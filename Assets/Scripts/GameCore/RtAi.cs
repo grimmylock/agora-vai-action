@@ -121,9 +121,9 @@ namespace GameCore
             if (w.IsJammed || w.CurrentMagazine <= 0)
             {
                 int missing = w.MagCapacity - w.CurrentMagazine;
-                float rt = w.IsJammed ? 0.8f : Gunplay.ByRound(w) ? (Gunplay.Revolver(w) ? Gunplay.CylinderOpen : 0f) + missing * Gunplay.PerRound(w) : Gunplay.For(w).ReloadTime;   // RT 6h
+                float rt = w.IsJammed ? 0.8f : Gunplay.ByRound(w) ? (Gunplay.Revolver(w) ? Gunplay.CylinderOpen : 0f) + missing * Gunplay.PerRound(w) : Gunplay.ReloadSeconds(w);   // RT 6h, 6k
                 s.ReloadUntil = now + rt * 1.2f;
-                CombatFx.Reload(h, w, s.ReloadUntil - now, w.IsJammed, Gunplay.ByRound(w) ? missing : 0);
+                CombatFx.Reload(h, w, s.ReloadUntil - now, w.IsJammed, missing);
                 Shout(h, w.IsJammed ? "Jammed!" : "Reloading!");
                 return;
             }

@@ -3353,3 +3353,18 @@ gone and the pistol magazine looks like a square and not an actual clip".
   feet, bounce once or twice and lie on their side on the floor, kept with the blood decals (oldest go first).
 - Renders: the harness dumps the dropped magazine's fall through the same `Fall` (`heldframes`), `held_anim.py` draws it.
 - Not yet: picking magazines up or keeping a partly used one (a magazine inventory) - asked Yan.
+
+## RT batch 6k - brass and shells land and stay; spent ones dumped on reload (2026-10-20)
+
+Yan: "no magazine system, this is purely visual" (magazines stay visual - no magazine inventory). "Is there a casings system when
+firing and for revolver reloading? Like opening a revolver drops all spent casings (based on how many shots were fired, also reload
+needs to be based on how many shots) Or when opening a break action shotgun it needs to drop/remove the shells".
+- Before: a fired casing was a 1-px fleck that faded in mid-air after 0.35 s; opening a revolver or break-action threw as many
+  flecks as the gun holds (max 6).
+- Now every ejected casing (brass) or shell (red) is a loose object (`CombatFxView.DropBrass`): it flies out, falls through
+  `HeldPoseMath.Fall` to the shooter's feet, bounces, lies flat and stays (its own queue of 160, oldest first, so automatics
+  don't wipe the blood decals). Revolvers and break-actions still eject nothing when they fire.
+- Opening a revolver's cylinder (at 0.3 s) or a break-action (as the barrels drop) dumps exactly the spent ones: the rounds
+  fired since it was last full (`FxEvent.Rounds`). Revolvers already reloaded only the empty chambers (RT 6h); break-actions
+  now take 0.6 s plus their per-shell share for each shell fired (`Gunplay.ReloadSeconds`, harness check), for you and NPCs.
+- Render: `heldframes` also dumps the brass through the same `Fall`; the revolver GIF shows it landing.

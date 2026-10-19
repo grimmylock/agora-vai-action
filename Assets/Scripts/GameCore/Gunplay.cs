@@ -109,6 +109,16 @@ namespace GameCore
         public static bool ByRound(Weapon w) { var r = WeaponFeel.For(w?.Db).Reload; return r == "tube" || r == "cylinder"; }
         public static bool Revolver(Weapon w) => WeaponFeel.For(w?.Db).Reload == "cylinder";
         public const float CylinderOpen = 0.4f;               // swing it out, dump the brass
+        public const float BreakOpenClose = 0.6f;             // RT 6k: a break-action opens, dumps and closes; the rest is per shell fired
+
+        /// <summary>A whole-magazine reload's length (RT 6k: a break-action's depends on how many shells it fired).</summary>
+        public static float ReloadSeconds(Weapon w)
+        {
+            float full = For(w).ReloadTime;
+            if (WeaponFeel.For(w?.Db).Reload != "break") return full;
+            int cap = System.Math.Max(1, w.MagCapacity);
+            return BreakOpenClose + (cap - w.CurrentMagazine) * (full - BreakOpenClose) / cap;
+        }
         public static float PerRound(Weapon w) =>
             System.Math.Max(0.25f, System.Math.Min(0.6f, (For(w).ReloadTime - (Revolver(w) ? CylinderOpen : 0f)) / System.Math.Max(1, w.MagCapacity)));
 

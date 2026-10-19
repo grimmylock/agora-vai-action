@@ -161,9 +161,9 @@ namespace GameCore
                 GameLog.Write("Loading...");
                 return;
             }
-            float t = w.IsJammed ? 0.8f : Gunplay.For(w).ReloadTime * speed;
+            float t = w.IsJammed ? 0.8f : Gunplay.ReloadSeconds(w) * speed;
             aim.ReloadUntil = now + t;
-            CombatFx.Reload(p, w, t, w.IsJammed);
+            CombatFx.Reload(p, w, t, w.IsJammed, w.MagCapacity - w.CurrentMagazine);   // rounds: the spent shells a break-action dumps
             GameLog.Write(w.IsJammed ? "Clearing the jam..." : "Reloading...");
         }
 

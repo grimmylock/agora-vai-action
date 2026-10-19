@@ -116,15 +116,15 @@ namespace GameCore
         }
 
         /// <summary>RT 6j: a loose magazine falling (world units, y up): gravity, one or two small bounces off the floor, then it
-        /// lies on its side (90 or 270 degrees). True once it has come to rest.</summary>
-        public static bool Fall(ref float x, ref float y, ref float vx, ref float vy, ref float deg, ref float spin, float floor, float dt)
+        /// lies at `lie` or `lie` + 180 degrees. True once it has come to rest.</summary>
+        public static bool Fall(ref float x, ref float y, ref float vx, ref float vy, ref float deg, ref float spin, float floor, float dt, float lie = 90f)
         {
             vy -= 14f * dt; x += vx * dt; y += vy * dt; deg += spin * dt;
             if (y > floor || vy > 0f) return false;
             y = floor;
             if (vy < -1.2f) { vy = -vy * 0.3f; vx *= 0.5f; spin *= 0.4f; return false; }
             vx = vy = spin = 0f;
-            float d = (deg % 360f + 360f) % 360f; deg = d < 180f ? 90f : 270f;   // on its side
+            float d = (deg % 360f + 360f) % 360f; deg = d < 180f ? lie : lie + 180f;   // a magazine on its side (90), brass flat (0)
             return true;
         }
 

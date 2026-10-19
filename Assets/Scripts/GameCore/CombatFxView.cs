@@ -45,7 +45,19 @@ namespace GameCore
         private readonly List<Particle> _live = new List<Particle>();
 
         // RT 6j: loose magazines - they fall out of the gun, bounce, and lie on the floor with the blood (MaxDecals)
-        private class LooseMag { public SpriteRenderer Sr; public float X, Y, Vx, Vy, Deg, Spin, Floor; }
+        // RT 6k: spent brass and shells too - they land at the shooter's feet and stay (their own queue, so automatics don't wipe the blood)
+        private class LooseMag { public SpriteRenderer Sr; public float X, Y, Vx, Vy, Deg, Spin, Floor; public bool Brass; }
+        private const int MaxBrass = 160;
+        private readonly Queue<SpriteRenderer> _brass = new Queue<SpriteRenderer>();
+        /// <summary>One spent casing (brass) or shotgun shell (red) thrown from `at` with velocity (vx, vy), landing on `floor`.</summary>
+        private void DropBrass(Vector3 at, bool shell, float vx, float vy, float floor, int order)
+        {
+            var sr = NewSprite(shell ? "Shell" : "Casing", White(), shell ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f), _root, order);
+            sr.transform.localScale = new Vector3((shell ? 2f : 1.5f) / WeaponArt.PixelsPerUnit, 1f / WeaponArt.PixelsPerUnit, 1f);
+            _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = vx, Vy = vy, Deg = Random.Range(0f, 360f), Spin = Random.Range(-720f, 720f), Floor = floor, Brass = true });
+        }
+        /// <summary>The floor under a held gun's owner (its feet), for things it drops.</summary>
+        private static float FloorOf(HeldWeaponView held) => held.Gun.parent != null ? held.Gun.parent.position.y - 0.42f : held.Gun.position.y - 0.4f;
         private readonly List<LooseMag> _mags = new List<LooseMag>();
         private void DropMag(Sprite s, Vector3 at, float deg, bool flip, float floor, int order)
         {
@@ -108,10 +120,14 @@ namespace GameCore
             {
                 var m = _mags[i];
                 if (m.Sr == null) { _mags.RemoveAt(i--); continue; }
-                bool rest = HeldPoseMath.Fall(ref m.X, ref m.Y, ref m.Vx, ref m.Vy, ref m.Deg, ref m.Spin, m.Floor, dt);
+                bool rest = HeldPoseMath.Fall(ref m.X, ref m.Y, ref m.Vx, ref m.Vy, ref m.Deg, ref m.Spin, m.Floor, dt, m.Brass ? 0f : 90f);
                 m.Sr.transform.position = new Vector3(m.X, m.Y, 0f);
                 m.Sr.transform.localRotation = Quaternion.Euler(0f, 0f, m.Deg);
-                if (rest) { m.Sr.sortingOrder = 2; Decal(m.Sr); _mags.RemoveAt(i--); }   // on the floor, under everyone
+                if (!rest) continue;
+                m.Sr.sortingOrder = 2;                                                 // on the floor, under everyone
+                if (m.Brass) { _brass.Enqueue(m.Sr); while (_brass.Count > MaxBrass) { var old = _brass.Dequeue(); if (old != null) Object.Destroy(old.gameObject); } }
+                else Decal(m.Sr);
+                _mags.RemoveAt(i--);
             }
             for (int i = 0; i < _live.Count; i++)
             {
@@ -224,15 +240,18 @@ namespace GameCore
                     float len = e.Seconds > 0f ? e.Seconds : feel.ReloadTime;
                     held.StartReload(feel, e.Weapon.MagCapacity, len, e.Rounds > 1 ? e.Rounds : 0);
                     Sfx.Play(Sfx.Reload(feel), from, 0.8f);
-                    At(now + 0.2f * len, () =>
+                    At(now + (feel.Reload == "cylinder" ? Mathf.Min(0.3f, 0.2f * len) : feel.Reload == "break" ? 0.17f * len : 0.2f * len), () =>   // RT 6k: when it's open
                     {
                         if (held == null || !held.Visible) return;
                         var at = held.Gun.position;
                         if (feel.Reload == "mag" && WeaponArt.Mag(WeaponArt.Identify(e.Weapon.Db).cat, WeaponArt.Identify(e.Weapon.Db).key).mag == null) Bit(at, new Color(0.2f, 0.22f, 0.23f), 2, 3, new Vector3(0f, -0.2f, 0f), 4f, 0.45f, 4);
                         else if (feel.Reload == "cylinder" || feel.Reload == "break")
-                            for (int i = 0; i < Mathf.Min(e.Weapon.MagCapacity, 6); i++)
-                                Bit(at, feel.Reload == "break" ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f), 1, 1,
-                                    new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0.2f, 0.8f), 0f), 5f, 0.4f, 4);
+                        {
+                            // RT 6k (Yan): opening the cylinder or the breech dumps the spent ones - as many as were fired
+                            int spent = e.Seconds > 0f ? e.Rounds : Mathf.Min(e.Weapon.MagCapacity, 6);
+                            for (int i = 0; i < spent; i++)
+                                DropBrass(at, feel.Reload == "break", Random.Range(-0.4f, 0.4f), Random.Range(0.1f, 0.6f), FloorOf(held), 7);
+                        }
                     });
                     break;
             }
@@ -280,8 +299,7 @@ namespace GameCore
             if (feel.Casing != null && held != null)
             {
                 float side = held.AimLeft ? -1f : 1f;
-                Bit(held.Gun.position, feel.Casing == "shell" ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f),
-                    feel.Casing == "shell" ? 2 : 1, 1, new Vector3(-side * Random.Range(0.4f, 0.9f), Random.Range(1.2f, 1.8f), 0f), 6f, 0.35f, 7);
+                DropBrass(held.Gun.position, feel.Casing == "shell", -side * Random.Range(0.4f, 0.9f), Random.Range(1.2f, 1.8f), FloorOf(held), 7);   // RT 6k: it lands
             }
             if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
 

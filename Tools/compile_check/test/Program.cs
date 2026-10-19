@@ -729,6 +729,9 @@ static class Program {
         // RT 6j: the dropped magazine, through the same fall the game runs (HeldPoseMath.Fall), in character px (y down)
         float[] mp = WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null;
         bool thrown = false, rest = false; float mx = 0, my = 0, mvx = 0, mvy = 0, mdeg = 0, mspin = 0;
+        // RT 6k: a revolver or break-action dumps its spent brass when it opens (from empty here: all of it)
+        bool dumps = style == "cylinder" || style == "break"; float dumpAt = style == "cylinder" ? Math.Min(0.3f, 0.2f * secs) / secs : 0.17f;
+        var brass = new System.Collections.Generic.List<float[]>(); var rnd = new Random(7);
         for (int i = 0; i < n; i++) {
           var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
           if (f.MagDropped && !thrown && mp != null) {
@@ -738,9 +741,15 @@ static class Program {
             mvx = 0.4f; mvy = 0.5f;   // forward, away from the body (CombatFxView.DropMag) mdeg = f.GunDeg; mspin = -280f;
           }
           if (thrown && !rest) rest = HeldPoseMath.Fall(ref mx, ref my, ref mvx, ref mvy, ref mdeg, ref mspin, (8f - 15f) / 16f + 0.06f, 1f / 30f);
-          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagDX},{f.MagDY},{(f.MagShown ? 1 : 0)},{f.BreakDeg},{(thrown ? 1 : 0)},{8 + mx * 16},{8 - my * 16},{mdeg},{(rest ? 1 : 0)}]"));
+          if (dumps && brass.Count == 0 && i / 30f / secs >= dumpAt)
+            for (int b = 0; b < cap; b++) brass.Add(new[] { (f.GunX - 8) / 16f, (8 - f.GunY) / 16f, (float)(rnd.NextDouble() * 0.8 - 0.4), (float)(rnd.NextDouble() * 0.5 + 0.1), (float)(rnd.NextDouble() * 360), (float)(rnd.NextDouble() * 1440 - 720), 0f });
+          foreach (var b in brass) if (b[6] == 0f) { float x = b[0], y = b[1], vx = b[2], vy = b[3], d = b[4], sp = b[5];
+            if (HeldPoseMath.Fall(ref x, ref y, ref vx, ref vy, ref d, ref sp, (8f - 15f) / 16f + 0.02f, 1f / 30f, 0f)) b[6] = 1f;
+            b[0] = x; b[1] = y; b[2] = vx; b[3] = vy; b[4] = d; b[5] = sp; }
+          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagDX},{f.MagDY},{(f.MagShown ? 1 : 0)},{f.BreakDeg},{(thrown ? 1 : 0)},{8 + mx * 16},{8 - my * 16},{mdeg},{(rest ? 1 : 0)},[{string.Join(",", brass.Select(b => FormattableString.Invariant($"[{8 + b[0] * 16},{8 - b[1] * 16},{b[4]},{b[6]}]")))}]]"));
         }
         if (mp != null) sb.Append(System.FormattableString.Invariant($"],\"mag\":[{mp[0]},{mp[1]},{mp[2]},{mp[3]}"));
+        if (dumps) sb.Append(mp != null ? "" : "],\"shell\":[" + (style == "break" ? 1 : 0));
         sb.Append("]}");
       }
     }
@@ -858,6 +867,8 @@ static class Program {
       Rt.StartReload(p, rv, aim, 0f); Rt.StopLoading(p, rv, aim);
       for (t = 0f; t < 6f; t += 0.02f) Rt.TickReload(p, rv, aim, t);
       Check(rv.CurrentMagazine == 1 && aim.Loading == 0, $"RT 6h: a revolver told to stop finishes the round in hand and closes ({rv.CurrentMagazine})");
+      var ob = W("shotgun", "Obrez66"); ob.CurrentMagazine = 1; float one = Gunplay.ReloadSeconds(ob); ob.CurrentMagazine = 0; float two = Gunplay.ReloadSeconds(ob);
+      Check(one < two && Math.Abs(two - Gunplay.For(ob).ReloadTime) < 0.01f, $"RT 6k: a break-action reloads faster after one shell than two ({one:0.00} / {two:0.00} s)");
       p.EquippedWeapon = keep; CombatFx.Pending.Clear(); }
     // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
     {

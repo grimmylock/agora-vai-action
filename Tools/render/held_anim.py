@@ -35,7 +35,7 @@ def paste(c, img, px, py, at_x, at_y, deg, flip):
     c.alpha_composite(big, (round((BX + at_x) * S) - pad, round((BY + at_y) * S) - pad))
 
 def frame(anim, f, body, gun, gl, parts=None):
-    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mdx, mdy, mshown, brk, thrown, lx, ly, ldeg, landed = f
+    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mdx, mdy, mshown, brk, thrown, lx, ly, ldeg, landed, brass = f
     if anim.get("barrels"):                                    # RT 6i: barrels swung down on the hinge (clockwise in the gun's own picture)
         gbody, gbar = anim["barrels"]; layer = Image.new("RGBA", gun.size); layer.alpha_composite(gbody)
         layer.alpha_composite(gbar.rotate(-brk, center=HINGES[anim["key"]], resample=Image.NEAREST)); gun = layer
@@ -43,7 +43,15 @@ def frame(anim, f, body, gun, gl, parts=None):
     mp = anim.get("mag")
     loose = lambda: paste(c, parts[1], mp[2], mp[3], lx, ly, ldeg, left)
     if parts and thrown and landed: loose()                   # RT 6j: on the floor, under the unit
+    shell = bool(anim.get("shell", [0])[0])
+    def bits(on_floor):                                        # RT 6k: spent brass (1.5x1 weapon px) or shells (2x1, red)
+        for bx, by, bdeg, rest in brass:
+            if bool(rest) != on_floor: continue
+            bit = Image.new("RGBA", (2 if shell else 2, 1), (176, 40, 40, 255) if shell else (201, 166, 62, 255))
+            paste(c, bit, 1, 0.5, bx, by, bdeg, False)
+    bits(True)
     c.alpha_composite(body, (BX * S, BY * S))
+    bits(False)
     if parts and thrown and not landed: loose()               # still falling, in front
     if parts and mshown: paste(c, parts[1], anim["gx"], anim["gy"], gx_ + mdx, gy_ + mdy, deg, left)   # seated or in the hand
     paste(c, (parts[0] or gun) if parts else gun, anim["gx"], anim["gy"], gx_, gy_, deg, left)
