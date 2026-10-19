@@ -19,7 +19,8 @@ namespace GameCore
         static readonly Dictionary<string, float> DeflectBonus = new Dictionary<string, float> { ["Obelisk Heavy"] = 0.03f, ["Sentinel Proto-Armor"] = 0.05f };
 
         /// <summary>Rounds no helmet turns (anti-materiel). By weapon name.</summary>
-        static readonly HashSet<string> NoDeflect = new HashSet<string> { "VK-127 Grom", "Halden AM-50 Sledge", "G-7 Rail Prototype" };
+        static readonly HashSet<string> NoDeflect = new HashSet<string> { "VK-127 Grom", "Halden AM-50 Sledge", "G-7 Rail Prototype",
+            "RK-12 Kuvalda", "Black Harrier", "Steppe Eagle" };   // + the heavy handguns (Yan)
 
         public static ArmorDef ArmorOf(ICombatant u) => u is Player p ? p.EquippedArmor : u is HumanEnemy h ? h.EquippedArmor : null;
 

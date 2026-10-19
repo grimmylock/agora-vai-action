@@ -3223,3 +3223,11 @@ required". "we can have armor that have more deflect chance or weapons that can'
   as checks.
 - ponytail: handling (spread, rate, recoil, reload) stays per class with the data-driven tweaks; a per-gun table when Yan has
   felt the classes in game. Ammo prices not rescaled yet (rounds per kill went up for automatics).
+
+## RT batch 6b - armor variants per tier, heavy handguns can't be deflected (2026-10-19)
+
+Yan: "calculate how each weapon performs against a few variants of armor of the same tier and see if there's any outliers",
+"add the can't be deflected to the rk-12 and the high recoil handguns" (done: RK-12 Kuvalda, Black Harrier, Steppe Eagle join
+`HeadGear.NoDeflect`). The probe now also prints every gun vs the lightest / middle / heaviest body armor of its tier and that
+tier's best helmet (expected hits, deflects counted as misses) - `test ttk`, saved in `Tools/probes/ttk_rt6.txt`. Findings in the
+reply to Yan (SR-21 Gadyuka weak, Halden Service Revolver strong, SMGs collapse vs heavy tier 2-3 armor, AP flattens tier 4-5 armor).

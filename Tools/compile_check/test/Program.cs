@@ -877,6 +877,28 @@ static class Program {
       float std = HeadGear.DeflectChance(gunner, rifle); rifle.CurrentAmmoType = "ArmorPiercing"; float ap = HeadGear.DeflectChance(gunner, rifle);
       Check(std == 0.25f && Math.Abs(ap - 0.125f) < 0.001f && HeadGear.DeflectChance(gunner, sledge) == 0f && HeadGear.Of(ArmorDatabase.Tiers["tier1"]["LeatherJacket"]).dr == 0f,
         $"exo helmet: 25% deflect, AP halves it ({ap}), anti-materiel never deflects, a balaclava protects nothing"); }
+    // RT batch 6b: every gun against the lightest, middle and heaviest body armor of its tier, and the tier's best helmet,
+    // in expected hits (deflects count as misses): the outlier hunt. `test ttk` prints it.
+    if (print) {
+      Console.WriteLine();
+      Console.WriteLine("VARIANTS  weapon                      T  chest: light  mid  heavy | head: none  best-helmet (expected, deflects as misses)");
+      foreach (var cat in WeaponDatabase.Categories) {
+        if (cat.Key == "melee") continue;
+        foreach (var d in cat.Value.Values) {
+          int t = Math.Max(1, Math.Min(5, d.Tier)); bool ap = t >= 4;
+          var tierArmors = ArmorDatabase.Tiers["tier" + t].Values.OrderBy(a => a.PhysDR).ToList();
+          var w = W(cat.Key, cat.Value.First(x => x.Value == d).Key);
+          var light = tierArmors.First(); var heavy = tierArmors.Last(); var mid = tierArmors[tierArmors.Count / 2];
+          var soft = tierArmors.FirstOrDefault(a => HeadGear.Of(a).dr == 0f) ?? light;
+          var helm = tierArmors.OrderByDescending(a => HeadGear.Of(a).dr).First();
+          w.CurrentAmmoType = ap ? "ArmorPiercing" : "Standard";
+          var dummy = new HumanEnemy("x", 1, 1, "Raiders", "Rookie", null, null) { EquippedArmor = helm };
+          float defl = HeadGear.DeflectChance(dummy, w);
+          float helmExp = Hits(w, helm, "Head", 6f, ap) / (1f - defl);
+          Console.WriteLine($"{cat.Key,-8}  {d.Name,-27} {t}  {Hits(w, light, "Torso", 6f, ap),10} {Hits(w, mid, "Torso", 6f, ap),4} {Hits(w, heavy, "Torso", 6f, ap),5}   | {Hits(w, soft, "Head", 6f, ap),9} {helmExp,8:0.0} ({helm.Name}{(defl > 0 ? $", {defl:P0} deflect" : "")})");
+        }
+      }
+    }
     int Med(string k, bool head) { var l = byClass[k].Select(x => head ? x.h : x.c).OrderBy(x => x).ToList(); return l[l.Count / 2]; }
     Check(Med("assault", true) >= 2 && Med("assault", true) <= 4, $"rifles: 2-4 head hits ({Med("assault", true)})");
     Check(Med("heavy", true) >= 2 && Med("heavy", true) <= 4, $"machine guns like rifles ({Med("heavy", true)})");
