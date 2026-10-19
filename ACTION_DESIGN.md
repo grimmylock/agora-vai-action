@@ -139,6 +139,17 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
   `turn-based-fallback` (Batch 131f) plus this document. Game name stays "agora vai".
 - Yan's side: also label the Plastic changeset ("turn-based-131") and keep a zip of the project folder.
 
+## Real combat tests (Yan, 2026-10-19: everything below waits for a play session in Unity, RT batches 1-5)
+
+- Moving: walk/sprint/crouch speeds and stamina; crossing a map exit; E looting.
+- Shooting: the crosshair and spread; hitting heads vs bodies; reload and jam timing; firing over your own cover.
+- Body: how fast fights end now that heads/torsos count; wounds; going down, crawling, stims/splints/bandages (belt 1-4).
+- Dive: distance, slow-mo length, 0.6 s prone (risky but fair?), how fast Focus fills.
+- Human enemies: alive or static/too aggressive? bursts and pauses, flanking, pins, call-outs, accuracy.
+- Mutants: hound pace vs yours, bite rate, the Brute's pace and boulder, the leap.
+- Weapon balance (see below) - per-gun damage, rate, recoil vs armor and HP.
+- Any red in the Console.
+
 ## Later list
 
 - A real run cycle for the hounds (Batch 131f): the knee-rig walk looks wrong at running speed.
