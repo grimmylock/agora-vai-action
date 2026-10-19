@@ -51,8 +51,8 @@ namespace GameCore
         /// <summary>Real-time fork: queue an event built by the caller (Gunplay).</summary>
         public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); }
 
-        /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer.</summary>
-        public static void Reload(ICombatant u, Weapon w, float seconds) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; }
+        /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer. jam (RT 6f): clearing a jam.</summary>
+        public static void Reload(ICombatant u, Weapon w, float seconds, bool jam = false) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; e.Jammed = jam; }
 
         public static FxEvent Push(string kind, ICombatant actor, ICombatant target, Weapon weapon = null)
         {

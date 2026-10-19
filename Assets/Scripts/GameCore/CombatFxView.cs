@@ -189,6 +189,14 @@ namespace GameCore
                     break;
                 case "reload":
                     if (held == null) break;
+                    if (e.Jammed)                               // RT 6f: clearing a jam - slap the magazine, rack the action
+                    {
+                        float jl = e.Seconds > 0f ? e.Seconds : 0.8f;
+                        held.StartClear(jl);
+                        At(now + 0.2f * jl, () => Sfx.Play("hit_hard", from, 0.35f));
+                        At(now + 0.6f * jl, () => Sfx.Play("reload_mag", from, 0.6f));   // ponytail: no rack sound of its own yet
+                        break;
+                    }
                     float len = e.Seconds > 0f ? e.Seconds : feel.ReloadTime;
                     held.StartReload(feel, e.Weapon.MagCapacity, len);
                     Sfx.Play(Sfx.Reload(feel), from, 0.8f);

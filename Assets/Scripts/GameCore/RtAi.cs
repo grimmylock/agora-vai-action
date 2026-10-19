@@ -121,7 +121,7 @@ namespace GameCore
             if (w.IsJammed || w.CurrentMagazine <= 0)
             {
                 s.ReloadUntil = now + Gunplay.For(w).ReloadTime * 1.2f;
-                if (!w.IsJammed) CombatFx.Reload(h, w, s.ReloadUntil - now);
+                CombatFx.Reload(h, w, s.ReloadUntil - now, w.IsJammed);
                 Shout(h, w.IsJammed ? "Jammed!" : "Reloading!");
                 return;
             }

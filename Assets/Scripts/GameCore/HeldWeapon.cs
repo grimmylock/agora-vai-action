@@ -21,6 +21,14 @@ namespace GameCore
         public bool HasSupport, AimLeft;
     }
 
+    /// <summary>RT 6f: one drawn frame of a held gun, in character pixels (16x16, y down): where the gun's grip point sits
+    /// and its rotation, and the centres of both gloves. HeldWeaponView turns it into transforms; the harness renders it.</summary>
+    public struct HeldFrame
+    {
+        public float GunX, GunY, GunDeg, GripX, GripY, SupX, SupY;
+        public bool Left, HasSupport;
+    }
+
     public static class HeldPoseMath
     {
         public const float ChestX = 8f, ChestY = 9.5f;
@@ -85,13 +93,14 @@ namespace GameCore
         }
 
         public static float ReloadTilt(string style) =>
-            style == "cylinder" ? 70f : style == "break" ? -50f : style == "tube" ? -20f : style == "belt" ? -15f : style == "mag" ? -35f : 0f;
+            style == "jam" ? 25f : style == "cylinder" ? 70f : style == "break" ? -50f : style == "tube" ? -20f : style == "belt" ? -15f : style == "mag" ? -35f : 0f;
 
         /// <summary>Reload progress r (0..1) -> how far the gun is tipped (0..1) and where the support
         /// hand is: 0 = on the gun, 1 = at the belt pouch. Mag: out to the pouch and back once.
         /// Tube / cylinder: several trips (one per couple of shells).</summary>
         public static (float tip, float pouch) Reload(float r, string style, int trips)
         {
+            if (style == "jam") { var j = Jam(r); return (j.tip, 0f); }
             if (r < 0f || r >= 1f || style == "none") return (0f, 0f);
             float tip = Mathf.Min(1f, Mathf.Min(r / 0.15f, (1f - r) / 0.15f));
             if (style == "belt" || style == "break") trips = 1;
@@ -100,6 +109,69 @@ namespace GameCore
             float u = inner * Mathf.Max(1, trips) % 1f;             // 0..1 within one trip
             float pouch = u < 0.35f ? u / 0.35f : u < 0.55f ? 1f : 1f - (u - 0.55f) / 0.45f;
             return (tip, pouch);
+        }
+
+        /// <summary>RT 6f: clearing a jam, progress r (0..1) - cant the gun to look into it, slap the magazine (tap: the support
+        /// hand goes under the gun and bumps it), then rack it (rack: the hand pulls back over the action, holds, lets go; jolt:
+        /// the action slams home and nudges the gun forward).</summary>
+        public static (float tip, float tap, float rack, float jolt) Jam(float r)
+        {
+            if (r < 0f || r >= 1f) return (0f, 0f, 0f, 0f);
+            float tip = Mathf.Min(1f, Mathf.Min(r / 0.12f, (1f - r) / 0.12f));
+            float u = (r - 0.12f) / 0.26f, tap = u <= 0f || u >= 1f ? 0f : u < 0.4f ? u / 0.4f : u < 0.6f ? 1f : 1f - (u - 0.6f) / 0.4f;
+            float v = (r - 0.42f) / 0.43f, rack = v <= 0f || v >= 1f ? 0f : v < 0.45f ? v / 0.45f : v < 0.6f ? 1f : v < 0.7f ? 1f - (v - 0.6f) / 0.1f : 0f;
+            float jolt = v >= 0.6f && v < 0.8f ? 1f : 0f;
+            return (tip, tap, rack, jolt);
+        }
+
+        /// <summary>RT 6f: everything HeldWeaponView.Show draws for a held gun (moved here from it so the harness can render it):
+        /// aim, then recoil (k: 0..1 left of the last shot's kick), swing, and the reload or jam-clearing pose at progress r.
+        /// g = WeaponArt grip/support/muzzle points.</summary>
+        public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
+            float r, string style, int trips)
+        {
+            bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
+            float side = left ? -1f : 1f;
+            var (swingDeg, lunge) = Swing(sinceSwing);
+            var (tip, pouch) = Reload(r, style, trips);
+            var jam = style == "jam" ? Jam(r) : default;
+            float extra = side * (climb * k + swingDeg + ReloadTilt(style) * tip);
+            float push = lunge - kick * k + jam.jolt;                       // + forward, - back (character px)
+
+            var pose = Compute(cat, angle + extra, g[0], g[1], g[2], g[3]);
+            if (pose.AimLeft != left) pose = Compute(cat, angle, g[0], g[1], g[2], g[3]);   // never flip sides mid-animation
+            float a = angle * Mathf.Deg2Rad;
+            float ox = Mathf.Round(push * Mathf.Cos(a)), oy = Mathf.Round(-push * Mathf.Sin(a)) - Mathf.Round(jam.tap);   // the tap bumps it up
+            bool free = false;                                              // the support hand is off the gun
+            if (pouch > 0f && pose.HasSupport)                              // support hand off to the belt pouch
+            {
+                float bx = pose.GripX + (left ? 3f : -3f), by = WaistTopRow + 1f;
+                pose.SupportX = Mathf.Round(Mathf.Lerp(pose.SupportX, bx, pouch));
+                pose.SupportY = Mathf.Round(Mathf.Lerp(pose.SupportY, by, pouch));
+                free = true;
+            }
+            if (style == "jam" && pose.HasSupport && (jam.tap > 0f || jam.rack > 0f))
+            {
+                bool pistol = float.IsNaN(g[2]);
+                // the magazine: under the grip on a pistol, between the hands on a long gun; the action: the slide over a
+                // pistol's grip, just behind and over the grip on a long gun
+                float mx = pistol ? pose.GripX : Mathf.Round((pose.GripX + pose.SupportX) * 0.5f), my = pistol ? pose.GripY + 2f : Mathf.Round((pose.GripY + pose.SupportY) * 0.5f) + 1f;
+                float rx = pistol ? pose.GripX : pose.GripX - side * 2f, ry = pose.GripY - 2f;
+                float tx = jam.tap > 0f ? mx : rx, ty = jam.tap > 0f ? my : ry, w = System.Math.Max(jam.tap, jam.rack);
+                pose.SupportX = Mathf.Round(Mathf.Lerp(pose.SupportX, tx, w));
+                pose.SupportY = Mathf.Round(Mathf.Lerp(pose.SupportY, ty, w));
+                free = true;
+            }
+            // Batch 28: small 4x3 gloves while holding something; the grip point (centre of the handle)
+            // sits in the middle of the glove's 2x1 interior, so the fist closes on the handle
+            float cx = pose.AimLeft ? 1f : 2f;
+            return new HeldFrame
+            {
+                Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
+                GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
+                GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
+                SupX = pose.SupportX + (free ? 0f : ox) + cx, SupY = pose.SupportY + (free ? 0f : oy) + 1.5f,
+            };
         }
     }
 
@@ -264,6 +336,8 @@ namespace GameCore
         }
         public void Twitch() { _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; }   // jammed: click, nothing
         public void Swing() => _swingAt = Time.time;
+        /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
+        public void StartClear(float seconds) { _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
         public void StartReload(WeaponFeel f, int capacity, float seconds = 0f)
         {
             _reloadAt = Time.time; _reloadTime = seconds > 0f ? seconds : f.ReloadTime; _reloadStyle = f.Reload;
@@ -326,44 +400,21 @@ namespace GameCore
             var (sprite, g) = WeaponArt.For(cat, key);
             _g = g;
 
-            // animation on top of the aim: recoil (back + muzzle climb), melee swing, reload tilt
-            bool left = Mathf.Cos(_angle * Mathf.Deg2Rad) < -0.0001f;
-            float side = left ? -1f : 1f;
-            float k = HeldPoseMath.Recoil(now - _shotAt, _recover);
-            var (swingDeg, lunge) = HeldPoseMath.Swing(now - _swingAt);
-            var (tip, pouch) = HeldPoseMath.Reload(_reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips);
-            float extra = side * (_climb * k + swingDeg + HeldPoseMath.ReloadTilt(_reloadStyle) * tip);
-            float push = lunge - _kick * k;                                   // + forward, - back (character px)
-
-            var pose = HeldPoseMath.Compute(cat, _angle + extra, g[0], g[1], g[2], g[3]);
-            if (pose.AimLeft != left) pose = HeldPoseMath.Compute(cat, _angle, g[0], g[1], g[2], g[3]);   // never flip sides mid-animation
-            float a = _angle * Mathf.Deg2Rad;
-            float ox = Mathf.Round(push * Mathf.Cos(a)), oy = Mathf.Round(-push * Mathf.Sin(a));    // whole character px
-            if (pouch > 0f && pose.HasSupport)                                 // support hand off to the belt pouch
-            {
-                float bx = pose.GripX + (left ? 3f : -3f), by = HeldPoseMath.WaistTopRow + 1f;
-                pose.SupportX = Mathf.Round(Mathf.Lerp(pose.SupportX, bx, pouch));
-                pose.SupportY = Mathf.Round(Mathf.Lerp(pose.SupportY, by, pouch));
-            }
+            // animation on top of the aim: recoil (back + muzzle climb), melee swing, reload tilt, clearing a jam
+            var f = HeldPoseMath.Frame(cat, g, _angle, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, now - _swingAt,
+                _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips);
 
             _gun.sprite = sprite;
-            _gun.flipY = pose.AimLeft;
-            // Batch 28: small 4x3 gloves while holding something; the grip point (centre of the handle)
-            // sits in the middle of the glove's 2x1 interior, so the fist closes on the handle
-            float cx = pose.AimLeft ? 1f : 2f;
-            _gun.transform.localPosition = Local(pose.GripX + ox + cx, pose.GripY + oy + 1.5f);
-            _gun.transform.localRotation = Quaternion.Euler(0f, 0f, _angle + extra);
+            _gun.flipY = f.Left;
+            _gun.transform.localPosition = Local(f.GunX, f.GunY);
+            _gun.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
 
             var hand = HandSprite(armor, true);
             _grip.sprite = hand; _support.sprite = hand;
-            _grip.flipX = _support.flipX = pose.AimLeft;                              // cuff stays on the body side
-            _grip.transform.localPosition = Local(pose.GripX + ox + cx, pose.GripY + oy + 1.5f);
-            _support.gameObject.SetActive(pose.HasSupport);
-            if (pose.HasSupport)
-            {
-                bool onGun = pouch <= 0f;
-                _support.transform.localPosition = Local(pose.SupportX + (onGun ? ox : 0f) + cx, pose.SupportY + (onGun ? oy : 0f) + 1.5f);
-            }
+            _grip.flipX = _support.flipX = f.Left;                                    // cuff stays on the body side
+            _grip.transform.localPosition = Local(f.GripX, f.GripY);
+            _support.gameObject.SetActive(f.HasSupport);
+            if (f.HasSupport) _support.transform.localPosition = Local(f.SupX, f.SupY);
         }
 
         // character pixel (16x16 sprite, y down) -> marker-local units (sprite spans -0.5..0.5)

@@ -3,6 +3,7 @@ static class Program {
   static int fails = 0;
   static void Check(bool ok, string msg) { if (!ok) { fails++; Console.WriteLine("FAIL " + msg); } }
   static int Main(string[] args) {
+    if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -709,6 +710,32 @@ static class Program {
   }
 
   // Real-time fork, batch 1: rounds trace over the ground; the crosshair's height picks the part, from any side; cover by height
+  // RT 6f: frames of the reload and jam-clearing animations straight from HeldPoseMath.Frame (the code HeldWeaponView.Show
+  // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
+  static void HeldFrames(string path) {
+    var sb = new System.Text.StringBuilder("[");
+    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump") };
+    int armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); if (armor < 0) armor = 0;   // bare hands, red cuffs: the hand work reads
+    bool firstAnim = true;
+    foreach (var (cat, key) in guns) {
+      var db = WeaponDatabase.Categories[cat][key]; var w = W(cat, key);
+      var feel = WeaponFeel.For(db); var g = WeaponArt.For(cat, key).grip;
+      int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1, trips = feel.Reload == "tube" || feel.Reload == "cylinder" ? Math.Clamp(cap / 2, 2, 4) : 1;
+      foreach (var (style, secs) in new[] { (feel.Reload, Gunplay.For(w).ReloadTime), ("jam", 0.8f) }) {
+        if (!firstAnim) sb.Append(','); firstAnim = false;
+        sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
+        int n = (int)Math.Ceiling(secs * 30f) + 4;
+        for (int i = 0; i < n; i++) {
+          var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips);
+          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)}]"));
+        }
+        sb.Append("]}");
+      }
+    }
+    System.IO.File.WriteAllText(path, sb.Append(']').ToString());
+    Console.WriteLine("held frames -> " + path);
+  }
+
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
     var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
@@ -797,6 +824,12 @@ static class Program {
       Check(Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 0.9f, p.X + 0.5f + 5f, p.Y + 0.9f, p) && !Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 2.5f, p.X + 0.5f + 5f, p.Y + 2.5f, p), "a round passing close is a near miss, one far off isn't");
       UnityEngine.Time.deltaTime = 0f; UnityEngine.Time.time = 0f; UnityEngine.Time.timeScale = 1f;
     }
+    // RT 6f: clearing a jam - the support hand leaves the gun to slap the magazine and rack the action, then comes back
+    { var g = WeaponArt.For("assault", "VK74").grip; var rest = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
+      var tap = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.25f, "jam", 1); var rack = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.65f, "jam", 1);
+      var done = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.99f, "jam", 1);
+      Check(tap.SupY > rack.SupY && rack.SupX < rest.SupX && tap.GunDeg > 0f && Math.Abs(done.SupX - rest.SupX) <= 1f && Math.Abs(done.SupY - rest.SupY) <= 1f,
+        $"RT 6f: jam clear - slap under the gun ({tap.SupX},{tap.SupY}), rack over the action ({rack.SupX},{rack.SupY}), back on the handguard ({done.SupX},{done.SupY} vs {rest.SupX},{rest.SupY})"); }
     // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
     {
       Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
@@ -814,7 +847,7 @@ static class Program {
         lastMag = mag;
         maxStep = Math.Max(maxStep, Math.Max(Math.Abs(g.X - lx), Math.Abs(g.Y - ly))); lx = g.X; ly = g.Y;
         if (f == 20) shotsAt1 = fired;
-        animSecs = Math.Max(animSecs, CombatFx.Pending.Where(e => e.Kind == "reload").Select(e => e.Seconds).DefaultIfEmpty(0f).Max()); CombatFx.Pending.Clear();
+        animSecs = Math.Max(animSecs, CombatFx.Pending.Where(e => e.Kind == "reload" && !e.Jammed).Select(e => e.Seconds).DefaultIfEmpty(0f).Max()); CombatFx.Pending.Clear();
       }
       Check(reloads == 0 || Math.Abs(animSecs - Gunplay.For(g.EquippedWeapon).ReloadTime * 1.2f) < 0.01f, $"RT 6d: the reload animation lasts as long as the reload ({animSecs:0.00} s)");
       Check(fired >= 6 && shotsAt1 < fired / 2, $"rounds go out over the fight, not in one go (first second {shotsAt1}, 20 s {fired})");

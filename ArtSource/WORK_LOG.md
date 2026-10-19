@@ -3280,3 +3280,15 @@ and lasts exactly as long: `CombatFx.Reload` sends the timer's seconds (`FxEvent
 the pose to it, and the dropped magazine/shells fall at 20% of it. Quick Hands and a hurt arm change it too, since they change
 the timer. `Weapon.Reload` no longer sends its own animation in real time (the turn-based game keeps it). Jam clearing still
 has no animation. Harness: the gunman's reload animation lasts his reload (1.68 s).
+
+## RT batch 6f - an animation for clearing jams; the held-gun pose is testable and renderable (2026-10-19)
+
+Yan: "add an animation for clearing jams too. Then give me an example of both animations".
+- Clearing a jam (R on a jammed gun, 0.8 s; NPCs on their own timer): the gun cants 25 degrees muzzle-up to look into it, the
+  support hand slaps the magazine (under the grip on a pistol, between the hands on a long gun) and bumps the gun up a pixel,
+  then racks the action (pulls back over the receiver / the slide, holds, lets go) and the gun jolts forward as it slams home.
+  `HeldPoseMath.Jam`, `HeldWeaponView.StartClear`, `CombatFx.Reload(..., jam: true)`. Sounds: a light knock on the slap, the
+  magazine click on the rack (ponytail: no rack sound of its own yet).
+- `HeldWeaponView.Show`'s pose maths moved into `HeldPoseMath.Frame` (pure, returns a `HeldFrame`), so the harness checks it
+  and renders it. `dotnet /tmp/test.dll heldframes <json>` dumps frames of the reload and jam animations (pistol, rifle, pump
+  shotgun); `python3 Tools/render/held_anim.py <json> maps/renders/held_anim` puts the real sprites on them (GIF each + a sheet).
