@@ -3292,3 +3292,6 @@ Yan: "add an animation for clearing jams too. Then give me an example of both an
 - `HeldWeaponView.Show`'s pose maths moved into `HeldPoseMath.Frame` (pure, returns a `HeldFrame`), so the harness checks it
   and renders it. `dotnet /tmp/test.dll heldframes <json>` dumps frames of the reload and jam animations (pistol, rifle, pump
   shotgun); `python3 Tools/render/held_anim.py <json> maps/renders/held_anim` puts the real sprites on them (GIF each + a sheet).
+- Fix (Yan: "why he holding the pistol by the front and not the grip"): the renders, not the game. Offline there are no
+  textures, so `WeaponArt.For` fell back to the category's grip points (the sidearm stand-in's handle sits mid-sprite) while the
+  render drew the real PSh-18 sprite. The harness now takes each gun's own points (`WeaponArt.GripOf`), like the game does.

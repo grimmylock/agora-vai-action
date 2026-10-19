@@ -719,7 +719,7 @@ static class Program {
     bool firstAnim = true;
     foreach (var (cat, key) in guns) {
       var db = WeaponDatabase.Categories[cat][key]; var w = W(cat, key);
-      var feel = WeaponFeel.For(db); var g = WeaponArt.For(cat, key).grip;
+      var feel = WeaponFeel.For(db); var g = WeaponArt.GripOf(cat, key);   // the sprite's own points (For() falls back to the category's here: no textures offline)
       int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1, trips = feel.Reload == "tube" || feel.Reload == "cylinder" ? Math.Clamp(cap / 2, 2, 4) : 1;
       foreach (var (style, secs) in new[] { (feel.Reload, Gunplay.For(w).ReloadTime), ("jam", 0.8f) }) {
         if (!firstAnim) sb.Append(','); firstAnim = false;
@@ -825,10 +825,10 @@ static class Program {
       UnityEngine.Time.deltaTime = 0f; UnityEngine.Time.time = 0f; UnityEngine.Time.timeScale = 1f;
     }
     // RT 6f: clearing a jam - the support hand leaves the gun to slap the magazine and rack the action, then comes back
-    { var g = WeaponArt.For("assault", "VK74").grip; var rest = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
+    { var g = WeaponArt.GripOf("assault", "VK74"); var rest = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
       var tap = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.25f, "jam", 1); var rack = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.65f, "jam", 1);
-      var done = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.99f, "jam", 1);
-      Check(tap.SupY > rack.SupY && rack.SupX < rest.SupX && tap.GunDeg > 0f && Math.Abs(done.SupX - rest.SupX) <= 1f && Math.Abs(done.SupY - rest.SupY) <= 1f,
+      var done = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.9f, "jam", 1); rest = HeldPoseMath.Frame("assault", g, done.GunDeg, 0f, 0f, 0f, 99f, 1f, "none", 1);   // same tilt, no hand work
+      Check(tap.SupY > rack.SupY && rack.SupX < tap.SupX && tap.GunDeg > 0f && Math.Abs(done.SupX - rest.SupX) <= 1f && Math.Abs(done.SupY - rest.SupY) <= 1f,
         $"RT 6f: jam clear - slap under the gun ({tap.SupX},{tap.SupY}), rack over the action ({rack.SupX},{rack.SupY}), back on the handguard ({done.SupX},{done.SupY} vs {rest.SupX},{rest.SupY})"); }
     // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
     {

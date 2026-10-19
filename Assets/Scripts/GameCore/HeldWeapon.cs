@@ -254,6 +254,8 @@ namespace GameCore
             ["RK12Kuvalda"] = new[] { 3f, 10f, float.NaN, float.NaN, 23f, 5.5f },
         };
         public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
+        /// <summary>The grip/support/muzzle points of a weapon's own sprite (its category's when it has none).</summary>
+        public static float[] GripOf(string cat, string key) => key != null && Grips.TryGetValue(key, out var kg) ? kg : Grips.TryGetValue("cat_" + cat, out var cg) ? cg : Grips["cat_assault"];
         private static readonly Dictionary<string, (Sprite, float[])> Cache = new Dictionary<string, (Sprite, float[])>();
         private static Dictionary<WeaponDef, (string cat, string key)> _index;
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
