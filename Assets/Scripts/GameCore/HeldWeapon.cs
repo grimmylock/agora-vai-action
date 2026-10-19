@@ -264,9 +264,9 @@ namespace GameCore
         }
         public void Twitch() { _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; }   // jammed: click, nothing
         public void Swing() => _swingAt = Time.time;
-        public void StartReload(WeaponFeel f, int capacity)
+        public void StartReload(WeaponFeel f, int capacity, float seconds = 0f)
         {
-            _reloadAt = Time.time; _reloadTime = f.ReloadTime; _reloadStyle = f.Reload;
+            _reloadAt = Time.time; _reloadTime = seconds > 0f ? seconds : f.ReloadTime; _reloadStyle = f.Reload;
             _reloadTrips = f.Reload == "tube" || f.Reload == "cylinder" ? Mathf.Clamp(capacity / 2, 2, 4) : 1;
         }
         /// <summary>Point the gun at a world position until `until` (the shot's target, even if the

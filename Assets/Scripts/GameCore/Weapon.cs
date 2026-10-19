@@ -507,7 +507,7 @@ namespace GameCore
             }
 
             CurrentMagazine += toLoad;
-            CombatFx.Push("reload", Owner ?? (ICombatant)Player.Current, null, this);
+            if (!Rt.On) CombatFx.Push("reload", Owner ?? (ICombatant)Player.Current, null, this);   // real time: the animation started with the timer (CombatFx.Reload)
             GameLog.Write($"{Name} reloaded {toLoad} rounds ({consumedFromGlobal} from stash). Magazine is now {CurrentMagazine}/{MagCapacity}.");
             return true;
         }

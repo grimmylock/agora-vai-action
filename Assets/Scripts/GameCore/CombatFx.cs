@@ -30,6 +30,7 @@ namespace GameCore
         // it ends exactly where the round stopped (tile space, y down). Pellet = a shotgun's extra pellet: tracer only.
         public bool Now, Pellet;
         public float Delay, EndX = -1f, EndY = -1f;
+        public float Seconds;          // RT 6d: a reload's real length (0 = the gun's own animation length)
     }
 
     public static class CombatFx
@@ -49,6 +50,9 @@ namespace GameCore
 
         /// <summary>Real-time fork: queue an event built by the caller (Gunplay).</summary>
         public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); }
+
+        /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer.</summary>
+        public static void Reload(ICombatant u, Weapon w, float seconds) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; }
 
         public static FxEvent Push(string kind, ICombatant actor, ICombatant target, Weapon weapon = null)
         {

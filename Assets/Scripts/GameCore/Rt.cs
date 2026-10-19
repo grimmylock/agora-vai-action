@@ -140,6 +140,7 @@ namespace GameCore
             {
                 float t = w.IsJammed ? 0.8f : hd.ReloadTime * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f) * (Body.ArmsHurt(p) > 0 ? 1.5f : 1f);
                 aim.ReloadUntil = Time.time + t;
+                if (!w.IsJammed) CombatFx.Reload(p, w, t);
                 GameLog.Write(w.IsJammed ? "Clearing the jam..." : "Reloading...");
             }
             bool trigger = m != null && (hd.Auto ? m.leftButton.isPressed : m.leftButton.wasPressedThisFrame);

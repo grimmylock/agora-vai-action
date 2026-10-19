@@ -3271,3 +3271,12 @@ same reload speed, same accuracy..."
   much as is fastest, reloads counted. Rifles aimed 0.4-1.2 s at 5 tiles; SMGs 0.7-1.4 aimed but 1.5-3.3 s walking from the hip
   (rifles 2.7-8 s): their place is on the move up close. Shotguns 2.2-4 s at 5 tiles (Obrez 9 s), snipers 0.7-2.2 s aimed and
   hopeless from the hip, machine guns 1.2-1.8 aimed at 5 tiles and slow walking.
+
+## RT batch 6e - the reload animation follows the real reload (2026-10-19)
+
+Yan: "make the reload animation follow the new reload times". In real time the animation used to play only when the magazine
+was refilled, at the END of the reload timer, with its own length. Now it starts with the timer (R for you, `RtAi` for NPCs)
+and lasts exactly as long: `CombatFx.Reload` sends the timer's seconds (`FxEvent.Seconds`), `HeldWeapon.StartReload` stretches
+the pose to it, and the dropped magazine/shells fall at 20% of it. Quick Hands and a hurt arm change it too, since they change
+the timer. `Weapon.Reload` no longer sends its own animation in real time (the turn-based game keeps it). Jam clearing still
+has no animation. Harness: the gunman's reload animation lasts his reload (1.68 s).

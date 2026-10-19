@@ -155,6 +155,5 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 ## Later list
 
 - A real run cycle for the hounds (Batch 131f): the knee-rig walk looks wrong at running speed.
-- The reload animation (`CombatFx` WeaponFeel.ReloadTime) has its own length; make it follow `Gunplay.Guns` reload times.
 - Shotguns: 3 full patterns to drop a mid-armor target at 5 tiles (2-4 s with a pump) vs ~1 s for rifles - look at it after playing.
 - SMGs still need 14-15 chest hits on the heaviest tier 3 armor (Wasp-9, Hornet): their answer is aiming for the head or AP.

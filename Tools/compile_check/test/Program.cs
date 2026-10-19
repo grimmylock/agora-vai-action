@@ -805,7 +805,7 @@ static class Program {
       g.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);   // a gun every time (the random loadout can be a knife)
       EncounterState.Enemies.Add(g); EncounterState.InCombat = true; Contact.Spot(p);
       UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 2000f;
-      int shotsAt1 = -1, reloads = 0, maxStep = 0, lastMag = g.EquippedWeapon.CurrentMagazine, fired = 0; var (gx0, gy0) = (g.X, g.Y); int lx = g.X, ly = g.Y;
+      float animSecs = 0f; int shotsAt1 = -1, reloads = 0, maxStep = 0, lastMag = g.EquippedWeapon.CurrentMagazine, fired = 0; var (gx0, gy0) = (g.X, g.Y); int lx = g.X, ly = g.Y;
       for (int f = 0; f < 400; f++) {
         Rt.WorldTick(p); UnityEngine.Time.time += 0.05f;
         p.HealPermanent(100); Body.Reset();
@@ -814,7 +814,9 @@ static class Program {
         lastMag = mag;
         maxStep = Math.Max(maxStep, Math.Max(Math.Abs(g.X - lx), Math.Abs(g.Y - ly))); lx = g.X; ly = g.Y;
         if (f == 20) shotsAt1 = fired;
+        animSecs = Math.Max(animSecs, CombatFx.Pending.Where(e => e.Kind == "reload").Select(e => e.Seconds).DefaultIfEmpty(0f).Max()); CombatFx.Pending.Clear();
       }
+      Check(reloads == 0 || Math.Abs(animSecs - Gunplay.For(g.EquippedWeapon).ReloadTime * 1.2f) < 0.01f, $"RT 6d: the reload animation lasts as long as the reload ({animSecs:0.00} s)");
       Check(fired >= 6 && shotsAt1 < fired / 2, $"rounds go out over the fight, not in one go (first second {shotsAt1}, 20 s {fired})");
       Check(reloads >= 1 || g.EquippedWeapon.MagCapacity > fired, $"it reloads when the magazine runs dry ({reloads}, fired {fired} of {g.EquippedWeapon.MagCapacity})");
       Check(maxStep <= 1, $"it walks a tile at a time ({maxStep})");

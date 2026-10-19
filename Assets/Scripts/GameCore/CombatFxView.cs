@@ -189,9 +189,10 @@ namespace GameCore
                     break;
                 case "reload":
                     if (held == null) break;
-                    held.StartReload(feel, e.Weapon.MagCapacity);
+                    float len = e.Seconds > 0f ? e.Seconds : feel.ReloadTime;
+                    held.StartReload(feel, e.Weapon.MagCapacity, len);
                     Sfx.Play(Sfx.Reload(feel), from, 0.8f);
-                    At(now + 0.2f * feel.ReloadTime, () =>
+                    At(now + 0.2f * len, () =>
                     {
                         if (held == null || !held.Visible) return;
                         var at = held.Gun.position;
