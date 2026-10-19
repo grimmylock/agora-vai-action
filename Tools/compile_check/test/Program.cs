@@ -714,7 +714,7 @@ static class Program {
   // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
   static void HeldFrames(string path) {
     var sb = new System.Text.StringBuilder("[");
-    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66") };
+    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sidearm", "RinaldiR6"), ("sidearm", "RK12Kuvalda"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66") };
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); if (armor < 0) armor = 0;   // bare hands, red cuffs: the hand work reads
     bool firstAnim = true;
     foreach (var (cat, key) in guns) {
