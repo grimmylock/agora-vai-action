@@ -26,6 +26,7 @@ namespace GameCore
     public struct HeldFrame
     {
         public float GunX, GunY, GunDeg, GripX, GripY, SupX, SupY;
+        public float MagOff;                // RT 6g: the magazine, half-size px out of the gun along its underside; -1 = out of sight
         public bool Left, HasSupport;
     }
 
@@ -165,8 +166,17 @@ namespace GameCore
             // Batch 28: small 4x3 gloves while holding something; the grip point (centre of the handle)
             // sits in the middle of the glove's 2x1 interior, so the fist closes on the handle
             float cx = pose.AimLeft ? 1f : 2f;
+            // RT 6g: a magazine reload - the old one slides out and drops while the hand heads for the pouch, the new one rides
+            // in with the hand on its way back and seats as the hand reaches the gun
+            float magOff = 0f;
+            if ((style == "mag" || style == "belt") && r >= 0.12f && r < 1f)   // belt: a machine gun's drum or box
+            {
+                float t = (r - 0.12f) / 0.18f;
+                magOff = r < 0.3f ? 2f + 18f * t * t : r < 0.54f ? -1f : pouch * 14f;
+            }
             return new HeldFrame
             {
+                MagOff = magOff,
                 Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
                 GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
                 GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
@@ -261,7 +271,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { Cache.Clear(); }
+        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); }
 
 
         public static (string cat, string key) Identify(WeaponDef db)
@@ -276,6 +286,24 @@ namespace GameCore
         }
 
         /// <summary>The weapon's own sprite and grip points, or its category stand-in and the category's points.</summary>
+        /// <summary>RT 6g: the gun without its magazine and the magazine alone (ArtSource/weapons/mags.py), same size and pivot as
+        /// the gun; body null = the magazine sits inside the grip (the gun is drawn whole, the magazine behind it). Both null: none cut.</summary>
+        public static (Sprite body, Sprite mag) Mag(string cat, string key)
+        {
+            if (key == null) return (null, null);
+            if (MagCache.TryGetValue(key, out var hit)) return hit;
+            var g = For(cat, key).grip;
+            Sprite Load(string part)
+            {
+                var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
+                if (tex == null) return null;
+                tex.filterMode = FilterMode.Point;
+                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit);
+            }
+            return MagCache[key] = (Load("body"), Load("mag"));
+        }
+        private static readonly Dictionary<string, (Sprite, Sprite)> MagCache = new Dictionary<string, (Sprite, Sprite)>();
+
         public static (Sprite sprite, float[] grip) For(string cat, string key)
         {
             string id = key ?? "cat_" + cat;
@@ -298,7 +326,7 @@ namespace GameCore
     /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
     public class HeldWeaponView
     {
-        private readonly SpriteRenderer _gun, _support, _grip;
+        private readonly SpriteRenderer _gun, _support, _grip, _mag;
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
@@ -324,6 +352,7 @@ namespace GameCore
             _gun = Child(body, "HeldWeapon", 1);
             _support = Child(body, "SupportHand", 2);
             _grip = Child(body, "GripHand", 3);
+            _mag = Child(body, "Magazine", 1);
         }
 
         public bool Visible => _gun.gameObject.activeSelf;
@@ -375,9 +404,10 @@ namespace GameCore
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false)
         {
             bool on = visible && weapon?.Db != null;
-            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible);
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false);
             if (!visible) return;
-            _gun.sortingOrder = _base + (back ? -3 : 1); _support.sortingOrder = _base + (back ? -2 : 2); _grip.sortingOrder = _base + (back ? -1 : 3);
+            // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
+            _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
             _grip.flipY = _support.flipY = back;
             if (!on)
             {
@@ -406,10 +436,20 @@ namespace GameCore
             var f = HeldPoseMath.Frame(cat, g, _angle, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, now - _swingAt,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips);
 
-            _gun.sprite = sprite;
+            var (body, mag) = WeaponArt.Mag(cat, key);
+            _gun.sprite = mag != null && body != null ? body : sprite;
             _gun.flipY = f.Left;
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
             _gun.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+            if (mag != null && f.MagOff >= 0f)
+            {
+                // along the gun's underside (png +y), which a flipped gun turns upward in its own space
+                float a = f.GunDeg * Mathf.Deg2Rad, d = f.MagOff / WeaponArt.PixelsPerUnit * (f.Left ? -1f : 1f);
+                _mag.gameObject.SetActive(true);
+                _mag.sprite = mag; _mag.flipY = f.Left;
+                _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(Mathf.Sin(a) * d, -Mathf.Cos(a) * d, 0f);
+                _mag.transform.localRotation = _gun.transform.localRotation;
+            }
 
             var hand = HandSprite(armor, true);
             _grip.sprite = hand; _support.sprite = hand;

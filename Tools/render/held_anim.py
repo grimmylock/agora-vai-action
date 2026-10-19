@@ -22,13 +22,17 @@ def glove(cuff, gl):
             if ch != ".": img.putpixel((x, y), col[ch])
     return img.resize((4 * S, 3 * S), Image.NEAREST)
 
-def frame(anim, f, body, gun, gl):
-    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left = f
+def frame(anim, f, body, gun, gl, parts=None):
+    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mag_off = f
+    if parts:                                                  # RT 6g: the magazine under the gun, mag_off half-px out (-1: gone)
+        gbody, gmag = parts; layer = Image.new("RGBA", (gun.width, gun.height + 24))
+        if mag_off >= 0: layer.alpha_composite(gmag, (0, round(mag_off)))
+        layer.alpha_composite(gbody or gun); gun = layer
     c = Image.new("RGBA", (W * S, H * S), BG)
     c.alpha_composite(body, (BX * S, BY * S))
     # the gun: half-size pixels, pivot on the grip, flipped vertically when aiming left, turned by deg (counter-clockwise)
     g = gun.transpose(Image.FLIP_TOP_BOTTOM) if left else gun
-    py = (g.height - anim["gy"]) if left else anim["gy"]
+    py = (g.height - anim["gy"]) if left else anim["gy"]       # flipping the (taller) layer moves the grip row with it
     g = g.resize((g.width * S // 2, g.height * S // 2), Image.NEAREST)
     pad = max(g.size) * 2
     big = Image.new("RGBA", (pad * 2, pad * 2)); big.alpha_composite(g, (pad - round(anim["gx"] * S / 2), pad - round(py * S / 2)))
@@ -50,7 +54,9 @@ def main(src, out):
         i = a["armor"]; body = atlas.crop(((i % 16) * 16, (i // 16) * 16, (i % 16) * 16 + 16, (i // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)
         gun = Image.open(os.path.join(SPR, "Weapons", f"weapon_{a['key']}.png")).convert("RGBA")
         gl = glove(a["cuff"], a["glove"])
-        frames = [frame(a, f, body, gun, gl) for f in a["frames"]]
+        mp = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_mag.png"); bp = mp.replace("_mag.png", "_body.png")
+        parts = (Image.open(bp).convert("RGBA") if os.path.exists(bp) else None, Image.open(mp).convert("RGBA")) if os.path.exists(mp) else None
+        frames = [frame(a, f, body, gun, gl, parts) for f in a["frames"]]
         hold = [frames[-1]] * 12                                   # a beat at rest before it loops
         frames[0].save(os.path.join(out, f"{a['key']}_{a['style']}.gif"), save_all=True, append_images=frames[1:] + hold,
                        duration=33, loop=0, disposal=2)

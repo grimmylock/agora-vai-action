@@ -204,7 +204,7 @@ namespace GameCore
                     {
                         if (held == null || !held.Visible) return;
                         var at = held.Gun.position;
-                        if (feel.Reload == "mag") Bit(at, new Color(0.2f, 0.22f, 0.23f), 2, 3, new Vector3(0f, -0.2f, 0f), 4f, 0.45f, 4);
+                        if (feel.Reload == "mag" && WeaponArt.Mag(WeaponArt.Identify(e.Weapon.Db).cat, WeaponArt.Identify(e.Weapon.Db).key).mag == null) Bit(at, new Color(0.2f, 0.22f, 0.23f), 2, 3, new Vector3(0f, -0.2f, 0f), 4f, 0.45f, 4);
                         else if (feel.Reload == "cylinder" || feel.Reload == "break")
                             for (int i = 0; i < Mathf.Min(e.Weapon.MagCapacity, 6); i++)
                                 Bit(at, feel.Reload == "break" ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f), 1, 1,

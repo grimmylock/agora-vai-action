@@ -3295,3 +3295,19 @@ Yan: "add an animation for clearing jams too. Then give me an example of both an
 - Fix (Yan: "why he holding the pistol by the front and not the grip"): the renders, not the game. Offline there are no
   textures, so `WeaponArt.For` fell back to the category's grip points (the sidearm stand-in's handle sits mid-sprite) while the
   render drew the real PSh-18 sprite. The harness now takes each gun's own points (`WeaponArt.GripOf`), like the game does.
+
+## RT batch 6g - magazines come out (2026-10-20)
+
+Yan: "when are we gonna be able to rig them up to the actual weapons, like at least changing the magazine and clip, or individual
+bullet reloading for revolvers and lever actions/ shotguns" -> plan agreed ("yes to all"): 1) magazines, 2) round by round with
+firing mid-reload for tube shotguns and levers, 3) break-actions. Hidden magazines (Yan asked how): the pistol's magazine is the
+grip's inner shape in magazine steel, drawn behind the gun, so it only shows once it slides out of the bottom of the grip.
+- `ArtSource/weapons/mags.py`: a box per gun cuts the magazine out of its in-hand sprite -> `weapon_<Key>_body.png` +
+  `weapon_<Key>_mag.png` (same size and pivot as the gun, .meta copied from the gun's with a new guid); 29 guns cut, 7 pistols
+  hidden; review sheet `ArtSource/_out/mags_sheet.png`. Not cut yet: revolvers, tube/break shotguns, levers, bolt guns loaded
+  round by round (step 2), SKN Karabin (stripper clip), the G-7, the two PL-74P Polovets.
+- `WeaponArt.Mag` loads them; `HeldWeaponView` draws the gun without its magazine plus the magazine one sorting step under
+  it (gun and hands moved up a step). `HeldFrame.MagOff`: in a "mag" or "belt" reload the old magazine slides out and drops
+  (12-30%), is gone while the hand is at the pouch, rides back in with the hand and seats as it reaches the gun. The grey fleck
+  that stood in for a dropped magazine is skipped for guns with a real one.
+- Renders: `maps/renders/held_anim/` now also has the Corvan Hornet .45 and the PL-62 Kobza drum.
