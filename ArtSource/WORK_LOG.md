@@ -3469,3 +3469,19 @@ and stuff". A dev range, outside the living world (no exits, no factions, never 
   with a gap, brush, and a hut with a door and windows. Render: `maps/renders/testing_ground/testing_ground.png`.
 - Check (`TestingGroundChecks`): you arrive alone, the pad is walkable, the crate gives a gun and ammo, spawns land where asked
   with the right awareness, clear empties it.
+
+### RT 7g - target dummies with damage numbers (2026-10-20)
+
+Yan: "add a target dummy that shows damage numbers".
+- `TestingGround.SpawnDummy`: a person kitted as a faction at a rank (armor and helmet from `PickFactionLoadout`) or bare, unarmed,
+  in faction "Target Dummy": never moves, shoots, wanders or notices you (skipped in `TurnLoop.TickAwareness`, never aggroed by
+  hits - `Gunplay`/`Melee` - so a fight never starts). Three stand on the range from the start: bare at 7 tiles, a Raider Rookie
+  at 20, a Garrison Veteran at 34. The terminal's Humans page has a "Dummy" button per faction (at the chosen rank) and a bare one.
+- 3 s after its last hit a dummy heals whole (`Body.Forget` clears its wounds); one you drop stands up again in its place 3 s
+  later. The log says how many hits and how much damage it took to drop it.
+- Damage numbers on the testing ground for every target: `Gunplay.Resolve`/`Melee.Strike` call `TestingGround.Note` (damage and
+  the body part); any other HP loss (blasts, bleeding) shows as a plain number. `HudView.Numbers.cs` floats them up and fades
+  them over 1.1 s: cream body, yellow head, red KILL.
+- Checks: a head hit's number, the dummy stays still and out of combat, heals after 3 s, other damage shows, the kill is
+  marked, it stands up again. Not yet seen in Unity (the HUD numbers can't be rendered offline).
+- ponytail: the dummy uses the faction's person sprite, not a straw dummy of its own.

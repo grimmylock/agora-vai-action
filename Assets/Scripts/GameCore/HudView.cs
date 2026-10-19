@@ -278,6 +278,7 @@ namespace GameCore
             UpdateActionBar(p);   // Batch 72
             UpdatePrompts(p);     // Batch 123
             UpdateBarks();        // Batch 129
+            UpdateNumbers();      // the testing ground's damage numbers
             UpdateTargeting(p);   // Batch 77
 
             // player card

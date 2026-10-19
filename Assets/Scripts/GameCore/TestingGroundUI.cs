@@ -61,8 +61,12 @@ namespace GameCore
                 }
             }
             else if (_tab == 3)
-                foreach (var f in Factions)
-                    list.Add(($"{f}", new (string, System.Action)[] { ("Spawn", () => TestingGround.SpawnHumans(p, f, CombatRules.RankOrder[_rank], _count, _near, _aware)) }));
+            {
+                list.Add(("Target dummy, no armor", new (string, System.Action)[] { ("Dummy", () => TestingGround.SpawnDummy(p, null, null, _near)) }));
+                foreach (var f in Factions)   // "Dummy": kitted as this faction at the chosen rank, but it never moves or fights
+                    list.Add(($"{f}", new (string, System.Action)[] { ("Dummy", () => TestingGround.SpawnDummy(p, f, CombatRules.RankOrder[_rank], _near)),
+                        ("Spawn", () => TestingGround.SpawnHumans(p, f, CombatRules.RankOrder[_rank], _count, _near, _aware)) }));
+            }
             else
                 foreach (var m in TestingGround.AllMutants())
                     list.Add(($"{m.Name}   <color=#8a8f94>tier {m.Tier}</color>", new (string, System.Action)[] { ("Spawn", () => TestingGround.SpawnMutants(p, m, _count, _near, _aware)) }));

@@ -816,9 +816,10 @@ static class Program {
   static void TestingGroundChecks() {
     // the Testing Ground: from the menu you land on the range alone, gear and enemies on demand
     { TestingGround.Start(); var tp = Player.Current;
-      Check(TerrainMap.ZoneId == TestingGround.Zone && EncounterState.Enemies.Count == 0 && EncounterState.Anomalies.Count == 0
+      int Live() => EncounterState.Enemies.Count(e => !TestingGround.IsDummy(e));
+      Check(TerrainMap.ZoneId == TestingGround.Zone && Live() == 0 && TestingGround.Dummies.Count == 3 && EncounterState.Anomalies.Count == 0
         && new[] { TestingGround.Armory, TestingGround.Spawner, TestingGround.Pad }.All(n => TerrainMap.Landmarks.Any(l => l.Name == n)),
-        $"testing ground: you arrive alone ({EncounterState.Enemies.Count} enemies, {EncounterState.Anomalies.Count} anomalies) with the crate, terminal and pad");
+        $"testing ground: you arrive alone ({Live()} enemies, {TestingGround.Dummies.Count} dummies, {EncounterState.Anomalies.Count} anomalies) with the crate, terminal and pad");
       var pad = TerrainMap.Landmarks.First(l => l.Name == TestingGround.Pad);
       Check(Pathfinding.FindPath(tp.X, tp.Y, pad.X, pad.Y, tp) != null, "testing ground: the pad can be walked to");
       var gun = ShopDatabase.Items.First(d => d.Type == "weapon" && d.Key == "VKS74U");
@@ -827,9 +828,27 @@ static class Program {
       var men = TestingGround.SpawnHumans(tp, "Garrison", "Veteran", 3, false, true);
       var dogs = TestingGround.SpawnMutants(tp, TestingGround.AllMutants().First(), 2, true, false);
       Check(men.Count == 3 && men.All(m => System.Math.Abs(m.X - pad.X) <= 4 && m.IsAggroed && !EnemyAI.FriendlyToPlayer(m)) && dogs.All(d => !d.IsAggroed && System.Math.Abs(d.X - tp.X) <= 11)
-        && EncounterState.Enemies.Count == 5 && EncounterState.InCombat, "testing ground: 3 hostile Veterans on the pad, 2 unaware mutants near you");
+        && Live() == 5 && EncounterState.InCombat, "testing ground: 3 hostile Veterans on the pad, 2 unaware mutants near you");
       TestingGround.Clear();
-      Check(EncounterState.Enemies.Count == 0, "testing ground: cleared");
+      Check(Live() == 0 && TestingGround.Dummies.Count == 3, "testing ground: cleared (the dummies stay)");
+      // the target dummy: hits show numbers (head ones marked), it never wakes up, heals 3 s after the last hit, stands up again
+      EncounterState.InCombat = false; TestingGround.Now = 100f;
+      var dm = TestingGround.Dummies[0].H; int full = dm.Hp; var blade = W("melee", "HuntingKnife");
+      Melee.Strike(tp, blade, dm, "Head", 1f); TestingGround.Tick();
+      var num = TestingGround.Numbers.LastOrDefault();
+      Check(dm.Hp < full && num != null && num.Who == dm && num.Kind == 1 && num.Text.StartsWith((full - dm.Hp) + " head") && !dm.IsAggroed && !EncounterState.InCombat,
+        $"dummy: a head hit shows \"{num?.Text}\" over it ({full} -> {dm.Hp}), and it stays still");
+      TestingGround.Now = 103.5f; TestingGround.Tick();
+      Check(dm.Hp == full && TestingGround.Dummies[0].Hits == 0 && TestingGround.Numbers.Count == 0, $"dummy: whole again 3 s later ({dm.Hp}), the numbers gone");
+      dm.Hp = 1; TestingGround.Tick(); var plain = TestingGround.Numbers.LastOrDefault();
+      Check(plain != null && plain.Text == (full - 1).ToString(), $"dummy: damage from anything else still shows (\"{plain?.Text}\")");
+      Melee.Strike(tp, blade, dm, "Torso", 1f); TestingGround.Tick();
+      Check(!dm.IsAlive() && TestingGround.Numbers.Last().Kind == 2, "dummy: the killing hit is marked");
+      TestingGround.Now = 107f; TestingGround.Tick();
+      var again = TestingGround.Dummies.FirstOrDefault(d => d.X == 13 && d.Y == 19);
+      Check(again != null && again.H != dm && again.H.IsAlive() && again.H.Hp == full && TestingGround.Numbers.Count == 0 && TestingGround.Dummies.Count == 3,
+        "dummy: a dropped dummy stands up again in its place, and that isn't a hit");
+      TestingGround.Now = -1f;
       Check(TestingGround.AllMutants().Count() > 5 && ShopDatabase.Items.Count(d => d.Type == "weapon") > 20, "testing ground: every mutant and weapon is on offer");
     }
   }

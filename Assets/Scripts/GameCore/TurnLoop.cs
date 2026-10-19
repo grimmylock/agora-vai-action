@@ -222,7 +222,7 @@ namespace GameCore
             foreach (var enemy in EncounterState.Enemies.ToList())
             {
                 if (Companion.Is(enemy)) Companion.Act(player, grid, false);   // Batch 69: follows you, holds fire while you sneak
-                else if (enemy.IsAlive()) CheckVisionAndWander(enemy, player, grid);
+                else if (enemy.IsAlive() && !TestingGround.IsDummy(enemy)) CheckVisionAndWander(enemy, player, grid);
             }
 
             Shakedown.Tick(player);                         // Batch 73

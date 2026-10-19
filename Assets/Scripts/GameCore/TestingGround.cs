@@ -60,6 +60,8 @@ namespace GameCore
             var p = Player.Current;
             foreach (var f in FactionDatabase.Factions.Keys) p.Reputation[f] = -3 * Player.RepPoint;
             p.Ru = 999999; p.CarryCapacityBonus = 500; p.ApplyCarryEffects();
+            Dummies.Clear(); Numbers.Clear(); LastHp.Clear(); Noted.Clear();
+            SpawnDummy(13, 19, null, null); SpawnDummy(26, 19, "Raiders", "Rookie"); SpawnDummy(40, 19, "Garrison", "Veteran");   // 7, 20 and 34 tiles out
             GameLog.Write("[TESTING GROUND] E at the armory crate: any gear, free. E at the spawner terminal: any enemy, on the pad or near you.");
         }
 
@@ -100,7 +102,7 @@ namespace GameCore
 
         public static void Clear()
         {
-            EncounterState.Enemies.RemoveAll(e => e != Companion.Current);
+            EncounterState.Enemies.RemoveAll(e => e != Companion.Current && !IsDummy(e));   // the dummies stay (the terminal adds more)
             EncounterState.InCombat = false;
             GameLog.Write("[TESTING GROUND] Range cleared.");
         }
@@ -139,7 +141,7 @@ namespace GameCore
 
         static void Spawned(int n, string what, bool aware)
         {
-            if (aware && EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed && !EnemyAI.FriendlyToPlayer(e))) EncounterState.InCombat = true;
+            if (aware && EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed && !IsDummy(e) && !EnemyAI.FriendlyToPlayer(e))) EncounterState.InCombat = true;
             GameLog.Write($"[TESTING GROUND] {n} x {what} {(aware ? "- they know you're here" : "- unaware")}.");
         }
 
@@ -156,6 +158,90 @@ namespace GameCore
                 taken.Add(s); spots.Add(s);
             }
             return spots;
+        }
+
+        // ---------------- target dummies and damage numbers ----------------
+        // Yan: "add a target dummy that shows damage numbers". A dummy is a person kitted as a faction at a rank (or bare) who
+        // never moves, shoots, wanders or notices you. Every hit on the range shows its damage over the target (head hits
+        // yellow, kills red); a dummy heals fully 3 s after its last hit, and one you drop stands up again 3 s later, so
+        // you can count the hits to kill. ponytail: it uses the faction's own person sprite, not a straw dummy of its own.
+
+        public const string DummyFaction = "Target Dummy";
+        public const float ResetAfter = 3f;
+        public class Dummy { public HumanEnemy H; public int X, Y; public string Faction, Rank; public float LastHit = -99f; public int Hits, Total; }
+        public static readonly List<Dummy> Dummies = new List<Dummy>();
+        public class Number { public ICombatant Who; public string Text; public int Kind; public float At; }   // Kind: 0 body, 1 head, 2 kill
+        public static readonly List<Number> Numbers = new List<Number>();
+        public const float NumberSeconds = 1.1f;
+        public static float Now = -1f;                                            // the harness sets the clock; the game uses Time.time
+        static float T => Now >= 0f ? Now : UnityEngine.Time.time;
+        static readonly Dictionary<ICombatant, int> LastHp = new Dictionary<ICombatant, int>(), Noted = new Dictionary<ICombatant, int>();
+
+        public static bool IsDummy(ICombatant u) => u is HumanEnemy h && h.FactionName == DummyFaction;
+
+        /// <summary>A dummy at (x, y) wearing what `faction` gives a `rank` (null faction: no armor at all). Unarmed.</summary>
+        public static HumanEnemy SpawnDummy(int x, int y, string faction, string rank)
+        {
+            var armor = faction == null ? null : EncounterGeneration.PickFactionLoadout(faction, rank, TierOf(rank)).armor;
+            var h = new HumanEnemy(faction == null ? "Target Dummy" : $"Dummy ({faction} {rank})", x, y, DummyFaction, rank ?? "Rookie", null, armor) { IsAggroed = false };
+            EncounterState.Enemies.Add(h);
+            Dummies.Add(new Dummy { H = h, X = x, Y = y, Faction = faction, Rank = rank });
+            return h;
+        }
+
+        public static HumanEnemy SpawnDummy(Player p, string faction, string rank, bool near)
+        {
+            var (x, y) = Spots(p, 1, near)[0];
+            GameLog.Write($"[TESTING GROUND] A target dummy{(faction == null ? " with no armor" : $" kitted as a {faction} {rank}")}.");
+            return SpawnDummy(x, y, faction, rank);
+        }
+
+        /// <summary>Gunplay.Resolve and Melee.Strike tell us the part a hit landed on; any other damage (a blast, bleeding)
+        /// shows up as plain numbers from the HP change in Tick.</summary>
+        public static void Note(ICombatant u, int dmg, string part)
+        {
+            if (!Here || u == null || dmg <= 0) return;
+            Noted[u] = (Noted.TryGetValue(u, out var n) ? n : 0) + dmg;
+            Show(u, dmg, part);
+        }
+
+        static void Show(ICombatant u, int dmg, string part)
+        {
+            bool dead = !u.IsAlive();
+            Numbers.Add(new Number { Who = u, Text = $"{dmg}{(part != null ? " " + part.ToLowerInvariant() : "")}{(dead ? " KILL" : "")}", Kind = dead ? 2 : part == "Head" ? 1 : 0, At = T });
+            var d = Dummies.FirstOrDefault(q => q.H == u);
+            if (d == null) return;
+            d.Hits++; d.Total += dmg; d.LastHit = T;
+            if (dead) GameLog.Write($"[TESTING GROUND] {d.H.Name} down: {d.Hits} hit{(d.Hits == 1 ? "" : "s")}, {d.Total} damage.");
+        }
+
+        /// <summary>Every frame on the range (Rt.WorldTick): dummies stay put and unaware, heal or stand up again, and HP lost
+        /// without a Note becomes a number too.</summary>
+        public static void Tick()
+        {
+            float now = T;
+            Numbers.RemoveAll(n => now - n.At > NumberSeconds);
+            foreach (var e in EncounterState.Enemies.ToList())
+            {
+                int hp = e.Hp, last = LastHp.TryGetValue(e, out var l) ? l : hp, noted = Noted.TryGetValue(e, out var n) ? n : 0;
+                if (last - hp > noted) Show(e, last - hp - noted, null);
+                LastHp[e] = hp; Noted.Remove(e);
+            }
+            foreach (var d in Dummies.ToList())
+            {
+                d.H.IsAggroed = false;
+                if (now - d.LastHit < ResetAfter) continue;
+                if (!d.H.IsAlive())
+                {
+                    EncounterState.Enemies.Remove(d.H); Dummies.Remove(d); LastHp.Remove(d.H);
+                    LastHp[SpawnDummy(d.X, d.Y, d.Faction, d.Rank)] = int.MaxValue;   // (the fresh one's full HP isn't a hit)
+                }
+                else if (d.Hits > 0)
+                {
+                    Body.Forget(d.H); d.H.Hp = d.H.MaxHp; d.H.StatusEffects.Bleeding = false; d.Hits = 0; d.Total = 0;
+                    LastHp[d.H] = d.H.Hp;
+                }
+            }
         }
 
         /// <summary>E next to the crate or the terminal opens the panel on that page.</summary>

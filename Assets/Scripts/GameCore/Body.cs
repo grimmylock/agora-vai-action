@@ -31,6 +31,7 @@ namespace GameCore
         }
         static readonly Dictionary<ICombatant, State> States = new Dictionary<ICombatant, State>();
         public static void Reset() => States.Clear();
+        public static void Forget(ICombatant u) => States.Remove(u);   // a testing-ground dummy healed whole
 
         public static float Now = -1f;              // the harness sets it; the game uses Time.time
         static float T => Now >= 0f ? Now : UnityEngine.Time.time;

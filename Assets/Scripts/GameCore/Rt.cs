@@ -324,6 +324,7 @@ namespace GameCore
             float now = Time.time;
             var grid = GameServices.Grid;
             if (grid == null) return;
+            if (TestingGround.Here) TestingGround.Tick();                         // dummies and damage numbers
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
             foreach (var e in EncounterState.Enemies.ToList())
             {

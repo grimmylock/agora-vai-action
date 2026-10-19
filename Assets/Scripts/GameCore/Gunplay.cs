@@ -247,8 +247,9 @@ namespace GameCore
                 target.Hp = System.Math.Max(0, target.Hp - dmg);
                 fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before;
                 if (first || pellets == 1) GameLog.Write($"{Who(shooter)} hits {Who(target)} in the {hit.Part.ToLowerInvariant()} for {dmg}.");
-                if (target is Mutant tm) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
-                if (shooter is Player && target is HumanEnemy he) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
+                TestingGround.Note(target, dmg, hit.Part);                    // the testing ground's damage numbers
+                if (target is Mutant tm && !TestingGround.IsDummy(tm)) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
+                if (shooter is Player && target is HumanEnemy he && !TestingGround.IsDummy(he)) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
                 if (target.IsAlive()) Body.Hit(target, hit.Part, hit.Side, dmg, w.CurrentAmmoType, shooter is Player && Rt.SlowMo ? 1.5f : 1f);   // RT batch 3: bullet time wounds more
                 if (shooter is Player) Rt.AddFocus(target.IsAlive() ? 4f : 25f);   // RT batch 2: limb health, wounds, down
                 if (!target.IsAlive()) Weapon.OnTargetKilled(shooter, target);
