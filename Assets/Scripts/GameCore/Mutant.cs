@@ -121,7 +121,7 @@ namespace GameCore
             X = spawn.x;
             Y = spawn.y;
             Db = db;
-            MaxHp = db?.Hp ?? 30;
+            MaxHp = db?.Hp ?? 300;
             Hp = MaxHp;
             PhysDR = db?.PhysDR ?? 0f;
             AnomDR = db?.AnomDR ?? 0f;

@@ -47,10 +47,10 @@ namespace GameData
             ["weightlessPearl"] = new ArtifactDef { Name = "Weightless Pearl", Type = "Gravitational", Tier = 5, AnomPenalty = -0.25f, CarryWeightBonus = 30, WeightKg = 0.5f, Description = "+30kg Carry Weight" },
 
             // Chemical (Auto-Regeneration)
-            ["pulsePebble"] = new ArtifactDef { Name = "Pulse Pebble", Type = "Chemical", Tier = 1, AnomPenalty = -0.05f, HpRegen = 1, WeightKg = 0.5f, Description = "+1 HP Auto-Regeneration per turn" },
-            ["fieryRouge"] = new ArtifactDef { Name = "Fiery Rouge", Type = "Chemical", Tier = 2, AnomPenalty = -0.10f, HpRegen = 2, WeightKg = 0.5f, Description = "+2 HP Auto-Regeneration per turn" },
-            ["heartspark"] = new ArtifactDef { Name = "Heartspark", Type = "Chemical", Tier = 3, AnomPenalty = -0.15f, HpRegen = 3, WeightKg = 0.5f, Description = "+3 HP Auto-Regeneration per turn" },
-            ["lanternSeed"] = new ArtifactDef { Name = "Lantern Seed", Type = "Chemical", Tier = 5, AnomPenalty = -0.25f, HpRegen = 5, WeightKg = 0.5f, Description = "+5 HP Auto-Regeneration per turn" },
+            ["pulsePebble"] = new ArtifactDef { Name = "Pulse Pebble", Type = "Chemical", Tier = 1, AnomPenalty = -0.05f, HpRegen = 10, WeightKg = 0.5f, Description = "+10 HP Auto-Regeneration per turn" },
+            ["fieryRouge"] = new ArtifactDef { Name = "Fiery Rouge", Type = "Chemical", Tier = 2, AnomPenalty = -0.10f, HpRegen = 20, WeightKg = 0.5f, Description = "+20 HP Auto-Regeneration per turn" },
+            ["heartspark"] = new ArtifactDef { Name = "Heartspark", Type = "Chemical", Tier = 3, AnomPenalty = -0.15f, HpRegen = 30, WeightKg = 0.5f, Description = "+30 HP Auto-Regeneration per turn" },
+            ["lanternSeed"] = new ArtifactDef { Name = "Lantern Seed", Type = "Chemical", Tier = 5, AnomPenalty = -0.25f, HpRegen = 50, WeightKg = 0.5f, Description = "+50 HP Auto-Regeneration per turn" },
 
             // Thermal (Bleeding Control)
             ["clot"] = new ArtifactDef { Name = "Clot", Type = "Thermal", Tier = 1, AnomPenalty = -0.05f, BleedNegate = false, WeightKg = 0.5f, Description = "Mitigates minor bleed effects" },
@@ -63,9 +63,9 @@ namespace GameData
             ["frostLattice"] = new ArtifactDef { Name = "Frost Lattice", Type = "Electrical", Tier = 5, AnomPenalty = -0.25f, MpBonus = 2, AnomalyAvoidanceBonus = 2, WeightKg = 0.5f, Description = "+2 MP and +2 Anomaly Avoidance" },
 
             // Tier 6 Legendaries
-            ["heartOfTheWound"] = new ArtifactDef { Name = "Heart of the Wound", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, HpRegen = 10, ImmuneBleed = true, WeightKg = 0.8f, Description = "Heals 10 HP/turn, immune to bleed" },
+            ["heartOfTheWound"] = new ArtifactDef { Name = "Heart of the Wound", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, HpRegen = 100, ImmuneBleed = true, WeightKg = 0.8f, Description = "Heals 100 HP/turn, immune to bleed" },
             ["theLodestone"] = new ArtifactDef { Name = "The Lodestone", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, PassAllAnomalies = true, WeightKg = 0.8f, Description = "Pass all Anomaly Avoidance checks automatically" },
-            ["lucifer"] = new ArtifactDef { Name = "Lucifer", Type = "Legendary", Tier = 6, AnomPenalty = -0.40f, ApBonus = 1, PhysDRBonus = 0.10f, AnomDRBonus = 0.10f, MaxHpPenalty = 25, WeightKg = 0.8f, Description = "+1 AP, +10% Phys/Anom-DR, Max HP -25" },
+            ["lucifer"] = new ArtifactDef { Name = "Lucifer", Type = "Legendary", Tier = 6, AnomPenalty = -0.40f, ApBonus = 1, PhysDRBonus = 0.10f, AnomDRBonus = 0.10f, MaxHpPenalty = 250, WeightKg = 0.8f, Description = "+1 AP, +10% Phys/Anom-DR, Max HP -25" },
             ["theBlackStar"] = new ArtifactDef { Name = "The Black Star (Awakened)", Type = "Legendary", Tier = 6, AnomPenalty = -0.35f, BypassPhysDR = 0.30f, KillRefundAp = true, CarryWeightBonus = -10, WeightKg = 0.8f, Description = "Bypasses 30% Phys-DR, kills refund 1 AP, Carry -10kg" },
         };
     }

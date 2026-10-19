@@ -77,12 +77,12 @@ namespace GameCore
         // category: kick, climb, recover, flash, shake, typical damage
         private static readonly Dictionary<string, float[]> Base = new Dictionary<string, float[]>
         {
-            ["sidearm"] = new[] { 1f, 10f, 0.14f, 1f, 0f, 15f },
-            ["smg"]     = new[] { 0.5f, 3f, 0.08f, 1f, 0f, 13f },
-            ["shotgun"] = new[] { 2f, 12f, 0.25f, 3f, 0.06f, 31f },
-            ["assault"] = new[] { 1f, 5f, 0.12f, 2f, 0.02f, 24f },
-            ["sniper"]  = new[] { 2f, 14f, 0.35f, 2f, 0.05f, 38f },
-            ["heavy"]   = new[] { 1f, 4f, 0.10f, 2f, 0.03f, 25f },
+            ["sidearm"] = new[] { 1f, 10f, 0.14f, 1f, 0f, 150f },
+            ["smg"]     = new[] { 0.5f, 3f, 0.08f, 1f, 0f, 130f },
+            ["shotgun"] = new[] { 2f, 12f, 0.25f, 3f, 0.06f, 310f },
+            ["assault"] = new[] { 1f, 5f, 0.12f, 2f, 0.02f, 240f },
+            ["sniper"]  = new[] { 2f, 14f, 0.35f, 2f, 0.05f, 380f },
+            ["heavy"]   = new[] { 1f, 4f, 0.10f, 2f, 0.03f, 250f },
         };
 
         // Odd ones out, by WeaponDatabase key. Runs after the derived values.

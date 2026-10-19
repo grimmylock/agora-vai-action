@@ -1043,7 +1043,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             float tierMult = CombatRules.HitMultiplier(roll.ChosenRoll, roll.ChosenRoll + modifier, target.Ac);   // Batch 56
             float baseDamage = attacker is HumanEnemy human && human.EquippedWeapon != null
                 ? combat.CalculateDamage(human.EquippedWeapon.Db.BaseDamage, human.EquippedWeapon.CurrentAmmoType, target.PhysDR, target.AnomDR)
-                : combat.CalculateDamage(attacker is Mutant m ? m.AttackDamage : 4, "Standard", target.PhysDR, target.AnomDR);
+                : combat.CalculateDamage(attacker is Mutant m ? m.AttackDamage : 40, "Standard", target.PhysDR, target.AnomDR);
 
             // Scale effective offscreen strikes by AP to approximate multi-action lethality without running full AI.
             int attackCount = System.Math.Max(1, attacker.Ap / 2); // ~2 attacks for 4 AP, 3 for 6 AP, etc.

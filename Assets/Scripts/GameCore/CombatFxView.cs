@@ -268,7 +268,7 @@ namespace GameCore
             if (!psi && GameConstants.Gore) { Splat(at, dx, dy); if (e.Target != null) OnWound?.Invoke(e.Target); }
             if (e.Killed && e.Target != null && _dying.Remove(e.Target)) OnKill?.Invoke(e.Target, dx, dy, e.Overkill >= GibOverkill * 3 ? 2 : e.Overkill >= GibOverkill ? 1 : 0);
         }
-        public const int GibOverkill = 15;
+        public const int GibOverkill = 150;
 
         /// <summary>Batch 105: a round hits a piece of cover. What flies off and the sound follow its material: splinters off
         /// wood, dust and chips off concrete, sparks off metal, earth off sandbags, leaves off brush.</summary>

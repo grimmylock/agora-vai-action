@@ -431,7 +431,7 @@ namespace GameCore
             int healed = (def.HealingPermanent ?? 0) + (def.HealingTemp ?? 0);
             if (healed > 0 && def.HungerRestore == null && def.ThirstRestore == null)
             {
-                float cost = healed / 10f * GameConstants.SurvivalCostPer10Hp;
+                float cost = healed / 100f * GameConstants.SurvivalCostPer10Hp;   // real-time fork: HP x10 - the cost stays per 10 old HP
                 Hunger = System.Math.Max(0, Hunger - cost);
                 Thirst = System.Math.Max(0, Thirst - cost);
                 Tiredness = System.Math.Max(0, Tiredness - cost);

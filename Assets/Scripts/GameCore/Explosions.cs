@@ -14,7 +14,7 @@ namespace GameCore
     public static class Explosions
     {
         public const int BarrelRadius = 1;
-        public const int BarrelDamage = 40;
+        public const int BarrelDamage = 400;
         public const int SaveDc = 13;
 
         public const int ThrowRadius = 1;   // 3x3 (file 01)
@@ -38,7 +38,7 @@ namespace GameCore
 
             switch (def.Throwable)
             {
-                case "frag": Blast(x, y, ThrowRadius, 40, thrower, "frag blast"); break;
+                case "frag": Blast(x, y, ThrowRadius, 400, thrower, "frag blast"); break;
                 case "smoke": TerrainMap.AddSmoke(x, y, ThrowRadius, 3); GameLog.Write("Thick smoke blocks sight through the area."); break;
                 case "flash": Flash(x, y, ThrowRadius); break;
             }

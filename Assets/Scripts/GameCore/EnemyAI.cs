@@ -627,7 +627,7 @@ namespace GameCore
             return true;
         }
 
-        public const int BoulderAfterTurns = 3, BoulderRange = 10, BoulderDamage = 25;
+        public const int BoulderAfterTurns = 3, BoulderRange = 10, BoulderDamage = 250;
 
         /// <summary>Batch 130: the Blight Brute rips a boulder out of the ground and hurls it (its whole turn). 2d10 + 3 against your AC
         /// (it arcs over cover); a hit does 25 and you start your next turn on half MP.</summary>
@@ -655,7 +655,7 @@ namespace GameCore
             foreach (var v in victims)
             {
                 if (!CombatantUtil.IsAdjacent(m, v) || !v.IsAlive()) continue;
-                int dmg = CombatRules.PhysicalDamage(30, "Standard", v.PhysDR);
+                int dmg = CombatRules.PhysicalDamage(300, "Standard", v.PhysDR);
                 v.Hp = System.Math.Max(0, v.Hp - dmg);
                 int roll = Random.Range(1, 21) + (int)v.AgilityMod;
                 string who = v is Player ? "Player" : v.Name;

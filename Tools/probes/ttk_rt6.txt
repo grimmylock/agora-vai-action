@@ -5,41 +5,41 @@
 
 class    weapon                      tier armor                       head chest  drop(s, chest, all hit)
 sidearm  PSh-18 Pchela               T1  Cartel Leather Coat              4    8     1.3
-sidearm  Walden P9                   T2  Sentinel Patrol Suit             3    7     1.1
+sidearm  Walden P9                   T2  Sentinel Patrol Suit             3    8     1.3
 sidearm  Halden .45 Service          T2  Sentinel Patrol Suit             3    7     1.1
-sidearm  Halden Service Revolver     T1  Cartel Leather Coat              3    5     0.8
-sidearm  SR-21 Gadyuka               T3  Raider Veteran Coat              3    8     1.3
+sidearm  Halden Service Revolver     T1  Cartel Leather Coat              3    6     0.9
+sidearm  SR-21 Gadyuka               T3  Raider Veteran Coat              3    7     1.1
 sidearm  Black Harrier               T3  Raider Veteran Coat              2    6     0.9
 sidearm  Corvan 5.7                  T4  Sentinel Vanguard          AP    3    6     0.9
 sidearm  Rinaldi R6                  T4  Sentinel Vanguard          AP    3    5     0.8
 sidearm  Steppe Eagle                T4  Sentinel Vanguard          AP    2    4     0.6
 sidearm  RK-12 Kuvalda               T5  Liberator Vanguard Plate   AP    2    4     0.6
-smg      Vosa vz. 62                 T1  Cartel Leather Coat              5   10     0.8
-smg      PPZ Zubr                    T2  Sentinel Patrol Suit             4   10     0.8
-smg      Corvan Wasp-9               T3  Raider Veteran Coat              4   10     0.8
-smg      Corvan Hornet .45           T3  Raider Veteran Coat              3    9     0.7
-smg      Corvan Gnat PDW             T4  Sentinel Vanguard          AP    5    9     0.7
-shotgun  Obrez-66                    T1  Cartel Leather Coat              1    3     1.6
+smg      Vosa vz. 62                 T1  Cartel Leather Coat              5   11     0.8
+smg      PPZ Zubr                    T2  Sentinel Patrol Suit             4   12     0.9
+smg      Corvan Wasp-9               T3  Raider Veteran Coat              4   11     0.8
+smg      Corvan Hornet .45           T3  Raider Veteran Coat              3   10     0.8
+smg      Corvan Gnat PDW             T4  Sentinel Vanguard          AP    5   10     0.8
+shotgun  Obrez-66                    T1  Cartel Leather Coat              2    3     1.6
 shotgun  Halden Lever Shotgun        T2  Sentinel Patrol Suit             1    3     1.6
-shotgun  Hound 13                    T2  Sentinel Patrol Suit             1    3     1.6
-shotgun  Ranger P8                   T2  Sentinel Patrol Suit             1    3     1.6
-shotgun  Bayou Pump                  T3  Raider Veteran Coat              1    3     1.6
+shotgun  Hound 13                    T2  Sentinel Patrol Suit             2    3     1.6
+shotgun  Ranger P8                   T2  Sentinel Patrol Suit             2    3     1.6
+shotgun  Bayou Pump                  T3  Raider Veteran Coat              1    4     2.4
 shotgun  Sever-34 O/U                T3  Raider Veteran Coat              1    3     1.6
 shotgun  Tambour-12                  T4  Sentinel Vanguard          AP    2    3     1.6
 shotgun  SP-14 Warden                T4  Sentinel Vanguard          AP    2    3     1.6
 shotgun  Sayan-12                    T4  Sentinel Vanguard          AP    2    3     1.6
 shotgun  Kaban-12                    T4  Sentinel Vanguard          AP    2    3     1.6
-assault  VKS-74U                     T1  Cartel Leather Coat              3    5     1.0
-assault  Smerch-3                    T2  Sentinel Patrol Suit             2    4     0.8
+assault  VKS-74U                     T1  Cartel Leather Coat              3    6     1.3
+assault  Smerch-3                    T2  Sentinel Patrol Suit             2    5     1.0
 assault  VK-74                       T2  Sentinel Patrol Suit             2    5     1.0
 assault  VKM                         T2  Sentinel Patrol Suit             2    5     1.0
 assault  TS-9 Tishina                T3  Raider Veteran Coat              2    5     1.0
-assault  TR-30                       T3  Raider Veteran Coat              2    5     1.0
-assault  Halden HR36K                T3  Raider Veteran Coat              2    5     1.0
+assault  TR-30                       T3  Raider Veteran Coat              2    6     1.3
+assault  Halden HR36K                T3  Raider Veteran Coat              2    6     1.3
 assault  VK-103                      T3  Raider Veteran Coat              2    5     1.0
 assault  BR-86 Bulldog               T4  Sentinel Vanguard          AP    2    4     0.8
 assault  VK-74 Obelisk               T4  Sentinel Vanguard          AP    2    4     0.8
-assault  NA-94 Yenisei               T4  Sentinel Vanguard          AP    2    5     1.0
+assault  NA-94 Yenisei               T4  Sentinel Vanguard          AP    3    5     1.0
 assault  Corvan Bullpup              T5  Liberator Vanguard Plate   AP    2    4     0.8
 assault  Corvan Battle Rifle         T4  Sentinel Vanguard          AP    2    4     0.8
 sniper   SKN Karabin                 T2  Sentinel Patrol Suit             1    2     1.2
@@ -55,44 +55,44 @@ sniper   Halden AM-50 Sledge         T5  Liberator Vanguard Plate   AP    1    1
 sniper   G-7 Rail Prototype          T5  Liberator Vanguard Plate   AP    1    1     0.0
 heavy    PL-62 Kobza                 T2  Sentinel Patrol Suit             2    6     0.5
 heavy    Corvan LMG                  T3  Raider Veteran Coat              2    6     0.5
-heavy    RL-44                       T3  Raider Veteran Coat              2    5     0.4
+heavy    RL-44                       T3  Raider Veteran Coat              2    6     0.5
 heavy    PL-74                       T4  Sentinel Vanguard          AP    2    4     0.3
 heavy    PL-74P Polovets             T4  Sentinel Vanguard          AP    2    4     0.3
 heavy    PL-74P Polovets Zulu        T5  Liberator Vanguard Plate   AP    2    4     0.3
 
 VARIANTS  weapon                      T  chest: light  mid  heavy | head: none  best-helmet (expected, deflects as misses)
-sidearm   PSh-18 Pchela               1           7    8     9   |         4      5.4 (Surveyor Guard Vest, 8 % deflect)
-sidearm   Walden P9                   2           6    7     9   |         3      4.3 (Garrison Field Uniform, 8 % deflect)
-sidearm   Halden .45 Service          2           5    7     8   |         3      4.3 (Garrison Field Uniform, 8 % deflect)
-sidearm   Halden Service Revolver     1           5    5     7   |         3      3.3 (Surveyor Guard Vest, 8 % deflect)
-sidearm   SR-21 Gadyuka               3           6    8    12   |         3      5.9 (Surveyor Guard Plates, 15 % deflect)
-sidearm   Black Harrier               3           4    6     8   |         2      4.0 (Surveyor Guard Plates)
-sidearm   Corvan 5.7                  4           5    6     7   |         3      3.3 (Surveyor Containment Armor, 10 % deflect)
+sidearm   PSh-18 Pchela               1           8    8    10   |         4      5.4 (Surveyor Guard Vest, 8 % deflect)
+sidearm   Walden P9                   2           6    8     9   |         3      4.3 (Garrison Field Uniform, 8 % deflect)
+sidearm   Halden .45 Service          2           6    7     9   |         3      4.3 (Garrison Field Uniform, 8 % deflect)
+sidearm   Halden Service Revolver     1           5    6     7   |         3      3.3 (Surveyor Guard Vest, 8 % deflect)
+sidearm   SR-21 Gadyuka               3           5    7    10   |         3      4.7 (Surveyor Guard Plates, 15 % deflect)
+sidearm   Black Harrier               3           5    6     9   |         2      4.0 (Surveyor Guard Plates)
+sidearm   Corvan 5.7                  4           6    6     7   |         3      3.3 (Surveyor Containment Armor, 10 % deflect)
 sidearm   Rinaldi R6                  4           5    5     6   |         2      3.3 (Surveyor Containment Armor, 10 % deflect)
 sidearm   Steppe Eagle                4           4    4     5   |         2      2.0 (Surveyor Containment Armor)
 sidearm   RK-12 Kuvalda               5           3    4     4   |         2      2.0 (Surveyor Field Lab Exo)
-smg       Vosa vz. 62                 1           9   10    12   |         5      6.5 (Surveyor Guard Vest, 8 % deflect)
-smg       PPZ Zubr                    2           8   10    14   |         4      5.4 (Garrison Field Uniform, 8 % deflect)
-smg       Corvan Wasp-9               3           8   10    14   |         4      7.1 (Surveyor Guard Plates, 15 % deflect)
-smg       Corvan Hornet .45           3           7    9    14   |         3      5.9 (Surveyor Guard Plates, 15 % deflect)
-smg       Corvan Gnat PDW             4           8    9    10   |         4      5.6 (Surveyor Containment Armor, 10 % deflect)
-shotgun   Obrez-66                    1           3    3     3   |         1      2.2 (Surveyor Guard Vest, 8 % deflect)
-shotgun   Halden Lever Shotgun        2           2    3     4   |         1      2.2 (Garrison Field Uniform, 8 % deflect)
-shotgun   Hound 13                    2           3    3     4   |         1      2.2 (Garrison Field Uniform, 8 % deflect)
-shotgun   Ranger P8                   2           3    3     4   |         1      2.2 (Garrison Field Uniform, 8 % deflect)
-shotgun   Bayou Pump                  3           3    3     5   |         1      2.4 (Surveyor Guard Plates, 15 % deflect)
-shotgun   Sever-34 O/U                3           2    3     4   |         1      2.4 (Surveyor Guard Plates, 15 % deflect)
-shotgun   Tambour-12                  4           2    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
-shotgun   SP-14 Warden                4           2    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
-shotgun   Sayan-12                    4           2    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
-shotgun   Kaban-12                    4           2    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
-assault   VKS-74U                     1           5    5     7   |         3      3.3 (Surveyor Guard Vest, 8 % deflect)
-assault   Smerch-3                    2           4    4     5   |         2      2.2 (Garrison Field Uniform, 8 % deflect)
-assault   VK-74                       2           4    5     6   |         2      3.3 (Garrison Field Uniform, 8 % deflect)
-assault   VKM                         2           4    5     5   |         2      2.2 (Garrison Field Uniform, 8 % deflect)
+smg       Vosa vz. 62                 1          10   11    13   |         5      6.5 (Surveyor Guard Vest, 8 % deflect)
+smg       PPZ Zubr                    2           9   12    14   |         4      6.5 (Garrison Field Uniform, 8 % deflect)
+smg       Corvan Wasp-9               3           8   11    16   |         4      8.2 (Surveyor Guard Plates, 15 % deflect)
+smg       Corvan Hornet .45           3           7   10    14   |         3      7.1 (Surveyor Guard Plates, 15 % deflect)
+smg       Corvan Gnat PDW             4           9   10    11   |         4      5.6 (Surveyor Containment Armor, 10 % deflect)
+shotgun   Obrez-66                    1           3    3     4   |         2      2.2 (Surveyor Guard Vest, 8 % deflect)
+shotgun   Halden Lever Shotgun        2           3    3     4   |         1      2.2 (Garrison Field Uniform, 8 % deflect)
+shotgun   Hound 13                    2           3    3     4   |         2      2.2 (Garrison Field Uniform, 8 % deflect)
+shotgun   Ranger P8                   2           3    3     4   |         2      2.2 (Garrison Field Uniform, 8 % deflect)
+shotgun   Bayou Pump                  3           3    4     5   |         1      2.4 (Surveyor Guard Plates, 15 % deflect)
+shotgun   Sever-34 O/U                3           3    3     5   |         1      2.4 (Surveyor Guard Plates, 15 % deflect)
+shotgun   Tambour-12                  4           3    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
+shotgun   SP-14 Warden                4           3    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
+shotgun   Sayan-12                    4           3    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
+shotgun   Kaban-12                    4           3    3     3   |         1      2.2 (Surveyor Containment Armor, 10 % deflect)
+assault   VKS-74U                     1           5    6     7   |         3      3.3 (Surveyor Guard Vest, 8 % deflect)
+assault   Smerch-3                    2           4    5     6   |         2      2.2 (Garrison Field Uniform, 8 % deflect)
+assault   VK-74                       2           4    5     7   |         2      3.3 (Garrison Field Uniform, 8 % deflect)
+assault   VKM                         2           4    5     6   |         2      3.3 (Garrison Field Uniform, 8 % deflect)
 assault   TS-9 Tishina                3           4    5     7   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
-assault   TR-30                       3           4    5     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
-assault   Halden HR36K                3           4    5     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
+assault   TR-30                       3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
+assault   Halden HR36K                3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
 assault   VK-103                      3           4    5     7   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
 assault   BR-86 Bulldog               4           4    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
 assault   VK-74 Obelisk               4           4    4     5   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
@@ -111,8 +111,8 @@ sniper    VK-127 Grom                 5           1    2     2   |         1    
 sniper    Halden AM-50 Sledge         5           1    1     2   |         1      1.0 (Surveyor Field Lab Exo)
 sniper    G-7 Rail Prototype          5           1    1     1   |         1      1.0 (Surveyor Field Lab Exo)
 heavy     PL-62 Kobza                 2           5    6     7   |         2      3.3 (Garrison Field Uniform, 8 % deflect)
-heavy     Corvan LMG                  3           4    6     8   |         2      4.7 (Surveyor Guard Plates, 15 % deflect)
-heavy     RL-44                       3           4    5     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
+heavy     Corvan LMG                  3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
+heavy     RL-44                       3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
 heavy     PL-74                       4           4    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
 heavy     PL-74P Polovets             4           4    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
-heavy     PL-74P Polovets Zulu        5           4    4     4   |         2      2.3 (Surveyor Field Lab Exo, 12 % deflect)
+heavy     PL-74P Polovets Zulu        5           4    4     5   |         2      2.3 (Surveyor Field Lab Exo, 12 % deflect)

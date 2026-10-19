@@ -387,8 +387,8 @@ static class Program {
     var b = new HumanEnemy("b", cx + 2, cy - 2, "Raiders", "Rookie", null, null);
     EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(a); EncounterState.Enemies.Add(b);
     Check(TerrainMap.DamageTile(cx, cy + 2, 1), "barrel didn't blow");
-    Check(a.Hp < 100, "man next to barrel unhurt");
-    Check(b.Hp == 100, "man far away hurt");
+    Check(a.Hp < a.MaxHp, "man next to barrel unhurt");
+    Check(b.Hp == b.MaxHp, "man far away hurt");
     Check(TerrainMap.GetTile(cx + 1, cy + 2).Type == TileType.Difficult, "blast didn't wreck light cover");
     Check(TerrainMap.GetTile(cx - 1, cy + 1).Type == TileType.Difficult, "chain barrel didn't go off");
     Check(TerrainMap.GetTile(cx - 1, cy + 2).Type == TileType.HardCover && TerrainMap.GetTile(cx - 1, cy + 2).Damage == 6 - 0 || TerrainMap.GetTile(cx - 1, cy + 2).Type == TileType.Difficult,
@@ -612,13 +612,13 @@ static class Program {
       Check(lo >= 2 && hi <= 20 && mid > 700, $"2d10 rolls 2-20 and bunch in the middle ({lo}-{hi}, {mid}/2000 in 9-13)"); }
     Check(CombatRules.RankAc("Rookie") == 10 && CombatRules.RankAc("Expert") == 12, "rank AC");
     Check(CombatRules.TraitToHit(W("shotgun", "RangerP8"), false, 3) == 2, "shotgun close +2");
-    // mutant claws vs armor: 20 dmg Veil Prowler vs 40% armor = 12
+    // mutant claws vs armor: 200 dmg Veil Prowler vs 40% armor = 120 (HP x10, real-time fork)
     var veil = new Mutant("v", 1, 1, MutantDatabase.Get("tier2", "VeilProwler"));
     var man = new HumanEnemy("m", 2, 1, "Raiders", "Rookie", null, ArmorDatabase.Tiers["tier1"].Values.First());
-    Check(CombatRules.PhysicalDamage(veil.AttackDamage, "Standard", 0.4f) == 12, "mutant vs armor");
+    Check(Math.Abs(CombatRules.PhysicalDamage(veil.AttackDamage, "Standard", 0.4f) - 120) <= 1, "mutant vs armor (float rounding: 120 or 121)");
     Check(man.Ac == 10, "rookie NPC AC 10");
     // wounds: a 25-dmg hit on a human always wounds
-    CombatRules.CheckWound(man, 25, false); Check(man.StatusEffects.Wound != null, "wound applied");
+    CombatRules.CheckWound(man, 250, false); Check(man.StatusEffects.Wound != null, "wound applied");
   }
 
   class ConsoleLog : IGameLogTarget { public bool Clicker; public int Lines; public System.Collections.Generic.Dictionary<string, int> Counts;
@@ -744,7 +744,7 @@ static class Program {
       && Math.Abs(Body.WoundChance(0.2f, "Standard") - 0.5f) < 0.01f && Body.WoundChance(0.4f, "HollowPoint") > Body.WoundChance(0.4f, "ArmorPiercing"),
       $"wound chance: 70% {Body.WoundChance(0.7f, null)}, 50% {Body.WoundChance(0.5f, null)}, 40% {Body.WoundChance(0.4f, null)}, 20% {Body.WoundChance(0.2f, null)}");
     r.Hp = r.MaxHp; r.StatusEffects.Wound = null;
-    for (int i = 0; i < 6; i++) Body.Hit(r, "Legs", 0.1f, 15, "Standard");
+    for (int i = 0; i < 6; i++) Body.Hit(r, "Legs", 0.1f, 150, "Standard");
     Check(Body.Of(r).Broken.Contains("LegR") && r.StatusEffects.Wound == "Leg" && Body.Of(r).Hp["Torso"] < Body.PartMax(r, "Torso"), $"six hits to his right leg break it (it limps) and the rest spills into the torso ({Body.Summary(r)})");
     r.Hp = r.MaxHp; Body.Reset(); Body.Hit(r, "Torso", 0f, (int)Body.PartMax(r, "Torso") + 1, "Standard");
     Check(!r.IsAlive(), "a human enemy's torso at 0: dead");
@@ -764,7 +764,7 @@ static class Program {
     bool bledOut = false; Body.GoDown(p); for (int i = 0; i < 100 && !bledOut; i++) bledOut = Body.TickDown(p, false, 1f);
     Check(bledOut, "lying still you bleed out in ~40 s");
     Body.Reset(); p.HealPermanent(100);
-    for (int i = 0; i < 6; i++) Body.Hit(p, "Legs", -0.1f, 12, "Standard");
+    for (int i = 0; i < 6; i++) Body.Hit(p, "Legs", -0.1f, 120, "Standard");
     Check(Body.LegHurt(p), "your left leg breaks");
     if (!p.Inventory.Items.Any(it => it.Id == "splint")) p.AddItem(new InventoryItem { Id = "splint", Name = "Splint", Type = "consumable", Qty = 1 });
     p.UseConsumable("splint");
@@ -802,6 +802,7 @@ static class Program {
       Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
       var (gw, ga) = EncounterGeneration.PickFactionLoadout("Raiders", "Experienced", 1);
       var g = new HumanEnemy("Gunman", px + 8, py, "Raiders", "Experienced", gw, ga) { IsAggroed = true };
+      g.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);   // a gun every time (the random loadout can be a knife)
       EncounterState.Enemies.Add(g); EncounterState.InCombat = true; Contact.Spot(p);
       UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 2000f;
       int shotsAt1 = -1, reloads = 0, maxStep = 0, lastMag = g.EquippedWeapon.CurrentMagazine, fired = 0; var (gx0, gy0) = (g.X, g.Y); int lx = g.X, ly = g.Y;
@@ -856,7 +857,7 @@ static class Program {
       int pel = Gunplay.For(w).Pellets;
       float dr = part == "Head" ? HeadGear.Of(a).dr : a.PhysDR;
       int per = CombatRules.PhysicalDamage(Gunplay.RoundDamage(w, part, dist, pel), w.CurrentAmmoType, dr) * pel;
-      return (int)Math.Ceiling((part == "Head" ? 50f : 80f) / per); }
+      return (int)Math.Ceiling((part == "Head" ? 500f : 800f) / per); }
     var byClass = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<(int h, int c)>>();
     if (print) Console.WriteLine("class    weapon                      tier armor                       head chest  drop(s, chest, all hit)");
     foreach (var cat in WeaponDatabase.Categories) {
@@ -1332,7 +1333,7 @@ static class Program {
       if (l == "Freelance Trader") Check(p.CarryCapacityBonus == 10, "trader sack");
       Check(p.GetRepLevel("Raiders") == "Hostile" && p.GetRepLevel("Wanderers") == "Neutral", "raiders start hostile, others neutral");
       float h0 = p.Hunger; p.UseConsumable("basicMedkit");
-      Check(Math.Abs(h0 - p.Hunger - 20 / 10f * GameConstants.SurvivalCostPer10Hp) < 0.001f && p.Tiredness < 10, "medkit makes you hungry and sleepy");
+      Check(Math.Abs(h0 - p.Hunger - 200 / 100f * GameConstants.SurvivalCostPer10Hp) < 0.001f && p.Tiredness < 10, "medkit makes you hungry and sleepy");
     }
     // rank-ups follow the milestones, one perk pick at Professional
     GameBootstrap.StartNewGame();
@@ -1540,7 +1541,7 @@ static class Program {
       StoryAt("reactor_core", "The Last Gate");
       Check(StorySystem.Act == 6 && p.MainStoryFinaleDone && p.Inventory.Items.Any(i => i.Id == "theBlackStar"), "ending reached");
       if (sponsor == "Garrison") Check(MacroMapDatabase.Zones.Max(z => z.Tier) == 5 && WorldEvents.ArtifactSearchBonus("perimeter") == -2, "destroy ending shrinks the zone");
-      if (sponsor == "Alone") { p.ApplyArtifactStatBonuses(); Check(p.MaxHp == 110, "take it: +10 max hp, got " + p.MaxHp); }
+      if (sponsor == "Alone") { p.ApplyArtifactStatBonuses(); Check(p.MaxHp == 1100, "take it: +100 max hp, got " + p.MaxHp); }
       Console.WriteLine($"story ({sponsor}): ending '{MacroState.Current.Ending}', rank {p.Rank}");
     }
     GameBootstrap.StartNewGame();
@@ -1674,9 +1675,9 @@ static class Program {
     Check(Math.Abs(p.AnomDR - Math.Max(0, anom0 - 0.20f)) < 0.001f, $"both penalties apply: {anom0} -> {p.AnomDR}");
     p.ArtifactSlots[0] = "lucifer"; p.ArtifactSlots[1] = "theLodestone"; p.ApplyArtifactStatBonuses();
     Check(p.ArtifactAutoPassAnomalies && p.ArtifactApBonus == 1, "two legendaries both work");
-    Check(p.MaxHp == 75, "lucifer max hp " + p.MaxHp);
+    Check(p.MaxHp == 750, "lucifer max hp " + p.MaxHp);
     p.ArtifactSlots[0] = null; p.ArtifactSlots[1] = null; p.ApplyArtifactStatBonuses();
-    Check(p.MaxHp == 100 && Math.Abs(p.AnomDR - anom0) < 0.001f, "everything restored after taking them off");
+    Check(p.MaxHp == 1000 && Math.Abs(p.AnomDR - anom0) < 0.001f, "everything restored after taking them off");
     GameLog.Target = null;
   }
 
@@ -2175,8 +2176,8 @@ static class Program {
     p.EquipArmorFromInventory(one.Id);
     Check(p.ArmorMods.SlotB == null && p.Inventory.Items.Any(i => i.Id == mods[1]), "extra mod returned");
     // Lucifer costs real HP; legendaries keep their value off the belt
-    p.HealPermanent(100); p.ArtifactSlots[0] = "lucifer"; p.ApplyArtifactStatBonuses();
-    Check(p.Hp == 75 && p.PermHP == 75, "lucifer clamps hp " + p.Hp);
+    p.HealPermanent(1000); p.ArtifactSlots[0] = "lucifer"; p.ApplyArtifactStatBonuses();
+    Check(p.Hp == 750 && p.PermHP == 750, "lucifer clamps hp " + p.Hp);
     p.UnequipArtifact(0);
     Check(p.Inventory.Items.First(i => i.Id == "lucifer").Price >= 20000, "legendary keeps its value");
     // two copies with different condition get their own ids

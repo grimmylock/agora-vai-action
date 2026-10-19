@@ -261,7 +261,7 @@ namespace GameCore
                     break;
                 case "Take it":
                     foreach (var f in FactionDatabase.Factions.Keys.Where(f => f != "Mutant")) p.AdjustReputation(f, -Player.RepPoint);
-                    p.BonusMaxHp += 10;
+                    p.BonusMaxHp += 100;
                     p.ApplyArtifactStatBonuses();
                     break;
             }

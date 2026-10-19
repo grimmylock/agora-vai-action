@@ -29,31 +29,31 @@ namespace GameData
         {
             ["Pyre"] = new AnomalyDef
             {
-                Name = "Pyre", Dc = 12, Damage = 50, AnomalyType = "Pyre", DamageKind = "Anom",
+                Name = "Pyre", Dc = 12, Damage = 500, AnomalyType = "Pyre", DamageKind = "Anom",
                 Effects = new AnomalyEffects { Burn = true },
                 Description = "Pyre anomaly that deals raw anomalous damage on failure.",
             },
             ["Livewire"] = new AnomalyDef
             {
-                Name = "Livewire", Dc = 14, Damage = 60, AnomalyType = "Livewire", DamageKind = "Anom",
+                Name = "Livewire", Dc = 14, Damage = 600, AnomalyType = "Livewire", DamageKind = "Anom",
                 Effects = new AnomalyEffects { ApDrain = 2 },
                 Description = "Livewire anomaly that drains AP on failure.",
             },
             ["AcidBloom"] = new AnomalyDef
             {
-                Name = "Acid Bloom", Dc = 11, Damage = 30, AnomalyType = "Acid Bloom", DamageKind = "Anom",
+                Name = "Acid Bloom", Dc = 11, Damage = 300, AnomalyType = "Acid Bloom", DamageKind = "Anom",
                 Effects = new AnomalyEffects { ToxicBleed = true },
                 Description = "Acid Bloom anomaly that inflicts toxic bleeding on failure.",
             },
             ["Spindle"] = new AnomalyDef
             {
-                Name = "Spindle", Dc = 15, Damage = 80, AnomalyType = "Spindle", DamageKind = "Phys",
+                Name = "Spindle", Dc = 15, Damage = 800, AnomalyType = "Spindle", DamageKind = "Phys",
                 Effects = new AnomalyEffects { Prone = true },
                 Description = "Spindle anomaly that throws the player and causes prone on failure.",
             },
             ["RadiationPocket"] = new AnomalyDef
             {
-                Name = "Radiation Pocket", Dc = null, Damage = 10, AnomalyType = "Radiation", DamageKind = "Anom",
+                Name = "Radiation Pocket", Dc = null, Damage = 100, AnomalyType = "Radiation", DamageKind = "Anom",
                 Effects = new AnomalyEffects { Radiation = true },
                 Description = "Radiation pocket that deals damage unless closed breathing is active.",
             },

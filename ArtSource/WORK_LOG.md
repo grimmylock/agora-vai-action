@@ -3231,3 +3231,20 @@ Yan: "calculate how each weapon performs against a few variants of armor of the 
 `HeadGear.NoDeflect`). The probe now also prints every gun vs the lightest / middle / heaviest body armor of its tier and that
 tier's best helmet (expected hits, deflects counted as misses) - `test ttk`, saved in `Tools/probes/ttk_rt6.txt`. Findings in the
 reply to Yan (SR-21 Gadyuka weak, Halden Service Revolver strong, SMGs collapse vs heavy tier 2-3 armor, AP flattens tier 4-5 armor).
+
+## RT batch 6c - HP and damage x10 (2026-10-19)
+
+Yan: "would it be easier to balance if we made base HP 1000 instead of 100? that way we can fiddle a bit more with weapon damage
+without being restricted to a low amount of number variations ... we do that, increase every weapon damage x10 as well and continue
+from there" ("base human enemy hp i meant, but mutants as well" - the player is human too and takes the same rounds, so x10 too).
+- x10: player and human enemies 1000 HP (Lucifer floor 500, the "Take it" ending +100); every mutant's HP and attack; every weapon's
+  damage (Reinforced +30); medkits, stims, rations, energy drink; artifact regeneration and Lucifer's penalty; anomalies; frags,
+  cooked-off grenades and barrels (400); the surge (600); the Brute's boulder (250) and ground slam (300); bleeding and toxic bleed
+  (50 a round); starvation; rolling barrels; off-screen squad fights; Adrenaline Surge (under 300 HP, +200 temp HP); the old wound
+  threshold (200); gib overkill (150); the gun-feel "typical damage" per class; descriptions that quote numbers.
+- Unchanged on purpose: everything that's a share (armor, part shares, wound chances, morale by % HP). The hunger/sleep cost of
+  healing stays per 10 *old* HP (now per 100).
+- The finer scale removed a hidden bonus: armor rounding went up to the next whole point, which mattered at 10-30 damage (a
+  shotgun pellet of 8.04 counted as 9). Some guns need a hit more now (SMGs ~+1 chest hit, a couple of shotguns 2 heads at 6 tiles).
+- Outlier fixes on the new scale: SR-21 Gadyuka 150 -> 180, Corvan LMG 220 -> 240. All of Yan's class targets still pass.
+- Harness tests updated to the new numbers (and the real-time gunman test now always gets a gun - its random loadout could be a knife).

@@ -50,38 +50,38 @@ namespace GameData
                 // three. HP below is the reference file's own compensation table; unchanged here
                 // since these three already had it (5%/10%/0% was small enough this database's HP
                 // already matched the reference's post-rebalance numbers).
-                ["BlindMaw"] = new MutantDef { Name = "Blind Maw", Tier = 1, Hp = 40, PhysDR = 0.0f, AnomDR = 0.05f, Ap = 4, Mp = 5, Ac = 11, AttackDamage = 8, AgilityMod = 1, Behavior = "pack", PackTactics = true, PanicThreshold = 0.4f },
-                ["PallidProwler"] = new MutantDef { Name = "Pallid Prowler", Tier = 1, Hp = 45, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 4, Ac = 11, AttackDamage = 9, AgilityMod = 0, Behavior = "pack", PackTactics = true, ToxicBite = true, PanicThreshold = 0.35f },
-                ["RotSwarm"] = new MutantDef { Name = "Rot Swarm", Tier = 1, Hp = 30, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 6, Ac = 10, AttackDamage = 6, AgilityMod = 2, Behavior = "swarm", PackTactics = true, PanicThreshold = 0.5f },
+                ["BlindMaw"] = new MutantDef { Name = "Blind Maw", Tier = 1, Hp = 400, PhysDR = 0.0f, AnomDR = 0.05f, Ap = 4, Mp = 5, Ac = 11, AttackDamage = 80, AgilityMod = 1, Behavior = "pack", PackTactics = true, PanicThreshold = 0.4f },
+                ["PallidProwler"] = new MutantDef { Name = "Pallid Prowler", Tier = 1, Hp = 450, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 4, Ac = 11, AttackDamage = 90, AgilityMod = 0, Behavior = "pack", PackTactics = true, ToxicBite = true, PanicThreshold = 0.35f },
+                ["RotSwarm"] = new MutantDef { Name = "Rot Swarm", Tier = 1, Hp = 300, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 6, Ac = 10, AttackDamage = 60, AgilityMod = 2, Behavior = "swarm", PackTactics = true, PanicThreshold = 0.5f },
             },
             ["tier2"] = new Dictionary<string, MutantDef>
             {
                 // Was PhysDR 15%/Hp 60 - Hp bumped to compensate for the removed Phys-DR (see
                 // Tier 1 note above for why it's being removed at all).
-                ["VeilProwler"] = new MutantDef { Name = "Veil Prowler", Tier = 2, Hp = 70, PhysDR = 0.0f, AnomDR = 0.2f, Ap = 4, Mp = 5, Ac = 12, AttackDamage = 20, AgilityMod = 1, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.25f, PanicThreshold = 0.3f },
+                ["VeilProwler"] = new MutantDef { Name = "Veil Prowler", Tier = 2, Hp = 700, PhysDR = 0.0f, AnomDR = 0.2f, Ap = 4, Mp = 5, Ac = 12, AttackDamage = 200, AgilityMod = 1, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.25f, PanicThreshold = 0.3f },
             },
             ["tier3"] = new Dictionary<string, MutantDef>
             {
                 // Was PhysDR 25%/Hp 85 and PhysDR 20%/Hp 85 respectively - both bumped to compensate.
-                ["AlphaProwler"] = new MutantDef { Name = "Alpha Prowler", Tier = 3, Hp = 100, PhysDR = 0.0f, AnomDR = 0.25f, Ap = 5, Mp = 5, Ac = 13, AttackDamage = 30, AgilityMod = 2, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.4f, ArmorPierce = 0.2f, PanicThreshold = 0.2f },
-                ["MindWeaver"] = new MutantDef { Name = "Mind Weaver", Tier = 3, Hp = 90, PhysDR = 0.0f, AnomDR = 0.3f, Ap = 5, Mp = 4, Ac = 13, AttackDamage = 35, AgilityMod = 2, Behavior = "ranged", PsiBlast = true, PanicThreshold = 0.2f },
+                ["AlphaProwler"] = new MutantDef { Name = "Alpha Prowler", Tier = 3, Hp = 1000, PhysDR = 0.0f, AnomDR = 0.25f, Ap = 5, Mp = 5, Ac = 13, AttackDamage = 300, AgilityMod = 2, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.4f, ArmorPierce = 0.2f, PanicThreshold = 0.2f },
+                ["MindWeaver"] = new MutantDef { Name = "Mind Weaver", Tier = 3, Hp = 900, PhysDR = 0.0f, AnomDR = 0.3f, Ap = 5, Mp = 4, Ac = 13, AttackDamage = 350, AgilityMod = 2, Behavior = "ranged", PsiBlast = true, PanicThreshold = 0.2f },
             },
             ["tier4"] = new Dictionary<string, MutantDef>
             {
                 // Blight Brute keeps its Phys-DR on purpose - it's the one Brute-archetype mutant
                 // meant to punish Hollow Point and reward Armor Piercing/Dart instead.
-                ["BlightBrute"] = new MutantDef { Name = "Blight Brute", Tier = 4, Hp = 120, PhysDR = 0.4f, AnomDR = 0.25f, Ap = 4, Mp = 3, Ac = 14, AttackDamage = 60, AgilityMod = -1, Behavior = "berserk", GroundSlam = true, PanicThreshold = 0.1f },
+                ["BlightBrute"] = new MutantDef { Name = "Blight Brute", Tier = 4, Hp = 1200, PhysDR = 0.4f, AnomDR = 0.25f, Ap = 4, Mp = 3, Ac = 14, AttackDamage = 600, AgilityMod = -1, Behavior = "berserk", GroundSlam = true, PanicThreshold = 0.1f },
                 // Berserk mutants "never panic" per the Mutants & Factions reference - set explicitly
                 // to 0f rather than leaving it unset, since Mutant's ctor fallback (?? 0.25f) would
                 // otherwise silently give Dread Prowler a 25% panic threshold it isn't supposed to have.
                 // Was PhysDR 30%/Hp 130 - Hp bumped to compensate.
-                ["DreadProwler"] = new MutantDef { Name = "Dread Prowler", Tier = 4, Hp = 155, PhysDR = 0.0f, AnomDR = 0.3f, Ap = 6, Mp = 6, Ac = 14, AttackDamage = 45, AgilityMod = 2, Behavior = "berserk", Leap = true, PanicThreshold = 0f },
+                ["DreadProwler"] = new MutantDef { Name = "Dread Prowler", Tier = 4, Hp = 1550, PhysDR = 0.0f, AnomDR = 0.3f, Ap = 6, Mp = 6, Ac = 14, AttackDamage = 450, AgilityMod = 2, Behavior = "berserk", Leap = true, PanicThreshold = 0f },
             },
             ["tier5"] = new Dictionary<string, MutantDef>
             {
                 // Void Weaver "never panics" too - see Dread Prowler's note above. Was PhysDR
                 // 30%/Hp 140 - Hp bumped to compensate.
-                ["VoidWeaver"] = new MutantDef { Name = "Void Weaver", Tier = 5, Hp = 170, PhysDR = 0.0f, AnomDR = 0.6f, Ap = 6, Mp = 5, Ac = 15, AttackDamage = 50, AgilityMod = 3, Behavior = "ranged", ActiveCamouflage = true, NeuralOverload = true, PanicThreshold = 0f },
+                ["VoidWeaver"] = new MutantDef { Name = "Void Weaver", Tier = 5, Hp = 1700, PhysDR = 0.0f, AnomDR = 0.6f, Ap = 6, Mp = 5, Ac = 15, AttackDamage = 500, AgilityMod = 3, Behavior = "ranged", ActiveCamouflage = true, NeuralOverload = true, PanicThreshold = 0f },
             },
         };
 

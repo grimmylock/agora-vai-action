@@ -276,7 +276,7 @@ namespace GameCore
             if (through < 1f) tierMult = CombatRules.HitMultiplier(0, -1, 0);   // through cover: always a graze, never aimed or ambush-boosted
             GameLog.Write(crit ? "Double 10 - headshot! Damage x1.5." : $"{CombatRules.HitName(tierMult)}: damage x{tierMult:0.0#}.");
 
-            float raw = (BaseDamage + (Upgrades.Contains("Reinforced") ? 3 : 0)) * tierMult * (burst ? CombatRules.BurstMultiplier(this) : 1f) * through;
+            float raw = (BaseDamage + (Upgrades.Contains("Reinforced") ? 30 : 0)) * tierMult * (burst ? CombatRules.BurstMultiplier(this) : 1f) * through;
             if (ItemCondition.IsDamaged(Condition)) raw *= 0.75f;
             if (attacker is Player) raw *= CombatRules.PlayerDamage;   // Batch 127: probe knob
             raw *= CombatRules.Lethality;   // Batch 74: one knob for how deadly every gun is (player and NPCs alike); 1 = as before

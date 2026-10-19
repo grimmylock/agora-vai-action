@@ -83,7 +83,7 @@ namespace GameCore
             // real gear the same way the player does (EquipWeaponFromDb/EquipArmorFromDb just above
             // set PhysDR/AnomDR straight from the ArmorDef, same as Player.EquipArmor) - that's
             // where their defense is supposed to live, not in bonus HP.
-            MaxHp = 100;
+            MaxHp = 1000;   // real-time fork: HP x10
             Hp = MaxHp;
             Ac = CombatRules.RankAc(Rank);
             Frags = CombatRules.RankIndex(Rank) >= CombatRules.RankIndex("Veteran") ? 1 : 0;   // Batch 56: grenades are Veteran+ gear (quest bosses get one, QuestSystem)

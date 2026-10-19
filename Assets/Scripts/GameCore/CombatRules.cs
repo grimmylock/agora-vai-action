@@ -205,7 +205,7 @@ namespace GameCore
             if (!(target is HumanEnemy h) || h.Frags <= 0) return;
             h.Frags--;
             GameLog.Write($"Pouch shot: the grenade on {h.Name}'s belt goes off!");
-            Explosions.Blast(h.X, h.Y, Explosions.ThrowRadius, 40, shooter, "cooked-off grenade");
+            Explosions.Blast(h.X, h.Y, Explosions.ThrowRadius, 400, shooter, "cooked-off grenade");
         }
 
         public static string HitName(float mult) => mult >= 1.5f ? "Headshot!" : mult > 1f ? "Vital hit" : mult < 1f ? "Graze" : "Clean hit";
@@ -266,7 +266,7 @@ namespace GameCore
         public static bool IsHuman(ICombatant u) => u is Player || u is HumanEnemy;
 
         /// <summary>Wound + armor wear check after a physical hit on a human (file 00).</summary>
-        public static void CheckWound(ICombatant target, int finalDamage, bool natural20, int threshold = 20)
+        public static void CheckWound(ICombatant target, int finalDamage, bool natural20, int threshold = 200)
         {
             if (!IsHuman(target) || !target.IsAlive()) return;
             if (finalDamage < threshold && !natural20) return;

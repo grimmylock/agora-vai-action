@@ -174,7 +174,7 @@ namespace GameCore
         public static float RoundDamage(Weapon w, string part, float dist, int pellets)
         {
             string cat = CombatRules.Category(w?.Db);
-            float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 3 : 0)) * (ClassDamage.TryGetValue(cat, out var m) ? m : 1f) * Ballistics.PartMult(part);
+            float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * (ClassDamage.TryGetValue(cat, out var m) ? m : 1f) * Ballistics.PartMult(part);
             if (pellets > 1) raw = raw / pellets * 1.5f * (dist <= 4f ? 1f : System.Math.Max(0.3f, 1f - (dist - 4f) / 8f * 0.7f));
             return raw;
         }
