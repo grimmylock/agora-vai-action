@@ -714,14 +714,15 @@ static class Program {
   // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
   static void HeldFrames(string path) {
     var sb = new System.Text.StringBuilder("[");
-    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza") };
+    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sniper", "FrontierLeverRifle") };
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); if (armor < 0) armor = 0;   // bare hands, red cuffs: the hand work reads
     bool firstAnim = true;
     foreach (var (cat, key) in guns) {
       var db = WeaponDatabase.Categories[cat][key]; var w = W(cat, key);
       var feel = WeaponFeel.For(db); var g = WeaponArt.GripOf(cat, key);   // the sprite's own points (For() falls back to the category's here: no textures offline)
-      int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1, trips = feel.Reload == "tube" || feel.Reload == "cylinder" ? Math.Clamp(cap / 2, 2, 4) : 1;
-      foreach (var (style, secs) in new[] { (feel.Reload, Gunplay.For(w).ReloadTime), ("jam", 0.8f) }) {
+      int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1, trips = Gunplay.ByRound(w) ? cap : 1;   // RT 6h: a trip per round, from empty
+      float full = Gunplay.ByRound(w) ? (Gunplay.Revolver(w) ? Gunplay.CylinderOpen : 0f) + cap * Gunplay.PerRound(w) : Gunplay.For(w).ReloadTime;
+      foreach (var (style, secs) in new[] { (feel.Reload, full), ("jam", 0.8f) }) {
         if (!firstAnim) sb.Append(','); firstAnim = false;
         sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
         int n = (int)Math.Ceiling(secs * 30f) + 4;
@@ -830,6 +831,23 @@ static class Program {
       var done = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.9f, "jam", 1); rest = HeldPoseMath.Frame("assault", g, done.GunDeg, 0f, 0f, 0f, 99f, 1f, "none", 1);   // same tilt, no hand work
       Check(tap.SupY > rack.SupY && rack.SupX < tap.SupX && tap.GunDeg > 0f && Math.Abs(done.SupX - rest.SupX) <= 1f && Math.Abs(done.SupY - rest.SupY) <= 1f,
         $"RT 6f: jam clear - slap under the gun ({tap.SupX},{tap.SupY}), rack over the action ({rack.SupX},{rack.SupY}), back on the handguard ({done.SupX},{done.SupY} vs {rest.SupX},{rest.SupY})"); }
+    // RT 6h: shotguns, levers and revolvers load a round at a time; firing stops a shotgun's reload, a revolver closes first
+    { var sg = W("shotgun", "BayouPump"); sg.CurrentMagazine = 2; var keep = p.EquippedWeapon; p.EquippedWeapon = sg;
+      string k = Ammo.Key(sg.Db, "Standard"); p.Inventory.AmmoReserve[k] = 40; var aim = new Gunplay.Aim();
+      float per = Gunplay.PerRound(sg), t = 0f;
+      Rt.StartReload(p, sg, aim, t);
+      for (t = 0f; t < per * 3.5f; t += 0.02f) Rt.TickReload(p, sg, aim, t);
+      int afterThree = sg.CurrentMagazine;
+      Rt.StopLoading(p, sg, aim);
+      for (; t < per * 8f; t += 0.02f) Rt.TickReload(p, sg, aim, t);
+      Check(afterThree == 5 && sg.CurrentMagazine == 5 && aim.ReloadUntil < 0f && aim.Loading == 0,
+        $"RT 6h: a pump loads a shell every {per:0.00} s (2 -> {afterThree} after 3.5 shells' time) and the trigger stops it ({sg.CurrentMagazine})");
+      var rv = W("sidearm", "HaldenServiceRevolver"); rv.CurrentMagazine = 0; p.EquippedWeapon = rv; aim = new Gunplay.Aim();
+      p.Inventory.AmmoReserve[Ammo.Key(rv.Db, "Standard")] = 40;
+      Rt.StartReload(p, rv, aim, 0f); Rt.StopLoading(p, rv, aim);
+      for (t = 0f; t < 6f; t += 0.02f) Rt.TickReload(p, rv, aim, t);
+      Check(rv.CurrentMagazine == 1 && aim.Loading == 0, $"RT 6h: a revolver told to stop finishes the round in hand and closes ({rv.CurrentMagazine})");
+      p.EquippedWeapon = keep; CombatFx.Pending.Clear(); }
     // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
     {
       Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);

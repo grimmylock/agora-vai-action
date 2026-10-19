@@ -130,20 +130,12 @@ namespace GameCore
             var hd = Gunplay.For(w);
             Gunplay.Tick(hd, aim, Aiming || Diving, Moving, SlowMo ? Time.unscaledDeltaTime : dt);   // in bullet time your aim keeps real-time speed
             var mw = MouseTile(m);
-            if (aim.ReloadUntil >= 0f && Time.time >= aim.ReloadUntil)
-            {
-                aim.ReloadUntil = -1f;
-                if (w != null) { if (w.IsJammed) w.ClearJam(); else p.ReloadWeapon(); }
-            }
+            TickReload(p, w, aim, Time.time);
             if (k.rKey.wasPressedThisFrame && w != null && aim.ReloadUntil < 0f && UsingId == null && !CombatRules.IsMelee(w)
                 && (w.IsJammed || w.CurrentMagazine < w.MagCapacity))
-            {
-                float t = w.IsJammed ? 0.8f : hd.ReloadTime * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f) * (Body.ArmsHurt(p) > 0 ? 1.5f : 1f);
-                aim.ReloadUntil = Time.time + t;
-                CombatFx.Reload(p, w, t, w.IsJammed);
-                GameLog.Write(w.IsJammed ? "Clearing the jam..." : "Reloading...");
-            }
+                StartReload(p, w, aim, Time.time);
             bool trigger = m != null && (hd.Auto ? m.leftButton.isPressed : m.leftButton.wasPressedThisFrame);
+            if (trigger && aim.Loading > 0) StopLoading(p, w, aim);   // RT 6h: a tube or lever fires what's in; a revolver closes first
             if (trigger && UsingId != null) { UsingId = null; GameLog.Write("You stop to shoot."); }
             if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
 
@@ -154,6 +146,47 @@ namespace GameCore
                 float reach = Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
                 Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
             }
+        }
+
+        /// <summary>R: clear the jam, swap the magazine, or (RT 6h) start loading round by round.</summary>
+        public static void StartReload(Player p, Weapon w, Gunplay.Aim aim, float now)
+        {
+            float speed = (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f) * (Body.ArmsHurt(p) > 0 ? 1.5f : 1f);
+            if (!w.IsJammed && Gunplay.ByRound(w))
+            {
+                int n = w.MagCapacity - w.CurrentMagazine;
+                float open = Gunplay.Revolver(w) ? Gunplay.CylinderOpen * speed : 0f, per = Gunplay.PerRound(w) * speed;
+                aim.Loading = n; aim.ReloadUntil = now + open + per;
+                CombatFx.Reload(p, w, open + n * per, false, n);
+                GameLog.Write("Loading...");
+                return;
+            }
+            float t = w.IsJammed ? 0.8f : Gunplay.For(w).ReloadTime * speed;
+            aim.ReloadUntil = now + t;
+            CombatFx.Reload(p, w, t, w.IsJammed);
+            GameLog.Write(w.IsJammed ? "Clearing the jam..." : "Reloading...");
+        }
+
+        /// <summary>Per frame: a reload's timer ran out - the jam clears, the magazine is in, or one more round goes in.</summary>
+        public static void TickReload(Player p, Weapon w, Gunplay.Aim aim, float now)
+        {
+            if (aim.ReloadUntil < 0f || now < aim.ReloadUntil) return;
+            aim.ReloadUntil = -1f;
+            if (w == null) { aim.Loading = 0; return; }
+            if (aim.Loading <= 0) { if (w.IsJammed) w.ClearJam(); else p.ReloadWeapon(); return; }
+            bool more = w.Reload(1) && --aim.Loading > 0 && w.CurrentMagazine < w.MagCapacity;
+            Sfx.Play("reload_shell", TacticalGridView.GridToWorld(p.X, p.Y), 0.6f);
+            if (more) aim.ReloadUntil = now + Gunplay.PerRound(w) * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f) * (Body.ArmsHurt(p) > 0 ? 1.5f : 1f);
+            else { aim.Loading = 0; CombatFx.Reload(p, w, -1f); }
+        }
+
+        /// <summary>The trigger during a round-by-round reload: a tube, lever or bolt stops and fires what's in; a revolver
+        /// finishes the round in hand and snaps shut (no firing until then).</summary>
+        public static void StopLoading(Player p, Weapon w, Gunplay.Aim aim)
+        {
+            if (Gunplay.Revolver(w)) { aim.Loading = 1; return; }
+            aim.Loading = 0; aim.ReloadUntil = -1f;
+            CombatFx.Reload(p, w, -1f);
         }
 
         static void PlayerFire(Player p, Weapon w, Handling hd, Gunplay.Aim aim, (float x, float y) at)

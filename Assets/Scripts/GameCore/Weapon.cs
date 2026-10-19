@@ -464,7 +464,7 @@ namespace GameCore
         }
 
         /// <summary>Ported from reload(). Consumes from the player's global ammo reserve first, then local reserve.</summary>
-        public bool Reload()
+        public bool Reload(int max = int.MaxValue)   // RT 6h: max = 1 loads a single round
         {
             if (CurrentMagazine >= MagCapacity)
             {
@@ -492,7 +492,7 @@ namespace GameCore
             }
 
             int needed = MagCapacity - CurrentMagazine;
-            int toLoad = System.Math.Min(needed, totalReserve);
+            int toLoad = System.Math.Min(System.Math.Min(needed, totalReserve), max);
 
             int consumedFromGlobal = 0;
             if (globalReserve > 0)
@@ -508,7 +508,7 @@ namespace GameCore
 
             CurrentMagazine += toLoad;
             if (!Rt.On) CombatFx.Push("reload", Owner ?? (ICombatant)Player.Current, null, this);   // real time: the animation started with the timer (CombatFx.Reload)
-            GameLog.Write($"{Name} reloaded {toLoad} rounds ({consumedFromGlobal} from stash). Magazine is now {CurrentMagazine}/{MagCapacity}.");
+            if (max == int.MaxValue) GameLog.Write($"{Name} reloaded {toLoad} rounds ({consumedFromGlobal} from stash). Magazine is now {CurrentMagazine}/{MagCapacity}.");
             return true;
         }
 

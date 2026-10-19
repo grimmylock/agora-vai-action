@@ -369,11 +369,13 @@ namespace GameCore
         public void Swing() => _swingAt = Time.time;
         /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
         public void StartClear(float seconds) { _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
-        public void StartReload(WeaponFeel f, int capacity, float seconds = 0f)
+        public void StartReload(WeaponFeel f, int capacity, float seconds = 0f, int rounds = 0)
         {
             _reloadAt = Time.time; _reloadTime = seconds > 0f ? seconds : f.ReloadTime; _reloadStyle = f.Reload;
-            _reloadTrips = f.Reload == "tube" || f.Reload == "cylinder" ? Mathf.Clamp(capacity / 2, 2, 4) : 1;
+            _reloadTrips = f.Reload == "tube" || f.Reload == "cylinder" ? (rounds > 0 ? rounds : Mathf.Clamp(capacity / 2, 2, 4)) : 1;
         }
+        /// <summary>RT 6h: a round-by-round reload cut short - the gun comes back up.</summary>
+        public void StopReload() { _reloadTime = 0f; }
         /// <summary>Point the gun at a world position until `until` (the shot's target, even if the
         /// player has already moved the mouse on).</summary>
         public void AimAt(Vector3 world, float until) { _aimOverride = world; _aimUntil = until; }

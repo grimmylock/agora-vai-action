@@ -3311,3 +3311,18 @@ grip's inner shape in magazine steel, drawn behind the gun, so it only shows onc
   (12-30%), is gone while the hand is at the pouch, rides back in with the hand and seats as it reaches the gun. The grey fleck
   that stood in for a dropped magazine is skipped for guns with a real one.
 - Renders: `maps/renders/held_anim/` now also has the Corvan Hornet .45 and the PL-62 Kobza drum.
+
+## RT batch 6h - round-by-round reloads (2026-10-20)
+
+Yan ("yes to all" to: shooting mid-reload stops a tube/lever reload with what's in; revolvers finish or cancel, no firing between).
+- Tube shotguns, the Frontier Lever Rifle and Nightwalker .45-70, the M91 and SKN Karabin (ponytail: stripper clips later) and the
+  revolvers (Halden Service Revolver, Rinaldi R6, RK-12, Tambour-12's drum) load a round at a time: `Gunplay.ByRound`, `PerRound`
+  = the gun's full reload time over its capacity (0.25-0.6 s a round), revolvers first swing the cylinder out for 0.4 s
+  (`CylinderOpen`). `Rt.StartReload` / `TickReload` (one round per timer, a shell sound each) / `StopLoading`: the trigger stops a
+  tube, lever or bolt reload and fires what's in; a revolver finishes the round in hand and closes, then fires. Quick Hands and a
+  hurt arm scale each round. `Weapon.Reload(max)` loads one round (quiet log).
+- NPCs: the same time per missing round (x1.2 as before), loaded at the end.
+- Animation: the hand makes one trip to the pouch per round (`StartReload(..., rounds)`), cut short with the reload
+  (`FxEvent.Seconds < 0` -> `HeldWeaponView.StopReload`).
+- Harness: a pump loads a shell every 0.38 s and stops on the trigger; a revolver told to stop finishes its round.
+  Renders: the revolver and the lever rifle added to `maps/renders/held_anim/`.

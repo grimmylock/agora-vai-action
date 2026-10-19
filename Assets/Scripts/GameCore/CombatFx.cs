@@ -30,7 +30,7 @@ namespace GameCore
         // it ends exactly where the round stopped (tile space, y down). Pellet = a shotgun's extra pellet: tracer only.
         public bool Now, Pellet;
         public float Delay, EndX = -1f, EndY = -1f;
-        public float Seconds;          // RT 6d: a reload's real length (0 = the gun's own animation length)
+        public float Seconds;          // (RT 6h: < 0 = the reload stopped; Rounds = the hand's trips, one per round)          // RT 6d: a reload's real length (0 = the gun's own animation length)
     }
 
     public static class CombatFx
@@ -52,7 +52,7 @@ namespace GameCore
         public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); }
 
         /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer. jam (RT 6f): clearing a jam.</summary>
-        public static void Reload(ICombatant u, Weapon w, float seconds, bool jam = false) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; e.Jammed = jam; }
+        public static void Reload(ICombatant u, Weapon w, float seconds, bool jam = false, int rounds = 0) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; e.Jammed = jam; e.Rounds = rounds; }
 
         public static FxEvent Push(string kind, ICombatant actor, ICombatant target, Weapon weapon = null)
         {
@@ -94,6 +94,9 @@ namespace GameCore
         {
             ["G7RailPrototype"] = f => { f.Rail = true; f.Flash = 0; f.Casing = null; f.Kick *= 0.5f; f.Climb *= 0.5f; f.Shake = 0.1f; },
             ["FrontierLeverRifle"] = f => { f.Reload = "tube"; f.ReloadTime = 1.6f; },   // loads through the side gate, round by round
+            ["Nightwalker4570"] = f => { f.Reload = "tube"; },                              // RT 6h: a lever too
+            ["M91Trekhlineyka"] = f => { f.Reload = "tube"; },                              // RT 6h: bolt open, round by round (ponytail: stripper clips later)
+            ["SKNKarabin"] = f => { f.Reload = "tube"; },
             ["HaldenAM50Sledge"] = f => { f.Flash = 4; f.Shake = 0.15f; },
             ["RK12Kuvalda"] = f => { f.Shake = 0.08f; },
         };

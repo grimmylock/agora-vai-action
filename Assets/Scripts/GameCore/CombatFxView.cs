@@ -197,8 +197,9 @@ namespace GameCore
                         At(now + 0.6f * jl, () => Sfx.Play("reload_mag", from, 0.6f));   // ponytail: no rack sound of its own yet
                         break;
                     }
+                    if (e.Seconds < 0f) { held.StopReload(); break; }   // RT 6h: cut short
                     float len = e.Seconds > 0f ? e.Seconds : feel.ReloadTime;
-                    held.StartReload(feel, e.Weapon.MagCapacity, len);
+                    held.StartReload(feel, e.Weapon.MagCapacity, len, e.Rounds > 1 ? e.Rounds : 0);
                     Sfx.Play(Sfx.Reload(feel), from, 0.8f);
                     At(now + 0.2f * len, () =>
                     {

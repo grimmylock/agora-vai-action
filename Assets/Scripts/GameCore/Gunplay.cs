@@ -103,6 +103,15 @@ namespace GameCore
             ["PL-74P Polovets Zulu"]    = (650, true, 4.5f, 0.8f, 1.10f, 2.4f),
         };
 
+        // RT 6h (Yan: "individual bullet reloading for revolvers and lever actions/ shotguns"): tube shotguns, levers, revolvers
+        // and the bolt rifles without a box magazine load a round at a time; shooting stops a tube/lever/bolt reload with what's in,
+        // a revolver finishes the round in hand and closes first. The per-gun reload time is a full load from empty.
+        public static bool ByRound(Weapon w) { var r = WeaponFeel.For(w?.Db).Reload; return r == "tube" || r == "cylinder"; }
+        public static bool Revolver(Weapon w) => WeaponFeel.For(w?.Db).Reload == "cylinder";
+        public const float CylinderOpen = 0.4f;               // swing it out, dump the brass
+        public static float PerRound(Weapon w) =>
+            System.Math.Max(0.25f, System.Math.Min(0.6f, (For(w).ReloadTime - (Revolver(w) ? CylinderOpen : 0f)) / System.Math.Max(1, w.MagCapacity)));
+
         public const float MaxBloom = 10f;                   // degrees of kick at most, however long the trigger is held
 
         public static Handling For(Weapon w)
@@ -126,6 +135,7 @@ namespace GameCore
             public float Bloom;           // degrees of kick not yet recovered
             public float NextShot;        // time the gun can fire again
             public float ReloadUntil = -1f;
+            public int Loading;           // RT 6h: rounds still to go in, one at a time (0 = a whole-magazine reload, or none)
         }
         static readonly Dictionary<ICombatant, Aim> Aims = new Dictionary<ICombatant, Aim>();
         public static Aim AimOf(ICombatant u) { if (!Aims.TryGetValue(u, out var a)) Aims[u] = a = new Aim(); return a; }
