@@ -26,8 +26,10 @@ namespace GameCore
     public struct HeldFrame
     {
         public float GunX, GunY, GunDeg, GripX, GripY, SupX, SupY;
-        public float MagOff;
-        public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)                // RT 6g: the magazine, half-size px out of the gun along its underside; -1 = out of sight
+        public float MagDX, MagDY;          // RT 6j: where the magazine is, from its seat in the gun (character px)
+        public bool MagShown;               // false while the old one is on the floor and the new one still in the pouch
+        public bool MagDropped;             // the old magazine has left the gun (HeldWeaponView throws it once)
+        public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)
         public bool Left, HasSupport;
     }
 
@@ -113,6 +115,19 @@ namespace GameCore
             return (tip, pouch);
         }
 
+        /// <summary>RT 6j: a loose magazine falling (world units, y up): gravity, one or two small bounces off the floor, then it
+        /// lies on its side (90 or 270 degrees). True once it has come to rest.</summary>
+        public static bool Fall(ref float x, ref float y, ref float vx, ref float vy, ref float deg, ref float spin, float floor, float dt)
+        {
+            vy -= 14f * dt; x += vx * dt; y += vy * dt; deg += spin * dt;
+            if (y > floor || vy > 0f) return false;
+            y = floor;
+            if (vy < -1.2f) { vy = -vy * 0.3f; vx *= 0.5f; spin *= 0.4f; return false; }
+            vx = vy = spin = 0f;
+            float d = (deg % 360f + 360f) % 360f; deg = d < 180f ? 90f : 270f;   // on its side
+            return true;
+        }
+
         /// <summary>RT 6f: clearing a jam, progress r (0..1) - cant the gun to look into it, slap the magazine (tap: the support
         /// hand goes under the gun and bumps it), then rack it (rack: the hand pulls back over the action, holds, lets go; jolt:
         /// the action slams home and nudges the gun forward).</summary>
@@ -130,7 +145,7 @@ namespace GameCore
         /// aim, then recoil (k: 0..1 left of the last shot's kick), swing, and the reload or jam-clearing pose at progress r.
         /// g = WeaponArt grip/support/muzzle points.</summary>
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
-            float r, string style, int trips)
+            float r, string style, int trips, float[] mag = null)
         {
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
@@ -167,23 +182,45 @@ namespace GameCore
             // Batch 28: small 4x3 gloves while holding something; the grip point (centre of the handle)
             // sits in the middle of the glove's 2x1 interior, so the fist closes on the handle
             float cx = pose.AimLeft ? 1f : 2f;
-            // RT 6g: a magazine reload - the old one slides out and drops while the hand heads for the pouch, the new one rides
-            // in with the hand on its way back and seats as the hand reaches the gun
-            float magOff = 0f;
-            if ((style == "mag" || style == "belt") && r >= 0.12f && r < 1f)   // belt: a machine gun's drum or box
+            // RT 6j (Yan: "treat magazines as actual physical objects"): a magazine reload - the old one drops free (12%, the view
+            // throws it as a loose object), the support hand goes to the pouch, brings the new one up under the well, pushes it
+            // home and goes back to the gun. mag = WeaponMags.Points (well x, y, centre x, y in gun pixels).
+            float magDX = 0f, magDY = 0f, supX = 0f, supY = 0f;
+            bool magShown = true, dropped = false, handMoved = false;
+            if ((style == "mag" || style == "belt") && mag != null && pose.HasSupport && r >= 0.12f && r < 1f)   // belt: a drum or box
             {
-                float t = (r - 0.12f) / 0.18f;
-                magOff = r < 0.3f ? 2f + 18f * t * t : r < 0.54f ? -1f : pouch * 14f;
+                float ma = (angle + extra) * Mathf.Deg2Rad, ca = Mathf.Cos(ma), sa = Mathf.Sin(ma), fl = left ? -1f : 1f;
+                (float x, float y) Rot(float vx, float vy) => (vx * ca + vy * sa, -vx * sa + vy * ca);   // gun space -> character px (y down)
+                float gunX = pose.GripX + ox + cx, gunY = pose.GripY + oy + 1.5f;
+                float homeX = pose.SupportX + ox + cx, homeY = pose.SupportY + oy + 1.5f;  // the hand's place on the gun
+                var w = Rot((mag[0] - g[0]) * 0.5f, (mag[1] - g[1]) * 0.5f * fl);
+                var dn = Rot(0f, fl);                                                       // the gun's underside
+                float wellX = gunX + w.x, wellY = gunY + w.y;
+                float holdX = wellX + 3f * dn.x, holdY = wellY + 3f * dn.y;                 // the hand on the seated magazine
+                float belowX = wellX + 6f * dn.x, belowY = wellY + 6f * dn.y;               // ... with it still under the well
+                float bx = pose.GripX + (left ? 3f : -3f) + cx, by = WaistTopRow + 1f + 1.5f;  // the belt pouch
+                float Sm(float t) { t = Mathf.Clamp01(t); return t * t * (3f - 2f * t); }
+                (float, float) L(float x0, float y0, float x1, float y1, float t) => (Mathf.Lerp(x0, x1, Sm(t)), Mathf.Lerp(y0, y1, Sm(t)));
+                (float hx, float hy) hand;
+                if (r < 0.38f) hand = L(homeX, homeY, bx, by, (r - 0.12f) / 0.26f);
+                else if (r < 0.5f) hand = (bx, by);
+                else if (r < 0.75f) hand = L(bx, by, belowX, belowY, (r - 0.5f) / 0.25f);
+                else if (r < 0.85f) hand = L(belowX, belowY, holdX, holdY, (r - 0.75f) / 0.1f);
+                else hand = L(holdX, holdY, homeX, homeY, (r - 0.85f) / 0.15f);
+                supX = Mathf.Round(hand.hx); supY = Mathf.Round(hand.hy); handMoved = true;
+                dropped = r < 0.5f;
+                magShown = r >= 0.5f;
+                if (r >= 0.5f && r < 0.85f) { magDX = hand.hx - holdX; magDY = hand.hy - holdY; }   // riding in the hand
             }
             // RT 6i: a break-action drops its barrels open, holds them while the shells go in, snaps them shut
             float breakDeg = style == "break" && r >= 0f && r < 1f ? 35f * Mathf.Clamp01(Mathf.Min((r - 0.05f) / 0.12f, (0.92f - r) / 0.07f)) : 0f;
             return new HeldFrame
             {
-                MagOff = magOff, BreakDeg = breakDeg,
+                MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg,
                 Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
                 GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
                 GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
-                SupX = pose.SupportX + (free ? 0f : ox) + cx, SupY = pose.SupportY + (free ? 0f : oy) + 1.5f,
+                SupX = handMoved ? supX : pose.SupportX + (free ? 0f : ox) + cx, SupY = handMoved ? supY : pose.SupportY + (free ? 0f : oy) + 1.5f,
             };
         }
     }
@@ -274,7 +311,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); BreakCache.Clear(); }
+        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); BreakCache.Clear(); LooseCache.Clear(); }
 
 
         public static (string cat, string key) Identify(WeaponDef db)
@@ -306,6 +343,18 @@ namespace GameCore
             return MagCache[key] = (Load("body"), Load("mag"));
         }
         private static readonly Dictionary<string, (Sprite, Sprite)> MagCache = new Dictionary<string, (Sprite, Sprite)>();
+
+        /// <summary>RT 6j: the magazine as a loose object - its sprite turned round its own middle (WeaponMags.Points).</summary>
+        public static Sprite LooseMag(string key)
+        {
+            if (key == null || !WeaponMags.Points.TryGetValue(key, out var mp)) return null;
+            if (LooseCache.TryGetValue(key, out var hit)) return hit;
+            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_mag");
+            if (tex == null) return LooseCache[key] = null;
+            tex.filterMode = FilterMode.Point;
+            return LooseCache[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(mp[2] / tex.width, 1f - mp[3] / tex.height), PixelsPerUnit);
+        }
+        private static readonly Dictionary<string, Sprite> LooseCache = new Dictionary<string, Sprite>();
 
         /// <summary>RT 6i: a break-action split at its hinge (ArtSource/weapons/mags.py BREAK): the stock and action, the barrels
         /// pivoting on the hinge, and the hinge in weapon-sprite pixels. Nulls for every other gun.</summary>
@@ -362,6 +411,9 @@ namespace GameCore
         private float _reloadAt = -99f, _reloadTime;
         private string _reloadStyle = "none";
         private int _reloadTrips = 1;
+        private bool _magThrown;
+        /// <summary>RT 6j: (sprite, world centre, degrees, flipped, floor y, sorting order) - a magazine let go.</summary>
+        public static System.Action<Sprite, Vector3, float, bool, float, int> MagDropped;
         private Vector3 _aimOverride;
         private float _aimUntil = -99f;
         private float[] _g;          // grip/support/muzzle points of the sprite on show
@@ -459,7 +511,8 @@ namespace GameCore
 
             // animation on top of the aim: recoil (back + muzzle climb), melee swing, reload tilt, clearing a jam
             var f = HeldPoseMath.Frame(cat, g, _angle, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, now - _swingAt,
-                _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips);
+                _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
+                key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null);
 
             var (body, mag) = WeaponArt.Mag(cat, key);
             _gun.sprite = mag != null && body != null ? body : sprite;
@@ -477,15 +530,21 @@ namespace GameCore
                 _barrels.transform.localPosition = _gun.transform.localPosition + new Vector3(hx * Mathf.Cos(a0) - hy * Mathf.Sin(a0), hx * Mathf.Sin(a0) + hy * Mathf.Cos(a0), 0f);
                 _barrels.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + (f.Left ? 1f : -1f) * f.BreakDeg);
             }
-            if (mag != null && f.MagOff >= 0f)
+            if (mag != null && f.MagShown)
             {
-                // along the gun's underside (png +y), which a flipped gun turns upward in its own space
-                float a = f.GunDeg * Mathf.Deg2Rad, d = f.MagOff / WeaponArt.PixelsPerUnit * (f.Left ? -1f : 1f);
                 _mag.gameObject.SetActive(true);
                 _mag.sprite = mag; _mag.flipY = f.Left;
-                _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(Mathf.Sin(a) * d, -Mathf.Cos(a) * d, 0f);
+                _mag.transform.localPosition = Local(f.GunX + f.MagDX, f.GunY + f.MagDY);   // seated, or riding in the hand
                 _mag.transform.localRotation = _gun.transform.localRotation;
             }
+            // RT 6j: the old magazine leaves as a loose object (CombatFxView lets it fall and lie on the floor)
+            if (f.MagDropped && !_magThrown && mag != null && MagDropped != null && WeaponMags.Points.TryGetValue(key, out var mp))
+            {
+                var c = _gun.transform.TransformPoint(new Vector3((mp[2] - g[0]) / WeaponArt.PixelsPerUnit, (f.Left ? 1f : -1f) * (mp[3] - g[1]) / WeaponArt.PixelsPerUnit, 0f));
+                var feet = _gun.transform.parent != null ? _gun.transform.parent.position.y - 0.38f : c.y - 0.5f;
+                MagDropped(WeaponArt.LooseMag(key), c, f.GunDeg, f.Left, feet, _base + 5);
+            }
+            _magThrown = f.MagDropped;
 
             var hand = HandSprite(armor, true);
             _grip.sprite = hand; _support.sprite = hand;

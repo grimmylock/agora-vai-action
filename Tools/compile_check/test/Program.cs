@@ -725,11 +725,22 @@ static class Program {
       foreach (var (style, secs) in new[] { (feel.Reload, full), ("jam", 0.8f) }) {
         if (!firstAnim) sb.Append(','); firstAnim = false;
         sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
-        int n = (int)Math.Ceiling(secs * 30f) + 4;
+        int n = (int)Math.Ceiling(secs * 30f) + 12;
+        // RT 6j: the dropped magazine, through the same fall the game runs (HeldPoseMath.Fall), in character px (y down)
+        float[] mp = WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null;
+        bool thrown = false, rest = false; float mx = 0, my = 0, mvx = 0, mvy = 0, mdeg = 0, mspin = 0;
         for (int i = 0; i < n; i++) {
-          var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips);
-          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagOff},{f.BreakDeg}]"));
+          var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
+          if (f.MagDropped && !thrown && mp != null) {
+            thrown = true;
+            double a = f.GunDeg * Math.PI / 180, vx = (mp[2] - g[0]) * 0.5, vy = (mp[3] - g[1]) * 0.5 * (f.Left ? -1 : 1);
+            mx = (float)((f.GunX + vx * Math.Cos(a) + vy * Math.Sin(a) - 8) / 16); my = (float)((8 - (f.GunY - vx * Math.Sin(a) + vy * Math.Cos(a))) / 16);
+            mvx = 0.4f; mvy = 0.5f;   // forward, away from the body (CombatFxView.DropMag) mdeg = f.GunDeg; mspin = -280f;
+          }
+          if (thrown && !rest) rest = HeldPoseMath.Fall(ref mx, ref my, ref mvx, ref mvy, ref mdeg, ref mspin, (8f - 15f) / 16f + 0.06f, 1f / 30f);
+          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagDX},{f.MagDY},{(f.MagShown ? 1 : 0)},{f.BreakDeg},{(thrown ? 1 : 0)},{8 + mx * 16},{8 - my * 16},{mdeg},{(rest ? 1 : 0)}]"));
         }
+        if (mp != null) sb.Append(System.FormattableString.Invariant($"],\"mag\":[{mp[0]},{mp[1]},{mp[2]},{mp[3]}"));
         sb.Append("]}");
       }
     }

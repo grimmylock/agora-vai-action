@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SPR = os.path.join(ROOT, "Assets/Resources/Sprites")
 S = 10                                   # screen pixels per character pixel
-W, H = 34, 22                            # canvas, character pixels
+W, H = 40, 24                            # canvas, character pixels
 BX, BY = 6, 4                            # where the 16x16 body sits on it
 BG = (46, 42, 34, 255)
 HINGES = {"Obrez66": (9, 4), "Sever34": (16, 4)}              # = WeaponArt.Hinges
@@ -23,25 +23,30 @@ def glove(cuff, gl):
             if ch != ".": img.putpixel((x, y), col[ch])
     return img.resize((4 * S, 3 * S), Image.NEAREST)
 
+def paste(c, img, px, py, at_x, at_y, deg, flip):
+    """Draw a weapon-pixel sprite (32 a unit) turned `deg` counter-clockwise round its pixel (px, py), that pixel landing on
+    character pixel (at_x, at_y) of the canvas; flipped vertically first when aiming left (as SpriteRenderer.flipY)."""
+    g = img.transpose(Image.FLIP_TOP_BOTTOM) if flip else img
+    if flip: py = g.height - py
+    g = g.resize((g.width * S // 2, g.height * S // 2), Image.NEAREST)
+    pad = max(g.size) * 2
+    big = Image.new("RGBA", (pad * 2, pad * 2)); big.alpha_composite(g, (pad - round(px * S / 2), pad - round(py * S / 2)))
+    big = big.rotate(deg, center=(pad, pad), resample=Image.NEAREST)
+    c.alpha_composite(big, (round((BX + at_x) * S) - pad, round((BY + at_y) * S) - pad))
+
 def frame(anim, f, body, gun, gl, parts=None):
-    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mag_off, brk = f
-    if parts:                                                  # RT 6g: the magazine under the gun, mag_off half-px out (-1: gone)
-        gbody, gmag = parts; layer = Image.new("RGBA", (gun.width, gun.height + 24))
-        if mag_off >= 0: layer.alpha_composite(gmag, (0, round(mag_off)))
-        layer.alpha_composite(gbody or gun); gun = layer
+    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mdx, mdy, mshown, brk, thrown, lx, ly, ldeg, landed = f
     if anim.get("barrels"):                                    # RT 6i: barrels swung down on the hinge (clockwise in the gun's own picture)
         gbody, gbar = anim["barrels"]; layer = Image.new("RGBA", gun.size); layer.alpha_composite(gbody)
         layer.alpha_composite(gbar.rotate(-brk, center=HINGES[anim["key"]], resample=Image.NEAREST)); gun = layer
     c = Image.new("RGBA", (W * S, H * S), BG)
+    mp = anim.get("mag")
+    loose = lambda: paste(c, parts[1], mp[2], mp[3], lx, ly, ldeg, left)
+    if parts and thrown and landed: loose()                   # RT 6j: on the floor, under the unit
     c.alpha_composite(body, (BX * S, BY * S))
-    # the gun: half-size pixels, pivot on the grip, flipped vertically when aiming left, turned by deg (counter-clockwise)
-    g = gun.transpose(Image.FLIP_TOP_BOTTOM) if left else gun
-    py = (g.height - anim["gy"]) if left else anim["gy"]       # flipping the (taller) layer moves the grip row with it
-    g = g.resize((g.width * S // 2, g.height * S // 2), Image.NEAREST)
-    pad = max(g.size) * 2
-    big = Image.new("RGBA", (pad * 2, pad * 2)); big.alpha_composite(g, (pad - round(anim["gx"] * S / 2), pad - round(py * S / 2)))
-    big = big.rotate(deg, center=(pad, pad), resample=Image.NEAREST)
-    c.alpha_composite(big, (round((BX + gx_) * S) - pad, round((BY + gy_) * S) - pad))
+    if parts and thrown and not landed: loose()               # still falling, in front
+    if parts and mshown: paste(c, parts[1], anim["gx"], anim["gy"], gx_ + mdx, gy_ + mdy, deg, left)   # seated or in the hand
+    paste(c, (parts[0] or gun) if parts else gun, anim["gx"], anim["gy"], gx_, gy_, deg, left)
     gg = gl.transpose(Image.FLIP_LEFT_RIGHT) if left else gl
     for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):       # support under the grip hand, as the sorting orders do
         if on: c.alpha_composite(gg, (round((BX + x) * S - 2 * S), round((BY + y) * S - 1.5 * S)))

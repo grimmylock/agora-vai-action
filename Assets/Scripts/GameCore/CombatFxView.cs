@@ -43,6 +43,19 @@ namespace GameCore
         private readonly System.Func<SpriteRenderer, HeldWeaponView> _heldOf;
         private readonly List<(float at, System.Action act)> _timers = new List<(float, System.Action)>();
         private readonly List<Particle> _live = new List<Particle>();
+
+        // RT 6j: loose magazines - they fall out of the gun, bounce, and lie on the floor with the blood (MaxDecals)
+        private class LooseMag { public SpriteRenderer Sr; public float X, Y, Vx, Vy, Deg, Spin, Floor; }
+        private readonly List<LooseMag> _mags = new List<LooseMag>();
+        private void DropMag(Sprite s, Vector3 at, float deg, bool flip, float floor, int order)
+        {
+            if (s == null) return;
+            var sr = NewSprite("Magazine", s, Color.white, _root, order);
+            sr.flipY = flip;
+            float side = flip ? -1f : 1f;
+            _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = side * Random.Range(0.2f, 0.6f), Vy = Random.Range(0.3f, 0.8f),
+                Deg = deg, Spin = -side * Random.Range(150f, 400f), Floor = floor });
+        }
         private readonly Dictionary<ICombatant, (float at, float dx, float dy, bool psi)> _hurt = new Dictionary<ICombatant, (float, float, float, bool)>();
         private readonly Dictionary<ICombatant, (float at, float dx, float dy)> _lunge = new Dictionary<ICombatant, (float, float, float)>();
         private float _nextFree, _shakeAt = -99f, _shakeAmp;
@@ -60,6 +73,7 @@ namespace GameCore
         public CombatFxView(Transform root, System.Func<ICombatant, SpriteRenderer> markerOf, System.Func<SpriteRenderer, HeldWeaponView> heldOf)
         {
             _root = root; _markerOf = markerOf; _heldOf = heldOf;
+            HeldWeaponView.MagDropped = DropMag;
             CombatFx.Pending.Clear();   // whatever happened before this view existed (previous zone, load) is stale
         }
 
@@ -90,6 +104,15 @@ namespace GameCore
             }
 
             float dt = Time.deltaTime;
+            for (int i = 0; i < _mags.Count; i++)
+            {
+                var m = _mags[i];
+                if (m.Sr == null) { _mags.RemoveAt(i--); continue; }
+                bool rest = HeldPoseMath.Fall(ref m.X, ref m.Y, ref m.Vx, ref m.Vy, ref m.Deg, ref m.Spin, m.Floor, dt);
+                m.Sr.transform.position = new Vector3(m.X, m.Y, 0f);
+                m.Sr.transform.localRotation = Quaternion.Euler(0f, 0f, m.Deg);
+                if (rest) { m.Sr.sortingOrder = 2; Decal(m.Sr); _mags.RemoveAt(i--); }   // on the floor, under everyone
+            }
             for (int i = 0; i < _live.Count; i++)
             {
                 var p = _live[i];

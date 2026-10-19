@@ -3335,3 +3335,21 @@ Yan ("yes to all" to: shooting mid-reload stops a tube/lever reload with what's 
 - Renders: the Obrez added to `maps/renders/held_anim/`.
 - Still to do: a shell in the glove on each trip, a rack at the end of an empty magazine reload, stripper clips (M91, SKN),
   the cylinder swinging out on revolvers, the Polovets and G-7 magazines.
+
+## RT batch 6j - magazines as real objects (2026-10-20)
+
+Yan: "magazine weapons reload make no sense, the magazine falls to the ground without being an actual object and comes up from the
+ground as well and magically glues itself onto the weapon. is it possible to separate weapons into frame + magazine and treat
+magazines as actual physical objects?" and "the magazine needs to be reworked, some of them take a part of the weapon with it when
+gone and the pistol magazine looks like a square and not an actual clip".
+- Art (`mags.py`): the cut is now the magazine's own colour columns from its first row down, nothing else (trigger guards and
+  receivers stay); the magazine keeps its hand-drawn pixels, gets a closed outline and a round at the lips; the gun's well is
+  closed and stray outline pixels cleaned. Pistols get a drawn magazine (steel lit on the left, a round at the lips, a polymer
+  base plate) flush with the bottom of the grip. `WeaponMags.cs` (generated): each magazine's well point and middle.
+- Reload (`HeldPoseMath.Frame`, "mag"/"belt"): at 12% the old magazine leaves the gun as a loose object; the support hand goes to
+  the belt pouch (12-38%), takes a new one (38-50%), carries it - drawn in the hand - up under the well (50-75%), pushes it home
+  (75-85%) and goes back to the gun. `HeldFrame.MagDX/MagDY/MagShown/MagDropped`.
+- Loose magazines (`CombatFxView.DropMag`, `HeldPoseMath.Fall`): thrown forward from where they sat, spinning, fall to the owner's
+  feet, bounce once or twice and lie on their side on the floor, kept with the blood decals (oldest go first).
+- Renders: the harness dumps the dropped magazine's fall through the same `Fall` (`heldframes`), `held_anim.py` draws it.
+- Not yet: picking magazines up or keeping a partly used one (a magazine inventory) - asked Yan.
