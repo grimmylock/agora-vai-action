@@ -34,7 +34,7 @@ namespace GameCore
         public const float Walk = 2.6f, Sprint = 4.4f, Crouch = 1.3f, AimSlow = 0.65f;
         public const float StaminaMax = 100f, SprintDrain = 18f, StaminaRegen = 14f;
         public const float Radius = 0.22f;
-        public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;
+        public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;   // a human enemy re-thinks its plan every ~3 s (RtAi acts in between)
 
         public static float Stamina = StaminaMax;
         static float _staminaRest;
@@ -44,7 +44,7 @@ namespace GameCore
         static float _round;
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -176,7 +176,7 @@ namespace GameCore
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
             float spread = Gunplay.Spread(hd, aim, Moving, p.Sneaking);
             spread += 2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f);   // RT batch 2: broken arms sway, a concussion blurs
-            if (p.StatusEffects.Suppressed) spread += 2f;
+            if (p.StatusEffects.Suppressed || Time.time < PinnedUntil) spread += 2f;   // RT batch 4: their near misses pin you
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
             aim.Bloom += hd.Kick;
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
@@ -189,7 +189,7 @@ namespace GameCore
         //      Landing: prone 0.6 s (Tumbler: 0.35) - no moving, but you can still shoot. Costs 40 Focus, so no chaining.
         //      Focus fills from kills (+25), hits (+4) and enemy rounds that just miss you (+6, Cold Blood x2). ----
         public const float DiveCost = 40f, DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
-        public static float Focus, DiveUntil = -1f, ProneUntil = -1f;
+        public static float Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f;
         const float DiveSpeedFloor = 1f;                              // moved slower than this (tiles/s): hit a wall, land now
         static float _diveX, _diveY;
         public static bool SlowMo;
@@ -289,6 +289,7 @@ namespace GameCore
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
+                if (e is HumanEnemy rh && !Companion.Is(e)) RtAi.Tick(rh, p);   // RT batch 4: walks and shoots every frame; thinks below
                 if (!NextTurn.TryGetValue(e, out var at)) { NextTurn[e] = now + Random.Range(0.5f, 1.3f); continue; }   // reaction time
                 if (now < at) continue;
                 NextTurn[e] = now + NpcTurnSeconds * Random.Range(0.85f, 1.15f);

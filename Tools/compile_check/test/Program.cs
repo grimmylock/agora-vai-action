@@ -796,6 +796,31 @@ static class Program {
       Check(Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 0.9f, p.X + 0.5f + 5f, p.Y + 0.9f, p) && !Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 2.5f, p.X + 0.5f + 5f, p.Y + 2.5f, p), "a round passing close is a near miss, one far off isn't");
       UnityEngine.Time.deltaTime = 0f; UnityEngine.Time.time = 0f; UnityEngine.Time.timeScale = 1f;
     }
+    // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
+    {
+      Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var (gw, ga) = EncounterGeneration.PickFactionLoadout("Raiders", "Experienced", 1);
+      var g = new HumanEnemy("Gunman", px + 8, py, "Raiders", "Experienced", gw, ga) { IsAggroed = true };
+      EncounterState.Enemies.Add(g); EncounterState.InCombat = true; Contact.Spot(p);
+      UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 2000f;
+      int shotsAt1 = -1, reloads = 0, maxStep = 0, lastMag = g.EquippedWeapon.CurrentMagazine, fired = 0; var (gx0, gy0) = (g.X, g.Y); int lx = g.X, ly = g.Y;
+      for (int f = 0; f < 400; f++) {
+        Rt.WorldTick(p); UnityEngine.Time.time += 0.05f;
+        p.HealPermanent(100); Body.Reset();
+        int mag = g.EquippedWeapon.CurrentMagazine;
+        if (mag < lastMag) fired += lastMag - mag; else if (mag > lastMag) reloads++;
+        lastMag = mag;
+        maxStep = Math.Max(maxStep, Math.Max(Math.Abs(g.X - lx), Math.Abs(g.Y - ly))); lx = g.X; ly = g.Y;
+        if (f == 20) shotsAt1 = fired;
+      }
+      Check(fired >= 6 && shotsAt1 < fired / 2, $"rounds go out over the fight, not in one go (first second {shotsAt1}, 20 s {fired})");
+      Check(reloads >= 1 || g.EquippedWeapon.MagCapacity > fired, $"it reloads when the magazine runs dry ({reloads}, fired {fired} of {g.EquippedWeapon.MagCapacity})");
+      Check(maxStep <= 1, $"it walks a tile at a time ({maxStep})");
+      var (x0, y0) = Ballistics.Pos(p); var (gx, gy) = Ballistics.Pos(g);
+      Gunplay.Shoot(p, p.EquippedWeapon, (gx - x0) / Math.Abs(gx - x0), 0f, 1.05f, 0f, false);   // over his head: a near miss
+      Check(RtAi.Pinned(g) && g.StatusEffects.Suppressed, "a round just over his head pins him");
+      EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
+    }
     Rt.On = false;   // turn-based again: lethal damage kills
     EncounterState.Enemies.Clear(); Rt.Reset(); p.HealPermanent(100);
   }

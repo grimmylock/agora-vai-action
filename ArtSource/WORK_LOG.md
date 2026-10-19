@@ -3162,3 +3162,24 @@ moment, immobilizing you and making it risky". Also: "concussion seems too long,
 - Harness: no Focus no dive, bullet time on and 40 spent, ~2.5 tiles and prone on landing, head-height rounds over you while
   sprawled, no moving while prone, up and walking after, near-miss geometry. ALL CHECKS PASSED.
 - **For Yan to check:** the dive's distance and slow-mo length; whether 0.6 s prone feels risky but fair; how fast Focus fills.
+
+## RT batch 4 - human enemies fight in real time (2026-10-19)
+
+- **Thinking stays, acting is continuous.** The old turn AI already had the tactics (roles Leader/Anchor/Flanker, morale and
+  rallying, cover and flanking tiles from `PickTile`, frags at a player who camps, flashbangs, smoke, props, searching where you
+  were last seen). With `Rt.On`, `EnemyAI.HumanTurn` still runs every ~3 s but only decides: a goal tile (`RtAi.SetGoal`) or to
+  flee (`RtAi.Flee`); it no longer walks and shoots inside that one frame.
+- **`RtAi.Tick` every frame:** walks one tile at a time toward the goal at 2.2 tiles/s (leg wound: slower); fires while it sees
+  you and you're within the gun's reach - bursts of 3-5 from automatics, single shots otherwise, then a 0.7-1.6 s pause (shorter
+  with rank); walking or being pinned widens its aim; reloads take the gun's reload time; a jam takes a clear; out of rounds it
+  closes in to swing ("I'm out!"). Someone down isn't shot at.
+- **Suppression both ways:** your rounds that pass within 0.6 tiles of an enemy pin it for 2.5 s (it holds still, shoots half as
+  often, wider); theirs pin you for 1.5 s (+2 deg spread).
+- **Call-outs** over heads (Banter): "Reloading!", "Jammed!", "Grenade!" (before a frag), "Flanking!", "Pinned!", "I'm out!".
+- Real-time fights burn more rounds: human enemies now carry 3 magazines of reserve (was 1) when the game runs in real time.
+- Mutants keep the bridge (their whole move and strike every ~3 s). ponytail: real-time mutants (circling hounds, the Brute's
+  charge) next if Yan wants them before testing.
+- Harness: a 20 s fight with one gunman - rounds spread over the fight in bursts, a reload, one tile per step, pinned by a
+  round over his head. ALL CHECKS PASSED.
+- **For Yan to check:** whether squads feel alive (moving between cover, flanking, pausing between bursts) or too static/too
+  aggressive; how often you get pinned; the call-outs.

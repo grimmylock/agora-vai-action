@@ -113,7 +113,7 @@ namespace GameCore
                 db.BaseDamage > 0 ? db.BaseDamage : 1,
                 mag,
                 "Standard",
-                new Dictionary<string, int> { ["Standard"] = mag, ["HollowPoint"] = 0, ["ArmorPiercing"] = 0 });
+                new Dictionary<string, int> { ["Standard"] = mag * (Rt.On ? 3 : 1), ["HollowPoint"] = 0, ["ArmorPiercing"] = 0 });
             w.Db = db;
             w.Owner = this;
             w.RangeTiles = RangeUtil.ParseRangeToTiles(db.Range);

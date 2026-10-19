@@ -11,8 +11,11 @@ real-time section describes the inherited turn-based game, most of which still r
 - `Rt.On` (set in `PlayerController.Awake`) switches the game to real time; the offline harness leaves it off, so the
   old turn-based probes and checks still run. `RtChecks()` in `Tools/compile_check/test/Program.cs` tests the new parts.
 - `Rt.cs`: your movement (free within and across tiles; crossing a tile is a real step via `PlayerController.StepFree`),
-  stamina, aiming, firing, reload timers, camera look-ahead, ESC pause; `Rt.WorldTick` runs enemies in a fight on timers
-  (each takes an old `EnemyAI.TakeTurn` every ~3 s - the bridge until RT batch 4) and a 6 s upkeep round.
+  stamina, aiming, firing, reload timers, camera look-ahead, ESC pause, the dive/bullet time/Focus (RT3); `Rt.WorldTick` runs
+  enemies in a fight: humans re-think every ~3 s through the old `EnemyAI.HumanTurn` (roles, cover/flank tiles, grenades,
+  morale - with `Rt.On` it only sets a goal) and act every frame in `RtAi.Tick` (walk, bursts, reloads, suppression,
+  call-outs); mutants still take a whole old turn every ~3 s. A 6 s upkeep round covers bleeding, radio, fight end.
+- `Body.cs` (RT2): six parts per human, Yan's 60% wound rule, fractures/bleeding/concussion, downed and bleed-out.
 - `Ballistics.cs`: a round is a line over the ground; bodies are footprints; the crosshair's height on the sprite picks the
   part (head/torso/arm/legs), spread scatters sideways and up/down; low cover blocks by height, walls stop rounds.
 - `Gunplay.cs`: per-class handling (spread, steadying, kick, recovery, rate, reach, reload), `Shoot` / `Resolve` (damage

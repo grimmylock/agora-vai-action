@@ -261,6 +261,7 @@ namespace GameCore
             if (h.Morale == "Shaken") h.Ap = System.Math.Max(0, h.Ap - 1);   // Batch 127: keeping their head down costs them a shot
             if (h.IsFleeing())
             {
+                if (Rt.On) { RtAi.Flee(h); return; }   // RT batch 4: runs off step by step
                 while (h.Mp > 0 && h.IsAlive() && h.MoveAwayFrom(player)) { }
                 return;
             }
@@ -304,6 +305,7 @@ namespace GameCore
             {
                 h.Frags--;
                 h.Ap -= 2;
+                RtAi.Shout(h, "Grenade!");
                 _playerSpotRounds = 0;
                 Explosions.Throw(h, ConsumableDatabase.All["fragGrenade"], player.X, player.Y);
                 if (!player.IsAlive()) return;
@@ -334,6 +336,7 @@ namespace GameCore
 
             // Move to the best tile this role can reach.
             var best = PickTile(h, player, role, range);
+            if (Rt.On) { RtAi.SetGoal(h, best, role); if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player); return; }   // RT batch 4: RtAi walks there and shoots
             WalkTo(h, best);
             if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player);   // Batch 103: roll a barrel up to you to shoot, or tip a desk for cover
 

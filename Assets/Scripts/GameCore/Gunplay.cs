@@ -105,7 +105,13 @@ namespace GameCore
                 Resolve(shooter, w, hit, ambush, p == 0, delay, hd.Pellets);
                 hits.Add(hit);
                 if (p == 0 && !(shooter is Player) && hit.Unit != Player.Current && Player.Current != null && NearMiss(x0, y0, hit.EndX, hit.EndY, Player.Current))
+                {
                     Rt.AddFocus(CombatantUtil.HasPerk(Player.Current, "ColdBlood") ? 12f : 6f);   // RT batch 3: a round that just missed you
+                    Rt.PinnedUntil = UnityEngine.Time.time + 1.5f;                                 // RT batch 4: and it pins you
+                }
+                if (p == 0 && shooter is Player && Rt.On)                                          // RT batch 4: your near misses pin them
+                    foreach (var e in EncounterState.Enemies)
+                        if (e != hit.Unit && e.IsAlive() && NearMiss(x0, y0, hit.EndX, hit.EndY, e)) RtAi.Suppress(e);
             }
             if (!CombatRules.IsMelee(w)) Noise.Make(shooter.X, shooter.Y, w.Db != null && w.Db.InnateSuppressor ? Noise.Suppressed : Noise.Shot, shooter);
             return hits;
@@ -186,6 +192,16 @@ namespace GameCore
             var hd = For(w);
             for (int i = 0; i < rounds; i++)
                 Shoot(shooter, w, dx, dy, h, spread + i * hd.Kick * 0.6f, false, i * 60f / System.Math.Max(60f, hd.Rpm));
+        }
+
+        /// <summary>RT batch 4: one trigger pull by an NPC fighting in real time (RtAi), extra = spread from moving or being pinned.</summary>
+        public static void NpcShootOnce(ICombatant shooter, Weapon w, ICombatant target, float extra)
+        {
+            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
+            float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
+            if (len < 0.01f) return;
+            var (h, spread) = NpcAim(shooter, w, target);
+            Shoot(shooter, w, dx / len, dy / len, h, spread + extra, false);
         }
     }
 }
