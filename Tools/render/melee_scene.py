@@ -13,6 +13,15 @@ TILE = 16                                 # character px per tile
 BG = (58, 54, 42, 255)
 
 def hexc(h): v = int(h.lstrip("#"), 16); return ((v >> 16) & 255, (v >> 8) & 255, v & 255, 255)
+def big_glove(cuff, gl):
+    """The 5x4 glove (HeldWeaponView.GloveBig): a fist round a melee handle (RT 7c)."""
+    g = hexc(gl); lit = tuple(min(255, int(v * 1.45)) for v in g[:3]) + (255,); dark = tuple(int(v * 0.65) for v in g[:3]) + (255,)
+    img = Image.new("RGBA", (5, 4)); col = {"K": hexc("#141617"), "c": hexc(cuff), "l": lit, "g": g, "d": dark}
+    for y, row in enumerate([".KKK.", "KcllK", "KcgdK", ".KKK."]):
+        for x, ch in enumerate(row):
+            if ch != ".": img.putpixel((x, y), col[ch])
+    return img
+
 def glove(cuff, gl):
     img = Image.new("RGBA", (4, 3)); col = {"K": hexc("#141617"), "c": hexc(cuff), "g": hexc(gl)}
     for y, row in enumerate([".KK.", "KcgK", ".KK."]):
@@ -68,12 +77,17 @@ def main(src, out):
                     sp = splats[k % 4].resize((10 * S, 8 * S), Image.NEAREST); x, y = P(bx + 0.15, by + 0.35); c.alpha_composite(sp, (round(x), round(y - 4 * S)))
             item = f["item"]
             if item and item[0] == "floor": paste(c, hatchet, (16, 8), P(item[1], item[2]), item[3])
-            # you
-            bx, by = P(yx, yy); bx -= 8 * S; by -= 8 * S
-            c.alpha_composite(you_b.resize((16 * S, 16 * S), Image.NEAREST), (round(bx), round(by)))
-            gx, gyy, gdeg, hx, hy, inhand = f["you"]
-            if inhand: paste(c, hatchet, tuple(d["grip"]), (bx + gx * S, by + gyy * S), gdeg)
-            gl = gy.resize((4 * S, 3 * S), Image.NEAREST); c.alpha_composite(gl, (round(bx + hx * S - 2 * S), round(by + hy * S - 1.5 * S)))
+            # you: body, the hatchet held upright in your fist, the fist on top; the whole unit leans with the swing (RT 7c)
+            gx, gyy, gdeg, hx, hy, inhand, lean, left = f["you"]
+            u = Image.new("RGBA", (16 * S * 3, 16 * S * 3)); ub = 16 * S        # the unit drawn on its own, then turned by the lean
+            u.alpha_composite(you_b.resize((16 * S, 16 * S), Image.NEAREST), (ub, ub))
+            if inhand: paste(u, hatchet, tuple(d["grip"]), (ub + gx * S, ub + gyy * S), gdeg, flip=bool(left))
+            gl = big_glove(acuff, aglove)
+            if left: gl = gl.transpose(Image.FLIP_LEFT_RIGHT)
+            gl = gl.resize((5 * S, 4 * S), Image.NEAREST)
+            u.alpha_composite(gl, (round(ub + hx * S - 2.5 * S), round(ub + hy * S - 2 * S)))
+            u = u.rotate(lean, center=(ub + 8 * S, ub + 8 * S), resample=Image.NEAREST)
+            bx, by = P(yx, yy); c.alpha_composite(u, (round(bx - 8 * S - ub), round(by - 8 * S - ub)))
             # the Raider, aiming his pistol at you; red and knocked back a pixel for 0.15 s after a hit
             fx_, fy_, hp, since, busy = f["foe"]
             if hp > 0:

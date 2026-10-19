@@ -31,7 +31,7 @@ namespace GameCore
         // per weapon (by name); the rest get stats from their weight: the smaller, the faster it swings and flies
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
-            ["Tactical Hatchet"] = new Stats { Swing = 0.55f, Reach = 1.35f, Arc = 110f, ThrowSpeed = 13f, ThrowRange = 9f },
+            ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, Arc = 110f, ThrowSpeed = 13f, ThrowRange = 9f },
         };
         public static Stats For(Weapon w)
         {
@@ -53,7 +53,10 @@ namespace GameCore
         public static readonly List<Lying> OnFloor = new List<Lying>();
         static readonly Dictionary<Player, (float at, Weapon w, float dx, float dy, float h)> Winding = new Dictionary<Player, (float, Weapon, float, float, float)>();
         static readonly Dictionary<ICombatant, float> NextSwing = new Dictionary<ICombatant, float>();
-        public static void Reset() { Air.Clear(); InCover.Clear(); InBodies.Clear(); OnFloor.Clear(); Winding.Clear(); NextSwing.Clear(); }
+        // RT 7c: a swing lands at the chop, after the wind-up (HeldPoseMath.Chop), not on the click
+        static readonly List<(float at, ICombatant by, Weapon w, float dx, float dy, float h)> Pending = new List<(float, ICombatant, Weapon, float, float, float)>();
+        public static float HitDelay => HeldPoseMath.WindUp + HeldPoseMath.ChopTime;
+        public static void Reset() { Air.Clear(); InCover.Clear(); InBodies.Clear(); OnFloor.Clear(); Winding.Clear(); NextSwing.Clear(); Pending.Clear(); }
 
         public static float Now = -1f;                             // the harness sets it; the game uses Time.time
         static float T => Now >= 0f ? Now : Time.time;
@@ -81,8 +84,10 @@ namespace GameCore
                 else Throw(p, w, dx, dy, h);
                 return;
             }
-            NextSwing[p] = now + st.Swing;
-            Swing(p, w, dx, dy, h);
+            NextSwing[p] = now + Mathf.Max(st.Swing, HeldPoseMath.SwingLength);
+            var anim = CombatFx.Push("melee", p, null, w); anim.Now = true;                      // the wind-up starts now
+            anim.ToX = p.X + Mathf.RoundToInt(dx * 2f); anim.ToY = p.Y + Mathf.RoundToInt(dy * 2f);
+            Pending.Add((now + HitDelay, p, w, dx, dy, h));
         }
 
         /// <summary>One swing: the nearest enemy within reach and inside the arc in front takes it.</summary>
@@ -100,8 +105,8 @@ namespace GameCore
                 if ((ex * dx + ey * dy) / d < Mathf.Cos(st.Arc * 0.5f * Mathf.Deg2Rad)) continue;   // outside the arc
                 if (d < bestD) { best = u; bestD = d; }
             }
-            var fx = CombatFx.Push("melee", by, best, w); fx.Now = true;
-            if (best == null) { fx.ToX = by.X + Mathf.RoundToInt(dx); fx.ToY = by.Y + Mathf.RoundToInt(dy); return null; }
+            if (best == null) return null;
+            var fx = CombatFx.Push("impact", by, best, w); fx.Now = true;                       // blood, the flash, the knock-back
             // the body part: a line straight at them at the crosshair's height
             var (bx, by2) = Ballistics.Pos(best);
             float ox = bx - px, oy = by2 - py, ol = Mathf.Max(0.01f, Mathf.Sqrt(ox * ox + oy * oy));
@@ -166,6 +171,13 @@ namespace GameCore
         public static void Tick(float dt)
         {
             float now = T;
+            for (int i = Pending.Count - 1; i >= 0; i--)
+            {
+                var q = Pending[i];
+                if (now < q.at) continue;
+                Pending.RemoveAt(i);
+                if (q.by.IsAlive() && (!(q.by is Player pp) || pp.EquippedWeapon == q.w)) Swing(q.by, q.w, q.dx, q.dy, q.h);
+            }
             foreach (var kv in Winding.ToList())
                 if (now >= kv.Value.at) { Winding.Remove(kv.Key); if (kv.Key.EquippedWeapon == kv.Value.w) Throw(kv.Key, kv.Value.w, kv.Value.dx, kv.Value.dy, kv.Value.h); }
 

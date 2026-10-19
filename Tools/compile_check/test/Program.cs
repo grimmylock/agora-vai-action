@@ -773,18 +773,20 @@ static class Program {
       var foe = new HumanEnemy("Raider", px + (clip == "swing" ? 1 : 5), py, "Raiders", "Experienced", null, null) { IsAggroed = true };
       foe.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
       EncounterState.Enemies.Add(foe);
+      if (clip == "swing") Rt.SetOffset(foe, 0.3f, 0f);                                    // a step back, inside the hatchet's reach (1.35)
       int maxHp = foe.Hp; float swingAt = -99f, hitAt = -99f; var blood = new System.Collections.Generic.List<string>();
       sb.Append($"{(clip == "swing" ? "" : ",")}\"{clip}\":{{\"hp\":{maxHp},\"frames\":[");
       int n = clip == "swing" ? 60 : 210;
       for (int i = 0; i < n; i++) {
         float t = i / 30f; Melee.Now = t;
         int hp0 = foe.Hp;
-        if (clip == "swing" && (i == 9 || i == 33)) { swingAt = t; Melee.Swing(p, hw, 1f, 0f, i == 9 ? 0.45f : 0.8f); }   // body, then head
+        if (clip == "swing" && (i == 9 || i == 36)) { swingAt = t; var (fpx, fpy) = Ballistics.Pos(foe); Melee.PlayerAttack(p, hw, (fpx, fpy + 0.44f - (i == 9 ? 0.45f : 0.8f) * Ballistics.BodyTiles), false); }   // body, then head; it lands at the chop
         if (clip == "throw" && i == 9) { swingAt = t; Melee.Throw(p, hw, 1f, 0f, 0.45f); }
         Melee.Tick(1f / 30f);
         if (foe.Hp < hp0) { hitAt = t; blood.Add(FormattableString.Invariant($"[{t},{Ballistics.Pos(foe).x},{Ballistics.Pos(foe).y}]")); }
         // you: the hatchet in hand (swing arc) or empty hands once it's thrown
         var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - swingAt, 1f, "none", 1);
+        float lean = HeldPoseMath.Chop(t - swingAt).lean;
         bool inHand = p.EquippedWeapon != null;
         // the hatchet out of your hands
         string item = "null";
@@ -793,7 +795,7 @@ static class Program {
         else if (stuck != null) { var (sx, sy) = Ballistics.Pos(stuck.In); item = FormattableString.Invariant($"[\"stuck\",{sx + 0.12f},{sy - 0.05f},{(stuck.Pulling ? stuck.Deg + 40f * (float)Math.Sin(t * 18f) : stuck.Deg)}]"); }
         else if (lying != null) item = FormattableString.Invariant($"[\"floor\",{lying.Wx},{lying.Wy + 0.3f},{lying.Deg}]");
         var (fx, fy) = Ballistics.Pos(foe);
-        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}{{\"you\":[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(inHand ? 1 : 0)}],\"foe\":[{fx},{fy},{foe.Hp},{t - hitAt},{(Melee.Busy(foe) ? 1 : 0)}],\"item\":{item}}}"));
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}{{\"you\":[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(inHand ? 1 : 0)},{lean},{(f.Left ? 1 : 0)}],\"foe\":[{fx},{fy},{foe.Hp},{t - hitAt},{(Melee.Busy(foe) ? 1 : 0)}],\"item\":{item}}}"));
       }
       sb.Append($"],\"blood\":[{string.Join(",", blood)}],\"you\":[{Ballistics.Pos(p).x},{Ballistics.Pos(p).y}]}}");
       Melee.Now = -1f;

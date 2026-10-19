@@ -142,12 +142,53 @@ namespace GameCore
             return (tip, tap, rack, jolt);
         }
 
+        // ---- RT 7c (Yan: "upside down ... held way too far from the body, too big, the swings have no weight ... make the character
+        // hold it with his actual hand and in a position that makes sense"): a melee weapon is held upright at your side - handle up,
+        // the edge toward where you aim, the head leaning forward a little - with your fist low on the handle beside the body. Only
+        // the side follows the aim. A swing: wind-up (the head goes back over the shoulder, the hand rises, you lean back), the chop
+        // (fast, forward and down - the hit lands here), follow-through, back to rest. ----
+        public const float WindUp = 0.22f, ChopTime = 0.08f, Follow = 0.15f, Recover = 0.17f, RestTilt = 25f;
+        public static float SwingLength => WindUp + ChopTime + Follow + Recover;
+
+        /// <summary>A swing at `t` s: how far the head is forward of rest (degrees, + = forward/down), the fist's shift (character px,
+        /// + = forward / down) and the body's lean (degrees, + = back).</summary>
+        public static (float off, float hx, float hy, float lean) Chop(float t)
+        {
+            if (t < 0f || t >= SwingLength) return (0f, 0f, 0f, 0f);
+            float Sm(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
+            if (t < WindUp) { float w = Sm(t / WindUp); return (-75f * w, -1f * w, -2f * w, 6f * w); }
+            t -= WindUp;
+            if (t < ChopTime) { float c = t / ChopTime; return (-75f + 160f * c, -1f + 4f * c, -2f + 3f * c, 6f - 14f * c); }   // to the head out in front, chest high
+            t -= ChopTime;
+            if (t < Follow) return (85f - 10f * (t / Follow), 3f, 1f, -8f);
+            float r = Sm((t - Follow) / Recover);
+            return (75f * (1f - r), 3f * (1f - r), 1f - r, -8f * (1f - r));
+        }
+
+        static HeldFrame MeleeFrame(float angle, float sinceSwing)
+        {
+            bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
+            float side = left ? -1f : 1f;
+            var (off, hx, hy, _) = Chop(sinceSwing);
+            float right = ChestX + 3f;                                                   // the fist beside the body
+            float gx = (left ? 13f - right : right) + side * Mathf.Round(hx);
+            float gy = Mathf.Min(Mathf.Round(ChestY + 0.5f + hy), WaistTopRow);
+            float cx = left ? 1f : 2f;
+            return new HeldFrame
+            {
+                Left = left, HasSupport = false, MagShown = false,
+                GunDeg = 90f - side * (RestTilt + off),                                   // upright, edge forward (a flipped sprite mirrors it)
+                GunX = gx + cx, GunY = gy + 1.5f, GripX = gx + cx, GripY = gy + 1.5f,
+            };
+        }
+
         /// <summary>RT 6f: everything HeldWeaponView.Show draws for a held gun (moved here from it so the harness can render it):
         /// aim, then recoil (k: 0..1 left of the last shot's kick), swing, and the reload or jam-clearing pose at progress r.
         /// g = WeaponArt grip/support/muzzle points.</summary>
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
             float r, string style, int trips, float[] mag = null)
         {
+            if (cat == "melee") return MeleeFrame(angle, sinceSwing);                  // RT 7c
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
             var (swingDeg, lunge) = Swing(sinceSwing);
@@ -256,7 +297,7 @@ namespace GameCore
             ["SteppeMachete"] = new[] { 4f, 3.5f, float.NaN, float.NaN, 24f, 2.5f },
             ["SerratedTrenchKnife"] = new[] { 5.5f, 5f, float.NaN, float.NaN, 18f, 5.5f },
             ["ObeliskRitualBlade"] = new[] { 3f, 5.5f, float.NaN, float.NaN, 22f, 5.5f },
-            ["TacticalHatchet"] = new[] { 7f, 9.5f, float.NaN, float.NaN, 30f, 2f },   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
+            ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 5.5f, 9f, float.NaN, float.NaN, 19f, 2.5f },
             ["WaldenP9"] = new[] { 5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
             ["Halden45Service"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 20f, 3.5f },
@@ -470,6 +511,8 @@ namespace GameCore
         }
         public void Twitch() { _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; }   // jammed: click, nothing
         public void Swing() => _swingAt = Time.time;
+        /// <summary>RT 7c: the body's lean while swinging a melee weapon (degrees, for the unit's tilt): back on the wind-up, into the chop.</summary>
+        public float Lean => Mathf.Cos(_angle * Mathf.Deg2Rad) < -0.0001f ? -HeldPoseMath.Chop(Time.time - _swingAt).lean : HeldPoseMath.Chop(Time.time - _swingAt).lean;
         /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
         public void StartClear(float seconds) { _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
         public void StartReload(WeaponFeel f, int capacity, float seconds = 0f, int rounds = 0)
@@ -583,7 +626,7 @@ namespace GameCore
             }
             _magThrown = f.MagDropped;
 
-            var hand = HandSprite(armor, true);
+            var hand = HandSprite(armor, cat != "melee");                            // RT 7c: a fist round a melee handle is the big glove, so it reads
             _grip.sprite = hand; _support.sprite = hand;
             _grip.flipX = _support.flipX = f.Left;                                    // cuff stays on the body side
             _grip.transform.localPosition = Local(f.GripX, f.GripY);

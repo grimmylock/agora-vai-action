@@ -252,7 +252,7 @@ namespace GameCore
                     }
                     break;
                 case "melee":
-                    held?.AimAt(to, now + 0.3f);
+                    held?.AimAt(to, now + HeldPoseMath.SwingLength);
                     held?.Swing();
                     Sfx.Play("swing", from);
                     if (e.Hit) At(now + 0.1f, () => Wound(e, to, dx, dy, false));

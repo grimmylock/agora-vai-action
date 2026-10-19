@@ -1,7 +1,7 @@
 """Tactical Hatchet from Yan's own pixel art (ArtSource/refs/tactical_hatchet/yan_hatchet.png: his drawing, recovered from his
 screenshot - pixel grid 5.76 x 5.375 screen px - and his palette, 12 colours by k-means). His drawing is diagonal (head top left,
-handle down to the right); the in-hand sprite lies along the aim, so it is turned until the handle points right with the head at
-the right end (blade up, spike down), then reduced: each output pixel takes the most common colour under it (transparent only
+handle down to the right); it is turned until the handle points right with the head at the right end and flipped so the blade
+is down and the spike up (held upright, the game turns it a quarter turn: handle up, edge toward the target), then reduced: each output pixel takes the most common colour under it (transparent only
 when under 40% covered), and the dark outline is redrawn round the result.
   python3 ArtSource/weapons/hand/tactical_hatchet.py  -> weapon_TacticalHatchet.png (in hand, 32x16) + _hd.png (menus, 64x32)
                                                          + ArtSource/_out/tactical_hatchet_sheet.png (his | in hand | menu)"""
@@ -58,8 +58,11 @@ def outline(im):
 if __name__ == "__main__":
     img, up = turned(); img = merge_darks(img)
     length = img.getbbox()[2] - img.getbbox()[0]                                 # in up-scaled px
-    b = outline(reduce(img, length / 28.0, 32, 16))                              # ~26 px long in hand (knives 17-24, rifles 28)
-    a = outline(reduce(img, length / 56.0, 64, 32))
+    # RT 7c (Yan: "upside down ... too big"): blade down, spike up - held upright, the edge faces the target - and ~10 character
+    # px long in hand (20 weapon px)
+    img = img.transpose(Image.FLIP_TOP_BOTTOM)
+    b = outline(reduce(img, length / 20.0, 32, 16))
+    a = outline(reduce(img, length / 40.0, 64, 32))
     b.save(os.path.join(WEAP, "weapon_TacticalHatchet.png")); a.save(os.path.join(WEAP, "weapon_TacticalHatchet_hd.png"))
     src = Image.open(SRC).convert("RGBA"); bg = (46, 42, 34, 255)
     def tile(im, s): t = Image.new("RGBA", im.size, bg); t.alpha_composite(im); return t.resize((im.width * s, im.height * s), Image.NEAREST)

@@ -3414,3 +3414,18 @@ from movement so they do not stop for it".
 - Renders: `dotnet /tmp/test.dll meleeframes <json>` runs two scenes through the real code (two swings - body, then head, which
   kills a Rookie-tier Raider: the hatchet is tier 5, 546 on the head vs 500 head health; a throw at 5 tiles that sticks, is
   wrenched out and dropped); `Tools/render/melee_scene.py` draws them -> `maps/renders/melee/`.
+
+## RT batch 7c - melee held and swung like a melee weapon (2026-10-20)
+
+Yan: "the hatchet is currently upside down and i didn't see the sprites hands on it, also it's held way to far form the body, its
+too big and the swings have no weight behind them because there's no indication of the character making an effort to swing it like
+maybe inclining it back a little before the swing, make the character hold it with his actual hand and in a position that makes
+sense for it to be in his hand".
+- Sprite: blade down, spike up, ~10 character px long (was ~14); grip points with a little handle below the fist.
+- Hold (`HeldPoseMath.MeleeFrame`): upright at your side, edge toward where you aim, head leaning forward 25 degrees, the fist low
+  beside the body (3 px out, waist high); only the side follows the aim. The fist is the big glove so it reads round the handle.
+- Swing (`HeldPoseMath.Chop`, 0.62 s): wind-up 0.22 s (the head goes back over the shoulder, the fist rises, the unit leans back 6
+  degrees), chop 0.08 s (forward to the head out in front at chest height, leaning 8 degrees into it), follow-through 0.15 s,
+  recovery 0.17 s. The hit lands at the chop (`Melee.Pending`, 0.30 s after the click), not on the click; the unit's lean is
+  `HeldWeaponView.Lean`, applied to the player's tilt (`TacticalGridView`).
+- Renders: `maps/renders/melee/` (scenes + `melee_swing_closeup.png`).

@@ -198,7 +198,7 @@ namespace GameCore
             ColorGrade.Apply(look);
             if (look.Rain > 0.75f) Sfx.Ambient("amb_storm"); else if (look.Rain > 0f) Sfx.Ambient("amb_rain"); else Sfx.Ambient(Sfx.AmbientFor(MacroState.Current.CurrentZoneId));   // the map overhaul: the region you stand in
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
-            float tilt = downNow ? 90f : Rt.Diving ? (Rt.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.DiveRight ? -90f : 90f) : 0f;   // RT batch 3: into the dive, sprawled after it
+            float tilt = downNow ? 90f : Rt.Diving ? (Rt.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.DiveRight ? -90f : 90f) : Held(_playerMarker).Lean;   // RT batch 3: into the dive, sprawled after it; RT 7c: leaning into a swing
             _playerMarker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker));
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
