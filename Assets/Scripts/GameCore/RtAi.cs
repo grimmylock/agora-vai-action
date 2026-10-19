@@ -9,7 +9,9 @@
 //  - suppression both ways: your rounds that just miss it pin it for 2.5 s (it stays put, shoots half as often, wider);
 //    its near misses pin you for 1.5 s (Rt: +2 deg spread);
 //  - call-outs over heads (Banter): "Reloading!", "Grenade!", "Flanking!", "Pinned!".
-// Mutants keep the bridge (their whole move and strike every ~3 s, EnemyAI.MutantTurn). ponytail: real-time mutants later.
+// RT batch 5: mutants too. EnemyAI.MutantTurn still decides every ~2 s (circle, chase, leap, slam, boulder, re-cloak, flee) but
+// with Rt on it only sets where to go (WalkTo -> GoTo, Approach -> Chase); TickMutant walks them at their own speed (MP-based:
+// hounds ~3.6-4.8 tiles/s, the Brute ~2.4) and strikes whenever you're in reach (every ~1 s, the big ones ~1.6 s).
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,7 +24,7 @@ namespace GameCore
         class Mind
         {
             public (int x, int y)? Goal;
-            public bool Flee;
+            public bool Flee, Chasing;
             public float NextStep, NextShot, ReloadUntil = -1f, PinnedUntil = -1f, MovedAt = -9f;
             public int BurstLeft;
             public bool Dry;                                          // out of rounds: closes in to swing
@@ -35,10 +37,35 @@ namespace GameCore
         {
             var s = Of(h);
             if (role == "Flanker" && s.Goal != goal && (h.X, h.Y) != goal && Random.value < 0.4f) Banter.Say(h, "Flanking!", 3);
-            s.Goal = goal; s.Flee = false;
+            s.Goal = goal; s.Flee = false; s.Chasing = false;
         }
 
-        public static void Flee(HumanEnemy h) { var s = Of(h); s.Flee = true; s.Goal = null; }
+        public static void Flee(Mutant m) { var s = Of(m); s.Flee = true; s.Goal = null; s.Chasing = false; }
+        public static void GoTo(Mutant m, (int x, int y) goal) { var s = Of(m); s.Goal = goal; s.Flee = false; s.Chasing = false; }
+        public static void Chase(Mutant m) { var s = Of(m); s.Chasing = true; s.Goal = null; s.Flee = false; }
+
+        /// <summary>RT batch 5: tiles a second. Mutants by their MP (hounds fast, the Brute slow); humans walk at 2.2.</summary>
+        public static float Speed(Mutant m) => m is HumanEnemy ? 2.2f : System.Math.Max(1.8f, System.Math.Min(5f, 0.6f * (m.Db?.Mp ?? 4)));
+
+        /// <summary>RT batch 5: one frame of a mutant in a fight - walks/chases/flees at its own speed, strikes when in reach.</summary>
+        public static void TickMutant(Mutant m, Player p)
+        {
+            var s = Of(m);
+            float now = Time.time;
+            if (m.StatusEffects.Prone) return;
+            if (now >= s.NextStep)
+            {
+                s.NextStep = now + 1f / Speed(m) * (m.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
+                m.Mp = System.Math.Max(m.Mp, TurnLoop.WalkMp);
+                if (s.Flee) m.MoveAwayFrom(p);
+                else if (s.Chasing && !CombatantUtil.IsAdjacent(m, p) && !m.IsInEngageRange(p)) m.MoveToward(p.X, p.Y);
+                else if (s.Goal.HasValue && (m.X, m.Y) != s.Goal.Value && !m.MoveToward(s.Goal.Value.x, s.Goal.Value.y)) s.Goal = null;
+            }
+            if (s.Flee || now < s.NextShot || Body.Down(p) || !p.IsAlive() || !m.IsInEngageRange(p)) return;
+            s.NextShot = now + (Ballistics.MutantSize(m) >= 2f ? 1.6f : 1.0f) * Random.Range(0.85f, 1.2f);
+            m.Ap = System.Math.Max(m.Ap, 2);
+            m.Attack(p);
+        }
 
         public static bool Pinned(Mutant m) => Minds.TryGetValue(m, out var s) && Time.time < s.PinnedUntil;
 

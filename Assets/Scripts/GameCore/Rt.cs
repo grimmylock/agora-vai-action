@@ -290,9 +290,10 @@ namespace GameCore
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
                 if (e is HumanEnemy rh && !Companion.Is(e)) RtAi.Tick(rh, p);   // RT batch 4: walks and shoots every frame; thinks below
+                else if (!(e is HumanEnemy)) RtAi.TickMutant(e, p);              // RT batch 5: mutants too
                 if (!NextTurn.TryGetValue(e, out var at)) { NextTurn[e] = now + Random.Range(0.5f, 1.3f); continue; }   // reaction time
                 if (now < at) continue;
-                NextTurn[e] = now + NpcTurnSeconds * Random.Range(0.85f, 1.15f);
+                NextTurn[e] = now + (e is HumanEnemy ? NpcTurnSeconds : 2f) * Random.Range(0.85f, 1.15f);   // mutants re-decide faster
                 try
                 {
                     if (Companion.Is(e)) { Companion.Act(p, grid, true); continue; }

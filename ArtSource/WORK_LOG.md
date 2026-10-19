@@ -3183,3 +3183,20 @@ moment, immobilizing you and making it risky". Also: "concussion seems too long,
   round over his head. ALL CHECKS PASSED.
 - **For Yan to check:** whether squads feel alive (moving between cover, flanking, pausing between bursts) or too static/too
   aggressive; how often you get pinned; the call-outs.
+
+## RT batch 5 - mutants in real time; how long the Tier 1 map takes to cross (2026-10-19)
+
+Yan asked how fast a character crosses Tier 1 (can't open Unity right now). Computed from `Rt.cs` (walk 2.6 tiles/s, sprint 4.4,
+stamina 100 at -18/s, back at 14/s after a 0.8 s pause): 200 tiles edge to edge - walking 77 s, sprinting each full bar then
+walking until it's full again 58 s (tapping sprint whenever a bit came back: 73 s, the pause eats it); corner to corner 283
+tiles - 109 s / 84 s. Real routes round buildings and walls: +20-40%. About 4-5 game hours a crossing. (Turn-based explored
+at 4.2 tiles/s: 48 s edge to edge.)
+- **Mutants** (the last bridge): `EnemyAI.MutantTurn` still decides every ~2 s (circle, chase, leap, ground slam, boulder after
+  three chases, re-cloak, flee, staggers), but with `Rt.On` its moves only set a destination (`WalkTo` -> `RtAi.GoTo`,
+  `Approach` -> `RtAi.Chase`, fleeing -> `RtAi.Flee`) and it no longer strikes in that frame. `RtAi.TickMutant` walks it at its
+  own speed - 0.6 x its MP in tiles/s, 1.8 to 5: Pallid Prowler 2.4, Blind Maw 3.0, Rot Swarm / Dread Prowler 3.6, Brute 1.8 -
+  re-aiming at you every step while chasing, and strikes whenever you're in its reach (bite/claw/psi as before: the old roll)
+  every ~1 s, the big ones every ~1.6 s. The leap is still an instant jump next to you.
+- Harness: a Blind Maw 10 tiles off reaches you in ~4 s (reaction + first decision included) and bites on its own clock; the
+  Brute lags behind. ALL CHECKS PASSED.
+- **For Yan to check:** hound pace vs yours (they're a bit faster than your walk, slower than your sprint), bite rate, the Brute.

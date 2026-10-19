@@ -448,6 +448,7 @@ namespace GameCore
 
         private static void WalkTo(Mutant u, (int x, int y) dest)
         {
+            if (Rt.On) { RtAi.GoTo(u, dest); return; }   // RT batch 5: walked step by step in real time
             int guard = 0;
             while ((u.X, u.Y) != dest && u.Mp > 0 && u.IsAlive() && guard++ < 20)
                 if (!u.MoveToward(dest.x, dest.y)) break;
@@ -473,6 +474,7 @@ namespace GameCore
 
             if (m.IsFleeing())
             {
+                if (Rt.On) { RtAi.Flee(m); return; }   // RT batch 5
                 while (m.Mp > 0 && m.IsAlive() && m.MoveAwayFrom(player)) { }
                 return;
             }
@@ -489,7 +491,7 @@ namespace GameCore
                 // Batch 61: circling only works if a leap line opens up; behind a wall or up a ledge it never does
                 if (m.StalkRounds++ < 2) Circle(m, player, 3, 5);
                 else Approach(m, player.X, player.Y, false);
-                if (m.Ap >= 2 && m.IsInEngageRange(player)) { m.Ap -= 2; m.Attack(player); m.StalkRounds = 0; }
+                if (!Rt.On && m.Ap >= 2 && m.IsInEngageRange(player)) { m.Ap -= 2; m.Attack(player); m.StalkRounds = 0; }
                 return;
             }
 
@@ -529,7 +531,7 @@ namespace GameCore
                     break;
             }
 
-            if (m.Ap >= 2 && m.IsInEngageRange(player))
+            if (!Rt.On && m.Ap >= 2 && m.IsInEngageRange(player))   // RT batch 5: RtAi strikes on its own clock
             {
                 m.Ap -= 2;
                 m.Attack(player);
@@ -569,6 +571,7 @@ namespace GameCore
         {
             if (CombatantUtil.IsAdjacent(m, tx, ty)) return;
             var adj = BestAdjacent(m, new Probe(tx, ty), packMate);
+            if (Rt.On) { RtAi.Chase(m); return; }   // RT batch 5: runs at you, re-aiming every step
             if (adj.HasValue) { WalkTo(m, adj.Value); return; }
             int guard = 0;
             while (m.Mp > 0 && !CombatantUtil.IsAdjacent(m, tx, ty) && guard++ < 20)

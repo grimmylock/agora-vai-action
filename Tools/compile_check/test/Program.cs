@@ -821,6 +821,25 @@ static class Program {
       Check(RtAi.Pinned(g) && g.StatusEffects.Suppressed, "a round just over his head pins him");
       EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
     }
+    // RT batch 5: mutants run at you at their own speed and strike on their own clock (a hound outruns the Brute)
+    {
+      Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var maw = new Mutant("Blind Maw", px + 10, py - 2, MutantDatabase.Get("tier1", "BlindMaw")) { IsAggroed = true };
+      var brute = new Mutant("Blight Brute", px + 10, py + 2, MutantDatabase.Get("tier4", "BlightBrute")) { IsAggroed = true };
+      EncounterState.Enemies.Add(maw); EncounterState.Enemies.Add(brute); EncounterState.InCombat = true; Contact.Spot(p);
+      UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 3000f;
+      int reachedAt = -1, strikes = 0, hp = p.Hp;
+      for (int f = 0; f < 120; f++) {
+        Rt.WorldTick(p); UnityEngine.Time.time += 0.05f;
+        if (reachedAt < 0 && CombatantUtil.IsAdjacent(maw, p)) reachedAt = f;
+        if (p.Hp < hp) strikes++;
+        p.HealPermanent(100); Body.Reset(); hp = p.Hp;
+      }
+      Check(reachedAt > 0 && reachedAt <= 100, $"the Blind Maw runs 10 tiles to you in {reachedAt * 0.05f:0.0} s");
+      Check(strikes >= 1 && strikes <= 6, $"then bites on its own clock ({strikes} landed in 6 s)");
+      Check(CombatantUtil.Distance(brute, p) > CombatantUtil.Distance(maw, p) || CombatantUtil.IsAdjacent(brute, p), $"the Brute is slower (brute {CombatantUtil.Distance(brute, p)}, maw {CombatantUtil.Distance(maw, p)})");
+      EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
+    }
     Rt.On = false;   // turn-based again: lethal damage kills
     EncounterState.Enemies.Clear(); Rt.Reset(); p.HealPermanent(100);
   }
