@@ -1,0 +1,241 @@
+=== Tier 1: Rookie (AP 4, mod -1), Halden Service Revolver, Rookie Field Suit DR 12 %, perks , 3 basicMedkit
+  -- as now
+    Raiders     open   vs 1: win  76%  die  21%  hp left  67  rounds  9.2
+    Raiders     open   vs 2: win  17%  die  81%  hp left  42  rounds  9.6
+    Raiders     open   vs 3: win   6%  die  93%  hp left  35  rounds  6.5
+    Raiders     ambush vs 1: win  79%  die  19%  hp left  68  rounds  9.0
+    Raiders     ambush vs 2: win  52%  die  48%  hp left  60  rounds 15.4
+    Raiders     ambush vs 3: win  36%  die  62%  hp left  52  rounds 17.9
+  -- armor T1-3 half
+    Raiders     open   vs 1: win  86%  die  14%  hp left  68  rounds  7.8
+    Raiders     open   vs 2: win  23%  die  77%  hp left  54  rounds  8.6
+    Raiders     open   vs 3: win   7%  die  90%  hp left  39  rounds  6.8
+    Raiders     ambush vs 1: win  77%  die  22%  hp left  74  rounds  7.8
+    Raiders     ambush vs 2: win  58%  die  42%  hp left  67  rounds 13.0
+    Raiders     ambush vs 3: win  37%  die  60%  hp left  61  rounds 18.2
+  -- player 8 AP
+    Raiders     open   vs 1: win  94%  die   6%  hp left  74  rounds  4.5
+    Raiders     open   vs 2: win  49%  die  50%  hp left  53  rounds  7.3
+    Raiders     open   vs 3: win  14%  die  85%  hp left  45  rounds  6.3
+    Raiders     ambush vs 1: win  96%  die   3%  hp left  82  rounds  5.0
+    Raiders     ambush vs 2: win  76%  die  21%  hp left  72  rounds 10.3
+    Raiders     ambush vs 3: win  64%  die  34%  hp left  64  rounds 13.0
+  -- both
+    Raiders     open   vs 1: win  92%  die   8%  hp left  80  rounds  3.9
+    Raiders     open   vs 2: win  48%  die  50%  hp left  56  rounds  7.3
+    Raiders     open   vs 3: win  13%  die  86%  hp left  38  rounds  6.1
+    Raiders     ambush vs 1: win  92%  die   7%  hp left  82  rounds  4.7
+    Raiders     ambush vs 2: win  91%  die   9%  hp left  79  rounds  7.8
+    Raiders     ambush vs 3: win  71%  die  26%  hp left  67  rounds 12.1
+=== Tier 2: Experienced (AP 4, mod +0), Walden P9, Raider Stitched Coat DR 25 %, perks , 3 basicMedkit
+  -- as now
+    Raiders     open   vs 1: win  86%  die  13%  hp left  69  rounds  8.2
+    Raiders     open   vs 2: win  33%  die  65%  hp left  48  rounds 10.4
+    Raiders     open   vs 3: win   9%  die  90%  hp left  39  rounds  7.2
+    Raiders     ambush vs 1: win  90%  die   9%  hp left  74  rounds  7.4
+    Raiders     ambush vs 2: win  62%  die  36%  hp left  65  rounds 14.3
+    Raiders     ambush vs 3: win  39%  die  56%  hp left  66  rounds 18.4
+    Garrison    open   vs 1: win  36%  die  64%  hp left  58  rounds  7.8
+    Garrison    open   vs 2: win   3%  die  97%  hp left  37  rounds  4.1
+    Garrison    open   vs 3: win   0%  die 100%  hp left   0  rounds  2.4
+    Garrison    ambush vs 1: win  36%  die  61%  hp left  60  rounds 10.3
+    Garrison    ambush vs 2: win   6%  die  94%  hp left  30  rounds 12.2
+    Garrison    ambush vs 3: win   0%  die  96%  hp left   0  rounds 13.8
+  -- armor T1-3 half
+    Raiders     open   vs 1: win  88%  die  12%  hp left  73  rounds  7.0
+    Raiders     open   vs 2: win  38%  die  61%  hp left  55  rounds  8.5
+    Raiders     open   vs 3: win   8%  die  92%  hp left  46  rounds  5.5
+    Raiders     ambush vs 1: win  88%  die  11%  hp left  73  rounds  7.3
+    Raiders     ambush vs 2: win  73%  die  27%  hp left  67  rounds 10.9
+    Raiders     ambush vs 3: win  49%  die  48%  hp left  61  rounds 16.3
+    Garrison    open   vs 1: win  45%  die  55%  hp left  64  rounds  7.7
+    Garrison    open   vs 2: win   3%  die  97%  hp left  40  rounds  3.4
+    Garrison    open   vs 3: win   0%  die 100%  hp left   0  rounds  2.0
+    Garrison    ambush vs 1: win  36%  die  64%  hp left  67  rounds  7.2
+    Garrison    ambush vs 2: win   7%  die  93%  hp left  72  rounds 10.2
+    Garrison    ambush vs 3: win   0%  die  99%  hp left   0  rounds 11.8
+  -- player 8 AP
+    Raiders     open   vs 1: win  95%  die   5%  hp left  81  rounds  4.1
+    Raiders     open   vs 2: win  64%  die  35%  hp left  55  rounds  8.7
+    Raiders     open   vs 3: win  22%  die  77%  hp left  42  rounds  7.2
+    Raiders     ambush vs 1: win  95%  die   5%  hp left  85  rounds  4.1
+    Raiders     ambush vs 2: win  87%  die  12%  hp left  76  rounds  8.4
+    Raiders     ambush vs 3: win  80%  die  14%  hp left  64  rounds 13.1
+    Garrison    open   vs 1: win  59%  die  41%  hp left  63  rounds  6.2
+    Garrison    open   vs 2: win  11%  die  87%  hp left  45  rounds  5.4
+    Garrison    open   vs 3: win   0%  die 100%  hp left   0  rounds  2.6
+    Garrison    ambush vs 1: win  63%  die  37%  hp left  65  rounds  6.3
+    Garrison    ambush vs 2: win  29%  die  70%  hp left  53  rounds 11.2
+    Garrison    ambush vs 3: win   8%  die  91%  hp left  43  rounds 13.8
+  -- both
+    Raiders     open   vs 1: win  95%  die   5%  hp left  80  rounds  3.5
+    Raiders     open   vs 2: win  67%  die  33%  hp left  62  rounds  6.5
+    Raiders     open   vs 3: win  16%  die  83%  hp left  40  rounds  5.9
+    Raiders     ambush vs 1: win  98%  die   1%  hp left  88  rounds  3.7
+    Raiders     ambush vs 2: win  90%  die   9%  hp left  76  rounds  7.5
+    Raiders     ambush vs 3: win  79%  die  17%  hp left  76  rounds 11.3
+    Garrison    open   vs 1: win  67%  die  33%  hp left  68  rounds  4.9
+    Garrison    open   vs 2: win  13%  die  87%  hp left  47  rounds  4.1
+    Garrison    open   vs 3: win   0%  die 100%  hp left   0  rounds  2.1
+    Garrison    ambush vs 1: win  66%  die  33%  hp left  70  rounds  6.0
+    Garrison    ambush vs 2: win  48%  die  52%  hp left  56  rounds  9.0
+    Garrison    ambush vs 3: win  23%  die  75%  hp left  55  rounds 10.5
+=== Tier 3: Professional (AP 5, mod +1), Black Harrier x2, Contractor ACE Base DR 35 %, perks Gunslinger, 3 militaryMedkit
+  -- as now
+    Contractors open   vs 1: win  65%  die  35%  hp left  68  rounds  8.3
+    Contractors open   vs 2: win   8%  die  91%  hp left  49  rounds  6.9
+    Contractors open   vs 3: win   1%  die  98%  hp left   7  rounds  4.4
+    Contractors ambush vs 1: win  66%  die  34%  hp left  70  rounds  8.7
+    Contractors ambush vs 2: win  31%  die  65%  hp left  54  rounds 15.0
+    Contractors ambush vs 3: win   7%  die  88%  hp left  50  rounds 17.5
+    Sentinels   open   vs 1: win  71%  die  28%  hp left  70  rounds  8.4
+    Sentinels   open   vs 2: win  10%  die  90%  hp left  42  rounds  7.0
+    Sentinels   open   vs 3: win   2%  die  98%  hp left  72  rounds  4.4
+    Sentinels   ambush vs 1: win  72%  die  27%  hp left  72  rounds  8.5
+    Sentinels   ambush vs 2: win  30%  die  69%  hp left  57  rounds 14.6
+    Sentinels   ambush vs 3: win   8%  die  85%  hp left  61  rounds 18.0
+  -- armor T1-3 half
+    Contractors open   vs 1: win  65%  die  34%  hp left  65  rounds  6.7
+    Contractors open   vs 2: win   9%  die  91%  hp left  50  rounds  5.7
+    Contractors open   vs 3: win   0%  die  99%  hp left   0  rounds  3.2
+    Contractors ambush vs 1: win  75%  die  24%  hp left  71  rounds  7.1
+    Contractors ambush vs 2: win  41%  die  57%  hp left  61  rounds 11.4
+    Contractors ambush vs 3: win  13%  die  87%  hp left  50  rounds 12.4
+    Sentinels   open   vs 1: win  63%  die  37%  hp left  67  rounds  6.0
+    Sentinels   open   vs 2: win  14%  die  85%  hp left  53  rounds  6.0
+    Sentinels   open   vs 3: win   1%  die  99%  hp left  83  rounds  3.3
+    Sentinels   ambush vs 1: win  77%  die  22%  hp left  72  rounds  6.9
+    Sentinels   ambush vs 2: win  32%  die  67%  hp left  55  rounds 11.9
+    Sentinels   ambush vs 3: win  19%  die  78%  hp left  59  rounds 14.2
+  -- player 8 AP
+    Contractors open   vs 1: win  83%  die  16%  hp left  74  rounds  5.1
+    Contractors open   vs 2: win  30%  die  70%  hp left  61  rounds  6.3
+    Contractors open   vs 3: win   8%  die  92%  hp left  30  rounds  4.5
+    Contractors ambush vs 1: win  90%  die   9%  hp left  81  rounds  5.2
+    Contractors ambush vs 2: win  56%  die  43%  hp left  66  rounds 10.4
+    Contractors ambush vs 3: win  32%  die  65%  hp left  59  rounds 14.5
+    Sentinels   open   vs 1: win  84%  die  15%  hp left  73  rounds  5.4
+    Sentinels   open   vs 2: win  34%  die  64%  hp left  60  rounds  7.5
+    Sentinels   open   vs 3: win   3%  die  96%  hp left  50  rounds  5.0
+    Sentinels   ambush vs 1: win  84%  die  16%  hp left  77  rounds  5.7
+    Sentinels   ambush vs 2: win  69%  die  30%  hp left  67  rounds 10.3
+    Sentinels   ambush vs 3: win  41%  die  57%  hp left  66  rounds 14.4
+  -- both
+    Contractors open   vs 1: win  82%  die  18%  hp left  75  rounds  4.0
+    Contractors open   vs 2: win  40%  die  60%  hp left  60  rounds  5.6
+    Contractors open   vs 3: win   6%  die  94%  hp left  59  rounds  4.0
+    Contractors ambush vs 1: win  91%  die   9%  hp left  76  rounds  4.9
+    Contractors ambush vs 2: win  67%  die  33%  hp left  68  rounds  8.5
+    Contractors ambush vs 3: win  45%  die  54%  hp left  61  rounds 12.2
+    Sentinels   open   vs 1: win  86%  die  14%  hp left  76  rounds  3.9
+    Sentinels   open   vs 2: win  39%  die  60%  hp left  58  rounds  5.9
+    Sentinels   open   vs 3: win   8%  die  92%  hp left  49  rounds  3.6
+    Sentinels   ambush vs 1: win  84%  die  16%  hp left  84  rounds  4.2
+    Sentinels   ambush vs 2: win  70%  die  29%  hp left  71  rounds  8.5
+    Sentinels   ambush vs 3: win  52%  die  48%  hp left  62  rounds 11.0
+=== Tier 4: Veteran (AP 5, mod +1), Steppe Eagle x2, Sentinel Vanguard DR 45 %, perks Gunslinger, 3 militaryMedkit
+  -- as now
+    Contractors open   vs 1: win  71%  die  29%  hp left  68  rounds  9.1
+    Contractors open   vs 2: win  15%  die  81%  hp left  47  rounds  9.3
+    Contractors open   vs 3: win   1%  die  98%  hp left  44  rounds  4.9
+    Contractors ambush vs 1: win  75%  die  23%  hp left  66  rounds  9.8
+    Contractors ambush vs 2: win  43%  die  56%  hp left  54  rounds 14.8
+    Contractors ambush vs 3: win  19%  die  74%  hp left  56  rounds 19.7
+    Raiders     open   vs 1: win  99%  die   0%  hp left  86  rounds  5.3
+    Raiders     open   vs 2: win  78%  die  21%  hp left  64  rounds 10.7
+    Raiders     open   vs 3: win  53%  die  45%  hp left  54  rounds 12.8
+    Raiders     ambush vs 1: win  99%  die   1%  hp left  91  rounds  4.3
+    Raiders     ambush vs 2: win  93%  die   6%  hp left  80  rounds  9.3
+    Raiders     ambush vs 3: win  88%  die   9%  hp left  72  rounds 14.2
+  -- armor T1-3 half
+    Contractors open   vs 1: win  80%  die  19%  hp left  73  rounds  7.8
+    Contractors open   vs 2: win  23%  die  76%  hp left  51  rounds  8.1
+    Contractors open   vs 3: win   1%  die  99%  hp left  50  rounds  4.5
+    Contractors ambush vs 1: win  85%  die  15%  hp left  72  rounds  6.9
+    Contractors ambush vs 2: win  46%  die  53%  hp left  61  rounds 13.2
+    Contractors ambush vs 3: win  30%  die  69%  hp left  52  rounds 17.3
+    Raiders     open   vs 1: win 100%  die   0%  hp left  85  rounds  3.9
+    Raiders     open   vs 2: win  83%  die  15%  hp left  67  rounds  9.9
+    Raiders     open   vs 3: win  58%  die  41%  hp left  59  rounds 11.9
+    Raiders     ambush vs 1: win 100%  die   0%  hp left  91  rounds  3.9
+    Raiders     ambush vs 2: win  94%  die   4%  hp left  79  rounds  9.7
+    Raiders     ambush vs 3: win  85%  die  12%  hp left  77  rounds 12.9
+  -- player 8 AP
+    Contractors open   vs 1: win  98%  die   2%  hp left  74  rounds  4.9
+    Contractors open   vs 2: win  43%  die  56%  hp left  57  rounds  7.6
+    Contractors open   vs 3: win   7%  die  93%  hp left  50  rounds  5.3
+    Contractors ambush vs 1: win  97%  die   3%  hp left  83  rounds  4.4
+    Contractors ambush vs 2: win  77%  die  23%  hp left  69  rounds  9.5
+    Contractors ambush vs 3: win  48%  die  46%  hp left  61  rounds 15.1
+    Raiders     open   vs 1: win 100%  die   0%  hp left  90  rounds  2.6
+    Raiders     open   vs 2: win  97%  die   3%  hp left  76  rounds  5.5
+    Raiders     open   vs 3: win  73%  die  24%  hp left  64  rounds  9.4
+    Raiders     ambush vs 1: win 100%  die   0%  hp left  94  rounds  2.7
+    Raiders     ambush vs 2: win 100%  die   0%  hp left  90  rounds  5.2
+    Raiders     ambush vs 3: win  95%  die   3%  hp left  87  rounds  7.9
+  -- both
+    Contractors open   vs 1: win  87%  die  11%  hp left  75  rounds  5.5
+    Contractors open   vs 2: win  55%  die  42%  hp left  59  rounds  8.7
+    Contractors open   vs 3: win  15%  die  85%  hp left  54  rounds  5.6
+    Contractors ambush vs 1: win  92%  die   8%  hp left  88  rounds  4.2
+    Contractors ambush vs 2: win  79%  die  20%  hp left  69  rounds  9.2
+    Contractors ambush vs 3: win  60%  die  38%  hp left  62  rounds 12.6
+    Raiders     open   vs 1: win 100%  die   0%  hp left  91  rounds  2.5
+    Raiders     open   vs 2: win  99%  die   1%  hp left  76  rounds  5.3
+    Raiders     open   vs 3: win  84%  die  15%  hp left  65  rounds  7.7
+    Raiders     ambush vs 1: win 100%  die   0%  hp left  96  rounds  2.6
+    Raiders     ambush vs 2: win  99%  die   0%  hp left  91  rounds  5.1
+    Raiders     ambush vs 3: win  93%  die   5%  hp left  89  rounds  7.3
+=== Tier 5: Expert (AP 5, mod +2), RK-12 Kuvalda x2, Wanderer Exoskeleton DR 70 %, perks Gunslinger+QuickHands, 3 scientificMedkit
+  -- as now
+    Contractors open   vs 1: win  98%  die   2%  hp left  86  rounds  3.3
+    Contractors open   vs 2: win  93%  die   7%  hp left  71  rounds  7.2
+    Contractors open   vs 3: win  75%  die  25%  hp left  67  rounds 10.2
+    Contractors ambush vs 1: win  99%  die   1%  hp left  92  rounds  3.6
+    Contractors ambush vs 2: win  95%  die   4%  hp left  85  rounds  7.2
+    Contractors ambush vs 3: win  92%  die   8%  hp left  79  rounds  9.6
+    Obelisk     open   vs 1: win  97%  die   3%  hp left  87  rounds  3.8
+    Obelisk     open   vs 2: win  89%  die  11%  hp left  71  rounds  8.4
+    Obelisk     open   vs 3: win  52%  die  48%  hp left  61  rounds  9.3
+    Obelisk     ambush vs 1: win  97%  die   3%  hp left  89  rounds  3.8
+    Obelisk     ambush vs 2: win  96%  die   4%  hp left  81  rounds  7.3
+    Obelisk     ambush vs 3: win  87%  die  11%  hp left  76  rounds 10.5
+  -- armor T1-3 half
+    Contractors open   vs 1: win 100%  die   0%  hp left  89  rounds  3.1
+    Contractors open   vs 2: win  94%  die   6%  hp left  76  rounds  5.8
+    Contractors open   vs 3: win  71%  die  29%  hp left  66  rounds  9.2
+    Contractors ambush vs 1: win  98%  die   2%  hp left  93  rounds  2.9
+    Contractors ambush vs 2: win  93%  die   5%  hp left  86  rounds  6.9
+    Contractors ambush vs 3: win  94%  die   5%  hp left  85  rounds  8.4
+    Obelisk     open   vs 1: win  98%  die   1%  hp left  81  rounds  4.0
+    Obelisk     open   vs 2: win  88%  die  12%  hp left  69  rounds  7.2
+    Obelisk     open   vs 3: win  54%  die  45%  hp left  66  rounds  9.0
+    Obelisk     ambush vs 1: win 100%  die   0%  hp left  91  rounds  3.8
+    Obelisk     ambush vs 2: win  98%  die   2%  hp left  78  rounds  7.3
+    Obelisk     ambush vs 3: win  94%  die   6%  hp left  77  rounds  9.7
+  -- player 8 AP
+    Contractors open   vs 1: win 100%  die   0%  hp left  93  rounds  2.0
+    Contractors open   vs 2: win  99%  die   1%  hp left  83  rounds  3.8
+    Contractors open   vs 3: win  90%  die  10%  hp left  75  rounds  5.6
+    Contractors ambush vs 1: win 100%  die   0%  hp left  97  rounds  1.9
+    Contractors ambush vs 2: win  98%  die   1%  hp left  95  rounds  4.1
+    Contractors ambush vs 3: win  98%  die   2%  hp left  93  rounds  5.7
+    Obelisk     open   vs 1: win 100%  die   0%  hp left  91  rounds  2.1
+    Obelisk     open   vs 2: win  96%  die   2%  hp left  78  rounds  5.1
+    Obelisk     open   vs 3: win  80%  die  19%  hp left  70  rounds  6.8
+    Obelisk     ambush vs 1: win  99%  die   1%  hp left  96  rounds  2.3
+    Obelisk     ambush vs 2: win  95%  die   5%  hp left  89  rounds  4.5
+    Obelisk     ambush vs 3: win  97%  die   1%  hp left  90  rounds  5.9
+  -- both
+    Contractors open   vs 1: win 100%  die   0%  hp left  96  rounds  1.6
+    Contractors open   vs 2: win 100%  die   0%  hp left  82  rounds  3.6
+    Contractors open   vs 3: win  94%  die   6%  hp left  72  rounds  5.4
+    Contractors ambush vs 1: win 100%  die   0%  hp left  98  rounds  2.0
+    Contractors ambush vs 2: win  99%  die   1%  hp left  95  rounds  3.3
+    Contractors ambush vs 3: win  99%  die   0%  hp left  95  rounds  4.8
+    Obelisk     open   vs 1: win 100%  die   0%  hp left  93  rounds  1.9
+    Obelisk     open   vs 2: win  97%  die   3%  hp left  82  rounds  4.2
+    Obelisk     open   vs 3: win  88%  die  12%  hp left  73  rounds  5.8
+    Obelisk     ambush vs 1: win  99%  die   0%  hp left  96  rounds  2.5
+    Obelisk     ambush vs 2: win  99%  die   1%  hp left  93  rounds  3.8
+    Obelisk     ambush vs 3: win  99%  die   1%  hp left  92  rounds  5.0

@@ -1,0 +1,12 @@
+  (kit: Phys-DR 84 %, regen 5/turn, MP 2, belt 3)
+  Gunslinger pistols   raid: armory   4%  died  56%  unfinished  28%  no Garrison at the base  12%  | 84 rounds, guards at the start 8.8, sent in waves 8.4, Garrison killed 5.1, HP left when won 80
+  Double Tap pistol    raid: armory   0%  died  66%  unfinished  28%  no Garrison at the base   6%  | 78 rounds, guards at the start 9.9, sent in waves 9.3, Garrison killed 4.0, HP left when won 0
+  SMG bursts           raid: armory   2%  died  52%  unfinished  38%  no Garrison at the base   8%  | 89 rounds, guards at the start 9.0, sent in waves 8.3, Garrison killed 4.1, HP left when won 82
+  (kit: Phys-DR 84 %, regen 5/turn, MP 2, belt 3)
+  Shotgun              raid: armory   4%  died  54%  unfinished  34%  no Garrison at the base   8%  | 84 rounds, guards at the start 8.2, sent in waves 8.7, Garrison killed 5.0, HP left when won 85
+  Rifle single         raid: armory   8%  died  30%  unfinished  54%  no Garrison at the base   8%  | 100 rounds, guards at the start 8.8, sent in waves 8.5, Garrison killed 5.9, HP left when won 88
+  Rifle bursts         raid: armory  16%  died  34%  unfinished  42%  no Garrison at the base   8%  | 93 rounds, guards at the start 9.9, sent in waves 9.0, Garrison killed 7.7, HP left when won 89
+  (kit: Phys-DR 84 %, regen 5/turn, MP 2, belt 3)
+  Sniper               raid: armory  26%  died  18%  unfinished  48%  no Garrison at the base   8%  | 95 rounds, guards at the start 9.8, sent in waves 8.8, Garrison killed 9.4, HP left when won 77
+  Machine gun          raid: armory   0%  died  52%  unfinished  44%  no Garrison at the base   4%  | 91 rounds, guards at the start 8.5, sent in waves 9.3, Garrison killed 5.8, HP left when won 0
+  Melee                raid: armory   0%  died  88%  unfinished  10%  no Garrison at the base   2%  | 47 rounds, guards at the start 9.1, sent in waves 9.3, Garrison killed 5.4, HP left when won 0

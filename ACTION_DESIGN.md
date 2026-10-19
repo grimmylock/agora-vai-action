@@ -1,0 +1,144 @@
+# agora vai - real-time fork: design (agreed with Yan, 2026-10-16)
+
+The turn-based game stays as it is (frozen snapshot: branch `turn-based-fallback`, Batch 131f; work continues on
+`tier-maps`). This document is the plan for a separate repo, `agora-vai-action`, copied from that snapshot, where
+the combat becomes real-time. Everything not listed here (maps, A-Life, factions, items, trading, quests, art,
+floating hands, audio, banter, the "!" detection) carries over unchanged. All the hard rules in CLAUDE.md still apply,
+including "never nerf enemies: give the player tools".
+
+## Feel
+
+Between S.T.A.L.K.E.R./Zero Sievert (slow, tense, deadly) and Max Payne (rare stylish moments) - not Hotline Miami.
+Patience usually wins; aggression is possible but risky. Fights swing: hold an angle, get pinned, move, push, dive.
+
+## Core rules
+
+- **Pause:** ESC pauses. Inventory, items, healing, looting all happen in real time.
+- **Time:** the world clock always runs (about 6 real minutes per game day, as exploring today). No rounds, no AP/MP.
+- **Controls:** WASD move, mouse aim, RMB aim down sights, LMB fire, Shift sprint, Ctrl crouch, Space dive, R reload,
+  Q/E lean, F interact (hold behind an unaware enemy = takedown), G throw (no grenade selected = bolt), Tab inventory,
+  Y swap weapon, ESC pause. Gamepad later.
+- **Camera:** drifts toward the mouse; aiming looks further; scopes further still (Zero Sievert style).
+  Directional sound for fights out of sight.
+
+## Hit model (no dice)
+
+- A body is a footprint circle on the ground. A bullet travels over the ground; it hits when its path crosses
+  the footprint, from any direction (so standing higher or lower on screen gives no advantage).
+- **Height comes from the crosshair:** over the head pixels = head height, chest = torso, legs = legs.
+- Weapon spread scatters the shot sideways (miss / the arm on that side) and in height (lower or higher part, or over the head).
+- Holding aim steadies spread over ~1 s. Moving widens it (walk a little, sprint a lot). Recoil kicks the crosshair after each shot.
+- Bullets have travel time: lead moving targets at range.
+- Cover blocks by height: low cover hides legs and torso (the head shows when leaning out); walls hide everything.
+  Crouching lowers every part. Materials as today: rounds go through wood/tin/brush/cloth, not concrete.
+- Enemies aim the same way; their rank decides how well they hold head height.
+- Suppression: rounds landing near a unit shake its aim (both ways).
+
+## Weapons
+
+New stats per gun: **accuracy** (steadied spread), **handling** (steady-up speed, sway), **recoil**, **recovery**,
+**fire rate / modes** (semi, burst, auto), **muzzle velocity** (bullet speed, drop-off), **penetration** (cover and
+armor; AP/HP ammo plug in here). Weight, wear, jams (d100 as now, 1% +2% per wear step) and magazines stay.
+
+## Health, wounds, death
+
+- **Limb health (Tarkov-lite):** head, torso, left/right arm, left/right leg, each with its own HP.
+  Head or torso at 0 = down. A limb at 0 is broken; more damage to it spills into the torso.
+- **Wounds (Yan's rule):** above 60% part HP no wound. Below 60% each hit has a chance that rises as the part weakens,
+  `chance = (60 - hp%) / 60 * 0.75` (50% ~13%, 40% 25%, 20% 50%; 0% = broken). HP rounds raise it, AP rounds lower it.
+  Types: bleeding (any part, bandage), fracture (limb, splint), concussion (head: blurred view and sway for a while).
+- **Debuffs only from wounds/broken parts:** broken leg = limp, no sprint; broken arm = heavy sway, slow reload.
+- **Armor:** helmet covers the head, vest the torso. Heavier armor = slower and louder.
+- **Healing:** bandage, splint, medkit; each takes a few seconds of real time.
+- **Downed (Yan):** at 0 you go down and bleed out. Lying still drains slowly; crawling (e.g. to cover) drains faster.
+  A partner revives by holding a key for a few seconds. Solo: use a stim to get up, otherwise death.
+- Enemies use the same system (shoot a Raider's legs and he limps).
+- Saves only at safe places (bonfires, bases). Permadeath maybe later as a mode.
+
+## Dive and bullet time (Yan)
+
+- Space: dive in any direction; time slows while airborne, aim and fire freely.
+- **On landing you are prone ~0.6 s** (can't move or dodge, getting up included): diving into cover is safe, into the open is risky.
+- Costs **Focus** (meter filled by kills and near misses), so no chaining.
+- In bullet time the body part under the crosshair is highlighted and hits on it get a better wound chance.
+- **Co-op:** bullet time slows everyone within ~40 tiles / in the same fight, and they can all use it (team effort).
+
+## Stealth, throwables, anomalies
+
+- Detection "!" meter, banter and shouts as today, in real time.
+- Takedown: hold F behind an unaware enemy. Suppressed guns don't alert the whole squad. Found bodies alert squadmates.
+- Ambush: a first shot on an unaware enemy does bonus damage.
+- Throwables: frag, smoke, flashbang; enemies throw them too and shout a warning first.
+- Anomalies as today; throw bolts (G) to find edges; a detector item beeps faster when close.
+
+## Weight and stamina
+
+Carried weight slows you and drains stamina faster (sprint, dive, melee). Looting becomes a choice.
+
+## Enemy AI (squads stay the same, now every frame)
+
+Patrol and posts as today; spot, shout, take cover, hold angles, suppress, flank, throw grenades, call backup on
+the radio, retreat when losing. Mutants: hounds circle and lunge in packs; the Brute charges and throws its boulder
+if you keep distance (hit = slowed); the Veil Prowler goes invisible. The new mutant animations carry over.
+
+## Companion
+
+Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack my target. Fills an empty co-op slot later.
+
+## Co-op (decided: build for it from the start)
+
+- Host runs the world (clock, A-Life, saves); other players send inputs. Unity Netcode for GameObjects + Relay.
+- 2-4 players on the same map; explore separately; **map exits only together** (everyone at an exit and confirmed, like Borderlands).
+- Separate inventories; drop items for each other; trade as now.
+- The first prototype is single-player, but the combat code is written host-authoritative from day one.
+
+## Perks (rework; same groups, names kept where they fit)
+
+| Group | Perk | Real-time effect |
+|-|-|-|
+| Sniper | Marksman's Focus | Less sway when aiming |
+| | High-Velocity Impact | Long shots pierce armor more |
+| | Overwatch | Hold aim on an area: the first enemy to step in slows time briefly |
+| Assault | Recoil Control | Recoil climbs half as fast |
+| | Controlled Taps | Single shots reset spread faster |
+| | Suppressive Fire | Wider suppression |
+| SMG | Bullet Hose | Little spread at close range |
+| | Run and Gun | Fire while sprinting |
+| | Hit and Run | Speed boost 2 s after a hit |
+| Heavy | Entrenched | Damage reduction while standing still |
+| | Walking Tank | Normal speed with heavy weapons |
+| Shotgun | Breacher / Staggering Blast | Close hits knock down |
+| | Buckshot Spread | Wider lethal pellet cone |
+| Sidearm | Gunslinger | Dual pistols, one per mouse button |
+| | Point-Blank Execution | Instantly finish downed or stunned enemies |
+| | Double Tap | Faster pistol fire rate |
+| Melee | Bull Rush | Sprint into a shoulder charge that knocks down |
+| | Desperate Parry | Timed block parries a melee hit |
+| | Blade Dancer | Melee hits chain faster |
+| Survival | Quick Hands / Gunsmith | Faster reload / jam clear |
+| | Sprinter | More stamina |
+| | Tactical Reposition | Faster leaning and moving between cover |
+| | Vault | Vault low cover |
+| | Adrenaline Surge | At low HP: a burst of slow-mo and Focus |
+| | Haggler, Pack Mule, etc. | Unchanged |
+| New | Tumbler | Shorter prone time after a dive (never zero) |
+| New | Disarm | Grab the gun from a stunned enemy |
+| New | Cold Blood | Focus fills faster from near misses |
+
+Turn-only systems are removed: action bar, AP/MP, turn overwatch, surprise round, the body-part targeting panel.
+
+## First prototype (done when all of this works)
+
+One part of Tier 1 with: movement, aim, fire, reload with the new stats on 3-4 guns; the hit model with height,
+limb health and wounds; cover; the dive and bullet time (solo); one Raider squad that patrols, spots, shouts,
+flanks and suppresses; downed and bleed-out. Old turn-based saves are not compatible.
+
+## Setup
+
+- Yan creates an empty private repo `grimmylock/agora-vai-action` (no README). The project is copied in from
+  `turn-based-fallback` (Batch 131f) plus this document. Game name stays "agora vai".
+- Yan's side: also label the Plastic changeset ("turn-based-131") and keep a zip of the project folder.
+
+## Later list
+
+- A real run cycle for the hounds (Batch 131f): the knee-rig walk looks wrong at running speed.

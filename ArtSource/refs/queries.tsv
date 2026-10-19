@@ -1,0 +1,50 @@
+# prop	queries (|-separated). Batch 104: the reference library (Yan's plan: references for every prop, building fronts, power lines)
+tree	birch tree field|birch trees abandoned village
+pine	spruce tree forest edge|pine tree single
+deadtree	dead tree bare branches|dead birch swamp
+redtree	birch autumn yellow|autumn tree orange leaves
+bush	shrub overgrown abandoned|bush green wild
+redbush	autumn shrub red|bush autumn leaves
+reeds	reeds cattail swamp|bulrush marsh
+sunktruck	truck sunk swamp|abandoned truck water
+brush	tall grass weeds overgrown|weeds ruderal field
+rock	boulder moss forest|large rock field
+logs	log pile forest|stacked logs firewood
+crate	wooden crate old|ammunition crate wooden
+lockers	metal lockers abandoned|old lockers rusty
+sandbags	sandbags wall|sandbag bunker position
+rustbarrel	rusty oil drum|old barrels rust abandoned
+barrel	red barrel drum|red fuel drum
+machine	abandoned factory machine|old lathe factory
+engine	old engine block rusty|diesel engine abandoned
+pipes	industrial pipes rusty|pipeline abandoned factory
+desk	old office desk wooden|abandoned office desk
+armchair	abandoned armchair|old armchair torn
+wreck	abandoned car rust soviet|car wreck overgrown
+container	shipping container rusty|abandoned shipping containers
+campfire	campfire night|campfire stones
+stones	stones pile field|fieldstones
+antenna	radio antenna mast|antenna tower rusty
+barrierpole	boom barrier checkpoint|road barrier gate
+fence	wooden fence village old|chain link fence rusty
+rubble	rubble concrete debris|ruined building rubble
+pole	concrete utility pole|electric pole village
+watchtower	watchtower wooden|guard tower prison camp
+lamp	soviet street lamp|old street light concrete
+busstop	soviet bus stop|bus stop concrete abandoned
+bus	abandoned bus rusty|old bus wreck
+dumpster	dumpster rusty|garbage container metal
+tank	abandoned tank rusty|tank monument
+flatcar	railway flatcar|freight wagon abandoned
+floorpipe	pipe on floor basement|pipes along floor industrial
+roots	tree roots cave ceiling|hanging roots
+front_brick	abandoned brick building facade|brick wall ruin
+front_plaster	plaster facade crumbling|peeling plaster house wall
+front_panel	soviet panel building abandoned|prefab concrete apartment block
+front_plank	wooden village house old|log cabin abandoned village
+front_concrete	concrete wall stained|concrete bunker wall
+front_metal	corrugated metal shed|corrugated iron wall rust
+front_window	broken window abandoned building|boarded up window
+front_door	old wooden door abandoned|rusty metal door
+power_lines	power lines village wooden poles|power line poles countryside
+power_pylon	power pylon field|high voltage tower

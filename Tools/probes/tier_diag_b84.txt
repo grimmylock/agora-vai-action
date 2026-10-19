@@ -1,0 +1,22 @@
+=== player with the best assault of the tier, mid armor of the tier, no perks; enemies 6 tiles away in the open
+T3 Contractors you: TS-9 Tishina, AC 11, DR 35 % | them: 4.8 a squad, HP 100, AC 10.8, DR 32 %, AP rounds 0%, guns Corvan Hornet .45, PPZ Zubr, SKN Karabin
+      you hit 66 % for 20 -> 7.6 shots a kill, ~18.4 turns for the squad | they hit 63 % for 16 -> the squad does ~96 a turn to your 100 HP (1.0 turns)
+T4 Contractors you: Corvan Battle Rifle, AC 11, DR 45 % | them: 5.2 a squad, HP 100, AC 11.3, DR 37 %, AP rounds 8%, guns Corvan Gnat PDW, Corvan Wasp-9, Rinaldi R6
+      you hit 61 % for 19 -> 9.9 shots a kill, ~17.1 turns for the squad | they hit 68 % for 14 -> the squad does ~102 a turn to your 100 HP (1.0 turns)
+T4 Raiders     you: Corvan Battle Rifle, AC 11, DR 45 % | them: 5.1 a squad, HP 100, AC 11.2, DR 32 %, AP rounds 8%, guns Corvan Gnat PDW, Sever-34 O/U, VK-103
+      you hit 62 % for 21 -> 8.1 shots a kill, ~13.7 turns for the squad | they hit 67 % for 14 -> the squad does ~99 a turn to your 100 HP (1.0 turns)
+T5 Contractors you: Corvan Bullpup, AC 12, DR 70 % | them: 5.1 a squad, HP 100, AC 11.9, DR 43 %, AP rounds 11%, guns Corvan Gnat PDW, BR-86 Bulldog, VK-74 Obelisk
+      you hit 73 % for 19 -> 8.2 shots a kill, ~14.1 turns for the squad | they hit 64 % for 12 -> the squad does ~77 a turn to your 100 HP (1.3 turns)
+T5 Obelisk     you: Corvan Bullpup, AC 12, DR 70 % | them: 5.1 a squad, HP 100, AC 11.7, DR 42 %, AP rounds 12%, guns Corvan Gnat PDW, NA-94 Yenisei, Corvan Battle Rifle
+      you hit 74 % for 20 -> 8.1 shots a kill, ~13.8 turns for the squad | they hit 62 % for 12 -> the squad does ~75 a turn to your 100 HP (1.3 turns)
+=== player with the best sidearm of the tier, mid armor of the tier, no perks; enemies 6 tiles away in the open
+T3 Contractors you: Black Harrier, AC 11, DR 35 % | them: 5.1 a squad, HP 100, AC 10.8, DR 33 %, AP rounds 0%, guns Corvan Wasp-9, TR-30, VK-74
+      you hit 65 % for 15 -> 10.7 shots a kill, ~27.1 turns for the squad | they hit 63 % for 16 -> the squad does ~104 a turn to your 100 HP (1.0 turns)
+T4 Contractors you: Steppe Eagle, AC 11, DR 45 % | them: 4.9 a squad, HP 100, AC 11.3, DR 38 %, AP rounds 9%, guns Corvan Gnat PDW, NA-94 Yenisei, Corvan Marksman
+      you hit 61 % for 16 -> 11.5 shots a kill, ~18.9 turns for the squad | they hit 68 % for 15 -> the squad does ~103 a turn to your 100 HP (1.0 turns)
+T4 Raiders     you: Steppe Eagle, AC 11, DR 45 % | them: 5.0 a squad, HP 100, AC 11.2, DR 33 %, AP rounds 6%, guns PPZ Zubr, Corvan Wasp-9, SR-21 Gadyuka
+      you hit 62 % for 17 -> 9.7 shots a kill, ~16.2 turns for the squad | they hit 67 % for 14 -> the squad does ~95 a turn to your 100 HP (1.1 turns)
+T5 Contractors you: RK-12 Kuvalda, AC 12, DR 70 % | them: 5.1 a squad, HP 100, AC 11.7, DR 41 %, AP rounds 17%, guns Corvan Gnat PDW, NA-94 Yenisei, VK-74 Obelisk
+      you hit 74 % for 24 -> 6.7 shots a kill, ~17.1 turns for the squad | they hit 63 % for 12 -> the squad does ~75 a turn to your 100 HP (1.3 turns)
+T5 Obelisk     you: RK-12 Kuvalda, AC 12, DR 70 % | them: 4.9 a squad, HP 100, AC 11.7, DR 42 %, AP rounds 11%, guns Corvan Battle Rifle, Corvan Gnat PDW, NA-94 Yenisei
+      you hit 74 % for 23 -> 6.7 shots a kill, ~16.4 turns for the squad | they hit 62 % for 11 -> the squad does ~69 a turn to your 100 HP (1.5 turns)

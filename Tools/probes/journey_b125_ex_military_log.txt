@@ -1,0 +1,1598 @@
+D1 07:00  Equipped weapon: VKS-74U (range 12 tiles).
+D1 07:00  Second weapon: Spetsnaz Switchblade. Swap with Y.
+D1 07:00  Equipped armor: Raider Jacket. Phys-DR 0.1, Anom-DR 0.1, Max MP 4.
+D1 07:00  [SQUAD] A Raiders force takes position in The Perimeter.
+D1 07:00  [SQUAD] A Raiders force takes position in The Perimeter.
+D1 07:00  [SQUAD] A Raiders force takes position in Toxic Marshes.
+D1 07:00  [SQUAD] A Raiders force takes position in Smuggler's Run.
+D1 07:00  [SQUAD] A Raiders force takes position in Smuggler's Run.
+D1 07:00  [SQUAD] A Wanderers force takes position in Smuggler's Run.
+D1 07:00  [SQUAD] A Wanderers force takes position in Smuggler's Run.
+D1 07:00  [SQUAD] A Raiders force takes position in Smuggler's Run.
+D1 07:00  [SAFE ZONE] Entered Bonfire Village. Weapons hold.
+D1 07:00  [RUMOR] Someone swears there's a hidden way into Secret Lab Alpha somewhere in Industrial Basin.
+D1 07:00  You step into the Perimeter: a Rookie ex-military with 400 Ru. P shows your character, W the state of the Zone.
+D1 07:00  [BOT] A new Ex-Military wakes up at Bonfire Village: 100 HP, 400 Ru, VKS-74U, Raider Jacket.
+D1 07:00  Quest accepted: Yefim noticed movement at the fence line and wants to know what's coming.
+D1 07:00    Complication (d6 = 6): Better offer - someone else may bid for what you bring back.
+D1 07:00    Two ways to finish: turn in to the Wanderers, or take it to the Garrison instead.
+D1 07:00  Quest accepted: A buyer wants the drum's contents analyzed, no questions asked.
+D1 07:00    Complication (d6 = 1): none - a clean job.
+D1 07:00    Two ways to finish: turn in to the Wanderers, or take it to the Cartel instead.
+D1 07:00  [QUEST] Your targets for "A buyer wants the drum's contents analyzed, no questions asked." are in Toxic Marshes.
+D1 07:00  [BOT] Goes after its quest target, Blind Maw.
+D1 07:00  Player moved to (79, 169), MP remaining: 5.
+D1 07:01  Player moved to (79, 168), MP remaining: 5.
+D1 07:02  Player moved to (79, 167), MP remaining: 5.
+D1 07:03  Player moved to (79, 166), MP remaining: 5.
+D1 07:04  Player moved to (79, 165), MP remaining: 5.
+D1 07:05  Player moved to (79, 164), MP remaining: 5.
+D1 07:06  Player moved to (79, 163), MP remaining: 5.
+D1 07:07  Player moved to (79, 162), MP remaining: 5.
+D1 07:08  Player moved to (79, 161), MP remaining: 5.
+D1 07:09  Player moved to (79, 160), MP remaining: 5.
+D1 07:10  Player moved to (79, 159), MP remaining: 5.
+D1 07:11  Player moved to (79, 158), MP remaining: 5.
+D1 07:12  Player moved to (79, 157), MP remaining: 5.
+D1 07:13  Player moved to (79, 156), MP remaining: 5.
+D1 07:14  Player moved to (79, 155), MP remaining: 5.
+D1 07:15  Player moved to (79, 154), MP remaining: 5.
+D1 07:16  Player moved to (79, 153), MP remaining: 5.
+D1 07:17  Player moved to (79, 152), MP remaining: 5.
+D1 07:18  Player moved to (79, 151), MP remaining: 4.
+D1 07:19  Player moved to (79, 150), MP remaining: 5.
+D1 07:20  Player moved to (80, 149), MP remaining: 4.5.
+D1 07:21  Player moved to (80, 148), MP remaining: 5.
+D1 07:22  Player moved to (81, 147), MP remaining: 4.5.
+D1 07:23  Player moved to (81, 146), MP remaining: 5.
+D1 07:24  Player moved to (82, 145), MP remaining: 4.5.
+D1 07:25  You're in The Perimeter now.
+D1 07:25  Player moved to (83, 144), MP remaining: 4.5.
+D1 07:26  Player moved to (84, 143), MP remaining: 4.5.
+D1 07:27  Player moved to (85, 142), MP remaining: 4.5.
+D1 07:28  Player moved to (86, 141), MP remaining: 3.
+D1 07:29  Player moved to (87, 140), MP remaining: 3.
+D1 07:30  Player moved to (88, 139), MP remaining: 3.
+D1 07:31  Player moved to (89, 138), MP remaining: 4.5.
+D1 07:32  Player moved to (90, 137), MP remaining: 4.5.
+D1 07:33  Player moved to (91, 136), MP remaining: 4.5.
+D1 07:34  Player moved to (92, 137), MP remaining: 3.
+D1 07:34  You discover a hidden path to Secret Cave Area!
+D1 07:35  Player moved to (93, 138), MP remaining: 3.
+D1 07:36  Player moved to (94, 139), MP remaining: 3.
+D1 07:37  Player moved to (95, 139), MP remaining: 4.
+D1 07:38  Player moved to (96, 140), MP remaining: 3.
+D1 07:39  Player moved to (97, 141), MP remaining: 4.5.
+D1 07:40  Player moved to (98, 142), MP remaining: 4.5.
+D1 07:41  Player moved to (99, 143), MP remaining: 4.5.
+D1 07:42  Player moved to (100, 144), MP remaining: 4.5.
+D1 07:43  Player moved to (101, 145), MP remaining: 4.5.
+D1 07:44  Player moved to (102, 146), MP remaining: 4.5.
+D1 07:45  Player moved to (103, 147), MP remaining: 4.5.
+D1 07:46  Player moved to (104, 148), MP remaining: 4.5.
+D1 07:47  Player attempts S check: Rolled 10 + 0 = 10 vs AC 10 -> Success
+D1 07:47  Bus Stop successfully interacted with.
+D1 07:47  Recovered loot: Obrez-66.
+D1 07:47  Recovered loot: Military Medkit.
+D1 07:47  Recovered loot: Halden Service Revolver.
+D1 07:47  Found 65 RU.
+D1 07:47  [BOT] Opens the Bus Stop: +65 Ru, +3 items.
+D1 07:47  Player moved to (105, 147), MP remaining: 4.5.
+D1 07:48  Player moved to (106, 146), MP remaining: 3.
+D1 07:49  Player moved to (107, 145), MP remaining: 4.5.
+D1 07:50  Player moved to (108, 144), MP remaining: 4.5.
+D1 07:51  Player moved to (109, 143), MP remaining: 4.5.
+D1 07:52  Player moved to (110, 142), MP remaining: 4.5.
+D1 07:53  Player moved to (110, 141), MP remaining: 5.
+D1 07:54  Player moved to (111, 140), MP remaining: 4.5.
+D1 07:55  Player moved to (112, 141), MP remaining: 4.5.
+D1 07:56  Player moved to (113, 142), MP remaining: 4.5.
+D1 07:57  Player moved to (114, 143), MP remaining: 4.5.
+D1 07:58  Player moved to (115, 144), MP remaining: 4.5.
+D1 07:59  Player moved to (116, 145), MP remaining: 4.5.
+D1 08:00  Player moved to (117, 146), MP remaining: 3.
+D1 08:01  Player moved to (118, 147), MP remaining: 4.5.
+D1 08:02  Player moved to (119, 148), MP remaining: 4.5.
+D1 08:03  Player moved to (120, 148), MP remaining: 5.
+D1 08:04  Player moved to (121, 149), MP remaining: 4.5.
+D1 08:05  Player moved to (122, 149), MP remaining: 5.
+D1 08:06  Player moved to (123, 150), MP remaining: 4.5.
+D1 08:06  [QUEST] You found what you were looking for: "Yefim noticed movement at the fence line and wants to know what's coming.".
+D1 08:06  [RUMOR] Your contact swears there's a hidden way into Underground Bunker from Abandoned City. (true)
+D1 08:06  Quest complete: Yefim noticed movement at the fence line and wants to know what's coming. (+182 RU, +1 reputation with the Wanderers)
+D1 08:07  Player moved to (124, 150), MP remaining: 4.
+D1 08:08  Player attempts S check: Rolled 20 + 0 = 20 vs AC 10 -> Success
+D1 08:08  Lone Grave successfully interacted with.
+D1 08:08  Recovered loot: Scrap-Plated Vest.
+D1 08:08  Recovered loot: Military Stim.
+D1 08:08  Recovered loot: Scrap-Plated Vest.
+D1 08:08  Recovered loot: Clicker.
+D1 08:08  Recovered loot: VKS-74U.
+D1 08:08  Recovered loot: Obrez-66.
+D1 08:08  [BOT] Opens the Lone Grave: +0 Ru, +6 items.
+D1 08:08  Player moved to (125, 149), MP remaining: 4.5.
+D1 08:09  Player moved to (126, 148), MP remaining: 4.5.
+D1 08:10  Player moved to (126, 147), MP remaining: 5.
+D1 08:11  Player moved to (127, 146), MP remaining: 4.5.
+D1 08:12  Player moved to (127, 145), MP remaining: 4.
+D1 08:13  Player moved to (127, 144), MP remaining: 5.
+D1 08:13  Raiders Operative opens a door.
+D1 08:14  Player attempts S check: Rolled 19 + 0 = 19 vs AC 10 -> Success
+D1 08:14  Footlocker successfully interacted with.
+D1 08:14  Recovered loot: Military Stim.
+D1 08:14  Recovered loot: Scrap-Plated Vest.
+D1 08:14  Recovered loot: Vosa vz. 62.
+D1 08:14  Junk, mostly. 34 loose RU.
+D1 08:14  [BOT] Opens the Footlocker: +34 Ru, +3 items.
+D1 08:14  Player moved to (128, 144), MP remaining: 5.
+D1 08:15  Player moved to (129, 144), MP remaining: 5.
+D1 08:16  Player moved to (130, 145), MP remaining: 3.
+D1 08:17  Player moved to (131, 145), MP remaining: 5.
+D1 08:18  Player attempts S check: Rolled 17 + 0 = 17 vs AC 10 -> Success
+D1 08:18  Old Chest successfully interacted with.
+D1 08:18  Found 136 RU.
+D1 08:18  Recovered loot: Heavy Trenchcoat.
+D1 08:18  Recovered loot: PSh-18 Pchela.
+D1 08:18  [BOT] Opens the Old Chest: +136 Ru, +2 items.
+D1 08:18  Player moved to (131, 144), MP remaining: 4.
+D1 08:19  Player moved to (131, 143), MP remaining: 5.
+D1 08:20  Player moved to (132, 142), MP remaining: 4.5.
+D1 08:21  Player moved to (132, 141), MP remaining: 5.
+D1 08:22  Player moved to (132, 140), MP remaining: 5.
+D1 08:23  Player moved to (133, 139), MP remaining: 3.
+D1 08:24  Player moved to (133, 138), MP remaining: 5.
+D1 08:25  Player moved to (133, 137), MP remaining: 4.
+D1 08:26  You're in Toxic Marshes now.
+D1 08:26  Player moved to (134, 136), MP remaining: 3.
+D1 08:27  Player moved to (134, 135), MP remaining: 4.
+D1 08:28  Player moved to (134, 134), MP remaining: 5.
+D1 08:29  Player moved to (135, 133), MP remaining: 4.5.
+D1 08:30  Player moved to (136, 132), MP remaining: 3.
+D1 08:31  Player moved to (136, 131), MP remaining: 5.
+D1 08:32  Player moved to (136, 130), MP remaining: 5.
+D1 08:33  Player moved to (137, 129), MP remaining: 4.5.
+D1 08:34  Player moved to (138, 128), MP remaining: 4.5.
+D1 08:35  Player moved to (139, 127), MP remaining: 4.5.
+D1 08:36  Player moved to (140, 126), MP remaining: 4.5.
+D1 08:37  Player moved to (140, 125), MP remaining: 5.
+D1 08:38  Player moved to (141, 124), MP remaining: 4.5.
+D1 08:39  Player moved to (142, 123), MP remaining: 4.5.
+D1 08:40  Player moved to (142, 122), MP remaining: 5.
+D1 08:41  Player moved to (143, 121), MP remaining: 4.5.
+D1 08:42  Player moved to (144, 120), MP remaining: 3.
+D1 08:43  Player moved to (145, 119), MP remaining: 4.5.
+D1 08:44  Player moved to (145, 118), MP remaining: 5.
+D1 08:45  Player moved to (146, 117), MP remaining: 4.5.
+D1 08:46  Player moved to (146, 116), MP remaining: 5.
+D1 08:47  Player moved to (146, 115), MP remaining: 5.
+D1 08:48  Player moved to (147, 114), MP remaining: 4.5.
+D1 08:49  Player moved to (148, 113), MP remaining: 4.5.
+D1 08:50  Player moved to (149, 112), MP remaining: 4.5.
+D1 08:51  Player moved to (150, 111), MP remaining: 4.5.
+D1 08:52  Player moved to (151, 110), MP remaining: 4.5.
+D1 08:52  Player moved to (152, 109), MP remaining: 4.5.
+D1 08:53  Player moved to (153, 108), MP remaining: 4.5.
+D1 08:54  Player moved to (153, 107), MP remaining: 5.
+D1 08:55  Player moved to (153, 106), MP remaining: 5.
+D1 08:56  Player moved to (153, 105), MP remaining: 5.
+D1 08:57  Player moved to (153, 104), MP remaining: 5.
+D1 08:58  Player moved to (153, 103), MP remaining: 5.
+D1 08:59  Player moved to (153, 102), MP remaining: 4.
+D1 09:00  [RADIO] Gunfire next door. A Raiders squad and a Liberators squad fought in The Scrapyard. The Liberators were wiped out.
+D1 09:00  Player moved to (153, 101), MP remaining: 5.
+D1 09:00  Raiders Operative opens a door.
+D1 09:01  Player moved to (154, 100), MP remaining: 4.5.
+D1 09:02  Player moved to (154, 99), MP remaining: 5.
+D1 09:03  Player moved to (154, 98), MP remaining: 4.
+D1 09:04  Player moved to (155, 97), MP remaining: 3.
+D1 09:04  Raiders Operative opens a door.
+D1 09:05  Player moved to (155, 96), MP remaining: 4.
+D1 09:06  Player moved to (156, 95), MP remaining: 3.
+D1 09:07  Player moved to (156, 94), MP remaining: 4.
+D1 09:08  Player moved to (156, 93), MP remaining: 4.
+D1 09:09  Player moved to (156, 92), MP remaining: 4.
+D1 09:10  Player moved to (157, 91), MP remaining: 3.
+D1 09:11  Player moved to (157, 90), MP remaining: 4.
+D1 09:12  Player moved to (158, 89), MP remaining: 4.5.
+D1 09:13  Player moved to (158, 88), MP remaining: 5.
+D1 09:14  Player moved to (159, 87), MP remaining: 4.5.
+D1 09:15  Player moved to (159, 86), MP remaining: 5.
+D1 09:16  Player moved to (160, 85), MP remaining: 4.5.
+D1 09:17  Player moved to (160, 84), MP remaining: 5.
+D1 09:18  Player moved to (161, 83), MP remaining: 4.5.
+D1 09:19  Player moved to (161, 82), MP remaining: 5.
+D1 09:20  Player moved to (161, 81), MP remaining: 5.
+D1 09:21  Player moved to (161, 80), MP remaining: 5.
+D1 09:21  [MOVEMENT] Raiders squad leaves Toxic Marshes for The Scrapyard.
+D1 09:22  Player moved to (161, 79), MP remaining: 5.
+D1 09:23  Player moved to (161, 78), MP remaining: 5.
+D1 09:24  Player moved to (161, 77), MP remaining: 5.
+D1 09:25  Player moved to (161, 76), MP remaining: 5.
+D1 09:26  Player moved to (160, 76), MP remaining: 5.
+D1 09:27  Player moved to (159, 76), MP remaining: 5.
+D1 09:28  Player moved to (158, 76), MP remaining: 5.
+D1 09:29  Player moved to (157, 76), MP remaining: 5.
+D1 09:30  Player opens a door.
+D1 09:30  Player moved to (157, 77), MP remaining: 4.
+D1 09:31  Player moved to (157, 78), MP remaining: 5.
+D1 09:32  Player moved to (158, 79), MP remaining: 4.5.
+D1 09:33  Player moved to (158, 80), MP remaining: 5.
+D1 09:34  Player attempts S check: Rolled 12 + 0 = 12 vs AC 10 -> Success
+D1 09:34  Toolbox successfully interacted with.
+D1 09:34  Recovered loot: Hunting Knife.
+D1 09:34  Recovered loot: Leather Jacket.
+D1 09:34  Recovered loot: Heavy Trenchcoat.
+D1 09:34  Recovered loot: Vosa vz. 62.
+D1 09:34  Recovered loot: VKS-74U.
+D1 09:34  [BOT] Opens the Toolbox: +0 Ru, +5 items.
+D1 09:34  Player moved to (158, 79), MP remaining: 5.
+D1 09:35  Player moved to (157, 78), MP remaining: 4.5.
+D1 09:36  Player moved to (157, 77), MP remaining: 5.
+D1 09:37  Player moved to (157, 76), MP remaining: 5.
+D1 09:38  Player moved to (158, 75), MP remaining: 4.5.
+D1 09:39  Player moved to (159, 74), MP remaining: 4.5.
+D1 09:40  Player moved to (160, 73), MP remaining: 4.5.
+D1 09:41  Player moved to (160, 72), MP remaining: 5.
+D1 09:42  Player moved to (161, 71), MP remaining: 4.5.
+D1 09:43  Player opens a door.
+D1 09:43  Player moved to (161, 70), MP remaining: 4.
+D1 09:44  Player moved to (161, 69), MP remaining: 5.
+D1 09:45  Player moved to (161, 68), MP remaining: 5.
+D1 09:46  Player moved to (161, 67), MP remaining: 5.
+D1 09:47  Player moved to (161, 66), MP remaining: 5.
+D1 09:48  Player moved to (161, 65), MP remaining: 5.
+D1 09:49  Player attempts S check: Rolled 8 + 0 = 8 vs AC 10 -> Failure
+D1 09:49  Footlocker interaction failed.
+D1 09:49  Metal clangs as it holds.
+D1 09:49  [BOT] Can't get the Footlocker open.
+D1 09:49  Player moved to (161, 66), MP remaining: 5.
+D1 09:50  Player moved to (161, 67), MP remaining: 5.
+D1 09:51  Player moved to (161, 68), MP remaining: 5.
+D1 09:52  Player moved to (161, 69), MP remaining: 5.
+D1 09:53  Player moved to (161, 70), MP remaining: 5.
+D1 09:54  Player moved to (161, 71), MP remaining: 5.
+D1 09:55  Player moved to (162, 71), MP remaining: 5.
+D1 09:56  Player moved to (163, 71), MP remaining: 5.
+D1 09:57  Player moved to (164, 71), MP remaining: 5.
+D1 09:58  Player moved to (165, 71), MP remaining: 5.
+D1 09:59  Player moved to (166, 71), MP remaining: 5.
+D1 10:00  Player moved to (167, 71), MP remaining: 5.
+D1 10:01  Player moved to (168, 70), MP remaining: 4.5.
+D1 10:02  Player moved to (169, 70), MP remaining: 5.
+D1 10:03  Player moved to (170, 69), MP remaining: 4.5.
+D1 10:03  [MOVEMENT] Raiders squad moves on into The Perimeter.
+D1 10:04  Player opens a door.
+D1 10:04  Player moved to (170, 68), MP remaining: 4.
+D1 10:05  Player moved to (170, 67), MP remaining: 5.
+D1 10:06  Player moved to (170, 66), MP remaining: 5.
+D1 10:07  Player moved to (170, 65), MP remaining: 5.
+D1 10:08  Player attempts S check: Rolled 5 + 0 = 5 vs AC 10 -> Failure
+D1 10:08  Toolbox interaction failed.
+D1 10:08  Metal clangs as it holds.
+D1 10:08  [BOT] Can't get the Toolbox open.
+D1 10:08  Player moved to (170, 66), MP remaining: 5.
+D1 10:09  Player moved to (170, 67), MP remaining: 5.
+D1 10:10  Player moved to (170, 68), MP remaining: 5.
+D1 10:11  Player moved to (170, 69), MP remaining: 5.
+D1 10:12  Player moved to (171, 69), MP remaining: 5.
+D1 10:13  Player moved to (172, 69), MP remaining: 5.
+D1 10:14  Player moved to (173, 69), MP remaining: 5.
+D1 10:15  Player moved to (174, 69), MP remaining: 5.
+D1 10:16  Player moved to (175, 69), MP remaining: 5.
+D1 10:17  Player moved to (176, 69), MP remaining: 5.
+D1 10:18  Player moved to (177, 69), MP remaining: 5.
+D1 10:19  Player moved to (178, 69), MP remaining: 5.
+D1 10:20  Player moved to (179, 69), MP remaining: 5.
+D1 10:21  Player opens a door.
+D1 10:21  Player moved to (179, 68), MP remaining: 4.
+D1 10:22  Player moved to (179, 67), MP remaining: 5.
+D1 10:23  Player moved to (180, 67), MP remaining: 5.
+D1 10:24  Player attempts S check: Rolled 2 + 0 = 2 vs AC 10 -> Failure
+D1 10:24  Toolbox interaction failed.
+D1 10:24  Metal clangs as it holds.
+D1 10:24  [BOT] Can't get the Toolbox open.
+D1 10:24  Player moved to (179, 67), MP remaining: 5.
+D1 10:25  Player moved to (179, 68), MP remaining: 5.
+D1 10:26  Player moved to (179, 69), MP remaining: 5.
+D1 10:27  Player moved to (178, 70), MP remaining: 4.5.
+D1 10:28  Player moved to (177, 71), MP remaining: 4.5.
+D1 10:29  Player moved to (176, 72), MP remaining: 4.5.
+D1 10:30  Player moved to (175, 73), MP remaining: 4.5.
+D1 10:31  Player moved to (174, 74), MP remaining: 4.5.
+D1 10:32  Player moved to (174, 75), MP remaining: 5.
+D1 10:33  Player moved to (174, 76), MP remaining: 5.
+D1 10:34  Player moved to (174, 77), MP remaining: 5.
+D1 10:35  Player moved to (174, 78), MP remaining: 5.
+D1 10:36  Player moved to (174, 79), MP remaining: 5.
+D1 10:37  Player moved to (174, 80), MP remaining: 5.
+D1 10:38  Player moved to (174, 81), MP remaining: 5.
+D1 10:39  Player moved to (174, 82), MP remaining: 5.
+D1 10:40  Player moved to (174, 83), MP remaining: 5.
+D1 10:41  Player moved to (175, 83), MP remaining: 5.
+D1 10:42  Player moved to (176, 83), MP remaining: 5.
+D1 10:43  Player opens a door.
+D1 10:43  Player moved to (176, 84), MP remaining: 4.
+D1 10:44  Player moved to (176, 85), MP remaining: 5.
+D1 10:45  Player attempts S check: Rolled 4 + 0 = 4 vs AC 10 -> Failure
+D1 10:45  Footlocker interaction failed.
+D1 10:45  Metal clangs as it holds.
+D1 10:45  [BOT] Can't get the Footlocker open.
+D1 10:45  Player moved to (176, 84), MP remaining: 5.
+D1 10:46  Player moved to (176, 83), MP remaining: 5.
+D1 10:47  Player moved to (175, 83), MP remaining: 5.
+D1 10:48  Player moved to (174, 83), MP remaining: 5.
+D1 10:49  Player moved to (174, 82), MP remaining: 5.
+D1 10:50  Player moved to (174, 81), MP remaining: 5.
+D1 10:51  Player moved to (174, 80), MP remaining: 5.
+D1 10:52  Player moved to (174, 79), MP remaining: 5.
+D1 10:53  Player opens a door.
+D1 10:53  Player moved to (175, 79), MP remaining: 4.
+D1 10:54  Player moved to (176, 79), MP remaining: 5.
+D1 10:55  Player moved to (177, 79), MP remaining: 5.
+D1 10:56  Player moved to (178, 79), MP remaining: 5.
+D1 10:57  Player moved to (179, 79), MP remaining: 5.
+D1 10:58  Player moved to (180, 79), MP remaining: 5.
+D1 10:59  Player moved to (181, 79), MP remaining: 5.
+D1 11:00  Player attempts S check: Rolled 2 + 0 = 2 vs AC 10 -> Failure
+D1 11:00  Headman's Strongbox interaction failed.
+D1 11:00  Metal clangs as it holds.
+D1 11:00  [BOT] Can't get the Headman's Strongbox open.
+D1 11:00  Player moved to (180, 79), MP remaining: 5.
+D1 11:01  Player moved to (179, 79), MP remaining: 5.
+D1 11:02  Player moved to (178, 79), MP remaining: 5.
+D1 11:02  [MOVEMENT] Raiders squad moves on into Smuggler's Run.
+D1 11:03  Player moved to (177, 79), MP remaining: 5.
+D1 11:04  Player moved to (176, 79), MP remaining: 5.
+D1 11:05  Player moved to (175, 79), MP remaining: 5.
+D1 11:06  Player moved to (174, 79), MP remaining: 5.
+D1 11:07  Player moved to (174, 78), MP remaining: 5.
+D1 11:08  Player moved to (174, 77), MP remaining: 5.
+D1 11:09  Player moved to (174, 76), MP remaining: 5.
+D1 11:10  Player moved to (174, 75), MP remaining: 5.
+D1 11:11  Player moved to (174, 74), MP remaining: 5.
+D1 11:12  Player moved to (174, 73), MP remaining: 5.
+D1 11:13  Player moved to (174, 72), MP remaining: 4.
+D1 11:14  Player moved to (174, 71), MP remaining: 5.
+D1 11:15  Player moved to (174, 70), MP remaining: 5.
+D1 11:15  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:15  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:15  Wanderers Operative is in light cover: +1 AC.
+D1 11:15  Rolled 2d10 6+10=16 = 16 vs AC 12
+D1 11:15  Clean hit: damage x1.0.
+D1 11:15  PL-62 Kobza hits Wanderers Operative for 17 damage using Standard ammo.
+D1 11:15  Wanderers Operative HP is now 83.
+D1 11:15  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:15  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:15  Raiders Operative is in light cover: +1 AC.
+D1 11:15  Rolled 2d10 8+10=18 (+1 skill) = 19 vs AC 11
+D1 11:15  Vital hit: damage x1.2.
+D1 11:15  PL-62 Kobza hits Raiders Operative for 22 damage using Standard ammo.
+D1 11:15  Raiders Operative HP is now 78.
+D1 11:15  Raiders Operative takes an ARM wound: -2 to attack rolls until bandaged.
+D1 11:16  Player moved to (174, 69), MP remaining: 5.
+D1 11:16  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:16  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:16  Wanderers Operative is in light cover: +1 AC.
+D1 11:16  Rolled 2d10 1+5=6 (-2 wounds/pinned) = 4 vs AC 12
+D1 11:16  PL-62 Kobza misses Wanderers Operative.
+D1 11:16  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:16  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:16  Raiders Operative is in light cover: +1 AC.
+D1 11:16  Rolled 2d10 4+3=7 (+1 skill) = 8 vs AC 11
+D1 11:16  PL-62 Kobza misses Raiders Operative.
+D1 11:16  Cover at (64, 66) takes a hit (2/3 left).
+D1 11:17  Player moved to (174, 68), MP remaining: 5.
+D1 11:17  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:17  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:17  Wanderers Operative is in light cover: +1 AC.
+D1 11:17  Rolled 2d10 10+4=14 (-2 wounds/pinned) = 12 vs AC 12
+D1 11:17  Graze: damage x0.85.
+D1 11:17  PL-62 Kobza hits Wanderers Operative for 15 damage using Standard ammo.
+D1 11:17  Wanderers Operative HP is now 68.
+D1 11:17  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:17  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:17  Raiders Operative is in light cover: +1 AC.
+D1 11:17  Rolled 2d10 5+9=14 (+1 skill) = 15 vs AC 11
+D1 11:17  Clean hit: damage x1.0.
+D1 11:17  PL-62 Kobza hits Raiders Operative for 18 damage using Standard ammo.
+D1 11:17  Raiders Operative HP is now 60.
+D1 11:18  Player moved to (174, 67), MP remaining: 5.
+D1 11:18  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:18  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:18  Wanderers Operative is in light cover: +1 AC.
+D1 11:18  Rolled 2d10 4+8=12 (-2 wounds/pinned) = 10 vs AC 12
+D1 11:18  PL-62 Kobza misses Wanderers Operative.
+D1 11:18  Cover at (56, 66) takes a hit (2/3 left).
+D1 11:18  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:18  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:18  Raiders Operative is in light cover: +1 AC.
+D1 11:18  Rolled 2d10 4+4=8 (+1 skill) = 9 vs AC 11
+D1 11:18  PL-62 Kobza misses Raiders Operative.
+D1 11:18  Cover at (64, 66) takes a hit (1/3 left).
+D1 11:19  Player moved to (174, 66), MP remaining: 5.
+D1 11:19  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:19  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:19  Wanderers Operative is in light cover: +1 AC.
+D1 11:19  Rolled 2d10 1+6=7 (-2 wounds/pinned) = 5 vs AC 12
+D1 11:19  PL-62 Kobza misses Wanderers Operative.
+D1 11:19  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:19  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:19  Raiders Operative is in light cover: +1 AC.
+D1 11:19  Rolled 2d10 1+9=10 (+1 skill) = 11 vs AC 11
+D1 11:19  Graze: damage x0.85.
+D1 11:19  PL-62 Kobza hits Raiders Operative for 16 damage using Standard ammo.
+D1 11:19  Raiders Operative HP is now 44.
+D1 11:20  Player moved to (174, 65), MP remaining: 5.
+D1 11:20  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:20  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:20  Wanderers Operative is in light cover: +1 AC.
+D1 11:20  Rolled 2d10 9+6=15 (-2 wounds/pinned) = 13 vs AC 12
+D1 11:20  Graze: damage x0.85.
+D1 11:20  PL-62 Kobza hits Wanderers Operative for 15 damage using Standard ammo.
+D1 11:20  Wanderers Operative HP is now 53.
+D1 11:20  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:20  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:20  Raiders Operative is in light cover: +1 AC.
+D1 11:20  Rolled 2d10 6+4=10 (+1 skill) = 11 vs AC 11
+D1 11:20  Graze: damage x0.85.
+D1 11:20  PL-62 Kobza hits Raiders Operative for 16 damage using Standard ammo.
+D1 11:20  Raiders Operative HP is now 28.
+D1 11:21  Player moved to (174, 64), MP remaining: 5.
+D1 11:21  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:21  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:21  Wanderers Operative is in light cover: +1 AC.
+D1 11:21  Rolled 2d10 2+1=3 (-2 wounds/pinned) = 1 vs AC 12
+D1 11:21  PL-62 Kobza misses Wanderers Operative.
+D1 11:21  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:21  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:21  Raiders Operative is in light cover: +1 AC.
+D1 11:21  Rolled 2d10 3+8=11 (+1 skill) = 12 vs AC 11
+D1 11:21  Graze: damage x0.85.
+D1 11:21  PL-62 Kobza hits Raiders Operative for 16 damage using Standard ammo.
+D1 11:21  Raiders Operative HP is now 12.
+D1 11:22  Player moved to (174, 63), MP remaining: 5.
+D1 11:22  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:22  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:22  Wanderers Operative is in light cover: +1 AC.
+D1 11:22  Rolled 2d10 1+8=9 (-2 wounds/pinned) = 7 vs AC 12
+D1 11:22  PL-62 Kobza misses Wanderers Operative.
+D1 11:22  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:22  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:22  Raiders Operative is in light cover: +1 AC.
+D1 11:22  Rolled 2d10 4+5=9 (+1 skill) = 10 vs AC 11
+D1 11:22  The round punches through the wood cover!
+D1 11:22  The cover at (64, 66) is shot to rubble.
+D1 11:22  Graze: damage x0.85.
+D1 11:22  PL-62 Kobza hits Raiders Operative for 8 damage using Standard ammo.
+D1 11:22  Raiders Operative HP is now 4.
+D1 11:23  Player moved to (174, 62), MP remaining: 5.
+D1 11:23  Raiders Operative fires PL-62 Kobza at Wanderers Operative!
+D1 11:23  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:23  Wanderers Operative is in light cover: +1 AC.
+D1 11:23  Rolled 2d10 6+4=10 (-2 wounds/pinned) = 8 vs AC 12
+D1 11:23  PL-62 Kobza misses Wanderers Operative.
+D1 11:23  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:23  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:23  Raiders Operative is in light cover: +1 AC.
+D1 11:23  Rolled 2d10 9+7=16 (+1 skill) = 17 vs AC 11
+D1 11:23  Clean hit: damage x1.0.
+D1 11:23  PL-62 Kobza hits Raiders Operative for 18 damage using Standard ammo.
+D1 11:23  Raiders Operative HP is now 0.
+D1 11:23  Raiders Operative has been defeated.
+D1 11:23  Raiders Operative sees Raiders Operative go down and is SHAKEN (-2 to hit, falls back).
+D1 11:24  Player moved to (174, 61), MP remaining: 5.
+D1 11:25  Player moved to (174, 60), MP remaining: 5.
+D1 11:26  Player moved to (174, 59), MP remaining: 4.
+D1 11:27  Player moved to (174, 58), MP remaining: 5.
+D1 11:28  Player moved to (174, 57), MP remaining: 5.
+D1 11:29  Player moved to (174, 56), MP remaining: 5.
+D1 11:30  Player moved to (174, 55), MP remaining: 4.
+D1 11:31  Player moved to (174, 54), MP remaining: 4.
+D1 11:32  Player moved to (174, 53), MP remaining: 4.
+D1 11:33  Player moved to (174, 52), MP remaining: 4.
+D1 11:34  Player moved to (174, 51), MP remaining: 4.
+D1 11:35  Player moved to (174, 50), MP remaining: 4.
+D1 11:36  Player moved to (174, 49), MP remaining: 4.
+D1 11:37  Player moved to (174, 48), MP remaining: 4.
+D1 11:38  Player moved to (174, 47), MP remaining: 4.
+D1 11:39  Player moved to (175, 46), MP remaining: 3.
+D1 11:40  Player moved to (176, 45), MP remaining: 3.
+D1 11:41  Player moved to (176, 44), MP remaining: 4.
+D1 11:42  Player moved to (176, 43), MP remaining: 4.
+D1 11:43  Player moved to (177, 42), MP remaining: 3.
+D1 11:43  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:43  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:43  Raiders Operative is in light cover: +1 AC.
+D1 11:43  Rolled 2d10 4+4=8 (+1 skill) = 9 vs AC 11
+D1 11:43  PL-62 Kobza jams!
+D1 11:43  PL-62 Kobza is now Dirty.
+D1 11:44  Player moved to (177, 41), MP remaining: 4.
+D1 11:44  PL-62 Kobza jam is cleared.
+D1 11:44  Wanderers Operative clears a jam.
+D1 11:44  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:44  VK-74 fires in Single mode, consuming 1 round.
+D1 11:44  Raiders Operative is flanked: +2 to hit.
+D1 11:44  Rolled 2d10 4+1=5 (+2 flank) = 7 vs AC 10
+D1 11:44  VK-74 misses Raiders Operative.
+D1 11:45  Player moved to (178, 40), MP remaining: 3.
+D1 11:45  [ALERT] Blind Maw has spotted the Player!
+D1 11:45  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:45  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:45  Raiders Operative is flanked: +2 to hit.
+D1 11:45  Rolled 2d10 3+1=4 (+1 skill, +2 flank) = 7 vs AC 10
+D1 11:45  PL-62 Kobza misses Raiders Operative.
+D1 11:45  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:45  VK-74 fires in Single mode, consuming 1 round.
+D1 11:45  Raiders Operative is flanked: +2 to hit.
+D1 11:45  Rolled 2d10 8+8=16 (+2 flank) = 18 vs AC 10
+D1 11:45  Vital hit: damage x1.2.
+D1 11:45  VK-74 hits Raiders Operative for 24 damage using Standard ammo.
+D1 11:45  Raiders Operative HP is now 76.
+D1 11:45  Raiders Operative takes an ARM wound: -2 to attack rolls until bandaged.
+D1 11:46  [BOT] Fight! 1x Blind Maw (100 HP).
+D1 11:46  VKS-74U fires in Single mode, consuming 1 round.
+D1 11:46  Rolled 2d10 6+2=8 (-1 skill) = 7 vs AC 11
+D1 11:46  VKS-74U misses Blind Maw.
+D1 11:46  VKS-74U fires in Single mode, consuming 1 round.
+D1 11:46  Rolled 2d10 5+1=6 (-1 skill) = 5 vs AC 11
+D1 11:46  VKS-74U misses Blind Maw.
+D1 11:46  Not enough AP to Single fire. 2 AP required.
+D1 11:46  Player ends turn. Mutant turn begins.
+D1 11:47  Raiders Operative fires Halden Lever Shotgun at Wanderers Operative!
+D1 11:47  Halden Lever Shotgun fires in Single mode, consuming 1 round.
+D1 11:47  Wanderers Operative is in light cover: +1 AC.
+D1 11:47  Rolled 2d10 5+3=8 (-1 skill, -4 wounds/pinned) = 3 vs AC 12
+D1 11:47  Halden Lever Shotgun misses Wanderers Operative.
+D1 11:47  Blind Maw cannot move: not enough MP to enter tile.
+D1 11:47  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:47  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:47  Raiders Operative is flanked: +2 to hit.
+D1 11:47  Rolled 2d10 7+10=17 (+1 skill, +2 flank) = 20 vs AC 10
+D1 11:47  Vital hit: damage x1.2.
+D1 11:47  PL-62 Kobza hits Raiders Operative for 22 damage using Standard ammo.
+D1 11:47  Raiders Operative HP is now 54.
+D1 11:47  Raiders Operative takes an ARM wound: -2 to attack rolls until bandaged.
+D1 11:47  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:47  VK-74 fires in Single mode, consuming 1 round.
+D1 11:47  Raiders Operative is flanked: +2 to hit.
+D1 11:47  Rolled 2d10 8+4=12 (+2 flank) = 14 vs AC 10
+D1 11:47  Clean hit: damage x1.0.
+D1 11:47  VK-74 hits Raiders Operative for 21 damage using Standard ammo.
+D1 11:47  Raiders Operative HP is now 33.
+D1 11:47  Player turn begins. AP and MP refreshed.
+D1 11:47  VKS-74U fires in Single mode, consuming 1 round.
+D1 11:47  Blind Maw is flanked: +2 to hit.
+D1 11:47  Rolled 2d10 1+5=6 (-1 skill, +2 flank) = 7 vs AC 11
+D1 11:47  VKS-74U misses Blind Maw.
+D1 11:47  VKS-74U fires in Single mode, consuming 1 round.
+D1 11:47  Blind Maw is flanked: +2 to hit.
+D1 11:47  Rolled 2d10 5+7=12 (-1 skill, +2 flank) = 13 vs AC 11
+D1 11:47  Graze: damage x0.85.
+D1 11:47  VKS-74U hits Blind Maw for 16 damage using Standard ammo.
+D1 11:47  Blind Maw HP is now 24.
+D1 11:47  Not enough AP to Single fire. 2 AP required.
+D1 11:47  Player ends turn. Mutant turn begins.
+D1 11:48  Raiders Operative fires Halden Lever Shotgun at Wanderers Operative!
+D1 11:48  Halden Lever Shotgun fires in Single mode, consuming 1 round.
+D1 11:48  Wanderers Operative is in light cover: +1 AC.
+D1 11:48  Rolled 2d10 4+3=7 (-1 skill, -4 wounds/pinned) = 2 vs AC 12
+D1 11:48  Halden Lever Shotgun jams!
+D1 11:48  Halden Lever Shotgun is now Dirty.
+D1 11:48  Raiders Operative fires Vosa vz. 62 at Wanderers Operative!
+D1 11:48  Vosa vz. 62 fires in Single mode, consuming 1 round.
+D1 11:48  Wanderers Operative is in light cover: +1 AC.
+D1 11:48  Rolled 2d10 1+2=3 (-1 skill) = 2 vs AC 12
+D1 11:48  Vosa vz. 62 misses Wanderers Operative.
+D1 11:48  Blind Maw is staggered and loses its turn.
+D1 11:48  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:48  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:48  Raiders Operative is flanked: +2 to hit.
+D1 11:48  Rolled 2d10 10+9=19 (+1 skill, +2 flank) = 22 vs AC 10
+D1 11:48  Vital hit: damage x1.2.
+D1 11:48  PL-62 Kobza hits Raiders Operative for 22 damage using Standard ammo.
+D1 11:48  Raiders Operative HP is now 11.
+D1 11:48  Raiders Operative takes a LEG wound: -2 MP until bandaged.
+D1 11:48  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:48  VK-74 fires in Single mode, consuming 1 round.
+D1 11:48  Raiders Operative is flanked: +2 to hit.
+D1 11:48  Rolled 2d10 9+7=16 (+2 flank) = 18 vs AC 10
+D1 11:48  Vital hit: damage x1.2.
+D1 11:48  VK-74 hits Raiders Operative for 25 damage using Standard ammo.
+D1 11:48  Raiders Operative HP is now 0.
+D1 11:48  Raiders Operative has been defeated.
+D1 11:48  Raiders Operative sees Raiders Operative go down and is SHAKEN (-2 to hit, falls back).
+D1 11:48  Player turn begins. AP and MP refreshed.
+D1 11:48  VKS-74U fires in Single mode, consuming 1 round.
+D1 11:48  Blind Maw is flanked: +2 to hit.
+D1 11:48  Rolled 2d10 4+7=11 (-1 skill, +2 flank) = 12 vs AC 11
+D1 11:48  Graze: damage x0.85.
+D1 11:48  VKS-74U hits Blind Maw for 16 damage using Standard ammo.
+D1 11:48  Blind Maw HP is now 8.
+D1 11:48  VKS-74U fires in Single mode, consuming 1 round.
+D1 11:48  Blind Maw is flanked: +2 to hit.
+D1 11:48  Rolled 2d10 1+6=7 (-1 skill, +2 flank) = 8 vs AC 11
+D1 11:48  VKS-74U misses Blind Maw.
+D1 11:48  Not enough AP to Single fire. 2 AP required.
+D1 11:48  All hostiles down. Area secured.
+D1 11:48  [BOT] Fight over after 3 rounds: 1 down, 100/100 HP left.
+D1 11:48  [BOT] Follows the signs for its quest.
+D1 11:48  Player moved to (177, 40), MP remaining: 4.
+D1 11:48  Raiders Operative fires Vosa vz. 62 at Wanderers Operative!
+D1 11:48  Vosa vz. 62 fires in Single mode, consuming 1 round.
+D1 11:48  Wanderers Operative is in light cover: +1 AC.
+D1 11:48  Rolled 2d10 4+8=12 (-1 skill, -2 wounds/pinned) = 9 vs AC 12
+D1 11:48  Vosa vz. 62 misses Wanderers Operative.
+D1 11:48  Cover at (56, 66) takes a hit (1/3 left).
+D1 11:48  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:48  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:48  Raiders Operative is flanked: +2 to hit.
+D1 11:48  Rolled 2d10 1+6=7 (+1 skill, +2 flank) = 10 vs AC 10
+D1 11:48  Graze: damage x0.85.
+D1 11:48  PL-62 Kobza hits Raiders Operative for 16 damage using Standard ammo.
+D1 11:48  Raiders Operative HP is now 84.
+D1 11:48  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:48  VK-74 fires in Single mode, consuming 1 round.
+D1 11:48  Raiders Operative is flanked: +2 to hit.
+D1 11:48  Rolled 2d10 7+3=10 (+2 flank) = 12 vs AC 10
+D1 11:48  Graze: damage x0.85.
+D1 11:48  VK-74 hits Raiders Operative for 17 damage using Standard ammo.
+D1 11:48  Raiders Operative HP is now 67.
+D1 11:49  Player moved to (176, 40), MP remaining: 4.
+D1 11:49  Raiders Operative fires Vosa vz. 62 at Wanderers Operative!
+D1 11:49  Vosa vz. 62 fires in Single mode, consuming 1 round.
+D1 11:49  Wanderers Operative is in light cover: +1 AC.
+D1 11:49  Rolled 2d10 7+7=14 (-1 skill, -2 wounds/pinned) = 11 vs AC 12
+D1 11:49  The round punches through the wood cover!
+D1 11:49  The cover at (56, 66) is shot to rubble.
+D1 11:49  Graze: damage x0.85.
+D1 11:49  Vosa vz. 62 hits Wanderers Operative for 4 damage using Standard ammo.
+D1 11:49  Wanderers Operative HP is now 49.
+D1 11:49  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:49  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:49  Raiders Operative is flanked: +2 to hit.
+D1 11:49  Rolled 2d10 4+10=14 (+1 skill, +2 flank) = 17 vs AC 10
+D1 11:49  Vital hit: damage x1.2.
+D1 11:49  PL-62 Kobza hits Raiders Operative for 22 damage using Standard ammo.
+D1 11:49  Raiders Operative HP is now 45.
+D1 11:49  Raiders Operative takes a LEG wound: -2 MP until bandaged.
+D1 11:49  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:49  VK-74 fires in Single mode, consuming 1 round.
+D1 11:49  Raiders Operative is flanked: +2 to hit.
+D1 11:49  Rolled 2d10 6+2=8 (+2 flank) = 10 vs AC 10
+D1 11:49  Graze: damage x0.85.
+D1 11:49  VK-74 hits Raiders Operative for 17 damage using Standard ammo.
+D1 11:49  Raiders Operative HP is now 28.
+D1 11:50  Player moved to (175, 40), MP remaining: 4.
+D1 11:50  Raiders Operative fires Vosa vz. 62 at Wanderers Operative!
+D1 11:50  Vosa vz. 62 fires in Single mode, consuming 1 round.
+D1 11:50  Wanderers Operative is in light cover: +1 AC.
+D1 11:50  Rolled 2d10 10+8=18 (-1 skill, -2 wounds/pinned) = 15 vs AC 12
+D1 11:50  Graze: damage x0.85.
+D1 11:50  Vosa vz. 62 hits Wanderers Operative for 8 damage using Standard ammo.
+D1 11:50  Wanderers Operative HP is now 41.
+D1 11:50  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:50  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:50  Raiders Operative is flanked: +2 to hit.
+D1 11:50  Rolled 2d10 2+1=3 (+1 skill, +2 flank) = 6 vs AC 10
+D1 11:50  PL-62 Kobza misses Raiders Operative.
+D1 11:50  Wanderers Operative fires VK-74 at Raiders Operative!
+D1 11:50  VK-74 fires in Single mode, consuming 1 round.
+D1 11:50  Raiders Operative is flanked: +2 to hit.
+D1 11:50  Rolled 2d10 8+1=9 (+2 flank) = 11 vs AC 10
+D1 11:50  Graze: damage x0.85.
+D1 11:50  VK-74 hits Raiders Operative for 17 damage using Standard ammo.
+D1 11:50  Raiders Operative HP is now 11.
+D1 11:51  Player moved to (174, 40), MP remaining: 4.
+D1 11:51  Raiders Operative fires Vosa vz. 62 at Wanderers Operative!
+D1 11:51  Vosa vz. 62 fires in Single mode, consuming 1 round.
+D1 11:51  Wanderers Operative is in light cover: +1 AC.
+D1 11:51  Rolled 2d10 1+3=4 (-1 skill, -2 wounds/pinned) = 1 vs AC 12
+D1 11:51  Vosa vz. 62 misses Wanderers Operative.
+D1 11:51  Wanderers Operative fires PL-62 Kobza at Raiders Operative!
+D1 11:51  PL-62 Kobza fires in Single mode, consuming 1 round.
+D1 11:51  Raiders Operative is flanked: +2 to hit.
+D1 11:51  Rolled 2d10 6+5=11 (+1 skill, +2 flank) = 14 vs AC 10
+D1 11:51  Clean hit: damage x1.0.
+D1 11:51  PL-62 Kobza hits Raiders Operative for 18 damage using Standard ammo.
+D1 11:51  Raiders Operative HP is now 0.
+D1 11:51  Raiders Operative has been defeated.
+D1 11:52  Player moved to (173, 40), MP remaining: 4.
+D1 11:53  Player moved to (172, 40), MP remaining: 4.
+D1 11:54  Player moved to (171, 40), MP remaining: 4.
+D1 11:55  Player moved to (170, 40), MP remaining: 4.
+D1 11:56  Player moved to (169, 40), MP remaining: 4.
+D1 11:57  Player moved to (168, 40), MP remaining: 4.
+D1 11:58  Player moved to (167, 40), MP remaining: 4.
+D1 11:59  Player moved to (166, 40), MP remaining: 4.
+D1 12:00  Player moved to (165, 40), MP remaining: 4.
+D1 12:01  Player moved to (164, 40), MP remaining: 4.
+D1 12:02  Player moved to (163, 40), MP remaining: 4.
+D1 12:03  Player moved to (162, 40), MP remaining: 4.
+D1 12:04  Player moved to (161, 40), MP remaining: 5.
+D1 12:05  Player moved to (160, 40), MP remaining: 5.
+D1 12:06  Player moved to (159, 41), MP remaining: 4.5.
+D1 12:07  Player moved to (158, 41), MP remaining: 5.
+D1 12:08  Player moved to (157, 42), MP remaining: 4.5.
+D1 12:09  Player moved to (156, 42), MP remaining: 5.
+D1 12:10  Player moved to (155, 43), MP remaining: 4.5.
+D1 12:11  Player moved to (154, 43), MP remaining: 4.
+D1 12:12  Player moved to (153, 44), MP remaining: 4.5.
+D1 12:13  Player moved to (152, 44), MP remaining: 5.
+D1 12:14  Player moved to (151, 45), MP remaining: 4.5.
+D1 12:15  Player moved to (150, 45), MP remaining: 4.
+D1 12:16  Player moved to (149, 46), MP remaining: 3.
+D1 12:17  Player moved to (148, 46), MP remaining: 4.
+D1 12:18  Player moved to (147, 47), MP remaining: 3.
+D1 12:19  Player moved to (146, 47), MP remaining: 5.
+D1 12:20  Player moved to (145, 48), MP remaining: 4.5.
+D1 12:21  Player moved to (144, 48), MP remaining: 5.
+D1 12:22  Player moved to (143, 49), MP remaining: 4.5.
+D1 12:23  Player moved to (142, 49), MP remaining: 5.
+D1 12:24  Player moved to (141, 50), MP remaining: 4.5.
+D1 12:25  Player moved to (140, 50), MP remaining: 4.
+D1 12:26  Player moved to (139, 51), MP remaining: 4.5.
+D1 12:26  [QUEST] You found what you were looking for: "A buyer wants the drum's contents analyzed, no questions asked.".
+D1 12:27  Player moved to (138, 51), MP remaining: 5.
+D1 12:28  Player moved to (137, 51), MP remaining: 5.
+D1 12:29  You're in The Perimeter now.
+D1 12:29  Player moved to (136, 50), MP remaining: 4.5.
+D1 12:30  Player moved to (135, 50), MP remaining: 5.
+D1 12:31  Player moved to (134, 49), MP remaining: 4.5.
+D1 12:32  Player moved to (133, 49), MP remaining: 5.
+D1 12:33  Player moved to (132, 48), MP remaining: 4.5.
+D1 12:34  Player moved to (131, 48), MP remaining: 5.
+D1 12:35  You're in Smuggler's Run now.
+D1 12:35  Player moved to (130, 48), MP remaining: 5.
+D1 12:36  Player moved to (129, 48), MP remaining: 4.
+D1 12:37  Player moved to (128, 48), MP remaining: 5.
+D1 12:38  Player moved to (127, 48), MP remaining: 5.
+D1 12:39  Player moved to (126, 48), MP remaining: 5.
+D1 12:40  Player attempts S check: Rolled 12 + 0 = 12 vs AC 10 -> Success
+D1 12:40  Toolbox successfully interacted with.
+D1 12:40  Recovered loot: Clot.
+D1 12:40  Recovered loot: Military Medkit.
+D1 12:40  Recovered loot: Pulse Pebble.
+D1 12:40  Recovered loot: Drift Bubble.
+D1 12:40  Junk, mostly. 17 loose RU.
+D1 12:40  Recovered loot: VKS-74U.
+D1 12:40  [BOT] Opens the Toolbox: +17 Ru, +5 items.
+D1 12:40  Player moved to (127, 49), MP remaining: 4.5.
+D1 12:41  Player moved to (128, 50), MP remaining: 4.5.
+D1 12:42  Player moved to (128, 51), MP remaining: 5.
+D1 12:43  Player moved to (128, 52), MP remaining: 5.
+D1 12:44  Player moved to (127, 52), MP remaining: 5.
+D1 12:45  Player moved to (126, 52), MP remaining: 5.
+D1 12:46  Player moved to (125, 52), MP remaining: 5.
+D1 12:47  Player moved to (124, 52), MP remaining: 5.
+D1 12:48  Player moved to (123, 52), MP remaining: 5.
+D1 12:49  Player moved to (122, 52), MP remaining: 5.
+D1 12:50  Player moved to (121, 52), MP remaining: 5.
+D1 12:51  Player moved to (120, 52), MP remaining: 5.
+D1 12:52  Player moved to (119, 52), MP remaining: 5.
+D1 12:53  Player moved to (118, 52), MP remaining: 5.
+D1 12:54  Player moved to (117, 52), MP remaining: 5.
+D1 12:55  Player moved to (116, 52), MP remaining: 5.
+D1 12:56  Player moved to (115, 52), MP remaining: 5.
+D1 12:57  Player moved to (114, 52), MP remaining: 5.
+D1 12:58  Player moved to (113, 52), MP remaining: 5.
+D1 12:59  Player moved to (112, 52), MP remaining: 5.
+D1 13:00  Player moved to (111, 52), MP remaining: 5.
+D1 13:01  Player moved to (110, 52), MP remaining: 5.
+D1 13:02  Player moved to (109, 52), MP remaining: 5.
+D1 13:03  Player moved to (108, 52), MP remaining: 5.
+D1 13:04  Player moved to (107, 52), MP remaining: 5.
+D1 13:05  Player moved to (106, 53), MP remaining: 4.5.
+D1 13:06  Player moved to (105, 54), MP remaining: 4.5.
+D1 13:07  Player moved to (104, 54), MP remaining: 5.
+D1 13:08  Player moved to (103, 55), MP remaining: 4.5.
+D1 13:09  Player moved to (102, 55), MP remaining: 5.
+D1 13:10  Player moved to (101, 56), MP remaining: 4.5.
+D1 13:11  Player moved to (100, 56), MP remaining: 5.
+D1 13:12  Player moved to (99, 57), MP remaining: 4.5.
+D1 13:13  Player moved to (98, 57), MP remaining: 5.
+D1 13:14  Player moved to (97, 58), MP remaining: 4.5.
+D1 13:15  Player moved to (96, 58), MP remaining: 5.
+D1 13:16  Player moved to (95, 59), MP remaining: 4.5.
+D1 13:17  Player moved to (95, 60), MP remaining: 5.
+D1 13:18  Player moved to (96, 61), MP remaining: 4.5.
+D1 13:19  Player moved to (96, 62), MP remaining: 5.
+D1 13:20  Player moved to (97, 63), MP remaining: 4.5.
+D1 13:21  Player moved to (97, 64), MP remaining: 5.
+D1 13:22  Player moved to (98, 65), MP remaining: 4.5.
+D1 13:23  Player moved to (98, 66), MP remaining: 5.
+D1 13:24  Player moved to (98, 67), MP remaining: 5.
+D1 13:24  [MOVEMENT] Raiders squad leaves Toxic Marshes for The Scrapyard.
+D1 13:25  Player moved to (99, 68), MP remaining: 4.5.
+D1 13:26  Player moved to (99, 69), MP remaining: 5.
+D1 13:27  Player moved to (99, 70), MP remaining: 5.
+D1 13:28  Player moved to (99, 71), MP remaining: 5.
+D1 13:29  Player moved to (99, 72), MP remaining: 5.
+D1 13:30  Player moved to (99, 73), MP remaining: 5.
+D1 13:31  Player moved to (99, 74), MP remaining: 5.
+D1 13:32  Player moved to (100, 75), MP remaining: 4.5.
+D1 13:33  Player opens a door.
+D1 13:33  Player moved to (101, 75), MP remaining: 4.
+D1 13:34  Player moved to (102, 75), MP remaining: 5.
+D1 13:35  Player moved to (103, 75), MP remaining: 5.
+D1 13:36  Player moved to (104, 75), MP remaining: 5.
+D1 13:37  Player moved to (105, 75), MP remaining: 4.
+D1 13:38  Player moved to (106, 74), MP remaining: 4.5.
+D1 13:39  Player moved to (107, 74), MP remaining: 5.
+D1 13:40  Player attempts S check: Rolled 5 + 0 = 5 vs AC 10 -> Failure
+D1 13:40  Footlocker interaction failed.
+D1 13:40  Metal clangs as it holds.
+D1 13:40  [BOT] Can't get the Footlocker open.
+D1 13:40  Player moved to (108, 74), MP remaining: 5.
+D1 13:41  Player moved to (109, 75), MP remaining: 4.5.
+D1 13:42  Player moved to (110, 75), MP remaining: 5.
+D1 13:43  Player moved to (111, 75), MP remaining: 5.
+D1 13:44  Player moved to (112, 74), MP remaining: 4.5.
+D1 13:45  Player opens a door.
+D1 13:45  Player moved to (113, 74), MP remaining: 4.
+D1 13:46  Player moved to (114, 74), MP remaining: 5.
+D1 13:47  Player moved to (115, 74), MP remaining: 4.
+D1 13:48  Player attempts S check: Rolled 2 + 0 = 2 vs AC 10 -> Failure
+D1 13:48  Old Chest interaction failed.
+D1 13:48  Metal clangs as it holds.
+D1 13:48  [BOT] Can't get the Old Chest open.
+D1 13:48  Player moved to (114, 74), MP remaining: 5.
+D1 13:49  Player moved to (113, 74), MP remaining: 5.
+D1 13:50  Player moved to (112, 74), MP remaining: 5.
+D1 13:51  Player moved to (111, 75), MP remaining: 4.5.
+D1 13:52  Player moved to (110, 75), MP remaining: 5.
+D1 13:53  Player moved to (109, 75), MP remaining: 5.
+D1 13:54  Player moved to (108, 76), MP remaining: 4.5.
+D1 13:55  Player moved to (107, 77), MP remaining: 4.5.
+D1 13:56  Player moved to (107, 78), MP remaining: 5.
+D1 13:57  Player moved to (107, 79), MP remaining: 5.
+D1 13:58  Player moved to (106, 80), MP remaining: 4.5.
+D1 13:59  Player moved to (105, 81), MP remaining: 4.5.
+D1 14:00  Player moved to (104, 82), MP remaining: 4.5.
+D1 14:01  Player moved to (103, 83), MP remaining: 4.5.
+D1 14:02  Player moved to (102, 84), MP remaining: 4.5.
+D1 14:03  Player moved to (101, 85), MP remaining: 4.5.
+D1 14:04  Player moved to (100, 86), MP remaining: 3.
+D1 14:05  Player moved to (100, 87), MP remaining: 4.
+D1 14:06  Player attempts S check: Rolled 7 + 0 = 7 vs AC 10 -> Failure
+D1 14:06  Duffel Bag interaction failed.
+D1 14:06  Metal clangs as it holds.
+D1 14:06  [BOT] Can't get the Duffel Bag open.
+D1 14:06  Player moved to (99, 86), MP remaining: 3.
+D1 14:07  Player moved to (98, 85), MP remaining: 4.5.
+D1 14:08  Player moved to (97, 84), MP remaining: 4.5.
+D1 14:09  Player moved to (96, 83), MP remaining: 4.5.
+D1 14:10  Player moved to (95, 82), MP remaining: 4.5.
+D1 14:11  Player moved to (95, 81), MP remaining: 5.
+D1 14:12  Player moved to (94, 80), MP remaining: 4.5.
+D1 14:13  Player moved to (93, 79), MP remaining: 3.
+D1 14:14  Player moved to (92, 78), MP remaining: 3.
+D1 14:15  Player moved to (91, 78), MP remaining: 5.
+D1 14:16  Player moved to (90, 77), MP remaining: 4.5.
+D1 14:17  Player moved to (89, 77), MP remaining: 5.
+D1 14:18  Player moved to (88, 77), MP remaining: 5.
+D1 14:19  Player moved to (87, 76), MP remaining: 4.5.
+D1 14:20  Player moved to (86, 75), MP remaining: 4.5.
+D1 14:21  Player moved to (85, 74), MP remaining: 4.5.
+D1 14:22  Player moved to (84, 74), MP remaining: 5.
+D1 14:23  Player moved to (83, 74), MP remaining: 5.
+D1 14:24  Player moved to (82, 74), MP remaining: 5.
+D1 14:25  Player moved to (81, 74), MP remaining: 5.
+D1 14:26  Player moved to (80, 74), MP remaining: 5.
+D1 14:27  Player moved to (79, 75), MP remaining: 4.5.
+D1 14:28  Player moved to (78, 76), MP remaining: 4.5.
+D1 14:29  Player moved to (77, 77), MP remaining: 3.
+D1 14:30  Player moved to (76, 78), MP remaining: 3.
+D1 14:31  Player moved to (75, 79), MP remaining: 4.5.
+D1 14:32  Player moved to (74, 80), MP remaining: 4.5.
+D1 14:33  Player moved to (73, 80), MP remaining: 5.
+D1 14:34  Player moved to (72, 80), MP remaining: 5.
+D1 14:35  Player moved to (71, 80), MP remaining: 5.
+D1 14:36  Player moved to (70, 80), MP remaining: 5.
+D1 14:37  Player moved to (69, 80), MP remaining: 5.
+D1 14:38  Player moved to (68, 80), MP remaining: 5.
+D1 14:39  Player moved to (67, 80), MP remaining: 5.
+D1 14:40  Player moved to (66, 80), MP remaining: 5.
+D1 14:41  Player opens a door.
+D1 14:41  Player moved to (66, 79), MP remaining: 4.
+D1 14:42  Player moved to (66, 78), MP remaining: 5.
+D1 14:43  Player moved to (67, 77), MP remaining: 4.5.
+D1 14:44  Player moved to (68, 77), MP remaining: 5.
+D1 14:45  Player moved to (69, 76), MP remaining: 4.5.
+D1 14:46  Player moved to (70, 76), MP remaining: 5.
+D1 14:47  Player attempts I check: Rolled 20 + 0 = 20 vs AC 14 -> Success
+D1 14:47  Encrypted PDA successfully interacted with.
+D1 14:47  Gained 120 RU.
+D1 14:47  [BOT] Opens the Encrypted PDA: +120 Ru, +0 items.
+D1 14:47  Player moved to (70, 75), MP remaining: 5.
+D1 14:48  Player moved to (70, 74), MP remaining: 5.
+D1 14:49  Player moved to (70, 73), MP remaining: 5.
+D1 14:50  Player moved to (70, 72), MP remaining: 5.
+D1 14:51  Player moved to (70, 71), MP remaining: 5.
+D1 14:52  Player attempts S check: Rolled 4 + 0 = 4 vs AC 10 -> Failure
+D1 14:52  Old Chest interaction failed.
+D1 14:52  Metal clangs as it holds.
+D1 14:52  [BOT] Can't get the Old Chest open.
+D1 14:52  Player moved to (69, 71), MP remaining: 5.
+D1 14:53  Player moved to (68, 71), MP remaining: 5.
+D1 14:54  Player moved to (67, 71), MP remaining: 5.
+D1 14:55  Player moved to (66, 71), MP remaining: 5.
+D1 14:56  Player moved to (65, 71), MP remaining: 5.
+D1 14:57  Player moved to (64, 71), MP remaining: 5.
+D1 14:58  Player moved to (63, 71), MP remaining: 5.
+D1 14:59  Player moved to (62, 72), MP remaining: 4.5.
+D1 15:00  Player opens a door.
+D1 15:00  Player moved to (61, 72), MP remaining: 4.
+D1 15:01  Player moved to (60, 72), MP remaining: 5.
+D1 15:02  Player moved to (60, 73), MP remaining: 5.
+D1 15:03  Player moved to (60, 74), MP remaining: 5.
+D1 15:04  Player attempts S check: Rolled 3 + 0 = 3 vs AC 10 -> Failure
+D1 15:04  Footlocker interaction failed.
+D1 15:04  Metal clangs as it holds.
+D1 15:04  [BOT] Can't get the Footlocker open.
+D1 15:04  Player moved to (59, 74), MP remaining: 5.
+D1 15:05  Player moved to (58, 74), MP remaining: 4.
+D1 15:06  Player moved to (57, 73), MP remaining: 4.5.
+D1 15:07  Player opens a door.
+D1 15:07  Player moved to (56, 73), MP remaining: 4.
+D1 15:08  Player moved to (55, 73), MP remaining: 5.
+D1 15:09  Player moved to (55, 72), MP remaining: 5.
+D1 15:10  Player moved to (55, 71), MP remaining: 5.
+D1 15:11  Player moved to (54, 70), MP remaining: 4.5.
+D1 15:12  Player moved to (54, 69), MP remaining: 5.
+D1 15:13  Player moved to (53, 68), MP remaining: 4.5.
+D1 15:14  Player moved to (53, 67), MP remaining: 5.
+D1 15:15  Player moved to (52, 66), MP remaining: 3.
+D1 15:16  Player moved to (52, 65), MP remaining: 5.
+D1 15:17  Player moved to (51, 64), MP remaining: 4.5.
+D1 15:18  Player moved to (51, 63), MP remaining: 5.
+D1 15:19  Player moved to (51, 62), MP remaining: 5.
+D1 15:20  Player moved to (51, 61), MP remaining: 5.
+D1 15:21  Player moved to (51, 60), MP remaining: 5.
+D1 15:22  Player moved to (51, 59), MP remaining: 5.
+D1 15:23  Player moved to (51, 58), MP remaining: 5.
+D1 15:24  Player moved to (51, 57), MP remaining: 5.
+D1 15:25  Player moved to (51, 56), MP remaining: 5.
+D1 15:26  Player moved to (51, 55), MP remaining: 5.
+D1 15:27  Player moved to (51, 54), MP remaining: 5.
+D1 15:28  Player moved to (51, 53), MP remaining: 5.
+D1 15:29  Player moved to (51, 52), MP remaining: 5.
+D1 15:30  Player moved to (51, 51), MP remaining: 5.
+D1 15:31  Player attempts S check: Rolled 14 + 0 = 14 vs AC 10 -> Success
+D1 15:31  Duffel Bag successfully interacted with.
+D1 15:31  Recovered loot: Vosa vz. 62.
+D1 15:31  Recovered loot: Military Stim.
+D1 15:31  Recovered loot: Vosa vz. 62.
+D1 15:31  Recovered loot: Hunting Knife.
+D1 15:31  [BOT] Opens the Duffel Bag: +0 Ru, +4 items.
+D1 15:31  Player moved to (51, 50), MP remaining: 5.
+D1 15:32  Player moved to (51, 49), MP remaining: 5.
+D1 15:33  Player moved to (50, 48), MP remaining: 4.5.
+D1 15:34  Player moved to (50, 47), MP remaining: 5.
+D1 15:35  Player moved to (49, 46), MP remaining: 4.5.
+D1 15:36  Player moved to (49, 45), MP remaining: 5.
+D1 15:37  Player moved to (48, 44), MP remaining: 4.5.
+D1 15:38  Player moved to (48, 43), MP remaining: 5.
+D1 15:38  Wanderers Operative opens a door.
+D1 15:39  Player moved to (47, 42), MP remaining: 4.5.
+D1 15:40  Player moved to (47, 41), MP remaining: 5.
+D1 15:41  Player moved to (47, 40), MP remaining: 5.
+D1 15:42  Player moved to (47, 39), MP remaining: 5.
+D1 15:43  Player moved to (47, 38), MP remaining: 5.
+D1 15:44  Player moved to (47, 37), MP remaining: 5.
+D1 15:45  Player moved to (47, 36), MP remaining: 5.
+D1 15:46  Player moved to (47, 35), MP remaining: 5.
+D1 15:47  Player moved to (47, 34), MP remaining: 5.
+D1 15:48  Player moved to (47, 33), MP remaining: 5.
+D1 15:49  Player moved to (47, 32), MP remaining: 5.
+D1 15:50  Player moved to (47, 31), MP remaining: 5.
+D1 15:51  Player moved to (47, 30), MP remaining: 5.
+D1 15:52  Player moved to (47, 29), MP remaining: 5.
+D1 15:53  Player moved to (47, 28), MP remaining: 5.
+D1 15:53  Raiders Operative and 2 more stop in front of you, guns up. A shakedown.
+D1 15:53  Raiders Operative counts the 150 Ru and waves you on. "Pleasure doing business."
+D1 15:53  That gang leaves you alone for a day.
+D1 15:54  Player moved to (47, 27), MP remaining: 5.
+D1 15:55  Player moved to (46, 26), MP remaining: 4.5.
+D1 15:56  Player moved to (45, 25), MP remaining: 4.5.
+D1 15:57  Player moved to (44, 24), MP remaining: 4.5.
+D1 15:58  Player moved to (44, 23), MP remaining: 5.
+D1 15:59  Player moved to (43, 22), MP remaining: 4.5.
+D1 16:00  Player moved to (43, 21), MP remaining: 5.
+D1 16:01  Player moved to (42, 20), MP remaining: 4.5.
+D1 16:02  Player moved to (42, 19), MP remaining: 4.
+D1 16:03  Player moved to (41, 18), MP remaining: 4.5.
+D1 16:04  Player moved to (41, 17), MP remaining: 5.
+D1 16:05  Player moved to (41, 16), MP remaining: 5.
+D1 16:06  Player moved to (41, 15), MP remaining: 5.
+D1 16:07  Player moved to (41, 14), MP remaining: 5.
+D1 16:08  Player attempts S check: Rolled 3 + 0 = 3 vs AC 10 -> Failure
+D1 16:08  Duffel Bag interaction failed.
+D1 16:08  Metal clangs as it holds.
+D1 16:08  [BOT] Can't get the Duffel Bag open.
+D1 16:08  Player moved to (41, 13), MP remaining: 5.
+D1 16:09  Player moved to (41, 12), MP remaining: 5.
+D1 16:10  Player moved to (41, 11), MP remaining: 5.
+D1 16:11  Player moved to (41, 10), MP remaining: 5.
+D1 16:12  Player moved to (41, 9), MP remaining: 5.
+D1 16:13  Player moved to (42, 8), MP remaining: 4.5.
+D1 16:14  Player moved to (42, 7), MP remaining: 5.
+D1 16:15  Player moved to (43, 6), MP remaining: 4.5.
+D1 16:16  Player moved to (43, 5), MP remaining: 5.
+D1 16:17  Player moved to (44, 4), MP remaining: 4.5.
+D1 16:18  Player moved to (44, 3), MP remaining: 5.
+D1 16:19  Player moved to (45, 2), MP remaining: 4.5.
+D1 16:20  Player moved to (45, 1), MP remaining: 5.
+D1 16:21  Player moved to (46, 0), MP remaining: 4.5.
+D1 16:22  Crossing into Industrial Basin (Tier 2).
+D1 16:22  [RANK UP] You are now Experienced. (Reach a Tier 2 zone; Complete 1 quest)
+D1 16:22    AP 5, attack/AC modifier 0.
+D1 16:22  Entered Industrial Basin (Tier 2 | Hazard 1).
+D1 16:22  Time passes on the road.
+D2 00:22  === Day 2 ===
+D2 00:22  [SQUAD] A Contractors force takes position in Ghost Town.
+D2 00:22  [SQUAD] A Sentinels force takes position in Vanguard Barracks.
+D2 00:22  [SQUAD] A Surveyors force takes position in Anomalous Epicenter.
+D2 00:22  [RADIO] Gunfire next door. A Wanderers squad and a Raiders squad fought in Smuggler's Run. The Wanderers fell back, leaving it to the Raiders.
+D2 00:22  Quest accepted: Wanderers want the silos safe to scavenge.
+D2 00:22    Complication (d6 = 1): none - a clean job.
+D2 00:22    Two ways to finish: turn in to the Wanderers, or take it to the Cartel instead.
+D2 00:22  [QUEST] Your targets for "Wanderers want the silos safe to scavenge." are in Industrial Basin.
+D2 00:22  [BOT] Goes after its quest target, Rot Swarm.
+D2 00:22  Player moved to (46, 198), MP remaining: 5.
+D2 00:23  Player moved to (46, 197), MP remaining: 5.
+D2 00:24  Player moved to (46, 196), MP remaining: 5.
+D2 00:25  Player moved to (47, 195), MP remaining: 4.5.
+D2 00:26  Player moved to (47, 194), MP remaining: 5.
+D2 00:27  Player moved to (48, 193), MP remaining: 4.5.
+D2 00:28  Player moved to (49, 193), MP remaining: 5.
+D2 00:29  Player moved to (50, 193), MP remaining: 5.
+D2 00:30  Player moved to (51, 193), MP remaining: 5.
+D2 00:31  Player moved to (52, 193), MP remaining: 5.
+D2 00:32  Player moved to (53, 193), MP remaining: 5.
+D2 00:33  Player moved to (54, 193), MP remaining: 5.
+D2 00:34  Player moved to (55, 192), MP remaining: 4.5.
+D2 00:35  Player moved to (56, 192), MP remaining: 5.
+D2 00:36  Player moved to (57, 191), MP remaining: 4.5.
+D2 00:37  Player moved to (58, 191), MP remaining: 5.
+D2 00:38  Player moved to (59, 190), MP remaining: 4.5.
+D2 00:39  Player moved to (60, 189), MP remaining: 4.5.
+D2 00:40  Player moved to (61, 188), MP remaining: 4.5.
+D2 00:41  Player moved to (62, 187), MP remaining: 4.5.
+D2 00:42  Player moved to (63, 186), MP remaining: 4.5.
+D2 00:43  Player moved to (64, 185), MP remaining: 4.5.
+D2 00:44  Player moved to (65, 184), MP remaining: 4.5.
+D2 00:45  Player moved to (66, 183), MP remaining: 4.5.
+D2 00:46  Player moved to (66, 182), MP remaining: 5.
+D2 00:47  Player moved to (67, 181), MP remaining: 4.5.
+D2 00:48  Player moved to (67, 180), MP remaining: 5.
+D2 00:49  Player moved to (68, 179), MP remaining: 4.5.
+D2 00:50  Player moved to (68, 178), MP remaining: 5.
+D2 00:51  Player moved to (69, 177), MP remaining: 4.5.
+D2 00:52  Player moved to (69, 176), MP remaining: 5.
+D2 00:53  Player moved to (70, 175), MP remaining: 4.5.
+D2 00:54  Player moved to (70, 174), MP remaining: 5.
+D2 00:55  Player moved to (71, 173), MP remaining: 4.5.
+D2 00:56  Player moved to (71, 172), MP remaining: 5.
+D2 00:57  Player moved to (72, 171), MP remaining: 4.5.
+D2 00:58  Player moved to (72, 170), MP remaining: 5.
+D2 00:59  Player moved to (73, 169), MP remaining: 4.5.
+D2 01:00  Player moved to (73, 168), MP remaining: 5.
+D2 01:01  Player moved to (74, 167), MP remaining: 3.
+D2 01:02  Player moved to (74, 166), MP remaining: 5.
+D2 01:03  Player moved to (75, 165), MP remaining: 4.5.
+D2 01:04  Player opens a door.
+D2 01:04  Player moved to (76, 165), MP remaining: 4.
+D2 01:05  Player moved to (77, 165), MP remaining: 5.
+D2 01:06  Player moved to (77, 166), MP remaining: 5.
+D2 01:07  Player moved to (77, 167), MP remaining: 5.
+D2 01:08  Player moved to (77, 168), MP remaining: 5.
+D2 01:09  Player attempts S check: Rolled 20 + 0 = 20 vs AC 10 -> Success
+D2 01:09  Footlocker successfully interacted with.
+D2 01:09  Recovered loot: SKN Karabin.
+D2 01:09  Recovered loot: Obelisk Patrol.
+D2 01:09  Recovered loot: VK-74.
+D2 01:09  Junk, mostly. 43 loose RU.
+D2 01:09  Recovered loot: Artifact Pouch.
+D2 01:09  Recovered loot: Military Stim.
+D2 01:09  [BOT] Opens the Footlocker: +43 Ru, +5 items.
+D2 01:09  Player moved to (78, 167), MP remaining: 4.5.
+D2 01:10  Player moved to (79, 166), MP remaining: 4.5.
+D2 01:11  Player moved to (80, 165), MP remaining: 4.5.
+D2 01:12  Player moved to (81, 164), MP remaining: 4.5.
+D2 01:13  Player moved to (82, 163), MP remaining: 4.5.
+D2 01:14  Player moved to (83, 162), MP remaining: 4.5.
+D2 01:15  Player moved to (84, 161), MP remaining: 4.5.
+D2 01:16  Player moved to (85, 160), MP remaining: 4.5.
+D2 01:17  Player moved to (86, 160), MP remaining: 5.
+D2 01:18  Player attempts S check: Rolled 15 + 0 = 15 vs AC 10 -> Success
+D2 01:18  Toolbox successfully interacted with.
+D2 01:18  Junk, mostly. 31 loose RU.
+D2 01:18  Recovered loot: Military Stim.
+D2 01:18  Recovered loot: Halden .45 Service.
+D2 01:18  Recovered loot: PSh-18 Pchela.
+D2 01:18  [BOT] Opens the Toolbox: +31 Ru, +3 items.
+D2 01:18  Player moved to (85, 160), MP remaining: 5.
+D2 01:19  Player moved to (84, 160), MP remaining: 5.
+D2 01:20  Player moved to (83, 160), MP remaining: 5.
+D2 01:21  Player moved to (82, 159), MP remaining: 4.5.
+D2 01:22  Player opens a door.
+D2 01:22  Player moved to (82, 158), MP remaining: 4.
+D2 01:22  Wanderers Operative opens a door.
+D2 01:23  Player moved to (82, 157), MP remaining: 5.
+D2 01:24  Player moved to (83, 157), MP remaining: 5.
+D2 01:25  Player moved to (84, 157), MP remaining: 5.
+D2 01:26  Player moved to (85, 157), MP remaining: 5.
+D2 01:27  Player moved to (86, 156), MP remaining: 4.5.
+D2 01:28  Player moved to (87, 156), MP remaining: 5.
+D2 01:29  Player moved to (88, 155), MP remaining: 4.5.
+D2 01:30  Player moved to (89, 155), MP remaining: 5.
+D2 01:31  Player moved to (90, 154), MP remaining: 4.5.
+D2 01:32  Player moved to (90, 153), MP remaining: 5.
+D2 01:33  Player moved to (90, 152), MP remaining: 5.
+D2 01:34  Player moved to (90, 151), MP remaining: 5.
+D2 01:35  Player moved to (90, 150), MP remaining: 5.
+D2 01:36  Player moved to (90, 149), MP remaining: 5.
+D2 01:37  Player moved to (90, 148), MP remaining: 5.
+D2 01:38  Player opens a door.
+D2 01:38  Player moved to (89, 148), MP remaining: 4.
+D2 01:39  Player moved to (88, 148), MP remaining: 5.
+D2 01:40  Player moved to (88, 149), MP remaining: 5.
+D2 01:41  Player moved to (88, 150), MP remaining: 5.
+D2 01:42  Player attempts S check: Rolled 4 + 0 = 4 vs AC 10 -> Failure
+D2 01:42  Old Chest interaction failed.
+D2 01:42  Metal clangs as it holds.
+D2 01:42  [BOT] Can't get the Old Chest open.
+D2 01:42  Player moved to (88, 149), MP remaining: 5.
+D2 01:43  Player moved to (88, 148), MP remaining: 5.
+D2 01:44  Player moved to (88, 147), MP remaining: 5.
+D2 01:44  [MOVEMENT] Wanderers squad moves on into The Scrapyard.
+D2 01:45  Player moved to (88, 146), MP remaining: 5.
+D2 01:46  Player moved to (88, 145), MP remaining: 5.
+D2 01:47  Player moved to (88, 144), MP remaining: 5.
+D2 01:48  Player attempts S check: Rolled 20 + 0 = 20 vs AC 10 -> Success
+D2 01:48  Old Chest successfully interacted with.
+D2 01:48  Recovered loot: Pulse Pebble.
+D2 01:48  Recovered loot: VKM.
+D2 01:48  Junk, mostly. 14 loose RU.
+D2 01:48  [BOT] Opens the Old Chest: +14 Ru, +2 items.
+D2 01:48  Player moved to (87, 144), MP remaining: 5.
+D2 01:49  Player moved to (86, 144), MP remaining: 5.
+D2 01:50  Player moved to (85, 144), MP remaining: 5.
+D2 01:51  Player moved to (84, 143), MP remaining: 4.5.
+D2 01:52  Player moved to (83, 143), MP remaining: 5.
+D2 01:53  Player moved to (82, 142), MP remaining: 4.5.
+D2 01:54  Player moved to (81, 142), MP remaining: 5.
+D2 01:55  Player attempts S check: Rolled 8 + 0 = 8 vs AC 10 -> Failure
+D2 01:55  Old Chest interaction failed.
+D2 01:55  Metal clangs as it holds.
+D2 01:55  [BOT] Can't get the Old Chest open.
+D2 01:55  Player moved to (80, 143), MP remaining: 4.5.
+D2 01:56  Player moved to (79, 144), MP remaining: 4.5.
+D2 01:57  Player moved to (79, 145), MP remaining: 5.
+D2 01:58  Player moved to (78, 146), MP remaining: 4.5.
+D2 01:59  Player moved to (78, 147), MP remaining: 5.
+D2 02:00  Player attempts S check: Rolled 14 + 0 = 14 vs AC 10 -> Success
+D2 02:00  Old Chest successfully interacted with.
+D2 02:00  Recovered loot: SKN Karabin.
+D2 02:00  Recovered loot: Military Stim.
+D2 02:00  Recovered loot: Marsh Recon Suit.
+D2 02:00  [BOT] Opens the Old Chest: +0 Ru, +3 items.
+D2 02:00  [BOT] Goes after its quest target, Pallid Prowler.
+D2 02:00  Player moved to (79, 147), MP remaining: 5.
+D2 02:01  Player moved to (80, 147), MP remaining: 5.
+D2 02:02  Player moved to (81, 147), MP remaining: 5.
+D2 02:03  Player moved to (82, 147), MP remaining: 5.
+D2 02:04  Player moved to (83, 147), MP remaining: 5.
+D2 02:05  Player moved to (84, 147), MP remaining: 5.
+D2 02:06  Player moved to (85, 147), MP remaining: 5.
+D2 02:07  Player moved to (86, 147), MP remaining: 5.
+D2 02:08  Player moved to (87, 147), MP remaining: 5.
+D2 02:09  Player moved to (88, 148), MP remaining: 4.5.
+D2 02:10  Player moved to (89, 148), MP remaining: 5.
+D2 02:11  Player moved to (90, 148), MP remaining: 5.
+D2 02:12  Player moved to (90, 149), MP remaining: 5.
+D2 02:13  Player moved to (90, 150), MP remaining: 5.
+D2 02:14  Player moved to (90, 151), MP remaining: 5.
+D2 02:15  Player moved to (90, 152), MP remaining: 5.
+D2 02:16  Player moved to (90, 153), MP remaining: 5.
+D2 02:17  Player moved to (90, 154), MP remaining: 5.
+D2 02:18  Player moved to (90, 155), MP remaining: 5.
+D2 02:19  Player moved to (90, 156), MP remaining: 5.
+D2 02:20  Player moved to (90, 157), MP remaining: 5.
+D2 02:21  Player moved to (90, 158), MP remaining: 5.
+D2 02:22  Player moved to (90, 159), MP remaining: 5.
+D2 02:23  Player moved to (90, 160), MP remaining: 4.
+D2 02:24  Player moved to (90, 161), MP remaining: 5.
+D2 02:25  Player moved to (90, 162), MP remaining: 5.
+D2 02:26  Player moved to (90, 163), MP remaining: 5.
+D2 02:27  Player moved to (90, 164), MP remaining: 5.
+D2 02:28  Player moved to (90, 165), MP remaining: 5.
+D2 02:29  Player moved to (90, 166), MP remaining: 5.
+D2 02:30  Player moved to (90, 167), MP remaining: 5.
+D2 02:31  Player moved to (90, 168), MP remaining: 5.
+D2 02:32  Player moved to (90, 169), MP remaining: 5.
+D2 02:33  Player moved to (90, 170), MP remaining: 5.
+D2 02:34  Player moved to (90, 171), MP remaining: 5.
+D2 02:35  Player moved to (90, 172), MP remaining: 5.
+D2 02:36  Player moved to (90, 173), MP remaining: 5.
+D2 02:37  Player moved to (90, 174), MP remaining: 5.
+D2 02:38  Player moved to (90, 175), MP remaining: 5.
+D2 02:39  Player moved to (90, 176), MP remaining: 5.
+D2 02:40  Player moved to (90, 177), MP remaining: 5.
+D2 02:41  Player moved to (90, 178), MP remaining: 5.
+D2 02:42  Player moved to (90, 179), MP remaining: 5.
+D2 02:43  Player moved to (90, 180), MP remaining: 5.
+D2 02:44  Player moved to (90, 181), MP remaining: 5.
+D2 02:45  [BOT] Opens fire on Pallid Prowler.
+D2 02:45  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:45  Rolled 2d10 1+8=9 = 9 vs AC 11
+D2 02:45  VKS-74U misses Pallid Prowler.
+D2 02:45  [BOT] Fight! 1x Pallid Prowler (100 HP).
+D2 02:45  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:45  Rolled 2d10 9+6=15 = 15 vs AC 11
+D2 02:45  Clean hit: damage x1.0.
+D2 02:45  VKS-74U hits Pallid Prowler for 18 damage using Standard ammo.
+D2 02:45  Pallid Prowler HP is now 27.
+D2 02:45  Not enough AP to Single fire. 2 AP required.
+D2 02:45  Player ends turn. Mutant turn begins.
+D2 02:46  Pallid Prowler is staggered and loses its turn.
+D2 02:46  Player turn begins. AP and MP refreshed.
+D2 02:46  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:46  Rolled 2d10 8+8=16 = 16 vs AC 11
+D2 02:46  Clean hit: damage x1.0.
+D2 02:46  VKS-74U hits Pallid Prowler for 18 damage using Standard ammo.
+D2 02:46  Pallid Prowler HP is now 9.
+D2 02:46  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:46  Rolled 2d10 9+1=10 = 10 vs AC 11
+D2 02:46  VKS-74U misses Pallid Prowler.
+D2 02:46  Not enough AP to Single fire. 2 AP required.
+D2 02:46  All hostiles down. Area secured.
+D2 02:46  [BOT] Fight over after 2 rounds: 0 down, 100/100 HP left.
+D2 02:46  Player moved to (90, 182), MP remaining: 5.
+D2 02:47  [BOT] Opens fire on Rot Swarm.
+D2 02:47  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:47  Rolled 2d10 4+1=5 = 5 vs AC 10
+D2 02:47  VKS-74U misses Rot Swarm.
+D2 02:47  [BOT] Fight! 1x Rot Swarm (100 HP).
+D2 02:47  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:47  Rolled 2d10 7+1=8 = 8 vs AC 10
+D2 02:47  VKS-74U misses Rot Swarm.
+D2 02:47  Not enough AP to Single fire. 2 AP required.
+D2 02:47  Player ends turn. Mutant turn begins.
+D2 02:48  Player turn begins. AP and MP refreshed.
+D2 02:48  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:48  Rot Swarm is flanked: +2 to hit.
+D2 02:48  Rolled 2d10 5+10=15 (+2 flank) = 17 vs AC 10
+D2 02:48  Vital hit: damage x1.2.
+D2 02:48  VKS-74U hits Rot Swarm for 22 damage using Standard ammo.
+D2 02:48  Rot Swarm HP is now 8.
+D2 02:48  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:48  Rot Swarm is flanked: +2 to hit.
+D2 02:48  Rolled 2d10 3+2=5 (+2 flank) = 7 vs AC 10
+D2 02:48  VKS-74U misses Rot Swarm.
+D2 02:48  Not enough AP to Single fire. 2 AP required.
+D2 02:48  All hostiles down. Area secured.
+D2 02:48  [BOT] Fight over after 2 rounds: 0 down, 100/100 HP left.
+D2 02:48  [BOT] Opens fire on Rot Swarm.
+D2 02:48  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:48  Rolled 2d10 7+7=14 = 14 vs AC 10
+D2 02:48  Clean hit: damage x1.0.
+D2 02:48  VKS-74U hits Rot Swarm for 18 damage using Standard ammo.
+D2 02:48  Rot Swarm HP is now 12.
+D2 02:48  [BOT] Fight! 1x Rot Swarm (100 HP).
+D2 02:48  VKS-74U fires in Single mode, consuming 1 round.
+D2 02:48  Rolled 2d10 1+8=9 = 9 vs AC 10
+D2 02:48  VKS-74U misses Rot Swarm.
+D2 02:48  Not enough AP to Single fire. 2 AP required.
+D2 02:48  All hostiles down. Area secured.
+D2 02:48  [BOT] Fight over after 1 rounds: 0 down, 100/100 HP left.
+D2 02:48  Player moved to (90, 181), MP remaining: 5.
+D2 02:49  Player moved to (90, 180), MP remaining: 5.
+D2 02:50  Player moved to (90, 179), MP remaining: 5.
+D2 02:51  Player moved to (90, 178), MP remaining: 5.
+D2 02:52  Player moved to (90, 177), MP remaining: 5.
+D2 02:53  Player moved to (90, 176), MP remaining: 5.
+D2 02:54  Player moved to (90, 175), MP remaining: 5.
+D2 02:55  Player moved to (90, 174), MP remaining: 5.
+D2 02:56  Player moved to (90, 173), MP remaining: 5.
+D2 02:57  Player moved to (90, 172), MP remaining: 5.
+D2 02:58  Player moved to (90, 171), MP remaining: 5.
+D2 02:59  Player moved to (90, 170), MP remaining: 5.
+D2 03:00  Player moved to (90, 169), MP remaining: 5.
+D2 03:01  Player moved to (90, 168), MP remaining: 5.
+D2 03:02  Player moved to (90, 167), MP remaining: 5.
+D2 03:03  Player moved to (90, 166), MP remaining: 5.
+D2 03:04  Player moved to (90, 165), MP remaining: 5.
+D2 03:05  Player moved to (90, 164), MP remaining: 5.
+D2 03:06  Player moved to (90, 163), MP remaining: 5.
+D2 03:07  Player moved to (90, 162), MP remaining: 5.
+D2 03:08  Player moved to (90, 161), MP remaining: 5.
+D2 03:09  Player moved to (90, 160), MP remaining: 4.
+D2 03:10  Player moved to (90, 159), MP remaining: 5.
+D2 03:11  Player moved to (90, 158), MP remaining: 5.
+D2 03:12  Player moved to (90, 157), MP remaining: 5.
+D2 03:13  Player moved to (90, 156), MP remaining: 5.
+D2 03:14  Player moved to (90, 155), MP remaining: 5.
+D2 03:15  Player moved to (90, 154), MP remaining: 5.
+D2 03:16  Player moved to (90, 153), MP remaining: 5.
+D2 03:17  Player moved to (90, 152), MP remaining: 5.
+D2 03:18  Player moved to (90, 151), MP remaining: 5.
+D2 03:19  Player moved to (90, 150), MP remaining: 5.
+D2 03:20  Player moved to (90, 149), MP remaining: 5.
+D2 03:21  Player moved to (90, 148), MP remaining: 5.
+D2 03:21  Raiders Operative opens a door.
+D2 03:22  Player moved to (90, 147), MP remaining: 5.
+D2 03:23  Player moved to (90, 146), MP remaining: 5.
+D2 03:24  Player moved to (90, 145), MP remaining: 5.
+D2 03:25  Player moved to (90, 144), MP remaining: 5.
+D2 03:26  Player moved to (90, 143), MP remaining: 5.
+D2 03:27  Player moved to (90, 142), MP remaining: 5.
+D2 03:28  Player moved to (90, 141), MP remaining: 5.
+D2 03:29  Player moved to (90, 140), MP remaining: 5.
+D2 03:30  Player moved to (90, 139), MP remaining: 5.
+D2 03:31  Player moved to (90, 138), MP remaining: 5.
+D2 03:32  Player moved to (90, 137), MP remaining: 5.
+D2 03:33  Player moved to (90, 136), MP remaining: 5.
+D2 03:34  Player moved to (90, 135), MP remaining: 5.
+D2 03:35  Player moved to (90, 134), MP remaining: 5.
+D2 03:36  Player moved to (90, 133), MP remaining: 5.
+D2 03:37  Player moved to (90, 132), MP remaining: 5.
+D2 03:38  Player moved to (90, 131), MP remaining: 5.
+D2 03:39  Player moved to (89, 130), MP remaining: 4.5.
+D2 03:40  Player moved to (88, 129), MP remaining: 3.
+D2 03:41  Player moved to (87, 128), MP remaining: 3.
+D2 03:42  Player moved to (86, 127), MP remaining: 4.5.
+D2 03:43  Player moved to (85, 126), MP remaining: 4.5.
+D2 03:44  Player moved to (84, 125), MP remaining: 4.5.
+D2 03:45  Player moved to (83, 124), MP remaining: 3.
+D2 03:46  Player moved to (82, 123), MP remaining: 4.5.
+D2 03:47  Player moved to (82, 122), MP remaining: 5.
+D2 03:48  Player moved to (82, 121), MP remaining: 5.
+D2 03:49  Player moved to (82, 120), MP remaining: 5.
+D2 03:50  Player moved to (82, 119), MP remaining: 5.
+D2 03:51  Player moved to (82, 118), MP remaining: 5.
+D2 03:52  Player attempts S check: Rolled 15 + 0 = 15 vs AC 10 -> Success
+D2 03:52  Toolbox successfully interacted with.
+D2 03:52  Recovered loot: Hunting Knife.
+D2 03:52  Recovered loot: Military Stim.
+D2 03:52  Recovered loot: Scientific Medkit.
+D2 03:52  Recovered loot: Military Stim.
+D2 03:52  [BOT] Opens the Toolbox: +0 Ru, +4 items.
+D2 03:52  Player moved to (81, 118), MP remaining: 5.
+D2 03:53  Player moved to (80, 118), MP remaining: 5.
+D2 03:54  Player moved to (79, 118), MP remaining: 5.
+D2 03:55  Player moved to (78, 118), MP remaining: 5.
+D2 03:56  Player moved to (77, 119), MP remaining: 4.5.
+D2 03:56  Raiders Operative fires Corvan Wasp-9 at Wanderers Operative!
+D2 03:56  Corvan Wasp-9 fires in Single mode, consuming 1 round.
+D2 03:56  Rolled 2d10 2+4=6 (+1 skill) = 7 vs AC 11
+D2 03:56  Corvan Wasp-9 misses Wanderers Operative.
+D2 03:57  Player moved to (76, 119), MP remaining: 5.
+D2 03:57  Wanderers Operative fires TR-30 at Raiders Operative!
+D2 03:57  TR-30 fires in Single mode, consuming 1 round.
+D2 03:57  Raiders Operative is in light cover: +1 AC.
+D2 03:57  Rolled 2d10 1+7=8 (+1 skill, +1 weapon) = 10 vs AC 12
+D2 03:57  TR-30 misses Raiders Operative.
+D2 03:57  Cover at (127, 93) takes a hit (3/4 left).
+D2 03:57  Raiders Operative fires Corvan Wasp-9 at Wanderers Operative!
+D2 03:57  Corvan Wasp-9 fires in Single mode, consuming 1 round.
+D2 03:57  Rolled 2d10 7+6=13 (+1 skill) = 14 vs AC 11
+D2 03:57  Graze: damage x0.85.
+D2 03:57  Corvan Wasp-9 hits Wanderers Operative for 11 damage using Standard ammo.
+D2 03:57  Wanderers Operative HP is now 89.
+D2 03:58  Player moved to (75, 120), MP remaining: 4.5.
+D2 03:58  Wanderers Operative fires TR-30 at Raiders Operative!
+D2 03:58  TR-30 fires in Single mode, consuming 1 round.
+D2 03:58  Raiders Operative is in light cover: +1 AC.
+D2 03:58  Rolled 2d10 5+7=12 (+1 skill, +1 weapon) = 14 vs AC 12
+D2 03:58  Graze: damage x0.85.
+D2 03:58  TR-30 hits Raiders Operative for 16 damage using Standard ammo.
+D2 03:58  Raiders Operative HP is now 38.
+D2 03:58  Raiders Operative fires Corvan Wasp-9 at Wanderers Operative!
+D2 03:58  Corvan Wasp-9 fires in Single mode, consuming 1 round.
+D2 03:58  Rolled 2d10 4+10=14 (+1 skill) = 15 vs AC 11
+D2 03:58  Clean hit: damage x1.0.
+D2 03:58  Corvan Wasp-9 hits Wanderers Operative for 12 damage using Standard ammo.
+D2 03:58  Wanderers Operative HP is now 77.
+D2 03:59  Player moved to (74, 120), MP remaining: 5.
+D2 03:59  Wanderers Operative fires TR-30 at Raiders Operative!
+D2 03:59  TR-30 fires in Single mode, consuming 1 round.
+D2 03:59  Raiders Operative is in light cover: +1 AC.
+D2 03:59  Rolled 2d10 3+7=10 (+1 skill, +1 weapon) = 12 vs AC 12
+D2 03:59  Graze: damage x0.85.
+D2 03:59  TR-30 hits Raiders Operative for 16 damage using Standard ammo.
+D2 03:59  Raiders Operative HP is now 22.
+D2 03:59  Raiders Operative fires Corvan Wasp-9 at Wanderers Operative!
+D2 03:59  Corvan Wasp-9 fires in Single mode, consuming 1 round.
+D2 03:59  Rolled 2d10 5+5=10 (+1 skill) = 11 vs AC 11
+D2 03:59  Graze: damage x0.85.
+D2 03:59  Corvan Wasp-9 hits Wanderers Operative for 11 damage using Standard ammo.
+D2 03:59  Wanderers Operative HP is now 66.
+D2 04:00  Player attempts S check: Rolled 7 + 0 = 7 vs AC 10 -> Failure
+D2 04:00  Toolbox interaction failed.
+D2 04:00  Metal clangs as it holds.
+D2 04:00  [BOT] Can't get the Toolbox open.
+D2 04:00  Player moved to (73, 120), MP remaining: 5.
+D2 04:00  Wanderers Operative fires TR-30 at Raiders Operative!
+D2 04:00  TR-30 fires in Single mode, consuming 1 round.
+D2 04:00  Raiders Operative is in light cover: +1 AC.
+D2 04:00  Rolled 2d10 9+10=19 (+1 skill, +1 weapon) = 21 vs AC 12
+D2 04:00  Vital hit: damage x1.2.
+D2 04:00  TR-30 hits Raiders Operative for 22 damage using Standard ammo.
+D2 04:00  Raiders Operative HP is now 0.
+D2 04:00  Raiders Operative has been defeated.
+D2 04:00  Raiders Operative sees Raiders Operative go down and is SHAKEN (-2 to hit, falls back).
+D2 04:01  Player opens a door.
+D2 04:01  Player moved to (72, 120), MP remaining: 4.
+D2 04:02  Player moved to (71, 120), MP remaining: 5.
+D2 04:03  Player moved to (71, 119), MP remaining: 5.
+D2 04:03  Wanderers Operative fires TR-30 at Raiders Operative!
+D2 04:03  TR-30 fires in Single mode, consuming 1 round.
+D2 04:03  Raiders Operative is flanked: +2 to hit.
+D2 04:03  Rolled 2d10 6+4=10 (+1 skill, +2 flank, +1 weapon) = 14 vs AC 10
+D2 04:03  Clean hit: damage x1.0.
+D2 04:03  TR-30 hits Raiders Operative for 22 damage using Standard ammo.
+D2 04:03  Raiders Operative HP is now 0.
+D2 04:03  Raiders Operative has been defeated.
+D2 04:04  Player moved to (71, 118), MP remaining: 5.
+D2 04:05  Player moved to (71, 117), MP remaining: 5.
+D2 04:06  Player moved to (71, 116), MP remaining: 5.
+D2 04:07  Player moved to (71, 115), MP remaining: 5.
+D2 04:08  Player moved to (72, 115), MP remaining: 5.
+D2 04:09  Player moved to (73, 115), MP remaining: 5.
+D2 04:10  Player moved to (74, 114), MP remaining: 4.5.
+D2 04:11  Player moved to (75, 114), MP remaining: 5.
+D2 04:12  Player moved to (76, 113), MP remaining: 4.5.
+D2 04:13  Player moved to (77, 113), MP remaining: 5.
+D2 04:14  Player moved to (78, 112), MP remaining: 4.5.
+D2 04:15  Player opens a door.
+D2 04:15  Player moved to (78, 111), MP remaining: 4.
+D2 04:16  Player moved to (78, 110), MP remaining: 5.
+D2 04:17  Player moved to (78, 109), MP remaining: 5.
+D2 04:18  Player moved to (78, 108), MP remaining: 5.
+D2 04:19  Player moved to (78, 107), MP remaining: 5.
+D2 04:20  Player moved to (78, 106), MP remaining: 5.
+D2 04:21  Player moved to (78, 105), MP remaining: 5.
+D2 04:22  Player attempts S check: Rolled 16 + 0 = 16 vs AC 10 -> Success
+D2 04:22  Old Chest successfully interacted with.
+D2 04:22  Recovered loot: Smerch-3.
+D2 04:22  Recovered loot: PPZ Zubr.
+D2 04:22  Junk, mostly. 41 loose RU.
+D2 04:22  [BOT] Opens the Old Chest: +41 Ru, +2 items.
+D2 04:22  Player moved to (77, 104), MP remaining: 4.5.
+D2 04:23  Player opens a door.
+D2 04:23  Player moved to (77, 103), MP remaining: 4.
+D2 04:24  Player moved to (77, 102), MP remaining: 5.
+D2 04:25  Player moved to (78, 101), MP remaining: 4.5.
+D2 04:26  Player moved to (79, 100), MP remaining: 4.5.
+D2 04:27  Player moved to (80, 99), MP remaining: 4.5.
+D2 04:28  Player moved to (81, 98), MP remaining: 4.5.
+D2 04:29  Player moved to (82, 97), MP remaining: 4.5.
+D2 04:30  Player moved to (83, 96), MP remaining: 4.5.
+D2 04:31  Player moved to (84, 95), MP remaining: 4.5.
+D2 04:32  Player moved to (85, 94), MP remaining: 4.5.
+D2 04:33  Player moved to (86, 93), MP remaining: 4.5.
+D2 04:34  Player moved to (87, 92), MP remaining: 4.5.
+D2 04:35  Player moved to (88, 91), MP remaining: 4.5.
+D2 04:36  Player moved to (88, 90), MP remaining: 5.
+D2 04:37  Player moved to (89, 89), MP remaining: 4.5.
+D2 04:38  Player moved to (89, 88), MP remaining: 5.
+D2 04:39  Player moved to (90, 87), MP remaining: 4.5.
+D2 04:40  Player moved to (91, 86), MP remaining: 4.5.
+D2 04:41  Player moved to (92, 85), MP remaining: 4.5.
+D2 04:42  Player moved to (93, 85), MP remaining: 5.
+D2 04:43  Player moved to (94, 84), MP remaining: 4.5.
+D2 04:44  Player moved to (94, 83), MP remaining: 5.
+D2 04:45  Player moved to (94, 82), MP remaining: 5.
+D2 04:46  Player moved to (94, 81), MP remaining: 5.
+D2 04:47  You're in Black Valley now.
+D2 04:47  Player moved to (94, 80), MP remaining: 5.
+D2 04:48  Player moved to (94, 79), MP remaining: 5.
+D2 04:49  Player moved to (94, 78), MP remaining: 5.
+D2 04:50  Player moved to (94, 77), MP remaining: 5.
+D2 04:51  Player moved to (93, 76), MP remaining: 4.5.
+D2 04:52  Player moved to (92, 75), MP remaining: 4.5.
+D2 04:53  Player moved to (91, 74), MP remaining: 4.5.
+D2 04:54  Player moved to (90, 73), MP remaining: 4.5.
+D2 04:55  Player moved to (89, 72), MP remaining: 4.5.
+D2 04:56  Player moved to (88, 71), MP remaining: 4.5.
+D2 04:57  Player moved to (87, 71), MP remaining: 5.
+D2 04:58  Player moved to (86, 70), MP remaining: 4.5.
+D2 04:59  Player moved to (85, 69), MP remaining: 4.5.
+D2 05:00  Player moved to (84, 68), MP remaining: 4.5.
+D2 05:01  Player moved to (84, 67), MP remaining: 5.
+D2 05:02  Player moved to (83, 66), MP remaining: 4.5.
+D2 05:03  Player moved to (83, 65), MP remaining: 5.
+D2 05:04  Player attempts S check: Rolled 9 + 0 = 9 vs AC 10 -> Failure
+D2 05:04  Duffel Bag interaction failed.
+D2 05:04  Metal clangs as it holds.
+D2 05:04  [BOT] Can't get the Duffel Bag open.
+D2 05:04  Player moved to (83, 64), MP remaining: 5.
+D2 05:05  Player moved to (84, 63), MP remaining: 4.5.
+D2 05:06  Player moved to (83, 62), MP remaining: 4.5.
+D2 05:07  Player moved to (82, 61), MP remaining: 4.5.
+D2 05:08  Player moved to (81, 60), MP remaining: 4.5.
+D2 05:09  Player moved to (80, 59), MP remaining: 4.5.
+D2 05:10  Player moved to (79, 58), MP remaining: 4.5.
+D2 05:11  Player moved to (78, 57), MP remaining: 4.5.
+D2 05:12  Player moved to (78, 56), MP remaining: 5.
+D2 05:13  Player moved to (77, 55), MP remaining: 4.5.
+D2 05:14  Player moved to (76, 54), MP remaining: 4.5.
+D2 05:15  Player moved to (75, 53), MP remaining: 4.5.
+D2 05:16  Player moved to (75, 52), MP remaining: 5.
+D2 05:17  Player moved to (74, 51), MP remaining: 4.5.
+D2 05:18  Player moved to (74, 50), MP remaining: 4.
+D2 05:19  Player attempts S check: Rolled 17 + 0 = 17 vs AC 10 -> Success
+D2 05:19  Under the Roots successfully interacted with.
+D2 05:19  Recovered loot: Smerch-3.
+D2 05:19  Recovered loot: PSh-18 Pchela.
+D2 05:19  Junk, mostly. 25 loose RU.
+D2 05:19  [BOT] Opens the Under the Roots: +25 Ru, +2 items.
+D2 05:19  Player moved to (75, 49), MP remaining: 4.5.
+D2 05:20  Player moved to (76, 48), MP remaining: 3.
+D2 05:21  Player moved to (77, 47), MP remaining: 4.5.
+D2 05:22  Player moved to (78, 46), MP remaining: 4.5.
+D2 05:23  Player moved to (78, 45), MP remaining: 4.
+D2 05:24  Player moved to (79, 44), MP remaining: 3.
+D2 05:25  Player moved to (79, 43), MP remaining: 4.
+D2 05:26  Player moved to (80, 42), MP remaining: 3.
+D2 05:27  Player moved to (80, 41), MP remaining: 4.
+D2 05:28  Player moved to (81, 40), MP remaining: 3.
+D2 05:28  [MOVEMENT] Wanderers squad moves on into Black Valley.
+D2 05:29  Player moved to (81, 39), MP remaining: 3.
+D2 05:30  Player moved to (82, 38), MP remaining: 4.5.
+D2 05:31  Player moved to (82, 37), MP remaining: 5.
+D2 05:32  Player moved to (83, 36), MP remaining: 4.5.
+D2 05:33  Player moved to (84, 35), MP remaining: 4.5.
+D2 05:34  Player moved to (85, 34), MP remaining: 4.5.
+D2 05:35  Player moved to (86, 33), MP remaining: 4.5.
+D2 05:36  Player moved to (86, 32), MP remaining: 5.
+D2 05:37  Player moved to (87, 31), MP remaining: 4.5.
+D2 05:38  Player moved to (87, 30), MP remaining: 5.
+D2 05:39  Player moved to (88, 29), MP remaining: 4.5.
+D2 05:40  Player moved to (88, 28), MP remaining: 5.
+D2 05:41  Player moved to (89, 27), MP remaining: 4.5.
+D2 05:42  Player moved to (89, 26), MP remaining: 5.
+D2 05:43  Player moved to (90, 25), MP remaining: 4.5.
+D2 05:44  Player moved to (90, 24), MP remaining: 4.
+D2 05:45  Player moved to (91, 23), MP remaining: 4.5.
+D2 05:46  Player attempts S check: Rolled 19 + 0 = 19 vs AC 10 -> Success
+D2 05:46  Toolbox successfully interacted with.
+D2 05:46  Recovered loot: Walden P9.
+D2 05:46  Recovered loot: VKM.
+D2 05:46  Recovered loot: Sniffer.
+D2 05:46  [BOT] Opens the Toolbox: +0 Ru, +3 items.
+D2 05:46  Player moved to (91, 22), MP remaining: 4.
+D2 05:47  Player moved to (91, 21), MP remaining: 5.
+D2 05:48  Player moved to (92, 20), MP remaining: 4.5.
+D2 05:49  Player moved to (92, 19), MP remaining: 5.
+D2 05:50  Player moved to (93, 18), MP remaining: 4.5.
+D2 05:51  Player moved to (93, 17), MP remaining: 5.
+D2 05:52  Player moved to (93, 16), MP remaining: 5.
+D2 05:53  Player moved to (94, 15), MP remaining: 4.5.
+D2 05:54  Player moved to (94, 14), MP remaining: 5.
+D2 05:55  Player moved to (95, 13), MP remaining: 4.5.
+D2 05:56  Player moved to (95, 12), MP remaining: 5.
+D2 05:57  Player moved to (95, 11), MP remaining: 5.
+D2 05:58  Player moved to (95, 10), MP remaining: 5.
+D2 05:59  Player moved to (95, 9), MP remaining: 5.
+D2 06:00  Player moved to (96, 8), MP remaining: 4.5.
+D2 06:01  Player moved to (96, 7), MP remaining: 5.
+D2 06:02  Player moved to (97, 6), MP remaining: 4.5.
+D2 06:03  Player moved to (97, 5), MP remaining: 5.
+D2 06:04  Player moved to (98, 4), MP remaining: 4.5.
+D2 06:05  Player moved to (98, 3), MP remaining: 5.
+D2 06:06  Player moved to (99, 2), MP remaining: 4.5.
+D2 06:07  Player moved to (99, 1), MP remaining: 5.
+D2 06:08  Player moved to (100, 0), MP remaining: 4.5.
+D2 06:09  Crossing into Scavenger's Hub (Tier 3).
+D2 06:09  [SAFE ZONE] Entered Scavenger's Hub. Weapons hold.
+D2 06:09  [RUMOR] A Garrison squad and an Obelisk squad fought in The Siege Ward. The Obelisk were wiped out.
+D2 06:09  [RUMOR] Someone swears there's a hidden way into Secret Lab Beta somewhere in Flooded Bunker.
+D2 06:09  [RUMOR] An Obelisk squad and a Garrison squad fought in The Siege Ward. The Garrison were wiped out.
+D2 06:09  Time passes on the road.
+D2 14:09  [RADIO] Gunfire next door. A Raiders squad and a Wanderers squad fought in Black Valley. The Wanderers fell back, leaving it to the Raiders.
+D2 14:09  Quest accepted: Contractors are spooked by an unidentified broadcast.
+D2 14:09    Complication (d6 = 3): Not as described - there's a second target.
+D2 14:09    Two ways to finish: turn in to the Contractors, or take it to the Surveyors instead.
+D2 14:09  [BOT] Reaches the Hub's gate.

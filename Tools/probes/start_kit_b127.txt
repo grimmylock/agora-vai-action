@@ -1,0 +1,25 @@
+Batch 127 (corrected). The first version of this file was WRONG: the probe bot swapped its rifle for the New Game knife and back
+every turn (the sniper/pistol swap fired for any second weapon). Fixed in BuildsProbe.Run; numbers below are with the fix.
+bp.dll start 150 <loadout>: the New Game kit vs Tier 1 Raiders. 'ambush' = they haven't seen you (surprise round).
+
+== Ex-Military, with Batch 127 tools (suppress for any automatic gun, kills shake squadmates within 4, Shaken -1 AP)
+  Ex-Military in cover  open    vs1 win  92 die   7   vs2 win  34 die  58   vs3 win   3 die  86
+  Ex-Military in cover  ambush  vs1 win  98 die   1   vs2 win  85 die  14   vs3 win  64 die  32
+  Ex-Military in the open open    vs1 win  85 die  14   vs2 win  22 die  76   vs3 win   2 die  96
+  Ex-Military in the open ambush  vs1 win  97 die   2   vs2 win  65 die  34   vs3 win  42 die  53
+  kit: VKS-74U (18 dmg, mag 30, range 12), Raider Jacket (DR 10 %), HP 100, AP 5, MP 4, rank Rookie, ammo 
+== Ex-Military, same but the bot never suppresses
+  Ex-Military in cover  open    vs1 win  92 die   7   vs2 win  35 die  64   vs3 win   9 die  90
+  Ex-Military in cover  ambush  vs1 win  98 die   1   vs2 win  90 die   9   vs3 win  60 die  35
+  Ex-Military in the open open    vs1 win  84 die  15   vs2 win  19 die  80   vs3 win   4 die  95
+  Ex-Military in the open ambush  vs1 win  97 die   2   vs2 win  70 die  29   vs3 win  47 die  52
+  kit: VKS-74U (18 dmg, mag 30, range 12), Raider Jacket (DR 10 %), HP 100, AP 5, MP 4, rank Rookie, ammo 
+== Scavenger
+  Scavenger in cover  open    vs1 win  92 die   7   vs2 win  35 die  63   vs3 win   2 die  91
+  Scavenger in cover  ambush  vs1 win  99 die   0   vs2 win  80 die  16   vs3 win  41 die  46
+  Scavenger in the open open    vs1 win  76 die  23   vs2 win  18 die  78   vs3 win   0 die  98
+  Scavenger in the open ambush  vs1 win  94 die   5   vs2 win  64 die  34   vs3 win  30 die  62
+  kit: PSh-18 Pchela (12 dmg, mag 8, range 8), Leather Jacket (DR 10 %), HP 100, AP 5, MP 4, rank Rookie, ammo 
+
+== the old targets kit (Batch 84 'Rifle single' Tier 1), today's code: bp.dll t1 100 "Rifle single"
+  Rifle single T1 open1 100  ambushSquad  88  openSquad  17  | VKS-74U, Rookie Field Suit (DR 12 %), perks ControlledTaps

@@ -1,0 +1,2 @@
+Enter the Gungeon table sprites (Dodge Roll / Devolver Digital), from enterthegungeon.wiki.gg/wiki/Table.
+Drawing reference only for how a top-down game shows a table flipped to each side; nothing is copied into the game.

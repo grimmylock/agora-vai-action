@@ -1,0 +1,6 @@
+perimeter           44 spots  route   1357 tiles  walking   5.4 min real time  (unreachable 0)
+scrapyard           30 spots  route   1241 tiles  walking   4.9 min real time  (unreachable 0)
+scavengers_hub      31 spots  route   1158 tiles  walking   4.6 min real time  (unreachable 0)
+vanguard_barracks   33 spots  route   1046 tiles  walking   4.2 min real time  (unreachable 0)
+quarry_basin        33 spots  route   1469 tiles  walking   5.8 min real time  (unreachable 0)
+abandoned_city      32 spots  route   1178 tiles  walking   4.7 min real time  (unreachable 0)

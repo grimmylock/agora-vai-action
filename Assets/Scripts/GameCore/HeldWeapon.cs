@@ -1,0 +1,410 @@
+// New (Batch 21): floating hands + held weapon (Rayman / Worms style - see the agora-vai pixel-art
+// skill). Characters are armless; each human gets two small glove sprites (glove + suit-coloured
+// cuff) and the weapon sprite, all on top of the body, turned toward where the unit is aiming.
+//
+// Rules (locked with Yan): the grip hand orbits the chest at a fixed reach per weapon type (pistol 4,
+// SMG 3.5, long guns 3 character pixels), snaps to whole character pixels, and never drops below the
+// waist. Pistols cup the second hand just in front/below the first; long guns put it on the handguard.
+// The gun turns around its grip; aiming left flips it so it never ends up upside down.
+using System.Collections.Generic;
+using GameData;
+using UnityEngine;
+
+namespace GameCore
+{
+    /// <summary>Hand/gun placement in character-sprite pixels (16x16, origin top-left, y down).
+    /// Plain floats on purpose, so the rules are testable outside Unity.</summary>
+    public struct HeldPose
+    {
+        public float GripX, GripY;        // top-left pixel of the grip hand's 3x2 interior (whole pixels)
+        public float SupportX, SupportY;  // same for the support hand
+        public bool HasSupport, AimLeft;
+    }
+
+    public static class HeldPoseMath
+    {
+        public const float ChestX = 8f, ChestY = 9.5f;
+        public const float WaistTopRow = 10f;   // a 2-row hand starting here ends on the belt row (11)
+
+        public static float Reach(string category) =>
+            category == "sidearm" || category == "melee" ? 4f : category == "smg" ? 3.5f : 3f;
+
+        /// <param name="angleDeg">aim angle, counter-clockwise from "right" (Unity/screen convention)</param>
+        /// <param name="gripX">weapon-sprite pixel (32x16, half-size pixels) where the main hand closes</param>
+        /// <param name="supportX">NaN = no support point (pistols cup the grip hand, melee is one-handed)</param>
+        public static HeldPose Compute(string category, float angleDeg, float gripX, float gripY, float supportX, float supportY)
+        {
+            float a = angleDeg * Mathf.Deg2Rad, c = Mathf.Cos(a), s = Mathf.Sin(a);
+            bool left = c < -0.0001f;
+            float reach = Reach(category);
+            var p = new HeldPose { AimLeft = left };
+            // the hand is 3x2 with its cuff on the body side; aiming left mirrors it (x -> 15 - x)
+            float right = Mathf.Round(ChestX + reach * Mathf.Abs(c));
+            p.GripX = left ? 13f - right : right;
+            p.GripY = Mathf.Min(Mathf.Round(ChestY - reach * s), WaistTopRow);
+            // gun-local axes in sprite pixels (y down): along the barrel, and "below the gun"
+            float dx = c, dy = -s, px = s, py = c;
+            if (left) { px = -px; py = -py; }   // the gun is flipped, so its underside stays down
+            if (category == "melee") return p;
+            float ax, ay;
+            if (float.IsNaN(supportX)) { ax = 1f; ay = 1f; }                               // pistol cup
+            else { ax = (supportX - gripX) * 0.5f; ay = (supportY - gripY) * 0.5f; }       // half-size px -> character px
+            p.HasSupport = true;
+            p.SupportX = Mathf.Round(p.GripX + ax * dx + ay * px);
+            p.SupportY = Mathf.Min(Mathf.Round(p.GripY + ax * dy + ay * py), WaistTopRow + 1f);
+            return p;
+        }
+
+        // ---- Batch 22: combat animation curves (all plain floats, see the Batch 22 checks) ----
+
+        /// <summary>Recoil left after `since` seconds: 1 at the shot, easing to 0 at `recover`.</summary>
+        public static float Recoil(float since, float recover)
+        {
+            if (since < 0f || recover <= 0f || since >= recover) return 0f;
+            float k = 1f - since / recover;
+            return k * k;
+        }
+
+        /// <summary>Melee swing: degrees added to the aim, from a raised wind-up (+70) through the cut
+        /// (-40) over 0.2 s, and how far forward (character px) the weapon lunges.</summary>
+        public static (float deg, float lunge) Swing(float since)
+        {
+            if (since < 0f || since >= SwingTime) return (0f, 0f);
+            float t = since / SwingTime, e = 1f - (1f - t) * (1f - t);
+            return (70f - 110f * e, 2f * Mathf.Sin(t * Mathf.PI));
+        }
+        public const float SwingTime = 0.2f;
+
+        /// <summary>How far the gun tips while reloading (+ = muzzle up when aiming right).</summary>
+        /// <summary>Walk cycle by distance walked (tiles): left foot up, stand, right foot up, stand -
+        /// one full cycle per tile. -1 = standing frame, 0 = left foot up, 1 = right foot up.</summary>
+        public static int WalkFrame(float stride)
+        {
+            int q = (int)(stride * 4f) % 4;
+            return q == 0 ? 0 : q == 2 ? 1 : -1;
+        }
+
+        public static float ReloadTilt(string style) =>
+            style == "cylinder" ? 70f : style == "break" ? -50f : style == "tube" ? -20f : style == "belt" ? -15f : style == "mag" ? -35f : 0f;
+
+        /// <summary>Reload progress r (0..1) -> how far the gun is tipped (0..1) and where the support
+        /// hand is: 0 = on the gun, 1 = at the belt pouch. Mag: out to the pouch and back once.
+        /// Tube / cylinder: several trips (one per couple of shells).</summary>
+        public static (float tip, float pouch) Reload(float r, string style, int trips)
+        {
+            if (r < 0f || r >= 1f || style == "none") return (0f, 0f);
+            float tip = Mathf.Min(1f, Mathf.Min(r / 0.15f, (1f - r) / 0.15f));
+            if (style == "belt" || style == "break") trips = 1;
+            float inner = Mathf.Clamp01((r - 0.1f) / 0.8f);        // the hand works between 10% and 90%
+            if (inner <= 0f || inner >= 1f) return (tip, 0f);
+            float u = inner * Mathf.Max(1, trips) % 1f;             // 0..1 within one trip
+            float pouch = u < 0.35f ? u / 0.35f : u < 0.55f ? 1f : 1f - (u - 0.55f) / 0.45f;
+            return (tip, pouch);
+        }
+    }
+
+    /// <summary>Weapon sprites + grip points. A weapon uses Sprites/Weapons/weapon_&lt;Key&gt; if it exists,
+    /// otherwise its category's stand-in (weapon_cat_&lt;category&gt;) until its own art is drawn.</summary>
+    public static class WeaponArt
+    {
+        public const int PixelsPerUnit = 32;   // half-size pixels next to the 16 px characters
+        // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
+        // per-weapon entries override the category
+        private static readonly Dictionary<string, float[]> Grips = new Dictionary<string, float[]>
+        {
+            ["cat_melee"]   = new[] { 7f, 7f, float.NaN, float.NaN, 27f, 7.5f },
+            ["cat_sidearm"] = new[] { 10.5f, 11.5f, float.NaN, float.NaN, 24f, 6.5f },
+            ["cat_smg"]     = new[] { 10.5f, 10.5f, 20f, 9.5f, 28f, 6.5f },
+            ["cat_shotgun"] = new[] { 9.5f, 8.5f, 14f, 9f, 32f, 5.5f },
+            ["cat_assault"] = new[] { 12.5f, 10f, 22f, 8.5f, 32f, 7.5f },
+            ["cat_sniper"]  = new[] { 14.5f, 10f, 19.5f, 7.5f, 32f, 7.5f },
+            ["cat_heavy"]   = new[] { 11.5f, 10.5f, 24f, 7.5f, 32f, 7f },
+            // Batch 29: every weapon hand-pixelled (ArtSource/weapons/hand, exported by export_hand.py)
+            ["HuntingKnife"] = new[] { 4f, 3f, float.NaN, float.NaN, 17f, 3.5f },
+            ["SpetsnazSwitchblade"] = new[] { 4f, 3.5f, float.NaN, float.NaN, 17f, 3.5f },
+            ["SteppeMachete"] = new[] { 4f, 3.5f, float.NaN, float.NaN, 24f, 2.5f },
+            ["SerratedTrenchKnife"] = new[] { 5.5f, 5f, float.NaN, float.NaN, 18f, 5.5f },
+            ["ObeliskRitualBlade"] = new[] { 3f, 5.5f, float.NaN, float.NaN, 22f, 5.5f },
+            ["PSh18Pchela"] = new[] { 5.5f, 9f, float.NaN, float.NaN, 19f, 2.5f },
+            ["WaldenP9"] = new[] { 5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
+            ["Halden45Service"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 20f, 3.5f },
+            ["HaldenServiceRevolver"] = new[] { 3.5f, 8.5f, float.NaN, float.NaN, 22f, 3f },
+            ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
+            ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
+            ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
+            ["RinaldiR6"] = new[] { 3.5f, 7f, float.NaN, float.NaN, 21f, 5.5f },
+            ["SteppeEagle"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 22f, 3.5f },
+            ["VosaVz62"] = new[] { 3.5f, 10f, float.NaN, float.NaN, 23f, 3.5f },
+            ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
+            ["CorvanWasp9"] = new[] { 6f, 13f, 20.5f, 8f, 31f, 6.5f },
+            ["CorvanHornet45"] = new[] { 12f, 8f, 23.5f, 8f, 31f, 4f },
+            ["CorvanGnatPDW"] = new[] { 8f, 11.5f, 14f, 9f, 28f, 7.5f },
+            ["Obrez66"] = new[] { 5.5f, 4f, 17f, 4f, 25f, 2f },
+            ["HaldenLeverShotgun"] = new[] { 11.5f, 5.5f, 26f, 5f, 37f, 2.5f },
+            ["Hound13"] = new[] { 12f, 5f, 27.5f, 4f, 39f, 2f },
+            ["RangerP8"] = new[] { 12.5f, 4.5f, 28f, 4f, 40f, 2f },
+            ["BayouPump"] = new[] { 11.5f, 4.5f, 29f, 4.5f, 41f, 2f },
+            ["Sever34"] = new[] { 13f, 5.5f, 24f, 4f, 41f, 2f },
+            ["Tambour12"] = new[] { 16f, 6.5f, 30f, 5.5f, 37f, 2.5f },
+            ["SP14Warden"] = new[] { 3f, 13f, 23f, 12f, 39f, 7.5f },
+            ["Sayan12"] = new[] { 10f, 4f, 25f, 3f, 40f, 2.5f },
+            ["Kaban12"] = new[] { 11f, 6.5f, 27f, 4f, 39f, 3.5f },
+            ["VKS74U"] = new[] { 11.5f, 7f, 25f, 4f, 33f, 3.5f },
+            ["Smerch3"] = new[] { 10.5f, 7.5f, 17f, 5f, 28f, 3.5f },
+            ["VK74"] = new[] { 13.5f, 7.5f, 27.5f, 5f, 41f, 3.5f },
+            ["VKM"] = new[] { 13.5f, 7.5f, 27.5f, 5f, 41f, 3.5f },
+            ["TS9Tishina"] = new[] { 11.5f, 6.5f, 25f, 4f, 37f, 3.5f },
+            ["TR30"] = new[] { 11f, 7.5f, 25f, 5f, 39f, 3.5f },
+            ["HaldenHR36K"] = new[] { 12f, 9f, 28f, 7f, 36f, 5.5f },
+            ["VK103"] = new[] { 13.5f, 7.5f, 27.5f, 5f, 41f, 3.5f },
+            ["BR86Bulldog"] = new[] { 15f, 11f, 25f, 8f, 36f, 6.5f },
+            ["VK74Obelisk"] = new[] { 13.5f, 9.5f, 27f, 8f, 41f, 5.5f },
+            ["NA94Yenisei"] = new[] { 12.5f, 8f, 29f, 6f, 41f, 4f },
+            ["CorvanBullpup"] = new[] { 11f, 11.5f, 22f, 11f, 32f, 8f },
+            ["CorvanBattleRifle"] = new[] { 13f, 7.5f, 27f, 5.5f, 43f, 4f },
+            ["SKNKarabin"] = new[] { 12.5f, 5f, 27f, 6f, 42f, 3.5f },
+            ["FrontierLeverRifle"] = new[] { 11.5f, 5f, 24f, 6.5f, 39f, 3f },
+            ["VSNShepot"] = new[] { 12f, 8.5f, 23.5f, 8f, 39f, 6f },
+            ["M91Trekhlineyka"] = new[] { 12.5f, 7f, 31f, 7.5f, 45f, 5f },
+            ["Nightwalker4570"] = new[] { 11f, 5.5f, 24f, 6.5f, 39f, 3f },
+            ["CorvanMarksman"] = new[] { 11.5f, 8f, 26f, 7.5f, 43f, 5.5f },
+            ["SV2Strela"] = new[] { 10.5f, 7.5f, 27f, 7.5f, 45f, 6f },
+            ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },
+            ["VK127Grom"] = new[] { 14f, 11.5f, 26f, 10.5f, 43f, 7f },
+            ["HaldenAM50Sledge"] = new[] { 13.5f, 11f, 28f, 9f, 47f, 6f },
+            ["G7RailPrototype"] = new[] { 12.5f, 10.5f, 28f, 9f, 41f, 6.5f },
+            ["CorvanLMG"] = new[] { 12.5f, 11f, 28f, 9.5f, 42f, 6f },
+            ["RL44"] = new[] { 11.5f, 7.5f, 24f, 6f, 43f, 4f },
+            ["PL62Kobza"] = new[] { 15f, 7.5f, 31f, 5.5f, 45f, 3.5f },   // Batch 113
+            ["PL74"] = new[] { 12.5f, 8.5f, 27f, 8.5f, 44f, 5f },
+            ["PL74PPolovets"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
+            ["PL74PPolovetsZulu"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
+            ["RK12Kuvalda"] = new[] { 3f, 10f, float.NaN, float.NaN, 23f, 5.5f },
+        };
+        public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
+        private static readonly Dictionary<string, (Sprite, float[])> Cache = new Dictionary<string, (Sprite, float[])>();
+        private static Dictionary<WeaponDef, (string cat, string key)> _index;
+        // Batch 29: the project enters Play mode without a domain reload, so statics survive between
+        // runs while the sprites/textures they point at are destroyed - clear the caches each run.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCaches() { Cache.Clear(); }
+
+
+        public static (string cat, string key) Identify(WeaponDef db)
+        {
+            if (_index == null)
+            {
+                _index = new Dictionary<WeaponDef, (string, string)>();
+                foreach (var cat in WeaponDatabase.Categories)
+                    foreach (var w in cat.Value) _index[w.Value] = (cat.Key, w.Key);
+            }
+            return db != null && _index.TryGetValue(db, out var id) ? id : ("assault", null);
+        }
+
+        /// <summary>The weapon's own sprite and grip points, or its category stand-in and the category's points.</summary>
+        public static (Sprite sprite, float[] grip) For(string cat, string key)
+        {
+            string id = key ?? "cat_" + cat;
+            if (Cache.TryGetValue(id, out var hit)) return hit;
+            var tex = key != null ? Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key) : null;
+            bool own = tex != null;
+            if (!own) tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_cat_" + cat);
+            var g = own && Grips.TryGetValue(key, out var kg) ? kg : Grips.TryGetValue("cat_" + cat, out var cg) ? cg : Grips["cat_assault"];
+            Sprite s = null;
+            if (tex != null)
+            {
+                tex.filterMode = FilterMode.Point;
+                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit);
+            }
+            return Cache[id] = (s, g);
+        }
+    }
+
+    /// <summary>The gun + two hands for one unit marker (children of the body's SpriteRenderer).
+    /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
+    public class HeldWeaponView
+    {
+        private readonly SpriteRenderer _gun, _support, _grip;
+        private float _angle;
+        private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
+        // Batch 29: the project enters Play mode without a domain reload, so statics survive between
+        // runs while the sprites/textures they point at are destroyed - clear the caches each run.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCaches() { HandCache.Clear(); }
+
+
+        private float _shotAt = -99f, _kick, _climb, _recover;
+        private float _swingAt = -99f;
+        private float _reloadAt = -99f, _reloadTime;
+        private string _reloadStyle = "none";
+        private int _reloadTrips = 1;
+        private Vector3 _aimOverride;
+        private float _aimUntil = -99f;
+        private float[] _g;          // grip/support/muzzle points of the sprite on show
+
+        private readonly int _base;   // the body's sorting order: gun and hands sit just above it, or just under it from behind
+
+        public HeldWeaponView(SpriteRenderer body)
+        {
+            _base = body.sortingOrder;
+            _gun = Child(body, "HeldWeapon", 1);
+            _support = Child(body, "SupportHand", 2);
+            _grip = Child(body, "GripHand", 3);
+        }
+
+        public bool Visible => _gun.gameObject.activeSelf;
+        public Transform Gun => _gun.transform;
+        public bool AimLeft => _gun.flipY;
+        public float Angle => _angle;
+        public Sprite GunSprite => _gun.sprite;
+
+        public void Recoil(WeaponFeel f, float scale)
+        {
+            _shotAt = Time.time; _kick = f.Kick * scale; _climb = f.Climb * scale; _recover = Mathf.Max(0.05f, f.Recover);
+        }
+        public void Twitch() { _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; }   // jammed: click, nothing
+        public void Swing() => _swingAt = Time.time;
+        public void StartReload(WeaponFeel f, int capacity)
+        {
+            _reloadAt = Time.time; _reloadTime = f.ReloadTime; _reloadStyle = f.Reload;
+            _reloadTrips = f.Reload == "tube" || f.Reload == "cylinder" ? Mathf.Clamp(capacity / 2, 2, 4) : 1;
+        }
+        /// <summary>Point the gun at a world position until `until` (the shot's target, even if the
+        /// player has already moved the mouse on).</summary>
+        public void AimAt(Vector3 world, float until) { _aimOverride = world; _aimUntil = until; }
+
+        /// <summary>World position of the muzzle (or blade tip) of the gun as last drawn.</summary>
+        public Vector3 Muzzle() => _gun.transform.TransformPoint(MuzzleLocal());
+
+        /// <summary>The muzzle in the gun's own space (the gun turns around its grip point).</summary>
+        public Vector3 MuzzleLocal()
+        {
+            if (_g == null) return Vector3.zero;
+            float side = _gun.flipY ? -1f : 1f;
+            return new Vector3((_g[4] - _g[0]) / WeaponArt.PixelsPerUnit, side * (_g[1] - _g[5]) / WeaponArt.PixelsPerUnit, 0f);
+        }
+
+        private static SpriteRenderer Child(SpriteRenderer body, string name, int order)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(body.transform, false);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = body.sortingOrder + order;
+            return sr;
+        }
+
+        /// <summary>aimAt: world position the unit points its weapon at, or null to keep the last angle. back: the unit shows
+        /// its back (UnitSprites.Away) - Batch 128 (Yan: "when they're with their back turned, the weapon is covered by the body
+        /// and the hands change orientation"): gun and hands go under the body and the gloves flip, seen from the other side.</summary>
+        public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false)
+        {
+            bool on = visible && weapon?.Db != null;
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible);
+            if (!visible) return;
+            _gun.sortingOrder = _base + (back ? -3 : 1); _support.sortingOrder = _base + (back ? -2 : 2); _grip.sortingOrder = _base + (back ? -1 : 3);
+            _grip.flipY = _support.flipY = back;
+            if (!on)
+            {
+                // nothing equipped: the big gloves float at the torso's sides (Batch 28, Yan)
+                var big = HandSprite(armor, false);
+                _grip.sprite = big; _support.sprite = big;
+                _grip.flipX = false; _support.flipX = true;                           // cuffs toward the body
+                _grip.transform.localPosition = Local(RestRightX, RestY);
+                _support.transform.localPosition = Local(RestLeftX, RestY);
+                _g = null;
+                return;
+            }
+
+            float now = Time.time;
+            if (now < _aimUntil) aimAt = _aimOverride;
+            if (aimAt.HasValue)
+            {
+                float ddx = aimAt.Value.x - unitPos.x, ddy = aimAt.Value.y - unitPos.y;
+                if (ddx * ddx + ddy * ddy > 0.0001f) _angle = Mathf.Atan2(ddy, ddx) * Mathf.Rad2Deg;
+            }
+            var (cat, key) = WeaponArt.Identify(weapon.Db);
+            var (sprite, g) = WeaponArt.For(cat, key);
+            _g = g;
+
+            // animation on top of the aim: recoil (back + muzzle climb), melee swing, reload tilt
+            bool left = Mathf.Cos(_angle * Mathf.Deg2Rad) < -0.0001f;
+            float side = left ? -1f : 1f;
+            float k = HeldPoseMath.Recoil(now - _shotAt, _recover);
+            var (swingDeg, lunge) = HeldPoseMath.Swing(now - _swingAt);
+            var (tip, pouch) = HeldPoseMath.Reload(_reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips);
+            float extra = side * (_climb * k + swingDeg + HeldPoseMath.ReloadTilt(_reloadStyle) * tip);
+            float push = lunge - _kick * k;                                   // + forward, - back (character px)
+
+            var pose = HeldPoseMath.Compute(cat, _angle + extra, g[0], g[1], g[2], g[3]);
+            if (pose.AimLeft != left) pose = HeldPoseMath.Compute(cat, _angle, g[0], g[1], g[2], g[3]);   // never flip sides mid-animation
+            float a = _angle * Mathf.Deg2Rad;
+            float ox = Mathf.Round(push * Mathf.Cos(a)), oy = Mathf.Round(-push * Mathf.Sin(a));    // whole character px
+            if (pouch > 0f && pose.HasSupport)                                 // support hand off to the belt pouch
+            {
+                float bx = pose.GripX + (left ? 3f : -3f), by = HeldPoseMath.WaistTopRow + 1f;
+                pose.SupportX = Mathf.Round(Mathf.Lerp(pose.SupportX, bx, pouch));
+                pose.SupportY = Mathf.Round(Mathf.Lerp(pose.SupportY, by, pouch));
+            }
+
+            _gun.sprite = sprite;
+            _gun.flipY = pose.AimLeft;
+            // Batch 28: small 4x3 gloves while holding something; the grip point (centre of the handle)
+            // sits in the middle of the glove's 2x1 interior, so the fist closes on the handle
+            float cx = pose.AimLeft ? 1f : 2f;
+            _gun.transform.localPosition = Local(pose.GripX + ox + cx, pose.GripY + oy + 1.5f);
+            _gun.transform.localRotation = Quaternion.Euler(0f, 0f, _angle + extra);
+
+            var hand = HandSprite(armor, true);
+            _grip.sprite = hand; _support.sprite = hand;
+            _grip.flipX = _support.flipX = pose.AimLeft;                              // cuff stays on the body side
+            _grip.transform.localPosition = Local(pose.GripX + ox + cx, pose.GripY + oy + 1.5f);
+            _support.gameObject.SetActive(pose.HasSupport);
+            if (pose.HasSupport)
+            {
+                bool onGun = pouch <= 0f;
+                _support.transform.localPosition = Local(pose.SupportX + (onGun ? ox : 0f) + cx, pose.SupportY + (onGun ? oy : 0f) + 1.5f);
+            }
+        }
+
+        // character pixel (16x16 sprite, y down) -> marker-local units (sprite spans -0.5..0.5)
+        private static Vector3 Local(float px, float py) => new Vector3((px - 8f) / 16f, (8f - py) / 16f, 0f);
+
+        // nothing equipped: big glove centres beside the torso (torso is columns 5-10, rows 8-11)
+        public const float RestRightX = 13.5f, RestLeftX = 2.5f, RestY = 10f;
+
+        /// <summary>Glove sprite: big 5x4 (incl. outline, suit-coloured cuff on the body side, lit top edge,
+        /// knuckle shadow) when the hands are empty; small 4x3 (cuff + glove) when holding something, so the
+        /// weapon stays readable. One per armor and size, built at runtime from SpriteAtlasIndex colours.</summary>
+        public static Sprite Glove(ArmorDef armor, bool small = false) => HandSprite(armor, small);
+        private static Sprite HandSprite(ArmorDef armor, bool small)
+        {
+            string name = armor?.Name ?? "";
+            string id = (small ? "s:" : "b:") + name;
+            if (HandCache.TryGetValue(id, out var s)) return s;
+            int i = System.Array.IndexOf(SpriteAtlasIndex.Armor, name);
+            Color cuff = Hex(i >= 0 ? SpriteAtlasIndex.ArmorCuff[i] : "#5a4a36");
+            Color glove = Hex(i >= 0 ? SpriteAtlasIndex.ArmorGlove[i] : "#3d4148");
+            Color k = Hex("#141617"), lit = Scale(glove, 1.45f), dark = Scale(glove, 0.65f), none = new Color(0, 0, 0, 0);
+            string[] rows = small ? GloveSmall : GloveBig;
+            int w = rows[0].Length, h = rows.Length;
+            var tex = new Texture2D(w, h) { filterMode = FilterMode.Point };
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    char ch = rows[y][x];
+                    tex.SetPixel(x, h - 1 - y, ch == 'K' ? k : ch == 'c' ? cuff : ch == 'l' ? lit : ch == 'g' ? glove : ch == 'd' ? dark : none);
+                }
+            tex.Apply();
+            return HandCache[id] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 16f);
+        }
+        public static readonly string[] GloveBig = { ".KKK.", "KcllK", "KcgdK", ".KKK." };
+        public static readonly string[] GloveSmall = { ".KK.", "KcgK", ".KK." };
+
+        private static Color Hex(string h)
+        {
+            int v = System.Convert.ToInt32(h.TrimStart('#'), 16);
+            return new Color(((v >> 16) & 255) / 255f, ((v >> 8) & 255) / 255f, (v & 255) / 255f, 1f);
+        }
+        private static Color Scale(Color c, float f) => new Color(Mathf.Min(1f, c.r * f), Mathf.Min(1f, c.g * f), Mathf.Min(1f, c.b * f), 1f);
+    }
+}

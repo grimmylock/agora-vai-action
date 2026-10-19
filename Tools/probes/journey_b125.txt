@@ -1,0 +1,15 @@
+Batch 125 journey probe (Tools/probes/Journey.cs, 6 characters, real maps and code): New Game at Bonfire Village -> Scavenger's Hub
+=== 1. Scavenger: reached Scavenger's Hub - 1 d 12:29 game time, ~7 real min; 803 tiles, 2 maps; 4 fights (11 rounds), 1 kill; 9 stashes; quests done 1; HP 64, Ru 500 -> 1298
+=== 2. Ex-Military: reached Scavenger's Hub - 1 d 14:09, ~6 min; 906 tiles; 4 fights (8 rounds), 1 kill, 1 toll; 16 stashes; quests 1; HP 100, Ru 400 -> 958
+=== 3. Freelance Trader: reached Scavenger's Hub - 1 d 15:31, ~6 min; 990 tiles; 4 fights (6 rounds), 2 tolls; 16 stashes; quests 1; HP 100, Ru 800 -> 2165
+=== 4. Scavenger: died in Smuggler's Run, day 1 (11:34) - 269 tiles; 1 fight (7 rounds), 1 kill, 1 toll; 6 medkits used
+=== 5. Ex-Military: stuck walking to a quest target at (172,70) from inside a Fishing Village house (181,79) - bot or map, not resolved
+=== 6. Freelance Trader: reached Scavenger's Hub - 1 d 15:26, ~6 min; 984 tiles; 4 fights (7 rounds), 1 kill, 1 toll; 17 stashes; quests 1; HP 100, Ru 800 -> 2084
+Full log of one run: journey_b125_ex_military_log.txt
+Real time = tiles / 4.2 per second + ~20 s a combat round (no looting, reading or menus).
+
+--- A-Life mode (dotnet journey.dll alife 3): the bot lives like a Wanderers squad leader (Posts tasks, rests, migrates 5.2%/h)
+=== 1. Scavenger: stuck walking to a quest target at (53,188) from (118,187) on the Tier 2 map - 1 d 10 h, ~7 real min, 1063 tiles, 2 fights, 4 stashes
+=== 2. Ex-Military: reached Scavenger's Hub - 7 d 24 h game time, ~43 real min; 3098 tiles; 5 fights (7 rounds), 3 kills; 13 stashes; quests 2
+=== 3. Freelance Trader: died in Industrial Basin, day 4 - ~18 real min; 3047 tiles; 2 fights; 13 stashes
+Real time here counts every game minute spent on a map (the exploring clock runs whether you walk or stand), not the 8 h crossings.

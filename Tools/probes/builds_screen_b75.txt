@@ -1,0 +1,10 @@
+Gunslinger pistols   score now  52.6  at 6 AP  64.6   (T1 Halden Service Revolver, T3 Black Harrier, T5 RK-12 Kuvalda)
+Double Tap pistol    score now  60.3  at 6 AP  65.2   (T1 Halden Service Revolver, T3 Black Harrier, T5 RK-12 Kuvalda)
+SMG bursts           score now  58.6  at 6 AP  67.7   (T1 Vosa vz. 62, T3 Corvan Hornet .45, T5 Corvan Gnat PDW)
+Shotgun              score now  57.9  at 6 AP  70.7   (T1 Obrez-66, T3 Sever-34 O/U, T5 SP-14 Warden)
+Rifle single         score now  61.0  at 6 AP  73.5   (T1 VKS-74U, T3 TS-9 Tishina, T5 Corvan Bullpup)
+Rifle bursts         score now  55.6  at 6 AP  70.7   (T1 VKS-74U, T3 TS-9 Tishina, T5 Corvan Bullpup)
+Sniper               score now  72.7  at 6 AP  80.9   (T1 VKS-74U, T3 M91 Trekhlineyka, T5 G-7 Rail Prototype)
+Machine gun          score now  55.4  at 6 AP  68.3   (T1 VKS-74U, T3 RL-44, T5 PL-74P Polovets Zulu)
+Melee                score now  51.3  at 6 AP  57.6   (T1 Hunting Knife, T3 Steppe Machete, T5 Obelisk Ritual Blade)
+ranked (6 AP): Sniper > Rifle single > Shotgun > Rifle bursts > Machine gun > SMG bursts > Double Tap pistol > Gunslinger pistols > Melee

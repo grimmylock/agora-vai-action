@@ -1,0 +1,72 @@
+=== Sniper
+  Tier 1 (Rookie, VKS-74U)
+    Raiders     open    vs1  84-> 89   vs2  27-> 42   vs3   7->  5
+    Raiders     ambush  vs1  86-> 95   vs2  61-> 78   vs3  43-> 55
+  Tier 2 (Experienced, SKN Karabin)
+    Raiders     open    vs1  94-> 99   vs2  54-> 77   vs3  13-> 38
+    Raiders     ambush  vs1  95-> 95   vs2  87-> 96   vs3  69-> 83
+    Garrison    open    vs1  59-> 71   vs2   3-> 11   vs3   2->  2
+    Garrison    ambush  vs1  60-> 79   vs2  30-> 52   vs3   4-> 22
+  Tier 3 (Professional, M91 Trekhlineyka, MarksmansFocus)
+    Contractors open    vs1  87-> 93   vs2  62-> 71   vs3  14-> 32
+    Contractors ambush  vs1  99-> 99   vs2  93-> 94   vs3  75-> 90
+    Sentinels   open    vs1  95-> 96   vs2  56-> 75   vs3  11-> 44
+    Sentinels   ambush  vs1  97->100   vs2  88-> 96   vs3  79-> 95
+  Tier 4 (Veteran, SV-2 Strela, MarksmansFocus)
+    Contractors open    vs1  95-> 96   vs2  66-> 84   vs3  23-> 49
+    Contractors ambush  vs1  96->100   vs2  91-> 96   vs3  86-> 93
+    Raiders     open    vs1 100->100   vs2 100->100   vs3  94->100
+    Raiders     ambush  vs1 100->100   vs2 100-> 99   vs3  98->100
+  Tier 5 (Expert, G-7 Rail Prototype, MarksmansFocus+HighVelocityImpact)
+    Contractors open    vs1 100->100   vs2 100->100   vs3  96->100
+    Contractors ambush  vs1 100->100   vs2  99->100   vs3 100-> 99
+    Obelisk     open    vs1 100->100   vs2  97->100   vs3  96-> 95
+    Obelisk     ambush  vs1 100->100   vs2  99->100   vs3 100->100
+=== Machine gun
+  Tier 1 (Rookie, VKS-74U)
+    Raiders     open    vs1  62-> 79   vs2   9-> 22   vs3   0->  9
+    Raiders     ambush  vs1  63-> 83   vs2  19-> 59   vs3   4-> 32
+  Tier 2 (Experienced, Smerch-3)
+    Raiders     open    vs1  73-> 90   vs2  33-> 54   vs3   8-> 21
+    Raiders     ambush  vs1  85-> 93   vs2  49-> 75   vs3  33-> 63
+    Garrison    open    vs1  39-> 47   vs2   1->  8   vs3   0->  1
+    Garrison    ambush  vs1  43-> 61   vs2  14-> 20   vs3   2-> 10
+  Tier 3 (Professional, RL-44, Shredder)
+    Contractors open    vs1  85-> 93   vs2  39-> 60   vs3   8-> 20
+    Contractors ambush  vs1  89-> 94   vs2  66-> 90   vs3  41-> 66
+    Sentinels   open    vs1  76-> 97   vs2  30-> 56   vs3   2-> 21
+    Sentinels   ambush  vs1  89-> 94   vs2  61-> 88   vs3  41-> 73
+  Tier 4 (Veteran, PL-74, Shredder)
+    Contractors open    vs1  87-> 93   vs2  40-> 67   vs3  11-> 16
+    Contractors ambush  vs1  89-> 95   vs2  75-> 86   vs3  57-> 75
+    Raiders     open    vs1 100->100   vs2  72-> 78   vs3  41-> 57
+    Raiders     ambush  vs1 100->100   vs2  91-> 92   vs3  58-> 83
+  Tier 5 (Expert, PL-74P Polovets Zulu, Shredder+WalkingTank)
+    Contractors open    vs1  97-> 99   vs2  88-> 95   vs3  55-> 83
+    Contractors ambush  vs1  99->100   vs2  95-> 98   vs3  90-> 98
+    Obelisk     open    vs1 100-> 99   vs2  86-> 93   vs3  50-> 77
+    Obelisk     ambush  vs1 100-> 99   vs2  96-> 98   vs3  93-> 94
+=== Melee
+  Tier 1 (Rookie, Hunting Knife)
+    Raiders     open    vs1  64-> 80   vs2   9-> 20   vs3   0->  1
+    Raiders     ambush  vs1  57-> 71   vs2  14-> 27   vs3   0->  5
+  Tier 2 (Experienced, Spetsnaz Switchblade)
+    Raiders     open    vs1  85-> 85   vs2  22-> 42   vs3   2->  4
+    Raiders     ambush  vs1  74-> 92   vs2  25-> 51   vs3   5-> 17
+    Garrison    open    vs1  33-> 55   vs2   1->  8   vs3   0->  0
+    Garrison    ambush  vs1  61-> 77   vs2  13-> 26   vs3   0->  5
+  Tier 3 (Professional, Steppe Machete, BladeDancer)
+    Contractors open    vs1  90-> 94   vs2  31-> 26   vs3   3->  2
+    Contractors ambush  vs1  97-> 96   vs2  77-> 78   vs3  38-> 49
+    Sentinels   open    vs1  89-> 91   vs2  22-> 27   vs3   4->  4
+    Sentinels   ambush  vs1  99-> 92   vs2  71-> 78   vs3  40-> 48
+  Tier 4 (Veteran, Serrated Trench Knife, BladeDancer)
+    Contractors open    vs1  92-> 96   vs2  38-> 55   vs3   4->  7
+    Contractors ambush  vs1  99-> 99   vs2  80-> 87   vs3  58-> 62
+    Raiders     open    vs1 100->100   vs2  93-> 91   vs3  59-> 66
+    Raiders     ambush  vs1  98->100   vs2  95-> 95   vs3  75-> 83
+  Tier 5 (Expert, Obelisk Ritual Blade, BladeDancer+Sprinter)
+    Contractors open    vs1  98->100   vs2  92-> 94   vs3  70-> 74
+    Contractors ambush  vs1  99->100   vs2  99-> 99   vs3  99-> 96
+    Obelisk     open    vs1 100-> 98   vs2  85-> 91   vs3  56-> 62
+    Obelisk     ambush  vs1  99-> 98   vs2  83-> 92   vs3  60-> 68

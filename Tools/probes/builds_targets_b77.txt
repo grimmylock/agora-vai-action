@@ -1,0 +1,90 @@
+=== Gunslinger pistols
+  T1 Halden Service Revolver  Raiders     open1  97  ambush3  61  open3  13
+  T2 Halden .45 Service       Raiders     open1  71  ambush3  37  open3   5
+  T2 Halden .45 Service       Garrison    open1  62  ambush3   3  open3   1
+  T3 Black Harrier            Contractors open1  92  ambush3  34  open3   1
+  T3 Black Harrier            Sentinels   open1  96  ambush3  32  open3   3
+  T4 Steppe Eagle             Contractors open1  79  ambush3  36  open3   2
+  T4 Steppe Eagle             Raiders     open1  93  ambush3  70  open3  35
+  T5 RK-12 Kuvalda            Contractors open1  99  ambush3  97  open3  75
+  T5 RK-12 Kuvalda            Obelisk     open1  99  ambush3  99  open3  87
+=== Double Tap pistol
+  T1 Halden Service Revolver  Raiders     open1  97  ambush3  69  open3   5
+  T2 Halden .45 Service       Raiders     open1  67  ambush3  45  open3   3
+  T2 Halden .45 Service       Garrison    open1  54  ambush3   5  open3   0
+  T3 Black Harrier            Contractors open1  97  ambush3  66  open3   3
+  T3 Black Harrier            Sentinels   open1  96  ambush3  53  open3   2
+  T4 Steppe Eagle             Contractors open1  84  ambush3  44  open3   1
+  T4 Steppe Eagle             Raiders     open1  90  ambush3  81  open3  27
+  T5 RK-12 Kuvalda            Contractors open1 100  ambush3  98  open3  74
+  T5 RK-12 Kuvalda            Obelisk     open1 100  ambush3  98  open3  75
+=== SMG bursts
+  T1 Vosa vz. 62              Raiders     open1  91  ambush3  69  open3  16
+  T2 PPZ Zubr                 Raiders     open1  78  ambush3  65  open3  11
+  T2 PPZ Zubr                 Garrison    open1  77  ambush3  21  open3   0
+  T3 Corvan Hornet .45        Contractors open1  99  ambush3  85  open3   9
+  T3 Corvan Hornet .45        Sentinels   open1  99  ambush3  76  open3   6
+  T4 Corvan Gnat PDW          Contractors open1  92  ambush3  73  open3   9
+  T4 Corvan Gnat PDW          Raiders     open1 100  ambush3  88  open3  50
+  T5 Corvan Gnat PDW          Contractors open1  97  ambush3  86  open3  53
+  T5 Corvan Gnat PDW          Obelisk     open1 100  ambush3  88  open3  57
+=== Shotgun
+  T1 Obrez-66                 Raiders     open1  99  ambush3  77  open3  19
+  T2 Halden Lever Shotgun     Raiders     open1  86  ambush3  65  open3  10
+  T2 Halden Lever Shotgun     Garrison    open1  82  ambush3  14  open3   1
+  T3 Sever-34 O/U             Contractors open1  99  ambush3  86  open3  12
+  T3 Sever-34 O/U             Sentinels   open1  97  ambush3  86  open3  14
+  T4 SP-14 Warden             Contractors open1  96  ambush3  80  open3  13
+  T4 SP-14 Warden             Raiders     open1 100  ambush3  90  open3  49
+  T5 SP-14 Warden             Contractors open1  99  ambush3  94  open3  53
+  T5 SP-14 Warden             Obelisk     open1 100  ambush3  93  open3  61
+=== Rifle single
+  T1 VKS-74U                  Raiders     open1  93  ambush3  50  open3   8
+  T2 Smerch-3                 Raiders     open1  85  ambush3  64  open3  10
+  T2 Smerch-3                 Garrison    open1  79  ambush3  22  open3   1
+  T3 TS-9 Tishina             Contractors open1  98  ambush3  76  open3  15
+  T3 TS-9 Tishina             Sentinels   open1 100  ambush3  80  open3  16
+  T4 Corvan Battle Rifle      Contractors open1  95  ambush3  77  open3  10
+  T4 Corvan Battle Rifle      Raiders     open1  99  ambush3  86  open3  49
+  T5 Corvan Bullpup           Contractors open1  99  ambush3  94  open3  63
+  T5 Corvan Bullpup           Obelisk     open1 100  ambush3  98  open3  75
+=== Rifle bursts
+  T1 VKS-74U                  Raiders     open1  82  ambush3  19  open3   4
+  T2 Smerch-3                 Raiders     open1  68  ambush3  25  open3   5
+  T2 Smerch-3                 Garrison    open1  53  ambush3   1  open3   0
+  T3 TS-9 Tishina             Contractors open1  99  ambush3  86  open3  24
+  T3 TS-9 Tishina             Sentinels   open1  97  ambush3  85  open3  11
+  T4 Corvan Battle Rifle      Contractors open1  94  ambush3  84  open3  19
+  T4 Corvan Battle Rifle      Raiders     open1  99  ambush3  96  open3  56
+  T5 Corvan Bullpup           Contractors open1  98  ambush3  98  open3  81
+  T5 Corvan Bullpup           Obelisk     open1 100  ambush3  99  open3  89
+=== Sniper
+  T1 VKS-74U                  Raiders     open1  96  ambush3  62  open3  13
+  T2 SKN Karabin              Raiders     open1  85  ambush3  47  open3  10
+  T2 SKN Karabin              Garrison    open1  68  ambush3  10  open3   1
+  T3 M91 Trekhlineyka         Contractors open1  99  ambush3  94  open3  21
+  T3 M91 Trekhlineyka         Sentinels   open1  98  ambush3  90  open3  13
+  T4 SV-2 Strela              Contractors open1  99  ambush3 100  open3  44
+  T4 SV-2 Strela              Raiders     open1 100  ambush3  99  open3  80
+  T5 G-7 Rail Prototype       Contractors open1 100  ambush3  99  open3  98
+  T5 G-7 Rail Prototype       Obelisk     open1 100  ambush3 100  open3 100
+=== Machine gun
+  T1 VKS-74U                  Raiders     open1  79  ambush3  26  open3   1
+  T2 Smerch-3                 Raiders     open1  57  ambush3  24  open3   5
+  T2 Smerch-3                 Garrison    open1  55  ambush3   5  open3   1
+  T3 RL-44                    Contractors open1  99  ambush3  76  open3   9
+  T3 RL-44                    Sentinels   open1 100  ambush3  79  open3  15
+  T4 PL-74                    Contractors open1  93  ambush3  77  open3  31
+  T4 PL-74                    Raiders     open1  99  ambush3  87  open3  56
+  T5 PL-74P Polovets Zulu     Contractors open1 100  ambush3  94  open3  87
+  T5 PL-74P Polovets Zulu     Obelisk     open1 100  ambush3  96  open3  94
+=== Melee
+  T1 Hunting Knife            Raiders     open1  84  ambush3   1  open3   0
+  T2 Spetsnaz Switchblade     Raiders     open1  57  ambush3   2  open3   0
+  T2 Spetsnaz Switchblade     Garrison    open1  64  ambush3   2  open3   0
+  T3 Steppe Machete           Contractors open1  99  ambush3  37  open3  10
+  T3 Steppe Machete           Sentinels   open1  99  ambush3  31  open3   8
+  T4 Serrated Trench Knife    Contractors open1 100  ambush3  87  open3  40
+  T4 Serrated Trench Knife    Raiders     open1 100  ambush3  87  open3  75
+  T5 Obelisk Ritual Blade     Contractors open1 100  ambush3  96  open3  81
+  T5 Obelisk Ritual Blade     Obelisk     open1  98  ambush3  86  open3  86
