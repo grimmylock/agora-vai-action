@@ -1,0 +1,56 @@
+class    weapon                      tier armor                       head chest  drop(s, chest, all hit)
+sidearm  PSh-18 Pchela               T1  Cartel Leather Coat              4    8     1.3
+sidearm  Walden P9                   T2  Sentinel Patrol Suit             3    7     1.1
+sidearm  Halden .45 Service          T2  Sentinel Patrol Suit             3    7     1.1
+sidearm  Halden Service Revolver     T1  Cartel Leather Coat              3    5     0.8
+sidearm  SR-21 Gadyuka               T3  Raider Veteran Coat              3    8     1.3
+sidearm  Black Harrier               T3  Raider Veteran Coat              2    6     0.9
+sidearm  Corvan 5.7                  T4  Sentinel Vanguard          AP    3    6     0.9
+sidearm  Rinaldi R6                  T4  Sentinel Vanguard          AP    3    5     0.8
+sidearm  Steppe Eagle                T4  Sentinel Vanguard          AP    2    4     0.6
+sidearm  RK-12 Kuvalda               T5  Liberator Vanguard Plate   AP    2    4     0.6
+smg      Vosa vz. 62                 T1  Cartel Leather Coat              5   10     0.8
+smg      PPZ Zubr                    T2  Sentinel Patrol Suit             4   10     0.8
+smg      Corvan Wasp-9               T3  Raider Veteran Coat              4   10     0.8
+smg      Corvan Hornet .45           T3  Raider Veteran Coat              3    9     0.7
+smg      Corvan Gnat PDW             T4  Sentinel Vanguard          AP    5    9     0.7
+shotgun  Obrez-66                    T1  Cartel Leather Coat              1    3     1.6
+shotgun  Halden Lever Shotgun        T2  Sentinel Patrol Suit             1    3     1.6
+shotgun  Hound 13                    T2  Sentinel Patrol Suit             1    3     1.6
+shotgun  Ranger P8                   T2  Sentinel Patrol Suit             1    3     1.6
+shotgun  Bayou Pump                  T3  Raider Veteran Coat              1    3     1.6
+shotgun  Sever-34 O/U                T3  Raider Veteran Coat              1    3     1.6
+shotgun  Tambour-12                  T4  Sentinel Vanguard          AP    2    3     1.6
+shotgun  SP-14 Warden                T4  Sentinel Vanguard          AP    2    3     1.6
+shotgun  Sayan-12                    T4  Sentinel Vanguard          AP    2    3     1.6
+shotgun  Kaban-12                    T4  Sentinel Vanguard          AP    2    3     1.6
+assault  VKS-74U                     T1  Cartel Leather Coat              3    5     1.0
+assault  Smerch-3                    T2  Sentinel Patrol Suit             2    4     0.8
+assault  VK-74                       T2  Sentinel Patrol Suit             2    5     1.0
+assault  VKM                         T2  Sentinel Patrol Suit             2    5     1.0
+assault  TS-9 Tishina                T3  Raider Veteran Coat              2    5     1.0
+assault  TR-30                       T3  Raider Veteran Coat              2    5     1.0
+assault  Halden HR36K                T3  Raider Veteran Coat              2    5     1.0
+assault  VK-103                      T3  Raider Veteran Coat              2    5     1.0
+assault  BR-86 Bulldog               T4  Sentinel Vanguard          AP    2    4     0.8
+assault  VK-74 Obelisk               T4  Sentinel Vanguard          AP    2    4     0.8
+assault  NA-94 Yenisei               T4  Sentinel Vanguard          AP    2    5     1.0
+assault  Corvan Bullpup              T5  Liberator Vanguard Plate   AP    2    4     0.8
+assault  Corvan Battle Rifle         T4  Sentinel Vanguard          AP    2    4     0.8
+sniper   SKN Karabin                 T2  Sentinel Patrol Suit             1    2     1.2
+sniper   Frontier Lever Rifle        T3  Raider Veteran Coat              1    3     2.4
+sniper   VSN Shepot                  T3  Raider Veteran Coat              1    2     1.2
+sniper   M91 Trekhlineyka            T3  Raider Veteran Coat              1    2     1.2
+sniper   Nightwalker .45-70          T4  Sentinel Vanguard          AP    1    2     1.2
+sniper   Corvan Marksman             T4  Sentinel Vanguard          AP    1    2     1.2
+sniper   SV-2 Strela                 T4  Sentinel Vanguard          AP    1    2     1.2
+sniper   Sever-98                    T4  Sentinel Vanguard          AP    1    2     1.2
+sniper   VK-127 Grom                 T5  Liberator Vanguard Plate   AP    1    2     1.2
+sniper   Halden AM-50 Sledge         T5  Liberator Vanguard Plate   AP    1    1     0.0
+sniper   G-7 Rail Prototype          T5  Liberator Vanguard Plate   AP    1    1     0.0
+heavy    PL-62 Kobza                 T2  Sentinel Patrol Suit             2    6     0.5
+heavy    Corvan LMG                  T3  Raider Veteran Coat              2    6     0.5
+heavy    RL-44                       T3  Raider Veteran Coat              2    5     0.4
+heavy    PL-74                       T4  Sentinel Vanguard          AP    2    4     0.3
+heavy    PL-74P Polovets             T4  Sentinel Vanguard          AP    2    4     0.3
+heavy    PL-74P Polovets Zulu        T5  Liberator Vanguard Plate   AP    2    4     0.3

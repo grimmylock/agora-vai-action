@@ -132,14 +132,24 @@ namespace GameCore
             if (target != null)
             {
                 fx.Target = target; fx.ToX = target.X; fx.ToY = target.Y; fx.Hit = true;
-                float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 3 : 0)) * Ballistics.PartMult(hit.Part) * hit.Through / pellets * (pellets > 1 ? 1.5f : 1f);
+                // RT batch 6: a helmet can turn the round away
+                if (hit.Part == "Head" && UnityEngine.Random.value < HeadGear.DeflectChance(target, w))
+                {
+                    fx.Hit = false; fx.CoverHit = true; fx.CoverX = target.X; fx.CoverY = target.Y; fx.CoverMat = Material.Steel;
+                    Body.Concuss(target, 2f);
+                    if (first) GameLog.Write($"The round pings off {(target is Player ? "your" : target.Name + "'s")} helmet!");
+                    CombatFx.Add(fx);
+                    return;
+                }
+                float raw = RoundDamage(w, hit.Part, hit.Dist, pellets) * hit.Through;
                 if (ambush) raw *= 1.3f;                                       // they never saw it coming (Batch 64, as a bonus now)
                 if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
                 if (shooter is Player) raw *= CombatRules.PlayerDamage;
                 raw *= CombatRules.Lethality;
                 float ignore = w.Db?.IgnorePhysDRPercent ?? 0f;
                 if (shooter is Player sp && sp.ArtifactBypassPhysDR > 0) ignore = 1f - (1f - ignore) * (1f - sp.ArtifactBypassPhysDR);
-                int dmg = CombatRules.PhysicalDamage(raw, w.CurrentAmmoType, target.PhysDR * CombatRules.ArmorScale(target), ignore);
+                float dr = hit.Part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(target)).dr : target.PhysDR * CombatRules.ArmorScale(target);   // RT batch 6: helmets
+                int dmg = CombatRules.PhysicalDamage(raw, w.CurrentAmmoType, dr, ignore);
                 int before = target.Hp;
                 target.Hp = System.Math.Max(0, target.Hp - dmg);
                 fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before;
@@ -152,6 +162,21 @@ namespace GameCore
                 if (target is Player p && p.IsAlive()) Perks.TryAdrenaline(p);
             }
             CombatFx.Add(fx);
+        }
+
+        // RT batch 6 (Yan's targets, weapon vs armor of its own tier: rifles 2-4 head hits, snipers 1 head / 2 chest, pistols 2-4,
+        // SMGs 4-6, shotguns 1 to many by range, machine guns like rifles): the per-round damage was tuned for one shot per turn,
+        // so each class gets a real-time multiplier. Shotguns fade with range: full to 4 tiles, down to 30% at 12.
+        public static readonly Dictionary<string, float> ClassDamage = new Dictionary<string, float>
+            { ["sidearm"] = 1f, ["smg"] = 0.8f, ["assault"] = 1f, ["sniper"] = 1.8f, ["shotgun"] = 1f, ["heavy"] = 1f };
+
+        /// <summary>One round's (or one pellet's) damage before armor: base x class x part x shotgun range fall-off.</summary>
+        public static float RoundDamage(Weapon w, string part, float dist, int pellets)
+        {
+            string cat = CombatRules.Category(w?.Db);
+            float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 3 : 0)) * (ClassDamage.TryGetValue(cat, out var m) ? m : 1f) * Ballistics.PartMult(part);
+            if (pellets > 1) raw = raw / pellets * 1.5f * (dist <= 4f ? 1f : System.Math.Max(0.3f, 1f - (dist - 4f) / 8f * 0.7f));
+            return raw;
         }
 
         /// <summary>The round's path (x0,y0)-(x1,y1) passed within 0.6 tiles of the unit.</summary>

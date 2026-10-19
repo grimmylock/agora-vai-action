@@ -114,7 +114,7 @@ namespace GameCore
         }
 
         /// <summary>Damage share per part (ponytail: a multiplier on one HP pool until limb health lands, RT batch 2).</summary>
-        public static float PartMult(string part) => part switch { "Head" => 1.6f, "Arm" => 0.6f, "Legs" => 0.7f, _ => 1f };
+        public static float PartMult(string part) => part switch { "Head" => 1.3f, "Arm" => 0.6f, "Legs" => 0.7f, _ => 1f };
 
         /// <summary>Height (share of a standing human) the crosshair puts the round at, given the world point under the
         /// mouse and the unit it is over. tileY = the mouse in tile space (y down).</summary>

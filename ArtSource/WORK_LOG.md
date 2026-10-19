@@ -3200,3 +3200,26 @@ at 4.2 tiles/s: 48 s edge to edge.)
 - Harness: a Blind Maw 10 tiles off reaches you in ~4 s (reaction + first decision included) and bites on its own clock; the
   Brute lags behind. ALL CHECKS PASSED.
 - **For Yan to check:** hound pace vs yours (they're a bit faster than your walk, slower than your sprint), bite rate, the Brute.
+
+## RT batch 6 - weapon and armor balance for real time; head protection (2026-10-19)
+
+Yan's targets (weapon vs armor of its own tier): "assault rifles, 2 to 4 headshots; Snipers, 1 headshot, 2 chest; pistols ... 2 to 4
+as well; Smgs, 4 to 6 (faster fire-rate); Shotguns, another wildcard, 1 to X, depending on range, AP ammo makes them lethal at close
+range with 1 headshot kills; Machine guns, same as assault rifles but have higher recoil". "tier 4 to 5 ap ammo is basically
+required". "we can have armor that have more deflect chance or weapons that can't be deflected".
+- **Head 50 HP (was 35), head hits x1.3 (was x1.6)** (`Body.cs`, `Ballistics.PartMult`): a head hit is strong, not automatic.
+- **Damage per class for real time** (`Gunplay.ClassDamage`): sniper x1.8, SMG x0.8, the rest x1 - the old per-round damage was
+  tuned for one shot per turn. **Shotguns fade with range**: full to 4 tiles, down to 30% at 12 (`Gunplay.RoundDamage`, shared by
+  the game and the probe).
+- **Head protection** (`HeadGear.cs`), from the head each armor's sprite already wears (no new art): hoods/bare/balaclava 0;
+  gas-mask and hazmat hoods 10%; steel helmets 25-40% by tier with 8-15% deflect; visor helmets 45%/15%; full-face 55%/20%;
+  exoskeleton helmets 55-60%/20-25%. A head hit uses it instead of the body armor; a deflect does no damage and concusses 2 s.
+  AP rounds cut it to 40% and halve the deflect. Hooks for Yan's idea: `DeflectBonus` per armor (Obelisk Heavy +3%, Sentinel
+  Proto-Armor +5%) and `NoDeflect` per weapon (VK-127 Grom, AM-50 Sledge, G-7 Rail). The head type of all 180 armors is generated
+  from the art scripts (make_armor_avatars.py + make_faction_armors.py); the harness checks none is missing.
+- **Probe** (`TtkProbe`, `test ttk` prints it; table in `Tools/probes/ttk_rt6.txt`): every gun vs the middle armor of its tier
+  (AP from tier 4), head and chest hits to drop, seconds to drop by chest if all hit. Medians: rifles 2 head / 4-5 chest, machine
+  guns 2 / 4-6, pistols 3 / 4-8, SMGs 4-5 / 9-10, snipers 1 / 2, shotguns 1-2 head close (more far). All of Yan's targets pass
+  as checks.
+- ponytail: handling (spread, rate, recoil, reload) stays per class with the data-driven tweaks; a per-gun table when Yan has
+  felt the classes in game. Ammo prices not rescaled yet (rounds per kill went up for automatics).

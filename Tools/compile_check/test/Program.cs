@@ -27,6 +27,7 @@ static class Program {
     Batch72Checks();
     RaidChecks();
     RtChecks();
+    TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
     foreach (var kv in FactionArmorDatabase.Lines)
@@ -842,6 +843,48 @@ static class Program {
     }
     Rt.On = false;   // turn-based again: lethal damage kills
     EncounterState.Enemies.Clear(); Rt.Reset(); p.HealPermanent(100);
+  }
+
+  // RT batch 6: hits to drop someone in the middle armor of the gun's own tier (AP rounds from tier 4, Yan: "basically
+  // required"), head and chest, through the game's own damage code (Gunplay.RoundDamage, CombatRules.PhysicalDamage, HeadGear).
+  // `test ttk` prints the whole table. Yan's targets are checked per class (median over the class).
+  static void TtkProbe(bool print) {
+    var med = new System.Collections.Generic.Dictionary<int, ArmorDef>();
+    foreach (var kv in ArmorDatabase.Tiers) { int t = int.Parse(kv.Key.Replace("tier", "")); var l = kv.Value.Values.OrderBy(a => a.PhysDR).ToList(); med[t] = l[l.Count / 2]; }
+    int Hits(Weapon w, ArmorDef a, string part, float dist, bool ap) {
+      w.CurrentAmmoType = ap ? "ArmorPiercing" : "Standard";
+      int pel = Gunplay.For(w).Pellets;
+      float dr = part == "Head" ? HeadGear.Of(a).dr : a.PhysDR;
+      int per = CombatRules.PhysicalDamage(Gunplay.RoundDamage(w, part, dist, pel), w.CurrentAmmoType, dr) * pel;
+      return (int)Math.Ceiling((part == "Head" ? 50f : 80f) / per); }
+    var byClass = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<(int h, int c)>>();
+    if (print) Console.WriteLine("class    weapon                      tier armor                       head chest  drop(s, chest, all hit)");
+    foreach (var cat in WeaponDatabase.Categories) {
+      if (cat.Key == "melee") continue;
+      foreach (var d in cat.Value.Values) {
+        int t = Math.Max(1, Math.Min(5, d.Tier)); var a = med[t]; bool ap = t >= 4;
+        var w = W(cat.Key, cat.Value.First(x => x.Value == d).Key);
+        int h = Hits(w, a, "Head", 6f, ap), c = Hits(w, a, "Torso", 6f, ap);
+        if (!byClass.ContainsKey(cat.Key)) byClass[cat.Key] = new System.Collections.Generic.List<(int, int)>();
+        byClass[cat.Key].Add((h, c));
+        if (print) Console.WriteLine($"{cat.Key,-8} {d.Name,-27} T{t}  {a.Name,-26}{(ap ? " AP" : "   ")}  {h,3} {c,4}   {(c - 1) * 60f / Gunplay.For(w).Rpm,5:0.0}");
+      }
+    }
+    var noHead = ArmorDatabase.Tiers.SelectMany(kv => kv.Value.Values).Where(a => HeadGear.HeadOf(a) == null).Select(a => a.Name).ToList();
+    Check(noHead.Count == 0, "every armor has a drawn head type for head protection: missing " + string.Join(", ", noHead));
+    { var exo = ArmorDatabase.Tiers["tier5"].Values.First(a => a.Name == "Liberator Exoskeleton"); var gunner = new HumanEnemy("Exo", 1, 1, "Liberators", "Expert", null, null) { EquippedArmor = exo };
+      var rifle = W("assault", WeaponDatabase.Categories["assault"].Keys.First()); var sledge = W("sniper", WeaponDatabase.Categories["sniper"].First(kv => kv.Value.Name == "Halden AM-50 Sledge").Key);
+      float std = HeadGear.DeflectChance(gunner, rifle); rifle.CurrentAmmoType = "ArmorPiercing"; float ap = HeadGear.DeflectChance(gunner, rifle);
+      Check(std == 0.25f && Math.Abs(ap - 0.125f) < 0.001f && HeadGear.DeflectChance(gunner, sledge) == 0f && HeadGear.Of(ArmorDatabase.Tiers["tier1"]["LeatherJacket"]).dr == 0f,
+        $"exo helmet: 25% deflect, AP halves it ({ap}), anti-materiel never deflects, a balaclava protects nothing"); }
+    int Med(string k, bool head) { var l = byClass[k].Select(x => head ? x.h : x.c).OrderBy(x => x).ToList(); return l[l.Count / 2]; }
+    Check(Med("assault", true) >= 2 && Med("assault", true) <= 4, $"rifles: 2-4 head hits ({Med("assault", true)})");
+    Check(Med("heavy", true) >= 2 && Med("heavy", true) <= 4, $"machine guns like rifles ({Med("heavy", true)})");
+    Check(Med("sidearm", true) >= 2 && Med("sidearm", true) <= 4, $"pistols: 2-4 head hits ({Med("sidearm", true)})");
+    Check(Med("smg", true) >= 4 && Med("smg", true) <= 6, $"SMGs: 4-6 head hits ({Med("smg", true)})");
+    Check(Med("sniper", true) == 1 && Med("sniper", false) <= 2, $"snipers: 1 head, 2 chest ({Med("sniper", true)}/{Med("sniper", false)})");
+    var sg = W("shotgun", WeaponDatabase.Categories["shotgun"].Keys.First());
+    Check(Hits(sg, med[1], "Head", 2f, false) == 1 && Hits(sg, med[1], "Head", 12f, false) > 1, $"shotgun: 1 head close ({Hits(sg, med[1], "Head", 2f, false)}), more far ({Hits(sg, med[1], "Head", 12f, false)})");
   }
 
   // Batch 87: the Garrison raid - fighting in the Siege Ward brings 2 more waves (the last led by a boss), then the armory opens

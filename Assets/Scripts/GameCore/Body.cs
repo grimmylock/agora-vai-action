@@ -19,7 +19,7 @@ namespace GameCore
     {
         public static readonly string[] Parts = { "Head", "Torso", "ArmL", "ArmR", "LegL", "LegR" };
         static readonly Dictionary<string, float> Share = new Dictionary<string, float>
-            { ["Head"] = 0.35f, ["Torso"] = 0.8f, ["ArmL"] = 0.45f, ["ArmR"] = 0.45f, ["LegL"] = 0.5f, ["LegR"] = 0.5f };
+            { ["Head"] = 0.5f, ["Torso"] = 0.8f, ["ArmL"] = 0.45f, ["ArmR"] = 0.45f, ["LegL"] = 0.5f, ["LegR"] = 0.5f };
 
         public class State
         {
@@ -168,6 +168,9 @@ namespace GameCore
             Sync(u, s);
             return true;
         }
+
+        /// <summary>RT batch 6: a round rang off the helmet - a short concussion.</summary>
+        public static void Concuss(ICombatant u, float seconds) { if (Human(u)) { var s = Of(u); s.ConcussedUntil = System.Math.Max(s.ConcussedUntil, T + seconds); } }
 
         public static string Name(string p) => p switch { "ArmL" => "left arm", "ArmR" => "right arm", "LegL" => "left leg", "LegR" => "right leg", _ => p.ToLowerInvariant() };
         static string Who(ICombatant u) => u is Player ? "You" : u.Name;
