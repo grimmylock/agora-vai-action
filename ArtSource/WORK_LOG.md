@@ -3378,3 +3378,13 @@ Rinaldi R6, RK-12 Kuvalda) -> `weapon_<Key>_cyl.png`, and the frame keeps an out
 first 12% of a "cylinder" reload (with the gun tipped muzzle-up that reads as swinging out sideways), holds it there while
 the spent brass falls and the rounds go in, and snaps it back in the last 4% (also when a reload is cut short). Drawn on the
 magazine's layer, under the frame. Not done: the Tambour-12's drum (it loads through a gate).
+
+## RT batch 6m - the two bottom-barrel revolvers (2026-10-20)
+
+Yan: "the rinaldi r6 barrel is looking a little chonky, both it and the rk-12 are bottom firing".
+- `ArtSource/weapons/hand/bottom_barrels.py` redraws the in-hand sprite in front of the cylinder (re-runnable): the Rinaldi R6's
+  shroud is 3 rows instead of 5 (lit top, the cut-outs, shaded underside), level with the bottom chamber, the top strap stops
+  over the cylinder; the RK-12 keeps its big housing but the top rail stops short and the barrel stands out at the bottom front.
+  Both bores are the dark pixel in the lowest row; muzzle points moved down to it (`WeaponArt.Grips`, y 5.5 -> 6.5), so flash
+  and rounds leave from there. Cylinders re-cut (`mags.py`). The menu sprites (_hd) are not changed yet (their generator needs
+  the old cloud session's art modules, not in the repo).
