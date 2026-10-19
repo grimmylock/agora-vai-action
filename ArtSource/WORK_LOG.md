@@ -3221,7 +3221,7 @@ required". "we can have armor that have more deflect chance or weapons that can'
   (AP from tier 4), head and chest hits to drop, seconds to drop by chest if all hit. Medians: rifles 2 head / 4-5 chest, machine
   guns 2 / 4-6, pistols 3 / 4-8, SMGs 4-5 / 9-10, snipers 1 / 2, shotguns 1-2 head close (more far). All of Yan's targets pass
   as checks.
-- ponytail: handling (spread, rate, recoil, reload) stays per class with the data-driven tweaks; a per-gun table when Yan has
+- (RT 6d replaced this: a handling row per gun.) handling (spread, rate, recoil, reload) stays per class with the data-driven tweaks; a per-gun table when Yan has
   felt the classes in game. Ammo prices not rescaled yet (rounds per kill went up for automatics).
 
 ## RT batch 6b - armor variants per tier, heavy handguns can't be deflected (2026-10-19)
@@ -3248,3 +3248,26 @@ from there" ("base human enemy hp i meant, but mutants as well" - the player is 
   shotgun pellet of 8.04 counted as 9). Some guns need a hit more now (SMGs ~+1 chest hit, a couple of shotguns 2 heads at 6 tiles).
 - Outlier fixes on the new scale: SR-21 Gadyuka 150 -> 180, Corvan LMG 220 -> 240. All of Yan's class targets still pass.
 - Harness tests updated to the new numbers (and the real-time gunman test now always gets a gun - its random loadout could be a knife).
+
+## RT batch 6d - AP halves armor, a handling row per gun, SMGs a little stronger (2026-10-19)
+
+Yan: "apply AP but 50% instead, so it cuts armor in half, for the smg's, rebalance their base damage, im worried if we buff too
+much without hand's on testing it will break stuff, we haven't considered accuracy, handling, fire-rate, reload time during these
+balancing tests, we need to have a varied roster of weapons otherwise every assault rifle is just firing at the same fire-rate,
+same reload speed, same accuracy..."
+- AP rounds: armor x0.5 (was x0.4), body and helmet (`CombatRules.PhysicalDamage`).
+- `Gunplay.Guns`: every firearm has its own fire rate, auto/semi, reload, steadied spread, seconds to steady and kick, from its
+  build (calibre, weight, action, magazine). The class row keeps hip spread, recovery, reach and a new moving factor (SMGs 0.5,
+  pistols 0.6, shotguns 0.8, rifles 1, machine guns 1.5, snipers 1.6 x the spread walking/sprinting adds). Hip spread: SMGs 3,
+  pistols 3.5, shotguns 4, rifles 5, machine guns 7, snipers 8. A harness check fails if a gun has no row.
+- Bug found by it: no rifle or SMG had BurstCapable, so in real time they all fired semi-auto at 240 rpm. Auto is per gun now.
+- Bug: kick piled up without limit while the trigger was held; capped at 10 degrees (`Gunplay.MaxBloom`).
+- Shotguns: the pellets leave as one pattern (the aim spread moves the whole pattern, `Choke` spreads it: 1.5, Obrez 2.4,
+  Sever-34 O/U 1.1, Halden Lever 1.8). Before, every pellet scattered by the whole gun spread and most missed even at 5 tiles.
+- SMG base damage, small steps: Vosa vz. 62 110 -> 120, PPZ Zubr 120 -> 130, Corvan Wasp-9 140 -> 150, Gnat PDW 130 -> 140
+  (Hornet .45 stays 160). Head hits stay 3-5.
+- The probe (`test ttk`, `Tools/probes/ttk_rt6.txt`) now prints seconds to drop a mid-armor target of the gun's tier: aimed and
+  standing at 5 and 12 tiles (chest) and 12 (head), and walking from the hip at 5 and 12 - the shooter lets the kick settle as
+  much as is fastest, reloads counted. Rifles aimed 0.4-1.2 s at 5 tiles; SMGs 0.7-1.4 aimed but 1.5-3.3 s walking from the hip
+  (rifles 2.7-8 s): their place is on the move up close. Shotguns 2.2-4 s at 5 tiles (Obrez 9 s), snipers 0.7-2.2 s aimed and
+  hopeless from the hip, machine guns 1.2-1.8 aimed at 5 tiles and slow walking.

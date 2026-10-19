@@ -19,7 +19,7 @@ real-time section describes the inherited turn-based game, most of which still r
 - `Body.cs` (RT2): six parts per human, Yan's 60% wound rule, fractures/bleeding/concussion, downed and bleed-out.
 - `Ballistics.cs`: a round is a line over the ground; bodies are footprints; the crosshair's height on the sprite picks the
   part (head/torso/arm/legs), spread scatters sideways and up/down; low cover blocks by height, walls stop rounds.
-- `Gunplay.cs`: per-class handling (spread, steadying, kick, recovery, rate, reach, reload), `Shoot` / `Resolve` (damage
+- `Gunplay.cs`: per-gun handling (`Guns`: rate, auto, reload, spread, steadying, kick; RT 6d) over a class row (hip, recovery, reach, moving), `Shoot` / `Resolve` (damage
   through the old armor math), `NpcShoot` (NPC gunfire from `Weapon.Fire` becomes real rounds when `Rt.On`).
 - Views: `UnitMotionView.Place` draws the player where it really is (`Rt.Free`), `TacticalGridView.StandOffset` reads
   `Rt.Offset`, `TacticalGridView.Reticle` draws the spread crosshair, `CombatFxView` plays `FxEvent.Now` rounds at once.

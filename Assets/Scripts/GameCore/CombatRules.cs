@@ -252,7 +252,7 @@ namespace GameCore
                     if (dr <= 0f) dmg *= 1.25f;
                     else if (dr >= 0.20f) dmg *= 0.5f;
                     break;
-                case "ArmorPiercing": dr *= 0.4f; break;
+                case "ArmorPiercing": dr *= 0.5f; break;   // RT batch 6d (Yan): AP halves armor
                 case "Dart": dr *= 0.5f; break;
             }
             dr *= 1f - ignorePercent;

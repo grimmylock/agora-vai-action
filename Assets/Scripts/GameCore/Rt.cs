@@ -178,7 +178,7 @@ namespace GameCore
             spread += 2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f);   // RT batch 2: broken arms sway, a concussion blurs
             if (p.StatusEffects.Suppressed || Time.time < PinnedUntil) spread += 2f;   // RT batch 4: their near misses pin you
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
-            aim.Bloom += hd.Kick;
+            aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();
         }

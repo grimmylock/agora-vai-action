@@ -3,7 +3,9 @@
 // recovery (degrees a second it settles back), fire rate, automatic or not, reach. Pellets for shotguns.
 // Moving widens the spread (walking a little, sprinting a lot); crouching tightens it; kicks add up and recover.
 // NPCs fire through the same code: their rank decides how steady they are and how often they go for the head.
-// ponytail: per class, with High Recoil and suppressors read off the data; a per-gun table when 3-4 guns get tuned by feel.
+// RT batch 6d (Yan: "every assault rifle is just firing at the same fire-rate, same reload speed, same accuracy"): every gun
+// has its own fire rate, fire mode, reload, accuracy, handling and kick (Guns below); the class row keeps hip spread,
+// recovery and reach. Numbers are a first pass from each gun's build (calibre, weight, action, magazine) - Unity tuning next.
 using System.Collections.Generic;
 using System.Linq;
 using GameData;
@@ -12,36 +14,106 @@ namespace GameCore
 {
     public class Handling
     {
-        public float Steady, Hip, SteadyTime, Kick, Recover, Rpm, Reach, ReloadTime;
+        public float Steady, Hip, SteadyTime, Kick, Recover, Rpm, Reach, ReloadTime, Move = 1f, Choke;
         public bool Auto;
         public int Pellets = 1;
     }
 
     public static class Gunplay
     {
-        // class: steadied spread, hip spread (degrees), seconds to steady, kick, recovery deg/s, rounds/min, auto, reach (tiles), reload s
+        // class: steadied spread, hip spread (degrees), seconds to steady, kick, recovery deg/s, rounds/min, auto, reach (tiles), reload s,
+        // moving (x the spread walking or sprinting adds: RT 6d, SMGs and pistols shoot on the move, long guns don't)
         static readonly Dictionary<string, float[]> Table = new Dictionary<string, float[]>
         {
-            ["sidearm"] = new[] { 1.2f, 4f, 0.45f, 2.6f, 14f, 320f, 0f, 22f, 1.3f },
-            ["smg"]     = new[] { 1.9f, 5f, 0.4f, 1.5f, 16f, 720f, 1f, 24f, 1.7f },
-            ["assault"] = new[] { 0.7f, 4.5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f },
-            ["sniper"]  = new[] { 0.12f, 7f, 1.2f, 7f, 5f, 50f, 0f, 70f, 2.6f },
-            ["shotgun"] = new[] { 3.5f, 6f, 0.5f, 6f, 9f, 75f, 0f, 14f, 2.4f },
-            ["heavy"]   = new[] { 1.4f, 6f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f },
+            ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 22f, 1.3f, 0.6f },
+            ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 24f, 1.7f, 0.5f },
+            ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f, 1f },
+            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 5f, 50f, 0f, 70f, 2.6f, 1.6f },
+            ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 14f, 2.4f, 0.8f },
+            ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f, 1.5f },
         };
+
+        // RT 6d: a shotgun's pellets leave as one shot (the aim spread moves the whole pattern) and spread round it by the choke, degrees
+        public static readonly Dictionary<string, float> Choke = new Dictionary<string, float> { ["Obrez-66"] = 2.4f, ["Sever-34 O/U"] = 1.1f, ["Halden Lever Shotgun"] = 1.8f };
+
+        // per gun: rounds/min, automatic, reload s, steadied spread (deg), seconds to steady, kick (deg a shot)
+        public static readonly Dictionary<string, (float rpm, bool auto, float reload, float steady, float steadyTime, float kick)> Guns =
+            new Dictionary<string, (float, bool, float, float, float, float)>
+        {
+            // sidearms: quick to raise; revolvers slow to reload, magnums kick
+            ["PSh-18 Pchela"]           = (300, false, 1.4f, 1.4f, 0.40f, 2.2f),
+            ["Walden P9"]               = (360, false, 1.2f, 1.1f, 0.40f, 2.2f),
+            ["Halden .45 Service"]      = (300, false, 1.3f, 1.0f, 0.45f, 3.0f),
+            ["Halden Service Revolver"] = (220, false, 2.6f, 1.0f, 0.50f, 3.2f),
+            ["SR-21 Gadyuka"]           = (340, false, 1.3f, 1.1f, 0.45f, 2.6f),
+            ["Black Harrier"]           = (260, false, 1.5f, 0.9f, 0.50f, 4.4f),
+            ["Corvan 5.7"]              = (380, false, 1.2f, 1.0f, 0.35f, 1.8f),
+            ["Rinaldi R6"]              = (240, false, 2.4f, 0.8f, 0.50f, 3.4f),
+            ["Steppe Eagle"]            = (200, false, 1.6f, 0.9f, 0.60f, 6.0f),
+            ["RK-12 Kuvalda"]           = (150, false, 3.0f, 0.8f, 0.65f, 7.5f),
+            // SMGs: fast, light kick, wide
+            ["Vosa vz. 62"]             = (850, true, 1.5f, 2.2f, 0.30f, 1.1f),
+            ["PPZ Zubr"]                = (680, true, 2.4f, 1.8f, 0.45f, 1.2f),
+            ["Corvan Wasp-9"]           = (800, true, 1.8f, 1.4f, 0.40f, 1.2f),
+            ["Corvan Hornet .45"]       = (600, true, 1.9f, 1.6f, 0.45f, 2.0f),
+            ["Corvan Gnat PDW"]         = (950, true, 1.7f, 1.5f, 0.30f, 1.0f),
+            // rifles: short ones handle fast and spread; long and heavy ones steady slower and shoot tighter
+            ["VKS-74U"]                 = (700, true, 1.9f, 1.1f, 0.50f, 2.2f),
+            ["Smerch-3"]                = (800, true, 1.8f, 0.9f, 0.50f, 2.3f),
+            ["VK-74"]                   = (620, true, 2.1f, 0.7f, 0.70f, 1.7f),
+            ["VKM"]                     = (600, true, 2.1f, 0.8f, 0.70f, 2.4f),
+            ["TS-9 Tishina"]            = (850, true, 2.0f, 0.75f, 0.60f, 2.0f),
+            ["TR-30"]                   = (700, true, 2.0f, 0.6f, 0.70f, 1.7f),
+            ["Halden HR36K"]            = (720, true, 2.0f, 0.65f, 0.60f, 1.6f),
+            ["VK-103"]                  = (600, true, 2.1f, 0.7f, 0.75f, 2.3f),
+            ["BR-86 Bulldog"]           = (650, true, 2.6f, 0.55f, 0.85f, 1.5f),
+            ["VK-74 Obelisk"]           = (650, true, 2.0f, 0.5f, 0.55f, 1.6f),
+            ["NA-94 Yenisei"]           = (600, true, 2.2f, 0.55f, 0.80f, 1.4f),
+            ["Corvan Bullpup"]          = (750, true, 2.3f, 0.55f, 0.65f, 1.6f),
+            ["Corvan Battle Rifle"]     = (600, true, 2.4f, 0.5f, 0.85f, 3.0f),
+            // snipers: semis fire faster and wander more; bolts are the tightest
+            ["SKN Karabin"]             = (120, false, 2.4f, 0.30f, 0.9f, 4.5f),
+            ["Frontier Lever Rifle"]    = (70, false, 3.2f, 0.25f, 0.9f, 5.0f),
+            ["VSN Shepot"]              = (150, false, 2.2f, 0.30f, 0.8f, 3.5f),
+            ["M91 Trekhlineyka"]        = (40, false, 3.4f, 0.10f, 1.2f, 7.0f),
+            ["Nightwalker .45-70"]      = (55, false, 3.0f, 0.20f, 1.1f, 8.0f),
+            ["Corvan Marksman"]         = (110, false, 2.5f, 0.15f, 1.1f, 5.0f),
+            ["SV-2 Strela"]             = (100, false, 2.6f, 0.15f, 1.2f, 6.0f),
+            ["Sever-98"]                = (45, false, 2.8f, 0.08f, 1.3f, 7.0f),
+            ["VK-127 Grom"]             = (40, false, 3.0f, 0.10f, 1.4f, 9.0f),
+            ["Halden AM-50 Sledge"]     = (70, false, 3.4f, 0.10f, 1.8f, 11f),
+            ["G-7 Rail Prototype"]      = (40, false, 3.0f, 0.05f, 1.4f, 4.0f),
+            // shotguns (spread = where the pattern goes; Choke = how wide it is): pumps and levers slow, semis and doubles quick
+            ["Obrez-66"]                = (200, false, 2.0f, 1.8f, 0.35f, 8.0f),
+            ["Halden Lever Shotgun"]    = (70, false, 3.0f, 1.4f, 0.50f, 6.0f),
+            ["Hound 13"]                = (75, false, 2.6f, 1.3f, 0.50f, 6.0f),
+            ["Ranger P8"]               = (80, false, 2.8f, 1.2f, 0.50f, 6.0f),
+            ["Bayou Pump"]              = (75, false, 3.0f, 1.2f, 0.55f, 6.0f),
+            ["Sever-34 O/U"]            = (150, false, 2.2f, 1.0f, 0.50f, 7.0f),
+            ["Tambour-12"]              = (180, false, 4.0f, 1.5f, 0.60f, 6.5f),
+            ["SP-14 Warden"]            = (200, false, 3.2f, 1.3f, 0.55f, 5.5f),
+            ["Sayan-12"]                = (180, false, 2.2f, 1.5f, 0.55f, 6.0f),
+            ["Kaban-12"]                = (200, false, 2.4f, 1.3f, 0.60f, 5.5f),
+            // machine guns: slow to steady, long belt changes
+            ["PL-62 Kobza"]             = (650, true, 4.0f, 1.4f, 0.90f, 2.2f),
+            ["Corvan LMG"]              = (750, true, 4.5f, 1.3f, 0.90f, 1.9f),
+            ["RL-44"]                   = (600, true, 4.2f, 1.2f, 1.00f, 2.4f),
+            ["PL-74"]                   = (650, true, 4.5f, 1.1f, 1.00f, 2.6f),
+            ["PL-74P Polovets"]         = (650, true, 4.5f, 1.0f, 1.00f, 2.5f),
+            ["PL-74P Polovets Zulu"]    = (650, true, 4.5f, 0.8f, 1.10f, 2.4f),
+        };
+
+        public const float MaxBloom = 10f;                   // degrees of kick at most, however long the trigger is held
 
         public static Handling For(Weapon w)
         {
             string cat = CombatRules.Category(w?.Db);
             if (!Table.TryGetValue(cat, out var t)) t = Table["sidearm"];
-            var h = new Handling { Steady = t[0], Hip = t[1], SteadyTime = t[2], Kick = t[3], Recover = t[4], Rpm = t[5], Auto = t[6] > 0f, Reach = t[7], ReloadTime = t[8] };
+            var h = new Handling { Steady = t[0], Hip = t[1], SteadyTime = t[2], Kick = t[3], Recover = t[4], Rpm = t[5], Auto = t[6] > 0f, Reach = t[7], ReloadTime = t[8], Move = t[9] };
             if (w?.Db != null)
             {
-                if (w.Db.HighRecoil) { h.Kick *= 1.4f; h.Recover *= 0.85f; }
-                if (cat == "assault" || cat == "smg") h.Auto = w.Db.BurstCapable;      // a semi-only rifle stays semi
-                if (cat == "assault" && !h.Auto) h.Rpm = 240f;
-                if (CombatRules.IsShotgun(w)) h.Pellets = 6;
-                if (w.Db.ReloadApCost >= 2) h.ReloadTime *= 1.4f;
+                if (Guns.TryGetValue(w.Db.Name, out var g)) { h.Rpm = g.rpm; h.Auto = g.auto; h.ReloadTime = g.reload; h.Steady = g.steady; h.SteadyTime = g.steadyTime; h.Kick = g.kick; }
+                if (CombatRules.IsShotgun(w)) { h.Pellets = 6; h.Choke = Choke.TryGetValue(w.Db.Name, out var c) ? c : 1.5f; }
             }
             if (ItemCondition.IsDamaged(w?.Condition ?? ItemCondition.Working)) h.Steady *= 1.4f;
             return h;
@@ -63,7 +135,7 @@ namespace GameCore
         public static float Spread(Handling h, Aim a, int move, bool crouched)
         {
             float s = h.Hip + (h.Steady - h.Hip) * a.Steady;
-            s += move == 1 ? 1.2f : move >= 2 ? 6f : 0f;
+            s += (move == 1 ? 1.2f : move >= 2 ? 6f : 0f) * h.Move;
             if (crouched) s *= 0.8f;
             return s + a.Bloom;
         }
@@ -93,9 +165,10 @@ namespace GameCore
             var hits = new List<Ballistics.Hit>();
             var hd = For(w);
             var (x0, y0) = Ballistics.Pos(shooter);
+            float aimSide = Gauss() * spread, aimUp = Gauss() * spread;
             for (int p = 0; p < hd.Pellets; p++)
             {
-                float side = Gauss() * spread * 0.0174533f, up = Gauss() * spread * 0.0174533f;
+                float side = (aimSide + Gauss() * hd.Choke) * 0.0174533f, up = (aimUp + Gauss() * hd.Choke) * 0.0174533f;
                 float c = (float)System.Math.Cos(side), s = (float)System.Math.Sin(side);
                 float rx = dx * c - dy * s, ry = dx * s + dy * c;
                 // up/down scatter lands as a height change at the range the round meets a body: approximated per trace

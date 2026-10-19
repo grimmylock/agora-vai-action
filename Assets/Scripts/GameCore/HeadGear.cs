@@ -5,7 +5,7 @@
 //   steel helmet: 25% (tiers 1-2), 30% / 10% (3), 35% / 12% (4), 40% / 15% (5).  visor helmet: 45% / 15%.
 //   full-face helmet: 55% / 20%.  exoskeleton helmet: 55% / 20% (tier 4), 60% / 25% (5).
 // A head hit uses this instead of the body's Phys-DR; a helmet can also turn the round away entirely (no damage, a 2 s
-// concussion). AP rounds cut head protection like body armor (to 40%) and halve the deflect chance - tiers 4-5 need AP (Yan).
+// concussion). AP rounds cut head protection like body armor (by half, RT 6d) and halve the deflect chance - tiers 4-5 need AP (Yan).
 // Yan: "we can have armor that have more deflect chance or weapons that can't be deflected": DeflectBonus per armor, NoDeflect per
 // weapon (anti-materiel rounds go straight through).
 using System.Collections.Generic;

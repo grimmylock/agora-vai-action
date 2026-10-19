@@ -589,7 +589,7 @@ static class Program {
     Check(CombatRules.PhysicalDamage(30, "HollowPoint", 0f) == 38, "HP vs 0% x1.25");
     Check(CombatRules.PhysicalDamage(30, "HollowPoint", 0.1f) == 27, "HP vs 10% no change");
     Check(CombatRules.PhysicalDamage(30, "HollowPoint", 0.3f) == 11, "HP vs 30% x0.5");
-    Check(CombatRules.PhysicalDamage(30, "ArmorPiercing", 0.5f) == 24, "AP x0.4 DR");
+    Check(CombatRules.PhysicalDamage(30, "ArmorPiercing", 0.5f) == 23, "AP halves DR");
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.9f) == 8, "DR cap 75%");
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.5f, 0.2f) == 18, "ignore 20%");
     var vk74 = W("assault", "VK74"); var vk103 = W("assault", "VK103"); var gnat = W("smg", "CorvanGnatPDW"); var pl74 = W("heavy", "PL74");
@@ -849,6 +849,12 @@ static class Program {
   // RT batch 6: hits to drop someone in the middle armor of the gun's own tier (AP rounds from tier 4, Yan: "basically
   // required"), head and chest, through the game's own damage code (Gunplay.RoundDamage, CombatRules.PhysicalDamage, HeadGear).
   // `test ttk` prints the whole table. Yan's targets are checked per class (median over the class).
+  // RT batch 6d: chance one round lands on a band `half` tiles either side (and `tall` up/down) at `dist`, spread in degrees (Gunplay.Shoot's model).
+  // Chest aims count the whole body (rounds high or low land on the head or legs), head aims only the head.
+  static float HitChance(float spreadDeg, float dist, float half, double tall = 0.156) {
+    double Erf(double x) { double tt = 1 / (1 + 0.3275911 * Math.Abs(x)); double y = 1 - (((((1.061405429 * tt - 1.453152027) * tt) + 1.421413741) * tt - 0.284496736) * tt + 0.254829592) * tt * Math.Exp(-x * x); return x >= 0 ? y : -y; }
+    double sd = Math.Max(1e-4, dist * Math.Tan(spreadDeg * Math.PI / 180));
+    return (float)(Erf(half / (sd * Math.Sqrt(2))) * Erf(tall / (sd * Math.Sqrt(2)))); }
   static void TtkProbe(bool print) {
     var med = new System.Collections.Generic.Dictionary<int, ArmorDef>();
     foreach (var kv in ArmorDatabase.Tiers) { int t = int.Parse(kv.Key.Replace("tier", "")); var l = kv.Value.Values.OrderBy(a => a.PhysDR).ToList(); med[t] = l[l.Count / 2]; }
@@ -871,6 +877,8 @@ static class Program {
         if (print) Console.WriteLine($"{cat.Key,-8} {d.Name,-27} T{t}  {a.Name,-26}{(ap ? " AP" : "   ")}  {h,3} {c,4}   {(c - 1) * 60f / Gunplay.For(w).Rpm,5:0.0}");
       }
     }
+    var noFeel = WeaponDatabase.Categories.Where(kv => kv.Key != "melee").SelectMany(kv => kv.Value.Values).Where(d => !Gunplay.Guns.ContainsKey(d.Name)).Select(d => d.Name).ToList();
+    Check(noFeel.Count == 0, "RT 6d: every gun has its own fire rate, reload, accuracy, handling and kick: missing " + string.Join(", ", noFeel));
     var noHead = ArmorDatabase.Tiers.SelectMany(kv => kv.Value.Values).Where(a => HeadGear.HeadOf(a) == null).Select(a => a.Name).ToList();
     Check(noHead.Count == 0, "every armor has a drawn head type for head protection: missing " + string.Join(", ", noHead));
     { var exo = ArmorDatabase.Tiers["tier5"].Values.First(a => a.Name == "Liberator Exoskeleton"); var gunner = new HumanEnemy("Exo", 1, 1, "Liberators", "Expert", null, null) { EquippedArmor = exo };
@@ -897,6 +905,39 @@ static class Program {
           float defl = HeadGear.DeflectChance(dummy, w);
           float helmExp = Hits(w, helm, "Head", 6f, ap) / (1f - defl);
           Console.WriteLine($"{cat.Key,-8}  {d.Name,-27} {t}  {Hits(w, light, "Torso", 6f, ap),10} {Hits(w, mid, "Torso", 6f, ap),4} {Hits(w, heavy, "Torso", 6f, ap),5}   | {Hits(w, soft, "Head", 6f, ap),9} {helmExp,8:0.0} ({helm.Name}{(defl > 0 ? $", {defl:P0} deflect" : "")})");
+        }
+      }
+    }
+    // RT batch 6d: seconds to drop a mid-armor target of the gun's tier, aiming steadied and holding the trigger at the fire
+    // rate (kick piles up and recovers between shots), reloads counted. Expected hits per shot from the spread at that range.
+    if (print) {
+      Console.WriteLine();
+      Console.WriteLine("SECONDS (aimed, standing)  weapon                      T  rpm  mode reload mag | chest@5  chest@12  head@12 | walking from the hip: chest@5 chest@12   hits chest@5/@12/head@12");
+      foreach (var cat in WeaponDatabase.Categories) {
+        if (cat.Key == "melee") continue;
+        foreach (var d in cat.Value.Values) {
+          int t = Math.Max(1, Math.Min(5, d.Tier)); bool ap = t >= 4; var a = med[t];
+          var w = W(cat.Key, cat.Value.First(x => x.Value == d).Key); var hd = Gunplay.For(w);
+          var dummy = new HumanEnemy("x", 1, 1, "Raiders", "Rookie", null, null) { EquippedArmor = a };
+          int mag = d.MagCapacity ?? d.CylinderCapacity ?? 1;
+          // the shooter waits for the kick to settle under a limit before each shot; the best of a few limits (tap .. hold)
+          float Secs(string part, float dist, float baseSpread) {
+            float need = Hits(w, a, part, dist, ap) / (part == "Head" ? 1f - HeadGear.DeflectChance(dummy, w) : 1f), best = 999f;
+            foreach (float lim in new[] { 0f, 0.5f, 1f, 2f, 4f, 999f }) {
+              float got = 0f, time = 0f, bloom = 0f, gap = 60f / hd.Rpm; int left = mag;
+              for (int n = 0; n < 400 && got < need; n++) {
+                if (left == 0) { time += hd.ReloadTime; left = mag; bloom = 0f; }
+                if (bloom > lim) { time += (bloom - lim) / hd.Recover; bloom = lim; }
+                got += HitChance((float)Math.Sqrt((baseSpread + bloom) * (baseSpread + bloom) + hd.Choke * hd.Choke), dist, part == "Head" ? Ballistics.HeadHalf : Ballistics.TorsoHalf, part == "Head" ? 0.156 : 0.33);
+                left--; bloom = Math.Max(0f, Math.Min(Gunplay.MaxBloom, bloom + hd.Kick) - hd.Recover * gap);
+                if (got < need) time += gap;
+              }
+              if (got >= need) best = Math.Min(best, time);
+            }
+            return best; }
+          // walking, hip fire (not steadied: Gunplay.Tick holds a quarter of the way)
+          float hip = hd.Hip + (hd.Steady - hd.Hip) * 0.25f + 1.2f * hd.Move;
+          Console.WriteLine($"{cat.Key,-8} {d.Name,-27} {t}  {hd.Rpm,4:0} {(hd.Auto ? "auto" : "semi")} {hd.ReloadTime,5:0.0} {mag,4} | {Secs("Torso", 5f, hd.Steady),7:0.00}  {Secs("Torso", 12f, hd.Steady),7:0.00}  {Secs("Head", 12f, hd.Steady),7:0.00} | {Secs("Torso", 5f, hip),7:0.00}  {Secs("Torso", 12f, hip),7:0.00}   hits {Hits(w, a, "Torso", 5f, ap)}/{Hits(w, a, "Torso", 12f, ap)}/{Hits(w, a, "Head", 12f, ap)}");
         }
       }
     }

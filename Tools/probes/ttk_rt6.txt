@@ -1,64 +1,59 @@
-
-
-
-
-
 class    weapon                      tier armor                       head chest  drop(s, chest, all hit)
-sidearm  PSh-18 Pchela               T1  Cartel Leather Coat              4    8     1.3
-sidearm  Walden P9                   T2  Sentinel Patrol Suit             3    8     1.3
-sidearm  Halden .45 Service          T2  Sentinel Patrol Suit             3    7     1.1
-sidearm  Halden Service Revolver     T1  Cartel Leather Coat              3    6     0.9
+sidearm  PSh-18 Pchela               T1  Cartel Leather Coat              4    8     1.4
+sidearm  Walden P9                   T2  Sentinel Patrol Suit             3    8     1.2
+sidearm  Halden .45 Service          T2  Sentinel Patrol Suit             3    7     1.2
+sidearm  Halden Service Revolver     T1  Cartel Leather Coat              3    6     1.4
 sidearm  SR-21 Gadyuka               T3  Raider Veteran Coat              3    7     1.1
-sidearm  Black Harrier               T3  Raider Veteran Coat              2    6     0.9
-sidearm  Corvan 5.7                  T4  Sentinel Vanguard          AP    3    6     0.9
-sidearm  Rinaldi R6                  T4  Sentinel Vanguard          AP    3    5     0.8
-sidearm  Steppe Eagle                T4  Sentinel Vanguard          AP    2    4     0.6
-sidearm  RK-12 Kuvalda               T5  Liberator Vanguard Plate   AP    2    4     0.6
-smg      Vosa vz. 62                 T1  Cartel Leather Coat              5   11     0.8
-smg      PPZ Zubr                    T2  Sentinel Patrol Suit             4   12     0.9
+sidearm  Black Harrier               T3  Raider Veteran Coat              2    6     1.2
+sidearm  Corvan 5.7                  T4  Sentinel Vanguard          AP    3    7     0.9
+sidearm  Rinaldi R6                  T4  Sentinel Vanguard          AP    3    6     1.3
+sidearm  Steppe Eagle                T4  Sentinel Vanguard          AP    2    5     1.2
+sidearm  RK-12 Kuvalda               T5  Liberator Vanguard Plate   AP    2    4     1.2
+smg      Vosa vz. 62                 T1  Cartel Leather Coat              4   10     0.6
+smg      PPZ Zubr                    T2  Sentinel Patrol Suit             4   11     0.9
 smg      Corvan Wasp-9               T3  Raider Veteran Coat              4   11     0.8
-smg      Corvan Hornet .45           T3  Raider Veteran Coat              3   10     0.8
-smg      Corvan Gnat PDW             T4  Sentinel Vanguard          AP    5   10     0.8
-shotgun  Obrez-66                    T1  Cartel Leather Coat              2    3     1.6
-shotgun  Halden Lever Shotgun        T2  Sentinel Patrol Suit             1    3     1.6
+smg      Corvan Hornet .45           T3  Raider Veteran Coat              3   10     0.9
+smg      Corvan Gnat PDW             T4  Sentinel Vanguard          AP    5   10     0.6
+shotgun  Obrez-66                    T1  Cartel Leather Coat              2    3     0.6
+shotgun  Halden Lever Shotgun        T2  Sentinel Patrol Suit             1    3     1.7
 shotgun  Hound 13                    T2  Sentinel Patrol Suit             2    3     1.6
-shotgun  Ranger P8                   T2  Sentinel Patrol Suit             2    3     1.6
+shotgun  Ranger P8                   T2  Sentinel Patrol Suit             2    3     1.5
 shotgun  Bayou Pump                  T3  Raider Veteran Coat              1    4     2.4
-shotgun  Sever-34 O/U                T3  Raider Veteran Coat              1    3     1.6
-shotgun  Tambour-12                  T4  Sentinel Vanguard          AP    2    3     1.6
-shotgun  SP-14 Warden                T4  Sentinel Vanguard          AP    2    3     1.6
-shotgun  Sayan-12                    T4  Sentinel Vanguard          AP    2    3     1.6
-shotgun  Kaban-12                    T4  Sentinel Vanguard          AP    2    3     1.6
-assault  VKS-74U                     T1  Cartel Leather Coat              3    6     1.3
-assault  Smerch-3                    T2  Sentinel Patrol Suit             2    5     1.0
-assault  VK-74                       T2  Sentinel Patrol Suit             2    5     1.0
-assault  VKM                         T2  Sentinel Patrol Suit             2    5     1.0
-assault  TS-9 Tishina                T3  Raider Veteran Coat              2    5     1.0
-assault  TR-30                       T3  Raider Veteran Coat              2    6     1.3
-assault  Halden HR36K                T3  Raider Veteran Coat              2    6     1.3
-assault  VK-103                      T3  Raider Veteran Coat              2    5     1.0
-assault  BR-86 Bulldog               T4  Sentinel Vanguard          AP    2    4     0.8
-assault  VK-74 Obelisk               T4  Sentinel Vanguard          AP    2    4     0.8
-assault  NA-94 Yenisei               T4  Sentinel Vanguard          AP    3    5     1.0
-assault  Corvan Bullpup              T5  Liberator Vanguard Plate   AP    2    4     0.8
-assault  Corvan Battle Rifle         T4  Sentinel Vanguard          AP    2    4     0.8
-sniper   SKN Karabin                 T2  Sentinel Patrol Suit             1    2     1.2
-sniper   Frontier Lever Rifle        T3  Raider Veteran Coat              1    3     2.4
-sniper   VSN Shepot                  T3  Raider Veteran Coat              1    2     1.2
-sniper   M91 Trekhlineyka            T3  Raider Veteran Coat              1    2     1.2
-sniper   Nightwalker .45-70          T4  Sentinel Vanguard          AP    1    2     1.2
-sniper   Corvan Marksman             T4  Sentinel Vanguard          AP    1    2     1.2
-sniper   SV-2 Strela                 T4  Sentinel Vanguard          AP    1    2     1.2
-sniper   Sever-98                    T4  Sentinel Vanguard          AP    1    2     1.2
-sniper   VK-127 Grom                 T5  Liberator Vanguard Plate   AP    1    2     1.2
-sniper   Halden AM-50 Sledge         T5  Liberator Vanguard Plate   AP    1    1     0.0
+shotgun  Sever-34 O/U                T3  Raider Veteran Coat              1    3     0.8
+shotgun  Tambour-12                  T4  Sentinel Vanguard          AP    2    3     0.7
+shotgun  SP-14 Warden                T4  Sentinel Vanguard          AP    2    3     0.6
+shotgun  Sayan-12                    T4  Sentinel Vanguard          AP    2    3     0.7
+shotgun  Kaban-12                    T4  Sentinel Vanguard          AP    2    3     0.6
+assault  VKS-74U                     T1  Cartel Leather Coat              3    6     0.4
+assault  Smerch-3                    T2  Sentinel Patrol Suit             2    5     0.3
+assault  VK-74                       T2  Sentinel Patrol Suit             2    5     0.4
+assault  VKM                         T2  Sentinel Patrol Suit             2    5     0.4
+assault  TS-9 Tishina                T3  Raider Veteran Coat              2    5     0.3
+assault  TR-30                       T3  Raider Veteran Coat              2    6     0.4
+assault  Halden HR36K                T3  Raider Veteran Coat              2    6     0.4
+assault  VK-103                      T3  Raider Veteran Coat              2    5     0.4
+assault  BR-86 Bulldog               T4  Sentinel Vanguard          AP    2    4     0.3
+assault  VK-74 Obelisk               T4  Sentinel Vanguard          AP    2    5     0.4
+assault  NA-94 Yenisei               T4  Sentinel Vanguard          AP    3    5     0.4
+assault  Corvan Bullpup              T5  Liberator Vanguard Plate   AP    2    4     0.2
+assault  Corvan Battle Rifle         T4  Sentinel Vanguard          AP    2    4     0.3
+sniper   SKN Karabin                 T2  Sentinel Patrol Suit             1    2     0.5
+sniper   Frontier Lever Rifle        T3  Raider Veteran Coat              1    3     1.7
+sniper   VSN Shepot                  T3  Raider Veteran Coat              1    2     0.4
+sniper   M91 Trekhlineyka            T3  Raider Veteran Coat              1    2     1.5
+sniper   Nightwalker .45-70          T4  Sentinel Vanguard          AP    1    2     1.1
+sniper   Corvan Marksman             T4  Sentinel Vanguard          AP    1    2     0.5
+sniper   SV-2 Strela                 T4  Sentinel Vanguard          AP    1    2     0.6
+sniper   Sever-98                    T4  Sentinel Vanguard          AP    1    2     1.3
+sniper   VK-127 Grom                 T5  Liberator Vanguard Plate   AP    1    2     1.5
+sniper   Halden AM-50 Sledge         T5  Liberator Vanguard Plate   AP    1    2     0.9
 sniper   G-7 Rail Prototype          T5  Liberator Vanguard Plate   AP    1    1     0.0
 heavy    PL-62 Kobza                 T2  Sentinel Patrol Suit             2    6     0.5
-heavy    Corvan LMG                  T3  Raider Veteran Coat              2    6     0.5
+heavy    Corvan LMG                  T3  Raider Veteran Coat              2    6     0.4
 heavy    RL-44                       T3  Raider Veteran Coat              2    6     0.5
 heavy    PL-74                       T4  Sentinel Vanguard          AP    2    4     0.3
 heavy    PL-74P Polovets             T4  Sentinel Vanguard          AP    2    4     0.3
-heavy    PL-74P Polovets Zulu        T5  Liberator Vanguard Plate   AP    2    4     0.3
+heavy    PL-74P Polovets Zulu        T5  Liberator Vanguard Plate   AP    2    5     0.4
 
 VARIANTS  weapon                      T  chest: light  mid  heavy | head: none  best-helmet (expected, deflects as misses)
 sidearm   PSh-18 Pchela               1           8    8    10   |         4      5.4 (Surveyor Guard Vest, 8 % deflect)
@@ -67,15 +62,15 @@ sidearm   Halden .45 Service          2           6    7     9   |         3    
 sidearm   Halden Service Revolver     1           5    6     7   |         3      3.3 (Surveyor Guard Vest, 8 % deflect)
 sidearm   SR-21 Gadyuka               3           5    7    10   |         3      4.7 (Surveyor Guard Plates, 15 % deflect)
 sidearm   Black Harrier               3           5    6     9   |         2      4.0 (Surveyor Guard Plates)
-sidearm   Corvan 5.7                  4           6    6     7   |         3      3.3 (Surveyor Containment Armor, 10 % deflect)
-sidearm   Rinaldi R6                  4           5    5     6   |         2      3.3 (Surveyor Containment Armor, 10 % deflect)
-sidearm   Steppe Eagle                4           4    4     5   |         2      2.0 (Surveyor Containment Armor)
+sidearm   Corvan 5.7                  4           6    7     7   |         3      4.4 (Surveyor Containment Armor, 10 % deflect)
+sidearm   Rinaldi R6                  4           5    6     6   |         2      3.3 (Surveyor Containment Armor, 10 % deflect)
+sidearm   Steppe Eagle                4           4    5     5   |         2      3.0 (Surveyor Containment Armor)
 sidearm   RK-12 Kuvalda               5           3    4     4   |         2      2.0 (Surveyor Field Lab Exo)
-smg       Vosa vz. 62                 1          10   11    13   |         5      6.5 (Surveyor Guard Vest, 8 % deflect)
-smg       PPZ Zubr                    2           9   12    14   |         4      6.5 (Garrison Field Uniform, 8 % deflect)
-smg       Corvan Wasp-9               3           8   11    16   |         4      8.2 (Surveyor Guard Plates, 15 % deflect)
+smg       Vosa vz. 62                 1           9   10    12   |         4      6.5 (Surveyor Guard Vest, 8 % deflect)
+smg       PPZ Zubr                    2           9   11    13   |         4      5.4 (Garrison Field Uniform, 8 % deflect)
+smg       Corvan Wasp-9               3           8   11    15   |         4      7.1 (Surveyor Guard Plates, 15 % deflect)
 smg       Corvan Hornet .45           3           7   10    14   |         3      7.1 (Surveyor Guard Plates, 15 % deflect)
-smg       Corvan Gnat PDW             4           9   10    11   |         4      5.6 (Surveyor Containment Armor, 10 % deflect)
+smg       Corvan Gnat PDW             4           8   10    11   |         4      5.6 (Surveyor Containment Armor, 10 % deflect)
 shotgun   Obrez-66                    1           3    3     4   |         2      2.2 (Surveyor Guard Vest, 8 % deflect)
 shotgun   Halden Lever Shotgun        2           3    3     4   |         1      2.2 (Garrison Field Uniform, 8 % deflect)
 shotgun   Hound 13                    2           3    3     4   |         2      2.2 (Garrison Field Uniform, 8 % deflect)
@@ -94,9 +89,9 @@ assault   TS-9 Tishina                3           4    5     7   |         2    
 assault   TR-30                       3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
 assault   Halden HR36K                3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
 assault   VK-103                      3           4    5     7   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
-assault   BR-86 Bulldog               4           4    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
-assault   VK-74 Obelisk               4           4    4     5   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
-assault   NA-94 Yenisei               4           4    5     5   |         2      3.3 (Surveyor Containment Armor, 10 % deflect)
+assault   BR-86 Bulldog               4           4    4     5   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
+assault   VK-74 Obelisk               4           4    5     5   |         2      3.3 (Surveyor Containment Armor, 10 % deflect)
+assault   NA-94 Yenisei               4           5    5     6   |         2      3.3 (Surveyor Containment Armor, 10 % deflect)
 assault   Corvan Bullpup              5           3    4     4   |         2      2.3 (Surveyor Field Lab Exo, 12 % deflect)
 assault   Corvan Battle Rifle         4           3    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
 sniper    SKN Karabin                 2           2    2     3   |         1      1.1 (Garrison Field Uniform, 8 % deflect)
@@ -108,11 +103,69 @@ sniper    Corvan Marksman             4           2    2     2   |         1    
 sniper    SV-2 Strela                 4           2    2     2   |         1      1.1 (Surveyor Containment Armor, 10 % deflect)
 sniper    Sever-98                    4           2    2     2   |         1      1.1 (Surveyor Containment Armor, 10 % deflect)
 sniper    VK-127 Grom                 5           1    2     2   |         1      1.0 (Surveyor Field Lab Exo)
-sniper    Halden AM-50 Sledge         5           1    1     2   |         1      1.0 (Surveyor Field Lab Exo)
+sniper    Halden AM-50 Sledge         5           1    2     2   |         1      1.0 (Surveyor Field Lab Exo)
 sniper    G-7 Rail Prototype          5           1    1     1   |         1      1.0 (Surveyor Field Lab Exo)
 heavy     PL-62 Kobza                 2           5    6     7   |         2      3.3 (Garrison Field Uniform, 8 % deflect)
 heavy     Corvan LMG                  3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
 heavy     RL-44                       3           4    6     8   |         2      3.5 (Surveyor Guard Plates, 15 % deflect)
-heavy     PL-74                       4           4    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
-heavy     PL-74P Polovets             4           4    4     4   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
-heavy     PL-74P Polovets Zulu        5           4    4     5   |         2      2.3 (Surveyor Field Lab Exo, 12 % deflect)
+heavy     PL-74                       4           4    4     5   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
+heavy     PL-74P Polovets             4           4    4     5   |         2      2.2 (Surveyor Containment Armor, 10 % deflect)
+heavy     PL-74P Polovets Zulu        5           4    5     5   |         2      2.3 (Surveyor Field Lab Exo, 12 % deflect)
+
+SECONDS (aimed, standing)  weapon                      T  rpm  mode reload mag | chest@5  chest@12  head@12 | walking from the hip: chest@5 chest@12   hits chest@5/@12/head@12
+sidearm  PSh-18 Pchela               1   300 semi   1.4    8 |    3.00     6.80     9.80 |    7.40    42.20   hits 8/8/4
+sidearm  Walden P9                   2   360 semi   1.2   16 |    1.33     2.33     2.17 |    5.03    25.37   hits 8/8/3
+sidearm  Halden .45 Service          2   300 semi   1.3    7 |    2.75     3.64     3.64 |    6.64    36.86   hits 7/7/3
+sidearm  Halden Service Revolver     1   220 semi   2.6    6 |    4.24     5.05     5.60 |    9.84    55.62   hits 6/6/3
+sidearm  SR-21 Gadyuka               3   340 semi   1.3   18 |    1.26     2.23     2.41 |    5.01    24.10   hits 7/7/3
+sidearm  Black Harrier               3   260 semi   1.5    9 |    1.85     2.51     1.89 |    6.45    36.16   hits 6/6/2
+sidearm  Corvan 5.7                  4   380 semi   1.2   20 |    1.11     1.74     1.89 |    3.00    19.64   hits 7/7/3
+sidearm  Rinaldi R6                  4   240 semi   2.4    6 |    3.90     4.15     4.40 |    8.80    50.70   hits 6/6/3
+sidearm  Steppe Eagle                4   200 semi   1.6    8 |    2.11     3.00     2.57 |    7.47    40.06   hits 5/5/2
+sidearm  RK-12 Kuvalda               5   150 semi   3.0    5 |    2.07     5.54     5.54 |   11.62    56.50   hits 4/4/2
+smg      Vosa vz. 62                 1   850 auto   1.5   20 |    1.06     6.81     9.23 |    3.34    17.54   hits 10/10/4
+smg      PPZ Zubr                    2   680 auto   2.4   64 |    1.15     3.71     4.06 |    2.38    13.43   hits 11/11/4
+smg      Corvan Wasp-9               3   800 auto   1.8   30 |    0.90     2.10     2.10 |    1.95    14.25   hits 11/11/4
+smg      Corvan Hornet .45           3   600 auto   1.9   25 |    1.38     5.75     5.25 |    3.00    21.38   hits 10/10/3
+smg      Corvan Gnat PDW             4   950 auto   1.7   40 |    0.69     1.77     4.42 |    1.52    10.28   hits 10/10/5
+shotgun  Obrez-66                    1   200 semi   2.0    2 |    9.40   105.23   147.58 |   22.32   287.00   hits 3/7/3
+shotgun  Halden Lever Shotgun        2    70 semi   3.0    5 |    3.43    66.43    76.29 |   17.14   257.57   hits 3/8/3
+shotgun  Hound 13                    2    75 semi   2.6    6 |    3.20    44.40    48.40 |   14.80   208.00   hits 3/8/3
+shotgun  Ranger P8                   2    80 semi   2.8    7 |    2.25    36.70    43.25 |   11.80   189.65   hits 3/8/3
+shotgun  Bayou Pump                  3    75 semi   3.0    8 |    2.40    42.40    43.20 |   12.60   219.40   hits 3/9/3
+shotgun  Sever-34 O/U                3   150 semi   2.2    2 |    3.93    37.16    40.53 |   17.67   260.87   hits 3/8/3
+shotgun  Tambour-12                  4   180 semi   4.0   12 |    2.89    39.72    66.44 |   12.28   174.78   hits 3/8/4
+shotgun  SP-14 Warden                4   200 semi   3.2    8 |    2.39    27.61    56.28 |   10.22   142.44   hits 3/7/4
+shotgun  Sayan-12                    4   180 semi   2.2   10 |    2.67    34.13    55.87 |    9.87   146.40   hits 3/8/4
+shotgun  Kaban-12                    4   200 semi   2.4   10 |    2.39    25.21    46.50 |    9.42   119.69   hits 3/7/4
+assault  VKS-74U                     1   700 auto   1.9   30 |    1.15     2.20     2.60 |    8.19    42.33   hits 6/6/3
+assault  Smerch-3                    2   800 auto   1.8   30 |    1.00     1.46     1.25 |    5.44    35.10   hits 5/5/2
+assault  VK-74                       2   620 auto   2.1   30 |    0.68     0.93     0.62 |    3.86    28.88   hits 5/5/2
+assault  VKM                         2   600 auto   2.1   30 |    1.05     1.31     1.09 |    5.45    37.38   hits 5/5/2
+assault  TS-9 Tishina                3   850 auto   2.0   20 |    0.82     1.09     0.73 |    6.43    35.70   hits 5/5/2
+assault  TR-30                       3   700 auto   2.0   30 |    0.84     0.93     0.46 |    6.57    34.23   hits 6/6/2
+assault  Halden HR36K                3   720 auto   2.0   30 |    0.78     0.87     0.58 |    6.30    32.96   hits 6/6/2
+assault  VK-103                      3   600 auto   2.1   30 |    0.95     1.25     0.84 |    5.23    35.98   hits 5/5/2
+assault  BR-86 Bulldog               4   650 auto   2.6   30 |    0.37     0.55     0.41 |    2.73    21.99   hits 4/4/2
+assault  VK-74 Obelisk               4   650 auto   2.0   30 |    0.64     0.73     0.44 |    3.64    26.84   hits 5/5/2
+assault  NA-94 Yenisei               4   600 auto   2.2   30 |    0.50     0.64     0.64 |    3.18    25.49   hits 5/5/3
+assault  Corvan Bullpup              5   750 auto   2.3   30 |    0.48     0.58     0.44 |    2.91    21.98   hits 4/4/2
+assault  Corvan Battle Rifle         4   600 auto   2.4   20 |    1.00     1.09     0.82 |    7.68    39.77   hits 4/4/2
+sniper   SKN Karabin                 2   120 semi   2.4   10 |    0.90     1.70     0.50 |   24.70   140.10   hits 2/2/1
+sniper   Frontier Lever Rifle        3    70 semi   3.2    8 |    2.00     2.90     0.86 |   47.23   267.37   hits 3/3/1
+sniper   VSN Shepot                  3   150 semi   2.2   10 |    0.70     1.30     0.40 |   19.90   113.10   hits 2/2/1
+sniper   M91 Trekhlineyka            3    40 semi   3.4    5 |    1.50     1.50     0.00 |   48.10   277.00   hits 2/2/1
+sniper   Nightwalker .45-70          4    55 semi   3.0    6 |    1.60     3.10     1.40 |   44.27   258.71   hits 2/2/1
+sniper   Corvan Marksman             4   110 semi   2.5   20 |    1.00     1.00     0.80 |   25.05   140.27   hits 2/2/1
+sniper   SV-2 Strela                 4   100 semi   2.6   10 |    1.20     1.20     1.00 |   31.60   177.60   hits 2/2/1
+sniper   Sever-98                    4    45 semi   2.8   10 |    1.33     1.40     1.33 |   37.67   212.00   hits 2/2/1
+sniper   VK-127 Grom                 5    40 semi   3.0    5 |    1.80     1.80     0.00 |   52.20   297.90   hits 2/2/1
+sniper   Halden AM-50 Sledge         5    70 semi   3.4   10 |    2.00     2.00     0.00 |   50.51   283.09   hits 2/2/1
+sniper   G-7 Rail Prototype          5    40 semi   3.0   10 |    0.00     0.00     0.00 |   19.50   112.50   hits 1/1/1
+heavy    PL-62 Kobza                 2   650 auto   4.0   75 |    1.65     4.13     3.85 |   16.50   106.84   hits 6/6/2
+heavy    Corvan LMG                  3   750 auto   4.5  200 |    1.43     3.09     2.85 |   14.25    82.96   hits 6/6/2
+heavy    RL-44                       3   600 auto   4.2  100 |    1.80     3.60     3.00 |   18.00   110.70   hits 6/6/2
+heavy    PL-74                       4   650 auto   4.5  100 |    1.24     2.28     2.93 |   12.68    79.38   hits 4/4/2
+heavy    PL-74P Polovets             4   650 auto   4.5  100 |    1.19     1.88     2.50 |   12.19    76.06   hits 4/4/2
+heavy    PL-74P Polovets Zulu        5   650 auto   4.5  100 |    1.44     1.80     1.50 |   14.40    88.68   hits 5/5/2
+ALL CHECKS PASSED

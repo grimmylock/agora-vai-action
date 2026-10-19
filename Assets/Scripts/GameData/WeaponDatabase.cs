@@ -60,11 +60,11 @@ namespace GameData
             },
             ["smg"] = new Dictionary<string, WeaponDef>
             {
-                ["VosaVz62"] = new WeaponDef { Name = "Vosa vz. 62", BaseDamage = 110, AmmoType = ".32 ACP", MagCapacity = 20, Range = "20cm", WeightKg = 1.3f, Tier = 1 },
-                ["PPZZubr"] = new WeaponDef { Name = "PPZ Zubr", BaseDamage = 120, AmmoType = "9x18mm", MagCapacity = 64, Range = "25cm", WeightKg = 2.5f, Tier = 2 },
-                ["CorvanWasp9"] = new WeaponDef { Name = "Corvan Wasp-9", BaseDamage = 140, AmmoType = "9x19mm", MagCapacity = 30, Range = "30cm", WeightKg = 2.5f, Tier = 3 },
+                ["VosaVz62"] = new WeaponDef { Name = "Vosa vz. 62", BaseDamage = 120, AmmoType = ".32 ACP", MagCapacity = 20, Range = "20cm", WeightKg = 1.3f, Tier = 1 },
+                ["PPZZubr"] = new WeaponDef { Name = "PPZ Zubr", BaseDamage = 130, AmmoType = "9x18mm", MagCapacity = 64, Range = "25cm", WeightKg = 2.5f, Tier = 2 },
+                ["CorvanWasp9"] = new WeaponDef { Name = "Corvan Wasp-9", BaseDamage = 150, AmmoType = "9x19mm", MagCapacity = 30, Range = "30cm", WeightKg = 2.5f, Tier = 3 },
                 ["CorvanHornet45"] = new WeaponDef { Name = "Corvan Hornet .45", BaseDamage = 160, AmmoType = ".45 ACP", MagCapacity = 25, Range = "25cm", WeightKg = 2.3f, Tier = 3 },
-                ["CorvanGnatPDW"] = new WeaponDef { Name = "Corvan Gnat PDW", BaseDamage = 130, AmmoType = "4.6x30mm", MagCapacity = 40, Range = "30cm", WeightKg = 1.9f, Tier = 4, IgnorePhysDRPercent = 0.1f },
+                ["CorvanGnatPDW"] = new WeaponDef { Name = "Corvan Gnat PDW", BaseDamage = 140, AmmoType = "4.6x30mm", MagCapacity = 40, Range = "30cm", WeightKg = 1.9f, Tier = 4, IgnorePhysDRPercent = 0.1f },
             },
             ["shotgun"] = new Dictionary<string, WeaponDef>
             {
