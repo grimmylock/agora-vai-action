@@ -4,6 +4,7 @@ static class Program {
   static void Check(bool ok, string msg) { if (!ok) { fails++; Console.WriteLine("FAIL " + msg); } }
   static int Main(string[] args) {
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -755,6 +756,51 @@ static class Program {
     }
     System.IO.File.WriteAllText(path, sb.Append(']').ToString());
     Console.WriteLine("held frames -> " + path);
+  }
+
+  // RT 7a: two short scenes run through the real melee code (Melee.Swing / Throw / Tick, HeldPoseMath.Frame) at 30 frames a second,
+  // for Tools/render/melee_scene.py: "swing" - a Raider next to you takes two swings (body, then head); "throw" - one 5 tiles away
+  // takes a thrown hatchet, wrenches it out, drops it. Per frame: your hand pose, the Raider, the hatchet's state, blood hits.
+  static void MeleeFrames(string path) {
+    var p = Arena(out int px, out int py); Melee.Reset();
+    p.EquipWeapon("melee", "TacticalHatchet");
+    var g = WeaponArt.GripOf("melee", "TacticalHatchet");
+    var sb = new System.Text.StringBuilder("{");
+    foreach (var clip in new[] { "swing", "throw" }) {
+      EncounterState.Enemies.Clear(); Melee.Reset(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      if (p.EquippedWeapon == null) p.EquipWeapon("melee", "TacticalHatchet");
+      var hw = p.EquippedWeapon;
+      var foe = new HumanEnemy("Raider", px + (clip == "swing" ? 1 : 5), py, "Raiders", "Experienced", null, null) { IsAggroed = true };
+      foe.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
+      EncounterState.Enemies.Add(foe);
+      int maxHp = foe.Hp; float swingAt = -99f, hitAt = -99f; var blood = new System.Collections.Generic.List<string>();
+      sb.Append($"{(clip == "swing" ? "" : ",")}\"{clip}\":{{\"hp\":{maxHp},\"frames\":[");
+      int n = clip == "swing" ? 60 : 210;
+      for (int i = 0; i < n; i++) {
+        float t = i / 30f; Melee.Now = t;
+        int hp0 = foe.Hp;
+        if (clip == "swing" && (i == 9 || i == 33)) { swingAt = t; Melee.Swing(p, hw, 1f, 0f, i == 9 ? 0.45f : 0.8f); }   // body, then head
+        if (clip == "throw" && i == 9) { swingAt = t; Melee.Throw(p, hw, 1f, 0f, 0.45f); }
+        Melee.Tick(1f / 30f);
+        if (foe.Hp < hp0) { hitAt = t; blood.Add(FormattableString.Invariant($"[{t},{Ballistics.Pos(foe).x},{Ballistics.Pos(foe).y}]")); }
+        // you: the hatchet in hand (swing arc) or empty hands once it's thrown
+        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - swingAt, 1f, "none", 1);
+        bool inHand = p.EquippedWeapon != null;
+        // the hatchet out of your hands
+        string item = "null";
+        var air = Melee.Air.FirstOrDefault(); var stuck = Melee.InBodies.FirstOrDefault(); var lying = Melee.OnFloor.FirstOrDefault();
+        if (air != null) item = FormattableString.Invariant($"[\"air\",{air.X},{air.Y - air.H * Ballistics.BodyTiles + 0.4f},{air.Deg}]");
+        else if (stuck != null) { var (sx, sy) = Ballistics.Pos(stuck.In); item = FormattableString.Invariant($"[\"stuck\",{sx + 0.12f},{sy - 0.05f},{(stuck.Pulling ? stuck.Deg + 40f * (float)Math.Sin(t * 18f) : stuck.Deg)}]"); }
+        else if (lying != null) item = FormattableString.Invariant($"[\"floor\",{lying.Wx},{lying.Wy + 0.3f},{lying.Deg}]");
+        var (fx, fy) = Ballistics.Pos(foe);
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}{{\"you\":[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(inHand ? 1 : 0)}],\"foe\":[{fx},{fy},{foe.Hp},{t - hitAt},{(Melee.Busy(foe) ? 1 : 0)}],\"item\":{item}}}"));
+      }
+      sb.Append($"],\"blood\":[{string.Join(",", blood)}],\"you\":[{Ballistics.Pos(p).x},{Ballistics.Pos(p).y}]}}");
+      Melee.Now = -1f;
+    }
+    var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
+    sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
+    System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
   }
 
   static void RtChecks() {

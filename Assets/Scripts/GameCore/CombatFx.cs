@@ -15,7 +15,7 @@ namespace GameCore
 {
     public class FxEvent
     {
-        public string Kind;            // "shot" | "melee" | "strike" (mutant claw/bite/psi) | "reload"
+        public string Kind;            // "shot" | "melee" | "strike" (mutant claw/bite/psi) | "reload" | "impact" (a thrown weapon lands, RT 7a)
         public ICombatant Actor, Target;
         public Weapon Weapon;
         public int Rounds = 1;

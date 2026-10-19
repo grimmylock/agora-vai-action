@@ -257,6 +257,9 @@ namespace GameCore
                     Sfx.Play("swing", from);
                     if (e.Hit) At(now + 0.1f, () => Wound(e, to, dx, dy, false));
                     break;
+                case "impact":                                  // RT 7a: a thrown weapon lands in a body
+                    if (e.Hit) Wound(e, to, dx, dy, false);
+                    break;
                 case "strike":
                     if (e.Actor != null) _lunge[e.Actor] = (now, dx, dy);
                     Sfx.Play(e.Psi ? "psi" : "claw", from);

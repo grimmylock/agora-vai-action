@@ -108,12 +108,12 @@ namespace GameCore
             var hit = Ballistics.Trace(by, px, py, ox / ol, oy / ol, st.Reach + 0.3f, h, new[] { best });
             if (hit.Unit == null) { hit.Unit = best; hit.Part = "Torso"; }
             fx.Hit = true;
-            Strike(by, w, hit.Unit, hit.Part, hit.Side);
+            Strike(by, w, hit.Unit, hit.Part, hit.Side, fx);
             return best;
         }
 
         /// <summary>Damage from a swing or a throw that lands: the old armor math, limb health, bleeding or a concussion.</summary>
-        public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side)
+        public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side, FxEvent fx = null)
         {
             var st = For(w);
             float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * Ballistics.PartMult(part ?? "Torso");
@@ -123,7 +123,9 @@ namespace GameCore
             raw *= CombatRules.Lethality;
             float dr = part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(target)).dr : target.PhysDR * CombatRules.ArmorScale(target);
             int dmg = CombatRules.PhysicalDamage(raw, "Standard", dr, w.Db?.IgnorePhysDRPercent ?? 0f);
+            int before = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - dmg);
+            if (fx != null) { fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before; }   // the view plays blood, the fall, gibs
             GameLog.Write($"{(by is Player ? "You hit" : by.Name + " hits")} {(target is Player ? "you" : target.Name)} in the {(part ?? "body").ToLowerInvariant()} for {dmg}.");
             if (target is Mutant tm) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
             if (by is Player && target is HumanEnemy he) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
@@ -176,7 +178,8 @@ namespace GameCore
                 if (hit.Unit != null)
                 {
                     Air.RemoveAt(i);
-                    Strike(f.By, f.W, hit.Unit, hit.Part, hit.Side);
+                    var fx = CombatFx.Push("impact", f.By, hit.Unit, f.W); fx.Now = true; fx.Hit = true;   // blood, as for a round
+                    Strike(f.By, f.W, hit.Unit, hit.Part, hit.Side, fx);
                     if (f.Blade && hit.Unit.IsAlive()) InBodies.Add(new Stuck { Item = f.Item, In = hit.Unit, Since = now, Deg = f.Deg });
                     else if (f.Blade && hit.Unit is HumanEnemy dead) dead.Inventory.Items.Add(f.Item);                  // in the corpse: loot it back
                     else { var (ux, uy) = Ballistics.Pos(hit.Unit); Drop(f.Item, ux, uy, f.Deg); }
@@ -233,7 +236,7 @@ namespace GameCore
                     if (Open(tx + ax, ty + ay)) { tx += ax; ty += ay; x = tx + 0.5f; y = ty + 0.5f; break; }
             var g = new GroundItem { X = tx, Y = ty, Item = item };
             TerrainMap.GroundItems.Add(g);
-            OnFloor.Add(new Lying { G = g, Wx = x, Wy = y, Deg = Mathf.Round(deg / 90f) * 90f + 15f });
+            OnFloor.Add(new Lying { G = g, Wx = x, Wy = y, Deg = (Mathf.Cos(deg * Mathf.Deg2Rad) >= 0f ? 0f : 180f) + 15f });   // lying flat, a little askew
         }
 
         static bool Open(int x, int y) => x >= 0 && y >= 0 && x < TerrainMap.Width && y < TerrainMap.Height

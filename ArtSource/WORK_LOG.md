@@ -3401,3 +3401,16 @@ from movement so they do not stop for it".
   picked up back into empty hands. The RT batch 5 mutant check ran 6 s and failed when the Maw arrived 0.35 s later (random
   timing shifted by the new test): now 10 s.
 - Not yet: placing it in the lab's secret room, parry, takedowns, Bull Rush, Flying Steel, the other weapons, NPCs throwing.
+
+## RT batch 7b - Yan's hatchet sprite, blood on thrown hits, the melee scenes (2026-10-20)
+
+- Sprite: Yan drew his own ("i created that one so you can just copy it"). His drawing recovered from his screenshot (pixel grid
+  5.76 x 5.375 screen px, his 12 colours) -> `ArtSource/refs/tactical_hatchet/yan_hatchet.png`; `tactical_hatchet.py` turns it so
+  the handle lies along the aim (blade up, spike down), folds his six near-black handle shades into two, and reduces it to the
+  in-hand (32x16) and menu (64x32) sprites, re-outlined. Grip points moved to the new handle.
+- Blood: a thrown weapon that lands now plays the same hit as a round (blood puff, splatter on the ground, the red flash and
+  knock-back) through a new "impact" effect; melee kills set Killed/Overkill, so the fall and gibs play like gunfire kills.
+- A dropped weapon now lies flat (0/180 degrees, a little askew), not on its end.
+- Renders: `dotnet /tmp/test.dll meleeframes <json>` runs two scenes through the real code (two swings - body, then head, which
+  kills a Rookie-tier Raider: the hatchet is tier 5, 546 on the head vs 500 head health; a throw at 5 tiles that sticks, is
+  wrenched out and dropped); `Tools/render/melee_scene.py` draws them -> `maps/renders/melee/`.
