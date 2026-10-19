@@ -29,6 +29,7 @@ namespace GameCore
         public float MagDX, MagDY;          // RT 6j: where the magazine is, from its seat in the gun (character px)
         public bool MagShown;               // false while the old one is on the floor and the new one still in the pouch
         public bool MagDropped;             // the old magazine has left the gun (HeldWeaponView throws it once)
+        public float CylDX, CylDY;          // RT 6l: a revolver's cylinder swung out on its crane (character px from its seat)
         public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)
         public bool Left, HasSupport;
     }
@@ -212,11 +213,19 @@ namespace GameCore
                 magShown = r >= 0.5f;
                 if (r >= 0.5f && r < 0.85f) { magDX = hand.hx - holdX; magDY = hand.hy - holdY; }   // riding in the hand
             }
+            // RT 6l: a revolver's cylinder swings out under the frame for the whole reload and snaps back in at the end
+            float cylDX = 0f, cylDY = 0f;
+            if (style == "cylinder" && r >= 0f && r < 1f)
+            {
+                float o = Mathf.Clamp01(Mathf.Min((r - 0.03f) / 0.09f, (0.96f - r) / 0.04f)) * 2.5f, ca2 = (angle + extra) * Mathf.Deg2Rad;
+                float vy = (left ? -1f : 1f) * o;                                           // along the gun's underside
+                cylDX = vy * Mathf.Sin(ca2); cylDY = vy * Mathf.Cos(ca2);
+            }
             // RT 6i: a break-action drops its barrels open, holds them while the shells go in, snaps them shut
             float breakDeg = style == "break" && r >= 0f && r < 1f ? 35f * Mathf.Clamp01(Mathf.Min((r - 0.05f) / 0.12f, (0.92f - r) / 0.07f)) : 0f;
             return new HeldFrame
             {
-                MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg,
+                CylDX = cylDX, CylDY = cylDY, MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg,
                 Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
                 GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
                 GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
@@ -311,7 +320,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); BreakCache.Clear(); LooseCache.Clear(); }
+        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); BreakCache.Clear(); LooseCache.Clear(); CylCache.Clear(); }
 
 
         public static (string cat, string key) Identify(WeaponDef db)
@@ -343,6 +352,24 @@ namespace GameCore
             return MagCache[key] = (Load("body"), Load("mag"));
         }
         private static readonly Dictionary<string, (Sprite, Sprite)> MagCache = new Dictionary<string, (Sprite, Sprite)>();
+
+        /// <summary>RT 6l: a revolver's frame (with an empty window) and its cylinder, same size and pivot as the gun; nulls otherwise.</summary>
+        public static (Sprite body, Sprite cyl) Cylinder(string cat, string key)
+        {
+            if (key == null) return (null, null);
+            if (CylCache.TryGetValue(key, out var hit)) return hit;
+            var cyl = Part(cat, key, "cyl");
+            return CylCache[key] = cyl == null ? (null, null) : (Part(cat, key, "body"), cyl);
+        }
+        private static readonly Dictionary<string, (Sprite, Sprite)> CylCache = new Dictionary<string, (Sprite, Sprite)>();
+        private static Sprite Part(string cat, string key, string part)
+        {
+            var g = For(cat, key).grip;
+            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
+            if (tex == null) return null;
+            tex.filterMode = FilterMode.Point;
+            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit);
+        }
 
         /// <summary>RT 6j: the magazine as a loose object - its sprite turned round its own middle (WeaponMags.Points).</summary>
         public static Sprite LooseMag(string key)
@@ -535,6 +562,15 @@ namespace GameCore
                 _mag.gameObject.SetActive(true);
                 _mag.sprite = mag; _mag.flipY = f.Left;
                 _mag.transform.localPosition = Local(f.GunX + f.MagDX, f.GunY + f.MagDY);   // seated, or riding in the hand
+                _mag.transform.localRotation = _gun.transform.localRotation;
+            }
+            var cy = WeaponArt.Cylinder(cat, key);
+            if (cy.cyl != null && cy.body != null)                                    // RT 6l: frame + cylinder, the cylinder on the magazine's layer
+            {
+                _gun.sprite = cy.body;
+                _mag.gameObject.SetActive(true);
+                _mag.sprite = cy.cyl; _mag.flipY = f.Left;
+                _mag.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY);
                 _mag.transform.localRotation = _gun.transform.localRotation;
             }
             // RT 6j: the old magazine leaves as a loose object (CombatFxView lets it fall and lie on the floor)

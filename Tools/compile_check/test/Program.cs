@@ -746,7 +746,7 @@ static class Program {
           foreach (var b in brass) if (b[6] == 0f) { float x = b[0], y = b[1], vx = b[2], vy = b[3], d = b[4], sp = b[5];
             if (HeldPoseMath.Fall(ref x, ref y, ref vx, ref vy, ref d, ref sp, (8f - 15f) / 16f + 0.02f, 1f / 30f, 0f)) b[6] = 1f;
             b[0] = x; b[1] = y; b[2] = vx; b[3] = vy; b[4] = d; b[5] = sp; }
-          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagDX},{f.MagDY},{(f.MagShown ? 1 : 0)},{f.BreakDeg},{(thrown ? 1 : 0)},{8 + mx * 16},{8 - my * 16},{mdeg},{(rest ? 1 : 0)},[{string.Join(",", brass.Select(b => FormattableString.Invariant($"[{8 + b[0] * 16},{8 - b[1] * 16},{b[4]},{b[6]}]")))}]]"));
+          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagDX + f.CylDX},{f.MagDY + f.CylDY},{(f.MagShown ? 1 : 0)},{f.BreakDeg},{(thrown ? 1 : 0)},{8 + mx * 16},{8 - my * 16},{mdeg},{(rest ? 1 : 0)},[{string.Join(",", brass.Select(b => FormattableString.Invariant($"[{8 + b[0] * 16},{8 - b[1] * 16},{b[4]},{b[6]}]")))}]]"));
         }
         if (mp != null) sb.Append(System.FormattableString.Invariant($"],\"mag\":[{mp[0]},{mp[1]},{mp[2]},{mp[3]}"));
         if (dumps) sb.Append(mp != null ? "" : "],\"shell\":[" + (style == "break" ? 1 : 0));

@@ -3368,3 +3368,13 @@ needs to be based on how many shots) Or when opening a break action shotgun it n
   fired since it was last full (`FxEvent.Rounds`). Revolvers already reloaded only the empty chambers (RT 6h); break-actions
   now take 0.6 s plus their per-shell share for each shell fired (`Gunplay.ReloadSeconds`, harness check), for you and NPCs.
 - Render: `heldframes` also dumps the brass through the same `Fall`; the revolver GIF shows it landing.
+
+## RT batch 6l - revolver cylinders swing out (2026-10-20)
+
+Yan: "make the revolver cylinder swing out when reloading" (worried there's no cylinder-out sprite and it'd need doing for every
+revolver). No new art needed: `mags.py CYL` cuts each revolver's cylinder out of its existing sprite (Halden Service Revolver,
+Rinaldi R6, RK-12 Kuvalda) -> `weapon_<Key>_cyl.png`, and the frame keeps an outlined empty window (`weapon_<Key>_body.png`).
+`WeaponArt.Cylinder` loads them; `HeldFrame.CylDX/CylDY` slides the cylinder 2.5 px out along the gun's underside in the
+first 12% of a "cylinder" reload (with the gun tipped muzzle-up that reads as swinging out sideways), holds it there while
+the spent brass falls and the rounds go in, and snaps it back in the last 4% (also when a reload is cut short). Drawn on the
+magazine's layer, under the frame. Not done: the Tambour-12's drum (it loads through a gate).

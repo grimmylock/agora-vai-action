@@ -42,6 +42,10 @@ PISTOL_MAG = [".4y4.",
 # key: (hinge x, hinge y, top row, forend x) -> weapon_<Key>_body.png (stock and action) + weapon_<Key>_barrels.png
 BREAK = {"Obrez66": (9, 4, 3, 13), "Sever34": (16, 4, 5, 19)}
 
+# RT 6l (Yan: "make the revolver cylinder swing out when reloading"): the cylinder's pixels (x0..x1, y0..y1) become
+# weapon_<Key>_cyl.png and the frame keeps an outlined, empty window (weapon_<Key>_body.png); the game slides it out on its crane.
+CYL = {"HaldenServiceRevolver": (7, 12, 2, 5), "RinaldiR6": (6, 10, 3, 5), "RK12Kuvalda": (6, 12, 3, 6)}
+
 K = (20, 22, 23, 255)
 WPAL = {"0": "#d5dadd", "1": "#a9b0b5", "2": "#727980", "3": "#4c5258", "4": "#33373b", "5": "#1f2225",
         "p": "#5a5f65", "q": "#3a3e42", "r": "#26292c", "Y": "#c9a63e", "y": "#f0d878"}
@@ -94,6 +98,17 @@ def cut(key):
                                              for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))): b[x, y] = (0, 0, 0, 0)
     ring(body, lambda x, y: x0 - 1 <= x <= x1 + 1 and y >= y0 - 1)
     return body, mag
+
+def cylinder(key):
+    gun = Image.open(os.path.join(WEAP, f"weapon_{key}.png")).convert("RGBA"); w, h = gun.size
+    body = Image.new("RGBA", (w, h + PAD)); body.alpha_composite(gun); cyl = Image.new("RGBA", (w, h + PAD))
+    b, c = body.load(), cyl.load(); x0, x1, y0, y1 = CYL[key]
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            if b[x, y][3] and not is_k(b[x, y]): c[x, y] = b[x, y]; b[x, y] = (0, 0, 0, 0)
+    ring(cyl)
+    ring(body, lambda x, y: x0 <= x <= x1 and y0 <= y <= y1)          # the empty window's edge
+    return body, cyl
 
 def split(key):
     gun = Image.open(os.path.join(WEAP, f"weapon_{key}.png")).convert("RGBA"); px = gun.load()
@@ -150,6 +165,11 @@ def main():
         "using System.Collections.Generic;\n\nnamespace GameCore\n{\n    public static class WeaponMags\n    {\n"
         "        public static readonly Dictionary<string, float[]> Points = new Dictionary<string, float[]>\n        {\n"
         + "\n".join(rows_cs) + "\n        };\n    }\n}\n")
+    for k in CYL:
+        src = os.path.join(WEAP, f"weapon_{k}.png")
+        for part, img in zip(("body", "cyl"), cylinder(k)):
+            p = os.path.join(WEAP, f"weapon_{k}_{part}.png"); img.save(p); meta(p, src)
+        print(k, "cylinder cut")
     for k in BREAK:
         src = os.path.join(WEAP, f"weapon_{k}.png")
         for part, img in zip(("body", "barrels"), split(k)):

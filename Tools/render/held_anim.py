@@ -74,6 +74,8 @@ def main(src, out):
         mp = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_mag.png"); bp = mp.replace("_mag.png", "_body.png")
         rp = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_barrels.png")
         if os.path.exists(rp): a["barrels"] = (Image.open(bp).convert("RGBA"), Image.open(rp).convert("RGBA"))
+        cp = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_cyl.png")   # RT 6l: a revolver's cylinder rides on the magazine's layer
+        if os.path.exists(cp): mp = cp
         parts = None if os.path.exists(rp) else (Image.open(bp).convert("RGBA") if os.path.exists(bp) else None, Image.open(mp).convert("RGBA")) if os.path.exists(mp) else None
         frames = [frame(a, f, body, gun, gl, parts) for f in a["frames"]]
         hold = [frames[-1]] * 12                                   # a beat at rest before it loops
