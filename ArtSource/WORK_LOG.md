@@ -3379,3 +3379,25 @@ first 12% of a "cylinder" reload (with the gun tipped muzzle-up that reads as sw
 the spent brass falls and the rounds go in, and snaps it back in the last 4% (also when a reload is cut short). Drawn on the
 magazine's layer, under the frame. Not done: the Tambour-12's drum (it loads through a gate).
 - Reverted (Yan: "revert the changes, well leave them as they were before, i like it more").
+
+## RT batch 7a - melee in real time, test run with the Tactical Hatchet (2026-10-20)
+
+Yan's melee decisions are in ACTION_DESIGN.md "Melee" (throwable melee, sticking blades, bleed/concussion, two-handed wind-up,
+Flying Steel, 12 weapons, the Barbed Wire Bat's outcast Raider - lore 1). Yan: "first a test run, model the tactical hatchet based
+on the picture and make the throwing and melee for it before doing everything else"; "mutants do not remove it, it just falls off
+from movement so they do not stop for it".
+- `Melee.cs`: click swings (nearest enemy inside the weapon's reach and arc in front; the crosshair's height picks the part);
+  aim (right mouse) + click throws (flies with travel time and spin, hits through `Ballistics.Trace`). Blades bleed, blunt
+  weapons concuss (`Body.Concuss`). A thrown blade sticks in wood/tin/brush/cloth cover (E next to it pulls it out) or in a body:
+  a human wrenches it out after 2.5 s, busy 2.5 s (`RtAi.Tick` skips him), and drops it; on a mutant it falls off after 3 s of
+  running; on a corpse it goes into the loot (mutants: the floor). Stone, concrete and steel bounce it onto the floor. On the
+  floor it's an ordinary ground item; picked up with empty hands it's equipped at once. Per-weapon stats (`Melee.Table`), the
+  rest derived from weight (smaller = faster). Two-handed wind-up is in the code (no two-handed weapon yet).
+- Tactical Hatchet: `WeaponDatabase` melee (tier 5, 420, 0.9 kg, ignores 15% armor), one of a kind (`EncounterGeneration.Unique`),
+  grip points; first sprite by `ArtSource/weapons/hand/tactical_hatchet.py` (Yan: "does not look great" - he drew his own,
+  to copy once the file arrives).
+- Views: `CombatFxView.TickMelee` draws it spinning in the air, stuck in cover or a body (wobbling while pulled), on the floor.
+- Harness: swing hits in front not behind and bleeds; throw flies 5 tiles in ~0.4 s, sticks, the Raider pulls it out and drops it,
+  picked up back into empty hands. The RT batch 5 mutant check ran 6 s and failed when the Maw arrived 0.35 s later (random
+  timing shifted by the new test): now 10 s.
+- Not yet: placing it in the lab's secret room, parry, takedowns, Bull Rush, Flying Steel, the other weapons, NPCs throwing.

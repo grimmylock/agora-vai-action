@@ -256,6 +256,7 @@ namespace GameCore
             ["SteppeMachete"] = new[] { 4f, 3.5f, float.NaN, float.NaN, 24f, 2.5f },
             ["SerratedTrenchKnife"] = new[] { 5.5f, 5f, float.NaN, float.NaN, 18f, 5.5f },
             ["ObeliskRitualBlade"] = new[] { 3f, 5.5f, float.NaN, float.NaN, 22f, 5.5f },
+            ["TacticalHatchet"] = new[] { 6.5f, 8.7f, float.NaN, float.NaN, 28.5f, 1f },   // RT 7a: tactical_hatchet.py; "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 5.5f, 9f, float.NaN, float.NaN, 19f, 2.5f },
             ["WaldenP9"] = new[] { 5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
             ["Halden45Service"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 20f, 3.5f },

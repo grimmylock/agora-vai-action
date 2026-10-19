@@ -44,6 +44,7 @@ namespace GameData
                 ["SteppeMachete"] = new WeaponDef { Name = "Steppe Machete", BaseDamage = 300, Range = "Adjacent", WeightKg = 0.8f, Tier = 3, IgnorePhysDRPercent = 0.1f },
                 ["SerratedTrenchKnife"] = new WeaponDef { Name = "Serrated Trench Knife", BaseDamage = 360, Range = "Adjacent", WeightKg = 0.6f, Tier = 4 },
                 ["ObeliskRitualBlade"] = new WeaponDef { Name = "Obelisk Ritual Blade", BaseDamage = 450, Range = "Adjacent", WeightKg = 0.7f, Tier = 5, IgnorePhysDRPercent = 0.2f },
+                ["TacticalHatchet"] = new WeaponDef { Name = "Tactical Hatchet", BaseDamage = 420, Range = "Adjacent", WeightKg = 0.9f, Tier = 5, IgnorePhysDRPercent = 0.15f },   // RT 7a: one of a kind (a lab's secret room)
             },
             ["sidearm"] = new Dictionary<string, WeaponDef>
             {

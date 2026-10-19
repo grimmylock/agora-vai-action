@@ -44,7 +44,7 @@ namespace GameCore
         static float _round;
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Stamina = StaminaMax; _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -192,7 +192,7 @@ namespace GameCore
         static void PlayerFire(Player p, Weapon w, Handling hd, Gunplay.Aim aim, (float x, float y) at)
         {
             aim.NextShot = Time.time + 60f / hd.Rpm;
-            if (CombatRules.IsMelee(w)) return;                      // ponytail: melee is RT batch 3 (shoulder charge, parry)
+            if (CombatRules.IsMelee(w)) { Melee.PlayerAttack(p, w, at, Aiming); return; }   // RT 7a: swing, or aim and throw
             if (w.IsJammed) { CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} is jammed - R to clear it."); return; }
             if (w.CurrentMagazine <= 0) { Sfx.Play("dryfire", TacticalGridView.GridToWorld(p.X, p.Y)); return; }
             w.CurrentMagazine--;
@@ -318,6 +318,7 @@ namespace GameCore
             float now = Time.time;
             var grid = GameServices.Grid;
             if (grid == null) return;
+            Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
             foreach (var e in EncounterState.Enemies.ToList())
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }

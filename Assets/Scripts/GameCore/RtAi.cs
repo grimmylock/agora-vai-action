@@ -87,6 +87,7 @@ namespace GameCore
             float now = Time.time;
             if (s.PinnedUntil >= 0f && now >= s.PinnedUntil) { s.PinnedUntil = -1f; h.StatusEffects.Suppressed = false; }
             if (h.Morale == "Surrendered" || h.StatusEffects.Prone) return;
+            if (Melee.Busy(h)) return;                                             // RT 7a: wrenching a blade out of himself
 
             // ---- walking ----
             if (now >= s.NextStep && !Pinned(h))

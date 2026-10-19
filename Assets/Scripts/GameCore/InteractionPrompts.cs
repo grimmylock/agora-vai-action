@@ -35,6 +35,7 @@ namespace GameCore
             // click: bodies with something on them, things on the ground
             foreach (var e in EncounterState.Enemies.OfType<HumanEnemy>())
                 if (!e.IsAlive() && D(p, e.X, e.Y) <= 2 && e.Inventory.Items.Count > 0) Add(e.X, e.Y, "CLICK", "Search the body");
+            foreach (var l in Melee.InCover) if (D(p, l.X, l.Y) <= 1) Add(l.X, l.Y, "E", "Pull out the " + l.Item.Name);   // RT 7a
             foreach (var g in TerrainMap.GroundItems)
                 if (D(p, g.X, g.Y) <= 2) Add(g.X, g.Y, "CLICK", "Pick up " + (g.Item?.Name ?? "item"));
             // the way out: walk onto it

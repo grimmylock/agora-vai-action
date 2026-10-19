@@ -309,7 +309,9 @@ namespace GameCore
                     foreach (var g in ground) { player.AddItem(g.Item); TerrainMap.GroundItems.Remove(g); }
                     GameLog.Write(ground.Count == 1 ? $"Picked up {ground[0].Item.Name}." : $"Picked up {ground.Count} items.");
                     Sfx.Play("pickup");
+                    foreach (var g in ground) Melee.EquipIfEmptyHanded(player, g.Item);   // RT 7a: your thrown weapon back in hand
                 }
+                else if (Melee.PullLodged(player)) { }                                  // RT 7a: a blade stuck in cover next to you
                 else InteractionEngine.AttemptInteract(player);
                 return;
             }

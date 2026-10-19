@@ -4,6 +4,7 @@
 // spaced a beat apart so a whole enemy turn reads as a sequence instead of one frame of noise.
 // Art: Sprites/Fx/fx_*.png (ArtSource/make_fx.py); missing art falls back to flat coloured quads.
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace GameCore
@@ -91,8 +92,48 @@ namespace GameCore
 
         public Vector3 ShakeOffset { get; private set; }
 
+        // RT 7a: melee weapons out of your hands - spinning in the air, stuck in cover or a body, lying on the floor
+        private readonly Dictionary<object, SpriteRenderer> _melee = new Dictionary<object, SpriteRenderer>();
+        private readonly Dictionary<string, Sprite> _meleeSprites = new Dictionary<string, Sprite>();
+        private Sprite MeleeSprite(InventoryItem item)
+        {
+            if (item?.Key == null) return null;
+            if (_meleeSprites.TryGetValue(item.Key, out var hit)) return hit;
+            var s = WeaponArt.For(item.Category ?? "melee", item.Key).sprite;            // turned round its middle, not its grip
+            return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit);
+        }
+        private void TickMelee()
+        {
+            var live = new HashSet<object>();
+            void Show(object k, InventoryItem item, float x, float worldY, float deg, int order)
+            {
+                live.Add(k);
+                if (!_melee.TryGetValue(k, out var sr) || sr == null)
+                {
+                    var spr = MeleeSprite(item);
+                    if (spr == null) return;
+                    _melee[k] = sr = NewSprite("MeleeItem", spr, Color.white, _root, order);
+                }
+                sr.sortingOrder = order;
+                sr.transform.position = new Vector3(x, worldY, 0f);
+                sr.transform.localRotation = Quaternion.Euler(0f, 0f, deg);
+            }
+            foreach (var f in Melee.Air) Show(f, f.Item, f.X, -f.Y + f.H * Ballistics.BodyTiles - 0.4f, f.Deg, TacticalGridView.SortAt(-f.Y) + 20);   // at the height it flies
+            foreach (var l in Melee.InCover) Show(l, l.Item, l.Wx, -l.Wy + 0.1f, l.Deg, TacticalGridView.SortAt(-l.Wy) + 6);
+            foreach (var b in Melee.InBodies)
+            {
+                var m = _markerOf(b.In);
+                if (m == null) continue;
+                var p = m.transform.position;
+                Show(b, b.Item, p.x + 0.12f, p.y + 0.05f, b.Pulling ? b.Deg + 40f * Mathf.Sin(Time.time * 18f) : b.Deg, m.sortingOrder + 5);   // pulling: it wobbles out
+            }
+            foreach (var g in Melee.OnFloor) Show(g, g.G.Item, g.Wx, -g.Wy - 0.3f, g.Deg, 2);
+            foreach (var k in _melee.Keys.Where(k => !live.Contains(k)).ToList()) { if (_melee[k] != null) Object.Destroy(_melee[k].gameObject); _melee.Remove(k); }
+        }
+
         public void Tick()
         {
+            TickMelee();
             float now = Time.time;
             foreach (var e in CombatFx.Pending)
             {

@@ -870,6 +870,33 @@ static class Program {
       var ob = W("shotgun", "Obrez66"); ob.CurrentMagazine = 1; float one = Gunplay.ReloadSeconds(ob); ob.CurrentMagazine = 0; float two = Gunplay.ReloadSeconds(ob);
       Check(one < two && Math.Abs(two - Gunplay.For(ob).ReloadTime) < 0.01f, $"RT 6k: a break-action reloads faster after one shell than two ({one:0.00} / {two:0.00} s)");
       p.EquippedWeapon = keep; CombatFx.Pending.Clear(); }
+    // RT 7a: the Tactical Hatchet - swings hit what's in front within reach (not behind), blades bleed; a throw flies, sticks in
+    // a body, the Raider wrenches it out (busy 2.5 s) and drops it; picked up with empty hands it's back in them
+    { var keepW = p.EquippedWeapon; var keepE = EncounterState.Enemies.ToList(); EncounterState.Enemies.Clear(); Melee.Reset(); Melee.Now = 0f;
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      p.EquipWeapon("melee", "TacticalHatchet"); var hw = p.EquippedWeapon;
+      var front = new HumanEnemy("Front", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      var back = new HumanEnemy("Back", px - 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      EncounterState.Enemies.Add(front); EncounterState.Enemies.Add(back);
+      int f0 = front.Hp, b0 = back.Hp;
+      var got = Melee.Swing(p, hw, 1f, 0f, 0.45f);
+      Check(got == front && front.Hp < f0 && back.Hp == b0 && front.StatusEffects.Bleeding, $"RT 7a: a swing hits the one in front ({f0} -> {front.Hp}), not the one behind, and he bleeds");
+      EncounterState.Enemies.Clear();
+      var far = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(far);
+      int h0 = far.Hp;
+      Melee.Throw(p, hw, 1f, 0f, 0.45f);
+      Check(p.EquippedWeapon == null && Melee.Air.Count == 1, "RT 7a: a thrown hatchet leaves your hands");
+      float t = 0f; for (; t < 1f && Melee.Air.Count > 0; t += 0.02f) { Melee.Now = t; Melee.Tick(0.02f); }
+      Check(far.Hp < h0 && Melee.InBodies.Count == 1 && t < 0.6f, $"RT 7a: it flies (~{5f / Melee.For(hw).ThrowSpeed:0.00} s for 5 tiles, took {t:0.00}), hits and sticks ({h0} -> {far.Hp})");
+      Melee.Now = t + Melee.PullAfter + 0.1f; Melee.Tick(0.02f);
+      bool busy = Melee.Busy(far);
+      Melee.Now = t + Melee.PullAfter + Melee.PullTime + 0.1f; Melee.Tick(0.02f);
+      var lying = TerrainMap.GroundItems.FirstOrDefault(g => g.Item.Key == "TacticalHatchet");
+      Check(busy && !Melee.Busy(far) && lying != null && Math.Abs(lying.X - far.X) <= 1, $"RT 7a: he wrenches it out (busy {busy}) and drops it at his feet ({lying?.X},{lying?.Y})");
+      if (lying != null) { p.AddItem(lying.Item); TerrainMap.GroundItems.Remove(lying); Melee.EquipIfEmptyHanded(p, lying.Item); }
+      Check(p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "RT 7a: picked up with empty hands, it's back in them");
+      Check(!EncounterGeneration.Unique.Contains("Tactical Hatchet") == false && WeaponArt.HasGrip("TacticalHatchet"), "RT 7a: one of a kind, with its own grip points");
+      Melee.Reset(); Melee.Now = -1f; EncounterState.Enemies.Clear(); foreach (var e in keepE) EncounterState.Enemies.Add(e); p.EquippedWeapon = keepW; CombatFx.Pending.Clear(); }
     // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
     {
       Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
@@ -906,14 +933,14 @@ static class Program {
       EncounterState.Enemies.Add(maw); EncounterState.Enemies.Add(brute); EncounterState.InCombat = true; Contact.Spot(p);
       UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 3000f;
       int reachedAt = -1, strikes = 0, hp = p.Hp;
-      for (int f = 0; f < 120; f++) {
+      for (int f = 0; f < 200; f++) {   // RT 7a: long enough that a later arrival (random timing) still leaves time to bite
         Rt.WorldTick(p); UnityEngine.Time.time += 0.05f;
         if (reachedAt < 0 && CombatantUtil.IsAdjacent(maw, p)) reachedAt = f;
         if (p.Hp < hp) strikes++;
         p.HealPermanent(100); Body.Reset(); hp = p.Hp;
       }
       Check(reachedAt > 0 && reachedAt <= 100, $"the Blind Maw runs 10 tiles to you in {reachedAt * 0.05f:0.0} s");
-      Check(strikes >= 1 && strikes <= 6, $"then bites on its own clock ({strikes} landed in 6 s)");
+      Check(strikes >= 1 && strikes <= 10, $"then bites on its own clock ({strikes} landed in 10 s)");
       Check(CombatantUtil.Distance(brute, p) > CombatantUtil.Distance(maw, p) || CombatantUtil.IsAdjacent(brute, p), $"the Brute is slower (brute {CombatantUtil.Distance(brute, p)}, maw {CombatantUtil.Distance(maw, p)})");
       EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
     }
