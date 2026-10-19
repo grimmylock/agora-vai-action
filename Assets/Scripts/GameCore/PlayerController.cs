@@ -298,6 +298,7 @@ namespace GameCore
             TickClock(player);
             Rt.WorldTick(player);
             if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }
+            if (Body.Down(player)) return;   // RT batch 2: down - crawl, or a stim from the belt (1-4)
             if (k.eKey.wasPressedThisFrame)
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);

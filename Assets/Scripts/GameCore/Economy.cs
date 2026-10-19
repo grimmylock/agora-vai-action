@@ -129,7 +129,7 @@ namespace GameCore
         /// <summary>Layer 1 baseline prices (file 05) for consumables, by consumable id.</summary>
         public static readonly Dictionary<string, int> BaselinePrice = new Dictionary<string, int>
         {
-            ["basicMedkit"] = 100, ["basicStim"] = 120, ["bandage"] = 40, ["radBlockPill"] = 60, ["mre"] = 50, ["energyDrink"] = 40,
+            ["basicMedkit"] = 100, ["basicStim"] = 120, ["bandage"] = 40, ["splint"] = 60, ["radBlockPill"] = 60, ["mre"] = 50, ["energyDrink"] = 40,
             ["fragGrenade"] = 250, ["smokeGrenade"] = 150, ["flashbang"] = 200, ["fieldRepairKit"] = 300,
         };
 

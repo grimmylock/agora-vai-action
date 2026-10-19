@@ -425,6 +425,7 @@ namespace GameCore
             }
             amount -= TempHP;
             TempHP = 0;
+            if (Rt.On && !Body.Down(this) && PermHP - amount <= 0) { PermHP = 1; Body.GoDown(this); return; }   // RT batch 2: down, not dead
             PermHP = System.Math.Max(0, PermHP - amount);
         }
 
@@ -438,6 +439,7 @@ namespace GameCore
         {
             if (amount <= 0) return;
             PermHP = System.Math.Min(MaxHp, PermHP + amount);
+            Body.Heal(this, amount);   // RT batch 2: the parts heal too
         }
 
         /// <summary>Ported from applyTemporaryHP(amount).</summary>

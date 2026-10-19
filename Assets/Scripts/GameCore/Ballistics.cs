@@ -32,6 +32,7 @@ namespace GameCore
             public bool Wall, Cover;                        // stopped by a wall / by low cover
             public int CoverX = -1, CoverY = -1;            // the cover it hit or went through
             public float Dist;
+            public float Side;                              // + = passed on the round's right (which arm or leg)
         }
 
         /// <summary>Where a unit stands, tile space.</summary>
@@ -50,7 +51,7 @@ namespace GameCore
                 part = h >= 0.7f * size / BodyTiles ? "Head" : "Body";
                 return h <= size / BodyTiles ? 0.25f * size : -1f;
             }
-            float s = Crouched(u) ? CrouchScale : 1f;
+            float s = Body.Down(u) ? 0.3f : Crouched(u) ? CrouchScale : 1f;   // RT batch 2: someone down lies flat
             if (h > s) { part = null; return -1f; }        // over the head
             if (h >= HeadFrom * s) { part = "Head"; return HeadHalf; }
             if (h >= TorsoFrom * s) { part = "Torso"; return TorsoHalf; }
@@ -68,7 +69,7 @@ namespace GameCore
         {
             var hit = new Hit();
             // the nearest body the line passes close enough to, at this height
-            ICombatant best = null; float bestT = float.MaxValue; string bestPart = null;
+            ICombatant best = null; float bestT = float.MaxValue, bestSide = 0f; string bestPart = null;
             foreach (var u in bodies)
             {
                 if (u == null || u == shooter || !u.IsAlive()) continue;
@@ -80,7 +81,7 @@ namespace GameCore
                 float half = HalfWidth(u, h, out string part);
                 if (half <= 0f || System.Math.Abs(side) > half) continue;
                 if (part == "Torso" && System.Math.Abs(side) > ArmFrom) part = "Arm";
-                best = u; bestT = t; bestPart = part;
+                best = u; bestT = t; bestPart = part; bestSide = side;
             }
             float stop = best != null ? bestT : range;
             // walk the tiles the line crosses up to the body (or the end of its reach)
@@ -108,7 +109,7 @@ namespace GameCore
             }
             hit.Dist = stop;
             hit.EndX = x0 + dx * stop; hit.EndY = y0 + dy * stop;
-            if (best != null && stop >= bestT) { hit.Unit = best; hit.Part = bestPart; }
+            if (best != null && stop >= bestT) { hit.Unit = best; hit.Part = bestPart; hit.Side = bestSide; }
             return hit;
         }
 

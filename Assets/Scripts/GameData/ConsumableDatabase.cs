@@ -14,6 +14,7 @@ namespace GameData
         public int? HealingTemp;
         public int? MpRestore;
         public bool CureBleeding;
+        public bool CureFracture;   // real-time fork, RT batch 2: a splint
         public bool CureRadiation;
         public int ApCost;
         public string Description;
@@ -39,6 +40,7 @@ namespace GameData
             ["basicStim"] = new ConsumableDef { Id = "basicStim", Name = "Basic Stim", HealingTemp = 15, ApCost = 2, Description = "Grants 15 temporary HP for 4 turns." },
             ["militaryStim"] = new ConsumableDef { Id = "militaryStim", Name = "Military Stim", HealingTemp = 25, ApCost = 2, Description = "Grants 25 temporary HP for 4 turns." },
             ["scientificStim"] = new ConsumableDef { Id = "scientificStim", Name = "Scientific Stim", HealingTemp = 40, ApCost = 2, Description = "Grants 40 temporary HP for 4 turns." },
+            ["splint"] = new ConsumableDef { Id = "splint", Name = "Splint", CureFracture = true, ApCost = 2, Description = "Sets a broken or fractured arm or leg (legs first)." },
             ["bandage"] = new ConsumableDef { Id = "bandage", Name = "Bandage", CureBleeding = true, ApCost = 2, Description = "Stops bleeding." },
             ["radBlockPill"] = new ConsumableDef { Id = "radBlockPill", Name = "Rad-Block Pill", CureRadiation = true, ApCost = 2, Description = "Purges radiation status." },
             ["mre"] = new ConsumableDef { Id = "mre", Name = "MRE", IsTravelRation = true, HealingPermanent = 10, HungerRestore = 4, ThirstRestore = 1, ApCost = 2, Description = "Restores 10 permanent HP, 4 hunger, and 1 thirst." },

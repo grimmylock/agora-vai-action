@@ -284,8 +284,16 @@ namespace GameCore
             _portrait.sprite = UnitSprites.For(p);
             FillSegs(_hpSeg, p.Hp / (float)Mathf.Max(1, p.MaxHp), Red);
             _hpNum.text = p.Hp.ToString();
-            _ac.text = $"AC {p.Ac}";
+            _ac.text = Rt.On ? Body.Summary(p) : $"AC {p.Ac}";   // RT batch 2: each part's health
             var st = new List<(string, Color)>();
+            if (Rt.On)
+            {
+                var bs = Body.Of(p);
+                if (bs.Down) st.Add(($"DOWN {Mathf.CeilToInt(bs.BleedOut)}s", Red));
+                foreach (var f in bs.Fractured) st.Add(((Body.Name(f) + (bs.Broken.Contains(f) ? " broken" : " fractured")).ToUpperInvariant(), Red));
+                if (Body.Concussed(p)) st.Add(("CONCUSSED", Yellow));
+                if (Rt.UsingId != null) st.Add(($"USING {Mathf.Max(0f, Rt.UseDone - Time.time):0.0}s", Cyan));
+            }
             if (p.StatusEffects.Bleeding) st.Add(("BLEEDING", Red));
             if (p.StatusEffects.ToxicBleed) st.Add(("TOXIC", Green));
             if (p.StatusEffects.Irradiated) st.Add(("RAD", Green));

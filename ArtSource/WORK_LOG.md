@@ -3116,3 +3116,31 @@ sprites HEAD. No dice rolls only aim and weapon accuracy affect it". The fallbac
   through, walls, crouching, a Rookie at 6 tiles hits 30-60%). ALL CHECKS PASSED.
 - **For Yan to check in Unity:** walking/sprinting/crouching feel and speeds; the crosshair; hitting heads vs bodies; enemy
   fire (too accurate? too slow at one turn per ~3 s?); reload timing; ESC pause; looting with E; crossing a map exit.
+
+## RT batch 2 - limb health, wounds, downed, timed healing (2026-10-19)
+
+Yan: "maybe modular limb health system like tarkov and stalker anomaly?", "the wounds could work in the limb system as IF bodypart
+is below 60% it has a chance of getting a wound, goes higher the lower HP that part has", "Death downs the player, he can either
+stay still and bleed out slowly or crawl behind cover at the cost of expending his bleed out faster".
+- **`Body.cs`:** you and human enemies have six parts (head 35% of max HP, torso 80%, arms 45% each, legs 50% each). A round's
+  damage comes off the part it hit and the HP pool (which everything else still reads). Arm/leg hits pick the side the round
+  passed (`Ballistics.Hit.Side`). Head or torso at 0 = down (you) / dead (enemies). A limb at 0 breaks; more damage to it
+  spills into the torso (x0.7).
+- **Wounds (Yan's rule):** nothing above 60% part health; below, `(60 - part%) / 60 * 0.75` per hit (50% ~13%, 40% 25%, 20% 50%),
+  x1.4 with hollow points, x0.6 with AP rounds. Head: concussion (20 s: +2 deg spread). Torso: bleeding. Arm/leg: fracture or
+  bleeding (half each). Effects only from wounds/broken parts: a fractured/broken leg limps (60% speed, no sprint); each bad arm
+  +2.5 deg spread and 1.5x reload time. Enemies: their fractures set the old `StatusEffects.Wound` (MP and aim penalties).
+- **Down (you):** lethal damage in real time drops you instead (`Player.TakeDamage`), HP 1. You bleed out in 40 s lying still,
+  2.5x faster while crawling (0.6 tiles/s). You can't shoot; you're a low target (30% height). Enemies stop shooting someone down.
+  Only a stim (belt keys) gets you up (head and torso back to 25%). Any hit while down kills.
+- **Items take time:** bandage 3 s (stops bleeding), splint 4 s (new item: sets the worst fracture, legs first; 60 RU, every
+  trader), medkit 4 s, stim 1.5 s, others 2.5 s; you move at half pace meanwhile and firing cancels. Grenades and repair kits
+  stay instant. Healing (medkits, rest) restores the parts too. Every start kit gets a bandage, a splint and a basic stim.
+- **HUD:** the AC slot shows each part's health (H T A/A L/L, red X = fractured); chips for DOWN with the seconds left,
+  broken/fractured parts, CONCUSSED, USING with time left. Down, you're drawn lying on your side with no gun in hand.
+- ponytail: part health isn't saved (a load starts every part full; the HP pool is saved as before); NPCs die instead of going
+  down; melee and blasts hit the HP pool only.
+- Harness: wound odds, breaking a leg and the spill, an enemy's torso, going down, nobody shooting you down, crawl drain,
+  bandage refused / stim accepted while down, bleeding out, splint. ALL CHECKS PASSED.
+- **For Yan to check:** how fast fights end now that heads and torsos can drop someone; going down and crawling; stim/splint/bandage
+  timing (belt keys 1-4); the part readout on the HUD.

@@ -44,7 +44,7 @@ namespace GameCore
         static float _round;
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { Paused = false; Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { Paused = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -86,19 +86,31 @@ namespace GameCore
             // ---- moving ----
             float ix = (k.dKey.isPressed || k.rightArrowKey.isPressed ? 1 : 0) - (k.aKey.isPressed || k.leftArrowKey.isPressed ? 1 : 0);
             float iy = (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0) - (k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0);
-            p.Sneaking = k.leftCtrlKey.isPressed;
-            Aiming = m != null && m.rightButton.isPressed;
-            bool wantSprint = k.leftShiftKey.isPressed && !p.Sneaking && !Aiming && (ix != 0 || iy != 0);
+            bool down = Body.Down(p);
+            p.Sneaking = down || k.leftCtrlKey.isPressed;
+            Aiming = !down && m != null && m.rightButton.isPressed;
+            bool wantSprint = k.leftShiftKey.isPressed && !p.Sneaking && !Aiming && !Body.LegHurt(p) && UsingId == null && (ix != 0 || iy != 0);
             bool sprint = wantSprint && Stamina > 1f;
             if (sprint) { Stamina = Mathf.Max(0f, Stamina - SprintDrain * dt); _staminaRest = 0.8f; }
             else if ((_staminaRest -= dt) <= 0f) Stamina = Mathf.Min(StaminaMax, Stamina + StaminaRegen * dt);
             float speed = sprint ? Sprint : p.Sneaking ? Crouch : Walk;
             if (Aiming) speed *= AimSlow;
-            if (p.StatusEffects.Wound == "Leg") speed *= 0.6f;
+            if (Body.LegHurt(p)) speed *= 0.6f;                       // RT batch 2: a broken or fractured leg limps
+            if (UsingId != null) speed *= 0.5f;                       // patching yourself up
+            if (down) speed = Crawl;
             if (p.StatusEffects.Prone) speed = 0f;
             float l = Mathf.Sqrt(ix * ix + iy * iy);
             Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
             if (Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
+
+            // ---- down: bleeding out (faster while crawling); only a stim (belt keys) gets you up ----
+            if (down)
+            {
+                if (Body.TickDown(p, Moving > 0, dt)) { GameLog.Write("You bled out."); p.Hp = 0; TurnLoop.CheckCombatEnd(); return; }
+                TickUse(p);
+                return;
+            }
+            TickUse(p);
 
             // ---- aiming and firing ----
             var w = p.EquippedWeapon;
@@ -111,14 +123,15 @@ namespace GameCore
                 aim.ReloadUntil = -1f;
                 if (w != null) { if (w.IsJammed) w.ClearJam(); else p.ReloadWeapon(); }
             }
-            if (k.rKey.wasPressedThisFrame && w != null && aim.ReloadUntil < 0f && !CombatRules.IsMelee(w)
+            if (k.rKey.wasPressedThisFrame && w != null && aim.ReloadUntil < 0f && UsingId == null && !CombatRules.IsMelee(w)
                 && (w.IsJammed || w.CurrentMagazine < w.MagCapacity))
             {
-                float t = w.IsJammed ? 0.8f : hd.ReloadTime * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f);
+                float t = w.IsJammed ? 0.8f : hd.ReloadTime * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f) * (Body.ArmsHurt(p) > 0 ? 1.5f : 1f);
                 aim.ReloadUntil = Time.time + t;
                 GameLog.Write(w.IsJammed ? "Clearing the jam..." : "Reloading...");
             }
             bool trigger = m != null && (hd.Auto ? m.leftButton.isPressed : m.leftButton.wasPressedThisFrame);
+            if (trigger && UsingId != null) { UsingId = null; GameLog.Write("You stop to shoot."); }
             if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
 
             // ---- camera looks toward the mouse; further when aiming, further still with a long gun ----
@@ -150,12 +163,38 @@ namespace GameCore
             bool ambush = over is Mutant u && !u.IsAggroed;
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
             float spread = Gunplay.Spread(hd, aim, Moving, p.Sneaking);
-            if (p.StatusEffects.Wound == "Arm") spread += 1.5f;
+            spread += 2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f);   // RT batch 2: broken arms sway, a concussion blurs
             if (p.StatusEffects.Suppressed) spread += 2f;
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
             aim.Bloom += hd.Kick;
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();
+        }
+
+        // ---- using an item takes time (RT batch 2): you move at half pace, firing cancels it ----
+        public const float Crawl = 0.6f;
+        public static string UsingId;
+        public static float UseDone;
+        public static bool Applying;                                  // true while the finished use runs Player.UseConsumable for real
+
+        public static float UseSeconds(GameData.ConsumableDef d) =>
+            d.CureFracture ? 4f : d.CureBleeding ? 3f : d.HealingPermanent > 0 && d.HungerRestore == null ? 4f : d.HealingTemp > 0 ? 1.5f : 2.5f;
+
+        public static void BeginUse(Player p, GameData.ConsumableDef d)
+        {
+            if (UsingId != null) { GameLog.Write("Already busy."); return; }
+            if (Body.Down(p) && !(d.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
+            if (d.Throwable != null || d.RepairKit) { Applying = true; try { p.UseConsumable(d.Id); } finally { Applying = false; } return; }
+            UsingId = d.Id; UseDone = Time.time + UseSeconds(d);
+            GameLog.Write($"Using {d.Name}...");
+        }
+
+        static void TickUse(Player p)
+        {
+            if (UsingId == null || Time.time < UseDone) return;
+            string id = UsingId; UsingId = null;
+            Applying = true;
+            try { p.UseConsumable(id); } finally { Applying = false; }
         }
 
         /// <summary>The living unit whose sprite the point (tile space) is over, if any - the nearest one.</summary>

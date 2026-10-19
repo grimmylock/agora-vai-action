@@ -359,6 +359,8 @@ namespace GameCore
                 GameLog.Write($"{def.Name} ready - click a tile within 8 to throw it (right-click to put it away).");
                 return;
             }
+            if (Rt.On && !Rt.Applying) { Rt.BeginUse(this, def); return; }   // real-time fork: it takes a few seconds (Rt.UseSeconds)
+            if (Body.Down(this) && !(def.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
             int apCost = def.ApCost > 0 ? def.ApCost : 2;
             bool inPlayerTacticalTurn = GameState.Current.Mode == GameMode.Tactical && GameState.Current.CurrentTurn == Turn.Player;
 
@@ -402,6 +404,8 @@ namespace GameCore
                 else if (StatusEffects.Bleeding) { StatusEffects.Bleeding = false; GameLog.Write("Bleeding has been stopped."); }
                 else GameLog.Write("No bleeding to treat.");
             }
+            if (def.CureFracture && !Body.Splint(this)) GameLog.Write("Nothing broken to splint.");
+            if (Body.Down(this) && def.HealingTemp > 0) Body.GetUp(this);   // RT batch 2: a stim gets you back up
             if (def.CureRadiation)
             {
                 if (StatusEffects.Irradiated) { StatusEffects.Irradiated = false; GameLog.Write("Irradiation has been removed."); }

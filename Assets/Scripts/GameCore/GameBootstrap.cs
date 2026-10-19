@@ -154,6 +154,7 @@ namespace GameCore
                     player.Ru += 200;
                     break;
             }
+            Give(player, "bandage", 1); Give(player, "splint", 1); Give(player, "basicStim", 1);   // real-time fork: a way back up when you go down
             if (!string.IsNullOrEmpty(spec.Perk)) player.TakePerk(spec.Perk);
             player.ApplyCarryEffects();
 

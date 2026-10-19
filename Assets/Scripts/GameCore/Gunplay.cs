@@ -138,7 +138,7 @@ namespace GameCore
                 if (first || pellets == 1) GameLog.Write($"{Who(shooter)} hits {Who(target)} in the {hit.Part.ToLowerInvariant()} for {dmg}.");
                 if (target is Mutant tm) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
                 if (shooter is Player && target is HumanEnemy he) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
-                if (hit.Part == "Head" && target.IsAlive()) CombatRules.CheckWound(target, 0, true);   // ponytail: old wound roll until limb health (RT batch 2)
+                if (target.IsAlive()) Body.Hit(target, hit.Part, hit.Side, dmg, w.CurrentAmmoType);   // RT batch 2: limb health, wounds, down
                 if (!target.IsAlive()) Weapon.OnTargetKilled(shooter, target);
                 if (target is Player p && p.IsAlive()) Perks.TryAdrenaline(p);
             }
@@ -155,6 +155,7 @@ namespace GameCore
             var hd = For(w);
             float spread = hd.Steady * (2.6f - 0.25f * r) + 0.8f + (shooter.StatusEffects?.Suppressed == true ? 2.5f : 0f);
             if (shooter.StatusEffects?.Wound == "Arm") spread += 1.5f;
+            if (Body.Concussed(shooter)) spread += 2f;
             return (h, spread);
         }
 
@@ -162,6 +163,7 @@ namespace GameCore
         /// it): Weapon.Fire hands NPC gunfire here, and each round is a real one at the target.</summary>
         public static void NpcShoot(ICombatant shooter, Weapon w, ICombatant target, int rounds)
         {
+            if (Body.Down(target)) return;                     // RT batch 2: they leave someone who's down to bleed
             var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
             float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
             if (len < 0.01f) return;

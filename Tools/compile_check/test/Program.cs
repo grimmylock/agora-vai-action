@@ -737,7 +737,40 @@ static class Program {
     int hits = 0, n = 40;
     for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); if (p.Hp < p.MaxHp) hits++; }
     Check(hits > 4 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");
-    EncounterState.Enemies.Clear(); Rt.On = false; Rt.Reset(); p.Hp = p.MaxHp;
+    // RT batch 2: limb health, Yan's wound rule, down and bleed-out, timed items
+    Rt.Reset(); Body.Now = 0f;
+    Check(Body.WoundChance(0.7f, "Standard") == 0f && Math.Abs(Body.WoundChance(0.5f, "Standard") - 0.125f) < 0.01f && Math.Abs(Body.WoundChance(0.4f, "Standard") - 0.25f) < 0.01f
+      && Math.Abs(Body.WoundChance(0.2f, "Standard") - 0.5f) < 0.01f && Body.WoundChance(0.4f, "HollowPoint") > Body.WoundChance(0.4f, "ArmorPiercing"),
+      $"wound chance: 70% {Body.WoundChance(0.7f, null)}, 50% {Body.WoundChance(0.5f, null)}, 40% {Body.WoundChance(0.4f, null)}, 20% {Body.WoundChance(0.2f, null)}");
+    r.Hp = r.MaxHp; r.StatusEffects.Wound = null;
+    for (int i = 0; i < 6; i++) Body.Hit(r, "Legs", 0.1f, 15, "Standard");
+    Check(Body.Of(r).Broken.Contains("LegR") && r.StatusEffects.Wound == "Leg" && Body.Of(r).Hp["Torso"] < Body.PartMax(r, "Torso"), $"six hits to his right leg break it (it limps) and the rest spills into the torso ({Body.Summary(r)})");
+    r.Hp = r.MaxHp; Body.Reset(); Body.Hit(r, "Torso", 0f, (int)Body.PartMax(r, "Torso") + 1, "Standard");
+    Check(!r.IsAlive(), "a human enemy's torso at 0: dead");
+    r.Hp = r.MaxHp; Body.Reset();
+    p.Hp = 5; p.Hp = 0;
+    Check(p.IsAlive() && Body.Down(p), $"lethal damage in real time: you go down, not out (HP {p.Hp})");
+    var ammoBefore = r.EquippedWeapon.CurrentMagazine; int hpDown = p.Hp; Gunplay.NpcShoot(r, r.EquippedWeapon, p, 3);
+    Check(p.Hp == hpDown, "nobody shoots someone who's down");
+    float still = Body.Of(p).BleedOut; Body.TickDown(p, false, 1f); float a = Body.Of(p).BleedOut; Body.TickDown(p, true, 1f); float b = Body.Of(p).BleedOut;
+    Check(still - a < a - b, $"crawling bleeds you out faster (still {still - a:0.0}/s, crawling {a - b:0.0}/s)");
+    Rt.Applying = true;
+    if (!p.Inventory.Items.Any(it => it.Id == "basicStim")) p.AddItem(new InventoryItem { Id = "basicStim", Name = "Basic Stim", Type = "consumable", Qty = 1 });
+    p.UseConsumable("bandage");
+    Check(Body.Down(p), "down: a bandage doesn't get you up");
+    p.UseConsumable("basicStim");
+    Check(!Body.Down(p) && p.IsAlive(), "a stim gets you back up");
+    bool bledOut = false; Body.GoDown(p); for (int i = 0; i < 100 && !bledOut; i++) bledOut = Body.TickDown(p, false, 1f);
+    Check(bledOut, "lying still you bleed out in ~40 s");
+    Body.Reset(); p.HealPermanent(100);
+    for (int i = 0; i < 6; i++) Body.Hit(p, "Legs", -0.1f, 12, "Standard");
+    Check(Body.LegHurt(p), "your left leg breaks");
+    if (!p.Inventory.Items.Any(it => it.Id == "splint")) p.AddItem(new InventoryItem { Id = "splint", Name = "Splint", Type = "consumable", Qty = 1 });
+    p.UseConsumable("splint");
+    Check(!Body.LegHurt(p), "a splint sets it");
+    Rt.Applying = false; Body.Now = -1f;
+    Rt.On = false;   // turn-based again: lethal damage kills
+    EncounterState.Enemies.Clear(); Rt.Reset(); p.HealPermanent(100);
   }
 
   // Batch 87: the Garrison raid - fighting in the Siege Ward brings 2 more waves (the last led by a boss), then the armory opens
@@ -1126,7 +1159,7 @@ static class Program {
     var ak = new InventoryItem { Type = "weapon", Category = "assault", Key = "VK74", Name = "VK-74" };
     Check(Economy.ValueOf(ak) == 1150, "VK-74 value " + Economy.ValueOf(ak));
     Check(Economy.RepairCost(new InventoryItem { Type = "weapon", Category = "assault", Key = "VK74", Condition = "Damaged" }) == 230, "repair cost");
-    Check(ShopDatabase.Items.Count(i => i.Baseline) == 15, "baseline count " + ShopDatabase.Items.Count(i => i.Baseline));
+    Check(ShopDatabase.Items.Count(i => i.Baseline) == 16, "baseline count (15 + the splint, RT batch 2) " + ShopDatabase.Items.Count(i => i.Baseline));
     foreach (var b in ShopDatabase.Items.Where(i => i.Baseline && i.Type == "consumable")) Check(ConsumableDatabase.All.ContainsKey(b.Id), "baseline consumable missing def " + b.Id);
   }
 
