@@ -263,7 +263,7 @@ namespace GameCore
             ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
             ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
             ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
-            ["RinaldiR6"] = new[] { 3.5f, 7f, float.NaN, float.NaN, 21f, 6.5f },   // RT 6m: bore low, level with the bottom chamber
+            ["RinaldiR6"] = new[] { 3.5f, 7f, float.NaN, float.NaN, 21f, 5.5f },
             ["SteppeEagle"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 22f, 3.5f },
             ["VosaVz62"] = new[] { 3.5f, 10f, float.NaN, float.NaN, 23f, 3.5f },
             ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
@@ -310,7 +310,7 @@ namespace GameCore
             ["PL74"] = new[] { 12.5f, 8.5f, 27f, 8.5f, 44f, 5f },
             ["PL74PPolovets"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
             ["PL74PPolovetsZulu"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
-            ["RK12Kuvalda"] = new[] { 3f, 10f, float.NaN, float.NaN, 23f, 6.5f },   // RT 6m: bore low
+            ["RK12Kuvalda"] = new[] { 3f, 10f, float.NaN, float.NaN, 23f, 5.5f },
         };
         public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
         /// <summary>The grip/support/muzzle points of a weapon's own sprite (its category's when it has none).</summary>
