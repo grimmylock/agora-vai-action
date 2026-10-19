@@ -769,6 +769,33 @@ static class Program {
     p.UseConsumable("splint");
     Check(!Body.LegHurt(p), "a splint sets it");
     Rt.Applying = false; Body.Now = -1f;
+    // RT batch 3: the dive - needs 40 Focus, flies ~2.5 tiles in bullet time, lands you prone for 0.6 s, a low target meanwhile
+    {
+      Body.Reset(); p.HealPermanent(100); EncounterState.Enemies.Clear(); r.X = px + 6; r.Y = py; r.Hp = r.MaxHp; EncounterState.Enemies.Add(r);
+      var kb = new UnityEngine.InputSystem.Keyboard();
+      foreach (var f in typeof(UnityEngine.InputSystem.Keyboard).GetFields()) if (f.FieldType == typeof(UnityEngine.InputSystem.KeyControl)) f.SetValue(kb, new UnityEngine.InputSystem.KeyControl());
+      UnityEngine.Time.deltaTime = 0.02f; UnityEngine.Time.unscaledDeltaTime = 0.02f; UnityEngine.Time.time = 1000f;
+      void Frame() { Rt.PlayerTick(p, kb, null); UnityEngine.Time.time += UnityEngine.Time.deltaTime; kb.spaceKey.wasPressedThisFrame = false; }
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.Focus = 0f;
+      kb.spaceKey.wasPressedThisFrame = true; Frame();
+      Check(!Rt.Diving, "no Focus, no dive");
+      Rt.Focus = 50f; kb.dKey.isPressed = true; kb.spaceKey.wasPressedThisFrame = true;
+      var (sx, _) = Ballistics.Pos(p); Frame();
+      Check(Rt.Diving && Rt.SlowMo && UnityEngine.Time.timeScale == Rt.SlowScale && Math.Abs(Rt.Focus - 10f) < 0.01f, $"Space dives: bullet time on, 40 Focus spent ({Rt.Focus})");
+      for (int i = 0; i < 40 && Rt.Diving; i++) Frame();
+      var (lx, _) = Ballistics.Pos(p);
+      Check(!Rt.Diving && Rt.Low(p) && !Rt.SlowMo && UnityEngine.Time.timeScale == 1f && lx - sx > 2f && lx - sx < 3f, $"lands {lx - sx:0.0} tiles on, prone, back to full speed");
+      Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.2f) != "miss", "sprawled on the ground: a head-height round goes over, a low one hits");
+      for (int i = 0; i < 10; i++) Frame();
+      var (px2, _) = Ballistics.Pos(p);
+      Check(Math.Abs(px2 - lx) < 0.001f, "prone: you can't move");
+      for (int i = 0; i < 30; i++) Frame();
+      var (px3, _) = Ballistics.Pos(p);
+      Check(px3 > px2 + 0.5f && !Rt.Low(p), "back up and walking after the landing");
+      kb.dKey.isPressed = false;
+      Check(Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 0.9f, p.X + 0.5f + 5f, p.Y + 0.9f, p) && !Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 2.5f, p.X + 0.5f + 5f, p.Y + 2.5f, p), "a round passing close is a near miss, one far off isn't");
+      UnityEngine.Time.deltaTime = 0f; UnityEngine.Time.time = 0f; UnityEngine.Time.timeScale = 1f;
+    }
     Rt.On = false;   // turn-based again: lethal damage kills
     EncounterState.Enemies.Clear(); Rt.Reset(); p.HealPermanent(100);
   }
@@ -1227,7 +1254,7 @@ static class Program {
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
     pl.ApplyCarryEffects(); int capped = pl.MaxMp; pl.TakePerk("WalkingTank"); pl.ApplyCarryEffects();
     Check(pl.MaxMp >= capped, $"walking tank {capped}->{pl.MaxMp}");
-    Check(PerkDatabase.All.Count == 35, "perk count " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 37, "perk count (35 + Tumbler, Cold Blood) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80

@@ -104,6 +104,8 @@ namespace GameCore
                 var hit = System.Math.Abs(hh - h) < 0.02f ? probe : Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, hh, Bodies());
                 Resolve(shooter, w, hit, ambush, p == 0, delay, hd.Pellets);
                 hits.Add(hit);
+                if (p == 0 && !(shooter is Player) && hit.Unit != Player.Current && Player.Current != null && NearMiss(x0, y0, hit.EndX, hit.EndY, Player.Current))
+                    Rt.AddFocus(CombatantUtil.HasPerk(Player.Current, "ColdBlood") ? 12f : 6f);   // RT batch 3: a round that just missed you
             }
             if (!CombatRules.IsMelee(w)) Noise.Make(shooter.X, shooter.Y, w.Db != null && w.Db.InnateSuppressor ? Noise.Suppressed : Noise.Shot, shooter);
             return hits;
@@ -138,11 +140,23 @@ namespace GameCore
                 if (first || pellets == 1) GameLog.Write($"{Who(shooter)} hits {Who(target)} in the {hit.Part.ToLowerInvariant()} for {dmg}.");
                 if (target is Mutant tm) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
                 if (shooter is Player && target is HumanEnemy he) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
-                if (target.IsAlive()) Body.Hit(target, hit.Part, hit.Side, dmg, w.CurrentAmmoType);   // RT batch 2: limb health, wounds, down
+                if (target.IsAlive()) Body.Hit(target, hit.Part, hit.Side, dmg, w.CurrentAmmoType, shooter is Player && Rt.SlowMo ? 1.5f : 1f);   // RT batch 3: bullet time wounds more
+                if (shooter is Player) Rt.AddFocus(target.IsAlive() ? 4f : 25f);   // RT batch 2: limb health, wounds, down
                 if (!target.IsAlive()) Weapon.OnTargetKilled(shooter, target);
                 if (target is Player p && p.IsAlive()) Perks.TryAdrenaline(p);
             }
             CombatFx.Add(fx);
+        }
+
+        /// <summary>The round's path (x0,y0)-(x1,y1) passed within 0.6 tiles of the unit.</summary>
+        public static bool NearMiss(float x0, float y0, float x1, float y1, ICombatant u)
+        {
+            var (ux, uy) = Ballistics.Pos(u);
+            float vx = x1 - x0, vy = y1 - y0, l2 = vx * vx + vy * vy;
+            if (l2 < 1e-4f) return false;
+            float t = System.Math.Max(0f, System.Math.Min(1f, ((ux - x0) * vx + (uy - y0) * vy) / l2));
+            float dx = x0 + vx * t - ux, dy = y0 + vy * t - uy;
+            return dx * dx + dy * dy < 0.36f;
         }
 
         static string Who(ICombatant u) => u is Player ? "You" : u.Name;

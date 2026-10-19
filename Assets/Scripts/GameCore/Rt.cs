@@ -44,7 +44,7 @@ namespace GameCore
         static float _round;
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { Paused = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -99,13 +99,25 @@ namespace GameCore
             if (UsingId != null) speed *= 0.5f;                       // patching yourself up
             if (down) speed = Crawl;
             if (p.StatusEffects.Prone) speed = 0f;
+            if (Time.time < ProneUntil) speed = 0f;                   // RT batch 3: sprawled after a dive
             float l = Mathf.Sqrt(ix * ix + iy * iy);
             Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
-            if (Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
+            if (!down && k.spaceKey.wasPressedThisFrame && !Diving && Time.time >= ProneUntil && UsingId == null) TryDive(p, ix, iy, MouseTile(m));
+            if (Diving)
+            {
+                Moving = 0;
+                var (bx, by) = Ballistics.Pos(p);
+                MoveBy(p, _diveX * DiveSpeed * dt, _diveY * DiveSpeed * dt);
+                var (ax, ay) = Ballistics.Pos(p);
+                bool blocked = dt > 0f && Mathf.Abs(ax - bx) + Mathf.Abs(ay - by) < DiveSpeedFloor * dt;
+                if (Time.time >= DiveUntil || blocked) Land(p);
+            }
+            else if (Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
 
             // ---- down: bleeding out (faster while crawling); only a stim (belt keys) gets you up ----
             if (down)
             {
+                if (Diving) Land(p);
                 if (Body.TickDown(p, Moving > 0, dt)) { GameLog.Write("You bled out."); p.Hp = 0; TurnLoop.CheckCombatEnd(); return; }
                 TickUse(p);
                 return;
@@ -116,7 +128,7 @@ namespace GameCore
             var w = p.EquippedWeapon;
             var aim = Gunplay.AimOf(p);
             var hd = Gunplay.For(w);
-            Gunplay.Tick(hd, aim, Aiming, Moving, dt);
+            Gunplay.Tick(hd, aim, Aiming || Diving, Moving, SlowMo ? Time.unscaledDeltaTime : dt);   // in bullet time your aim keeps real-time speed
             var mw = MouseTile(m);
             if (aim.ReloadUntil >= 0f && Time.time >= aim.ReloadUntil)
             {
@@ -170,6 +182,51 @@ namespace GameCore
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();
         }
+
+        // ---- RT batch 3: the dive and bullet time (Yan: "you jump and get the slowmo but when it ends you're prone for a tiny
+        //      moment, immobilizing you and making it risky"). Space dives the way you're moving (or toward the mouse): airborne
+        //      ~0.55 s of game time, time runs at 30% meanwhile, you can aim and fire (the aim steadies at real-time speed).
+        //      Landing: prone 0.6 s (Tumbler: 0.35) - no moving, but you can still shoot. Costs 40 Focus, so no chaining.
+        //      Focus fills from kills (+25), hits (+4) and enemy rounds that just miss you (+6, Cold Blood x2). ----
+        public const float DiveCost = 40f, DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
+        public static float Focus, DiveUntil = -1f, ProneUntil = -1f;
+        const float DiveSpeedFloor = 1f;                              // moved slower than this (tiles/s): hit a wall, land now
+        static float _diveX, _diveY;
+        public static bool SlowMo;
+        public static bool Diving => DiveUntil >= 0f;
+        public static bool DiveRight => _diveX >= 0f;              // the view tilts the body into the dive
+        public static bool Low(ICombatant u) => On && u is Player && (Diving || Time.time < ProneUntil);   // airborne or sprawled: a low target
+
+        public static void AddFocus(float f)
+        {
+            if (!On) return;
+            Focus = Mathf.Min(FocusMax, Focus + f);
+        }
+
+        static bool TryDive(Player p, float ix, float iy, (float x, float y)? mouse)
+        {
+            if (Focus < DiveCost) { GameLog.Write($"Not enough Focus to dive ({Mathf.FloorToInt(Focus)}/{DiveCost:0})."); return false; }
+            float dx = ix, dy = iy;
+            if (dx == 0f && dy == 0f && mouse.HasValue) { var (px, py) = Ballistics.Pos(p); dx = mouse.Value.x - px; dy = mouse.Value.y - py; }
+            float l = Mathf.Sqrt(dx * dx + dy * dy);
+            if (l < 0.01f) return false;
+            _diveX = dx / l; _diveY = dy / l;
+            Focus -= DiveCost;
+            DiveUntil = Time.time + DiveTime;
+            SetSlow(true);
+            Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 1f, 0.05f, 0.6f);
+            return true;
+        }
+
+        static void Land(Player p)
+        {
+            DiveUntil = -1f;
+            ProneUntil = Time.time + (CombatantUtil.HasPerk(p, "Tumbler") ? 0.35f : ProneTime);
+            SetSlow(false);
+            Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f);
+        }
+
+        public static void SetSlow(bool on) { SlowMo = on; if (!Paused) Time.timeScale = on ? SlowScale : 1f; }
 
         // ---- using an item takes time (RT batch 2): you move at half pace, firing cancels it ----
         public const float Crawl = 0.6f;

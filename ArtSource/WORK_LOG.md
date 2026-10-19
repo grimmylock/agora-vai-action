@@ -3144,3 +3144,21 @@ stay still and bleed out slowly or crawl behind cover at the cost of expending h
   bandage refused / stim accepted while down, bleeding out, splint. ALL CHECKS PASSED.
 - **For Yan to check:** how fast fights end now that heads and torsos can drop someone; going down and crawling; stim/splint/bandage
   timing (belt keys 1-4); the part readout on the HUD.
+
+## RT batch 3 - the dive, bullet time, Focus (2026-10-19)
+
+Yan: "the max payne part could be a double edged thing, where you jump and get the slowmo but when it ends you're prone for a tiny
+moment, immobilizing you and making it risky". Also: "concussion seems too long, 20 seconds is a lot during gameplay, set it to 10" (done).
+- **Space dives** the way you're moving (standing still: toward the mouse), 4.5 tiles/s for 0.55 s of game time (~2.5 tiles),
+  sliding along walls and landing early if one stops you. Time runs at 30% while you're airborne; you can aim and fire, and your
+  aim steadies at real-time speed (the rest of the world is slowed: enemy timers, everyone's fire rate, your own gun's rate too).
+- **Landing:** prone 0.6 s (perk Tumbler: 0.35) - no moving, you can still shoot. Airborne or sprawled you're a low target
+  (40% height): head-height rounds go over you. Time goes back to full speed on landing.
+- **Focus** (0-100, HUD): costs 40 a dive, so no chaining. Fills from your kills (+25), hits (+4) and enemy rounds that pass within
+  0.6 tiles of you without hitting (+6; perk Cold Blood: +12).
+- **In bullet time** the part under the crosshair lights up (head / torso / legs band of the sprite) and your hits wound 1.5x as often.
+- New perks: Tumbler, Cold Blood (Survival group). ESC during bullet time pauses and resumes it. Controls panel: Space.
+- ponytail: team bullet time waits for co-op; the dive has no art of its own (the body tilts into it and lies flat after).
+- Harness: no Focus no dive, bullet time on and 40 spent, ~2.5 tiles and prone on landing, head-height rounds over you while
+  sprawled, no moving while prone, up and walking after, near-miss geometry. ALL CHECKS PASSED.
+- **For Yan to check:** the dive's distance and slow-mo length; whether 0.6 s prone feels risky but fair; how fast Focus fills.

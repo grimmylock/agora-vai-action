@@ -4,7 +4,7 @@
 //  - Head or torso at 0 = down. An arm or leg at 0 is broken; more damage to it spills into the torso.
 //  - Wounds (Yan's rule): a hit that leaves a part under 60% may wound it - the chance rises as the part weakens,
 //    (60 - part%) / 60 * 0.75 (50% ~13%, 40% 25%, 20% 50%); hollow points raise it, AP rounds lower it.
-//    Head: concussion (blur and sway for a while). Torso: bleeding. Arm/leg: a fracture or bleeding.
+//    Head: concussion (blur and sway for 10 s, Yan). Torso: bleeding. Arm/leg: a fracture or bleeding.
 //  - Debuffs only from wounds and broken parts: a broken leg limps (no sprint), a broken arm sways and reloads slowly.
 //  - You, downed (Yan): at 0 you drop and bleed out - lying still slowly, crawling (to cover) faster. A stim gets you up.
 //    Enemies stop shooting someone who is down; a human enemy at 0 is dead (ponytail: NPC downed states later).
@@ -57,7 +57,7 @@ namespace GameCore
 
         /// <summary>A round landed. part: Ballistics' "Head" | "Torso" | "Arm" | "Legs"; side: + = the shooter's right.
         /// `dmg` has already come off the HP pool. Returns the part name hit (ArmL, LegR...).</summary>
-        public static string Hit(ICombatant u, string part, float side, int dmg, string ammo)
+        public static string Hit(ICombatant u, string part, float side, int dmg, string ammo, float woundMult = 1f)
         {
             if (!Human(u) || dmg <= 0) return part;
             var s = Of(u);
@@ -72,7 +72,7 @@ namespace GameCore
             }
             s.Hp[p] = System.Math.Max(0f, left);
             if (s.Hp["Head"] <= 0f || s.Hp["Torso"] <= 0f) { Drop(u, s); return p; }
-            if (!s.Broken.Contains(p)) Wound(u, s, p, ammo);
+            if (!s.Broken.Contains(p)) Wound(u, s, p, ammo, woundMult);
             Sync(u, s);
             return p;
         }
@@ -87,10 +87,10 @@ namespace GameCore
             return System.Math.Min(1f, c);
         }
 
-        static void Wound(ICombatant u, State s, string p, string ammo)
+        static void Wound(ICombatant u, State s, string p, string ammo, float mult)
         {
-            if (UnityEngine.Random.value >= WoundChance(Pct(u, p), ammo)) return;
-            if (p == "Head") { s.ConcussedUntil = T + 20f; GameLog.Write($"{Who(u)} {(u is Player ? "are" : "is")} concussed!"); return; }
+            if (UnityEngine.Random.value >= WoundChance(Pct(u, p), ammo) * mult) return;
+            if (p == "Head") { s.ConcussedUntil = T + 10f; GameLog.Write($"{Who(u)} {(u is Player ? "are" : "is")} concussed!"); return; }
             bool limb = p != "Torso";
             if (limb && UnityEngine.Random.value < 0.5f) { if (s.Fractured.Add(p)) GameLog.Write($"{Who(u)}: fractured {Name(p)}."); }
             else if (!u.StatusEffects.Bleeding) { u.StatusEffects.Bleeding = true; GameLog.Write($"{Who(u)} {(u is Player ? "are" : "is")} bleeding."); }

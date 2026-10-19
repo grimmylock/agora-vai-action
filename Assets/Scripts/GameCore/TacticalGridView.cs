@@ -198,7 +198,8 @@ namespace GameCore
             ColorGrade.Apply(look);
             if (look.Rain > 0.75f) Sfx.Ambient("amb_storm"); else if (look.Rain > 0f) Sfx.Ambient("amb_rain"); else Sfx.Ambient(Sfx.AmbientFor(MacroState.Current.CurrentZoneId));   // the map overhaul: the region you stand in
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
-            _playerMarker.transform.localRotation = Quaternion.Euler(0f, 0f, downNow ? 90f : 0f);
+            float tilt = downNow ? 90f : Rt.Diving ? (Rt.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.DiveRight ? -90f : 90f) : 0f;   // RT batch 3: into the dive, sprawled after it
+            _playerMarker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker));
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker
@@ -361,7 +362,7 @@ namespace GameCore
         private readonly List<SpriteRenderer> _reticle = new List<SpriteRenderer>();
         private void Reticle(Player player)
         {
-            while (_reticle.Count < 5)
+            while (_reticle.Count < 6)
                 _reticle.Add(CreateMarker("Reticle", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite()));
             var mt = Rt.MouseTile(UnityEngine.InputSystem.Mouse.current);
             var w = player.EquippedWeapon;
@@ -379,11 +380,27 @@ namespace GameCore
             var c = new Vector3(mx, -my, 0f);
             Vector3[] at = { c + new Vector3(gap, 0f, 0f), c + new Vector3(-gap, 0f, 0f), c + new Vector3(0f, gap, 0f), c + new Vector3(0f, -gap, 0f), c };
             Vector3[] size = { new Vector3(3f, 1f, 1f), new Vector3(3f, 1f, 1f), new Vector3(1f, 3f, 1f), new Vector3(1f, 3f, 1f), Vector3.one };
+            var over = Rt.UnitUnder(mx, my);
             for (int i = 0; i < 5; i++)
             {
                 _reticle[i].transform.position = at[i];
                 _reticle[i].transform.localScale = size[i] * (1f / 16f);
-                _reticle[i].color = i == 4 && Rt.UnitUnder(mx, my) != null ? new Color(1f, 0.3f, 0.25f, 1f) : col;
+                _reticle[i].color = i == 4 && over != null ? new Color(1f, 0.3f, 0.25f, 1f) : col;
+            }
+            // RT batch 3: in bullet time the part under the crosshair lights up (head, torso or legs band of the sprite)
+            var box = _reticle[5];
+            bool lit = Rt.SlowMo && over != null && Body.Human(over);
+            box.gameObject.SetActive(lit);
+            if (lit)
+            {
+                float h = Ballistics.AimHeight(over, my), sc = Ballistics.Crouched(over) ? Ballistics.CrouchScale : 1f;
+                float lo = h >= Ballistics.HeadFrom * sc ? Ballistics.HeadFrom * sc : h >= Ballistics.TorsoFrom * sc ? Ballistics.TorsoFrom * sc : 0f;
+                float hi = lo >= Ballistics.HeadFrom * sc ? sc : lo >= Ballistics.TorsoFrom * sc ? Ballistics.HeadFrom * sc : Ballistics.TorsoFrom * sc;
+                var (ux, uy) = Ballistics.Pos(over);
+                float feet = -(uy + 0.44f), wide = lo >= Ballistics.HeadFrom * sc ? 0.28f : 0.4f;
+                box.transform.position = new Vector3(ux, feet + (lo + hi) * 0.5f * Ballistics.BodyTiles, 0f);
+                box.transform.localScale = new Vector3(wide, (hi - lo) * Ballistics.BodyTiles, 1f);
+                box.color = new Color(1f, 0.9f, 0.4f, 0.35f);
             }
         }
 

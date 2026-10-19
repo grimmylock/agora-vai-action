@@ -270,7 +270,7 @@ namespace GameCore
             if (m.SurgeRounds > 0) turn += $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>";
             if (Rt.On)   // real-time fork: no turns - fighting or not, and your stamina
                 turn = Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : (EncounterState.InCombat ? "<color=#c8443a>FIGHT</color>" : "<color=#62b25a>EXPLORING</color>")
-                    + $"   STAMINA {Mathf.RoundToInt(Rt.Stamina)}" + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "");
+                    + $"   STAMINA {Mathf.RoundToInt(Rt.Stamina)}   FOCUS {Mathf.FloorToInt(Rt.Focus)}" + (Rt.SlowMo ? "   <color=#62c0e0>BULLET TIME</color>" : "") + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "");
             _turn.text = turn;
             _endTurn.SetActive(!Rt.On && !exploring && GameState.Current.CurrentTurn == Turn.Player);
 

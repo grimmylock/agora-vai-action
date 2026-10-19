@@ -292,7 +292,7 @@ namespace GameCore
         {
             if (k == null) return;
             if (HudView.TargetingOpen) HudView.CloseTargeting();
-            if (k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : 1f; }   // ESC pauses; nothing else does
+            if (k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
             if (Rt.Paused) return;
             Rt.PlayerTick(player, k, m);
             TickClock(player);
