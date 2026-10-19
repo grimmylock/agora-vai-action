@@ -26,7 +26,8 @@ namespace GameCore
     public struct HeldFrame
     {
         public float GunX, GunY, GunDeg, GripX, GripY, SupX, SupY;
-        public float MagOff;                // RT 6g: the magazine, half-size px out of the gun along its underside; -1 = out of sight
+        public float MagOff;
+        public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)                // RT 6g: the magazine, half-size px out of the gun along its underside; -1 = out of sight
         public bool Left, HasSupport;
     }
 
@@ -174,9 +175,11 @@ namespace GameCore
                 float t = (r - 0.12f) / 0.18f;
                 magOff = r < 0.3f ? 2f + 18f * t * t : r < 0.54f ? -1f : pouch * 14f;
             }
+            // RT 6i: a break-action drops its barrels open, holds them while the shells go in, snaps them shut
+            float breakDeg = style == "break" && r >= 0f && r < 1f ? 35f * Mathf.Clamp01(Mathf.Min((r - 0.05f) / 0.12f, (0.92f - r) / 0.07f)) : 0f;
             return new HeldFrame
             {
-                MagOff = magOff,
+                MagOff = magOff, BreakDeg = breakDeg,
                 Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
                 GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
                 GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
@@ -271,7 +274,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); }
+        private static void ResetCaches() { Cache.Clear(); MagCache.Clear(); BreakCache.Clear(); }
 
 
         public static (string cat, string key) Identify(WeaponDef db)
@@ -304,6 +307,25 @@ namespace GameCore
         }
         private static readonly Dictionary<string, (Sprite, Sprite)> MagCache = new Dictionary<string, (Sprite, Sprite)>();
 
+        /// <summary>RT 6i: a break-action split at its hinge (ArtSource/weapons/mags.py BREAK): the stock and action, the barrels
+        /// pivoting on the hinge, and the hinge in weapon-sprite pixels. Nulls for every other gun.</summary>
+        public static (Sprite body, Sprite barrels, float hx, float hy) Break(string cat, string key)
+        {
+            if (key == null || !Hinges.TryGetValue(key, out var h)) return (null, null, 0f, 0f);
+            if (BreakCache.TryGetValue(key, out var hit)) return hit;
+            var g = For(cat, key).grip;
+            Sprite Load(string part, float px, float py)
+            {
+                var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
+                if (tex == null) return null;
+                tex.filterMode = FilterMode.Point;
+                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(px / tex.width, 1f - py / tex.height), PixelsPerUnit);
+            }
+            return BreakCache[key] = (Load("body", g[0], g[1]), Load("barrels", h.x, h.y), h.x, h.y);
+        }
+        public static readonly Dictionary<string, (float x, float y)> Hinges = new Dictionary<string, (float, float)> { ["Obrez66"] = (9f, 4f), ["Sever34"] = (16f, 4f) };
+        private static readonly Dictionary<string, (Sprite, Sprite, float, float)> BreakCache = new Dictionary<string, (Sprite, Sprite, float, float)>();
+
         public static (Sprite sprite, float[] grip) For(string cat, string key)
         {
             string id = key ?? "cat_" + cat;
@@ -326,7 +348,7 @@ namespace GameCore
     /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
     public class HeldWeaponView
     {
-        private readonly SpriteRenderer _gun, _support, _grip, _mag;
+        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels;
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
@@ -353,6 +375,7 @@ namespace GameCore
             _support = Child(body, "SupportHand", 2);
             _grip = Child(body, "GripHand", 3);
             _mag = Child(body, "Magazine", 1);
+            _barrels = Child(body, "Barrels", 2);
         }
 
         public bool Visible => _gun.gameObject.activeSelf;
@@ -406,10 +429,10 @@ namespace GameCore
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false)
         {
             bool on = visible && weapon?.Db != null;
-            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false);
             if (!visible) return;
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
-            _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
+            _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
             _grip.flipY = _support.flipY = back;
             if (!on)
             {
@@ -443,6 +466,17 @@ namespace GameCore
             _gun.flipY = f.Left;
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
             _gun.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+            var brk = WeaponArt.Break(cat, key);
+            if (brk.body != null && brk.barrels != null)
+            {
+                // the barrels turn on the hinge: grip -> hinge in the gun's own space (a flipped gun mirrors it), then the aim
+                _gun.sprite = brk.body;
+                float a0 = f.GunDeg * Mathf.Deg2Rad, hx = (brk.hx - g[0]) / WeaponArt.PixelsPerUnit, hy = (f.Left ? 1f : -1f) * (brk.hy - g[1]) / WeaponArt.PixelsPerUnit;
+                _barrels.gameObject.SetActive(true);
+                _barrels.sprite = brk.barrels; _barrels.flipY = f.Left;
+                _barrels.transform.localPosition = _gun.transform.localPosition + new Vector3(hx * Mathf.Cos(a0) - hy * Mathf.Sin(a0), hx * Mathf.Sin(a0) + hy * Mathf.Cos(a0), 0f);
+                _barrels.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + (f.Left ? 1f : -1f) * f.BreakDeg);
+            }
             if (mag != null && f.MagOff >= 0f)
             {
                 // along the gun's underside (png +y), which a flipped gun turns upward in its own space

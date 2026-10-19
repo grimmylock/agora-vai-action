@@ -11,6 +11,7 @@ S = 10                                   # screen pixels per character pixel
 W, H = 34, 22                            # canvas, character pixels
 BX, BY = 6, 4                            # where the 16x16 body sits on it
 BG = (46, 42, 34, 255)
+HINGES = {"Obrez66": (9, 4), "Sever34": (16, 4)}              # = WeaponArt.Hinges
 
 def hexc(h): v = int(h.lstrip("#"), 16); return ((v >> 16) & 255, (v >> 8) & 255, v & 255, 255)
 
@@ -23,11 +24,14 @@ def glove(cuff, gl):
     return img.resize((4 * S, 3 * S), Image.NEAREST)
 
 def frame(anim, f, body, gun, gl, parts=None):
-    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mag_off = f
+    gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mag_off, brk = f
     if parts:                                                  # RT 6g: the magazine under the gun, mag_off half-px out (-1: gone)
         gbody, gmag = parts; layer = Image.new("RGBA", (gun.width, gun.height + 24))
         if mag_off >= 0: layer.alpha_composite(gmag, (0, round(mag_off)))
         layer.alpha_composite(gbody or gun); gun = layer
+    if anim.get("barrels"):                                    # RT 6i: barrels swung down on the hinge (clockwise in the gun's own picture)
+        gbody, gbar = anim["barrels"]; layer = Image.new("RGBA", gun.size); layer.alpha_composite(gbody)
+        layer.alpha_composite(gbar.rotate(-brk, center=HINGES[anim["key"]], resample=Image.NEAREST)); gun = layer
     c = Image.new("RGBA", (W * S, H * S), BG)
     c.alpha_composite(body, (BX * S, BY * S))
     # the gun: half-size pixels, pivot on the grip, flipped vertically when aiming left, turned by deg (counter-clockwise)
@@ -55,7 +59,9 @@ def main(src, out):
         gun = Image.open(os.path.join(SPR, "Weapons", f"weapon_{a['key']}.png")).convert("RGBA")
         gl = glove(a["cuff"], a["glove"])
         mp = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_mag.png"); bp = mp.replace("_mag.png", "_body.png")
-        parts = (Image.open(bp).convert("RGBA") if os.path.exists(bp) else None, Image.open(mp).convert("RGBA")) if os.path.exists(mp) else None
+        rp = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_barrels.png")
+        if os.path.exists(rp): a["barrels"] = (Image.open(bp).convert("RGBA"), Image.open(rp).convert("RGBA"))
+        parts = None if os.path.exists(rp) else (Image.open(bp).convert("RGBA") if os.path.exists(bp) else None, Image.open(mp).convert("RGBA")) if os.path.exists(mp) else None
         frames = [frame(a, f, body, gun, gl, parts) for f in a["frames"]]
         hold = [frames[-1]] * 12                                   # a beat at rest before it loops
         frames[0].save(os.path.join(out, f"{a['key']}_{a['style']}.gif"), save_all=True, append_images=frames[1:] + hold,

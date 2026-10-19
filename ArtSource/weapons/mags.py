@@ -28,6 +28,10 @@ MAGS = {
 HIDDEN = {"PSh18Pchela": (5.5, 9), "WaldenP9": (5, 10), "Halden45Service": (4.5, 9.5), "SR21Gadyuka": (4, 10.5),
           "BlackHarrier": (4.5, 9.5), "Corvan57": (4.5, 10), "SteppeEagle": (4.5, 10)}
 
+# RT 6i: break-actions - the barrels (pixels at x >= hinge x, above `top` or at x >= `fore`) swing open around the hinge:
+# key: (hinge x, hinge y, top row, forend x) -> weapon_<Key>_body.png (stock and action) + weapon_<Key>_barrels.png
+BREAK = {"Obrez66": (9, 4, 3, 13), "Sever34": (16, 4, 5, 19)}
+
 STEEL, STEEL_LIT, EDGE = (61, 65, 72, 255), (96, 102, 110, 255), (20, 22, 23, 255)
 
 def cut(key):
@@ -46,6 +50,15 @@ def cut(key):
         for x in range(x0, min(x1, w - 1) + 1):
             if px[x, y][3]: m[x, y] = px[x, y]; b[x, y] = (0, 0, 0, 0)
     return body, mag
+
+def split(key):
+    gun = Image.open(os.path.join(WEAP, f"weapon_{key}.png")).convert("RGBA"); px = gun.load()
+    hx, hy, top, fore = BREAK[key]
+    body, bar = gun.copy(), Image.new("RGBA", gun.size); b, r = body.load(), bar.load()
+    for y in range(gun.height):
+        for x in range(gun.width):
+            if px[x, y][3] and x >= hx and (y <= top or x >= fore): r[x, y] = px[x, y]; b[x, y] = (0, 0, 0, 0)
+    return body, bar
 
 def meta(png, like):
     """Unity import settings copied from the gun's own .meta (point filter, no compression), with a fresh guid."""
@@ -79,6 +92,11 @@ def main():
             bg = Image.new("RGBA", img.size, (46, 42, 34, 255)); bg.alpha_composite(img)
             sheet.alpha_composite(bg.resize((img.width * S, img.height * S), Image.NEAREST), (180 + i * cw, y))
     sheet.convert("RGB").save(os.path.join(out, "mags_sheet.png")); print(len(rows), "guns ->", os.path.join(out, "mags_sheet.png"))
+    for k in BREAK:
+        src = os.path.join(WEAP, f"weapon_{k}.png")
+        for part, img in zip(("body", "barrels"), split(k)):
+            p = os.path.join(WEAP, f"weapon_{k}_{part}.png"); img.save(p); meta(p, src)
+        print(k, "split at the hinge")
 
 if __name__ == "__main__":
     main()

@@ -3326,3 +3326,12 @@ Yan ("yes to all" to: shooting mid-reload stops a tube/lever reload with what's 
   (`FxEvent.Seconds < 0` -> `HeldWeaponView.StopReload`).
 - Harness: a pump loads a shell every 0.38 s and stops on the trigger; a revolver told to stop finishes its round.
   Renders: the revolver and the lever rifle added to `maps/renders/held_anim/`.
+
+## RT batch 6i - break-actions open on the hinge (2026-10-20)
+
+- `mags.py BREAK`: the Obrez-66 (hinge x 9) and Sever-34 O/U (x 16) split into `weapon_<Key>_body.png` (stock and action) and
+  `weapon_<Key>_barrels.png`. `WeaponArt.Break` loads them (barrels pivot on `WeaponArt.Hinges`); `HeldFrame.BreakDeg` swings
+  the barrels 35 degrees open during a "break" reload (5-17%), holds, snaps shut (85-92%); the red shells still fly at 20%.
+- Renders: the Obrez added to `maps/renders/held_anim/`.
+- Still to do: a shell in the glove on each trip, a rack at the end of an empty magazine reload, stripper clips (M91, SKN),
+  the cylinder swinging out on revolvers, the Polovets and G-7 magazines.

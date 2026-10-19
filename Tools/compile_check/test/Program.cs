@@ -714,7 +714,7 @@ static class Program {
   // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
   static void HeldFrames(string path) {
     var sb = new System.Text.StringBuilder("[");
-    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sniper", "FrontierLeverRifle") };
+    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66") };
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); if (armor < 0) armor = 0;   // bare hands, red cuffs: the hand work reads
     bool firstAnim = true;
     foreach (var (cat, key) in guns) {
@@ -728,7 +728,7 @@ static class Program {
         int n = (int)Math.Ceiling(secs * 30f) + 4;
         for (int i = 0; i < n; i++) {
           var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips);
-          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagOff}]"));
+          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagOff},{f.BreakDeg}]"));
         }
         sb.Append("]}");
       }

@@ -148,6 +148,8 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 - Human enemies: alive or static/too aggressive? bursts and pauses, flanking, pins, call-outs, accuracy.
 - Mutants: hound pace vs yours, bite rate, the Brute's pace and boulder, the leap.
 - Weapon balance (see below) - per-gun damage, rate, recoil vs armor and HP.
+- Reloads (RT 6g-6i): magazines dropping and seating (hidden pistol magazines sliding out of the grip), round-by-round loading
+  and firing mid-reload (tube shotguns, levers), revolvers finishing the round, break-actions opening on the hinge.
 - Per-gun handling (RT 6d, `Gunplay.Guns`): does each gun feel different? fire rates, reloads, how fast it steadies, kick;
   SMGs/pistols from the hip on the move vs rifles aimed; shotgun patterns (choke); the 10-degree kick cap when holding the trigger.
 - Any red in the Console.
