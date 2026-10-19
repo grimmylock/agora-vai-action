@@ -3429,3 +3429,10 @@ sense for it to be in his hand".
   recovery 0.17 s. The hit lands at the chop (`Melee.Pending`, 0.30 s after the click), not on the click; the unit's lean is
   `HeldWeaponView.Lean`, applied to the player's tilt (`TacticalGridView`).
 - Renders: `maps/renders/melee/` (scenes + `melee_swing_closeup.png`).
+
+## RT batch 7d - a thrown blade sits IN the body (2026-10-20)
+
+Yan: "when thrown the weapon sprite kind just glues itself to the enemy instead of being actually IN the enemy". `tactical_hatchet.py`
+also writes `weapon_TacticalHatchet_stuck.png`: the blade from row 9 down is buried (cut off) and a line of blood marks where it goes
+in; `Melee.StuckPose` puts that cut line on the chest, the edge in and the handle out up and back toward the thrower (140 degrees,
+mirrored for a throw from the right); pulling it out wrenches it back and forth. `Melee.Stats.StuckX/Y` = the cut line's point.

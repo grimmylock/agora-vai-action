@@ -792,7 +792,8 @@ static class Program {
         string item = "null";
         var air = Melee.Air.FirstOrDefault(); var stuck = Melee.InBodies.FirstOrDefault(); var lying = Melee.OnFloor.FirstOrDefault();
         if (air != null) item = FormattableString.Invariant($"[\"air\",{air.X},{air.Y - air.H * Ballistics.BodyTiles + 0.4f},{air.Deg}]");
-        else if (stuck != null) { var (sx, sy) = Ballistics.Pos(stuck.In); item = FormattableString.Invariant($"[\"stuck\",{sx + 0.12f},{sy - 0.05f},{(stuck.Pulling ? stuck.Deg + 40f * (float)Math.Sin(t * 18f) : stuck.Deg)}]"); }
+        else if (stuck != null) { var (sx, sy) = Ballistics.Pos(stuck.In); var sp = Melee.StuckPose(stuck.Side);
+          item = FormattableString.Invariant($"[\"stuck\",{sx + sp.ox / 16f},{sy + sp.oy / 16f},{sp.deg + (stuck.Pulling ? 12f * (float)Math.Sin(t * 18f) : 0f)},{(sp.flipX ? 1 : 0)}]"); }
         else if (lying != null) item = FormattableString.Invariant($"[\"floor\",{lying.Wx},{lying.Wy + 0.3f},{lying.Deg}]");
         var (fx, fy) = Ballistics.Pos(foe);
         sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}{{\"you\":[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(inHand ? 1 : 0)},{lean},{(f.Left ? 1 : 0)}],\"foe\":[{fx},{fy},{foe.Hp},{t - hitAt},{(Melee.Busy(foe) ? 1 : 0)}],\"item\":{item}}}"));

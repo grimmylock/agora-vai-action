@@ -26,12 +26,13 @@ namespace GameCore
             public float ThrowRange = 8f;       // tiles
             public float WindUp;                // seconds before a throw leaves the hand (two-handed weapons: 1)
             public bool Blade = true, TwoHanded;
+            public float StuckX = float.NaN, StuckY;   // RT 7d: where the buried blade's cut line is on weapon_<Key>_stuck.png
         }
 
         // per weapon (by name); the rest get stats from their weight: the smaller, the faster it swings and flies
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
-            ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, Arc = 110f, ThrowSpeed = 13f, ThrowRange = 9f },
+            ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, Arc = 110f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
         };
         public static Stats For(Weapon w)
         {
@@ -45,7 +46,7 @@ namespace GameCore
 
         public class Flying { public Weapon W; public InventoryItem Item; public ICombatant By; public float X, Y, Dx, Dy, Left, Speed, H, Deg, Spin; public bool Blade; }
         public class Lodged { public InventoryItem Item; public int X, Y; public float Wx, Wy, Deg; }          // in cover: E pulls it out
-        public class Stuck { public InventoryItem Item; public ICombatant In; public float Since, Deg; public bool Pulling; }
+        public class Stuck { public InventoryItem Item; public ICombatant In; public float Since, Deg, Side; public bool Pulling; }   // Side: +1 = thrown from the left
         public class Lying { public GroundItem G; public float Wx, Wy, Deg; }                                // on the floor (a ground item)
         public static readonly List<Flying> Air = new List<Flying>();
         public static readonly List<Lodged> InCover = new List<Lodged>();
@@ -192,7 +193,7 @@ namespace GameCore
                     Air.RemoveAt(i);
                     var fx = CombatFx.Push("impact", f.By, hit.Unit, f.W); fx.Now = true; fx.Hit = true;   // blood, as for a round
                     Strike(f.By, f.W, hit.Unit, hit.Part, hit.Side, fx);
-                    if (f.Blade && hit.Unit.IsAlive()) InBodies.Add(new Stuck { Item = f.Item, In = hit.Unit, Since = now, Deg = f.Deg });
+                    if (f.Blade && hit.Unit.IsAlive()) InBodies.Add(new Stuck { Item = f.Item, In = hit.Unit, Since = now, Deg = f.Deg, Side = f.Dx >= 0f ? 1f : -1f });
                     else if (f.Blade && hit.Unit is HumanEnemy dead) dead.Inventory.Items.Add(f.Item);                  // in the corpse: loot it back
                     else { var (ux, uy) = Ballistics.Pos(hit.Unit); Drop(f.Item, ux, uy, f.Deg); }
                     continue;
@@ -250,6 +251,12 @@ namespace GameCore
             TerrainMap.GroundItems.Add(g);
             OnFloor.Add(new Lying { G = g, Wx = x, Wy = y, Deg = (Mathf.Cos(deg * Mathf.Deg2Rad) >= 0f ? 0f : 180f) + 15f });   // lying flat, a little askew
         }
+
+        /// <summary>RT 7d: how a blade sits in a body - the cut line of its "stuck" sprite on the chest, a little toward the thrower,
+        /// the edge in and the handle up and back toward them. (degrees, flip the sprite left-right, offset from the body's middle
+        /// in character px, x right / y down).</summary>
+        public static (float deg, bool flipX, float ox, float oy) StuckPose(float side) =>
+            side >= 0f ? (140f, true, -0.5f, -0.5f) : (-140f, false, 0.5f, -0.5f);
 
         static bool Open(int x, int y) => x >= 0 && y >= 0 && x < TerrainMap.Width && y < TerrainMap.Height
             && !TileRules.BlocksMovement(TerrainMap.GetTile(x, y).Type) && TerrainMap.CoverAcAt(x, y) == 0;

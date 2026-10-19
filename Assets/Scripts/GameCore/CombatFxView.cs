@@ -102,6 +102,18 @@ namespace GameCore
             var s = WeaponArt.For(item.Category ?? "melee", item.Key).sprite;            // turned round its middle, not its grip
             return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit);
         }
+        private readonly Dictionary<string, Sprite> _stuckSprites = new Dictionary<string, Sprite>();
+        private Sprite MeleeStuckSprite(InventoryItem item)
+        {
+            if (item?.Key == null) return null;
+            if (_stuckSprites.TryGetValue(item.Key, out var hit)) return hit;
+            var stats = Melee.Table.TryGetValue(item.Name ?? "", out var s) ? s : null;
+            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + item.Key + "_stuck");
+            if (tex == null || stats == null || float.IsNaN(stats.StuckX)) return _stuckSprites[item.Key] = null;
+            tex.filterMode = FilterMode.Point;
+            return _stuckSprites[item.Key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(stats.StuckX / tex.width, 1f - stats.StuckY / tex.height), WeaponArt.PixelsPerUnit);
+        }
+
         private void TickMelee()
         {
             var live = new HashSet<object>();
@@ -125,7 +137,11 @@ namespace GameCore
                 var m = _markerOf(b.In);
                 if (m == null) continue;
                 var p = m.transform.position;
-                Show(b, b.Item, p.x + 0.12f, p.y + 0.05f, b.Pulling ? b.Deg + 40f * Mathf.Sin(Time.time * 18f) : b.Deg, m.sortingOrder + 5);   // pulling: it wobbles out
+                // RT 7d: in the body - the buried half cut off (weapon_<Key>_stuck), the cut line on the chest, handle up toward the thrower
+                var (deg, flipX, ox, oy) = Melee.StuckPose(b.Side);
+                var st = MeleeStuckSprite(b.Item);
+                Show(b, b.Item, p.x + ox / 16f, p.y - oy / 16f, deg + (b.Pulling ? 12f * Mathf.Sin(Time.time * 18f) : 0f), m.sortingOrder + 5);   // pulling: it wrenches back and forth
+                if (_melee.TryGetValue(b, out var sr) && sr != null && st != null) { sr.sprite = st; sr.flipX = flipX; }
             }
             foreach (var g in Melee.OnFloor) Show(g, g.G.Item, g.Wx, -g.Wy - 0.3f, g.Deg, 2);
             foreach (var k in _melee.Keys.Where(k => !live.Contains(k)).ToList()) { if (_melee[k] != null) Object.Destroy(_melee[k].gameObject); _melee.Remove(k); }

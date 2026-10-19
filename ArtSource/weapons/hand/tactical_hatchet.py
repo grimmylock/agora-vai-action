@@ -64,6 +64,18 @@ if __name__ == "__main__":
     b = outline(reduce(img, length / 20.0, 32, 16))
     a = outline(reduce(img, length / 40.0, 64, 32))
     b.save(os.path.join(WEAP, "weapon_TacticalHatchet.png")); a.save(os.path.join(WEAP, "weapon_TacticalHatchet_hd.png"))
+    # RT 7d (Yan: "it kinda just glues itself to the enemy instead of being actually IN the enemy"): stuck in a body, only part of
+    # the head shows - the blade from row CUT down is buried; a line of blood where it goes in. The game puts the cut line on the
+    # body (WeaponMags-style point in Melee.StuckPoint).
+    CUT = 9
+    st = b.copy(); sp = st.load()
+    head = [x for x in range(st.width) if any(sp[x, y][3] and sp[x, y][:3] != K[:3] for y in range(CUT, st.height)) and x >= 19]
+    for y in range(CUT, st.height):
+        for x in range(min(head) - 1, max(head) + 2): sp[x, y] = (0, 0, 0, 0)      # the buried blade and its outline
+    for x in head:
+        if sp[x, CUT - 1][3]: sp[x, CUT - 1] = (122, 20, 20, 255) if x % 2 else (176, 32, 32, 255)
+    st.save(os.path.join(WEAP, "weapon_TacticalHatchet_stuck.png"))
+    print("stuck: cut line x", min(head), "-", max(head), "row", CUT - 0.5)
     src = Image.open(SRC).convert("RGBA"); bg = (46, 42, 34, 255)
     def tile(im, s): t = Image.new("RGBA", im.size, bg); t.alpha_composite(im); return t.resize((im.width * s, im.height * s), Image.NEAREST)
     parts = [tile(src, 4), tile(b, 10), tile(a, 5)]

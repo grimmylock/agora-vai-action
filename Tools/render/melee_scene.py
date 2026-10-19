@@ -48,6 +48,7 @@ def main(src, out):
     ai, acuff, aglove, ri, rcuff, rglove = d["armor"]
     you_b, foe_b = body(ai), body(ri)
     hatchet = Image.open(os.path.join(SPR, "Weapons/weapon_TacticalHatchet.png")).convert("RGBA")
+    stuck_img = Image.open(os.path.join(SPR, "Weapons/weapon_TacticalHatchet_stuck.png")).convert("RGBA")
     pistol = Image.open(os.path.join(SPR, "Weapons/weapon_PSh18Pchela.png")).convert("RGBA")
     splat = Image.open(os.path.join(SPR, "Fx/fx_blood_splat.png")).convert("RGBA")
     puff = Image.open(os.path.join(SPR, "Fx/fx_hit_blood.png")).convert("RGBA")
@@ -105,7 +106,10 @@ def main(src, out):
                 rx, ry = P(fx_, fy_)
                 lb = foe_b.rotate(90, expand=True).resize((16 * S, 16 * S), Image.NEAREST)
                 c.alpha_composite(lb, (round(rx - 8 * S), round(ry - 4 * S)))
-            if item and item[0] in ("air", "stuck"): paste(c, hatchet, (16, 8), P(item[1], item[2]), item[3])
+            if item and item[0] == "air": paste(c, hatchet, (16, 8), P(item[1], item[2]), item[3])
+            if item and item[0] == "stuck":                             # RT 7d: half buried, the cut line on his chest
+                paste(c, stuck_img.transpose(Image.FLIP_LEFT_RIGHT) if item[4] else stuck_img,
+                      (32 - 23.5 if item[4] else 23.5, 8.5), P(item[1], item[2]), item[3])
             # the blood puff, 0.2 s
             for bt, bx2, by2 in c0["blood"]:
                 if 0 <= i / 30 - bt < 0.2:
