@@ -71,6 +71,35 @@ armor; AP/HP ammo plug in here). Weight, wear, jams (d100 as now, 1% +2% per wea
 - Throwables: frag, smoke, flashbang; enemies throw them too and shout a warning first.
 - Anomalies as today; throw bolts (G) to find edges; a detector item beeps faster when close.
 
+## Melee (Yan, 2026-10-20)
+
+Melee's place: ambushes round corners, unseen camp massacres, parrying mutants - not open charges into gunfire.
+- **Every melee weapon can be thrown.** Smaller = faster swings and faster, longer throws. Thrown weapons fly (travel time,
+  spin, max range) and hit through the same body-part rules as bullets.
+- **Bladed weapons stick** where they hit: in wood, tin or cloth cover (pull it out with E), or in a body. A living enemy or
+  mutant pulls it out after a few seconds, spending 2-3 s doing it; then it lies on the floor. Stone, concrete and steel make it
+  bounce off onto the floor. **Blunt weapons never stick.**
+- **Every bladed weapon makes the target bleed** on a hit and on a throw that lands. **Blunt weapons concuss** (`Body.Concuss`).
+- **Two-handed weapons** are heavier: slower swings, more damage, shorter throws and a 1 s wind-up before a throw.
+- New perk **Flying Steel**: throws travel faster and further, and pulling a stuck blade out is quicker.
+
+| Weapon | Tier | Kind | Notes |
+|-|-|-|-|
+| Hunting Knife | 1 | knife | as is |
+| Spetsnaz Switchblade | 2 | knife | quicker draw than the others, flies faster when thrown |
+| Steppe Machete | 3 | blade | as is |
+| Serrated Trench Knife | 4 | knife | easier parry: a longer window |
+| Obelisk Ritual Blade | 5 | blade | as is, but a boss reward: one Master-rank Obelisk boss at an Obelisk stronghold on Tier 5 or 6 |
+| Hatchet | 2 | axe | wooden handle, plain axe head |
+| Fire Axe | 3 | axe, two-handed | red head, black handle |
+| Tactical Hatchet | 5 | axe | look after Leon's axe in RE9 (Yan sends a reference); found in a secret room of a Tier 4-5 lab (not the G-7 lab): break a wall, walk a long corridor; it's stuck in a corpse in black armour with a red visor (a nod only, no names from that game) |
+| Wooden Baseball Bat | 2 | blunt, two-handed | concussive |
+| Hammer | 3 | blunt, one-handed | faster swings, smaller reach, concussive |
+| Sledgehammer | 4 | blunt, two-handed | like the bat with more damage; breaks cover (not walls) |
+| Barbed Wire Bat | 5 (secret) | blunt, two-handed | bleeds and concusses; carried by a boss in a Tier 4 corner or dungeon, lore to settle (not regular Raider kit) |
+
+To-do (Yan): the Tactical Hatchet's corpse gets up when you take the hatchet and fights you in melee - you parry him with it.
+
 ## Weight and stamina
 
 Carried weight slows you and drains stamina faster (sprint, dive, melee). Looting becomes a choice.
