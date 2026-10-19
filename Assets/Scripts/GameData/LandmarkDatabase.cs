@@ -302,6 +302,12 @@ namespace GameData
                 L("Cave Mouth", "The entrance chamber, still lit by daylight from outside."),
             },
             // the map overhaul: Tier 1 dungeons (TierDungeons.cs)
+            ["testing_ground"] = new List<LandmarkDef>   // the menu's dev range (TestingGround.cs; the names are its constants)
+            {
+                L("Armory Crate", "Every weapon, suit and supply in the Zone, free for the taking. E to open."),
+                L("Spawner Terminal", "Puts any faction at any rank, or any mutant, on the range. E to use."),
+                L("Spawn Pad", "Where the terminal sends what you ask for."),
+            },
             ["chapel_crypt"] = new List<LandmarkDef>
             {
                 L("Crypt Stair", "Stone steps down from the chapel. The air smells of wet earth and something worse."),

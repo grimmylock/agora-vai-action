@@ -72,6 +72,8 @@ namespace GameCore
                 gameObject.AddComponent<CorpseLootUI>();
             // New (Batch 6): the quest journal - QuestSystem existed but nothing ever showed
             // available/active quests or let the player accept one. Same self-building convention.
+            if (GetComponent<TestingGroundUI>() == null)
+                gameObject.AddComponent<TestingGroundUI>();
             if (GetComponent<QuestUI>() == null)
                 gameObject.AddComponent<QuestUI>();
             if (GetComponent<WorldUI>() == null)
@@ -111,7 +113,7 @@ namespace GameCore
         /// death restart can call the exact same path instead of duplicating it. Doesn't touch
         /// GameServices or the MonoBehaviour components (TacticalGridView etc.) - those don't need
         /// recreating, they already read everything fresh from the statics reset here.</summary>
-        public static void StartNewGame(CharacterSpec spec = null)
+        public static void StartNewGame(CharacterSpec spec = null, string startZone = null)
         {
             spec = spec ?? new CharacterSpec();
             GameState.Current = new GameState();
@@ -158,6 +160,12 @@ namespace GameCore
             if (!string.IsNullOrEmpty(spec.Perk)) player.TakePerk(spec.Perk);
             player.ApplyCarryEffects();
 
+            if (startZone != null)   // the Testing Ground: its own map, never seeded with squads or anomalies
+            {
+                MacroState.Current.CurrentZoneId = startZone;
+                MacroState.Current.PopulatedZones.Add(startZone);
+                MacroState.Current.PersistedZoneAnomalies[startZone] = new System.Collections.Generic.List<Anomaly>();
+            }
             ZoneTravel.EnterZone(MacroState.Current.CurrentZoneId);
             SquadManager.SeedWorld();               // Batch 41: the rest of the Zone is populated from the start (after a map is loaded)
             GameLog.Write($"You step into the Perimeter: a Rookie {spec.Loadout.ToLowerInvariant()} with {player.Ru} Ru. P shows your character, W the state of the Zone.");

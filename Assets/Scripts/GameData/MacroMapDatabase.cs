@@ -92,6 +92,7 @@ namespace GameData
             // Tier 1 dungeons (TierDungeons.cs): found by walking up to them, not by a roll
             new ZoneDef { Id = "chapel_crypt", Name = "Chapel Crypt", Tier = 1, BaseHazardModifier = 1, ConnectedZones = { "perimeter" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             // Batch 120: upper floors of buildings, their own small maps (TierDungeons.Upstairs, ArtSource/plans/house_plans.py)
+            new ZoneDef { Id = "testing_ground", Name = "Testing Ground", Tier = 1, BaseHazardModifier = 0 },   // the menu's dev range (TestingGround.cs): no exits, no factions
             new ZoneDef { Id = "farmhouse_upper", Name = "Farmhouse - Upstairs", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter" }, IsDungeon = true, Upstairs = true },
             new ZoneDef { Id = "school_upper", Name = "School - First Floor", Tier = 4, BaseHazardModifier = 2, ConnectedZones = { "ghost_town" }, IsDungeon = true, Upstairs = true },
             new ZoneDef { Id = "flats_2", Name = "The Flats - Second Floor", Tier = 4, BaseHazardModifier = 2, ConnectedZones = { "ghost_town", "flats_3" }, IsDungeon = true, Upstairs = true },

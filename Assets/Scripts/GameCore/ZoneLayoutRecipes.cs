@@ -91,6 +91,7 @@ namespace GameCore
                 ["underground_labyrinth"] = TierDungeons.Lab("underground_labyrinth", "cliff", CaveFloor, "The Fork", "Cave-In Chamber", "quarry_basin"),   // Batch 100: a plan
                 ["secret_lab_gamma"] = TierDungeons.Lab("secret_lab_gamma", "concrete", LabTile, "Signal Room", "Sealed Vault", "antenna_grid"),   // Batch 92: a floor plan
                 ["lattice_foundry"] = TierDungeons.LatticeUpper(),         // Batch 91: floor plans (TierDungeons.Plans.cs)
+                [TestingGround.Zone] = TestingGround.Map(),   // the menu's testing ground
                 ["farmhouse_upper"] = TierDungeons.Upstairs("farmhouse_upper", "wall", "perimeter"),   // Batch 120: upper floors
                 ["school_upper"] = TierDungeons.Upstairs("school_upper", "wall", "ghost_town"),
                 ["flats_2"] = TierDungeons.Upstairs("flats_2", "plaster", "ghost_town", "flats_3"),

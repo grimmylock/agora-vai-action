@@ -9,6 +9,7 @@ namespace GameCore
         /// <summary>Ported from attemptInteract(unit).</summary>
         public static void AttemptInteract(ICombatant unit)
         {
+            if (unit is Player tester && TestingGround.TryInteract(tester)) return;   // the testing ground's crate and terminal
             if (GameState.Current.CurrentTurn != Turn.Player)
             {
                 GameLog.Write("Cannot interact outside your turn.");

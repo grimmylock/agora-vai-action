@@ -29,6 +29,7 @@ static class Program {
     Batch72Checks();
     RaidChecks();
     RtChecks();
+    TestingGroundChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -417,6 +418,7 @@ static class Program {
       MacroState.Current.PersistedZoneTerrain.Remove(zone.Id);
       foreach (var h in zone.HiddenConnections ?? new System.Collections.Generic.List<string>()) if (!MacroState.Current.DiscoveredHiddenNodes.Contains(h)) MacroState.Current.DiscoveredHiddenNodes.Add(h);
       TerrainMap.BuildTerrainForZone(zone.Id);
+      if (zone.Id == TestingGround.Zone) continue;   // the menu's dev range: walled in on purpose (its own check below)
       if (TerrainMap.Exits.Count == 0) { Check(false, zone.Id + " has no exits"); continue; }
       var start = (TerrainMap.Exits[0].X, TerrainMap.Exits[0].Y);
       var seen = new System.Collections.Generic.HashSet<(int, int)> { start };
@@ -809,6 +811,27 @@ static class Program {
     var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
     sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
     System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
+  }
+
+  static void TestingGroundChecks() {
+    // the Testing Ground: from the menu you land on the range alone, gear and enemies on demand
+    { TestingGround.Start(); var tp = Player.Current;
+      Check(TerrainMap.ZoneId == TestingGround.Zone && EncounterState.Enemies.Count == 0 && EncounterState.Anomalies.Count == 0
+        && new[] { TestingGround.Armory, TestingGround.Spawner, TestingGround.Pad }.All(n => TerrainMap.Landmarks.Any(l => l.Name == n)),
+        $"testing ground: you arrive alone ({EncounterState.Enemies.Count} enemies, {EncounterState.Anomalies.Count} anomalies) with the crate, terminal and pad");
+      var pad = TerrainMap.Landmarks.First(l => l.Name == TestingGround.Pad);
+      Check(Pathfinding.FindPath(tp.X, tp.Y, pad.X, pad.Y, tp) != null, "testing ground: the pad can be walked to");
+      var gun = ShopDatabase.Items.First(d => d.Type == "weapon" && d.Key == "VKS74U");
+      TestingGround.Take(tp, gun, true); TestingGround.RefillAmmo(tp);
+      Check(tp.EquippedWeapon?.Db?.Name == gun.Name && Ammo.Get(tp.Inventory, Ammo.Key(tp.EquippedWeapon.Db, "ArmorPiercing")) == 300, $"testing ground: the crate hands over a gun ({tp.EquippedWeapon?.Name}) and ammo");
+      var men = TestingGround.SpawnHumans(tp, "Garrison", "Veteran", 3, false, true);
+      var dogs = TestingGround.SpawnMutants(tp, TestingGround.AllMutants().First(), 2, true, false);
+      Check(men.Count == 3 && men.All(m => System.Math.Abs(m.X - pad.X) <= 4 && m.IsAggroed && !EnemyAI.FriendlyToPlayer(m)) && dogs.All(d => !d.IsAggroed && System.Math.Abs(d.X - tp.X) <= 11)
+        && EncounterState.Enemies.Count == 5 && EncounterState.InCombat, "testing ground: 3 hostile Veterans on the pad, 2 unaware mutants near you");
+      TestingGround.Clear();
+      Check(EncounterState.Enemies.Count == 0, "testing ground: cleared");
+      Check(TestingGround.AllMutants().Count() > 5 && ShopDatabase.Items.Count(d => d.Type == "weapon") > 20, "testing ground: every mutant and weapon is on offer");
+    }
   }
 
   static void RtChecks() {

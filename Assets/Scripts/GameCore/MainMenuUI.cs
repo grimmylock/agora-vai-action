@@ -96,8 +96,9 @@ namespace GameCore
 
             Item(col.transform, 0, "New Game", OnNewGame);
             _loadButton = Item(col.transform, 1, "Load Game", OnLoadGame);
-            Item(col.transform, 2, "Options", ToggleOptions);
-            Item(col.transform, 3, "Quit", OnQuit);
+            Item(col.transform, 2, "Testing Ground", () => { Hide(); TestingGround.Start(); });
+            Item(col.transform, 3, "Options", ToggleOptions);
+            Item(col.transform, 4, "Quit", OnQuit);
 
             // where you are and when: the menu's own clock (MenuBackdrop) ticking along
             Text(col.transform, "Place", new Vector2(0.1f, 0.09f), new Vector2(0.95f, 0.125f), "BONFIRE VILLAGE", true, 16, HudView.Cream);

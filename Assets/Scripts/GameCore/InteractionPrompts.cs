@@ -27,6 +27,8 @@ namespace GameCore
             {
                 if (D(p, l.X, l.Y) > 2) continue;
                 if (l.Name == GarrisonRaid.Armory && GarrisonRaid.InBase(p)) Add(l.X, l.Y, "E", "Armory");
+                if (TestingGround.Here && l.Name == TestingGround.Armory) Add(l.X, l.Y, "E", "Armory: any gear");
+                if (TestingGround.Here && l.Name == TestingGround.Spawner) Add(l.X, l.Y, "E", "Spawn enemies");
                 if (l.Name == G7Lab.Machine && MacroState.Current.CurrentZoneId == G7Lab.Zone) Add(l.X, l.Y, "E", "Feed the synthesizer");
             }
             // F: an anomaly you can comb for an artifact

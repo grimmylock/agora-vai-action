@@ -3454,3 +3454,18 @@ starts charging it, letting go throws it."
   boundary (`Ballistics.Trace` skips bodies under 0.05 from the start - the flight now traces from a step back).
 - Checks: a tap vs a held swing (damage x1.5+), a flick of RMB throws nothing, a longer hold throws farther. Renders:
   `maps/renders/melee/` (`melee_swing.gif` tap then charged, `melee_throw.gif`, `melee_throw_closeup.png`).
+
+### RT 7f - Testing Ground on the main menu (2026-10-20)
+
+Yan: "can you configure an option at the menu for a ''testing ground'' with enemy spawners and chests with all the loot for testing
+and stuff". A dev range, outside the living world (no exits, no factions, never seeded with squads or anomalies):
+- Main menu "Testing Ground" -> `TestingGround.Start`: a fresh Scavenger on a 64x40 walled range (`TestingGround.Map`), 999,999 Ru,
+  +500 kg carry, every faction hostile so what you spawn fights you. `GameBootstrap.StartNewGame` takes a start zone for it.
+- West yard: the **Armory Crate** (E): every weapon, armor and supply in `ShopDatabase`, free - Take or Equip (equipping a gun
+  fills its ammo). The **Spawner Terminal** (E): any faction at any rank (1/3/5/8 of them), or any mutant; aware of you or not;
+  on the **Spawn Pad** 50 tiles east, or 8 tiles in front of you. Every page: Refill ammo (300 of each kind for every gun you
+  carry, full mags), Heal (gets you up, stops bleeding), Clear range. Panel: `TestingGroundUI` (pages, no scroll).
+- Between them, three lanes: sandbags and concrete blocks; crates, desks to tip, rust barrels and one explosive barrel; a fence
+  with a gap, brush, and a hut with a door and windows. Render: `maps/renders/testing_ground/testing_ground.png`.
+- Check (`TestingGroundChecks`): you arrive alone, the pad is walkable, the crate gives a gun and ammo, spawns land where asked
+  with the right awareness, clear empties it.
