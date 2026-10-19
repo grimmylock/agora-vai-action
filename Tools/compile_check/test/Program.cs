@@ -26,6 +26,7 @@ static class Program {
     FightSim(args);
     Batch72Checks();
     RaidChecks();
+    RtChecks();
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
     foreach (var kv in FactionArmorDatabase.Lines)
@@ -704,6 +705,39 @@ static class Program {
       if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
     p.StartTurn(); p.HealPermanent(100);
     return p;
+  }
+
+  // Real-time fork, batch 1: rounds trace over the ground; the crosshair's height picks the part, from any side; cover by height
+  static void RtChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
+    var r = new HumanEnemy("Raider", px + 6, py, "Raiders", "Rookie", rw, ra) { IsAggroed = true };
+    EncounterState.Enemies.Add(r);
+    string PartAt(ICombatant from, ICombatant to, float h) {
+      var (x0, y0) = Ballistics.Pos(from); var (x1, y1) = Ballistics.Pos(to); float dx = x1 - x0, dy = y1 - y0, l = (float)Math.Sqrt(dx * dx + dy * dy);
+      var hit = Ballistics.Trace(from, x0, y0, dx / l, dy / l, 40f, h, Gunplay.Bodies()); return hit.Unit == to ? hit.Part : hit.Cover ? "cover" : hit.Wall && hit.Dist < l ? "wall" : "miss"; }
+    foreach (var (ox, oy, side) in new[] { (6, 0, "side"), (0, -6, "above"), (0, 6, "below"), (4, -4, "diagonal") }) {
+      r.X = px + ox; r.Y = py + oy;
+      Check(PartAt(p, r, 0.8f) == "Head" && PartAt(p, r, 0.45f) == "Torso" && PartAt(p, r, 0.1f) == "Legs" && PartAt(p, r, 1.05f) == "miss",
+        $"you shooting a raider {side}: head {PartAt(p, r, 0.8f)}, chest {PartAt(p, r, 0.45f)}, legs {PartAt(p, r, 0.1f)}, over {PartAt(p, r, 1.05f)}");
+      Check(PartAt(r, p, 0.8f) == "Head" && PartAt(r, p, 0.1f) == "Legs", $"the raider {side} shooting you: head {PartAt(r, p, 0.8f)}, legs {PartAt(r, p, 0.1f)}");
+    }
+    r.X = px + 6; r.Y = py;
+    TerrainMap.SetTileType(px + 5, py, TileType.HardCover);
+    Check(PartAt(p, r, 0.45f) == "cover" && PartAt(p, r, 0.8f) == "Head", $"low concrete in front of him: chest stopped ({PartAt(p, r, 0.45f)}), head over it ({PartAt(p, r, 0.8f)})");
+    Check(PartAt(r, p, 0.45f) == "Torso", $"he fires over his own cover ({PartAt(r, p, 0.45f)})");
+    TerrainMap.SetTileType(px + 5, py, TileType.ScatterCover);
+    var through = Ballistics.Trace(p, px + 0.5f, py + 0.5f, 1f, 0f, 40f, 0.3f, Gunplay.Bodies());
+    Check(through.Unit == r && through.Through < 1f, $"wood lets a round through at half damage ({through.Unit?.Name}, x{through.Through})");
+    TerrainMap.SetTileType(px + 5, py, TileType.Solid);
+    Check(PartAt(p, r, 0.8f) == "wall", "a wall stops it");
+    TerrainMap.SetTileType(px + 5, py, TileType.Empty);
+    p.Sneaking = true; Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.6f) == "Head", "crouching: a head-height round goes over you"); p.Sneaking = false;
+    // the old turn AI's gunfire becomes real rounds
+    int hits = 0, n = 40;
+    for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); if (p.Hp < p.MaxHp) hits++; }
+    Check(hits > 4 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");
+    EncounterState.Enemies.Clear(); Rt.On = false; Rt.Reset(); p.Hp = p.MaxHp;
   }
 
   // Batch 87: the Garrison raid - fighting in the Siege Ward brings 2 more waves (the last led by a boss), then the armory opens

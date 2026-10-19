@@ -26,6 +26,10 @@ namespace GameCore
         public bool Killed;            // this hit killed the target (Batch 24: the view starts the ragdoll then)
         public int Overkill;           // damage past the target's remaining HP; big overkill = gibs
         public int FromX, FromY, ToX, ToY;
+        // Real-time fork: a round resolved now (Gunplay) plays at once, not queued a beat apart behind the turn's other events;
+        // it ends exactly where the round stopped (tile space, y down). Pellet = a shotgun's extra pellet: tracer only.
+        public bool Now, Pellet;
+        public float Delay, EndX = -1f, EndY = -1f;
     }
 
     public static class CombatFx
@@ -42,6 +46,9 @@ namespace GameCore
         }
         // ponytail: nothing drains the queue without a view (tests, headless); cap it instead.
         private const int Cap = 64;
+
+        /// <summary>Real-time fork: queue an event built by the caller (Gunplay).</summary>
+        public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); }
 
         public static FxEvent Push(string kind, ICombatant actor, ICombatant target, Weapon weapon = null)
         {

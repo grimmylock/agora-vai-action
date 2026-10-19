@@ -1,18 +1,24 @@
-# agora vai — handoff for Claude Code
+# agora vai (real-time fork) — handoff for Claude Code
 
-A turn-based, top-down (3/4 view) 2D open-world survival game in Unity, like S.T.A.L.K.E.R.: no raids
-and no hideout, with a semi A-Life world (`SquadManager`, `WorldEvents`). Zero Sievert inspires the
-graphics only; Roadside Picnic the setting. Yan owns it and decides on design and art. Everything was
-built with Claude (96 batches so far). The full history is in `ArtSource/WORK_LOG.md`:
-read its top section and the last batches (35-108) before changing anything. This file was last
-updated at Batch 108 (2026-10-15).
+**This repo is the REAL-TIME fork** (`grimmylock/agora-vai-action`, created 2026-10-19). It was copied from the
+turn-based game at Batch 131f (`grimmylock/agora-vai123`, branch `turn-based-fallback`, commit af02b98), which stays
+frozen and continues separately on `tier-maps`. The plan agreed with Yan is **`ACTION_DESIGN.md`**: read it first.
+`main` here is the untouched starting snapshot; work goes on branches (now `realtime-proto`). Everything below the
+real-time section describes the inherited turn-based game, most of which still runs underneath.
 
-- Unity **6000.5.6f1**, URP 2D (Global Light 2D in the scene), new Input System, TextMeshPro, uGUI.
-- Project root: `C:\Users\yan-s\Desktop\agora vai\agora vai\` (this file sits there).
-- Version control: Unity Version Control (Plastic, `.plastic/`). `Backups/` holds older per-batch copies.
-  The project folder is **also a git repo** (`grimmylock/agora-vai123` on GitHub, private) so cloud
-  sessions can work on it: Plastic stays Yan's main VCS, git is how files travel. Cloud work goes on a
-  branch; Yan pulls it with GitHub Desktop.
+## Real-time fork: where things are (RT batches, logged in `ArtSource/WORK_LOG.md`)
+
+- `Rt.On` (set in `PlayerController.Awake`) switches the game to real time; the offline harness leaves it off, so the
+  old turn-based probes and checks still run. `RtChecks()` in `Tools/compile_check/test/Program.cs` tests the new parts.
+- `Rt.cs`: your movement (free within and across tiles; crossing a tile is a real step via `PlayerController.StepFree`),
+  stamina, aiming, firing, reload timers, camera look-ahead, ESC pause; `Rt.WorldTick` runs enemies in a fight on timers
+  (each takes an old `EnemyAI.TakeTurn` every ~3 s - the bridge until RT batch 4) and a 6 s upkeep round.
+- `Ballistics.cs`: a round is a line over the ground; bodies are footprints; the crosshair's height on the sprite picks the
+  part (head/torso/arm/legs), spread scatters sideways and up/down; low cover blocks by height, walls stop rounds.
+- `Gunplay.cs`: per-class handling (spread, steadying, kick, recovery, rate, reach, reload), `Shoot` / `Resolve` (damage
+  through the old armor math), `NpcShoot` (NPC gunfire from `Weapon.Fire` becomes real rounds when `Rt.On`).
+- Views: `UnitMotionView.Place` draws the player where it really is (`Rt.Free`), `TacticalGridView.StandOffset` reads
+  `Rt.Offset`, `TacticalGridView.Reticle` draws the spread crosshair, `CombatFxView` plays `FxEvent.Now` rounds at once.
 
 ## Hard rules (Yan's)
 
@@ -304,7 +310,7 @@ lost with the old cloud session):
 
 ## Working from a cloud session
 
-- Clone `grimmylock/agora-vai123` (private; the session needs it attached), work on a branch, push it;
+- Clone `grimmylock/agora-vai-action` (private; the session needs it attached), work on a branch, push it;
   Yan pulls in GitHub Desktop. Never push to `main` without Yan.
 - `apt-get install -y dotnet-sdk-8.0` for the harness and `Tools/render/render.sh`; python3 with numpy and
   pillow is there already. `pack.py` writes `__pycache__` (gitignored).

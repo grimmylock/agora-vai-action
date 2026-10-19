@@ -1,0 +1,220 @@
+// Real-time fork, batch 1 (ACTION_DESIGN.md): the game runs on the clock instead of turns.
+//  - You: WASD moves you freely inside and across tiles (walls collide), Shift sprints on stamina, Ctrl crouches (the old
+//    sneak), right mouse aims (slower, steadier, the camera looks further), left mouse fires (held for automatics), R reloads
+//    over the gun's reload time (again: clears a jam). Your tile still drives the rules underneath (X/Y, exits, anomalies).
+//  - Enemies (bridge until RT batch 4): each one in a fight takes an old-style turn every ~3 s (EnemyAI.TakeTurn): it moves
+//    and its gunfire becomes real rounds (Weapon.Fire -> Gunplay.NpcShoot). Melee and mutant strikes still use the old rolls.
+//  - Every 6 s of fighting counts as a round for upkeep: bleeding, status effects, radio calls, the fight ending.
+//  - The world clock always runs (exploring and fighting alike): a game minute every 1/4.2 s, as Batch 67's exploring clock.
+// Rt.On is false in the offline harness (its fight probes stay turn-based) and true in the game (PlayerController.Awake).
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace GameCore
+{
+    public static class Rt
+    {
+        public static bool On, Paused;
+
+        // ---- where each unit stands inside its tile (tile space, y down; within +-0.5) ----
+        static readonly Dictionary<ICombatant, (float x, float y)> Off = new Dictionary<ICombatant, (float, float)>();
+        public static (float x, float y) Offset(ICombatant u)
+        {
+            if (u != null && Off.TryGetValue(u, out var o)) return o;
+            if (u == null || u is Player) return (0f, 0f);
+            int h = u.GetHashCode() * 73856093;                      // NPCs: the fixed spot of Batch 114
+            return (((h & 255) / 255f - 0.5f) * 0.55f, -(((h >> 8) & 255) / 255f - 0.5f) * 0.4f);
+        }
+        public static void SetOffset(ICombatant u, float x, float y) => Off[u] = (x, y);
+        public static bool Free(ICombatant u) => On && u is Player;   // drawn where it really is, no tile-to-tile walk
+
+        // ---- tuning (tiles a second; stamina points) ----
+        public const float Walk = 2.6f, Sprint = 4.4f, Crouch = 1.3f, AimSlow = 0.65f;
+        public const float StaminaMax = 100f, SprintDrain = 18f, StaminaRegen = 14f;
+        public const float Radius = 0.22f;
+        public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;
+
+        public static float Stamina = StaminaMax;
+        static float _staminaRest;
+        public static bool Aiming;
+        public static int Moving;                                     // 0 still, 1 walking, 2 sprinting
+        public static Vector3 Look;                                   // camera look-ahead (world), eased by TacticalGridView
+        static float _round;
+        static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
+
+        public static void Reset() { Paused = false; Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Stamina = StaminaMax; _round = 0f; }
+
+        /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
+        /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
+        public static void MoveBy(Player p, float dx, float dy)
+        {
+            var (ox, oy) = Offset(p);
+            float x = p.X + 0.5f + ox, y = p.Y + 0.5f + oy;
+            if (dx != 0f && Clear(x + dx, y)) x += dx;
+            if (dy != 0f && Clear(x, y + dy)) y += dy;
+            int tx = Mathf.FloorToInt(x), ty = Mathf.FloorToInt(y);
+            if (tx != p.X || ty != p.Y)
+            {
+                p.Mp = System.Math.Max(p.Mp, TurnLoop.WalkMp); p.Ap = System.Math.Max(p.Ap, p.MaxAp);
+                int bx = p.X, by = p.Y;
+                PlayerController.StepFree(p, tx - p.X, ty - p.Y);
+                if (p.X == bx && p.Y == by) return;                       // refused: someone stands there
+                if (p.X != tx || p.Y != ty) { SetOffset(p, 0f, 0f); return; }   // thrown elsewhere (an anomaly) or a new map (an exit)
+            }
+            SetOffset(p, x - (p.X + 0.5f), y - (p.Y + 0.5f));
+        }
+
+        /// <summary>The body's circle fits: every tile it overlaps is walkable.</summary>
+        static bool Clear(float x, float y)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                float cx = x + (i % 2 == 0 ? -Radius : Radius), cy = y + (i < 2 ? -Radius : Radius);
+                if (!TerrainMap.CanEnterTile(Mathf.FloorToInt(cx), Mathf.FloorToInt(cy))) return false;
+            }
+            return true;
+        }
+
+        /// <summary>Your controls, once a frame. False = nothing to do (a panel is open).</summary>
+        public static void PlayerTick(Player p, Keyboard k, Mouse m)
+        {
+            float dt = Time.deltaTime;
+            p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: AP/MP only gate old actions
+
+            // ---- moving ----
+            float ix = (k.dKey.isPressed || k.rightArrowKey.isPressed ? 1 : 0) - (k.aKey.isPressed || k.leftArrowKey.isPressed ? 1 : 0);
+            float iy = (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0) - (k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0);
+            p.Sneaking = k.leftCtrlKey.isPressed;
+            Aiming = m != null && m.rightButton.isPressed;
+            bool wantSprint = k.leftShiftKey.isPressed && !p.Sneaking && !Aiming && (ix != 0 || iy != 0);
+            bool sprint = wantSprint && Stamina > 1f;
+            if (sprint) { Stamina = Mathf.Max(0f, Stamina - SprintDrain * dt); _staminaRest = 0.8f; }
+            else if ((_staminaRest -= dt) <= 0f) Stamina = Mathf.Min(StaminaMax, Stamina + StaminaRegen * dt);
+            float speed = sprint ? Sprint : p.Sneaking ? Crouch : Walk;
+            if (Aiming) speed *= AimSlow;
+            if (p.StatusEffects.Wound == "Leg") speed *= 0.6f;
+            if (p.StatusEffects.Prone) speed = 0f;
+            float l = Mathf.Sqrt(ix * ix + iy * iy);
+            Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
+            if (Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
+
+            // ---- aiming and firing ----
+            var w = p.EquippedWeapon;
+            var aim = Gunplay.AimOf(p);
+            var hd = Gunplay.For(w);
+            Gunplay.Tick(hd, aim, Aiming, Moving, dt);
+            var mw = MouseTile(m);
+            if (aim.ReloadUntil >= 0f && Time.time >= aim.ReloadUntil)
+            {
+                aim.ReloadUntil = -1f;
+                if (w != null) { if (w.IsJammed) w.ClearJam(); else p.ReloadWeapon(); }
+            }
+            if (k.rKey.wasPressedThisFrame && w != null && aim.ReloadUntil < 0f && !CombatRules.IsMelee(w)
+                && (w.IsJammed || w.CurrentMagazine < w.MagCapacity))
+            {
+                float t = w.IsJammed ? 0.8f : hd.ReloadTime * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f);
+                aim.ReloadUntil = Time.time + t;
+                GameLog.Write(w.IsJammed ? "Clearing the jam..." : "Reloading...");
+            }
+            bool trigger = m != null && (hd.Auto ? m.leftButton.isPressed : m.leftButton.wasPressedThisFrame);
+            if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
+
+            // ---- camera looks toward the mouse; further when aiming, further still with a long gun ----
+            if (mw.HasValue)
+            {
+                var (px, py) = Ballistics.Pos(p);
+                float reach = Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
+                Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
+            }
+        }
+
+        static void PlayerFire(Player p, Weapon w, Handling hd, Gunplay.Aim aim, (float x, float y) at)
+        {
+            aim.NextShot = Time.time + 60f / hd.Rpm;
+            if (CombatRules.IsMelee(w)) return;                      // ponytail: melee is RT batch 3 (shoulder charge, parry)
+            if (w.IsJammed) { CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} is jammed - R to clear it."); return; }
+            if (w.CurrentMagazine <= 0) { Sfx.Play("dryfire", TacticalGridView.GridToWorld(p.X, p.Y)); return; }
+            w.CurrentMagazine--;
+            if (CombatRules.Jams(CombatRules.RollJam(), w)) { w.IsJammed = true; CombatRules.DegradeOnJam(w); CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} jams!"); return; }
+            var (px, py) = Ballistics.Pos(p);
+            float dx = at.x - px, dy = at.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
+            if (len < 0.05f) return;
+            var over = UnitUnder(at.x, at.y);
+            float h = Ballistics.AimHeight(over, at.y);
+            int mx = Mathf.FloorToInt(at.x), my = Mathf.FloorToInt(at.y);
+            if (over == null && TerrainMap.CoverAcAt(mx, my) > 0 && !TerrainMap.BlocksSight(mx, my)) h = 0.3f;   // a barrel, sandbags, a desk: shoot the thing itself
+            // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
+            if (over != null) { var (ux, uy) = Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
+            bool ambush = over is Mutant u && !u.IsAggroed;
+            if (!EncounterState.InCombat) Contact.ShotFrom(p);
+            float spread = Gunplay.Spread(hd, aim, Moving, p.Sneaking);
+            if (p.StatusEffects.Wound == "Arm") spread += 1.5f;
+            if (p.StatusEffects.Suppressed) spread += 2f;
+            Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
+            aim.Bloom += hd.Kick;
+            if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
+            TurnLoop.CheckCombatEnd();
+        }
+
+        /// <summary>The living unit whose sprite the point (tile space) is over, if any - the nearest one.</summary>
+        public static ICombatant UnitUnder(float x, float y)
+        {
+            ICombatant best = null; float bd = 9f;
+            foreach (var u in Gunplay.Bodies())
+            {
+                if (u is Player || !u.IsAlive() || !Vision.Shows(u)) continue;
+                var (ux, uy) = Ballistics.Pos(u);
+                float tall = u is Mutant mm && !(u is HumanEnemy) ? Ballistics.MutantSize(mm) : 1f;
+                // the sprite covers half a tile each side and from its feet up to its crown
+                if (System.Math.Abs(x - ux) > 0.45f * tall || y > uy + 0.5f || y < uy + 0.44f - Ballistics.BodyTiles * tall - 0.1f) continue;
+                float d = System.Math.Abs(x - ux) + System.Math.Abs(y - uy);
+                if (d < bd) { bd = d; best = u; }
+            }
+            return best;
+        }
+
+        public static (float x, float y)? MouseTile(Mouse m)
+        {
+            if (m == null || Camera.main == null || GameState.Current.ModalOpen) return null;
+            var w = Camera.main.ScreenToWorldPoint(m.position.ReadValue());
+            return (w.x, -w.y);
+        }
+
+        /// <summary>The world, once a frame: enemies in a fight act on their own timers, rounds tick over.</summary>
+        public static void WorldTick(Player p)
+        {
+            float now = Time.time;
+            var grid = GameServices.Grid;
+            if (grid == null) return;
+            foreach (var e in EncounterState.Enemies.ToList())
+            {
+                if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
+                bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
+                if (!fighting) { NextTurn.Remove(e); continue; }
+                if (!NextTurn.TryGetValue(e, out var at)) { NextTurn[e] = now + Random.Range(0.5f, 1.3f); continue; }   // reaction time
+                if (now < at) continue;
+                NextTurn[e] = now + NpcTurnSeconds * Random.Range(0.85f, 1.15f);
+                try
+                {
+                    if (Companion.Is(e)) { Companion.Act(p, grid, true); continue; }
+                    if (Companion.TakesFire(e, p, grid)) continue;
+                    EnemyAI.TakeTurn(e, p);
+                }
+                catch (System.Exception ex) { Debug.LogException(ex); }
+                if (!p.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }
+                Perks.TryAdrenaline(p);
+            }
+            if (!EncounterState.InCombat) { _round = 0f; return; }
+            if ((_round += Time.deltaTime) < RoundSeconds) return;
+            _round = 0f;
+            EnemyAI.BeginEnemyRound(p);
+            p.EndTurn(); p.StartTurn();
+            AnomalyEngine.ProcessTurnStart(p);
+            if (p.IsAlive()) Contact.EndRound(p);
+            TurnLoop.CheckCombatEnd();
+            if (EncounterState.InCombat) TurnLoop.RadioForHelp();
+        }
+    }
+}

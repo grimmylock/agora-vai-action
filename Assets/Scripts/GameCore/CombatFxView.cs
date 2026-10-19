@@ -71,6 +71,7 @@ namespace GameCore
             foreach (var e in CombatFx.Pending)
             {
                 if (e.Killed && e.Target != null) _dying.Add(e.Target);
+                if (e.Now) { var rt = e; At(now + e.Delay, () => Play(rt)); continue; }   // real-time fork: no queue, no waiting for walkers
                 float start = Mathf.Max(now, _nextFree);
                 float gap = e.Kind == "shot" ? 0.14f + 0.07f * (e.Rounds - 1) : e.Kind == "reload" ? 0.15f : 0.22f;
                 if (_nextFree - now > 1.2f) gap *= 0.4f;            // a big enemy turn: catch up instead of lagging
@@ -155,6 +156,7 @@ namespace GameCore
             Vector3 from = marker != null ? marker.transform.position : TacticalGridView.GridToWorld(e.FromX, e.FromY);
             var targetMarker = e.Target != null ? _markerOf(e.Target) : null;
             Vector3 to = targetMarker != null ? targetMarker.transform.position : TacticalGridView.GridToWorld(e.ToX, e.ToY);
+            if (e.EndX >= 0f) to = new Vector3(e.EndX, -e.EndY, 0f);   // real-time fork: where the round really stopped
             var (dx, dy) = Dir(from, to);
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
@@ -206,9 +208,27 @@ namespace GameCore
         private void SubShot(FxEvent e, WeaponFeel feel, HeldWeaponView held, Vector3 from, Vector3 to, int i)
         {
             if (held != null && !held.Visible) held = null;
-            held?.Recoil(feel, i == 0 ? 1f : 0.7f);
             Vector3 muzzle = held != null ? held.Muzzle() : from;
             bool last = i == e.Rounds - 1;
+            if (e.Now)
+            {
+                // real-time fork: one real round. Flash, sound and casing once a trigger pull; the tracer to where it stopped.
+                if (!e.Pellet)
+                {
+                    held?.Recoil(feel, 1f);
+                    Sfx.Play(Sfx.Shot(e.Weapon?.Db, feel), muzzle, feel.Flash == 0 ? 0.35f : 1f, 0.07f, feel.Flash == 0 ? 1.35f : 1f);
+                    if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);
+                    else if (feel.Flash == 0) Puff("fx_muzzle_puff", muzzle, 0.3f, 0.3f);
+                    else Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
+                    if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
+                }
+                Tracer(muzzle, to, feel);
+                float rx = to.x - muzzle.x, ry = to.y - muzzle.y, rl = Mathf.Max(0.01f, Mathf.Sqrt(rx * rx + ry * ry));
+                if (e.CoverHit || e.Through) CoverImpact(e, rx / rl, ry / rl);
+                if (e.Hit && e.Target != null) Wound(e, to, rx / rl, ry / rl, false);
+                return;
+            }
+            held?.Recoil(feel, i == 0 ? 1f : 0.7f);
 
             Sfx.Play(Sfx.Shot(e.Weapon?.Db, feel), muzzle, feel.Flash == 0 ? 0.35f : 1f, 0.07f, feel.Flash == 0 ? 1.35f : 1f);   // suppressed: quieter, thinner
             if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);

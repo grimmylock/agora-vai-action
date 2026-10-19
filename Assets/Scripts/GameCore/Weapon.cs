@@ -193,6 +193,9 @@ namespace GameCore
                 return new WeaponFireResult { Hit = false, NoLineOfSight = true };
             }
 
+            // Real-time fork: an NPC's gunfire is real rounds now (Gunplay), not a roll (the player fires through Rt directly)
+            if (Rt.On && !isMelee && !(attacker is Player)) { Gunplay.NpcShoot(attacker, this, target, roundsToUse); return new WeaponFireResult(); }
+
             var combat = GameServices.RequireCombat();
             int distance = attacker != null ? CombatantUtil.Distance(attacker, target) : 1;
             // Batch 77: the numbers come from PreviewHit, the same the targeting panel shows; Fire only adds the side effects

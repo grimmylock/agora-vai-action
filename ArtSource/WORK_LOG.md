@@ -3079,3 +3079,40 @@ add it to the list for we to come back to later / For now try the brute".
   - Attack (9): club back, overhead, the body twists the shoulder forward and chops it down in front, swipe arc and dust.
   - Throw (12): crouch, the club punches into the ground at its side, rips a boulder out, hauls it back and over, hurls it forward.
   Strips `mutant_blight_brute_{walk,attack,throw}_strip.png` (100x94 frames); preview `maps/renders/brute_frames_pilot.gif`.
+
+---------------------------------------------------------------------------------------------------------------------------
+# REAL-TIME FORK (repo `grimmylock/agora-vai-action`, from Batch 131f; plan: `ACTION_DESIGN.md`)
+
+## RT batch 1 - move, aim, shoot, enemies fire back (2026-10-19)
+
+Yan: "i'd like to keep some of the tactical feel and stalker like slow crawl though, not hotline miami level of crazy,
+somewhere in between it and max payne, stalker and zero sievert". "a headshot is a headshot if the bullet connects to the
+sprites HEAD. No dice rolls only aim and weapon accuracy affect it". The fallback is frozen in agora-vai123 (`turn-based-fallback`).
+- **Turns are gone in the game** (`Rt.On`, set by `PlayerController.Awake`; the harness keeps it off so its turn-based
+  probes still run). The world clock always runs (a game minute every 1/4.2 s, fighting or not).
+- **Moving (`Rt.cs`):** WASD moves you freely inside and across tiles (2.6 tiles/s), walls collide (a 0.22-tile body);
+  Shift sprints (4.4, stamina 100, -18/s, back at 14/s after 0.8 s); Ctrl crouches (1.3, the old sneak); aiming slows you
+  to 65%; a leg wound to 60%. Crossing into a tile is a real step for the rules (doors, anomalies, exits, regions).
+- **Shooting (`Ballistics.cs`, `Gunplay.cs`):** left mouse fires (held for automatics), right mouse aims: the spread closes
+  over the gun's handling time and the camera looks further (more with a sniper rifle). A round is a line over the ground;
+  the crosshair's height on a body picks head / torso / arm / legs, from any side (Yan's "enemy above you" worry: tested from
+  the side, above, below, diagonal). Spread scatters sideways and up/down; walking widens it, sprinting a lot, crouching
+  narrows it, each shot kicks and the kick settles. Low cover stops rounds below its height (a head above it is still a
+  target; cover right next to the shooter is fired over), wood/tin/brush/cloth let them through at half damage, walls stop
+  them. Aiming at a barrel or cover with no body under the crosshair shoots the object. Part damage until limb health:
+  head x1.6, torso x1, arm x0.6, legs x0.7; armor as before; an unaware target takes x1.3. Shotguns fire 6 pellets.
+  Per class (ponytail: per-class table, per-gun tuning later): steadied/hip spread, seconds to steady, kick, recovery, rate,
+  automatic (rifles/SMGs that could burst), reach, reload time; High Recoil kicks harder, a damaged gun spreads more.
+- **R reloads over the gun's reload time** (Quick Hands 60%); R on a jam clears it in 0.8 s. Jams roll per round as before.
+- **Enemies (bridge until RT batch 4):** each one in a fight takes an old-style turn every ~3 s (first after a 0.5-1.3 s
+  reaction); its gunfire becomes real rounds (`Weapon.Fire` -> `Gunplay.NpcShoot`): rank decides steadiness and how often it
+  goes for your head. Melee and mutant strikes still roll. Every 6 s of fighting is a round for upkeep (bleeding, radio
+  calls, fight end).
+- **Look:** the player sprite is drawn where you are (walk frames by distance); a 4-tick crosshair shows the spread at the
+  mouse (red when reloading/empty/jammed, centre dot red over a body); no move range or path dots; the action bar and End
+  Turn are hidden; the HUD shows FIGHT/EXPLORING and stamina. ESC pauses. E also loots a body next to you or picks up what's
+  at your feet. Controls panel (F1) rewritten.
+- Harness: `RtChecks` (parts by height from four sides both ways, low cover by height, firing over your own cover, wood
+  through, walls, crouching, a Rookie at 6 tiles hits 30-60%). ALL CHECKS PASSED.
+- **For Yan to check in Unity:** walking/sprinting/crouching feel and speeds; the crosshair; hitting heads vs bodies; enemy
+  fire (too accurate? too slow at one turn per ~3 s?); reload timing; ESC pause; looting with E; crossing a map exit.

@@ -19,6 +19,8 @@ namespace GameCore
 {
     public class PlayerController : MonoBehaviour
     {
+        private void Awake() { Rt.On = true; Rt.Reset(); Time.timeScale = 1f; }   // real-time fork: the game runs on the clock (Rt.cs); the harness stays turn-based
+
         private void Update()
         {
             var player = Player.Current;
@@ -32,6 +34,7 @@ namespace GameCore
             if (GameState.Current.ModalOpen || GameState.Current.CurrentTurn == Turn.CombatOver) return;
 
             var keyboard = Keyboard.current;
+            if (Rt.On) { RealTime(player, keyboard, Mouse.current); return; }
             // Batch 30: out of combat you just walk - WASD / arrows, held, step after step at walking
             // pace (the turns still tick underneath, unseen). Once anything hostile is aware of you,
             // WASD go back to being combat keys and movement is click-to-move on your turn.
@@ -245,7 +248,8 @@ namespace GameCore
         private static void TickClock(Player player)
         {
             _clock += Time.deltaTime;
-            while (_clock >= SecondsPerMinute && Exploring()) { _clock -= SecondsPerMinute; TurnLoop.TickAwareness(); }
+            while (_clock >= SecondsPerMinute && (Rt.On || Exploring())) { _clock -= SecondsPerMinute; TurnLoop.TickAwareness(); }
+            if (Rt.On) return;
             if (!Exploring()) { _clock = 0f; _walk.Clear(); return; }
             if (_walk.Count > 0 && UnitMotionView.PlayerQueue <= 1)
             {
@@ -277,6 +281,53 @@ namespace GameCore
             if (!grid.CanEnterTile(player.X + dx, player.Y + dy)) return true;
             Step(player, dx, dy, false);
             return true;
+        }
+
+        /// <summary>Real-time fork: one tile crossed by free movement (Rt.MoveBy) - doors, anomalies, exits, regions.</summary>
+        internal static void StepFree(Player player, int dx, int dy) => Step(player, dx, dy, true);
+
+        /// <summary>Real-time fork (ACTION_DESIGN.md): the controls without turns. Movement, aim, fire and reload are Rt's;
+        /// the rest are the old keys that still make sense. E also loots a body or picks up what's at your feet.</summary>
+        private static void RealTime(Player player, Keyboard k, Mouse m)
+        {
+            if (k == null) return;
+            if (HudView.TargetingOpen) HudView.CloseTargeting();
+            if (k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : 1f; }   // ESC pauses; nothing else does
+            if (Rt.Paused) return;
+            Rt.PlayerTick(player, k, m);
+            TickClock(player);
+            Rt.WorldTick(player);
+            if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }
+            if (k.eKey.wasPressedThisFrame)
+            {
+                var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
+                var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);
+                if (corpse != null) CorpseLootUI.Open(corpse);
+                else if (ground.Count > 0)
+                {
+                    foreach (var g in ground) { player.AddItem(g.Item); TerrainMap.GroundItems.Remove(g); }
+                    GameLog.Write(ground.Count == 1 ? $"Picked up {ground[0].Item.Name}." : $"Picked up {ground.Count} items.");
+                    Sfx.Play("pickup");
+                }
+                else InteractionEngine.AttemptInteract(player);
+                return;
+            }
+            if (k.fKey.wasPressedThisFrame) { if (!AnomalyEngine.TrySearchAnomaly(player)) { ZoneTravel.SearchArea(); QuestSystem.TryInvestigate(); } return; }
+            if (k.uKey.wasPressedThisFrame) { player.ToggleFlashlight(); return; }
+            if (k.qKey.wasPressedThisFrame) { player.CycleAmmoType(); return; }
+            if (k.yKey.wasPressedThisFrame) { player.SwapWeapons(); return; }
+            if (k.zKey.wasPressedThisFrame && !EncounterState.InCombat) { WorldDays.Rest(); return; }
+            if (k.bKey.wasPressedThisFrame) { ShopUI.Toggle(); return; }
+            if (k.pKey.wasPressedThisFrame) { CharacterUI.ShowSheet(); return; }
+            if (k.mKey.wasPressedThisFrame) { WorldUI.Toggle(); return; }
+            if (k.jKey.wasPressedThisFrame) { QuestUI.Toggle(); return; }
+            if (k.f5Key.wasPressedThisFrame) { SaveSystem.Save(); return; }
+            if (k.f9Key.wasPressedThisFrame) { SaveSystem.Load(); return; }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (k.f8Key.wasPressedThisFrame) { ColorGrade.Off = !ColorGrade.Off; return; }
+            if (k.f10Key.wasPressedThisFrame) { Atmosphere.Advance(60f); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); return; }
+            if (k.f11Key.wasPressedThisFrame) { Atmosphere.Current = (Weather)(((int)Atmosphere.Current + 1) % 5); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); }
+#endif
         }
 
         /// <summary>One step of a walk. False = stop walking (blocked, left the zone, or just got spotted).</summary>

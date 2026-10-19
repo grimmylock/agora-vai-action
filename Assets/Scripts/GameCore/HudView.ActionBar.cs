@@ -73,7 +73,7 @@ namespace GameCore
         void UpdateActionBar(Player p)
         {
             if (_acts.Count == 0) return;
-            var shown = CombatActions.Visible(p);
+            var shown = Rt.On ? new List<ActionDef>() : CombatActions.Visible(p);   // real-time fork: no turn actions
             float x0 = -(shown.Count - 1) * (BtnSize + BtnGap) / 2f;
             var mouse = Mouse.current;
             Vector2 mp = mouse != null ? mouse.position.ReadValue() : new Vector2(-1, -1);

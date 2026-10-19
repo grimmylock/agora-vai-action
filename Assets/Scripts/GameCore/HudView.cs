@@ -268,8 +268,11 @@ namespace GameCore
             bool exploring = PlayerController.Exploring();
             string turn = GameState.Current.CurrentTurn == Turn.Player ? (exploring ? "<color=#62b25a>EXPLORING</color>" : "YOUR TURN") : "<color=#c8443a>ENEMY TURN</color>";
             if (m.SurgeRounds > 0) turn += $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>";
+            if (Rt.On)   // real-time fork: no turns - fighting or not, and your stamina
+                turn = Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : (EncounterState.InCombat ? "<color=#c8443a>FIGHT</color>" : "<color=#62b25a>EXPLORING</color>")
+                    + $"   STAMINA {Mathf.RoundToInt(Rt.Stamina)}" + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "");
             _turn.text = turn;
-            _endTurn.SetActive(!exploring && GameState.Current.CurrentTurn == Turn.Player);
+            _endTurn.SetActive(!Rt.On && !exploring && GameState.Current.CurrentTurn == Turn.Player);
 
             UpdateTarget(p);
             UpdateActionBar(p);   // Batch 72

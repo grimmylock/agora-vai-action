@@ -344,6 +344,7 @@ namespace GameCore
             if (Camera.main != null) Camera.main.transform.position += _fx.ShakeOffset;
             UpdateFades();
 
+            if (Rt.On) { Reticle(player); return; }   // real-time fork: no move range, no path dots; a crosshair instead
             if (GameState.Current.CurrentTurn == Turn.Player
                 && (player.X != _highlightX || player.Y != _highlightY || player.Mp != _highlightMp))
             {
@@ -351,6 +352,37 @@ namespace GameCore
                 _highlightX = player.X; _highlightY = player.Y; _highlightMp = player.Mp;
             }
             UpdatePathPreview(player);
+        }
+
+        // Real-time fork: four ticks round the mouse, as far apart as the round can stray at that distance (one spread),
+        // so steadying the aim visibly closes them. Red while reloading or empty; the centre dot turns red over a body.
+        private readonly List<SpriteRenderer> _reticle = new List<SpriteRenderer>();
+        private void Reticle(Player player)
+        {
+            while (_reticle.Count < 5)
+                _reticle.Add(CreateMarker("Reticle", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite()));
+            var mt = Rt.MouseTile(UnityEngine.InputSystem.Mouse.current);
+            var w = player.EquippedWeapon;
+            bool show = mt.HasValue && w != null && player.IsAlive();
+            foreach (var r in _reticle) r.gameObject.SetActive(show);
+            if (!show) return;
+            var (mx, my) = mt.Value;
+            var (px, py) = Ballistics.Pos(player);
+            float dist = Mathf.Sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
+            var aim = Gunplay.AimOf(player);
+            float spread = Gunplay.Spread(Gunplay.For(w), aim, Rt.Moving, player.Sneaking);
+            float gap = Mathf.Clamp(dist * Mathf.Sin(spread * Mathf.Deg2Rad) + 2f / 16f, 2f / 16f, 3f);
+            bool dry = aim.ReloadUntil >= 0f || (!CombatRules.IsMelee(w) && w.CurrentMagazine <= 0) || w.IsJammed;
+            var col = dry ? new Color(1f, 0.35f, 0.3f, 0.9f) : new Color(1f, 1f, 1f, 0.85f);
+            var c = new Vector3(mx, -my, 0f);
+            Vector3[] at = { c + new Vector3(gap, 0f, 0f), c + new Vector3(-gap, 0f, 0f), c + new Vector3(0f, gap, 0f), c + new Vector3(0f, -gap, 0f), c };
+            Vector3[] size = { new Vector3(3f, 1f, 1f), new Vector3(3f, 1f, 1f), new Vector3(1f, 3f, 1f), new Vector3(1f, 3f, 1f), Vector3.one };
+            for (int i = 0; i < 5; i++)
+            {
+                _reticle[i].transform.position = at[i];
+                _reticle[i].transform.localScale = size[i] * (1f / 16f);
+                _reticle[i].color = i == 4 && Rt.UnitUnder(mx, my) != null ? new Color(1f, 0.3f, 0.25f, 1f) : col;
+            }
         }
 
         // Batch 116 (Yan: "a line indicating the path the character is gonna take if you click there, it could be green when in
@@ -548,9 +580,9 @@ namespace GameCore
         /// clicked; everyone else has a fixed spot of their own, up to a third of a tile off. Rules still use the tile.</summary>
         public static Vector3 StandOffset(ICombatant u)
         {
-            if (u is Player) return PlayerController.StandAt;
-            int h = u.GetHashCode() * 73856093;
-            return new Vector3(((h & 255) / 255f - 0.5f) * 0.55f, (((h >> 8) & 255) / 255f - 0.5f) * 0.4f, 0f);
+            if (u is Player && !Rt.On) return PlayerController.StandAt;
+            var (ox, oy) = Rt.Offset(u);                                   // real-time fork: where the body really is (tile space, y down)
+            return new Vector3(ox, -oy, 0f);
         }
 
         /// <summary>Batch 24: positions (walking), art (walk frames) and death (ragdoll) for one unit.
@@ -829,7 +861,7 @@ namespace GameCore
         static readonly Color BangYellow = new Color(0.91f, 0.77f, 0.28f), BangRed = new Color(0.86f, 0.24f, 0.2f), BangYou = new Color(0.95f, 0.94f, 0.86f);
         Vector3 Above(SpriteRenderer m) => m.transform.position + new Vector3(0f, 1.1f + 0.05f * Mathf.Sin(Time.time * 6f), 0f);
 
-        static Vector3 _focus;   // eased camera offset from the player (a speaker pulls it over)
+        static Vector3 _focus, _lookAhead;   // eased camera offset from the player (a speaker pulls it over)
 
         private static void FollowCamera(Vector3 target, Vector3? speaker = null)
         {
@@ -839,6 +871,8 @@ namespace GameCore
             var off = speaker.HasValue ? (speaker.Value - target) * 0.5f + new Vector3(0f, -cam.orthographicSize * 0.3f, 0f) : Vector3.zero;   // the dialog covers the bottom third
             _focus = Vector3.Lerp(_focus, off, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 6f));
             target += _focus;
+            _lookAhead = Vector3.Lerp(_lookAhead, Rt.On && !speaker.HasValue ? Rt.Look : Vector3.zero, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 4f));   // real-time fork: look toward the mouse
+            target += _lookAhead;
             cam.transform.position = new Vector3(target.x, target.y, -10f);
             // Batch 65: mouse wheel zooms between the close view and twice as far (long guns reach past the close view)
             var mouse = UnityEngine.InputSystem.Mouse.current;

@@ -15,26 +15,18 @@ namespace GameCore
         // Public (Batch 11): reused as-is by MainMenuUI's Options panel so the main menu's
         // "controls" screen and this in-play corner hint can't drift out of sync.
         public const string Text =
-            "--- CONTROLS ---\n" +
-            "WASD / arrows: walk (out of combat)\n" +
-            "Click: move / attack\n" +
-            "Right-click: shoot barrel / door / cover\n" +
-            "E: interact / story landmarks\n" +
+            "--- CONTROLS (real-time) ---\n" +
+            "WASD: move   Shift: sprint   Ctrl: crouch\n" +
+            "Right mouse: aim (steadier, look further)\n" +
+            "Left mouse: fire (hold for automatics)\n" +
+            "Crosshair height on a body = where you hit\n" +
+            "R: reload / clear jam   Y: swap weapon\n" +
+            "E: interact / loot body / pick up\n" +
             "F: search anomaly / area / quest\n" +
-            "R: reload / clear jam\n" +
-            "X: single / burst fire\n" +
-            "L: aim for legs / arms / body / head / armor / grenade pouch\n" +
-            "N: sneak (half speed, seen at half range)\n" +
-            "In combat - A: aim (+2)  C: cover  V: evasive\n" +
-            "K: hunker down  O: overwatch (end your turn)\n" +
-            "G: ready grenade, then click a tile\n" +
-            "T: intimidate nearest enemy\n" +
-            "Q: switch ammo type  Z: rest (safe zone/campfire)\n" +
-            "B: shop (Safe Zone)\n" +
-            "J: quests  M: the Zone  P: character\n" +
-            "S: suppressive fire  H: run and gun (perks)\n" +
-            "Mouse wheel: zoom in / out\n" +
-            "Space: end turn\n" +
+            "Q: switch ammo   U: flashlight\n" +
+            "Z: rest (safe zone/campfire)   B: shop\n" +
+            "J: quests  M: the Zone  P: character  I: pack\n" +
+            "Mouse wheel: zoom   ESC: pause\n" +
             "F5: save / F9: load";
 
         private void Awake()
