@@ -3436,3 +3436,21 @@ Yan: "when thrown the weapon sprite kind just glues itself to the enemy instead 
 also writes `weapon_TacticalHatchet_stuck.png`: the blade from row 9 down is buried (cut off) and a line of blood marks where it goes
 in; `Melee.StuckPose` puts that cut line on the chest, the edge in and the handle out up and back toward the thrower (140 degrees,
 mirrored for a throw from the right); pulling it out wrenches it back and forth. `Melee.Stats.StuckX/Y` = the cut line's point.
+
+
+### RT 7e - melee controls: charged swings, throws lifted over the head (2026-10-20)
+
+Yan: "the throwing animation needs a better wind-up ... like lifting it over the players head before throwing" and "left click
+swings it, holding left click charges the swing for higher damage and can be held indefinetly, right click ''aims'' the throw and
+starts charging it, letting go throws it."
+- `Melee.PlayerInput` reads both mouse buttons every frame (`Rt.PlayerFire` sends a melee weapon there). LMB press winds up, release
+  swings; held past the wind-up it charges for 1 s more to x1.75 damage and can be held forever (the pose trembles). RMB press lifts it
+  over the head (`HeldPoseMath.Lift`: fist above the head, the head hanging back behind it, the body leaning back), release whips it
+  forward (`Whip`, 0.12 s; it leaves the hand halfway) and throws. Power = held / 0.6 s: a half-charged throw flies at 60-100% of the
+  speed and range. Shorter than 0.2 s (or a two-handed wind-up) lowers it without throwing. `Melee.Charge` per unit drives the pose
+  (`HeldWeaponView.MeleeCharge`).
+- Bugs fixed on the way: melee aimed at the crosshair point instead of the body under it, so a throw at a chest flew along the wrong
+  line (now `Melee.Aim` aims at the footprint like guns do); a thrown blade could pass through a body that sat exactly on a frame
+  boundary (`Ballistics.Trace` skips bodies under 0.05 from the start - the flight now traces from a step back).
+- Checks: a tap vs a held swing (damage x1.5+), a flick of RMB throws nothing, a longer hold throws farther. Renders:
+  `maps/renders/melee/` (`melee_swing.gif` tap then charged, `melee_throw.gif`, `melee_throw_closeup.png`).

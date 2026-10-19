@@ -116,13 +116,15 @@ def main(src, out):
                     k = min(2, int((i / 30 - bt) / 0.2 * 3)); x, y = P(bx2, by2 - 0.25)
                     c.alpha_composite(puffs[k].resize((5 * S, 5 * S), Image.NEAREST), (round(x - 2.5 * S), round(y - 2.5 * S)))
             dr = ImageDraw.Draw(c)
-            label = {"swing": "swing: body, then head", "throw": "aim + click: throw"}[clip]
+            # RT 7e: what the mouse is doing (the harness's script: left tap at 0.2 s, left held 1.2-2.7 s; right held 0.3-1.0 s)
+            if clip == "swing": label = "left click: a quick swing" if i < 36 else "holding left: charging" if i < 81 else "let go: charged swing (x1.75)"
+            else: label = "holding right: lifted, charging" if 9 <= i < 30 else "let go: thrown" if i < 50 else "it sticks in him"
             if clip == "throw" and busy: label = "he wrenches it out (2.5 s)"
             if clip == "throw" and item and item[0] == "floor": label = "dropped: walk over, E to pick it up"
             dr.text((10, 8), f"{label}   {i / 30:4.2f} s", font=font, fill=(235, 235, 235))
             frames.append(c)
         frames[0].save(os.path.join(out, f"melee_{clip}.gif"), save_all=True, append_images=frames[1:], duration=33, loop=0, disposal=2)
-        picks = [frames[k] for k in ([0, 10, 13, 30, 34, 37, 45, 59] if clip == "swing" else [8, 11, 15, 19, 100, 150, 175, 205])]
+        picks = [frames[k] for k in ([6, 9, 12, 45, 70, 81, 84, 90] if clip == "swing" else [9, 13, 18, 29, 30, 32, 44, 140])]
         sheet_rows.append(picks)
     w, h = sheet_rows[0][0].size; sw, sh = w // 2, h // 2
     sheet = Image.new("RGBA", (4 * sw + 30, 4 * sh + 50), (27, 29, 31, 255))

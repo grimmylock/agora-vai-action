@@ -52,12 +52,22 @@ namespace GameCore
         public static readonly List<Lodged> InCover = new List<Lodged>();
         public static readonly List<Stuck> InBodies = new List<Stuck>();
         public static readonly List<Lying> OnFloor = new List<Lying>();
-        static readonly Dictionary<Player, (float at, Weapon w, float dx, float dy, float h)> Winding = new Dictionary<Player, (float, Weapon, float, float, float)>();
+        static readonly Dictionary<Player, (float at, Weapon w, float dx, float dy, float h, float power)> Winding = new Dictionary<Player, (float, Weapon, float, float, float, float)>();
+
+        // RT 7e (Yan: "left click swings it, holding left click charges the swing for higher damage and can be held indefinitely,
+        // right click 'aims' the throw and starts charging it, letting go throws it"; and a throw wind-up "like lifting it over the
+        // player's head"). Per combatant: when each button went down, when the last swing started (for its pose), when it threw.
+        public class Charge { public float SwingFrom = -1f, ThrowFrom = -1f, SwungAt = -99f, ThrewAt = -99f; }
+        static readonly Dictionary<ICombatant, Charge> Charges = new Dictionary<ICombatant, Charge>();
+        public static Charge ChargeOf(ICombatant u) { if (!Charges.TryGetValue(u, out var c)) Charges[u] = c = new Charge(); return c; }
+        public const float FullSwingCharge = 1f, MaxSwingBonus = 0.75f;   // held a second past the wind-up: x1.75 damage
+        public const float FullThrowCharge = 0.6f, MinThrowHold = 0.2f;  // a throw charged 0.6 s flies full speed and range
+        public const float ThrowWhip = 0.06f;                              // it leaves the hand this far into the whip forward
         static readonly Dictionary<ICombatant, float> NextSwing = new Dictionary<ICombatant, float>();
         // RT 7c: a swing lands at the chop, after the wind-up (HeldPoseMath.Chop), not on the click
-        static readonly List<(float at, ICombatant by, Weapon w, float dx, float dy, float h)> Pending = new List<(float, ICombatant, Weapon, float, float, float)>();
+        static readonly List<(float at, ICombatant by, Weapon w, float dx, float dy, float h, float mult)> Pending = new List<(float, ICombatant, Weapon, float, float, float, float)>();
         public static float HitDelay => HeldPoseMath.WindUp + HeldPoseMath.ChopTime;
-        public static void Reset() { Air.Clear(); InCover.Clear(); InBodies.Clear(); OnFloor.Clear(); Winding.Clear(); NextSwing.Clear(); Pending.Clear(); }
+        public static void Reset() { Air.Clear(); InCover.Clear(); InBodies.Clear(); OnFloor.Clear(); Winding.Clear(); NextSwing.Clear(); Pending.Clear(); Charges.Clear(); }
 
         public static float Now = -1f;                             // the harness sets it; the game uses Time.time
         static float T => Now >= 0f ? Now : Time.time;
@@ -67,32 +77,80 @@ namespace GameCore
 
         // ---------------- the player ----------------
 
-        /// <summary>Click with a melee weapon: aiming throws it, otherwise it swings. at = the crosshair (tile space).</summary>
+        /// <summary>RT 7e: the mouse buttons with a melee weapon, every frame. Left: press winds up, release swings (held past the
+        /// wind-up it charges, up to x1.75 damage). Right: press lifts it over your head and charges the throw, release throws it
+        /// (let go before MinThrowHold - or a two-handed weapon's wind-up - and you just lower it). at = the crosshair, tile space.</summary>
+        public static void PlayerInput(Player p, Weapon w, bool left, bool right, (float x, float y)? at)
+        {
+            var c = ChargeOf(p); float now = T;
+            if (Winding.ContainsKey(p)) return;                                           // mid-throw
+            if (left && c.SwingFrom < 0f && c.ThrowFrom < 0f && !(NextSwing.TryGetValue(p, out var ns) && now < ns)) c.SwingFrom = now;
+            if (!left && c.SwingFrom >= 0f)
+            {
+                float held = now - c.SwingFrom; c.SwingFrom = -1f;
+                float wind = Mathf.Min(held, HeldPoseMath.WindUp);
+                float charge = Mathf.Clamp01((held - HeldPoseMath.WindUp) / FullSwingCharge);
+                c.SwungAt = now - wind;                                                   // the pose carries on from where the wind-up is
+                if (at.HasValue) Release(p, w, at.Value, HeldPoseMath.WindUp - wind + HeldPoseMath.ChopTime, 1f + MaxSwingBonus * charge);
+            }
+            if (right && c.ThrowFrom < 0f && c.SwingFrom < 0f) c.ThrowFrom = now;
+            if (!right && c.ThrowFrom >= 0f)
+            {
+                float held = now - c.ThrowFrom; c.ThrowFrom = -1f;
+                if (held < Mathf.Max(MinThrowHold, For(w).WindUp) || !at.HasValue) return;  // not wound up: lowered, no throw
+                var (dx, dy, h) = Aim(p, at.Value);
+                if (dx == 0f && dy == 0f) return;
+                c.ThrewAt = now;
+                Winding[p] = (now + ThrowWhip, w, dx, dy, h, Mathf.Clamp01(held / FullThrowCharge));
+            }
+        }
+
+        static (float dx, float dy, float h) Aim(ICombatant by, (float x, float y) at)
+        {
+            var (px, py) = Ballistics.Pos(by);
+            var over = Rt.UnitUnder(at.x, at.y);
+            var (tx, ty) = over != null ? Ballistics.Pos(over) : at;                       // over a body: at its footprint, as guns aim
+            float dx = tx - px, dy = ty - py, len = Mathf.Sqrt(dx * dx + dy * dy);
+            if (len < 0.05f) return (0f, 0f, 0f);
+            return (dx / len, dy / len, over != null ? Ballistics.AimHeight(over, at.y) : ThrowHeight);
+        }
+
+        /// <summary>The swing leaves the wind-up: the hit lands `delay` s later (at the chop), `mult` x damage.</summary>
+        static void Release(Player p, Weapon w, (float x, float y) at, float delay, float mult)
+        {
+            var (dx, dy, h) = Aim(p, at);
+            if (dx == 0f && dy == 0f) return;
+            float now = T;
+            NextSwing[p] = now + delay + HeldPoseMath.Follow + HeldPoseMath.Recover;
+            var anim = CombatFx.Push("melee", p, null, w); anim.Now = true;                  // the whoosh
+            anim.ToX = p.X + Mathf.RoundToInt(dx * 2f); anim.ToY = p.Y + Mathf.RoundToInt(dy * 2f);
+            Pending.Add((now + delay, p, w, dx, dy, h, mult));
+            if (mult > 1.05f) GameLog.Write($"A charged swing (x{mult:0.00}).");
+        }
+
+        /// <summary>RT 7a (kept for tests and NPCs): click with a melee weapon - aiming throws it, otherwise it swings.</summary>
         public static void PlayerAttack(Player p, Weapon w, (float x, float y) at, bool aiming)
         {
             var st = For(w);
             float now = T;
             if (Winding.ContainsKey(p) || NextSwing.TryGetValue(p, out var t) && now < t) return;
-            var (px, py) = Ballistics.Pos(p);
-            float dx = at.x - px, dy = at.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
-            if (len < 0.05f) return;
-            dx /= len; dy /= len;
-            var over = Rt.UnitUnder(at.x, at.y);
-            float h = over != null ? Ballistics.AimHeight(over, at.y) : ThrowHeight;
+            var (dx, dy, h) = Aim(p, at);
+            if (dx == 0f && dy == 0f) return;
             if (aiming)
             {
-                if (st.WindUp > 0f) { Winding[p] = (now + st.WindUp, w, dx, dy, h); GameLog.Write($"You wind up the {w.Name}..."); }
+                if (st.WindUp > 0f) { Winding[p] = (now + st.WindUp, w, dx, dy, h, 1f); GameLog.Write($"You wind up the {w.Name}..."); }
                 else Throw(p, w, dx, dy, h);
                 return;
             }
             NextSwing[p] = now + Mathf.Max(st.Swing, HeldPoseMath.SwingLength);
             var anim = CombatFx.Push("melee", p, null, w); anim.Now = true;                      // the wind-up starts now
             anim.ToX = p.X + Mathf.RoundToInt(dx * 2f); anim.ToY = p.Y + Mathf.RoundToInt(dy * 2f);
-            Pending.Add((now + HitDelay, p, w, dx, dy, h));
+            Pending.Add((now + HitDelay, p, w, dx, dy, h, 1f));
+            ChargeOf(p).SwungAt = now;
         }
 
         /// <summary>One swing: the nearest enemy within reach and inside the arc in front takes it.</summary>
-        public static ICombatant Swing(ICombatant by, Weapon w, float dx, float dy, float h)
+        public static ICombatant Swing(ICombatant by, Weapon w, float dx, float dy, float h, float mult = 1f)
         {
             var st = For(w);
             var (px, py) = Ballistics.Pos(by);
@@ -114,15 +172,15 @@ namespace GameCore
             var hit = Ballistics.Trace(by, px, py, ox / ol, oy / ol, st.Reach + 0.3f, h, new[] { best });
             if (hit.Unit == null) { hit.Unit = best; hit.Part = "Torso"; }
             fx.Hit = true;
-            Strike(by, w, hit.Unit, hit.Part, hit.Side, fx);
+            Strike(by, w, hit.Unit, hit.Part, hit.Side, fx, mult);
             return best;
         }
 
         /// <summary>Damage from a swing or a throw that lands: the old armor math, limb health, bleeding or a concussion.</summary>
-        public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side, FxEvent fx = null)
+        public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side, FxEvent fx = null, float mult = 1f)
         {
             var st = For(w);
-            float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * Ballistics.PartMult(part ?? "Torso");
+            float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * Ballistics.PartMult(part ?? "Torso") * mult;
             if (target is Mutant tm0 && !tm0.IsAggroed) raw *= 1.3f;                      // they never saw it coming
             if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
             if (by is Player) raw *= CombatRules.PlayerDamage;
@@ -146,12 +204,13 @@ namespace GameCore
         }
 
         /// <summary>Let go of the weapon: it leaves your hands and flies.</summary>
-        public static void Throw(Player p, Weapon w, float dx, float dy, float h)
+        public static void Throw(Player p, Weapon w, float dx, float dy, float h, float power = 1f)
         {
             var st = For(w);
             var (px, py) = Ballistics.Pos(p);
-            Air.Add(new Flying { W = w, Item = ItemOf(w), By = p, X = px, Y = py, Dx = dx, Dy = dy, H = h, Left = st.ThrowRange,
-                Speed = st.ThrowSpeed, Blade = st.Blade, Deg = Mathf.Atan2(-dy, dx) * Mathf.Rad2Deg, Spin = dx >= 0f ? -900f : 900f });
+            float k = 0.6f + 0.4f * Mathf.Clamp01(power);                                        // RT 7e: a half-charged throw is slower and shorter
+            Air.Add(new Flying { W = w, Item = ItemOf(w), By = p, X = px, Y = py, Dx = dx, Dy = dy, H = h, Left = st.ThrowRange * k,
+                Speed = st.ThrowSpeed * k, Blade = st.Blade, Deg = Mathf.Atan2(-dy, dx) * Mathf.Rad2Deg, Spin = dx >= 0f ? -900f : 900f });
             if (p.EquippedWeapon == w) { p.EquippedWeapon = null; p.EquippedWeaponCategory = null; p.EquippedWeaponKey = null; }
             GameLog.Write($"You throw the {w.Name}.");
             Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y));
@@ -177,16 +236,16 @@ namespace GameCore
                 var q = Pending[i];
                 if (now < q.at) continue;
                 Pending.RemoveAt(i);
-                if (q.by.IsAlive() && (!(q.by is Player pp) || pp.EquippedWeapon == q.w)) Swing(q.by, q.w, q.dx, q.dy, q.h);
+                if (q.by.IsAlive() && (!(q.by is Player pp) || pp.EquippedWeapon == q.w)) Swing(q.by, q.w, q.dx, q.dy, q.h, q.mult);
             }
             foreach (var kv in Winding.ToList())
-                if (now >= kv.Value.at) { Winding.Remove(kv.Key); if (kv.Key.EquippedWeapon == kv.Value.w) Throw(kv.Key, kv.Value.w, kv.Value.dx, kv.Value.dy, kv.Value.h); }
+                if (now >= kv.Value.at) { Winding.Remove(kv.Key); if (kv.Key.EquippedWeapon == kv.Value.w) Throw(kv.Key, kv.Value.w, kv.Value.dx, kv.Value.dy, kv.Value.h, kv.Value.power); }
 
             for (int i = Air.Count - 1; i >= 0; i--)
             {
                 var f = Air[i];
                 float step = Mathf.Min(f.Speed * dt, f.Left);
-                var hit = Ballistics.Trace(f.By, f.X, f.Y, f.Dx, f.Dy, step, f.H, Gunplay.Bodies().Where(u => u != f.By));
+                var hit = Ballistics.Trace(f.By, f.X - f.Dx * 0.1f, f.Y - f.Dy * 0.1f, f.Dx, f.Dy, step + 0.1f, f.H, Gunplay.Bodies().Where(u => u != f.By));   // from a bit back: Trace skips bodies under 0.05 from the start
                 f.Deg += f.Spin * dt;
                 if (hit.Unit != null)
                 {

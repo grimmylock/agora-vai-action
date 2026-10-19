@@ -200,6 +200,7 @@ namespace GameCore
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
             float tilt = downNow ? 90f : Rt.Diving ? (Rt.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.DiveRight ? -90f : 90f) : Held(_playerMarker).Lean;   // RT batch 3: into the dive, sprawled after it; RT 7c: leaning into a swing
             _playerMarker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+            Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker));
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker

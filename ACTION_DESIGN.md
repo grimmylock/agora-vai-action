@@ -74,6 +74,9 @@ armor; AP/HP ammo plug in here). Weight, wear, jams (d100 as now, 1% +2% per wea
 ## Melee (Yan, 2026-10-20)
 
 Melee's place: ambushes round corners, unseen camp massacres, parrying mutants - not open charges into gunfire.
+- **Controls (Yan, RT 7e):** with a melee weapon in hand, LMB swings; hold LMB to charge the swing (held as long as you like,
+  up to x1.75 damage a second past the wind-up). RMB lifts it over your head and charges the throw; let go to throw it (full
+  speed and range at 0.6 s held; let go before 0.2 s - or a two-handed weapon's 1 s wind-up - and you just lower it).
 - **Every melee weapon can be thrown.** Smaller = faster swings and faster, longer throws. Thrown weapons fly (travel time,
   spin, max range) and hit through the same body-part rules as bullets.
 - **Bladed weapons stick** where they hit: in wood, tin or cloth cover (pull it out with E), or in a body. A living enemy or

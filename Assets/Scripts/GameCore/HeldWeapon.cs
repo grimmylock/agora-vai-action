@@ -30,6 +30,8 @@ namespace GameCore
         public bool MagShown;               // false while the old one is on the floor and the new one still in the pouch
         public bool MagDropped;             // the old magazine has left the gun (HeldWeaponView throws it once)
         public float CylDX, CylDY;          // RT 6l: a revolver's cylinder swung out on its crane (character px from its seat)
+        public float Lean;                  // RT 7e: the unit's tilt from a melee swing or throw (degrees, + = counter-clockwise)
+        public bool Thrown;                 // RT 7e: it has left the hand (the whip forward, after release)
         public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)
         public bool Left, HasSupport;
     }
@@ -165,20 +167,40 @@ namespace GameCore
             return (75f * (1f - r), 3f * (1f - r), 1f - r, -8f * (1f - r));
         }
 
-        static HeldFrame MeleeFrame(float angle, float sinceSwing)
+        /// <summary>RT 7e: lifting it over your head to throw (held `t` s): the head goes back and down behind you, the fist up by
+        /// your head; charged, it trembles. Then the whip forward over `w` s after release.</summary>
+        public const float LiftTime = 0.25f, WhipTime = 0.12f;
+        public static (float off, float hx, float hy, float lean) Lift(float t)
+        {
+            float Sm(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
+            float k = Sm(t / LiftTime), shake = t > LiftTime ? 2.5f * Mathf.Sin(t * 33f) : 0f;
+            return (-150f * k + shake, -2f * k, -10f * k, 8f * k);
+        }
+        public static (float off, float hx, float hy, float lean) Whip(float t)
+        {
+            float c = Mathf.Clamp01(t / WhipTime);
+            return (-150f + 220f * c, -2f + 5f * c, -10f + 10f * c, 8f - 18f * c);
+        }
+
+        static HeldFrame MeleeFrame(float angle, float sinceSwing, float swingHold = -1f, float throwHold = -1f, float sinceThrow = 99f)
         {
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
-            var (off, hx, hy, _) = Chop(sinceSwing);
+            var (off, hx, hy, lean) = throwHold >= 0f ? Lift(throwHold)
+                : sinceThrow < WhipTime ? Whip(sinceThrow)
+                : swingHold >= 0f ? Chop(Mathf.Min(swingHold, WindUp))
+                : Chop(sinceSwing);
+            if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp) off += 3f * Mathf.Sin(swingHold * 30f);   // a charged swing trembles
             float right = ChestX + 3f;                                                   // the fist beside the body
             float gx = (left ? 13f - right : right) + side * Mathf.Round(hx);
-            float gy = Mathf.Min(Mathf.Round(ChestY + 0.5f + hy), WaistTopRow);
+            float gy = Mathf.Min(Mathf.Round(ChestY + 0.5f + hy), WaistTopRow);   // (a lifted fist goes up past the head: no lower limit)
             float cx = left ? 1f : 2f;
             return new HeldFrame
             {
                 Left = left, HasSupport = false, MagShown = false,
                 GunDeg = 90f - side * (RestTilt + off),                                   // upright, edge forward (a flipped sprite mirrors it)
                 GunX = gx + cx, GunY = gy + 1.5f, GripX = gx + cx, GripY = gy + 1.5f,
+                Lean = side * lean, Thrown = throwHold < 0f && sinceThrow >= 0f && sinceThrow < WhipTime && sinceThrow >= 0.5f * WhipTime,
             };
         }
 
@@ -186,9 +208,9 @@ namespace GameCore
         /// aim, then recoil (k: 0..1 left of the last shot's kick), swing, and the reload or jam-clearing pose at progress r.
         /// g = WeaponArt grip/support/muzzle points.</summary>
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
-            float r, string style, int trips, float[] mag = null)
+            float r, string style, int trips, float[] mag = null, float swingHold = -1f, float throwHold = -1f, float sinceThrow = 99f)
         {
-            if (cat == "melee") return MeleeFrame(angle, sinceSwing);                  // RT 7c
+            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow);   // RT 7c, 7e
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
             var (swingDeg, lunge) = Swing(sinceSwing);
@@ -512,7 +534,9 @@ namespace GameCore
         public void Twitch() { _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; }   // jammed: click, nothing
         public void Swing() => _swingAt = Time.time;
         /// <summary>RT 7c: the body's lean while swinging a melee weapon (degrees, for the unit's tilt): back on the wind-up, into the chop.</summary>
-        public float Lean => Mathf.Cos(_angle * Mathf.Deg2Rad) < -0.0001f ? -HeldPoseMath.Chop(Time.time - _swingAt).lean : HeldPoseMath.Chop(Time.time - _swingAt).lean;
+        public float Lean { get; private set; }
+        /// <summary>RT 7e: the player's melee charge (Melee.ChargeOf) - drives the wind-up, the lift and the whip; null for others.</summary>
+        public Melee.Charge MeleeCharge;
         /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
         public void StartClear(float seconds) { _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
         public void StartReload(WeaponFeel f, int capacity, float seconds = 0f, int rounds = 0)
@@ -581,9 +605,12 @@ namespace GameCore
             _g = g;
 
             // animation on top of the aim: recoil (back + muzzle climb), melee swing, reload tilt, clearing a jam
-            var f = HeldPoseMath.Frame(cat, g, _angle, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, now - _swingAt,
+            var mc = cat == "melee" ? MeleeCharge : null;
+            var f = HeldPoseMath.Frame(cat, g, _angle, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, mc != null ? now - mc.SwungAt : now - _swingAt,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
-                key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null);
+                key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
+                mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f);
+            Lean = f.Lean;
 
             var (body, mag) = WeaponArt.Mag(cat, key);
             _gun.sprite = mag != null && body != null ? body : sprite;

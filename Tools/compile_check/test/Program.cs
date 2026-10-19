@@ -776,17 +776,22 @@ static class Program {
       if (clip == "swing") Rt.SetOffset(foe, 0.3f, 0f);                                    // a step back, inside the hatchet's reach (1.35)
       int maxHp = foe.Hp; float swingAt = -99f, hitAt = -99f; var blood = new System.Collections.Generic.List<string>();
       sb.Append($"{(clip == "swing" ? "" : ",")}\"{clip}\":{{\"hp\":{maxHp},\"frames\":[");
-      int n = clip == "swing" ? 60 : 210;
+      int n = clip == "swing" ? 112 : 230;
       for (int i = 0; i < n; i++) {
         float t = i / 30f; Melee.Now = t;
         int hp0 = foe.Hp;
-        if (clip == "swing" && (i == 9 || i == 36)) { swingAt = t; var (fpx, fpy) = Ballistics.Pos(foe); Melee.PlayerAttack(p, hw, (fpx, fpy + 0.44f - (i == 9 ? 0.45f : 0.8f) * Ballistics.BodyTiles), false); }   // body, then head; it lands at the chop
-        if (clip == "throw" && i == 9) { swingAt = t; Melee.Throw(p, hw, 1f, 0f, 0.45f); }
+        // RT 7e: the mouse as the game reads it - a left tap (body), then the left held 1.5 s (a full charge, body);
+        // the right held 0.7 s (lifted over the head, charged), let go: thrown
+        { var (fpx, fpy) = Ballistics.Pos(foe); var at = (fpx, fpy + 0.44f - 0.45f * Ballistics.BodyTiles);   // the crosshair on his chest
+          bool left = clip == "swing" && (i >= 6 && i < 8 || i >= 36 && i < 81), right = clip == "throw" && i >= 9 && i < 30;
+          if (p.EquippedWeapon != null) Melee.PlayerInput(p, hw, left, right, at); }
         Melee.Tick(1f / 30f);
         if (foe.Hp < hp0) { hitAt = t; blood.Add(FormattableString.Invariant($"[{t},{Ballistics.Pos(foe).x},{Ballistics.Pos(foe).y}]")); }
         // you: the hatchet in hand (swing arc) or empty hands once it's thrown
-        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - swingAt, 1f, "none", 1);
-        float lean = HeldPoseMath.Chop(t - swingAt).lean;
+        var mc = Melee.ChargeOf(p);
+        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null,
+          mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, mc.ThrowFrom >= 0f ? t - mc.ThrowFrom : -1f, t - mc.ThrewAt);
+        float lean = f.Lean;
         bool inHand = p.EquippedWeapon != null;
         // the hatchet out of your hands
         string item = "null";
@@ -945,6 +950,24 @@ static class Program {
       if (lying != null) { p.AddItem(lying.Item); TerrainMap.GroundItems.Remove(lying); Melee.EquipIfEmptyHanded(p, lying.Item); }
       Check(p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "RT 7a: picked up with empty hands, it's back in them");
       Check(!EncounterGeneration.Unique.Contains("Tactical Hatchet") == false && WeaponArt.HasGrip("TacticalHatchet"), "RT 7a: one of a kind, with its own grip points");
+      // RT 7e: left held then let go swings (held past the wind-up: more damage); right held lifts and charges the throw
+      int Swung(float hold) {
+        Melee.Reset(); EncounterState.Enemies.Clear(); p.EquipWeapon("melee", "TacticalHatchet"); var w2 = p.EquippedWeapon;
+        var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(foe);
+        foe.Hp = 100000; int hp = foe.Hp; var at = (Ballistics.Pos(foe).x, Ballistics.Pos(foe).y);
+        Melee.Now = 0f; Melee.PlayerInput(p, w2, true, false, at); Melee.Now = hold; Melee.PlayerInput(p, w2, false, false, at);
+        for (float s = hold; s < hold + 1f; s += 0.02f) { Melee.Now = s; Melee.Tick(0.02f); }
+        return hp - foe.Hp; }
+      int tap = Swung(0.05f), full = Swung(5f);
+      Check(tap > 0 && full > tap * 1.5f, $"RT 7e: a tap swings ({tap}), a held swing hits harder ({full})");
+      float Thrown(float hold) {
+        Melee.Reset(); EncounterState.Enemies.Clear(); p.EquipWeapon("melee", "TacticalHatchet"); var w2 = p.EquippedWeapon;
+        var at = (Ballistics.Pos(p).x + 5f, Ballistics.Pos(p).y);
+        Melee.Now = 0f; Melee.PlayerInput(p, w2, false, true, at); Melee.Now = hold; Melee.PlayerInput(p, w2, false, false, at);
+        Melee.Now = hold + 0.1f; Melee.Tick(0.02f);
+        return Melee.Air.FirstOrDefault()?.Left ?? -1f; }
+      float quick = Thrown(0.1f), half = Thrown(0.3f), strong = Thrown(1f);
+      Check(quick < 0f && half > 0f && strong > half, $"RT 7e: a flick of the right button lowers it (no throw), a longer hold throws farther ({half:0.0} < {strong:0.0} tiles)");
       Melee.Reset(); Melee.Now = -1f; EncounterState.Enemies.Clear(); foreach (var e in keepE) EncounterState.Enemies.Add(e); p.EquippedWeapon = keepW; CombatFx.Pending.Clear(); }
     // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
     {

@@ -134,11 +134,17 @@ namespace GameCore
             if (k.rKey.wasPressedThisFrame && w != null && aim.ReloadUntil < 0f && UsingId == null && !CombatRules.IsMelee(w)
                 && (w.IsJammed || w.CurrentMagazine < w.MagCapacity))
                 StartReload(p, w, aim, Time.time);
+            if (w != null && CombatRules.IsMelee(w))                                         // RT 7e: hold to charge a swing; right mouse to throw
+            {
+                if (m != null && UsingId == null) Melee.PlayerInput(p, w, m.leftButton.isPressed, m.rightButton.isPressed, mw);
+                goto camera;
+            }
             bool trigger = m != null && (hd.Auto ? m.leftButton.isPressed : m.leftButton.wasPressedThisFrame);
             if (trigger && aim.Loading > 0) StopLoading(p, w, aim);   // RT 6h: a tube or lever fires what's in; a revolver closes first
             if (trigger && UsingId != null) { UsingId = null; GameLog.Write("You stop to shoot."); }
             if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
 
+            camera:
             // ---- camera looks toward the mouse; further when aiming, further still with a long gun ----
             if (mw.HasValue)
             {
