@@ -248,7 +248,8 @@ namespace GameCore
                 foreach (var extra in s.Members.Where(m => m != lead).Skip(1).ToList()) s.Members.Remove(extra);
                 return;
             }
-            int want = (s.Faction == "Raiders" || dest.Tier >= 3) ? 4 : 0;
+            int want = s.Faction == "Raiders" && dest.Tier <= 1 ? 0             // Batch 73 (Yan): a Tier 1 gang is at most 3 - never padded back to 4
+                : (s.Faction == "Raiders" || dest.Tier >= 3) ? 4 : 0;
             for (int tries = 0; s.Members.Count(m => m.IsAlive()) < want && tries < 12; tries++)
             {
                 bool north = dest.Tier >= 4;   // Batch 83: the deck of where it's going, members within 2 tiers under the leader

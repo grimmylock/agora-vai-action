@@ -188,6 +188,12 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 
 ## Later list
 
+- **Starting area rework (Yan, 2026-10-20; waiting on his map and quest spots):** Bonfire Village as a real Safe Zone in the
+  Cordon rookie-village spirit - the starting faction's boundary and perimeter that hostile squads (mostly Raiders) can't or
+  very rarely cross (and then fight the guards), guards, random friendly squads, a trader, a medic, a small bar and barman.
+  Tutorial: the trader's job (recover something from a dead courier, a fixed pack of 2-3 Blind Maws) and the barman's job (clear
+  a nearby spot held by a fixed 3-man Raider squad, laid out so stealth works - teaches sneaking, takedowns). Plus: name your
+  character, and a save made at character creation. Renders: `maps/renders/start_area/`.
 - A real run cycle for the hounds (Batch 131f): the knee-rig walk looks wrong at running speed.
 - Shotguns: 3 full patterns to drop a mid-armor target at 5 tiles (2-4 s with a pump) vs ~1 s for rifles - look at it after playing.
 - SMGs still need 14-15 chest hits on the heaviest tier 3 armor (Wasp-9, Hornet): their answer is aiming for the head or AP.
