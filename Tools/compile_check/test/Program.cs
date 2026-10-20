@@ -860,6 +860,18 @@ static class Program {
       for (int i = 0; i < 6; i++) { p.Mp = 99; PlayerController.StepFree(p, i < 3 ? 1 : -1, 0); }
       Check(MacroState.Current.Hour == h0 && p.X == px, $"real time: walking doesn't tick the world (hour {h0} -> {MacroState.Current.Hour})");
       EncounterState.InCombat = false; }
+    // "my shots seem to pass straight through them": a step is a slide, so the body you see is where the rounds hit
+    { EncounterState.Enemies.Clear(); var dog = new Mutant("Dog", px + 5, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(dog);
+      Rt.Glide(0f); var a0 = Ballistics.Pos(dog); dog.X += 1; Rt.Glide(0f); var a1 = Ballistics.Pos(dog);
+      Rt.Glide(0.2f); var a2 = Ballistics.Pos(dog); Rt.Glide(1f); var a3 = Ballistics.Pos(dog);
+      Check(Math.Abs(a1.x - a0.x) < 0.01f && a2.x > a1.x + 0.2f && a2.x < a3.x && Math.Abs(a3.x - a0.x - 1f) < 0.01f,
+        $"real time: a step slides the body over (x {a0.x:0.00} -> {a1.x:0.00} -> {a2.x:0.00} -> {a3.x:0.00})");
+      EncounterState.Enemies.Clear(); }
+    // "make the entire screen seeable as long as im looking at it": the look cone reaches far where you point, not behind you
+    { Vision.Reset(); Vision.Update(p, 4242, 8f, 0f, 0f, 24f);
+      Check(Vision.Light(px + 20, py) > 0.35f && Vision.Light(px - 20, py) < 0.35f && Vision.Light(px - 6, py) > 0.35f && Vision.LookReach == 24f,
+        $"real time: you see 20 tiles where you look ({Vision.Light(px + 20, py):0.00}), not behind ({Vision.Light(px - 20, py):0.00}), 6 all round");
+      Vision.Reset(); }
     // ... and "damage rolls are still happening": in real time a mutant's strike and an NPC's blade land on reach, no 2d10
     { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
       var md = TestingGround.AllMutants().First(m => !m.PsiBlast && !m.NeuralOverload);

@@ -22,13 +22,37 @@ namespace GameCore
         static readonly Dictionary<ICombatant, (float x, float y)> Off = new Dictionary<ICombatant, (float, float)>();
         public static (float x, float y) Offset(ICombatant u)
         {
-            if (u != null && Off.TryGetValue(u, out var o)) return o;
+            var (sx, sy) = u != null && Slide.TryGetValue(u, out var sl) ? sl : (0f, 0f);
+            if (u != null && Off.TryGetValue(u, out var o)) return (o.x + sx, o.y + sy);
             if (u == null || u is Player) return (0f, 0f);
             int h = u.GetHashCode() * 73856093;                      // NPCs: the fixed spot of Batch 114
-            return (((h & 255) / 255f - 0.5f) * 0.55f, -(((h >> 8) & 255) / 255f - 0.5f) * 0.4f);
+            return (((h & 255) / 255f - 0.5f) * 0.55f + sx, -(((h >> 8) & 255) / 255f - 0.5f) * 0.4f + sy);
         }
         public static void SetOffset(ICombatant u, float x, float y) => Off[u] = (x, y);
-        public static bool Free(ICombatant u) => On && u is Player;   // drawn where it really is, no tile-to-tile walk
+        // the first real-time playtest ("some of my shots seem to pass straight through them"): an NPC's tile changes in one jump
+        // and its sprite used to walk over after it, so the body you shot at was up to a tile behind its hitbox. Now the jump is
+        // undone as a slide that runs out at its walking speed (Glide), and everyone is drawn where the rounds see them.
+        static readonly Dictionary<ICombatant, (int x, int y)> Was = new Dictionary<ICombatant, (int, int)>();
+        static readonly Dictionary<ICombatant, (float x, float y)> Slide = new Dictionary<ICombatant, (float, float)>();
+        public static bool Free(ICombatant u) => On && u != null;     // drawn where it really is, no tile-to-tile walk
+
+        public static void Glide(float dt)
+        {
+            foreach (var e in EncounterState.Enemies)
+            {
+                if (!Was.TryGetValue(e, out var w)) { Was[e] = (e.X, e.Y); continue; }
+                var (sx, sy) = Slide.TryGetValue(e, out var sl) ? sl : (0f, 0f);
+                if (w.x != e.X || w.y != e.Y)
+                {
+                    int jx = w.x - e.X, jy = w.y - e.Y;
+                    if (System.Math.Abs(jx) <= 2 && System.Math.Abs(jy) <= 2) { sx += jx; sy += jy; } else { sx = 0f; sy = 0f; }   // a jump far off is a teleport
+                    Was[e] = (e.X, e.Y);
+                }
+                float len = Mathf.Sqrt(sx * sx + sy * sy), step = RtAi.Speed(e) * 1.15f * dt;
+                if (len <= step || !e.IsAlive()) { sx = 0f; sy = 0f; } else { sx *= (len - step) / len; sy *= (len - step) / len; }
+                Slide[e] = (sx, sy);
+            }
+        }
 
         // ---- tuning (tiles a second; stamina points) ----
         public const float Walk = 2.6f, Sprint = 4.4f, Crouch = 1.3f, AimSlow = 0.65f;
@@ -44,7 +68,7 @@ namespace GameCore
         static float _round;
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Stamina = StaminaMax; _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>

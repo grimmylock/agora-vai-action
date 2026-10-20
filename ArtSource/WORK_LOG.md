@@ -3517,3 +3517,20 @@ ones we have".
   up yet; the hound run cycle is still on the later list.
 - Not seen in Unity yet: check the size next to people, the feet on the ground, mirroring, corpses (they keep the right-facing
   sprite).
+
+### RT 7j - second playtest: hitboxes, vision, fair shots (2026-10-20)
+
+Yan: "i can't see past a certain range but enemies keep shooting me, make the entire screen seeable as long as im looking at it (so
+where the cursor is poiting) / Enemies also see me throw walls / Also some of my shoots seem to pass straight through them".
+- Hitboxes: an NPC's tile changed in one jump and its sprite walked over afterwards (`UnitMotionView.Place`, 3 tiles/s), so the
+  body on screen trailed its hitbox (`Ballistics.Pos`) by up to a tile while it moved. Now `Rt.Glide` turns each jump into a
+  slide inside `Rt.Offset` that runs out at the unit's own speed, and every unit is drawn where it really is (`Rt.Free`): the
+  sprite, the hitbox, melee reach and the crosshair's target are one position.
+- Vision: a look cone toward the mouse (`Vision.LookHalfAngle` ~50 degrees a side) that sees 1.5x the day's all-round sight -
+  30 tiles in daylight (the far zoom's corners; `MaxRadius` 20 -> 30), less in rain, fog and dusk, nothing extra at night (the
+  flashlight does that). All round you the old radius stays. Leaning round corners still counts, within 12 tiles.
+- Fair shots: an enemy fires only from as far as you could see him if you looked (`Vision.LookReach`), and line of sight must hold
+  both ways (`Contact.Mutual`): a tile line traced from him to you could slip past a corner that yours to him didn't - that was
+  the "seeing through walls". Spotting uses the same two-way check.
+- Checks: a step slides the body over, the look cone reaches 20 tiles ahead and not behind.
+- Open, asked Yan: walking through low cover (no vault yet), the slow and tactical pace, the birch trees' look.

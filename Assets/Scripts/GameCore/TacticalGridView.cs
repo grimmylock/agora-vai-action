@@ -184,6 +184,7 @@ namespace GameCore
             }
 
             SlideProps();
+            if (Rt.On) Rt.Glide(Time.deltaTime);                                 // NPC tile jumps become slides; hitboxes ride them (also under the menu)
             _motion.DrainSteps();
             bool playerUp = DrawUnit(player, _playerMarker, new Color(0.2f, 0.6f, 1f));
             // Batch 31: time of day / weather decide how far you see; the flashlight follows your aim
@@ -192,7 +193,8 @@ namespace GameCore
             _look = look; _lookZone = _builtZoneId;
             var aimAt = MouseWorld();
             if (aimAt.HasValue) _aim = Mathf.Atan2(aimAt.Value.y - _playerMarker.transform.position.y, aimAt.Value.x - _playerMarker.transform.position.x);
-            Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim);
+            float lookReach = Rt.On ? look.Vision * (1f + 0.5f * (1f - Mathf.Clamp01(look.Night / 0.8f))) : 0f;   // real time: the look cone (Vision.LookReach)
+            Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
             _roofs?.Tick(player);
             _atmo?.Tick(player, look);
             ColorGrade.Apply(look);
