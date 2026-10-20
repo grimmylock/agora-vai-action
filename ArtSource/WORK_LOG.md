@@ -3738,3 +3738,6 @@ Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
   - Machete: the blade is 3 px longer, so its belly runs straight longer before it sweeps up.
   - Trench knife: the blade is longer, with a clip point and an edge that curves up to the tip.
   - Hatchet: removed the bump on the handle next to the head.
+- Yan: the two bats' handles were "too long, makes them look like that other bat from that other sport". The thin handle is now
+  about a third shorter and the barrel longer, on both bats and in both sizes, with the total length unchanged. The barbed bat
+  now has 6 wire coils.

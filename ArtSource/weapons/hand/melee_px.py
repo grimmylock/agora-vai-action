@@ -17,18 +17,18 @@ BAT = {"l": "#e6b57b", "f": "#f9e5cc", "m": "#d5a171", "d": "#c08658", "e": "#a0
        "t": "#ebe2d1", "T": "#cbb59d", "S": "#a8937c"}                                       # tape
 
 BAT_MENU = [
-    "..................................lllllllllllllllllllllllee",
-    ".ll...................llllllllllllfffffffffffffffffffffffgG",
-    "lfflttTtttTtttTttlllllfffffffffffflllllllllllllllldddllllgG",
-    "mmmmtTtttTtttTtttmmmmmmmmmmmmmmmmmmmmmmmdddddmmmmdmmmdmmmgG",
-    "ddddSTTTSTTTSTTTSdddddddddddddddddmmmmmmmmmmmmmmmmdddmmmmgG",
-    ".ee...................eeeeeeeeeeeedddddddddddddddddddddddgG",
-    "..................................eeeeeeeeeeeeeeeeeeeeeeeee",
+    ".......................llllllllllllllllllllllllllllllllllee",
+    ".ll............llllllllffffffffffffffffffffffffffffffffffgG",
+    "lfflttTtttTttllfffffffflllllllllllllllldddlllllllllllllllgG",
+    "mmmmtTtttTtttmmmmmmmmmmmmmmmmdddddmmmmdmmmdmmmmmmmdddddmmgG",
+    "ddddSTTTSTTTSddddddddddmmmmmmmmmmmmmmmmdddmmmmmmmmmmmmmmmgG",
+    ".ee............eeeeeeeeddddddddddddddddddddddddddddddddddgG",
+    ".......................eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
 ]
 BAT_HAND = [
-    "l...........lllllfffffflllle",
-    "mtTtTtmmmmmmmmmmmmmddmmmmmmg",
-    "d...........ddddddddddddddde",
+    "l......lllllffffffllllllllfe",
+    "mtTtTmmmmmmmmmddmmmmmmmmmmmg",
+    "d......dddddddddddddddddddde",
 ]
 
 HAMMER = {"0": "#2e2935", "1": "#52555e", "2": "#757883", "3": "#a0a4af", "4": "#c8cad2",   # steel
@@ -275,24 +275,24 @@ SLEDGEHAMMER_HAND = [
 
 BARBEDWIREBAT = {"a": "#4a2a1a", "b": "#6e4024", "c": "#8c5634", "d": "#a86e40", "e": "#c48a56", "f": "#d8a470", "g": "#3a2418", "G": "#24160e", "t": "#c8c0b0", "T": "#9a9080", "S": "#6e665c", "w": "#5e524c", "W": "#b0a49a", "K": "#141617"}
 BARBEDWIREBAT_MENU = [
-    "....................................w.w..w.w..w.w..w.w.....",
-    "...............................w.w...W....W....W....W......",
-    "................................W.dddwddddwddddwddddwddddcc",
-    ".ee...................eeeeeeeeeeweeeeWeeeeWeeeeWeeeeWeeeegG",
-    "dffdStttStttStttStddddffffffffffWfffffwafffwffffwffffwfffgG",
-    "ccccTttSTttSTttSTtccccccaacccccccwccccWccccWccccWccccWcacgG",
-    "abbaTTSSTTSSTTSSTTaaaabbbbbbbabbbWccccwccccwcaccwccccwcccgG",
-    ".aa............TT.....aaaaaaaaaaaawbbbbWbbbbWbbbbWbbbbWbbgG",
-    "...............ST.................Waaaawaaaawaaaawaaaawaabb",
-    "................S................w.w...W....W....W....W....",
-    "......................................w.w..w.w..w.w..w.w...",
+    "............................w.w..w.w..w.w..w.w..w.w..w.w...",
+    ".............................W....W....W....W....W....W....",
+    ".......................ddddddwddddwddddwddddwddddwddddwddcc",
+    ".ee............eeeeeeeeeeeeeeWeeeeWeeeeWeeeeWeeeeWeeeeWeegG",
+    "dffdStttStttSddfffffffffffffffwfffawffffwffffwffffwffffwfgG",
+    "ccccTttSTttSTcccccaaccccccccccWccccWccccWccccWccccWccccWcgG",
+    "abbaTTSSTTSSTaabbbbbbbbcccacccwccccwccccwcccawccccwccccwcgG",
+    ".aa........TT..aaaaaaaabbbbbbbbWbbbbWbbbbWbbbbWbbbbWbbbbWgG",
+    "...........ST..........aaaaaaaawaaaawaaaawaaaawaaaawaaaawbb",
+    "............S..................W....W....W....W....W....W..",
+    "..............................w.w..w.w..w.w..w.w..w.w..w.w.",
 ]
 BARBEDWIREBAT_HAND = [
-    ".............W...W...W......",
-    "e...........eeweeeweeeweeeeg",
-    "ctTtTtTccccccccWcccWcccWcccg",
-    "a....S......aaawaaawaaawaaag",
-    "................W...W...W...",
+    "...........W...W...W...W....",
+    "e.......eeeeweeeweeeweeeweeg",
+    "ctTtTtcccccccWcccWcccWcccWcg",
+    "a...S...aaaaawaaawaaawaaawag",
+    "..............W...W...W...W.",
 ]
 
 OBELISKRITUALBLADE = {"0": "#22262a", "1": "#33373b", "2": "#4c5258", "3": "#727980", "4": "#a9b0b5", "a": "#4c2812", "b": "#743f1c", "c": "#a0602f", "d": "#b97a45", "r": "#7a1a17", "R": "#c0302a", "s": "#e06a50", "y": "#f0d878", "K": "#141617"}
