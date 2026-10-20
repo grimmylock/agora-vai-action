@@ -39,7 +39,68 @@ def _crown(im, r, S, pal, cx, cy, sx, sy, n, rmin, rmax, droop=0.0):
                     if r.random() < 0.07: i = 4
                     _px(im, xx, yy, S[pal][i])
 
+def _mass(im, r, S, pal, cx, cy, rx, ry, dark=0):
+    """RT 7l: one leaf mass - leaf clumps packed tight inside a ragged ellipse, each lit on its top-left and shaded on its
+    lower right, so the mass reads as leaves but its outline is one shape (the Batch 117 crowns were ~30 separate round clusters
+    each outlined on its own: bubbles, with the trunk showing through)"""
+    n = int(rx * ry / 4.5) + 4
+    for _ in range(n):
+        a = r.uniform(0, 6.283); t = r.random() ** 0.6
+        x0, y0 = cx + math.cos(a) * rx * t, cy + math.sin(a) * ry * t
+        rad = r.uniform(2.2, 3.8)
+        deep = (x0 - cx) / rx + (y0 - cy) / ry                                # lower right of the mass = in its shade
+        for yy in range(int(y0 - rad), int(y0 + rad) + 1):
+            for xx in range(int(x0 - rad), int(x0 + rad) + 1):
+                d = ((xx - x0) / rad) ** 2 + ((yy - y0) / (rad * 0.85)) ** 2
+                if d > 1 or d > 0.8 and r.random() < 0.3: continue
+                lit = (xx - x0) + (yy - y0) < -0.8
+                i = (3 if d < 0.45 else 2) if lit else (1 if d < 0.75 else 0)
+                if deep > 0.5: i = max(0, i - 1)
+                i = max(0, i - dark)
+                if r.random() < 0.04: i = 4
+                _px(im, xx, yy, S[pal][i])
+
 def big_birch(seed, S=A):
+    """RT 7l (Yan: "some trees look very weird"): the same four birches (tall, forked twin, slender young, broad old), each crown
+    a few big leaf masses over the trunk instead of a cloud of bubbles; the white trunk shows below the crown, the branches only
+    at its lower edge."""
+    r = random.Random(seed * 31 + 7); kind = seed % 4
+    h = [104, 92, 76, 100][kind] + r.randint(-6, 8); w = int(h * (0.42 if kind == 2 else 0.6 if kind != 3 else 0.7))
+    im = concept.blank(w, h); base = w // 2 - 1
+    trunks = {0: [(0, r.uniform(-.06, .06), 3, 0.62)], 1: [(-2, -.11, 3, 0.56), (2, .09, 2, 0.5)],
+              2: [(0, r.uniform(-.05, .05), 2, 0.66)], 3: [(0, r.uniform(-.04, .04), 4, 0.5)]}[kind]
+    tops = []
+    for (dx, lean, th, frac) in trunks:
+        ln = int(h * frac)
+        for k in range(ln):                                                   # white bark, black lenticels, dark base
+            y = h - 1 - k; x0 = base + dx + int(k * lean)
+            for t in range(th):
+                c = S["bark"][0] if t == 0 else S["bark"][1] if t < th - 1 else S["bark"][2]
+                if k < 4: c = S["bark"][2] if t else S["mark"]
+                elif r.random() < 0.16 and y % 3 == 0: c = S["mark"]
+                _px(im, x0 + t, y, c)
+        tops.append((base + dx + int(ln * lean) + th / 2, h - ln))
+    for (tx, ty) in tops:                                                     # a few branches reaching into the crown's underside
+        for side in (-1, 1):
+            x, y = tx, ty + h * 0.06
+            for _s in range(r.randint(5, 9)): _px(im, x, y, S["bark"][2]); x += side * r.choice((0, 1, 1)); y -= 1
+    cw = w * (0.2 if kind == 2 else 0.27 if kind != 3 else 0.32)
+    for (tx, ty) in tops:
+        cy = ty - h * 0.02; rows = 3 if kind != 3 else 2
+        for j in range(rows):                                                 # lower masses first (darker), the top last (lit)
+            yj = cy + h * 0.13 * (rows - 1 - j) - h * 0.06
+            k = max(1, 3 - j) if kind != 2 else 2
+            for _m in range(k):
+                ox = (_m - (k - 1) / 2) * cw * 0.8 + r.uniform(-2, 2)
+                _mass(im, r, S, "leaf", tx + ox, yj + r.uniform(-2, 2), cw * r.uniform(0.6, 0.8) / len(tops) ** 0.5, h * r.uniform(0.09, 0.12),
+                      dark=1 if j == 0 else 0)
+    if kind == 3:                                                             # the old birch's hanging strands
+        for _ in range(14):
+            x, y = tops[0][0] + r.gauss(0, w * 0.2), tops[0][1] + h * 0.08          # from the crown's underside, not floating
+            for _s in range(r.randint(5, 11)): _px(im, x, y, S["leaf"][r.choice((0, 1))]); y += 1
+    return Prop(concept.outline(im, S["outline"]), (base + 1, h - 1), (int(w * 0.5), 5, 1, 0), True)
+
+def big_birch_old(seed, S=A):
     r = random.Random(seed * 31 + 7); kind = seed % 4
     h = [104, 92, 76, 100][kind] + r.randint(-6, 8); w = int(h * (0.42 if kind == 2 else 0.6 if kind != 3 else 0.7))
     im = concept.blank(w, h); base = w // 2 - 1

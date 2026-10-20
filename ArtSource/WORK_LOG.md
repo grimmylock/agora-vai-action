@@ -3547,3 +3547,13 @@ Yan: "i can walk right through cover like the sandbags and stuff (might be my ch
 - Enemies: their paths already cost cover double (`TacticalGridSystem.BaseCost`), so they go round when that's shorter; a step
   onto cover now takes them twice as long (a climb). No hop drawn for them yet.
 - Check: sandbags stop you, Space carries you two tiles over them with a hop.
+
+### RT 7l - birch redraw, for review (2026-10-20)
+
+Yan: "some trees look very weird" (the big birches of Batch 117: ~30 separate round leaf clusters, each outlined on its own, read as
+bubbles, and the white trunk ran up through them). `zone_style.big_birch`: the same four birches (tall, forked twin, slender young,
+broad old), the crown now 2-3 rows of leaf masses (`_mass`: clumps packed tight inside a ragged ellipse, lit top-left, the
+underside and lower masses darker), the trunk hidden in it with branches only at its lower edge, the old birch's strands hanging
+from the crown. The old one is kept as `big_birch_old`. Review: `maps/renders/start_area/birch_sheet.png` (sprites 3x) and
+`birch_before_after.png` (in the map). Not in the game's atlas until Yan approves (then `pack.py` -> world_atlas.bytes).
+Also rendered for Yan: `maps/renders/start_area/bonfire_village_now.png`, the starting village as it is (he'll direct the redo).
