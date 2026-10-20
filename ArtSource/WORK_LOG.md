@@ -3690,3 +3690,17 @@ of where each real-time system lives, the turn-based leftovers, the shared world
 art, logging), the current state (nothing since RT 7 checked in Unity), what waits on Yan, and the agreed next steps.
 Also sent Yan the melee weapon list for references (6 new: Hatchet, Fire Axe, Wooden Baseball Bat, Hammer, Sledgehammer,
 Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
+
+## RT 7u - melee weapons redrawn from Yan's references (2026-10-20)
+
+- Yan sent references for 10 melee weapons ("try taking the existing design and making it better quality like these"; no
+  reference for the Obelisk Ritual Blade).
+- First try, `ArtSource/weapons/hand/melee_set.py`: shrink each reference to sprite size. Mushy (one-pixel details can't
+  survive the shrink); kept for the record.
+- Used instead: `ArtSource/weapons/hand/melee_drawn.py`. Each weapon is drawn from a few shapes (handle, guard, blade, head),
+  with colours taken from the references. Each is painted twice: 32x16 in the hand and 64x32 for the menu (scaled to fill
+  the canvas). Pixel-art edge shading, outline #141617.
+- The Ritual Blade is redrawn from the old sprite's design: wooden grip, red binding, dark fin with a red eye, chipped spine.
+- References: `ArtSource/refs/melee/`. Review sheet: `maps/renders/melee/melee_drawn_sheet.png`.
+- **Not installed yet:** waiting on Yan's approval; then run `melee_drawn.py --install`. The 6 new weapons (Hatchet, Fire Axe,
+  Bat, Hammer, Sledgehammer, Barbed Wire Bat) still need database entries, `Melee.Stats`, grips and a two-handed hold.
