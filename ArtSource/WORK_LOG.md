@@ -3741,3 +3741,9 @@ Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
 - Yan: the two bats' handles were "too long, makes them look like that other bat from that other sport". The thin handle is now
   about a third shorter and the barrel longer, on both bats and in both sizes, with the total length unchanged. The barbed bat
   now has 6 wire coils.
+- Yan: "they all look great, push to live". Installed with `melee_px.py --install`: the 5 existing blades' sprites replaced, the
+  6 new weapons' sprites added. `WeaponArt.Grips` (`HeldWeapon.cs`) was redone for the 5 old blades, whose sprites are now
+  centred on 32x16 canvases instead of cropped, and added for the 6 new weapons. Grips are computed from the grids: the fist on
+  the handle; the "muzzle" at the blade tip or the head's striking corner. Harness: ALL CHECKS PASSED.
+- **Not checked:** the new sprites in Unity (how they sit in the hand, and the thrown/spinning look). The 6 new weapons still
+  can't drop or be bought: no database entries or stats yet.

@@ -314,11 +314,18 @@ namespace GameCore
             ["cat_sniper"]  = new[] { 14.5f, 10f, 19.5f, 7.5f, 32f, 7.5f },
             ["cat_heavy"]   = new[] { 11.5f, 10.5f, 24f, 7.5f, 32f, 7f },
             // Batch 29: every weapon hand-pixelled (ArtSource/weapons/hand, exported by export_hand.py)
-            ["HuntingKnife"] = new[] { 4f, 3f, float.NaN, float.NaN, 17f, 3.5f },
-            ["SpetsnazSwitchblade"] = new[] { 4f, 3.5f, float.NaN, float.NaN, 17f, 3.5f },
-            ["SteppeMachete"] = new[] { 4f, 3.5f, float.NaN, float.NaN, 24f, 2.5f },
-            ["SerratedTrenchKnife"] = new[] { 5.5f, 5f, float.NaN, float.NaN, 18f, 5.5f },
-            ["ObeliskRitualBlade"] = new[] { 3f, 5.5f, float.NaN, float.NaN, 22f, 5.5f },
+            // RT 7v: the melee set pixelled by hand from Yan's references (ArtSource/weapons/hand/melee_px.py), on 32x16 canvases
+            ["HuntingKnife"] = new[] { 11.5f, 8f, float.NaN, float.NaN, 23f, 7.5f },
+            ["SpetsnazSwitchblade"] = new[] { 11.5f, 8f, float.NaN, float.NaN, 23f, 7.5f },
+            ["SteppeMachete"] = new[] { 4.5f, 8f, float.NaN, float.NaN, 30f, 6.5f },
+            ["SerratedTrenchKnife"] = new[] { 9.5f, 7f, float.NaN, float.NaN, 26f, 7.5f },
+            ["ObeliskRitualBlade"] = new[] { 7f, 7f, float.NaN, float.NaN, 26f, 6.5f },
+            ["Hatchet"] = new[] { 10.5f, 7f, float.NaN, float.NaN, 25.5f, 11.5f },
+            ["FireAxe"] = new[] { 5.5f, 8f, float.NaN, float.NaN, 29.5f, 13.5f },
+            ["Hammer"] = new[] { 10.5f, 7f, float.NaN, float.NaN, 23.5f, 11f },
+            ["Sledgehammer"] = new[] { 4.5f, 8f, float.NaN, float.NaN, 28f, 12.5f },
+            ["WoodenBaseballBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
+            ["BarbedWireBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 5.5f, 9f, float.NaN, float.NaN, 19f, 2.5f },
             ["WaldenP9"] = new[] { 5f, 10f, float.NaN, float.NaN, 20f, 3.5f },

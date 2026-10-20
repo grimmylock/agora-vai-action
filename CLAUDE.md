@@ -128,8 +128,6 @@ hitboxes, look cone, fair shots, cover/vault, radio icon, mutants/blood, HD muta
 rank XP, Testing Ground dummies.
 
 **Waiting on Yan:**
-- Pixel art references for the melee weapons (6 new: Hatchet, Fire Axe, Wooden Baseball Bat, Hammer, Sledgehammer, Barbed
-  Wire Bat; maybe redraws of the old 5 knives/blades). Two-handed weapons need a second hand on the handle (not built yet).
 - His map and quest spots for the starting area (Bonfire Village as a real Safe Zone with perimeter, guards, trader, medic,
   bar, and two tutorial jobs). Renders: `maps/renders/start_area/`.
 - Approval of the birch redraw (`maps/renders/start_area/birch_*.png`; `zone_style.big_birch`, not in the atlas yet).
@@ -137,7 +135,9 @@ rank XP, Testing Ground dummies.
 
 **Next (agreed order):** the networking test (Unity Netcode for GameObjects + Relay; host runs the world, others send
 `Rt.Input`; test with Multiplayer Play Mode in the editor), then save slots + character naming + the save at creation, then
-the starting area and tutorial. Melee weapons as soon as references arrive. Longer list: `ACTION_DESIGN.md` "Later list".
+the starting area and tutorial. The melee set: art done and in the game (RT 7v, `ArtSource/weapons/hand/melee_px.py`,
+hand-placed pixel grids); the 6 new ones (Hatchet, Fire Axe, Wooden Baseball Bat, Hammer, Sledgehammer, Barbed Wire Bat) still
+need database entries, `Melee.Stats` and a two-handed hold. Longer list: `ACTION_DESIGN.md` "Later list".
 
 ## Working from a cloud session
 
