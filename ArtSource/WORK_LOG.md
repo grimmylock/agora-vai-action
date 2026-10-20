@@ -3485,3 +3485,20 @@ Yan: "add a target dummy that shows damage numbers".
 - Checks: a head hit's number, the dummy stays still and out of combat, heals after 3 s, other damage shows, the kill is
   marked, it stands up again. Not yet seen in Unity (the HUD numbers can't be rendered offline).
 - ponytail: the dummy uses the faction's person sprite, not a straw dummy of its own.
+
+### RT 7h - first real-time playtest fixes (2026-10-20)
+
+Yan: "some of them running REEEEALLY fast for some reason, like zooming around, might have something to do with me pressing
+shift"; "damage rolls are still happening, when im walking it also keeps updating the MP values but we got rid of that".
+- Zooming, two causes. (1) Every tile you crossed in a fight also ran the old turn-based world tick (`TurnLoop.TickAwareness`)
+  on top of the clock's 4.2 ticks a second, so the faster you moved the faster the world ran: unaware squad members stepped, the
+  clock advanced (and with it the hourly A-Life). Real time now ticks only on the clock (`PlayerController.Step`). (2) On that
+  clock an unaware follower took a tile every tick, 4.2 tiles/s, faster than your walk; followers now keep their leader's half
+  pace in real time (~2.1/s; humans in a fight move at 2.2).
+- No dice in real time: a mutant's strike lands if you're in its reach when it comes (a dive under it misses; no hit tiers); an
+  NPC's knife or club is a real swing (`Melee.Swing`: reach and arc), not a 2d10. Enemies' "fires in Single mode" log lines are
+  gone (one per shot was spam).
+- The HUD's AP and MP pips are hidden in real time.
+- Checks: walking doesn't tick the world; strikes land in reach without rolls, a knife misses from 3 tiles. Two old checks
+  pinned (a Rookie's random loadout can be a knife; bites-per-10-s bound raised since no strike misses now).
+- Not changed (rule 6): the squad size and the radio backup. Watch: mutant bites no longer miss on a roll - keep distance or dive.

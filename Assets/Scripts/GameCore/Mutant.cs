@@ -304,7 +304,9 @@ namespace GameCore
             }
             else if (target.StatusEffects.EvasiveMelee) ac += target.StatusEffects.TakeCoverAc;
 
-            var result = GameServices.RequireCombat().RollAttack(advantage ? "advantage" : "standard", (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);   // Batch 57: maimed claws
+            if (Rt.On && target is Player diver && Rt.Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
+            var result = Rt.On ? new AttackRollResult { Hit = true, ChosenRoll = 0 }   // real time: no dice - in reach when it strikes = hit
+                : GameServices.RequireCombat().RollAttack(advantage ? "advantage" : "standard", (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);   // Batch 57: maimed claws
             bool crit = result.ChosenRoll == CombatRules.Headshot;
             if (!result.Hit && !crit)
             {
@@ -319,7 +321,7 @@ namespace GameCore
                 GameLog.Write($"Desperate Parry: {pr} vs DC 14 - {(pr >= 14 ? "you knock the blow aside!" : "too slow.")}");
                 if (pr >= 14) return;
             }
-            float tierMult = CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
+            float tierMult = Rt.On ? 1f : CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
             float raw = AttackDamage * tierMult;
             int damage = psi
                 ? CombatRules.AnomalousDamage(raw, target.AnomDR)

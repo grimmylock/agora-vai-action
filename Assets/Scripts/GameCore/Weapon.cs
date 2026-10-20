@@ -173,10 +173,19 @@ namespace GameCore
                 GameLog.Write($"{Name} does not have enough rounds for {modeName} fire ({roundsToUse} required).");
                 return new WeaponFireResult { Hit = false, NoAmmo = true };
             }
+            // Yan's first real-time playtest ("damage rolls are still happening"): an NPC's blade or club is a real swing too -
+            // it lands if you're in its reach and arc when it comes (Melee.Swing), no 2d10
+            if (Rt.On && isMelee && Owner != null && !(Owner is Player))
+            {
+                var (ox, oy) = Ballistics.Pos(Owner); var (tx, ty) = Ballistics.Pos(target);
+                float ddx = tx - ox, ddy = ty - oy, len = UnityEngine.Mathf.Max(0.01f, UnityEngine.Mathf.Sqrt(ddx * ddx + ddy * ddy));
+                var swing = CombatFx.Push("melee", Owner, target, this); swing.Now = true;
+                return new WeaponFireResult { Hit = Melee.Swing(Owner, this, ddx / len, ddy / len, 0.45f) == target };
+            }
             if (!isMelee)
             {
                 CurrentMagazine -= roundsToUse;
-                GameLog.Write($"{Name} fires in {modeName} mode, consuming {roundsToUse} round{(roundsToUse > 1 ? "s" : "")}.");
+                if (!Rt.On || shooterUnit is Player) GameLog.Write($"{Name} fires in {modeName} mode, consuming {roundsToUse} round{(roundsToUse > 1 ? "s" : "")}.");
             }
             var fx = CombatFx.Push(isMelee ? "melee" : "shot", Owner ?? (ICombatant)Player.Current, target, this);
             fx.Rounds = roundsToUse;

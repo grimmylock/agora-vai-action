@@ -855,8 +855,26 @@ static class Program {
 
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    // Yan's first real-time playtest: sprinting made enemies zoom - each tile you crossed also ticked the world
+    { float h0 = MacroState.Current.Hour; EncounterState.InCombat = true;
+      for (int i = 0; i < 6; i++) { p.Mp = 99; PlayerController.StepFree(p, i < 3 ? 1 : -1, 0); }
+      Check(MacroState.Current.Hour == h0 && p.X == px, $"real time: walking doesn't tick the world (hour {h0} -> {MacroState.Current.Hour})");
+      EncounterState.InCombat = false; }
+    // ... and "damage rolls are still happening": in real time a mutant's strike and an NPC's blade land on reach, no 2d10
+    { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var md = TestingGround.AllMutants().First(m => !m.PsiBlast && !m.NeuralOverload);
+      var mu = EncounterGeneration.CreateMutantFromDb(md, px + 1, py); EncounterState.Enemies.Add(mu);
+      int bites = 0; for (int i = 0; i < 10; i++) { p.HealPermanent(5000); int h = p.Hp; mu.Ap = 2; mu.Attack(p); if (p.Hp < h) bites++; }
+      Check(bites == 10, $"real time: a mutant in reach always lands its strike ({bites}/10)");
+      var knifer = new HumanEnemy("Knifer", px + 1, py, "Raiders", "Rookie", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
+      EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(knifer); p.HealPermanent(5000); int k0 = p.Hp;
+      var cut = knifer.EquippedWeapon.Fire(p);
+      knifer.X = px + 3; p.HealPermanent(5000); int k1 = p.Hp; var far = knifer.EquippedWeapon.Fire(p);
+      Check(cut.Hit && p.Hp == k1 && !far.Hit && k0 > 0, $"real time: a Raider's knife cuts you in reach, not from 3 tiles");
+      EncounterState.Enemies.Clear(); CombatFx.Pending.Clear(); p.HealPermanent(5000); }
     var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
     var r = new HumanEnemy("Raider", px + 6, py, "Raiders", "Rookie", rw, ra) { IsAggroed = true };
+    if (r.EquippedWeapon == null || CombatRules.IsMelee(r.EquippedWeapon)) r.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);   // a gun every time (the random loadout can be a knife)
     EncounterState.Enemies.Add(r);
     string PartAt(ICombatant from, ICombatant to, float h) {
       var (x0, y0) = Ballistics.Pos(from); var (x1, y1) = Ballistics.Pos(to); float dx = x1 - x0, dy = y1 - y0, l = (float)Math.Sqrt(dx * dx + dy * dy);
@@ -1054,7 +1072,7 @@ static class Program {
         p.HealPermanent(100); Body.Reset(); hp = p.Hp;
       }
       Check(reachedAt > 0 && reachedAt <= 100, $"the Blind Maw runs 10 tiles to you in {reachedAt * 0.05f:0.0} s");
-      Check(strikes >= 1 && strikes <= 10, $"then bites on its own clock ({strikes} landed in 10 s)");
+      Check(strikes >= 1 && strikes <= 18, $"then bites on its own clock ({strikes} landed in 10 s, the Maw and the Brute together)");   // no dice since the first playtest: every strike in reach lands
       Check(CombatantUtil.Distance(brute, p) > CombatantUtil.Distance(maw, p) || CombatantUtil.IsAdjacent(brute, p), $"the Brute is slower (brute {CombatantUtil.Distance(brute, p)}, maw {CombatantUtil.Distance(maw, p)})");
       EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
     }

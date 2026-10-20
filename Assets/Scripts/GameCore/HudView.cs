@@ -43,6 +43,7 @@ namespace GameCore
         TextMeshProUGUI _tgtHint;
         TextMeshProUGUI _zone, _zoneSub, _turn, _targetName, _targetState, _hpNum, _ac, _wName, _wMag, _wCap, _wAmmo, _hint;
         readonly List<Image> _hpSeg = new List<Image>(), _tgtSeg = new List<Image>(), _ap = new List<Image>(), _mp = new List<Image>();
+        TextMeshProUGUI _apL, _mpL;   // hidden in real time
         readonly List<(GameObject go, TextMeshProUGUI t, Image edge)> _chips = new List<(GameObject, TextMeshProUGUI, Image)>();
         readonly List<(TextMeshProUGUI t, Image edge)> _wChips = new List<(TextMeshProUGUI, Image)>();
         readonly List<TextMeshProUGUI> _belt = new List<TextMeshProUGUI>(), _arts = new List<TextMeshProUGUI>();
@@ -163,9 +164,9 @@ namespace GameCore
             _hpNum = Txt(pc, "HPN", new Vector2(452, -10), new Vector2(60, 24), "", true, 16, Cream);
             _ac = Txt(pc, "AC", new Vector2(128, -46), new Vector2(120, 22), "", true, 14, Cream);
             for (int i = 0; i < 3; i++) { var ch = Chip(pc, new Vector2(232 + i * 96, -44), 92); _chips.Add(ch); ch.Item1.SetActive(false); }
-            Txt(pc, "APL", new Vector2(128, -82), new Vector2(40, 20), "AP", true, 14, Dim);
+            _apL = Txt(pc, "APL", new Vector2(128, -82), new Vector2(40, 20), "AP", true, 14, Dim);
             _ap.AddRange(Segments(pc, new Vector2(168, -84), 6, 16, 16, 8));
-            Txt(pc, "MPL", new Vector2(320, -82), new Vector2(40, 20), "MP", true, 14, Dim);
+            _mpL = Txt(pc, "MPL", new Vector2(320, -82), new Vector2(40, 20), "MP", true, 14, Dim);
             _mp.AddRange(Segments(pc, new Vector2(360, -84), 6, 16, 16, 8));
             _food = Meter(pc, new Vector2(12, -132), "FOOD", Yellow);
             _water = Meter(pc, new Vector2(184, -132), "WATER", Cyan);
@@ -313,6 +314,10 @@ namespace GameCore
             }
             Pips(_ap, p.Ap, p.MaxAp, Yellow);
             Pips(_mp, (int)p.Mp, p.MaxMp, Cyan);
+            // real time has no turns: AP and MP mean nothing (Yan: "it also keeps updating the MP values but we got rid of that")
+            _apL.gameObject.SetActive(!Rt.On); _mpL.gameObject.SetActive(!Rt.On);
+            foreach (var seg in _ap) seg.gameObject.SetActive(!Rt.On);
+            foreach (var seg in _mp) seg.gameObject.SetActive(!Rt.On);
             Meter(_food, p.Hunger / 10f); Meter(_water, p.Thirst / 10f); Meter(_rest, p.Tiredness / 10f);
 
             // weapon card

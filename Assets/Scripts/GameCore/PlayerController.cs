@@ -346,7 +346,9 @@ namespace GameCore
             // Let the zone react to each step taken: enemies already here can notice you (or
             // wander past) near-instantly instead of only in a batch once MP runs out.
             // Batch 67: exploring, the clock ticks the zone instead (TickClock), a quarter second at most behind your step.
-            if (!exploring) TurnLoop.TickAwareness();
+            // RT: never per step - the clock (TickClock) already ticks the zone 4.2 times a second, and a tick per tile crossed
+            // made the world (squads walking, the clock, the hourly A-Life) run faster the faster you moved: sprinting, enemies zoomed
+            if (!exploring && !Rt.On) TurnLoop.TickAwareness();
 
             var exit = TerrainMap.Exits.FirstOrDefault(e => e.X == player.X && e.Y == player.Y);
             if (exit != null)

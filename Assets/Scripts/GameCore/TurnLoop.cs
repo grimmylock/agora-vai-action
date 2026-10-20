@@ -193,7 +193,9 @@ namespace GameCore
                 var pt = enemy.PatrolTarget.Value;
                 if (!SquadManager.MayWalkInto(squad?.Faction, pt.x, pt.y)) { enemy.PatrolTarget = null; enemy.RestUntil = minute + 30; return; }
             }
-            if (!follower && exitTo == null && (minute + enemy.GetHashCode()) % 2 != 0) return;   // the leader walks at half your pace
+            // the leader walks at half your pace; real time: the followers too - the clock ticks 4.2 times a second there, so a tile
+            // every tick was 4.2 tiles/s, faster than you walk (2.6) and twice their leader (Yan: "running REEEEALLY fast")
+            if ((!follower || Rt.On) && exitTo == null && (minute + enemy.GetHashCode()) % 2 != 0) return;
 
             // Ambient wander gets its own small top-up rather than relying on the combat Mp pool,
             // which only ever gets refreshed for enemies that reach the aggroed combat branch.
