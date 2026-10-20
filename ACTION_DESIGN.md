@@ -136,6 +136,8 @@ Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack
     revivable with E out of combat); DEAD DEAD when the squad wipes - everyone back at the last camp (E at a bonfire; Bonfire
     Village by default), armor one step worse, half the pack dropped where they fell (hostile passers-by loot it - kill them to
     get it back), rank XP loss. Dying never costs a rank; XP stops at 0. (RT 7q-7r, `Death.cs`; rank XP in `Player.Progression`.)
+- **Ranks (Yan):** rank XP from milestones, jobs and kills. Master and Legend don't need the main story but are a long road
+  (2500 / 6000 XP; dungeons cleared, storylines finished, Named kills, 40 quests) - the game should hold a lot of playtime.
 - The first prototype is single-player, but the combat code is written host-authoritative from day one.
 - **Groundwork done (RT 7n, 2026-10-20; it slipped through RT 1-7m, Yan caught it):** each player's real-time state is its own
   (`Rt.State`, `Rt.Of(p)`); controls arrive as `Rt.Input` packets (the local player's from `Rt.Read`, joined players' from

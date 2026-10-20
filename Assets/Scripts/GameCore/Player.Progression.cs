@@ -19,6 +19,8 @@ namespace GameCore
         public bool MainStoryAct3Done, MainStoryFinaleDone;   // set by the story once file 09 is in
         public int PendingPerkPicks;
         public int BonusMaxHp;   // permanent (the "Take it" ending)
+        public List<string> DungeonsCleared = new List<string>();   // dungeons emptied of hostiles (Master/Legend milestones)
+        public int NamedKilled;                                     // Named mutants and bosses killed
 
         // per-turn / per-fight perk trackers
         public bool MovedThisTurn, HitAndRunUsed, RunAndGunUsed, OverwatchHeld, ParryHeld, AdrenalineUsed;
@@ -37,8 +39,13 @@ namespace GameCore
                 case "Professional": return new List<(string, bool)> { ("Complete 3 quests", QuestsCompleted >= 3), ("Kill a Tier 2 mutant or a Professional+ NPC", MaxMutantTierKilled >= 2 || MaxNpcRankKilled >= prof) };
                 case "Veteran": return new List<(string, bool)> { ("Reach a Tier 3 zone", MaxTierReached >= 3), ("Clear a hidden sub-zone or finish an NPC storyline", HiddenNodeCleared || ArcsFinished >= 1) };
                 case "Expert": return new List<(string, bool)> { ("Reach a Tier 4 zone", MaxTierReached >= 4), ("Kill a Tier 4 mutant", MaxMutantTierKilled >= 4), ("Finish an NPC storyline", ArcsFinished >= 1) };
-                case "Master": return new List<(string, bool)> { ("Reach a Tier 5 zone", MaxTierReached >= 5), ("Main Story Act 3 (not in the game yet)", MainStoryAct3Done), ("Kill a Tier 5 mutant or a Legend NPC", MaxMutantTierKilled >= 5 || MaxNpcRankKilled >= legend) };
-                case "Legend": return new List<(string, bool)> { ("Main Story finale (not in the game yet)", MainStoryFinaleDone) };
+                // Yan: "master and legend should not required the main story but they should be pretty hard to achieve, i'd like the
+                // game to have a lot of playtime available": long goals across the big maps and their dungeons
+                case "Master": return new List<(string, bool)> { ("Reach a Tier 5 zone", MaxTierReached >= 5), ("Kill a Tier 5 mutant or a Legend NPC", MaxMutantTierKilled >= 5 || MaxNpcRankKilled >= legend),
+                    ($"Clear 6 dungeons ({DungeonsCleared.Count}/6)", DungeonsCleared.Count >= 6), ($"Finish 3 NPC storylines ({ArcsFinished}/3)", ArcsFinished >= 3) };
+                case "Legend": return new List<(string, bool)> { ("Reach a Tier 6 zone", MaxTierReached >= 6), ($"Kill 3 Named mutants or bosses ({NamedKilled}/3)", NamedKilled >= 3),
+                    ($"Clear 12 dungeons ({DungeonsCleared.Count}/12)", DungeonsCleared.Count >= 12), ($"Finish 6 NPC storylines ({ArcsFinished}/6)", ArcsFinished >= 6),
+                    ($"Complete 40 quests ({QuestsCompleted}/40)", QuestsCompleted >= 40) };
                 default: return new List<(string, bool)>();
             }
         }
@@ -59,7 +66,7 @@ namespace GameCore
         // to deaths can be earned back.
         public static int XpToNext(string next) => next switch
         {
-            "Experienced" => 200, "Professional" => 300, "Veteran" => 400, "Expert" => 600, "Master" => 800, "Legend" => 1000, _ => 0,
+            "Experienced" => 200, "Professional" => 300, "Veteran" => 400, "Expert" => 600, "Master" => 2500, "Legend" => 6000, _ => 0,   // the top two: a long way
         };
         public const int QuestXp = 50;
         public static int KillXp(ICombatant t) => t is HumanEnemy h ? 5 + 5 * CombatRules.RankIndex(h.Rank) : t is Mutant m && m.Db != null ? 5 * m.Db.Tier : 0;
@@ -89,9 +96,9 @@ namespace GameCore
                 var next = NextRank;
                 var ms = MilestonesFor(next);                             // only the next rank's milestones pay (in order, as the sheet shows);
                 foreach (var (text, met) in ms)                           // ones met early pay once their rank is next
-                    if (met && !MilestonesDone.Contains(next + ":" + text))
+                    if (met && !MilestonesDone.Contains(next + ":" + text.Split(" (")[0]))   // keyed without the "(3/6)" count
                     {
-                        MilestonesDone.Add(next + ":" + text);
+                        MilestonesDone.Add(next + ":" + text.Split(" (")[0]);
                         int xp = XpToNext(next) / System.Math.Max(1, ms.Count);
                         Exp += xp;
                         GameLog.Write($"[MILESTONE] {text}: +{xp} XP.");
@@ -127,6 +134,14 @@ namespace GameCore
             {
                 HiddenNodeCleared = true;
                 GameLog.Write($"You've cleared {zone.Name}.");
+            }
+            if (target is Mutant nm && nm.Named) NamedKilled++;
+            var map = MacroMapDatabase.Find(TerrainMap.ZoneId);
+            if (map != null && map.IsDungeon && !map.Upstairs && !DungeonsCleared.Contains(map.Id)
+                && !EncounterState.Enemies.Any(e => e.IsAlive() && !Companion.Is(e) && !EnemyAI.FriendlyToPlayer(e)))
+            {
+                DungeonsCleared.Add(map.Id);
+                GameLog.Write($"[DUNGEON CLEARED] {map.Name} ({DungeonsCleared.Count} so far).");
             }
             GainXp(KillXp(target));
         }

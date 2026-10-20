@@ -1738,7 +1738,16 @@ static class Program {
     pl.ArcsFinished = 1; pl.NoteKill(new Mutant("x", 0, 0, MutantDatabase.Tiers["tier4"].First().Value));
     Check(pl.Rank == "Expert" && pl.PendingPerkPicks == 2, "expert, got " + pl.Rank);
     pl.NoteKill(new Mutant("x", 0, 0, MutantDatabase.Tiers["tier5"].First().Value));
-    Check(pl.Rank == "Expert", "master is gated on the main story");
+    Check(pl.Rank == "Expert", "master is a long way off");
+    // Yan: Master and Legend without the main story, but "pretty hard to achieve" - dungeons, storylines, named kills, big bars
+    int xpBefore = pl.Exp;
+    for (int k = 0; k < 6; k++) pl.DungeonsCleared.Add("d" + k);
+    pl.ArcsFinished = 3; pl.CheckRankUp();
+    int paid = pl.Exp - xpBefore;
+    pl.DungeonsCleared.Add("d6"); pl.CheckRankUp();
+    Check(pl.Rank == "Master" || paid > 0 && pl.Exp - xpBefore == paid, $"a milestone pays once even as its count passes the target (+{paid})");
+    Check(Player.XpToNext("Master") >= 2000 && Player.XpToNext("Legend") >= 5000 && !pl.MilestonesFor("Legend").Any(m => m.text.Contains("Main Story")) && !pl.MilestonesFor("Master").Any(m => m.text.Contains("Main Story")),
+      "Master and Legend: big bars, no main story needed");
     // a few perk effects
     pl.ApplyTemporaryHP(10); Check(pl.TempHPDuration == 4, "temp hp 4 turns");
     pl.TakePerk("IronWill"); pl.ApplyTemporaryHP(10); Check(pl.TempHPDuration == 8, "iron will");

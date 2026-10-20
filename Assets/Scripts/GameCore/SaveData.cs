@@ -70,6 +70,8 @@ namespace GameCore
         public int BonusMaxHp;
         public int Exp;
         public List<string> MilestonesDone = new List<string>();
+        public List<string> DungeonsCleared = new List<string>();
+        public int NamedKilled;
         public List<string> ActivePerks = new List<string>();
 
         public float Hunger, Thirst, Tiredness;

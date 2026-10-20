@@ -3669,3 +3669,15 @@ dying can't knock you down ranks, just removes XP and it goes down to 0 if it re
 - Checks: XP from quests and milestones makes Professional; a kill pays; losing more XP than you have stops at 0 with the rank
   kept; a wipe drops the half pack where they fell and a Raider nearby walks over and takes it. The "Rookie at 6 tiles" check
   now shoots at a standing you each time (a shotgun hit knocked you down mid-test and the rest flew over).
+
+### RT 7s - Master and Legend: no main story, a long road (2026-10-20)
+
+Yan: "master and legend should not required the main story but they should be pretty hard to achieve, i'd like the game to have a
+lot of playtime available, that's why we're focusing so much on having big maps and plenty of explorable dungeons and stuff".
+- Bars: Master 2500 XP, Legend 6000 (Expert is 600).
+- Master: reach a Tier 5 zone; kill a Tier 5 mutant or a Legend NPC; clear 6 dungeons; finish 3 NPC storylines.
+- Legend: reach a Tier 6 zone; kill 3 Named mutants or bosses; clear 12 dungeons; finish 6 NPC storylines; complete 40 quests.
+- New trackers (saved): `Player.DungeonsCleared` (a dungeon map - not an upper floor - with no hostile left alive after one of
+  your kills; log "[DUNGEON CLEARED]"), `Player.NamedKilled`. Milestones are now remembered without their running count, so
+  "Clear 6 dungeons (7/6)" doesn't pay twice.
+- Checks: a milestone pays once as its count passes the target; the top bars are big and need no main story.
