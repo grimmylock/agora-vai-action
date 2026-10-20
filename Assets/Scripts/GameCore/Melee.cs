@@ -26,6 +26,7 @@ namespace GameCore
             public float ThrowRange = 8f;       // tiles
             public float WindUp;                // seconds before a throw leaves the hand (two-handed weapons: 1)
             public bool Blade = true, TwoHanded;
+            public bool Bleeds;                 // RT 7v: blunt but cuts (barbed wire): bleeding as well as the concussion
             public float StuckX = float.NaN, StuckY;   // RT 7d: where the buried blade's cut line is on weapon_<Key>_stuck.png
         }
 
@@ -34,12 +35,23 @@ namespace GameCore
         {
             ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, Arc = 110f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
         };
+        // RT 7v (Yan): no blade = concussive and never sticks; from 1 kg a weapon takes both hands (the bats, the fire axe, the sledge) (a throw winds up for a second)
+        public static readonly HashSet<string> Blunt = new HashSet<string> { "Wooden Baseball Bat", "Hammer", "Sledgehammer", "Barbed Wire Bat" };
+        public const float TwoHandedKg = 1.0f;
         public static Stats For(Weapon w)
         {
             if (w?.Db != null && Table.TryGetValue(w.Db.Name, out var s)) return s;
+            if (w?.Db != null && Cache.TryGetValue(w.Db.Name, out s)) return s;
             float kg = w?.Db?.WeightKg ?? 0.6f;
-            return new Stats { Swing = 0.3f + 0.3f * kg, ThrowSpeed = Mathf.Max(8f, 17f - 6f * kg), ThrowRange = Mathf.Max(5f, 11f - 4f * kg) };
+            string name = w?.Db?.Name ?? "";
+            s = new Stats { Swing = 0.3f + 0.3f * kg, ThrowSpeed = Mathf.Max(8f, 17f - 6f * kg), ThrowRange = Mathf.Max(5f, 11f - 4f * kg),
+                Blade = !Blunt.Contains(name), Bleeds = name == "Barbed Wire Bat", TwoHanded = kg >= TwoHandedKg, WindUp = kg >= TwoHandedKg ? 1f : 0f };
+            if (w?.Db != null) Cache[name] = s;
+            return s;
         }
+        static readonly Dictionary<string, Stats> Cache = new Dictionary<string, Stats>();
+        /// <summary>RT 7v: how long a blunt hit leaves a human dazed: the heavier, the longer (4 s for a 1 kg bat, 8 for the sledge).</summary>
+        public static float ConcussSeconds(Weapon w) => Mathf.Clamp(3f + (w?.Db?.WeightKg ?? 1f) * 1.25f, 3f, 8f);
 
         public const float PullAfter = 2.5f, PullTime = 2.5f, FallsOff = 3f;
         public const float ThrowHeight = 0.45f;                    // chest high unless the crosshair is on a body
@@ -197,8 +209,8 @@ namespace GameCore
             if (target.IsAlive())
             {
                 Body.Hit(target, part ?? "Torso", side, dmg, "Standard");
-                if (st.Blade && !target.StatusEffects.Bleeding) { target.StatusEffects.Bleeding = true; GameLog.Write($"{(target is Player ? "You are" : target.Name + " is")} bleeding."); }
-                if (!st.Blade) Body.Concuss(target, 4f);
+                if ((st.Blade || st.Bleeds) && !target.StatusEffects.Bleeding) { target.StatusEffects.Bleeding = true; GameLog.Write($"{(target is Player ? "You are" : target.Name + " is")} bleeding."); }
+                if (!st.Blade) Body.Concuss(target, ConcussSeconds(w));
             }
             if (by is Player bf) Rt.AddFocus(bf, target.IsAlive() ? 4f : 25f);
             if (!target.IsAlive()) Weapon.OnTargetKilled(by, target);

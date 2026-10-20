@@ -136,8 +136,8 @@ rank XP, Testing Ground dummies.
 **Next (agreed order):** the networking test (Unity Netcode for GameObjects + Relay; host runs the world, others send
 `Rt.Input`; test with Multiplayer Play Mode in the editor), then save slots + character naming + the save at creation, then
 the starting area and tutorial. The melee set: art done and in the game (RT 7v, `ArtSource/weapons/hand/melee_px.py`,
-hand-placed pixel grids); the 6 new ones (Hatchet, Fire Axe, Wooden Baseball Bat, Hammer, Sledgehammer, Barbed Wire Bat) still
-need database entries, `Melee.Stats` and a two-handed hold. Longer list: `ACTION_DESIGN.md` "Later list".
+hand-placed pixel grids), and the 6 new ones have stats and loot (`Melee.For`: weight sets speed, `Melee.Blunt` concusses);
+still missing: the second hand on two-handed handles (bats, fire axe, sledge). Longer list: `ACTION_DESIGN.md` "Later list".
 
 ## Working from a cloud session
 

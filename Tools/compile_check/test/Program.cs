@@ -1117,6 +1117,26 @@ static class Program {
       if (lying != null) { p.AddItem(lying.Item); TerrainMap.GroundItems.Remove(lying); Melee.EquipIfEmptyHanded(p, lying.Item); }
       Check(p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "RT 7a: picked up with empty hands, it's back in them");
       Check(!EncounterGeneration.Unique.Contains("Tactical Hatchet") == false && WeaponArt.HasGrip("TacticalHatchet"), "RT 7a: one of a kind, with its own grip points");
+      // RT 7v (Yan): bigger swings and flies slower but hits harder; no blade = concussion, no bleeding, never sticks
+      { Melee.Reset(); EncounterState.Enemies.Clear();
+        Weapon W(string k) { p.EquipWeapon("melee", k); return p.EquippedWeapon; }
+        var knife = Melee.For(W("HuntingKnife")); var sledge = W("Sledgehammer"); var ss = Melee.For(sledge);
+        Check(ss.Swing > knife.Swing && ss.ThrowSpeed < knife.ThrowSpeed && sledge.BaseDamage > W("HuntingKnife").BaseDamage && ss.TwoHanded && !knife.TwoHanded,
+          $"RT 7v: the sledge swings slower ({ss.Swing:0.00} s vs {knife.Swing:0.00}), flies slower, hits harder and takes both hands");
+        var bat = W("WoodenBaseballBat"); Melee.Now = 0f;
+        var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; foe.Hp = 100000; EncounterState.Enemies.Add(foe);
+        Melee.Strike(p, bat, foe, "Torso", 1f);
+        Check(!foe.StatusEffects.Bleeding && Body.Of(foe).ConcussedUntil > 0f, "RT 7v: a bat concusses, no bleeding");
+        EncounterState.Enemies.Clear();
+        var far2 = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; far2.Hp = 100000; EncounterState.Enemies.Add(far2);
+        Melee.Throw(p, bat, 1f, 0f, 0.45f);
+        for (float t2 = 0f; t2 < 1.5f && Melee.Air.Count > 0; t2 += 0.02f) { Melee.Now = t2; Melee.Tick(0.02f); }
+        Check(Melee.InBodies.Count == 0 && TerrainMap.GroundItems.Any(g => g.Item.Key == "WoodenBaseballBat"), "RT 7v: a thrown bat hits and drops, it never sticks");
+        TerrainMap.GroundItems.RemoveAll(g => g.Item.Key == "WoodenBaseballBat"); EncounterState.Enemies.Clear(); Melee.Reset(); Melee.Now = 0f;
+        var barbed = Melee.For(W("BarbedWireBat"));
+        Check(!barbed.Blade && barbed.Bleeds && Melee.For(W("Hatchet")).Blade && Melee.For(W("FireAxe")).TwoHanded, "RT 7v: the barbed bat is blunt but cuts; the axes are blades");
+        foreach (var k in new[] { "Hatchet", "FireAxe", "WoodenBaseballBat", "Hammer", "Sledgehammer", "BarbedWireBat" })
+          Check(WeaponArt.HasGrip(k) && WeaponDatabase.Categories["melee"].ContainsKey(k), $"RT 7v: {k} has stats and grip points"); }
       // RT 7e: left held then let go swings (held past the wind-up: more damage); right held lifts and charges the throw
       int Swung(float hold) {
         Melee.Reset(); EncounterState.Enemies.Clear(); p.EquipWeapon("melee", "TacticalHatchet"); var w2 = p.EquippedWeapon;

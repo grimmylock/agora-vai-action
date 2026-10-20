@@ -3747,3 +3747,27 @@ Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
   the handle; the "muzzle" at the blade tip or the head's striking corner. Harness: ALL CHECKS PASSED.
 - **Not checked:** the new sprites in Unity (how they sit in the hand, and the thrown/spinning look). The 6 new weapons still
   can't drop or be bought: no database entries or stats yet.
+
+## RT 7w - the 6 new melee weapons in the game (2026-10-20)
+
+Yan: "use simple logic for them, bigger = swings/throws slower but does more damage, no blade = concussive and doesn't stick to
+targets/walls".
+- `WeaponDatabase` melee entries (damage / kg / tier):
+  - Hatchet 300 / 0.9 / T2
+  - Wooden Baseball Bat 310 / 1.0 / T2
+  - Hammer 330 / 0.7 / T3
+  - Fire Axe 450 / 2.0 / T3 (ignores 10% armor)
+  - Sledgehammer 650 / 4.0 / T4 (ignores 20%)
+  - Barbed Wire Bat 480 / 1.3 / T5
+- Loot and trader pools (`Economy.Pools`) at those tiers. T5 weapons come only from loot, as before.
+- `Melee.For`: the weight already set the speed: swing 0.3 + 0.3 x kg seconds; throws slower and shorter. New:
+  - `Melee.Blunt` (the bats, the hammer, the sledge): no bleeding and no sticking. A thrown one hits and drops; this was already
+    how `Stats.Blade == false` worked.
+  - A blunt hit concusses a human for 3 + 1.25 x kg seconds (4.3 s for a bat, 8 s for the sledge).
+  - The Barbed Wire Bat is blunt but also makes the target bleed (`Stats.Bleeds`).
+  - From 1 kg (the bats, fire axe, sledge) a weapon counts as two-handed: a throw winds up for a second (`Stats.WindUp`, which
+    was already wired in).
+- Harness: new RT 7v checks (the sledge is slower and harder-hitting than the knife and takes both hands; a bat concusses
+  without bleeding; a thrown bat drops instead of sticking; the barbed bat bleeds; all 6 have stats and grips). ALL CHECKS PASSED.
+- **Not built:** the second hand on two-handed handles (they're still held in one fist). Not tuned against fights; not checked
+  in Unity.

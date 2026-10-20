@@ -44,6 +44,14 @@ namespace GameData
                 ["SteppeMachete"] = new WeaponDef { Name = "Steppe Machete", BaseDamage = 300, Range = "Adjacent", WeightKg = 0.8f, Tier = 3, IgnorePhysDRPercent = 0.1f },
                 ["SerratedTrenchKnife"] = new WeaponDef { Name = "Serrated Trench Knife", BaseDamage = 360, Range = "Adjacent", WeightKg = 0.6f, Tier = 4 },
                 ["ObeliskRitualBlade"] = new WeaponDef { Name = "Obelisk Ritual Blade", BaseDamage = 450, Range = "Adjacent", WeightKg = 0.7f, Tier = 5, IgnorePhysDRPercent = 0.2f },
+                // RT 7v (Yan: "bigger = swings/throws slower but does more damage, no blade = concussive and doesn't stick"):
+                // the weight sets the speed (Melee.For); blunt ones are listed in Melee.Blunt
+                ["Hatchet"] = new WeaponDef { Name = "Hatchet", BaseDamage = 300, Range = "Adjacent", WeightKg = 0.9f, Tier = 2 },
+                ["WoodenBaseballBat"] = new WeaponDef { Name = "Wooden Baseball Bat", BaseDamage = 310, Range = "Adjacent", WeightKg = 1.0f, Tier = 2 },
+                ["Hammer"] = new WeaponDef { Name = "Hammer", BaseDamage = 330, Range = "Adjacent", WeightKg = 0.7f, Tier = 3 },
+                ["FireAxe"] = new WeaponDef { Name = "Fire Axe", BaseDamage = 450, Range = "Adjacent", WeightKg = 2.0f, Tier = 3, IgnorePhysDRPercent = 0.1f },
+                ["Sledgehammer"] = new WeaponDef { Name = "Sledgehammer", BaseDamage = 650, Range = "Adjacent", WeightKg = 4.0f, Tier = 4, IgnorePhysDRPercent = 0.2f },
+                ["BarbedWireBat"] = new WeaponDef { Name = "Barbed Wire Bat", BaseDamage = 480, Range = "Adjacent", WeightKg = 1.3f, Tier = 5 },
                 ["TacticalHatchet"] = new WeaponDef { Name = "Tactical Hatchet", BaseDamage = 420, Range = "Adjacent", WeightKg = 0.9f, Tier = 5, IgnorePhysDRPercent = 0.15f },   // RT 7a: one of a kind (a lab's secret room)
             },
             ["sidearm"] = new Dictionary<string, WeaponDef>
