@@ -280,13 +280,16 @@ namespace GameCore
         /// end-of-turn, and from PlayerController right after the player's attack so a win is
         /// recognized immediately instead of requiring an extra End Turn press.
         /// </summary>
+        /// <summary>Every player is dead (solo: you are).</summary>
+        public static bool AllDead => Player.All.Count == 0 ? Player.Current == null || Player.Current.Hp <= 0 : Player.All.All(pl => pl.Hp <= 0);
+
         public static void CheckCombatEnd()
         {
             if (GameState.Current.Mode != GameMode.Tactical) return;
             if (GameState.Current.CurrentTurn == Turn.CombatOver) return;
 
             var player = Player.Current;
-            if (player != null && player.Hp <= 0)
+            if (player != null && AllDead)                           // co-op (Yan): "game over only if everyone dies"
             {
                 GameLog.Write("Player has fallen. Combat ends.");
                 GameState.Current.CurrentTurn = Turn.CombatOver;

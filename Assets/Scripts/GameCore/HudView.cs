@@ -295,6 +295,7 @@ namespace GameCore
                 foreach (var f in bs.Fractured) st.Add(((Body.Name(f) + (bs.Broken.Contains(f) ? " broken" : " fractured")).ToUpperInvariant(), Red));
                 if (Body.Concussed(p)) st.Add(("CONCUSSED", Yellow));
                 if (Rt.Me.UsingId != null) st.Add(($"USING {Mathf.Max(0f, Rt.Me.UseDone - Time.time):0.0}s", Cyan));
+                if (Rt.Me.Reviving > 0f) st.Add(($"REVIVING {Rt.ReviveSeconds - Rt.Me.Reviving:0.0}s", Cyan));
             }
             if (p.StatusEffects.Bleeding) st.Add(("BLEEDING", Red));
             if (p.StatusEffects.ToxicBleed) st.Add(("TOXIC", Green));

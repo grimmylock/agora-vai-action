@@ -122,6 +122,16 @@ Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack
 - Host runs the world (clock, A-Life, saves); other players send inputs. Unity Netcode for GameObjects + Relay.
 - 2-4 players on the same map; explore separately; **map exits only together** (everyone at an exit and confirmed, like Borderlands).
 - Separate inventories; drop items for each other; trade as now.
+- **Yan's co-op rules (2026-10-20):**
+  - **Quests are shared:** when anyone accepts a job, everyone has it. Rewards are given to each player separately - money,
+    reputation, and items (a quest that rewards a weapon gives everyone one).
+  - **Saves (Terraria/Borderlands):** the host saves the world; each player owns their character and can join other worlds or
+    play their own. The host's saves also save the other players' characters automatically. **Several save slots**, so a
+    player can keep a solo character and a co-op one.
+  - **Talking and trading don't pause anything:** the world keeps going, for you too.
+  - **Downed players are revived** by a friend holding E over them for a few seconds. **Game over only when everyone is dead**;
+    then the host's last save loads.
+  - **Loot on bodies: first come, first served.**
 - The first prototype is single-player, but the combat code is written host-authoritative from day one.
 - **Groundwork done (RT 7n, 2026-10-20; it slipped through RT 1-7m, Yan caught it):** each player's real-time state is its own
   (`Rt.State`, `Rt.Of(p)`); controls arrive as `Rt.Input` packets (the local player's from `Rt.Read`, joined players' from
@@ -197,6 +207,8 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 
 ## Later list
 
+- **Character creator (Yan, 2026-10-20):** new games starting in different factions with their own loadouts, and a storyline per
+  faction (like Anomaly's faction starts).
 - **Starting area rework (Yan, 2026-10-20; waiting on his map and quest spots):** Bonfire Village as a real Safe Zone in the
   Cordon rookie-village spirit - the starting faction's boundary and perimeter that hostile squads (mostly Raiders) can't or
   very rarely cross (and then fight the guards), guards, random friendly squads, a trader, a medic, a small bar and barman.

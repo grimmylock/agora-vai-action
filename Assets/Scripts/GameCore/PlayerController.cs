@@ -28,7 +28,9 @@ namespace GameCore
             if (GameState.Current.Mode != GameMode.Tactical) return;
             // Anything can drop HP to 0 (bleeding at turn start, an anomaly underfoot, a failed
             // interaction) - one check here catches every path instead of one per caller.
-            if (player.Hp <= 0 && GameState.Current.CurrentTurn != Turn.CombatOver) { TurnLoop.CheckCombatEnd(); return; }
+            if (player.Hp <= 0 && GameState.Current.CurrentTurn != Turn.CombatOver) { TurnLoop.CheckCombatEnd(); if (!Rt.On || TurnLoop.AllDead) return; }   // co-op: the world goes on while a friend lives
+            // co-op (Yan: "Talking to npc, world keeps going as normal"): a panel (talk, trade, loot, the sheet) stops your hands, not the world
+            if (Rt.On && GameState.Current.ModalOpen && GameState.Current.CurrentTurn != Turn.CombatOver) { RealTime(player, null, null); return; }
             // A modal panel (shop, death screen) is up - don't let any keybind or click fall
             // through to the world underneath it.
             if (GameState.Current.ModalOpen || GameState.Current.CurrentTurn == Turn.CombatOver) return;
@@ -290,17 +292,18 @@ namespace GameCore
         /// the rest are the old keys that still make sense. E also loots a body or picks up what's at your feet.</summary>
         private static void RealTime(Player player, Keyboard k, Mouse m)
         {
-            if (k == null) return;
+            bool panel = GameState.Current.ModalOpen;                // a panel is up: you stand still, everything else runs
+            if (k == null && !panel) return;
             if (HudView.TargetingOpen) HudView.CloseTargeting();
-            if (k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
+            if (!panel && k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
             if (Rt.Paused) return;
-            Rt.PlayerTick(player, Rt.Read(k, m));                 // co-op: the local player's devices become one Input packet
+            if (player.IsAlive()) Rt.PlayerTick(player, panel ? default : Rt.Read(k, m));   // co-op: the local player's devices become one Input packet
             foreach (var j in Player.All) if (j != player && j.IsAlive()) Rt.PlayerTick(j, Rt.Remote.TryGetValue(j, out var ji) ? ji : default);   // joined players, on their last packet
             TickClock(player);
             Rt.WorldTick(player);
-            if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }
-            if (Body.Down(player)) return;   // RT batch 2: down - crawl, or a stim from the belt (1-4)
-            if (k.eKey.wasPressedThisFrame)
+            if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }   // dead: the world still runs above while a friend lives
+            if (panel || Body.Down(player)) return;   // RT batch 2: down - crawl, or a stim from the belt (1-4)
+            if (k.eKey.wasPressedThisFrame && Rt.DownedNear(player) == null)    // E next to a downed friend revives them (held, Rt.PlayerTick)
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
                 var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);

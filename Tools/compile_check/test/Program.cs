@@ -886,6 +886,18 @@ static class Program {
       Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
       Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
       Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Focus < 50f, "co-op: a dive spends that player's Focus and only they dive");
+      Check(Rt.SlowMo, "co-op: bullet time when the players are together");
+      for (int f = 0; f < 60 && Rt.Of(q).Diving; f++) { Rt.PlayerTick(q, default); UnityEngine.Time.time += 0.02f; }
+      q.X = px + 45; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).Focus = 50f; Rt.Of(q).ProneUntil = -1f; Rt.PlayerTick(q, new Rt.Input { X = 1f, Jump = true });
+      Check(Rt.Of(q).Diving && !Rt.SlowMo, $"co-op: a friend 45 tiles off dives without slowing your fight");
+      for (int f = 0; f < 60 && Rt.Of(q).Diving; f++) { Rt.PlayerTick(q, default); UnityEngine.Time.time += 0.02f; }
+      // Yan: "downed players can be revived by holding E over them for a few seconds, 'game over' only if everyone dies"
+      q.X = px + 1; q.Y = py; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).ProneUntil = -1f; Body.GoDown(q);
+      Rt.On = false; int ph0 = p.Hp; p.Hp = 0; bool over = TurnLoop.AllDead; Rt.On = true; p.HealPermanent(5000);   // (in real time 0 HP is "down", not dead)
+      for (int f = 0; f < 140; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
+      bool up1 = Body.Down(q);
+      for (int f = 0; f < 30; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
+      Check(!over && up1 && !Body.Down(q) && q.IsAlive(), "co-op: you dead with a friend alive isn't game over; holding E 3 s over a downed friend gets them up");
       // Yan: "turn friendly fire off for now for players, make it so bullets go through allied players"
       EncounterState.Enemies.Clear(); q.X = px + 3; q.Y = py; Rt.SetOffset(q, 0f, 0f); raider.X = px + 6; raider.Y = py; raider.Hp = 100000; EncounterState.Enemies.Add(raider);
       var line = Ballistics.Trace(p, px + 0.5f, py + 0.5f, 1f, 0f, 20f, 0.45f, Gunplay.Targets(p));

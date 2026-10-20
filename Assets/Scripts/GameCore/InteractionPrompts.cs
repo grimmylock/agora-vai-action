@@ -22,6 +22,8 @@ namespace GameCore
             void Add(int x, int y, string key, string label) { if (!list.Any(q => q.X == x && q.Y == y)) list.Add(new Prompt { X = x, Y = y, Key = key, Label = label }); }
 
             // E: containers, locks, stashes (InteractionEngine; they're within one tile), and the two special machines
+            var friend = Rt.DownedNear(p);
+            if (friend != null) Add(friend.X, friend.Y, "HOLD E", "Revive");                          // co-op: a downed friend
             foreach (var o in TerrainMap.InteractiveObjects) if (D(p, o.X, o.Y) <= 1) Add(o.X, o.Y, "E", o.Name);
             foreach (var l in TerrainMap.Landmarks)
             {

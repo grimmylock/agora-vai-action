@@ -3610,3 +3610,20 @@ the back while fighting players".
   (`Gunplay.NpcShoot`, also NPC-vs-NPC fights) just holds. Spread can still clip a friend - they try, they're not perfect.
 - Checks: your round passes through your friend into the Raider behind; a Raider with his mate in the way doesn't fire through
   him and steps aside until the line is clear.
+
+### RT 7p - Yan's co-op rules; bullet time per fight; panels don't pause; revive; game over when all are dead (2026-10-20)
+
+Yan's co-op rules (now in ACTION_DESIGN "Co-op"): shared quests with individual rewards (items too); the host saves the world and
+players own their characters (Terraria/Borderlands), several save slots; talking doesn't pause the world; downed players are
+revived by a friend holding E; game over only when everyone is dead (then the host's last save loads); loot first come, first
+served. Character creator (faction starts, loadouts, storylines) on the later list.
+- Co-op step 4, bullet time (`Rt.TryDive`/`Land`): Unity has one clock, so a dive slows time only when every living player is
+  within 40 tiles (`Rt.SlowReach`); a friend off in another fight keeps full speed. It ends when nobody is mid-dive.
+- Panels (talk, trade, loot, sheet) no longer stop the game in real time (`PlayerController.Update` -> `RealTime` with no input):
+  you stand still, the world, the clock and your friends carry on.
+- Revive (`Rt.DownedNear`, `Rt.State.Reviving`, `Rt.Input.Use` = E held): kneel 3 s over a downed friend and they're up
+  (`Body.GetUp`); prompt "HOLD E Revive", HUD "REVIVING". E doesn't loot or interact while a downed friend is next to you.
+- Game over only when every player is dead (`TurnLoop.AllDead` in `CheckCombatEnd`); the world keeps running while a friend
+  lives (`PlayerController.Update`, `Rt.WorldTick`).
+- Checks: bullet time together but not 45 tiles apart; you dead with a friend alive isn't game over; 3 s of E gets them up.
+- Open: what happens to a player who bleeds out while friends live (waits until the group wipes or a save loads, for now).

@@ -72,6 +72,7 @@ namespace GameCore
             public int Moving;                                        // 0 still, 1 walking, 2 sprinting
             public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
             public string UsingId;
+            public float Reviving;                                    // seconds E has been held over a downed friend
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
             public bool Vaulting => VaultFrom >= 0f;
@@ -87,14 +88,14 @@ namespace GameCore
         public struct Input
         {
             public float X, Y;                                        // move, -1..1 each (y down)
-            public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload;   // held / held / held / held / pressed / pressed / pressed
+            public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload, Use;   // held / held / held / held / pressed / pressed / pressed / held (E)
             public (float x, float y)? Mouse;                         // the crosshair, tile space
         }
         public static Input Read(Keyboard k, Mouse m) => new Input
         {
             X = (k.dKey.isPressed || k.rightArrowKey.isPressed ? 1 : 0) - (k.aKey.isPressed || k.leftArrowKey.isPressed ? 1 : 0),
             Y = (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0) - (k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0),
-            Sneak = k.leftCtrlKey.isPressed, Sprint = k.leftShiftKey.isPressed, Jump = k.spaceKey.wasPressedThisFrame, Reload = k.rKey.wasPressedThisFrame,
+            Sneak = k.leftCtrlKey.isPressed, Sprint = k.leftShiftKey.isPressed, Jump = k.spaceKey.wasPressedThisFrame, Reload = k.rKey.wasPressedThisFrame, Use = k.eKey.isPressed,
             Aim = m != null && m.rightButton.isPressed, Fire = m != null && m.leftButton.isPressed, FireDown = m != null && m.leftButton.wasPressedThisFrame,
             Mouse = MouseTile(m),
         };
@@ -198,6 +199,21 @@ namespace GameCore
             return false;
         }
 
+        public const float ReviveSeconds = 3f;
+
+        /// <summary>A downed (not dead) friend within arm's reach, or null.</summary>
+        public static Player DownedNear(Player p)
+        {
+            var (px, py) = Ballistics.Pos(p);
+            foreach (var o in Player.All)
+            {
+                if (o == p || !o.IsAlive() || !Body.Down(o)) continue;
+                var (ox, oy) = Ballistics.Pos(o);
+                if ((ox - px) * (ox - px) + (oy - py) * (oy - py) <= 1.5f * 1.5f) return o;
+            }
+            return null;
+        }
+
         /// <summary>One player's controls, once a frame.</summary>
         public static void PlayerTick(Player p, Input i)
         {
@@ -205,9 +221,18 @@ namespace GameCore
             var s = Of(p);
             p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: AP/MP only gate old actions
 
+            // ---- reviving: hold E over a downed friend (Yan: "downed players can be revived by holding E over them for a few seconds") ----
+            bool down = Body.Down(p);
+            var friend = down ? null : DownedNear(p);
+            if (friend != null && i.Use)
+            {
+                if ((s.Reviving += dt) >= ReviveSeconds) { s.Reviving = 0f; Body.GetUp(friend); GameLog.Write("You get your friend back on their feet."); }
+                i.X = i.Y = 0f;                                       // you kneel there while you do it
+            }
+            else s.Reviving = 0f;
+
             // ---- moving ----
             float ix = i.X, iy = i.Y;
-            bool down = Body.Down(p);
             p.Sneaking = down || i.Sneak;
             s.Aiming = !down && i.Aim;
             bool wantSprint = i.Sprint && !p.Sneaking && !s.Aiming && !Body.LegHurt(p) && s.UsingId == null && (ix != 0 || iy != 0);
@@ -351,6 +376,7 @@ namespace GameCore
         //      ~0.55 s of game time, time runs at 30% meanwhile, you can aim and fire (the aim steadies at real-time speed).
         //      Landing: prone 0.6 s (Tumbler: 0.35) - no moving, but you can still shoot. Costs 40 Focus, so no chaining.
         //      Focus fills from kills (+25), hits (+4) and enemy rounds that just miss you (+6, Cold Blood x2). ----
+        public const int SlowReach = 40;
         public const float DiveCost = 40f, DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
         const float DiveSpeedFloor = 1f;                              // moved slower than this (tiles/s): hit a wall, land now
         public static bool SlowMo;                                    // ponytail: one time scale for everyone - step 4 makes it per fight
@@ -373,7 +399,9 @@ namespace GameCore
             s.DiveX = dx / l; s.DiveY = dy / l;
             s.Focus -= DiveCost;
             s.DiveUntil = Time.time + DiveTime;
-            SetSlow(true);
+            // co-op step 4 (ACTION_DESIGN: "bullet time slows everyone within ~40 tiles / in the same fight"): Unity has one clock, so
+            // it slows only when every living player is within 40 tiles of the diver; a friend far off in their own fight keeps full speed
+            if (Player.All.All(o => o == p || !o.IsAlive() || CombatantUtil.Distance(o, p) <= SlowReach)) SetSlow(true);
             Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 1f, 0.05f, 0.6f);
             return true;
         }
@@ -383,7 +411,7 @@ namespace GameCore
             var s = Of(p);
             s.DiveUntil = -1f;
             s.ProneUntil = Time.time + (CombatantUtil.HasPerk(p, "Tumbler") ? 0.35f : ProneTime);
-            SetSlow(false);
+            if (!Player.All.Any(o => Of(o).Diving)) SetSlow(false);   // still slow while a friend is mid-dive
             Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f);
         }
 
@@ -468,7 +496,7 @@ namespace GameCore
                 catch (System.Exception ex) { Debug.LogException(ex); }
                 if (!p.IsAlive()) TurnLoop.CheckCombatEnd();
                 else Perks.TryAdrenaline(p);
-                if (!local.IsAlive()) return;
+                if (TurnLoop.AllDead) return;
             }
             if (!EncounterState.InCombat) { _round = 0f; return; }
             if ((_round += Time.deltaTime) < RoundSeconds) return;
