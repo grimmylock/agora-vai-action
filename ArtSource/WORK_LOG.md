@@ -3733,3 +3733,8 @@ Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
   `melee_set.py` and their sheets (they're in git history).
 - Review sheet: `maps/renders/melee/melee_px_all.png`. Not installed yet: once Yan approves, run `melee_px.py --install`. The 6
   new weapons still need stats and a two-handed hold.
+- Yan's notes on the full set: the fire axe, hammer, sledgehammer and both bats are "great". Fixes to the in-hand sprites:
+  - Switchblade: the handle is now red like the menu one.
+  - Machete: the blade is 3 px longer, so its belly runs straight longer before it sweeps up.
+  - Trench knife: the blade is longer, with a clip point and an edge that curves up to the tip.
+  - Hatchet: removed the bump on the handle next to the head.
