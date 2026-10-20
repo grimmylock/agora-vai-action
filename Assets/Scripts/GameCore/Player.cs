@@ -179,10 +179,17 @@ namespace GameCore
         public bool ArtifactKillRefundAp;
         public int PendingApDrain { get; set; }
 
-        public Player()
+        public Player() : this(true) { }
+
+        /// <summary>Co-op groundwork: every player in the game - the local one (Current) first. A new local player (New Game,
+        /// a load) starts the list over; Join adds another player beside you (the host's view of a friend, or the harness).</summary>
+        public static readonly System.Collections.Generic.List<Player> All = new System.Collections.Generic.List<Player>();
+        Player(bool local)
         {
-            Current = this;
+            if (local) { Current = this; All.Clear(); }
+            All.Add(this);
         }
+        public static Player Join() => new Player(false);
 
         /// <summary>Ported from calculateCarryWeight().</summary>
         public float CalculateCarryWeight()

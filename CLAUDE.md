@@ -18,6 +18,9 @@ real-time section describes the inherited turn-based game, most of which still r
   morale - with `Rt.On` it only sets a goal) and act every frame in `RtAi.Tick` (walk, bursts, reloads, suppression,
   call-outs); mutants re-think every ~2 s through `EnemyAI.MutantTurn` (with `Rt.On` it sets GoTo/Chase/Flee) and move and
   strike every frame in `RtAi.TickMutant` (RT5). A 6 s upkeep round covers bleeding, radio, fight end.
+- **Co-op groundwork (RT 7n):** per-player state `Rt.State` (`Rt.Of(p)`, `Rt.Me`), input packets `Rt.Input` (`Rt.Read` for
+  the local player, `Rt.Remote` for joined ones), `Player.All`/`Player.Join`, `Rt.TargetOf`. New code must work for several
+  players (ACTION_DESIGN "Co-op" lists what's still one-player).
 - `Body.cs` (RT2): six parts per human, Yan's 60% wound rule, fractures/bleeding/concussion, downed and bleed-out.
 - `Ballistics.cs`: a round is a line over the ground; bodies are footprints; the crosshair's height on the sprite picks the
   part (head/torso/arm/legs), spread scatters sideways and up/down; low cover blocks by height, walls stop rounds.

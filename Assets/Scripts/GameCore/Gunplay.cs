@@ -174,7 +174,7 @@ namespace GameCore
         /// <summary>The bodies a round can hit: you and everyone on the map.</summary>
         public static IEnumerable<ICombatant> Bodies()
         {
-            if (Player.Current != null) yield return Player.Current;
+            foreach (var p in Player.All) yield return p;                  // co-op: every player has a body rounds can hit
             foreach (var e in EncounterState.Enemies) yield return e;
         }
 
@@ -197,11 +197,13 @@ namespace GameCore
                 var hit = System.Math.Abs(hh - h) < 0.02f ? probe : Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, hh, Bodies());
                 Resolve(shooter, w, hit, ambush, p == 0, delay, hd.Pellets);
                 hits.Add(hit);
-                if (p == 0 && !(shooter is Player) && hit.Unit != Player.Current && Player.Current != null && NearMiss(x0, y0, hit.EndX, hit.EndY, Player.Current))
-                {
-                    Rt.AddFocus(CombatantUtil.HasPerk(Player.Current, "ColdBlood") ? 12f : 6f);   // RT batch 3: a round that just missed you
-                    Rt.PinnedUntil = UnityEngine.Time.time + 1.5f;                                 // RT batch 4: and it pins you
-                }
+                if (p == 0 && !(shooter is Player))
+                    foreach (var pl in Player.All)                                                  // co-op: whoever it just missed
+                        if (hit.Unit != pl && NearMiss(x0, y0, hit.EndX, hit.EndY, pl))
+                        {
+                            Rt.AddFocus(pl, CombatantUtil.HasPerk(pl, "ColdBlood") ? 12f : 6f);    // RT batch 3: a round that just missed you
+                            Rt.Of(pl).PinnedUntil = UnityEngine.Time.time + 1.5f;                  // RT batch 4: and it pins you
+                        }
                 if (p == 0 && shooter is Player && Rt.On)                                          // RT batch 4: your near misses pin them
                     foreach (var e in EncounterState.Enemies)
                         if (e != hit.Unit && e.IsAlive() && NearMiss(x0, y0, hit.EndX, hit.EndY, e)) RtAi.Suppress(e);
@@ -251,7 +253,7 @@ namespace GameCore
                 if (target is Mutant tm && !TestingGround.IsDummy(tm)) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
                 if (shooter is Player && target is HumanEnemy he && !TestingGround.IsDummy(he)) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
                 if (target.IsAlive()) Body.Hit(target, hit.Part, hit.Side, dmg, w.CurrentAmmoType, shooter is Player && Rt.SlowMo ? 1.5f : 1f);   // RT batch 3: bullet time wounds more
-                if (shooter is Player) Rt.AddFocus(target.IsAlive() ? 4f : 25f);   // RT batch 2: limb health, wounds, down
+                if (shooter is Player sf) Rt.AddFocus(sf, target.IsAlive() ? 4f : 25f);   // RT batch 2: limb health, wounds, down
                 if (!target.IsAlive()) Weapon.OnTargetKilled(shooter, target);
                 if (target is Player p && p.IsAlive()) Perks.TryAdrenaline(p);
             }

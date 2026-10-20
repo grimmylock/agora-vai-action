@@ -200,7 +200,7 @@ namespace GameCore
                 if (st.Blade && !target.StatusEffects.Bleeding) { target.StatusEffects.Bleeding = true; GameLog.Write($"{(target is Player ? "You are" : target.Name + " is")} bleeding."); }
                 if (!st.Blade) Body.Concuss(target, 4f);
             }
-            if (by is Player) Rt.AddFocus(target.IsAlive() ? 4f : 25f);
+            if (by is Player bf) Rt.AddFocus(bf, target.IsAlive() ? 4f : 25f);
             if (!target.IsAlive()) Weapon.OnTargetKilled(by, target);
         }
 

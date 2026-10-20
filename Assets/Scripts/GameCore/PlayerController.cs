@@ -294,7 +294,8 @@ namespace GameCore
             if (HudView.TargetingOpen) HudView.CloseTargeting();
             if (k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
             if (Rt.Paused) return;
-            Rt.PlayerTick(player, k, m);
+            Rt.PlayerTick(player, Rt.Read(k, m));                 // co-op: the local player's devices become one Input packet
+            foreach (var j in Player.All) if (j != player && j.IsAlive()) Rt.PlayerTick(j, Rt.Remote.TryGetValue(j, out var ji) ? ji : default);   // joined players, on their last packet
             TickClock(player);
             Rt.WorldTick(player);
             if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }
@@ -350,7 +351,9 @@ namespace GameCore
             // made the world (squads walking, the clock, the hourly A-Life) run faster the faster you moved: sprinting, enemies zoomed
             if (!exploring && !Rt.On) TurnLoop.TickAwareness();
 
-            var exit = TerrainMap.Exits.FirstOrDefault(e => e.X == player.X && e.Y == player.Y);
+            // co-op: map exits are taken together (ACTION_DESIGN) - a joined player standing on one doesn't move the game; ponytail:
+            // the "everyone at the exit and confirmed" vote comes with the network layer
+            var exit = player != Player.Current ? null : TerrainMap.Exits.FirstOrDefault(e => e.X == player.X && e.Y == player.Y);
             if (exit != null)
             {
                 if (ZoneTravel.TravelToSector(exit.TargetZoneId)) return false; // the grid under our feet just changed - stop following the old path

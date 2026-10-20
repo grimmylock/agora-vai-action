@@ -866,9 +866,27 @@ static class Program {
       for (int i = 0; i < 40; i++) Rt.MoveBy(p, 0.05f, 0f);
       bool stopped = p.X == px;
       bool hop = Rt.TryVault(p, 1f, 0f, null); float lift = 0f;
-      for (int i = 0; i < 30 && Rt.Vaulting; i++) { UnityEngine.Time.time += 0.02f; lift = Math.Max(lift, Rt.VaultLift); Rt.TickVault(p, 0.02f); }
-      Check(stopped && hop && p.X == px + 2 && !Rt.Vaulting && lift > 0.2f, $"real time: sandbags stop you ({stopped}), Space vaults you over them (to x+{p.X - px}, up {lift:0.00})");
+      for (int i = 0; i < 30 && Rt.Of(p).Vaulting; i++) { UnityEngine.Time.time += 0.02f; lift = Math.Max(lift, Rt.Of(p).VaultLift); Rt.TickVault(p, 0.02f); }
+      Check(stopped && hop && p.X == px + 2 && !Rt.Of(p).Vaulting && lift > 0.2f, $"real time: sandbags stop you ({stopped}), Space vaults you over them (to x+{p.X - px}, up {lift:0.00})");
       TerrainMap.SetTileType(px + 1, py, TileType.Empty); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); }
+    // co-op groundwork (Yan: "start steps 1-3 now"): two players in one fight - own state, own input packets, enemies pick the
+    // nearest, rounds hit whoever they hit
+    { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(5000);
+      var q = Player.Join(); q.EquipWeapon("sidearm", "PSh18Pchela"); q.X = px; q.Y = py + 4; Rt.SetOffset(q, 0f, 0f); q.HealPermanent(5000);
+      UnityEngine.Time.deltaTime = 0.02f; UnityEngine.Time.time = 5000f;
+      float pSt = Rt.Of(p).Stamina;
+      for (int i = 0; i < 25; i++) { Rt.PlayerTick(q, new Rt.Input { X = 1f, Sprint = true }); Rt.PlayerTick(p, default); UnityEngine.Time.time += 0.02f; }
+      Check(Player.All.Count == 2 && Player.Current == p && q.X > px && p.X == px && Rt.Of(q).Stamina < Rt.Of(p).Stamina && Rt.Of(p).Stamina == pSt,
+        $"co-op: a joined player moves and sprints on its own packets (x+{q.X - px}, stamina {Rt.Of(q).Stamina:0} vs yours {Rt.Of(p).Stamina:0})");
+      var raider = new HumanEnemy("Raider", q.X + 5, q.Y, "Raiders", "Experienced", null, null) { IsAggroed = true };
+      raider.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]); EncounterState.Enemies.Add(raider);
+      Check(Rt.TargetOf(raider, p) == q && Gunplay.Bodies().Contains(q), "co-op: an enemy fights the player nearest it, and rounds can hit either player");
+      EncounterState.InCombat = true; Contact.Spot(q); int qh = q.Hp, ph = p.Hp;
+      for (int f = 0; f < 300 && q.Hp == qh; f++) { Rt.WorldTick(p); UnityEngine.Time.time += 0.02f; }
+      Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
+      Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
+      Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Focus < 50f, "co-op: a dive spends that player's Focus and only they dive");
+      Rt.SetSlow(false); Player.All.Remove(q); Rt.Remote.Clear(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; CombatFx.Pending.Clear(); }
     // Yan: "radio the specific closest squad for help instead of it being a full AOE call"
     { EncounterState.Enemies.Clear(); var keepSq = MacroState.Current.OfflineSquads.ToList(); MacroState.Current.OfflineSquads.Clear();
       OfflineSquad Gang(int dx) { var sq = new OfflineSquad { ZoneId = TerrainMap.ZoneId, Faction = "Raiders" };
@@ -977,16 +995,16 @@ static class Program {
       var kb = new UnityEngine.InputSystem.Keyboard();
       foreach (var f in typeof(UnityEngine.InputSystem.Keyboard).GetFields()) if (f.FieldType == typeof(UnityEngine.InputSystem.KeyControl)) f.SetValue(kb, new UnityEngine.InputSystem.KeyControl());
       UnityEngine.Time.deltaTime = 0.02f; UnityEngine.Time.unscaledDeltaTime = 0.02f; UnityEngine.Time.time = 1000f;
-      void Frame() { Rt.PlayerTick(p, kb, null); UnityEngine.Time.time += UnityEngine.Time.deltaTime; kb.spaceKey.wasPressedThisFrame = false; }
-      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.Focus = 0f;
+      void Frame() { Rt.PlayerTick(p, Rt.Read(kb, null)); UnityEngine.Time.time += UnityEngine.Time.deltaTime; kb.spaceKey.wasPressedThisFrame = false; }
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.Of(p).Focus = 0f;
       kb.spaceKey.wasPressedThisFrame = true; Frame();
-      Check(!Rt.Diving, "no Focus, no dive");
-      Rt.Focus = 50f; kb.dKey.isPressed = true; kb.spaceKey.wasPressedThisFrame = true;
+      Check(!Rt.Of(p).Diving, "no Focus, no dive");
+      Rt.Of(p).Focus = 50f; kb.dKey.isPressed = true; kb.spaceKey.wasPressedThisFrame = true;
       var (sx, _) = Ballistics.Pos(p); Frame();
-      Check(Rt.Diving && Rt.SlowMo && UnityEngine.Time.timeScale == Rt.SlowScale && Math.Abs(Rt.Focus - 10f) < 0.01f, $"Space dives: bullet time on, 40 Focus spent ({Rt.Focus})");
-      for (int i = 0; i < 40 && Rt.Diving; i++) Frame();
+      Check(Rt.Of(p).Diving && Rt.SlowMo && UnityEngine.Time.timeScale == Rt.SlowScale && Math.Abs(Rt.Of(p).Focus - 10f) < 0.01f, $"Space dives: bullet time on, 40 Focus spent ({Rt.Of(p).Focus})");
+      for (int i = 0; i < 40 && Rt.Of(p).Diving; i++) Frame();
       var (lx, _) = Ballistics.Pos(p);
-      Check(!Rt.Diving && Rt.Low(p) && !Rt.SlowMo && UnityEngine.Time.timeScale == 1f && lx - sx > 2f && lx - sx < 3f, $"lands {lx - sx:0.0} tiles on, prone, back to full speed");
+      Check(!Rt.Of(p).Diving && Rt.Low(p) && !Rt.SlowMo && UnityEngine.Time.timeScale == 1f && lx - sx > 2f && lx - sx < 3f, $"lands {lx - sx:0.0} tiles on, prone, back to full speed");
       Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.2f) != "miss", "sprawled on the ground: a head-height round goes over, a low one hits");
       for (int i = 0; i < 10; i++) Frame();
       var (px2, _) = Ballistics.Pos(p);

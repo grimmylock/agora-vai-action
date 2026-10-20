@@ -133,7 +133,7 @@ namespace GameCore
             // a fair shot (Yan: "i can't see past a certain range but enemies keep shooting me ... Enemies also see me through walls"):
             // only from as far as you could see him if you looked (Vision.LookReach), and the line of sight has to hold both ways -
             // a tile line traced from him to you can slip past a corner that the line from you to him doesn't
-            if (CombatantUtil.Distance(h, p) > System.Math.Min(hd.Reach, Vision.LookReach) || !Contact.Mutual(h, p) || !Contact.Knows(h, p)) { s.BurstLeft = 0; return; }
+            if (CombatantUtil.Distance(h, p) > System.Math.Min(hd.Reach, Rt.Of(p).LookReach) || !Contact.Mutual(h, p) || !Contact.Knows(h, p)) { s.BurstLeft = 0; return; }
 
             if (s.BurstLeft <= 0) s.BurstLeft = hd.Auto ? Random.Range(3, 6) : 1;
             w.CurrentMagazine--;

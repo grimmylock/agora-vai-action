@@ -3576,3 +3576,24 @@ the action version as the main combat version of the game, the turn based will b
 - Checks: only the closest squad answers; a Maw ignores a gunshot, won't come for a body while you're at full health, comes when
   you're nearly dead. Stub: Color -> Color32.
 - `CLAUDE.md`: real time is the game; turn-based abandoned for now. The Tier 1 map is 200x200 tiles (all six tier maps are).
+
+### RT 7n - co-op groundwork, steps 1-3 (2026-10-20)
+
+Yan: "wait, but if we decided to build for it from the start why are we building NOT for it?"; "yes, start steps 1-3 now". The
+design said combat would be written host-authoritative from day one; RT 1-7m didn't do it (one `Player.Current`, the player's
+state in globals, the keyboard read inside the rules). Fixed before more features pile on:
+- Step 1, state per player: `Rt.State` (stamina, Focus, aim, moving, look-ahead, dive, prone, pinned, vault, item use, look reach);
+  `Rt.Of(p)`, `Rt.Me` for the local view and HUD. Focus goes to whoever earned it (`Rt.AddFocus(p, f)`); a near miss pins the
+  player it missed.
+- Step 2, input packets: `Rt.Input` (move, sneak, sprint, aim, fire held/pressed, jump, reload, crosshair). `Rt.Read` turns the
+  local keyboard and mouse into one; `Rt.PlayerTick(p, input)` is the only way a player acts; joined players are ticked each
+  frame on their last packet (`Rt.Remote`). The non-combat keys (E, belt, flashlight, menus) are still read for the local
+  player only.
+- Step 3, the players: `Player.All` (the local player first; New Game/Load start it over) and `Player.Join`; `Gunplay.Bodies`
+  has every player; each enemy fights the nearest player it can see, else the nearest (`Rt.TargetOf`, in `Rt.WorldTick` and
+  `TurnLoop.TickAwareness`); every player gets the 6 s round upkeep; fair shots read the target's own look reach; a joined player
+  on an exit doesn't move the game.
+- Check: two players in one fight - the joined one moves and sprints on its own packets, a Raider picks it (the nearer) and
+  shoots it, not you; its dive spends its own Focus.
+- Still one-player, listed in ACTION_DESIGN "Co-op" (bullet time, spotting memory, morale/radio, reputation, HUD/camera, exit
+  vote, game over, friendly fire).

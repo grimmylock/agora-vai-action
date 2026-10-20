@@ -60,15 +60,67 @@ namespace GameCore
         public const float Radius = 0.22f;
         public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;   // a human enemy re-thinks its plan every ~3 s (RtAi acts in between)
 
-        public static float Stamina = StaminaMax;
-        static float _staminaRest;
-        public static bool Aiming;
-        public static int Moving;                                     // 0 still, 1 walking, 2 sprinting
-        public static Vector3 Look;                                   // camera look-ahead (world), eased by TacticalGridView
+        // Co-op groundwork (Yan: "if we decided to build for it from the start why are we building NOT for it?" - ACTION_DESIGN
+        // "Co-op"): everything that belongs to one player's body and hands lives on that player, not in globals. The local player
+        // is Me (Player.Current); a joined player (Player.Join) gets its own State and is driven by its own Input packets.
+        public class State
+        {
+            public float Stamina = StaminaMax, StaminaRest, Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f, DiveX, DiveY;
+            public float VaultFrom = -1f, VaultLen, VaultX, VaultY, VaultDist, UseDone;
+            public float LookReach = Vision.MaxRadius;                // how far this player sees where they look (Vision, for fair shots)
+            public bool Aiming;
+            public int Moving;                                        // 0 still, 1 walking, 2 sprinting
+            public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
+            public string UsingId;
+            public bool Diving => DiveUntil >= 0f;
+            public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
+            public bool Vaulting => VaultFrom >= 0f;
+            /// <summary>The hop's height now (tiles), for the view - 0 when on their feet.</summary>
+            public float VaultLift => Vaulting ? VaultHeight * Mathf.Sin(Mathf.PI * Mathf.Clamp01((Time.time - VaultFrom) / VaultLen)) : 0f;
+        }
+        static readonly Dictionary<Player, State> States = new Dictionary<Player, State>();
+        public static State Of(Player p) { if (p == null) return new State(); if (!States.TryGetValue(p, out var s)) States[p] = s = new State(); return s; }
+        public static State Me => Of(Player.Current);
+
+        /// <summary>One frame of one player's controls - read from the keyboard and mouse for the local player (Read), or sent
+        /// by a joined player. Everything Rt does with a player goes through this, never the devices directly.</summary>
+        public struct Input
+        {
+            public float X, Y;                                        // move, -1..1 each (y down)
+            public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload;   // held / held / held / held / pressed / pressed / pressed
+            public (float x, float y)? Mouse;                         // the crosshair, tile space
+        }
+        public static Input Read(Keyboard k, Mouse m) => new Input
+        {
+            X = (k.dKey.isPressed || k.rightArrowKey.isPressed ? 1 : 0) - (k.aKey.isPressed || k.leftArrowKey.isPressed ? 1 : 0),
+            Y = (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0) - (k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0),
+            Sneak = k.leftCtrlKey.isPressed, Sprint = k.leftShiftKey.isPressed, Jump = k.spaceKey.wasPressedThisFrame, Reload = k.rKey.wasPressedThisFrame,
+            Aim = m != null && m.rightButton.isPressed, Fire = m != null && m.leftButton.isPressed, FireDown = m != null && m.leftButton.wasPressedThisFrame,
+            Mouse = MouseTile(m),
+        };
         static float _round;
+
+        /// <summary>The last Input each joined player sent (the network layer fills it; the harness too). Ticked with the local one.</summary>
+        public static readonly Dictionary<Player, Input> Remote = new Dictionary<Player, Input>();
+
+        /// <summary>Co-op: who an enemy fights - the nearest living player it has a line of sight to, else the nearest living one.
+        /// `fallback` (the local player) when nobody else qualifies.</summary>
+        public static Player TargetOf(Mutant e, Player fallback)
+        {
+            Player best = null; int bd = int.MaxValue; bool bestSees = false;
+            var grid = GameServices.Grid;
+            foreach (var p in Player.All)
+            {
+                if (!p.IsAlive()) continue;
+                int d = CombatantUtil.Distance(e, p);
+                bool sees = grid != null && grid.CheckLineOfSight(e.X, e.Y, p.X, p.Y);
+                if (best == null || sees && !bestSees || sees == bestSees && d < bd) { best = p; bd = d; bestSees = sees; }
+            }
+            return best ?? fallback;
+        }
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = _vaultFrom = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -76,8 +128,8 @@ namespace GameCore
         {
             var (ox, oy) = Offset(p);
             float x = p.X + 0.5f + ox, y = p.Y + 0.5f + oy;
-            if (dx != 0f && Clear(x + dx, y)) x += dx;
-            if (dy != 0f && Clear(x, y + dy)) y += dy;
+            if (dx != 0f && Clear(p, x + dx, y)) x += dx;
+            if (dy != 0f && Clear(p, x, y + dy)) y += dy;
             int tx = Mathf.FloorToInt(x), ty = Mathf.FloorToInt(y);
             if (tx != p.X || ty != p.Y)
             {
@@ -92,31 +144,28 @@ namespace GameCore
 
         /// <summary>The body's circle fits: every tile it overlaps is walkable - and, unless you're vaulting, not low cover
         /// (Yan: "i can walk right through cover like the sandbags"). The tile you're in never blocks (you can always step off).</summary>
-        static bool Clear(float x, float y)
+        static bool Clear(Player p, float x, float y)
         {
-            var p = Player.Current;
+            bool vaulting = Of(p).Vaulting;
             for (int i = 0; i < 4; i++)
             {
                 int tx = Mathf.FloorToInt(x + (i % 2 == 0 ? -Radius : Radius)), ty = Mathf.FloorToInt(y + (i < 2 ? -Radius : Radius));
                 if (!TerrainMap.CanEnterTile(tx, ty)) return false;
-                if (!Vaulting && Ledge(tx, ty) && (p == null || tx != p.X || ty != p.Y)) return false;
+                if (!vaulting && Ledge(tx, ty) && (tx != p.X || ty != p.Y)) return false;
             }
             return true;
         }
 
         // ---- vaulting: Space at low cover hops you over it (no Focus, no landing on your face like a dive) ----
         public const float VaultTime = 0.45f, VaultHeight = 0.35f;     // seconds; tiles the body rises at the top of the hop
-        static float _vaultFrom = -1f, _vaultLen, _vaultX, _vaultY, _vaultDist;
-        public static bool Vaulting => _vaultFrom >= 0f;
-        /// <summary>The hop's height now (tiles), for the view - 0 when you're on your feet.</summary>
-        public static float VaultLift => Vaulting ? VaultHeight * Mathf.Sin(Mathf.PI * Mathf.Clamp01((Time.time - _vaultFrom) / _vaultLen)) : 0f;
         public static bool Ledge(int x, int y) { var t = TerrainMap.GetTile(x, y).Type; return t == TileType.HardCover || t == TileType.ScatterCover; }
 
         /// <summary>Low cover within reach the way you're going (the keys, else the mouse) with floor beyond it: hop over.</summary>
         internal static void TickVault(Player p, float dt)
         {
-            MoveBy(p, _vaultX * _vaultDist / _vaultLen * dt, _vaultY * _vaultDist / _vaultLen * dt);
-            if (Time.time - _vaultFrom >= _vaultLen) _vaultFrom = -1f;
+            var s = Of(p);
+            MoveBy(p, s.VaultX * s.VaultDist / s.VaultLen * dt, s.VaultY * s.VaultDist / s.VaultLen * dt);
+            if (Time.time - s.VaultFrom >= s.VaultLen) s.VaultFrom = -1f;
         }
 
         internal static bool TryVault(Player p, float ix, float iy, (float x, float y)? mouse)
@@ -137,9 +186,10 @@ namespace GameCore
                     int fx = Mathf.FloorToInt(ex), fy = Mathf.FloorToInt(ey);
                     if (!TerrainMap.CanEnterTile(fx, fy)) return false;
                     if (Ledge(fx, fy) || TerrainMap.UnitAt(fx, fy, p) != null) continue;
-                    _vaultX = dx; _vaultY = dy; _vaultDist = e;
-                    _vaultLen = CombatantUtil.HasPerk(p, "Vault") ? VaultTime * 0.7f : VaultTime;
-                    _vaultFrom = Time.time;
+                    var s = Of(p);
+                    s.VaultX = dx; s.VaultY = dy; s.VaultDist = e;
+                    s.VaultLen = CombatantUtil.HasPerk(p, "Vault") ? VaultTime * 0.7f : VaultTime;
+                    s.VaultFrom = Time.time;
                     Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 0.6f, 0.05f, 0.8f);
                     return true;
                 }
@@ -148,50 +198,50 @@ namespace GameCore
             return false;
         }
 
-        /// <summary>Your controls, once a frame. False = nothing to do (a panel is open).</summary>
-        public static void PlayerTick(Player p, Keyboard k, Mouse m)
+        /// <summary>One player's controls, once a frame.</summary>
+        public static void PlayerTick(Player p, Input i)
         {
             float dt = Time.deltaTime;
+            var s = Of(p);
             p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: AP/MP only gate old actions
 
             // ---- moving ----
-            float ix = (k.dKey.isPressed || k.rightArrowKey.isPressed ? 1 : 0) - (k.aKey.isPressed || k.leftArrowKey.isPressed ? 1 : 0);
-            float iy = (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0) - (k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0);
+            float ix = i.X, iy = i.Y;
             bool down = Body.Down(p);
-            p.Sneaking = down || k.leftCtrlKey.isPressed;
-            Aiming = !down && m != null && m.rightButton.isPressed;
-            bool wantSprint = k.leftShiftKey.isPressed && !p.Sneaking && !Aiming && !Body.LegHurt(p) && UsingId == null && (ix != 0 || iy != 0);
-            bool sprint = wantSprint && Stamina > 1f;
-            if (sprint) { Stamina = Mathf.Max(0f, Stamina - SprintDrain * dt); _staminaRest = 0.8f; }
-            else if ((_staminaRest -= dt) <= 0f) Stamina = Mathf.Min(StaminaMax, Stamina + StaminaRegen * dt);
+            p.Sneaking = down || i.Sneak;
+            s.Aiming = !down && i.Aim;
+            bool wantSprint = i.Sprint && !p.Sneaking && !s.Aiming && !Body.LegHurt(p) && s.UsingId == null && (ix != 0 || iy != 0);
+            bool sprint = wantSprint && s.Stamina > 1f;
+            if (sprint) { s.Stamina = Mathf.Max(0f, s.Stamina - SprintDrain * dt); s.StaminaRest = 0.8f; }
+            else if ((s.StaminaRest -= dt) <= 0f) s.Stamina = Mathf.Min(StaminaMax, s.Stamina + StaminaRegen * dt);
             float speed = sprint ? Sprint : p.Sneaking ? Crouch : Walk;
-            if (Aiming) speed *= AimSlow;
+            if (s.Aiming) speed *= AimSlow;
             if (Body.LegHurt(p)) speed *= 0.6f;                       // RT batch 2: a broken or fractured leg limps
-            if (UsingId != null) speed *= 0.5f;                       // patching yourself up
+            if (s.UsingId != null) speed *= 0.5f;                     // patching yourself up
             if (down) speed = Crawl;
             if (p.StatusEffects.Prone) speed = 0f;
-            if (Time.time < ProneUntil) speed = 0f;                   // RT batch 3: sprawled after a dive
+            if (Time.time < s.ProneUntil) speed = 0f;                 // RT batch 3: sprawled after a dive
             float l = Mathf.Sqrt(ix * ix + iy * iy);
-            Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
-            if (!down && k.spaceKey.wasPressedThisFrame && !Diving && !Vaulting && Time.time >= ProneUntil && UsingId == null && !TryVault(p, ix, iy, MouseTile(m)))
-                TryDive(p, ix, iy, MouseTile(m));                         // Space at low cover vaults it; anywhere else it dives
-            if (Vaulting) { Moving = 0; TickVault(p, dt); }
-            else if (Diving)
+            s.Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
+            if (!down && i.Jump && !s.Diving && !s.Vaulting && Time.time >= s.ProneUntil && s.UsingId == null && !TryVault(p, ix, iy, i.Mouse))
+                TryDive(p, ix, iy, i.Mouse);                          // Space at low cover vaults it; anywhere else it dives
+            if (s.Vaulting) { s.Moving = 0; TickVault(p, dt); }
+            else if (s.Diving)
             {
-                Moving = 0;
+                s.Moving = 0;
                 var (bx, by) = Ballistics.Pos(p);
-                MoveBy(p, _diveX * DiveSpeed * dt, _diveY * DiveSpeed * dt);
+                MoveBy(p, s.DiveX * DiveSpeed * dt, s.DiveY * DiveSpeed * dt);
                 var (ax, ay) = Ballistics.Pos(p);
                 bool blocked = dt > 0f && Mathf.Abs(ax - bx) + Mathf.Abs(ay - by) < DiveSpeedFloor * dt;
-                if (Time.time >= DiveUntil || blocked) Land(p);
+                if (Time.time >= s.DiveUntil || blocked) Land(p);
             }
-            else if (Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
+            else if (s.Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
 
             // ---- down: bleeding out (faster while crawling); only a stim (belt keys) gets you up ----
             if (down)
             {
-                if (Diving) Land(p);
-                if (Body.TickDown(p, Moving > 0, dt)) { GameLog.Write("You bled out."); p.Hp = 0; TurnLoop.CheckCombatEnd(); return; }
+                if (s.Diving) Land(p);
+                if (Body.TickDown(p, s.Moving > 0, dt)) { GameLog.Write("You bled out."); p.Hp = 0; TurnLoop.CheckCombatEnd(); return; }
                 TickUse(p);
                 return;
             }
@@ -201,20 +251,20 @@ namespace GameCore
             var w = p.EquippedWeapon;
             var aim = Gunplay.AimOf(p);
             var hd = Gunplay.For(w);
-            Gunplay.Tick(hd, aim, Aiming || Diving, Moving, SlowMo ? Time.unscaledDeltaTime : dt);   // in bullet time your aim keeps real-time speed
-            var mw = MouseTile(m);
+            Gunplay.Tick(hd, aim, s.Aiming || s.Diving, s.Moving, SlowMo ? Time.unscaledDeltaTime : dt);   // in bullet time your aim keeps real-time speed
+            var mw = i.Mouse;
             TickReload(p, w, aim, Time.time);
-            if (k.rKey.wasPressedThisFrame && w != null && aim.ReloadUntil < 0f && UsingId == null && !CombatRules.IsMelee(w)
+            if (i.Reload && w != null && aim.ReloadUntil < 0f && s.UsingId == null && !CombatRules.IsMelee(w)
                 && (w.IsJammed || w.CurrentMagazine < w.MagCapacity))
                 StartReload(p, w, aim, Time.time);
             if (w != null && CombatRules.IsMelee(w))                                         // RT 7e: hold to charge a swing; right mouse to throw
             {
-                if (m != null && UsingId == null) Melee.PlayerInput(p, w, m.leftButton.isPressed, m.rightButton.isPressed, mw);
+                if (s.UsingId == null) Melee.PlayerInput(p, w, i.Fire, i.Aim, mw);
                 goto camera;
             }
-            bool trigger = m != null && (hd.Auto ? m.leftButton.isPressed : m.leftButton.wasPressedThisFrame);
+            bool trigger = hd.Auto ? i.Fire : i.FireDown;
             if (trigger && aim.Loading > 0) StopLoading(p, w, aim);   // RT 6h: a tube or lever fires what's in; a revolver closes first
-            if (trigger && UsingId != null) { UsingId = null; GameLog.Write("You stop to shoot."); }
+            if (trigger && s.UsingId != null) { s.UsingId = null; GameLog.Write("You stop to shoot."); }
             if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
 
             camera:
@@ -222,8 +272,8 @@ namespace GameCore
             if (mw.HasValue)
             {
                 var (px, py) = Ballistics.Pos(p);
-                float reach = Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
-                Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
+                float reach = s.Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
+                s.Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
             }
         }
 
@@ -271,7 +321,7 @@ namespace GameCore
         static void PlayerFire(Player p, Weapon w, Handling hd, Gunplay.Aim aim, (float x, float y) at)
         {
             aim.NextShot = Time.time + 60f / hd.Rpm;
-            if (CombatRules.IsMelee(w)) { Melee.PlayerAttack(p, w, at, Aiming); return; }   // RT 7a: swing, or aim and throw
+            if (CombatRules.IsMelee(w)) { Melee.PlayerAttack(p, w, at, Of(p).Aiming); return; }   // RT 7a: swing, or aim and throw
             if (w.IsJammed) { CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} is jammed - R to clear it."); return; }
             if (w.CurrentMagazine <= 0) { Sfx.Play("dryfire", TacticalGridView.GridToWorld(p.X, p.Y)); return; }
             w.CurrentMagazine--;
@@ -287,9 +337,9 @@ namespace GameCore
             if (over != null) { var (ux, uy) = Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
             bool ambush = over is Mutant u && !u.IsAggroed;
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
-            float spread = Gunplay.Spread(hd, aim, Moving, p.Sneaking);
+            float spread = Gunplay.Spread(hd, aim, Of(p).Moving, p.Sneaking);
             spread += 2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f);   // RT batch 2: broken arms sway, a concussion blurs
-            if (p.StatusEffects.Suppressed || Time.time < PinnedUntil) spread += 2f;   // RT batch 4: their near misses pin you
+            if (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil) spread += 2f;   // RT batch 4: their near misses pin you
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
             aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
@@ -302,30 +352,27 @@ namespace GameCore
         //      Landing: prone 0.6 s (Tumbler: 0.35) - no moving, but you can still shoot. Costs 40 Focus, so no chaining.
         //      Focus fills from kills (+25), hits (+4) and enemy rounds that just miss you (+6, Cold Blood x2). ----
         public const float DiveCost = 40f, DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
-        public static float Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f;
         const float DiveSpeedFloor = 1f;                              // moved slower than this (tiles/s): hit a wall, land now
-        static float _diveX, _diveY;
-        public static bool SlowMo;
-        public static bool Diving => DiveUntil >= 0f;
-        public static bool DiveRight => _diveX >= 0f;              // the view tilts the body into the dive
-        public static bool Low(ICombatant u) => On && u is Player && (Diving || Time.time < ProneUntil);   // airborne or sprawled: a low target
+        public static bool SlowMo;                                    // ponytail: one time scale for everyone - step 4 makes it per fight
+        public static bool Low(ICombatant u) => On && u is Player p && (Of(p).Diving || Time.time < Of(p).ProneUntil);   // airborne or sprawled: a low target
 
-        public static void AddFocus(float f)
+        public static void AddFocus(Player p, float f)
         {
-            if (!On) return;
-            Focus = Mathf.Min(FocusMax, Focus + f);
+            if (!On || p == null) return;
+            var s = Of(p); s.Focus = Mathf.Min(FocusMax, s.Focus + f);
         }
 
         static bool TryDive(Player p, float ix, float iy, (float x, float y)? mouse)
         {
-            if (Focus < DiveCost) { GameLog.Write($"Not enough Focus to dive ({Mathf.FloorToInt(Focus)}/{DiveCost:0})."); return false; }
+            var s = Of(p);
+            if (s.Focus < DiveCost) { GameLog.Write($"Not enough Focus to dive ({Mathf.FloorToInt(s.Focus)}/{DiveCost:0})."); return false; }
             float dx = ix, dy = iy;
             if (dx == 0f && dy == 0f && mouse.HasValue) { var (px, py) = Ballistics.Pos(p); dx = mouse.Value.x - px; dy = mouse.Value.y - py; }
             float l = Mathf.Sqrt(dx * dx + dy * dy);
             if (l < 0.01f) return false;
-            _diveX = dx / l; _diveY = dy / l;
-            Focus -= DiveCost;
-            DiveUntil = Time.time + DiveTime;
+            s.DiveX = dx / l; s.DiveY = dy / l;
+            s.Focus -= DiveCost;
+            s.DiveUntil = Time.time + DiveTime;
             SetSlow(true);
             Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 1f, 0.05f, 0.6f);
             return true;
@@ -333,8 +380,9 @@ namespace GameCore
 
         static void Land(Player p)
         {
-            DiveUntil = -1f;
-            ProneUntil = Time.time + (CombatantUtil.HasPerk(p, "Tumbler") ? 0.35f : ProneTime);
+            var s = Of(p);
+            s.DiveUntil = -1f;
+            s.ProneUntil = Time.time + (CombatantUtil.HasPerk(p, "Tumbler") ? 0.35f : ProneTime);
             SetSlow(false);
             Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f);
         }
@@ -343,8 +391,6 @@ namespace GameCore
 
         // ---- using an item takes time (RT batch 2): you move at half pace, firing cancels it ----
         public const float Crawl = 0.6f;
-        public static string UsingId;
-        public static float UseDone;
         public static bool Applying;                                  // true while the finished use runs Player.UseConsumable for real
 
         public static float UseSeconds(GameData.ConsumableDef d) =>
@@ -352,17 +398,19 @@ namespace GameCore
 
         public static void BeginUse(Player p, GameData.ConsumableDef d)
         {
-            if (UsingId != null) { GameLog.Write("Already busy."); return; }
+            var s = Of(p);
+            if (s.UsingId != null) { GameLog.Write("Already busy."); return; }
             if (Body.Down(p) && !(d.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
             if (d.Throwable != null || d.RepairKit) { Applying = true; try { p.UseConsumable(d.Id); } finally { Applying = false; } return; }
-            UsingId = d.Id; UseDone = Time.time + UseSeconds(d);
+            s.UsingId = d.Id; s.UseDone = Time.time + UseSeconds(d);
             GameLog.Write($"Using {d.Name}...");
         }
 
         static void TickUse(Player p)
         {
-            if (UsingId == null || Time.time < UseDone) return;
-            string id = UsingId; UsingId = null;
+            var s = Of(p);
+            if (s.UsingId == null || Time.time < s.UseDone) return;
+            string id = s.UsingId; s.UsingId = null;
             Applying = true;
             try { p.UseConsumable(id); } finally { Applying = false; }
         }
@@ -392,8 +440,9 @@ namespace GameCore
         }
 
         /// <summary>The world, once a frame: enemies in a fight act on their own timers, rounds tick over.</summary>
-        public static void WorldTick(Player p)
+        public static void WorldTick(Player local)
         {
+            var p = local;
             float now = Time.time;
             var grid = GameServices.Grid;
             if (grid == null) return;
@@ -404,6 +453,7 @@ namespace GameCore
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
+                p = Companion.Is(e) ? local : TargetOf(e, local);                // co-op: each enemy fights the player nearest it
                 if (e is HumanEnemy rh && !Companion.Is(e)) RtAi.Tick(rh, p);   // RT batch 4: walks and shoots every frame; thinks below
                 else if (!(e is HumanEnemy)) RtAi.TickMutant(e, p);              // RT batch 5: mutants too
                 if (!NextTurn.TryGetValue(e, out var at)) { NextTurn[e] = now + Random.Range(0.5f, 1.3f); continue; }   // reaction time
@@ -416,16 +466,20 @@ namespace GameCore
                     EnemyAI.TakeTurn(e, p);
                 }
                 catch (System.Exception ex) { Debug.LogException(ex); }
-                if (!p.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }
-                Perks.TryAdrenaline(p);
+                if (!p.IsAlive()) TurnLoop.CheckCombatEnd();
+                else Perks.TryAdrenaline(p);
+                if (!local.IsAlive()) return;
             }
             if (!EncounterState.InCombat) { _round = 0f; return; }
             if ((_round += Time.deltaTime) < RoundSeconds) return;
             _round = 0f;
-            EnemyAI.BeginEnemyRound(p);
-            p.EndTurn(); p.StartTurn();
-            AnomalyEngine.ProcessTurnStart(p);
-            if (p.IsAlive()) Contact.EndRound(p);
+            EnemyAI.BeginEnemyRound(local);                                 // ponytail: morale and radio still read the local player
+            foreach (var pl in Player.All.ToList())                         // every player's upkeep: bleeding, effects, anomalies
+            {
+                pl.EndTurn(); pl.StartTurn();
+                AnomalyEngine.ProcessTurnStart(pl);
+                if (pl.IsAlive()) Contact.EndRound(pl);
+            }
             TurnLoop.CheckCombatEnd();
             if (EncounterState.InCombat) TurnLoop.RadioForHelp();
         }

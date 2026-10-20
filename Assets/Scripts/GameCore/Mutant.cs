@@ -304,7 +304,7 @@ namespace GameCore
             }
             else if (target.StatusEffects.EvasiveMelee) ac += target.StatusEffects.TakeCoverAc;
 
-            if (Rt.On && target is Player diver && Rt.Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
+            if (Rt.On && target is Player diver && Rt.Of(diver).Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
             var result = Rt.On ? new AttackRollResult { Hit = true, ChosenRoll = 0 }   // real time: no dice - in reach when it strikes = hit
                 : GameServices.RequireCombat().RollAttack(advantage ? "advantage" : "standard", (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);   // Batch 57: maimed claws
             bool crit = result.ChosenRoll == CombatRules.Headshot;

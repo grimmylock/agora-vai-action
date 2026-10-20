@@ -195,12 +195,13 @@ namespace GameCore
             if (aimAt.HasValue) _aim = Mathf.Atan2(aimAt.Value.y - _playerMarker.transform.position.y, aimAt.Value.x - _playerMarker.transform.position.x);
             float lookReach = Rt.On ? look.Vision * (1f + 0.5f * (1f - Mathf.Clamp01(look.Night / 0.8f))) : 0f;   // real time: the look cone (Vision.LookReach)
             Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
+            Rt.Me.LookReach = Vision.LookReach;                                  // co-op: fair shots read each player's own reach
             _roofs?.Tick(player);
             _atmo?.Tick(player, look);
             ColorGrade.Apply(look);
             if (look.Rain > 0.75f) Sfx.Ambient("amb_storm"); else if (look.Rain > 0f) Sfx.Ambient("amb_rain"); else Sfx.Ambient(Sfx.AmbientFor(MacroState.Current.CurrentZoneId));   // the map overhaul: the region you stand in
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
-            float tilt = downNow ? 90f : Rt.Diving ? (Rt.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.DiveRight ? -90f : 90f) : Held(_playerMarker).Lean;   // RT batch 3: into the dive, sprawled after it; RT 7c: leaning into a swing
+            float tilt = downNow ? 90f : Rt.Me.Diving ? (Rt.Me.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.Me.DiveRight ? -90f : 90f) : Held(_playerMarker).Lean;   // RT batch 3: into the dive, sprawled after it; RT 7c: leaning into a swing
             _playerMarker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
             Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker));
@@ -378,7 +379,7 @@ namespace GameCore
             var (px, py) = Ballistics.Pos(player);
             float dist = Mathf.Sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
             var aim = Gunplay.AimOf(player);
-            float spread = Gunplay.Spread(Gunplay.For(w), aim, Rt.Moving, player.Sneaking);
+            float spread = Gunplay.Spread(Gunplay.For(w), aim, Rt.Me.Moving, player.Sneaking);
             float gap = Mathf.Clamp(dist * Mathf.Sin(spread * Mathf.Deg2Rad) + 2f / 16f, 2f / 16f, 3f);
             bool dry = aim.ReloadUntil >= 0f || (!CombatRules.IsMelee(w) && w.CurrentMagazine <= 0) || w.IsJammed;
             var col = dry ? new Color(1f, 0.35f, 0.3f, 0.9f) : new Color(1f, 1f, 1f, 0.85f);
@@ -606,7 +607,7 @@ namespace GameCore
         {
             if (u is Player && !Rt.On) return PlayerController.StandAt;
             var (ox, oy) = Rt.Offset(u);                                   // real-time fork: where the body really is (tile space, y down)
-            return new Vector3(ox, -oy + (u is Player ? Rt.VaultLift : 0f), 0f);   // vaulting: up and over
+            return new Vector3(ox, -oy + (u is Player up ? Rt.Of(up).VaultLift : 0f), 0f);   // vaulting: up and over
         }
 
         /// <summary>Batch 24: positions (walking), art (walk frames) and death (ragdoll) for one unit.
@@ -922,7 +923,7 @@ namespace GameCore
             var off = speaker.HasValue ? (speaker.Value - target) * 0.5f + new Vector3(0f, -cam.orthographicSize * 0.3f, 0f) : Vector3.zero;   // the dialog covers the bottom third
             _focus = Vector3.Lerp(_focus, off, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 6f));
             target += _focus;
-            _lookAhead = Vector3.Lerp(_lookAhead, Rt.On && !speaker.HasValue ? Rt.Look : Vector3.zero, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 4f));   // real-time fork: look toward the mouse
+            _lookAhead = Vector3.Lerp(_lookAhead, Rt.On && !speaker.HasValue ? Rt.Me.Look : Vector3.zero, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 4f));   // real-time fork: look toward the mouse
             target += _lookAhead;
             cam.transform.position = new Vector3(target.x, target.y, -10f);
             // Batch 65: mouse wheel zooms between the close view and twice as far (long guns reach past the close view)

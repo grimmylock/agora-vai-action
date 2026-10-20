@@ -123,6 +123,15 @@ Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack
 - 2-4 players on the same map; explore separately; **map exits only together** (everyone at an exit and confirmed, like Borderlands).
 - Separate inventories; drop items for each other; trade as now.
 - The first prototype is single-player, but the combat code is written host-authoritative from day one.
+- **Groundwork done (RT 7n, 2026-10-20; it slipped through RT 1-7m, Yan caught it):** each player's real-time state is its own
+  (`Rt.State`, `Rt.Of(p)`); controls arrive as `Rt.Input` packets (the local player's from `Rt.Read`, joined players' from
+  `Rt.Remote`); `Player.All` / `Player.Join`; rounds and melee can hit any player; each enemy fights the nearest player
+  (`Rt.TargetOf`); every player gets the round's upkeep; fair shots use each player's own sight. **Rule from now on: new code
+  works for several players, or the batch says why not.**
+- Still one-player (to do with the network layer): bullet time is one time scale for everyone (step 4: per fight); spotting
+  memory (`Contact`) is shared; morale/radio and reputation read the host; the HUD, vision and camera are the local player's;
+  a joined player's exit is ignored until the "everyone at the exit" vote; game over is the host's death; friendly fire is on
+  (rounds and swings hit any body) - Yan to decide.
 
 ## Perks (rework; same groups, names kept where they fit)
 
