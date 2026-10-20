@@ -3716,3 +3716,20 @@ Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
   one from it. Yan chose to start with the baseball bat and the hammer.
 - Review: `maps/renders/melee/melee_px_bat_hammer.png` (reference | menu | in hand | size check next to the Tactical Hatchet
   and a character; the size check is laid side by side, not a game render). Not installed.
+- Yan on the bat and hammer: "they look waaaaaaaaay better now". One fix: the bat was lopsided because its taper grew on top
+  first, so it now grows on both sides at once. Then: "you can do the rest using the same logic as these".
+- The other nine are drawn the same way. Each was traced from its reference into a grid, then shaded and detailed by hand:
+  - Hunting knife: finger grooves, rivets, a serrated spine, a clip point.
+  - Switchblade: steel cap, red-rimmed black handle with its button, quillons, a slim blade.
+  - Machete: rivets, lanyard hole, finger flare, the step in the spine, a belly sweeping up to the tip, two glints.
+  - Trench knife: a cord-wrapped grip, the quillon, four see-through knuckle rings (`_` in a grid = a hole with no outline).
+  - Hatchet: curved butt, bearded blade.
+  - Fire axe: rubber grip, pick, flared blade with a steel edge.
+  - Sledgehammer: the head is a bit smaller than the reference's (Yan found the old one too big), with rimmed faces, a nut and
+    the collar.
+  - Barbed wire bat: the bat's shape in worn wood, a rag wrap with a loose end, wire strands with barbs.
+  - Obelisk Ritual Blade: its old design, with the kris waves back.
+- The scratch scripts that made the drafts aren't kept; the grids in `melee_px.py` are the source now. Removed: `melee_drawn.py`,
+  `melee_set.py` and their sheets (they're in git history).
+- Review sheet: `maps/renders/melee/melee_px_all.png`. Not installed yet: once Yan approves, run `melee_px.py --install`. The 6
+  new weapons still need stats and a two-handed hold.
