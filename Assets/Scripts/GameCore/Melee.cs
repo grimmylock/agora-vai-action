@@ -155,7 +155,7 @@ namespace GameCore
             var st = For(w);
             var (px, py) = Ballistics.Pos(by);
             ICombatant best = null; float bestD = float.MaxValue;
-            foreach (var u in Gunplay.Bodies())
+            foreach (var u in Gunplay.Targets(by))
             {
                 if (u == null || u == by || !u.IsAlive() || Body.Down(u)) continue;
                 var (ux, uy) = Ballistics.Pos(u);
@@ -246,7 +246,7 @@ namespace GameCore
             {
                 var f = Air[i];
                 float step = Mathf.Min(f.Speed * dt, f.Left);
-                var hit = Ballistics.Trace(f.By, f.X - f.Dx * 0.1f, f.Y - f.Dy * 0.1f, f.Dx, f.Dy, step + 0.1f, f.H, Gunplay.Bodies().Where(u => u != f.By));   // from a bit back: Trace skips bodies under 0.05 from the start
+                var hit = Ballistics.Trace(f.By, f.X - f.Dx * 0.1f, f.Y - f.Dy * 0.1f, f.Dx, f.Dy, step + 0.1f, f.H, Gunplay.Targets(f.By).Where(u => u != f.By));   // from a bit back: Trace skips bodies under 0.05 from the start
                 f.Deg += f.Spin * dt;
                 if (hit.Unit != null)
                 {

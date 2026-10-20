@@ -886,6 +886,19 @@ static class Program {
       Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
       Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
       Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Focus < 50f, "co-op: a dive spends that player's Focus and only they dive");
+      // Yan: "turn friendly fire off for now for players, make it so bullets go through allied players"
+      EncounterState.Enemies.Clear(); q.X = px + 3; q.Y = py; Rt.SetOffset(q, 0f, 0f); raider.X = px + 6; raider.Y = py; raider.Hp = 100000; EncounterState.Enemies.Add(raider);
+      var line = Ballistics.Trace(p, px + 0.5f, py + 0.5f, 1f, 0f, 20f, 0.45f, Gunplay.Targets(p));
+      Check(line.Unit == raider, $"co-op: your round passes through your friend and hits the Raider behind ({line.Unit?.Name})");
+      // "they need to at least try to not shoot each other in the back": a Raider with a friend in his line of fire holds it
+      var mate = new HumanEnemy("Mate", px + 3, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      var back = new HumanEnemy("Back", px + 6, py, "Raiders", "Experienced", null, null) { IsAggroed = true };
+      back.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
+      Player.All.Remove(q); EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(mate); EncounterState.Enemies.Add(back);
+      int mh = mate.Hp, mag = back.EquippedWeapon.CurrentMagazine; Contact.Spot(p); EncounterState.InCombat = true;
+      for (int f = 0; f < 150; f++) { RtAi.Tick(back, p); UnityEngine.Time.time += 0.02f; }
+      Check(back.Y != py && !Gunplay.AllyInLine(back, p) && mate.Hp == mh,
+        $"enemies: a Raider won't fire through his mate ({mate.Hp}/{mh}) and steps aside for a clear shot (now at y{back.Y - py:+0;-0})");
       Rt.SetSlow(false); Player.All.Remove(q); Rt.Remote.Clear(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; CombatFx.Pending.Clear(); }
     // Yan: "radio the specific closest squad for help instead of it being a full AOE call"
     { EncounterState.Enemies.Clear(); var keepSq = MacroState.Current.OfflineSquads.ToList(); MacroState.Current.OfflineSquads.Clear();

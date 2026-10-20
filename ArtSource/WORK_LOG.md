@@ -3597,3 +3597,16 @@ state in globals, the keyboard read inside the rules). Fixed before more feature
   shoots it, not you; its dive spends its own Focus.
 - Still one-player, listed in ACTION_DESIGN "Co-op" (bullet time, spotting memory, morale/radio, reputation, HUD/camera, exit
   vote, game over, friendly fire).
+
+### RT 7o - no friendly fire between players; enemies mind their own (2026-10-20)
+
+Yan: "turn friendly fire off for now for players, make it so bullets go through allied players, also i noticed enemies make no
+effort to not shoot their friends, i saw a few of them die to friendly fire, they need to at least try to not shoot each other in
+the back while fighting players".
+- `Gunplay.Targets(shooter)`: a player's rounds (`Gunplay.Shoot`), swings (`Melee.Swing`) and thrown blades (`Melee.Tick`) pass
+  through other players. (Grenades still hurt everyone in the blast; a hired companion can still be hit.)
+- `Gunplay.AllyInLine`: a living ally (same faction, or one at peace) within ~half a tile of the line of fire, before the target.
+  `RtAi.Tick` then holds fire and steps two tiles to the open side (`RtAi.SideStep`) for a clear shot; the old turn path
+  (`Gunplay.NpcShoot`, also NPC-vs-NPC fights) just holds. Spread can still clip a friend - they try, they're not perfect.
+- Checks: your round passes through your friend into the Raider behind; a Raider with his mate in the way doesn't fire through
+  him and steps aside until the line is clear.

@@ -172,6 +172,33 @@ namespace GameCore
         static float Gauss() { float u1 = System.Math.Max(1e-6f, UnityEngine.Random.value), u2 = UnityEngine.Random.value; return (float)(System.Math.Sqrt(-2.0 * System.Math.Log(u1)) * System.Math.Cos(6.2831853 * u2)); }
 
         /// <summary>The bodies a round can hit: you and everyone on the map.</summary>
+        /// <summary>What a shot or a blade from `shooter` can hit. Yan: "turn friendly fire off for now for players, make it so bullets
+        /// go through allied players" - a player's rounds, swings and throws pass through the other players.</summary>
+        public static IEnumerable<ICombatant> Targets(ICombatant shooter) => shooter is Player ? Bodies().Where(u => !(u is Player)) : Bodies();
+
+        /// <summary>On the same side: players together; people of one faction or of factions at peace.</summary>
+        public static bool Allies(ICombatant a, ICombatant b) =>
+            a is Player && b is Player
+            || a is HumanEnemy x && b is HumanEnemy y && (x.FactionName == y.FactionName || !FactionDatabase.AreHostile(x.FactionName, y.FactionName));
+
+        /// <summary>Yan: "enemies make no effort to not shoot their friends ... they need to at least try to not shoot each other in the
+        /// back": a living ally stands within ~half a tile of the line from the shooter to the target, before the target.</summary>
+        public static bool AllyInLine(ICombatant shooter, ICombatant target)
+        {
+            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
+            float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
+            if (len < 0.01f) return false;
+            dx /= len; dy /= len;
+            foreach (var u in Bodies())
+            {
+                if (u == shooter || u == target || !u.IsAlive() || !Allies(shooter, u)) continue;
+                var (ux, uy) = Ballistics.Pos(u);
+                float t = (ux - sx) * dx + (uy - sy) * dy, side = (ux - sx) * dy - (uy - sy) * dx;
+                if (t > 0.3f && t < len && System.Math.Abs(side) < 0.6f) return true;
+            }
+            return false;
+        }
+
         public static IEnumerable<ICombatant> Bodies()
         {
             foreach (var p in Player.All) yield return p;                  // co-op: every player has a body rounds can hit
@@ -192,9 +219,9 @@ namespace GameCore
                 float c = (float)System.Math.Cos(side), s = (float)System.Math.Sin(side);
                 float rx = dx * c - dy * s, ry = dx * s + dy * c;
                 // up/down scatter lands as a height change at the range the round meets a body: approximated per trace
-                var probe = Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, h, Bodies());
+                var probe = Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, h, Targets(shooter));
                 float hh = h + (float)System.Math.Tan(up) * probe.Dist / Ballistics.BodyTiles;
-                var hit = System.Math.Abs(hh - h) < 0.02f ? probe : Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, hh, Bodies());
+                var hit = System.Math.Abs(hh - h) < 0.02f ? probe : Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, hh, Targets(shooter));
                 Resolve(shooter, w, hit, ambush, p == 0, delay, hd.Pellets);
                 hits.Add(hit);
                 if (p == 0 && !(shooter is Player))
@@ -305,6 +332,7 @@ namespace GameCore
         public static void NpcShoot(ICombatant shooter, Weapon w, ICombatant target, int rounds)
         {
             if (Body.Down(target)) return;                     // RT batch 2: they leave someone who's down to bleed
+            if (AllyInLine(shooter, target)) return;           // a friend in the way: hold fire
             var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
             float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
             if (len < 0.01f) return;

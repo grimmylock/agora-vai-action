@@ -131,7 +131,7 @@ Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack
 - Still one-player (to do with the network layer): bullet time is one time scale for everyone (step 4: per fight); spotting
   memory (`Contact`) is shared; morale/radio and reputation read the host; the HUD, vision and camera are the local player's;
   a joined player's exit is ignored until the "everyone at the exit" vote; game over is the host's death; friendly fire is on
-  (rounds and swings hit any body) - Yan to decide.
+  was on until RT 7o; now off for players (Yan).
 
 ## Perks (rework; same groups, names kept where they fit)
 

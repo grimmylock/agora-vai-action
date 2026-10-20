@@ -67,6 +67,18 @@ namespace GameCore
             m.Attack(p);
         }
 
+        /// <summary>A tile two steps to one side of the line to the target (whichever side is open), for a clear shot.</summary>
+        static (int x, int y)? SideStep(HumanEnemy h, Player p)
+        {
+            int dx = System.Math.Sign(p.X - h.X), dy = System.Math.Sign(p.Y - h.Y);
+            foreach (int side in Random.value < 0.5f ? new[] { 1, -1 } : new[] { -1, 1 })
+            {
+                int x = h.X - dy * side * 2, y = h.Y + dx * side * 2;           // perpendicular to (dx, dy)
+                if (TerrainMap.CanEnterTile(x, y) && TerrainMap.UnitAt(x, y) == null) return (x, y);
+            }
+            return null;
+        }
+
         public static bool Pinned(Mutant m) => Minds.TryGetValue(m, out var s) && Time.time < s.PinnedUntil;
 
         /// <summary>A round just missed it (Gunplay): pinned for a moment.</summary>
@@ -135,6 +147,12 @@ namespace GameCore
             // a tile line traced from him to you can slip past a corner that the line from you to him doesn't
             if (CombatantUtil.Distance(h, p) > System.Math.Min(hd.Reach, Rt.Of(p).LookReach) || !Contact.Mutual(h, p) || !Contact.Knows(h, p)) { s.BurstLeft = 0; return; }
 
+            if (Gunplay.AllyInLine(h, p))                                  // a friend in the line of fire: hold, and step aside for a clear shot
+            {
+                s.BurstLeft = 0; s.NextShot = now + 0.3f;
+                if (s.Goal == null || (h.X, h.Y) == s.Goal.Value) s.Goal = SideStep(h, p);
+                return;
+            }
             if (s.BurstLeft <= 0) s.BurstLeft = hd.Auto ? Random.Range(3, 6) : 1;
             w.CurrentMagazine--;
             if (CombatRules.Jams(CombatRules.RollJam(), w)) { w.IsJammed = true; CombatRules.DegradeOnJam(w); s.BurstLeft = 0; return; }
