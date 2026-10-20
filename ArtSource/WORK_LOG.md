@@ -3787,3 +3787,6 @@ targets/walls".
 - Taken out again: the Barbed Wire Bat from the Tier 5 loot pool. ACTION_DESIGN has it as a secret weapon carried by a boss,
   "not regular Raider kit". It's only in the Testing Ground crate until that boss exists.
 - Still open from the design table: the hammer's shorter reach and the sledgehammer breaking cover.
+- Saved the method for the gun redraw: `ArtSource/weapons/hand/PIXEL_GUIDE.md` (the steps, Yan's catches, what guns need on
+  top) and the tools that were in a temporary folder (`pixel_tools/`: `tmat.py` material trace, `grid.py` gridded reference,
+  `bench.py` drafting helpers, two example drafts). Linked from ACTION_DESIGN's later list and CLAUDE.md.
