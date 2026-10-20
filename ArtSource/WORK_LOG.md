@@ -3704,3 +3704,15 @@ Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
 - References: `ArtSource/refs/melee/`. Review sheet: `maps/renders/melee/melee_drawn_sheet.png`.
 - **Not installed yet:** waiting on Yan's approval; then run `melee_drawn.py --install`. The 6 new weapons (Hatchet, Fire Axe,
   Bat, Hammer, Sledgehammer, Barbed Wire Bat) still need database entries, `Melee.Stats`, grips and a two-handed hold.
+
+## RT 7v - melee pixelled by hand: bat and hammer first (2026-10-20)
+
+- Yan on RT 7u: "all of them are weird looking". Problems he listed: wrong proportions (hammer head too big), lost shapes
+  (machete curve, kris waves), jagged and gappy edges, and menu and in-hand sprites that don't match.
+- Why: the RT 7u shapes were guessed, not measured. His references are pixel art 140-240 px long; the menu sprite has ~60 px
+  and the in-hand one 15-30, so a person has to choose which details survive.
+- New way, `ArtSource/weapons/hand/melee_px.py`: each sprite is a grid of letters typed by hand, one per pixel. The outline
+  is traced from the reference at game size; colours are picked from it. The menu sprite is drawn first, then the in-hand
+  one from it. Yan chose to start with the baseball bat and the hammer.
+- Review: `maps/renders/melee/melee_px_bat_hammer.png` (reference | menu | in hand | size check next to the Tactical Hatchet
+  and a character; the size check is laid side by side, not a game render). Not installed.
