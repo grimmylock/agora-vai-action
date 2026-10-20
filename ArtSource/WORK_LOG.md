@@ -3681,3 +3681,12 @@ lot of playtime available, that's why we're focusing so much on having big maps 
   your kills; log "[DUNGEON CLEARED]"), `Player.NamedKilled`. Milestones are now remembered without their running count, so
   "Clear 6 dungeons (7/6)" doesn't pay twice.
 - Checks: a milestone pays once as its count passes the target; the top bars are big and need no main story.
+
+### RT 7t - CLAUDE.md rewritten (2026-10-20)
+
+Yan: "rewrite claude.md". The handoff file still described the turn-based game (Batch 121 state, 2d10 combat, the old next
+steps). Now: what the game is (real time, co-op from the start), the hard rules (plus rule 9: co-op from the start), a table
+of where each real-time system lives, the turn-based leftovers, the shared world systems, the workflow (harness, renders,
+art, logging), the current state (nothing since RT 7 checked in Unity), what waits on Yan, and the agreed next steps.
+Also sent Yan the melee weapon list for references (6 new: Hatchet, Fire Axe, Wooden Baseball Bat, Hammer, Sledgehammer,
+Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
