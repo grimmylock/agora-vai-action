@@ -932,6 +932,15 @@ namespace GameCore
             Color live = art != null ? Color.white : fallbackColor;
             if (unit is HumanEnemy h && h.Morale == "Surrendered") live = new Color(0.7f, 0.75f, 0.9f, 0.85f);   // hands up
             if (unit is Mutant nm && nm.Named) { live = Color.Lerp(Color.white, new Color(1f, 0.55f, 0.2f), 0.35f + 0.25f * Mathf.Sin(Time.time * 3f)); marker.transform.localScale *= 1.2f; }
+            if (unit is Mutant hm && !(unit is HumanEnemy) && art != null && art == UnitSprites.HD(hm.Db?.Name ?? hm.Name))
+            {
+                // they're drawn facing right: turn toward you in a fight, toward where they walk otherwise (kept between moves)
+                var p = Player.Current;
+                int? tx = hm.IsAggroed && p != null ? p.X : hm.PatrolTarget?.x;
+                if (alive && tx.HasValue && tx.Value != unit.X) marker.flipX = tx.Value < unit.X;
+                if (hm.IsCloaked) live.a = 0.3f;                                  // the Veil Prowler's shimmer (no cloaked cell at this size)
+            }
+            else marker.flipX = false;
             marker.color = alive ? live : new Color(0.35f, 0.32f, 0.3f, 0.9f);
         }
 

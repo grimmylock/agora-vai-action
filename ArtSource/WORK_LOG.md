@@ -3502,3 +3502,18 @@ shift"; "damage rolls are still happening, when im walking it also keeps updatin
 - Checks: walking doesn't tick the world; strikes land in reach without rolls, a knife misses from 3 tiles. Two old checks
   pinned (a Rookie's random loadout can be a knife; bites-per-10-s bound raised since no strike misses now).
 - Not changed (rule 6): the squad size and the radio backup. Watch: mutant bites no longer miss on a roll - keep distance or dive.
+
+### RT 7i - the double-resolution mutants in the game (2026-10-20)
+
+Yan: "the mutant sprites we did a while back did not get pushed to live, you can do it, even without the animations / at least the
+ones we have".
+- The five approved Batch 130c sprites (Pallid Prowler, Blind Maw, Veil Prowler 48x32; Dread Prowler 64x48; Blight Brute 64x64),
+  exported by `ArtSource/make_mutants_hd.py <sheet> Assets/Resources/Sprites/Mutants` (renamed `mutant_hd_<key>.png`).
+- `UnitSprites.HD`: loaded at 32 px a tile (like the in-hand guns), feet on the tile's ground line (pivot 16 px above the bottom
+  row, where a 16 px human's feet are). `UnitSprites.For` prefers them; Rot Swarm, Alpha Prowler, Mind Weaver and Void Weaver keep
+  their old atlas cells (no new art yet).
+- `TacticalGridView.ApplyUnitArt`: drawn facing right, mirrored to face you in a fight or where they walk otherwise; a cloaked Veil
+  Prowler shows at 30% (there's no cloaked cell at this size). Static frames only: the walk/bite/club strips (131-131f) aren't hooked
+  up yet; the hound run cycle is still on the later list.
+- Not seen in Unity yet: check the size next to people, the feet on the ground, mirroring, corpses (they keep the right-facing
+  sprite).

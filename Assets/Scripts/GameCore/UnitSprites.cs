@@ -18,7 +18,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; }
+        private static void ResetCaches() { _hd = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; }
 
         /// <summary>Batch 128 (Yan: "add the back as well so the player can know which way the npc's are looking"): a unit
         /// whose aim (or gaze) from `from` to `to` goes up the screen shows its back - more than ~17 degrees above level.</summary>
@@ -46,10 +46,31 @@ namespace GameCore
                 case HumanEnemy h: return ForArmor(h.EquippedArmor);
                 case Mutant m:
                     string name = m.Db?.Name ?? m.Name;
+                    var hd = HD(name);
+                    if (hd != null) return hd;                                       // the approved double-resolution art (Batch 130c)
                     if (m.IsCloaked && _mutants.TryGetValue(name + " (cloaked)", out var cloaked)) return cloaked;
                     return _mutants.TryGetValue(name, out var s) ? s : null;
                 default: return null;
             }
+        }
+
+        // Batch 130c's mutants at double resolution (ArtSource/make_mutants_hd.py -> Sprites/Mutants/mutant_hd_<key>.png): 32 px a
+        // tile like the in-hand guns, so a 48x32 hound covers the ground a 24x16 one would; the feet sit on the tile's ground
+        // line (16 px under the middle of a tile, where a 16 px human's feet are). They face right; TacticalGridView mirrors them.
+        // Mutants without one keep their old atlas cell (Rot Swarm, Alpha Prowler, Mind Weaver, Void Weaver).
+        private static Dictionary<string, Sprite> _hd;
+        public static Sprite HD(string name)
+        {
+            if (_hd == null)
+            {
+                _hd = new Dictionary<string, Sprite>();
+                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute" })
+                {
+                    var tex = Resources.Load<Texture2D>("Sprites/Mutants/mutant_hd_" + n.ToLowerInvariant().Replace(' ', '_'));
+                    if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell);
+                }
+            }
+            return name != null && _hd.TryGetValue(name, out var s) ? s : null;
         }
 
         public static Sprite ForArmor(ArmorDef armor)
