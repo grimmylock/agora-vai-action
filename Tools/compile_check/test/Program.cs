@@ -869,6 +869,24 @@ static class Program {
       for (int i = 0; i < 30 && Rt.Vaulting; i++) { UnityEngine.Time.time += 0.02f; lift = Math.Max(lift, Rt.VaultLift); Rt.TickVault(p, 0.02f); }
       Check(stopped && hop && p.X == px + 2 && !Rt.Vaulting && lift > 0.2f, $"real time: sandbags stop you ({stopped}), Space vaults you over them (to x+{p.X - px}, up {lift:0.00})");
       TerrainMap.SetTileType(px + 1, py, TileType.Empty); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); }
+    // Yan: "radio the specific closest squad for help instead of it being a full AOE call"
+    { EncounterState.Enemies.Clear(); var keepSq = MacroState.Current.OfflineSquads.ToList(); MacroState.Current.OfflineSquads.Clear();
+      OfflineSquad Gang(int dx) { var sq = new OfflineSquad { ZoneId = TerrainMap.ZoneId, Faction = "Raiders" };
+        for (int i = 0; i < 3; i++) { var m = new HumanEnemy("R", px + dx, py + i, "Raiders", "Rookie", null, null); sq.Members.Add(m); EncounterState.Enemies.Add(m); }
+        MacroState.Current.OfflineSquads.Add(sq); return sq; }
+      var near = Gang(12); var far = Gang(30);
+      int answered = SquadManager.CallReinforcements("Raiders", TerrainMap.ZoneId, px, py);
+      Check(answered == 1 && near.Members.All(m => m.PatrolTarget != null) && far.Members.All(m => m.PatrolTarget == null), "radio: only the closest free squad answers the call");
+      MacroState.Current.OfflineSquads.Clear(); MacroState.Current.OfflineSquads.AddRange(keepSq); EncounterState.Enemies.Clear(); }
+    // Yan: "make it so mutants only come over if someone dies (they smell the blood) and only if they think they can win the fight"
+    { EncounterState.Enemies.Clear(); p.HealPermanent(5000);
+      var maw = new Mutant("Maw", px + 15, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(maw);
+      Noise.Make(px, py, Noise.Shot, p);
+      bool deaf = maw.PatrolTarget == null;
+      Noise.Smell(px + 1, py); bool wary = maw.PatrolTarget == null;
+      int hp = p.Hp; p.Hp = 5; Noise.Smell(px + 1, py); bool comes = maw.PatrolTarget != null; p.HealPermanent(5000);
+      Check(deaf && wary && comes, $"mutants: deaf to gunfire ({deaf}), a lone Maw ({maw.Hp} HP) won't take on you at full health ({wary}), but comes for blood when you're weak ({comes})");
+      EncounterState.Enemies.Clear(); }
     // "my shots seem to pass straight through them": a step is a slide, so the body you see is where the rounds hit
     { EncounterState.Enemies.Clear(); var dog = new Mutant("Dog", px + 5, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(dog);
       Rt.Glide(0f); var a0 = Ballistics.Pos(dog); dog.X += 1; Rt.Glide(0f); var a1 = Ballistics.Pos(dog);

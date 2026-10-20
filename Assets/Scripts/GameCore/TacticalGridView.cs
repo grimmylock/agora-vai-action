@@ -246,10 +246,12 @@ namespace GameCore
                 bool shown = Vision.Shows(enemy);                // out of sight: not drawn at all
                 _enemyMarkers[i].gameObject.SetActive(shown);
                 bool red = Time.time - enemy.SpottedAt < 2.5f, yellow = !enemy.IsAggroed && enemy.Alert > 0f;
-                _alertMarks[i].gameObject.SetActive(shown && enemy.IsAlive() && (red || yellow));
+                bool calling = EncounterState.Caller == enemy && EncounterState.CallAt >= 0f;
+                _alertMarks[i].sprite = calling ? Radio((Time.time - EncounterState.CallAt) / Rt.RoundSeconds) : Bang();
+                _alertMarks[i].gameObject.SetActive(shown && enemy.IsAlive() && (red || yellow || calling));
                 if (!shown) continue;
                 bool alive = DrawUnit(enemy, _enemyMarkers[i], Companion.Is(enemy) ? new Color(0.45f, 1f, 0.55f) : new Color(1f, 0.25f, 0.2f));
-                if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
+                if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = calling ? Color.white : red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
                 if (enemy is HumanEnemy he)   // aware enemies point at the player, the rest where they look (Batch 128); corpses and the surrendered drop it
                     Held(_enemyMarkers[i]).Show(he.EquippedWeapon, he.EquippedArmor, _enemyMarkers[i].transform.position,
                         AimPoint(he, _enemyMarkers[i]), alive && he.Morale != "Surrendered", Away(_enemyMarkers[i]));
@@ -879,6 +881,33 @@ namespace GameCore
             var tex = new Texture2D(3, 8, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
             tex.SetPixels32(px); tex.Apply();
             return _bang = Sprite.Create(tex, new Rect(0, 0, 3, 8), new Vector2(0.5f, 0f), TerrainArt.Px);
+        }
+        // Yan: "add a radio icon in the same style as the ! above the head of the one who is calling for reinforcements, and make it
+        // slowly fill from yellow/white to red representing the 'charging up' of the call": a walkie-talkie in the !'s outline,
+        // its face filling red from the bottom over the round the call takes (TurnLoop.RadioForHelp gets through, or not, then).
+        static Sprite[] _radio;
+        static Sprite Radio(float charge)
+        {
+            if (_radio == null)
+            {
+                string[] rows = { "kk...", "kk...", "kkkkk", "kwwwk", "kwkwk", "kwwwk", "kwkwk", "kwwwk", "kkkkk" };   // antenna, body, grille
+                _radio = new Sprite[8];
+                for (int f = 0; f < 8; f++)
+                {
+                    var px = new Color32[5 * 9];
+                    for (int y = 0; y < 9; y++)
+                        for (int x = 0; x < 5; x++)
+                        {
+                            char c = rows[y][x]; int fromBottom = 7 - y;              // the face spans rows 3-7 (5 rows)
+                            px[(8 - y) * 5 + x] = c == '.' ? new Color32(0, 0, 0, 0) : c == 'k' ? new Color32(40, 34, 28, 255)
+                                : fromBottom < f * 5 / 7f ? (Color32)BangRed : (Color32)Color.Lerp(BangYou, BangYellow, f / 7f);
+                        }
+                    var tex = new Texture2D(5, 9, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+                    tex.SetPixels32(px); tex.Apply();
+                    _radio[f] = Sprite.Create(tex, new Rect(0, 0, 5, 9), new Vector2(0.5f, 0f), TerrainArt.Px);
+                }
+            }
+            return _radio[Mathf.Clamp(Mathf.FloorToInt(charge * 8f), 0, 7)];
         }
         static readonly Color BangYellow = new Color(0.91f, 0.77f, 0.28f), BangRed = new Color(0.86f, 0.24f, 0.2f), BangYou = new Color(0.95f, 0.94f, 0.86f);
         Vector3 Above(SpriteRenderer m) => m.transform.position + new Vector3(0f, 1.1f + 0.05f * Mathf.Sin(Time.time * 6f), 0f);

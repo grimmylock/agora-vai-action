@@ -3557,3 +3557,22 @@ underside and lower masses darker), the trunk hidden in it with branches only at
 from the crown. The old one is kept as `big_birch_old`. Review: `maps/renders/start_area/birch_sheet.png` (sprites 3x) and
 `birch_before_after.png` (in the map). Not in the game's atlas until Yan approves (then `pack.py` -> world_atlas.bytes).
 Also rendered for Yan: `maps/renders/start_area/bonfire_village_now.png`, the starting village as it is (he'll direct the redo).
+
+### RT 7m - radio calls one squad, with a charging icon; mutants come to blood, not gunfire (2026-10-20)
+
+Yan: "every free Raider squad within 60 tiles ... that's a little too broad"; "add a radio icon in the same style as the ! above the
+head of the one who is calling for reinforcements, and make it slowly fill from yellow/white to red representing the 'charging up'
+of the call"; "make it so mutants only come over if someone dies (they smell the blood) and only if they think they can win the
+fight"; "Make it so they radio the specific closest squad for help instead of it being a full AOE call"; "we're moving foward with
+the action version as the main combat version of the game, the turn based will be abandoned for now".
+- `SquadManager.CallReinforcements`: the nearest free squad of the caller's faction on this map within radio range (60 tiles)
+  answers - one squad, not all of them. (Other factions still also get one squad from a neighbouring region, as before.)
+- `TacticalGridView.Radio`: a walkie-talkie in the "!"'s outline over the caller (`EncounterState.CallAt`), its face filling red
+  from the bottom over the 6 s round the call takes; kill or panic him before it's full and the call is cut off (unchanged).
+  Frames: `maps/renders/radio_icon.png`.
+- `Noise.Make`: gunfire only draws people now. `Noise.Smell` (from `Weapon.OnTargetKilled`): a death draws each unaware mutant
+  pack within 25 tiles whose members' HP adds up to more than everyone still standing within 10 tiles of the body (you
+  included). ponytail: HP against HP, no guns or armor counted.
+- Checks: only the closest squad answers; a Maw ignores a gunshot, won't come for a body while you're at full health, comes when
+  you're nearly dead. Stub: Color -> Color32.
+- `CLAUDE.md`: real time is the game; turn-based abandoned for now. The Tier 1 map is 200x200 tiles (all six tier maps are).

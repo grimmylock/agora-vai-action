@@ -359,6 +359,7 @@ namespace GameCore
         public static void OnTargetKilled(ICombatant attacker, ICombatant target)
         {
             GameLog.Write($"{target.Name} has been defeated.");
+            Noise.Smell(target.X, target.Y);   // blood: mutant packs nearby may come for it
             Companion.OnKilled(target);   // Batch 69
             if (attacker is HumanEnemy veteran && veteran.IsAlive()) veteran.GainXp(HumanEnemy.Worth(target));   // Batch 53: NPCs learn from their kills
 

@@ -3,7 +3,9 @@
 **This repo is the REAL-TIME fork** (`grimmylock/agora-vai-action`, created 2026-10-19). It was copied from the
 turn-based game at Batch 131f (`grimmylock/agora-vai123`, branch `turn-based-fallback`, commit af02b98), which stays
 frozen and continues separately on `tier-maps`. The plan agreed with Yan is **`ACTION_DESIGN.md`**: read it first.
-`main` here is the untouched starting snapshot; work goes on branches (now `realtime-proto`). Everything below the
+`main` here is the untouched starting snapshot; work goes on branches (now `realtime-proto`).
+**Yan, 2026-10-20: the real-time version is now THE game - the turn-based one is abandoned for now.** Real time runs on every
+map already (`Rt.On` is set globally in `PlayerController.Awake`); the harness still runs the old turn-based checks with it off. Everything below the
 real-time section describes the inherited turn-based game, most of which still runs underneath.
 
 ## Real-time fork: where things are (RT batches, logged in `ArtSource/WORK_LOG.md`)

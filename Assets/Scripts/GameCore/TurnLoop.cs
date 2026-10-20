@@ -269,6 +269,7 @@ namespace GameCore
             if (side == null) return;
             var lead = EnemyAI.Leader(side.First());
             EncounterState.Caller = lead != null && lead.Morale == "Steady" ? lead : side.First();
+            EncounterState.CallAt = UnityEngine.Time.time;
             GameLog.Write($"[ALERT] {EncounterState.Caller.Name} is yelling into the radio for backup!");
         }
 
