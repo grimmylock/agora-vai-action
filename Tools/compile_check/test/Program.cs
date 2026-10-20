@@ -860,6 +860,15 @@ static class Program {
       for (int i = 0; i < 6; i++) { p.Mp = 99; PlayerController.StepFree(p, i < 3 ? 1 : -1, 0); }
       Check(MacroState.Current.Hour == h0 && p.X == px, $"real time: walking doesn't tick the world (hour {h0} -> {MacroState.Current.Hour})");
       EncounterState.InCombat = false; }
+    // "i can walk right through cover like the sandbags": low cover stops you; Space at it vaults you over
+    { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      TerrainMap.SetTileType(px + 1, py, TileType.HardCover);
+      for (int i = 0; i < 40; i++) Rt.MoveBy(p, 0.05f, 0f);
+      bool stopped = p.X == px;
+      bool hop = Rt.TryVault(p, 1f, 0f, null); float lift = 0f;
+      for (int i = 0; i < 30 && Rt.Vaulting; i++) { UnityEngine.Time.time += 0.02f; lift = Math.Max(lift, Rt.VaultLift); Rt.TickVault(p, 0.02f); }
+      Check(stopped && hop && p.X == px + 2 && !Rt.Vaulting && lift > 0.2f, $"real time: sandbags stop you ({stopped}), Space vaults you over them (to x+{p.X - px}, up {lift:0.00})");
+      TerrainMap.SetTileType(px + 1, py, TileType.Empty); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); }
     // "my shots seem to pass straight through them": a step is a slide, so the body you see is where the rounds hit
     { EncounterState.Enemies.Clear(); var dog = new Mutant("Dog", px + 5, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(dog);
       Rt.Glide(0f); var a0 = Ballistics.Pos(dog); dog.X += 1; Rt.Glide(0f); var a1 = Ballistics.Pos(dog);

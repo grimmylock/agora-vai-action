@@ -68,7 +68,7 @@ namespace GameCore
         static float _round;
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Stamina = StaminaMax; _round = 0f; }
+        public static void Reset() { RtAi.Reset(); PinnedUntil = -1f; Paused = false; Focus = 0f; DiveUntil = ProneUntil = _vaultFrom = -1f; SlowMo = false; UsingId = null; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Stamina = StaminaMax; _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -90,15 +90,62 @@ namespace GameCore
             SetOffset(p, x - (p.X + 0.5f), y - (p.Y + 0.5f));
         }
 
-        /// <summary>The body's circle fits: every tile it overlaps is walkable.</summary>
+        /// <summary>The body's circle fits: every tile it overlaps is walkable - and, unless you're vaulting, not low cover
+        /// (Yan: "i can walk right through cover like the sandbags"). The tile you're in never blocks (you can always step off).</summary>
         static bool Clear(float x, float y)
         {
+            var p = Player.Current;
             for (int i = 0; i < 4; i++)
             {
-                float cx = x + (i % 2 == 0 ? -Radius : Radius), cy = y + (i < 2 ? -Radius : Radius);
-                if (!TerrainMap.CanEnterTile(Mathf.FloorToInt(cx), Mathf.FloorToInt(cy))) return false;
+                int tx = Mathf.FloorToInt(x + (i % 2 == 0 ? -Radius : Radius)), ty = Mathf.FloorToInt(y + (i < 2 ? -Radius : Radius));
+                if (!TerrainMap.CanEnterTile(tx, ty)) return false;
+                if (!Vaulting && Ledge(tx, ty) && (p == null || tx != p.X || ty != p.Y)) return false;
             }
             return true;
+        }
+
+        // ---- vaulting: Space at low cover hops you over it (no Focus, no landing on your face like a dive) ----
+        public const float VaultTime = 0.45f, VaultHeight = 0.35f;     // seconds; tiles the body rises at the top of the hop
+        static float _vaultFrom = -1f, _vaultLen, _vaultX, _vaultY, _vaultDist;
+        public static bool Vaulting => _vaultFrom >= 0f;
+        /// <summary>The hop's height now (tiles), for the view - 0 when you're on your feet.</summary>
+        public static float VaultLift => Vaulting ? VaultHeight * Mathf.Sin(Mathf.PI * Mathf.Clamp01((Time.time - _vaultFrom) / _vaultLen)) : 0f;
+        public static bool Ledge(int x, int y) { var t = TerrainMap.GetTile(x, y).Type; return t == TileType.HardCover || t == TileType.ScatterCover; }
+
+        /// <summary>Low cover within reach the way you're going (the keys, else the mouse) with floor beyond it: hop over.</summary>
+        internal static void TickVault(Player p, float dt)
+        {
+            MoveBy(p, _vaultX * _vaultDist / _vaultLen * dt, _vaultY * _vaultDist / _vaultLen * dt);
+            if (Time.time - _vaultFrom >= _vaultLen) _vaultFrom = -1f;
+        }
+
+        internal static bool TryVault(Player p, float ix, float iy, (float x, float y)? mouse)
+        {
+            var (px, py) = Ballistics.Pos(p);
+            float dx = ix, dy = iy;
+            if (dx == 0f && dy == 0f && mouse.HasValue) { dx = mouse.Value.x - px; dy = mouse.Value.y - py; }
+            float l = Mathf.Sqrt(dx * dx + dy * dy);
+            if (l < 0.01f) return false;
+            dx /= l; dy /= l;
+            for (float d = 0.5f; d <= 1.2f; d += 0.1f)                   // cover just ahead...
+            {
+                int cx = Mathf.FloorToInt(px + dx * d), cy = Mathf.FloorToInt(py + dy * d);
+                if ((cx, cy) == (p.X, p.Y) || !Ledge(cx, cy)) continue;
+                for (float e = d + 0.6f; e <= d + 1.6f; e += 0.1f)       // ...and open floor past it
+                {
+                    float ex = px + dx * e, ey = py + dy * e;
+                    int fx = Mathf.FloorToInt(ex), fy = Mathf.FloorToInt(ey);
+                    if (!TerrainMap.CanEnterTile(fx, fy)) return false;
+                    if (Ledge(fx, fy) || TerrainMap.UnitAt(fx, fy, p) != null) continue;
+                    _vaultX = dx; _vaultY = dy; _vaultDist = e;
+                    _vaultLen = CombatantUtil.HasPerk(p, "Vault") ? VaultTime * 0.7f : VaultTime;
+                    _vaultFrom = Time.time;
+                    Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 0.6f, 0.05f, 0.8f);
+                    return true;
+                }
+                return false;
+            }
+            return false;
         }
 
         /// <summary>Your controls, once a frame. False = nothing to do (a panel is open).</summary>
@@ -126,8 +173,10 @@ namespace GameCore
             if (Time.time < ProneUntil) speed = 0f;                   // RT batch 3: sprawled after a dive
             float l = Mathf.Sqrt(ix * ix + iy * iy);
             Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
-            if (!down && k.spaceKey.wasPressedThisFrame && !Diving && Time.time >= ProneUntil && UsingId == null) TryDive(p, ix, iy, MouseTile(m));
-            if (Diving)
+            if (!down && k.spaceKey.wasPressedThisFrame && !Diving && !Vaulting && Time.time >= ProneUntil && UsingId == null && !TryVault(p, ix, iy, MouseTile(m)))
+                TryDive(p, ix, iy, MouseTile(m));                         // Space at low cover vaults it; anywhere else it dives
+            if (Vaulting) { Moving = 0; TickVault(p, dt); }
+            else if (Diving)
             {
                 Moving = 0;
                 var (bx, by) = Ballistics.Pos(p);

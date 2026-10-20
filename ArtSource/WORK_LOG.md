@@ -3534,3 +3534,16 @@ where the cursor is poiting) / Enemies also see me throw walls / Also some of my
   the "seeing through walls". Spotting uses the same two-way check.
 - Checks: a step slides the body over, the look cone reaches 20 tiles ahead and not behind.
 - Open, asked Yan: walking through low cover (no vault yet), the slow and tactical pace, the birch trees' look.
+
+### RT 7k - low cover blocks you; Space vaults it (2026-10-20)
+
+Yan: "i can walk right through cover like the sandbags and stuff (might be my character vaulting it but there's no animation)";
+"go ahead" with: low cover blocks walking, Space at it vaults.
+- `Rt.Clear`: in real time sandbags, blocks, crates, desks and other low cover (HardCover/ScatterCover, `Rt.Ledge`) stop your body;
+  the tile you're already in never does (so nobody gets stuck).
+- `Rt.TryVault`: Space with low cover just ahead (the keys' way, else toward the mouse) and open floor past it hops you over in
+  0.45 s (0.3 s with the Vault perk) - no Focus, no landing prone; elsewhere Space still dives. The view lifts you up to 0.35
+  tiles at the top of the hop (`Rt.VaultLift` in `TacticalGridView.StandOffset`).
+- Enemies: their paths already cost cover double (`TacticalGridSystem.BaseCost`), so they go round when that's shorter; a step
+  onto cover now takes them twice as long (a climb). No hop drawn for them yet.
+- Check: sandbags stop you, Space carries you two tiles over them with a hop.

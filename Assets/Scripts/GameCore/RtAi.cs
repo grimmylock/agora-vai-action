@@ -100,6 +100,7 @@ namespace GameCore
                 else if (s.Goal.HasValue && (h.X, h.Y) != s.Goal.Value && !h.MoveToward(s.Goal.Value.x, s.Goal.Value.y)) s.Goal = null;
                 moved = h.X != bx || h.Y != by;
                 if (moved) s.MovedAt = now;
+                if (moved && Rt.Ledge(h.X, h.Y)) s.NextStep += StepSeconds;   // climbing over low cover, as you do (Rt.TryVault)
             }
 
             // ---- shooting ----

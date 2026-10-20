@@ -604,7 +604,7 @@ namespace GameCore
         {
             if (u is Player && !Rt.On) return PlayerController.StandAt;
             var (ox, oy) = Rt.Offset(u);                                   // real-time fork: where the body really is (tile space, y down)
-            return new Vector3(ox, -oy, 0f);
+            return new Vector3(ox, -oy + (u is Player ? Rt.VaultLift : 0f), 0f);   // vaulting: up and over
         }
 
         /// <summary>Batch 24: positions (walking), art (walk frames) and death (ragdoll) for one unit.
