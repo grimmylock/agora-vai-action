@@ -69,6 +69,7 @@ namespace GameCore
         public bool HiddenNodeCleared, MainStoryAct3Done, MainStoryFinaleDone;
         public int BonusMaxHp;
         public int Exp;
+        public List<string> MilestonesDone = new List<string>();
         public List<string> ActivePerks = new List<string>();
 
         public float Hunger, Thirst, Tiredness;
@@ -103,6 +104,7 @@ namespace GameCore
         public List<string> StoryFlags = new List<string>();
         public string Sponsor, Ending;
         public int SurgeRounds, LastRumorDay;
+        public string CampZone; public int CampX = -1, CampY = -1;
         public string SurgeZoneId;
         public float Hour = 7f;
         public string Weather = "Overcast";

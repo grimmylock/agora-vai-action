@@ -73,6 +73,7 @@ namespace GameCore
             public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
             public string UsingId;
             public float Reviving;                                    // seconds E has been held over a downed friend
+            public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
             public bool Vaulting => VaultFrom >= 0f;
@@ -201,13 +202,13 @@ namespace GameCore
 
         public const float ReviveSeconds = 3f;
 
-        /// <summary>A downed (not dead) friend within arm's reach, or null.</summary>
+        /// <summary>A friend within arm's reach you can get up: downed, or (out of combat) dead. Null if none.</summary>
         public static Player DownedNear(Player p)
         {
             var (px, py) = Ballistics.Pos(p);
             foreach (var o in Player.All)
             {
-                if (o == p || !o.IsAlive() || !Body.Down(o)) continue;
+                if (o == p || (o.IsAlive() ? !Body.Down(o) : EncounterState.InCombat || TurnLoop.AllDead)) continue;
                 var (ox, oy) = Ballistics.Pos(o);
                 if ((ox - px) * (ox - px) + (oy - py) * (oy - py) <= 1.5f * 1.5f) return o;
             }
@@ -226,7 +227,12 @@ namespace GameCore
             var friend = down ? null : DownedNear(p);
             if (friend != null && i.Use)
             {
-                if ((s.Reviving += dt) >= ReviveSeconds) { s.Reviving = 0f; Body.GetUp(friend); GameLog.Write("You get your friend back on their feet."); }
+                if ((s.Reviving += dt) >= ReviveSeconds)
+                {
+                    s.Reviving = 0f;
+                    if (friend.IsAlive()) { Body.GetUp(friend); GameLog.Write("You get your friend back on their feet."); }
+                    else Death.Revive(friend);                        // dead, out of combat (Death)
+                }
                 i.X = i.Y = 0f;                                       // you kneel there while you do it
             }
             else s.Reviving = 0f;
@@ -474,6 +480,7 @@ namespace GameCore
             float now = Time.time;
             var grid = GameServices.Grid;
             if (grid == null) return;
+            Death.Tick();                                                          // co-op: the dead penalty, once
             if (TestingGround.Here) TestingGround.Tick();                         // dummies and damage numbers
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
             foreach (var e in EncounterState.Enemies.ToList())

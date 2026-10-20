@@ -39,7 +39,7 @@ namespace GameCore
                 ActiveDetectorKey = ActiveDetectorKey,
                 Backpack = Inventory.Backpack,
                 Companion = GameCore.Companion.Capture(),
-                Rank = Rank, Exp = Exp, Sneaking = Sneaking, FlashlightOff = !FlashlightOn,
+                Rank = Rank, Exp = Exp, MilestonesDone = new System.Collections.Generic.List<string>(MilestonesDone), Sneaking = Sneaking, FlashlightOff = !FlashlightOn,
                 MaxTierReached = MaxTierReached, QuestsCompleted = QuestsCompleted, MaxMutantTierKilled = MaxMutantTierKilled,
                 MaxNpcRankKilled = MaxNpcRankKilled, ArcsFinished = ArcsFinished, PendingPerkPicks = PendingPerkPicks,
                 HiddenNodeCleared = HiddenNodeCleared, MainStoryAct3Done = MainStoryAct3Done, MainStoryFinaleDone = MainStoryFinaleDone,
@@ -152,6 +152,7 @@ namespace GameCore
             ArcsFinished = d.ArcsFinished; PendingPerkPicks = d.PendingPerkPicks; HiddenNodeCleared = d.HiddenNodeCleared;
             MainStoryAct3Done = d.MainStoryAct3Done; MainStoryFinaleDone = d.MainStoryFinaleDone; BonusMaxHp = d.BonusMaxHp;
             Exp = d.Exp;
+            MilestonesDone = d.MilestonesDone ?? new System.Collections.Generic.List<string>();
             ActivePerks.Clear();
             if (d.ActivePerks != null) ActivePerks.AddRange(d.ActivePerks);
 

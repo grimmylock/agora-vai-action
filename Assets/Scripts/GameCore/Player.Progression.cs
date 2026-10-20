@@ -52,16 +52,54 @@ namespace GameCore
             }
         }
 
-        /// <summary>Ranks up as far as the milestones allow. Call after anything that can meet one.</summary>
+        // Rank XP (Yan, 2026-10-20: "build an xp system for the ranks, make it so the milestones award rank xp instead of the rank
+        // itself, also dying can't knock you down ranks, just removes XP and it goes down to 0 if it removes more than the player
+        // has"). Exp is the progress toward the next rank; it carries over on a rank-up. Every milestone, of any rank, pays its
+        // rank's share once (a rank's milestones together fill that rank's bar); quests and kills pay a little more, so XP lost
+        // to deaths can be earned back.
+        public static int XpToNext(string next) => next switch
+        {
+            "Experienced" => 200, "Professional" => 300, "Veteran" => 400, "Expert" => 600, "Master" => 800, "Legend" => 1000, _ => 0,
+        };
+        public const int QuestXp = 50;
+        public static int KillXp(ICombatant t) => t is HumanEnemy h ? 5 + 5 * CombatRules.RankIndex(h.Rank) : t is Mutant m && m.Db != null ? 5 * m.Db.Tier : 0;
+        public List<string> MilestonesDone = new List<string>();   // "Rank:text", each paid once
+
+        public void GainXp(int xp, string why = null)
+        {
+            if (xp <= 0) return;
+            Exp += xp;
+            if (why != null) GameLog.Write($"+{xp} XP: {why}.");
+            CheckRankUp();
+        }
+
+        /// <summary>Death costs XP toward the next rank - never a rank, never below 0.</summary>
+        public void LoseXp(int xp)
+        {
+            int lost = System.Math.Min(Exp, System.Math.Max(0, xp));
+            Exp -= lost;
+            if (lost > 0) GameLog.Write($"-{lost} XP.");
+        }
+
+        /// <summary>Pays any milestone newly met, then ranks up as far as the XP goes. Call after anything that can meet one.</summary>
         public void CheckRankUp()
         {
             while (NextRank != null)
             {
                 var next = NextRank;
-                var ms = MilestonesFor(next);
-                if (ms.Count == 0 || ms.Any(m => !m.met)) return;
+                var ms = MilestonesFor(next);                             // only the next rank's milestones pay (in order, as the sheet shows);
+                foreach (var (text, met) in ms)                           // ones met early pay once their rank is next
+                    if (met && !MilestonesDone.Contains(next + ":" + text))
+                    {
+                        MilestonesDone.Add(next + ":" + text);
+                        int xp = XpToNext(next) / System.Math.Max(1, ms.Count);
+                        Exp += xp;
+                        GameLog.Write($"[MILESTONE] {text}: +{xp} XP.");
+                    }
+                if (Exp < XpToNext(next)) return;
+                Exp -= XpToNext(next);
                 Rank = next;
-                GameLog.Write($"[RANK UP] You are now {next}. ({string.Join("; ", ms.Select(m => m.text))})");
+                GameLog.Write($"[RANK UP] You are now {next}.");
                 GameLog.Write($"  AP {MaxAp}, attack/AC modifier {CombatRules.RankMod(Rank):+0;-0;0}.");
                 if (PerkRanks.Contains(next))
                 {
@@ -90,7 +128,7 @@ namespace GameCore
                 HiddenNodeCleared = true;
                 GameLog.Write($"You've cleared {zone.Name}.");
             }
-            CheckRankUp();
+            GainXp(KillXp(target));
         }
 
         public void NoteQuestDone(QuestDef q)
@@ -101,7 +139,7 @@ namespace GameCore
                 ArcsFinished++;
                 GameLog.Write("That was the end of their story.");
             }
-            CheckRankUp();
+            GainXp(QuestXp, "job done");
         }
 
         /// <summary>Run and Gun (H): once per turn, 1 AP for +2 MP.</summary>

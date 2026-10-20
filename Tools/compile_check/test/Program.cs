@@ -898,6 +898,31 @@ static class Program {
       bool up1 = Body.Down(q);
       for (int f = 0; f < 30; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
       Check(!over && up1 && !Body.Down(q) && q.IsAlive(), "co-op: you dead with a friend alive isn't game over; holding E 3 s over a downed friend gets them up");
+      // Yan's three death states: dead (penalty once, revivable only out of combat), and the wipe (back at the camp, armor worn, half the pack gone)
+      q.Exp = 120; q.EquipArmor("tier1", "LeatherJacket"); string qa = q.EquippedArmorCondition, qw = q.EquippedWeapon.Condition;
+      Rt.On = false; q.Hp = 0; Rt.On = true; EncounterState.InCombat = true; Death.Tick(); Death.Tick();
+      bool penalised = q.Exp == 120 - Death.DeadXp && (q.EquippedArmorCondition != qa || q.EquippedWeapon.Condition != qw);
+      bool noReviveInFight = Rt.DownedNear(p) == null;
+      EncounterState.InCombat = false;
+      for (int f = 0; f < 170; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
+      Check(penalised && noReviveInFight && q.IsAlive() && q.Hp < q.MaxHp, $"co-op: a dead friend loses XP and wear once, can't be revived mid-fight, can after (HP {q.Hp})");
+      for (int k = 0; k < 6; k++) q.AddItem(new InventoryItem { Id = "junk" + k, Name = "Junk", Qty = 1, Type = "junk" });
+      int packBefore = q.Inventory.Items.Count; MacroState.Current.CampZone = MacroState.Current.CurrentZoneId; MacroState.Current.CampX = px; MacroState.Current.CampY = py - 3;
+      string armorBefore = q.EquippedArmorCondition; string qRank = q.Rank; q.Exp = 30; int qx = q.X, qy = q.Y; int ground0 = TerrainMap.GroundItems.Count;
+      Rt.On = false; p.Hp = 0; q.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
+      bool dropped = TerrainMap.GroundItems.Count(g => g.X == qx && g.Y == qy) >= packBefore / 2 && Death.Packs.Count > 0;
+      Check(q.Exp == 0 && q.Rank == qRank && dropped, $"co-op: a wipe takes XP down to 0, never a rank ({q.Exp}, {q.Rank}), and the lost half of the pack lies where they fell");
+      // "if enemies are nearby they can loot it, so the player needs to kill them to get them back"
+      EncounterState.Enemies.Clear();
+      var scav = new HumanEnemy("Scav", qx + 4, qy, "Raiders", "Rookie", null, null); EncounterState.Enemies.Add(scav);
+      for (int k = 0; k < 12 && Death.Packs.Count > 0; k++) { Death.TickPacks(); if (scav.PatrolTarget.HasValue) { scav.Mp = 9; scav.MoveToward(scav.PatrolTarget.Value.x, scav.PatrolTarget.Value.y); } }
+      Check(Death.Packs.Count == 0 && scav.Inventory.Items.Count >= packBefore / 2 && !TerrainMap.GroundItems.Any(g => g.X == qx && g.Y == qy && g.Item.Id.StartsWith("junk")),
+        $"co-op: a Raider nearby walks over and pockets the dropped gear ({scav.Inventory.Items.Count} items on him)");
+      EncounterState.Enemies.Clear();
+      Check(p.IsAlive() && q.IsAlive() && q.Inventory.Items.Count == packBefore - packBefore / 2 && q.EquippedArmorCondition != armorBefore
+        && Math.Abs(p.Y - (py - 3)) <= 3 && GameState.Current.CurrentTurn == Turn.Player,
+        $"co-op: a squad wipe wakes everyone at the camp, armor worn ({armorBefore} -> {q.EquippedArmorCondition}), half the pack gone ({packBefore} -> {q.Inventory.Items.Count})");
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); MacroState.Current.CampZone = null; MacroState.Current.CampX = MacroState.Current.CampY = -1;
       // Yan: "turn friendly fire off for now for players, make it so bullets go through allied players"
       EncounterState.Enemies.Clear(); q.X = px + 3; q.Y = py; Rt.SetOffset(q, 0f, 0f); raider.X = px + 6; raider.Y = py; raider.Hp = 100000; EncounterState.Enemies.Add(raider);
       var line = Ballistics.Trace(p, px + 0.5f, py + 0.5f, 1f, 0f, 20f, 0.45f, Gunplay.Targets(p));
@@ -979,9 +1004,9 @@ static class Program {
     TerrainMap.SetTileType(px + 5, py, TileType.Empty);
     p.Sneaking = true; Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.6f) == "Head", "crouching: a head-height round goes over you"); p.Sneaking = false;
     // the old turn AI's gunfire becomes real rounds
-    int hits = 0, n = 40;
-    for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); if (p.Hp < p.MaxHp) hits++; }
-    Check(hits > 4 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");
+    int hits = 0, n = 120;
+    for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; Body.Forget(p); p.Sneaking = false; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); if (p.Hp < p.MaxHp) hits++; }
+    Check(hits > 8 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");   // (120 shots: 40 tripped on chance)
     // RT batch 2: limb health, Yan's wound rule, down and bleed-out, timed items
     Rt.Reset(); Body.Now = 0f;
     Check(Body.WoundChance(0.7f, "Standard") == 0f && Math.Abs(Body.WoundChance(0.5f, "Standard") - 0.125f) < 0.01f && Math.Abs(Body.WoundChance(0.4f, "Standard") - 0.25f) < 0.01f
@@ -1702,10 +1727,12 @@ static class Program {
     pl.NoteQuestDone(q);
     Check(pl.Rank == "Experienced", "experienced after tier 2 + quest, got " + pl.Rank);
     pl.NoteQuestDone(q); pl.NoteQuestDone(q);
-    Check(pl.Rank == "Experienced", "professional needs a kill");
+    Check(pl.Rank == "Professional" && pl.Exp == 0 && pl.PendingPerkPicks == 1 && pl.MaxAp == 5,   // rank XP (Yan): quests + the "3 quests" milestone fill the bar
+      $"professional from XP: {pl.Rank} xp {pl.Exp} picks {pl.PendingPerkPicks} ap {pl.MaxAp}");
     var m2 = MutantDatabase.Tiers["tier2"].First();
     pl.NoteKill(new Mutant(m2.Key, 0, 0, m2.Value));
-    Check(pl.Rank == "Professional" && pl.PendingPerkPicks == 1 && pl.MaxAp == 5, $"professional: {pl.Rank} picks {pl.PendingPerkPicks} ap {pl.MaxAp}");
+    Check(pl.Rank == "Professional" && pl.Exp == Player.KillXp(new Mutant(m2.Key, 0, 0, m2.Value)), $"a kill pays a little XP ({pl.Exp})");
+    pl.LoseXp(999); Check(pl.Rank == "Professional" && pl.Exp == 0, "dying's XP loss stops at 0 and never takes a rank");
     pl.HiddenNodeCleared = true; pl.NoteZoneTier(5);
     Check(pl.Rank == "Veteran", "veteran after tier 3 + hidden node, got " + pl.Rank);
     pl.ArcsFinished = 1; pl.NoteKill(new Mutant("x", 0, 0, MutantDatabase.Tiers["tier4"].First().Value));

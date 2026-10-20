@@ -176,9 +176,9 @@ namespace GameCore
             var next = p.NextRank;
             if (next != null)
             {
-                sb.AppendLine($"<color=#e0c060>NEXT RANK: {next.ToUpperInvariant()}</color>");
+                sb.AppendLine($"<color=#e0c060>NEXT RANK: {next.ToUpperInvariant()}</color>   XP {p.Exp} / {Player.XpToNext(next)}");
                 foreach (var (text, met) in p.MilestonesFor(next))
-                    sb.AppendLine($"  {(met ? "<color=#80d080>[x]</color>" : "[ ]")} {text}");
+                    sb.AppendLine($"  {(met ? "<color=#80d080>[x]</color>" : "[ ]")} {text}  <color=#8a8f94>+{Player.XpToNext(next) / System.Math.Max(1, p.MilestonesFor(next).Count)} XP</color>");
             }
             sb.AppendLine();
             sb.AppendLine($"Quests done {p.QuestsCompleted} | deepest tier {p.MaxTierReached} | toughest mutant killed T{p.MaxMutantTierKilled} | storylines finished {p.ArcsFinished}");

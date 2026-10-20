@@ -65,6 +65,7 @@ namespace GameCore
                     WorldNews = new List<string>(macro.WorldNews),
                     StoryFlags = new List<string>(macro.StoryFlags), Sponsor = macro.Sponsor, Ending = macro.Ending,
                     SurgeRounds = macro.SurgeRounds, SurgeZoneId = macro.SurgeZoneId, Hour = macro.Hour, Weather = macro.Weather, LastRumorDay = macro.LastRumorDay,
+                    CampZone = macro.CampZone, CampX = macro.CampX, CampY = macro.CampY,
                 },
             };
 
@@ -136,6 +137,7 @@ namespace GameCore
             macro.Sponsor = dm.Sponsor;
             macro.SurgeRounds = dm.SurgeRounds; macro.SurgeZoneId = dm.SurgeZoneId;
             macro.Hour = dm.Hour; macro.Weather = dm.Weather ?? "Overcast"; macro.LastRumorDay = dm.LastRumorDay;
+            macro.CampZone = string.IsNullOrEmpty(dm.CampZone) ? null : dm.CampZone; macro.CampX = dm.CampX; macro.CampY = dm.CampY;
             macro.Ending = string.IsNullOrEmpty(dm.Ending) ? null : dm.Ending;
             StorySystem.ResetWorld();
             StorySystem.ApplyEnding(null, apply: false);

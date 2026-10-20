@@ -228,6 +228,7 @@ namespace GameCore
             }
 
             Shakedown.Tick(player);                         // Batch 73
+            Death.TickPacks();                              // co-op: passers-by loot a dropped pack
             AnomalyEngine.DetectorSweep(player);
             ZoneTravel.SenseHiddenWays();                   // Batch 50
             QuestSystem.SenseClues();                       // Batch 50
@@ -289,6 +290,7 @@ namespace GameCore
             if (GameState.Current.CurrentTurn == Turn.CombatOver) return;
 
             var player = Player.Current;
+            if (player != null && AllDead && Death.Coop) { Death.Wipe(); return; }   // co-op: DEAD DEAD - everyone back at the camp
             if (player != null && AllDead)                           // co-op (Yan): "game over only if everyone dies"
             {
                 GameLog.Write("Player has fallen. Combat ends.");

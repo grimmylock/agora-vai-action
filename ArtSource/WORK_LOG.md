@@ -3627,3 +3627,45 @@ served. Character creator (faction starts, loadouts, storylines) on the later li
   lives (`PlayerController.Update`, `Rt.WorldTick`).
 - Checks: bullet time together but not 45 tiles apart; you dead with a friend alive isn't game over; 3 s of E gets them up.
 - Open: what happens to a player who bleeds out while friends live (waits until the group wipes or a save loads, for now).
+
+### RT 7q - three death states in co-op; camps (2026-10-20)
+
+Yan: "Make it so players have 3 death states in online, one is the downed state where they can crawl around and be revived, the
+other is fully 'dead', they lose some rank/reputation EXP and one of their equipped items loses a durability rating, primary or
+secondary weapon or armor but can be revived out of combat, and the third is DEAD DEAD when the squad whipes, this requires
+either a save-point or spawns everyone in the last safe-zone or maybe closest bonfire, but that would required a 'camp' mechanic
+around bonfires to 'save' the place, when spawning after DEAD DEAD, the players armor loses one durability rating and they lose
+half the items in their pack, together with the rank/reputation penalty".
+- `Death.cs`, in co-op only (`Death.Coop`: more than one player; solo still ends at the death screen):
+  - Downed: as before (crawl, a friend holds E).
+  - Dead (`Death.Tick`, once per death): rank XP lost (`Death.DeadXp`, see RT 7r); one of primary / secondary / armor (at
+    random) wears one step. A friend
+    can bring you back with E (3 s, `Rt.DownedNear` now includes the dead) only out of combat, on a quarter of your HP.
+  - DEAD DEAD (`Death.Wipe`, from `TurnLoop.CheckCombatEnd` when every player is dead): everyone wakes round the last camp (or
+    Bonfire Village's arrival spot), healed; each player's armor wears one step, half the pack (random items) is dropped where
+    they fell (RT 7r), and rank XP is lost (`Death.WipeXp`). The world goes on (no load); the enemies there forget the fight.
+  - Camps: E at a bonfire (`Death.TryCamp`, the same "by the fire" test as resting, `WorldDays.Rest`) makes it the squad's camp;
+    saved with the world (`MacroState.CampZone/CampX/CampY`). Prompt "E Make camp" in co-op.
+- Check: a dead friend loses XP and wear once, can't be revived mid-fight, can after; a wipe wakes everyone at the camp with
+  armor worn and half the pack gone.
+
+### RT 7r - rank XP; deaths cost XP, not reputation; the dropped half of the pack can be looted (2026-10-20)
+
+Yan: "the players items that are gone from their inventory on death are actually dropped in the place they died, and if enemies
+are nearby they can loot it, so the player needs to kill them to get them back. the faction reputation penalty wasn't the intended
+idea, remove that and build an xp system for the ranks, make it so the milestones award rank xp instead of the rank itself, also
+dying can't knock you down ranks, just removes XP and it goes down to 0 if it removes more than the player has".
+- Rank XP (`Player.Progression`): `Exp` is the progress toward the next rank (carried over on a rank-up). Bars: Experienced 200,
+  Professional 300, Veteran 400, Expert 600, Master 800, Legend 1000 (`Player.XpToNext`). Each milestone of the next rank pays
+  that rank's bar divided by its number of milestones, once (`MilestonesDone`, saved), so meeting them all fills it exactly;
+  milestones met early pay once their rank comes up (ranks stay in order, as the sheet shows them). A job done pays 50
+  (`QuestXp`), a kill 5-35 by rank or 5 per mutant tier (`KillXp`) - so XP lost to deaths can be earned back. The sheet shows
+  "XP x / y" and what each milestone pays. Master and Legend are no longer hard-gated on the (unwritten) main story: XP gets you
+  there.
+- Deaths (`Death`): dead -50 XP, wipe -100 XP (`Player.LoseXp`: never below 0, never a rank). No reputation change.
+- The lost half of the pack lies where the player fell (`Death.DropPack`, ground items; pick it up as usual). Each game minute
+  (`Death.TickPacks`) the nearest hostile person within 10 tiles who isn't fighting walks over and pockets what's left - it's in
+  his inventory, on his body when he's dead. Mutants don't loot.
+- Checks: XP from quests and milestones makes Professional; a kill pays; losing more XP than you have stops at 0 with the rank
+  kept; a wipe drops the half pack where they fell and a Raider nearby walks over and takes it. The "Rookie at 6 tiles" check
+  now shoots at a standing you each time (a shotgun hit knocked you down mid-test and the rest flew over).

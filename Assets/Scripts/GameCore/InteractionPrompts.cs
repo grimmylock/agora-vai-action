@@ -23,7 +23,9 @@ namespace GameCore
 
             // E: containers, locks, stashes (InteractionEngine; they're within one tile), and the two special machines
             var friend = Rt.DownedNear(p);
-            if (friend != null) Add(friend.X, friend.Y, "HOLD E", "Revive");                          // co-op: a downed friend
+            if (friend != null) Add(friend.X, friend.Y, "HOLD E", "Revive");                          // co-op: a downed (or, out of a fight, dead) friend
+            if (Death.Coop) foreach (var (fx, fy) in TerrainMap.GetAdjacentCoords(p.X, p.Y).Append((p.X, p.Y)))
+                if (TerrainMap.GetTile(fx, fy).Look == "campfire") { Add(fx, fy, "E", "Make camp"); break; }
             foreach (var o in TerrainMap.InteractiveObjects) if (D(p, o.X, o.Y) <= 1) Add(o.X, o.Y, "E", o.Name);
             foreach (var l in TerrainMap.Landmarks)
             {

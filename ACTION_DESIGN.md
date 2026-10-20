@@ -132,6 +132,10 @@ Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack
   - **Downed players are revived** by a friend holding E over them for a few seconds. **Game over only when everyone is dead**;
     then the host's last save loads.
   - **Loot on bodies: first come, first served.**
+  - **Three death states (co-op):** downed (crawl, revive with E); dead (rank XP loss, one equipped item wears a step,
+    revivable with E out of combat); DEAD DEAD when the squad wipes - everyone back at the last camp (E at a bonfire; Bonfire
+    Village by default), armor one step worse, half the pack dropped where they fell (hostile passers-by loot it - kill them to
+    get it back), rank XP loss. Dying never costs a rank; XP stops at 0. (RT 7q-7r, `Death.cs`; rank XP in `Player.Progression`.)
 - The first prototype is single-player, but the combat code is written host-authoritative from day one.
 - **Groundwork done (RT 7n, 2026-10-20; it slipped through RT 1-7m, Yan caught it):** each player's real-time state is its own
   (`Rt.State`, `Rt.Of(p)`); controls arrive as `Rt.Input` packets (the local player's from `Rt.Read`, joined players' from
