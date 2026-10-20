@@ -113,7 +113,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
    `RENDER_WEATHER`, `PREVIEW_PLAYER=x,y`, `PROP_SHEET`. Review images go in `maps/renders/` (send them to Yan).
 4. **Art changes:** world sprites -> `ArtSource/world/pack.py` -> copy `world_atlas.png` to
    `Assets/Resources/Sprites/world_atlas.bytes` and `world_atlas.txt` to `world_atlas_meta.txt` (only after Yan approves).
-   Weapons: `ArtSource/weapons/` (hand-drawn per gun; `mags.py` cuts magazines). Mutants: `ArtSource/make_mutants_hd.py`,
+   Weapons: the method Yan approved is **`ArtSource/weapons/hand/PIXEL_GUIDE.md`** (RT 7v melee set); the older guns in `ArtSource/weapons/` are due a redraw (`mags.py` cuts magazines). Mutants: `ArtSource/make_mutants_hd.py`,
    `make_mutant_frames.py`. Audio: `ArtSource/audio/sfx.py` -> `Assets/Resources/Audio/`.
 5. **Test in Unity (Yan):** Play -> New Game (or Testing Ground). Check the Console for red.
 6. **Log every batch** at the end of `ArtSource/WORK_LOG.md`: what changed, why, Yan's words when he decided something, what

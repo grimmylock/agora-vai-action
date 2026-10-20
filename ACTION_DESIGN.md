@@ -220,7 +220,7 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
   especially the ones without very popular designs". The guns came from `ArtSource/weapons/batch_all.py`, which shrinks a
   reference photo into each size separately; the well-known silhouettes survive, the rest turn to mush. Redo each from a clean
   pixel-art reference, drawn at its in-hand size with details placed by hand, the menu version made from the same drawing
-  (as `tactical_hatchet.py`). Keep the parts the animations need: grip/support points (`WeaponArt.Grips`), magazine cuts
+  (method: **`ArtSource/weapons/hand/PIXEL_GUIDE.md`**, as the melee set). Keep the parts the animations need: grip/support points (`WeaponArt.Grips`), magazine cuts
   (`mags.py`), break-action barrels and revolver cylinders. After the melee weapons.
 - **Character creator (Yan, 2026-10-20):** new games starting in different factions with their own loadouts, and a storyline per
   faction (like Anomaly's faction starts).
