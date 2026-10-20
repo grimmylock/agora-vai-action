@@ -3771,3 +3771,13 @@ targets/walls".
   without bleeding; a thrown bat drops instead of sticking; the barbed bat bleeds; all 6 have stats and grips). ALL CHECKS PASSED.
 - **Not built:** the second hand on two-handed handles (they're still held in one fist). Not tuned against fights; not checked
   in Unity.
+- Fix found while comparing the numbers for Yan: the player's real swing path (`Melee.Release`, the mouse) used a fixed ~0.62 s
+  cadence and ignored the weapon's `Swing` time; only the old `PlayerAttack` and NPC swings used it. A sledge swung as fast as a
+  knife. Now the next swing waits for the longer of the two. Light weapons (under ~1 kg) are unchanged at ~0.62 s; the fire axe
+  takes 0.9 s, the barbed bat 0.69 s, the sledge 1.5 s. New harness check on the real mouse path.
+- For Yan, per hit and per second against the torso, before armor, uncharged:
+  - Melee: 200-650 a hit, ~320-730 a second (knife 323, sledge 433, Ritual Blade 726).
+  - Pistols: 120-340 a hit, 600-1000 a second.
+  - Rifles and machine guns: ~2000-4100 a second.
+  - Sniper rifles: 540-1440 a hit.
+  - Melee hits hard once but has the lowest damage per second; it pays in no ammo, bleeding or concussion, and throws.

@@ -133,7 +133,7 @@ namespace GameCore
             var (dx, dy, h) = Aim(p, at);
             if (dx == 0f && dy == 0f) return;
             float now = T;
-            NextSwing[p] = now + delay + HeldPoseMath.Follow + HeldPoseMath.Recover;
+            NextSwing[p] = now + Mathf.Max(delay + HeldPoseMath.Follow + HeldPoseMath.Recover, For(w).Swing - HeldPoseMath.WindUp);   // RT 7w: heavy ones recover slower
             var anim = CombatFx.Push("melee", p, null, w); anim.Now = true;                  // the whoosh
             anim.ToX = p.X + Mathf.RoundToInt(dx * 2f); anim.ToY = p.Y + Mathf.RoundToInt(dy * 2f);
             Pending.Add((now + delay, p, w, dx, dy, h, mult));

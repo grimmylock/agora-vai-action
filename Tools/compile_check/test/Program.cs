@@ -1135,6 +1135,13 @@ static class Program {
         TerrainMap.GroundItems.RemoveAll(g => g.Item.Key == "WoodenBaseballBat"); EncounterState.Enemies.Clear(); Melee.Reset(); Melee.Now = 0f;
         var barbed = Melee.For(W("BarbedWireBat"));
         Check(!barbed.Blade && barbed.Bleeds && Melee.For(W("Hatchet")).Blade && Melee.For(W("FireAxe")).TwoHanded, "RT 7v: the barbed bat is blunt but cuts; the axes are blades");
+        // the real mouse path: how soon a second swing can start after a tap
+        float Gap(string k) { Melee.Reset(); var w = W(k); var at = (Ballistics.Pos(p).x + 1f, Ballistics.Pos(p).y);
+          Melee.Now = 0f; Melee.PlayerInput(p, w, true, false, at); Melee.Now = 0.3f; Melee.PlayerInput(p, w, false, false, at);
+          for (float t3 = 0.3f; t3 < 3f; t3 += 0.01f) { Melee.Now = t3; Melee.PlayerInput(p, w, true, false, at); if (Melee.ChargeOf(p).SwingFrom >= 0f) return t3; }
+          return 99f; }
+        float gk = Gap("HuntingKnife"), gs = Gap("Sledgehammer"); Melee.Reset(); Melee.Now = -1f;
+        Check(gs > gk + 0.5f, $"RT 7w: the sledge swings again later than the knife ({gs:0.00} s vs {gk:0.00} s)");
         foreach (var k in new[] { "Hatchet", "FireAxe", "WoodenBaseballBat", "Hammer", "Sledgehammer", "BarbedWireBat" })
           Check(WeaponArt.HasGrip(k) && WeaponDatabase.Categories["melee"].ContainsKey(k), $"RT 7v: {k} has stats and grip points"); }
       // RT 7e: left held then let go swings (held past the wind-up: more damage); right held lifts and charges the throw
