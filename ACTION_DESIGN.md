@@ -101,6 +101,9 @@ Melee's place: ambushes round corners, unseen camp massacres, parrying mutants -
 | Sledgehammer | 4 | blunt, two-handed | like the bat with more damage; breaks cover (not walls) |
 | Barbed Wire Bat | 5 (secret) | blunt, two-handed | bleeds and concusses; carried by a boss in a Tier 4 corner or dungeon, lore to settle (not regular Raider kit) |
 
+**Melee slot (Yan, 2026-10-20, for the inventory/equipment UI):** a dedicated melee slot beside the two weapon slots, so everyone
+always has at least a knife (for parrying). A throwing build can still put more melee weapons in the weapon slots.
+
 To-do (Yan): the Tactical Hatchet's corpse gets up when you take the hatchet and fights you in melee - you parry him with it.
 
 ## Weight and stamina

@@ -3781,3 +3781,9 @@ targets/walls".
   - Rifles and machine guns: ~2000-4100 a second.
   - Sniper rifles: 540-1440 a hit.
   - Melee hits hard once but has the lowest damage per second; it pays in no ammo, bleeding or concussion, and throws.
+- Yan's idea for the inventory UI: a dedicated melee slot so everyone always has a knife for parrying; more melee weapons can go
+  in the weapon slots for a throwing build. Written into ACTION_DESIGN.md (Melee). Not built: no inventory UI yet, and the
+  parry isn't built either.
+- Taken out again: the Barbed Wire Bat from the Tier 5 loot pool. ACTION_DESIGN has it as a secret weapon carried by a boss,
+  "not regular Raider kit". It's only in the Testing Ground crate until that boss exists.
+- Still open from the design table: the hammer's shorter reach and the sledgehammer breaking cover.

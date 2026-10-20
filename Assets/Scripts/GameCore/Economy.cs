@@ -95,7 +95,7 @@ namespace GameCore
             },
             [5] = new Dictionary<string, Pool>
             {
-                ["melee"] = P(700, 1200, "Obelisk Ritual Blade", "Barbed Wire Bat"),
+                ["melee"] = P(700, 1200, "Obelisk Ritual Blade"),
                 ["sidearm"] = P(16000, 22000, "RK-12 Kuvalda"),
                 ["assault"] = P(20000, 28000, "Corvan Bullpup"),
                 ["sniper"] = P(15000, 24000, "VK-127 Grom", "Halden AM-50 Sledge", "G-7 Rail Prototype"),
