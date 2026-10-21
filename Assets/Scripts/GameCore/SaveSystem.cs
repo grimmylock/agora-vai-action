@@ -1,8 +1,12 @@
-// New (Batch 9): single-slot save/load. Nothing in the project persisted to disk before this -
-// closing the game lost everything.
+// New (Batch 9): save/load. RT 7x (Yan's co-op rules: "the host saves the world, the players own their characters and can
+// join other worlds or play their own ... multiple save-slots"): a character file per character (saves/characters/<id>.json:
+// name, the PlayerSaveData, the world it was last in) and a world file per world (saves/worlds/<id>.json: the MacroSaveData,
+// who hosts it). A slot = a character; loading it opens the world it was last in. New Game names the character and saves both
+// at once (the save at creation). The old single savegame.json becomes a slot the first time the slots are listed.
+// Co-op: Save() writes the world and the local character; a joined player's character lives on their own machine (the network
+// layer asks them to save when the host does - not wired yet); the harness's local joiners aren't saved.
 //
-// ponytail: single slot (Application.persistentDataPath/savegame.json), overwritten each save -
-// add slot selection/UI if multiple saves are wanted later. Deliberately does NOT snapshot the
+// Deliberately does NOT snapshot the
 // live tactical state of the zone you're standing in: MacroState.PersistedZoneTerrain/
 // PersistedZoneInteractiveObjects/PersistedZoneLandmarks/PersistedZoneAnomalies/OfflineSquads/
 // RolledShopStock/WanderingTrader* are all runtime caches JsonUtility can't serialize anyway
@@ -24,9 +28,102 @@ namespace GameCore
 {
     public static class SaveSystem
     {
-        private static string FilePath => Path.Combine(Application.persistentDataPath, "savegame.json");
+        /// <summary>Where the saves live; the harness points it at a temp folder. Null = no saving (the harness by default).</summary>
+        public static string Root;
+        static string Dir => Root ?? (string.IsNullOrEmpty(Application.persistentDataPath) ? null : Path.Combine(Application.persistentDataPath, "saves"));
+        static string CharFile(string id) => Path.Combine(Dir, "characters", id + ".json");
+        static string WorldFile(string id) => Path.Combine(Dir, "worlds", id + ".json");
+        static string Legacy => Path.Combine(Path.GetDirectoryName(Dir), "savegame.json");
 
-        public static bool HasSave() => File.Exists(FilePath);
+        /// <summary>The slot in play: the local character and the world it's in. Null in the Testing Ground (never saved).</summary>
+        public static string CharacterId, WorldId;
+
+        public class Slot { public string CharacterId, Name, Rank, WorldId, Place, SavedAtUtc; public int Day; }
+
+        /// <summary>Every character on this machine, the last saved first.</summary>
+        public static List<Slot> Slots()
+        {
+            var list = new List<Slot>();
+            if (Dir == null) return list;
+            MigrateLegacy();
+            var folder = Path.Combine(Dir, "characters");
+            if (!Directory.Exists(folder)) return list;
+            foreach (var f in Directory.GetFiles(folder, "*.json"))
+            {
+                try
+                {
+                    var c = JsonUtility.FromJson<CharacterSave>(NameMigration.Apply(File.ReadAllText(f)));
+                    if (c?.Player == null) continue;
+                    var w = ReadWorld(c.WorldId);
+                    list.Add(new Slot { CharacterId = c.Id, Name = c.Name, Rank = c.Player.Rank ?? "Rookie", WorldId = c.WorldId, SavedAtUtc = c.SavedAtUtc,
+                        Day = w?.Macro?.Day ?? 0, Place = GameData.MacroMapDatabase.Find(w?.Macro?.CurrentZoneId)?.Name ?? "" });
+                }
+                catch (Exception e) { Debug.LogWarning($"SaveSystem: skipping {f}: {e.Message}"); }
+            }
+            return list.OrderByDescending(x => x.SavedAtUtc).ToList();
+        }
+
+        public static bool HasSave() => Slots().Count > 0;
+
+        static WorldSave ReadWorld(string id)
+        {
+            if (string.IsNullOrEmpty(id) || !File.Exists(WorldFile(id))) return null;
+            return JsonUtility.FromJson<WorldSave>(NameMigration.Apply(File.ReadAllText(WorldFile(id))));
+        }
+
+        /// <summary>New Game: a new character in a new world, saved straight away. False when there's nowhere to save (harness).</summary>
+        public static bool Create(string name)
+        {
+            CharacterId = WorldId = null;
+            if (Dir == null || Player.Current == null) return false;
+            Player.Current.CharacterName = CleanName(name);
+            CharacterId = Guid.NewGuid().ToString("N");
+            WorldId = Guid.NewGuid().ToString("N");
+            return Save();
+        }
+
+        public static string CleanName(string name)
+        {
+            name = new string((name ?? "").Where(ch => !char.IsControl(ch)).ToArray()).Trim();
+            return name.Length == 0 ? "Scavenger" : name.Length > 20 ? name.Substring(0, 20) : name;
+        }
+
+        /// <summary>Deletes a character; its world goes too when no other character on this machine is in it.</summary>
+        public static bool Delete(string characterId)
+        {
+            if (Dir == null || string.IsNullOrEmpty(characterId) || !File.Exists(CharFile(characterId))) return false;
+            var slot = Slots().FirstOrDefault(x => x.CharacterId == characterId);
+            File.Delete(CharFile(characterId));
+            if (slot?.WorldId != null && !Slots().Any(x => x.WorldId == slot.WorldId) && File.Exists(WorldFile(slot.WorldId))) File.Delete(WorldFile(slot.WorldId));
+            if (CharacterId == characterId) CharacterId = WorldId = null;
+            return true;
+        }
+
+        /// <summary>The old one-slot savegame.json becomes a slot ("Scavenger"); the old file is kept as savegame.json.migrated.</summary>
+        static void MigrateLegacy()
+        {
+            try
+            {
+                if (!File.Exists(Legacy)) return;
+                var old = JsonUtility.FromJson<SaveData>(NameMigration.Apply(File.ReadAllText(Legacy)));
+                if (old?.Player != null && old.Macro != null)
+                {
+                    string cid = Guid.NewGuid().ToString("N"), wid = Guid.NewGuid().ToString("N");
+                    Write(new CharacterSave { Id = cid, Name = "Scavenger", WorldId = wid, SavedAtUtc = old.SavedAtUtc, Player = old.Player },
+                          new WorldSave { Id = wid, HostCharacterId = cid, SavedAtUtc = old.SavedAtUtc, Macro = old.Macro });
+                }
+                File.Move(Legacy, Legacy + ".migrated");
+            }
+            catch (Exception e) { Debug.LogWarning($"SaveSystem: the old save couldn't be moved over: {e.Message}"); }
+        }
+
+        static void Write(CharacterSave c, WorldSave w)
+        {
+            Directory.CreateDirectory(Path.Combine(Dir, "characters")); Directory.CreateDirectory(Path.Combine(Dir, "worlds"));
+            if (w != null) WriteSafe(WorldFile(w.Id), JsonUtility.ToJson(w, true));
+            WriteSafe(CharFile(c.Id), JsonUtility.ToJson(c, true));
+        }
+        static void WriteSafe(string path, string json) { File.WriteAllText(path + ".tmp", json); if (File.Exists(path)) File.Delete(path); File.Move(path + ".tmp", path); }   // a crash mid-write never eats the last save
 
         public static bool Save()
         {
@@ -36,6 +133,11 @@ namespace GameCore
                 GameLog.Write("Nothing to save yet.");
                 return false;
             }
+            if (CharacterId == null || Dir == null)
+            {
+                GameLog.Write(TestingGround.Here ? "The Testing Ground isn't saved." : "Nothing to save to.");
+                return false;
+            }
             if (!player.IsAlive())
             {
                 GameLog.Write("Cannot save while dead.");
@@ -43,10 +145,10 @@ namespace GameCore
             }
 
             var macro = MacroState.Current;
-            var data = new SaveData
+            string now = DateTime.UtcNow.ToString("o");
+            var world = new WorldSave
             {
-                SavedAtUtc = DateTime.UtcNow.ToString("o"),
-                Player = player.CaptureSaveData(),
+                Id = WorldId, HostCharacterId = CharacterId, SavedAtUtc = now,
                 Macro = new MacroSaveData
                 {
                     CurrentZoneId = macro.CurrentZoneId,
@@ -68,10 +170,11 @@ namespace GameCore
                     CampZone = macro.CampZone, CampX = macro.CampX, CampY = macro.CampY,
                 },
             };
+            var character = new CharacterSave { Id = CharacterId, Name = player.CharacterName, WorldId = WorldId, SavedAtUtc = now, Player = player.CaptureSaveData() };
 
             try
             {
-                File.WriteAllText(FilePath, JsonUtility.ToJson(data, true));
+                Write(character, world);
                 GameLog.Write("Game saved.");
                 return true;
             }
@@ -83,18 +186,22 @@ namespace GameCore
             }
         }
 
-        public static bool Load()
+        /// <summary>F9 / the death screen: the slot in play again, else the last saved one.</summary>
+        public static bool Load() => Load(CharacterId ?? Slots().FirstOrDefault()?.CharacterId);
+
+        public static bool Load(string characterId)
         {
-            if (!HasSave())
+            if (Dir == null || string.IsNullOrEmpty(characterId) || !File.Exists(CharFile(characterId)))
             {
                 GameLog.Write("No save file found.");
                 return false;
             }
 
-            SaveData data;
+            CharacterSave character; WorldSave world;
             try
             {
-                data = JsonUtility.FromJson<SaveData>(NameMigration.Apply(File.ReadAllText(FilePath)));
+                character = JsonUtility.FromJson<CharacterSave>(NameMigration.Apply(File.ReadAllText(CharFile(characterId))));
+                world = ReadWorld(character?.WorldId);
             }
             catch (Exception e)
             {
@@ -102,11 +209,12 @@ namespace GameCore
                 GameLog.Write("Load failed - save file could not be read, see the console for details.");
                 return false;
             }
-            if (data?.Player == null || data.Macro == null)
+            if (character?.Player == null || world?.Macro == null)
             {
                 GameLog.Write("Load failed - save file is corrupt or empty.");
                 return false;
             }
+            var data = new SaveData { Player = character.Player, Macro = world.Macro };
 
             // Same reset GameBootstrap.StartNewGame uses for a fresh game/death-restart - fresh
             // GameState/MacroState/Player, then populate them instead of the hardcoded starting loadout.
@@ -145,6 +253,8 @@ namespace GameCore
             new Player();
             var player = Player.Current;
             player.ApplyLoadedData(data.Player);
+            player.CharacterName = CleanName(character.Name);
+            CharacterId = character.Id; WorldId = world.Id;
 
             ZoneTravel.EnterZone(macro.CurrentZoneId);
             // EnterZone's own spawn placement (FindEntrySpawn) has no "came from" zone to work off

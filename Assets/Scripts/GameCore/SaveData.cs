@@ -112,6 +112,25 @@ namespace GameCore
         public string Weather = "Overcast";
     }
 
+    /// <summary>RT 7x: one character (saves/characters/id.json) - the player owns it and can take it into any world.</summary>
+    [Serializable]
+    public class CharacterSave
+    {
+        public int Version = 2;
+        public string Id, Name, WorldId, SavedAtUtc;
+        public PlayerSaveData Player;
+    }
+
+    /// <summary>RT 7x: one world (saves/worlds/id.json) - the host saves it.</summary>
+    [Serializable]
+    public class WorldSave
+    {
+        public int Version = 2;
+        public string Id, HostCharacterId, SavedAtUtc;
+        public MacroSaveData Macro;
+    }
+
+    /// <summary>The old single-file save (savegame.json, before RT 7x); read once to move it into a slot.</summary>
     [Serializable]
     public class SaveData
     {

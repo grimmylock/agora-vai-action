@@ -1,4 +1,4 @@
-using System; using System.Linq; using GameData; using GameCore;
+using System; using System.IO; using System.Linq; using GameData; using GameCore;
 static class Program {
   static int fails = 0;
   static void Check(bool ok, string msg) { if (!ok) { fails++; Console.WriteLine("FAIL " + msg); } }
@@ -30,6 +30,7 @@ static class Program {
     RaidChecks();
     RtChecks();
     TestingGroundChecks();
+    SaveSlotChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -811,6 +812,31 @@ static class Program {
     var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
     sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
     System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
+  }
+
+  // RT 7x: save slots - a character file + a world file per New Game (saved at creation), load by slot, delete, the old single
+  // save moved into a slot, the Testing Ground never saved
+  static void SaveSlotChecks() {
+    var dir = Path.Combine(Path.GetTempPath(), "av_saves_" + Guid.NewGuid().ToString("N"));
+    SaveSystem.Root = Path.Combine(dir, "saves");
+    try {
+      GameBootstrap.StartNewGame(new CharacterSpec { Name = "  Vasya  " });
+      var vasya = SaveSystem.CharacterId;
+      Check(vasya != null && SaveSystem.Slots().Count == 1 && SaveSystem.Slots()[0].Name == "Vasya", "RT 7x: New Game saves a named slot at once");
+      Player.Current.Ru = 4321; Check(SaveSystem.Save(), "RT 7x: saving the slot in play");
+      GameBootstrap.StartNewGame(new CharacterSpec { Name = "" });
+      var kolya = SaveSystem.CharacterId;
+      Check(SaveSystem.Slots().Count == 2 && Player.Current.CharacterName == "Scavenger" && kolya != vasya, "RT 7x: a second character gets its own slot (no name -> Scavenger)");
+      Check(SaveSystem.Load(vasya) && Player.Current.Ru == 4321 && Player.Current.CharacterName == "Vasya" && SaveSystem.CharacterId == vasya, "RT 7x: loading a slot brings that character back");
+      var kolyaWorld = SaveSystem.Slots().First(x => x.CharacterId == kolya).WorldId;
+      Check(SaveSystem.Delete(kolya) && SaveSystem.Slots().Count == 1 && !File.Exists(Path.Combine(SaveSystem.Root, "worlds", kolyaWorld + ".json")), "RT 7x: deleting a character takes its world along");
+      GameBootstrap.StartNewGame(new CharacterSpec(), TestingGround.Zone);
+      Check(!SaveSystem.Save() && SaveSystem.Slots().Count == 1, "RT 7x: the Testing Ground isn't saved");
+      var old = new SaveData { SavedAtUtc = "2020-01-01T00:00:00Z", Player = new PlayerSaveData { Rank = "Experienced", Ru = 77 }, Macro = new MacroSaveData { CurrentZoneId = "perimeter", Day = 3 } };
+      File.WriteAllText(Path.Combine(dir, "savegame.json"), UnityEngine.JsonUtility.ToJson(old, true));
+      var all = SaveSystem.Slots();
+      Check(all.Count == 2 && all.Any(x => x.Rank == "Experienced" && x.Day == 3) && File.Exists(Path.Combine(dir, "savegame.json.migrated")), "RT 7x: the old single save becomes a slot");
+    } finally { SaveSystem.Root = null; SaveSystem.CharacterId = SaveSystem.WorldId = null; try { Directory.Delete(dir, true); } catch { } }
   }
 
   static void TestingGroundChecks() {

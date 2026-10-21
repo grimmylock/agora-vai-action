@@ -17,6 +17,7 @@ namespace GameCore
         public int S = 10, P = 10, A = 10, I = 10;
         public string Loadout = "Scavenger";
         public string Perk;
+        public string Name = "";                 // RT 7x: typed at creation; empty = "Scavenger"
     }
 
     public class CharacterUI : MonoBehaviour
@@ -93,7 +94,8 @@ namespace GameCore
         private void BuildCreation()
         {
             var t = _panel.transform;
-            Text(t, new Vector2(0.03f, 0.9f), new Vector2(0.6f, 0.98f), "NEW SCAVENGER", 30);
+            Text(t, new Vector2(0.03f, 0.9f), new Vector2(0.25f, 0.98f), "NEW SCAVENGER", 30);
+            NameField(t, new Vector2(0.26f, 0.915f), new Vector2(0.5f, 0.97f));
             int left = 6 - (_spec.S + _spec.P + _spec.A + _spec.I - 40);
             Text(t, new Vector2(0.03f, 0.84f), new Vector2(0.45f, 0.9f), $"Stats - {left} point{(left == 1 ? "" : "s")} left (6-16 each, lower one to raise another)", 15);
             string[] names = { "Strength", "Perception", "Agility", "Intelligence" };
@@ -135,6 +137,21 @@ namespace GameCore
             Btn(t, new Vector2(0.6f, 0.03f), new Vector2(0.77f, 0.1f), "Back", () => { Close(); MainMenuUI.Show(); });
         }
 
+        /// <summary>RT 7x: the character's name. Typing doesn't rebuild the panel; the text lives in _spec.Name across rebuilds.</summary>
+        private void NameField(Transform t, Vector2 a, Vector2 b)
+        {
+            var box = UIBuildUtil.CreatePanel(t, "NameField", a, b, new Color(0.14f, 0.14f, 0.13f, 1f));
+            var area = UIBuildUtil.CreatePanel(box.transform, "TextArea", Vector2.zero, Vector2.one, new Color(0, 0, 0, 0));
+            var ar = area.GetComponent<RectTransform>(); ar.offsetMin = new Vector2(10, 4); ar.offsetMax = new Vector2(-10, -4);
+            var text = UIBuildUtil.CreateText(area.transform, "Text", Vector2.zero, Vector2.one, "", 20, Color.white, TextAlignmentOptions.Left);
+            var hint = UIBuildUtil.CreateText(area.transform, "Placeholder", Vector2.zero, Vector2.one, "Name your character...", 20, new Color(1f, 1f, 1f, 0.35f), TextAlignmentOptions.Left);
+            if (HudView.BodyFont != null) { text.font = HudView.BodyFont; hint.font = HudView.BodyFont; }
+            var field = box.AddComponent<TMP_InputField>();
+            field.textViewport = ar; field.textComponent = text; field.placeholder = hint; field.characterLimit = 20;
+            field.text = _spec.Name;
+            field.onValueChanged.AddListener(v => _spec.Name = v);
+        }
+
         private int Get(int i) => i == 0 ? _spec.S : i == 1 ? _spec.P : i == 2 ? _spec.A : _spec.I;
         private void Set(int i, int v) { if (i == 0) _spec.S = v; else if (i == 1) _spec.P = v; else if (i == 2) _spec.A = v; else _spec.I = v; }
 
@@ -162,7 +179,7 @@ namespace GameCore
             var p = Player.Current;
             if (p == null) { Close(); return; }
             var sb = new StringBuilder();
-            sb.AppendLine($"<size=24>{p.Rank.ToUpperInvariant()}</size>   Ru {p.Ru}   AP {p.MaxAp}   AC {p.Ac}   HP {p.Hp}/{p.MaxHp}");
+            sb.AppendLine($"<size=24>{p.CharacterName.ToUpperInvariant()} - {p.Rank.ToUpperInvariant()}</size>   Ru {p.Ru}   AP {p.MaxAp}   AC {p.Ac}   HP {p.Hp}/{p.MaxHp}");
             sb.AppendLine($"S {p.Stats.S}  P {p.Stats.P}  A {p.Stats.A}  I {p.Stats.I}");
             sb.AppendLine();
             sb.AppendLine("<color=#e0c060>REPUTATION</color>  (-3 Hostile, +3 Friendly)");

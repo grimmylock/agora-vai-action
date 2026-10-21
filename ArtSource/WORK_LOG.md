@@ -3790,3 +3790,32 @@ targets/walls".
 - Saved the method for the gun redraw: `ArtSource/weapons/hand/PIXEL_GUIDE.md` (the steps, Yan's catches, what guns need on
   top) and the tools that were in a temporary folder (`pixel_tools/`: `tmat.py` material trace, `grid.py` gridded reference,
   `bench.py` drafting helpers, two example drafts). Linked from ACTION_DESIGN's later list and CLAUDE.md.
+
+## RT 7x - save slots, character names, the save at creation (2026-10-21)
+
+Yan: "do 2 and 3" (2 = save slots + naming + the save at creation; 3 = the networking test groundwork). Built on his co-op rules
+(ACTION_DESIGN): "The host saves the world, the players own their characters and can join other world or play their own ...
+Add multiple save-slots".
+- `SaveSystem`: a **character file** per character (`saves/characters/<id>.json`: name, the PlayerSaveData, which world it was
+  last in) and a **world file** per world (`saves/worlds/<id>.json`: the MacroSaveData, who hosts it).
+  - A slot is a character. Loading one opens the world it was last in.
+  - `Slots()` lists them, the last saved first. `Delete` removes a character, and its world when no other character is in it.
+  - Writes go to a `.tmp` file first, so a crash mid-save never destroys the last good save.
+- **New Game** has a name box on the creation screen (20 characters; empty = "Scavenger"). `StartNewGame` calls
+  `SaveSystem.Create(name)`: a new character in a new world, saved at once.
+- **Main menu:**
+  - Continue loads the last played character.
+  - Load Game lists the characters (name, rank, day, place, when saved) with Load and Delete; Delete asks "Sure?" first.
+  - F5/F9 and the death screen's Load use the slot in play.
+- **The old single save** (`savegame.json`) becomes a slot named "Scavenger" the first time the slots are listed. The old file
+  is kept as `savegame.json.migrated`.
+- **The Testing Ground** is never saved ("The Testing Ground isn't saved.").
+- The character sheet (P) shows the name. `Player.CharacterName` is saved in the character file.
+- **Co-op (rule 9):** Save() writes the world and the **local** character. A joined player's character lives on their own
+  machine; the network layer will ask them to save when the host saves (RT 7y). Local joiners in the harness aren't saved.
+- **Harness:**
+  - The `JsonUtility` stub is now real (System.Text.Json, public fields like Unity), so the save checks read and write real
+    files.
+  - New `SaveSlotChecks`: a named slot at New Game, save/load by slot, a second character, delete with its world, the
+    Testing Ground not saved, the old file moved over. ALL CHECKS PASSED.
+- **Not checked in Unity:** typing in the name box (a TMP_InputField built in code), the slot list's layout, Continue.

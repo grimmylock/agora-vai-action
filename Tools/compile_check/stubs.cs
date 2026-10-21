@@ -62,7 +62,12 @@ namespace UnityEngine
     public enum RenderMode { ScreenSpaceOverlay, ScreenSpaceCamera, WorldSpace }
     public class Font : Object {}
     public static class PlayerPrefs { public static string GetString(string k, string d = "") => d; public static void SetString(string k, string v) {} public static int GetInt(string k, int d = 0) => d; public static void SetInt(string k, int v) {} public static void Save() {} public static bool HasKey(string k) => false; public static void DeleteKey(string k) {} }
-    public static class JsonUtility { public static string ToJson(object o, bool p = false) => ""; public static T FromJson<T>(string s) => default(T); }
+    public static class JsonUtility   // RT 7x: real enough for the save checks - public fields, like Unity's
+    {
+        static System.Text.Json.JsonSerializerOptions O(bool p) => new System.Text.Json.JsonSerializerOptions { IncludeFields = true, WriteIndented = p };
+        public static string ToJson(object o, bool p = false) => o == null ? "" : System.Text.Json.JsonSerializer.Serialize(o, o.GetType(), O(p));
+        public static T FromJson<T>(string s) => string.IsNullOrEmpty(s) ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(s, O(false));
+    }
     public class SerializeField : Attribute {}
     public class HeaderAttribute : Attribute { public HeaderAttribute(string s) {} }
     public class TooltipAttribute : Attribute { public TooltipAttribute(string s) {} }
@@ -131,6 +136,8 @@ namespace TMPro
 {
     public class TMP_Text : UnityEngine.UI.Graphic { public TMP_FontAsset font; public float characterSpacing, outlineWidth; public UnityEngine.Color32 outlineColor; public string text; public float fontSize; public TextAlignmentOptions alignment; public bool enableWordWrapping; public TextOverflowModes overflowMode; public FontStyles fontStyle; public bool richText; public bool textWrappingMode_dummy; public TextWrappingModes textWrappingMode; }
     public class TextMeshProUGUI : TMP_Text {}
+    public class TMP_InputField : UnityEngine.UI.Selectable { public string text; public TMP_Text textComponent; public UnityEngine.UI.Graphic placeholder; public UnityEngine.RectTransform textViewport; public int characterLimit;
+        public OnChangeEvent onValueChanged = new OnChangeEvent(); public class OnChangeEvent { public void AddListener(System.Action<string> a) {} } }
     public class TMP_FontAsset : UnityEngine.Object { public static TMP_FontAsset CreateFontAsset(UnityEngine.Font f) => null; }
     public enum TextAlignmentOptions { Left, Center, Right, TopLeft, Top, TopRight, MidlineLeft, Midline, BottomLeft, Bottom, CenterGeoAligned, Justified }
     public enum TextOverflowModes { Overflow, Ellipsis, Truncate, ScrollRect }

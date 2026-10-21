@@ -116,6 +116,7 @@ namespace GameCore
         public static void StartNewGame(CharacterSpec spec = null, string startZone = null)
         {
             spec = spec ?? new CharacterSpec();
+            SaveSystem.CharacterId = SaveSystem.WorldId = null;   // RT 7x: a new slot is made at the end (none for the Testing Ground)
             GameState.Current = new GameState();
             MacroState.Current = new MacroState();
             FactionDeck.Reset(); GarrisonRaid.Reset();
@@ -168,6 +169,8 @@ namespace GameCore
             }
             ZoneTravel.EnterZone(MacroState.Current.CurrentZoneId);
             SquadManager.SeedWorld();               // Batch 41: the rest of the Zone is populated from the start (after a map is loaded)
+            player.CharacterName = SaveSystem.CleanName(spec.Name);
+            if (startZone == null) SaveSystem.Create(spec.Name);   // RT 7x: the save at creation (Yan) - a new character in a new world
             GameLog.Write($"You step into the Perimeter: a Rookie {spec.Loadout.ToLowerInvariant()} with {player.Ru} Ru. P shows your character, W the state of the Zone.");
         }
 

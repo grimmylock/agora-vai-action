@@ -36,6 +36,8 @@ namespace GameCore
         public static Player Current;
 
         public string Name => "Player";
+        /// <summary>RT 7x: the name the player gave the character at creation (saved in its character file).</summary>
+        public string CharacterName = "Scavenger";
         public string Faction => "Player";
 
         public int X { get; set; } = 2;

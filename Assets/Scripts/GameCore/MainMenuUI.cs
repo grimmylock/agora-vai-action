@@ -9,6 +9,7 @@
 // the left over the live village (TacticalGridView backdrop, MenuBackdrop); the place, the day, the clock and the weather
 // sit in the bottom corner and tick along with it. The HUD's fonts and colours.
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -22,7 +23,9 @@ namespace GameCore
 
         private GameObject _panel;
         private GameObject _optionsPanel;
-        private Button _loadButton;
+        private Button _loadButton, _continueButton;
+        private GameObject _slotsPanel;
+        private string _confirmDelete;
         private TextMeshProUGUI _clock;
         private readonly List<(RectTransform r, TextMeshProUGUI t, Button b)> _items = new List<(RectTransform, TextMeshProUGUI, Button)>();
 
@@ -41,7 +44,10 @@ namespace GameCore
             _panel.SetActive(true);
             _panel.transform.SetAsLastSibling();
             if (_optionsPanel != null) _optionsPanel.SetActive(false);
-            if (_loadButton != null) _loadButton.interactable = SaveSystem.HasSave();
+            CloseSlots();
+            bool any = SaveSystem.HasSave();
+            if (_loadButton != null) _loadButton.interactable = any;
+            if (_continueButton != null) _continueButton.interactable = any;
         }
 
         private GameObject _log;   // the game log: hidden while the menu is up (it was under the old opaque menu)
@@ -95,10 +101,11 @@ namespace GameCore
             UIBuildUtil.CreatePanel(col.transform, "Rule", new Vector2(0.1f, 0.685f), new Vector2(0.62f, 0.688f), HudView.Yellow);
 
             Item(col.transform, 0, "New Game", OnNewGame);
-            _loadButton = Item(col.transform, 1, "Load Game", OnLoadGame);
-            Item(col.transform, 2, "Testing Ground", () => { Hide(); TestingGround.Start(); });
-            Item(col.transform, 3, "Options", ToggleOptions);
-            Item(col.transform, 4, "Quit", OnQuit);
+            _continueButton = Item(col.transform, 1, "Continue", () => { if (SaveSystem.Load(SaveSystem.Slots().FirstOrDefault()?.CharacterId)) Hide(); });
+            _loadButton = Item(col.transform, 2, "Load Game", OnLoadGame);
+            Item(col.transform, 3, "Testing Ground", () => { Hide(); TestingGround.Start(); });
+            Item(col.transform, 4, "Options", ToggleOptions);
+            Item(col.transform, 5, "Quit", OnQuit);
 
             // where you are and when: the menu's own clock (MenuBackdrop) ticking along
             Text(col.transform, "Place", new Vector2(0.1f, 0.09f), new Vector2(0.95f, 0.125f), "BONFIRE VILLAGE", true, 16, HudView.Cream);
@@ -140,7 +147,43 @@ namespace GameCore
             }
         }
 
-        private void ToggleOptions() => _optionsPanel.SetActive(!_optionsPanel.activeSelf);
+        private void ToggleOptions() { CloseSlots(); _optionsPanel.SetActive(!_optionsPanel.activeSelf); }
+
+        private void CloseSlots() { if (_slotsPanel != null) Destroy(_slotsPanel); _slotsPanel = null; }
+
+        /// <summary>RT 7x: the save slots - one per character, the last played first: load or delete (a second click confirms).
+        /// ponytail: shows the newest 9; a scroll list when someone has more.</summary>
+        private void ShowSlots()
+        {
+            CloseSlots();
+            if (_optionsPanel != null) _optionsPanel.SetActive(false);
+            _slotsPanel = UIBuildUtil.CreatePanel(_panel.transform, "SlotsPanel", new Vector2(0.34f, 0.1f), new Vector2(0.9f, 0.9f), HudView.Edge);
+            var fill = UIBuildUtil.CreatePanel(_slotsPanel.transform, "Fill", Vector2.zero, Vector2.one, new Color(0.06f, 0.065f, 0.07f, 0.96f));
+            var fr = fill.GetComponent<RectTransform>(); fr.offsetMin = new Vector2(2, 2); fr.offsetMax = new Vector2(-2, -2);
+            Text(fill.transform, "SlotsTitle", new Vector2(0.04f, 0.9f), new Vector2(0.96f, 0.97f), "CHARACTERS", true, 22, HudView.Yellow);
+            var slots = SaveSystem.Slots();
+            for (int i = 0; i < slots.Count && i < 9; i++)
+            {
+                var s = slots[i];
+                float y1 = 0.88f - i * 0.083f, y0 = y1 - 0.07f;
+                string when = System.DateTime.TryParse(s.SavedAtUtc, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt) ? dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "";
+                Text(fill.transform, "Slot", new Vector2(0.04f, y0), new Vector2(0.7f, y1),
+                    $"<b>{s.Name}</b>  <color=#9a9f94>{s.Rank} - day {s.Day}, {s.Place} - {when}</color>", false, 16, HudView.Cream, TextAlignmentOptions.MidlineLeft);
+                var load = UIBuildUtil.CreateButton(fill.transform, "Load", new Vector2(0.71f, y0 + 0.008f), new Vector2(0.84f, y1 - 0.008f), "Load", () => { if (SaveSystem.Load(s.CharacterId)) { CloseSlots(); Hide(); } });
+                load.GetComponent<Image>().color = HudView.Lip;
+                bool sure = _confirmDelete == s.CharacterId;
+                var del = UIBuildUtil.CreateButton(fill.transform, "Delete", new Vector2(0.85f, y0 + 0.008f), new Vector2(0.97f, y1 - 0.008f), sure ? "Sure?" : "Delete", () =>
+                {
+                    if (_confirmDelete == s.CharacterId) { SaveSystem.Delete(s.CharacterId); _confirmDelete = null; }
+                    else _confirmDelete = s.CharacterId;
+                    ShowInternal(); ShowSlots();
+                });
+                del.GetComponent<Image>().color = sure ? new Color(0.5f, 0.12f, 0.1f, 1f) : new Color(0.2f, 0.2f, 0.2f, 1f);
+            }
+            if (slots.Count == 0) Text(fill.transform, "None", new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.85f), "No characters yet.", false, 16, HudView.Dim);
+            var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.1f), "Back", () => { _confirmDelete = null; CloseSlots(); });
+            back.GetComponent<Image>().color = HudView.Lip;
+        }
 
         private void OnNewGame()
         {
@@ -148,10 +191,7 @@ namespace GameCore
             CharacterUI.ShowCreation();
         }
 
-        private void OnLoadGame()
-        {
-            if (SaveSystem.Load()) Hide(); // SaveSystem.Load already logs the failure reason on false
-        }
+        private void OnLoadGame() { if (_slotsPanel != null) CloseSlots(); else ShowSlots(); }
 
         private void OnQuit()
         {
