@@ -147,6 +147,11 @@ Hireable Wanderer kept as an AI partner for solo play: follow, hold here, attack
   `Rt.Remote`); `Player.All` / `Player.Join`; rounds and melee can hit any player; each enemy fights the nearest player
   (`Rt.TargetOf`); every player gets the round's upkeep; fair shots use each player's own sight. **Rule from now on: new code
   works for several players, or the batch says why not.**
+- **Networking test (RT 7y, 2026-10-21):** Netcode for GameObjects 2.13.3 + Multiplayer Services 2.3.3 (a session with a join
+  code over the relay) + Multiplayer Play Mode 2.0.2. Main menu > Co-op: Host (your last character) or Join (type the code). The
+  host runs everything; a client sends its Input every frame and gets a snapshot 20 times a second. **Players only so far**:
+  enemies, shots, items, quests, characters travelling with their owner, the exit vote and saving the friends' characters come next.
+- **Saves (RT 7x):** a character file and a world file per slot, New Game names the character and saves at once.
 - Still one-player (to do with the network layer): bullet time is one time scale for everyone (step 4: per fight); spotting
   memory (`Contact`) is shared; morale/radio and reputation read the host; the HUD, vision and camera are the local player's;
   a joined player's exit is ignored until the "everyone at the exit" vote; game over is the host's death; friendly fire is on

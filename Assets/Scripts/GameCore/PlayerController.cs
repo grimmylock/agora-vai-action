@@ -296,9 +296,12 @@ namespace GameCore
             if (k == null && !panel) return;
             if (HudView.TargetingOpen) HudView.CloseTargeting();
             if (!panel && k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
-            if (Rt.Paused) return;
-            if (player.IsAlive()) Rt.PlayerTick(player, panel ? default : Rt.Read(k, m));   // co-op: the local player's devices become one Input packet
-            foreach (var j in Player.All) if (j != player && j.IsAlive()) Rt.PlayerTick(j, Rt.Remote.TryGetValue(j, out var ji) ? ji : default);   // joined players, on their last packet
+            if (Rt.Paused && !Net.Client) return;                   // ponytail: ESC still pauses a host's whole world (Yan's rule: no pausing in co-op - with the menu work)
+            var mine = panel || k == null ? default : Rt.Read(k, m);
+            Net.Tick(Time.unscaledTime, mine);                       // RT 7y: a client sends this; a host sends snapshots
+            if (Net.Client) return;                                  // the host's world is the only one: no tick here, the snapshot places you
+            if (player.IsAlive()) Rt.PlayerTick(player, mine);       // co-op: the local player's devices become one Input packet
+            foreach (var j in Player.All) if (j != player && j.IsAlive()) Rt.PlayerTick(j, Net.TakeInput(j));   // joined players, on their last packet (presses spent once)
             TickClock(player);
             Rt.WorldTick(player);
             if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }   // dead: the world still runs above while a friend lives

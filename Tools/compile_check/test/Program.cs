@@ -31,6 +31,7 @@ static class Program {
     RtChecks();
     TestingGroundChecks();
     SaveSlotChecks();
+    NetChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -812,6 +813,51 @@ static class Program {
     var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
     sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
     System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
+  }
+
+  // RT 7y: the networking test's game side through a fake link - the input packet survives the wire, a joining friend gets a body
+  // the host drives from their packets (a press is used once), the snapshot carries everyone, and a client puts players where it says
+  class FakeLink : INetLink {
+    public ulong Id; public int ToHost, ToClients; public byte[] Last;
+    public void Host(Action<string> onCode, Action<string> onError) => onCode("ABC123");
+    public void Join(string code, Action onJoined, Action<string> onError) => onJoined();
+    public void Stop() {}
+    public ulong LocalId => Id;
+    public void SendToHost(byte[] d) { ToHost++; Last = d; }
+    public void SendToClients(byte[] d) { ToClients++; Last = d; }
+  }
+  static void NetChecks() {
+    var link = new FakeLink(); Net.Link = link;
+    try {
+      var sent = new Rt.Input { X = 1f, Y = -0.5f, Sprint = true, FireDown = true, Mouse = (12.5f, 7.25f) };
+      var got = Net.DecodeInput(Net.EncodeInput(sent));
+      Check(got.X == 1f && got.Y == -0.5f && got.Sprint && got.FireDown && !got.Jump && got.Mouse.HasValue && got.Mouse.Value.x == 12.5f, "RT 7y: an input packet survives the wire");
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+      Net.Host();
+      Check(Net.Mode == Net.Role.Host && Net.Code == "ABC123", "RT 7y: hosting gives a join code");
+      var q = Net.OnJoin(7);
+      Check(q != null && Player.All.Count == 2 && q.EquippedWeapon != null && Math.Abs(q.X - p.X) + Math.Abs(q.Y - p.Y) <= 3, "RT 7y: a friend joins next to the host, armed");
+      Net.OnInput(7, Net.EncodeInput(new Rt.Input { X = 1f, FireDown = true }));
+      Net.OnInput(7, Net.EncodeInput(new Rt.Input { X = 1f }));
+      var first = Net.TakeInput(q); var second = Net.TakeInput(q);
+      Check(first.FireDown && !second.FireDown && second.X == 1f, "RT 7y: a press between two host frames is used once, held keys stay");
+      int qx = q.X; UnityEngine.Time.deltaTime = 0.02f;
+      for (int i = 0; i < 50; i++) { Rt.PlayerTick(q, Net.TakeInput(q)); UnityEngine.Time.time += 0.02f; }
+      Check(q.X > qx, $"RT 7y: the friend's packets walk their body on the host ({qx} -> {q.X})");
+      Net.Tick(1000f, default); Net.Tick(1000.01f, default);
+      Check(link.ToClients == 1, "RT 7y: snapshots go out at their own rate, not every frame");
+      var snap = Net.EncodeSnapshot(); var s = Net.DecodeSnapshot(snap);
+      Check(s.Players.Count == 2 && s.Players.Any(e => e.Owner == 7 && e.X == q.X) && s.Players.Any(e => e.Owner == 0 && e.X == p.X) && s.Map == TerrainMap.ZoneId,
+        "RT 7y: the snapshot carries every player and the map");
+      int hostX = p.X, friendX = q.X;
+      Net.Reset(); Net.Link = link; link.Id = 7;
+      GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient();
+      Net.OnSnapshot(snap);
+      Check(Player.Current.X == friendX && Player.All.Count == 2 && Player.All.Any(o => o != Player.Current && o.X == hostX) && SaveSystem.CharacterId == null,
+        "RT 7y: a client stands where the host says and sees the host; it never saves");
+      Net.Tick(2000f, new Rt.Input { X = -1f });
+      Check(link.ToHost == 1 && Net.DecodeInput(link.Last).X == -1f, "RT 7y: a client sends its input every frame");
+    } finally { Net.Reset(); Net.Link = null; Rt.On = false; }
   }
 
   // RT 7x: save slots - a character file + a world file per New Game (saved at creation), load by slot, delete, the old single

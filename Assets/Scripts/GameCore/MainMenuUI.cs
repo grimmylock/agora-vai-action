@@ -70,7 +70,7 @@ namespace GameCore
 
         private Button Item(Transform parent, int row, string label, System.Action onClick)
         {
-            float y1 = 0.555f - row * 0.07f, y0 = y1 - 0.055f;
+            float y1 = 0.6f - row * 0.065f, y0 = y1 - 0.052f;
             var go = UIBuildUtil.CreatePanel(parent, label + "Button", new Vector2(0.1f, y0), new Vector2(0.92f, y1), new Color(0, 0, 0, 0));
             var b = go.AddComponent<Button>();
             b.targetGraphic = go.GetComponent<Image>();
@@ -103,9 +103,10 @@ namespace GameCore
             Item(col.transform, 0, "New Game", OnNewGame);
             _continueButton = Item(col.transform, 1, "Continue", () => { if (SaveSystem.Load(SaveSystem.Slots().FirstOrDefault()?.CharacterId)) Hide(); });
             _loadButton = Item(col.transform, 2, "Load Game", OnLoadGame);
-            Item(col.transform, 3, "Testing Ground", () => { Hide(); TestingGround.Start(); });
-            Item(col.transform, 4, "Options", ToggleOptions);
-            Item(col.transform, 5, "Quit", OnQuit);
+            Item(col.transform, 3, "Co-op", () => { CloseSlots(); if (_optionsPanel != null) _optionsPanel.SetActive(false); CoopUI.Open(_panel.transform, Hide); });
+            Item(col.transform, 4, "Testing Ground", () => { Hide(); TestingGround.Start(); });
+            Item(col.transform, 5, "Options", ToggleOptions);
+            Item(col.transform, 6, "Quit", OnQuit);
 
             // where you are and when: the menu's own clock (MenuBackdrop) ticking along
             Text(col.transform, "Place", new Vector2(0.1f, 0.09f), new Vector2(0.95f, 0.125f), "BONFIRE VILLAGE", true, 16, HudView.Cream);

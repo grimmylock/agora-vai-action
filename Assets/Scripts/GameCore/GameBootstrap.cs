@@ -92,6 +92,8 @@ namespace GameCore
             // New (Batch 11): New Game / Load Game / Options (controls) / Quit - see MainMenuUI.
             if (GetComponent<MainMenuUI>() == null)
                 gameObject.AddComponent<MainMenuUI>();
+            if (GetComponent<CoopUI>() == null)   // RT 7y: host / join (the networking test)
+                gameObject.AddComponent<CoopUI>();
 
             // New (Batch 11): show the main menu instead of auto-starting/auto-loading a game.
             // GameState.Mode defaults to GameMode.MainMenu (see GameState.cs), which already keeps
@@ -113,7 +115,7 @@ namespace GameCore
         /// death restart can call the exact same path instead of duplicating it. Doesn't touch
         /// GameServices or the MonoBehaviour components (TacticalGridView etc.) - those don't need
         /// recreating, they already read everything fresh from the statics reset here.</summary>
-        public static void StartNewGame(CharacterSpec spec = null, string startZone = null)
+        public static void StartNewGame(CharacterSpec spec = null, string startZone = null, bool save = true)
         {
             spec = spec ?? new CharacterSpec();
             SaveSystem.CharacterId = SaveSystem.WorldId = null;   // RT 7x: a new slot is made at the end (none for the Testing Ground)
@@ -170,7 +172,7 @@ namespace GameCore
             ZoneTravel.EnterZone(MacroState.Current.CurrentZoneId);
             SquadManager.SeedWorld();               // Batch 41: the rest of the Zone is populated from the start (after a map is loaded)
             player.CharacterName = SaveSystem.CleanName(spec.Name);
-            if (startZone == null) SaveSystem.Create(spec.Name);   // RT 7x: the save at creation (Yan) - a new character in a new world
+            if (startZone == null && save) SaveSystem.Create(spec.Name);   // RT 7x: the save at creation (Yan) - a new character in a new world
             GameLog.Write($"You step into the Perimeter: a Rookie {spec.Loadout.ToLowerInvariant()} with {player.Ru} Ru. P shows your character, W the state of the Zone.");
         }
 

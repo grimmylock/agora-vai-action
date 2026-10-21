@@ -3819,3 +3819,49 @@ Add multiple save-slots".
   - New `SaveSlotChecks`: a named slot at New Game, save/load by slot, a second character, delete with its world, the
     Testing Ground not saved, the old file moved over. ALL CHECKS PASSED.
 - **Not checked in Unity:** typing in the name box (a TMP_InputField built in code), the slot list's layout, Continue.
+
+## RT 7y - the networking test, first stage (2026-10-21)
+
+The agreed next step (ACTION_DESIGN "Co-op": "Host runs the world ... other players send inputs. Unity Netcode for GameObjects
++ Relay"; test with Multiplayer Play Mode).
+- **Packages** (`Packages/manifest.json`, versions picked for Unity 6000.5 and released 2+ weeks ago):
+  `com.unity.netcode.gameobjects` 2.13.3 (3.x needs Unity 6000.7), `com.unity.services.multiplayer` 2.3.3 (sessions with join
+  codes over the relay), `com.unity.multiplayer.playmode` 2.0.2 (several players in one editor). Unity installs them the next
+  time the project opens.
+- **`Net.cs`** (game side, checked by the harness):
+  - Roles Off / Host / Client.
+  - **Host:** a friend who connects gets a body beside the host with a starting pistol. Their Input packets go into
+    `Rt.Remote`, and PlayerController ticks them like the local player. A press (fire, jump, reload) is kept until one tick
+    uses it, so presses aren't lost between frames. Every client gets a snapshot 20 times a second.
+  - **Client:** sends its Input every frame and runs no world of its own (no clock, AI or squads; enemies cleared). Every
+    player, itself included, stands where the host's snapshot says. A client never saves.
+- **`Assets/Scripts/Net/NgoLink.cs`** (Unity side):
+  - Anonymous sign-in, with a separate profile per editor window so two windows count as two players.
+  - `MultiplayerService.CreateSessionAsync(... WithRelayNetwork())` to host, `JoinSessionByCodeAsync` to join.
+  - Two Netcode named messages: inputs (reliable) and snapshots (unreliable, to the clients only).
+  - It installs itself as `Net.Link` at startup.
+  - The harness skips the `Net/` folder (`runtest.sh`), so I checked every API call in it by hand against the source of the
+    exact package versions (NGO 2.13.3, Multiplayer 2.3.3, Authentication 3.7.0, Core 1.18.0).
+- **`CoopUI.cs`:** main menu > Co-op. Host loads your last character and gives a code; Join takes a code and starts a client.
+  A corner line while connected: HOST with the code, or CLIENT, plus the player count.
+- **Harness:** `NetChecks` with a fake link: the packet survives the wire; hosting gives a code; a friend joins armed next to
+  the host; a press is used once; their packets walk their body; snapshots go at their own rate and carry every player and
+  the map; a client stands where the snapshot says, sees the host and never saves; a client sends every frame.
+  ALL CHECKS PASSED.
+- **Not checked:** nothing here has run in Unity; the Unity side is untested. Yan's test:
+  1. Open the project; Unity installs the 3 packages. Red errors in the Console mean a package or API mismatch: send them over.
+  2. Link the project to Unity Cloud: Edit > Project Settings > Services, sign in, create or link a project. The session and
+     relay need it; the free tier covers testing.
+  3. Window > Multiplayer > Multiplayer Play Mode: turn on Player 2.
+  4. If there's no character yet: Play > New Game once (it saves at creation), then stop. There's no "back to menu" in game
+     yet. Press Play; in the main window go to Co-op > Host. It loads your last character, and the code shows in the corner
+     and the log.
+  5. In the Player 2 window: Co-op, type the code, Join.
+  6. Each should see the other walk. The client's own moves come back from the host, so they lag by the round trip.
+- **Known limits of this stage (players only):**
+  - Enemies, shots, effects, items, quests and the HUD aren't synced.
+  - The client gets a fresh character; characters don't travel yet.
+  - The friend's held gun doesn't turn to their aim on the client yet.
+  - ESC still pauses a host's world.
+  - No client-side prediction (the client's movement lags).
+  - No leaving or rejoining from the UI (quit Play to stop).

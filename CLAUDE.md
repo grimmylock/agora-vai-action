@@ -60,6 +60,8 @@ This file was rewritten on 2026-10-20 (after RT 7s).
 | Noise, radio, blood | `Noise.cs` (gunfire draws people; `Smell` draws mutant packs to a death when they like their odds), `TurnLoop.RadioForHelp` + `SquadManager.CallReinforcements` (the closest free squad answers) |
 | Cover | low cover blocks walking, Space vaults it (`Rt.TryVault`); NPCs climb slower |
 | Ranks | rank XP in `Player.Progression.cs` (milestones of the next rank pay its bar; jobs and kills pay a little; deaths cost XP, never a rank). Master 2500 / Legend 6000 XP |
+| Network (RT 7y, test stage) | `Net.cs` (host/client roles, the Input packet and snapshot wire format, a joined friend's body, the client placing players) + `CoopUI.cs` (main menu > Co-op: host / join by code, the corner line); `Assets/Scripts/Net/NgoLink.cs` = the Unity side (Multiplayer Services session with a join code over the relay, Netcode named messages), skipped by the harness. Players only so far |
+| Saves (RT 7x) | `SaveSystem.cs`: a character file + a world file per slot (`saves/characters`, `saves/worlds`), New Game names the character and saves at once, Continue / Load list, the old `savegame.json` migrates |
 | Dev range | `TestingGround.cs` + `TestingGroundUI.cs` (main menu "Testing Ground": armory crate, enemy spawner, target dummies, damage numbers) |
 | Mutant sprites | double-resolution `Sprites/Mutants/mutant_hd_*.png` (5 kinds) via `UnitSprites.HD`; the other 4 still use the old atlas |
 | HUD | `HudView*.cs` (stamina, Focus, using/reviving, barks, damage numbers on the range); AP/MP are hidden in real time |
@@ -101,7 +103,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
    cd Tools/compile_check
    bash runtest.sh ../../Assets/Scripts       # every check (test/Program.cs); must end with "ALL CHECKS PASSED"
    ```
-   It compiles all scripts except `Editor/` against `stubs.cs`, a fake UnityEngine (add a minimal stub when you use a Unity
+   It compiles all scripts except `Editor/` and `Net/` (Unity packages) against `stubs.cs`, a fake UnityEngine (add a minimal stub when you use a Unity
    API it lacks; C# 9). `RtChecks()`, `TestingGroundChecks()` and the co-op block test the real-time game with `Rt.On`;
    the rest are older turn-based checks that still guard shared code. Checks that roll dice depend on the order of random
    numbers: when an unrelated change shifts one, make the check sturdier (more samples, reset state), don't loosen it blindly.
