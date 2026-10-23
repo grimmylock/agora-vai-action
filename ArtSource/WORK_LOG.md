@@ -3929,3 +3929,39 @@ jumping, today he kinda just likes turns sideways and there's no sense of moment
   - how the held gun follows the turned body;
   - the ground shadow's sorting;
   - friends' markers.
+
+## RT 7z-c - Gunslinger in real time (dual pistols), and the Max Payne scene (2026-10-23)
+
+Yan: "make a scene where he is dual wielding pistols and shooting back at enemies while jumping, like max payne". Dual pistols
+only existed as the turn-based perk, so I offered to build it first; Yan: "do 1, build gunslinger for real then render it".
+- **Rules** (ACTION_DESIGN "Perks": "Gunslinger - Dual pistols, one per mouse button"):
+  - You need the perk (after Point-Blank Execution) and a sidearm in each hand (the inventory's "Off-hand" button, as before).
+  - The left button fires the right-hand gun; the right button fires the left-hand gun (`Rt.Input.Fire2Down`).
+  - Each gun has its own rate of fire, kick, magazine and jams (`Gunplay.OffAimOf`, `Rt.TickOffhand`).
+  - The right button no longer steadies your aim, but a dive still steadies both guns.
+  - Each gun spreads a quarter wider than alone (`Rt.GunslingerSpread` 1.25).
+  - R reloads the right-hand gun, then the left.
+- **Drawing:**
+  - The left-hand pistol sits in the other glove, 3 px "under" and 1 px behind the first, both aimed at the crosshair
+    (`HeldPoseMath.Offhand`, `HeldWeaponView._gun2`).
+  - Each gun has its own recoil and muzzle flash; effects pick the gun that fired (`HeldWeaponView.Use(weapon)`).
+  - Reloading the left gun has no animation yet (ponytail).
+- **Fixed on the way:** the hands and guns are children of the body, so a turned body (the dive, lying down) turned the guns
+  with it, and they pointed the wrong way. The aim is now taken in the body's turned frame (`HeldWeaponView.Show`, `bodyTurn`).
+- **Testing Ground:** a "2 pistols" button gives both perks and a PSh-18 in each hand (`TestingGround.GunslingerKit`).
+- **Co-op:** the second trigger travels in the Input packet (bit 512), and the host keeps a press until a tick uses it. Friends'
+  left-hand guns are drawn too, but the snapshot doesn't carry a friend's gear yet; characters don't travel yet (RT 7y).
+- **Harness:**
+  - `GunslingerChecks`: the kit; each button fires its own gun; the right button doesn't aim; both fire mid-dive; R reloads
+    both; the left gun's pose sits beside the right one at 5 aim angles.
+  - New stubs `Transform.localEulerAngles` and `Mathf.DeltaAngle`. ALL CHECKS PASSED.
+  - Seen once and not reproduced: "a keypad safe opens only with the code from its note" failed in one run and passed on the
+    next with the same code. A flaky check, to look at.
+- **The scene:**
+  - `dotnet /tmp/test.dll gunslingframes gs.json` runs a real fight frame by frame (the kit, two Rookie Raiders in Raider
+    Jackets with a VKS-74U and a PSh-18 fighting back on RtAi, a dive up the screen, both guns firing in turns).
+  - `python3 Tools/render/gunsling_scene.py` draws it the way the view builds it (body, gloves and guns as one group, squashed
+    and turned and lifted; ground shadows; tracers, muzzle flashes, blood) -> `maps/renders/gunslinger/`.
+  - Real outcome: 16 rounds, 4 hits, the first Raider down to 584 of 1000 HP; you got hit too. Raiders have 1000 HP, so a
+    PSh-18 needs ~8 body hits.
+- **Not checked in Unity:** the second gun's sorting under the body when seen from behind; the muzzle flash on the left gun.

@@ -116,6 +116,7 @@ namespace GameCore
             Btn(new Vector2(0.02f, 0.02f), new Vector2(0.1f, 0.08f), "<", () => _page = (_page + pages - 1) % pages);
             UIBuildUtil.CreateText(_body, "Page", new Vector2(0.1f, 0.02f), new Vector2(0.2f, 0.08f), $"{_page + 1} / {pages}", 15, HudView.Cream, TextAlignmentOptions.Center);
             Btn(new Vector2(0.2f, 0.02f), new Vector2(0.28f, 0.08f), ">", () => _page = (_page + 1) % pages);
+            Btn(new Vector2(0.29f, 0.02f), new Vector2(0.39f, 0.08f), "2 pistols", () => TestingGround.GunslingerKit(p));   // RT 7z-c
             Btn(new Vector2(0.4f, 0.02f), new Vector2(0.58f, 0.08f), "Refill ammo", () => TestingGround.RefillAmmo(p));
             Btn(new Vector2(0.6f, 0.02f), new Vector2(0.76f, 0.08f), "Heal", () => TestingGround.Heal(p));
             Btn(new Vector2(0.78f, 0.02f), new Vector2(0.98f, 0.08f), "Clear range", TestingGround.Clear);

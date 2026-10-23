@@ -149,7 +149,10 @@ namespace GameCore
         }
         static readonly Dictionary<ICombatant, Aim> Aims = new Dictionary<ICombatant, Aim>();
         public static Aim AimOf(ICombatant u) { if (!Aims.TryGetValue(u, out var a)) Aims[u] = a = new Aim(); return a; }
-        public static void Reset() => Aims.Clear();
+        public static void Reset() { Aims.Clear(); OffAims.Clear(); }
+        static readonly Dictionary<ICombatant, Aim> OffAims = new Dictionary<ICombatant, Aim>();
+        /// <summary>RT 7z-c: a Gunslinger's left-hand gun keeps its own steadiness, kick, fire rate and reload.</summary>
+        public static Aim OffAimOf(ICombatant u) { if (!OffAims.TryGetValue(u, out var a)) OffAims[u] = a = new Aim(); return a; }
 
         /// <summary>RT 7z (Yan: "weapon dispersion seems very high even for the starter pistol ... past a few 'me's' bullets
         /// already fly high or low"): the player's spread is halved. The degrees were set when one shot was a turn; in real time a

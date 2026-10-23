@@ -7,6 +7,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1]); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -36,6 +37,7 @@ static class Program {
     NetChecks();
     GunfeelChecks();
     DiveChecks();
+    GunslingerChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -817,6 +819,93 @@ static class Program {
     var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
     sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
     System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
+  }
+
+  // RT 7z-c (Yan: "make a scene where he is dual wielding pistols and shooting back at enemies while jumping, like max payne"):
+  // a real fight run frame by frame - the Gunslinger kit, two Raiders who fight back with RtAi, a dive with both guns firing in
+  // turns at whoever is still up - dumped for Tools/render/gunsling_scene.py: bodies, poses, both guns' frames, every round
+  static void GunslingFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 11000f;
+    for (int y = py - 7; y <= py + 5; y++) for (int x = px - 4; x <= px + 13; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    Rt.SetOffset(p, 0f, 0f); TestingGround.GunslingerKit(p); p.HealPermanent(100000); Rt.Of(p).Focus = 100f;
+    var foes = new List<HumanEnemy> {
+      new HumanEnemy("Raider", px + 8, py - 2, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true },
+      new HumanEnemy("Raider", px + 9, py + 1, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } };
+    EncounterState.Enemies.Clear(); foreach (var f in foes) { EncounterState.Enemies.Add(f); Rt.SetOffset(f, 0f, 0f); }
+    EncounterState.InCombat = true; Contact.Spot(p);
+    string Hex(string[] arr, string name) { int i = Array.IndexOf(SpriteAtlasIndex.Armor, name ?? ""); return i >= 0 ? arr[i] : "#3d4148"; }
+    string Who(ICombatant u, Weapon w) => u == p ? (w == p.OffhandWeapon ? "L" : "R") : "e" + foes.IndexOf(u as HumanEnemy);
+    var g = WeaponArt.GripOf("sidearm", "PSh18Pchela"); var feel = WeaponFeel.For(p.EquippedWeapon.Db);
+    var last = new Dictionary<string, float> { ["R"] = -99f, ["L"] = -99f, ["e0"] = -99f, ["e1"] = -99f };
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string F(float v) => v.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)}]";
+    var sb = new System.Text.StringBuilder();
+    sb.Append("{\"player\":{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, p.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, p.EquippedArmor?.Name) + "\",\"g\":[" + string.Join(",", g.Select(F)) + "]},\"enemies\":[");
+    for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (cat, key) = WeaponArt.Identify(e.EquippedWeapon.Db);
+      sb.Append((i > 0 ? "," : "") + "{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, e.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, e.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, e.EquippedArmor?.Name) + "\",\"gun\":\"" + key + "\",\"cat\":\"" + cat + "\",\"g\":[" + string.Join(",", WeaponArt.GripOf(cat, key).Select(F)) + "]}"); }
+    sb.Append("],\"origin\":[" + px + "," + py + "],\"frames\":[");
+    float dt = 1f / 60f; int shot = 0; float nextShot = 0.3f;
+    for (int k = 0; k * dt < 2.2f; k++) {
+      float t = k * dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = Rt.SlowMo ? dt / Rt.SlowScale : dt;   // bullet time: the aim steadies on real seconds
+      var target = foes.FirstOrDefault(f => f.IsAlive()) ?? foes[0];
+      var (tx, ty) = Ballistics.Pos(target);
+      var input = new Rt.Input { Mouse = (tx, ty) };
+      if (k == 15) { input.Y = -1f; input.Jump = true; }                                     // the dive, up the screen, at 0.25 s
+      if (t >= nextShot && foes.Any(f => f.IsAlive())) { if (shot % 2 == 0) input.FireDown = true; else input.Fire2Down = true; shot++; nextShot = t + 0.11f; }
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); UnityEngine.Time.time += dt;
+      var shots = new List<string>();
+      foreach (var e in CombatFx.Pending.Where(e => e.Kind == "shot" && !e.Pellet && e.Actor != null)) {
+        string who = Who(e.Actor, e.Weapon); last[who] = t;
+        shots.Add($"[\"{who}\",{F(e.EndX)},{F(e.EndY)},{(e.Hit ? 1 : 0)}]"); }
+      CombatFx.Pending.Clear();
+      var pose = Rt.PoseOf(p); var (ppx, ppy) = Ballistics.Pos(p);
+      float world = UnityEngine.Mathf.Atan2(-(ty - ppy), tx - ppx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, world - pose.Tilt);
+      var fR = HeldPoseMath.Frame("sidearm", g, local, HeldPoseMath.Recoil(t - last["R"], feel.Recover), feel.Climb, feel.Kick, 99f, 1f, "", 1);
+      var fL = HeldPoseMath.Offhand(HeldPoseMath.Frame("sidearm", g, local, HeldPoseMath.Recoil(t - last["L"], feel.Recover), feel.Climb, feel.Kick, 99f, 1f, "", 1), local);
+      var en = new List<string>();
+      for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (ex, ey) = Ballistics.Pos(e); var (cat, key) = WeaponArt.Identify(e.EquippedWeapon.Db);
+        var ef = WeaponFeel.For(e.EquippedWeapon.Db); float ea = UnityEngine.Mathf.Atan2(-(ppy - ey), ppx - ex) * UnityEngine.Mathf.Rad2Deg;
+        var fe = HeldPoseMath.Frame(cat, WeaponArt.GripOf(cat, key), ea, HeldPoseMath.Recoil(t - last["e" + i], ef.Recover), ef.Climb, ef.Kick, 99f, 1f, "", 1);
+        en.Add($"[{F(ex)},{F(ey)},{(e.IsAlive() ? 1 : 0)},{e.Hp},{Fr(fe)}]"); }
+      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp}}}");
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString());
+    Console.WriteLine($"{shot} trigger pulls; raiders {string.Join(", ", foes.Select(f => f.IsAlive() ? f.Hp + " hp" : "dead"))}");
+    Rt.On = false; Rt.SetSlow(false);
+  }
+
+  // RT 7z-c (Yan: "do 1, build gunslinger for real"): a pistol in each hand - each mouse button fires its own gun, the right one no
+  // longer aims, both fire mid-dive, R reloads both; the left gun's pose sits beside the right one inside the sprite
+  static void GunslingerChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 9000f; UnityEngine.Time.deltaTime = 0.02f;
+    try {
+      TestingGround.GunslingerKit(p);
+      var main = p.EquippedWeapon; var off = p.OffhandWeapon;
+      Check(p.Gunslinging && off != null && off != main, "RT 7z-c: the Testing Ground's kit puts a pistol in each hand");
+      var at = (Ballistics.Pos(p).x + 6f, Ballistics.Pos(p).y);
+      int m0 = main.CurrentMagazine, o0 = off.CurrentMagazine;
+      Rt.PlayerTick(p, new Rt.Input { Aim = true, Fire2Down = true, Mouse = at });
+      Check(off.CurrentMagazine == o0 - 1 && main.CurrentMagazine == m0 && !Rt.Of(p).Aiming, "RT 7z-c: the right button fires the left-hand gun and doesn't aim");
+      Rt.PlayerTick(p, new Rt.Input { FireDown = true, Mouse = at });
+      Check(main.CurrentMagazine == m0 - 1 && off.CurrentMagazine == o0 - 1, "RT 7z-c: the left button fires the right-hand gun");
+      UnityEngine.Time.time += 1f;
+      Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { Y = -1f, Jump = true, Mouse = at });
+      UnityEngine.Time.time += 0.1f;
+      Rt.PlayerTick(p, new Rt.Input { FireDown = true, Fire2Down = true, Mouse = at });
+      Check(Rt.Of(p).Diving && main.CurrentMagazine == m0 - 2 && off.CurrentMagazine == o0 - 2, "RT 7z-c: both guns fire mid-dive");
+      for (int f = 0; f < 60; f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
+      Rt.PlayerTick(p, new Rt.Input { Reload = true, Mouse = at });
+      for (int f = 0; f < 400 && (main.CurrentMagazine < main.MagCapacity || off.CurrentMagazine < off.MagCapacity); f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
+      Check(main.CurrentMagazine == main.MagCapacity && off.CurrentMagazine == off.MagCapacity, $"RT 7z-c: R reloads both guns ({main.CurrentMagazine}/{main.MagCapacity}, {off.CurrentMagazine}/{off.MagCapacity})");
+      var g = WeaponArt.GripOf("sidearm", "PSh18Pchela");
+      foreach (var ang in new[] { 0f, 45f, 135f, 180f, -90f }) {
+        var f1 = HeldPoseMath.Frame("sidearm", g, ang, 0f, 0f, 0f, 99f, 1f, "", 1); var f2 = HeldPoseMath.Offhand(f1, ang);
+        Check((f1.GripX != f2.GripX || f1.GripY != f2.GripY) && f2.GripX >= 0f && f2.GripX <= 16f && f2.GripY <= HeldPoseMath.WaistTopRow + 2.5f && !f2.HasSupport,
+          $"RT 7z-c: the left-hand gun sits beside the right one, aiming {ang} ({f1.GripX},{f1.GripY} / {f2.GripX},{f2.GripY})");
+      }
+    } finally { Rt.On = false; Rt.SetSlow(false); }
   }
 
   // RT 7z (Yan: "lowers himself to build momentum before jumping ... no sense of momentum or height"): the dive crouches, rises

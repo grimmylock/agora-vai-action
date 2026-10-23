@@ -247,7 +247,7 @@ namespace GameCore
         {
             float now = Time.time;
             var marker = e.Actor != null ? _markerOf(e.Actor) : null;
-            var held = marker != null && e.Kind != "strike" ? _heldOf(marker) : null;
+            var held = marker != null && e.Kind != "strike" ? _heldOf(marker)?.Use(e.Weapon) : null;   // RT 7z-c: which of two guns
             if (held != null && !held.Visible) held = null;
             Vector3 from = marker != null ? marker.transform.position : TacticalGridView.GridToWorld(e.FromX, e.FromY);
             var targetMarker = e.Target != null ? _markerOf(e.Target) : null;
@@ -319,6 +319,7 @@ namespace GameCore
 
         private void SubShot(FxEvent e, WeaponFeel feel, HeldWeaponView held, Vector3 from, Vector3 to, int i)
         {
+            held = held?.Use(e.Weapon);                                         // RT 7z-c: the pistols alternate between these delayed calls
             if (held != null && !held.Visible) held = null;
             Vector3 muzzle = held != null ? held.Muzzle() : from;
             bool last = i == e.Rounds - 1;

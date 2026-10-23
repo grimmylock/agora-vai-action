@@ -204,7 +204,7 @@ namespace GameCore
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
             PoseBody(_playerMarker, player, downNow);
             Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
-            Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker));
+            Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker), player.Gunslinging ? player.OffhandWeapon : null);
             DrawFriends();
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker
@@ -679,7 +679,7 @@ namespace GameCore
                 bool up = DrawUnit(p, m, new Color(0.3f, 0.85f, 1f));
                 bool down = Body.Down(p);
                 PoseBody(m, p, down);
-                Held(m).Show(p.EquippedWeapon, p.EquippedArmor, m.transform.position, AimPoint(p, m), up && !down, Away(m));
+                Held(m).Show(p.EquippedWeapon, p.EquippedArmor, m.transform.position, AimPoint(p, m), up && !down, Away(m), p.Gunslinging ? p.OffhandWeapon : null);
             }
             foreach (var gone in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(_friendMarkers.Keys, k => !Player.All.Contains(k))))
             {

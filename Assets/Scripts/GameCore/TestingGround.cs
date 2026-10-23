@@ -81,6 +81,18 @@ namespace GameCore
             GameLog.Write($"[TESTING GROUND] {(equip ? "Equipped" : "Took")} {d.Name}.");
         }
 
+        /// <summary>RT 7z-c: try two pistols - Point-Blank Execution and Gunslinger, a PSh-18 in each hand, full magazines.</summary>
+        public static void GunslingerKit(Player p)
+        {
+            p.TakePerk("PointBlankExecution"); p.TakePerk("Gunslinger");
+            var d = ShopDatabase.Items.First(i => i.Type == "weapon" && i.Category == "sidearm" && i.Key == "PSh18Pchela");
+            if (CombatRules.Category(p.EquippedWeapon?.Db) != "sidearm") Take(p, d, true);
+            p.AddItem(ItemOf(d));
+            p.EquipOffhandFromInventory(d.Id);
+            RefillAmmo(p);
+            GameLog.Write("[TESTING GROUND] Two pistols: left button fires the right-hand gun, right button the left. R reloads both.");
+        }
+
         /// <summary>300 rounds of every ammo kind for every gun you carry, and full magazines.</summary>
         public static void RefillAmmo(Player p)
         {
@@ -88,7 +100,7 @@ namespace GameCore
                 .Select(i => WeaponDatabase.Categories.TryGetValue(i.Category ?? "", out var cat) && cat.TryGetValue(i.Key ?? "", out var d) ? d : null)
                 .Concat(new[] { p.EquippedWeapon?.Db, p.SecondaryWeapon?.Db }).Where(d => d != null && d.Range != "Adjacent").Distinct();
             foreach (var d in guns) foreach (var k in Kinds) Ammo.Add(p.Inventory, Ammo.Key(d, k), 300 - Ammo.Get(p.Inventory, Ammo.Key(d, k)));
-            foreach (var w in new[] { p.EquippedWeapon, p.SecondaryWeapon }) if (w != null && !CombatRules.IsMelee(w)) { w.CurrentMagazine = w.MagCapacity; w.IsJammed = false; }
+            foreach (var w in new[] { p.EquippedWeapon, p.SecondaryWeapon, p.OffhandWeapon }) if (w != null && !CombatRules.IsMelee(w)) { w.CurrentMagazine = w.MagCapacity; w.IsJammed = false; }
             GameLog.Write("[TESTING GROUND] Ammo topped up.");
         }
 

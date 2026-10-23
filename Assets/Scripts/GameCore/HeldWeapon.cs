@@ -70,6 +70,20 @@ namespace GameCore
             return p;
         }
 
+        /// <summary>RT 7z-c (Gunslinger): the left-hand pistol's frame - the same pose as a right-hand one (its own recoil already in
+        /// f), moved 3 px "under the gun" and 1 px back so the two guns sit side by side; the left glove holds it, nobody cups.</summary>
+        public static HeldFrame Offhand(HeldFrame f, float angleDeg)
+        {
+            float a = angleDeg * Mathf.Deg2Rad, c = Mathf.Cos(a), s = Mathf.Sin(a);
+            float bx = s, by = c;                                            // under the gun, screen pixels (y down)
+            if (f.Left) { bx = -bx; by = -by; }
+            float ox = Mathf.Round(3f * bx - c), oy = Mathf.Round(3f * by + s);
+            float y = Mathf.Min(f.GripY + oy, WaistTopRow + 2.5f);           // never under the belt
+            f.GunX += ox; f.GripX += ox; f.GunY += y - f.GripY; f.GripY = y;
+            f.HasSupport = false;
+            return f;
+        }
+
         // ---- Batch 22: combat animation curves (all plain floats, see the Batch 22 checks) ----
 
         /// <summary>Recoil left after `since` seconds: 1 at the shot, easing to 0 at `recover`.</summary>
@@ -526,46 +540,64 @@ namespace GameCore
             _grip = Child(body, "GripHand", 3);
             _mag = Child(body, "Magazine", 1);
             _barrels = Child(body, "Barrels", 2);
+            _gun2 = Child(body, "OffhandWeapon", 2);
         }
 
+        // RT 7z-c (Gunslinger): the left-hand pistol - its own sprite, recoil and muzzle. Effects pick a gun with Use(weapon).
+        private readonly SpriteRenderer _gun2;
+        private Weapon _w2;
+        private float[] _g2;
+        private float _shotAt2 = -99f, _kick2, _climb2, _recover2;
+        private bool _sel2;
+        /// <summary>Points Gun / Muzzle / Recoil at the gun that fired: the left-hand one when it's `w`, else the main one.</summary>
+        public HeldWeaponView Use(Weapon w) { _sel2 = w != null && w == _w2 && _gun2.gameObject.activeSelf; return this; }
+        SpriteRenderer Sel => _sel2 ? _gun2 : _gun;
+
         public bool Visible => _gun.gameObject.activeSelf;
-        public Transform Gun => _gun.transform;
-        public bool AimLeft => _gun.flipY;
+        public Transform Gun => Sel.transform;
+        public bool AimLeft => Sel.flipY;
         public float Angle => _angle;
         public Sprite GunSprite => _gun.sprite;
 
         public void Recoil(WeaponFeel f, float scale)
         {
+            if (_sel2) { _shotAt2 = Time.time; _kick2 = f.Kick * scale; _climb2 = f.Climb * scale; _recover2 = Mathf.Max(0.05f, f.Recover); return; }
             _shotAt = Time.time; _kick = f.Kick * scale; _climb = f.Climb * scale; _recover = Mathf.Max(0.05f, f.Recover);
         }
-        public void Twitch() { _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; }   // jammed: click, nothing
+        public void Twitch()   // jammed: click, nothing
+        {
+            if (_sel2) { _shotAt2 = Time.time; _kick2 = 0.5f; _climb2 = -4f; _recover2 = 0.1f; return; }
+            _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f;
+        }
         public void Swing() => _swingAt = Time.time;
         /// <summary>RT 7c: the body's lean while swinging a melee weapon (degrees, for the unit's tilt): back on the wind-up, into the chop.</summary>
         public float Lean { get; private set; }
         /// <summary>RT 7e: the player's melee charge (Melee.ChargeOf) - drives the wind-up, the lift and the whip; null for others.</summary>
         public Melee.Charge MeleeCharge;
         /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
-        public void StartClear(float seconds) { _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
+        public void StartClear(float seconds) { if (_sel2) return; _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
         public void StartReload(WeaponFeel f, int capacity, float seconds = 0f, int rounds = 0)
         {
+            if (_sel2) return;                                                          // ponytail: the left gun reloads without its own animation
             _reloadAt = Time.time; _reloadTime = seconds > 0f ? seconds : f.ReloadTime; _reloadStyle = f.Reload;
             _reloadTrips = f.Reload == "tube" || f.Reload == "cylinder" ? (rounds > 0 ? rounds : Mathf.Clamp(capacity / 2, 2, 4)) : 1;
         }
         /// <summary>RT 6h: a round-by-round reload cut short - the gun comes back up.</summary>
-        public void StopReload() { _reloadTime = 0f; }
+        public void StopReload() { if (!_sel2) _reloadTime = 0f; }
         /// <summary>Point the gun at a world position until `until` (the shot's target, even if the
         /// player has already moved the mouse on).</summary>
         public void AimAt(Vector3 world, float until) { _aimOverride = world; _aimUntil = until; }
 
         /// <summary>World position of the muzzle (or blade tip) of the gun as last drawn.</summary>
-        public Vector3 Muzzle() => _gun.transform.TransformPoint(MuzzleLocal());
+        public Vector3 Muzzle() => Sel.transform.TransformPoint(MuzzleLocal());
 
         /// <summary>The muzzle in the gun's own space (the gun turns around its grip point).</summary>
         public Vector3 MuzzleLocal()
         {
-            if (_g == null) return Vector3.zero;
-            float side = _gun.flipY ? -1f : 1f;
-            return new Vector3((_g[4] - _g[0]) / WeaponArt.PixelsPerUnit, side * (_g[1] - _g[5]) / WeaponArt.PixelsPerUnit, 0f);
+            var g = _sel2 ? _g2 : _g;
+            if (g == null) return Vector3.zero;
+            float side = Sel.flipY ? -1f : 1f;
+            return new Vector3((g[4] - g[0]) / WeaponArt.PixelsPerUnit, side * (g[1] - g[5]) / WeaponArt.PixelsPerUnit, 0f);
         }
 
         private static SpriteRenderer Child(SpriteRenderer body, string name, int order)
@@ -580,9 +612,11 @@ namespace GameCore
         /// <summary>aimAt: world position the unit points its weapon at, or null to keep the last angle. back: the unit shows
         /// its back (UnitSprites.Away) - Batch 128 (Yan: "when they're with their back turned, the weapon is covered by the body
         /// and the hands change orientation"): gun and hands go under the body and the gloves flip, seen from the other side.</summary>
-        public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false)
+        public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
             bool on = visible && weapon?.Db != null;
+            _w2 = on ? offhand : null;
+            _gun2.gameObject.SetActive(_w2?.Db != null);
             _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false);
             if (!visible) return;
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
@@ -613,7 +647,11 @@ namespace GameCore
 
             // animation on top of the aim: recoil (back + muzzle climb), melee swing, reload tilt, clearing a jam
             var mc = cat == "melee" ? MeleeCharge : null;
-            var f = HeldPoseMath.Frame(cat, g, _angle, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, mc != null ? now - mc.SwungAt : now - _swingAt,
+            // RT 7z-c: the hands and guns are children of the body - when it's turned (a dive, lying down) the aim is taken in its
+            // turned frame, so the guns still point at the target instead of turning with the body
+            float bodyTurn = _gun.transform.parent != null ? _gun.transform.parent.localEulerAngles.z : 0f;
+            float local = Mathf.DeltaAngle(0f, _angle - bodyTurn);
+            var f = HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, mc != null ? now - mc.SwungAt : now - _swingAt,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
                 mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f);
@@ -666,6 +704,20 @@ namespace GameCore
             _grip.transform.localPosition = Local(f.GripX, f.GripY);
             _support.gameObject.SetActive(f.HasSupport);
             if (f.HasSupport) _support.transform.localPosition = Local(f.SupX, f.SupY);
+            if (_w2?.Db != null && cat != "melee")
+            {
+                // RT 7z-c: the left-hand pistol in the other glove, beside the first, with its own kick
+                var (cat2, key2) = WeaponArt.Identify(_w2.Db);
+                var (sprite2, g2) = WeaponArt.For(cat2, key2);
+                _g2 = g2;
+                var f2 = HeldPoseMath.Offhand(HeldPoseMath.Frame(cat2, g2, local, HeldPoseMath.Recoil(now - _shotAt2, _recover2), _climb2, _kick2, 99f, 1f, "", 1), local);
+                _gun2.sprite = sprite2; _gun2.flipY = f2.Left;
+                _gun2.sortingOrder = _base + (back ? -3 : 1);                           // behind the right-hand gun
+                _gun2.transform.localPosition = Local(f2.GunX, f2.GunY);
+                _gun2.transform.localRotation = Quaternion.Euler(0f, 0f, f2.GunDeg);
+                _support.gameObject.SetActive(true);
+                _support.transform.localPosition = Local(f2.GripX, f2.GripY);
+            }
         }
 
         // character pixel (16x16 sprite, y down) -> marker-local units (sprite spans -0.5..0.5)

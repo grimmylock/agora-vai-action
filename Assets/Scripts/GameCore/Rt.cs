@@ -74,6 +74,7 @@ namespace GameCore
             public string UsingId;
             public float Reviving;                                    // seconds E has been held over a downed friend
             public (float x, float y)? AimAt;                         // RT 7z: where this player's crosshair is (tile space) - friends' guns point there
+            public bool ReloadOffhand;                                // RT 7z-c: R was pressed while the right-hand gun reloaded: the left one is next
             public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
@@ -91,6 +92,7 @@ namespace GameCore
         {
             public float X, Y;                                        // move, -1..1 each (y down)
             public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload, Use;   // held / held / held / held / pressed / pressed / pressed / held (E)
+            public bool Fire2Down;                                    // RT 7z-c: right mouse pressed - a Gunslinger's left-hand gun
             public (float x, float y)? Mouse;                         // the crosshair, tile space
         }
         public static Input Read(Keyboard k, Mouse m) => new Input
@@ -99,6 +101,7 @@ namespace GameCore
             Y = (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0) - (k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0),
             Sneak = k.leftCtrlKey.isPressed, Sprint = k.leftShiftKey.isPressed, Jump = k.spaceKey.wasPressedThisFrame, Reload = k.rKey.wasPressedThisFrame, Use = k.eKey.isPressed,
             Aim = m != null && m.rightButton.isPressed, Fire = m != null && m.leftButton.isPressed, FireDown = m != null && m.leftButton.wasPressedThisFrame,
+            Fire2Down = m != null && m.rightButton.wasPressedThisFrame,
             Mouse = MouseTile(m),
         };
         static float _round;
@@ -242,7 +245,7 @@ namespace GameCore
             float ix = i.X, iy = i.Y;
             if (i.Mouse.HasValue) s.AimAt = i.Mouse;
             p.Sneaking = down || i.Sneak;
-            s.Aiming = !down && i.Aim;
+            s.Aiming = !down && i.Aim && !p.Gunslinging;              // RT 7z-c: with two pistols the right button is the left gun
             bool wantSprint = i.Sprint && !p.Sneaking && !s.Aiming && !Body.LegHurt(p) && s.UsingId == null && (ix != 0 || iy != 0);
             bool sprint = wantSprint && s.Stamina > 1f;
             if (sprint) { s.Stamina = Mathf.Max(0f, s.Stamina - SprintDrain * dt); s.StaminaRest = 0.8f; }
@@ -300,6 +303,7 @@ namespace GameCore
             if (trigger && aim.Loading > 0) StopLoading(p, w, aim);   // RT 6h: a tube or lever fires what's in; a revolver closes first
             if (trigger && s.UsingId != null) { s.UsingId = null; GameLog.Write("You stop to shoot."); }
             if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
+            if (p.Gunslinging) TickOffhand(p, i, s, mw, dt, aim);
 
             camera:
             // ---- camera looks toward the mouse; further when aiming, further still with a long gun ----
@@ -309,6 +313,36 @@ namespace GameCore
                 float reach = s.Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
                 s.Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
             }
+        }
+
+        // ---- RT 7z-c: Gunslinger (ACTION_DESIGN "Perks": "Dual pistols, one per mouse button"; Yan: "do 1, build gunslinger for real").
+        //      With the perk and a pistol in each hand: left button = the right-hand gun, right button = the left-hand gun, each on
+        //      its own rate of fire, kick, magazine and jams. No steadied aim (the right button is a trigger now), but a dive steadies
+        //      both; each gun spreads a quarter wider than alone. R reloads the right-hand gun, then the left. ----
+        public const float GunslingerSpread = 1.25f;
+
+        static void TickOffhand(Player p, Input i, State s, (float x, float y)? mw, float dt, Gunplay.Aim mainAim)
+        {
+            var off = p.OffhandWeapon;
+            var aim2 = Gunplay.OffAimOf(p);
+            var hd2 = Gunplay.For(off);
+            Gunplay.Tick(hd2, aim2, s.Diving, s.Moving, SlowMo ? Time.unscaledDeltaTime : dt);
+            if (aim2.ReloadUntil >= 0f && Time.time >= aim2.ReloadUntil)
+            {
+                aim2.ReloadUntil = -1f;
+                if (off.IsJammed) off.ClearJam(); else off.Reload();
+                CombatFx.Reload(p, off, -1f);
+            }
+            bool wants = i.Reload || s.ReloadOffhand;
+            if (wants && mainAim.ReloadUntil < 0f && aim2.ReloadUntil < 0f && (off.IsJammed || off.CurrentMagazine < off.MagCapacity))
+            {
+                float t = off.IsJammed ? 0.8f : Gunplay.ReloadSeconds(off) * (CombatantUtil.HasPerk(p, "QuickHands") ? 0.6f : 1f) * (Body.ArmsHurt(p) > 0 ? 1.5f : 1f);
+                aim2.ReloadUntil = Time.time + t; s.ReloadOffhand = false;
+                CombatFx.Reload(p, off, t, off.IsJammed, off.MagCapacity - off.CurrentMagazine);
+                GameLog.Write(off.IsJammed ? "Clearing the left gun..." : "Reloading the left gun...");
+            }
+            else if (i.Reload && mainAim.ReloadUntil >= 0f) s.ReloadOffhand = true;   // after the right-hand gun
+            if (i.Fire2Down && mw.HasValue && aim2.ReloadUntil < 0f && Time.time >= aim2.NextShot) PlayerFire(p, off, hd2, aim2, mw.Value);
         }
 
         /// <summary>R: clear the jam, swap the magazine, or (RT 6h) start loading round by round.</summary>
@@ -374,6 +408,7 @@ namespace GameCore
             float spread = Gunplay.Spread(hd, aim, Of(p).Moving, p.Sneaking);
             spread += 2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f);   // RT batch 2: broken arms sway, a concussion blurs
             if (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil) spread += 2f;   // RT batch 4: their near misses pin you
+            if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
             aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
