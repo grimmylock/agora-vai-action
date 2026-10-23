@@ -4045,3 +4045,31 @@ players*, to the enemies it does".
   `gunsling_scene.py` takes `VIEW=x0,y0,w,h`. Renders `maps/renders/gunslinger/gunslinger_side_rk12.gif` / `_strip.png`.
   Result: 3 of the first 3 rounds hit (1000 -> 186), then the RK-12's kick bloom plus being pinned by his near misses
   scatter the rest; 10 rounds gone by 0.95 s (5-round cylinders), he lives on 136. All three of his shots missed (the dive).
+
+## RT 8 (2026-10-23): real bullets for everyone, no pinning mid-dive, slower revolvers
+
+Yan, on the RK-12 scene: "10 rounds fired in 1 second from the strongest sidearm in the game and a rookie raider didn't die? D:
+is that right?" - it was what the code said: 150 rpm per RK-12, two guns taking turns = 5 rounds a second, ~2 real s for both
+cylinders. A Rookie Raider has 1000 HP (x10 in real time, `HumanEnemy.cs:86`); an RK-12 torso hit does ~313, so 4 hits kill.
+3 hit, then the kick (7.5 deg a shot) plus being pinned by his near misses scattered the rest.
+Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too" / "No pinning mid dive but those numbers might
+need adjusting, the revolvers are almost full auto if they work like that".
+- **Rounds fly** (`Gunplay.Round`, `Gunplay.Flying`, `Gunplay.Fly` from `Rt.WorldTick`): `Shoot` launches them; each frame a round
+  traces its frame's stretch (`Ballistics.Trace`) and lands on the first body/wall/cover; damage, wounds and near-miss pins happen
+  on landing (`Land`). Height drifts with the up/down scatter. Bullet time slows them with everything else (game time).
+- **Velocity stat** (`Handling.Speed`, tiles/s): a class column (pistol 40, SMG 45, rifle 80, sniper 100, shotgun 40, MG 85) and
+  per-gun overrides (`Gunplay.Velocity`: magnums ~50, subsonic Tishina/Shepot 32, AM-50 110, rail 250). Real muzzle speeds scaled
+  ~1:5 so rounds are visible and dodgeable.
+- **Enemies lead** (`Gunplay.Lead`: position + smoothed velocity x flight time), fully, so real bullets don't make them worse
+  shots (rule 6); turning or diving after they fire makes them miss.
+- **No pinning mid-dive:** a near miss while diving still gives Focus but doesn't pin, and an old pin adds no spread mid-dive.
+- **Revolvers slower** (rpm): Halden Service Revolver 220 -> 120, Rinaldi R6 240 -> 130, RK-12 150 -> 75. The Steppe Eagle
+  (semi magnum, 200) is unchanged - not a revolver.
+- View: the trigger pull is a "shot" FxEvent with `Flying` (flash, sound, kick, no tracer); each round in the air is a streak
+  (`CombatFxView.TickRounds`); landing is a `Landed` event (blood / chips only).
+- Checks: `RoundChecks` (in the air, speed, lands, rifle faster than pistol, stepping aside dodges, enemies lead, no pin mid-dive).
+  Probes that read a hit straight after `Shoot` now call `Gunplay.LandAll()`.
+- Scene: `maps/renders/gunslinger/gunslinger_side_rk12.gif` / `_strip.png` redone: 3 RK-12 rounds visibly fly up to him, he
+  dies at 0.58 s (game time), his 3 rounds miss the dive.
+- Not done / not checked: co-op clients don't see rounds yet (the snapshot still carries players only); the old dive/duel scenes
+  weren't re-rendered; nothing checked in Unity (the streak sorting and height in particular).

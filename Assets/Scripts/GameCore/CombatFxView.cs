@@ -147,9 +147,33 @@ namespace GameCore
             foreach (var k in _melee.Keys.Where(k => !live.Contains(k)).ToList()) { if (_melee[k] != null) Object.Destroy(_melee[k].gameObject); _melee.Remove(k); }
         }
 
+        // RT 8: every round in the air is a short streak along its path, at the height it flies
+        private readonly Dictionary<Gunplay.Round, SpriteRenderer> _rounds = new Dictionary<Gunplay.Round, SpriteRenderer>();
+        private void TickRounds()
+        {
+            foreach (var r in Gunplay.Flying)
+            {
+                if (r.Wait > 0f) continue;
+                var feel = WeaponFeel.For(r.W?.Db);
+                if (!_rounds.TryGetValue(r, out var sr) || sr == null)
+                {
+                    var col = feel.Rail ? RailColor : TracerColor; col.a = Mathf.Max(0.6f, feel.Tracer);
+                    _rounds[r] = sr = NewSprite("Round", White(), col, _root, 8);
+                }
+                float len = Mathf.Clamp(r.Speed * 0.012f, 0.25f, 1.2f), back = Mathf.Min(len, r.Gone);   // never behind the muzzle
+                float y = -(r.Y + 0.44f) + (r.H + r.Up * r.Gone / Ballistics.BodyTiles) * Ballistics.BodyTiles;
+                sr.transform.position = new Vector3(r.X - r.Dx * back * 0.5f, y + r.Dy * back * 0.5f, 0f);
+                sr.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-r.Dy, r.Dx) * Mathf.Rad2Deg);
+                sr.transform.localScale = new Vector3(back, (feel.Rail ? 2f : 1f) / WeaponArt.PixelsPerUnit, 1f);
+                sr.sortingOrder = TacticalGridView.SortAt(-r.Y) + 20;
+            }
+            foreach (var k in _rounds.Keys.Where(k => !Gunplay.Flying.Contains(k)).ToList()) { if (_rounds[k] != null) Object.Destroy(_rounds[k].gameObject); _rounds.Remove(k); }
+        }
+
         public void Tick()
         {
             TickMelee();
+            TickRounds();
             float now = Time.time;
             foreach (var e in CombatFx.Pending)
             {
@@ -259,6 +283,13 @@ namespace GameCore
             switch (e.Kind)
             {
                 case "shot":
+                    if (e.Landed)                                // RT 8: a flying round came down - the impact only
+                    {
+                        float lx = to.x - from.x, ly = to.y - from.y, ll = Mathf.Max(0.01f, Mathf.Sqrt(lx * lx + ly * ly));
+                        if (e.CoverHit || e.Through) CoverImpact(e, lx / ll, ly / ll);
+                        if (e.Hit && e.Target != null) Wound(e, to, lx / ll, ly / ll, false);
+                        break;
+                    }
                     held?.AimAt(to, now + 0.35f + 0.07f * e.Rounds);
                     if (e.Jammed) { At(now + 0.03f, () => held?.Twitch()); Sfx.Play("dryfire", from); return; }
                     for (int i = 0; i < e.Rounds; i++)
@@ -335,6 +366,7 @@ namespace GameCore
                     else Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
                     if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
                 }
+                if (e.Flying) return;                                          // RT 8: the round itself is drawn while it flies (TickRounds)
                 Tracer(muzzle, to, feel);
                 float rx = to.x - muzzle.x, ry = to.y - muzzle.y, rl = Mathf.Max(0.01f, Mathf.Sqrt(rx * rx + ry * ry));
                 if (e.CoverHit || e.Through) CoverImpact(e, rx / rl, ry / rl);

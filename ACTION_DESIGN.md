@@ -28,7 +28,9 @@ Patience usually wins; aggression is possible but risky. Fights swing: hold an a
 - **Height comes from the crosshair:** over the head pixels = head height, chest = torso, legs = legs.
 - Weapon spread scatters the shot sideways (miss / the arm on that side) and in height (lower or higher part, or over the head).
 - Holding aim steadies spread over ~1 s. Moving widens it (walk a little, sprint a lot). Recoil kicks the crosshair after each shot.
-- Bullets have travel time: lead moving targets at range.
+- Bullets have travel time: lead moving targets at range. **Built (RT 8):** every round flies at its gun's speed
+  (`Gunplay.Round`/`Fly`, `Handling.Speed`); bullet time slows them; enemies lead you (`Gunplay.Lead`), so changing direction
+  after they fire (a dive) is a real dodge. Near misses pin, but not mid-dive (Yan, 2026-10-23).
 - Cover blocks by height: low cover hides legs and torso (the head shows when leaning out); walls hide everything.
   Crouching lowers every part. Materials as today: rounds go through wood/tin/brush/cloth, not concrete.
 - Enemies aim the same way; their rank decides how well they hold head height.

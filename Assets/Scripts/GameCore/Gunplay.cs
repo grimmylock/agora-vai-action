@@ -14,7 +14,7 @@ namespace GameCore
 {
     public class Handling
     {
-        public float Steady, Hip, SteadyTime, Kick, Recover, Rpm, Reach, ReloadTime, Move = 1f, Choke;
+        public float Steady, Hip, SteadyTime, Kick, Recover, Rpm, Reach, ReloadTime, Move = 1f, Choke, Speed;
         public bool Auto;
         public int Pellets = 1;
     }
@@ -22,15 +22,16 @@ namespace GameCore
     public static class Gunplay
     {
         // class: steadied spread, hip spread (degrees), seconds to steady, kick, recovery deg/s, rounds/min, auto, reach (tiles), reload s,
-        // moving (x the spread walking or sprinting adds: RT 6d, SMGs and pistols shoot on the move, long guns don't)
+        // moving (x the spread walking or sprinting adds: RT 6d, SMGs and pistols shoot on the move, long guns don't),
+        // bullet speed in tiles a second (RT 8; Velocity below for the guns that differ from their class)
         static readonly Dictionary<string, float[]> Table = new Dictionary<string, float[]>
         {
-            ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 22f, 1.3f, 0.6f },
-            ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 24f, 1.7f, 0.5f },
-            ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f, 1f },
-            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 5f, 50f, 0f, 70f, 2.6f, 1.6f },
-            ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 14f, 2.4f, 0.8f },
-            ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f, 1.5f },
+            ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 22f, 1.3f, 0.6f, 40f },
+            ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 24f, 1.7f, 0.5f, 45f },
+            ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f, 1f, 80f },
+            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 5f, 50f, 0f, 70f, 2.6f, 1.6f, 100f },
+            ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 14f, 2.4f, 0.8f, 40f },
+            ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f, 1.5f, 85f },
         };
 
         // RT 6d: a shotgun's pellets leave as one shot (the aim spread moves the whole pattern) and spread round it by the choke, degrees
@@ -44,13 +45,13 @@ namespace GameCore
             ["PSh-18 Pchela"]           = (300, false, 1.4f, 1.4f, 0.40f, 2.2f),
             ["Walden P9"]               = (360, false, 1.2f, 1.1f, 0.40f, 2.2f),
             ["Halden .45 Service"]      = (300, false, 1.3f, 1.0f, 0.45f, 3.0f),
-            ["Halden Service Revolver"] = (220, false, 2.6f, 1.0f, 0.50f, 3.2f),
+            ["Halden Service Revolver"] = (120, false, 2.6f, 1.0f, 0.50f, 3.2f),
             ["SR-21 Gadyuka"]           = (340, false, 1.3f, 1.1f, 0.45f, 2.6f),
             ["Black Harrier"]           = (260, false, 1.5f, 0.9f, 0.50f, 4.4f),
             ["Corvan 5.7"]              = (380, false, 1.2f, 1.0f, 0.35f, 1.8f),
-            ["Rinaldi R6"]              = (240, false, 2.4f, 0.8f, 0.50f, 3.4f),
+            ["Rinaldi R6"]              = (130, false, 2.4f, 0.8f, 0.50f, 3.4f),
             ["Steppe Eagle"]            = (200, false, 1.6f, 0.9f, 0.60f, 6.0f),
-            ["RK-12 Kuvalda"]           = (150, false, 3.0f, 0.8f, 0.65f, 7.5f),
+            ["RK-12 Kuvalda"]           = (75,  false, 3.0f, 0.8f, 0.65f, 7.5f),
             // SMGs: fast, light kick, wide
             ["Vosa vz. 62"]             = (850, true, 1.5f, 2.2f, 0.30f, 1.1f),
             ["PPZ Zubr"]                = (680, true, 2.4f, 1.8f, 0.45f, 1.2f),
@@ -103,6 +104,16 @@ namespace GameCore
             ["PL-74P Polovets Zulu"]    = (650, true, 4.5f, 0.8f, 1.10f, 2.4f),
         };
 
+        // RT 8 (Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too"): tiles a second, game time (bullet
+        // time slows them with everything else). Real muzzle speeds scaled down ~1:5 so a round is something you can see and step
+        // out of: a pistol crosses 6 tiles in 0.15 s (0.5 s in bullet time), a rifle 30 tiles in 0.4 s. Subsonic guns are slow.
+        public static readonly Dictionary<string, float> Velocity = new Dictionary<string, float>
+        {
+            ["Corvan 5.7"] = 55f, ["Steppe Eagle"] = 50f, ["RK-12 Kuvalda"] = 50f, ["Black Harrier"] = 48f, ["Vosa vz. 62"] = 35f,
+            ["Corvan Gnat PDW"] = 60f, ["VKS-74U"] = 70f, ["TS-9 Tishina"] = 32f, ["VSN Shepot"] = 32f, ["Frontier Lever Rifle"] = 60f,
+            ["Nightwalker .45-70"] = 55f, ["VK-127 Grom"] = 105f, ["Halden AM-50 Sledge"] = 110f, ["G-7 Rail Prototype"] = 250f, ["Obrez-66"] = 35f,
+        };
+
         // RT 6h (Yan: "individual bullet reloading for revolvers and lever actions/ shotguns"): tube shotguns, levers, revolvers
         // and the bolt rifles without a box magazine load a round at a time; shooting stops a tube/lever/bolt reload with what's in,
         // a revolver finishes the round in hand and closes first. The per-gun reload time is a full load from empty.
@@ -128,9 +139,10 @@ namespace GameCore
         {
             string cat = CombatRules.Category(w?.Db);
             if (!Table.TryGetValue(cat, out var t)) t = Table["sidearm"];
-            var h = new Handling { Steady = t[0], Hip = t[1], SteadyTime = t[2], Kick = t[3], Recover = t[4], Rpm = t[5], Auto = t[6] > 0f, Reach = t[7], ReloadTime = t[8], Move = t[9] };
+            var h = new Handling { Steady = t[0], Hip = t[1], SteadyTime = t[2], Kick = t[3], Recover = t[4], Rpm = t[5], Auto = t[6] > 0f, Reach = t[7], ReloadTime = t[8], Move = t[9], Speed = t[10] };
             if (w?.Db != null)
             {
+                if (Velocity.TryGetValue(w.Db.Name, out var v)) h.Speed = v;
                 if (Guns.TryGetValue(w.Db.Name, out var g)) { h.Rpm = g.rpm; h.Auto = g.auto; h.ReloadTime = g.reload; h.Steady = g.steady; h.SteadyTime = g.steadyTime; h.Kick = g.kick; }
                 if (CombatRules.IsShotgun(w)) { h.Pellets = 6; h.Choke = Choke.TryGetValue(w.Db.Name, out var c) ? c : 1.5f; }
             }
@@ -149,7 +161,7 @@ namespace GameCore
         }
         static readonly Dictionary<ICombatant, Aim> Aims = new Dictionary<ICombatant, Aim>();
         public static Aim AimOf(ICombatant u) { if (!Aims.TryGetValue(u, out var a)) Aims[u] = a = new Aim(); return a; }
-        public static void Reset() { Aims.Clear(); OffAims.Clear(); }
+        public static void Reset() { Aims.Clear(); OffAims.Clear(); Flying.Clear(); Track.Clear(); }
         static readonly Dictionary<ICombatant, Aim> OffAims = new Dictionary<ICombatant, Aim>();
         /// <summary>RT 7z-c: a Gunslinger's left-hand gun keeps its own steadiness, kick, fire rate and reload.</summary>
         public static Aim OffAimOf(ICombatant u) { if (!OffAims.TryGetValue(u, out var a)) OffAims[u] = a = new Aim(); return a; }
@@ -213,11 +225,23 @@ namespace GameCore
             foreach (var e in EncounterState.Enemies) yield return e;
         }
 
-        /// <summary>One trigger pull: rounds leave the muzzle, scattered by `spread` degrees sideways and up/down, at aim
-        /// height h. Ammo, jams and the fire rate are the caller's (PlayerShoot / NpcShoot). Returns the rounds' hits.</summary>
-        public static List<Ballistics.Hit> Shoot(ICombatant shooter, Weapon w, float dx, float dy, float h, float spread, bool ambush, float delay = 0f)
+        /// <summary>RT 8: a round in the air. It flies `Speed` tiles a second (game time) and lands on the first body, wall or
+        /// blocking cover its path crosses (Ballistics.Trace a frame's length at a time); its height drifts with the up/down scatter.</summary>
+        public class Round
         {
-            var hits = new List<Ballistics.Hit>();
+            public ICombatant Shooter; public Weapon W; public string Map;
+            public float X, Y, Dx, Dy, H, Up, Gone, Range, Speed, Wait, X0, Y0, Through = 1f;
+            public int CoverX = -1, CoverY = -1, Pellets = 1;
+            public bool Ambush, First;
+            public Ballistics.Hit Hit;                         // set when it lands
+        }
+        public static readonly List<Round> Flying = new List<Round>();
+
+        /// <summary>One trigger pull: rounds leave the muzzle, scattered by `spread` degrees sideways and up/down, at aim
+        /// height h. Ammo, jams and the fire rate are the caller's (PlayerShoot / NpcShoot). RT 8: they fly (Fly), nothing lands yet.</summary>
+        public static List<Round> Shoot(ICombatant shooter, Weapon w, float dx, float dy, float h, float spread, bool ambush, float delay = 0f)
+        {
+            var rounds = new List<Round>();
             var hd = For(w);
             var (x0, y0) = Ballistics.Pos(shooter);
             float aimSide = Gauss() * spread, aimUp = Gauss() * spread;
@@ -225,32 +249,82 @@ namespace GameCore
             {
                 float side = (aimSide + Gauss() * hd.Choke) * 0.0174533f, up = (aimUp + Gauss() * hd.Choke) * 0.0174533f;
                 float c = (float)System.Math.Cos(side), s = (float)System.Math.Sin(side);
-                float rx = dx * c - dy * s, ry = dx * s + dy * c;
-                // up/down scatter lands as a height change at the range the round meets a body: approximated per trace
-                var probe = Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, h, Targets(shooter));
-                float hh = h + (float)System.Math.Tan(up) * probe.Dist / Ballistics.BodyTiles;
-                var hit = System.Math.Abs(hh - h) < 0.02f ? probe : Ballistics.Trace(shooter, x0, y0, rx, ry, hd.Reach, hh, Targets(shooter));
-                Resolve(shooter, w, hit, ambush, p == 0, delay, hd.Pellets);
-                hits.Add(hit);
-                if (p == 0 && !(shooter is Player))
-                    foreach (var pl in Player.All)                                                  // co-op: whoever it just missed
-                        if (hit.Unit != pl && NearMiss(x0, y0, hit.EndX, hit.EndY, pl))
-                        {
-                            Rt.AddFocus(pl, CombatantUtil.HasPerk(pl, "ColdBlood") ? 12f : 6f);    // RT batch 3: a round that just missed you
-                            Rt.Of(pl).PinnedUntil = UnityEngine.Time.time + 1.5f;                  // RT batch 4: and it pins you
-                        }
-                if (p == 0 && shooter is Player && Rt.On)                                          // RT batch 4: your near misses pin them
-                    foreach (var e in EncounterState.Enemies)
-                        if (e != hit.Unit && e.IsAlive() && NearMiss(x0, y0, hit.EndX, hit.EndY, e)) RtAi.Suppress(e);
+                var r = new Round { Shooter = shooter, W = w, Map = TerrainMap.ZoneId, X = x0, Y = y0, X0 = x0, Y0 = y0, Dx = dx * c - dy * s, Dy = dx * s + dy * c,
+                    H = h, Up = (float)System.Math.Tan(up), Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0 };
+                Flying.Add(r); rounds.Add(r);
             }
+            // the trigger pull itself: flash, sound, kick, casing (CombatFxView); the gun points along the shot
+            CombatFx.Add(new FxEvent { Kind = "shot", Actor = shooter, Weapon = w, Now = true, Delay = delay, Flying = true,
+                EndX = x0 + dx * 6f, EndY = y0 + dy * 6f, FromX = shooter.X, FromY = shooter.Y });
             if (!CombatRules.IsMelee(w)) Noise.Make(shooter.X, shooter.Y, w.Db != null && w.Db.InnateSuppressor ? Noise.Suppressed : Noise.Shot, shooter);
-            return hits;
+            return rounds;
+        }
+
+        /// <summary>RT 8: every round in the air moves one frame (Rt.WorldTick, the host's world). dt is game time.</summary>
+        public static void Fly(float dt)
+        {
+            if (dt <= 0f) return;
+            foreach (var u in Bodies())                       // how everyone is moving, for leading a shot (NpcLead)
+            {
+                var (x, y) = Ballistics.Pos(u);
+                Track[u] = Track.TryGetValue(u, out var t) ? (x, y, t.vx + ((x - t.x) / dt - t.vx) * 0.3f, t.vy + ((y - t.y) / dt - t.vy) * 0.3f) : (x, y, 0f, 0f);
+            }
+            for (int i = 0; i < Flying.Count; i++)
+            {
+                var r = Flying[i];
+                if (r.Map != TerrainMap.ZoneId) { Flying.RemoveAt(i--); continue; }   // the map changed under it
+                if (r.Wait > 0f) { r.Wait -= dt; continue; }
+                float step = System.Math.Min(r.Speed * dt, r.Range - r.Gone);
+                float h = r.H + r.Up * (r.Gone + step * 0.5f) / Ballistics.BodyTiles;
+                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, Targets(r.Shooter));
+                r.Through *= hit.Through;
+                if (hit.CoverX >= 0) { r.CoverX = hit.CoverX; r.CoverY = hit.CoverY; }
+                r.X = hit.EndX; r.Y = hit.EndY; r.Gone += hit.Dist;
+                if (hit.Unit == null && !hit.Wall && !hit.Cover && r.Gone < r.Range - 0.001f) continue;
+                hit.Through = r.Through; hit.CoverX = r.CoverX; hit.CoverY = r.CoverY; hit.Dist = r.Gone;
+                Flying.RemoveAt(i--);
+                Land(r, hit);
+            }
+        }
+
+        /// <summary>Test and probe helper: fly every round until it lands.</summary>
+        public static void LandAll() { for (int k = 0; k < 2000 && Flying.Count > 0; k++) Fly(0.02f); }
+
+        static void Land(Round r, Ballistics.Hit hit)
+        {
+            r.Hit = hit;
+            var shooter = r.Shooter;
+            Resolve(shooter, r.W, hit, r.Ambush, r.First, 0f, r.Pellets);
+            if (!r.First) return;
+            if (!(shooter is Player))
+                foreach (var pl in Player.All)                                                  // co-op: whoever it just missed
+                    if (hit.Unit != pl && NearMiss(r.X0, r.Y0, hit.EndX, hit.EndY, pl))
+                    {
+                        Rt.AddFocus(pl, CombatantUtil.HasPerk(pl, "ColdBlood") ? 12f : 6f);    // RT batch 3: a round that just missed you
+                        if (!Rt.Of(pl).Diving) Rt.Of(pl).PinnedUntil = UnityEngine.Time.time + 1.5f;   // RT batch 4: it pins you (RT 8, Yan: not mid-dive)
+                    }
+            if (shooter is Player && Rt.On)                                                    // RT batch 4: your near misses pin them
+                foreach (var e in EncounterState.Enemies)
+                    if (e != hit.Unit && e.IsAlive() && NearMiss(r.X0, r.Y0, hit.EndX, hit.EndY, e)) RtAi.Suppress(e);
+        }
+
+        static readonly Dictionary<ICombatant, (float x, float y, float vx, float vy)> Track = new Dictionary<ICombatant, (float, float, float, float)>();
+
+        /// <summary>RT 8: where to aim at a moving target so a round of this gun meets it - its position plus its velocity times
+        /// the flight time. NPCs lead their shots fully (Yan's rule 6: real bullets mustn't make them worse shots); a dive or a
+        /// sudden turn after the trigger is pulled is what makes them miss.</summary>
+        public static (float x, float y) Lead(ICombatant shooter, Weapon w, ICombatant target)
+        {
+            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
+            if (!Track.TryGetValue(target, out var t)) return (tx, ty);
+            float d = (float)System.Math.Sqrt((tx - sx) * (tx - sx) + (ty - sy) * (ty - sy)), fly = d / System.Math.Max(5f, For(w).Speed);
+            return (tx + t.vx * fly, ty + t.vy * fly);
         }
 
         /// <summary>Damage (armor as before: CombatRules.PhysicalDamage), aggro, death hooks and the shot's effects.</summary>
         static void Resolve(ICombatant shooter, Weapon w, Ballistics.Hit hit, bool ambush, bool first, float delay, int pellets)
         {
-            var fx = new FxEvent { Kind = "shot", Actor = shooter, Weapon = w, Now = true, Delay = delay, Pellet = !first,
+            var fx = new FxEvent { Kind = "shot", Actor = shooter, Weapon = w, Now = true, Delay = delay, Pellet = !first, Landed = true,
                 EndX = hit.EndX, EndY = hit.EndY, FromX = shooter.X, FromY = shooter.Y };
             if (hit.CoverX >= 0)
             {
@@ -341,7 +415,7 @@ namespace GameCore
         {
             if (Body.Down(target)) return;                     // RT batch 2: they leave someone who's down to bleed
             if (AllyInLine(shooter, target)) return;           // a friend in the way: hold fire
-            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
+            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Lead(shooter, w, target);
             float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
             if (len < 0.01f) return;
             dx /= len; dy /= len;
@@ -354,7 +428,7 @@ namespace GameCore
         /// <summary>RT batch 4: one trigger pull by an NPC fighting in real time (RtAi), extra = spread from moving or being pinned.</summary>
         public static void NpcShootOnce(ICombatant shooter, Weapon w, ICombatant target, float extra)
         {
-            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Ballistics.Pos(target);
+            var (sx, sy) = Ballistics.Pos(shooter); var (tx, ty) = Lead(shooter, w, target);
             float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
             if (len < 0.01f) return;
             var (h, spread) = NpcAim(shooter, w, target);

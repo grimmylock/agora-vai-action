@@ -3,7 +3,7 @@ jumping, like max payne"). Everything comes from `dotnet /tmp/test.dll gunslingf
 (Rt.PlayerTick with the Gunslinger kit, two Raiders on RtAi, Gunplay rounds), the poses from Rt.PoseOf and HeldPoseMath
 (Frame, Offhand). Drawn the way the view builds it: the body with its gloves and guns as one group (TacticalGridView marker ->
 HeldWeaponView children), squashed and turned together, lifted; shadows on the ground; tracers from the muzzle to where each
-round stopped, muzzle flashes and blood puffs from the game's own Fx sprites. Real time: bullet time plays at x0.3.
+round stopped (RT 8: each round drawn where it flies, frame by frame), muzzle flashes and blood puffs from the game's own Fx sprites. Real time: bullet time plays at x0.3.
   python3 Tools/render/gunsling_scene.py gs.json out_dir   -> gunslinger_dive.gif + gunslinger_dive_strip.png"""
 import json, math, os, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -76,7 +76,7 @@ def unit(canvas, bodyimg, guns, gloves, tx, ty, lift=0.0, tilt=0.0, sx=1.0, sy=1
 
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
 small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 9)
-traces = []                                                 # (born game t, x0, y0, x1, y1, hit, who)
+flashes, impacts = [], []                                   # RT 8: (born game t, muzzle x, y) / (born, x, y, hit)
 dodges = []                                                 # (game t, x, y): an enemy round that missed you while you were low
 def draw(i):
     f = frames[i]; t = f["t"]; c = BG.copy()
@@ -102,25 +102,30 @@ def draw(i):
             gl = [(eglove[k], efr[3], efr[4], efr[8])] + ([(eglove[k], efr[5], efr[6], efr[8])] if efr[7] else [])
             muz["e%d" % k] = unit(c, ebody[k], [(egun[k], E[k]["g"], efr)], gl, x, y)[0]
     dd = ImageDraw.Draw(c)
-    for s in f["shots"]:
+    for who in f.get("fires", []):                          # RT 8: the trigger pull - a muzzle flash; the round flies on its own
+        if who in muz: flashes.append((t, *muz[who]))
+    for s in f["shots"]:                                     # where a round came down
         who, ex, ey, hit = s
-        if who in muz: traces.append((t, *muz[who], (ex - X0) * 16 * Z, (ey - Y0) * 16 * Z, hit, who))
+        impacts.append((t, (ex - X0) * 16 * Z, (ey - Y0) * 16 * Z, hit))
         if who.startswith("e") and not hit and f.get("low"): dodges.append((t, (f["x"] - X0) * 16 * Z, (f["y"] - Y0) * 16 * Z))
     for k, e in enumerate(f["en"]):                          # the enemy's health, a thin bar over his head
         if not e[2]: continue
         bx, by = (e[0] - X0) * 16 * Z - 8 * Z, (e[1] - Y0) * 16 * Z - 12 * Z
         dd.rectangle((bx, by, bx + 16 * Z, by + 2), fill=(20, 20, 20, 220)); dd.rectangle((bx, by, bx + 16 * Z * max(0, e[3]) / 1000, by + 2), fill=(200, 60, 50, 255))
-    for (born, x0, y0, x1, y1, hit, who) in traces:
-        age = t - born
-        if age > 0.06: continue
-        col = (255, 236, 170, 230) if who in "RL" else (255, 190, 140, 200)
-        dd.line([(x0, y0), (x1, y1)], fill=col, width=Z)
-        if age < 0.03:
-            fl = frame0(fx["fx_muzzle_1"]).resize((frame0(fx["fx_muzzle_1"]).width * Z // 2 + 2, frame0(fx["fx_muzzle_1"]).height * Z // 2 + 2), Image.NEAREST)
-            c.alpha_composite(fl, (int(x0 - fl.width / 2), int(y0 - fl.height / 2)))
-        if hit and age < 0.05:
-            b = frame0(fx["fx_hit_blood"]).resize((frame0(fx["fx_hit_blood"]).width * Z, frame0(fx["fx_hit_blood"]).height * Z), Image.NEAREST)
-            c.alpha_composite(b, (int(x1 - b.width / 2), int(y1 - b.height / 2)))
+    for r in f.get("rounds", []):                            # RT 8: each round in the air, a streak at the height it flies (CombatFxView.TickRounds)
+        who, x, y, dx, dy, h, gone, speed = r
+        back = min(max(0.25, min(1.2, speed * 0.012)), gone)
+        hx, hy = (x - X0) * 16 * Z, (y + 0.44 - h * 0.82 - Y0) * 16 * Z
+        col = (255, 236, 170, 255) if who in "RL" else (255, 190, 140, 235)
+        dd.line([(hx - dx * back * 16 * Z, hy - dy * back * 16 * Z), (hx, hy)], fill=col, width=Z)
+    fl0 = frame0(fx["fx_muzzle_1"]); fl = fl0.resize((fl0.width * Z // 2 + 2, fl0.height * Z // 2 + 2), Image.NEAREST)
+    for (born, x0, y0) in flashes:
+        if t - born < 0.03: c.alpha_composite(fl, (int(x0 - fl.width / 2), int(y0 - fl.height / 2)))
+    b0 = frame0(fx["fx_hit_blood"]); bl = b0.resize((b0.width * Z, b0.height * Z), Image.NEAREST)
+    for (born, x1, y1, hit) in impacts:
+        if t - born >= 0.06: continue
+        if hit: c.alpha_composite(bl, (int(x1 - bl.width / 2), int(y1 - bl.height / 2)))
+        else: dd.ellipse((x1 - Z, y1 - Z, x1 + Z, y1 + Z), fill=(150, 140, 120, 200))   # dust where it hit the ground
     for (dt0, x, y) in dodges:
         if 0 <= t - dt0 < 0.25: dd.text((x - 16, y - 26 - 20 * (t - dt0)), "DODGE", font=small, fill=(150, 220, 255, 255))
     big = c.resize((c.width * 2, c.height * 2), Image.NEAREST)

@@ -409,7 +409,7 @@ namespace GameCore
             // RT batch 2: broken arms sway, a concussion blurs; RT batch 4: their near misses pin you. RT 7z-d: halved like the rest of
             // your spread (Gunplay.PlayerSpread) - left whole in RT 7z, a pin alone tripled a steady pistol's spread
             spread += (2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f)) * Gunplay.PlayerSpread;
-            if (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil) spread += 2f * Gunplay.PlayerSpread;
+            if (!Of(p).Diving && (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil)) spread += 2f * Gunplay.PlayerSpread;   // RT 8 (Yan): no pinning mid-dive
             if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
             aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
@@ -590,6 +590,7 @@ namespace GameCore
             Death.Tick();                                                          // co-op: the dead penalty, once
             if (TestingGround.Here) TestingGround.Tick();                         // dummies and damage numbers
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
+            Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
             foreach (var e in EncounterState.Enemies.ToList())
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }

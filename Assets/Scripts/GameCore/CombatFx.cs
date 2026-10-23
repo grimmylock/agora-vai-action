@@ -29,6 +29,7 @@ namespace GameCore
         // Real-time fork: a round resolved now (Gunplay) plays at once, not queued a beat apart behind the turn's other events;
         // it ends exactly where the round stopped (tile space, y down). Pellet = a shotgun's extra pellet: tracer only.
         public bool Now, Pellet;
+        public bool Flying, Landed;    // RT 8: the trigger pull (flash, kick, no tracer) / where a flying round came down (impact only)
         public float Delay, EndX = -1f, EndY = -1f;
         public float Seconds;          // (RT 6h: < 0 = the reload stopped; Rounds = the hand's trips, one per round)          // RT 6d: a reload's real length (0 = the gun's own animation length)
     }

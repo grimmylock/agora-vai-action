@@ -41,6 +41,7 @@ static class Program {
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
+    RoundChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -874,10 +875,12 @@ static class Program {
         var am = input.FireDown ? Gunplay.AimOf(p) : Gunplay.OffAimOf(p); var hdd = Gunplay.For(p.EquippedWeapon);
         Console.WriteLine($"t {t:0.00} {(input.FireDown ? "R" : "L")} steady {am.Steady:0.00} bloom {am.Bloom:0.0} spread {Gunplay.Spread(hdd, am, Rt.Of(p).Moving, p.Sneaking):0.00} arms {Body.ArmsHurt(p)} pinned {(UnityEngine.Time.time < Rt.Of(p).PinnedUntil || p.StatusEffects.Suppressed)} diving {Rt.Of(p).Diving} low {Rt.Low(p)}"); }
       Rt.PlayerTick(p, input); Rt.WorldTick(p); UnityEngine.Time.time += dt;
-      var shots = new List<string>();
+      var shots = new List<string>(); var fires = new List<string>();
       foreach (var e in CombatFx.Pending.Where(e => e.Kind == "shot" && !e.Pellet && e.Actor != null)) {
-        string who = Who(e.Actor, e.Weapon); last[who] = t;
-        shots.Add($"[\"{who}\",{F(e.EndX)},{F(e.EndY)},{(e.Hit ? 1 : 0)}]"); }
+        string who = Who(e.Actor, e.Weapon);
+        if (e.Flying) { last[who] = t; fires.Add($"\"{who}\""); }                                   // RT 8: the trigger pull
+        else shots.Add($"[\"{who}\",{F(e.EndX)},{F(e.EndY)},{(e.Hit ? 1 : 0)}]"); }               // where a round came down
+      var rounds = Gunplay.Flying.Where(r => r.Wait <= 0f && r.Shooter != null).Select(r => $"[\"{Who(r.Shooter, r.W)}\",{F(r.X)},{F(r.Y)},{F(r.Dx)},{F(r.Dy)},{F(r.H + r.Up * r.Gone / Ballistics.BodyTiles)},{F(r.Gone)},{F(r.Speed)}]");
       CombatFx.Pending.Clear();
       var pose = Rt.PoseOf(p); var (ppx, ppy) = Ballistics.Pos(p);
       float world = UnityEngine.Mathf.Atan2(-(ty - ppy), tx - ppx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, world - pose.Tilt);
@@ -889,7 +892,7 @@ static class Program {
         var ef = WeaponFeel.For(edb); float ea = UnityEngine.Mathf.Atan2(-(ppy - ey), ppx - ex) * UnityEngine.Mathf.Rad2Deg;
         var fe = HeldPoseMath.Frame(cat, WeaponArt.GripOf(cat, key), ea, HeldPoseMath.Recoil(t - last["e" + i], ef.Recover), ef.Climb, ef.Kick, 99f, 1f, "", 1);
         en.Add($"[{F(ex)},{F(ey)},{(e.IsAlive() ? 1 : 0)},{e.Hp},{Fr(fe)}]"); }
-      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp},\"low\":{(Rt.Low(p) ? 1 : 0)}}}");
+      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"fires\":[{string.Join(",", fires)}],\"rounds\":[{string.Join(",", rounds)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp},\"low\":{(Rt.Low(p) ? 1 : 0)}}}");
     }
     File.WriteAllText(path, sb.Append("]}").ToString());
     Console.WriteLine($"{shot} trigger pulls; raiders {string.Join(", ", foes.Select(f => f.IsAlive() ? f.Hp + " hp" : "dead"))}");
@@ -898,6 +901,36 @@ static class Program {
 
   // RT 7z-c (Yan: "do 1, build gunslinger for real"): a pistol in each hand - each mouse button fires its own gun, the right one no
   // longer aims, both fire mid-dive, R reloads both; the left gun's pose sits beside the right one inside the sprite
+  static Ballistics.Hit Landed(List<Gunplay.Round> r) { Gunplay.LandAll(); return r[0].Hit; }   // RT 8: rounds fly
+
+  // RT 8 (Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too" / "no pinning mid dive")
+  static void RoundChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 12000f;
+    try {
+      var e = new HumanEnemy("Raider", px + 8, py, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], null) { IsAggroed = true };
+      EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+      p.EquipWeapon("sidearm", "PSh18Pchela"); var w = p.EquippedWeapon; int hp = e.Hp;
+      var rs = Gunplay.Shoot(p, w, 1f, 0f, 0.5f, 0f, false);
+      Check(e.Hp == hp && Gunplay.Flying.Count == 1, "RT 8: a fired round is in the air, nothing has landed yet");
+      Gunplay.Fly(0.1f);
+      Check(Math.Abs(rs[0].Gone - Gunplay.For(w).Speed * 0.1f) < 0.01f && e.Hp == hp, $"RT 8: it flies at the gun's speed ({rs[0].Gone:0.0} tiles in 0.1 s)");
+      Gunplay.LandAll();
+      Check(e.Hp < hp && rs[0].Hit?.Unit == e, "RT 8: and lands on him");
+      Check(Gunplay.For(p.MakeWeapon("assault", "VK74")).Speed > Gunplay.For(w).Speed, "RT 8: a rifle round is faster than a pistol's");
+      hp = e.Hp; Gunplay.Shoot(p, w, 1f, 0f, 0.5f, 0f, false); Gunplay.Fly(0.05f); e.Y = py + 2; Gunplay.LandAll(); e.Y = py;
+      Check(e.Hp == hp, "RT 8: stepping out of its path after the shot dodges it");
+      for (int f = 0; f < 20; f++) { Rt.SetOffset(p, 0f, f * 0.05f); Gunplay.Fly(1f / 60f); }   // walking down the screen at 3 tiles/s
+      var (lx, ly) = Gunplay.Lead(e, e.EquippedWeapon, p);
+      Check(ly > Ballistics.Pos(p).y + 0.3f, $"RT 8: enemies lead a walking target ({ly - Ballistics.Pos(p).y:0.00} tiles ahead)");
+      Rt.SetOffset(p, 0f, 0f); Rt.Of(p).PinnedUntil = -1f; float focus = Rt.Of(p).Focus;
+      Rt.Of(p).DiveUntil = UnityEngine.Time.time + 1f;
+      var (ex, ey) = Ballistics.Pos(e); Gunplay.Shoot(e, e.EquippedWeapon, -1f, 0f, 1.05f, 0f, false); Gunplay.LandAll();   // over the head
+      Check(Rt.Of(p).PinnedUntil < 0f && Rt.Of(p).Focus > focus, "RT 8: a near miss mid-dive gives Focus but doesn't pin");
+      Rt.Of(p).DiveUntil = -1f; Gunplay.Shoot(e, e.EquippedWeapon, -1f, 0f, 1.05f, 0f, false); Gunplay.LandAll();
+      Check(Rt.Of(p).PinnedUntil > UnityEngine.Time.time, "RT 8: standing, it still pins");
+    } finally { Rt.On = false; Rt.SetSlow(false); Gunplay.Flying.Clear(); }
+  }
+
   static void GunslingerChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 9000f; UnityEngine.Time.deltaTime = 0.02f;
     try {
@@ -986,7 +1019,7 @@ static class Program {
       var dummy = new HumanEnemy("Target", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
       EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
       float spread = Gunplay.Spread(Gunplay.For(w), new Gunplay.Aim { Steady = 0.25f }, 0, false);
-      int hits = 0; for (int i = 0; i < 300; i++) { dummy.Hp = 100000; w.CurrentMagazine = 5; if (Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)[0].Unit == dummy) hits++; }
+      int hits = 0; for (int i = 0; i < 300; i++) { dummy.Hp = 100000; w.CurrentMagazine = 5; if (Landed(Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)).Unit == dummy) hits++; }
       var (_, npc) = Gunplay.NpcAim(new HumanEnemy("R", px, py, "Raiders", "Rookie", null, null), w, p);
       Check(hits > 240 && npc > spread * 1.5f, $"RT 7z: the starter pistol from the hip hits {hits * 100 / 300}% at 5 tiles (spread {spread:0.0} deg; a Rookie's stays {npc:0.0})");
     } finally { EncounterState.Enemies.Clear(); Rt.On = false; }
@@ -1009,7 +1042,7 @@ static class Program {
         p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
         var aim = new Gunplay.Aim { Steady = steady, Bloom = bloom };
         float spread = Gunplay.Spread(hd, aim, move, false);
-        line += Pct(() => { dummy.Hp = 100000; w.CurrentMagazine = 5; return Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)[0].Unit == dummy; });
+        line += Pct(() => { dummy.Hp = 100000; w.CurrentMagazine = 5; return Landed(Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)).Unit == dummy; });
       }
       Console.WriteLine(line);
     }
@@ -1019,7 +1052,7 @@ static class Program {
         var e = new HumanEnemy("Raider", px + d, py, "Raiders", rank, WeaponDatabase.Categories[cat][key], null) { IsAggroed = true };
         EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(e); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(e, 0f, 0f);
         var w = e.EquippedWeapon;
-        line += Pct(() => { p.HealPermanent(100000); Body.Reset(); var (h, spread) = Gunplay.NpcAim(e, w, p); return Gunplay.Shoot(e, w, -1f, 0f, h, spread, false)[0].Unit == p; });
+        line += Pct(() => { p.HealPermanent(100000); Body.Reset(); var (h, spread) = Gunplay.NpcAim(e, w, p); return Landed(Gunplay.Shoot(e, w, -1f, 0f, h, spread, false)).Unit == p; });
       }
       Console.WriteLine(line);
     }
@@ -1296,7 +1329,7 @@ static class Program {
     p.Sneaking = true; Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.6f) == "Head", "crouching: a head-height round goes over you"); p.Sneaking = false;
     // the old turn AI's gunfire becomes real rounds
     int hits = 0, n = 120;
-    for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; Body.Forget(p); p.Sneaking = false; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); if (p.Hp < p.MaxHp) hits++; }
+    for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; Body.Forget(p); p.Sneaking = false; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); Gunplay.LandAll(); if (p.Hp < p.MaxHp) hits++; }
     Check(hits > 8 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");   // (120 shots: 40 tripped on chance)
     // RT batch 2: limb health, Yan's wound rule, down and bleed-out, timed items
     Rt.Reset(); Body.Now = 0f;
@@ -1311,7 +1344,7 @@ static class Program {
     r.Hp = r.MaxHp; Body.Reset();
     p.Hp = 5; p.Hp = 0;
     Check(p.IsAlive() && Body.Down(p), $"lethal damage in real time: you go down, not out (HP {p.Hp})");
-    var ammoBefore = r.EquippedWeapon.CurrentMagazine; int hpDown = p.Hp; Gunplay.NpcShoot(r, r.EquippedWeapon, p, 3);
+    var ammoBefore = r.EquippedWeapon.CurrentMagazine; int hpDown = p.Hp; Gunplay.NpcShoot(r, r.EquippedWeapon, p, 3); Gunplay.LandAll();
     Check(p.Hp == hpDown, "nobody shoots someone who's down");
     float still = Body.Of(p).BleedOut; Body.TickDown(p, false, 1f); float a = Body.Of(p).BleedOut; Body.TickDown(p, true, 1f); float b = Body.Of(p).BleedOut;
     Check(still - a < a - b, $"crawling bleeds you out faster (still {still - a:0.0}/s, crawling {a - b:0.0}/s)");
@@ -1478,7 +1511,7 @@ static class Program {
       Check(reloads >= 1 || g.EquippedWeapon.MagCapacity > fired, $"it reloads when the magazine runs dry ({reloads}, fired {fired} of {g.EquippedWeapon.MagCapacity})");
       Check(maxStep <= 1, $"it walks a tile at a time ({maxStep})");
       var (x0, y0) = Ballistics.Pos(p); var (gx, gy) = Ballistics.Pos(g);
-      Gunplay.Shoot(p, p.EquippedWeapon, (gx - x0) / Math.Abs(gx - x0), 0f, 1.05f, 0f, false);   // over his head: a near miss
+      Gunplay.Shoot(p, p.EquippedWeapon, (gx - x0) / Math.Abs(gx - x0), 0f, 1.05f, 0f, false); Gunplay.LandAll();   // over his head: a near miss
       Check(RtAi.Pinned(g) && g.StatusEffects.Suppressed, "a round just over his head pins him");
       EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
     }

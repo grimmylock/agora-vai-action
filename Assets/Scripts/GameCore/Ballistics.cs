@@ -6,8 +6,7 @@
 //  - Walls stop it. Low cover stops it below its own height (a head over a low wall can still be hit); wood, tin, brush
 //    and cloth let it through at half damage (Materials, Batch 105). Cover right in front of the shooter is fired over.
 // Positions are in tile space: x right, y DOWN (the same axes as X/Y), a unit at tile (X, Y) stands at X + 0.5 + ox.
-// Hitscan: at these ranges (screen ~20 tiles, bullets 100+ tiles/s) travel time is a few frames.
-// ponytail: hitscan, real travel time (leading targets at range) when long guns need it.
+// RT 8: rounds fly (Gunplay.Round, Gunplay.Fly): Trace runs one frame's stretch of a round's path at a time.
 using System.Collections.Generic;
 
 namespace GameCore
