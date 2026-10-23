@@ -17,7 +17,7 @@ namespace GameCore
         public const float LineSeconds = 2.8f;
         static readonly Dictionary<OfflineSquad, float> _next = new Dictionary<OfflineSquad, float>();   // real time a squad may talk again
         static readonly HashSet<OfflineSquad> _greeted = new HashSet<OfflineSquad>();
-        static readonly System.Random _rng = new System.Random();
+        static readonly System.Random _rng = new System.Random(UnityEngine.Random.Range(0, int.MaxValue));   // RT 7z-d: seeded from the game's dice, so a run can be replayed (the harness)
         public static float Now = -1f;   // the harness sets a clock; the game uses Time.time
         static float T => Now >= 0f ? Now : UnityEngine.Time.time;
 

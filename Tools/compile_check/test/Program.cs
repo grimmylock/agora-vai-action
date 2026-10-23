@@ -3,11 +3,14 @@ static class Program {
   static int fails = 0;
   static void Check(bool ok, string msg) { if (!ok) { fails++; Console.WriteLine("FAIL " + msg); } }
   static int Main(string[] args) {
+    // RT 7z-d: the real JsonUtility stub (RT 7x) made SquadManager's offline_squads.json persist between runs, so every run started
+    // from the last one's squads - the checks and the scene dumps drifted. Every run starts clean.
+    try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
-    if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1]); return 0; }
-    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
+    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] == "duel"); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -824,15 +827,21 @@ static class Program {
   // RT 7z-c (Yan: "make a scene where he is dual wielding pistols and shooting back at enemies while jumping, like max payne"):
   // a real fight run frame by frame - the Gunslinger kit, two Raiders who fight back with RtAi, a dive with both guns firing in
   // turns at whoever is still up - dumped for Tools/render/gunsling_scene.py: bodies, poses, both guns' frames, every round
-  static void GunslingFrames(string path) {
+  // duel (Yan: "an example of the character dodging a shot with the jump and killing the enemy"): one Raider with a rifle at 5 tiles
+  // who holds his first shot a quarter second (RtAi.Hold - the one staged thing), a dive across his line, both guns as fast as
+  // they cycle until he drops
+  static void GunslingFrames(string path, bool duel = false) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 11000f;
     for (int y = py - 7; y <= py + 5; y++) for (int x = px - 4; x <= px + 13; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     Rt.SetOffset(p, 0f, 0f); TestingGround.GunslingerKit(p); p.HealPermanent(100000); Rt.Of(p).Focus = 100f;
-    var foes = new List<HumanEnemy> {
+    var foes = duel ? new List<HumanEnemy> {
+      new HumanEnemy("Raider", px + 5, py, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } }
+      : new List<HumanEnemy> {
       new HumanEnemy("Raider", px + 8, py - 2, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true },
       new HumanEnemy("Raider", px + 9, py + 1, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } };
     EncounterState.Enemies.Clear(); foreach (var f in foes) { EncounterState.Enemies.Add(f); Rt.SetOffset(f, 0f, 0f); }
+    if (duel) RtAi.Hold(foes[0], 0.25f);
     EncounterState.InCombat = true; Contact.Spot(p);
     string Hex(string[] arr, string name) { int i = Array.IndexOf(SpriteAtlasIndex.Armor, name ?? ""); return i >= 0 ? arr[i] : "#3d4148"; }
     string Who(ICombatant u, Weapon w) => u == p ? (w == p.OffhandWeapon ? "L" : "R") : "e" + foes.IndexOf(u as HumanEnemy);
@@ -846,14 +855,18 @@ static class Program {
     for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (cat, key) = WeaponArt.Identify(e.EquippedWeapon.Db);
       sb.Append((i > 0 ? "," : "") + "{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, e.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, e.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, e.EquippedArmor?.Name) + "\",\"gun\":\"" + key + "\",\"cat\":\"" + cat + "\",\"g\":[" + string.Join(",", WeaponArt.GripOf(cat, key).Select(F)) + "]}"); }
     sb.Append("],\"origin\":[" + px + "," + py + "],\"frames\":[");
-    float dt = 1f / 60f; int shot = 0; float nextShot = 0.3f;
-    for (int k = 0; k * dt < 2.2f; k++) {
+    float dt = 1f / 60f; int shot = 0; float nextShot = duel ? 0.2f : 0.3f, gap = duel ? 0.1f : 0.11f, end = duel ? 4f : 2.2f, diedAt = -1f; int diveFrame = duel ? 8 : 15;
+    for (int k = 0; k * dt < end; k++) {
       float t = k * dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = Rt.SlowMo ? dt / Rt.SlowScale : dt;   // bullet time: the aim steadies on real seconds
       var target = foes.FirstOrDefault(f => f.IsAlive()) ?? foes[0];
       var (tx, ty) = Ballistics.Pos(target);
       var input = new Rt.Input { Mouse = (tx, ty) };
-      if (k == 15) { input.Y = -1f; input.Jump = true; }                                     // the dive, up the screen, at 0.25 s
-      if (t >= nextShot && foes.Any(f => f.IsAlive())) { if (shot % 2 == 0) input.FireDown = true; else input.Fire2Down = true; shot++; nextShot = t + 0.11f; }
+      if (k == diveFrame) { input.Y = -1f; input.Jump = true; }                              // the dive, up the screen
+      if (t >= nextShot && foes.Any(f => f.IsAlive())) { if (shot % 2 == 0) input.FireDown = true; else input.Fire2Down = true; shot++; nextShot = t + gap; }
+      if (duel && diedAt < 0f && !foes[0].IsAlive()) { diedAt = t; end = t + 0.8f; }
+      if (Environment.GetEnvironmentVariable("SPREAD_DEBUG") == "1" && (input.FireDown || input.Fire2Down)) {
+        var am = input.FireDown ? Gunplay.AimOf(p) : Gunplay.OffAimOf(p); var hdd = Gunplay.For(p.EquippedWeapon);
+        Console.WriteLine($"t {t:0.00} {(input.FireDown ? "R" : "L")} steady {am.Steady:0.00} bloom {am.Bloom:0.0} spread {Gunplay.Spread(hdd, am, Rt.Of(p).Moving, p.Sneaking):0.00} arms {Body.ArmsHurt(p)} pinned {(UnityEngine.Time.time < Rt.Of(p).PinnedUntil || p.StatusEffects.Suppressed)} diving {Rt.Of(p).Diving} low {Rt.Low(p)}"); }
       Rt.PlayerTick(p, input); Rt.WorldTick(p); UnityEngine.Time.time += dt;
       var shots = new List<string>();
       foreach (var e in CombatFx.Pending.Where(e => e.Kind == "shot" && !e.Pellet && e.Actor != null)) {
@@ -869,7 +882,7 @@ static class Program {
         var ef = WeaponFeel.For(e.EquippedWeapon.Db); float ea = UnityEngine.Mathf.Atan2(-(ppy - ey), ppx - ex) * UnityEngine.Mathf.Rad2Deg;
         var fe = HeldPoseMath.Frame(cat, WeaponArt.GripOf(cat, key), ea, HeldPoseMath.Recoil(t - last["e" + i], ef.Recover), ef.Climb, ef.Kick, 99f, 1f, "", 1);
         en.Add($"[{F(ex)},{F(ey)},{(e.IsAlive() ? 1 : 0)},{e.Hp},{Fr(fe)}]"); }
-      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp}}}");
+      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp},\"low\":{(Rt.Low(p) ? 1 : 0)}}}");
     }
     File.WriteAllText(path, sb.Append("]}").ToString());
     Console.WriteLine($"{shot} trigger pulls; raiders {string.Join(", ", foes.Select(f => f.IsAlive() ? f.Hp + " hp" : "dead"))}");
@@ -910,9 +923,9 @@ static class Program {
 
   // RT 7z (Yan: "lowers himself to build momentum before jumping ... no sense of momentum or height"): the dive crouches, rises
   // and lands flat, then gets up; it still covers the same ground; a friend's dive and aim travel in the snapshot
-  static List<(float t, float x, float y, Rt.Pose pose, bool slow)> DiveRun(Player p, float frame) {
+  static List<(float t, float x, float y, Rt.Pose pose, bool slow)> DiveRun(Player p, float frame, float dx = 1f, float dy = 0f) {
     var run = new List<(float, float, float, Rt.Pose, bool)>();
-    Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { X = 1f, Jump = true });
+    Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { X = dx, Y = dy, Jump = true });
     for (float t = 0f; t < Rt.DiveTime + Rt.ProneTime + 0.1f; t += frame) {
       var (x, y) = Ballistics.Pos(p); run.Add((t, x, y, Rt.PoseOf(p), Rt.SlowMo));
       UnityEngine.Time.time += frame; UnityEngine.Time.deltaTime = frame; Rt.PlayerTick(p, default);
@@ -930,16 +943,22 @@ static class Program {
       Check(crouch.SquashY < 0.9f && crouch.Lift == 0f && top.pose.Lift > 0.4f && top.t > Rt.DiveCrouch && Math.Abs(land.Tilt) == 90f && top.pose.Shadow < 0.7f && !after.Active,
         $"RT 7z: the dive crouches (squash {crouch.SquashY:0.00}), rises {top.pose.Lift:0.00} tiles at {top.t:0.00} s, lands flat, gets up");
       Check(Math.Abs(dist - Rt.DiveSpeed * Rt.DiveTime) < 0.35f, $"RT 7z: the dive still covers {Rt.DiveSpeed * Rt.DiveTime:0.00} tiles ({dist:0.00})");
+      UnityEngine.Time.time += 3f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var up = DiveRun(p, 0.01f, 0f, -1f); var upTop = up.First(r => r.t >= 0.3f).pose;
+      UnityEngine.Time.time += 3f; p.X = px; p.Y = py - 2; Rt.SetOffset(p, 0f, 0f);
+      var dn = DiveRun(p, 0.01f, 0f, 1f); var dnTop = dn.First(r => r.t >= 0.3f).pose; var dnCrouch = dn.First(r => r.t >= 0.06f).pose;
+      Check(Math.Abs(upTop.Tilt) < 1f && upTop.SquashY < 0.75f && up.Last().y < up[0].y - 2f && Math.Abs(dnTop.Tilt) > 150f && Math.Abs(dnCrouch.Tilt) < 1f,
+        $"RT 7z-d: up the screen the body lies head-up and foreshortened (turn {upTop.Tilt:0}, x{upTop.SquashY:0.00}); down, head-down ({dnTop.Tilt:0}), turning in the air");
       // the snapshot carries a diving friend's moment and aim
       var q = Player.Join(); Rt.Of(q).DiveUntil = UnityEngine.Time.time + 0.3f; Rt.Of(q).DiveX = 1f; Rt.Of(q).AimAt = (3f, 4f);
       var e = Net.DecodeSnapshot(Net.EncodeSnapshot()).Players.Last();
-      Check(Math.Abs(e.DiveT - (Rt.DiveTime - 0.3f)) < 0.01f && e.DiveRight && e.HasAim && e.AimX == 3f, "RT 7z: a friend's dive and aim travel in the snapshot");
+      Check(Math.Abs(e.DiveT - (Rt.DiveTime - 0.3f)) < 0.01f && e.DiveX == 1f && e.HasAim && e.AimX == 3f, "RT 7z: a friend's dive and aim travel in the snapshot");
     } finally { Rt.On = false; Rt.SetSlow(false); }
   }
-  static void DiveFrames(string path) {
+  static void DiveFrames(string path, float dx = 1f, float dy = 0f) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f; Rt.SetOffset(p, 0f, 0f);
-    var run = DiveRun(p, 1f / 60f);
+    var run = DiveRun(p, 1f / 60f, dx, dy);
     var sb = new System.Text.StringBuilder("[");
     for (int i = 0; i < run.Count; i++) { var r = run[i];
       sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{r.t:0.0000},{r.x - run[0].x:0.0000},{r.y - run[0].y:0.0000},{r.pose.Lift:0.0000},{r.pose.Tilt:0.00},{r.pose.SquashX:0.0000},{r.pose.SquashY:0.0000},{r.pose.Shadow:0.0000},{(r.slow ? 1 : 0)}]")); }

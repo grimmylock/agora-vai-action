@@ -156,7 +156,7 @@ namespace GameCore
                 st.Aiming = e.Aiming;
                 if (e.HasAim && p != Player.Current) st.AimAt = (e.AimX, e.AimY);   // your own gun follows your own mouse
                 st.DiveUntil = e.DiveT >= 0f ? now + Rt.DiveTime - e.DiveT : -1f;
-                st.ProneUntil = now + e.ProneLeft; st.DiveX = e.DiveRight ? 1f : -1f;
+                st.ProneUntil = now + e.ProneLeft; st.DiveX = e.DiveX; st.DiveY = e.DiveY;
             }
             foreach (var gone in ByOwner.Keys.Where(k => !seen.Contains(k)).ToList()) { Player.All.Remove(ByOwner[gone]); ByOwner.Remove(gone); }
         }
@@ -186,7 +186,7 @@ namespace GameCore
         }
 
         public class PlayerEntry { public ulong Owner; public int X, Y, Hp; public float Ox, Oy; public bool Aiming;
-            public bool HasAim, DiveRight; public float AimX, AimY, DiveT = -1f, ProneLeft; }   // RT 7z: where they aim, the dive's moment
+            public bool HasAim; public float AimX, AimY, DiveT = -1f, ProneLeft, DiveX, DiveY; }   // RT 7z: where they aim, the dive's moment
         public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); }
 
         public static byte[] EncodeSnapshot()
@@ -200,7 +200,7 @@ namespace GameCore
                 var st = Rt.Of(p); float now = Time.time;
                 w.Write(OwnerOf(p)); w.Write(p.X); w.Write(p.Y); w.Write(ox); w.Write(oy); w.Write(p.Hp); w.Write(st.Aiming);
                 w.Write(st.AimAt.HasValue); w.Write(st.AimAt?.x ?? 0f); w.Write(st.AimAt?.y ?? 0f);
-                w.Write(st.Diving ? Rt.DiveTime - (st.DiveUntil - now) : -1f); w.Write(Mathf.Max(0f, st.ProneUntil - now)); w.Write(st.DiveRight);
+                w.Write(st.Diving ? Rt.DiveTime - (st.DiveUntil - now) : -1f); w.Write(Mathf.Max(0f, st.ProneUntil - now)); w.Write(st.DiveX); w.Write(st.DiveY);
             }
             return ms.ToArray();
         }
@@ -212,7 +212,7 @@ namespace GameCore
             int n = r.ReadByte();
             for (int k = 0; k < n; k++)
                 s.Players.Add(new PlayerEntry { Owner = r.ReadUInt64(), X = r.ReadInt32(), Y = r.ReadInt32(), Ox = r.ReadSingle(), Oy = r.ReadSingle(), Hp = r.ReadInt32(), Aiming = r.ReadBoolean(),
-                    HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveRight = r.ReadBoolean() });
+                    HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveX = r.ReadSingle(), DiveY = r.ReadSingle() });
             return s;
         }
     }

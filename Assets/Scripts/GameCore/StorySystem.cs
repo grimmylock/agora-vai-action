@@ -309,7 +309,7 @@ namespace GameCore
             var spot = guardian ? TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Sealed Crypt") : null;
             int x = spot?.X ?? UnityEngine.Random.Range(4, TerrainMap.Width - 4), y = spot?.Y ?? UnityEngine.Random.Range(4, TerrainMap.Height - 4);
             var m = new Mutant(pick.Value.Name, x + 1, y, pick.Value);
-            m.MakeNamed(Titles[System.Math.Abs((zone.Id + MacroState.Current.Day).GetHashCode()) % Titles.Length]);
+            m.MakeNamed(Titles[System.Math.Abs(ZoneExitPlacer.StableHash(zone.Id + MacroState.Current.Day)) % Titles.Length]);
             EncounterState.Enemies.Add(m);
             GameLog.Write(guardian
                 ? $"[LEGEND] Something old is curled around the Sealed Crypt: {m.Name}."

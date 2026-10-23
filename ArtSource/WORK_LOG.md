@@ -3965,3 +3965,40 @@ only existed as the turn-based perk, so I offered to build it first; Yan: "do 1,
   - Real outcome: 16 rounds, 4 hits, the first Raider down to 584 of 1000 HP; you got hit too. Raiders have 1000 HP, so a
     PSh-18 needs ~8 body hits.
 - **Not checked in Unity:** the second gun's sorting under the body when seen from behind; the muzzle flash on the left gun.
+
+## RT 7z-d - dives up and down, two pistols that read as two, the dodge duel; the harness is deterministic again (2026-10-23)
+
+Yan: "we need an animation for diving upward and downward as well, right now the character dives and always turns right or
+left, also both pistols are held in the exact same place so it looks like one, make the character hold one slightly back and
+above/below the other one so that it reads visually that he has 2". And: "make an example of the character dodging a shot
+with the jump and killing the enemy ... (no need to teleport, just the dodge and killing the enemy while jumping is fine)".
+- **The dive faces its direction** (`Rt.PoseOf`):
+  - Lying flat, the head points where the dive goes: right -90 deg, up 0, down 180, diagonals between.
+  - The up/down share is also foreshortened (`Rt.Foreshorten` 0.45: a body flat on its belly, head-on from above, is short).
+  - A dive toward the bottom of the screen turns in the air, not in the crouch.
+  - The snapshot sends the dive direction (`DiveX/DiveY`) instead of a left/right flag.
+  - Sheet: `maps/renders/dive/dive_directions.png` (`Tools/render/dive_dirs.py`, from `diveframes <json> dx dy`).
+- **Two pistols that read as two:** the left-hand gun sits 3 px "under" and now 3 px behind the right one, staggered
+  (`HeldPoseMath.OffSide/OffBack`; it was 1 px behind).
+- **Fixed, the player's spread extras:** pinned, hurt arms and concussion added whole degrees on top of the halved spread from
+  RT 7z, so a pin alone tripled a steady pistol's spread. They're halved too now (`Rt.PlayerFire`).
+- **Fixed, the harness wasn't deterministic** (two dice checks failed at random; the scene dumps differed run to run):
+  - Since RT 7x the JSON stub writes real data, so SquadManager's `offline_squads.json` carried the last run's squads into
+    the next. Every harness run now deletes it first. Found by tracing every random call (`RNG_TRACE=file` in the stub)
+    and diffing two runs.
+  - Hash codes that change every run: NPC stand spots (`Rt.Offset`), the follower pace (`TurnLoop`), a Named title
+    (`StorySystem`) and a quest wording (`QuestSystem`). They now use `CombatantUtil.StableId` / `ZoneExitPlacer.StableHash`.
+  - Banter seeds its own random numbers from the game's.
+  - In the game this also means NPCs no longer stand in different spots from one session to the next.
+- **Found, not fixed:** `offline_squads.json` (the off-screen squads) sits in the game's save folder, shared by every save
+  slot. It should live in each world's file (RT 7x). Next save task.
+- **The duel** (`gunslingframes <json> duel`; `Tools/render/gunsling_scene.py ... gunslinger_duel`, with HP bars and a
+  "DODGE" tag on rounds that fly over you):
+  - Setup: one Rookie Raider (VKS-74U, Raider Jacket) at 5 tiles. Staged: he holds his first shot 0.25 s (`RtAi.Hold`).
+  - You dive up across his line and fire both guns as fast as they cycle.
+  - Real outcome: 2 of his 7 rounds hit you (both early, before you're low). 3 of your 4 dive rounds hit; from the ground
+    most miss (hip-fired pair, pinned, 5-6 tiles). He ends at 266 of 1000 HP with both magazines empty.
+  - The kill Yan asked for doesn't happen with the current numbers: a Raider needs ~10 PSh-18 hits, and a dive gives ~4
+    rounds. Levers offered to Yan (player tools, rule 6), not built.
+- Harness: an up dive lies head-up and foreshortened, a down dive head-down turning in the air. ALL CHECKS PASSED, 3 runs
+  in a row.

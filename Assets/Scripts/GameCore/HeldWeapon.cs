@@ -71,13 +71,16 @@ namespace GameCore
         }
 
         /// <summary>RT 7z-c (Gunslinger): the left-hand pistol's frame - the same pose as a right-hand one (its own recoil already in
-        /// f), moved 3 px "under the gun" and 1 px back so the two guns sit side by side; the left glove holds it, nobody cups.</summary>
+        /// f), staggered so the two read as two (Yan: "both pistols are held in the exact same place so it looks like one, make the
+        /// character hold one slightly back and above/below the other"): OffSide px "under the gun" and OffBack px back along it.
+        /// The left glove holds it; nobody cups.</summary>
+        public const float OffSide = 3f, OffBack = 3f;
         public static HeldFrame Offhand(HeldFrame f, float angleDeg)
         {
             float a = angleDeg * Mathf.Deg2Rad, c = Mathf.Cos(a), s = Mathf.Sin(a);
             float bx = s, by = c;                                            // under the gun, screen pixels (y down)
             if (f.Left) { bx = -bx; by = -by; }
-            float ox = Mathf.Round(3f * bx - c), oy = Mathf.Round(3f * by + s);
+            float ox = Mathf.Round(OffSide * bx - OffBack * c), oy = Mathf.Round(OffSide * by + OffBack * s);
             float y = Mathf.Min(f.GripY + oy, WaistTopRow + 2.5f);           // never under the belt
             f.GunX += ox; f.GripX += ox; f.GunY += y - f.GripY; f.GripY = y;
             f.HasSupport = false;

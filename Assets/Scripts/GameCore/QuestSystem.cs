@@ -379,7 +379,7 @@ namespace GameCore
                 ?? "Wanderers";
             giver = FactionDatabase.NormalizeFactionName(giver);
             var alts = Bidders.Where(f => f != giver).ToList();
-            string alt = alts[System.Math.Abs((q.Id ?? "").GetHashCode()) % alts.Count];
+            string alt = alts[System.Math.Abs(ZoneExitPlacer.StableHash(q.Id ?? "")) % alts.Count];
             return (giver, alt);
         }
 

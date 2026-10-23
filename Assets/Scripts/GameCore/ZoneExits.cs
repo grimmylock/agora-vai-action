@@ -72,7 +72,7 @@ namespace GameCore
         /// <summary>Deterministic string hash (FNV-1a) - string.GetHashCode() is randomized per
         /// process in modern .NET/Mono, which would silently reshuffle every exit's position on
         /// every game restart if used here instead.</summary>
-        private static int StableHash(string s)
+        internal static int StableHash(string s)
         {
             unchecked
             {

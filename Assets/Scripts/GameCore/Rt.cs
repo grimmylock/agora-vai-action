@@ -25,7 +25,7 @@ namespace GameCore
             var (sx, sy) = u != null && Slide.TryGetValue(u, out var sl) ? sl : (0f, 0f);
             if (u != null && Off.TryGetValue(u, out var o)) return (o.x + sx, o.y + sy);
             if (u == null || u is Player) return (0f, 0f);
-            int h = u.GetHashCode() * 73856093;                      // NPCs: the fixed spot of Batch 114
+            int h = CombatantUtil.StableId(u) * 73856093;             // NPCs: the fixed spot of Batch 114 (RT 7z-d: stable, not GetHashCode)
             return (((h & 255) / 255f - 0.5f) * 0.55f + sx, -(((h >> 8) & 255) / 255f - 0.5f) * 0.4f + sy);
         }
         public static void SetOffset(ICombatant u, float x, float y) => Off[u] = (x, y);
@@ -406,8 +406,10 @@ namespace GameCore
             bool ambush = over is Mutant u && !u.IsAggroed;
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
             float spread = Gunplay.Spread(hd, aim, Of(p).Moving, p.Sneaking);
-            spread += 2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f);   // RT batch 2: broken arms sway, a concussion blurs
-            if (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil) spread += 2f;   // RT batch 4: their near misses pin you
+            // RT batch 2: broken arms sway, a concussion blurs; RT batch 4: their near misses pin you. RT 7z-d: halved like the rest of
+            // your spread (Gunplay.PlayerSpread) - left whole in RT 7z, a pin alone tripled a steady pistol's spread
+            spread += (2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f)) * Gunplay.PlayerSpread;
+            if (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil) spread += 2f * Gunplay.PlayerSpread;
             if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
             Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
             aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
@@ -440,11 +442,15 @@ namespace GameCore
         public struct Pose { public bool Active; public float Lift, Tilt, SquashX, SquashY, Shadow; }
 
         /// <summary>How a player's body is drawn right now: height off the ground (tiles), turn (degrees; + = to the left), squash
-        /// along and across the body, and the ground shadow's size.</summary>
+        /// along and across the body, and the ground shadow's size. RT 7z-d (Yan: "we need an animation for diving upward and
+        /// downward as well, right now the character dives and always turns right or left"): the body leans into the dive's own
+        /// direction - its sideways share turns it (head first), its up/down share lays it out along the screen, foreshortened
+        /// (a body flat on its belly, seen from above and head-on, is short); diagonals mix the two.</summary>
         public static Pose PoseOf(Player p)
         {
-            var s = Of(p); float now = Time.time, side = s.DiveRight ? -1f : 1f;
+            var s = Of(p); float now = Time.time;
             var o = new Pose { SquashX = 1f, SquashY = 1f, Shadow = 1f };
+            float lean = 0f;                                                 // 0 upright .. 90 flat out
             if (s.Diving)
             {
                 o.Active = true;
@@ -452,29 +458,36 @@ namespace GameCore
                 if (t < DiveCrouch)                                          // loading the legs
                 {
                     float k = t / DiveCrouch;
-                    o.Tilt = side * 20f * k; o.SquashY = 1f - 0.28f * k; o.SquashX = 1f + 0.14f * k;
+                    lean = 20f * k; o.SquashY = 1f - 0.28f * k; o.SquashX = 1f + 0.14f * k;
                 }
                 else if (t < DiveTime - DiveLanding)                         // launch and arc
                 {
                     float u = (t - DiveCrouch) / air, pop = Mathf.Max(0f, 1f - u / 0.35f);
                     o.Lift = DiveHeight * Mathf.Sin(Mathf.PI * u);
-                    o.Tilt = side * (20f + 70f * Mathf.Min(1f, u * 1.8f));
+                    lean = 20f + 70f * Mathf.Min(1f, u * 1.8f);
                     o.SquashY = 1f + 0.14f * pop; o.SquashX = 1f - 0.1f * pop;
                 }
                 else                                                         // belly landing
                 {
                     float k = (t - (DiveTime - DiveLanding)) / DiveLanding;
-                    o.Tilt = side * 90f; o.SquashY = 0.8f + 0.2f * k; o.SquashX = 1.12f - 0.12f * k;
+                    lean = 90f; o.SquashY = 0.8f + 0.2f * k; o.SquashX = 1.12f - 0.12f * k;
                 }
                 o.Shadow = 1f - 0.45f * o.Lift / DiveHeight;
             }
             else if (now < s.ProneUntil)                                     // sprawled, then pushing back up
             {
                 o.Active = true;
-                o.Tilt = side * 90f * Mathf.Clamp01((s.ProneUntil - now) / GetUpTime);
+                lean = 90f * Mathf.Clamp01((s.ProneUntil - now) / GetUpTime);
             }
+            float l = Mathf.Sqrt(s.DiveX * s.DiveX + s.DiveY * s.DiveY), v = l > 0.01f ? Mathf.Abs(s.DiveY) / l : 0f;
+            // lying flat, the head points where the dive goes: right -90, up 0, down 180 (degrees, + = counter-clockwise)
+            float full = l > 0.01f ? -Mathf.Atan2(s.DiveX, -s.DiveY) * Mathf.Rad2Deg : (s.DiveRight ? -90f : 90f);
+            float ramp = Mathf.Abs(full) <= 90f ? lean / 90f : Mathf.Clamp01((lean - 20f) / 70f);   // a dive toward you turns in the air, not in the crouch
+            o.Tilt = full * ramp;
+            o.SquashY *= 1f - Foreshorten * (lean / 90f) * v;               // up or down the screen: laid out lengthwise, shorter
             return o;
         }
+        public const float Foreshorten = 0.45f;
         public static bool Low(ICombatant u) => On && u is Player p && (Of(p).Diving || Time.time < Of(p).ProneUntil);   // airborne or sprawled: a low target
 
         public static void AddFocus(Player p, float f)

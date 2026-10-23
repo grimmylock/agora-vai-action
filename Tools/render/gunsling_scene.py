@@ -11,6 +11,8 @@ from PIL import Image, ImageDraw, ImageFont
 R = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SPR = os.path.join(R, "Assets/Resources/Sprites")
 d = json.load(open(sys.argv[1])); out = sys.argv[2]; os.makedirs(out, exist_ok=True)
+NAME = sys.argv[3] if len(sys.argv) > 3 else "gunslinger_dive"                       # duel: python3 ... duel.json out gunslinger_duel "note"
+NOTE = sys.argv[4] if len(sys.argv) > 4 else ""
 frames = d["frames"]
 world = Image.open(os.path.join(R, "Tools/render/_render/perimeter.png")).convert("RGBA")
 atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
@@ -72,7 +74,9 @@ def unit(canvas, bodyimg, guns, gloves, tx, ty, lift=0.0, tilt=0.0, sx=1.0, sy=1
     return out
 
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
+small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 9)
 traces = []                                                 # (born game t, x0, y0, x1, y1, hit, who)
+dodges = []                                                 # (game t, x, y): an enemy round that missed you while you were low
 def draw(i):
     f = frames[i]; t = f["t"]; c = BG.copy()
     lift, tilt, sx, sy, sh = f["pose"]
@@ -93,6 +97,11 @@ def draw(i):
     for s in f["shots"]:
         who, ex, ey, hit = s
         if who in muz: traces.append((t, *muz[who], (ex - X0) * 16 * Z, (ey - Y0) * 16 * Z, hit, who))
+        if who.startswith("e") and not hit and f.get("low"): dodges.append((t, (f["x"] - X0) * 16 * Z, (f["y"] - Y0) * 16 * Z))
+    for k, e in enumerate(f["en"]):                          # the enemy's health, a thin bar over his head
+        if not e[2]: continue
+        bx, by = (e[0] - X0) * 16 * Z - 8 * Z, (e[1] - Y0) * 16 * Z - 12 * Z
+        dd.rectangle((bx, by, bx + 16 * Z, by + 2), fill=(20, 20, 20, 220)); dd.rectangle((bx, by, bx + 16 * Z * max(0, e[3]) / 1000, by + 2), fill=(200, 60, 50, 255))
     for (born, x0, y0, x1, y1, hit, who) in traces:
         age = t - born
         if age > 0.06: continue
@@ -104,10 +113,13 @@ def draw(i):
         if hit and age < 0.05:
             b = frame0(fx["fx_hit_blood"]).resize((frame0(fx["fx_hit_blood"]).width * Z, frame0(fx["fx_hit_blood"]).height * Z), Image.NEAREST)
             c.alpha_composite(b, (int(x1 - b.width / 2), int(y1 - b.height / 2)))
+    for (dt0, x, y) in dodges:
+        if 0 <= t - dt0 < 0.25: dd.text((x - 16, y - 26 - 20 * (t - dt0)), "DODGE", font=small, fill=(150, 220, 255, 255))
     big = c.resize((c.width * 2, c.height * 2), Image.NEAREST)
-    pane = Image.new("RGBA", (big.width, big.height + 34), (24, 26, 28, 255)); pane.alpha_composite(big, (0, 34))
+    pane = Image.new("RGBA", (big.width, big.height + (58 if NOTE else 34)), (24, 26, 28, 255)); pane.alpha_composite(big, (0, 34))
     pd = ImageDraw.Draw(pane)
     pd.text((10, 8), "Gunslinger: left button = right-hand gun, right button = left-hand gun", font=font, fill=(235, 220, 140))
+    if NOTE: pd.text((10, big.height + 38), NOTE, font=font, fill=(170, 170, 160))
     if f["slow"]: pd.text((big.width - 130, 8), "BULLET TIME", font=font, fill=(150, 200, 255))
     return pane
 
@@ -121,11 +133,11 @@ gif, t = [], 0.0
 while t <= clock:
     i = max(k for k in range(len(frames)) if stamps[k] <= t)
     gif.append(rendered[i].convert("P", palette=Image.ADAPTIVE, colors=160)); t += 1 / 30
-gif[0].save(os.path.join(out, "gunslinger_dive.gif"), save_all=True, append_images=gif[1:], duration=33, loop=0, disposal=2)
+gif[0].save(os.path.join(out, NAME + ".gif"), save_all=True, append_images=gif[1:], duration=33, loop=0, disposal=2)
 keys = [0.05, 0.31, 0.43, 0.54, 0.66, 0.9, 1.36, 1.83]
 cells = [rendered[min(range(len(frames)), key=lambda k: abs(frames[k]["t"] - kt))] for kt in keys]
 cw, ch = cells[0].width // 2, cells[0].height // 2
 strip = Image.new("RGBA", (cw * 4 + 30, ch * 2 + 10), (24, 26, 28, 255))
 for n, cimg in enumerate(cells): strip.alpha_composite(cimg.resize((cw, ch), Image.LANCZOS), ((n % 4) * (cw + 10), (n // 4) * (ch + 10)))
-strip.save(os.path.join(out, "gunslinger_dive_strip.png"))
+strip.save(os.path.join(out, NAME + "_strip.png"))
 print(len(gif), "gif frames,", round(clock, 2), "s real")
