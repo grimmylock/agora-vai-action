@@ -5,6 +5,7 @@ static class Program {
   static int Main(string[] args) {
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
+    if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -32,6 +33,7 @@ static class Program {
     TestingGroundChecks();
     SaveSlotChecks();
     NetChecks();
+    GunfeelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -813,6 +815,63 @@ static class Program {
     var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
     sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
     System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
+  }
+
+  // RT 7z: the starter pistol, fired from the hip at a man 5 tiles off, hits most of the time; enemies' own spread is untouched
+  static void GunfeelChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    try {
+      for (int y = py - 2; y <= py + 2; y++) for (int x = px; x <= px + 7; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      p.EquipWeapon("sidearm", "PSh18Pchela"); var w = p.EquippedWeapon;
+      var dummy = new HumanEnemy("Target", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
+      float spread = Gunplay.Spread(Gunplay.For(w), new Gunplay.Aim { Steady = 0.25f }, 0, false);
+      int hits = 0; for (int i = 0; i < 300; i++) { dummy.Hp = 100000; w.CurrentMagazine = 5; if (Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)[0].Unit == dummy) hits++; }
+      var (_, npc) = Gunplay.NpcAim(new HumanEnemy("R", px, py, "Raiders", "Rookie", null, null), w, p);
+      Check(hits > 240 && npc > spread * 1.5f, $"RT 7z: the starter pistol from the hip hits {hits * 100 / 300}% at 5 tiles (spread {spread:0.0} deg; a Rookie's stays {npc:0.0})");
+    } finally { EncounterState.Enemies.Clear(); Rt.On = false; }
+  }
+
+  // Yan, 2026-10-23: "enemies ... a lot more accurate than the player ... characters past a few 'me's' bullets already fly high or
+  // low". Hit chances (any part, 600 shots each) at a standing target in the open, chest-high aim, through the real Gunplay.Shoot.
+  static void AccuracyProbe() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    for (int y = py - 3; y <= py + 3; y++) for (int x = px - 2; x <= px + 22; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    int[] dists = { 3, 5, 8, 12, 16 };
+    Console.WriteLine("shooter                          " + string.Join("", dists.Select(d => $"{d,6}t")) + "   (tiles; a body is 0.82 tiles tall)");
+    string Pct(Func<bool> shot) { int hit = 0; for (int i = 0; i < 600; i++) if (shot()) hit++; return $"{100 * hit / 600,6}%"; }
+    var dummy = new HumanEnemy("Target", px, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+    void Player(string label, string cat, string key, float steady, float bloom, int move = 0) {
+      p.EquipWeapon(cat, key); var w = p.EquippedWeapon; var hd = Gunplay.For(w);
+      var line = $"you  {label,-28}";
+      foreach (var d in dists) {
+        EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); dummy.X = px + d; dummy.Y = py;
+        p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
+        var aim = new Gunplay.Aim { Steady = steady, Bloom = bloom };
+        float spread = Gunplay.Spread(hd, aim, move, false);
+        line += Pct(() => { dummy.Hp = 100000; w.CurrentMagazine = 5; return Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)[0].Unit == dummy; });
+      }
+      Console.WriteLine(line);
+    }
+    void Npc(string label, string rank, string cat, string key) {
+      var line = $"them {label,-28}";
+      foreach (var d in dists) {
+        var e = new HumanEnemy("Raider", px + d, py, "Raiders", rank, WeaponDatabase.Categories[cat][key], null) { IsAggroed = true };
+        EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(e); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(e, 0f, 0f);
+        var w = e.EquippedWeapon;
+        line += Pct(() => { p.HealPermanent(100000); Body.Reset(); var (h, spread) = Gunplay.NpcAim(e, w, p); return Gunplay.Shoot(e, w, -1f, 0f, h, spread, false)[0].Unit == p; });
+      }
+      Console.WriteLine(line);
+    }
+    Player("pistol, hip (no RMB)", "sidearm", "PSh18Pchela", 0.25f, 0f);
+    Player("pistol, hip, 2nd quick shot", "sidearm", "PSh18Pchela", 0.25f, 2.2f);
+    Player("pistol, hip, walking", "sidearm", "PSh18Pchela", 0.25f, 0f, 1);
+    Player("pistol, aimed (RMB held)", "sidearm", "PSh18Pchela", 1f, 0f);
+    Player("VKS-74U, hip", "assault", "VKS74U", 0.25f, 0f);
+    Player("VKS-74U, aimed", "assault", "VKS74U", 1f, 0f);
+    Npc("Rookie, pistol", "Rookie", "sidearm", "PSh18Pchela");
+    Npc("Rookie, VKS-74U", "Rookie", "assault", "VKS74U");
+    Npc("Veteran, VKS-74U", "Veteran", "assault", "VKS74U");
   }
 
   // RT 7y: the networking test's game side through a fake link - the input packet survives the wire, a joining friend gets a body

@@ -1,0 +1,10 @@
+shooter                               3t     5t     8t    12t    16t   (tiles; a body is 0.82 tiles tall)
+you  pistol, hip (no RMB)            98%    89%    59%    39%    26%
+you  pistol, hip, 2nd quick shot     86%    53%    33%    19%    14%
+you  pistol, hip, walking            95%    73%    48%    30%    21%
+you  pistol, aimed (RMB held)       100%    99%    94%    77%    64%
+you  VKS-74U, hip                    92%    68%    43%    26%    17%
+you  VKS-74U, aimed                 100%   100%    99%    90%    79%
+them Rookie, pistol                  53%    29%    16%    12%     6%
+them Rookie, VKS-74U                 63%    35%    19%    13%     6%
+them Veteran, VKS-74U                72%    47%    26%    16%    11%

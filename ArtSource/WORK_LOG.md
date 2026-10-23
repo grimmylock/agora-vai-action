@@ -3865,3 +3865,36 @@ The agreed next step (ACTION_DESIGN "Co-op": "Host runs the world ... other play
   - ESC still pauses a host's world.
   - No client-side prediction (the client's movement lags).
   - No leaving or rejoining from the UI (quit Play to stop).
+
+## RT 7z - gun feel: the player's spread, the shakedown's "shoot first" (2026-10-23)
+
+Yan: "enemies instantly shoot and kill me, also they're a lot more accurate than the player for some reason, also also weapon
+dispersion seems very high even for the starter pistol, characters past a few 'me's' bullets already fly high or low and miss
+them, like 5 players of distance, i think our range calculations do not work all that well now that the game is real time."
+And: "enemies instantly shoot and kill me, when exiting chat about the extorsion".
+- **Measured first:** new `dotnet /tmp/test.dll accuracy`, real `Gunplay.Shoot`, 600 shots per cell, chest-high aim at a
+  standing man in the open. Results in `Tools/probes/accuracy_rt7z.txt`.
+  - Before, per shot, the player was **not** less accurate than enemies; everyone missed a lot past ~5 tiles. Your hip-fired
+    pistol hit 49% at 5 tiles and 24% at 8. A Rookie Raider's pistol hit 30% at 5 tiles, a Veteran's rifle 47%.
+  - The spread is in degrees, scattered sideways and up/down alike (`Gunplay.Shoot`). At these ranges a 3 deg spread is
+    wider than a body (0.42 tiles wide, 0.82 tall); that's the shots flying high and low. The degrees date from one shot a
+    turn.
+  - Why enemies feel deadlier:
+    - they aim at your exact centre (`Gunplay.NpcAim`), while you aim with the mouse;
+    - several fire at once;
+    - every enemy fires the moment a fight starts. `RtAi.Tick`'s first shot has no wait, so the whole squad fires on the same
+      frame.
+- **Fix 1, the player's spread halved** (`Gunplay.PlayerSpread = 0.5`, inside `Gunplay.Spread`, which only the player's shots
+  and the crosshair use).
+  - Hip pistol: 90% at 5 tiles, 58% at 8.
+  - Aimed (RMB): 94% at 8 tiles, 77% at 12.
+  - Aimed VKS-74U: 91% at 12 tiles.
+  - Enemies unchanged (rule 6: never nerf enemies; the player gets the tools).
+- **Fix 2, the shakedown:** "Shoot first (they lose their first turn)" did nothing in real time. `EncounterState.Surprised` is
+  only read by the turn loop, so the gang fired at once anyway. Now they hold fire for 1.5 s (`RtAi.Hold`,
+  `Shakedown.SurpriseSeconds`), and the option reads "they're slow to react". "Refuse" still means they open fire straight away.
+- **Asked Yan, not done:** a reaction time for enemies when a fight starts or when they first see you (e.g. 0.3-0.8 s,
+  quicker with rank, each man his own). It would stop the "whole squad, same frame" volley. It changes how hard enemies
+  are, so it's Yan's call.
+- Harness: `GunfeelChecks` (the hip pistol hits 80%+ at 5 tiles; enemy spread untouched). ALL CHECKS PASSED. Not checked in
+  Unity.

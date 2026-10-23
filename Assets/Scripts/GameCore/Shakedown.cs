@@ -19,6 +19,7 @@ namespace GameCore
         public static bool TestApproach;   // headless: walk over anyway (the dialog then takes its first answer)
 
         public const int Pay = 0, HandGun = 1, Refuse = 2, ShootFirst = 3;
+        public const float SurpriseSeconds = 1.5f;   // RT 7z: real-time "they lose their first turn"
 
         static int Minute => (int)((MacroState.Current.Day * 24f + MacroState.Current.Hour) * 60f);
 
@@ -104,7 +105,7 @@ namespace GameCore
             if (p.Ru >= toll) { opts.Add($"Pay the toll ({toll} Ru)"); map.Add(Pay); }
             if (hasGun) { opts.Add($"Hand over your {gun.Name}"); map.Add(HandGun); }
             opts.Add("Refuse (they open fire)"); map.Add(Refuse);
-            opts.Add("Shoot first (they lose their first turn)"); map.Add(ShootFirst);
+            opts.Add(Rt.On ? "Shoot first (they're slow to react)" : "Shoot first (they lose their first turn)"); map.Add(ShootFirst);
 
             string others = gang.Count > 1 ? $" and {gang.Count - 1} more" : "";
             GameLog.Write($"{boss.Name}{others} stop in front of you, guns up. A shakedown.");
@@ -144,8 +145,9 @@ namespace GameCore
                 default:
                     Fight(gang, p);
                     EncounterState.Surprised = true;   // Batch 69: they lose their first turn
+                    if (Rt.On) foreach (var m in gang) RtAi.Hold(m, SurpriseSeconds);   // RT 7z: in real time "a turn" was never applied - they fired at once
                     p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);
-                    GameLog.Write($"You go for your gun before {boss.Name} finishes the sentence! They lose their first turn.");
+                    GameLog.Write($"You go for your gun before {boss.Name} finishes the sentence!{(Rt.On ? "" : " They lose their first turn.")}");
                     break;
             }
         }

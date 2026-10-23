@@ -151,13 +151,18 @@ namespace GameCore
         public static Aim AimOf(ICombatant u) { if (!Aims.TryGetValue(u, out var a)) Aims[u] = a = new Aim(); return a; }
         public static void Reset() => Aims.Clear();
 
-        /// <summary>Spread (degrees, one standard deviation) right now. move: 0 still, 1 walking, 2 sprinting.</summary>
+        /// <summary>RT 7z (Yan: "weapon dispersion seems very high even for the starter pistol ... past a few 'me's' bullets
+        /// already fly high or low"): the player's spread is halved. The degrees were set when one shot was a turn; in real time a
+        /// hip-fired pistol hit 24% at 8 tiles (Program.cs AccuracyProbe). Enemies keep theirs (NpcAim) - Yan's rule 6.</summary>
+        public const float PlayerSpread = 0.5f;
+
+        /// <summary>The player's spread (degrees, one standard deviation) right now. move: 0 still, 1 walking, 2 sprinting.</summary>
         public static float Spread(Handling h, Aim a, int move, bool crouched)
         {
             float s = h.Hip + (h.Steady - h.Hip) * a.Steady;
             s += (move == 1 ? 1.2f : move >= 2 ? 6f : 0f) * h.Move;
             if (crouched) s *= 0.8f;
-            return s + a.Bloom;
+            return (s + a.Bloom) * PlayerSpread;
         }
 
         /// <summary>Per frame: steady up while aiming (and not sprinting), the kick settles back.</summary>

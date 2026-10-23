@@ -79,6 +79,9 @@ namespace GameCore
             return null;
         }
 
+        /// <summary>Holds its fire for `seconds` (caught off guard: the shakedown's "shoot first").</summary>
+        public static void Hold(Mutant m, float seconds) { var s = Of(m); s.NextShot = System.Math.Max(s.NextShot, Time.time + seconds); s.BurstLeft = 0; }
+
         public static bool Pinned(Mutant m) => Minds.TryGetValue(m, out var s) && Time.time < s.PinnedUntil;
 
         /// <summary>A round just missed it (Gunplay): pinned for a moment.</summary>
