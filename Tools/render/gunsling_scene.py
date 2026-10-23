@@ -29,11 +29,12 @@ def glove(cuff, gl):                                       # HeldWeaponView.Glov
             if ch != ".": img.putpixel((x, y), col[ch])
     return img.resize((4 * Z, 3 * Z), Image.NEAREST)
 def gun(key): return Image.open(os.path.join(SPR, f"Weapons/weapon_{key}.png")).convert("RGBA")
-fx = {n: Image.open(os.path.join(SPR, f"Fx/{n}.png")).convert("RGBA") for n in ("fx_muzzle_1", "fx_hit_blood")}
+fx = {n: Image.open(os.path.join(SPR, f"Fx/{n}.png")).convert("RGBA") for n in ("fx_muzzle_1", "fx_hit_blood", "fx_blood_pool")}
+dead_at = {}                                                # enemy -> game time it went down
 def frame0(img, n=2): w = img.width // n; return img.crop((0, 0, w, img.height))
 
 P = d["player"]; E = d["enemies"]
-pbody, pglove, pgun = body(P["armor"]), glove(P["cuff"], P["glove"]), gun("PSh18Pchela")
+pbody, pglove, pgun = body(P["armor"]), glove(P["cuff"], P["glove"]), gun(d.get("pistol", "PSh18Pchela"))
 ebody = [body(e["armor"]) for e in E]; eglove = [glove(e["cuff"], e["glove"]) for e in E]; egun = [gun(e["gun"]) for e in E]
 
 def place_gun(layer, sprite, g, fr):
@@ -90,7 +91,14 @@ def draw(i):
             muz["L"], muz["R"] = m[0], m[1]
         else:
             x, y, alive, hp, efr = e
-            if not alive: continue
+            if not alive:                                   # down: on his side in a spreading pool (the game ragdolls; a still pose here)
+                dead_at.setdefault(k, t); age = min(1.0, (t - dead_at[k]) / 0.6)
+                fi = min(4, int(age * 5)); pool = fx["fx_blood_pool"].crop((fi * 16, 0, fi * 16 + 16, 12))   # 5 frames, growing (CombatFxView)
+                pw, ph = pool.width * Z, pool.height * Z
+                c.alpha_composite(pool.resize((pw, ph), Image.NEAREST), (int((x - X0) * 16 * Z - pw / 2), int((y - Y0) * 16 * Z + 2 * Z - ph / 2)))
+                lying = ebody[k].resize((16 * Z, 16 * Z), Image.NEAREST).rotate(90 if f["x"] > x else -90, resample=Image.NEAREST, expand=True)
+                c.alpha_composite(lying, (int((x - X0) * 16 * Z - lying.width / 2), int((y - Y0) * 16 * Z + 3 * Z - lying.height / 2)))
+                continue
             gl = [(eglove[k], efr[3], efr[4], efr[8])] + ([(eglove[k], efr[5], efr[6], efr[8])] if efr[7] else [])
             muz["e%d" % k] = unit(c, ebody[k], [(egun[k], E[k]["g"], efr)], gl, x, y)[0]
     dd = ImageDraw.Draw(c)

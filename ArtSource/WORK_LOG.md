@@ -4014,3 +4014,20 @@ camera, the sideways dodge looks okay no need to change that".
 - Sheet and GIF: `maps/renders/dive/dive_directions.png` / `.gif` (`dive_dirs.py` now writes both).
 - After an up dive he lies head-up, which reads much like standing during the 0.6 s sprawl. Not changed; to see in Unity.
 - ALL CHECKS PASSED. Not checked in Unity.
+
+## RT 7z-f - the dodge + kill scene with stronger pistols (2026-10-23)
+
+Yan: "dodging down is still weird, he rotates mid air then gets up and the image is inverted again, we'll need to think about
+that" (parked; one option is to drop the 180-degree turn and keep only the grow) and "try recreating the dodge + kill scene but
+give the character a stronger pistols to make the kill happen on screen".
+- `gunslingframes <json> duel <pistol>` runs the same duel with any pair of sidearms. Each gun fires as fast as it cycles,
+  the two in turns. Results (one Rookie Raider, VKS-74U, Raider Jacket, 5 tiles):
+  - **Black Harrier pair:** 4 of 4 rounds hit mid-dive (1000 -> 208 HP), and the killing shot lands at 0.87 s as you hit the
+    ground. He hits you twice as you leave the ground.
+  - **Steppe Eagle pair:** a kill at 0.87 s too; you take three hits.
+  - **RK-12 Kuvalda pair:** he's left on 11 HP. They hit hardest but cycle too slowly.
+- Render: `maps/renders/gunslinger/gunslinger_duel_kill.gif` (+ strip). The dead Raider lies on his side in the growing
+  `fx_blood_pool` (5 frames, as CombatFxView), a still pose; the game ragdolls instead. The only staged thing is the Raider
+  holding his first shot 0.25 s.
+- Fixed in the dump: a dead Raider drops his gun, so the scene keeps his weapon from the start.
+- ALL CHECKS PASSED.

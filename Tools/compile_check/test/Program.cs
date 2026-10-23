@@ -10,7 +10,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
-    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] == "duel"); return 0; }
+    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] == "duel", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -830,11 +830,14 @@ static class Program {
   // duel (Yan: "an example of the character dodging a shot with the jump and killing the enemy"): one Raider with a rifle at 5 tiles
   // who holds his first shot a quarter second (RtAi.Hold - the one staged thing), a dive across his line, both guns as fast as
   // they cycle until he drops
-  static void GunslingFrames(string path, bool duel = false) {
+  static void GunslingFrames(string path, bool duel = false, string pistol = "PSh18Pchela") {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 11000f;
     for (int y = py - 7; y <= py + 5; y++) for (int x = px - 4; x <= px + 13; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     Rt.SetOffset(p, 0f, 0f); TestingGround.GunslingerKit(p); p.HealPermanent(100000); Rt.Of(p).Focus = 100f;
+    if (pistol != "PSh18Pchela") {                                                          // Yan: "give the character a stronger pistols"
+      p.EquipWeapon("sidearm", pistol); p.OffhandWeapon = p.MakeWeapon("sidearm", pistol); p.OffhandKey = pistol;
+      TestingGround.RefillAmmo(p); }
     var foes = duel ? new List<HumanEnemy> {
       new HumanEnemy("Raider", px + 5, py, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } }
       : new List<HumanEnemy> {
@@ -842,20 +845,22 @@ static class Program {
       new HumanEnemy("Raider", px + 9, py + 1, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } };
     EncounterState.Enemies.Clear(); foreach (var f in foes) { EncounterState.Enemies.Add(f); Rt.SetOffset(f, 0f, 0f); }
     if (duel) RtAi.Hold(foes[0], 0.25f);
+    var foeGuns = foes.Select(f => f.EquippedWeapon.Db).ToList();
     EncounterState.InCombat = true; Contact.Spot(p);
     string Hex(string[] arr, string name) { int i = Array.IndexOf(SpriteAtlasIndex.Armor, name ?? ""); return i >= 0 ? arr[i] : "#3d4148"; }
     string Who(ICombatant u, Weapon w) => u == p ? (w == p.OffhandWeapon ? "L" : "R") : "e" + foes.IndexOf(u as HumanEnemy);
-    var g = WeaponArt.GripOf("sidearm", "PSh18Pchela"); var feel = WeaponFeel.For(p.EquippedWeapon.Db);
+    var g = WeaponArt.GripOf("sidearm", pistol); var feel = WeaponFeel.For(p.EquippedWeapon.Db);
     var last = new Dictionary<string, float> { ["R"] = -99f, ["L"] = -99f, ["e0"] = -99f, ["e1"] = -99f };
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string F(float v) => v.ToString("0.###", inv);
     string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)}]";
     var sb = new System.Text.StringBuilder();
-    sb.Append("{\"player\":{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, p.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, p.EquippedArmor?.Name) + "\",\"g\":[" + string.Join(",", g.Select(F)) + "]},\"enemies\":[");
+    sb.Append("{\"pistol\":\"" + pistol + "\",\"player\":{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, p.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, p.EquippedArmor?.Name) + "\",\"g\":[" + string.Join(",", g.Select(F)) + "]},\"enemies\":[");
     for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (cat, key) = WeaponArt.Identify(e.EquippedWeapon.Db);
       sb.Append((i > 0 ? "," : "") + "{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, e.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, e.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, e.EquippedArmor?.Name) + "\",\"gun\":\"" + key + "\",\"cat\":\"" + cat + "\",\"g\":[" + string.Join(",", WeaponArt.GripOf(cat, key).Select(F)) + "]}"); }
     sb.Append("],\"origin\":[" + px + "," + py + "],\"frames\":[");
-    float dt = 1f / 60f; int shot = 0; float nextShot = duel ? 0.2f : 0.3f, gap = duel ? 0.1f : 0.11f, end = duel ? 4f : 2.2f, diedAt = -1f; int diveFrame = duel ? 8 : 15;
+    float cycle = 60f / Gunplay.For(p.EquippedWeapon).Rpm;                                     // each gun's fastest; the two take turns
+    float dt = 1f / 60f; int shot = 0; float nextShot = duel ? 0.2f : 0.3f, gap = duel ? cycle / 2f + 0.005f : 0.11f, end = duel ? 4f : 2.2f, diedAt = -1f; int diveFrame = duel ? 8 : 15;
     for (int k = 0; k * dt < end; k++) {
       float t = k * dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = Rt.SlowMo ? dt / Rt.SlowScale : dt;   // bullet time: the aim steadies on real seconds
       var target = foes.FirstOrDefault(f => f.IsAlive()) ?? foes[0];
@@ -878,8 +883,9 @@ static class Program {
       var fR = HeldPoseMath.Frame("sidearm", g, local, HeldPoseMath.Recoil(t - last["R"], feel.Recover), feel.Climb, feel.Kick, 99f, 1f, "", 1);
       var fL = HeldPoseMath.Offhand(HeldPoseMath.Frame("sidearm", g, local, HeldPoseMath.Recoil(t - last["L"], feel.Recover), feel.Climb, feel.Kick, 99f, 1f, "", 1), local);
       var en = new List<string>();
-      for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (ex, ey) = Ballistics.Pos(e); var (cat, key) = WeaponArt.Identify(e.EquippedWeapon.Db);
-        var ef = WeaponFeel.For(e.EquippedWeapon.Db); float ea = UnityEngine.Mathf.Atan2(-(ppy - ey), ppx - ex) * UnityEngine.Mathf.Rad2Deg;
+      for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (ex, ey) = Ballistics.Pos(e); var edb = e.EquippedWeapon?.Db ?? foeGuns[i];   // dead: he dropped it
+        var (cat, key) = WeaponArt.Identify(edb);
+        var ef = WeaponFeel.For(edb); float ea = UnityEngine.Mathf.Atan2(-(ppy - ey), ppx - ex) * UnityEngine.Mathf.Rad2Deg;
         var fe = HeldPoseMath.Frame(cat, WeaponArt.GripOf(cat, key), ea, HeldPoseMath.Recoil(t - last["e" + i], ef.Recover), ef.Climb, ef.Kick, 99f, 1f, "", 1);
         en.Add($"[{F(ex)},{F(ey)},{(e.IsAlive() ? 1 : 0)},{e.Hp},{Fr(fe)}]"); }
       sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp},\"low\":{(Rt.Low(p) ? 1 : 0)}}}");
