@@ -57,6 +57,7 @@ namespace GameCore
         {
             if (unit == null) return null;
             if (unit == Player.Current) return _playerMarker;
+            if (unit is Player fp) return _friendMarkers.TryGetValue(fp, out var fm) ? fm : null;
             int i = unit is Mutant m ? EncounterState.Enemies.IndexOf(m) : -1;
             return i >= 0 && i < _enemyMarkers.Count ? _enemyMarkers[i] : null;
         }
@@ -201,10 +202,10 @@ namespace GameCore
             ColorGrade.Apply(look);
             if (look.Rain > 0.75f) Sfx.Ambient("amb_storm"); else if (look.Rain > 0f) Sfx.Ambient("amb_rain"); else Sfx.Ambient(Sfx.AmbientFor(MacroState.Current.CurrentZoneId));   // the map overhaul: the region you stand in
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
-            float tilt = downNow ? 90f : Rt.Me.Diving ? (Rt.Me.DiveRight ? -70f : 70f) : Rt.Low(player) ? (Rt.Me.DiveRight ? -90f : 90f) : Held(_playerMarker).Lean;   // RT batch 3: into the dive, sprawled after it; RT 7c: leaning into a swing
-            _playerMarker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+            PoseBody(_playerMarker, player, downNow);
             Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker));
+            DrawFriends();
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker
             var speaker = ChoiceUI.Speaker; var spm = speaker != null && speaker != player ? MarkerOf(speaker) : null;
@@ -607,7 +608,10 @@ namespace GameCore
         {
             if (u is Player && !Rt.On) return PlayerController.StandAt;
             var (ox, oy) = Rt.Offset(u);                                   // real-time fork: where the body really is (tile space, y down)
-            return new Vector3(ox, -oy + (u is Player up ? Rt.Of(up).VaultLift : 0f), 0f);   // vaulting: up and over
+            if (!(u is Player up)) return new Vector3(ox, -oy, 0f);
+            var pose = Rt.PoseOf(up);                                          // RT 7z: the dive's arc; a crouch keeps the feet on the ground
+            float feet = 7f / 16f * (1f - pose.SquashY) * Mathf.Cos(pose.Tilt * Mathf.Deg2Rad);
+            return new Vector3(ox, -oy + Rt.Of(up).VaultLift + pose.Lift - feet, 0f);   // vaulting: up and over
         }
 
         /// <summary>Batch 24: positions (walking), art (walk frames) and death (ragdoll) for one unit.
@@ -617,6 +621,8 @@ namespace GameCore
         /// the back sprite (UnitSprites.Away) and the held gun together, so the gun always points where the body faces.</summary>
         private Vector3? AimPoint(ICombatant u, SpriteRenderer m)
         {
+            if (u is Player fp && fp != Player.Current)                       // a friend: their own crosshair (their Input packets / the snapshot)
+                return Rt.Of(fp).AimAt is (float, float) a ? new Vector3(a.Item1, -a.Item2, 0f) : (Vector3?)null;
             if (u is Player)
             {
                 var sp = ChoiceUI.Speaker; var sm = sp != null && sp != u ? MarkerOf(sp) : null;
@@ -629,6 +635,63 @@ namespace GameCore
         }
         private readonly Dictionary<SpriteRenderer, bool> _away = new Dictionary<SpriteRenderer, bool>();
         private bool Away(SpriteRenderer m) => _away.TryGetValue(m, out var b) && b;
+
+        /// <summary>RT 7z: a player's body turned, squashed and lifted by the moment (Rt.PoseOf: the dive's crouch, arc, landing and
+        /// get-up; down = on their side; else leaning into a swing). While posed, the shadow stays on the ground under them and
+        /// shrinks with the height (a ground-level copy, since the body's own child shadow turns and lifts with it).</summary>
+        private void PoseBody(SpriteRenderer marker, Player p, bool down)
+        {
+            var pose = Rt.PoseOf(p);
+            float tilt = down ? 90f : pose.Active ? pose.Tilt : Held(marker).Lean;
+            marker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+            if (!down && pose.Active) marker.transform.localScale = new Vector3(marker.transform.localScale.x * pose.SquashX, marker.transform.localScale.y * pose.SquashY, 1f);
+            bool flying = !down && pose.Active && pose.Lift > 0.01f;
+            if (_shadows.TryGetValue(marker, out var own) && own != null) own.enabled = !flying;
+            if (!_groundShadows.TryGetValue(marker, out var g) || g == null)
+            {
+                if (own == null) return;
+                g = new GameObject("GroundShadow").AddComponent<SpriteRenderer>();
+                g.transform.SetParent(_root.transform, false);
+                g.sprite = own.sprite; g.color = own.color;
+                _groundShadows[marker] = g;
+            }
+            g.enabled = flying;
+            if (!flying) return;
+            var c = marker.transform.position;
+            g.transform.position = new Vector3(c.x, c.y - pose.Lift - 7f / TerrainArt.Px * Mathf.Cos(pose.Tilt * Mathf.Deg2Rad), 0f);
+            g.transform.localScale = new Vector3(pose.Shadow, pose.Shadow, 1f);
+            g.sortingOrder = SortAt(c.y - pose.Lift) - 1;
+        }
+        private readonly Dictionary<SpriteRenderer, SpriteRenderer> _groundShadows = new Dictionary<SpriteRenderer, SpriteRenderer>();
+
+        /// <summary>Co-op: every other player gets a body, their gun pointed at their own crosshair. (Before RT 7z only you were drawn.)</summary>
+        private void DrawFriends()
+        {
+            foreach (var p in Player.All)
+            {
+                if (p == Player.Current) continue;
+                if (!_friendMarkers.TryGetValue(p, out var m) || m == null)
+                {
+                    m = CreateMarker("Friend", new Color(0.3f, 0.85f, 1f), TileWorldSize * 0.7f, 5, _root.transform, _spriteBeing);
+                    m.gameObject.AddComponent<UnityEngine.Rendering.SortingGroup>();
+                    _friendMarkers[p] = m;
+                }
+                bool up = DrawUnit(p, m, new Color(0.3f, 0.85f, 1f));
+                bool down = Body.Down(p);
+                PoseBody(m, p, down);
+                Held(m).Show(p.EquippedWeapon, p.EquippedArmor, m.transform.position, AimPoint(p, m), up && !down, Away(m));
+            }
+            foreach (var gone in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(_friendMarkers.Keys, k => !Player.All.Contains(k))))
+            {
+                var m = _friendMarkers[gone]; _friendMarkers.Remove(gone);
+                if (m == null) continue;
+                _held.Remove(m);
+                if (_groundShadows.TryGetValue(m, out var g) && g != null) Destroy(g.gameObject);
+                _groundShadows.Remove(m);
+                Destroy(m.gameObject);
+            }
+        }
+        private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
 
         private bool DrawUnit(ICombatant u, SpriteRenderer marker, Color fallback)
         {

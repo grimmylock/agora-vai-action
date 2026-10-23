@@ -73,6 +73,7 @@ namespace GameCore
             public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
             public string UsingId;
             public float Reviving;                                    // seconds E has been held over a downed friend
+            public (float x, float y)? AimAt;                         // RT 7z: where this player's crosshair is (tile space) - friends' guns point there
             public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
@@ -239,6 +240,7 @@ namespace GameCore
 
             // ---- moving ----
             float ix = i.X, iy = i.Y;
+            if (i.Mouse.HasValue) s.AimAt = i.Mouse;
             p.Sneaking = down || i.Sneak;
             s.Aiming = !down && i.Aim;
             bool wantSprint = i.Sprint && !p.Sneaking && !s.Aiming && !Body.LegHurt(p) && s.UsingId == null && (ix != 0 || iy != 0);
@@ -261,7 +263,8 @@ namespace GameCore
             {
                 s.Moving = 0;
                 var (bx, by) = Ballistics.Pos(p);
-                MoveBy(p, s.DiveX * DiveSpeed * dt, s.DiveY * DiveSpeed * dt);
+                float k = DiveSpeedAt(DiveTime - (s.DiveUntil - Time.time));   // RT 7z: slow in the crouch, fast in the air, a skid on landing
+                MoveBy(p, s.DiveX * DiveSpeed * k * dt, s.DiveY * DiveSpeed * k * dt);
                 var (ax, ay) = Ballistics.Pos(p);
                 bool blocked = dt > 0f && Mathf.Abs(ax - bx) + Mathf.Abs(ay - by) < DiveSpeedFloor * dt;
                 if (Time.time >= s.DiveUntil || blocked) Land(p);
@@ -386,6 +389,57 @@ namespace GameCore
         public const float DiveCost = 40f, DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
         const float DiveSpeedFloor = 1f;                              // moved slower than this (tiles/s): hit a wall, land now
         public static bool SlowMo;                                    // ponytail: one time scale for everyone - step 4 makes it per fight
+
+        // ---- RT 7z, the dive's look (Yan: "maybe the character lowers himself to build momentum before jumping, today he kinda just
+        //      turns sideways and there's no sense of momentum or height"). The same 0.55 s, in four beats: a crouch that loads the
+        //      legs (squashed, leaning in, barely moving), the launch and the arc (stretched, rising to 0.45 tiles and down, turning
+        //      flat; the shadow stays on the ground and shrinks), the belly landing (squashed flat, skidding), then the get-up at the
+        //      end of the prone time. The distance covered is unchanged (DiveSpeedAt averages to 1). ----
+        public const float DiveCrouch = 0.1f, DiveLanding = 0.08f, DiveHeight = 0.45f, GetUpTime = 0.2f;
+        const float CrouchPace = 0.3f, SkidPace = 0.6f;
+        static float AirPace => (DiveTime - CrouchPace * DiveCrouch - SkidPace * DiveLanding) / (DiveTime - DiveCrouch - DiveLanding);
+
+        /// <summary>The dive's speed (x DiveSpeed) `t` seconds into it.</summary>
+        public static float DiveSpeedAt(float t) => t < DiveCrouch ? CrouchPace : t < DiveTime - DiveLanding ? AirPace : SkidPace;
+
+        public struct Pose { public bool Active; public float Lift, Tilt, SquashX, SquashY, Shadow; }
+
+        /// <summary>How a player's body is drawn right now: height off the ground (tiles), turn (degrees; + = to the left), squash
+        /// along and across the body, and the ground shadow's size.</summary>
+        public static Pose PoseOf(Player p)
+        {
+            var s = Of(p); float now = Time.time, side = s.DiveRight ? -1f : 1f;
+            var o = new Pose { SquashX = 1f, SquashY = 1f, Shadow = 1f };
+            if (s.Diving)
+            {
+                o.Active = true;
+                float t = Mathf.Clamp(DiveTime - (s.DiveUntil - now), 0f, DiveTime), air = DiveTime - DiveCrouch - DiveLanding;
+                if (t < DiveCrouch)                                          // loading the legs
+                {
+                    float k = t / DiveCrouch;
+                    o.Tilt = side * 20f * k; o.SquashY = 1f - 0.28f * k; o.SquashX = 1f + 0.14f * k;
+                }
+                else if (t < DiveTime - DiveLanding)                         // launch and arc
+                {
+                    float u = (t - DiveCrouch) / air, pop = Mathf.Max(0f, 1f - u / 0.35f);
+                    o.Lift = DiveHeight * Mathf.Sin(Mathf.PI * u);
+                    o.Tilt = side * (20f + 70f * Mathf.Min(1f, u * 1.8f));
+                    o.SquashY = 1f + 0.14f * pop; o.SquashX = 1f - 0.1f * pop;
+                }
+                else                                                         // belly landing
+                {
+                    float k = (t - (DiveTime - DiveLanding)) / DiveLanding;
+                    o.Tilt = side * 90f; o.SquashY = 0.8f + 0.2f * k; o.SquashX = 1.12f - 0.12f * k;
+                }
+                o.Shadow = 1f - 0.45f * o.Lift / DiveHeight;
+            }
+            else if (now < s.ProneUntil)                                     // sprawled, then pushing back up
+            {
+                o.Active = true;
+                o.Tilt = side * 90f * Mathf.Clamp01((s.ProneUntil - now) / GetUpTime);
+            }
+            return o;
+        }
         public static bool Low(ICombatant u) => On && u is Player p && (Of(p).Diving || Time.time < Of(p).ProneUntil);   // airborne or sprawled: a low target
 
         public static void AddFocus(Player p, float f)
@@ -416,6 +470,7 @@ namespace GameCore
         {
             var s = Of(p);
             s.DiveUntil = -1f;
+            Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f, 0.1f, 0.7f);   // RT 7z: the body hits the ground
             s.ProneUntil = Time.time + (CombatantUtil.HasPerk(p, "Tumbler") ? 0.35f : ProneTime);
             if (!Player.All.Any(o => Of(o).Diving)) SetSlow(false);   // still slow while a friend is mid-dive
             Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f);

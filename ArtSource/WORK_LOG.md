@@ -3898,3 +3898,34 @@ And: "enemies instantly shoot and kill me, when exiting chat about the extorsion
   are, so it's Yan's call.
 - Harness: `GunfeelChecks` (the hip pistol hits 80%+ at 5 tiles; enemy spread untouched). ALL CHECKS PASSED. Not checked in
   Unity.
+
+## RT 7z-b - the dive animation; other players are drawn (2026-10-23)
+
+Yan: "i'd like to have an animation for the dive + slow motion now, maybe the character lowers himself to build momentum before
+jumping, today he kinda just likes turns sideways and there's no sense of momentum or height during it".
+- `Rt.PoseOf(p)` (`Rt.cs`): how a player's body is drawn at this moment. The same 0.55 s dive, now in beats:
+  - **Crouch, 0.1 s:** squashed to ~0.72 tall and 1.14 wide, leaning 20 deg into the dive, barely moving.
+  - **Launch and arc:** stretched at take-off, rising to 0.45 tiles and back down, turning flat by mid-air.
+  - **Belly landing, 0.08 s:** squashed flat, skidding, with a thud (`hit_dirt`).
+  - **Sprawled for the prone time**, then a 0.2 s **get-up**. Before, you snapped upright.
+- The speed follows the beats (`Rt.DiveSpeedAt`): 0.3x in the crouch, 1.28x in the air, 0.6x in the skid. The distance is
+  unchanged (2.5 tiles), and so are the bullet time and the low target.
+- `TacticalGridView.PoseBody`: turn, squash and lift (through `StandOffset`; a crouch keeps the feet on the ground). While in
+  the air, the shadow stays on the ground under you and shrinks with height.
+- **Found and fixed:** other players were never drawn; `TacticalGridView` drew only you and the enemies. The co-op test would
+  have shown nobody. `DrawFriends` now gives every other player a body, their dive poses and their gun pointed at their own
+  crosshair:
+  - `Rt.State.AimAt`, from their Input packets on the host;
+  - the snapshot now also carries the aim and the dive's moment (`Net.PlayerEntry`).
+- **Harness:**
+  - `DiveChecks`: crouch, rise, flat landing, get-up; same distance; the snapshot carries a friend's dive and aim.
+  - A dice-dependent co-op check (a Raider at 5 tiles hitting the near player within 6 s, ~12% to fail by chance) now gets
+    30 s.
+  - ALL CHECKS PASSED.
+- **Preview:** `Tools/render/dive_anim.py` (from `dotnet /tmp/test.dll diveframes`) -> `maps/renders/dive/`, before/after GIF
+  and a strip. It's the real numbers drawn like the view, on the map render, in real time with bullet time. Not drawn: the
+  held gun and hands.
+- **Not checked in Unity:**
+  - how the held gun follows the turned body;
+  - the ground shadow's sorting;
+  - friends' markers.

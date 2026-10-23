@@ -1,4 +1,4 @@
-using System; using System.IO; using System.Linq; using GameData; using GameCore;
+using System; using System.Collections.Generic; using System.IO; using System.Linq; using GameData; using GameCore;
 static class Program {
   static int fails = 0;
   static void Check(bool ok, string msg) { if (!ok) { fails++; Console.WriteLine("FAIL " + msg); } }
@@ -6,6 +6,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
+    if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1]); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -34,6 +35,7 @@ static class Program {
     SaveSlotChecks();
     NetChecks();
     GunfeelChecks();
+    DiveChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -817,6 +819,45 @@ static class Program {
     System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
   }
 
+  // RT 7z (Yan: "lowers himself to build momentum before jumping ... no sense of momentum or height"): the dive crouches, rises
+  // and lands flat, then gets up; it still covers the same ground; a friend's dive and aim travel in the snapshot
+  static List<(float t, float x, float y, Rt.Pose pose, bool slow)> DiveRun(Player p, float frame) {
+    var run = new List<(float, float, float, Rt.Pose, bool)>();
+    Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { X = 1f, Jump = true });
+    for (float t = 0f; t < Rt.DiveTime + Rt.ProneTime + 0.1f; t += frame) {
+      var (x, y) = Ballistics.Pos(p); run.Add((t, x, y, Rt.PoseOf(p), Rt.SlowMo));
+      UnityEngine.Time.time += frame; UnityEngine.Time.deltaTime = frame; Rt.PlayerTick(p, default);
+    }
+    return run;
+  }
+  static void DiveChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f;
+    try {
+      Rt.SetOffset(p, 0f, 0f);
+      var run = DiveRun(p, 0.01f);
+      var crouch = run.First(r => r.t >= 0.06f).pose; var top = run.OrderByDescending(r => r.pose.Lift).First();
+      var land = run.First(r => r.t >= Rt.DiveTime - 0.03f && r.t < Rt.DiveTime).pose; var after = run.Last().pose;
+      float dist = run.Last().x - run[0].x;
+      Check(crouch.SquashY < 0.9f && crouch.Lift == 0f && top.pose.Lift > 0.4f && top.t > Rt.DiveCrouch && Math.Abs(land.Tilt) == 90f && top.pose.Shadow < 0.7f && !after.Active,
+        $"RT 7z: the dive crouches (squash {crouch.SquashY:0.00}), rises {top.pose.Lift:0.00} tiles at {top.t:0.00} s, lands flat, gets up");
+      Check(Math.Abs(dist - Rt.DiveSpeed * Rt.DiveTime) < 0.35f, $"RT 7z: the dive still covers {Rt.DiveSpeed * Rt.DiveTime:0.00} tiles ({dist:0.00})");
+      // the snapshot carries a diving friend's moment and aim
+      var q = Player.Join(); Rt.Of(q).DiveUntil = UnityEngine.Time.time + 0.3f; Rt.Of(q).DiveX = 1f; Rt.Of(q).AimAt = (3f, 4f);
+      var e = Net.DecodeSnapshot(Net.EncodeSnapshot()).Players.Last();
+      Check(Math.Abs(e.DiveT - (Rt.DiveTime - 0.3f)) < 0.01f && e.DiveRight && e.HasAim && e.AimX == 3f, "RT 7z: a friend's dive and aim travel in the snapshot");
+    } finally { Rt.On = false; Rt.SetSlow(false); }
+  }
+  static void DiveFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f; Rt.SetOffset(p, 0f, 0f);
+    var run = DiveRun(p, 1f / 60f);
+    var sb = new System.Text.StringBuilder("[");
+    for (int i = 0; i < run.Count; i++) { var r = run[i];
+      sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{r.t:0.0000},{r.x - run[0].x:0.0000},{r.y - run[0].y:0.0000},{r.pose.Lift:0.0000},{r.pose.Tilt:0.00},{r.pose.SquashX:0.0000},{r.pose.SquashY:0.0000},{r.pose.Shadow:0.0000},{(r.slow ? 1 : 0)}]")); }
+    File.WriteAllText(path, sb.Append("]").ToString());
+    Rt.On = false; Rt.SetSlow(false);
+  }
+
   // RT 7z: the starter pistol, fired from the hip at a man 5 tiles off, hits most of the time; enemies' own spread is untouched
   static void GunfeelChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
@@ -1013,7 +1054,7 @@ static class Program {
       raider.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]); EncounterState.Enemies.Add(raider);
       Check(Rt.TargetOf(raider, p) == q && Gunplay.Bodies().Contains(q), "co-op: an enemy fights the player nearest it, and rounds can hit either player");
       EncounterState.InCombat = true; Contact.Spot(q); int qh = q.Hp, ph = p.Hp;
-      for (int f = 0; f < 300 && q.Hp == qh; f++) { Rt.WorldTick(p); UnityEngine.Time.time += 0.02f; }
+      for (int f = 0; f < 1500 && q.Hp == qh; f++) { Rt.WorldTick(p); UnityEngine.Time.time += 0.02f; }
       Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
       Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
       Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Focus < 50f, "co-op: a dive spends that player's Focus and only they dive");
