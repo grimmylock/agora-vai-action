@@ -388,7 +388,7 @@ namespace GameCore
 
         static void PlayerFire(Player p, Weapon w, Handling hd, Gunplay.Aim aim, (float x, float y) at)
         {
-            aim.NextShot = Time.time + 60f / hd.Rpm;
+            aim.NextShot = Time.time + 60f / hd.Rpm * (SlowMo ? SlowScale : 1f);   // RT 7z-g: bullet time never slows a player's trigger (enemies stay slowed)
             if (CombatRules.IsMelee(w)) { Melee.PlayerAttack(p, w, at, Of(p).Aiming); return; }   // RT 7a: swing, or aim and throw
             if (w.IsJammed) { CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} is jammed - R to clear it."); return; }
             if (w.CurrentMagazine <= 0) { Sfx.Play("dryfire", TacticalGridView.GridToWorld(p.X, p.Y)); return; }

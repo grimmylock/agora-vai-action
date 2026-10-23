@@ -17,7 +17,7 @@ frames = d["frames"]
 world = Image.open(os.path.join(R, "Tools/render/_render/perimeter.png")).convert("RGBA")
 atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
 Z = 2                                   # canvas px per character px (a weapon px is half a character px)
-X0, Y0, W, H = 75.5, 164.0, 17.0, 9.5   # the view, tiles
+X0, Y0, W, H = map(float, os.environ.get("VIEW", "75.5,164,17,9.5").split(","))   # the view, tiles (VIEW=x0,y0,w,h)
 BG = world.crop((int(X0 * 16), int(Y0 * 16), int((X0 + W) * 16), int((Y0 + H) * 16))).resize((int(W * 16 * Z), int(H * 16 * Z)), Image.NEAREST)
 
 def hexc(h, a=255): v = int(h.lstrip("#"), 16); return ((v >> 16) & 255, (v >> 8) & 255, v & 255, a)

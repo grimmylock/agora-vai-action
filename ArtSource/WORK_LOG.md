@@ -4031,3 +4031,17 @@ give the character a stronger pistols to make the kill happen on screen".
   holding his first shot 0.25 s.
 - Fixed in the dump: a dead Raider drops his gun, so the scene keeps his weapon from the start.
 - ALL CHECKS PASSED.
+
+## RT 7z-g (2026-10-23): bullet time no longer slows the player's trigger; RK-12 sideways dive scene
+
+Yan: "the dive nerfs our attack speed as well ... make it so dive does not nerf attack speed" - "not nerf attack speed for the
+players*, to the enemies it does".
+- `Rt.PlayerFire`: the gap to the next shot is scaled by `SlowScale` in bullet time, so a player's guns (both hands) keep
+  their real-time rate while everything else, enemy guns included, runs at x0.3. Check in `GunslingerChecks`. Reloads still
+  run on game time (slowed): not asked.
+- Slow visible bullets: rounds are hitscan (`Ballistics.cs:9`), so there is nothing in flight to slow. Asked Yan: real
+  projectiles for everyone, or tracers only.
+- Scene: `gunslingframes <json> side RK12Kuvalda` dives sideways with one Rookie Raider 6 tiles up the screen;
+  `gunsling_scene.py` takes `VIEW=x0,y0,w,h`. Renders `maps/renders/gunslinger/gunslinger_side_rk12.gif` / `_strip.png`.
+  Result: 3 of the first 3 rounds hit (1000 -> 186), then the RK-12's kick bloom plus being pinned by his near misses
+  scatter the rest; 10 rounds gone by 0.95 s (5-round cylinders), he lives on 136. All three of his shots missed (the dive).

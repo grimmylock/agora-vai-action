@@ -10,7 +10,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
-    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] == "duel", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
+    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -830,16 +830,17 @@ static class Program {
   // duel (Yan: "an example of the character dodging a shot with the jump and killing the enemy"): one Raider with a rifle at 5 tiles
   // who holds his first shot a quarter second (RtAi.Hold - the one staged thing), a dive across his line, both guns as fast as
   // they cycle until he drops
-  static void GunslingFrames(string path, bool duel = false, string pistol = "PSh18Pchela") {
+  static void GunslingFrames(string path, string mode = "", string pistol = "PSh18Pchela") {
+    bool side = mode == "side", duel = mode == "duel" || side;   // side (RT 7z-g): dive sideways, the Raider up the screen
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 11000f;
-    for (int y = py - 7; y <= py + 5; y++) for (int x = px - 4; x <= px + 13; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    for (int y = py - 8; y <= py + 5; y++) for (int x = px - 4; x <= px + 13; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     Rt.SetOffset(p, 0f, 0f); TestingGround.GunslingerKit(p); p.HealPermanent(100000); Rt.Of(p).Focus = 100f;
     if (pistol != "PSh18Pchela") {                                                          // Yan: "give the character a stronger pistols"
       p.EquipWeapon("sidearm", pistol); p.OffhandWeapon = p.MakeWeapon("sidearm", pistol); p.OffhandKey = pistol;
       TestingGround.RefillAmmo(p); }
     var foes = duel ? new List<HumanEnemy> {
-      new HumanEnemy("Raider", px + 5, py, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } }
+      new HumanEnemy("Raider", side ? px + 1 : px + 5, side ? py - 6 : py, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } }
       : new List<HumanEnemy> {
       new HumanEnemy("Raider", px + 8, py - 2, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true },
       new HumanEnemy("Raider", px + 9, py + 1, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } };
@@ -866,8 +867,8 @@ static class Program {
       var target = foes.FirstOrDefault(f => f.IsAlive()) ?? foes[0];
       var (tx, ty) = Ballistics.Pos(target);
       var input = new Rt.Input { Mouse = (tx, ty) };
-      if (k == diveFrame) { input.Y = -1f; input.Jump = true; }                              // the dive, up the screen
-      if (t >= nextShot && foes.Any(f => f.IsAlive())) { if (shot % 2 == 0) input.FireDown = true; else input.Fire2Down = true; shot++; nextShot = t + gap; }
+      if (k == diveFrame) { if (side) input.X = 1f; else input.Y = -1f; input.Jump = true; }   // the dive: up the screen, or sideways
+      if (t >= nextShot && foes.Any(f => f.IsAlive())) { if (shot % 2 == 0) input.FireDown = true; else input.Fire2Down = true; shot++; nextShot = t + (Rt.SlowMo ? gap * Rt.SlowScale : gap); }   // RT 7z-g: bullet time keeps the trigger's real rate
       if (duel && diedAt < 0f && !foes[0].IsAlive()) { diedAt = t; end = t + 0.8f; }
       if (Environment.GetEnvironmentVariable("SPREAD_DEBUG") == "1" && (input.FireDown || input.Fire2Down)) {
         var am = input.FireDown ? Gunplay.AimOf(p) : Gunplay.OffAimOf(p); var hdd = Gunplay.For(p.EquippedWeapon);
@@ -914,6 +915,8 @@ static class Program {
       UnityEngine.Time.time += 0.1f;
       Rt.PlayerTick(p, new Rt.Input { FireDown = true, Fire2Down = true, Mouse = at });
       Check(Rt.Of(p).Diving && main.CurrentMagazine == m0 - 2 && off.CurrentMagazine == o0 - 2, "RT 7z-c: both guns fire mid-dive");
+      Check(Rt.SlowMo && main.Db != null && System.Math.Abs(Gunplay.AimOf(p).NextShot - UnityEngine.Time.time - 60f / Gunplay.For(main).Rpm * Rt.SlowScale) < 0.001f,
+        "RT 7z-g: in bullet time the player's guns keep their real-time rate (the game-time gap shrinks with the time scale)");
       for (int f = 0; f < 60; f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
       Rt.PlayerTick(p, new Rt.Input { Reload = true, Mouse = at });
       for (int f = 0; f < 400 && (main.CurrentMagazine < main.MagCapacity || off.CurrentMagazine < off.MagCapacity); f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
