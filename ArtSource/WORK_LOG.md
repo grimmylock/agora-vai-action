@@ -4002,3 +4002,15 @@ with the jump and killing the enemy ... (no need to teleport, just the dodge and
     rounds. Levers offered to Yan (player tools, rule 6), not built.
 - Harness: an up dive lies head-up and foreshortened, a down dive head-down turning in the air. ALL CHECKS PASSED, 3 runs
   in a row.
+
+## RT 7z-e - dives up/down grow toward the camera instead of squashing (2026-10-23)
+
+Yan: "the side dodges look great but dodging up doesn't, because the character squishes himself and un-squishes after, what if
+you try playing a trick on the camera by making the character a little bigger during the dodge so it seems he's closer to the
+camera, the sideways dodge looks okay no need to change that".
+- `Rt.PoseOf`: the foreshortening is gone. The body grows with its height in the arc, up to +30% at the top (`Rt.DiveGrow`),
+  weighted by the dive's up/down share. A pure side dive is exactly as before; the harness checks its size stays 1.
+- Head-first turning (up 0 deg, down 180) and the crouch and landing squash (same as side dives) are unchanged.
+- Sheet and GIF: `maps/renders/dive/dive_directions.png` / `.gif` (`dive_dirs.py` now writes both).
+- After an up dive he lies head-up, which reads much like standing during the 0.6 s sprawl. Not changed; to see in Unity.
+- ALL CHECKS PASSED. Not checked in Unity.

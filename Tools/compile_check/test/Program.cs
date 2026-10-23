@@ -947,8 +947,10 @@ static class Program {
       var up = DiveRun(p, 0.01f, 0f, -1f); var upTop = up.First(r => r.t >= 0.3f).pose;
       UnityEngine.Time.time += 3f; p.X = px; p.Y = py - 2; Rt.SetOffset(p, 0f, 0f);
       var dn = DiveRun(p, 0.01f, 0f, 1f); var dnTop = dn.First(r => r.t >= 0.3f).pose; var dnCrouch = dn.First(r => r.t >= 0.06f).pose;
-      Check(Math.Abs(upTop.Tilt) < 1f && upTop.SquashY < 0.75f && up.Last().y < up[0].y - 2f && Math.Abs(dnTop.Tilt) > 150f && Math.Abs(dnCrouch.Tilt) < 1f,
-        $"RT 7z-d: up the screen the body lies head-up and foreshortened (turn {upTop.Tilt:0}, x{upTop.SquashY:0.00}); down, head-down ({dnTop.Tilt:0}), turning in the air");
+      var sideTop = run.First(r => r.t >= 0.3f).pose;
+      Check(Math.Abs(upTop.Tilt) < 1f && upTop.SquashY > 1.2f && upTop.SquashX > 1.2f && up.Last().y < up[0].y - 2f && Math.Abs(dnTop.Tilt) > 150f && Math.Abs(dnCrouch.Tilt) < 1f
+        && Math.Abs(sideTop.SquashX - 1f) < 0.01f && Math.Abs(sideTop.SquashY - 1f) < 0.01f,
+        $"RT 7z-e: up the screen the body grows with its height (x{upTop.SquashY:0.00}, no squash), head-up; down, head-down ({dnTop.Tilt:0}); a side dive's size is unchanged");
       // the snapshot carries a diving friend's moment and aim
       var q = Player.Join(); Rt.Of(q).DiveUntil = UnityEngine.Time.time + 0.3f; Rt.Of(q).DiveX = 1f; Rt.Of(q).AimAt = (3f, 4f);
       var e = Net.DecodeSnapshot(Net.EncodeSnapshot()).Players.Last();

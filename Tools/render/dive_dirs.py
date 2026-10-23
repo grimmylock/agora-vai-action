@@ -31,3 +31,21 @@ for r, (name, fr) in enumerate(rows):
         f = min(fr, key=lambda f: abs(f[0] - k))
         sheet.alpha_composite(draw(*f[1:8]), (130 + i * (cw + 6), 34 + r * (ch + 6)))
 sheet.save(sys.argv[1]); print(sheet.size)
+
+# RT 7z-e: also the same directions side by side as one GIF, real time (bullet time at x0.3): out.png -> out.gif
+gif, t, clock = [], 0.0, []
+for name, fr in rows:
+    c, ts = 0.0, []
+    for i, f in enumerate(fr):
+        ts.append(c); c += ((fr[i + 1][0] - f[0]) if i + 1 < len(fr) else 1 / 60) / (0.3 if f[8] else 1.0)
+    clock.append(ts)
+end = max(ts[-1] for ts in clock)
+while t <= end + 0.3:
+    pane = Image.new("RGBA", (len(rows) * (cw // 2 + 6), ch // 2 + 30), (24, 26, 28, 255)); dd = ImageDraw.Draw(pane)
+    for r, ((name, fr), ts) in enumerate(zip(rows, clock)):
+        i = max(k for k in range(len(fr)) if ts[k] <= t)
+        cell = draw(*fr[i][1:8]); pane.alpha_composite(cell.resize((cw // 2, ch // 2), Image.NEAREST), (r * (cw // 2 + 6), 30))
+        dd.text((r * (cw // 2 + 6) + 6, 6), name + ("   BULLET TIME" if fr[i][8] else ""), font=font, fill=(235, 220, 140))
+    gif.append(pane.convert("P", palette=Image.ADAPTIVE, colors=128)); t += 1 / 30
+gif[0].save(sys.argv[1].replace(".png", ".gif"), save_all=True, append_images=gif[1:], duration=33, loop=0, disposal=2)
+print(len(gif), "gif frames")

@@ -484,10 +484,14 @@ namespace GameCore
             float full = l > 0.01f ? -Mathf.Atan2(s.DiveX, -s.DiveY) * Mathf.Rad2Deg : (s.DiveRight ? -90f : 90f);
             float ramp = Mathf.Abs(full) <= 90f ? lean / 90f : Mathf.Clamp01((lean - 20f) / 70f);   // a dive toward you turns in the air, not in the crouch
             o.Tilt = full * ramp;
-            o.SquashY *= 1f - Foreshorten * (lean / 90f) * v;               // up or down the screen: laid out lengthwise, shorter
+            // up or down the screen (Yan, RT 7z-e: "dodging up doesn't [look great] ... the character squishes himself and un-squishes
+            // after, what if you try playing a trick on the camera by making the character a little bigger during the dodge so it
+            // seems he's closer to the camera"): no foreshortening - he grows with his height instead; side dives are unchanged
+            float grow = 1f + DiveGrow * (o.Lift / DiveHeight) * v;
+            o.SquashX *= grow; o.SquashY *= grow;
             return o;
         }
-        public const float Foreshorten = 0.45f;
+        public const float DiveGrow = 0.3f;
         public static bool Low(ICombatant u) => On && u is Player p && (Of(p).Diving || Time.time < Of(p).ProneUntil);   // airborne or sprawled: a low target
 
         public static void AddFocus(Player p, float f)
