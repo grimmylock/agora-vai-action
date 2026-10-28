@@ -174,6 +174,53 @@ Decided (Yan, 2026-10-28):
 Still open (suggestions given, not confirmed): the passcard (from Pavel's
 canister - why the Garrison think you know the way); which mutants; co-op details.
 
+## Tier 2 walkthrough for a completionist (draft, 2026-10-28)
+
+Yan's beat is "Taken"; the rest is my proposal (marked P) until Yan says otherwise. Places are the real Tier 2 landmarks.
+
+**Phase 1 - Taken.** First step onto Tier 2, by the Cutting (the Gatehouse) or the Causeway (a Garrison roadblock by the
+Scrapyard): flashbang, beating, black. The Loading Dock, the interrogation, the strip-search (knife, armour, a medkit and a
+bandage stay), down the hatch, the maze, the door, the alarm, the horde, the run back. Weapons back from the box; journal
+entry: come back here with better gear. From now on the Loading Dock is a Garrison camp and the Garrison shoot on sight.
+
+**Phase 2 - Getting a foothold (P).** No safe zone on this map. The Scrap King's Nest is the only trader (Raiders, neutral
+access): sell, buy ammo, take work. Side: T2-02 the stolen ledger in The Maze -> the Scrap King arc 1-2 (the Loading Dock
+rivals - now overlapping the Garrison camp, to rewrite - and the rival crew in Crusher Row).
+
+**Phase 3 - Old business from Tier 1 (P).** Yefim 3: Bogdan, the Raider warlord, holds the Tire Fort - fight him or talk him
+down. Runner 3: the Runner's patron is (maybe) the Scrap King - free the Runner and lose the King, or side with the King.
+
+**Phase 4 - The trail north (P).** Pavel, on the radio from Bonfire Village, decodes more of the canister: "those" came down
+through Black Valley, and only Dr. Osei at the Dried Lake (Tier 3) can be trusted with the data. You scout a route he can
+survive. The strange broadcast (T2-05, moved here) comes from the Radio Repeater on the north rim - the device's signal.
+Robed figures seen again, more of them, on the valley road. Husks here carry better gear than in Tier 1.
+
+**Phase 5 - The crossings (P).** The gulley has three: the Chokepoint Bridge (Liberators, who search everyone and seize
+anything high-tech - Pavel's crate included), the Ford (slow, in the open) and the Rail Bridge Camp (scramble between the
+piers). Earn the Liberators' trust with T2-03 (guard their convoy over the bridge), pay them, scout another crossing, or fight
+them (hostile; a contract for them later makes up for it).
+
+**Phase 6 - Exploring and dungeons.** The Central Plant (big place), the Smokestack, Silo Row (T2-01 Pallid Prowlers), the
+Workers' Flats, the Crane Cab, the Chemical Dump, the Substation; The Maze, Crusher Row and the Crusher Pit dungeon, the Truck
+Stop, the Dog Kennels, the Rusted Bus, the Scrapper's Shack; the Old Mine Works and the Valley Mine dungeon, the Wreck Line,
+the Burnt Tank, the Hanged Man's Tree, the Overturned Lorry, the Hunter's Shack. Six stash spots (locked, moving every 7 days).
+Rank: likely Experienced -> Professional around here.
+
+**Phase 7 - The escort (finale, P).** Back to Bonfire Village for Pavel (a trip down a tier). Up through the Runner's tunnel
+or the Causeway (the Gatehouse is Garrison now), across the basins and a ridge pass, over the crossing you prepared, then the
+north rim: a Contractor sniper team at Sniper's Lip (the T2-04 bounty gets its target) and the Raider checkpoint on the road
+cut (how it goes depends on you and the Scrap King). Arrive at the Scavenger's Hub (Tier 3) - Yefim radios about the Blight
+Brute. Pavel can die -> retry from a save; lasting consequences tbd.
+
+**Crossing between tiers in Tier 2:** Yefim 3 and Runner 3 (Tier 1 arcs ending here), fetching Pavel from Tier 1, the
+Liberators' make-up contract (later), the lab under the Loading Dock (later, with better gear), the Brute rematch (from the Hub).
+
+**Length (estimate, not measured):** 3-5 hours for everything.
+
+**Open:** when the player comes back to the lab under the Loading Dock (end of Tier 2, or a later tier) and what's inside
+(the lab rework); whether the Garrison camp stays at the Loading Dock for good; the Scrap King arc's first job (it was "clear
+the Loading Dock" - the Garrison are there now).
+
 ## Tier 3+
 
 Not written yet.
