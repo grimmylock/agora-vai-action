@@ -181,11 +181,11 @@ Yan's beat is "Taken"; the rest is my proposal (marked P) until Yan says otherwi
 **Phase 1 - Taken.** First step onto Tier 2, by the Cutting (the Gatehouse) or the Causeway (a Garrison roadblock by the
 Scrapyard): flashbang, beating, black. The Loading Dock, the interrogation, the strip-search (knife, armour, a medkit and a
 bandage stay), down the hatch, the maze, the door, the alarm, the horde, the run back. Weapons back from the box; journal
-entry: come back here with better gear. From now on the Loading Dock is a Garrison camp and the Garrison shoot on sight.
+entry: come back here with better gear. Wipe out the Garrison left at the camp; rival Raiders move in after.
 
 **Phase 2 - Getting a foothold (P).** No safe zone on this map. The Scrap King's Nest is the only trader (Raiders, neutral
 access): sell, buy ammo, take work. Side: T2-02 the stolen ledger in The Maze -> the Scrap King arc 1-2 (the Loading Dock
-rivals - now overlapping the Garrison camp, to rewrite - and the rival crew in Crusher Row).
+rivals who took it after the Garrison, by radio a day later - and the rival crew in Crusher Row).
 
 **Phase 3 - Old business from Tier 1 (P).** Yefim 3: Bogdan, the Raider warlord, holds the Tire Fort - fight him or talk him
 down. Runner 3: the Runner's patron is (maybe) the Scrap King - free the Runner and lose the King, or side with the King.
@@ -217,9 +217,13 @@ Liberators' make-up contract (later), the lab under the Loading Dock (later, wit
 
 **Length (estimate, not measured):** 3-5 hours for everything.
 
-**Open:** when the player comes back to the lab under the Loading Dock (end of Tier 2, or a later tier) and what's inside
-(the lab rework); whether the Garrison camp stays at the Loading Dock for good; the Scrap King arc's first job (it was "clear
-the Loading Dock" - the Garrison are there now).
+**Decided (Yan, 2026-10-28):**
+- **The lab under the Loading Dock is open to the player whenever they want.** Going further into the tunnels, the way the
+  mutants came from, they find the body that has the real passcard, and can then explore the lab: maybe Tier 4 loot and a
+  boss fight (tbd, part of the lab rework).
+- **The Garrison are at the Loading Dock only for that mission.** Once the player wipes them out, rival Raiders take the place.
+- **The Scrap King's first job comes after the Garrison mission:** about a day later he radios the player - clear the rival
+  Raiders who moved into the Loading Dock.
 
 ## Tier 3+
 
