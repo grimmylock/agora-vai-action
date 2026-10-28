@@ -146,8 +146,17 @@ Sniper's Lip). Yan's story for Tier 2 still to come. Decided so far:
 6. **Out.** At the top the weapons box gives everything back, and a hint (a **player journal** entry) that the place is
    worth coming back to with better gear. The hidden lab's content is to be designed later.
 
-Open: which POI; where the passcard comes from; which mutants; whether a knife survives the strip-search; how the Garrison
-treats the player afterwards; co-op details (who must find the door, what if one player dies).
+Decided (Yan, 2026-10-28):
+- **The strip-search leaves the knife and armour**, and maybe a medkit and a bandage.
+- **The grab always happens, on the first entry by either road** (the Cutting or the Causeway), at a spot the player is
+  basically guaranteed to pass at the start of Tier 2. Suggestion: the Gatehouse on the Cutting road (a Garrison post already),
+  and a Garrison roadblock where the Causeway comes up by the Scrapyard.
+- **The Garrison is always hostile to the player, and to most factions except one ally** (Yan named it as the strict
+  military-order faction - which of ours that is to be confirmed, probably the Sentinels). Note: today's table
+  (`FactionDatabase.cs:84`) has the Garrison hostile only to the player, Raiders, Outcasts, Wanderers and mutants.
+
+Still open (suggestions given, not confirmed): the POI (the Loading Dock, over Secret Lab Alpha); the passcard (from Pavel's
+canister - why the Garrison think you know the way); which mutants; co-op details.
 
 ## Tier 3+
 
