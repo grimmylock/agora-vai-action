@@ -4073,3 +4073,13 @@ need adjusting, the revolvers are almost full auto if they work like that".
   dies at 0.58 s (game time), his 3 rounds miss the dive.
 - Not done / not checked: co-op clients don't see rounds yet (the snapshot still carries players only); the old dive/duel scenes
   weren't re-rendered; nothing checked in Unity (the streak sorting and height in particular).
+
+## Story 1 (2026-10-28): the Tier 1 story, written with Yan (no code)
+
+`STORY.md` started from Yan's two campaign files. Tier 1: tutorial, the cut fence (scapegoat mutant, optional close look),
+the Grey Robes (not hostile; shot at -> smoke and leave, hits stagger; can't die in Tier 1), the Engineer from the Flooded
+Bunker (stays in Bonfire Village), the Culvert (Blight Brute, "RUN" on the radio, chase), the Husks, the village defence.
+Yan's words: husks are "zombified stalkers, they appear in all tiers and have strength relative to that tier based on their
+armor and weapons, just like npcs, but they have worse accuracy, are slower and can't call reinforcements"; the defence can be
+lost only by dying or losing the Engineer, but "player should win most of the time unless he plays sooooo badly".
+Names still placeholders (suggestions in STORY.md).
