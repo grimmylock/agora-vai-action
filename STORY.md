@@ -118,6 +118,16 @@ likely 2.5-4 hours. Walking every landmark alone takes 4-6 real minutes (Batch 1
 - The siege: waves for the village defence, plus a win-rate probe.
 - The Blight Brute chase in the culvert (too big for the pipe).
 
-## Tier 2+
+## Tier 2 - The Road North (in progress)
+
+Draft proposal given 2026-10-28 (Pavel's trail north, Secret Lab Alpha as the device's birthplace, the Liberators at the
+Chokepoint Bridge, the Garrison at the Gatehouse, the escort to the Scavenger's Hub with a Contractor sniper team at
+Sniper's Lip). Yan's story for Tier 2 still to come. Decided so far:
+- **The Veteran comes later, in Tier 3.**
+- **The escort can be failed** (Pavel dies -> retry); the lasting consequences wait until the ending is known.
+- **The Runner's patron could be the Scrap King** (maybe).
+- **Fighting the Liberators at the Bridge makes them hostile, but a contract for them makes up for it later** (details tbd).
+
+## Tier 3+
 
 Not written yet.
