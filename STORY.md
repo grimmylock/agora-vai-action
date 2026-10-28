@@ -39,15 +39,70 @@ placeholders until Yan picks.
 6. **Defend Bonfire Village** (last Tier 1 story mission). A husk horde comes out of the marsh at night in waves from several
    sides; the guards and Yefim fight with you; the Engineer must survive in the bunkhouse. **Lost only if you die or the
    Engineer dies** -> retry from a save before it. **Balance (Yan): the player should win most of the time unless he plays
-   very badly** - measure it with a probe before shipping. Winning opens the road south (the checkpoint or the Runner's tunnel).
+   very badly** - measure it with a probe before shipping. Winning opens the road north to Tier 2 (the Causeway to the Scrapyard, or the Cutting to the Industrial Basin; a
+   checkpoint on the road, or the Runner's tunnel round it).
 
 Side content alongside: the Yefim arc, the Runner arc (opens the tunnel route), the board jobs (T1-02 to T1-05).
 
-## Names (suggestions, Yan to pick)
+## Tier 1 walkthrough for a completionist (draft, 2026-10-28)
 
-- Grey Robes: *the Ashen*, *the Hush*, *the Quiet Choir*, *the Greycloaks*
-- Husks: *Husks*, *the Hollowed*, *the Dimmed*, *Emptied*
-- The Engineer: *Ilya Vashkevich*, *Pavel Druzhin*, *Anton Lisovsky*
+Places are the real Tier 1 landmarks (`TierMaps.Tier1`). Marked (fill-in) = my guess where Yan hasn't said yet.
+
+**Phase 1 - Bonfire Village (Rookie).** Wake by the fire. Name the character (saved at creation). Walk the village: Yefim
+(trader), the Medic's House, the Repair Bench, the Bunkhouse (rest heals), the bar, the Job Board. Barks and guards make it
+feel safe: hostile squads almost never cross its edge.
+
+**Phase 2 - The tutorial.** Trader's job: a dead courier's pack at the Dead Scavenger's Camp (fill-in), 2-3 Blind Maws round
+it - first gunfight, first loot. Barman's job: a 3-man Raider camp nearby, laid out for stealth - sneaking, a takedown, the
+"!" detection marker.
+
+**Phase 3 - The Perimeter opens up (south).** The Cut Fence at Watchtower 3 (scapegoat mutant; the close look = bonus pay and
+the grey thread). Yefim 1: debris at the Checkpoint Gate. Yefim 2: his keepsake near Watchtower 3, Raiders guarding it - he
+used to ride with them. Free exploring: the Old Farmstead (its upstairs floor), the Old Cemetery and the Chapel Crypt dungeon,
+the Army Field Camp, the Roadside Station, the Bus Stop, the Crashed Car, the Lone Grave, the Transformer Yard. First stashes
+(about 8 on the map: a key carried by a mutant, a code to find, or a post a squad holds; they move every 7 game days).
+Board jobs: T1-05 escort a greenhorn to the Hunter's Hide (fill-in).
+
+**Phase 4 - First sightings of "those".** On the marsh roads and the Causeway: robed stalkers at a distance, looking at the
+ground, holding up a device. They turn away when you come close; shoot and they vanish in smoke.
+
+**Phase 5 - The Marshes (east), main story.** The Burst: Yefim's radio catches the loop, traced to the Radio Mast (fill-in).
+The Key: the Flooded Bunker key at the Headman's House in the Fishing Village (buy, favour or take). The Flooded Bunker
+dungeon: Pavel, wounded, with his crate. Back to the village past "those" searching the reeds - unseen. Side: T1-02 the drum
+at the Sunken Tanker (mutants), T1-03 the Raider ambusher at the Reed Blind, the Pumping Station and its basement dungeon, the
+Fisherman's Shack, the Duck Blind.
+
+**Phase 6 - Smuggler's Run (north-west).** The Runner arc: carry the sealed package to the Signal Box (fill-in) without
+opening it; the ambush at Blind Curve; T1-04 the Rot Swarms there; the Rail Depot, Loading Office, Derailed Wagon, Water
+Tower, Overwatch Ridge and its Sniper Nest, the Logging Camp. The Smugglers' Tunnel under the depot: the Raider-and-mutant
+dungeon that later becomes the way round the checkpoint. (Runner 3 and Yefim 3 / Bogdan are written as Tier 2 jobs: they
+can wait or be done at the end.)
+
+**Phase 7 - The Culvert.** Pavel sends you into the Rust Culvert for the canister. The Blight Brute, the radio "RUN", the
+chase to the pipe. From here on **Husks** roam Tier 1 - pale, bloodied, slow, poor shots, no radio, everything they drop
+Broken. Back at the village Pavel opens the canister: "those" are testing a mind device in the marsh; the courier and the
+missing fishermen are Husks now.
+
+**Phase 8 - Mopping up.** Remaining stashes and landmarks, the dungeons' far-end stashes, Husk packs, rank-up (Rookie ->
+Experienced is likely by here: milestones, jobs, kills). Gear up for the night.
+
+**Phase 9 - Defend Bonfire Village (final).** At night a Husk horde comes out of the marsh in waves from several sides; guards
+and Yefim fight with you; Pavel must live in the Bunkhouse. Win (most players should) -> the road north opens: the Causeway to
+the Scrapyard or the Cutting to the Industrial Basin, through a checkpoint or under it by the Runner's tunnel.
+
+**Length (estimate, not measured):** the agreed target for Tier 1 is 1-3 hours; a completionist with all of the above is
+likely 2.5-4 hours. Walking every landmark alone takes 4-6 real minutes (Batch 111).
+
+**Open (fill-ins to confirm):** where the tutorial courier lies, where the distress loop comes from, where the Runner's package
+goes, the greenhorn's destination, whether the Blight Brute can be come back for and killed later (a Tier 4 rematch), whether
+Yefim 3 and Runner 3 belong in Tier 1 or Tier 2.
+
+## Names (Yan, 2026-10-28)
+
+- The Grey Robes have **no name**: robed stalkers, still mysterious. People just call them "those" ("those were at the fence
+  again"). "Grey Robes" stays only as our working description.
+- The zombified stalkers: **Husks**.
+- The Engineer: **Pavel**.
 
 ## Needed to build Tier 1 (later)
 
