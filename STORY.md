@@ -6,6 +6,20 @@ cult were the scientists / final choice" beats). We are rewriting it into this w
 "Heart of the Zone" main story (`StorySystem.cs`) once built. **Nothing here is coded yet.** Names in *italics* are
 placeholders until Yan picks.
 
+## Our factions (cheat sheet, for writing)
+
+| Ours | Role in the world |
+|-|-|
+| Wanderers | free stalkers, the everyman faction; Bonfire Village, the Scavenger's Hub |
+| Raiders | bandit gangs, many and weak; the Scrapyard |
+| Garrison | the military; hostile to the player and most factions, friendly with the Sentinels, neutral with the Surveyors |
+| Sentinels | the strict armed order (anti-anomaly, disciplined) |
+| Liberators | the free-spirited, anti-authority militia |
+| Surveyors | the scientists' escorts and researchers; Dr. Osei, the Dried Lake |
+| Contractors | mercenaries, hired guns |
+| Obelisk | the fanatics guarding the centre |
+| Outcasts, Prospectors, Cartel, IZC | smaller factions |
+
 ## Rules the story keeps
 
 - The world lives by itself (rule 7): story enemies are real squads with a task, never spawned next to you. Dungeon bosses
@@ -151,11 +165,13 @@ Decided (Yan, 2026-10-28):
 - **The grab always happens, on the first entry by either road** (the Cutting or the Causeway), at a spot the player is
   basically guaranteed to pass at the start of Tier 2. Suggestion: the Gatehouse on the Cutting road (a Garrison post already),
   and a Garrison roadblock where the Causeway comes up by the Scrapyard.
-- **The Garrison is always hostile to the player, and to most factions except one ally** (Yan named it as the strict
-  military-order faction - which of ours that is to be confirmed, probably the Sentinels). Note: today's table
+- **The Garrison is always hostile to the player and to most factions; friendly with the Sentinels, neutral with the
+  Surveyors** (Yan). Note: today's table
   (`FactionDatabase.cs:84`) has the Garrison hostile only to the player, Raiders, Outcasts, Wanderers and mutants.
 
-Still open (suggestions given, not confirmed): the POI (the Loading Dock, over Secret Lab Alpha); the passcard (from Pavel's
+- **The POI is the Loading Dock** (the hatch down to Secret Lab Alpha). **The lab needs a rework** for this.
+
+Still open (suggestions given, not confirmed): the passcard (from Pavel's
 canister - why the Garrison think you know the way); which mutants; co-op details.
 
 ## Tier 3+
