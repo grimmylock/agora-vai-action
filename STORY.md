@@ -128,6 +128,27 @@ Sniper's Lip). Yan's story for Tier 2 still to come. Decided so far:
 - **The Runner's patron could be the Scrap King** (maybe).
 - **Fighting the Liberators at the Bridge makes them hostile, but a contract for them makes up for it later** (details tbd).
 
+### Tier 2, beat 1: "Taken" (Yan, 2026-10-28)
+
+1. **The grab.** Soon after the player(s) first enter Tier 2, a Garrison squad ambushes them: a flashbang out of nowhere -
+   white screen, sounds of a beating, black screen, a short load.
+2. **Their base.** The player(s) wake at a Garrison base of operations at one POI (tbd; suggestion: the Loading Dock, which
+   already has the hatch down to Secret Lab Alpha). The soldiers interrogate them about what is "down there". Whatever the
+   answers, they strip **all weapons** and put them in a box inside the POI.
+3. **Down the hatch.** Led at gunpoint down a tunnel into a big underground maze (in the spirit of a classic Zone
+   underground; our own design). "Take us THERE." Auto-save here. The player must find the way; **taking too long gets them
+   shot** -> game over -> reload the auto-save. Finding it should take **about 3-4 minutes** of wandering.
+4. **The door.** In the middle of a long corridor: the hidden lab's door. The player tries a passcard they carry on the
+   electronic lock - it fails, an alarm goes off, and **a horde of mutants** pours in from the far end of the corridor
+   (10-15 on screen, but it must FEEL overwhelming).
+5. **The run.** The soldiers turn on the mutants - the player(s) run all the way back to the entrance while hearing the
+   mutants tear into the soldiers (shots, screams); after ~10 s some come after the players.
+6. **Out.** At the top the weapons box gives everything back, and a hint (a **player journal** entry) that the place is
+   worth coming back to with better gear. The hidden lab's content is to be designed later.
+
+Open: which POI; where the passcard comes from; which mutants; whether a knife survives the strip-search; how the Garrison
+treats the player afterwards; co-op details (who must find the door, what if one player dies).
+
 ## Tier 3+
 
 Not written yet.
