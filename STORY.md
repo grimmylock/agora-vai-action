@@ -52,7 +52,7 @@ Places are the real Tier 1 landmarks (`TierMaps.Tier1`). Marked (fill-in) = my g
 (trader), the Medic's House, the Repair Bench, the Bunkhouse (rest heals), the bar, the Job Board. Barks and guards make it
 feel safe: hostile squads almost never cross its edge.
 
-**Phase 2 - The tutorial.** Trader's job: a dead courier's pack at the Dead Scavenger's Camp (fill-in), 2-3 Blind Maws round
+**Phase 2 - The tutorial.** Trader's job: a dead courier's pack at a random spot (see Decided), 2-3 Blind Maws round
 it - first gunfight, first loot. Barman's job: a 3-man Raider camp nearby, laid out for stealth - sneaking, a takedown, the
 "!" detection marker.
 
@@ -61,18 +61,18 @@ the grey thread). Yefim 1: debris at the Checkpoint Gate. Yefim 2: his keepsake 
 used to ride with them. Free exploring: the Old Farmstead (its upstairs floor), the Old Cemetery and the Chapel Crypt dungeon,
 the Army Field Camp, the Roadside Station, the Bus Stop, the Crashed Car, the Lone Grave, the Transformer Yard. First stashes
 (about 8 on the map: a key carried by a mutant, a code to find, or a post a squad holds; they move every 7 game days).
-Board jobs: T1-05 escort a greenhorn to the Hunter's Hide (fill-in).
+Board jobs: T1-05 escort a greenhorn to a random spot.
 
 **Phase 4 - First sightings of "those".** On the marsh roads and the Causeway: robed stalkers at a distance, looking at the
 ground, holding up a device. They turn away when you come close; shoot and they vanish in smoke.
 
-**Phase 5 - The Marshes (east), main story.** The Burst: Yefim's radio catches the loop, traced to the Radio Mast (fill-in).
+**Phase 5 - The Marshes (east), main story.** The Burst: Yefim's radio catches the loop, traced to a random spot.
 The Key: the Flooded Bunker key at the Headman's House in the Fishing Village (buy, favour or take). The Flooded Bunker
 dungeon: Pavel, wounded, with his crate. Back to the village past "those" searching the reeds - unseen. Side: T1-02 the drum
 at the Sunken Tanker (mutants), T1-03 the Raider ambusher at the Reed Blind, the Pumping Station and its basement dungeon, the
 Fisherman's Shack, the Duck Blind.
 
-**Phase 6 - Smuggler's Run (north-west).** The Runner arc: carry the sealed package to the Signal Box (fill-in) without
+**Phase 6 - Smuggler's Run (north-west).** The Runner arc: carry the sealed package to a random spot without
 opening it; the ambush at Blind Curve; T1-04 the Rot Swarms there; the Rail Depot, Loading Office, Derailed Wagon, Water
 Tower, Overwatch Ridge and its Sniper Nest, the Logging Camp. The Smugglers' Tunnel under the depot: the Raider-and-mutant
 dungeon that later becomes the way round the checkpoint. (Runner 3 and Yefim 3 / Bogdan are written as Tier 2 jobs: they
@@ -93,9 +93,13 @@ the Scrapyard or the Cutting to the Industrial Basin, through a checkpoint or un
 **Length (estimate, not measured):** the agreed target for Tier 1 is 1-3 hours; a completionist with all of the above is
 likely 2.5-4 hours. Walking every landmark alone takes 4-6 real minutes (Batch 111).
 
-**Open (fill-ins to confirm):** where the tutorial courier lies, where the distress loop comes from, where the Runner's package
-goes, the greenhorn's destination, whether the Blight Brute can be come back for and killed later (a Tier 4 rematch), whether
-Yefim 3 and Runner 3 belong in Tier 1 or Tier 2.
+**Decided (Yan, 2026-10-28):**
+- The tutorial courier, the distress loop, the Runner's contact and the greenhorn's destination are each **a different spot,
+  not used by any other mission, picked when the world is created** - for replayability.
+- **The Blight Brute rematch:** yes. When the player first reaches the trading hub (the Scavenger's Hub, Tier 3), Yefim
+  radios to ask him to come back and deal with the Brute in the Rust Culvert. (It keeps its Tier 4 strength - rule 6.)
+- **Yefim 3 (Bogdan) and Runner 3 (the patron) stay Tier 2 jobs:** "we need reason for the player to move in between zones,
+  like in stalker" - quests that send you back and forth between tiers are wanted, not avoided.
 
 ## Names (Yan, 2026-10-28)
 
