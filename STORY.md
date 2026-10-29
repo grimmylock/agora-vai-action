@@ -6,6 +6,48 @@ cult were the scientists / final choice" beats). We are rewriting it into this w
 "Heart of the Zone" main story (`StorySystem.cs`) once built. **Nothing here is coded yet.** Names in *italics* are
 placeholders until Yan picks.
 
+## Source material: Yan's old campaign logs (read 2026-10-29)
+
+Four Gemini logs. Three are one long Zone campaign (in order: the Red Forest chapter, the Barrier siege and the array lab, then
+the hospital and the descent toward the deepest lab); the fourth is a tabletop playtest of agora vai itself (Scavenger's Hub,
+the Dried Lake, Dr. Priya Osei, the Sub-Station Depths, the Blight Brute, Ghost Town) - mostly rules and balance notes.
+Names below are already ours (the logs use another game's names).
+
+Cast: the player's squad of three - the leader, a **heavy** in a loud exoskeleton (loyal frontline, keeps the peace between
+two factions after an earlier war), and a **tech/marksman who used to work for "those"** (hacks their gear, knows their
+methods) - plus a **contract sniper** lent by the Contractors' boss, a **legendary stalker** fighting the same war elsewhere,
+two scientists building the countermeasure, and a scientist leader who turned out to have worked with "those".
+
+Scenes worth keeping (most striking first):
+1. **The siege at the barrier.** Fanatics (Obelisk) storm the Liberators' barricade line: an RPG man, an LMG nest, grenade
+   swarms on the flanks, and a **Preacher** with a psi-core on his back whose field makes your vision swim purple and your nose
+   bleed. Kill him without breaking the core - it's the last component of the countermeasure.
+2. **The array lab.** Push up a serpentine road of checkpoints (silent sniping, then it goes loud; snorks-like ambush), a
+   commander of "those" fights alongside the fanatics and retreats into the bunker. Breach charges; a machine gun holds the
+   corridor; shooting through the wall and blind fire both fail; you blow a hangar door to flank. A heavy throws a
+   **gravity-anomaly grenade** and thermite. A crippled fanatic: "they were normal stalkers once" - a mercy kill.
+3. **The Array Commander** (boss): psi-mutated, a frontal shield, charges a telekinetic gravity sphere, a **3-minute timer**
+   to the broadcast's peak. The heavy tackles him to the floor; the hacker fails the console; the last thermite is thrown
+   through a six-inch gap with 20 seconds left.
+4. **Aftermath:** the array dies, but fully converted fanatics stay "dead" inside - "those" lose control of them. Their gravity
+   weapon "turns anyone into a mutant with telekinesis": hand it over or destroy it (the player destroyed it).
+5. **The hospital.** An ambush on a bridge (the sniper drops the officer, one enemy taken alive and interrogated: "20 men and a
+   science team"). Inside it's too quiet: the science team is opening a **portal** to the deep lab. The sniper waits for the
+   first one to step in, then shoots the computer - the portal destabilises, the rest are trapped; you barricade and weld the
+   door.
+6. **The contract sniper's dismissal:** her boss wanted her inside the deep lab to stream intel he could sell. You send her
+   back and take your loaned rifle.
+7. **Faction politics:** walking into the strict order's base wearing mercenary armour (the patch is what counts, not the
+   armour); the Liberators' leader who knows your past deeds; a summit where the Sentinels and Liberators agree to a truce
+   again to hold the fanatics while you go underground; hiring a guide through a subterranean bypass.
+8. **The Burner tunnel:** a tunnel of fire-pillar anomalies with an artifact pulsing inside; the heavy refuses to go in.
+9. **The Red Forest hunt:** an apex predator ambush, a trophy for the scientists; a burned forester's tower cleared room by
+   room; lying over the radio to cancel a contract.
+10. **The descent:** a freight elevator into toxic, fog-filled tunnels, a booby-trapped airlock, racing the fanatics to the
+    deepest lab.
+11. From the playtest: Dr. Osei is **Priya Osei**; the Sub-Station Depths' Transformer Vault holds a dead researcher's
+    station measuring **energy spikes from deeper underground**.
+
 ## Our factions (cheat sheet, for writing)
 
 | Ours | Role in the world |
@@ -242,6 +284,8 @@ Decided (Yan, 2026-10-29):
 - **The Veteran was one of "those".** He got out, and used what he learned inside to become a legend of the Zone - but it was
   never enough to confront them; knowing and being unable to do anything sank him into depression.
 - **Pavel stays at the Sub-Station** with Dr. Osei from Tier 3 on.
+- **The Veteran's medication is never just bought at the Bazaar** (too easy): it comes from Dr. Osei or has to be found (e.g.
+  the Stranded Ferry).
 - **Where the final descent happens is open:** Yan wants the whole main mission sketched end to end first, then adds depth
   and decides changes.
 
