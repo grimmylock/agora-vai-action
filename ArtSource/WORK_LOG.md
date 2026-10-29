@@ -4183,3 +4183,11 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   Bonfire Village ground, not the lab. 29 s from wake-up to smoke; 5 perfect parries were enough.
 - Not checked in Unity. Open for Yan: the dive needs 40 Focus, so without Focus his red moves can't be dodged by diving; the fight
   is short for a parrying player (2400 HP, ~10 hatchet hits plus bleeding).
+
+## Poses prototype (2026-10-29)
+- Yan: "besides the front and back sprites we added some 'poses' ... sitting down, crouching, leaning foward, leaning to the side
+  to use the cover mechanics, and add a few in between frames"; then "just this for now": two suits, a preview sheet to approve or
+  redline. `ArtSource/make_poses.py` cuts any finished 16x16 suit into bands (upper body to the belt, legs) and re-composes 16 poses
+  (stand, crouch, kneel, sit, lean left/right, lunge, stagger, each with a 1/2 in-between, and lying), front and back, re-outlined.
+  Sheet: `maps/renders/poses/poses_preview.png` (Leather Jacket and Black Visor Suit, x6, plus true size and x5).
+- Nothing in the game. Hands aren't posed yet (they float as now); that comes once Yan picks the poses.
