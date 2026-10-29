@@ -34,7 +34,8 @@ namespace GameCore
             public float Mult = 1f;        // x the weapon's damage
             public int Weight = 1;         // how often he picks it
             public bool Phase2Only;
-            public int[] Poses = { 0 };    // Visor 2: his pose for each hit (HeldPoseMath's Visor moves), in order, wrapping
+            public int[] Poses = { 0 };
+            public float Open = 1f;        // Visor 5: after it he stops to get his breath - still, knife low, bullets land - this long (x phase speed)    // Visor 2: his pose for each hit (HeldPoseMath's Visor moves), in order, wrapping
         }
 
         public class Def
@@ -57,7 +58,8 @@ namespace GameCore
             public float GlintAt = -99f; public bool GlintDanger;   // for the view
             public float Started;
             public int Parries; public float LastParryAt = -99f;
-            public float GlintDue = -1f;   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
+            public float GlintDue = -1f;
+            public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
         public const float GuardRecovers = 8f, GlintLead = 0.4f;
 
@@ -87,13 +89,13 @@ namespace GameCore
             Moves = new[]
             {
                 // Visor 2: each move strings his own poses (backhand 0, rising 1, ice-pick 2, thrust 3, spin 4, execution 5)
-                new Move { Name = "Slash", Wind = 0.6f, Weight = 2, Poses = new[] { 0 } },
-                new Move { Name = "Ice pick", Wind = 0.7f, Weight = 1, Mult = 1.15f, Poses = new[] { 2 } },
-                new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2, Poses = new[] { 0, 1, 2 } },
-                new Move { Name = "Lunge", Wind = 0.75f, Danger = true, Lunge = 5f, Mult = 1.4f, Weight = 1, Poses = new[] { 3 } },
-                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 0, 1, 4, 0, 2 } },
-                new Move { Name = "Whirlwind", Wind = 0.55f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 } },
-                new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 } },
+                new Move { Name = "Slash", Wind = 0.6f, Weight = 2, Poses = new[] { 0 }, Open = 1f },
+                new Move { Name = "Ice pick", Wind = 0.7f, Weight = 1, Mult = 1.15f, Poses = new[] { 2 }, Open = 1.2f },
+                new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2, Poses = new[] { 0, 1, 2 }, Open = 1.5f },
+                new Move { Name = "Lunge", Wind = 0.75f, Danger = true, Lunge = 5f, Mult = 1.4f, Weight = 1, Poses = new[] { 3 }, Open = 2f },
+                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 0, 1, 4, 0, 2 }, Open = 1.8f },
+                new Move { Name = "Whirlwind", Wind = 0.55f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 }, Open = 1.5f },
+                new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 }, Open = 2.2f },
             },
         };
 
@@ -139,6 +141,7 @@ namespace GameCore
 
             if (f.Doing == null)
             {
+                if (now < f.OpenUntil) return;                                  // Visor 5: getting his breath back - he doesn't move
                 if (dist > 1 && now >= f.NextStep)
                 {
                     f.NextStep = now + f.Def.StepSeconds * speed;
@@ -156,8 +159,17 @@ namespace GameCore
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
             if (--f.HitsLeft > 0) { f.StrikeAt = now + f.Doing.Gap * speed; f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
-            f.Doing = null; f.NextMoveAt = now + f.Def.Recover * speed * Random.Range(0.8f, 1.3f);
+            OpenUp(f, f.Doing.Open * speed, now);
+            f.Doing = null; f.NextMoveAt = f.OpenUntil + 0.3f * Random.Range(0.8f, 1.3f);
         }
+
+        /// <summary>Visor 5: the window after a move - he stands, knife low, breathing; bullets get through (Deflects).</summary>
+        static void OpenUp(Fight f, float seconds, float now)
+        {
+            f.OpenUntil = now + seconds;
+            var mc = Melee.ChargeOf(f.Unit); mc.OpenFrom = now + HeldPoseMath.Follow / mc.Pace; mc.OpenUntil = f.OpenUntil;   // the pose sinks after the follow-through
+        }
+        public static bool Open(ICombatant u) => Of(u) is Fight f && Time.time < f.OpenUntil && !f.Broken && !f.Finished;
 
         internal static void Begin(Fight f, Move m, float now, float speed)
         {
@@ -225,7 +237,7 @@ namespace GameCore
             f.LastParryAt = Time.time;
             if (++f.Parries < f.Def.ParriesToStagger) return false;
             f.Parries = 0;
-            f.StaggerUntil = Time.time + seconds; f.Doing = null; f.NextMoveAt = f.StaggerUntil + 0.3f;
+            f.StaggerUntil = Time.time + seconds; f.Doing = null; f.NextMoveAt = f.StaggerUntil + 0.3f; f.OpenUntil = -1f;
             CombatFx.Push("stagger", u, null, null).Now = true;
             return true;
         }
@@ -235,7 +247,7 @@ namespace GameCore
         public static bool Staggered(ICombatant u) => Of(u) is Fight f && Time.time < f.StaggerUntil;
 
         /// <summary>Rounds glance off him unless he's staggered (or already broken).</summary>
-        public static bool Deflects(ICombatant u) => Of(u) is Fight f && !f.Broken && !f.Finished && Time.time >= f.StaggerUntil;
+        public static bool Deflects(ICombatant u) => Of(u) is Fight f && !f.Broken && !f.Finished && Time.time >= f.StaggerUntil && Time.time >= f.OpenUntil;
 
         /// <summary>After any damage (Gunplay.Resolve, Melee.Strike): a boss at 0 doesn't die, he breaks.</summary>
         public static void OnDamaged(ICombatant u)

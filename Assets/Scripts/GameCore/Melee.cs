@@ -95,6 +95,8 @@ namespace GameCore
             public float From = -1f;                            // how far into the last swing this one began (-1: from the stance)
             public bool Queued;                                 // clicked before the last swing let go: it starts the moment it can
             public float GuardAt = -99f, BrokenAt = -99f;
+            public float OpenFrom = -99f, OpenUntil = -99f;     // Visor 5: a boss's opening - his weapon sinks, he breathes
+            public float OpenK(float now) => now < OpenFrom || now >= OpenUntil ? 0f : Mathf.Min(1f, Mathf.Min((now - OpenFrom) / 0.2f, (OpenUntil - now) / 0.15f));
             public bool Red;                                    // Melee 4: this swing can't be parried (a boss's red move): its smear is red
             public string PoseKey;
             public float Pace = 1f;                             // Visor 4: how fast his swings play (0.5 = half speed: a strike you can see coming)

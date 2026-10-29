@@ -4318,3 +4318,10 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
     instead of 0.08, the follow-through is heavier.
   - Sim (bot now parries 0.1 s before the hit, a beat after the glint): executed in 46.5 s real. Renders re-made
     (`maps/renders/boss/boss_duel.mp4`, `visor_moves/`).
+- Visor 5 (Yan: "add a few in between pauses between his attacks and combos, window of oportunity"): after every move he opens up
+  (`Boss.Move.Open`, x0.8 in phase 2): Slash 1 s, Ice pick 1.2, Flurry 1.5, Whirlwind 1.5, Feint flurry 1.8, Lunge 2, Execution
+  2.2 (the red ones overcommit). While open he stands still, his weapon sinks and his shoulders heave (`Melee.Charge.OpenK` ->
+  the `open` blend in `HeldPoseMath.MeleeFrame`), bullets land (`Boss.Deflects` is false), the bar reads OPEN; his next move comes
+  0.24-0.39 s after it closes. A stun cancels it. Checks: open after a move, still, bullets land, then it closes.
+- Sim (perfect bot, now going in and hitting whenever he's open): executed in 27 s real (was 46.5), 3 openings of 1.3-1.5 s
+  seen, the first worth ~410 damage. A perfect bot isn't a person - but if he now falls too fast, the opening lengths are the knob.

@@ -68,7 +68,7 @@ namespace GameCore
                 _bossFill.color = open ? Color.Lerp(C("b8302a"), Color.white, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 30f)) : f.Phase == 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f)) : C("b8302a");
                 _bossName.text = f.Def.Name.ToUpperInvariant() + (f.Phase == 2 ? "  <color=#ff5a3a>II</color>" : "");
                 int gd = Boss.GuardDamage(f);                                       // perfect parries toward the stagger
-                _bossState.text = f.Finished ? "DEFEATED" : f.Broken ? "EXECUTE - E" : open ? "STAGGERED" : gd > 0 ? $"GUARD {gd}/{f.Def.ParriesToStagger}" : "";
+                _bossState.text = f.Finished ? "DEFEATED" : f.Broken ? "EXECUTE - E" : open ? "STAGGERED" : Boss.Open(f.Unit) ? "OPEN" : gd > 0 ? $"GUARD {gd}/{f.Def.ParriesToStagger}" : "";
                 _bossState.color = f.Broken ? new Color(1f, 0.35f, 0.3f) : Yellow;
             }
             else _ghost = 1f;

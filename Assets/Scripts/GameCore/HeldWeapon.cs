@@ -287,7 +287,7 @@ namespace GameCore
         static float Hold(float t, float len, float rise, float fall) => t < 0f || t >= len ? 0f : Mathf.Min(1f, Mathf.Min(t / rise, (len - t) / fall));
 
         static HeldFrame MeleeFrame(float angle, float sinceSwing, float swingHold, float throwHold, float sinceThrow, string key, int move, float from,
-            float sinceGuard = 99f, float sinceBroken = 99f)
+            float sinceGuard = 99f, float sinceBroken = 99f, float open = 0f)
         {
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
@@ -304,6 +304,7 @@ namespace GameCore
             float gk = Hold(sinceGuard, GuardTime, 0.04f, 0.12f), bk = Hold(sinceBroken, BrokenTime, BrokenRise, 0.3f);
             if (sinceBroken < BrokenRise) bk = 1f - (1f - bk) * (1f - bk) * (1f - bk);
             if (gk > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), Guard, gk);
+            if (open > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), (stance.off + 25f, stance.hx - 1f, stance.hy + 2.5f + 0.6f * Mathf.Sin(Time.time * 7f), 0f), open);   // Visor 5: the weapon sinks, the shoulders heave
             if (bk > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), (Broken.off + 6f * Mathf.Sin(sinceBroken * 25f) * (1f - sinceBroken), Broken.hx, Broken.hy, Broken.lean), bk);   // it shudders
             // Melee 2 (Yan: "the hand and angle stay the same ... they need to rotate as well with the swing"): in a swing the fist
             // rides an arc round the shoulder with the weapon (the arm swinging, not just the wrist) and turns with it; at the stance
@@ -361,9 +362,9 @@ namespace GameCore
         /// g = WeaponArt grip/support/muzzle points.</summary>
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
             float r, string style, int trips, float[] mag = null, float swingHold = -1f, float throwHold = -1f, float sinceThrow = 99f,
-            string key = null, int move = 0, float from = -1f, float sinceGuard = 99f, float sinceBroken = 99f)
+            string key = null, int move = 0, float from = -1f, float sinceGuard = 99f, float sinceBroken = 99f, float open = 0f)
         {
-            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow, key, move, from, sinceGuard, sinceBroken);   // RT 7c, 7e, Melee 2
+            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow, key, move, from, sinceGuard, sinceBroken, open);   // RT 7c, 7e, Melee 2
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
             var (swingDeg, lunge) = Swing(sinceSwing);
@@ -800,7 +801,7 @@ namespace GameCore
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
                 hold, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
                 mc?.PoseKey ?? key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f,
-                mc != null ? Melee.T - mc.GuardAt : 99f, mc != null ? Melee.T - mc.BrokenAt : 99f);
+                mc != null ? Melee.T - mc.GuardAt : 99f, mc != null ? Melee.T - mc.BrokenAt : 99f, mc != null ? mc.OpenK(Melee.T) : 0f);
             var f = At(since);
             bool smear = cat == "melee" && HeldPoseMath.Striking(since, hold);
             for (int i = 0; i < _smear.Length; i++)

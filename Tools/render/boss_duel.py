@@ -243,7 +243,8 @@ def hud(img, f, punch):
         name = "THE VISOR" + ("  II" if phase == 2 else "")
         dd.text((img.width // 2, y0 - 22), name, font=NAME, fill=CREAM, anchor="mm")
         gd = f["b"][9] if len(f["b"]) > 9 else 0
-        state = "DEFEATED" if finished else "EXECUTE - E" if broken else "STAGGERED" if stag else f"GUARD {gd}/3" if gd else ""
+        opn = f["b"][10] if len(f["b"]) > 10 else 0
+        state = "DEFEATED" if finished else "EXECUTE - E" if broken else "STAGGERED" if stag else "OPEN" if opn else f"GUARD {gd}/3" if gd else ""
         if state: dd.text((img.width // 2, y0 + 50), state, font=NAME, fill=(255, 90, 76, 255) if broken else YELLOW, anchor="mm")
     title, sub, age = f["splash"]
     if 0 <= age < 3.2 and title:

@@ -821,7 +821,7 @@ static class Program {
         else if (strike % 6 == 2) { if (left <= 0.26f && left > 0.2f) input.Parry = true; }   // late: blocked
         else if (left <= 0.11f && left > 0.11f - 1f / 30f) input.Parry = true;      // a beat after the glint (0.4 s before the hit): perfect
       }
-      else if (Boss.Staggered(v)) { if (dist > 1) { input.X = sx; input.Y = sy; } else { fire = !fire; input.Fire = fire; } }
+      else if (Boss.Staggered(v) || Boss.Open(v)) { if (dist > 1) { input.X = sx; input.Y = sy; } else { fire = !fire; input.Fire = fire; } }   // open: in and hit him
       else if (now < backUntil) { input.X = -sx; input.Y = 0; input.Sprint = true; }      // after some punishes it sprints off: he lunges
       else if (dist > 2 && backUntil < 0f) { input.X = sx; input.Y = sy; }
       bool open = Boss.Staggered(v);
@@ -844,12 +844,12 @@ static class Program {
       HeldFrame PAt(float sw) => HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, sw, 1f, "none", 1, null, ph, -1f, 99f,
         "TacticalHatchet", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
       HeldFrame BAt(float sw) => HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, sw, 1f, "none", 1, null, bh, -1f, 99f,
-        vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt);
+        vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt, vc.OpenK(now));
       var fp = PAt(mc.Since(now)); var fb = BAt(vc.Since(now));
       string psm = Smear(PAt, mc.Since(now), ph), bsm = Smear(BAt, vc.Since(now), bh);
       sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
         + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
-        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)}],\"bf\":{Fr(fb)},\"ps\":{psm},\"bs\":{bsm},\"red\":{(vc.Red ? 1 : 0)}"
+        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)},{(Boss.Open(v) ? 1 : 0)}],\"bf\":{Fr(fb)},\"ps\":{psm},\"bs\":{bsm},\"red\":{(vc.Red ? 1 : 0)}"
         + $",\"ev\":[{string.Join(",", ev)}],\"splash\":[\"{Boss.SplashTitle}\",\"{Boss.SplashSub}\",{F(UnityEngine.Time.unscaledTime - Boss.SplashAt)}],\"punch\":{F(Boss.Punch)},\"cut\":{(Story.InCutscene ? 1 : 0)}}}");
       if (end > 0f && UnityEngine.Time.unscaledTime >= end) break;
     }
@@ -873,18 +873,18 @@ static class Program {
     int k = 0;
     for (int mi = 0; mi < Boss.Visor.Moves.Length; mi++) {
       var m = Boss.Visor.Moves[mi];
-      for (int i = 0; i < 30 * 4; i++) {
+      for (int i = 0; i < 30 * 6; i++) {
         float dt = 1f / 30f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.timeScale = 1f;
         float now = UnityEngine.Time.time;
         p.Hp = p.MaxHp; Body.Forget(p); v.Hp = v.MaxHp; f.Phase = m.Phase2Only ? 2 : 1; f.StaggerUntil = -1f;
         v.X = px + 1; v.Y = py; p.X = px; p.Y = py;
         if (i == 15) Boss.Begin(f, m, now, 1f);
-        if (i < 15) f.NextMoveAt = now + 10f;
+        if (i < 15) { f.NextMoveAt = now + 10f; f.OpenUntil = -1f; }
         Boss.Tick(f, p); Boss.TickAll(); Melee.Tick(dt); Rt.Glide(dt); CombatFx.Pending.Clear();
-        if (i > 15 && f.Doing == null && i > 30 * 3) break;
+        if (i > 15 && f.Doing == null && i > 30 * 3 && !Boss.Open(v)) break;
         var c = Melee.ChargeOf(v); var (vx, vy) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
         float aw = UnityEngine.Mathf.Atan2(-(my - vy), mx - vx) * UnityEngine.Mathf.Rad2Deg;
-        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt);
+        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));
         sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\"]"));
       }
       f.Doing = null;
@@ -1178,6 +1178,15 @@ static class Program {
       Check(glintAt > 0f && Math.Abs(bf.StrikeAt - glintAt - Boss.GlintLead) < 0.03f, $"Boss: the glint comes {Boss.GlintLead} s before the hit ({bf.StrikeAt - glintAt:0.00})");
       Rt.Of(pl).ParryReady = -99f; Parry.Press(pl); Melee.Strike(bf.Unit, bf.Unit.EquippedWeapon, pl, "Torso", 0f);
       Check(Rt.Of(pl).ParryReady <= UnityEngine.Time.time, "Parry: one that lands frees the key at once (deflections chain)");
+      // "a few in between pauses between his attacks and combos, window of opportunity": after a move he stands open, bullets land
+      { bf.Doing = null; bf.StaggerUntil = -1f; bf.Parries = 0; var slash = Boss.Visor.Moves.First(m => m.Name == "Slash");
+        Boss.Begin(bf, slash, UnityEngine.Time.time, 1f);
+        for (int i = 0; i < 120 && bf.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; pl.Hp = pl.MaxHp; Body.Forget(pl); Boss.Tick(bf, pl); }
+        int bx0 = bf.Unit.X, by0 = bf.Unit.Y; bf.Unit.X = qx + 3;                                        // you stepped back: he'd walk after you
+        bool open = Boss.Open(bf.Unit), deflects = Boss.Deflects(bf.Unit);
+        for (int i = 0; i < 30; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(bf, pl); }
+        Check(open && !deflects && bf.Unit.X == qx + 3, "Boss: after a move he's open (bullets land) and stands still");
+        UnityEngine.Time.time += slash.Open + 1f; Check(!Boss.Open(bf.Unit) && Boss.Deflects(bf.Unit), "Boss: the opening closes"); }
       Rt.On = false;
       Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
