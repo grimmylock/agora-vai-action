@@ -4239,3 +4239,12 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
     out of reach, he backs off hurt and is pressed; down in ~13 s.
   - Seen in the render, not fixed: units have no body collision below a tile - you can stand at the edge of your tile 0.57 from
     an enemy, and the bodies overlap.
+- Melee 2e (Yan: "add the minimum distance between bodies so that they don't overlap, but dead bodies can be walked over";
+  "the video still shows characters teleporting around"):
+  - `Rt.BodyGap` 0.8 tiles between the middles of the living (downed and dead don't count): `Rt.MoveBy` won't take you closer
+    (`Crowds`), and `Separate` pushes you back out (4 tiles/s) when an enemy steps in on you. Co-op: other players count too.
+  - The teleporting was half the render: `Rt.Glide` (tile hops -> slides) only runs in TacticalGridView, and the sim didn't call it.
+    The other half was real: a step into reach (`Boss.StepIn`) moved him inside his tile in one jump, and Glide only smoothed whole
+    tiles. Glide now slides every jump of where an enemy stands; the duel sim runs it every frame like the view. Largest move per
+    frame in the new render: 0.085 tiles; closest the bodies get: 0.73 (the push-out takes a moment).
+  - Not checked in Unity.

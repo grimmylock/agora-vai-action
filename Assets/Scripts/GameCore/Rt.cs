@@ -32,7 +32,7 @@ namespace GameCore
         // the first real-time playtest ("some of my shots seem to pass straight through them"): an NPC's tile changes in one jump
         // and its sprite used to walk over after it, so the body you shot at was up to a tile behind its hitbox. Now the jump is
         // undone as a slide that runs out at its walking speed (Glide), and everyone is drawn where the rounds see them.
-        static readonly Dictionary<ICombatant, (int x, int y)> Was = new Dictionary<ICombatant, (int, int)>();
+        static readonly Dictionary<ICombatant, (float x, float y)> Was = new Dictionary<ICombatant, (float, float)>();
         static readonly Dictionary<ICombatant, (float x, float y)> Slide = new Dictionary<ICombatant, (float, float)>();
         public static bool Free(ICombatant u) => On && u != null;     // drawn where it really is, no tile-to-tile walk
 
@@ -40,13 +40,16 @@ namespace GameCore
         {
             foreach (var e in EncounterState.Enemies)
             {
-                if (!Was.TryGetValue(e, out var w)) { Was[e] = (e.X, e.Y); continue; }
+                // Melee 2e (Yan: "characters teleporting around"): the spot inside the tile too (a step into reach before a swing),
+                // not only the tile - every jump of where he stands slides
                 var (sx, sy) = Slide.TryGetValue(e, out var sl) ? sl : (0f, 0f);
-                if (w.x != e.X || w.y != e.Y)
+                var (ox, oy) = Offset(e); float bx = e.X + 0.5f + ox - sx, by = e.Y + 0.5f + oy - sy;
+                if (!Was.TryGetValue(e, out var w)) { Was[e] = (bx, by); continue; }
+                if (Mathf.Abs(w.x - bx) + Mathf.Abs(w.y - by) > 0.001f)
                 {
-                    int jx = w.x - e.X, jy = w.y - e.Y;
-                    if (System.Math.Abs(jx) <= 2 && System.Math.Abs(jy) <= 2) { sx += jx; sy += jy; } else { sx = 0f; sy = 0f; }   // a jump far off is a teleport
-                    Was[e] = (e.X, e.Y);
+                    float jx = w.x - bx, jy = w.y - by;
+                    if (Mathf.Abs(jx) <= 2.5f && Mathf.Abs(jy) <= 2.5f) { sx += jx; sy += jy; } else { sx = 0f; sy = 0f; }   // a jump far off is a teleport
+                    Was[e] = (bx, by);
                 }
                 float len = Mathf.Sqrt(sx * sx + sy * sy), step = RtAi.Speed(e) * 1.15f * dt;
                 if (len <= step || !e.IsAlive()) { sx = 0f; sy = 0f; } else { sx *= (len - step) / len; sy *= (len - step) / len; }
@@ -137,8 +140,8 @@ namespace GameCore
         {
             var (ox, oy) = Offset(p);
             float x = p.X + 0.5f + ox, y = p.Y + 0.5f + oy;
-            if (dx != 0f && Clear(p, x + dx, y)) x += dx;
-            if (dy != 0f && Clear(p, x, y + dy)) y += dy;
+            if (dx != 0f && Clear(p, x + dx, y) && !Crowds(p, x, y, x + dx, y)) x += dx;
+            if (dy != 0f && Clear(p, x, y + dy) && !Crowds(p, x, y, x, y + dy)) y += dy;
             int tx = Mathf.FloorToInt(x), ty = Mathf.FloorToInt(y);
             if (tx != p.X || ty != p.Y)
             {
@@ -149,6 +152,40 @@ namespace GameCore
                 if (p.X != tx || p.Y != ty) { SetOffset(p, 0f, 0f); return; }   // thrown elsewhere (an anomaly) or a new map (an exit)
             }
             SetOffset(p, x - (p.X + 0.5f), y - (p.Y + 0.5f));
+        }
+
+        // Yan (2026-10-29): "add the minimum distance between bodies so that they don't overlap, but dead bodies can be walked
+        // over". The living (and not downed) keep BodyGap tiles between their middles: you can't walk closer, and one that steps in
+        // on you (an NPC walks tile to tile) pushes you back out. ponytail: only players move to keep it - NPCs stand on tile middles,
+        // one to a tile, so two of them never overlap.
+        public const float BodyGap = 0.8f, PushSpeed = 4f;
+        static IEnumerable<ICombatant> Bodies(Player p) =>
+            EncounterState.Enemies.Cast<ICombatant>().Concat(Player.All).Where(u => u != p && u.IsAlive() && !Body.Down(u));
+        /// <summary>Would moving from (x0, y0) to (x1, y1) take p closer to a body already inside the gap?</summary>
+        static bool Crowds(Player p, float x0, float y0, float x1, float y1)
+        {
+            foreach (var u in Bodies(p))
+            {
+                var (ux, uy) = Ballistics.Pos(u);
+                float d1 = (x1 - ux) * (x1 - ux) + (y1 - uy) * (y1 - uy);
+                if (d1 < BodyGap * BodyGap && d1 < (x0 - ux) * (x0 - ux) + (y0 - uy) * (y0 - uy)) return true;
+            }
+            return false;
+        }
+        /// <summary>Pushed back out of anyone standing too close.</summary>
+        static void Separate(Player p, float dt)
+        {
+            var (px, py) = Ballistics.Pos(p);
+            foreach (var u in Bodies(p))
+            {
+                var (ux, uy) = Ballistics.Pos(u);
+                float dx = px - ux, dy = py - uy, d = Mathf.Sqrt(dx * dx + dy * dy);
+                if (d >= BodyGap) continue;
+                if (d < 0.01f) { dx = 1f; dy = 0f; d = 1f; }
+                float push = Mathf.Min(BodyGap - d, PushSpeed * dt);
+                MoveBy(p, dx / d * push, dy / d * push);
+                return;
+            }
         }
 
         /// <summary>The body's circle fits: every tile it overlaps is walkable - and, unless you're vaulting, not low cover
@@ -277,6 +314,7 @@ namespace GameCore
                 if (Time.time >= s.DiveUntil || blocked) Land(p);
             }
             else if (s.Moving > 0) MoveBy(p, ix / l * speed * dt, iy / l * speed * dt);
+            if (!down) Separate(p, dt);
 
             // ---- down: bleeding out (faster while crawling); only a stim (belt keys) gets you up ----
             if (down)

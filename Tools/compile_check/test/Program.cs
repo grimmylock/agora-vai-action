@@ -906,7 +906,7 @@ static class Program {
       else { if (d > 1.6f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; } else if (d < 1f) input.X = -Math.Sign(dx); label = "stance, reading him"; }   // keeps a body's width between them
       if (lands >= 0f || now < punishUntil) quietSince = now;
       int hp0 = p.Hp, rh0 = r.Hp;
-      Rt.PlayerTick(p, input); Rt.WorldTick(p);
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); Rt.Glide(gdt);                       // the view runs Glide every frame: so does the sim
       var ev = new List<string>();
       foreach (var e in CombatFx.Pending) {
         if (e.Kind == "parry") { if (e.Hit) perfects++; else blocks++; }
