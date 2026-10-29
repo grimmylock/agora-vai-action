@@ -239,6 +239,9 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 
 ## Later list
 
+- **Poses (Yan, 2026-10-29):** extra body frames besides front/back (crouch, kneel, sit, leans for cover, lunge, stagger,
+  lying, with in-betweens), the floating hands doing the expressive part. Prototype sheet: `maps/renders/poses/poses_preview.png`
+  (`ArtSource/make_poses.py`, any suit). Waiting on Yan's picks before anything goes in the game.
 - **Redraw every gun the melee way (Yan, 2026-10-20):** "i was looking at some of them in the files and they look weird,
   especially the ones without very popular designs". The guns came from `ArtSource/weapons/batch_all.py`, which shrinks a
   reference photo into each size separately; the well-known silhouettes survive, the rest turn to mush. Redo each from a clean
