@@ -373,12 +373,13 @@ namespace GameCore
         }
 
         /// <summary>Empty hands: where the two gloves float (centres, character px) at a walk's `phase` (radians) and `swing` (0 still ..
-        /// 1 walking): a pixel clear of the torso at the hips, rising and falling opposite ways a step at a time, snapped to pixels.</summary>
+        /// 1 walking): hanging fingers-down (HeldWeaponView turns them) a pixel clear of the torso at the hips, both swaying a pixel
+        /// to one side then the other with the steps, snapped to pixels.</summary>
         public static (float rx, float ry, float lx, float ly) FreeHands(float phase, float swing)
         {
             float a = Mathf.Sin(phase) * swing;
-            float dy = Mathf.Round(1.4f * a), dx = Mathf.Round(0.4f * a);
-            return (14.5f + dx, 11f - dy, 1.5f - dx, 11f + dy);
+            float dx = Mathf.Round(1.2f * a);                       // Yan: "pointing down and swinging a little to the sides" - no bob
+            return (14f + dx, 11.5f, 2f + dx, 11.5f);
         }
 
         /// <summary>Melee 3: the body's frame through a swing - gathered (half crouch) on the wind-up, a charge, a throw's lift and
@@ -837,8 +838,8 @@ namespace GameCore
                 _stepPhase += moved * Mathf.PI * 2f / StrideTiles;
                 _swing = Mathf.MoveTowards(_swing, walking, dt * 4f);
                 var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_stepPhase, _swing);
-                _grip.transform.localPosition = Local(rx, ry); _grip.transform.localRotation = Quaternion.identity;
-                _support.transform.localPosition = Local(lx, ly);
+                _grip.transform.localPosition = Local(rx, ry); _grip.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);   // hanging, fingers down
+                _support.transform.localPosition = Local(lx, ly); _support.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
                 _g = null;
                 return;
             }
@@ -941,6 +942,7 @@ namespace GameCore
             _grip.transform.localPosition = Local(f.GripX, f.GripY);
             _grip.transform.localRotation = Quaternion.Euler(0f, 0f, f.HandDeg);
             _support.gameObject.SetActive(f.HasSupport);
+            _support.transform.localRotation = Quaternion.identity;               // (the empty hands hang turned)
             if (f.HasSupport) _support.transform.localPosition = Local(f.SupX, f.SupY);
             if (_w2?.Db != null && cat != "melee")
             {

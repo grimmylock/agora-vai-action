@@ -4347,3 +4347,6 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   easing back to still when you stop (`HeldPoseMath.FreeHands`; HeldWeaponView reads the walk from how far the body moved, a full
   swing per 1.2 tiles). Preview: `maps/renders/hands/empty_hands_walk.gif` (drawn with the same numbers; not a harness render).
   Not checked in Unity.
+- Empty hands b (Yan: "they're pointing to the sides and swinging up and down instead of pointing down and swinging a little to
+  the sides, seems like they're dancing"): the gloves hang turned fingers-down (grip -90, support +90; the support glove's turn is
+  reset when a weapon is out) at a fixed height and sway a pixel to one side, then the other, together with the steps.
