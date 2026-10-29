@@ -21,7 +21,6 @@ namespace GameCore
         {
             public float Swing = 0.5f;          // seconds between swings
             public float Reach = 1.3f;          // tiles from your middle
-            public float Arc = 100f;            // degrees in front of you
             public float ThrowSpeed = 12f;      // tiles a second
             public float ThrowRange = 8f;       // tiles
             public float WindUp;                // seconds before a throw leaves the hand (two-handed weapons: 1)
@@ -33,7 +32,7 @@ namespace GameCore
         // per weapon (by name); the rest get stats from their weight: the smaller, the faster it swings and flies
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
-            ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, Arc = 110f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
+            ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
         };
         // RT 7v (Yan): no blade = concussive and never sticks; from 1 kg a weapon takes both hands (the bats, the fire axe, the sledge) (a throw winds up for a second)
         public static readonly HashSet<string> Blunt = new HashSet<string> { "Wooden Baseball Bat", "Hammer", "Sledgehammer", "Barbed Wire Bat" };
@@ -44,12 +43,30 @@ namespace GameCore
             if (w?.Db != null && Cache.TryGetValue(w.Db.Name, out s)) return s;
             float kg = w?.Db?.WeightKg ?? 0.6f;
             string name = w?.Db?.Name ?? "";
-            s = new Stats { Swing = 0.3f + 0.3f * kg, ThrowSpeed = Mathf.Max(8f, 17f - 6f * kg), ThrowRange = Mathf.Max(5f, 11f - 4f * kg),
+            s = new Stats { Swing = 0.3f + 0.3f * kg, Reach = BaseReach[(int)HeldPoseMath.StyleOf(w?.Db != null ? KeyOf(w) : null)], ThrowSpeed = Mathf.Max(8f, 17f - 6f * kg), ThrowRange = Mathf.Max(5f, 11f - 4f * kg),
                 Blade = !Blunt.Contains(name), Bleeds = name == "Barbed Wire Bat", TwoHanded = kg >= TwoHandedKg, WindUp = kg >= TwoHandedKg ? 1f : 0f };
             if (w?.Db != null) Cache[name] = s;
             return s;
         }
         static readonly Dictionary<string, Stats> Cache = new Dictionary<string, Stats>();
+        static string KeyOf(Weapon w) => WeaponDatabase.Categories["melee"].FirstOrDefault(kv => kv.Value.Name == w.Db.Name).Key;
+
+        // Melee 2c (Yan chose "option 1": each swing its own hit shape, each weapon its own reach). Reach in tiles from your middle,
+        // per kind of weapon (Tactical Hatchet: its own, Table); per move: reach x, arc (degrees in front), every body in it or only
+        // the nearest, damage x. Same order as HeldPoseMath.Moves.
+        static readonly float[] BaseReach = { 1.3f, 1.45f, 1.75f };          // knife, one-handed, two-handed
+        public static readonly (float reach, float arc, bool all, float dmg)[][] Shapes =
+        {
+            new[] { (1.2f, 40f, false, 1.1f), (1f, 100f, false, 1f), (1f, 100f, false, 1f) },        // stab: long, narrow; the slashes
+            new[] { (1f, 70f, false, 1.15f), (0.95f, 150f, true, 0.85f) },                           // chop: narrow, harder; sweep: wide, all
+            new[] { (1f, 60f, false, 1.25f), (1f, 160f, true, 0.85f), (1.05f, 90f, false, 1f) },     // slam; wide sweep; rising swing
+        };
+        public static (float reach, float arc, bool all, float dmg) Shape(Weapon w, int move)
+        {
+            var st = HeldPoseMath.StyleOf(w?.Db != null ? KeyOf(w) : null); var row = Shapes[(int)st];
+            var m = row[((move % row.Length) + row.Length) % row.Length];
+            return (For(w).Reach * m.reach, m.arc, m.all, m.dmg);
+        }
         /// <summary>RT 7v: how long a blunt hit leaves a human dazed: the heavier, the longer (4 s for a 1 kg bat, 8 for the sledge).</summary>
         public static float ConcussSeconds(Weapon w) => Mathf.Clamp(3f + (w?.Db?.WeightKg ?? 1f) * 1.25f, 3f, 8f);
 
@@ -75,6 +92,7 @@ namespace GameCore
             public int Move;                                    // Melee 2: which swing of the weapon's string this one is
             public float From = -1f;                            // how far into the last swing this one began (-1: from the stance)
             public bool Queued;                                 // clicked before the last swing let go: it starts the moment it can
+            public float GuardAt = -99f, BrokenAt = -99f;       // Melee 2d: the parry guard went up; his guard was broken by a perfect parry
             public void Next(float now)
             {
                 bool combo = now - SwungAt < HeldPoseMath.SwingLength + ComboGap;
@@ -94,7 +112,7 @@ namespace GameCore
         public static void Reset() { Air.Clear(); InCover.Clear(); InBodies.Clear(); OnFloor.Clear(); Winding.Clear(); NextSwing.Clear(); Pending.Clear(); Charges.Clear(); }
 
         public static float Now = -1f;                             // the harness sets it; the game uses Time.time
-        static float T => Now >= 0f ? Now : Time.time;
+        public static float T => Now >= 0f ? Now : Time.time;
 
         /// <summary>A human busy pulling a blade out of himself does nothing else (RtAi.Tick asks).</summary>
         public static bool Busy(ICombatant u) => InBodies.Any(s => s.In == u && s.Pulling);
@@ -178,29 +196,51 @@ namespace GameCore
         /// <summary>One swing: the nearest enemy within reach and inside the arc in front takes it.</summary>
         public static ICombatant Swing(ICombatant by, Weapon w, float dx, float dy, float h, float mult = 1f)
         {
-            var st = For(w);
+            var sh = Shape(w, ChargeOf(by).Move);                                         // Melee 2c: this swing's shape
             var (px, py) = Ballistics.Pos(by);
-            ICombatant best = null; float bestD = float.MaxValue;
+            var inside = new List<(ICombatant u, float d)>();
             foreach (var u in Gunplay.Targets(by))
             {
                 if (u == null || u == by || !u.IsAlive() || Body.Down(u)) continue;
                 var (ux, uy) = Ballistics.Pos(u);
                 float ex = ux - px, ey = uy - py, d = Mathf.Sqrt(ex * ex + ey * ey);
-                if (d > st.Reach || d < 0.01f) continue;
-                if ((ex * dx + ey * dy) / d < Mathf.Cos(st.Arc * 0.5f * Mathf.Deg2Rad)) continue;   // outside the arc
-                if (d < bestD) { best = u; bestD = d; }
+                if (d > sh.reach || d < 0.01f) continue;
+                if ((ex * dx + ey * dy) / d < Mathf.Cos(sh.arc * 0.5f * Mathf.Deg2Rad)) continue;   // outside the arc
+                inside.Add((u, d));
             }
-            if (best == null) return null;
+            if (inside.Count == 0) return null;
+            inside.Sort((a, b) => a.d.CompareTo(b.d));
+            for (int i = 1; sh.all && i < inside.Count; i++) Land(by, w, inside[i].u, px, py, h, sh.reach, mult * sh.dmg);   // a sweep takes everyone in it
+            Land(by, w, inside[0].u, px, py, h, sh.reach, mult * sh.dmg);
+            return inside[0].u;
+        }
+
+        static void Land(ICombatant by, Weapon w, ICombatant best, float px, float py, float h, float reach, float mult)
+        {
             var fx = CombatFx.Push("impact", by, best, w); fx.Now = true;                       // blood, the flash, the knock-back
             // the body part: a line straight at them at the crosshair's height
             var (bx, by2) = Ballistics.Pos(best);
             float ox = bx - px, oy = by2 - py, ol = Mathf.Max(0.01f, Mathf.Sqrt(ox * ox + oy * oy));
-            var hit = Ballistics.Trace(by, px, py, ox / ol, oy / ol, st.Reach + 0.3f, h, new[] { best });
+            var hit = Ballistics.Trace(by, px, py, ox / ol, oy / ol, reach + 0.3f, h, new[] { best });
             if (hit.Unit == null) { hit.Unit = best; hit.Part = "Torso"; }
             fx.Hit = true;
             Strike(by, w, hit.Unit, hit.Part, hit.Side, fx, mult);
-            return best;
         }
+
+        /// <summary>Melee 2c: an NPC's swing (Yan: a fight with parries, so it has to be readable): it winds up like yours and lands
+        /// at the end of the strike - step out of its shape or parry on the beat. Each swing is the next move of his weapon's string.</summary>
+        public static void NpcSwing(ICombatant by, Weapon w, ICombatant target)
+        {
+            float now = T; var c = ChargeOf(by);
+            c.Move++; c.From = -1f; c.SwungAt = now;
+            if (by is HumanEnemy he && target is Player tp && CombatantUtil.IsAdjacent(he, tp)) Boss.StepIn(he, tp, 0.8f * Shape(w, c.Move).reach);   // from next to you, the swing comes with a step into reach
+            var (ox, oy) = Ballistics.Pos(by); var (tx, ty) = Ballistics.Pos(target);
+            float dx = tx - ox, dy = ty - oy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy)); dx /= len; dy /= len;
+            Pending.Add((now + HitDelay, by, w, dx, dy, 0.45f, 1f));
+        }
+        /// <summary>Melee 2c: how long until a pending NPC swing from `by` lands (the bot in the duel sim reads it like a player reads
+        /// the wind-up), or -1.</summary>
+        public static float LandsIn(ICombatant by) { float now = T, best = -1f; foreach (var q in Pending) if (q.by == by && (best < 0f || q.at - now < best)) best = q.at - now; return best; }
 
         /// <summary>Damage from a swing or a throw that lands: the old armor math, limb health, bleeding or a concussion.</summary>
         public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side, FxEvent fx = null, float mult = 1f)

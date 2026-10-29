@@ -256,8 +256,11 @@ namespace GameCore
                 bool alive = DrawUnit(enemy, _enemyMarkers[i], Companion.Is(enemy) ? new Color(0.45f, 1f, 0.55f) : new Color(1f, 0.25f, 0.2f));
                 if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = calling ? Color.white : red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
                 if (enemy is HumanEnemy he)   // aware enemies point at the player, the rest where they look (Batch 128); corpses and the surrendered drop it
+                {
+                    Held(_enemyMarkers[i]).MeleeCharge = Melee.ChargeOf(he);                 // Melee 2c: his swings and moves drive the pose
                     Held(_enemyMarkers[i]).Show(he.EquippedWeapon, he.EquippedArmor, _enemyMarkers[i].transform.position,
                         AimPoint(he, _enemyMarkers[i]), alive && he.Morale != "Surrendered", Away(_enemyMarkers[i]));
+                }
                 else if (_held.TryGetValue(_enemyMarkers[i], out var stale)) stale.Show(null, null, Vector3.zero, null, false);   // slot reused by a mutant
             }
 

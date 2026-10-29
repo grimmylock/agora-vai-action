@@ -177,10 +177,9 @@ namespace GameCore
             // it lands if you're in its reach and arc when it comes (Melee.Swing), no 2d10
             if (Rt.On && isMelee && Owner != null && !(Owner is Player))
             {
-                var (ox, oy) = Ballistics.Pos(Owner); var (tx, ty) = Ballistics.Pos(target);
-                float ddx = tx - ox, ddy = ty - oy, len = UnityEngine.Mathf.Max(0.01f, UnityEngine.Mathf.Sqrt(ddx * ddx + ddy * ddy));
                 var swing = CombatFx.Push("melee", Owner, target, this); swing.Now = true;
-                return new WeaponFireResult { Hit = Melee.Swing(Owner, this, ddx / len, ddy / len, 0.45f) == target };
+                Melee.NpcSwing(Owner, this, target);                         // Melee 2c: it winds up and lands at the strike
+                return new WeaponFireResult { Hit = false };
             }
             if (!isMelee)
             {

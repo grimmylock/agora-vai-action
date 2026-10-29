@@ -166,6 +166,7 @@ namespace GameCore
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
+            var mc = Melee.ChargeOf(h); mc.Move = 1; mc.From = -1f; mc.SwungAt = Time.time - HeldPoseMath.WindUp - HeldPoseMath.ChopTime;   // his pose is at the strike (his own moveset: to do)
             if (m.Danger && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }   // the dive goes under it
             if (h.EquippedWeapon == null) return;
             Parry.Unparryable = m.Danger;
@@ -175,7 +176,7 @@ namespace GameCore
 
         /// <summary>Close in to `gap` tiles from p before a hit lands - you stand anywhere inside a tile, so "the next tile" can still
         /// be out of a knife's reach (Melee.Stats.Reach 1.3). Only toward you, never through a wall. Rt.Glide turns it into a slide.</summary>
-        static void StepIn(HumanEnemy h, Player p, float gap)
+        public static void StepIn(HumanEnemy h, Player p, float gap)
         {
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = hx - px, dy = hy - py, d = Mathf.Sqrt(dx * dx + dy * dy);

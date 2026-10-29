@@ -132,7 +132,12 @@ namespace GameCore
             if (s.Dry) s.Goal = (p.X, p.Y);
             if (w == null || CombatRules.IsMelee(w) || s.Dry)
             {
-                if (CombatantUtil.IsAdjacent(h, p)) { s.NextShot = now + 1.2f; h.MeleeAttack(p); }
+                if (CombatantUtil.IsAdjacent(h, p))
+                {
+                    s.NextShot = now + 1.2f;
+                    if (w != null && CombatRules.IsMelee(w)) w.Fire(p);                  // Melee 2c: a real swing with his blade (it winds up: parry it)
+                    else h.MeleeAttack(p);                                             // out of rounds: fists and the rifle butt
+                }
                 return;
             }
             if (w.IsJammed || w.CurrentMagazine <= 0)

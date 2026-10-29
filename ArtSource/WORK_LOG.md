@@ -4219,3 +4219,23 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   - Render shows the real clicking: a click every 0.25 s (mashing), machete instead of the hatchet. Checks: the combo starts where
     the last swing was, an early click is queued and becomes the next move.
 - Yan: "bosses get their own moveset, at least the special red visor one" - to do (the Visor still uses his single swing pose).
+- Melee 2c (Yan chose "option 1": each swing its own hit shape, each weapon its own reach; "simulate a melee fight between one
+  player and one normal npc, try to include at least 2 parries"):
+  - `Melee.Shapes` / `Melee.Shape`: reach by kind (knife 1.3, one-handed 1.45, two-handed 1.75 tiles; the Tactical Hatchet keeps
+    1.35) times the move's: stab x1.2 at 40 deg, the slashes 100 deg; chop 70 deg x1.15 damage, sweep 150 deg x0.85 hits everyone
+    in it; slam 60 deg x1.25, wide sweep 160 deg x0.85 everyone, rising 90 deg. `Melee.Swing` uses the swinger's current move.
+    `Stats.Arc` is gone.
+  - Found while building the sim: a human enemy's blade never went through Melee at all in real time - RtAi called
+    `MeleeAttack` (the mutant strike). Now RtAi swings the blade (`Weapon.Fire` -> `Melee.NpcSwing`): it winds up like yours,
+    lands at the end of the strike (so it can be read, stepped away from and parried), steps into reach from the next tile
+    (`Boss.StepIn`, now public), and walks his weapon's string of moves. Enemies' poses are driven by their own `Melee.Charge`
+    (TacticalGridView). The Visor poses at his strike (move 1) until he gets his own moveset.
+  - Melee 2d (Yan: "the perfect parries need a visual indication, the enemy hand could go UP simulating their guard was broken"):
+    `Charge.BrokenAt` set by a perfect parry -> his weapon arm is knocked up over his head, body rocked back, shuddering, for 1 s.
+    Also `Charge.GuardAt`: your parry raises the weapon across in front of you for the window (before, in the game, the parry key
+    showed nothing on the player - the view read only SwungAt).
+  - Sim: `dotnet /tmp/test.dll meleeduel d.json` + `Tools/render/melee_duel.py` -> `maps/renders/melee2/melee_duel.mp4/.gif/_sheet`.
+    Machete vs a Veteran Raider with a knife: 3 perfect parries (each punished with one chop), 1 late block, 1 cut taken, 1 step
+    out of reach, he backs off hurt and is pressed; down in ~13 s.
+  - Seen in the render, not fixed: units have no body collision below a tile - you can stand at the edge of your tile 0.57 from
+    an enemy, and the bodies overlap.

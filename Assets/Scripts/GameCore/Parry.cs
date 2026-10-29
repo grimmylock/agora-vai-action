@@ -46,6 +46,7 @@ namespace GameCore
                 if (!CanParry(p)) return;
             }
             s.ParryAt = now; s.ParryReady = now + Cooldown;
+            Melee.ChargeOf(p).GuardAt = Melee.T;                                   // Melee 2d: the guard pose
             var anim = CombatFx.Push("melee", p, null, p.EquippedWeapon); anim.Now = true;   // the guard comes up (the swing pose)
         }
 
@@ -60,6 +61,7 @@ namespace GameCore
             if (perfect)
             {
                 Boss.Stagger(by, StaggerSeconds);
+                Melee.ChargeOf(by).BrokenAt = Melee.T;                             // Melee 2d (Yan): his arm is knocked up, guard broken
                 Rt.AddFocus(p, PerfectFocus);
                 Boss.ParryMoment();
                 GameLog.Write(Boss.Is(by) ? "PERFECT PARRY - he's open!" : "Perfect parry!");

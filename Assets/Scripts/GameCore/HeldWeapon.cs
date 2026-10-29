@@ -259,7 +259,15 @@ namespace GameCore
             return (-150f + 220f * c, -2f + 5f * c, -10f + 10f * c, 8f - 18f * c);
         }
 
-        static HeldFrame MeleeFrame(float angle, float sinceSwing, float swingHold, float throwHold, float sinceThrow, string key, int move, float from)
+        // Melee 2d: the parry guard (the weapon up and across in front of you, for the parry window) and a broken guard (Yan: "the
+        // perfect parries need a visual indication, the enemy hand could go UP simulating their guard was broken": the weapon arm
+        // knocked up and back, the body rocked back, for the stagger, then it comes back down)
+        public const float GuardTime = 0.35f, BrokenTime = 1f;
+        static readonly (float off, float hx, float hy, float lean) Guard = (-95f, 1f, -4f, 2f), Broken = (-60f, -2f, -7f, 12f);
+        static float Hold(float t, float len, float rise, float fall) => t < 0f || t >= len ? 0f : Mathf.Min(1f, Mathf.Min(t / rise, (len - t) / fall));
+
+        static HeldFrame MeleeFrame(float angle, float sinceSwing, float swingHold, float throwHold, float sinceThrow, string key, int move, float from,
+            float sinceGuard = 99f, float sinceBroken = 99f)
         {
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
@@ -269,6 +277,9 @@ namespace GameCore
                 : swingHold >= 0f ? Chop(Mathf.Min(swingHold, WindUp), st, move, from)
                 : Chop(sinceSwing, st, move, from);
             if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp) off += 3f * Mathf.Sin(swingHold * 30f);   // a charged swing trembles
+            float gk = Hold(sinceGuard, GuardTime, 0.04f, 0.12f), bk = Hold(sinceBroken, BrokenTime, 0.06f, 0.3f);
+            if (gk > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), Guard, gk);
+            if (bk > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), (Broken.off + 6f * Mathf.Sin(sinceBroken * 25f) * (1f - sinceBroken), Broken.hx, Broken.hy, Broken.lean), bk);   // it shudders
             // Melee 2 (Yan: "the hand and angle stay the same ... they need to rotate as well with the swing"): in a swing the fist
             // rides an arc round the shoulder with the weapon (the arm swinging, not just the wrist) and turns with it; at the stance
             // the arc adds nothing
@@ -307,9 +318,9 @@ namespace GameCore
         /// g = WeaponArt grip/support/muzzle points.</summary>
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
             float r, string style, int trips, float[] mag = null, float swingHold = -1f, float throwHold = -1f, float sinceThrow = 99f,
-            string key = null, int move = 0, float from = -1f)
+            string key = null, int move = 0, float from = -1f, float sinceGuard = 99f, float sinceBroken = 99f)
         {
-            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow, key, move, from);   // RT 7c, 7e, Melee 2
+            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow, key, move, from, sinceGuard, sinceBroken);   // RT 7c, 7e, Melee 2
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
             var (swingDeg, lunge) = Swing(sinceSwing);
@@ -740,7 +751,8 @@ namespace GameCore
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
                 mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
-                key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f);   // Melee 2: NPCs vary their swings too
+                key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f,
+                mc != null ? Melee.T - mc.GuardAt : 99f, mc != null ? Melee.T - mc.BrokenAt : 99f);
             Lean = f.Lean;
 
             var (body, mag) = WeaponArt.Mag(cat, key);

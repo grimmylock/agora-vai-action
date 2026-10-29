@@ -9,6 +9,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
@@ -850,6 +851,86 @@ static class Program {
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
   }
 
+  // Melee 2c: you (a bot on the real controls: Rt.PlayerTick with an Rt.Input) with a machete against one ordinary Raider with a
+  // knife, run by the real AI (Rt.WorldTick -> RtAi / EnemyAI), 30 frames a second. The bot reads his wind-up like a player would
+  // (Melee.LandsIn) and parries: on the beat (perfect: his guard breaks, it punishes with a combo), once late (blocked), once not
+  // at all (it takes the cut). -> Tools/render/melee_duel.py
+  static void MeleeDuel(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f;
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
+    Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Body.Forget(p);
+    p.EquipWeapon("melee", "SteppeMachete");
+    EncounterState.Enemies.Clear();
+    var r = new HumanEnemy("Raider", px + 4, py, "Raiders", "Veteran", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
+    EncounterState.Enemies.Add(r); EncounterState.InCombat = true; Rt.SetOffset(r, 0f, 0f);
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)}]";
+    var gm = WeaponArt.GripOf("melee", "SteppeMachete"); var gk = WeaponArt.GripOf("melee", "HuntingKnife");
+    int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? ""), rar = Array.IndexOf(SpriteAtlasIndex.Armor, r.EquippedArmor?.Name ?? "Raider Jacket");
+    var sb = new System.Text.StringBuilder();
+    sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":[" + armor + ",\"" + SpriteAtlasIndex.ArmorCuff[Math.Max(0, armor)] + "\",\"" + SpriteAtlasIndex.ArmorGlove[Math.Max(0, armor)]
+      + "\"," + rar + ",\"" + SpriteAtlasIndex.ArmorCuff[Math.Max(0, rar)] + "\",\"" + SpriteAtlasIndex.ArmorGlove[Math.Max(0, rar)] + "\"],\"gm\":[" + string.Join(",", gm.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F))
+      + "],\"maxhp\":[" + p.MaxHp + "," + r.Hp + "],\"frames\":[");
+    float real = 1f / 30f, end = -1f, punishUntil = -1f, lastPend = -1f; int seen = 0, perfects = 0, blocks = 0, cuts = 0, clicks = 0; bool mouse = false; string label = ""; float quietSince = UnityEngine.Time.time;
+    for (int k = 0; k < 30 * 60; k++) {
+      float gdt = real * UnityEngine.Time.timeScale;
+      UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
+      float now = UnityEngine.Time.time;
+      var (rx, ry) = Ballistics.Pos(r); var (mx, my) = Ballistics.Pos(p);
+      var input = new Rt.Input { Mouse = (rx, ry + 0.44f - 0.45f * Ballistics.BodyTiles) };
+      float dx = rx - mx, dy = ry - my, d = (float)Math.Sqrt(dx * dx + dy * dy);
+      float lands = r.IsAlive() ? Melee.LandsIn(r) : -1f;
+      if (lands >= 0f && lastPend < 0f) seen++;                                         // a new swing of his is winding up
+      lastPend = lands;
+      var mc = Melee.ChargeOf(p);
+      if (!r.IsAlive()) { if (end < 0f) end = now + 1.5f; label = "he's down"; }
+      else if (lands >= 0f) {
+        int which = seen % 5;                                                              // 1, 3: on the beat; 2: late; 4: no parry; 0: back off
+        if (which == 0) { input.X = -Math.Sign(dx); label = "steps back out of his reach"; }
+        else if (which == 4) label = "misreads it";
+        else if (which == 2) { if (lands <= 0.2f && lands > 0.15f) input.Parry = true; label = "parry (late)"; }
+        else { if (lands <= 0.05f && lands > 0.01f) input.Parry = true; label = "parry on the beat"; }
+      }
+      else if (now < punishUntil || now - Melee.ChargeOf(r).BrokenAt < 0.9f) {
+        if (punishUntil < now) { punishUntil = now + 0.9f; clicks = 0; }
+        if (d > 1.2f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; }
+        mouse = !mouse && clicks < 1; if (mouse) clicks++; input.Fire = mouse; label = "his guard is broken: punish";
+      }
+      else if (now - quietSince > 1.6f) {                                                // he's stopped swinging (backing off, hurt): go in
+        if (d > 1.2f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; }
+        else { mouse = !mouse; input.Fire = mouse; }
+        label = "he backs off: press him";
+      }
+      else { if (d > 1.6f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; } else if (d < 1f) input.X = -Math.Sign(dx); label = "stance, reading him"; }   // keeps a body's width between them
+      if (lands >= 0f || now < punishUntil) quietSince = now;
+      int hp0 = p.Hp, rh0 = r.Hp;
+      Rt.PlayerTick(p, input); Rt.WorldTick(p);
+      var ev = new List<string>();
+      foreach (var e in CombatFx.Pending) {
+        if (e.Kind == "parry") { if (e.Hit) perfects++; else blocks++; }
+        ev.Add($"[\"{e.Kind}\",{(e.Actor == r ? 1 : 0)},{(e.Hit ? 1 : 0)}]");
+      }
+      CombatFx.Pending.Clear();
+      if (p.Hp < hp0) cuts++;
+      (mx, my) = Ballistics.Pos(p); (rx, ry) = Ballistics.Pos(r);
+      var pose = Rt.PoseOf(p);
+      float aw = UnityEngine.Mathf.Atan2(-(ry - my), rx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
+      mc = Melee.ChargeOf(p); var rc = Melee.ChargeOf(r);
+      var fp = HeldPoseMath.Frame("melee", gm, local, 0f, 0f, 0f, now - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f,
+        "SteppeMachete", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
+      var fr = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, now - rc.SwungAt, 1f, "none", 1, null, -1f, -1f, 99f, "HuntingKnife", rc.Move, rc.From, now - rc.GuardAt, now - rc.BrokenAt);
+      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"p\":[{F(mx)},{F(my)},{p.Hp},{F(pose.Tilt)}],\"pf\":{Fr(fp)}"
+        + $",\"r\":[{F(rx)},{F(ry)},{r.Hp},{(r.IsAlive() ? 1 : 0)},{(now - rc.BrokenAt < HeldPoseMath.BrokenTime ? 1 : 0)}],\"rf\":{Fr(fr)},\"ev\":[{string.Join(",", ev)}],\"label\":\"{label}\",\"punch\":{F(Boss.Punch)}}}");
+      if (end > 0f && now >= end) break;
+      if (!p.IsAlive() || Body.Down(p)) { if (end < 0f) end = now + 1.5f; label = "you're down"; }
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString());
+    Console.WriteLine($"melee duel: raider {(r.IsAlive() ? "alive " + r.Hp : "down")}, you {p.Hp}/{p.MaxHp}, his swings {seen}, perfect parries {perfects}, blocked {blocks}, cuts taken {cuts}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s");
+    Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Melee.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+  }
+
   // Melee 2: each kind of melee weapon in its stance, then its whole string of swings clicked through the real Melee.PlayerInput
   // (each click within the combo gap is the next move), at 30 frames a second -> Tools/render/melee_moves.py
   static void MeleeMoves(string path) {
@@ -1588,9 +1669,12 @@ static class Program {
       Check(bites == 10, $"real time: a mutant in reach always lands its strike ({bites}/10)");
       var knifer = new HumanEnemy("Knifer", px + 1, py, "Raiders", "Rookie", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
       EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(knifer); p.HealPermanent(5000); int k0 = p.Hp;
-      var cut = knifer.EquippedWeapon.Fire(p);
-      knifer.X = px + 3; p.HealPermanent(5000); int k1 = p.Hp; var far = knifer.EquippedWeapon.Fire(p);
-      Check(cut.Hit && p.Hp == k1 && !far.Hit && k0 > 0, $"real time: a Raider's knife cuts you in reach, not from 3 tiles");
+      // Melee 2c: his swing winds up and lands at the end of the strike (Melee.NpcSwing), like yours
+      Melee.Reset(); Melee.Now = 0f; knifer.EquippedWeapon.Fire(p); Melee.Tick(0.01f); bool early = p.Hp < k0;
+      Melee.Now = Melee.HitDelay + 0.01f; Melee.Tick(0.01f); bool cut = p.Hp < k0;
+      knifer.X = px + 3; p.HealPermanent(5000); int k1 = p.Hp; Melee.Now = 1f; knifer.EquippedWeapon.Fire(p); Melee.Now = 2f; Melee.Tick(0.01f);
+      Check(!early && cut && p.Hp == k1 && k0 > 0, $"real time: a Raider's knife cuts you in reach at the strike, not from 3 tiles");
+      Melee.Now = -1f; Melee.Reset();
       EncounterState.Enemies.Clear(); CombatFx.Pending.Clear(); p.HealPermanent(5000); }
     var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
     var r = new HumanEnemy("Raider", px + 6, py, "Raiders", "Rookie", rw, ra) { IsAggroed = true };
