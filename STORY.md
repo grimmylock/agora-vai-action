@@ -55,7 +55,9 @@ Scenes worth keeping (most striking first):
 - **The Garrison work for "those" without knowing it** - "they're stupid". Their base is the Siege Ward hospital, which is why
   "those" fall back there in Tier 6.
 - **The traitor scientist is someone inside the Sub-Station with Dr. Osei** - a new character (not Osei, not Pavel).
-- The squad characters from the logs need original names (suggestions given 2026-10-29).
+- **Names (Yan, 2026-10-29):** the Veteran is **Lev Marchuk**; the heavy is **Tolik Brodsky** (a big friendly guy who talks
+  to his armour); at the Sub-Station with Osei: **Dr. Emil Rask** (polite, helpful, the last you'd suspect) and **Konrad Hale**
+  (supply officer, nobody looks at him) - Yan took both; whether one or both work for "those" is open.
 - Rough end-to-end skeleton proposed 2026-10-29 (T3 Safe Haven, T4 the Barrier siege and the Preacher's psi-core, T5 the
   Array and the Array Commander, T6 the Siege Ward and the portal, T7 the Descent) - waiting on Yan's reaction.
 
