@@ -225,6 +225,26 @@ Liberators' make-up contract (later), the lab under the Loading Dock (later, wit
 - **The Scrap King's first job comes after the Garrison mission:** about a day later he radios the player - clear the rival
   Raiders who moved into the Loading Dock.
 
-## Tier 3+
+## Tier 3 - The Safe Haven (in progress)
+
+Map: the Scavenger's Hub (safe zone, the Wanderers' base; the Sentinel Checkpoint, the Bazaar, the Rusty Anchor, the
+Bunkhouse, the Sentinel Barracks, the Repair Yard, the Sentinel Outpost), Dried Lake Sub-Station (the Surveyors' base: Dr.
+Osei at the Sub-Station House, the Drainage Sump over the Sub-Station Depths, the Stranded Ferry, the Lakeside Camp), the
+Rail-Yards (Voss and the Contractors at the Roundhouse, the Container Stacks, the Signal Tower, the Rail Culvert over the
+Maintenance Tunnels). Exits north to Ghost Town and Vanguard Barracks (Tier 4).
+
+Proposal given 2026-10-29 (not yet confirmed): arrive at the Hub with Pavel; the Veteran at the Rusty Anchor (his medication
+thread); a second, shorter escort across the lakebed to Dr. Osei; the Sub-Station locked down, its defences shut off to get
+in under mutant pressure; the reveal (the device is ready to be made in numbers; a counter-signal needs an old dead facility's
+computing power further north); Voss's leak hunt shows "those" paid the Contractor snipers; a robed figure at the Signal Tower.
+
+Decided (Yan, 2026-10-29):
+- **The Veteran was one of "those".** He got out, and used what he learned inside to become a legend of the Zone - but it was
+  never enough to confront them; knowing and being unable to do anything sank him into depression.
+- **Pavel stays at the Sub-Station** with Dr. Osei from Tier 3 on.
+- **Where the final descent happens is open:** Yan wants the whole main mission sketched end to end first, then adds depth
+  and decides changes.
+
+## Tier 4+
 
 Not written yet.
