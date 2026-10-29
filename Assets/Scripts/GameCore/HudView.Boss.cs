@@ -42,7 +42,7 @@ namespace GameCore
                     for (int x = 0; x < N; x++)
                     {
                         float dx = (x + 0.5f) / N * 2f - 1f, dy = (y + 0.5f) / N * 2f - 1f, r = Mathf.Sqrt(dx * dx * 0.8f + dy * dy * 0.8f);
-                        tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.62f, 1.12f, r))));
+                        tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.74f, 1.18f, r))));
                     }
                 tex.Apply();
                 _edge = Img(_root.transform, "ParryEdge", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.clear);
@@ -52,7 +52,7 @@ namespace GameCore
             }
             float punch = Boss.Punch;
             _edge.gameObject.SetActive(punch > 0.01f);
-            if (punch > 0.01f) _edge.color = new Color(0.72f, 0.9f, 1f, 0.85f * punch);
+            if (punch > 0.01f) _edge.color = new Color(0.72f, 0.9f, 1f, 0.6f * punch);
 
             var f = Boss.Current;
             bool on = f != null && !GameState.Current.ModalOpen;

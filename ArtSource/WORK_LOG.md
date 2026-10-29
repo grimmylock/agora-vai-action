@@ -4156,3 +4156,30 @@ preference - he deflects bullets unless staggered. The place: the plan in ACTION
 - Not done / not checked: no render of the duel yet; not checked in Unity (feel, timings, the HUD, the sounds); no sprite for him
   (the Proto-Exoskeleton's look; a black suit with a red visor needs Yan's art call); mutants can't be parried; co-op clients don't
   see the boss (the snapshot carries players only).
+
+## Boss 1b (2026-10-29): the Visor's look, parry draws your knife, EXECUTE, the perfect parry's moment, the duel render
+
+Yan: "draw him a black suit with a red visor and a gas mask, the parry works even without a melee in hand, it insta-draws it,
+picking up the hatchet equips it, change FINISH HIM to EXECUTE, executing gives slow-mo energy. Also we need an indication for the
+perfect parry, maybe time slows down for the second as well? a slow-down effect on the screen, maybe a little zoom-in and something on
+the edges? After that's done try rendering the fight". Mutant parries and co-op for bosses: "later".
+- **Black Visor Suit** (`ArtSource/make_unique_armor.py`): a new head "visormask" (black helmet, red visor band with a hot glint, gas
+  mask with a chin filter) on the heavy body in black; front, back and walk frames in `armor_unique_black_visor_suit.png`;
+  `UnitSprites.Unique` adds it beside the atlas, `UnitSprites.UniqueGloves` gives it black gloves. His alone (`Boss.BlackVisorSuit`),
+  not in any loot table. Preview: `maps/renders/boss/visor_suit.png`.
+- **Parry draws the melee weapon:** with a gun in hand, F pulls the best melee weapon from the pack into your hand and parries in
+  the same instant (`Parry.MeleeInPack`). No melee weapon at all: no parry. ponytail: it stays in your hand (no melee slot yet).
+- The hatchet from his body goes straight into your hand (already so in Boss 1).
+- **EXECUTE** replaces FINISH HIM; the execution fills your Focus.
+- **The perfect parry's moment** (`Boss.ParryMoment`): the hit-stop (0.14 s), then 1 s of slow motion (x0.25), the camera leaning
+  in 9%, and a cold blue edge round the screen (`HudView.Boss.cs`), all eased by `Boss.Punch`.
+- **Bugs the render found** (the harness's duel had been passing): (1) he stood a tile away but you stand anywhere inside a tile, so
+  he swung at air from 1.4 tiles (the knife reaches 1.3) - he now steps in before each hit (`Boss.StepIn`); (2) bleeding (and any
+  other damage road) killed him instead of breaking him - `Mutant.Unkillable` holds a boss at 1 HP until the execution.
+- **The render:** `dotnet /tmp/test.dll bossframes duel.json` (a bot plays the duel through the real code at 30 frames a real second)
+  -> `python3 Tools/render/boss_duel.py duel.json maps/renders/boss` -> `boss_duel.mp4` + `boss_duel_sheet.png`. The bot parries most
+  white glints on the beat (one late = blocked), hacks while he's open, sprints off after some punishes (he lunges: a red glint, it
+  dives through with bullet time), executes him, opens the body: smoke. It starts with full Focus (a dive costs 40). Drawn on the
+  Bonfire Village ground, not the lab. 29 s from wake-up to smoke; 5 perfect parries were enough.
+- Not checked in Unity. Open for Yan: the dive needs 40 Focus, so without Focus his red moves can't be dodged by diving; the fight
+  is short for a parrying player (2400 HP, ~10 hatchet hits plus bleeding).

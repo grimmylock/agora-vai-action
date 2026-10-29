@@ -8,6 +8,7 @@ static class Program {
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
@@ -778,6 +779,76 @@ static class Program {
   // RT 7a: two short scenes run through the real melee code (Melee.Swing / Throw / Tick, HeldPoseMath.Frame) at 30 frames a second,
   // for Tools/render/melee_scene.py: "swing" - a Raider next to you takes two swings (body, then head); "throw" - one 5 tiles away
   // takes a thrown hatchet, wrenches it out, drops it. Per frame: your hand pose, the Raider, the hatchet's state, blood hits.
+  // Boss 1b (Yan: "try rendering the fight"): the Visor's duel played by a bot through the real code - Rt.PlayerTick / Rt.WorldTick,
+  // Boss.Tick, Parry, Melee - at 30 frames a REAL second (game time follows Time.timeScale: hit-stops, the parry's slow motion,
+  // bullet time). The bot parries his white glints on time (most of them: some it blocks late, some it misses), dives away from
+  // the red ones, hacks at him while he's staggered, walks up and executes him when he breaks, opens his body. Every frame: both
+  // bodies, their held weapons' poses (HeldPoseMath), the boss's state, the events the view would play, the HUD's numbers.
+  static void BossFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
+    Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Rt.Of(p).Focus = Rt.FocusMax;   // full Focus: it can dive his red moves
+    var f = Boss.WakeVisor(p, px + 4, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)}]";
+    var gh = WeaponArt.GripOf("melee", "TacticalHatchet"); var gk = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
+    int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "");
+    var sb = new System.Text.StringBuilder();
+    sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#3d4148")
+      + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + Boss.Visor.Hp + ",\"frames\":[");
+    float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f;
+    for (int k = 0; k < 30 * 120; k++) {
+      float scale = UnityEngine.Time.timeScale, gdt = real * scale;
+      UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
+      float now = UnityEngine.Time.time;
+      var (bx, by) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
+      var input = new Rt.Input { Mouse = (bx, by + 0.44f - 0.45f * Ballistics.BodyTiles) };
+      int dist = CombatantUtil.Distance(p, v); int sx = Math.Sign(v.X - p.X), sy = Math.Sign(v.Y - p.Y);
+      if (p.Hp < p.MaxHp * 0.35f) p.Hp = p.MaxHp * 0.6f is var _ ? (int)(p.MaxHp * 0.6f) : p.Hp;   // the bot drinks a medkit (keeps the clip going)
+      if (f.Broken && !f.Finished) { if (dist > 1) { input.X = sx; input.Y = sy; } else { p.Ap = 4; InteractionEngine.AttemptInteract(p); } }
+      else if (f.Finished) { if (lootAt < 0f) lootAt = now + 0.8f; if (now >= lootAt && f.LootedAt < 0f) Boss.Looted(v); if (f.Gone && end < 0f) end = UnityEngine.Time.unscaledTime + 2f; }
+      else if (f.Doing != null) {
+        if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; }
+        float left = f.StrikeAt - now;
+        if (f.Doing.Danger) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
+        else if (strike % 6 == 4) { }                                                  // this one it misses: the hit lands
+        else if (strike % 6 == 2) { if (left <= 0.26f && left > 0.2f) input.Parry = true; }   // late: blocked
+        else if (left <= 1f / 30f + 0.01f && left > 0f) input.Parry = true;          // on the glint's beat: perfect
+      }
+      else if (Boss.Staggered(v)) { if (dist > 1) { input.X = sx; input.Y = sy; } else { fire = !fire; input.Fire = fire; } }
+      else if (now < backUntil) { input.X = -sx; input.Y = 0; input.Sprint = true; }      // after some punishes it sprints off: he lunges
+      else if (dist > 2 && backUntil < 0f) { input.X = sx; input.Y = sy; }
+      bool open = Boss.Staggered(v);
+      if (wasOpen && !open && ++staggers % 2 == 0) backUntil = now + 1.3f;
+      if (!open && now > backUntil + 2.5f) backUntil = -1f;
+      wasOpen = open;
+      if (input.Parry) parryAt = now;
+      Rt.PlayerTick(p, input); Rt.WorldTick(p);
+      var ev = new List<string>();
+      foreach (var e in CombatFx.Pending) {
+        bool byBoss = e.Actor == v;
+        if (e.Kind == "melee" && byBoss) bossSwung = now;
+        ev.Add($"[\"{e.Kind}\",{(byBoss ? 1 : 0)},{(e.Psi ? 1 : 0)},{(e.Hit ? 1 : 0)}]");
+      }
+      CombatFx.Pending.Clear();
+      var pose = Rt.PoseOf(p); (mx, my) = Ballistics.Pos(p); (bx, by) = Ballistics.Pos(v);
+      float aw = UnityEngine.Mathf.Atan2(-(by - my), bx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
+      var mc = Melee.ChargeOf(p); float swung = Math.Max(mc.SwungAt, parryAt);
+      var fp = HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, now - swung, 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f);
+      var fb = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, now - bossSwung, 1f, "none", 1, null, -1f, -1f, 99f);
+      sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
+        + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
+        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)}],\"bf\":{Fr(fb)}"
+        + $",\"ev\":[{string.Join(",", ev)}],\"splash\":[\"{Boss.SplashTitle}\",\"{Boss.SplashSub}\",{F(UnityEngine.Time.unscaledTime - Boss.SplashAt)}],\"punch\":{F(Boss.Punch)},\"cut\":{(Story.InCutscene ? 1 : 0)}}}");
+      if (end > 0f && UnityEngine.Time.unscaledTime >= end) break;
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString());
+    Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}");
+    Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
+  }
+
   static void MeleeFrames(string path) {
     var p = Arena(out int px, out int py); Melee.Reset();
     p.EquipWeapon("melee", "TacticalHatchet");

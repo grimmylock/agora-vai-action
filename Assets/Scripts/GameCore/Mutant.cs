@@ -19,7 +19,11 @@ namespace GameCore
         public MutantDef Db;
 
         public int MaxHp;
-        public int Hp { get; set; }
+        public int Hp { get => _hp; set => _hp = Unkillable && value < 1 ? 1 : value; }
+        int _hp;
+        /// <summary>Boss 1: a boss can't drop below 1 HP by any road (shots, blades, bleeding, blasts, anomalies) - he breaks
+        /// instead (Boss.cs), and only the execution kills him.</summary>
+        public bool Unkillable;
         public float PhysDR { get; set; }
         public float AnomDR { get; set; }
         public int Ap { get; set; }

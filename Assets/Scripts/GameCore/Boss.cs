@@ -93,7 +93,7 @@ namespace GameCore
         {
             var w = WeaponDatabase.Categories["melee"].TryGetValue(def.Weapon, out var wd) ? wd : null;
             var a = SuitOf(def);
-            var h = new HumanEnemy(def.Name, x, y, "Contractors", "Legend", w, a) { IsAggroed = true, MaxHp = def.Hp, Hp = def.Hp };
+            var h = new HumanEnemy(def.Name, x, y, "Contractors", "Legend", w, a) { IsAggroed = true, MaxHp = def.Hp, Hp = def.Hp, Unkillable = true };
             EncounterState.Enemies.Add(h); EncounterState.InCombat = true;
             var f = new Fight { Def = def, Unit = h, Started = Time.time, NextMoveAt = Time.time + 1.2f };
             Fights.Add(f);
@@ -109,6 +109,7 @@ namespace GameCore
         public static void Tick(Fight f, Player p)
         {
             var h = f.Unit; float now = Time.time;
+            if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
             if (now < f.StaggerUntil) return;
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2)
@@ -161,12 +162,7 @@ namespace GameCore
         static void Land(Fight f, Player p)
         {
             var h = f.Unit; var m = f.Doing;
-            if (m.Lunge > 0f)
-            {
-                int sx = System.Math.Sign(h.X - p.X), sy = System.Math.Sign(h.Y - p.Y);
-                var (x, y) = TerrainMap.FindNearestEnterable(p.X + sx, p.Y + sy);
-                if (CombatantUtil.Distance(p, x, y) <= 1) { h.X = x; h.Y = y; }   // Rt.Glide turns the jump into a rush
-            }
+            StepIn(h, p, m.Lunge > 0f ? 0.8f : 0.9f);                             // the hit comes with a step (a lunge: the whole rush)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
@@ -175,6 +171,22 @@ namespace GameCore
             Parry.Unparryable = m.Danger;
             try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, m.Mult); }
             finally { Parry.Unparryable = false; }
+        }
+
+        /// <summary>Close in to `gap` tiles from p before a hit lands - you stand anywhere inside a tile, so "the next tile" can still
+        /// be out of a knife's reach (Melee.Stats.Reach 1.3). Only toward you, never through a wall. Rt.Glide turns it into a slide.</summary>
+        static void StepIn(HumanEnemy h, Player p, float gap)
+        {
+            var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
+            float dx = hx - px, dy = hy - py, d = Mathf.Sqrt(dx * dx + dy * dy);
+            if (d <= gap + 0.05f || d < 0.01f) return;
+            float tx = px + dx / d * gap, ty = py + dy / d * gap;
+            int x = Mathf.FloorToInt(tx), y = Mathf.FloorToInt(ty);
+            if (!(x == p.X && y == p.Y) && TerrainMap.CanEnterTile(x, y)) { h.X = x; h.Y = y; Rt.SetOffset(h, tx - x - 0.5f, ty - y - 0.5f); return; }
+            int sx = System.Math.Sign(h.X - p.X), sy = System.Math.Sign(h.Y - p.Y);   // the spot is in your tile: the edge of the next one
+            var (ax, ay) = TerrainMap.FindNearestEnterable(p.X + sx, p.Y + sy);
+            if (CombatantUtil.Distance(p, ax, ay) <= 1)
+            { h.X = ax; h.Y = ay; Rt.SetOffset(h, Mathf.Clamp(tx - ax - 0.5f, -0.45f, 0.45f), Mathf.Clamp(ty - ay - 0.5f, -0.45f, 0.45f)); }
         }
 
         // ---------------- what the rest of the game asks ----------------
@@ -198,9 +210,7 @@ namespace GameCore
         public static void OnDamaged(ICombatant u)
         {
             var f = Of(u);
-            if (f == null || f.Finished || u.Hp > 0) return;
-            u.Hp = 1;
-            if (f.Broken) return;
+            if (f == null || f.Finished || f.Broken || u.Hp > 1) return;   // Unkillable holds him at 1: that's the break
             f.Broken = true; f.Doing = null;
             Splash("EXECUTE", "E - next to him");
             CombatFx.Push("stagger", u, null, null).Now = true;
@@ -220,7 +230,7 @@ namespace GameCore
             Story.Cutscene(x, y, 1.6f);
             HitStop(0.45f);
             var fx = CombatFx.Push("finisher", p, f.Unit, p.EquippedWeapon); fx.Now = true; fx.Hit = true; fx.Killed = true;
-            f.Unit.Hp = 0;
+            f.Unit.Unkillable = false; f.Unit.Hp = 0;
             Weapon.OnTargetKilled(p, f.Unit);
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");
             Rt.AddFocus(p, Rt.FocusMax);                                           // Yan: "executing gives slow-mo energy" - Focus full
