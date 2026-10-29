@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from melee_scene import SPR, S, BG, big_glove, glove, paste
 
-NAMES = {"HuntingKnife": ("Knife", ["stab", "slash down", "slash up"]), "TacticalHatchet": ("Hatchet", ["vertical chop", "horizontal sweep"]),
+NAMES = {"SteppeMachete": ("Machete", ["vertical chop", "horizontal sweep"]), "HuntingKnife": ("Knife", ["stab", "slash down", "slash up"]), "TacticalHatchet": ("Hatchet", ["vertical chop", "horizontal sweep"]),
          "FireAxe": ("Two-handed (fire axe)", ["overhead slam", "wide sweep", "rising swing"])}
 
 def main(src, out):
@@ -25,11 +25,13 @@ def main(src, out):
         img = Image.open(os.path.join(SPR, f"Weapons/weapon_{wpn['key']}.png")).convert("RGBA")
         title, moves = NAMES[wpn["key"]]
         fr = []
-        for gx, gy, deg, hx, hy, sup, sx, sy, lean, move, swinging in wpn["frames"]:
+        for gx, gy, deg, hx, hy, sup, sx, sy, lean, move, swinging, length, hdeg in wpn["frames"]:
             c = Image.new("RGBA", (W, W + 40), BG); ub = 16 * S
             u = Image.new("RGBA", (W, W)); u.alpha_composite(body, (ub, ub))
-            paste(u, img, tuple(wpn["grip"]), (ub + gx * S, ub + gy * S), deg)
-            u.alpha_composite(fist, (round(ub + hx * S - 2.5 * S), round(ub + hy * S - 2 * S)))
+            wi = img if length > 0.99 else img.resize((max(1, round(img.width * length)), img.height), Image.NEAREST)   # a sweep foreshortens
+            paste(u, wi, (wpn["grip"][0] * length, wpn["grip"][1]), (ub + gx * S, ub + gy * S), deg)
+            fz = fist.rotate(hdeg, expand=True, resample=Image.NEAREST)            # the fist turns with the swing
+            u.alpha_composite(fz, (round(ub + hx * S - fz.width / 2), round(ub + hy * S - fz.height / 2)))
             if sup: u.alpha_composite(other, (round(ub + sx * S - 2 * S), round(ub + sy * S - 1.5 * S)))
             u = u.rotate(lean, center=(ub + 8 * S, ub + 8 * S), resample=Image.NEAREST)
             c.alpha_composite(u, (0, 40))
@@ -50,7 +52,7 @@ def main(src, out):
     for wpn, fr in zip(d["weapons"], cols):
         picks, last = [fr[5]], None
         for i, f in enumerate(wpn["frames"]):
-            if f[10] and f[9] != last: last = f[9]; picks += [fr[i + 3], fr[i + 6], fr[i + 9]]   # wound up, strike, follow-through
+            if f[10] and f[9] != last: last = f[9]; picks += [fr[i + 3], fr[i + 6], fr[min(i + 9, len(fr) - 1)]]   # wound up, strike, follow-through
         rows.append(picks)
     m = max(len(r) for r in rows)
     sheet = Image.new("RGB", (m * W, len(rows) * (W + 40)), (27, 29, 31))

@@ -854,21 +854,23 @@ static class Program {
   // (each click within the combo gap is the next move), at 30 frames a second -> Tools/render/melee_moves.py
   static void MeleeMoves(string path) {
     var p = Arena(out int px, out int py); var sb = new System.Text.StringBuilder("{\"weapons\":[");
-    var keys = new[] { "HuntingKnife", "TacticalHatchet", "FireAxe" };
+    var keys = new[] { "HuntingKnife", "SteppeMachete", "FireAxe" };
     for (int k = 0; k < keys.Length; k++) {
       Melee.Reset(); EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
       p.EquipWeapon("melee", keys[k]); var w = p.EquippedWeapon; var g = WeaponArt.GripOf("melee", keys[k]);
       int moves = HeldPoseMath.MoveCount(HeldPoseMath.StyleOf(keys[k]));
-      float every = HeldPoseMath.SwingLength + 0.15f; int n = (int)((0.5f + moves * every + 0.6f) * 30f);
+      // the player mashes: a click every 0.25 s for the whole string (early clicks wait for the follow-through), then lets it settle
+      float every = 0.25f; int n = (int)((0.5f + moves * 0.8f + 0.8f) * 30f); int clicks = 0; bool was = false; float lastAt = -99f;
       sb.Append(FormattableString.Invariant($"{(k > 0 ? "," : "")}{{\"key\":\"{keys[k]}\",\"grip\":[{g[0]},{g[1]}],\"frames\":["));
       for (int i = 0; i < n; i++) {
         float t = i / 30f; Melee.Now = t;
-        float u = t - 0.5f; bool left = u >= 0f && u < moves * every && u % every < 2.5f / 30f;   // a quick click per move
+        float u = t - 0.5f; bool left = u >= 0f && clicks < moves && u % every < 2.5f / 30f;   // a quick click until every move has started
+        if (Melee.ChargeOf(p).SwungAt != lastAt) { lastAt = Melee.ChargeOf(p).SwungAt; clicks++; } was = left;
         Melee.PlayerInput(p, w, left, false, (px + 1.2f, py + 0.5f - 0.45f * Ballistics.BodyTiles));
         Melee.Tick(1f / 30f);
         var mc = Melee.ChargeOf(p);
-        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, -1f, 99f, keys[k], mc.Move);
-        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(f.HasSupport ? 1 : 0)},{f.SupX},{f.SupY},{f.Lean},{mc.Move},{(t - mc.SwungAt < HeldPoseMath.SwingLength ? 1 : 0)}]"));
+        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, -1f, 99f, keys[k], mc.Move, mc.From);
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(f.HasSupport ? 1 : 0)},{f.SupX},{f.SupY},{f.Lean},{mc.Move},{(t - mc.SwungAt < HeldPoseMath.SwingLength ? 1 : 0)},{(f.Length > 0f ? f.Length : 1f)},{f.HandDeg}]"));
       }
       sb.Append("]}"); Melee.Now = -1f;
     }
@@ -1020,6 +1022,14 @@ static class Program {
     Check(a != b, "the chop and the sweep end in different places");
     var f = HeldPoseMath.Frame("melee", WeaponArt.GripOf("melee", "FireAxe"), 0f, 0f, 0f, 0f, 99f, 1f, "none", 1, null, -1f, -1f, 99f, "FireAxe", 0);
     Check(f.HasSupport && Math.Abs(f.SupX - f.GripX) + Math.Abs(f.SupY - f.GripY) >= 3f, "two-handed: the other hand is on the handle");
+    float into = HeldPoseMath.WindUp + HeldPoseMath.ChopTime + 0.05f;
+    Check(HeldPoseMath.Chop(0f, HeldPoseMath.Style.Knife, 1, into) == HeldPoseMath.Chop(into, HeldPoseMath.Style.Knife, 0), "a combo swing starts where the last one was");
+    { var p = Arena(out int px, out int py); Melee.Reset(); p.EquipWeapon("melee", "HuntingKnife"); var w = p.EquippedWeapon; var at = (px + 1.2f, (float)py);
+      Melee.Now = 0f; Melee.PlayerInput(p, w, true, false, at); Melee.Now = 0.03f; Melee.PlayerInput(p, w, false, false, at);   // a tap
+      Melee.Now = 0.2f; Melee.PlayerInput(p, w, true, false, at); Melee.Now = 0.23f; Melee.PlayerInput(p, w, false, false, at); // too early: queued
+      var mc = Melee.ChargeOf(p); Check(mc.Queued && mc.Move == 0, "a click mid-swing is queued");
+      for (float t = 0.25f; t < 1f && mc.Queued; t += 1f / 30f) { Melee.Now = t; Melee.PlayerInput(p, w, false, false, at); }
+      Check(!mc.Queued && mc.Move == 1 && mc.From > 0f, "the queued click becomes the next move of the combo"); Melee.Now = -1f; Melee.Reset(); }
   }
 
   static void BossChecks() {

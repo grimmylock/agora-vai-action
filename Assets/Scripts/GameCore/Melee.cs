@@ -73,7 +73,13 @@ namespace GameCore
         {
             public float SwingFrom = -1f, ThrowFrom = -1f, SwungAt = -99f, ThrewAt = -99f;
             public int Move;                                    // Melee 2: which swing of the weapon's string this one is
-            public void Next(float now) => Move = now - SwungAt < HeldPoseMath.SwingLength + ComboGap ? Move + 1 : 0;
+            public float From = -1f;                            // how far into the last swing this one began (-1: from the stance)
+            public bool Queued;                                 // clicked before the last swing let go: it starts the moment it can
+            public void Next(float now)
+            {
+                bool combo = now - SwungAt < HeldPoseMath.SwingLength + ComboGap;
+                Move = combo ? Move + 1 : 0; From = combo ? now - SwungAt : -1f;
+            }
         }
         public const float ComboGap = 0.4f;                    // click again within this of the last swing ending: the next move
         static readonly Dictionary<ICombatant, Charge> Charges = new Dictionary<ICombatant, Charge>();
@@ -102,7 +108,9 @@ namespace GameCore
         {
             var c = ChargeOf(p); float now = T;
             if (Winding.ContainsKey(p)) return;                                           // mid-throw
-            if (left && c.SwingFrom < 0f && c.ThrowFrom < 0f && !(NextSwing.TryGetValue(p, out var ns) && now < ns)) { c.Next(now); c.SwingFrom = now; }
+            bool locked = NextSwing.TryGetValue(p, out var ns) && now < ns;
+            if (left && locked && c.SwingFrom < 0f) c.Queued = true;                     // Melee 2: a click during the follow-through isn't lost
+            if ((left || c.Queued) && c.SwingFrom < 0f && c.ThrowFrom < 0f && !locked) { c.Next(now); c.SwingFrom = now; c.Queued = false; }
             if (!left && c.SwingFrom >= 0f)
             {
                 float held = now - c.SwingFrom; c.SwingFrom = -1f;
@@ -111,7 +119,7 @@ namespace GameCore
                 c.SwungAt = now - wind;                                                   // the pose carries on from where the wind-up is
                 if (at.HasValue) Release(p, w, at.Value, HeldPoseMath.WindUp - wind + HeldPoseMath.ChopTime, 1f + MaxSwingBonus * charge);
             }
-            if (right && c.ThrowFrom < 0f && c.SwingFrom < 0f) c.ThrowFrom = now;
+            if (right && c.ThrowFrom < 0f && c.SwingFrom < 0f) { c.ThrowFrom = now; c.Queued = false; }
             if (!right && c.ThrowFrom >= 0f)
             {
                 float held = now - c.ThrowFrom; c.ThrowFrom = -1f;
@@ -139,7 +147,7 @@ namespace GameCore
             var (dx, dy, h) = Aim(p, at);
             if (dx == 0f && dy == 0f) return;
             float now = T;
-            NextSwing[p] = now + Mathf.Max(delay + HeldPoseMath.Follow + HeldPoseMath.Recover, For(w).Swing - HeldPoseMath.WindUp);   // RT 7w: heavy ones recover slower
+            NextSwing[p] = now + Mathf.Max(delay + HeldPoseMath.Follow, For(w).Swing - HeldPoseMath.WindUp);   // RT 7w: heavy ones recover slower; Melee 2: the next swing may cut the recovery
             var anim = CombatFx.Push("melee", p, null, w); anim.Now = true;                  // the whoosh
             anim.ToX = p.X + Mathf.RoundToInt(dx * 2f); anim.ToY = p.Y + Mathf.RoundToInt(dy * 2f);
             Pending.Add((now + delay, p, w, dx, dy, h, mult));

@@ -32,6 +32,8 @@ namespace GameCore
         public float CylDX, CylDY;          // RT 6l: a revolver's cylinder swung out on its crane (character px from its seat)
         public float Lean;                  // RT 7e: the unit's tilt from a melee swing or throw (degrees, + = counter-clockwise)
         public bool Thrown;                 // RT 7e: it has left the hand (the whip forward, after release)
+        public float HandDeg;              // Melee 2: the weapon fist's turn (degrees, + = counter-clockwise)
+        public float Length;                // Melee 2: the weapon's drawn length (1, or less mid-sweep: 0 = unset, read as 1)
         public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)
         public bool Left, HasSupport;
     }
@@ -197,34 +199,49 @@ namespace GameCore
             },
             new[] {
                 ((-75f, -1f, -2f, 6f), (85f, 3f, 1f, -8f)),          // vertical chop
-                ((-115f, -3f, 0f, 5f), (-295f, 4f, 0f, -8f)),        // horizontal sweep: from behind, round in front, level
+                ((-135f, -3f, -2f, 5f), (-275f, 4f, -2f, -8f)),      // horizontal sweep: from behind, round in front at chest height
             },
             new[] {
                 ((-150f, -2f, -7f, 10f), (95f, 3f, 2f, -10f)),       // overhead slam
-                ((-110f, -4f, 0f, 6f), (-300f, 5f, 0f, -10f)),       // wide sweep
+                ((-130f, -4f, -1f, 6f), (-280f, 5f, -1f, -10f)),     // wide sweep
                 ((160f, -2f, 3f, -2f), (-60f, 4f, -5f, 8f)),         // rising swing from the floor
             },
         };
         public static int MoveCount(Style st) => Moves[(int)st].Length;
         public static (float off, float hx, float hy, float lean) Stance(Style st) => Stances[(int)st];
 
-        /// <summary>A swing at `t` s of move `move` (any number: it wraps) for this style; outside a swing, the stance.</summary>
-        public static (float off, float hx, float hy, float lean) Chop(float t, Style st = Style.Chop, int move = 0)
+        /// <summary>The sweeps: the weapon turns flat round in front of you, so mid-strike it points at the camera.</summary>
+        public const float ArmArc = 3f, HandTurn = 0.6f;   // px the fist travels on its arc per radian-ish of swing; how much of the turn the wrist takes
+        public static bool Sweep(Style st, int move) => st != Style.Knife && Wrap(st, move) == 1;
+        static int Wrap(Style st, int move) => ((move % MoveCount(st)) + MoveCount(st)) % MoveCount(st);
+
+        /// <summary>A swing at `t` s of move `move` (any number: it wraps) for this style; outside a swing, the stance. In a combo
+        /// (`from` = how far into the last swing this one began, -1 = not in one) the wind-up starts where the last swing was, so
+        /// the swings flow into each other instead of going back to the stance between them.</summary>
+        public static (float off, float hx, float hy, float lean) Chop(float t, Style st = Style.Chop, int move = 0, float from = -1f)
         {
-            var s = Stances[(int)st]; var m = Moves[(int)st][((move % MoveCount(st)) + MoveCount(st)) % MoveCount(st)];
+            var s = Stances[(int)st]; var m = Moves[(int)st][Wrap(st, move)];
             if (t < 0f || t >= SwingLength) return s;
+            var start = from >= 0f ? Chop(from, st, move - 1) : s;
             float Sm(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
             (float, float, float, float) L((float off, float hx, float hy, float lean) p, (float off, float hx, float hy, float lean) q, float k, bool near)
             {
-                float qo = near ? p.off + Mathf.DeltaAngle(p.off, q.off) : q.off;          // to and from the stance: the short way round
+                float qo = near ? p.off + Mathf.DeltaAngle(p.off, q.off) : q.off;          // to and from the stance: the short way round,
+                if (near && Through(p.off, qo, 155f)) qo += qo > p.off ? -360f : 360f;     // unless that drops it through your feet: then over the top
                 return (Mathf.Lerp(p.off, qo, k), Mathf.Lerp(p.hx, q.hx, k), Mathf.Lerp(p.hy, q.hy, k), Mathf.Lerp(p.lean, q.lean, k));
             }
-            if (t < WindUp) return L(s, m.a, Sm(t / WindUp), true);
+            if (t < WindUp) return L(start, m.a, Sm(t / WindUp), true);
             t -= WindUp;
             if (t < ChopTime) return L(m.a, m.b, t / ChopTime, false);                    // the strike (the hit lands at its end)
             t -= ChopTime;
             if (t < Follow) return m.b;
             return L(m.b, s, Sm((t - Follow) / Recover), true);
+        }
+
+        static bool Through(float from, float to, float off)                             // does turning from -> to pass `off` (mod 360)?
+        {
+            float lo = Mathf.Min(from, to), hi = Mathf.Max(from, to), k = Mathf.Ceil((lo - off) / 360f);
+            return off + 360f * k <= hi;
         }
 
         /// <summary>RT 7e: lifting it over your head to throw (held `t` s): the head goes back and down behind you, the fist up by
@@ -242,19 +259,29 @@ namespace GameCore
             return (-150f + 220f * c, -2f + 5f * c, -10f + 10f * c, 8f - 18f * c);
         }
 
-        static HeldFrame MeleeFrame(float angle, float sinceSwing, float swingHold, float throwHold, float sinceThrow, string key, int move)
+        static HeldFrame MeleeFrame(float angle, float sinceSwing, float swingHold, float throwHold, float sinceThrow, string key, int move, float from)
         {
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
             var st = StyleOf(key); var stance = Stance(st);
             var (off, hx, hy, lean) = throwHold >= 0f ? Blend(stance, Lift(throwHold), Mathf.Clamp01(throwHold / LiftTime))
                 : sinceThrow < WhipTime ? Whip(sinceThrow)
-                : swingHold >= 0f ? Chop(Mathf.Min(swingHold, WindUp), st, move)
-                : Chop(sinceSwing, st, move);
+                : swingHold >= 0f ? Chop(Mathf.Min(swingHold, WindUp), st, move, from)
+                : Chop(sinceSwing, st, move, from);
             if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp) off += 3f * Mathf.Sin(swingHold * 30f);   // a charged swing trembles
+            // Melee 2 (Yan: "the hand and angle stay the same ... they need to rotate as well with the swing"): in a swing the fist
+            // rides an arc round the shoulder with the weapon (the arm swinging, not just the wrist) and turns with it; at the stance
+            // the arc adds nothing
+            float turn = 0f;
+            if (throwHold < 0f && sinceThrow >= WhipTime)
+            {
+                float a = (65f - off) * Mathf.Deg2Rad, a0 = (65f - stance.off) * Mathf.Deg2Rad;   // the weapon's angle facing right, now and at the stance
+                hx += ArmArc * (Mathf.Cos(a) - Mathf.Cos(a0)); hy -= ArmArc * (Mathf.Sin(a) - Mathf.Sin(a0));
+                turn = Mathf.DeltaAngle(stance.off, off);
+            }
             float right = ChestX + 3f;                                                   // the fist beside the body
             float gx = (left ? 13f - right : right) + side * Mathf.Round(hx);
-            float gy = Mathf.Min(Mathf.Round(ChestY + 0.5f + hy), WaistTopRow);   // (a lifted fist goes up past the head: no lower limit)
+            float gy = Mathf.Min(Mathf.Round(ChestY + 0.5f + hy), WaistTopRow + 2f);   // down to the hip at most (a lifted fist goes up past the head)
             float cx = left ? 1f : 2f, deg = 90f - side * (RestTilt + off);
             // the other hand: on the handle above the fist with a two-handed weapon; otherwise up in a guard in front of the chest,
             // pulled back as the weapon hand goes out (none while throwing - it's up there with the weapon)
@@ -265,7 +292,10 @@ namespace GameCore
             {
                 Left = left, HasSupport = sup, MagShown = false, SupX = Mathf.Round(sx), SupY = Mathf.Round(sy - 0.5f) + 0.5f,
                 GunDeg = deg,                                                            // edge forward (a flipped sprite mirrors it)
+                HandDeg = -side * turn * HandTurn,
                 GunX = gx + cx, GunY = gy + 1.5f, GripX = gx + cx, GripY = gy + 1.5f,
+                Length = swingHold < 0f && throwHold < 0f && sinceSwing >= WindUp && sinceSwing < WindUp + ChopTime && Sweep(st, move)
+                    ? 0.45f + 0.55f * Mathf.Abs(Mathf.Cos(deg * Mathf.Deg2Rad)) : 1f,   // a sweep foreshortens as it comes at the camera
                 Lean = side * lean, Thrown = throwHold < 0f && sinceThrow >= 0f && sinceThrow < WhipTime && sinceThrow >= 0.5f * WhipTime,
             };
         }
@@ -277,9 +307,9 @@ namespace GameCore
         /// g = WeaponArt grip/support/muzzle points.</summary>
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
             float r, string style, int trips, float[] mag = null, float swingHold = -1f, float throwHold = -1f, float sinceThrow = 99f,
-            string key = null, int move = 0)
+            string key = null, int move = 0, float from = -1f)
         {
-            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow, key, move);   // RT 7c, 7e, Melee 2
+            if (cat == "melee") return MeleeFrame(angle, sinceSwing, swingHold, throwHold, sinceThrow, key, move, from);   // RT 7c, 7e, Melee 2
             bool left = Mathf.Cos(angle * Mathf.Deg2Rad) < -0.0001f;
             float side = left ? -1f : 1f;
             var (swingDeg, lunge) = Swing(sinceSwing);
@@ -683,7 +713,7 @@ namespace GameCore
                 var big = HandSprite(armor, false);
                 _grip.sprite = big; _support.sprite = big;
                 _grip.flipX = false; _support.flipX = true;                           // cuffs toward the body
-                _grip.transform.localPosition = Local(RestRightX, RestY);
+                _grip.transform.localPosition = Local(RestRightX, RestY); _grip.transform.localRotation = Quaternion.identity;
                 _support.transform.localPosition = Local(RestLeftX, RestY);
                 _g = null;
                 return;
@@ -710,7 +740,7 @@ namespace GameCore
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
                 mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
-                key, mc != null ? mc.Move : (int)(_swingAt * 7f));                         // Melee 2: NPCs vary their swings too
+                key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f);   // Melee 2: NPCs vary their swings too
             Lean = f.Lean;
 
             var (body, mag) = WeaponArt.Mag(cat, key);
@@ -718,6 +748,7 @@ namespace GameCore
             _gun.flipY = f.Left;
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
             _gun.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+            _gun.transform.localScale = new Vector3(f.Length > 0f ? f.Length : 1f, 1f, 1f);
             var brk = WeaponArt.Break(cat, key);
             if (brk.body != null && brk.barrels != null)
             {
@@ -758,6 +789,7 @@ namespace GameCore
             _grip.sprite = hand; _support.sprite = hand;
             _grip.flipX = _support.flipX = f.Left;                                    // cuff stays on the body side
             _grip.transform.localPosition = Local(f.GripX, f.GripY);
+            _grip.transform.localRotation = Quaternion.Euler(0f, 0f, f.HandDeg);
             _support.gameObject.SetActive(f.HasSupport);
             if (f.HasSupport) _support.transform.localPosition = Local(f.SupX, f.SupY);
             if (_w2?.Db != null && cat != "melee")

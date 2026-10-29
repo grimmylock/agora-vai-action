@@ -4206,3 +4206,16 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   theirs by swing time. Timing and damage unchanged (the hit still lands at the end of the strike).
 - Render: `dotnet /tmp/test.dll meleemoves m.json` + `Tools/render/melee_moves.py` -> `maps/renders/melee2/` (GIF and sheet).
   Checks: `MeleeMoveChecks`. Not checked in Unity. Per-move damage/speed (a quick stab, a slow slam) not done: Yan's call.
+- Melee 2b (Yan: "they have a pause between each attack and that makes it not look like a combo"; "the machete-type animation
+  might need some work on the second swing"; "the hand and angle stay the same ... they need to rotate as well with the swing"):
+  - Combos flow: a swing in a combo winds up from wherever the last one was (`Chop(.., from)`, `Charge.From`) instead of going
+    back to the stance; the next click is allowed after the follow-through (the recovery is cut, `Melee.cs` NextSwing), and a
+    click made too early is kept (`Charge.Queued`) and starts the next swing the moment it can. Heavy weapons keep their longer
+    recovery (RT 7w), so the axe still has a short beat between swings.
+  - Wind-ups never swing the weapon down through your feet: they go over the top (`Through`). The sweeps stay at chest height and
+    the weapon foreshortens as it comes round at the camera (`HeldFrame.Length` -> the weapon's x scale).
+  - The fist rides an arc round the shoulder with the swing (`ArmArc` 3 px) and turns with it (`HandDeg`, 0.6 of the weapon's
+    turn); it can drop to the hip now.
+  - Render shows the real clicking: a click every 0.25 s (mashing), machete instead of the hatchet. Checks: the combo starts where
+    the last swing was, an early click is queued and becomes the next move.
+- Yan: "bosses get their own moveset, at least the special red visor one" - to do (the Visor still uses his single swing pose).
