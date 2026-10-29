@@ -4105,3 +4105,26 @@ Yan: "i did the unity check, everything seems alright, you can start by building
 - Not done: no missions yet (Tier 1 is next); no radio crackle sound (the click for now); the old acts in `StorySystem.cs`
   still run until each is replaced. Co-op: story is the host's; conversations, radio and cutscenes show on the host only until
   the snapshot carries story events (with enemies and shots). Not checked in Unity.
+
+## Story 4 (2026-10-29): Tier 1 missions, part 1
+
+Yan: "start building the tier 1 missions". New `Tier1Story.cs` on the Story.cs pieces, lines from STORY_DIALOGUE.md:
+- **The first morning:** a new game's objective is "Talk to Yefim by the fire"; E by The Bonfire Camp starts his talk and his
+  first job.
+- **The Courier's Pack (Yefim):** the courier's body is a per-world spot; 3 Blind Maws hold it (a real quest squad placed there);
+  E at the spot takes the pack; back to Yefim: 400 Ru.
+- **The Raider camp (Stas):** 3 Rookie Raiders at a second per-world spot; when they're all dead, Stas pays 500 Ru.
+  ponytail: Stas stands at the Bunkhouse until the village's bar exists.
+- **The Cut Fence (Yefim):** a Pallid Prowler at Watchtower 3; E at the fence (before handing in) finds the bolt-cutter cut and
+  the grey cloth (journal); Yefim pays 300, or 600 with the closer look.
+- **The Burst:** once the fence and the camp are done, at night (21:00-05:00) Yefim's radio picks up the loop; Yefim points to a
+  third per-world spot; E there: the note from "P." (journal), then the Headman.
+- **The Key (Headman Petro):** favour (2 Prowlers at the Fisherman's Shack), pay 1500 Ru, or take it (Wanderers reputation
+  down, the village remembers). Then: "Find P. in the Flooded Bunker" - the next batch starts there.
+- Per-world spots never use the village, checkpoints or any place another Tier 1 mission uses. Rewards go to every player.
+- Hooks: `InteractionEngine` (before the bonfire's camp, so E by the fire talks first), `TurnLoop.TickAwareness` (jobs that
+  finish on their own, the night radio).
+- Check: `Tier1StoryChecks` plays the whole chain with the harness's default answers. It caught one bug: the fence could only
+  be inspected before the Prowler died (now any time before you hand in).
+- Not done: Pavel, "those", the Culvert, the Husks, the defence (next). The people aren't units on the map yet (no portraits).
+  Not checked in Unity.

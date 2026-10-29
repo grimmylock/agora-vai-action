@@ -219,6 +219,7 @@ namespace GameCore
             var grid = GameServices.Grid;
             if (player == null || grid == null) return;
             Stashes.Tick();   // Batch 126
+            Tier1Story.Tick();   // Story 4: jobs that finish on their own, the distress loop
             Banter.Tick(player);   // Batch 129: squads you can see talk, friends say hi: stashes move every 7 days; a locked chest's key finds a carrier
 
             foreach (var enemy in EncounterState.Enemies.ToList())

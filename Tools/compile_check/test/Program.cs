@@ -43,6 +43,7 @@ static class Program {
     GunslingerChecks();
     RoundChecks();
     StorySystemsChecks();
+    Tier1StoryChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -903,6 +904,53 @@ static class Program {
   // RT 7z-c (Yan: "do 1, build gunslinger for real"): a pistol in each hand - each mouse button fires its own gun, the right one no
   // longer aims, both fire mid-dive, R reloads both; the left gun's pose sits beside the right one inside the sprite
   static Ballistics.Hit Landed(List<Gunplay.Round> r) { Gunplay.LandAll(); return r[0].Hit; }   // RT 8: rounds fly
+
+  // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
+  static void Tier1StoryChecks() {
+    var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear();
+    Check(TerrainMap.ZoneId == "perimeter", $"Story 4: the arena is the Tier 1 map ({TerrainMap.ZoneId})");
+    void At(string landmark) { var l = TerrainMap.Landmarks.First(x => x.Name == landmark); p.X = l.X; p.Y = l.Y + 1; }
+    void Kill(string mission) { foreach (var q in MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission)) foreach (var m in q.Members) m.Hp = 0; Tier1Story.Tick(); }
+    int Alive(string mission) => MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission).SelectMany(q => q.Members).Count(m => m.IsAlive());
+    Tier1Story.Tick();
+    Check(Story.Objectives.Any(o => o.mission == "intro" && o.landmark == Tier1Story.Yefim), "Story 4: a new game points you at Yefim");
+    At(Tier1Story.Yefim); p.Ap = 4; InteractionEngine.AttemptInteract(p);
+    string courier = Story.Spot("courier");
+    Check(Story.IsDone("intro") && Story.Step("courier") == 1 && courier != null && Alive("courier") == 3, $"Story 4: E by the fire - Yefim's first job, 3 Maws at the courier's spot ({courier})");
+    var pre = MacroState.Current.OfflineSquads.First(q => q.QuestId == "story:courier").Members[0];
+    var cl = TerrainMap.Landmarks.First(x => x.Name == courier);
+    Check(Math.Max(Math.Abs(pre.X - cl.X), Math.Abs(pre.Y - cl.Y)) <= 4, "Story 4: the Maws stand round the courier's body");
+    int ru = p.Ru;
+    At(courier); Tier1Story.TryInteract(p);
+    At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("courier") && p.Ru == ru + 400 && !p.Inventory.Items.Any(i => i.Id == "story_courier_pack"), "Story 4: the pack, back to Yefim, paid");
+    Tier1Story.TryInteract(p);
+    Check(Story.Step("fence") == 1 && Alive("fence") == 1, "Story 4: then the fence - a Prowler at Watchtower 3");
+    At(Tier1Story.Stas); Tier1Story.TryInteract(p);
+    string camp = Story.Spot("raiders");
+    Check(Story.Step("raiders") == 1 && Alive("raiders") == 3 && camp != courier, $"Story 4: Stas's job - 3 Raiders at a different spot ({camp})");
+    Kill("fence"); At(Tier1Story.Fence); Tier1Story.TryInteract(p);
+    Check(Story.Step("fence") == 2 && Story.Has("fence_inspected") && Story.JournalEntries.Any(j => j.Contains("bolt cutters")), "Story 4: the Prowler dies; the close look finds the cut and the cloth");
+    ru = p.Ru; At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("fence") && p.Ru == ru + 600, "Story 4: the closer look pays the bonus");
+    Kill("raiders"); ru = p.Ru; At(Tier1Story.Stas); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("raiders") && p.Ru == ru + 500, "Story 4: the camp cleared, Stas pays");
+    MacroState.Current.Hour = 14f; Tier1Story.Tick();
+    Check(Story.Step("burst") == 0, "Story 4: no distress loop by day");
+    MacroState.Current.Hour = 22f; Tier1Story.Tick();
+    Check(Story.Step("burst") == 1, "Story 4: at night Yefim's radio picks up the loop");
+    At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+    string distress = Story.Spot("distress");
+    Check(Story.Step("burst") == 2 && distress != courier && distress != camp, $"Story 4: Yefim points at a third spot ({distress})");
+    At(distress); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("burst") && Story.Step("key") == 1 && Story.Objectives.Any(o => o.landmark == Tier1Story.Headman), "Story 4: the note sends you to the Headman");
+    At(Tier1Story.Headman); Tier1Story.TryInteract(p);
+    Check(Story.Step("key") == 2 && Alive("key") == 2, "Story 4: the Headman's favour - Prowlers at the Fisherman's Shack");
+    Kill("key"); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("key") && MacroState.Current.Keys.Contains("flooded_bunker") && Story.Objectives.Any(o => o.mission == "engineer" && o.landmark == "Flooded Bunker"),
+      "Story 4: the key, and the bunker is next");
+    MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Remove("flooded_bunker");
+  }
 
   // Story 3: the systems the missions use - steps, objectives (and the map marker), the journal, per-world spots, talks, cutscenes
   static void StorySystemsChecks() {

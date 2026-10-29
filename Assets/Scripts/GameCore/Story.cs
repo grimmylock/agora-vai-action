@@ -26,6 +26,10 @@ namespace GameCore
 
         // ---------------- missions ----------------
 
+        /// <summary>A plain story flag ("fence_inspected").</summary>
+        public static bool Has(string flag) => Flags.Contains("f:" + flag);
+        public static void Set(string flag) { if (!Has(flag)) Flags.Add("f:" + flag); }
+
         /// <summary>A mission's step: 0 = not started; each mission numbers its own steps; Done = finished.</summary>
         public static int Step(string mission) => int.TryParse(Get($"m:{mission}="), out int s) ? s : 0;
         public static void SetStep(string mission, int step) => Put($"m:{mission}=", step.ToString());
@@ -46,6 +50,13 @@ namespace GameCore
 
         /// <summary>Is this landmark (on the map you're on) one a mission wants you at? Drives the map's objective marker.</summary>
         public static bool IsObjective(string landmark) => Objectives.Any(o => o.landmark == landmark);
+
+        /// <summary>Someone within `r` tiles of a landmark on the loaded map.</summary>
+        public static bool Near(ICombatant u, string landmark, int r = 2) =>
+            u != null && landmark != null && (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).Any(l => l.Name == landmark && System.Math.Max(System.Math.Abs(l.X - u.X), System.Math.Abs(l.Y - u.Y)) <= r);
+
+        /// <summary>Any player within `r` tiles of a landmark (co-op: whoever gets there).</summary>
+        public static bool AnyNear(string landmark, int r = 2) => Player.All.Any(p => p.IsAlive() && Near(p, landmark, r));
 
         // ---------------- the journal ----------------
 
