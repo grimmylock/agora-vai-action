@@ -57,7 +57,16 @@ Scenes worth keeping (most striking first):
 - **The traitor scientist is someone inside the Sub-Station with Dr. Osei** - a new character (not Osei, not Pavel).
 - **Names (Yan, 2026-10-29):** the Veteran is **Lev Marchuk**; the heavy is **Tolik Brodsky** (a big friendly guy who talks
   to his armour); at the Sub-Station with Osei: **Dr. Emil Rask** (polite, helpful, the last you'd suspect) and **Konrad Hale**
-  (supply officer, nobody looks at him) - Yan took both; whether one or both work for "those" is open.
+  (supply officer, nobody looks at him). **Rask is the traitor; Hale is the red herring** (supplies, odd hours, a hidden
+  radio - players suspect him first).
+- **The Array Commander fight (Yan):** during dialogue you can send Tolik away as a travelling companion, but he turns up
+  mid-fight anyway. The boss is immune while his adds live; kill them all and Tolik bursts in and tackles him - the shield
+  drops and you can hurt him; more adds come, kill them, set up the next tackle. Without Tolik in the party the story still
+  brings him in for this (he is a story beat here, not a party requirement).
+- **The Preacher (Yan):** sends waves of purple energy out round him (an area attack); dodge them with the dive or stay out
+  of range.
+- **The red forest hunt (Yan):** a beefed-up, named mutant - our apex predator (nothing like it in `MutantDatabase` yet).
+- **The skeleton (T3-T7) is good for now (Yan).** Next: dialogue for the missions (`STORY_DIALOGUE.md`).
 - Rough end-to-end skeleton proposed 2026-10-29 (T3 Safe Haven, T4 the Barrier siege and the Preacher's psi-core, T5 the
   Array and the Array Commander, T6 the Siege Ward and the portal, T7 the Descent) - waiting on Yan's reaction.
 

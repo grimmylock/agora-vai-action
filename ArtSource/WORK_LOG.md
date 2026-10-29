@@ -4083,3 +4083,11 @@ Yan's words: husks are "zombified stalkers, they appear in all tiers and have st
 armor and weapons, just like npcs, but they have worse accuracy, are slower and can't call reinforcements"; the defence can be
 lost only by dying or losing the Engineer, but "player should win most of the time unless he plays sooooo badly".
 Names still placeholders (suggestions in STORY.md).
+
+## Story 2 (2026-10-29): Tiers 2-3 decisions, the old campaign logs, the end-to-end skeleton, mission dialogue (no code)
+
+`STORY.md`: Tier 2 ("Taken", the walkthrough, the Loading Dock after the Garrison, the Scrap King's radio job), Tier 3 (Lev
+Marchuk was one of "those"; Pavel stays with Osei), notes from Yan's four old campaign logs, the T3-T7 skeleton ("looks good"),
+companions never required, no contract sniper, Contractors side-only, the Garrison as unwitting pawns, Rask the traitor with
+Hale as the red herring, Tolik's tackle boss fight, the Preacher's dodgeable waves. New `STORY_DIALOGUE.md`: draft lines for
+every mission from the first morning to the descent (new names marked * for Yan).
