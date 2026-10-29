@@ -4293,3 +4293,8 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
     Glide rushes jumps over 1.2 tiles (`Rt.RushTime` 0.12 s of game time, slowed by bullet time too). Largest move in a frame now:
     0.39 tiles (a lunge at full speed).
   - Not checked in Unity.
+- Melee 5 (Yan: "make guard breaks create a slowdown effect like the dive, so that the players sees the enemy getting their hands
+  up slower"): a guard break already had Boss.ParryMoment (0.14 s freeze, then 0.25x for a real second, the lean-in and the cold
+  edge - for plain enemies too), but the arm flew up in 0.06 s of game time, done in a quarter of a real second. Now it rises over
+  `HeldPoseMath.BrokenRise` 0.24 s of game time, eased, which fills the slow motion: in the duel render the knife goes up over 28
+  frames (~0.9 s real). Not checked in Unity.
