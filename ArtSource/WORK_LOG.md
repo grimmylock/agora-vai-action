@@ -4301,3 +4301,20 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Melee 5b (Yan: "the enemy animation for getting parried is too slow, his hand goes up almost at the end of the slowdown"): the
   rise is eased out (knocked up at once, slowing into the top) over 0.12 s of game time instead of eased in over 0.24 - in the duel
   render it's most of the way up 0.4 s (real) after the parry and held at the top through the rest of the slow motion.
+
+## Visor 4 - Yan's first Unity test of the melee work (2026-10-29)
+- Yan: "the top of the characters heads get cut off, same with the visor boss" (screenshot: the hood's top outline row missing).
+  Cause: since Melee 2 every melee stance had a resting tilt (knife -3, Visor -5 degrees), and a 16 px body turned a few degrees
+  under point sampling drops pixel rows. Stances now have no tilt (`MeleeMoveChecks`: "no tilt at rest"); bodies lean only mid-swing.
+  Not confirmed in Unity - if heads still clip at rest, it's something else.
+- Yan: "the visor boss is basically impossible like he is now, parries are probably too hard and his animations are not expressive
+  enough to be read". Player tools and readability, no nerf (his damage, HP, moves and timings to the hit are unchanged):
+  - Parry windows wider: perfect 0.2 s before the hit (was 0.12), block 0.45 (was 0.35); cooldown 0.7 (stays above the window, so
+    mashing can't hold a guard up) - but a parry that lands frees the key at once. Before, his combo hits (0.24-0.45 s apart) could
+    never be parried twice in a row because of the 0.45 s cooldown.
+  - His glint now comes at a fixed beat, `Boss.GlintLead` 0.4 s, before every hit (it came at each move's start, 0.4-0.9 s early,
+    different every move): glint, beat, parry.
+  - His swings play at half pace (`Boss.Def.Pace` 0.5 -> `Melee.Charge.Pace`/`Since`): the strike starts 0.16 s before the hit
+    instead of 0.08, the follow-through is heavier.
+  - Sim (bot now parries 0.1 s before the hit, a beat after the glint): executed in 46.5 s real. Renders re-made
+    (`maps/renders/boss/boss_duel.mp4`, `visor_moves/`).

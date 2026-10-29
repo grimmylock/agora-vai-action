@@ -188,10 +188,11 @@ namespace GameCore
 
         static readonly (float off, float hx, float hy, float lean)[] Stances =
         {
-            (45f, 1f, -1f, -3f),       // knife: point out at chest height, hunched over it (Krauser)
-            (-5f, 0f, -2f, -2f),       // hatchet, machete, hammer: raised, head up and forward
-            (-35f, -1f, -1f, -1f),     // two-handed: up across the body, ready to come round
-            (165f, 1f, -1f, -5f),      // the Visor: the knife reversed, blade down along the forearm, low and forward, crouched
+            // lean 0 at rest (Yan: "the top of the characters heads get cut off": a 16 px body turned a few degrees loses pixel rows)
+            (45f, 1f, -1f, 0f),        // knife: point out at chest height (Krauser)
+            (-5f, 0f, -2f, 0f),        // hatchet, machete, hammer: raised, head up and forward
+            (-35f, -1f, -1f, 0f),      // two-handed: up across the body, ready to come round
+            (165f, 1f, -1f, 0f),       // the Visor: the knife reversed, blade down along the forearm, low and forward
         };
         static readonly ((float off, float hx, float hy, float lean) a, (float off, float hx, float hy, float lean) b)[][] Moves =
         {
@@ -793,7 +794,7 @@ namespace GameCore
             // turned frame, so the guns still point at the target instead of turning with the body
             float bodyTurn = _gun.transform.parent != null ? _gun.transform.parent.localEulerAngles.z : 0f;
             float local = Mathf.DeltaAngle(0f, _angle - bodyTurn);
-            float since = mc != null ? now - mc.SwungAt : now - _swingAt, hold = mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f;
+            float since = mc != null ? mc.Since(now) : now - _swingAt, hold = mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f;
             HeldFrame At(float sw) => HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, sw,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,

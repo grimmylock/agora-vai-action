@@ -18,7 +18,7 @@ namespace GameCore
 {
     public static class Parry
     {
-        public const float Window = 0.35f, Perfect = 0.12f, Cooldown = 0.45f, StaggerSeconds = 1.0f, PerfectFocus = 10f;
+        public const float Window = 0.45f, Perfect = 0.2f, Cooldown = 0.7f, StaggerSeconds = 1.0f, PerfectFocus = 10f;   // Yan: "parries are probably too hard" (windows were 0.35 / 0.12; the cooldown stays longer than the window, so mashing never holds a guard up)
         public enum Result { None, Blocked, Perfect }
 
         /// <summary>Set by a boss while it lands a move that can't be parried.</summary>
@@ -56,6 +56,7 @@ namespace GameCore
             var s = Rt.Of(p); float since = Time.time - s.ParryAt;
             if (Unparryable || !CanParry(p) || since < 0f || since > Window * Long(p)) return Result.None;
             s.ParryAt = -99f;                                                      // one parry, one hit
+            s.ParryReady = Time.time;                                              // Visor 4: one that lands frees the key - deflections chain through a combo (only a whiff costs the cooldown)
             bool perfect = since <= Perfect * Long(p);
             var fx = CombatFx.Push("parry", p, by, p.EquippedWeapon); fx.Now = true; fx.Hit = perfect;
             if (perfect)

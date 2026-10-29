@@ -819,7 +819,7 @@ static class Program {
         if (f.Doing.Danger) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
         else if (strike % 6 == 4) { }                                                  // this one it misses: the hit lands
         else if (strike % 6 == 2) { if (left <= 0.26f && left > 0.2f) input.Parry = true; }   // late: blocked
-        else if (left <= 1f / 30f + 0.01f && left > 0f) input.Parry = true;          // on the glint's beat: perfect
+        else if (left <= 0.11f && left > 0.11f - 1f / 30f) input.Parry = true;      // a beat after the glint (0.4 s before the hit): perfect
       }
       else if (Boss.Staggered(v)) { if (dist > 1) { input.X = sx; input.Y = sy; } else { fire = !fire; input.Fire = fire; } }
       else if (now < backUntil) { input.X = -sx; input.Y = 0; input.Sprint = true; }      // after some punishes it sprints off: he lunges
@@ -845,8 +845,8 @@ static class Program {
         "TacticalHatchet", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
       HeldFrame BAt(float sw) => HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, sw, 1f, "none", 1, null, bh, -1f, 99f,
         vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt);
-      var fp = PAt(now - mc.SwungAt); var fb = BAt(now - vc.SwungAt);
-      string psm = Smear(PAt, now - mc.SwungAt, ph), bsm = Smear(BAt, now - vc.SwungAt, bh);
+      var fp = PAt(mc.Since(now)); var fb = BAt(vc.Since(now));
+      string psm = Smear(PAt, mc.Since(now), ph), bsm = Smear(BAt, vc.Since(now), bh);
       sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
         + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
         + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)}],\"bf\":{Fr(fb)},\"ps\":{psm},\"bs\":{bsm},\"red\":{(vc.Red ? 1 : 0)}"
@@ -884,7 +884,7 @@ static class Program {
         if (i > 15 && f.Doing == null && i > 30 * 3) break;
         var c = Melee.ChargeOf(v); var (vx, vy) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
         float aw = UnityEngine.Mathf.Atan2(-(my - vy), mx - vx) * UnityEngine.Mathf.Rad2Deg;
-        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, now - c.SwungAt, 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt);
+        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt);
         sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\"]"));
       }
       f.Doing = null;
@@ -969,9 +969,9 @@ static class Program {
       var pose = Rt.PoseOf(p);
       float aw = UnityEngine.Mathf.Atan2(-(ry - my), rx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
       mc = Melee.ChargeOf(p); var rc = Melee.ChargeOf(r);
-      var fp = HeldPoseMath.Frame("melee", gm, local, 0f, 0f, 0f, now - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f,
+      var fp = HeldPoseMath.Frame("melee", gm, local, 0f, 0f, 0f, mc.Since(now), 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f,
         "SteppeMachete", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
-      var fr = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, now - rc.SwungAt, 1f, "none", 1, null, -1f, -1f, 99f, "HuntingKnife", rc.Move, rc.From, now - rc.GuardAt, now - rc.BrokenAt);
+      var fr = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, rc.Since(now), 1f, "none", 1, null, -1f, -1f, 99f, "HuntingKnife", rc.Move, rc.From, now - rc.GuardAt, now - rc.BrokenAt);
       sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"p\":[{F(mx)},{F(my)},{p.Hp},{F(pose.Tilt)}],\"pf\":{Fr(fp)}"
         + $",\"r\":[{F(rx)},{F(ry)},{r.Hp},{(r.IsAlive() ? 1 : 0)},{(now - rc.BrokenAt < HeldPoseMath.BrokenTime ? 1 : 0)}],\"rf\":{Fr(fr)},\"ev\":[{string.Join(",", ev)}],\"label\":\"{label}\",\"punch\":{F(Boss.Punch)}}}");
       if (end > 0f && now >= end) break;
@@ -1162,12 +1162,23 @@ static class Program {
       var mc = Melee.ChargeOf(p); Check(mc.Queued && mc.Move == 0, "a click mid-swing is queued");
       for (float t = 0.25f; t < 1f && mc.Queued; t += 1f / 30f) { Melee.Now = t; Melee.PlayerInput(p, w, false, false, at); }
       Check(!mc.Queued && mc.Move == 1 && mc.From > 0f, "the queued click becomes the next move of the combo"); Melee.Now = -1f; Melee.Reset(); }
+    // Yan: "the top of the characters heads get cut off" - nobody stands tilted (a turned 16 px body loses pixel rows)
+    Check(Enum.GetValues(typeof(HeldPoseMath.Style)).Cast<HeldPoseMath.Style>().All(st => HeldPoseMath.Stance(st).lean == 0f), "melee stances: no tilt at rest");
     // Yan: "make it so he needs 3 parries to get stunned": two perfect parries are deflections, the third opens him; they fade
     { var p = Arena(out int px, out int py); Boss.Reset(); EncounterState.Enemies.Clear(); var bf = Boss.Spawn(Boss.Visor, px + 1, py);
       bool a1 = Boss.Stagger(bf.Unit, 1f), a2 = Boss.Stagger(bf.Unit, 1f), a3 = Boss.Stagger(bf.Unit, 1f);
       Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 4800, "Boss: the Visor (4800 HP) staggers on the 3rd perfect parry, not before");
       bf.StaggerUntil = -1f; Boss.Stagger(bf.Unit, 1f); bf.LastParryAt -= Boss.GuardRecovers + 1f;
       Check(!Boss.Stagger(bf.Unit, 1f) && Boss.GuardDamage(bf) == 1, "Boss: parries toward a stagger fade after a while");
+      // "parries are probably too hard": the glint is a fixed beat before each hit, and a parry that lands frees the key for the next hit
+      var pl = Arena(out int qx, out int qy); Rt.On = true; bf.StaggerUntil = -1f; bf.Unit.X = qx + 1; bf.Unit.Y = qy;
+      var mv = Boss.Visor.Moves.First(m => m.Name == "Flurry"); float t0 = UnityEngine.Time.time;
+      Boss.Begin(bf, mv, t0, 1f); float glintAt = -1f;
+      for (int i = 0; i < 60 && glintAt < 0f; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(bf, pl); if (bf.GlintAt >= t0) glintAt = bf.GlintAt; }
+      Check(glintAt > 0f && Math.Abs(bf.StrikeAt - glintAt - Boss.GlintLead) < 0.03f, $"Boss: the glint comes {Boss.GlintLead} s before the hit ({bf.StrikeAt - glintAt:0.00})");
+      Rt.Of(pl).ParryReady = -99f; Parry.Press(pl); Melee.Strike(bf.Unit, bf.Unit.EquippedWeapon, pl, "Torso", 0f);
+      Check(Rt.Of(pl).ParryReady <= UnityEngine.Time.time, "Parry: one that lands frees the key at once (deflections chain)");
+      Rt.On = false;
       Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
@@ -1182,12 +1193,12 @@ static class Program {
       int hp = p.Hp;
       void Hit() => Melee.Strike(raider, raider.EquippedWeapon, p, "Torso", 0f);
       Parry.Press(p); UnityEngine.Time.time += 0.05f; Hit();
-      Check(p.Hp == hp && Rt.Of(p).ParryAt < 0f, "Boss 1: a hit inside the first 0.12 s of the guard is a perfect parry - no damage");
+      Check(p.Hp == hp && Rt.Of(p).ParryAt < 0f, "Boss 1: a hit inside the first 0.2 s of the guard is a perfect parry - no damage");
       UnityEngine.Time.time += 1f; Parry.Press(p); UnityEngine.Time.time += 0.25f; Hit();
       Check(p.Hp == hp, "Boss 1: later in the window it's blocked - still no damage");
       UnityEngine.Time.time += 1f; Hit();
       Check(p.Hp < hp, "Boss 1: no guard up - the hit lands");
-      hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.4f; Parry.Press(p); UnityEngine.Time.time += 0.03f; Hit();
+      hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.4f; Parry.Press(p); UnityEngine.Time.time += 0.08f; Hit();
       Check(p.Hp < hp, "Boss 1: pressing again inside the cooldown does nothing (no spamming)");
       UnityEngine.Time.time += 1f; hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f; Parry.Unparryable = true; Hit(); Parry.Unparryable = false;
       Check(p.Hp < hp, "Boss 1: a red-glint hit can't be parried");

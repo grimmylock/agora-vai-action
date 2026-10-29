@@ -42,6 +42,7 @@ namespace GameCore
             public string Name, Title, Weapon, Armor;
             public int Hp;
             public float StepSeconds = 0.35f, Recover = 1.0f;
+            public float Pace = 0.5f;          // Visor 4: his swings play at this speed - the strike starts ChopTime/Pace before the hit
             public int ParriesToStagger = 3;  // Yan: "make it so he needs 3 parries to get stunned"
             public Move[] Moves;
             public string Phase2Line;
@@ -55,9 +56,10 @@ namespace GameCore
             public bool Broken, Finished, Gone; public float LootedAt = -1f;
             public float GlintAt = -99f; public bool GlintDanger;   // for the view
             public float Started;
-            public int Parries; public float LastParryAt = -99f;   // perfect parries toward the next stagger (they fade after GuardRecovers s)
+            public int Parries; public float LastParryAt = -99f;
+            public float GlintDue = -1f;   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
-        public const float GuardRecovers = 8f;
+        public const float GuardRecovers = 8f, GlintLead = 0.4f;
 
         public static readonly List<Fight> Fights = new List<Fight>();
         public static Fight Of(ICombatant u) => u == null ? null : Fights.FirstOrDefault(f => f.Unit == u && !f.Gone);
@@ -117,9 +119,10 @@ namespace GameCore
         {
             var h = f.Unit; float now = Time.time;
             // Visor 2: his wind-up is held through the glint, and the strike starts just before the hit lands
-            var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def == Visor ? HeldPoseMath.VisorPoses : null;
+            var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def == Visor ? HeldPoseMath.VisorPoses : null; mc.Pace = f.Def.Pace;
             if (f.Doing == null) mc.SwingFrom = -1f;
-            else if (mc.SwingFrom >= 0f && now >= f.StrikeAt - HeldPoseMath.ChopTime) { float held = now - mc.SwingFrom; mc.SwingFrom = -1f; mc.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp); }
+            else if (mc.SwingFrom >= 0f && now >= f.StrikeAt - HeldPoseMath.ChopTime / mc.Pace) { float held = now - mc.SwingFrom; mc.SwingFrom = -1f; mc.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp) / mc.Pace; }
+            if (f.Doing != null && f.GlintDue >= 0f && now >= f.GlintDue) { f.GlintDue = -1f; Glint(f, f.Doing.Danger); }
             if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
             if (now < f.StaggerUntil) return;
@@ -152,14 +155,14 @@ namespace GameCore
             if (now < f.StrikeAt) return;
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
-            if (--f.HitsLeft > 0) { f.StrikeAt = now + f.Doing.Gap * speed; Glint(f, f.Doing.Danger); WindPose(f, now); return; }
+            if (--f.HitsLeft > 0) { f.StrikeAt = now + f.Doing.Gap * speed; f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
             f.Doing = null; f.NextMoveAt = now + f.Def.Recover * speed * Random.Range(0.8f, 1.3f);
         }
 
         internal static void Begin(Fight f, Move m, float now, float speed)
         {
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
-            Glint(f, m.Danger); WindPose(f, now);
+            f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
 
@@ -167,7 +170,7 @@ namespace GameCore
         static void WindPose(Fight f, float now)
         {
             var mc = Melee.ChargeOf(f.Unit); var m = f.Doing; int i = m.Hits - f.HitsLeft;
-            mc.From = i > 0 ? now - mc.SwungAt : -1f;
+            mc.From = i > 0 ? mc.Since(now) : -1f;
             mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now; mc.Red = m.Danger;
         }
 
