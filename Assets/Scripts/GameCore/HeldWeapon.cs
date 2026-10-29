@@ -372,6 +372,15 @@ namespace GameCore
             return udeg;
         }
 
+        /// <summary>Empty hands: where the two gloves float (centres, character px) at a walk's `phase` (radians) and `swing` (0 still ..
+        /// 1 walking): a pixel clear of the torso at the hips, rising and falling opposite ways a step at a time, snapped to pixels.</summary>
+        public static (float rx, float ry, float lx, float ly) FreeHands(float phase, float swing)
+        {
+            float a = Mathf.Sin(phase) * swing;
+            float dy = Mathf.Round(1.4f * a), dx = Mathf.Round(0.4f * a);
+            return (14.5f + dx, 11f - dy, 1.5f - dx, 11f + dy);
+        }
+
         /// <summary>Melee 3: the body's frame through a swing - gathered (half crouch) on the wind-up, a charge, a throw's lift and
         /// the parry guard; the lunge's half and full frames on the strike and follow-through, half again as it recovers; rocked
         /// back (stagger) when the guard is broken. The facing ones lean toward where you aim.</summary>
@@ -819,8 +828,17 @@ namespace GameCore
                 var big = HandSprite(armor, false);
                 _grip.sprite = big; _support.sprite = big;
                 _grip.flipX = false; _support.flipX = true;                           // cuffs toward the body
-                _grip.transform.localPosition = Local(RestRightX, RestY); _grip.transform.localRotation = Quaternion.identity;
-                _support.transform.localPosition = Local(RestLeftX, RestY);
+                // Yan: "when nothing's equipped the hands ... look like chicken wings ... should stay still detached from the body but make
+                // movements as if they're swinging a little with each step": a pixel clear of the body at the hips, swinging opposite
+                // ways as you walk (the walk is read from how far the body moved), easing back to still when you stop
+                float mx = _lastPos.HasValue ? unitPos.x - _lastPos.Value.x : 0f, my = _lastPos.HasValue ? unitPos.y - _lastPos.Value.y : 0f;
+                float moved = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); _lastPos = unitPos;   // (a jump - a new map - isn't a step)
+                float dt = Mathf.Max(Time.deltaTime, 0.0001f), walking = Mathf.Clamp01(moved / dt / 1.5f);
+                _stepPhase += moved * Mathf.PI * 2f / StrideTiles;
+                _swing = Mathf.MoveTowards(_swing, walking, dt * 4f);
+                var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_stepPhase, _swing);
+                _grip.transform.localPosition = Local(rx, ry); _grip.transform.localRotation = Quaternion.identity;
+                _support.transform.localPosition = Local(lx, ly);
                 _g = null;
                 return;
             }
@@ -945,6 +963,8 @@ namespace GameCore
 
         // nothing equipped: big glove centres beside the torso (torso is columns 5-10, rows 8-11)
         public const float RestRightX = 13.5f, RestLeftX = 2.5f, RestY = 10f;
+        const float StrideTiles = 1.2f;                     // a full arm swing (two steps) per this many tiles walked
+        private Vector3? _lastPos; private float _stepPhase, _swing;
 
         /// <summary>Glove sprite: big 5x4 (incl. outline, suit-coloured cuff on the body side, lit top edge,
         /// knuckle shadow) when the hands are empty; small 4x3 (cuff + glove) when holding something, so the

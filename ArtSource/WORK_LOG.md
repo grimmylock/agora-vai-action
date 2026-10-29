@@ -4341,3 +4341,9 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   armor_pose_crouch / armor_back_pose_crouch, unique strips regenerated), shown while sneaking (walking or still).
 - Yan's RE4-style case inventory: not built - proposal sent, waiting on his answers.
 - Not checked in Unity.
+- Empty hands (Yan: "when the character has nothing in his hand his HANDs stay on his side looking like chicken wings ... should
+  stay either invisible or still detached from the body but make movements as if they're swinging a little with each step"):
+  the gloves float a pixel clear of the torso at the hips and swing opposite ways (one up, one down, a touch in/out) once per step,
+  easing back to still when you stop (`HeldPoseMath.FreeHands`; HeldWeaponView reads the walk from how far the body moved, a full
+  swing per 1.2 tiles). Preview: `maps/renders/hands/empty_hands_walk.gif` (drawn with the same numbers; not a harness render).
+  Not checked in Unity.
