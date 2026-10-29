@@ -42,6 +42,7 @@ static class Program {
     DiveChecks();
     GunslingerChecks();
     RoundChecks();
+    StorySystemsChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -902,6 +903,38 @@ static class Program {
   // RT 7z-c (Yan: "do 1, build gunslinger for real"): a pistol in each hand - each mouse button fires its own gun, the right one no
   // longer aims, both fire mid-dive, R reloads both; the left gun's pose sits beside the right one inside the sprite
   static Ballistics.Hit Landed(List<Gunplay.Round> r) { Gunplay.LandAll(); return r[0].Hit; }   // RT 8: rounds fly
+
+  // Story 3: the systems the missions use - steps, objectives (and the map marker), the journal, per-world spots, talks, cutscenes
+  static void StorySystemsChecks() {
+    var p = Arena(out int px, out int py);
+    var f = MacroState.Current.StoryFlags;
+    Check(Story.Step("courier") == 0 && !Story.IsDone("courier"), "Story 3: a mission not started is step 0");
+    Story.SetStep("courier", 2); Story.SetStep("fence", 1);
+    Check(Story.Step("courier") == 2 && Story.Step("fence") == 1 && f.Count(x => x.StartsWith("m:courier=")) == 1, "Story 3: steps are kept per mission, one flag each");
+    Story.SetObjective("courier", "Find the courier's pack", "Old Well"); Story.SetObjective("fence", "Talk to Yefim");
+    var obs = Story.Objectives.ToList();
+    Check(obs.Count == 2 && obs.Any(o => o.mission == "courier" && o.text == "Find the courier's pack" && o.landmark == "Old Well")
+      && obs.Any(o => o.mission == "fence" && string.IsNullOrEmpty(o.landmark)), "Story 3: objectives read back with and without a landmark");
+    Check(StorySystem.IsObjective(MacroState.Current.CurrentZoneId, "Old Well") && !StorySystem.IsObjective(MacroState.Current.CurrentZoneId, "Lone Grave"), "Story 3: an objective's landmark gets the map marker");
+    Story.Finish("courier");
+    Check(Story.IsDone("courier") && !Story.Objectives.Any(o => o.mission == "courier"), "Story 3: finishing a mission clears its objective");
+    Story.Journal("The fence was cut."); Story.Journal("The fence was cut."); Story.Journal("A scrap of grey cloth.");
+    Check(Story.JournalEntries.SequenceEqual(new[] { "The fence was cut.", "A scrap of grey cloth." }), "Story 3: journal entries in order, no doubles");
+    var names = TerrainMap.Landmarks.Select(l => l.Name).Where(n => !n.Contains(":")).Distinct().ToList();
+    string a = Story.Spot("courier_spot", names[0]), b = Story.Spot("distress_spot", names[0]);
+    Check(a != null && b != null && a != b && a != names[0] && b != names[0] && Story.Spot("courier_spot") == a, $"Story 3: per-world spots differ, skip reserved ones and stay put ({a}, {b})");
+    int picked = -1, lines = 0;
+    Story.Talk("Yefim", new[] { "One.", "Two.", "Three?" }, new[] { "Yes", "No" }, i => { picked = i; lines++; });
+    Check(picked == 0 && lines == 1, "Story 3: a conversation runs its lines and answers once (no panel in the harness: the first answer)");
+    UnityEngine.Time.time = 500f; Story.Cutscene(px + 5f, py, 2f);
+    Check(Story.InCutscene && Story.LookAt.Value.x == px + 5f, "Story 3: a cutscene frames its point");
+    UnityEngine.Time.time = 502.5f;
+    Check(!Story.InCutscene, "Story 3: and ends on time");
+    var json = UnityEngine.JsonUtility.ToJson(new MacroSaveData { StoryFlags = new List<string>(f) });
+    var back = UnityEngine.JsonUtility.FromJson<MacroSaveData>(json);
+    Check(back.StoryFlags.SequenceEqual(f), "Story 3: story state survives a save (MacroSaveData.StoryFlags)");
+    f.Clear(); Story.Reset();
+  }
 
   // RT 8 (Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too" / "no pinning mid dive")
   static void RoundChecks() {

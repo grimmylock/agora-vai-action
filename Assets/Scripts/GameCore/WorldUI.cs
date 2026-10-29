@@ -52,6 +52,7 @@ namespace GameCore
             sb.AppendLine();
             sb.AppendLine($"<color=#e0c060>MAIN STORY - ACT {System.Math.Min(5, StorySystem.Act)}</color>   Fragments: {StorySystem.Fragments}");
             sb.AppendLine("  " + StorySystem.Objective);
+            foreach (var o in Story.Objectives) sb.AppendLine($"  {o.text}{(string.IsNullOrEmpty(o.landmark) ? "" : $" ({o.landmark})")}");   // Story 3
             sb.AppendLine();
             sb.AppendLine("<color=#e0c060>FACTION GOALS</color>");
             foreach (var g in WorldEvents.Goals)

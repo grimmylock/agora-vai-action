@@ -292,7 +292,7 @@ namespace GameCore
         /// the rest are the old keys that still make sense. E also loots a body or picks up what's at your feet.</summary>
         private static void RealTime(Player player, Keyboard k, Mouse m)
         {
-            bool panel = GameState.Current.ModalOpen;                // a panel is up: you stand still, everything else runs
+            bool panel = GameState.Current.ModalOpen || Story.InCutscene;   // a panel (or a cutscene) is up: you stand still, everything else runs
             if (k == null && !panel) return;
             if (HudView.TargetingOpen) HudView.CloseTargeting();
             if (!panel && k.escapeKey.wasPressedThisFrame) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does

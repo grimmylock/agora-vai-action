@@ -209,7 +209,8 @@ namespace GameCore
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker
             var speaker = ChoiceUI.Speaker; var spm = speaker != null && speaker != player ? MarkerOf(speaker) : null;
-            FollowCamera(_playerMarker.transform.position, spm != null ? spm.transform.position : (Vector3?)null);
+            var cut = Story.InCutscene && Story.LookAt.HasValue ? new Vector3(Story.LookAt.Value.x, -Story.LookAt.Value.y, 0f) : (Vector3?)null;   // Story 3: a cutscene frames its point
+            FollowCamera(_playerMarker.transform.position, spm != null ? spm.transform.position : cut);
             if (spm != null && _speakerMark == null) _speakerMark = CreateMarker("Speaker", Color.white, 1f, WorldArt.SortTop, _root.transform, Chevron());
             if (_speakerMark != null)
             {

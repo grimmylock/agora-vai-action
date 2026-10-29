@@ -4091,3 +4091,17 @@ Marchuk was one of "those"; Pavel stays with Osei), notes from Yan's four old ca
 companions never required, no contract sniper, Contractors side-only, the Garrison as unwitting pawns, Rask the traitor with
 Hale as the red herring, Tolik's tackle boss fight, the Preacher's dodgeable waves. New `STORY_DIALOGUE.md`: draft lines for
 every mission from the first morning to the descent (new names marked * for Yan).
+
+## Story 3 (2026-10-29): the story systems
+
+Yan: "i did the unity check, everything seems alright, you can start by building the story systems".
+- New `Story.cs`: `Talk` (a conversation in the dialogue panel, line by line, answers on the last), `Radio` (a log line while
+  you play), `Journal` (entries, no doubles), `Step`/`SetStep`/`Finish` (each mission's progress), `SetObjective` (text and a
+  landmark - the landmark gets the map's objective marker through `StorySystem.IsObjective`), `Spot` (a landmark picked once
+  per world, never a reserved one or another spot's), `Cutscene` (the camera frames a point, you stand still, the world runs).
+- All kept in `MacroState.StoryFlags` (prefixes m:/o:/j:/spot:), so saves carry it with no format change.
+- Shown: objectives in the World panel and a STORY block (objectives + last 4 journal entries) at the top of the J panel.
+- Check: `StorySystemsChecks`.
+- Not done: no missions yet (Tier 1 is next); no radio crackle sound (the click for now); the old acts in `StorySystem.cs`
+  still run until each is replaced. Co-op: story is the host's; conversations, radio and cutscenes show on the host only until
+  the snapshot carries story events (with enemies and shots). Not checked in Unity.

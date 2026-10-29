@@ -47,6 +47,7 @@ namespace GameCore
         /// <summary>Is this landmark where the story (or a legendary artifact) wants you next?</summary>
         public static bool IsObjective(string zone, string landmark)
         {
+            if (Story.IsObjective(landmark)) return true;   // Story 3: the new missions' objectives
             if (zone == "outskirts" && landmark == "The Wound") return !Has("wound_heart");
             if (zone == "siege_catacombs" && landmark == "Sealed Crypt") return !Has("lucifer");
             switch (Act)
@@ -283,6 +284,7 @@ namespace GameCore
         /// new game and load, before re-applying the current ending.</summary>
         public static void ResetWorld()
         {
+            Story.Reset();
             if (_originalTiers == null) _originalTiers = MacroMapDatabase.Zones.ToDictionary(z => z.Id, z => z.Tier);
             foreach (var z in MacroMapDatabase.Zones) z.Tier = _originalTiers[z.Id];
         }
