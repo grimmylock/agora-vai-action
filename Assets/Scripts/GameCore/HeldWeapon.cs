@@ -281,7 +281,7 @@ namespace GameCore
         // Melee 2d: the parry guard (the weapon up and across in front of you, for the parry window) and a broken guard (Yan: "the
         // perfect parries need a visual indication, the enemy hand could go UP simulating their guard was broken": the weapon arm
         // knocked up and back, the body rocked back, for the stagger, then it comes back down)
-        public const float GuardTime = 0.35f, BrokenTime = 1f, BrokenRise = 0.24f;
+        public const float GuardTime = 0.35f, BrokenTime = 1f, BrokenRise = 0.12f;
         static readonly (float off, float hx, float hy, float lean) Guard = (-95f, 1f, -4f, 2f), Broken = (-60f, -2f, -7f, 12f);
         static float Hold(float t, float len, float rise, float fall) => t < 0f || t >= len ? 0f : Mathf.Min(1f, Mathf.Min(t / rise, (len - t) / fall));
 
@@ -297,10 +297,11 @@ namespace GameCore
                 : Chop(sinceSwing, st, move, from);
             if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp) off += 3f * Mathf.Sin(swingHold * 30f);   // a charged swing trembles
             // Yan: "make guard breaks create a slowdown effect like the dive, so that the player sees the enemy getting their hands up
-            // slower": the break's slow motion (Boss.ParryMoment, 0.25x for a real second) now carries the whole rise - BrokenRise of
-            // game time is about a real second - eased in and out
+            // slower": the rise plays inside the break's slow motion (Boss.ParryMoment, 0.25x for a real second); "his hand goes up
+            // almost at the end of the slowdown": eased out - it's knocked up at once and slows into the top - over BrokenRise (about
+            // half a real second in the slow motion), then held there
             float gk = Hold(sinceGuard, GuardTime, 0.04f, 0.12f), bk = Hold(sinceBroken, BrokenTime, BrokenRise, 0.3f);
-            bk = bk * bk * (3f - 2f * bk);
+            if (sinceBroken < BrokenRise) bk = 1f - (1f - bk) * (1f - bk) * (1f - bk);
             if (gk > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), Guard, gk);
             if (bk > 0f) (off, hx, hy, lean) = Blend((off, hx, hy, lean), (Broken.off + 6f * Mathf.Sin(sinceBroken * 25f) * (1f - sinceBroken), Broken.hx, Broken.hy, Broken.lean), bk);   // it shudders
             // Melee 2 (Yan: "the hand and angle stay the same ... they need to rotate as well with the swing"): in a swing the fist

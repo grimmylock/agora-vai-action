@@ -4298,3 +4298,6 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   edge - for plain enemies too), but the arm flew up in 0.06 s of game time, done in a quarter of a real second. Now it rises over
   `HeldPoseMath.BrokenRise` 0.24 s of game time, eased, which fills the slow motion: in the duel render the knife goes up over 28
   frames (~0.9 s real). Not checked in Unity.
+- Melee 5b (Yan: "the enemy animation for getting parried is too slow, his hand goes up almost at the end of the slowdown"): the
+  rise is eased out (knocked up at once, slowing into the top) over 0.12 s of game time instead of eased in over 0.24 - in the duel
+  render it's most of the way up 0.4 s (real) after the parry and held at the top through the rest of the slow motion.
