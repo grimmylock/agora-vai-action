@@ -44,6 +44,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
+    BossChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -904,6 +905,77 @@ static class Program {
   // RT 7z-c (Yan: "do 1, build gunslinger for real"): a pistol in each hand - each mouse button fires its own gun, the right one no
   // longer aims, both fire mid-dive, R reloads both; the left gun's pose sits beside the right one inside the sprite
   static Ballistics.Hit Landed(List<Gunplay.Round> r) { Gunplay.LandAll(); return r[0].Hit; }   // RT 8: rounds fly
+
+  // Boss 1: the parry (perfect / blocked / missed / cooldown / no melee / unparryable), the Visor's duel frame by frame (telegraphs,
+  // a perfect parry staggers him, bullets glance off unless he's open, phase 2, he breaks at 0, the finisher, the smoke), his lab
+  static void BossChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    float T0 = 20000f; UnityEngine.Time.time = T0; UnityEngine.Time.unscaledTime = T0; UnityEngine.Time.deltaTime = 1f / 60f;
+    try {
+      var hatchet = ShopDatabase.Items.First(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "TacticalHatchet");
+      p.AddItem(TestingGround.ItemOf(hatchet)); p.EquipWeaponFromInventory(hatchet.Id); p.HealPermanent(100000);
+      var raider = new HumanEnemy("Raider", px + 1, py, "Raiders", "Rookie", WeaponDatabase.Categories["melee"]["SerratedTrenchKnife"], null) { IsAggroed = true };
+      EncounterState.Enemies.Add(raider); Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(raider, 0f, 0f);
+      int hp = p.Hp;
+      void Hit() => Melee.Strike(raider, raider.EquippedWeapon, p, "Torso", 0f);
+      Parry.Press(p); UnityEngine.Time.time += 0.05f; Hit();
+      Check(p.Hp == hp && Rt.Of(p).ParryAt < 0f, "Boss 1: a hit inside the first 0.12 s of the guard is a perfect parry - no damage");
+      UnityEngine.Time.time += 1f; Parry.Press(p); UnityEngine.Time.time += 0.25f; Hit();
+      Check(p.Hp == hp, "Boss 1: later in the window it's blocked - still no damage");
+      UnityEngine.Time.time += 1f; Hit();
+      Check(p.Hp < hp, "Boss 1: no guard up - the hit lands");
+      hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.4f; Parry.Press(p); UnityEngine.Time.time += 0.03f; Hit();
+      Check(p.Hp < hp, "Boss 1: pressing again inside the cooldown does nothing (no spamming)");
+      UnityEngine.Time.time += 1f; hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f; Parry.Unparryable = true; Hit(); Parry.Unparryable = false;
+      Check(p.Hp < hp, "Boss 1: a red-glint hit can't be parried");
+      p.EquipWeapon("sidearm", "PSh18Pchela"); UnityEngine.Time.time += 1f; hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f; Hit();
+      Check(p.Hp < hp, "Boss 1: no melee weapon in hand - no parry");
+      p.EquipWeaponFromInventory(hatchet.Id);
+      EncounterState.Enemies.Clear();
+
+      // the duel
+      p.Hp = p.MaxHp; Body.Forget(p);
+      var f = Boss.WakeVisor(p, px + 3, py);
+      var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
+      Check(Boss.Is(v) && v.Hp == Boss.Visor.Hp && p.EquippedWeapon?.Db?.Name == "Tactical Hatchet" && Boss.SplashTitle == "THE VISOR", "Boss 1: taking the hatchet wakes him - name card, full health, the hatchet in your hand");
+      int glints = 0, parried = 0, frames = 0; bool staggered = false;
+      for (; frames < 60 * 30 && !staggered; frames++) {
+        UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.unscaledTime += 1f / 60f; p.Hp = p.MaxHp; Body.Forget(p);
+        Rt.WorldTick(p); glints += CombatFx.Pending.Count(e => e.Kind == "glint"); CombatFx.Pending.Clear();
+        if (f.Doing != null && !f.Doing.Danger && f.StrikeAt - UnityEngine.Time.time is float left && left > 0f && left <= 0.06f && Rt.Of(p).ParryReady <= UnityEngine.Time.time) { Parry.Press(p); parried++;
+          if (Environment.GetEnvironmentVariable("BOSS_DEBUG") == "1") Console.WriteLine($"t {UnityEngine.Time.time - T0:0.00} parry before {f.Doing.Name}, dist {CombatantUtil.Distance(p, v)} hp {p.Hp}"); }
+        staggered = Boss.Staggered(v);
+      }
+      Check(glints > 0 && staggered, $"Boss 1: he walks in, glints, swings - a parry timed on the glint staggers him ({frames / 60f:0.0} s, {glints} glints)");
+      int vhp = v.Hp; Gunplay.Shoot(p, p.EquippedWeapon, 1f, 0f, 0.5f, 0f, false);
+      Check(v.Hp == vhp || Boss.Staggered(v), "Boss 1: (setup) still open");
+      UnityEngine.Time.time = f.StaggerUntil + 0.01f;
+      var ak = p.MakeWeapon("assault", "VK74");
+      vhp = v.Hp; Gunplay.Shoot(p, ak, (v.X - p.X) / (float)Math.Max(1, Math.Abs(v.X - p.X)), 0f, 0.5f, 0f, false); Gunplay.LandAll();
+      Check(v.Hp == vhp, "Boss 1: when he isn't staggered, rounds glance off him");
+      f.StaggerUntil = UnityEngine.Time.time + 1f; vhp = v.Hp;
+      Gunplay.Shoot(p, ak, (v.X - p.X) / (float)Math.Max(1, Math.Abs(v.X - p.X)), 0f, 0.5f, 0f, false); Gunplay.LandAll();
+      Check(v.Hp < vhp, "Boss 1: while he's staggered, they land");
+      v.Hp = Boss.Visor.Hp / 2; f.StaggerUntil = -1f; f.NextMoveAt = 0f; UnityEngine.Time.time += 0.1f; Boss.Tick(f, p);
+      Check(f.Phase == 2 && Boss.SplashTitle == "PHASE 2", "Boss 1: half health - phase 2");
+      v.Hp = 10; f.StaggerUntil = UnityEngine.Time.time + 1f; p.X = v.X - 1; p.Y = v.Y;
+      Melee.Strike(p, p.EquippedWeapon, v, "Torso", 0f);
+      Check(f.Broken && v.IsAlive() && v.Hp == 1 && Boss.SplashTitle == "FINISH HIM", "Boss 1: at 0 he doesn't die - he breaks, FINISH HIM");
+      int fhp = p.Hp; for (int k = 0; k < 120; k++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
+      Check(p.Hp == fhp, "Boss 1: broken, he doesn't fight");
+      p.Ap = 4; InteractionEngine.AttemptInteract(p);
+      Check(f.Finished && !v.IsAlive() && Story.Has("visor_done") && Story.InCutscene, "Boss 1: E next to him - the finisher (cutscene), and he's done");
+      Boss.Looted(v); UnityEngine.Time.time += Boss.SmokeAfter + 0.1f; Boss.TickAll();
+      Check(f.Gone && !EncounterState.Enemies.Contains(v), "Boss 1: looted, and a few seconds later the smoke takes the body");
+      UnityEngine.Time.unscaledTime += 5f; Boss.HitStop(0.2f); Check(UnityEngine.Time.timeScale < 0.1f, "Boss 1: (hit-stop freezes time)");
+      UnityEngine.Time.unscaledTime += 0.3f; Boss.TickAll(); Check(UnityEngine.Time.timeScale == 1f, "Boss 1: and lets it go");
+
+      // the lab: a cracked wall, the corridor behind it, the body
+      MacroState.Current.StoryFlags.Clear(); EncounterState.Enemies.Clear();
+      var marks = MapLayoutDatabase.All["secret_lab_beta"].Anchors.Keys.ToList();
+      Check(marks.Contains(Boss.CrackedWall) && marks.Contains(Boss.VisorMark), "Boss 1: Lab Beta has the cracked wall and the body's room");
+    } finally { Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset(); Parry.Unparryable = false; MacroState.Current.StoryFlags.Clear(); }
+  }
 
   // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
   static void Tier1StoryChecks() {

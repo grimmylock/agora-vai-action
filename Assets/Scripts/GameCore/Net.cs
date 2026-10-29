@@ -109,7 +109,7 @@ namespace GameCore
         {
             if (Mode != Role.Host || !ByOwner.TryGetValue(owner, out var p)) return;
             var i = DecodeInput(data);
-            if (Rt.Remote.TryGetValue(p, out var prev)) { i.FireDown |= prev.FireDown; i.Fire2Down |= prev.Fire2Down; i.Jump |= prev.Jump; i.Reload |= prev.Reload; }
+            if (Rt.Remote.TryGetValue(p, out var prev)) { i.FireDown |= prev.FireDown; i.Fire2Down |= prev.Fire2Down; i.Parry |= prev.Parry; i.Jump |= prev.Jump; i.Reload |= prev.Reload; }
             Rt.Remote[p] = i;
         }
 
@@ -117,7 +117,7 @@ namespace GameCore
         public static Rt.Input TakeInput(Player p)
         {
             if (!Rt.Remote.TryGetValue(p, out var i)) return default;
-            var held = i; held.FireDown = held.Fire2Down = held.Jump = held.Reload = false;
+            var held = i; held.FireDown = held.Fire2Down = held.Parry = held.Jump = held.Reload = false;
             Rt.Remote[p] = held;
             return i;
         }
@@ -168,7 +168,7 @@ namespace GameCore
             using var ms = new MemoryStream(); using var w = new BinaryWriter(ms);
             w.Write(i.X); w.Write(i.Y);
             int bits = (i.Sneak ? 1 : 0) | (i.Sprint ? 2 : 0) | (i.Aim ? 4 : 0) | (i.Fire ? 8 : 0) | (i.FireDown ? 16 : 0) | (i.Jump ? 32 : 0)
-                     | (i.Reload ? 64 : 0) | (i.Use ? 128 : 0) | (i.Mouse.HasValue ? 256 : 0) | (i.Fire2Down ? 512 : 0);
+                     | (i.Reload ? 64 : 0) | (i.Use ? 128 : 0) | (i.Mouse.HasValue ? 256 : 0) | (i.Fire2Down ? 512 : 0) | (i.Parry ? 1024 : 0);
             w.Write((short)bits);
             if (i.Mouse.HasValue) { w.Write(i.Mouse.Value.x); w.Write(i.Mouse.Value.y); }
             return ms.ToArray();
@@ -180,7 +180,7 @@ namespace GameCore
             var i = new Rt.Input { X = r.ReadSingle(), Y = r.ReadSingle() };
             int b = r.ReadInt16();
             i.Sneak = (b & 1) != 0; i.Sprint = (b & 2) != 0; i.Aim = (b & 4) != 0; i.Fire = (b & 8) != 0; i.FireDown = (b & 16) != 0;
-            i.Jump = (b & 32) != 0; i.Reload = (b & 64) != 0; i.Use = (b & 128) != 0; i.Fire2Down = (b & 512) != 0;
+            i.Jump = (b & 32) != 0; i.Reload = (b & 64) != 0; i.Use = (b & 128) != 0; i.Fire2Down = (b & 512) != 0; i.Parry = (b & 1024) != 0;
             if ((b & 256) != 0) i.Mouse = (r.ReadSingle(), r.ReadSingle());
             return i;
         }

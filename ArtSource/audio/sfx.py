@@ -184,6 +184,38 @@ def ui_click(): return metal(.05, [1600, 2500], .006) + hp(noise(.05), 2000) * e
 def hurt(seed):
     rs.seed(seed); return fit(hit_flesh(seed), lp(noise(.3), 300) * env(.3, .01, .06) * .6)
 
+# ------------------------------------------------------------------ boss fights (Boss 1: parry, glints, stings, the finisher)
+def parry(seed):           # blade on blade: a bright clang and a ring
+    rs.seed(seed)
+    clang = metal(.6, [1850, 2740, 3610, 5150], .11) + hp(noise(.6), 3000) * env(.6, 0, .004) * .8
+    return tail(clang + lp(noise(.6), 400) * env(.6, 0, .02) * .5, .5, 3000, .35)
+def parry_perfect():       # the perfect one: a harder hit, a long shimmering ring, a sub thump
+    rs.seed(1201)
+    ring = metal(1.6, [2210, 3320, 4410, 6630, 8850], .42)
+    shimmer = sweep(900, 2600, 1.0, .35) * .35
+    hit = hp(noise(1.6), 2500) * env(1.6, 0, .006) * 1.2 + sweep(140, 45, 1.6, .18) * 1.1
+    return tail(fit(ring, shimmer, hit), 1.0, 4000, .6)
+def glint():               # the tell before a parryable hit
+    rs.seed(1202); return fit(metal(.35, [4200, 6300, 8400], .07), sweep(3000, 6000, .2, .06) * .3)
+def glint_danger():        # the tell before one you must dodge: low, ugly, two tones beating
+    rs.seed(1203); x = t(.7)
+    beat = (np.sin(2 * np.pi * 180 * x) + np.sin(2 * np.pi * 191 * x)) * env(.7, .01, .3)
+    return fit(beat, lp(noise(.7), 500) * env(.7, .01, .15) * .6, metal(.7, [720, 1080], .2) * .5)
+def boss_sting():          # the name card: a boom, a falling sub, a dissonant drone
+    rs.seed(1204); sec = 3.2
+    boom = lp(noise(sec), 160) * env(sec, .005, .35) * 2 + sweep(90, 32, sec, 1.0) * 1.4
+    drone = metal(sec, [110, 116.5, 165, 233], 1.4) * env(sec, .3, 2.0) * 1.2
+    return tail(fit(boom, drone, hp(noise(sec), 2000) * env(sec, 0, .03) * .5), 1.5, 900, .6)
+def finisher():            # the deathblow: a whoosh into a heavy wet hit and a boom
+    rs.seed(1205)
+    whoosh = bp(noise(.35), 500, 3000) * np.linspace(0, 1, int(SR * .35)) ** 2
+    hit = fit(hit_flesh(1206) * 1.3, lp(noise(1.2), 220) * env(1.2, 0, .25) * 1.6, sweep(110, 35, 1.2, .4) * 1.3)
+    out = np.zeros(int(SR * 1.6)); out[:len(whoosh)] += whoosh; i = len(whoosh); out[i:i + len(hit)] += hit[:len(out) - i]
+    return tail(out, .8, 1500, .5)
+def smoke():               # a grenade's pop and a long hiss
+    rs.seed(1207); sec = 2.4
+    return fit(click((900, 1500), .02, .08) * 1.5, hp(noise(sec), 1500) * env(sec, .08, .9) * .7, lp(noise(sec), 400) * env(sec, .02, .3) * .3)
+
 # ------------------------------------------------------------------ ambience (seamless loops)
 def loopify(x, xf=1.5):
     n = int(SR * xf); a = x[:n]; b = x[-n:]; w = np.linspace(0, 1, n)
@@ -256,6 +288,9 @@ def main(d):
     save(d, "amb_rain", rain(), .35); save(d, "amb_storm", rain(heavy=True), .45)
     for v in range(2): save(d, f"thunder_{v}", thunder(900 + v), .9)
     save(d, "amb_wind", wind(), .35); save(d, "amb_hum", hum(), .25); save(d, "amb_cave", cave(), .3); save(d, "amb_marsh", marsh(), .3)
+    for v in range(2): save(d, f"parry_{v}", parry(1200 + v * 5), .7)
+    save(d, "parry_perfect", parry_perfect(), .9); save(d, "glint", glint(), .55); save(d, "glint_danger", glint_danger(), .7)
+    save(d, "boss_sting", boss_sting(), .95); save(d, "finisher", finisher(), .95); save(d, "smoke", smoke(), .6)
     print(len(os.listdir(d)), "sounds in", d)
 
 if __name__ == "__main__": main(sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/audio_out")

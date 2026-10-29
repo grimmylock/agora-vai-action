@@ -93,6 +93,13 @@ namespace GameCore
             GameLog.Write("[TESTING GROUND] Two pistols: left button fires the right-hand gun, right button the left. R reloads both.");
         }
 
+        /// <summary>Boss 1: the Visor's duel on the range - the hatchet in your hand, him getting up 5 tiles in front of you.</summary>
+        public static void VisorDuel(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 5, p.Y);
+            Boss.WakeVisor(p, x, y);
+        }
+
         /// <summary>300 rounds of every ammo kind for every gun you carry, and full magazines.</summary>
         public static void RefillAmmo(Player p)
         {

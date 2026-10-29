@@ -173,6 +173,7 @@ namespace GameCore
         public void Tick()
         {
             TickMelee();
+            TickAura();
             TickRounds();
             float now = Time.time;
             foreach (var e in CombatFx.Pending)
@@ -280,6 +281,12 @@ namespace GameCore
             var (dx, dy) = Dir(from, to);
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge")
+            {
+                if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
+                BossFx(e, from, to);
+                return;
+            }
             switch (e.Kind)
             {
                 case "shot":
@@ -459,13 +466,96 @@ namespace GameCore
             _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames });
         }
 
-        private void Puff(string strip, Vector3 at, float life, float rise = 0f)
+        private void Puff(string strip, Vector3 at, float life, float rise = 0f, Color? tint = null, float scale = 1f)
         {
             var frames = Strip("Sprites/Fx/" + strip, 3, strip == "fx_muzzle_puff" ? WeaponArt.PixelsPerUnit : 16, new Vector2(0.5f, 0.5f));
-            var sr = NewSprite(strip, frames?[0], strip.Contains("blood") ? new Color(0.7f, 0.13f, 0.16f) : strip.Contains("psi") ? new Color(0.75f, 0.42f, 1f) : new Color(1f, 0.8f, 0.3f), _root, 9);
+            var sr = NewSprite(strip, frames?[0], tint ?? (strip.Contains("blood") ? new Color(0.7f, 0.13f, 0.16f) : strip.Contains("psi") ? new Color(0.75f, 0.42f, 1f) : new Color(1f, 0.8f, 0.3f)), _root, 9);
             sr.transform.position = new Vector3(at.x + Random.Range(-0.06f, 0.06f), at.y + Random.Range(-0.06f, 0.06f), 0f);
-            if (frames == null) sr.transform.localScale = Vector3.one * 0.2f;
-            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames, Vel = new Vector3(0f, rise, 0f), Fade = rise > 0f });
+            sr.transform.localScale = Vector3.one * (frames == null ? 0.2f : scale);
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames, Vel = new Vector3(0f, rise, 0f), Fade = rise > 0f, Alpha = (tint ?? Color.white).a });
+        }
+
+        // ---- Boss 1: the hype (glints, parries, staggers, the aura, the finisher, the smoke) ----
+
+        static readonly Color GlintWhite = new Color(1f, 1f, 0.92f), GlintRed = new Color(1f, 0.18f, 0.14f), Steel = new Color(1f, 0.93f, 0.7f);
+
+        /// <summary>Sparks or chips flying out of a point in every direction.</summary>
+        void Burst(Vector3 at, Color col, int n, float speed, float life, int size = 1)
+        {
+            for (int k = 0; k < n; k++)
+            {
+                float a = Random.value * Mathf.PI * 2f, sp = speed * Random.Range(0.5f, 1.2f);
+                Bit(at, col, size, size, new Vector3(Mathf.Cos(a) * sp, Mathf.Sin(a) * sp + 0.6f, 0f), 6f, life * Random.Range(0.7f, 1.2f), 10);
+            }
+        }
+
+        void Shake(float amp) { if (amp >= _shakeAmp || Time.time - _shakeAt > ShakeTime) { _shakeAt = Time.time; _shakeAmp = amp; } }
+
+        void BossFx(FxEvent e, Vector3 from, Vector3 to)
+        {
+            var head = from + new Vector3(0f, 0.75f, 0f);
+            switch (e.Kind)
+            {
+                case "glint":      // the tell: white = parry it, red = get out of the way
+                    Puff("fx_hit_spark", head, 0.32f, 0f, e.Psi ? GlintRed : GlintWhite, 2.2f);
+                    Burst(head, e.Psi ? GlintRed : GlintWhite, 6, 1.2f, 0.25f);
+                    Sfx.Play(e.Psi ? "glint_danger" : "glint", from, e.Psi ? 0.9f : 0.7f, 0.02f);
+                    break;
+                case "parry":      // blade on blade between the two of you
+                    var mid = Vector3.Lerp(from, to, 0.45f) + new Vector3(0f, 0.45f, 0f);
+                    Puff("fx_hit_spark", mid, e.Hit ? 0.3f : 0.15f, 0f, Steel, e.Hit ? 3f : 1.6f);
+                    Burst(mid, Steel, e.Hit ? 22 : 8, e.Hit ? 3.2f : 1.8f, e.Hit ? 0.5f : 0.3f);
+                    if (e.Hit) Burst(mid, Color.white, 10, 4.5f, 0.35f, 2);
+                    Sfx.Play(e.Hit ? "parry_perfect" : "parry", mid, 1f, e.Hit ? 0f : 0.08f);
+                    Shake(e.Hit ? 0.22f : 0.07f);
+                    break;
+                case "stagger":    // reeling: a ring of sparks, a dull clank
+                    Burst(head, Steel, 12, 2.2f, 0.4f);
+                    Sfx.Play("hit_hard", from, 0.9f);
+                    Shake(0.1f);
+                    break;
+                case "aura":       // phase 2: the aura bursts out of him
+                    for (int k = 0; k < 10; k++) Puff("fx_hit_psi", from + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0f, 0.9f), 0f), 0.6f, 1.4f, GlintRed, 1.6f);
+                    Burst(from + new Vector3(0f, 0.4f, 0f), GlintRed, 26, 4f, 0.6f, 2);
+                    Shake(0.3f);
+                    break;
+                case "finisher":   // the deathblow
+                    for (int k = 0; k < 5; k++) Puff("fx_hit_blood", to + new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(0.1f, 0.7f), 0f), 0.45f, 0.4f, null, 1.8f);
+                    Burst(to + new Vector3(0f, 0.5f, 0f), new Color(0.6f, 0.06f, 0.08f), 30, 3.5f, 0.7f, 2);
+                    Sfx.Play("finisher", to, 1f, 0f);
+                    Shake(0.35f);
+                    var (fx, fy) = Dir(from, to);
+                    if (e.Target != null) Wound(e, to, fx, fy, false);
+                    break;
+                case "smoke":      // the smoke grenade: he's gone
+                    for (int k = 0; k < 14; k++)
+                        Puff("fx_muzzle_puff", from + new Vector3(Random.Range(-0.8f, 0.8f), Random.Range(-0.2f, 0.8f), 0f), Random.Range(1.4f, 2.4f), Random.Range(0.2f, 0.6f), new Color(0.72f, 0.74f, 0.72f, 0.9f), Random.Range(3f, 5f));
+                    Sfx.Play("smoke", from, 0.9f);
+                    break;
+                case "deflect":    // a round swatted away
+                    Puff("fx_hit_spark", to + new Vector3(0f, 0.5f, 0f), 0.12f, 0f, Steel, 1.3f);
+                    Burst(to + new Vector3(0f, 0.5f, 0f), Steel, 5, 2.5f, 0.2f);
+                    Sfx.Play("hit_tin", to, 0.7f, 0.15f);
+                    break;
+                case "dodge":
+                    Puff("fx_muzzle_puff", from, 0.4f, 0.3f, new Color(0.6f, 0.55f, 0.45f, 0.7f), 2f);
+                    break;
+            }
+        }
+
+        float _auraAt;
+        /// <summary>Phase 2: embers keep rising off him.</summary>
+        void TickAura()
+        {
+            if (Time.time - _auraAt < 0.09f) return;
+            _auraAt = Time.time;
+            foreach (var f in Boss.Fights)
+            {
+                if (f.Phase < 2 || f.Broken || f.Finished || f.Gone) continue;
+                var m = _markerOf(f.Unit);
+                if (m == null) continue;
+                Puff("fx_hit_psi", m.transform.position + new Vector3(Random.Range(-0.35f, 0.35f), Random.Range(-0.1f, 0.6f), 0f), 0.55f, 1.1f, new Color(1f, 0.2f, 0.12f, 0.75f), 1.1f);
+            }
         }
 
         private void Tracer(Vector3 a, Vector3 b, WeaponFeel feel)

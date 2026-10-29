@@ -76,6 +76,7 @@ namespace GameCore
             public (float x, float y)? AimAt;                         // RT 7z: where this player's crosshair is (tile space) - friends' guns point there
             public bool ReloadOffhand;                                // RT 7z-c: R was pressed while the right-hand gun reloaded: the left one is next
             public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
+            public float ParryAt = -99f, ParryReady;                  // Boss 1: when the parry key went down, when it can again
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
             public bool Vaulting => VaultFrom >= 0f;
@@ -93,6 +94,7 @@ namespace GameCore
             public float X, Y;                                        // move, -1..1 each (y down)
             public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload, Use;   // held / held / held / held / pressed / pressed / pressed / held (E)
             public bool Fire2Down;                                    // RT 7z-c: right mouse pressed - a Gunslinger's left-hand gun
+            public bool Parry;                                        // Boss 1: the parry key pressed (F by default, Keybinds)
             public (float x, float y)? Mouse;                         // the crosshair, tile space
         }
         public static Input Read(Keyboard k, Mouse m) => new Input
@@ -102,6 +104,7 @@ namespace GameCore
             Sneak = k.leftCtrlKey.isPressed, Sprint = k.leftShiftKey.isPressed, Jump = k.spaceKey.wasPressedThisFrame, Reload = k.rKey.wasPressedThisFrame, Use = k.eKey.isPressed,
             Aim = m != null && m.rightButton.isPressed, Fire = m != null && m.leftButton.isPressed, FireDown = m != null && m.leftButton.wasPressedThisFrame,
             Fire2Down = m != null && m.rightButton.wasPressedThisFrame,
+            Parry = Keybinds.Pressed(k, Keybinds.Parry),
             Mouse = MouseTile(m),
         };
         static float _round;
@@ -126,7 +129,7 @@ namespace GameCore
         }
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); _round = 0f; }
+        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -225,6 +228,7 @@ namespace GameCore
             float dt = Time.deltaTime;
             var s = Of(p);
             p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: AP/MP only gate old actions
+            if (i.Parry) Parry.Press(p);                                                       // Boss 1
 
             // ---- reviving: hold E over a downed friend (Yan: "downed players can be revived by holding E over them for a few seconds") ----
             bool down = Body.Down(p);
@@ -590,10 +594,12 @@ namespace GameCore
             Death.Tick();                                                          // co-op: the dead penalty, once
             if (TestingGround.Here) TestingGround.Tick();                         // dummies and damage numbers
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
+            Boss.TickAll();                                                        // Boss 1: the hit-stop, a looted boss's smoke
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
             foreach (var e in EncounterState.Enemies.ToList())
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
+                if (Boss.Of(e) is Boss.Fight bf) { Boss.Tick(bf, TargetOf(e, local)); continue; }   // Boss 1: a boss runs his own moves
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
                 p = Companion.Is(e) ? local : TargetOf(e, local);                // co-op: each enemy fights the player nearest it

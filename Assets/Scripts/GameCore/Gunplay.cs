@@ -333,6 +333,12 @@ namespace GameCore
                 if (hit.Cover || hit.Through < 1f) TerrainMap.DamageTile(hit.CoverX, hit.CoverY, pellets > 1 ? 1 : 1, shooter);
             }
             var target = hit.Unit;
+            if (target != null && Boss.Deflects(target))                               // Boss 1: he swats it away unless he's staggered
+            {
+                fx.Kind = "deflect"; fx.Target = target; fx.Landed = false;
+                CombatFx.Add(fx);
+                return;
+            }
             if (target != null)
             {
                 fx.Target = target; fx.ToX = target.X; fx.ToY = target.Y; fx.Hit = true;
@@ -356,6 +362,7 @@ namespace GameCore
                 int dmg = CombatRules.PhysicalDamage(raw, w.CurrentAmmoType, dr, ignore);
                 int before = target.Hp;
                 target.Hp = System.Math.Max(0, target.Hp - dmg);
+                Boss.OnDamaged(target);
                 fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before;
                 if (first || pellets == 1) GameLog.Write($"{Who(shooter)} hits {Who(target)} in the {hit.Part.ToLowerInvariant()} for {dmg}.");
                 TestingGround.Note(target, dmg, hit.Part);                    // the testing ground's damage numbers

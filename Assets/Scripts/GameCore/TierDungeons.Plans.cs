@@ -54,6 +54,7 @@ namespace GameCore
                         case 's': c.Put(x, y, HardCover, "sandbags"); break;
                         case ',': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Concrete); continue;
                         case 'D': c.Put(x, y, Door); c.Paint(x, y, 1, 1, floor); continue;
+                        case 'Z': c.Put(x, y, Solid, wallLook); break;            // Boss 1: a cracked wall (E breaks it; a landmark marks it)
                         case 'h': c.Put(x, y, HardCover, "block"); break;
                         case 'm': c.Put(x, y, HardCover, "machine"); break;
                         case 'l': c.Put(x, y, HardCover, "lockers"); break;
@@ -114,7 +115,7 @@ namespace GameCore
 
         public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent) =>
             FloorPlan(id, LabPlans[id], wallLook, floor,
-                new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null) });
+                new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) });   // Boss 1
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)
 

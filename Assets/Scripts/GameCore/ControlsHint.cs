@@ -23,7 +23,8 @@ namespace GameCore
             "Crosshair height on a body = where you hit\n" +
             "R: reload / clear jam   Y: swap weapon\n" +
             "E: interact / loot body / pick up\n" +
-            "F: search anomaly / area / quest\n" +
+            "F: parry (melee weapon in hand)\n" +
+            "G: search anomaly / area / quest (F/G: Options)\n" +
             "Q: switch ammo   U: flashlight\n" +
             "Z: rest (safe zone/campfire)   B: shop\n" +
             "J: quests  M: the Zone  P: character  I: pack\n" +

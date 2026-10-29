@@ -124,16 +124,32 @@ namespace GameCore
             var fr = fill.GetComponent<RectTransform>(); fr.offsetMin = new Vector2(2, 2); fr.offsetMax = new Vector2(-2, -2);
 
             Text(fill.transform, "OptionsTitle", new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.96f), "CONTROLS", true, 22, HudView.Yellow);
-            Text(fill.transform, "OptionsText", new Vector2(0.06f, 0.14f), new Vector2(0.94f, 0.86f), ControlsHint.Text, false, 16, HudView.Cream, TextAlignmentOptions.TopLeft);
+            Text(fill.transform, "OptionsText", new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.86f), ControlsHint.Text, false, 16, HudView.Cream, TextAlignmentOptions.TopLeft);
+            // Boss 1 (Yan: the parry key "customizable in options"): click, then press the new key
+            foreach (var (name, x0) in new[] { ("parry", 0.06f), ("search", 0.5f) })
+            {
+                var b = UIBuildUtil.CreateButton(fill.transform, "Bind_" + name, new Vector2(x0, 0.13f), new Vector2(x0 + 0.44f, 0.2f), "", () => _rebinding = name);
+                _binds.Add((name, b.GetComponentInChildren<TextMeshProUGUI>()));
+            }
             var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.11f), "Back", () => _optionsPanel.SetActive(false));
             back.GetComponent<Image>().color = HudView.Lip;
 
             _optionsPanel.SetActive(false);
         }
 
+        string _rebinding;
+        readonly System.Collections.Generic.List<(string name, TextMeshProUGUI label)> _binds = new System.Collections.Generic.List<(string, TextMeshProUGUI)>();
+
         private void Update()
         {
             if (_panel == null || !_panel.activeSelf) return;
+            if (_rebinding != null)
+            {
+                var key = Keybinds.AnyPressed(Keyboard.current);
+                if (key != Key.None) { if (key != Key.Escape) Keybinds.Set(_rebinding, key); _rebinding = null; }
+            }
+            foreach (var (name, label) in _binds)
+                if (label != null) label.text = _rebinding == name ? $"{name.ToUpperInvariant()}: press a key..." : $"{name.ToUpperInvariant()}: {(name == "parry" ? Keybinds.Parry : Keybinds.Search)}";
             if (_log == null) _log = GameObject.Find("CombatLogBackground");
             if (_log != null && _log.activeSelf) _log.SetActive(false);
             if (_clock != null) _clock.text = MenuBackdrop.Ready ? MenuBackdrop.Label() : "";

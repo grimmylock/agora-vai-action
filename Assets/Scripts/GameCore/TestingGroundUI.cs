@@ -62,6 +62,7 @@ namespace GameCore
             }
             else if (_tab == 3)
             {
+                list.Add(("<color=#ff5a3a>BOSS</color> The Visor - hatchet duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.VisorDuel(p)) }));   // Boss 1
                 list.Add(("Target dummy, no armor", new (string, System.Action)[] { ("Dummy", () => TestingGround.SpawnDummy(p, null, null, _near)) }));
                 foreach (var f in Factions)   // "Dummy": kitted as this faction at the chosen rank, but it never moves or fights
                     list.Add(($"{f}", new (string, System.Action)[] { ("Dummy", () => TestingGround.SpawnDummy(p, f, CombatRules.RankOrder[_rank], _near)),

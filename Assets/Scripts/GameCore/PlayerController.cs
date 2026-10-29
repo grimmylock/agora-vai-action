@@ -81,7 +81,7 @@ namespace GameCore
                 InteractionEngine.AttemptInteract(player);
                 return;
             }
-            if (keyboard != null && keyboard.fKey.wasPressedThisFrame)
+            if (keyboard != null && Keybinds.Pressed(keyboard, Keybinds.Search))
             {
                 // file 03: next to a resolved anomaly, F searches it for an artifact instead.
                 if (AnomalyEngine.TrySearchAnomaly(player)) return;
@@ -310,7 +310,7 @@ namespace GameCore
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
                 var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);
-                if (corpse != null) CorpseLootUI.Open(corpse);
+                if (corpse != null) { if (!Boss.TryWake(player, corpse)) CorpseLootUI.Open(corpse); }   // Boss 1: the Visor's body
                 else if (ground.Count > 0)
                 {
                     foreach (var g in ground) { player.AddItem(g.Item); TerrainMap.GroundItems.Remove(g); }
@@ -322,7 +322,7 @@ namespace GameCore
                 else InteractionEngine.AttemptInteract(player);
                 return;
             }
-            if (k.fKey.wasPressedThisFrame) { if (!AnomalyEngine.TrySearchAnomaly(player)) { ZoneTravel.SearchArea(); QuestSystem.TryInvestigate(); } return; }
+            if (Keybinds.Pressed(k, Keybinds.Search)) { if (!AnomalyEngine.TrySearchAnomaly(player)) { ZoneTravel.SearchArea(); QuestSystem.TryInvestigate(); } return; }
             if (k.uKey.wasPressedThisFrame) { player.ToggleFlashlight(); return; }
             if (k.qKey.wasPressedThisFrame) { player.CycleAmmoType(); return; }
             if (k.yKey.wasPressedThisFrame) { player.SwapWeapons(); return; }

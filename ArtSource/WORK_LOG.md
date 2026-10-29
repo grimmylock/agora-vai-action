@@ -4128,3 +4128,31 @@ Yan: "start building the tier 1 missions". New `Tier1Story.cs` on the Story.cs p
   be inspected before the Prowler died (now any time before you hand in).
 - Not done: Pavel, "those", the Culvert, the Husks, the defence (next). The people aren't units on the map yet (no portraits).
   Not checked in Unity.
+
+## Boss 1 (2026-10-29): the parry, the boss framework, the Visor's hatchet duel
+
+Yan: "before we continue with part 2 i'd like to build the secret lab hatchet Hunk-reference bossfight we talked about, to be used
+as baseline for the bossfights in this game, im a sucker for HYPE MOMENTS AND AURA stuff like metal gear rising revengeance,
+dragon ball, sekiro". His calls: parry on a "dedicated key, customizable in options but default can be F"; no posture ("posture +
+deathblows only work for bossfights since nowhere else in the game we could have you brawling it out in melee with a normal npc while
+others shoot you"); "perfect parries stagger him for a second, normal parries just block the damage, when hp bar gets to 0 we can press
+a key to finish him off (after he's down and looted, a few seconds later a smoke grenade goes off and he's gone)". Guns: no
+preference - he deflects bullets unless staggered. The place: the plan in ACTION_DESIGN (a secret room of a Tier 4-5 lab) - Lab Beta.
+- `Parry.cs`: F (Keybinds), perfect 0.12 s / blocked 0.35 s / cooldown 0.45 s, any human melee hit (`Melee.Strike`), the trench
+  knife's longer window. Co-op: the Input packet's bit 1024.
+- `Boss.cs`: moves with white/red glints, combos, lunges, stagger, bullet deflection, phase 2, breaking at 0, the finisher (E),
+  the smoke-out after looting, a hit-stop. Bosses run their own moves (`Rt.WorldTick`), not RtAi.
+- The Visor: Legend, Proto-Exoskeleton, Serrated Trench Knife, 2400 HP; Slash, Flurry (3), Lunge (red); phase 2 adds a 5-hit
+  feint flurry and the Execution (a long red rush).
+- Lab Beta: `lab_plans.py visor_wing` - a cracked wall ('Z', E breaks it), a long unlit corridor, the end room ('V'). The body lies
+  there until the fight's won (`Story.Has("visor_done")`); E on it pulls the hatchet out and he gets up. Other labs unchanged.
+- Testing Ground: Humans tab, BOSS row - the hatchet in your hand, him 5 tiles away.
+- HUD: `HudView.Boss.cs` (name card, health bar with a draining chunk, STAGGERED / FINISH HIM / DEFEATED). Effects: `CombatFxView`
+  (glints, sparks, the aura's embers, the finisher's blood, the smoke, deflects). Sounds: `sfx.py` boss section (parry x2,
+  parry_perfect, glint, glint_danger, boss_sting, finisher, smoke) - the old sounds are byte-identical.
+- Keybinds: `Keybinds.cs` (PlayerPrefs), Options has PARRY / SEARCH buttons (click, press a key). Search moved from F to G.
+- Checks: `BossChecks` - the parry rules, a duel driven frame by frame (a timed parry staggers him), deflect vs open, phase 2,
+  the break, the finisher, the smoke, the hit-stop, the lab's marks. It caught a real bug: a perfect parry mid-combo crashed the boss.
+- Not done / not checked: no render of the duel yet; not checked in Unity (feel, timings, the HUD, the sounds); no sprite for him
+  (the Proto-Exoskeleton's look; a black suit with a red visor needs Yan's art call); mutants can't be parried; co-op clients don't
+  see the boss (the snapshot carries players only).

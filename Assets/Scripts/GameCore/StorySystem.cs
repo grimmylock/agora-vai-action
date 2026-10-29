@@ -301,6 +301,7 @@ namespace GameCore
         /// and after the ending one Named mutant per Tier 5+ zone until it's killed (file 09).</summary>
         public static void OnEnterZone(ZoneDef zone)
         {
+            Boss.OnEnterZone(zone?.Id);   // Boss 1: the Visor's body in Lab Beta
             if (zone == null || zone.IsSafeZone) return;
             bool guardian = zone.Id == "siege_catacombs" && !Has("lucifer") && !Has("named:siege_catacombs");
             int tier = _originalTiers != null && _originalTiers.TryGetValue(zone.Id, out var t) ? t : zone.Tier;

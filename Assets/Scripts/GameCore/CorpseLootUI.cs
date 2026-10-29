@@ -33,6 +33,7 @@ namespace GameCore
         private void OpenInternal(HumanEnemy corpse)
         {
             if (corpse == null) return;
+            Boss.Looted(corpse);   // Boss 1: a few seconds later, his smoke grenade
             _corpse = corpse;
             BuildPanelIfNeeded();
             if (_panel == null) return; // no Canvas in the scene - already warned in BuildPanelIfNeeded

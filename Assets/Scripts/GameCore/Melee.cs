@@ -191,6 +191,7 @@ namespace GameCore
         /// <summary>Damage from a swing or a throw that lands: the old armor math, limb health, bleeding or a concussion.</summary>
         public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side, FxEvent fx = null, float mult = 1f)
         {
+            if (target is Player tp && Parry.Try(tp, by) != Parry.Result.None) { if (fx != null) fx.Hit = false; return; }   // Boss 1: parried or blocked
             var st = For(w);
             float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * Ballistics.PartMult(part ?? "Torso") * mult;
             if (target is Mutant tm0 && !tm0.IsAggroed) raw *= 1.3f;                      // they never saw it coming
@@ -201,6 +202,7 @@ namespace GameCore
             int dmg = CombatRules.PhysicalDamage(raw, "Standard", dr, w.Db?.IgnorePhysDRPercent ?? 0f);
             int before = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - dmg);
+            Boss.OnDamaged(target);                                                       // Boss 1: a boss at 0 breaks, he doesn't die
             if (fx != null) { fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before; }   // the view plays blood, the fall, gibs
             GameLog.Write($"{(by is Player ? "You hit" : by.Name + " hits")} {(target is Player ? "you" : target.Name)} in the {(part ?? "body").ToLowerInvariant()} for {dmg}.");
             TestingGround.Note(target, dmg, part ?? "Torso");

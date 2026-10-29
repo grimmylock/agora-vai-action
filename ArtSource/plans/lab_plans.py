@@ -114,6 +114,23 @@ LABS = {
     "maintenance_tunnels":  dict(seed=206, h=40, kinds=("plant", "store", "store"), hall="plant", caves=3, scenes=3, lit=0.2),
 }
 
+def visor_wing(rows):
+    """Boss 1 (ACTION_DESIGN "Melee", the Tactical Hatchet): Lab Beta's secret wing. A cracked stretch of wall (Z) on the east
+    side of the south-west rooms, a long dark corridor behind it through the rock, and a small room at the end where a body in
+    black armour lies with the hatchet in it (V). Added after the reachability check: it's sealed until the wall is broken."""
+    g = [list(r) for r in rows]
+    y = 31
+    wall = next(x for x in range(30, 60) if g[y][x] == '#' and g[y][x - 1] != '#')        # the first wall east of the room
+    assert all(g[yy][xx] == '#' for yy in range(29, 35) for xx in range(wall + 1, 69)), "the rock isn't solid there"
+    g[y][wall] = 'Z'
+    for x in range(wall + 1, 58): g[y][x] = '.'                                            # the corridor, 1 wide, unlit
+    g[y][wall + 9] = 'e'; g[y][wall + 15] = '*'                                             # one red light half way, old blood
+    for yy in range(30, 34):
+        for x in range(58, 67): g[yy][x] = '.'                                             # the room at the end
+    g[30][58] = '%'; g[33][66] = '%'; g[30][59] = 'x'; g[33][58] = 'x'; g[30][66] = 'e'
+    g[31][63] = 'V'; g[31][62] = '*'; g[32][63] = '*'
+    return ["".join(r) for r in g]
+
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     for name, kw in LABS.items():
@@ -123,4 +140,5 @@ if __name__ == "__main__":
         assert any('G' in row for row in rows), name
         print(name, p.w, "x", p.h, "walkable", n, "unreachable", len(cut), cut[:6])
         assert not cut, (name, cut)
+        if name == "secret_lab_beta": rows = visor_wing(rows)
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))

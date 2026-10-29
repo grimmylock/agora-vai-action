@@ -106,7 +106,23 @@ Melee's place: ambushes round corners, unseen camp massacres, parrying mutants -
 **Melee slot (Yan, 2026-10-20, for the inventory/equipment UI):** a dedicated melee slot beside the two weapon slots, so everyone
 always has at least a knife (for parrying). A throwing build can still put more melee weapons in the weapon slots.
 
-To-do (Yan): the Tactical Hatchet's corpse gets up when you take the hatchet and fights you in melee - you parry him with it.
+**Built (Boss 1, 2026-10-29):** the Tactical Hatchet's corpse gets up when you take the hatchet and fights you in melee - you
+parry him with it. Secret Lab Beta's south-west rooms have a cracked wall (E breaks it), a long dark corridor, and the room where
+"The Visor" lies; also on the Testing Ground (Humans tab, BOSS row).
+
+## Parry and bosses (Boss 1, Yan 2026-10-29: the baseline for every boss fight; "HYPE MOMENTS AND AURA")
+
+- **Parry: F** (rebindable in Options; search moved to G), with a melee weapon in hand, against any human's melee hit. The first
+  0.12 s of the guard is a **perfect parry** (no damage, the attacker staggers 1 s, a hit-stop, sparks, Focus); later in the 0.35 s
+  window it's **blocked** (no damage). 0.45 s cooldown. The Serrated Trench Knife's windows are x1.5.
+- **Bosses** (`Boss.cs`, a reusable framework): telegraphed moves - a **white glint** = parry it, a **red glint** = it can't be
+  parried, dive or step out. Combos. Bullets glance off unless he's staggered (the parry is the way in, your gun the punish).
+  Phase 2 at half health (aura, a sting, faster, new moves). No posture bar (Yan: posture only makes sense in boss duels).
+  At 0 HP he breaks: **E next to him = the finisher** (slow motion, the camera, the blood). Once he's looted, a smoke grenade and
+  the body is gone (Yan).
+- A name card when the fight starts, his health bar with a draining chunk, STAGGERED / FINISH HIM, procedural sounds (parry,
+  perfect parry, glints, the sting, the finisher, the smoke).
+- Not yet: mutants' claws can't be parried (they don't go through `Melee.Strike`); finishers on normal enemies; the melee slot.
 
 ## Weight and stamina
 
