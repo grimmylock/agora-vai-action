@@ -34,6 +34,7 @@ namespace GameCore
             public float Mult = 1f;        // x the weapon's damage
             public int Weight = 1;         // how often he picks it
             public bool Phase2Only;
+            public int[] Poses = { 0 };    // Visor 2: his pose for each hit (HeldPoseMath's Visor moves), in order, wrapping
         }
 
         public class Def
@@ -80,11 +81,14 @@ namespace GameCore
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = new[]
             {
-                new Move { Name = "Slash", Wind = 0.6f, Weight = 3 },
-                new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2 },
-                new Move { Name = "Lunge", Wind = 0.75f, Danger = true, Lunge = 5f, Mult = 1.4f, Weight = 1 },
-                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true },
-                new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true },
+                // Visor 2: each move strings his own poses (backhand 0, rising 1, ice-pick 2, thrust 3, spin 4, execution 5)
+                new Move { Name = "Slash", Wind = 0.6f, Weight = 2, Poses = new[] { 0 } },
+                new Move { Name = "Ice pick", Wind = 0.7f, Weight = 1, Mult = 1.15f, Poses = new[] { 2 } },
+                new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2, Poses = new[] { 0, 1, 2 } },
+                new Move { Name = "Lunge", Wind = 0.75f, Danger = true, Lunge = 5f, Mult = 1.4f, Weight = 1, Poses = new[] { 3 } },
+                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 0, 1, 4, 0, 2 } },
+                new Move { Name = "Whirlwind", Wind = 0.55f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 } },
+                new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 } },
             },
         };
 
@@ -109,6 +113,10 @@ namespace GameCore
         public static void Tick(Fight f, Player p)
         {
             var h = f.Unit; float now = Time.time;
+            // Visor 2: his wind-up is held through the glint, and the strike starts just before the hit lands
+            var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def == Visor ? HeldPoseMath.VisorPoses : null;
+            if (f.Doing == null) mc.SwingFrom = -1f;
+            else if (mc.SwingFrom >= 0f && now >= f.StrikeAt - HeldPoseMath.ChopTime) { float held = now - mc.SwingFrom; mc.SwingFrom = -1f; mc.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp); }
             if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
             if (now < f.StaggerUntil) return;
@@ -141,15 +149,23 @@ namespace GameCore
             if (now < f.StrikeAt) return;
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
-            if (--f.HitsLeft > 0) { f.StrikeAt = now + f.Doing.Gap * speed; Glint(f, f.Doing.Danger); return; }
+            if (--f.HitsLeft > 0) { f.StrikeAt = now + f.Doing.Gap * speed; Glint(f, f.Doing.Danger); WindPose(f, now); return; }
             f.Doing = null; f.NextMoveAt = now + f.Def.Recover * speed * Random.Range(0.8f, 1.3f);
         }
 
-        static void Begin(Fight f, Move m, float now, float speed)
+        internal static void Begin(Fight f, Move m, float now, float speed)
         {
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
-            Glint(f, m.Danger);
+            Glint(f, m.Danger); WindPose(f, now);
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
+        }
+
+        /// <summary>Visor 2: the next hit's pose winds up (from wherever the last hit left the knife, in a combo).</summary>
+        static void WindPose(Fight f, float now)
+        {
+            var mc = Melee.ChargeOf(f.Unit); var m = f.Doing; int i = m.Hits - f.HitsLeft;
+            mc.From = i > 0 ? now - mc.SwungAt : -1f;
+            mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now;
         }
 
         static void Glint(Fight f, bool danger)
@@ -166,7 +182,6 @@ namespace GameCore
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
-            var mc = Melee.ChargeOf(h); mc.Move = 1; mc.From = -1f; mc.SwungAt = Time.time - HeldPoseMath.WindUp - HeldPoseMath.ChopTime;   // his pose is at the strike (his own moveset: to do)
             if (m.Danger && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }   // the dive goes under it
             if (h.EquippedWeapon == null) return;
             Parry.Unparryable = m.Danger;

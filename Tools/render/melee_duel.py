@@ -21,7 +21,13 @@ CAP, SMALL = font("PixelifySans-SemiBold.ttf", 26), font("PixelifySans-SemiBold.
 atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
 def body(i): i = max(0, i); return atlas.crop(((i % 16) * 16, (i // 16) * 16, (i % 16) * 16 + 16, (i // 16) * 16 + 16))
 ai, acuff, aglove, ri, rcuff, rglove = d["armor"]
-PB, RB = body(ai), body(ri).transpose(Image.FLIP_LEFT_RIGHT)
+PB, RB = body(ai), body(ri)                                                   # the game never mirrors a human body
+POSES = {}
+def posed(i, key, base):
+    """Melee 3: the swing's body frame (armor_pose_<key>.png, the armor atlas's layout), or the standing cell."""
+    if not key: return base
+    if key not in POSES: POSES[key] = Image.open(os.path.join(SPR, f"armor_pose_{key}.png")).convert("RGBA")
+    i = max(0, i); return POSES[key].crop(((i % 16) * 16, (i // 16) * 16, (i % 16) * 16 + 16, (i // 16) * 16 + 16))
 MACHETE = Image.open(os.path.join(SPR, "Weapons/weapon_SteppeMachete.png")).convert("RGBA")
 KNIFE = Image.open(os.path.join(SPR, "Weapons/weapon_HuntingKnife.png")).convert("RGBA")
 def fx(n, k=3): im = Image.open(os.path.join(SPR, f"Fx/{n}.png")).convert("RGBA"); w = im.width // k; return [im.crop((i * w, 0, i * w + w, im.height)) for i in range(k)]
@@ -44,7 +50,7 @@ def tint(img, col, k):
     return im
 
 def unit(c, bod, weapon, g, fr, fist, free, tx, ty, flash=0.0, flip=False):
-    gx, gy, deg, hx, hy, sx, sy, sup, left, lean, hdeg, length = fr
+    gx, gy, deg, hx, hy, sx, sy, sup, left, lean, hdeg, length = fr[:12]
     L = Image.new("RGBA", (64 * Z, 64 * Z)); o = 24 * Z                     # the unit on its own layer, turned by its lean
     b = tint(bod, (255, 90, 80), flash) if flash > 0 else bod
     L.alpha_composite(b.resize((16 * Z, 16 * Z), Image.NEAREST), (o, o))
@@ -98,12 +104,12 @@ def draw(i):
             puff(X, Y - 4 * Z, BLOOD, (180, 30, 40), 0.22, 2.4, t); burst(X, Y - 4 * Z, (150, 20, 28), 10, 160, 0.35, t, i)
             hurt["p" if byr else "r"] = t; pool.append((X + random.Random(i).uniform(-8, 8) * Z / 4, Y + 6 * Z))
     for X, Y in pool: dd.ellipse((X - 3 * Z, Y - Z, X + 3 * Z, Y + Z), fill=(110, 18, 24, 200))
-    def drawp(): unit(c, PB, MACHETE, d["gm"], f["pf"], PG, PS, px, py, max(0, 1 - (t - hurt.get("p", -9)) / 0.15) * 0.7)
+    def drawp(): unit(c, posed(ai, f["pf"][12], PB), MACHETE, d["gm"], f["pf"], PG, PS, px, py, max(0, 1 - (t - hurt.get("p", -9)) / 0.15) * 0.7)
     def drawr():
         if not ralive:
             lying = RB.resize((16 * Z, 16 * Z), Image.NEAREST).rotate(-90, expand=True, resample=Image.NEAREST)
             c.alpha_composite(lying, (int(RX - lying.width / 2), int(RY + 2 * Z - lying.height / 2))); return
-        unit(c, RB, KNIFE, d["gk"], f["rf"], RG, RS, rx, ry, max(0, 1 - (t - hurt.get("r", -9)) / 0.15) * 0.7)
+        unit(c, posed(ri, f["rf"][12], RB), KNIFE, d["gk"], f["rf"], RG, RS, rx, ry, max(0, 1 - (t - hurt.get("r", -9)) / 0.15) * 0.7)
     for _, fn in sorted([(py, drawp), (ry, drawr)], key=lambda r: r[0]): fn()
     keep = []
     for pr in parts:

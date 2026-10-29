@@ -30,6 +30,15 @@ atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
 ai = max(0, d["armor"]); pbody = atlas.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16))
 vstrip = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit.png")).convert("RGBA")
 vcell = [vstrip.crop((i * 16, 0, i * 16 + 16, 16)) for i in range(6)]
+# Melee 3: the swing's body frames - his from the unique strip (front row), yours from armor_pose_<key>.png
+PKEYS = ["crouch_h", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
+vposes = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit_poses.png")).convert("RGBA")
+def vpose(key, base): return vposes.crop((PKEYS.index(key) * 16, 0, PKEYS.index(key) * 16 + 16, 16)) if key else base
+PP = {}
+def ppose(key, base):
+    if not key: return base
+    if key not in PP: PP[key] = Image.open(os.path.join(SPR, f"armor_pose_{key}.png")).convert("RGBA").crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16))
+    return PP[key]
 hatchet = Image.open(os.path.join(SPR, "Weapons/weapon_TacticalHatchet.png")).convert("RGBA")
 knife = Image.open(os.path.join(SPR, "Weapons/weapon_SerratedTrenchKnife.png")).convert("RGBA")
 def fx(n, k=3): im = Image.open(os.path.join(SPR, f"Fx/{n}.png")).convert("RGBA"); w = im.width // k; return [im.crop((i * w, 0, i * w + w, im.height)) for i in range(k)]
@@ -73,9 +82,15 @@ def unit(canvas, body, weapon, g, fr, glv, tx, ty, pose=(0, 0, 1, 1, 1), flash=0
     b = tint(body, (255, 90, 80), flash) if flash > 0 else body
     layer.alpha_composite(b.resize((16 * Z, 16 * Z), Image.NEAREST), (72 - 8 * Z, 72 - 8 * Z))
     if weapon is not None:
+        if len(fr) > 11 and fr[11] < 0.99: weapon = weapon.resize((max(1, round(weapon.width * fr[11])), weapon.height), Image.NEAREST); g = (g[0] * fr[11], g[1])   # a sweep foreshortens
         place_weapon(layer, weapon, g, fr)
         gl = glv.transpose(Image.FLIP_LEFT_RIGHT) if fr[8] else glv
+        if len(fr) > 10: gl = gl.rotate(fr[10], expand=True, resample=Image.NEAREST)          # the fist turns with the swing
         layer.alpha_composite(gl, (int(round(72 + Z * (fr[3] - 8) - gl.width / 2)), int(round(72 + Z * (fr[4] - 8) - gl.height / 2))))
+        if fr[7]:                                                                                 # the free hand (guard, or on a two-handed handle)
+            sg = glv.resize((4 * Z, 3 * Z), Image.NEAREST); sg = sg if fr[8] else sg.transpose(Image.FLIP_LEFT_RIGHT)
+            layer.alpha_composite(sg, (int(round(72 + Z * (fr[5] - 8) - sg.width / 2)), int(round(72 + Z * (fr[6] - 8) - sg.height / 2))))
+    if len(fr) > 9: tilt = tilt + fr[9]                                                          # the body leans with the swing
     if sx != 1 or sy != 1: layer = layer.resize((max(1, round(144 * sx)), max(1, round(144 * sy))), Image.NEAREST)
     rot = layer.rotate(tilt, resample=Image.NEAREST, expand=True)
     canvas.alpha_composite(rot, (int(round(gx - rot.width / 2)), int(round(gy - lift * 16 * Z - rot.height / 2))))
@@ -140,7 +155,7 @@ def draw(i):
     last_pos["p"], last_pos["b"] = (round(px_, 2), round(py_, 2)), (round(bx, 2), round(by, 2))
     def drawp():
         pose = f["pose"]; fl = max(0.0, 1 - (t - hurt.get("p", -9)) / 0.15) * 0.7
-        unit(c, pbody, hatchet, d["gh"], f["pf"], PGLOVE, px_, py_, pose, fl)
+        unit(c, ppose(f["pf"][12] if len(f["pf"]) > 12 else "", pbody), hatchet, d["gh"], f["pf"], PGLOVE, px_, py_, pose, fl)
     def drawb():
         global dead_at
         if gone: return
@@ -150,7 +165,7 @@ def draw(i):
             c.alpha_composite(pool, (int(hx - pool.width / 2), int(hy + 2 * Z - pool.height / 2)))
             lying = vcell[0].resize((16 * Z, 16 * Z), Image.NEAREST).rotate(90 if px_ > bx else -90, resample=Image.NEAREST, expand=True)
             c.alpha_composite(lying, (int(hx - lying.width / 2), int(hy + 3 * Z - lying.height / 2))); return
-        cell = vcell[(1 + int(t / 0.15) % 2) if bmoved else 0]
+        cell = vpose(f["bf"][12] if len(f["bf"]) > 12 else "", vcell[(1 + int(t / 0.15) % 2) if bmoved else 0])
         fl = max(0.0, 1 - (t - hurt.get("b", -9)) / 0.15) * 0.7
         if broken: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by + 0.12, (0, -8, 1, 0.9, 1), fl)   # on one knee
         else: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by, (0, 0, 1, 1, 1), max(fl, 0.25 if stag else 0), jitter=(Z if stag and i % 2 else 0))

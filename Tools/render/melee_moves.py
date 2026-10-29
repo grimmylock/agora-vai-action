@@ -16,6 +16,15 @@ def main(src, out):
     atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
     ai, acuff, aglove = d["armor"]
     body = atlas.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)
+    if "body" in d: body = Image.open(os.path.join(SPR, d["body"])).convert("RGBA").crop((0, 0, 16, 16)).resize((16 * S, 16 * S), Image.NEAREST)   # a unique suit's front cell
+    PKEYS = ["crouch_h", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
+    def posed(key):                                                  # Melee 3: the swing's body frame
+        if not key: return body
+        if "body" in d:
+            strip = Image.open(os.path.join(SPR, d["body"][:-4] + "_poses.png")).convert("RGBA"); i = PKEYS.index(key)
+            return strip.crop((i * 16, 0, i * 16 + 16, 16)).resize((16 * S, 16 * S), Image.NEAREST)
+        im = Image.open(os.path.join(SPR, f"armor_pose_{key}.png")).convert("RGBA")
+        return im.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)
     fist = big_glove(acuff, aglove).resize((5 * S, 4 * S), Image.NEAREST)
     other = glove(acuff, aglove).resize((4 * S, 3 * S), Image.NEAREST)
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
@@ -23,11 +32,13 @@ def main(src, out):
     cols = []
     for wpn in d["weapons"]:
         img = Image.open(os.path.join(SPR, f"Weapons/weapon_{wpn['key']}.png")).convert("RGBA")
-        title, moves = NAMES[wpn["key"]]
+        title, moves = (wpn["title"], wpn["moves"]) if "title" in wpn else NAMES[wpn["key"]]
         fr = []
-        for gx, gy, deg, hx, hy, sup, sx, sy, lean, move, swinging, length, hdeg in wpn["frames"]:
+        for frm in wpn["frames"]:
+            gx, gy, deg, hx, hy, sup, sx, sy, lean, move, swinging, length, hdeg = frm[:13]; glint = frm[13] if len(frm) > 13 and not isinstance(frm[13], str) else 0
+            bkey = frm[14] if len(frm) > 14 else (frm[13] if len(frm) > 13 and isinstance(frm[13], str) else "")
             c = Image.new("RGBA", (W, W + 40), BG); ub = 16 * S
-            u = Image.new("RGBA", (W, W)); u.alpha_composite(body, (ub, ub))
+            u = Image.new("RGBA", (W, W)); u.alpha_composite(posed(bkey), (ub, ub))
             wi = img if length > 0.99 else img.resize((max(1, round(img.width * length)), img.height), Image.NEAREST)   # a sweep foreshortens
             paste(u, wi, (wpn["grip"][0] * length, wpn["grip"][1]), (ub + gx * S, ub + gy * S), deg)
             fz = fist.rotate(hdeg, expand=True, resample=Image.NEAREST)            # the fist turns with the swing
@@ -37,7 +48,10 @@ def main(src, out):
             c.alpha_composite(u, (0, 40))
             dr = ImageDraw.Draw(c)
             dr.text((8, 4), title, font=font, fill=(235, 235, 235))
-            dr.text((8, 22), moves[move % len(moves)] if swinging else "stance", font=font, fill=(240, 200, 90) if swinging else (180, 180, 180))
+            dr.text((8, 22), moves[move % len(moves)] if swinging or "title" in wpn else "stance", font=font, fill=(240, 200, 90) if swinging else (180, 180, 180))
+            if glint:                                                                 # the glint over the blade: white = parry it, red = dodge
+                gxp, gyp = ub + gx * S, ub + gy * S + 40 - 3 * S
+                dr.ellipse((gxp - 9, gyp - 9, gxp + 9, gyp + 9), fill=(255, 60, 40) if glint == 2 else (255, 255, 230))
             fr.append(c)
         cols.append(fr)
     n = max(len(f) for f in cols)
@@ -49,7 +63,12 @@ def main(src, out):
     frames[0].save(os.path.join(out, "melee_moves.gif"), save_all=True, append_images=frames[1:], duration=33, loop=0)
     # the sheet: per weapon, the stance and each move's wound-up and end-of-strike frames
     rows = []
-    for wpn, fr in zip(d["weapons"], cols):
+    if "title" in d["weapons"][0]:                     # a boss's moveset: a row per move, every 3rd frame from the glint to the end
+        wpn, fr = d["weapons"][0], cols[0]
+        for mi in range(len(wpn["moves"])):
+            idx = [i for i, f in enumerate(wpn["frames"]) if f[9] == mi and f[10]]
+            if idx: rows.append(fr[idx[0]:idx[-1] + 4:3][:14])
+    for wpn, fr in ([] if rows else zip(d["weapons"], cols)):
         picks, last = [fr[5]], None
         for i, f in enumerate(wpn["frames"]):
             if f[10] and f[9] != last: last = f[9]; picks += [fr[i + 3], fr[i + 6], fr[min(i + 9, len(fr) - 1)]]   # wound up, strike, follow-through

@@ -103,7 +103,9 @@ def build(name, back=False):
     tier, phys, anom, belt = next((a[1], a[2], a[3], a[4]) for a in av.ARMORS if a[0] == name)
     return av.build(name, anom, belt, back=back)
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "atlas":
+    pass
+elif __name__ == "__main__":
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
     bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
     S = 6; CELL = 16 * S; GAP = 14
@@ -135,3 +137,51 @@ if __name__ == "__main__":
         b5 = im.resize((im.width * 5, im.height * 5), Image.NEAREST)
         sheet.alpha_composite(b5, (x + 18, y + 80 - b5.height + 10))
     out = os.path.join(HERE, "_out", "poses_preview.png"); sheet.save(out); print("wrote", out, len(names), "poses")
+
+# ---- Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings, maybe that could add a little ding and pep")
+# The swing poses for every suit, laid out like armor_atlas.png / armor_back_atlas.png (UnitSprites slices them the same way):
+# armor_pose_<key>.png and armor_back_pose_<key>.png; a unique suit's strip gets armor_unique_<name>_poses.png (front row, back
+# row). Facing poses come twice: _r as drawn (leaning right) and _l from the mirrored suit, mirrored back (the armband stays put).
+#   python3 ArtSource/make_poses.py atlas [Sprites dir]
+GAME_POSES = [("crouch_h", "crouch 1/2", False), ("lunge_h", "lunge 1/2", True), ("lunge", "lunge", True),
+              ("stagger_h", "stagger 1/2", True), ("stagger", "stagger", True)]
+
+def cell_poses(cell):
+    """{key: 16x16} for one suit cell; None for an empty cell. The belt sits a row over where the legs split (make_walk_atlas)."""
+    import make_walk_atlas as wa
+    top = wa.leg_top(cell.load(), 0, 0)
+    if top is None: return None
+    heavy = top - 1 <= 10
+    P, M = poses(cell, heavy), poses(cell.transpose(Image.FLIP_LEFT_RIGHT), heavy)
+    out = {}
+    for key, name, facing in GAME_POSES:
+        if not facing: out[key] = P[name]; continue
+        out[key + "_r"] = P[name]; out[key + "_l"] = M[name].transpose(Image.FLIP_LEFT_RIGHT)
+    return out
+
+def atlas(sprites):
+    keys = None
+    for src, prefix in (("armor_atlas", "armor_pose"), ("armor_back_atlas", "armor_back_pose")):
+        a = Image.open(os.path.join(sprites, src + ".png")).convert("RGBA"); outs = {}
+        for oy in range(0, a.height, 16):
+            for ox in range(0, a.width, 16):
+                cp = cell_poses(a.crop((ox, oy, ox + 16, oy + 16)))
+                if cp is None: continue
+                for k, im in cp.items():
+                    outs.setdefault(k, Image.new("RGBA", a.size, (0, 0, 0, 0))).alpha_composite(im, (ox, oy))
+        for k, im in outs.items(): im.save(os.path.join(sprites, f"{prefix}_{k}.png"))
+        keys = sorted(outs)
+    for f in os.listdir(sprites):                                  # unique suits: front (cell 0) and back (cell 3) rows
+        if f.startswith("armor_unique_") and f.endswith(".png") and not f.endswith("_poses.png"):
+            s = Image.open(os.path.join(sprites, f)).convert("RGBA")
+            rows = [cell_poses(s.crop((c * 16, 0, c * 16 + 16, 16))) for c in (0, 3)]
+            out = Image.new("RGBA", (16 * len(keys), 32), (0, 0, 0, 0))
+            for r, cp in enumerate(rows):
+                for i, k in enumerate(keys):
+                    if cp: out.alpha_composite(cp[k], (i * 16, r * 16))
+            out.save(os.path.join(sprites, f[:-4] + "_poses.png"))
+    print("pose atlases:", ", ".join(keys))
+    return keys
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "atlas":
+    atlas(sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "..", "Assets", "Resources", "Sprites"))

@@ -18,7 +18,22 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { _hd = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; }
+        private static void ResetCaches() { _hd = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; _poses.Clear(); }
+
+        // Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings"): the swing poses of every suit
+        // (ArtSource/make_poses.py atlas): armor_pose_<key> / armor_back_pose_<key>, laid out like the armor atlases, plus a unique
+        // suit's armor_unique_<name>_poses strip (front row, back row). Keys: crouch_h, lunge_h_r/l, lunge_r/l, stagger_h_r/l, stagger_r/l.
+        public static readonly string[] PoseKeys = { "crouch_h", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r" };
+        private static readonly Dictionary<string, Dictionary<string, Sprite>> _poses = new Dictionary<string, Dictionary<string, Sprite>>();
+        public static Sprite Pose(ICombatant unit, string key, bool away)
+        {
+            if (key == null) return null;
+            Load();
+            var armor = unit is Player p ? p.EquippedArmor : unit is HumanEnemy h ? h.EquippedArmor : null;
+            string set = (away ? "armor_back_pose_" : "armor_pose_") + key;
+            if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
+            return armor != null && d.TryGetValue(armor.Name, out var s) ? s : null;
+        }
 
         /// <summary>Batch 128 (Yan: "add the back as well so the player can know which way the npc's are looking"): a unit
         /// whose aim (or gaze) from `from` to `to` goes up the screen shows its back - more than ~17 degrees above level.</summary>
@@ -114,6 +129,15 @@ namespace GameCore
             if (tex == null) return;
             var sets = new[] { _armor, _walkA, _walkB, _back, _backWalkA, _backWalkB };
             for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * Cell, 0, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
+            var poses = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_') + "_poses");
+            if (poses == null) return;
+            for (int r = 0; r < 2; r++)                                            // texture row 0 is the bottom: the back row
+                for (int i = 0; i < PoseKeys.Length; i++)
+                {
+                    string set = (r == 0 ? "armor_back_pose_" : "armor_pose_") + PoseKeys[i];
+                    if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
+                    d[name] = Sprite.Create(poses, new Rect(i * Cell, r * Cell, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
+                }
         }
 
         private static Dictionary<string, Sprite> Slice(string path, string[] order)

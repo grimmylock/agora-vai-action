@@ -54,16 +54,18 @@ namespace GameCore
         // Melee 2c (Yan chose "option 1": each swing its own hit shape, each weapon its own reach). Reach in tiles from your middle,
         // per kind of weapon (Tactical Hatchet: its own, Table); per move: reach x, arc (degrees in front), every body in it or only
         // the nearest, damage x. Same order as HeldPoseMath.Moves.
-        static readonly float[] BaseReach = { 1.3f, 1.45f, 1.75f };          // knife, one-handed, two-handed
+        static readonly float[] BaseReach = { 1.3f, 1.45f, 1.75f, 1.3f };    // knife, one-handed, two-handed, the Visor
         public static readonly (float reach, float arc, bool all, float dmg)[][] Shapes =
         {
             new[] { (1.2f, 40f, false, 1.1f), (1f, 100f, false, 1f), (1f, 100f, false, 1f) },        // stab: long, narrow; the slashes
             new[] { (1f, 70f, false, 1.15f), (0.95f, 150f, true, 0.85f) },                           // chop: narrow, harder; sweep: wide, all
             new[] { (1f, 60f, false, 1.25f), (1f, 160f, true, 0.85f), (1.05f, 90f, false, 1f) },     // slam; wide sweep; rising swing
+            // the Visor (damage stays his Boss.Move.Mult: x1): backhand, rising, ice-pick, thrust (long), spin (all round him), execution
+            new[] { (1f, 120f, false, 1f), (1f, 100f, false, 1f), (1f, 70f, false, 1f), (1.25f, 40f, false, 1f), (1f, 360f, true, 1f), (1.1f, 80f, false, 1f) },
         };
-        public static (float reach, float arc, bool all, float dmg) Shape(Weapon w, int move)
+        public static (float reach, float arc, bool all, float dmg) Shape(Weapon w, int move, ICombatant by = null)
         {
-            var st = HeldPoseMath.StyleOf(w?.Db != null ? KeyOf(w) : null); var row = Shapes[(int)st];
+            var st = HeldPoseMath.StyleOf(by != null && ChargeOf(by).PoseKey != null ? ChargeOf(by).PoseKey : w?.Db != null ? KeyOf(w) : null); var row = Shapes[(int)st];
             var m = row[((move % row.Length) + row.Length) % row.Length];
             return (For(w).Reach * m.reach, m.arc, m.all, m.dmg);
         }
@@ -92,7 +94,8 @@ namespace GameCore
             public int Move;                                    // Melee 2: which swing of the weapon's string this one is
             public float From = -1f;                            // how far into the last swing this one began (-1: from the stance)
             public bool Queued;                                 // clicked before the last swing let go: it starts the moment it can
-            public float GuardAt = -99f, BrokenAt = -99f;       // Melee 2d: the parry guard went up; his guard was broken by a perfect parry
+            public float GuardAt = -99f, BrokenAt = -99f;
+            public string PoseKey;                              // Visor 2: a boss's own pose and shape set (HeldPoseMath.VisorPoses), else his weapon's       // Melee 2d: the parry guard went up; his guard was broken by a perfect parry
             public void Next(float now)
             {
                 bool combo = now - SwungAt < HeldPoseMath.SwingLength + ComboGap;
@@ -196,7 +199,7 @@ namespace GameCore
         /// <summary>One swing: the nearest enemy within reach and inside the arc in front takes it.</summary>
         public static ICombatant Swing(ICombatant by, Weapon w, float dx, float dy, float h, float mult = 1f)
         {
-            var sh = Shape(w, ChargeOf(by).Move);                                         // Melee 2c: this swing's shape
+            var sh = Shape(w, ChargeOf(by).Move, by);                                         // Melee 2c: this swing's shape
             var (px, py) = Ballistics.Pos(by);
             var inside = new List<(ICombatant u, float d)>();
             foreach (var u in Gunplay.Targets(by))
@@ -233,7 +236,7 @@ namespace GameCore
         {
             float now = T; var c = ChargeOf(by);
             c.Move++; c.From = -1f; c.SwungAt = now;
-            if (by is HumanEnemy he && target is Player tp && CombatantUtil.IsAdjacent(he, tp)) Boss.StepIn(he, tp, 0.8f * Shape(w, c.Move).reach);   // from next to you, the swing comes with a step into reach
+            if (by is HumanEnemy he && target is Player tp && CombatantUtil.IsAdjacent(he, tp)) Boss.StepIn(he, tp, 0.8f * Shape(w, c.Move, by).reach);   // from next to you, the swing comes with a step into reach
             var (ox, oy) = Ballistics.Pos(by); var (tx, ty) = Ballistics.Pos(target);
             float dx = tx - ox, dy = ty - oy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy)); dx /= len; dy /= len;
             Pending.Add((now + HitDelay, by, w, dx, dy, 0.45f, 1f));

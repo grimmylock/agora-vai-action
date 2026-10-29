@@ -4248,3 +4248,24 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
     tiles. Glide now slides every jump of where an enemy stands; the duel sim runs it every frame like the view. Largest move per
     frame in the new render: 0.085 tiles; closest the bodies get: 0.73 (the push-out takes a moment).
   - Not checked in Unity.
+
+## Visor 2 and Melee 3 (2026-10-29)
+- Visor 2 (Yan: "now build the visor's own moveset, he can have some different animation combos"): his own pose set
+  (`HeldPoseMath.Style.Visor`, picked by `Melee.Charge.PoseKey = HeldPoseMath.VisorPoses`, not by his knife): a reverse-grip
+  stance (blade down along the forearm, low, crouched) and six swings - backhand, rising, ice-pick, thrust, spin (a full turn),
+  execution - each with its own hit shape (`Melee.Shapes` row 4: the spin hits all round him, the thrust reaches further; damage
+  stays his moves' Mult). `Boss.Move.Poses` strings them: Slash = backhand; Ice pick (new, x1.15) ; Flurry = backhand, rising,
+  ice-pick; Lunge (red) = thrust; Feint flurry (phase 2) = backhand, rising, spin, backhand, ice-pick; Whirlwind (new, phase 2) =
+  two spins; Execution (red) = execution. His wind-up is held through the glint (`WindPose`, the Tick clears it a strike-length
+  before the hit), and a combo's next hit winds up from where the last left the knife.
+- Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings, maybe that could add a little ding and pep"):
+  `ArtSource/make_poses.py atlas` makes the swing poses for every suit, laid out like the armor atlases: armor_pose_<key>.png and
+  armor_back_pose_<key>.png (crouch_h, lunge_h, lunge, stagger_h, stagger; the leaning ones as _r and _l, the _l from the mirrored
+  suit so the armband stays on its side), and armor_unique_<suit>_poses.png. `UnitSprites.Pose`. `HeldFrame.Body`
+  (`HeldPoseMath.BodyPose`): half crouch on the wind-up, a charge, a throw's lift and the parry guard; half then full lunge on the
+  strike and follow-through, half on the way back; stagger when the guard is broken. TacticalGridView swaps it in after the walk
+  frame. The poses are the generated prototype frames Yan saw on 2026-10-29 (not hand-touched yet).
+- Renders: `dotnet /tmp/test.dll visormoves v.json` + `melee_moves.py` -> `maps/renders/boss/visor_moves/` (every move through the
+  real Boss.Begin/Tick); melee_moves, melee_duel and boss_duel re-rendered with the body frames. The duel renderer no longer
+  mirrors the Raider's body (the game never does).
+- Not checked in Unity: the new PNGs import through the Sprites folder's importer like armor_back_atlas.png (no .meta committed).

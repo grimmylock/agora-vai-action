@@ -725,6 +725,7 @@ namespace GameCore
             if (down) { marker.color = new Color(0f, 0f, 0f, 0f); return false; }
             int wf = up ? _motion.WalkFrame(u) : -1;
             if (wf >= 0 && UnitSprites.Walk(u, wf, away) is Sprite ws) marker.sprite = ws;
+            if (up && _held.TryGetValue(marker, out var hv) && UnitSprites.Pose(u, hv.BodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3: the swing's body frame
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))

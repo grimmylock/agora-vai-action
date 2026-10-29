@@ -10,6 +10,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
@@ -794,13 +795,13 @@ static class Program {
     Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Rt.Of(p).Focus = Rt.FocusMax;   // full Focus: it can dive his red moves
     var f = Boss.WakeVisor(p, px + 4, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
     var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
-    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)}]";
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
     var gh = WeaponArt.GripOf("melee", "TacticalHatchet"); var gk = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "");
     var sb = new System.Text.StringBuilder();
     sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#3d4148")
       + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + Boss.Visor.Hp + ",\"frames\":[");
-    float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f;
+    float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f; var moves = new List<string>();
     for (int k = 0; k < 30 * 120; k++) {
       float scale = UnityEngine.Time.timeScale, gdt = real * scale;
       UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
@@ -812,7 +813,7 @@ static class Program {
       if (f.Broken && !f.Finished) { if (dist > 1) { input.X = sx; input.Y = sy; } else { p.Ap = 4; InteractionEngine.AttemptInteract(p); } }
       else if (f.Finished) { if (lootAt < 0f) lootAt = now + 0.8f; if (now >= lootAt && f.LootedAt < 0f) Boss.Looted(v); if (f.Gone && end < 0f) end = UnityEngine.Time.unscaledTime + 2f; }
       else if (f.Doing != null) {
-        if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; }
+        if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; moves.Add(f.Doing.Name); }
         float left = f.StrikeAt - now;
         if (f.Doing.Danger) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
         else if (strike % 6 == 4) { }                                                  // this one it misses: the hit lands
@@ -837,9 +838,11 @@ static class Program {
       CombatFx.Pending.Clear();
       var pose = Rt.PoseOf(p); (mx, my) = Ballistics.Pos(p); (bx, by) = Ballistics.Pos(v);
       float aw = UnityEngine.Mathf.Atan2(-(by - my), bx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
-      var mc = Melee.ChargeOf(p); float swung = Math.Max(mc.SwungAt, parryAt);
-      var fp = HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, now - swung, 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f);
-      var fb = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, now - bossSwung, 1f, "none", 1, null, -1f, -1f, 99f);
+      var mc = Melee.ChargeOf(p); var vc = Melee.ChargeOf(v);                          // Visor 2: both drawn from their own charges, as the view does
+      var fp = HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, now - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f,
+        "TacticalHatchet", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
+      var fb = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, now - vc.SwungAt, 1f, "none", 1, null, vc.SwingFrom >= 0f ? now - vc.SwingFrom : -1f, -1f, 99f,
+        vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt);
       sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
         + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
         + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)}],\"bf\":{Fr(fb)}"
@@ -847,8 +850,44 @@ static class Program {
       if (end > 0f && UnityEngine.Time.unscaledTime >= end) break;
     }
     File.WriteAllText(path, sb.Append("]}").ToString());
-    Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}");
+    Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}: {string.Join(", ", moves)}");
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
+  }
+
+  // Visor 2: the Visor's whole moveset, one move after another, through the real Boss.Begin / Boss.Tick (glint, held wind-up,
+  // each hit's pose) against a player who just stands there (healed every frame) -> Tools/render/melee_moves.py
+  static void VisorMoves(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
+    EncounterState.Enemies.Clear();
+    var f = Boss.Spawn(Boss.Visor, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+    var g = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
+    var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"SerratedTrenchKnife\",\"title\":\"The Visor\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
+    sb.Append(string.Join(",", Boss.Visor.Moves.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
+    int k = 0;
+    for (int mi = 0; mi < Boss.Visor.Moves.Length; mi++) {
+      var m = Boss.Visor.Moves[mi];
+      for (int i = 0; i < 30 * 4; i++) {
+        float dt = 1f / 30f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.timeScale = 1f;
+        float now = UnityEngine.Time.time;
+        p.Hp = p.MaxHp; Body.Forget(p); v.Hp = v.MaxHp; f.Phase = m.Phase2Only ? 2 : 1; f.StaggerUntil = -1f;
+        v.X = px + 1; v.Y = py; p.X = px; p.Y = py;
+        if (i == 15) Boss.Begin(f, m, now, 1f);
+        if (i < 15) f.NextMoveAt = now + 10f;
+        Boss.Tick(f, p); Boss.TickAll(); Melee.Tick(dt); Rt.Glide(dt); CombatFx.Pending.Clear();
+        if (i > 15 && f.Doing == null && i > 30 * 3) break;
+        var c = Melee.ChargeOf(v); var (vx, vy) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
+        float aw = UnityEngine.Mathf.Atan2(-(my - vy), mx - vx) * UnityEngine.Mathf.Rad2Deg;
+        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, now - c.SwungAt, 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt);
+        sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\"]"));
+      }
+      f.Doing = null;
+    }
+    sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
+    File.WriteAllText(path, sb.ToString()); Console.WriteLine("visor moves -> " + path);
+    Rt.On = false; Boss.Reset(); Melee.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
   }
 
   // Melee 2c: you (a bot on the real controls: Rt.PlayerTick with an Rt.Input) with a machete against one ordinary Raider with a
@@ -866,7 +905,7 @@ static class Program {
     var r = new HumanEnemy("Raider", px + 4, py, "Raiders", "Veteran", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
     EncounterState.Enemies.Add(r); EncounterState.InCombat = true; Rt.SetOffset(r, 0f, 0f);
     var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
-    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)}]";
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
     var gm = WeaponArt.GripOf("melee", "SteppeMachete"); var gk = WeaponArt.GripOf("melee", "HuntingKnife");
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? ""), rar = Array.IndexOf(SpriteAtlasIndex.Armor, r.EquippedArmor?.Name ?? "Raider Jacket");
     var sb = new System.Text.StringBuilder();
@@ -951,7 +990,7 @@ static class Program {
         Melee.Tick(1f / 30f);
         var mc = Melee.ChargeOf(p);
         var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, -1f, 99f, keys[k], mc.Move, mc.From);
-        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(f.HasSupport ? 1 : 0)},{f.SupX},{f.SupY},{f.Lean},{mc.Move},{(t - mc.SwungAt < HeldPoseMath.SwingLength ? 1 : 0)},{(f.Length > 0f ? f.Length : 1f)},{f.HandDeg}]"));
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(f.HasSupport ? 1 : 0)},{f.SupX},{f.SupY},{f.Lean},{mc.Move},{(t - mc.SwungAt < HeldPoseMath.SwingLength ? 1 : 0)},{(f.Length > 0f ? f.Length : 1f)},{f.HandDeg},\"{f.Body}\"]"));
       }
       sb.Append("]}"); Melee.Now = -1f;
     }
