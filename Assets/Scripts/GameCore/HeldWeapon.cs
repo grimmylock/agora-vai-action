@@ -225,7 +225,12 @@ namespace GameCore
         public static (float off, float hx, float hy, float lean) Stance(Style st) => Stances[(int)st];
 
         /// <summary>The sweeps: the weapon turns flat round in front of you, so mid-strike it points at the camera.</summary>
-        public const float ArmArc = 3f, HandTurn = 0.6f;   // px the fist travels on its arc per radian-ish of swing; how much of the turn the wrist takes
+        public const float ArmArc = 3f, HandTurn = 0.6f;
+        // Melee 4 (Yan: "his combos still kind of blend into one another"): the strike is 0.08 s, too quick to read one swing from
+        // the next, so it leaves a smear - ghosts of the blade where it was SmearStep, 2x, 3x... s ago - through the strike and
+        // the start of the follow-through. Read from the pose math at those times, so it's the same at any frame rate.
+        public const float SmearStep = 0.025f; public const int SmearCount = 4;
+        public static bool Striking(float sinceSwing, float swingHold) => swingHold < 0f && sinceSwing >= WindUp && sinceSwing < WindUp + ChopTime + Follow * 0.6f;   // px the fist travels on its arc per radian-ish of swing; how much of the turn the wrist takes
         public static bool Sweep(Style st, int move) => st != Style.Knife && Wrap(st, move) == 1;
         static int Wrap(Style st, int move) => ((move % MoveCount(st)) + MoveCount(st)) % MoveCount(st);
 
@@ -638,6 +643,7 @@ namespace GameCore
     public class HeldWeaponView
     {
         private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels;
+        private readonly SpriteRenderer[] _smear = new SpriteRenderer[HeldPoseMath.SmearCount];   // Melee 4: the strike's ghosts
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
@@ -669,6 +675,7 @@ namespace GameCore
             _mag = Child(body, "Magazine", 1);
             _barrels = Child(body, "Barrels", 2);
             _gun2 = Child(body, "OffhandWeapon", 2);
+            for (int i = 0; i < _smear.Length; i++) _smear[i] = Child(body, "Smear" + i, 0);
         }
 
         // RT 7z-c (Gunslinger): the left-hand pistol - its own sprite, recoil and muzzle. Effects pick a gun with Use(weapon).
@@ -744,6 +751,7 @@ namespace GameCore
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
             bool on = visible && weapon?.Db != null; BodyPose = null;
+            foreach (var sm in _smear) sm.gameObject.SetActive(false);
             _w2 = on ? offhand : null;
             _gun2.gameObject.SetActive(_w2?.Db != null);
             _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false);
@@ -780,12 +788,27 @@ namespace GameCore
             // turned frame, so the guns still point at the target instead of turning with the body
             float bodyTurn = _gun.transform.parent != null ? _gun.transform.parent.localEulerAngles.z : 0f;
             float local = Mathf.DeltaAngle(0f, _angle - bodyTurn);
-            var f = HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, mc != null ? now - mc.SwungAt : now - _swingAt,
+            float since = mc != null ? now - mc.SwungAt : now - _swingAt, hold = mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f;
+            HeldFrame At(float sw) => HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, sw,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
-                mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
+                hold, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
                 mc?.PoseKey ?? key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f,
                 mc != null ? Melee.T - mc.GuardAt : 99f, mc != null ? Melee.T - mc.BrokenAt : 99f);
+            var f = At(since);
+            bool smear = cat == "melee" && HeldPoseMath.Striking(since, hold);
+            for (int i = 0; i < _smear.Length; i++)
+            {
+                _smear[i].gameObject.SetActive(smear);
+                if (!smear) continue;
+                var gf = At(since - (i + 1) * HeldPoseMath.SmearStep);
+                _smear[i].sprite = sprite; _smear[i].flipY = gf.Left; _smear[i].sortingOrder = _base + (back ? -5 : 0);
+                _smear[i].transform.localPosition = Local(gf.GunX, gf.GunY);
+                _smear[i].transform.localRotation = Quaternion.Euler(0f, 0f, gf.GunDeg);
+                _smear[i].transform.localScale = new Vector3(gf.Length > 0f ? gf.Length : 1f, 1f, 1f);
+                var col = mc != null && mc.Red ? new Color(1f, 0.25f, 0.18f) : new Color(1f, 0.97f, 0.88f);
+                col.a = 0.55f * (1f - i / (float)_smear.Length); _smear[i].color = col;   // ponytail: tinted, not a white silhouette (needs a shader)
+            }
             Lean = f.Lean; BodyPose = cat == "melee" ? f.Body : null;
 
             var (body, mag) = WeaponArt.Mag(cat, key);

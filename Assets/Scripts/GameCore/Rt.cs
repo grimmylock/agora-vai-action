@@ -51,7 +51,7 @@ namespace GameCore
                     if (Mathf.Abs(jx) <= 2.5f && Mathf.Abs(jy) <= 2.5f) { sx += jx; sy += jy; } else { sx = 0f; sy = 0f; }   // a jump far off is a teleport
                     Was[e] = (bx, by);
                 }
-                float len = Mathf.Sqrt(sx * sx + sy * sy), step = RtAi.Speed(e) * 1.15f * dt;
+                float len = Mathf.Sqrt(sx * sx + sy * sy), step = Mathf.Max(RtAi.Speed(e) * 1.15f, len > 1.2f ? len / RushTime : 0f) * dt;   // a lunge rushes (game time: bullet time slows it too)
                 if (len <= step || !e.IsAlive()) { sx = 0f; sy = 0f; } else { sx *= (len - step) / len; sy *= (len - step) / len; }
                 Slide[e] = (sx, sy);
             }
@@ -61,7 +61,8 @@ namespace GameCore
         public const float Walk = 2.6f, Sprint = 4.4f, Crouch = 1.3f, AimSlow = 0.65f;
         public const float StaminaMax = 100f, SprintDrain = 18f, StaminaRegen = 14f;
         public const float Radius = 0.22f;
-        public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;   // a human enemy re-thinks its plan every ~3 s (RtAi acts in between)
+        public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;
+        public const float RushTime = 0.12f;                          // Glide: a jump of more than 1.2 tiles (a lunge) closes in about this long   // a human enemy re-thinks its plan every ~3 s (RtAi acts in between)
 
         // Co-op groundwork (Yan: "if we decided to build for it from the start why are we building NOT for it?" - ACTION_DESIGN
         // "Co-op"): everything that belongs to one player's body and hands lives on that player, not in globals. The local player

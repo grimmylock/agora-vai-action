@@ -829,7 +829,7 @@ static class Program {
       if (!open && now > backUntil + 2.5f) backUntil = -1f;
       wasOpen = open;
       if (input.Parry) parryAt = now;
-      Rt.PlayerTick(p, input); Rt.WorldTick(p);
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); Rt.Glide(UnityEngine.Time.deltaTime);   // the view runs Glide every frame (game time): so does the sim
       var ev = new List<string>();
       foreach (var e in CombatFx.Pending) {
         bool byBoss = e.Actor == v;
@@ -840,13 +840,16 @@ static class Program {
       var pose = Rt.PoseOf(p); (mx, my) = Ballistics.Pos(p); (bx, by) = Ballistics.Pos(v);
       float aw = UnityEngine.Mathf.Atan2(-(by - my), bx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
       var mc = Melee.ChargeOf(p); var vc = Melee.ChargeOf(v);                          // Visor 2: both drawn from their own charges, as the view does
-      var fp = HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, now - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f,
+      float ph = mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, bh = vc.SwingFrom >= 0f ? now - vc.SwingFrom : -1f;
+      HeldFrame PAt(float sw) => HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, sw, 1f, "none", 1, null, ph, -1f, 99f,
         "TacticalHatchet", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
-      var fb = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, now - vc.SwungAt, 1f, "none", 1, null, vc.SwingFrom >= 0f ? now - vc.SwingFrom : -1f, -1f, 99f,
+      HeldFrame BAt(float sw) => HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, sw, 1f, "none", 1, null, bh, -1f, 99f,
         vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt);
+      var fp = PAt(now - mc.SwungAt); var fb = BAt(now - vc.SwungAt);
+      string psm = Smear(PAt, now - mc.SwungAt, ph), bsm = Smear(BAt, now - vc.SwungAt, bh);
       sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
         + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
-        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)}],\"bf\":{Fr(fb)}"
+        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)}],\"bf\":{Fr(fb)},\"ps\":{psm},\"bs\":{bsm},\"red\":{(vc.Red ? 1 : 0)}"
         + $",\"ev\":[{string.Join(",", ev)}],\"splash\":[\"{Boss.SplashTitle}\",\"{Boss.SplashSub}\",{F(UnityEngine.Time.unscaledTime - Boss.SplashAt)}],\"punch\":{F(Boss.Punch)},\"cut\":{(Story.InCutscene ? 1 : 0)}}}");
       if (end > 0f && UnityEngine.Time.unscaledTime >= end) break;
     }
@@ -895,6 +898,14 @@ static class Program {
   // knife, run by the real AI (Rt.WorldTick -> RtAi / EnemyAI), 30 frames a second. The bot reads his wind-up like a player would
   // (Melee.LandsIn) and parries: on the beat (perfect: his guard breaks, it punishes with a combo), once late (blocked), once not
   // at all (it takes the cut). -> Tools/render/melee_duel.py
+  // Melee 4: the strike's smear - the blade where it was SmearStep, 2x... s ago (as HeldWeaponView draws it), or [] outside a strike
+  static string Smear(Func<float, HeldFrame> at, float since, float hold) {
+    if (!HeldPoseMath.Striking(since, hold)) return "[]";
+    var parts = new List<string>();
+    for (int k = 1; k <= HeldPoseMath.SmearCount; k++) { var g = at(since - k * HeldPoseMath.SmearStep); parts.Add(FormattableString.Invariant($"[{g.GunX},{g.GunY},{g.GunDeg},{(g.Length > 0f ? g.Length : 1f)}]")); }
+    return "[" + string.Join(",", parts) + "]";
+  }
+
   static void MeleeDuel(string path) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f;

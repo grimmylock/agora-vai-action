@@ -18,7 +18,12 @@ Z = 3                                             # canvas px per character px
 X0, Y0, W, H = ox - 5.5, oy - 4.4, 14.0, 7.9      # the view, tiles
 OUT_W, OUT_H = int(W * 16 * Z * 2), int(H * 16 * Z * 2)
 world = Image.open(os.path.join(R, "Tools/render/_render/perimeter.png")).convert("RGBA")
-BG = world.crop((int(X0 * 16), int(Y0 * 16), int((X0 + W) * 16), int((Y0 + H) * 16))).resize((int(W * 16 * Z), int(H * 16 * Z)), Image.NEAREST)
+# Yan: "they went out of the screen during the duel": the view follows the fight, as the game's camera follows you - eased
+# toward the middle of the two of them (CAM_EASE a frame), the ground cropped from the world render under it each frame
+CAM_EASE = 0.08
+def ground(x0, y0):
+    return world.crop((int(round(x0 * 16)), int(round(y0 * 16)), int(round(x0 * 16)) + int(W * 16), int(round(y0 * 16)) + int(H * 16))).resize((int(W * 16 * Z), int(H * 16 * Z)), Image.NEAREST)
+BG = ground(X0, Y0)
 
 def hexc(h, a=255): v = int(h.lstrip("#"), 16); return ((v >> 16) & 255, (v >> 8) & 255, v & 255, a)
 def font(n, s): return ImageFont.truetype(os.path.join(FONTS, n), s)
@@ -73,7 +78,10 @@ def place_weapon(layer, sprite, g, fr):
     cx, cy = 72 + Z * (gx - 8), 72 + Z * (gy - 8)
     layer.alpha_composite(big, (int(round(cx - 120)), int(round(cy - 120))))
 
-def unit(canvas, body, weapon, g, fr, glv, tx, ty, pose=(0, 0, 1, 1, 1), flash=0.0, jitter=0):
+def smear_img(sprite, col, a):
+    """Melee 4: the smear's ghost of the blade - tinted, see-through."""
+    im = tint(sprite, col, 0.75); im.putalpha(im.getchannel("A").point(lambda v: v * a // 255)); return im
+def unit(canvas, body, weapon, g, fr, glv, tx, ty, pose=(0, 0, 1, 1, 1), flash=0.0, jitter=0, smear=(), red=False):
     lift, tilt, sx, sy, shadow = pose
     gx, gy = (tx - X0) * 16 * Z + jitter, (ty - Y0) * 16 * Z
     sw, sh = 12 * Z * shadow, 4 * Z * shadow; shy = gy + 7 * Z
@@ -81,6 +89,9 @@ def unit(canvas, body, weapon, g, fr, glv, tx, ty, pose=(0, 0, 1, 1, 1), flash=0
     layer = Image.new("RGBA", (144, 144))
     b = tint(body, (255, 90, 80), flash) if flash > 0 else body
     layer.alpha_composite(b.resize((16 * Z, 16 * Z), Image.NEAREST), (72 - 8 * Z, 72 - 8 * Z))
+    for k, sm in enumerate(smear or []):                                                         # the strike's smear, oldest faintest
+        sw = weapon if sm[3] > 0.99 else weapon.resize((max(1, round(weapon.width * sm[3])), weapon.height), Image.NEAREST)
+        place_weapon(layer, smear_img(sw, (255, 64, 46) if red else (255, 248, 225), int(150 * (1 - k / 4))), (g[0] * sm[3], g[1]), [sm[0], sm[1], sm[2]] + list(fr[3:]))
     if weapon is not None:
         if len(fr) > 11 and fr[11] < 0.99: weapon = weapon.resize((max(1, round(weapon.width * fr[11])), weapon.height), Image.NEAREST); g = (g[0] * fr[11], g[1])   # a sweep foreshortens
         place_weapon(layer, weapon, g, fr)
@@ -101,9 +112,9 @@ def burst(x, y, col, n, speed, life, size=1, t=0.0, seed=0):
     r = random.Random(seed)
     for _ in range(n):
         a = r.random() * math.tau; sp = speed * r.uniform(0.5, 1.2)
-        parts.append([x, y, math.cos(a) * sp, math.sin(a) * sp - 0.6, t, life * r.uniform(0.7, 1.2), col, size, 6.0, None, 1])
+        parts.append([x, y, math.cos(a) * sp, math.sin(a) * sp - 0.6, t, life * r.uniform(0.7, 1.2), col, size, 6.0, None, 1, X0, Y0])
 def puff(x, y, frames_, col, life, rise=0.0, scale=1.0, t=0.0):
-    parts.append([x, y, 0, -rise, t, life, col, 1, 0.0, frames_, scale])
+    parts.append([x, y, 0, -rise, t, life, col, 1, 0.0, frames_, scale, X0, Y0])
 
 WHITE, REDG, STEEL = (255, 255, 235), (255, 46, 36), (255, 236, 180)
 shake_at, shake_amp = -9.0, 0.0
@@ -116,7 +127,11 @@ dead_at = None; ghost = 1.0; prev_b = None; walk_t = {"p": 0.0, "b": 0.0}; last_
 def draw(i):
     global dead_at, ghost, prev_b
     f = frames[i]; t = f["rt"]
-    c = BG.copy(); dd = ImageDraw.Draw(c)
+    global X0, Y0
+    mx_, my_ = (f["p"][0] + f["b"][0]) / 2, (f["p"][1] + f["b"][1]) / 2
+    tx0, ty0 = mx_ - W / 2, my_ - H / 2 - 0.4
+    X0 += (tx0 - X0) * CAM_EASE; Y0 += (ty0 - Y0) * CAM_EASE
+    c = ground(X0, Y0); dd = ImageDraw.Draw(c)
     px_, py_, php, focus = f["p"]; bx, by, bhp, phase, broken, finished, gone, stag, danger = f["b"][:9]
     hx, hy = (bx - X0) * 16 * Z, (by - Y0) * 16 * Z
     pxs, pys = (px_ - X0) * 16 * Z, (py_ - Y0) * 16 * Z
@@ -155,7 +170,7 @@ def draw(i):
     last_pos["p"], last_pos["b"] = (round(px_, 2), round(py_, 2)), (round(bx, 2), round(by, 2))
     def drawp():
         pose = f["pose"]; fl = max(0.0, 1 - (t - hurt.get("p", -9)) / 0.15) * 0.7
-        unit(c, ppose(f["pf"][12] if len(f["pf"]) > 12 else "", pbody), hatchet, d["gh"], f["pf"], PGLOVE, px_, py_, pose, fl)
+        unit(c, ppose(f["pf"][12] if len(f["pf"]) > 12 else "", pbody), hatchet, d["gh"], f["pf"], PGLOVE, px_, py_, pose, fl, smear=f.get("ps"))
     def drawb():
         global dead_at
         if gone: return
@@ -168,12 +183,13 @@ def draw(i):
         cell = vpose(f["bf"][12] if len(f["bf"]) > 12 else "", vcell[(1 + int(t / 0.15) % 2) if bmoved else 0])
         fl = max(0.0, 1 - (t - hurt.get("b", -9)) / 0.15) * 0.7
         if broken: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by + 0.12, (0, -8, 1, 0.9, 1), fl)   # on one knee
-        else: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by, (0, 0, 1, 1, 1), max(fl, 0.25 if stag else 0), jitter=(Z if stag and i % 2 else 0))
+        else: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by, (0, 0, 1, 1, 1), max(fl, 0.25 if stag else 0), jitter=(Z if stag and i % 2 else 0), smear=f.get("bs"), red=f.get("red"))
     for _, fn in sorted([(py_, drawp), (by, drawb)], key=lambda r: r[0]): fn()
     # particles
     keep = []
     for pr in parts:
-        x, y, vx, vy, born, life, col, size, grav, frs, scale = pr
+        x, y, vx, vy, born, life, col, size, grav, frs, scale, cx0, cy0 = pr
+        x += (cx0 - X0) * 16 * Z; y += (cy0 - Y0) * 16 * Z                 # world-fixed: shift by how far the camera moved
         age = t - born
         if age < 0 or age > life: continue
         keep.append(pr)

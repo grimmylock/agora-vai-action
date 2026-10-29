@@ -4280,3 +4280,16 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
     executed in 51 s real, 6 stuns (18 perfect parries), phase 2 at 33 s. `maps/renders/boss/boss_duel.mp4` re-rendered with
     the guard counter.
   - Seen, not changed: the boss doesn't swing at a downed player (Melee.Swing skips downed targets) - he just stands over you.
+- Melee 4 (Yan: "they went out of the screen during the duel"; "his combos still kind of blend into one another"; "they are still
+  teleporting around a little in the videos, in game that won't happen right?"; "he also seem to be moving at normal speed during
+  the dive?"):
+  - Render camera: boss_duel.py now follows the fight (eased to the middle of the two), ground cropped per frame, effects stay put.
+  - Smear: every melee strike (yours, NPCs', the boss's) leaves ghosts of the blade 0.025/0.05/0.075/0.1 s back along its path
+    (`HeldPoseMath.Striking`/`SmearStep`/`SmearCount`, four SpriteRenderers in HeldWeaponView, read from the pose math so it's
+    frame-rate independent); red for a boss's red move (`Melee.Charge.Red`). ponytail: tinted ghosts, not a white silhouette.
+  - The teleporting in the boss video was the sim: it never ran Rt.Glide (the view does, on game time). Checked the data: during
+    the dive the clock was at 0.3 and he still jumped 1.9 tiles in one frame - in the game that step slides, slowed by bullet time.
+    The sim runs Glide now. A real issue found with it: a long lunge would slide at walking pace and arrive after its hit, so
+    Glide rushes jumps over 1.2 tiles (`Rt.RushTime` 0.12 s of game time, slowed by bullet time too). Largest move in a frame now:
+    0.39 tiles (a lunge at full speed).
+  - Not checked in Unity.

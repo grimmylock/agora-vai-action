@@ -168,7 +168,7 @@ namespace GameCore
         {
             var mc = Melee.ChargeOf(f.Unit); var m = f.Doing; int i = m.Hits - f.HitsLeft;
             mc.From = i > 0 ? now - mc.SwungAt : -1f;
-            mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now;
+            mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now; mc.Red = m.Danger;
         }
 
         static void Glint(Fight f, bool danger)

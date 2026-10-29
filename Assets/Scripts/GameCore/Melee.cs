@@ -95,6 +95,7 @@ namespace GameCore
             public float From = -1f;                            // how far into the last swing this one began (-1: from the stance)
             public bool Queued;                                 // clicked before the last swing let go: it starts the moment it can
             public float GuardAt = -99f, BrokenAt = -99f;
+            public bool Red;                                    // Melee 4: this swing can't be parried (a boss's red move): its smear is red
             public string PoseKey;                              // Visor 2: a boss's own pose and shape set (HeldPoseMath.VisorPoses), else his weapon's       // Melee 2d: the parry guard went up; his guard was broken by a perfect parry
             public void Next(float now)
             {
