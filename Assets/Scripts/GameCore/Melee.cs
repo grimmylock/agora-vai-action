@@ -69,7 +69,13 @@ namespace GameCore
         // RT 7e (Yan: "left click swings it, holding left click charges the swing for higher damage and can be held indefinitely,
         // right click 'aims' the throw and starts charging it, letting go throws it"; and a throw wind-up "like lifting it over the
         // player's head"). Per combatant: when each button went down, when the last swing started (for its pose), when it threw.
-        public class Charge { public float SwingFrom = -1f, ThrowFrom = -1f, SwungAt = -99f, ThrewAt = -99f; }
+        public class Charge
+        {
+            public float SwingFrom = -1f, ThrowFrom = -1f, SwungAt = -99f, ThrewAt = -99f;
+            public int Move;                                    // Melee 2: which swing of the weapon's string this one is
+            public void Next(float now) => Move = now - SwungAt < HeldPoseMath.SwingLength + ComboGap ? Move + 1 : 0;
+        }
+        public const float ComboGap = 0.4f;                    // click again within this of the last swing ending: the next move
         static readonly Dictionary<ICombatant, Charge> Charges = new Dictionary<ICombatant, Charge>();
         public static Charge ChargeOf(ICombatant u) { if (!Charges.TryGetValue(u, out var c)) Charges[u] = c = new Charge(); return c; }
         public const float FullSwingCharge = 1f, MaxSwingBonus = 0.75f;   // held a second past the wind-up: x1.75 damage
@@ -96,7 +102,7 @@ namespace GameCore
         {
             var c = ChargeOf(p); float now = T;
             if (Winding.ContainsKey(p)) return;                                           // mid-throw
-            if (left && c.SwingFrom < 0f && c.ThrowFrom < 0f && !(NextSwing.TryGetValue(p, out var ns) && now < ns)) c.SwingFrom = now;
+            if (left && c.SwingFrom < 0f && c.ThrowFrom < 0f && !(NextSwing.TryGetValue(p, out var ns) && now < ns)) { c.Next(now); c.SwingFrom = now; }
             if (!left && c.SwingFrom >= 0f)
             {
                 float held = now - c.SwingFrom; c.SwingFrom = -1f;
@@ -158,7 +164,7 @@ namespace GameCore
             var anim = CombatFx.Push("melee", p, null, w); anim.Now = true;                      // the wind-up starts now
             anim.ToX = p.X + Mathf.RoundToInt(dx * 2f); anim.ToY = p.Y + Mathf.RoundToInt(dy * 2f);
             Pending.Add((now + HitDelay, p, w, dx, dy, h, 1f));
-            ChargeOf(p).SwungAt = now;
+            ChargeOf(p).Next(now); ChargeOf(p).SwungAt = now;
         }
 
         /// <summary>One swing: the nearest enemy within reach and inside the arc in front takes it.</summary>

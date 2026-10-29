@@ -4191,3 +4191,18 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   (stand, crouch, kneel, sit, lean left/right, lunge, stagger, each with a 1/2 in-between, and lying), front and back, re-outlined.
   Sheet: `maps/renders/poses/poses_preview.png` (Leather Jacket and Black Visor Suit, x6, plus true size and x5).
 - Nothing in the game. Hands aren't posed yet (they float as now); that comes once Yan picks the poses.
+
+## Melee 2: stances and swing strings (2026-10-29)
+- Yan (with a screenshot of Leon vs Krauser, RE4): "melee should feel like the leon vs krauser fight from re4, the posing could too,
+  knifes can have stabs and slashes from up or down, hatchets can have horizontal and vertical sweeps, 2 handed melees can have
+  some different swings as well"; "they need a STANCE".
+- `HeldPoseMath` (HeldWeapon.cs): three styles (`StyleOf`: the four knives / 1 kg and up = two-handed / the rest), each with a
+  fighting stance instead of hanging the weapon at your side (knife out at chest height, hunched; hatchet raised; two-handed up
+  across the body) and a string of moves: knife stab / slash down / slash up, hatchet vertical chop / horizontal sweep (it turns
+  the other way, under the hands, and stays level), two-handed overhead slam / wide sweep / rising swing. `Chop(t, style, move)`
+  goes stance -> wound up -> strike -> follow-through -> stance. The other hand shows now: on the handle of a two-handed weapon, up
+  in a guard in front of the chest otherwise.
+- `Melee.Charge.Move` + `Next`: clicking again within 0.4 s of a swing ending gives the next move; a pause starts over. NPCs vary
+  theirs by swing time. Timing and damage unchanged (the hit still lands at the end of the strike).
+- Render: `dotnet /tmp/test.dll meleemoves m.json` + `Tools/render/melee_moves.py` -> `maps/renders/melee2/` (GIF and sheet).
+  Checks: `MeleeMoveChecks`. Not checked in Unity. Per-move damage/speed (a quick stab, a slow slam) not done: Yan's call.

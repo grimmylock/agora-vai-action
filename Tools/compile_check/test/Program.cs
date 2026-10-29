@@ -8,6 +8,7 @@ static class Program {
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
@@ -45,7 +46,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks();
+    BossChecks(); MeleeMoveChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -849,6 +850,33 @@ static class Program {
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
   }
 
+  // Melee 2: each kind of melee weapon in its stance, then its whole string of swings clicked through the real Melee.PlayerInput
+  // (each click within the combo gap is the next move), at 30 frames a second -> Tools/render/melee_moves.py
+  static void MeleeMoves(string path) {
+    var p = Arena(out int px, out int py); var sb = new System.Text.StringBuilder("{\"weapons\":[");
+    var keys = new[] { "HuntingKnife", "TacticalHatchet", "FireAxe" };
+    for (int k = 0; k < keys.Length; k++) {
+      Melee.Reset(); EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      p.EquipWeapon("melee", keys[k]); var w = p.EquippedWeapon; var g = WeaponArt.GripOf("melee", keys[k]);
+      int moves = HeldPoseMath.MoveCount(HeldPoseMath.StyleOf(keys[k]));
+      float every = HeldPoseMath.SwingLength + 0.15f; int n = (int)((0.5f + moves * every + 0.6f) * 30f);
+      sb.Append(FormattableString.Invariant($"{(k > 0 ? "," : "")}{{\"key\":\"{keys[k]}\",\"grip\":[{g[0]},{g[1]}],\"frames\":["));
+      for (int i = 0; i < n; i++) {
+        float t = i / 30f; Melee.Now = t;
+        float u = t - 0.5f; bool left = u >= 0f && u < moves * every && u % every < 2.5f / 30f;   // a quick click per move
+        Melee.PlayerInput(p, w, left, false, (px + 1.2f, py + 0.5f - 0.45f * Ballistics.BodyTiles));
+        Melee.Tick(1f / 30f);
+        var mc = Melee.ChargeOf(p);
+        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, -1f, 99f, keys[k], mc.Move);
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(f.HasSupport ? 1 : 0)},{f.SupX},{f.SupY},{f.Lean},{mc.Move},{(t - mc.SwungAt < HeldPoseMath.SwingLength ? 1 : 0)}]"));
+      }
+      sb.Append("]}"); Melee.Now = -1f;
+    }
+    var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit");
+    sb.Append(FormattableString.Invariant($"],\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\"]}}"));
+    System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee moves -> " + path);
+  }
+
   static void MeleeFrames(string path) {
     var p = Arena(out int px, out int py); Melee.Reset();
     p.EquipWeapon("melee", "TacticalHatchet");
@@ -979,6 +1007,21 @@ static class Program {
 
   // Boss 1: the parry (perfect / blocked / missed / cooldown / no melee / unparryable), the Visor's duel frame by frame (telegraphs,
   // a perfect parry staggers him, bullets glance off unless he's open, phase 2, he breaks at 0, the finisher, the smoke), his lab
+  // Melee 2: a stance and a string of swings per kind of weapon; clicks inside the combo gap walk the string, a pause starts it over
+  static void MeleeMoveChecks() {
+    Check(HeldPoseMath.StyleOf("HuntingKnife") == HeldPoseMath.Style.Knife && HeldPoseMath.StyleOf("FireAxe") == HeldPoseMath.Style.Heavy
+      && HeldPoseMath.StyleOf("TacticalHatchet") == HeldPoseMath.Style.Chop, "melee styles: knife / two-handed / one-handed");
+    Check(HeldPoseMath.Chop(99f, HeldPoseMath.Style.Knife) == HeldPoseMath.Stance(HeldPoseMath.Style.Knife), "out of a swing: the stance");
+    var c = new Melee.Charge(); c.Next(0f); c.SwungAt = 0f; c.Next(HeldPoseMath.SwingLength + 0.1f); c.SwungAt = HeldPoseMath.SwingLength + 0.1f;
+    Check(c.Move == 1, "a quick second click is the next move");
+    c.Next(c.SwungAt + HeldPoseMath.SwingLength + Melee.ComboGap + 0.5f); Check(c.Move == 0, "a pause starts the string over");
+    var a = HeldPoseMath.Chop(HeldPoseMath.WindUp + HeldPoseMath.ChopTime + 0.01f, HeldPoseMath.Style.Chop, 0);
+    var b = HeldPoseMath.Chop(HeldPoseMath.WindUp + HeldPoseMath.ChopTime + 0.01f, HeldPoseMath.Style.Chop, 1);
+    Check(a != b, "the chop and the sweep end in different places");
+    var f = HeldPoseMath.Frame("melee", WeaponArt.GripOf("melee", "FireAxe"), 0f, 0f, 0f, 0f, 99f, 1f, "none", 1, null, -1f, -1f, 99f, "FireAxe", 0);
+    Check(f.HasSupport && Math.Abs(f.SupX - f.GripX) + Math.Abs(f.SupY - f.GripY) >= 3f, "two-handed: the other hand is on the handle");
+  }
+
   static void BossChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
     float T0 = 20000f; UnityEngine.Time.time = T0; UnityEngine.Time.unscaledTime = T0; UnityEngine.Time.deltaTime = 1f / 60f;
