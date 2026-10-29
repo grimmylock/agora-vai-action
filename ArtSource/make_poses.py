@@ -143,7 +143,8 @@ elif __name__ == "__main__":
 # armor_pose_<key>.png and armor_back_pose_<key>.png; a unique suit's strip gets armor_unique_<name>_poses.png (front row, back
 # row). Facing poses come twice: _r as drawn (leaning right) and _l from the mirrored suit, mirrored back (the armband stays put).
 #   python3 ArtSource/make_poses.py atlas [Sprites dir]
-GAME_POSES = [("crouch_h", "crouch 1/2", False), ("lunge_h", "lunge 1/2", True), ("lunge", "lunge", True),
+# crouch: sneaking (Yan: "crouching also doesn't play the crouch animation")
+GAME_POSES = [("crouch", "crouch", False), ("crouch_h", "crouch 1/2", False), ("lunge_h", "lunge 1/2", True), ("lunge", "lunge", True),
               ("stagger_h", "stagger 1/2", True), ("stagger", "stagger", True)]
 
 def cell_poses(cell):

@@ -204,6 +204,7 @@ namespace GameCore
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
             PoseBody(_playerMarker, player, downNow);
             Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
+            UseOf(Held(_playerMarker), player);
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker), player.Gunslinging ? player.OffhandWeapon : null);
             DrawFriends();
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
@@ -683,6 +684,7 @@ namespace GameCore
                 bool up = DrawUnit(p, m, new Color(0.3f, 0.85f, 1f));
                 bool down = Body.Down(p);
                 PoseBody(m, p, down);
+                UseOf(Held(m), p);
                 Held(m).Show(p.EquippedWeapon, p.EquippedArmor, m.transform.position, AimPoint(p, m), up && !down, Away(m), p.Gunslinging ? p.OffhandWeapon : null);
             }
             foreach (var gone in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(_friendMarkers.Keys, k => !Player.All.Contains(k))))
@@ -696,6 +698,14 @@ namespace GameCore
             }
         }
         private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
+
+        /// <summary>Use: the item a player is using, for the hands (HeldWeaponView.UseKind/UseT).</summary>
+        private static void UseOf(HeldWeaponView h, Player p)
+        {
+            var s = Rt.On ? Rt.Of(p) : null;
+            h.UseKind = s?.UsingId != null ? HeldPoseMath.UseKindOf(s.UsingId) : null;
+            h.UseT = s != null && s.UseDone > s.UseFrom ? Mathf.Clamp01((Time.time - s.UseFrom) / (s.UseDone - s.UseFrom)) : 0f;
+        }
 
         private bool DrawUnit(ICombatant u, SpriteRenderer marker, Color fallback)
         {
@@ -725,7 +735,9 @@ namespace GameCore
             if (down) { marker.color = new Color(0f, 0f, 0f, 0f); return false; }
             int wf = up ? _motion.WalkFrame(u) : -1;
             if (wf >= 0 && UnitSprites.Walk(u, wf, away) is Sprite ws) marker.sprite = ws;
-            if (up && _held.TryGetValue(marker, out var hv) && UnitSprites.Pose(u, hv.BodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3: the swing's body frame
+            string bodyPose = _held.TryGetValue(marker, out var hv) ? hv.BodyPose : null;
+            if (bodyPose == null && u is Player sp && sp.Sneaking && !Body.Down(sp)) bodyPose = "crouch";   // sneaking: crouched, walking or still
+            if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3: the swing's body frame
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))

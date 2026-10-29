@@ -11,6 +11,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
@@ -856,6 +857,28 @@ static class Program {
     File.WriteAllText(path, sb.Append("]}").ToString());
     Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}: {string.Join(", ", moves)}");
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
+  }
+
+  // Use: the item-use animations (HeldPoseMath.Frame + ApplyUse, as HeldWeaponView draws them) with a pistol in hand, facing right
+  // and left, 2 s each -> Tools/render/use_anim.py
+  static void UseFrames(string path) {
+    var g = WeaponArt.GripOf("sidearm", "PSh18Pchela"); var sb = new System.Text.StringBuilder("{\"grip\":[" + FormattableString.Invariant($"{g[0]},{g[1]}") + "],\"kinds\":[");
+    var kinds = new[] { "bandage", "medkit", "syringe", "ration" };
+    for (int k = 0; k < kinds.Length; k++) {
+      var ug = HeldPoseMath.UseGrip(kinds[k]);
+      sb.Append((k > 0 ? "," : "") + "{\"kind\":\"" + kinds[k] + "\"," + FormattableString.Invariant($"\"grip\":[{ug.x},{ug.y}]") + ",\"frames\":[");
+      for (int i = 0; i < 60; i++) {
+        float t = i / 59f; var parts = new List<string>();
+        foreach (float ang in new[] { 0f, 180f }) {
+          var f = HeldPoseMath.Frame("sidearm", g, ang, 0f, 0f, 0f, 99f, 1f, "none", 1);
+          float deg = HeldPoseMath.ApplyUse(ref f, kinds[k], t);
+          parts.Add(FormattableString.Invariant($"[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.Left ? 1 : 0)},{deg}]"));
+        }
+        sb.Append((i > 0 ? "," : "") + "[" + string.Join(",", parts) + "]");
+      }
+      sb.Append("]}");
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString()); Console.WriteLine("use frames -> " + path);
   }
 
   // Visor 2: the Visor's whole moveset, one move after another, through the real Boss.Begin / Boss.Tick (glint, held wind-up,

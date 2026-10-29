@@ -4325,3 +4325,19 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   0.24-0.39 s after it closes. A stun cancels it. Checks: open after a move, still, bullets land, then it closes.
 - Sim (perfect bot, now going in and hitting whenever he's open): executed in 27 s real (was 46.5), 3 openings of 1.3-1.5 s
   seen, the first worth ~410 damage. A perfect bot isn't a person - but if he now falls too fast, the opening lengths are the knob.
+
+## Freeze, item use, crouch (2026-10-29, after Yan's Unity test)
+- Yan: "after opening and closing the inventory my character froze". Not reproduced (no Unity here); the likely cause: ESC is
+  the pause key and the I panels don't close on ESC, so ESC paused the game under the inventory - and the only sign of a pause
+  was "PAUSED - ESC" in the top line. Now ESC closes open panels first (`HudView.CloseOldPanels`), and a pause shows a big
+  PAUSED / "ESC to resume" in the middle of the screen. If it still freezes without ESC, it's something else - ask Yan for steps.
+- Yan: "healing doesn't have an animation right now". While you use an item (Rt.BeginUse .. UseDone, `Rt.State.UseFrom` added),
+  your weapon dips and the free glove works with the item (`HeldPoseMath.UseKindOf/UsePose/ApplyUse/UseGrip`, HeldWeaponView's
+  UseItem sprite; TacticalGridView sets each player's `UseKind/UseT`): bandage/splint wound round the arm, a medkit pressed to the
+  chest, a stim jabbed into the thigh, a pill/MRE/energy drink raised to the mask. New sprites `Sprites/Items/use_<kind>.png`
+  (medkit, bandage, syringe, ration; `ArtSource/make_use_items.py`, weapon-B scale, held at a grip point so they show past the
+  glove). Render: `dotnet /tmp/test.dll useframes u.json` + `Tools/render/use_anim.py` -> `maps/renders/use/`.
+- Yan: "crouching also doesn't play the crouch animation": a full `crouch` frame for every suit (make_poses.py atlas,
+  armor_pose_crouch / armor_back_pose_crouch, unique strips regenerated), shown while sneaking (walking or still).
+- Yan's RE4-style case inventory: not built - proposal sent, waiting on his answers.
+- Not checked in Unity.

@@ -236,7 +236,16 @@ namespace GameCore
             }
         }
 
-        readonly Dictionary<string, GameObject> _old = new Dictionary<string, GameObject>();   // the hidden debug panels
+        static readonly Dictionary<string, GameObject> _old = new Dictionary<string, GameObject>();   // the hidden debug panels (one HUD)
+        /// <summary>Yan: "after opening and closing the inventory my character froze" - ESC paused the game under the open inventory.
+        /// Now ESC closes the inventory (and the other old panels) first; true if it closed one.</summary>
+        public static bool CloseOldPanels()
+        {
+            bool any = false;
+            foreach (var go in _old.Values) if (go != null && go.activeSelf) { go.SetActive(false); any = true; }
+            return any;
+        }
+        TextMeshProUGUI _paused;
         void Toggle(string name)
         {
             if (_old.TryGetValue(name, out var go) && go != null) go.SetActive(!go.activeSelf);
@@ -273,6 +282,14 @@ namespace GameCore
                 turn = Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : (EncounterState.InCombat ? "<color=#c8443a>FIGHT</color>" : "<color=#62b25a>EXPLORING</color>")
                     + $"   STAMINA {Mathf.RoundToInt(Rt.Me.Stamina)}   FOCUS {Mathf.FloorToInt(Rt.Me.Focus)}" + (Rt.SlowMo ? "   <color=#62c0e0>BULLET TIME</color>" : "") + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "");
             _turn.text = turn;
+            // a paused game says so in the middle of the screen, not only in the top line
+            if (_paused == null)
+            {
+                _paused = Txt(_root.transform, "Paused", Vector2.zero, new Vector2(900f, 120f), "PAUSED\n<size=50%>ESC to resume</size>", true, 56, Cream, TextAlignmentOptions.Center);
+                Pin(_paused.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f));
+                _paused.outlineWidth = 0.25f; _paused.outlineColor = new Color32(0, 0, 0, 255);
+            }
+            _paused.gameObject.SetActive(Rt.On && Rt.Paused && !GameState.Current.ModalOpen);
             _endTurn.SetActive(!Rt.On && !exploring && GameState.Current.CurrentTurn == Turn.Player);
 
             UpdateTarget(p);

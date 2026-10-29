@@ -70,7 +70,7 @@ namespace GameCore
         public class State
         {
             public float Stamina = StaminaMax, StaminaRest, Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f, DiveX, DiveY;
-            public float VaultFrom = -1f, VaultLen, VaultX, VaultY, VaultDist, UseDone;
+            public float VaultFrom = -1f, VaultLen, VaultX, VaultY, VaultDist, UseDone, UseFrom;
             public float LookReach = Vision.MaxRadius;                // how far this player sees where they look (Vision, for fair shots)
             public bool Aiming;
             public int Moving;                                        // 0 still, 1 walking, 2 sprinting
@@ -586,7 +586,7 @@ namespace GameCore
             if (s.UsingId != null) { GameLog.Write("Already busy."); return; }
             if (Body.Down(p) && !(d.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
             if (d.Throwable != null || d.RepairKit) { Applying = true; try { p.UseConsumable(d.Id); } finally { Applying = false; } return; }
-            s.UsingId = d.Id; s.UseDone = Time.time + UseSeconds(d);
+            s.UsingId = d.Id; s.UseFrom = Time.time; s.UseDone = Time.time + UseSeconds(d);
             GameLog.Write($"Using {d.Name}...");
         }
 

@@ -337,6 +337,41 @@ namespace GameCore
                 Lean = side * lean, Thrown = throwHold < 0f && sinceThrow >= 0f && sinceThrow < WhipTime && sinceThrow >= 0.5f * WhipTime,
             };
         }
+        // ---- Use (Yan: "healing doesn't have an animation right now"): while you use an item (Rt.BeginUse .. UseDone) your weapon
+        // dips and the free glove works with the item (Sprites/Items/use_<kind>.png, ArtSource/make_use_items.py): a bandage or
+        // splint is wound round the arm, a medkit pressed to the chest, a stim jabbed into the thigh, a pill/ration/drink raised to
+        // the mouth. t = 0..1 through the use. Returns the free hand's centre (character px, as SupX/SupY), the item's turn, and how
+        // far the weapon is lowered (0..1). ----
+        /// <summary>Where the glove holds each item, in its 16x16 sprite's pixels (y down): the medkit by its handle, the roll by
+        /// one end, the syringe by its plunger, the can at its base - so the item shows past the glove.</summary>
+        public static (float x, float y) UseGrip(string kind) =>
+            kind == "medkit" ? (8f, 4.5f) : kind == "bandage" ? (4f, 8f) : kind == "syringe" ? (2f, 8f) : (8f, 11f);
+        public static string UseKindOf(string id) =>
+            id == null ? null : id.Contains("Medkit") ? "medkit" : id == "bandage" || id == "splint" ? "bandage" : id.Contains("Stim") ? "syringe" : "ration";
+        public static (float x, float y, float deg, float lower) UsePose(string kind, float t, bool left)
+        {
+            float k = Mathf.Clamp01(Mathf.Min(t / 0.12f, (1f - t) / 0.12f));                  // in and out
+            float hx = ChestX + 2f, hy = ChestY + 1.5f, deg = 0f;                                 // where the hand starts: at the hip
+            switch (kind)
+            {
+                case "bandage": { float a = t * Mathf.PI * 2f * 3f; hx = ChestX + 1.5f + 1.6f * Mathf.Cos(a); hy = ChestY + 0.8f * Mathf.Sin(a); deg = 15f * Mathf.Sin(a); break; }
+                case "medkit": { hx = ChestX + 1.5f; hy = ChestY - 0.5f + 0.6f * Mathf.Abs(Mathf.Sin(t * 22f)); deg = -10f; break; }
+                case "syringe": { float jab = Mathf.Clamp01((t - 0.35f) / 0.06f); hx = ChestX + 2f - jab; hy = Mathf.Lerp(ChestY - 2.5f, ChestY + 2.5f, jab); deg = -70f; break; }
+                default: { hx = ChestX + 1f; hy = ChestY - 4f + 0.4f * Mathf.Sin(t * 18f); deg = 35f; break; }   // up to the mask
+            }
+            float x = Mathf.Lerp(ChestX + 3f, hx, k), y = Mathf.Lerp(ChestY + 1.5f, hy, k);
+            return (left ? 16f - x : x, y, left ? -deg : deg, k);
+        }
+
+        /// <summary>Use: the frame while using an item - the weapon dips, the free glove takes the item. Returns the item's turn.</summary>
+        public static float ApplyUse(ref HeldFrame f, string kind, float t)
+        {
+            var (ux, uy, udeg, lower) = UsePose(kind, t, f.Left);
+            f.GunDeg = Mathf.LerpAngle(f.GunDeg, f.Left ? 240f : -60f, lower); f.GunY += lower;
+            f.HasSupport = true; f.SupX = Mathf.Round(ux); f.SupY = Mathf.Round(uy - 0.5f) + 0.5f;
+            return udeg;
+        }
+
         /// <summary>Melee 3: the body's frame through a swing - gathered (half crouch) on the wind-up, a charge, a throw's lift and
         /// the parry guard; the lunge's half and full frames on the strike and follow-through, half again as it recovers; rocked
         /// back (stagger) when the guard is broken. The facing ones lean toward where you aim.</summary>
@@ -656,7 +691,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { HandCache.Clear(); }
+        private static void ResetCaches() { HandCache.Clear(); ItemSprites.Clear(); }
 
 
         private float _shotAt = -99f, _kick, _climb, _recover;
@@ -683,6 +718,7 @@ namespace GameCore
             _barrels = Child(body, "Barrels", 2);
             _gun2 = Child(body, "OffhandWeapon", 2);
             for (int i = 0; i < _smear.Length; i++) _smear[i] = Child(body, "Smear" + i, 0);
+            _item = Child(body, "UseItem", 2);
         }
 
         // RT 7z-c (Gunslinger): the left-hand pistol - its own sprite, recoil and muzzle. Effects pick a gun with Use(weapon).
@@ -717,6 +753,16 @@ namespace GameCore
         /// <summary>RT 7e: the player's melee charge (Melee.ChargeOf) - drives the wind-up, the lift and the whip; null for others.</summary>
         public Melee.Charge MeleeCharge;
         public string BodyPose;                 // Melee 3: the body frame the swing wants (TacticalGridView.DrawUnit swaps it in)
+        public string UseKind; public float UseT;   // Use: the item in use (HeldPoseMath.UseKindOf) and how far through (TacticalGridView sets it)
+        private readonly SpriteRenderer _item;
+        private static readonly Dictionary<string, Sprite> ItemSprites = new Dictionary<string, Sprite>();
+        static Sprite ItemSprite(string kind)
+        {
+            if (ItemSprites.TryGetValue(kind, out var s) && s != null) return s;
+            var tex = Resources.Load<Texture2D>("Sprites/Items/use_" + kind);
+            var gp = HeldPoseMath.UseGrip(kind);
+            return ItemSprites[kind] = tex == null ? null : Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(gp.x / tex.width, 1f - gp.y / tex.height), WeaponArt.PixelsPerUnit);
+        }
         /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
         public void StartClear(float seconds) { if (_sel2) return; _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
         public void StartReload(WeaponFeel f, int capacity, float seconds = 0f, int rounds = 0)
@@ -759,6 +805,7 @@ namespace GameCore
         {
             bool on = visible && weapon?.Db != null; BodyPose = null;
             foreach (var sm in _smear) sm.gameObject.SetActive(false);
+            _item.gameObject.SetActive(false);
             _w2 = on ? offhand : null;
             _gun2.gameObject.SetActive(_w2?.Db != null);
             _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false);
@@ -803,6 +850,16 @@ namespace GameCore
                 mc?.PoseKey ?? key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f,
                 mc != null ? Melee.T - mc.GuardAt : 99f, mc != null ? Melee.T - mc.BrokenAt : 99f, mc != null ? mc.OpenK(Melee.T) : 0f);
             var f = At(since);
+            if (UseKind != null)                                                       // Use: the weapon dips, the free hand works the item
+            {
+                float udeg = HeldPoseMath.ApplyUse(ref f, UseKind, UseT);
+                var isp = ItemSprite(UseKind);
+                if (isp != null)
+                {
+                    _item.gameObject.SetActive(true); _item.sprite = isp; _item.flipX = f.Left; _item.sortingOrder = _base + (back ? -2 : 3);
+                    _item.transform.localPosition = Local(f.SupX, f.SupY); _item.transform.localRotation = Quaternion.Euler(0f, 0f, udeg);
+                }
+            }
             bool smear = cat == "melee" && HeldPoseMath.Striking(since, hold);
             for (int i = 0; i < _smear.Length; i++)
             {
