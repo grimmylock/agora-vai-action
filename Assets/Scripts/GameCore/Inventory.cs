@@ -26,6 +26,8 @@ namespace GameCore
         // callers already assume.
         public string Condition;
         public string Upgrades;   // technician upgrades, comma list (Upgrades.cs)
+        public int GridX = -1, GridY;   // Pack 1: where it sits in the bag (Pack.cs); -1 = not in it (didn't fit)
+        public bool Rot;                // turned a quarter
 
         public InventoryItem Clone() => new InventoryItem
         {

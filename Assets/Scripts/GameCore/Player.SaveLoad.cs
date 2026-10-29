@@ -57,6 +57,7 @@ namespace GameCore
                 {
                     Id = item.Id, Name = item.Name, WeightKg = item.WeightKg, Qty = item.Qty, Type = item.Type,
                     Price = item.Price ?? 0, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades,
+                    GridX = item.GridX, GridY = item.GridY, Rot = item.Rot,
                 });
 
             foreach (var kvp in Inventory.AmmoReserve)
@@ -138,12 +139,14 @@ namespace GameCore
                 {
                     Id = item.Id, Name = item.Name, WeightKg = item.WeightKg, Qty = item.Qty, Type = item.Type,
                     Price = item.Price, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades,
+                    GridX = item.GridX, GridY = item.GridY, Rot = item.Rot,
                 });
 
             Inventory.AmmoReserve.Clear();
             foreach (var kv in d.AmmoReserve) Inventory.AmmoReserve[kv.Key] = kv.Value;
             Ammo.Migrate(this);   // Batch 80
             Inventory.Backpack = d.Backpack;
+            Pack.Settle(this);                                                     // Pack 1: an old save's items find their places
             GameCore.Companion.Restore(d.Companion, this);   // EnterZone places them beside you
 
             Rank = string.IsNullOrEmpty(d.Rank) ? "Rookie" : d.Rank;

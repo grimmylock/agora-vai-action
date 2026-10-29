@@ -368,6 +368,7 @@ namespace GameCore
                     copy.Id = $"{item.Id}~{n}";
                 }
                 Inventory.Items.Add(copy);
+                if (!Pack.Place(this, copy)) GameLog.Write($"No room in your pack for the {copy.Name} - make room or drop something (I).");   // Pack 1
             }
             ApplyCarryEffects();
         }

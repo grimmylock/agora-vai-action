@@ -514,6 +514,8 @@ namespace GameCore
             var backpackDef = BackpackDatabase.All.TryGetValue(backpackId ?? "none", out var bp) ? bp : null;
             CarryCapacityBonus = backpackDef?.CapacityBonus ?? 0;
             ApplyArmorModsForPlayer();
+            var left = Pack.Refit(this);                                                // Pack 1: everything into the new bag
+            if (left.Count > 0) GameLog.Write($"{left.Count} item{(left.Count > 1 ? "s don't" : " doesn't")} fit in the {backpackDef?.Name ?? "pockets"} - see the pack (I).");
         }
     }
 }

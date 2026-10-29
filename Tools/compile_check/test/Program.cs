@@ -49,7 +49,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1165,6 +1165,31 @@ static class Program {
   // Boss 1: the parry (perfect / blocked / missed / cooldown / no melee / unparryable), the Visor's duel frame by frame (telegraphs,
   // a perfect parry staggers him, bullets glance off unless he's open, phase 2, he breaks at 0, the finisher, the smoke), his lab
   // Melee 2: a stance and a string of swings per kind of weapon; clicks inside the combo gap walk the string, a pause starts it over
+  // Pack 1: the bag's grid - footprints, first-fit placement (turned when that's the only way), drag, a new bag repacks,
+  // what doesn't fit stays out (never lost), and the grid survives a save
+  static void PackChecks() {
+    var p = Arena(out _, out _); p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
+    var b = Pack.Bag(p);
+    Check(b.Cols == 5 && b.Rows == 4, "Pack: no backpack = 5x4 pockets");
+    InventoryItem W(string cat, string key) => new InventoryItem { Id = key, Name = key, Type = "weapon", Category = cat, Key = key, WeightKg = 1f };
+    var rifle = W("assault", "VK74"); p.Inventory.Items.Add(rifle);
+    Check(Pack.Size(rifle) == (5, 2) && Pack.Place(p, rifle) && rifle.GridX == 0 && rifle.GridY == 0 && !rifle.Rot, "Pack: a rifle takes 5x2 at the top left");
+    var sniper = W("sniper", "x"); p.Inventory.Items.Add(sniper);
+    Check(!Pack.Place(p, sniper) && sniper.GridX < 0, "Pack: a 6x2 sniper rifle doesn't fit 5x4 pockets - it stays out");
+    p.AddItem(new InventoryItem { Id = "bandage", Name = "Bandage", Type = "consumable", Qty = 1, WeightKg = 0.1f });
+    var band = p.Inventory.Items.First(i => i.Id == "bandage");
+    Check(band.GridX == 0 && band.GridY == 2, "Pack: a pickup lands in the first free cell");
+    Check(!Pack.Move(p, band, 1, 1, false) && Pack.Move(p, band, 4, 3, false) && band.GridX == 4, "Pack: you can't drop it on another item, you can on space");
+    var med = new InventoryItem { Id = "basicMedkit", Name = "Basic Medkit", Type = "consumable", WeightKg = 0.5f }; p.Inventory.Items.Add(med);
+    Check(!Pack.Move(p, med, 4, 0, true) && Pack.Move(p, med, 3, 2, true) && Pack.Footprint(med) == (1, 2), "Pack: turned, a 2x1 medkit stands 1x2");
+    p.HandleBackpackChange("backpack_tourist");
+    Check(p.Inventory.Items.All(i => i.GridX >= 0) && sniper.GridX >= 0, "Pack: a bigger bag repacks everything (the sniper rifle fits now)");
+    var save = p.CaptureSaveData(); var q = new Player(); q.ApplyLoadedData(save);
+    var rb = q.Inventory.Items.First(i => i.Id == "VK74");
+    Check(rb.GridX == rifle.GridX && rb.GridY == rifle.GridY && rb.Rot == rifle.Rot, "Pack: places survive a save");
+    p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
+  }
+
   static void MeleeMoveChecks() {
     Check(HeldPoseMath.StyleOf("HuntingKnife") == HeldPoseMath.Style.Knife && HeldPoseMath.StyleOf("FireAxe") == HeldPoseMath.Style.Heavy
       && HeldPoseMath.StyleOf("TacticalHatchet") == HeldPoseMath.Style.Chop, "melee styles: knife / two-handed / one-handed");

@@ -32,6 +32,7 @@ namespace GameCore
         public string Key;
         public string Upgrades;
         public string Condition;
+        public int GridX = -1, GridY; public bool Rot;   // Pack 1 (an old save has none: -1, settled on load)
     }
 
     [Serializable]
