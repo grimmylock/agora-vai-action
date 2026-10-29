@@ -1,5 +1,6 @@
 // Boss 1: a boss's HUD - the name card over the middle of the screen when the fight starts (and on phase 2, the break, the
-// end), his health bar along the top with his name, and the state under it: STAGGERED (go!), FINISH HIM (E), DEFEATED.
+// end), his health bar along the top with his name, and the state under it: STAGGERED (go!), EXECUTE (E), DEFEATED; and
+// the perfect parry's cold edge round the screen (Boss.Punch).
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,7 @@ namespace GameCore
 {
     public partial class HudView
     {
+        Image _edge;
         RectTransform _bossBar; Image _bossFill, _bossGhost; TextMeshProUGUI _bossName, _bossState, _splash, _splashSub;
         float _ghost = 1f;
         const float BossW = 560f;
@@ -32,6 +34,26 @@ namespace GameCore
                 Pin(_splashSub.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f));
             }
 
+            // the perfect parry: a cold edge closes in round the screen and fades with the slow motion
+            if (_edge == null)
+            {
+                const int N = 64; var tex = new Texture2D(N, N, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float dx = (x + 0.5f) / N * 2f - 1f, dy = (y + 0.5f) / N * 2f - 1f, r = Mathf.Sqrt(dx * dx * 0.8f + dy * dy * 0.8f);
+                        tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.62f, 1.12f, r))));
+                    }
+                tex.Apply();
+                _edge = Img(_root.transform, "ParryEdge", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.clear);
+                var er = _edge.rectTransform; er.anchorMin = Vector2.zero; er.anchorMax = Vector2.one; er.sizeDelta = Vector2.zero;
+                _edge.sprite = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), N);
+                _edge.transform.SetAsFirstSibling();                                  // under the HUD's panels
+            }
+            float punch = Boss.Punch;
+            _edge.gameObject.SetActive(punch > 0.01f);
+            if (punch > 0.01f) _edge.color = new Color(0.72f, 0.9f, 1f, 0.85f * punch);
+
             var f = Boss.Current;
             bool on = f != null && !GameState.Current.ModalOpen;
             _bossBar.gameObject.SetActive(on); _bossName.gameObject.SetActive(on); _bossState.gameObject.SetActive(on);
@@ -45,7 +67,7 @@ namespace GameCore
                 bool open = Boss.Staggered(f.Unit);
                 _bossFill.color = open ? Color.Lerp(C("b8302a"), Color.white, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 30f)) : f.Phase == 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f)) : C("b8302a");
                 _bossName.text = f.Def.Name.ToUpperInvariant() + (f.Phase == 2 ? "  <color=#ff5a3a>II</color>" : "");
-                _bossState.text = f.Finished ? "DEFEATED" : f.Broken ? "FINISH HIM - E" : open ? "STAGGERED" : "";
+                _bossState.text = f.Finished ? "DEFEATED" : f.Broken ? "EXECUTE - E" : open ? "STAGGERED" : "";
                 _bossState.color = f.Broken ? new Color(1f, 0.35f, 0.3f) : Yellow;
             }
             else _ghost = 1f;

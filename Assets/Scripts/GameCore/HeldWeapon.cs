@@ -739,8 +739,9 @@ namespace GameCore
             string id = (small ? "s:" : "b:") + name;
             if (HandCache.TryGetValue(id, out var s)) return s;
             int i = System.Array.IndexOf(SpriteAtlasIndex.Armor, name);
-            Color cuff = Hex(i >= 0 ? SpriteAtlasIndex.ArmorCuff[i] : "#5a4a36");
-            Color glove = Hex(i >= 0 ? SpriteAtlasIndex.ArmorGlove[i] : "#3d4148");
+            bool unique = UnitSprites.UniqueGloves.TryGetValue(name, out var ug);   // Boss 1: one-of-a-kind suits
+            Color cuff = Hex(unique ? ug.cuff : i >= 0 ? SpriteAtlasIndex.ArmorCuff[i] : "#5a4a36");
+            Color glove = Hex(unique ? ug.glove : i >= 0 ? SpriteAtlasIndex.ArmorGlove[i] : "#3d4148");
             Color k = Hex("#141617"), lit = Scale(glove, 1.45f), dark = Scale(glove, 0.65f), none = new Color(0, 0, 0, 0);
             string[] rows = small ? GloveSmall : GloveBig;
             int w = rows[0].Length, h = rows.Length;

@@ -120,7 +120,7 @@ parry him with it. Secret Lab Beta's south-west rooms have a cracked wall (E bre
   Phase 2 at half health (aura, a sting, faster, new moves). No posture bar (Yan: posture only makes sense in boss duels).
   At 0 HP he breaks: **E next to him = the finisher** (slow motion, the camera, the blood). Once he's looted, a smoke grenade and
   the body is gone (Yan).
-- A name card when the fight starts, his health bar with a draining chunk, STAGGERED / FINISH HIM, procedural sounds (parry,
+- A name card when the fight starts, his health bar with a draining chunk, STAGGERED / EXECUTE, procedural sounds (parry,
   perfect parry, glints, the sting, the finisher, the smoke).
 - Not yet: mutants' claws can't be parried (they don't go through `Melee.Strike`); finishers on normal enemies; the melee slot.
 

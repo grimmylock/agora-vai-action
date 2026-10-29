@@ -928,15 +928,26 @@ static class Program {
       Check(p.Hp < hp, "Boss 1: pressing again inside the cooldown does nothing (no spamming)");
       UnityEngine.Time.time += 1f; hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f; Parry.Unparryable = true; Hit(); Parry.Unparryable = false;
       Check(p.Hp < hp, "Boss 1: a red-glint hit can't be parried");
-      p.EquipWeapon("sidearm", "PSh18Pchela"); UnityEngine.Time.time += 1f; hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f; Hit();
-      Check(p.Hp < hp, "Boss 1: no melee weapon in hand - no parry");
-      p.EquipWeaponFromInventory(hatchet.Id);
+      var pistol = ShopDatabase.Items.First(i => i.Type == "weapon" && i.Category == "sidearm" && i.Key == "PSh18Pchela");
+      p.AddItem(TestingGround.ItemOf(pistol)); p.EquipWeaponFromInventory(pistol.Id);   // the hatchet goes back in the pack
+      UnityEngine.Time.time += 1f; p.Hp = p.MaxHp; Body.Forget(p); hp = p.Hp; Parry.Press(p);
+      UnityEngine.Time.time += 0.05f; Hit();
+      Check(p.Hp == hp && p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "Boss 1: a gun in hand - the parry key draws the hatchet from the pack and parries");
+      Check(Parry.MeleeInPack(p) == null || p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "Boss 1: (the hatchet left the pack for the hand)");
+      // the perfect parry's moment: frozen, then a second of slow motion, then back
+      UnityEngine.Time.unscaledTime += 10f; Boss.ParryMoment(); float u0 = UnityEngine.Time.unscaledTime;
+      Check(UnityEngine.Time.timeScale < 0.1f && Boss.Punch >= 0f, "Boss 1: perfect parry - a hit-stop first");
+      UnityEngine.Time.unscaledTime = u0 + Boss.MomentStop + 0.05f; Boss.TickAll();
+      Check(Math.Abs(UnityEngine.Time.timeScale - Boss.MomentScale) < 0.01f && Boss.Punch > 0.5f, $"Boss 1: then slow motion, the camera leaning in ({UnityEngine.Time.timeScale}, punch {Boss.Punch:0.00})");
+      UnityEngine.Time.unscaledTime = u0 + Boss.MomentStop + Boss.MomentSlow + 0.05f; Boss.TickAll();
+      Check(UnityEngine.Time.timeScale == 1f && Boss.Punch == 0f, "Boss 1: and back to normal after a second");
       EncounterState.Enemies.Clear();
 
       // the duel
       p.Hp = p.MaxHp; Body.Forget(p);
       var f = Boss.WakeVisor(p, px + 3, py);
       var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
+      Check(v.EquippedArmor?.Name == "Black Visor Suit", "Boss 1: he wears his own suit (black, red visor, gas mask)");
       Check(Boss.Is(v) && v.Hp == Boss.Visor.Hp && p.EquippedWeapon?.Db?.Name == "Tactical Hatchet" && Boss.SplashTitle == "THE VISOR", "Boss 1: taking the hatchet wakes him - name card, full health, the hatchet in your hand");
       int glints = 0, parried = 0, frames = 0; bool staggered = false;
       for (; frames < 60 * 30 && !staggered; frames++) {
@@ -960,10 +971,11 @@ static class Program {
       Check(f.Phase == 2 && Boss.SplashTitle == "PHASE 2", "Boss 1: half health - phase 2");
       v.Hp = 10; f.StaggerUntil = UnityEngine.Time.time + 1f; p.X = v.X - 1; p.Y = v.Y;
       Melee.Strike(p, p.EquippedWeapon, v, "Torso", 0f);
-      Check(f.Broken && v.IsAlive() && v.Hp == 1 && Boss.SplashTitle == "FINISH HIM", "Boss 1: at 0 he doesn't die - he breaks, FINISH HIM");
+      Check(f.Broken && v.IsAlive() && v.Hp == 1 && Boss.SplashTitle == "EXECUTE", "Boss 1: at 0 he doesn't die - he breaks, EXECUTE");
       int fhp = p.Hp; for (int k = 0; k < 120; k++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
       Check(p.Hp == fhp, "Boss 1: broken, he doesn't fight");
-      p.Ap = 4; InteractionEngine.AttemptInteract(p);
+      Rt.Of(p).Focus = 0f; p.Ap = 4; InteractionEngine.AttemptInteract(p);
+      Check(Rt.Of(p).Focus >= Rt.FocusMax - 0.01f, "Boss 1: executing fills your Focus (slow-mo energy)");
       Check(f.Finished && !v.IsAlive() && Story.Has("visor_done") && Story.InCutscene, "Boss 1: E next to him - the finisher (cutscene), and he's done");
       Boss.Looted(v); UnityEngine.Time.time += Boss.SmokeAfter + 0.1f; Boss.TickAll();
       Check(f.Gone && !EncounterState.Enemies.Contains(v), "Boss 1: looted, and a few seconds later the smoke takes the body");

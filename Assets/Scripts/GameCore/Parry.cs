@@ -4,8 +4,14 @@
 //   PERFECT parry (no damage, the attacker staggers, a hit-stop, sparks, Focus); later in the window it's BLOCKED (no damage).
 // - A Cooldown after each press: spamming it doesn't work. The Serrated Trench Knife's window is half as long again (ACTION_DESIGN).
 // - Some boss moves can't be parried at all (Unparryable, the red glint): dodge those.
-// ponytail: mutants' claws and bites don't go through Melee.Strike yet, so they can't be parried; and the melee slot isn't built,
-// so you parry with whatever melee weapon is in your hand.
+// - Yan: "the parry works even without a melee in hand, it insta-draws it": with a gun out, the key pulls your best melee weapon from
+//   the pack into your hand in the same instant (no melee weapon at all: no parry).
+// - A perfect parry is a moment (Yan: "maybe time slows down for the second as well? a slow-down effect on the screen, maybe a
+//   little zoom-in and something on the edges"): the hit-stop, then a second of slow motion, the camera leaning in, a cold edge
+//   round the screen (Boss.ParryMoment, HudView.Boss.cs).
+// ponytail: mutants' claws and bites don't go through Melee.Strike yet, so they can't be parried; the melee slot isn't built, so
+// the drawn weapon stays in your hand (Y / the pack to go back to the gun).
+using System.Linq;
 using UnityEngine;
 
 namespace GameCore
@@ -22,11 +28,23 @@ namespace GameCore
 
         public static bool CanParry(Player p) => p != null && p.EquippedWeapon != null && CombatRules.IsMelee(p.EquippedWeapon) && !Body.Down(p);
 
+        /// <summary>The best melee weapon in the pack (the heaviest hitter), or null.</summary>
+        public static InventoryItem MeleeInPack(Player p) =>
+            p.Inventory.Items.Where(i => i.Type == "weapon" && i.Category == "melee" && i.Key != null && GameData.WeaponDatabase.Categories["melee"].ContainsKey(i.Key))
+                .OrderByDescending(i => GameData.WeaponDatabase.Categories["melee"][i.Key].BaseDamage).FirstOrDefault();
+
         /// <summary>The parry key, pressed (Rt.PlayerTick).</summary>
         public static void Press(Player p)
         {
             var s = Rt.Of(p); float now = Time.time;
-            if (!CanParry(p) || now < s.ParryReady || s.Diving) return;
+            if (now < s.ParryReady || s.Diving || p == null || Body.Down(p)) return;
+            if (!CanParry(p))                                                      // a gun in hand: the knife comes out with the guard
+            {
+                var item = MeleeInPack(p);
+                if (item == null) return;
+                p.EquipWeaponFromInventory(item.Id);
+                if (!CanParry(p)) return;
+            }
             s.ParryAt = now; s.ParryReady = now + Cooldown;
             var anim = CombatFx.Push("melee", p, null, p.EquippedWeapon); anim.Now = true;   // the guard comes up (the swing pose)
         }
@@ -43,7 +61,7 @@ namespace GameCore
             {
                 Boss.Stagger(by, StaggerSeconds);
                 Rt.AddFocus(p, PerfectFocus);
-                Boss.HitStop(0.16f);
+                Boss.ParryMoment();
                 GameLog.Write(Boss.Is(by) ? "PERFECT PARRY - he's open!" : "Perfect parry!");
             }
             else { Boss.HitStop(0.05f); GameLog.Write("Blocked."); }

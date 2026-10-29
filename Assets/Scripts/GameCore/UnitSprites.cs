@@ -99,6 +99,21 @@ namespace GameCore
             _backWalkA = Slice("Sprites/armor_back_walk_a", SpriteAtlasIndex.Armor);
             _backWalkB = Slice("Sprites/armor_back_walk_b", SpriteAtlasIndex.Armor);
             _mutants = Slice("Sprites/mutant_atlas", SpriteAtlasIndex.Mutants);
+            foreach (var name in UniqueSuits) Unique(name);
+        }
+
+        /// <summary>Boss 1: one-of-a-kind suits outside the faction atlases (ArtSource/make_unique_armor.py): a 96x16 strip -
+        /// front, walk a, walk b, back, back walk a, back walk b - added under the suit's name like an atlas cell.</summary>
+        public static readonly string[] UniqueSuits = { "Black Visor Suit" };
+        public static readonly Dictionary<string, (string cuff, string glove)> UniqueGloves = new Dictionary<string, (string, string)>
+            { ["Black Visor Suit"] = ("#1f2226", "#2a2c30") };
+
+        static void Unique(string name)
+        {
+            var tex = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_'));
+            if (tex == null) return;
+            var sets = new[] { _armor, _walkA, _walkB, _back, _backWalkA, _backWalkB };
+            for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * Cell, 0, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
         }
 
         private static Dictionary<string, Sprite> Slice(string path, string[] order)

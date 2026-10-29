@@ -10,7 +10,7 @@
 // - At 0 HP he doesn't die - he drops to a knee, broken: "when hp bar gets to 0 we can press a key to finish him off" - E next to
 //   him: the finisher (slow motion, the camera on you both, a hit-stop, the blood). "after he's down and looted, a few seconds
 //   later a smoke grenade goes off and he's gone".
-// - The HUD (HudView.Boss.cs): his name card when the fight starts, his health bar, STAGGERED / FINISH HIM.
+// - The HUD (HudView.Boss.cs): his name card when the fight starts, his health bar, STAGGERED / EXECUTE.
 // Bosses aren't nerfed for difficulty (rule 6): tune them by giving the player tools.
 // Co-op: he fights the nearest player (Rt.TargetOf); any player can parry him, shoot him while he's open, or finish him.
 // ponytail: the hit-stop is the host's time scale (fine solo; co-op clients don't share the host's clock yet).
@@ -64,15 +64,19 @@ namespace GameCore
         public static string SplashTitle, SplashSub; public static float SplashAt = -99f, SplashSeconds = 3.2f;
         static void Splash(string title, string sub) { SplashTitle = title; SplashSub = sub; SplashAt = Time.unscaledTime; }
 
-        public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; Parry.Unparryable = false; SplashAt = -99f; }
+        public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; Parry.Unparryable = false; SplashAt = -99f; }
 
         // ---------------- the first boss ----------------
 
         // Yan's hatchet fight (ACTION_DESIGN "Melee"): a corpse in black armour with a red visor, the Tactical Hatchet buried in
         // it; take the hatchet and he gets up - a nod to a certain unkillable courier, no names from that game. He draws a knife.
+        /// <summary>Yan: "a black suit with a red visor and a gas mask" (ArtSource/make_unique_armor.py) - his alone, not in any loot table.</summary>
+        public static readonly ArmorDef BlackVisorSuit = new ArmorDef { Name = "Black Visor Suit", PhysDR = 0.6f, AnomDR = 0.3f, BeltSlots = 2, ModSlots = 2, Mp = 4, WeightKg = 14f };
+        static ArmorDef SuitOf(Def def) => def.Armor == BlackVisorSuit.Name ? BlackVisorSuit : ArmorDatabase.Get("tier5", def.Armor) ?? ArmorDatabase.Get("tier4", def.Armor);
+
         public static readonly Def Visor = new Def
         {
-            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "ProtoExoskeleton", Hp = 2400,
+            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 2400,
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = new[]
             {
@@ -88,7 +92,7 @@ namespace GameCore
         public static Fight Spawn(Def def, int x, int y)
         {
             var w = WeaponDatabase.Categories["melee"].TryGetValue(def.Weapon, out var wd) ? wd : null;
-            var a = ArmorDatabase.Get("tier5", def.Armor) ?? ArmorDatabase.Get("tier4", def.Armor);
+            var a = SuitOf(def);
             var h = new HumanEnemy(def.Name, x, y, "Contractors", "Legend", w, a) { IsAggroed = true, MaxHp = def.Hp, Hp = def.Hp };
             EncounterState.Enemies.Add(h); EncounterState.InCombat = true;
             var f = new Fight { Def = def, Unit = h, Started = Time.time, NextMoveAt = Time.time + 1.2f };
@@ -198,10 +202,10 @@ namespace GameCore
             u.Hp = 1;
             if (f.Broken) return;
             f.Broken = true; f.Doing = null;
-            Splash("FINISH HIM", "E - next to him");
+            Splash("EXECUTE", "E - next to him");
             CombatFx.Push("stagger", u, null, null).Now = true;
             HitStop(0.35f);
-            GameLog.Write($"{f.Def.Name} drops to one knee. E next to him to finish it.");
+            GameLog.Write($"{f.Def.Name} drops to one knee. E next to him: execute.");
         }
 
         public static Fight BrokenNear(Player p) => Fights.FirstOrDefault(f => f.Broken && !f.Finished && CombatantUtil.Distance(p, f.Unit) <= 2);
@@ -219,7 +223,8 @@ namespace GameCore
             f.Unit.Hp = 0;
             Weapon.OnTargetKilled(p, f.Unit);
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");
-            GameLog.Write($"You finish {f.Def.Name}.");
+            Rt.AddFocus(p, Rt.FocusMax);                                           // Yan: "executing gives slow-mo energy" - Focus full
+            GameLog.Write($"You execute {f.Def.Name}. Your Focus surges.");
             if (f.Def == Visor) Story.Set("visor_done");
             return true;
         }
@@ -238,7 +243,7 @@ namespace GameCore
             if (zoneId != VisorLab || Story.Has("visor_done")) return;
             var l = TerrainMap.Landmarks?.FirstOrDefault(x => x.Name == VisorMark);
             if (l == null) return;
-            var body = new HumanEnemy("Body in black armour", l.X, l.Y, "Contractors", "Legend", null, ArmorDatabase.Get("tier4", Visor.Armor)) { Hp = 0 };
+            var body = new HumanEnemy("Body in black armour", l.X, l.Y, "Contractors", "Legend", null, BlackVisorSuit) { Hp = 0 };
             EncounterState.Enemies.Add(body); Sleepers.Add(body);
         }
 
@@ -287,6 +292,11 @@ namespace GameCore
             if (_stopUntil >= 0f && Time.unscaledTime >= _stopUntil)
             {
                 _stopUntil = -1f;
+                if (!Rt.Paused) Time.timeScale = Time.unscaledTime < _slowUntil ? Mathf.Min(MomentScale, Rt.SlowMo ? Rt.SlowScale : 1f) : Rt.SlowMo ? Rt.SlowScale : 1f;
+            }
+            else if (_stopUntil < 0f && _slowUntil >= 0f && Time.unscaledTime >= _slowUntil)
+            {
+                _slowUntil = -1f;
                 if (!Rt.Paused) Time.timeScale = Rt.SlowMo ? Rt.SlowScale : 1f;
             }
             foreach (var f in Fights.Where(f => f.Finished && !f.Gone && f.LootedAt >= 0f && Time.time - f.LootedAt >= SmokeAfter).ToList())
@@ -298,9 +308,10 @@ namespace GameCore
             }
         }
 
-        // ---------------- hit-stop ----------------
+        // ---------------- hit-stop and the perfect parry's moment ----------------
 
-        static float _stopUntil = -1f;
+        static float _stopUntil = -1f, _slowUntil = -1f, _momentAt = -99f;
+        public const float MomentStop = 0.14f, MomentSlow = 1.0f, MomentScale = 0.25f;
 
         /// <summary>A moment of near-frozen time (real seconds): the weight on a parry, a phase change, the finisher.</summary>
         public static void HitStop(float seconds)
@@ -308,6 +319,26 @@ namespace GameCore
             if (Rt.Paused) return;
             Time.timeScale = 0.05f;
             _stopUntil = Mathf.Max(_stopUntil, Time.unscaledTime + seconds);
+        }
+
+        /// <summary>A perfect parry: a hit-stop, then a second of slow motion while the camera leans in and a cold edge rings
+        /// the screen (Punch drives the zoom and HudView's vignette).</summary>
+        public static void ParryMoment()
+        {
+            HitStop(MomentStop);
+            _momentAt = Time.unscaledTime;
+            _slowUntil = Time.unscaledTime + MomentStop + MomentSlow;
+        }
+
+        /// <summary>0..1: how far into the parry moment's lean-in we are (fast in, held, eased out).</summary>
+        public static float Punch
+        {
+            get
+            {
+                float t = Time.unscaledTime - _momentAt, len = MomentStop + MomentSlow;
+                if (t < 0f || t > len) return 0f;
+                return Mathf.Clamp01(t / 0.08f) * Mathf.Clamp01((len - t) / 0.45f);
+            }
         }
     }
 }

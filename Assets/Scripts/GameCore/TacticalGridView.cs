@@ -1012,7 +1012,7 @@ namespace GameCore
             if (speaker.HasValue) need = Mathf.Max(need, Mathf.Max(Mathf.Abs(speaker.Value.y - me.y) * 2f + 2f, Mathf.Abs(speaker.Value.x - me.x) / Mathf.Max(0.5f, cam.aspect) + 2f));
             float want = Mathf.Clamp(Mathf.Max(_zoom, need), CameraViewHalfHeightTiles, CameraMaxHalfHeightTiles);
             _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * 6f);
-            cam.orthographicSize = _shown;
+            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch);   // Boss 1: the perfect parry's little zoom-in
         }
         private static float _shown;
 
