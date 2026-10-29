@@ -48,6 +48,17 @@ Scenes worth keeping (most striking first):
 11. From the playtest: Dr. Osei is **Priya Osei**; the Sub-Station Depths' Transformer Vault holds a dead researcher's
     station measuring **energy spikes from deeper underground**.
 
+## Main story decisions from the campaign logs (Yan, 2026-10-29)
+
+- **No contract sniper** (too cliché). **The Contractors' part is side quests only**, to develop later - the hire-a-sniper deal
+  and her dismissal are cut; in the hospital portal scene the player takes the shot.
+- **The Garrison work for "those" without knowing it** - "they're stupid". Their base is the Siege Ward hospital, which is why
+  "those" fall back there in Tier 6.
+- **The traitor scientist is someone inside the Sub-Station with Dr. Osei** - a new character (not Osei, not Pavel).
+- The squad characters from the logs need original names (suggestions given 2026-10-29).
+- Rough end-to-end skeleton proposed 2026-10-29 (T3 Safe Haven, T4 the Barrier siege and the Preacher's psi-core, T5 the
+  Array and the Array Commander, T6 the Siege Ward and the portal, T7 the Descent) - waiting on Yan's reaction.
+
 ## Our factions (cheat sheet, for writing)
 
 | Ours | Role in the world |
@@ -68,6 +79,9 @@ Scenes worth keeping (most striking first):
   placed in a dungeon are part of the map.
 - Never weaken enemies for difficulty (rule 6): when a fight is too big, the story says run, hide or go round.
 - Co-op (rule 9): every mission must work with 2-4 players; story flags belong to the host's world.
+- **Companions are never required (Yan, 2026-10-29).** Story characters (the Veteran, the heavy, ...) can be part of the story,
+  but no mission may need them in the party: co-op groups and true-solo players must be able to do everything. A scene written
+  around a companion's action (a tackle, a hack, a throw) must work when the player does it, or play out without them.
 
 ## Tier 1 - Extraction
 
