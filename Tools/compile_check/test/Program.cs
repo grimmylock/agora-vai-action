@@ -802,7 +802,7 @@ static class Program {
     sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#3d4148")
       + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + Boss.Visor.Hp + ",\"frames\":[");
     float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f; var moves = new List<string>();
-    for (int k = 0; k < 30 * 120; k++) {
+    for (int k = 0; k < 30 * 300; k++) {
       float scale = UnityEngine.Time.timeScale, gdt = real * scale;
       UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
       float now = UnityEngine.Time.time;
@@ -810,6 +810,7 @@ static class Program {
       var input = new Rt.Input { Mouse = (bx, by + 0.44f - 0.45f * Ballistics.BodyTiles) };
       int dist = CombatantUtil.Distance(p, v); int sx = Math.Sign(v.X - p.X), sy = Math.Sign(v.Y - p.Y);
       if (p.Hp < p.MaxHp * 0.35f) p.Hp = p.MaxHp * 0.6f is var _ ? (int)(p.MaxHp * 0.6f) : p.Hp;   // the bot drinks a medkit (keeps the clip going)
+      if (Body.Down(p)) { Body.Forget(p); p.Hp = Math.Max(p.Hp, (int)(p.MaxHp * 0.6f)); }   // downed: it jabs a stim and gets up, as you would
       if (f.Broken && !f.Finished) { if (dist > 1) { input.X = sx; input.Y = sy; } else { p.Ap = 4; InteractionEngine.AttemptInteract(p); } }
       else if (f.Finished) { if (lootAt < 0f) lootAt = now + 0.8f; if (now >= lootAt && f.LootedAt < 0f) Boss.Looted(v); if (f.Gone && end < 0f) end = UnityEngine.Time.unscaledTime + 2f; }
       else if (f.Doing != null) {
@@ -845,7 +846,7 @@ static class Program {
         vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt);
       sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
         + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
-        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)}],\"bf\":{Fr(fb)}"
+        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)}],\"bf\":{Fr(fb)}"
         + $",\"ev\":[{string.Join(",", ev)}],\"splash\":[\"{Boss.SplashTitle}\",\"{Boss.SplashSub}\",{F(UnityEngine.Time.unscaledTime - Boss.SplashAt)}],\"punch\":{F(Boss.Punch)},\"cut\":{(Story.InCutscene ? 1 : 0)}}}");
       if (end > 0f && UnityEngine.Time.unscaledTime >= end) break;
     }
@@ -1150,6 +1151,13 @@ static class Program {
       var mc = Melee.ChargeOf(p); Check(mc.Queued && mc.Move == 0, "a click mid-swing is queued");
       for (float t = 0.25f; t < 1f && mc.Queued; t += 1f / 30f) { Melee.Now = t; Melee.PlayerInput(p, w, false, false, at); }
       Check(!mc.Queued && mc.Move == 1 && mc.From > 0f, "the queued click becomes the next move of the combo"); Melee.Now = -1f; Melee.Reset(); }
+    // Yan: "make it so he needs 3 parries to get stunned": two perfect parries are deflections, the third opens him; they fade
+    { var p = Arena(out int px, out int py); Boss.Reset(); EncounterState.Enemies.Clear(); var bf = Boss.Spawn(Boss.Visor, px + 1, py);
+      bool a1 = Boss.Stagger(bf.Unit, 1f), a2 = Boss.Stagger(bf.Unit, 1f), a3 = Boss.Stagger(bf.Unit, 1f);
+      Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 4800, "Boss: the Visor (4800 HP) staggers on the 3rd perfect parry, not before");
+      bf.StaggerUntil = -1f; Boss.Stagger(bf.Unit, 1f); bf.LastParryAt -= Boss.GuardRecovers + 1f;
+      Check(!Boss.Stagger(bf.Unit, 1f) && Boss.GuardDamage(bf) == 1, "Boss: parries toward a stagger fade after a while");
+      Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
   static void BossChecks() {

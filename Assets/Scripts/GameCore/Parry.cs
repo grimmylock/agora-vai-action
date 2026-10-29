@@ -60,11 +60,15 @@ namespace GameCore
             var fx = CombatFx.Push("parry", p, by, p.EquippedWeapon); fx.Now = true; fx.Hit = perfect;
             if (perfect)
             {
-                Boss.Stagger(by, StaggerSeconds);
-                Melee.ChargeOf(by).BrokenAt = Melee.T;                             // Melee 2d (Yan): his arm is knocked up, guard broken
+                bool broke = Boss.Stagger(by, StaggerSeconds);
                 Rt.AddFocus(p, PerfectFocus);
-                Boss.ParryMoment();
-                GameLog.Write(Boss.Is(by) ? "PERFECT PARRY - he's open!" : "Perfect parry!");
+                if (broke)
+                {
+                    Melee.ChargeOf(by).BrokenAt = Melee.T;                         // Melee 2d (Yan): his arm is knocked up, guard broken
+                    Boss.ParryMoment();
+                    GameLog.Write(Boss.Is(by) ? "PERFECT PARRY - he's open!" : "Perfect parry!");
+                }
+                else { Boss.HitStop(0.08f); GameLog.Write($"Perfect parry ({Boss.GuardDamage(Boss.Of(by))}/{Boss.Of(by).Def.ParriesToStagger})."); }   // a boss: not yet
             }
             else { Boss.HitStop(0.05f); GameLog.Write("Blocked."); }
             return perfect ? Result.Perfect : Result.Blocked;

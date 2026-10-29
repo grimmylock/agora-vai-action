@@ -4269,3 +4269,14 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   real Boss.Begin/Tick); melee_moves, melee_duel and boss_duel re-rendered with the body frames. The duel renderer no longer
   mirrors the Raider's body (the game never does).
 - Not checked in Unity: the new PNGs import through the Sprites folder's importer like armor_back_atlas.png (no .meta committed).
+- Visor 3 (Yan: "visor got absolutely crushed lol, he needs more hp, at least double"; "make it so he needs 3 parries to get
+  stunned, if he got stunned by every single one he'd be tooooo easy"; "i could not even see his combo"):
+  - HP 2400 -> 4800. `Boss.Def.ParriesToStagger` = 3: `Boss.Stagger` counts perfect parries (they fade after `GuardRecovers` 8 s
+    without one) and only the 3rd opens him; the first two are clean deflections (a short hit-stop, Focus, no slow-mo) that don't
+    break his combo, so the combos play out. The guard-break pose and the slow-mo moment come with the stun. HUD: "GUARD 1/3",
+    "GUARD 2/3" under his bar. Plain enemies still stagger on one perfect parry.
+  - Sim (the same bot: perfect on 4 of every 6 hits, one late, one missed, dives his red moves): before, the bot got downed by
+    limb damage and the boss stopped hitting a downed player; the bot now stims back up when downed, as a player would. Result:
+    executed in 51 s real, 6 stuns (18 perfect parries), phase 2 at 33 s. `maps/renders/boss/boss_duel.mp4` re-rendered with
+    the guard counter.
+  - Seen, not changed: the boss doesn't swing at a downed player (Melee.Swing skips downed targets) - he just stands over you.

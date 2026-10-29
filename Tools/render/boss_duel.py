@@ -117,7 +117,7 @@ def draw(i):
     global dead_at, ghost, prev_b
     f = frames[i]; t = f["rt"]
     c = BG.copy(); dd = ImageDraw.Draw(c)
-    px_, py_, php, focus = f["p"]; bx, by, bhp, phase, broken, finished, gone, stag, danger = f["b"]
+    px_, py_, php, focus = f["p"]; bx, by, bhp, phase, broken, finished, gone, stag, danger = f["b"][:9]
     hx, hy = (bx - X0) * 16 * Z, (by - Y0) * 16 * Z
     pxs, pys = (px_ - X0) * 16 * Z, (py_ - Y0) * 16 * Z
     for e in f["ev"]:                                       # this frame's events -> effects
@@ -213,7 +213,7 @@ def hud(img, f, punch):
     if punch > 0.01:
         edge = Image.new("RGBA", img.size, (184, 230, 255, 0)); edge.putalpha(VIG.point(lambda v: int(v * 0.6 * punch)))
         img.alpha_composite(edge)
-    bx, by, bhp, phase, broken, finished, gone, stag, danger = f["b"]
+    bx, by, bhp, phase, broken, finished, gone, stag, danger = f["b"][:9]
     show = not gone or (f["rt"] - getattr(hud, "gone_at", f["rt"])) < 3
     if gone and not hasattr(hud, "gone_at"): hud.gone_at = f["rt"]
     if show:
@@ -226,7 +226,8 @@ def hud(img, f, punch):
         if hp > 0: dd.rectangle((x0 + 4, y0 + 4, x0 + 4 + (BW - 8) * hp, y0 + 24), fill=fill)
         name = "THE VISOR" + ("  II" if phase == 2 else "")
         dd.text((img.width // 2, y0 - 22), name, font=NAME, fill=CREAM, anchor="mm")
-        state = "DEFEATED" if finished else "EXECUTE - E" if broken else "STAGGERED" if stag else ""
+        gd = f["b"][9] if len(f["b"]) > 9 else 0
+        state = "DEFEATED" if finished else "EXECUTE - E" if broken else "STAGGERED" if stag else f"GUARD {gd}/3" if gd else ""
         if state: dd.text((img.width // 2, y0 + 50), state, font=NAME, fill=(255, 90, 76, 255) if broken else YELLOW, anchor="mm")
     title, sub, age = f["splash"]
     if 0 <= age < 3.2 and title:

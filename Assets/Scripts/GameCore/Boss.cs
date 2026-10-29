@@ -42,6 +42,7 @@ namespace GameCore
             public string Name, Title, Weapon, Armor;
             public int Hp;
             public float StepSeconds = 0.35f, Recover = 1.0f;
+            public int ParriesToStagger = 3;  // Yan: "make it so he needs 3 parries to get stunned"
             public Move[] Moves;
             public string Phase2Line;
         }
@@ -54,7 +55,9 @@ namespace GameCore
             public bool Broken, Finished, Gone; public float LootedAt = -1f;
             public float GlintAt = -99f; public bool GlintDanger;   // for the view
             public float Started;
+            public int Parries; public float LastParryAt = -99f;   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
+        public const float GuardRecovers = 8f;
 
         public static readonly List<Fight> Fights = new List<Fight>();
         public static Fight Of(ICombatant u) => u == null ? null : Fights.FirstOrDefault(f => f.Unit == u && !f.Gone);
@@ -77,7 +80,7 @@ namespace GameCore
 
         public static readonly Def Visor = new Def
         {
-            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 2400,
+            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 4800,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = new[]
             {
@@ -208,14 +211,23 @@ namespace GameCore
         // ---------------- what the rest of the game asks ----------------
 
         /// <summary>A perfect parry (or anything else that staggers): open for `seconds`. A plain enemy just loses that long.</summary>
-        public static void Stagger(ICombatant u, float seconds)
+        /// <summary>A boss needs Def.ParriesToStagger perfect parries (within GuardRecovers s of each other) before he's open; the ones
+        /// before it are clean deflections that don't break his combo. True if this one staggered him.</summary>
+        public static bool Stagger(ICombatant u, float seconds)
         {
             var f = Of(u);
-            if (f == null) { if (u is HumanEnemy he) RtAi.Hold(he, seconds); return; }
-            if (f.Broken) return;
+            if (f == null) { if (u is HumanEnemy he) RtAi.Hold(he, seconds); return true; }
+            if (f.Broken) return false;
+            if (Time.time - f.LastParryAt > GuardRecovers) f.Parries = 0;
+            f.LastParryAt = Time.time;
+            if (++f.Parries < f.Def.ParriesToStagger) return false;
+            f.Parries = 0;
             f.StaggerUntil = Time.time + seconds; f.Doing = null; f.NextMoveAt = f.StaggerUntil + 0.3f;
             CombatFx.Push("stagger", u, null, null).Now = true;
+            return true;
         }
+        /// <summary>For the HUD: how many perfect parries toward the next stagger (0 once they've faded).</summary>
+        public static int GuardDamage(Fight f) => Time.time - f.LastParryAt > GuardRecovers ? 0 : f.Parries;
 
         public static bool Staggered(ICombatant u) => Of(u) is Fight f && Time.time < f.StaggerUntil;
 
