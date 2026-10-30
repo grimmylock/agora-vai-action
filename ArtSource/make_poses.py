@@ -31,6 +31,21 @@ def spread(r, s):
         if x + s < 16: out[x + s] = r[x]
     return out
 def halves(left, right): return left[:8] + right[8:]
+def step_legs(r, ls, rs):
+    """Each leg moved on its own (left half by ls, right half by rs) - shifting the whole row and then cutting it in half dragged a
+    slice of the other leg along (Yan: "lunge has 3 legs"). Where they meet, the right leg is drawn over the left."""
+    out = shift(r[:8] + [(0, 0, 0, 0)] * 8, ls)
+    right = shift([(0, 0, 0, 0)] * 8 + r[8:], rs)
+    return [b if b[3] else a for a, b in zip(out, right)]
+def main_colour(r):
+    from collections import Counter
+    c = Counter(p for p in r if p[3] and p[:3] != K[:3])
+    return c.most_common(1)[0][0] if c else (90, 80, 60, 255)
+def strip(x0, x1, col, boot=None, bx=2):
+    """A leg seen from the side, lying flat: trouser colour from x0 to x1, the boot's last bx pixels."""
+    r = blank()
+    for x in range(max(0, x0), min(16, x1 + 1)): r[x] = boot if boot is not None and x > x1 - bx else col
+    return r
 def tone(r, f):
     return [(min(255, int(p[0] * f)), min(255, int(p[1] * f)), min(255, int(p[2] * f)), p[3]) if p[3] and p[:3] != K[:3] else p for p in r]
 
@@ -77,16 +92,21 @@ def poses(img, heavy):
     knee = halves(blank(), tone(thigh, 1.25))
     P["kneel 1/2"] = assemble(upper, [spread(thigh, 1), halves(spread(boots, 1), tone(thigh, 1.2))], down=n - 2)
     P["kneel"] = assemble(upper, [halves(spread(thigh, 1), blank()), halves(spread(boots, 1), tone(thigh, 1.25))], down=n - 1)
-    # sit: on the ground facing you, thighs coming at you, feet out wide
-    P["sit 1/2"] = assemble(upper, [spread(thigh, 1), spread(boots, 2)], down=n - 2)
-    P["sit"] = assemble(upper, [spread(boots, 3)], down=n)              # on the seat of his pants, only the boots show
+    # sit (Yan: "sit 1/2 and sit makes it look they're doing a split, make the sitting have their legs stretched out to the
+    # side"): on the ground, both legs together stretched out sideways along it (this one facing right; the game would mirror
+    # it for the left). The in-between: the legs on their way out, bent at the knee.
+    tr, bt = main_colour(thigh), main_colour(boots)
+    lit, dark = tuple(min(255, int(v * 1.12)) for v in tr[:3]) + (255,), tuple(int(v * 0.8) for v in tr[:3]) + (255,)
+    P["sit 1/2"] = assemble(upper, [strip(6, 9, lit), strip(8, 11, tr), strip(10, 13, dark, bt)], down=n)
+    P["sit"] = assemble(upper, [strip(6, 14, lit, bt), strip(6, 14, dark, bt)], down=n)
     # leaning out from cover: head and shoulders over, legs stay
     for side, s in (("left", -1), ("right", 1)):
         P[f"lean {side} 1/2"] = assemble(upper, L, lean=(2 * s, s))
         P[f"lean {side}"] = assemble(upper, L, lean=(3 * s, 2 * s))
     # lunge: the body forward and down, the front leg out, the back leg trailing
-    P["lunge 1/2"] = assemble(upper, [halves(shift(thigh, 0), shift(thigh, 1))] + [halves(shift(r, 0), shift(r, 1)) for r in L[1:]], down=1, lean=(1, 1))
-    P["lunge"] = assemble(upper, [halves(shift(thigh, -1), shift(thigh, 2)), halves(shift(boots, -1), shift(boots, 3))], down=n - 2, lean=(2, 2))
+    # (each leg moved on its own: the front leg steps out and bends, the back one stretches behind)
+    P["lunge 1/2"] = assemble(upper, [step_legs(r, -(i * 1) // max(1, n - 1), (i + 1) // 2) for i, r in enumerate(L)], down=1, lean=(1, 1))
+    P["lunge"] = assemble(upper, [step_legs(thigh, 0, 1), step_legs(L[-2], -1, 2), step_legs(boots, -2, 3)], down=n - 3, lean=(2, 2))
     # stagger: rocked back, feet apart to catch himself
     P["stagger 1/2"] = assemble(upper, [spread(r, 1) for r in L], lean=(-1, 0))
     P["stagger"] = assemble(upper, [spread(thigh, 1), spread(boots, 1)], down=n - 2 - 1 if n > 3 else 0, lean=(-2, -1))

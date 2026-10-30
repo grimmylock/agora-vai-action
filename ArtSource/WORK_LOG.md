@@ -4397,3 +4397,8 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Humans' gear drops pristine (`HumanLootSystem.RollCondition` -> Working) with three magazines of ammo.
 - HUD top line: WAVE / TIER / LEFT / KILLS / next-wave timer. Checks: `SurvivalChecks` (sizes, breather, the minute cap, boss
   wave waits, tier up, pristine loot). Not checked in Unity; no render (it's a live fight on a full map).
+- Poses b (Yan, on the pose sheet: "lunge has 3 legs, sit 1/2 and sit makes it look they're doing a split, make the sitting have
+  their legs strechted out to the side"): the lunge moved the whole leg row and cut it in half, dragging a slice of the other leg
+  along - now each leg moves on its own (`make_poses.step_legs`). The sit: both legs together stretched out sideways along the
+  ground (boots at the end), the in-between bent at the knee on the way out; facing right on the sheet (the game would mirror it).
+  The swing poses in the game (lunge) were regenerated with the fix (`make_poses.py atlas`).
