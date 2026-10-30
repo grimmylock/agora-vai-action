@@ -208,6 +208,23 @@ namespace GameCore
             ApplyCarryEffects();
         }
 
+        /// <summary>Pack 1b (Yan: "there's no equip/unequip ui"): the main weapon back into the pack (its rounds into the stash), hands
+        /// empty - the second weapon, if any, comes up instead.</summary>
+        public void UnequipWeapon()
+        {
+            var w = EquippedWeapon;
+            if (w == null) return;
+            if (w.CurrentMagazine > 0 && !CombatRules.IsMelee(w)) Ammo.Add(Inventory, Ammo.Key(w.Db, w.CurrentAmmoType), w.CurrentMagazine);
+            StowOffhand();
+            var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == EquippedWeaponCategory && i.Key == EquippedWeaponKey);
+            var item = new InventoryItem { Id = d?.Id ?? EquippedWeaponKey, Name = d?.Name ?? w.Name, WeightKg = d?.WeightKg ?? 1f, Qty = 1, Type = "weapon", Price = d?.Price,
+                Category = EquippedWeaponCategory, Key = EquippedWeaponKey, Condition = w.Condition, Upgrades = GameCore.Upgrades.Join(w.Upgrades) };
+            EquippedWeapon = null; EquippedWeaponCategory = EquippedWeaponKey = null;
+            AddItem(item);
+            if (SecondaryWeapon != null) SwapWeapons();
+            ApplyCarryEffects();
+        }
+
         /// <summary>Y: swap the two weapons. Both keep their loaded rounds.</summary>
         public bool SwapWeapons()
         {

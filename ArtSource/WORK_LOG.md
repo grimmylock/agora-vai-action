@@ -4373,3 +4373,10 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   drawn outside Unity in the panel's layout - fonts/frame approximate). Checks: `PackChecks`.
 - Not checked in Unity. Not done: backpacks visible on the character (Yan: "probably wont be visible on the character"), more
   backpack kinds, shop/loot/stash screens still list items as text.
+- Pack 1b (Yan's Unity test: "when i close the inventory it stays a grey screen, also there's no equip/unequip ui, no drag and
+  drop"): two layout bugs of mine - the panel was placed half its size up and left of centre (HudView.Rect's pivot is its anchor),
+  so the pack screen showed as an empty grey block in the corner, and closing destroyed only the box's inner fill, leaving the grey
+  frame. Now centred and the whole box goes. Equip/unequip: drag an item onto WEAPON / SECOND / ARMOR / BACKPACK to equip it there;
+  drag a weapon out of its slot into the bag (or right-click the slot) to unequip it (`Player.UnequipWeapon`: rounds to the stash,
+  the second weapon comes up). A suit or a pack comes off by putting another on. Check: unequip -> in the pack, equip -> out.
+  Not checked in Unity.

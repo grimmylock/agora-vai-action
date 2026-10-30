@@ -1212,6 +1212,13 @@ static class Program {
     var save = p.CaptureSaveData(); var q = new Player(); q.ApplyLoadedData(save);
     var rb = q.Inventory.Items.First(i => i.Id == "VK74");
     Check(rb.GridX == rifle.GridX && rb.GridY == rifle.GridY && rb.Rot == rifle.Rot, "Pack: places survive a save");
+    // Pack 1b (Yan: "there's no equip/unequip ui"): unequipping puts the gun in the pack and empties your hands
+    p.Inventory.Items.Clear(); p.EquipWeapon("sidearm", "PSh18Pchela"); p.SecondaryWeapon = null;
+    p.UnequipWeapon();
+    var gun = p.Inventory.Items.FirstOrDefault(i => i.Type == "weapon" && i.Key == "PSh18Pchela");
+    Check(p.EquippedWeapon == null && gun != null && gun.GridX >= 0, "Pack: unequipping puts the pistol in the pack, hands empty");
+    p.EquipWeaponFromInventory(gun.Id);
+    Check(p.EquippedWeapon != null && p.Inventory.Items.All(i => i.Type != "weapon"), "Pack: and equipping takes it back out");
     p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
   }
 

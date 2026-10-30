@@ -19,7 +19,7 @@ namespace GameCore
         public static bool PackOpen;
         public static int PackClosedFrame = -1;          // the ESC that closed it doesn't also pause (PlayerController)
         const float Cell = 56f;
-        RectTransform _pack, _bagRect, _outRect; TextMeshProUGUI _packInfo, _packHint;
+        RectTransform _pack, _bagRect, _outRect; GameObject _packBox; readonly RectTransform[] _slots = new RectTransform[4]; TextMeshProUGUI _packInfo, _packHint;
         string _packStamp;
         InventoryItem _drag; bool _dragRot; int _dragDx, _dragDy; Image _dragImg;
         static readonly Dictionary<string, Sprite> Icons = new Dictionary<string, Sprite>();
@@ -28,7 +28,8 @@ namespace GameCore
         {
             PackOpen = !PackOpen;
             GameState.Current.ModalOpen = PackOpen;
-            if (PackOpen) { Pack.Settle(Player.Current); _packStamp = null; } else { PackClosedFrame = Time.frameCount; _drag = null; if (_pack != null) Destroy(_pack.gameObject); _pack = null; }
+            if (PackOpen) { Pack.Settle(Player.Current); _packStamp = null; }
+            else { PackClosedFrame = Time.frameCount; DropDrag(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; }   // the whole box (Yan: "it stays a grey screen")
         }
 
         void UpdatePack()
@@ -47,10 +48,11 @@ namespace GameCore
 
         void BuildPack(Player p)
         {
-            if (_pack != null) Destroy(_pack.gameObject);
+            if (_packBox != null) Destroy(_packBox);
             var bag = Pack.Bag(p);
             float bw = bag.Cols * Cell, bh = bag.Rows * Cell, W = bw + 48f + 420f, H = Mathf.Max(bh + 48f + 150f, 560f);
-            _pack = Box(_root.transform, "Pack", new Vector2(0.5f, 0.5f), new Vector2(-W / 2f, H / 2f), new Vector2(W, H));
+            _pack = Box(_root.transform, "Pack", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(W, H));   // centred (Rect's pivot is its anchor)
+            _packBox = _pack.parent.gameObject;
             Txt(_pack, "Title", new Vector2(18, -12), new Vector2(600, 30), (bag.Id == "none" ? "POCKETS" : bag.Name.Split('(')[0].Trim().ToUpperInvariant()), true, 20, Cream);
             // the bag: its cloth, a darker seam round the opening, the cells sewn in
             Color cloth = C(bag.Colour.TrimStart('#'));
@@ -77,14 +79,14 @@ namespace GameCore
             for (int i = 0; i < eq.Length; i++)
             {
                 float y = -46 - i * 72;
-                var slot = Img(_pack, "Slot", new Vector2(0, 1), new Vector2(rx, y), new Vector2(150, 64), new Color(0, 0, 0, 0.3f));
+                var slot = Img(_pack, "Slot", new Vector2(0, 1), new Vector2(rx, y), new Vector2(150, 64), new Color(0, 0, 0, 0.3f)); _slots[i] = slot.rectTransform;
                 if (eq[i].item != null) { var im = Img(slot.transform, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(142, 58), Color.white); im.sprite = Icon(eq[i].item); im.preserveAspect = true; Center(im.rectTransform); }
                 Txt(_pack, "SlotName", new Vector2(rx + 160, y - 6), new Vector2(260, 20), eq[i].slot, true, 12, Dim);
                 Txt(_pack, "SlotItem", new Vector2(rx + 160, y - 28), new Vector2(260, 24), eq[i].item?.Name ?? "-", false, 15, Cream);
             }
             _packInfo = Txt(_pack, "Info", new Vector2(rx, -346), new Vector2(400, 120), "", false, 15, Cream);
             _packInfo.enableWordWrapping = true;
-            _packHint = Txt(_pack, "Hint", new Vector2(rx, -H + 70), new Vector2(400, 60), "DRAG to move    R turn\nRIGHT-CLICK use / equip    X drop    I close", true, 11, Dim);
+            _packHint = Txt(_pack, "Hint", new Vector2(rx, -H + 84), new Vector2(400, 80), "DRAG to move, onto a slot to equip, out of a slot to unequip    R turn\nRIGHT-CLICK use / equip / unequip    X drop    I close", true, 11, Dim);
             _packHint.enableWordWrapping = true;
         }
 
@@ -183,25 +185,76 @@ namespace GameCore
                 }
                 if (m.leftButton.wasReleasedThisFrame)
                 {
-                    bool ok = inBag && Pack.Move(p, _drag, c.Value.x - _dragDx, c.Value.y - _dragDy, _dragRot);
-                    if (!ok && !inBag && CellAt(_outRect, screen) is var oc && oc.HasValue && oc.Value.y >= -1 && oc.Value.y <= 2) _drag.GridX = -1;   // put it aside
-                    _drag = null; if (_dragImg != null) Destroy(_dragImg.transform.parent.gameObject); _dragImg = null; _packStamp = null;
+                    int slot = SlotAt(screen);
+                    if (_dragSlot >= 0)                                                       // out of a slot: into the bag = unequip
+                    {
+                        if (slot != _dragSlot && (inBag || slot < 0)) Unequip(p, _dragSlot, inBag ? c : null);
+                    }
+                    else if (slot >= 0) EquipTo(p, _drag, slot);                              // onto a slot: equip it there
+                    else
+                    {
+                        bool ok = inBag && Pack.Move(p, _drag, c.Value.x - _dragDx, c.Value.y - _dragDy, _dragRot);
+                        if (!ok && !inBag && CellAt(_outRect, screen) is var oc && oc.HasValue && oc.Value.y >= -1 && oc.Value.y <= 2) _drag.GridX = -1;   // put it aside
+                    }
+                    DropDrag(); _packStamp = null;
                 }
+                return;
+            }
+            int over = SlotAt(screen);
+            if (over >= 0 && hover == null)                                                   // an equipped slot: drag it out or right-click to unequip
+            {
+                if (m.rightButton.wasPressedThisFrame) { Unequip(p, over, null); _packStamp = null; }
+                else if (m.leftButton.wasPressedThisFrame && SlotItem(p, over) is InventoryItem si && over < 2) { StartDrag(si, 0, 0); _dragSlot = over; }
                 return;
             }
             if (hover == null) return;
             if (m.leftButton.wasPressedThisFrame)
-            {
-                _drag = hover; _dragRot = hover.Rot;
-                _dragDx = hover.GridX >= 0 && inBag ? c.Value.x - hover.GridX : 0; _dragDy = hover.GridX >= 0 && inBag ? c.Value.y - hover.GridY : 0;
-                var (w, h) = Pack.Size(hover);
-                var holder = Rect(_root.transform, "Held", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(w * Cell, h * Cell));
-                holder.pivot = new Vector2((_dragDx + 0.5f) / (hover.Rot ? h : w), 1f - (_dragDy + 0.5f) / (hover.Rot ? w : h));
-                _dragImg = Img(holder, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(w * Cell - 8, h * Cell - 8), new Color(1f, 1f, 1f, 0.85f));
-                Center(_dragImg.rectTransform); _dragImg.sprite = Icon(hover); _dragImg.preserveAspect = true;
-            }
+                StartDrag(hover, hover.GridX >= 0 && inBag ? c.Value.x - hover.GridX : 0, hover.GridX >= 0 && inBag ? c.Value.y - hover.GridY : 0);
             else if (m.rightButton.wasPressedThisFrame) Act(p, hover);
             else if (k != null && k.xKey.wasPressedThisFrame) { p.DropItem(hover.Id, System.Math.Max(1, hover.Qty)); _packStamp = null; }
+        }
+
+        int _dragSlot = -1;
+        void StartDrag(InventoryItem it, int dx, int dy)
+        {
+            _drag = it; _dragRot = it.Rot; _dragDx = dx; _dragDy = dy; _dragSlot = -1;
+            var (w, h) = Pack.Size(it);
+            var holder = Rect(_root.transform, "Held", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(w * Cell, h * Cell));
+            holder.pivot = new Vector2((dx + 0.5f) / (it.Rot ? h : w), 1f - (dy + 0.5f) / (it.Rot ? w : h));
+            _dragImg = Img(holder, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(w * Cell - 8, h * Cell - 8), new Color(1f, 1f, 1f, 0.85f));
+            Center(_dragImg.rectTransform); _dragImg.sprite = Icon(it); _dragImg.preserveAspect = true;
+        }
+        void DropDrag() { _drag = null; _dragSlot = -1; if (_dragImg != null) Destroy(_dragImg.transform.parent.gameObject); _dragImg = null; }
+
+        /// <summary>Which equipped slot (0 weapon, 1 second, 2 armor, 3 backpack) the mouse is over, or -1.</summary>
+        int SlotAt(Vector2 screen)
+        {
+            for (int i = 0; i < _slots.Length; i++)
+                if (_slots[i] != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(_slots[i], screen, null, out var l) && l.x >= 0 && l.x <= 150 && l.y <= 0 && l.y >= -64) return i;
+            return -1;
+        }
+        static InventoryItem SlotItem(Player p, int slot) =>
+            slot == 0 ? (p.EquippedWeapon != null ? AsItem(p.EquippedWeapon) : null) : slot == 1 ? (p.SecondaryWeapon != null ? AsItem(p.SecondaryWeapon) : null) : null;
+
+        /// <summary>Dropped on a slot: the weapon slots take weapons (second: Second), armor takes a suit, the backpack slot a pack.</summary>
+        static void EquipTo(Player p, InventoryItem it, int slot)
+        {
+            if (slot == 0 && it.Type == "weapon") p.EquipWeaponFromInventory(it.Id);
+            else if (slot == 1 && it.Type == "weapon") p.EquipSecondaryFromInventory(it.Id);
+            else if (slot == 2 && it.Type == "armor") p.EquipArmorFromInventory(it.Id);
+            else if (slot == 3 && it.Type == "backpack") p.EquipBackpackFromInventory(it.Id);
+            else GameLog.Write($"The {it.Name} doesn't go there.");
+        }
+
+        /// <summary>Out of a slot into the pack (at `cell` if there's room there). A suit or a backpack only comes off by putting another on.</summary>
+        static void Unequip(Player p, int slot, (int x, int y)? cell)
+        {
+            int before = p.Inventory.Items.Count;
+            if (slot == 0) p.UnequipWeapon();
+            else if (slot == 1) p.StowSecondary();
+            else { GameLog.Write(slot == 2 ? "Put another suit on to take this one off (drag it onto ARMOR)." : "Put another pack on to swap (drag it onto BACKPACK)."); return; }
+            var it = p.Inventory.Items.Count > before ? p.Inventory.Items[p.Inventory.Items.Count - 1] : null;
+            if (it != null && cell.HasValue) Pack.Move(p, it, cell.Value.x, cell.Value.y, it.Rot);
         }
 
         /// <summary>Right-click: what the old panel's button did - equip a weapon or suit, use a consumable, wear a pack, belt an artifact.</summary>
