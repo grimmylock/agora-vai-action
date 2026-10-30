@@ -261,9 +261,10 @@ namespace GameCore
             if (!show) return;
 
             var k = Keyboard.current;
+            UpdatePack();                                                             // Pack 1: I - the pack screen
             if (k != null && !GameState.Current.ModalOpen)
             {
-                if (k.iKey.wasPressedThisFrame) { Toggle("EquipmentPanel"); Toggle("InventoryPanel"); }
+                // (I opens the pack screen now - HudView.Pack.cs; the old text panels stay hidden)
                 if (k.f1Key.wasPressedThisFrame) Toggle("ControlsPanel");
                 var digits = new[] { k.digit1Key, k.digit2Key, k.digit3Key, k.digit4Key };
                 for (int i = 0; i < 4; i++)

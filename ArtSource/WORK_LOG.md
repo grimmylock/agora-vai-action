@@ -4350,3 +4350,26 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Empty hands b (Yan: "they're pointing to the sides and swinging up and down instead of pointing down and swinging a little to
   the sides, seems like they're dancing"): the gloves hang turned fingers-down (grip -90, support +90; the support glove's turn is
   reset when a weapon is out) at a fixed height and sway a pixel to one side, then the other, together with the steps.
+
+## Pack 1 - the backpack inventory (2026-10-30)
+- Yan: "the inventory is just text for now, we can add a real one like the case from re4 using our detailed sprites for items";
+  his answers: items take grid shapes ("could be"), they rotate ("yeah"), pack space and weight both limit ("both"), armor icons
+  by "turning off the eyes in the suits and putting the gloves in a resting position above them", and it's "inside of a bag, also
+  reflected by the color and size of the backpack". Gloves: "option 1" (A - unchanged).
+- `Pack.cs`: the bag from the equipped backpack (`BackpackDef.Cols/Rows/Colour`: pockets 5x4, Small Canvas Sack 8x5 in khaki
+  canvas, Tourist Frame 11x7 in blue-grey nylon); footprints (`Pack.Size`: pistol 2x2, SMG 3x2, rifle/shotgun 5x2, sniper 6x2,
+  heavy 6x3, knives 2x1 / one-handed 3x1 / two-handed 4x1-4x2, suit 3x3, medkit/splint/MRE 2x1, repair kit 2x2, the rest 1x1);
+  `InventoryItem.GridX/GridY/Rot` (saved); first-fit placement flat then turned (`Place`), dragging (`Move`), repack on a new bag
+  (`Refit`, from HandleBackpackChange), old saves settle on load. Pickups (Player.AddItem) take the first free spot; what doesn't
+  fit stays out of the grid - never lost - until you make room or drop it. Ammo stays in the ammo stash. Weight still limits.
+- `HudView.Pack.cs` (I): the bag in its cloth, cells sewn in, items as icons over their footprints; drag to move, R turns the held
+  item, right-click equips / uses / wears / belts / fits it (the old panel's buttons), X drops it; the "doesn't fit" strip under
+  the bag; equipped weapon / second / armor / backpack and the hovered item's name, weight and size on the right. The world keeps
+  running (hands stop, like the other panels); I or ESC closes (that ESC doesn't also pause). The old I text panels stay hidden.
+- Icons (`ArtSource/make_item_icons.py`, 16 px a cell, locked style): all 15 consumables, loot/junk/mutant part/key/cash/detector/
+  armor mod, artifacts by type, both backpacks in their colours; `armor_icon_atlas.png` - every suit with its eyes put out and its
+  gloves laid above it (48x48, armor atlas order). Weapons use their 64x32 _hd sprites.
+- Renders: `dotnet /tmp/test.dll packdump p.json` + `Tools/render/pack_screen.py` -> `maps/renders/pack/` (the real packing,
+  drawn outside Unity in the panel's layout - fonts/frame approximate). Checks: `PackChecks`.
+- Not checked in Unity. Not done: backpacks visible on the character (Yan: "probably wont be visible on the character"), more
+  backpack kinds, shop/loot/stash screens still list items as text.

@@ -12,6 +12,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
@@ -857,6 +858,30 @@ static class Program {
     File.WriteAllText(path, sb.Append("]}").ToString());
     Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}: {string.Join(", ", moves)}");
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
+  }
+
+  // Pack 1: a pack as the game packs it (Pack.Settle on a real kit + loot, through Player.AddItem) for each bag -> Tools/render/pack_screen.py
+  static void PackDump(string path) {
+    var sb = new System.Text.StringBuilder("{\"bags\":[");
+    var bags = new[] { "none", "backpack_small", "backpack_tourist" };
+    for (int b = 0; b < bags.Length; b++) {
+      var p = Arena(out _, out _); p.Inventory.Items.Clear(); p.Inventory.Backpack = bags[b];
+      p.EquipWeapon("sidearm", "PSh18Pchela"); p.EquipArmor("tier1", "LeatherJacket");
+      void Add(string type, string id, string name, int qty = 1, string cat = null, string key = null) => p.AddItem(new InventoryItem { Id = id, Name = name, Type = type, Qty = qty, Category = cat, Key = key, WeightKg = 0.5f });
+      Add("weapon", "HuntingKnife", "Hunting Knife", 1, "melee", "HuntingKnife");
+      Add("consumable", "basicMedkit", "Basic Medkit", 2); Add("consumable", "bandage", "Bandage", 3); Add("consumable", "splint", "Splint"); Add("consumable", "basicStim", "Basic Stim", 2);
+      Add("consumable", "mre", "MRE"); Add("consumable", "energyDrink", "Energy Drink", 2); Add("consumable", "fragGrenade", "Frag Grenade", 2); Add("consumable", "radBlockPill", "Rad-Block Pill");
+      Add("weapon", "VK74", "VK-74", 1, "assault", "VK74"); Add("armor", "x", "Raider Jacket", 1, "tier1", "RaiderJacket");
+      Add("consumable", "fieldRepairKit", "Field Repair Kit"); Add("loot", "scrap", "Scrap Metal", 4); Add("artifact", "x2", "Pulse Pebble"); Add("key", "k", "Bunker Key");
+      if (bags[b] == "backpack_tourist") { Add("weapon", "SVD", "Long Rifle", 1, "sniper", "SVDx"); Add("consumable", "militaryMedkit", "Military Medkit"); Add("consumable", "smokeGrenade", "Smoke Grenade"); }
+      var bag = Pack.Bag(p);
+      sb.Append((b > 0 ? "," : "") + $"{{\"id\":\"{bag.Id}\",\"name\":\"{bag.Name}\",\"cols\":{bag.Cols},\"rows\":{bag.Rows},\"colour\":\"{bag.Colour}\",\"items\":[");
+      sb.Append(string.Join(",", p.Inventory.Items.Select(i => { var (w, h) = Pack.Size(i);
+        string icon = i.Type == "weapon" ? "Weapons/weapon_" + i.Key + "_hd.png" : i.Type == "armor" ? "armor:" + i.Name : i.Type == "consumable" ? "Items/icon_" + i.Id.Split('~')[0] + ".png" : i.Type == "artifact" ? "Items/icon_artifact_Gravitational.png" : "Items/icon_" + i.Type + ".png";
+        return FormattableString.Invariant($"{{\"name\":\"{i.Name}\",\"x\":{i.GridX},\"y\":{i.GridY},\"rot\":{(i.Rot ? 1 : 0)},\"w\":{w},\"h\":{h},\"qty\":{i.Qty},\"icon\":\"{icon}\"}}"); })));
+      sb.Append("]}");
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString()); Console.WriteLine("pack dump -> " + path);
   }
 
   // Use: the item-use animations (HeldPoseMath.Frame + ApplyUse, as HeldWeaponView draws them) with a pistol in hand, facing right
