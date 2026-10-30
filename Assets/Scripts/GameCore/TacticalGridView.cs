@@ -647,7 +647,7 @@ namespace GameCore
         private void PoseBody(SpriteRenderer marker, Player p, bool down)
         {
             var pose = Rt.PoseOf(p);
-            float tilt = down ? 90f : pose.Active ? pose.Tilt : Held(marker).Lean;
+            float tilt = down ? (UnitSprites.Pose(p, "lying", false) != null ? 0f : 90f) : pose.Active ? pose.Tilt : Held(marker).Lean;   // Poses: the lying frame instead of turning the body
             marker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
             if (!down && pose.Active) marker.transform.localScale = new Vector3(marker.transform.localScale.x * pose.SquashX, marker.transform.localScale.y * pose.SquashY, 1f);
             bool flying = !down && pose.Active && pose.Lift > 0.01f;
@@ -707,6 +707,59 @@ namespace GameCore
             h.UseT = s != null && s.UseDone > s.UseFrom ? Mathf.Clamp01((Time.time - s.UseFrom) / (s.UseDone - s.UseFrom)) : 0f;
         }
 
+        // ---- Poses (Yan: "keep all of them, wire them into the game"): the body's frame when no swing asks for one ----
+        readonly Dictionary<SpriteRenderer, (Vector3 pos, float since)> _still = new Dictionary<SpriteRenderer, (Vector3, float)>();
+        readonly Dictionary<SpriteRenderer, (string pose, float at)> _posed = new Dictionary<SpriteRenderer, (string, float)>();
+        const float SitAfter = 8f, NpcSitAfter = 10f, HalfFrame = 0.12f;
+
+        /// <summary>Downed: lying. Sneaking: crouched on the move, kneeling when still. Aiming with cover right beside you (between
+        /// you and where you aim): leaning out of it to that side. Out of a fight and still for a while - you, or a calm NPC -
+        /// sitting down, legs out to the side you face.</summary>
+        string StancePose(ICombatant u, SpriteRenderer marker, bool walking)
+        {
+            float now = Time.time; var pos = marker.transform.position;
+            if (!_still.TryGetValue(marker, out var st) || Mathf.Abs(st.pos.x - pos.x) + Mathf.Abs(st.pos.y - pos.y) > 0.02f) _still[marker] = st = (pos, now);
+            float still = now - st.since;
+            if (u is Player p)
+            {
+                if (Body.Down(p)) return "lying";
+                if (p.Sneaking) return walking || still < 0.3f ? "crouch" : "kneel";
+                var aim = AimPoint(p, marker);
+                if (Rt.On && Rt.Of(p).Aiming && aim.HasValue && Lean(p, aim.Value.x - pos.x, aim.Value.y - pos.y) is string lean) return lean;
+                if (!EncounterState.InCombat && still > SitAfter && (!Rt.On || Rt.Of(p).UsingId == null)) return aim.HasValue && aim.Value.x < pos.x ? "sit_l" : "sit_r";
+                return null;
+            }
+            if (u is HumanEnemy h && h.IsAlive())
+            {
+                var aim = AimPoint(h, marker);
+                if (h.IsAggroed && EncounterState.InCombat && aim.HasValue && Lean(h, aim.Value.x - pos.x, aim.Value.y - pos.y) is string lean) return lean;
+                if (!h.IsAggroed && still > NpcSitAfter && h.Morale != "Surrendered") return h.Facing.x < 0 ? "sit_l" : "sit_r";
+            }
+            return null;
+        }
+
+        /// <summary>Cover on the tile beside you toward where you aim (side to side, or up and down the screen): lean out of it to the
+        /// side you aim at.</summary>
+        static string Lean(ICombatant u, float dx, float dy)
+        {
+            int sx = Mathf.Abs(dx) > 0.3f ? (dx > 0 ? 1 : -1) : 0, sy = Mathf.Abs(dy) > 0.3f ? (dy > 0 ? -1 : 1) : 0;   // screen y up = map y down
+            bool Cover(int x, int y) { var t = TerrainMap.GetTile(x, y).Type; return t == TileType.HardCover || t == TileType.ScatterCover || t == TileType.Solid; }
+            bool covered = (sx != 0 && Cover(u.X + sx, u.Y)) || (sy != 0 && Cover(u.X, u.Y + sy));
+            if (!covered) return null;
+            return dx < 0 ? "lean_l" : "lean_r";
+        }
+
+        /// <summary>The in-between frame for an instant on the way into a pose that has one.</summary>
+        string Entering(SpriteRenderer marker, string pose)
+        {
+            float now = Time.time;
+            if (!_posed.TryGetValue(marker, out var was) || was.pose != pose) _posed[marker] = was = (pose, now);
+            if (pose == null || now - was.at >= HalfFrame) return pose;
+            string half = pose == "crouch" ? "crouch_h" : pose == "kneel" ? "kneel_h" : pose.StartsWith("sit_") ? "sit_h_" + pose.Substring(4)
+                : pose.StartsWith("lean_") && !pose.StartsWith("lean_h") ? "lean_h_" + pose.Substring(5) : null;
+            return half ?? pose;
+        }
+
         private bool DrawUnit(ICombatant u, SpriteRenderer marker, Color fallback)
         {
             bool known = _motion.Known(u);
@@ -736,8 +789,10 @@ namespace GameCore
             int wf = up ? _motion.WalkFrame(u) : -1;
             if (wf >= 0 && UnitSprites.Walk(u, wf, away) is Sprite ws) marker.sprite = ws;
             string bodyPose = _held.TryGetValue(marker, out var hv) ? hv.BodyPose : null;
-            if (bodyPose == null && u is Player sp && sp.Sneaking && !Body.Down(sp)) bodyPose = "crouch";   // sneaking: crouched, walking or still
-            if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3: the swing's body frame
+            if (bodyPose == null && up) bodyPose = StancePose(u, marker, wf >= 0);
+            bodyPose = Entering(marker, bodyPose);
+            if (hv != null) hv.BodyDrop = bodyPose != null && (bodyPose.StartsWith("crouch") || bodyPose.StartsWith("kneel") || bodyPose.StartsWith("sit") || bodyPose.StartsWith("stagger")) ? 1f : 0f;
+            if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3 / Poses: the body's frame
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))

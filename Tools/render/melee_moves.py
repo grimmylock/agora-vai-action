@@ -17,7 +17,7 @@ def main(src, out):
     ai, acuff, aglove = d["armor"]
     body = atlas.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)
     if "body" in d: body = Image.open(os.path.join(SPR, d["body"])).convert("RGBA").crop((0, 0, 16, 16)).resize((16 * S, 16 * S), Image.NEAREST)   # a unique suit's front cell
-    PKEYS = ["crouch", "crouch_h", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
+    PKEYS = ["crouch", "crouch_h", "kneel", "kneel_h", "lean_h_l", "lean_h_r", "lean_l", "lean_r", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "lying", "sit_h_l", "sit_h_r", "sit_l", "sit_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
     def posed(key):                                                  # Melee 3: the swing's body frame
         if not key: return body
         if "body" in d:

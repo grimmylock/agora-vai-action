@@ -165,7 +165,11 @@ elif __name__ == "__main__":
 #   python3 ArtSource/make_poses.py atlas [Sprites dir]
 # crouch: sneaking (Yan: "crouching also doesn't play the crouch animation")
 GAME_POSES = [("crouch", "crouch", False), ("crouch_h", "crouch 1/2", False), ("lunge_h", "lunge 1/2", True), ("lunge", "lunge", True),
-              ("stagger_h", "stagger 1/2", True), ("stagger", "stagger", True)]
+              ("stagger_h", "stagger 1/2", True), ("stagger", "stagger", True),
+              # Yan: "keep all of them, wire them into the game": kneel (sneaking, still), sit (resting), the cover leans, lying (downed)
+              ("kneel", "kneel", False), ("kneel_h", "kneel 1/2", False), ("sit_h", "sit 1/2", True), ("sit", "sit", True),
+              ("lean_l", "lean left", False), ("lean_h_l", "lean left 1/2", False), ("lean_r", "lean right", False), ("lean_h_r", "lean right 1/2", False),
+              ("lying", "lying", False)]
 
 def cell_poses(cell):
     """{key: 16x16} for one suit cell; None for an empty cell. The belt sits a row over where the legs split (make_walk_atlas)."""

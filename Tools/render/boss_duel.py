@@ -36,7 +36,7 @@ ai = max(0, d["armor"]); pbody = atlas.crop(((ai % 16) * 16, (ai // 16) * 16, (a
 vstrip = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit.png")).convert("RGBA")
 vcell = [vstrip.crop((i * 16, 0, i * 16 + 16, 16)) for i in range(6)]
 # Melee 3: the swing's body frames - his from the unique strip (front row), yours from armor_pose_<key>.png
-PKEYS = ["crouch", "crouch_h", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
+PKEYS = ["crouch", "crouch_h", "kneel", "kneel_h", "lean_h_l", "lean_h_r", "lean_l", "lean_r", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "lying", "sit_h_l", "sit_h_r", "sit_l", "sit_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
 vposes = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit_poses.png")).convert("RGBA")
 def vpose(key, base): return vposes.crop((PKEYS.index(key) * 16, 0, PKEYS.index(key) * 16 + 16, 16)) if key else base
 PP = {}

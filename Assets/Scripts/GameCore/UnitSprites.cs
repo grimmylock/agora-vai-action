@@ -23,7 +23,8 @@ namespace GameCore
         // Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings"): the swing poses of every suit
         // (ArtSource/make_poses.py atlas): armor_pose_<key> / armor_back_pose_<key>, laid out like the armor atlases, plus a unique
         // suit's armor_unique_<name>_poses strip (front row, back row). Keys: crouch (sneaking), crouch_h, lunge_h_r/l, lunge_r/l, stagger_h_r/l, stagger_r/l.
-        public static readonly string[] PoseKeys = { "crouch", "crouch_h", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r" };
+        public static readonly string[] PoseKeys = { "crouch", "crouch_h", "kneel", "kneel_h", "lean_h_l", "lean_h_r", "lean_l", "lean_r", "lunge_h_l", "lunge_h_r",
+            "lunge_l", "lunge_r", "lying", "sit_h_l", "sit_h_r", "sit_l", "sit_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r" };   // sorted, as make_poses.py writes them
         private static readonly Dictionary<string, Dictionary<string, Sprite>> _poses = new Dictionary<string, Dictionary<string, Sprite>>();
         public static Sprite Pose(ICombatant unit, string key, bool away)
         {

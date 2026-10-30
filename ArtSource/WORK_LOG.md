@@ -4402,3 +4402,14 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   along - now each leg moves on its own (`make_poses.step_legs`). The sit: both legs together stretched out sideways along the
   ground (boots at the end), the in-between bent at the knee on the way out; facing right on the sheet (the game would mirror it).
   The swing poses in the game (lunge) were regenerated with the fix (`make_poses.py atlas`).
+- Poses c (Yan: "keep all of them, wire them into the game"): every suit now also has kneel, sit (facing left/right), the two
+  cover leans and lying, each with its in-between (`make_poses.py atlas`; `UnitSprites.PoseKeys`, 21 frames). When they show
+  (`TacticalGridView.StancePose`, used whenever no swing asks for a frame):
+  - downed: lying (the frame, instead of turning the body 90 degrees);
+  - sneaking: crouched while moving, kneeling once still;
+  - aiming (you) / in a fight (an aware NPC) with cover - low, hard or a wall - on the tile beside you toward the aim: leaning out
+    to the side you aim at;
+  - out of a fight, still for 8 s (you; not mid-item-use) or 10 s (a calm, unaware human NPC): sitting, legs out to the side
+    you face - camps sit around.
+  The in-between frame plays for 0.12 s on the way into crouch / kneel / sit / lean (`Entering`). Crouched, kneeling, seated and
+  staggered bodies sit a pixel lower, and the hands and weapon go down with them (`HeldWeaponView.BodyDrop`). Not checked in Unity.

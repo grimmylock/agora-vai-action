@@ -961,7 +961,8 @@ namespace GameCore
         }
 
         // character pixel (16x16 sprite, y down) -> marker-local units (sprite spans -0.5..0.5)
-        private static Vector3 Local(float px, float py) => new Vector3((px - 8f) / 16f, (8f - py) / 16f, 0f);
+        private Vector3 Local(float px, float py) => new Vector3((px - 8f) / 16f, (8f - py - BodyDrop) / 16f, 0f);
+        public float BodyDrop;                  // Poses: px the body sits lower (crouched, kneeling, seated) - the hands go down with it
 
         // nothing equipped: big glove centres beside the torso (torso is columns 5-10, rows 8-11)
         public const float RestRightX = 13.5f, RestLeftX = 2.5f, RestY = 10f;
