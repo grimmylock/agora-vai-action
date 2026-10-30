@@ -646,6 +646,7 @@ namespace GameCore
         /// the enemies on the map), so nothing moves into, out of or fights inside it here.</summary>
         public static void TickHour()
         {
+            if (Survival.On) return;                                             // Survival: nobody walks in
             // the map overhaul: everything on the loaded map is live (all of a tier map's regions); `here` is that map's id
             var here = MacroMapDatabase.SameMap(MacroState.Current.CurrentZoneId, TerrainMap.ZoneId) && !(MacroMapDatabase.RegionsOf(TerrainMap.ZoneId).All(r => r.IsSafeZone)) ? TerrainMap.ZoneId : null;
             GameLog.Quiet = true;     // ponytail: hourly news goes to the Console until it reaches the player as radio chatter and rumors

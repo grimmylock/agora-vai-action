@@ -4380,3 +4380,20 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   drag a weapon out of its slot into the bag (or right-click the slot) to unequip it (`Player.UnequipWeapon`: rounds to the stash,
   the second weapon comes up). A suit or a pack comes off by putting another on. Check: unequip -> in the pack, equip -> out.
   Not checked in Unity.
+
+## Survival mode (2026-10-30)
+- Yan: "add a survival mode, starts at a randomly chosen poi, enemy waves come starting with 5 then 3 more each wave, every 5 waves
+  one boss, or high tier mutant spawns, every boss or high tier mutant ups the 'tier' of the waves ... all human enemies are lootable
+  and have ammo and pristine weapons and armor on death, 15 second delay between waves, maximum time of 1 minute between waves
+  besides the boss one, i'll use this to stress test the combat, player starts with basic pistol and some meds".
+- `Survival.cs`, main menu "Survival": a Scavenger (PSh-18, 30 rounds, the hunting knife, Leather Jacket, 2 medkits, 2 bandages,
+  splint, stim) at a random landmark of a random tier map (1-6). A dev mode like the Testing Ground: no squads (all offline squads
+  cleared, `SquadManager.TickHour` off), no anomalies, every faction hostile, never saved (`SaveSystem.Save` refuses; New Game and
+  Load end the run).
+- Waves: 5 + 3 per wave, aware and coming from 16-24 tiles out; odd waves one human faction at the tier's ranks (tier t: ranks t-1/t
+  of Rookie..Legend, the first one the higher rank), even waves the tier's mutants. Every 5th wave one boss: a human faction boss
+  (`SquadManager.MakeBoss`, AP rounds) and "The Apex" (the toughest mutant two tiers up, named) taking turns; killing it raises the
+  tier (max 6). Next wave 15 s after a clear, or 60 s after the wave began; the boss wave waits for the boss (+15 s).
+- Humans' gear drops pristine (`HumanLootSystem.RollCondition` -> Working) with three magazines of ammo.
+- HUD top line: WAVE / TIER / LEFT / KILLS / next-wave timer. Checks: `SurvivalChecks` (sizes, breather, the minute cap, boss
+  wave waits, tier up, pristine loot). Not checked in Unity; no render (it's a live fight on a full map).

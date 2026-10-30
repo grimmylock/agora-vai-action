@@ -632,6 +632,7 @@ namespace GameCore
             if (grid == null) return;
             Death.Tick();                                                          // co-op: the dead penalty, once
             if (TestingGround.Here) TestingGround.Tick();                         // dummies and damage numbers
+            Survival.Tick(local);                                                  // Survival: the waves
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
             Boss.TickAll();                                                        // Boss 1: the hit-stop, a looted boss's smoke
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly

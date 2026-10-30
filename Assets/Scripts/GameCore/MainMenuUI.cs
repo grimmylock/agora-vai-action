@@ -105,8 +105,9 @@ namespace GameCore
             _loadButton = Item(col.transform, 2, "Load Game", OnLoadGame);
             Item(col.transform, 3, "Co-op", () => { CloseSlots(); if (_optionsPanel != null) _optionsPanel.SetActive(false); CoopUI.Open(_panel.transform, Hide); });
             Item(col.transform, 4, "Testing Ground", () => { Hide(); TestingGround.Start(); });
-            Item(col.transform, 5, "Options", ToggleOptions);
-            Item(col.transform, 6, "Quit", OnQuit);
+            Item(col.transform, 5, "Survival", () => { Hide(); Survival.Start(); });
+            Item(col.transform, 6, "Options", ToggleOptions);
+            Item(col.transform, 7, "Quit", OnQuit);
 
             // where you are and when: the menu's own clock (MenuBackdrop) ticking along
             Text(col.transform, "Place", new Vector2(0.1f, 0.09f), new Vector2(0.95f, 0.125f), "BONFIRE VILLAGE", true, 16, HudView.Cream);

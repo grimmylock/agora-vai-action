@@ -117,6 +117,7 @@ namespace GameCore
         /// recreating, they already read everything fresh from the statics reset here.</summary>
         public static void StartNewGame(CharacterSpec spec = null, string startZone = null, bool save = true)
         {
+            Survival.Stop();                                                       // a new game is never a survival run (Survival.Begin turns it on)
             spec = spec ?? new CharacterSpec();
             SaveSystem.CharacterId = SaveSystem.WorldId = null;   // RT 7x: a new slot is made at the end (none for the Testing Ground)
             GameState.Current = new GameState();

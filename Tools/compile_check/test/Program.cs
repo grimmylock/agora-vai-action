@@ -50,7 +50,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1192,6 +1192,30 @@ static class Program {
   // Melee 2: a stance and a string of swings per kind of weapon; clicks inside the combo gap walk the string, a pause starts it over
   // Pack 1: the bag's grid - footprints, first-fit placement (turned when that's the only way), drag, a new bag repacks,
   // what doesn't fit stays out (never lost), and the grid survives a save
+  // Survival: 5 then +3 a wave, a 15 s breather after a clear, a minute at most, every 5th wave a boss that waits to be killed and
+  // raises the tier, humans' loot pristine
+  static void SurvivalChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true;
+    Survival.Now = 0f; Survival.Begin(p); p.X = px; p.Y = py;
+    void Run(float until) { while (Survival.Now < until) { Survival.Now += 0.25f; Survival.Tick(p); } }
+    void KillAll() { foreach (var e in Survival.Live) e.Hp = 0; }
+    Run(14.5f); Check(Survival.Wave == 0, "Survival: nothing for the first 15 s");
+    Run(15.5f); Check(Survival.Wave == 1 && Survival.Live.Count == 5, $"Survival: wave 1 is 5 enemies ({Survival.Live.Count})");
+    KillAll(); Run(16f); Run(30f); Check(Survival.Wave == 1, "Survival: 15 s breather after a clear");
+    Run(31.5f); Check(Survival.Wave == 2 && Survival.Live.Count == 8, $"Survival: wave 2 is 8 ({Survival.Live.Count})");
+    Run(31.5f + 59f); Check(Survival.Wave == 2, "Survival: an uncleared wave holds for up to a minute");
+    Run(31.5f + 61f); Check(Survival.Wave == 3, "Survival: then the next comes anyway");
+    while (Survival.Wave < 5 && Survival.Now < 1000f) { KillAll(); Run(Survival.Now + 1f); }
+    Check(Survival.Wave == 5 && Survival.BossWave && Survival.Live.Count(e => e.IsAlive()) == 1, $"Survival: wave 5 is one boss (wave {Survival.Wave}, {Survival.Live.Count})");
+    float t5 = Survival.Now; Run(t5 + 200f); Check(Survival.Wave == 5 && Survival.Tier == 1, "Survival: the boss wave waits for the boss");
+    KillAll(); Run(Survival.Now + 1f); Check(Survival.Tier == 2, "Survival: killing the boss raises the tier");
+    Run(Survival.Now + 15f); Check(Survival.Wave == 6 && Survival.Live.Count == Survival.WaveSize(6), $"Survival: and the next wave comes after a breather ({Survival.Wave}, {Survival.Live.Count})");
+    var raider = Survival.Live.OfType<HumanEnemy>().FirstOrDefault() ?? new HumanEnemy("x", px + 3, py, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], null);
+    HumanLootSystem.GrantDrop(raider, p, 1);
+    Check(raider.Inventory.Items.Where(i => i.Type == "weapon" || i.Type == "armor").All(i => i.Condition == "Working"), "Survival: their gear is pristine");
+    Survival.Stop(); Survival.Now = -1f; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false;
+  }
+
   static void PackChecks() {
     var p = Arena(out _, out _); p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
     var b = Pack.Bag(p);

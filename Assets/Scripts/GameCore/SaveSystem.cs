@@ -133,6 +133,7 @@ namespace GameCore
                 GameLog.Write("Nothing to save yet.");
                 return false;
             }
+            if (Survival.On) { GameLog.Write("Survival runs aren't saved."); return false; }   // (a run must never overwrite a real slot)
             if (CharacterId == null || Dir == null)
             {
                 GameLog.Write(TestingGround.Here ? "The Testing Ground isn't saved." : "Nothing to save to.");
@@ -191,6 +192,7 @@ namespace GameCore
 
         public static bool Load(string characterId)
         {
+            Survival.Stop();                                                       // loading a character ends a survival run
             if (Dir == null || string.IsNullOrEmpty(characterId) || !File.Exists(CharFile(characterId)))
             {
                 GameLog.Write("No save file found.");
