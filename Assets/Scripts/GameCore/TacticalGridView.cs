@@ -355,6 +355,8 @@ namespace GameCore
             _fx.Tick();
             _motion.TickRagdolls();
             _fx.ApplyTo(player, _playerMarker);
+            if (HudView.PlayerHurt > 0.01f)                                         // you were hit: the body flashes red (HudView.UpdateHurt)
+                _playerMarker.color = Color.Lerp(_playerMarker.color, new Color(1f, 0.22f, 0.16f, _playerMarker.color.a), 0.6f * HudView.PlayerHurt);
             for (int i = 0; i < EncounterState.Enemies.Count && i < _enemyMarkers.Count; i++) _fx.ApplyTo(EncounterState.Enemies[i], _enemyMarkers[i]);
             if (Camera.main != null) Camera.main.transform.position += _fx.ShakeOffset;
             UpdateFades();

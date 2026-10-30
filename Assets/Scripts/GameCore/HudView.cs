@@ -262,6 +262,7 @@ namespace GameCore
 
             var k = Keyboard.current;
             UpdatePack();                                                             // Pack 1: I - the pack screen
+            UpdateHurt();                                                             // getting hit: the red edge and flash
             if (k != null && !GameState.Current.ModalOpen)
             {
                 // (I opens the pack screen now - HudView.Pack.cs; the old text panels stay hidden)

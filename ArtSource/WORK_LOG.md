@@ -4413,3 +4413,9 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
     you face - camps sit around.
   The in-between frame plays for 0.12 s on the way into crouch / kneel / sit / lean (`Entering`). Crouched, kneeling, seated and
   staggered bodies sit a pixel lower, and the hands and weapon go down with them (`HeldWeaponView.BodyDrop`). Not checked in Unity.
+- Hurt feedback (Yan: "there's no feedback to getting hit, maybe a little red flash on the corners of the screen / character
+  flashes a little red similar to the visor boss"): there was a hit flash (`CombatFxView.ApplyTo`, 0.15 s of a pale pink) but only
+  on combat-effect events and too faint to notice. Now read off the local player's health dropping (any blow, bullet, bite, bleed;
+  `HudView.UpdateHurt`): a red vignette closes in round the screen edges (`EdgeImage`, shared with the parry's cold edge), stronger
+  for a bigger hit (a sixth of your health or more = full), fading over 0.5 s; and your body flashes red for 0.3 s
+  (`HudView.PlayerHurt` -> TacticalGridView). Not checked in Unity.
