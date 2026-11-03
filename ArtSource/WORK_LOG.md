@@ -4484,3 +4484,18 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   on a real Tier 1 render with a 16 px unit: `maps/renders/fx/pixelfx_muted.png`, `pixelfx_anomaly.png`.
 - Verdict: muzzle flashes, hit spark, ricochet, bullet impact, smoke bomb and the electric ones fit; ground effects are side-view
   (flat lines on our top-down map) and most anomaly effects are 2-5x too big. Nothing in the game yet; waiting on Yan.
+
+## RT fx 1 - pixelfx in the repo, the void pull (2026-11-03)
+
+- Yan: "Isn't this skill supposed to help you create effects?" - yes: the library is ready-made effects, the skill is the method
+  for making new ones (drafts, render, look, refine, `check.mjs`). Yan: "some of the ready made ones can be used or at least as a
+  reference, mostly the ones that are not 'ground' effects, that black hole thing looks cool, a smaller version could be used for
+  a mutant attack".
+- pixelfx copied into `ArtSource/fx/pixelfx/` (MIT, LICENSE and NOTICE kept; the 12 MB of demo GIFs dropped; `records/` ignored),
+  the skill into `.claude/skills/pixelfx/` so later sessions have it. Needs Node 18+: `cd ArtSource/fx/pixelfx && node tools/render.mjs <id> --sheet`.
+  Our own effects go in `src/fx/zone/`. Credits screen: "Effects - pixelfx by Patch and Hugo Duprez (MIT)".
+- `zone/void-pull`: the black hole redrawn at 0.36 of its size (one factor `SC` on every length, two bands instead of four,
+  fewer particles) - 72x56, about 3 tiles wide, purple ramp kept for a psychic mutant. Three rounds: v1 speckled and too white,
+  v2 calmer streaks and a bigger dark core, v3 the bright side toned down; `check.mjs` passes clean. At this size it reads like
+  a floating eye, which suits a psychic mutant. On a map: `maps/renders/fx/void_pull_on_map.gif`.
+- Not done: which mutant uses it and how (a pull? damage over time?), the Unity side (a strip like the anomaly strips).

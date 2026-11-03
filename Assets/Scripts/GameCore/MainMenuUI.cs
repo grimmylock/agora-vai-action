@@ -132,6 +132,7 @@ namespace GameCore
             "Kenney, rubberduck, qubodup, Fantozzi, Independent.nu, artisticdude, Ylmir, WuxiaScrub, JaggedStone, Wolfgang_, " +
             "SpringySpringo, zer0_sol, BMacZero, TinyWorlds, StarNinjas\n" +
             "All found on OpenGameArt.org. Sounds trimmed, levelled and layered for this game.\n\n" +
+            "<b>Effects</b> - pixelfx by Patch and Hugo Duprez (MIT)\n" +
             "<b>Fonts</b> - Silkscreen, Pixelify Sans (SIL Open Font License)";
 
         private void BuildCreditsPanel()
