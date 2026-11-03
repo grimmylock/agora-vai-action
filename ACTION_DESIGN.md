@@ -137,6 +137,13 @@ bullet hell but not really? you have to dodge stuff")
   a psychic mutant in a Tier 2-3 lab. Void orbs in rings and spirals (the `zone/void-pull` look); the big move opens a full-size
   void pull that drags you toward him while orbs fly. Telekinesis on the room's props (`Props.cs`): desks, crates and barrels
   thrown at you, pulled across the floor, set up as walls and lanes you have to weave through.
+- Where and how (Yan, 2026-11-03: "sure" / "sounds good"): Secret Lab Alpha (Tier 2, hidden off the Industrial Basin). You crack
+  the vat glass in a few places; the liquid drains in phases, each angrier; in the last phase the brain lies bare and takes damage.
+- **It comes back** (Yan: "when it drains completely it sits still for a few moments, then its eyes open again and it uses a
+  portal/black hole thingy to teleport away, then we fight it again with enhanced mechanics in another place"): beaten, the
+  brain goes still, the eyes open, a void pull swallows it and it's gone. A later lab holds the rematch with new tricks.
+  The first fight ends with the escape, not a kill.
+- Art first: the vat, the brain and the eyes drawn in our style and shown to Yan as a real render before any fight code.
 - Not built yet.
 
 ## Weight and stamina
