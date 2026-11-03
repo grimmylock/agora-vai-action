@@ -45,16 +45,23 @@ def find(root, name):
     hits = [p for p in glob.glob(os.path.join(root, "**", name), recursive=True) if "__MACOSX" not in p]
     return hits[0] if hits else None
 
-def rms_db(path):
+def _vol(path, key):
     out = subprocess.run(["ffmpeg", "-v", "info", "-i", path, "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
     for line in out.splitlines():
-        if "mean_volume" in line: return float(line.split(":")[1].replace("dB", ""))
+        if key in line: return float(line.split(":")[1].replace("dB", ""))
     return None
+def rms_db(path): return _vol(path, "mean_volume")
+def peak_db(path): return _vol(path, "max_volume")
+def level_gain(src, old):
+    """dB to bring src toward the loudness (mean) of the sound it replaces - but only as far as its peak can go without touching
+    the ceiling: a long real recording matched on its average would be squashed flat by the limiter (a gunshot loses its crack)."""
+    g = rms_db(old) - rms_db(src)
+    return min(g, -0.5 - peak_db(src))
 
 def duration(path):
     return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], capture_output=True, text=True).stdout.strip() or 0)
 
-def convert(src, dst, cap, gain_to=None):
+def convert(src, dst, cap, old=None):
     tmp = dst + ".tmp.wav"
     L = min(LOOP_MAX, duration(src) - XFADE - 0.1)            # a loop: its own length (minus the seam), at most LOOP_MAX
     af = ["aformat=sample_fmts=s16:sample_rates=44100:channel_layouts=mono",
@@ -69,12 +76,10 @@ def convert(src, dst, cap, gain_to=None):
                         f"[t][h]acrossfade=d={XFADE}:c1=tri:c2=tri[x];[0]atrim={XFADE}:{L},asetpts=PTS-STARTPTS[m];[m][x]concat=n=2:v=0:a=1",
                         a], check=True)
         os.replace(a, tmp)
-    if gain_to is not None:
-        now = rms_db(tmp)
-        if now is not None:
-            g = max(-20.0, min(20.0, gain_to - now))
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", f"volume={g}dB,alimiter=limit=0.97", "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", dst], check=True)
-            os.remove(tmp); return
+    if old is not None:
+        g = max(-20.0, min(20.0, level_gain(tmp, old)))
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", f"volume={g}dB", "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", dst], check=True)
+        os.remove(tmp); return
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-c:a", "pcm_s16le", dst], check=True); os.remove(tmp)
 
 if __name__ == "__main__":
@@ -89,7 +94,9 @@ if __name__ == "__main__":
         src = os.path.join(SRC, name)
         if not os.path.exists(src): print("skip (no source):", t); continue
         dst = os.path.join(OUT, t + ".wav")
-        target_db = rms_db(dst) if os.path.exists(dst) else None
-        convert(src, dst, cap, target_db)
+        old = dst + ".old.wav"
+        if os.path.exists(dst): shutil.copy(dst, old)
+        convert(src, dst, cap, old if os.path.exists(old) else None)
+        if os.path.exists(old): os.remove(old)
         done[t] = name
     print(f"{len(done)} sounds replaced")

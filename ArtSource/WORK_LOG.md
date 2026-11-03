@@ -4433,3 +4433,16 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Picked by file name and checked by length and level - I can't listen here, so Yan's ears decide. Kept generated: gunshots,
   reloads, explosions, thunder, wind (the only CC0 wind was a 5 s gust), the Zone hum, creatures, psi, hurt, and the boss/parry set
   - waiting on Sonniss.
+- Sound part 2 (Yan: "what if i get some from youtube" - advised against: the recordings are someone's copyright whatever the
+  title says, and YouTube's terms forbid ripping; "yes, search opengameart for gunshots"): CC0 only. "The Free Firearm Sound
+  Library" (Ben Jaszczak et al., 22 real guns at 96 kHz) gives every gunshot: `ArtSource/audio/import_guns.py` cuts one shot out of
+  a take (a shot starts where the loudness jumps to half the take's peak out of quiet, at least 0.3 s after the last - 0.05 s for
+  the full-auto SMG - and keeps its tail; the SMG and one AK take use the burst's last shot, which has a tail). Pistols: Walther PPQ
+  / 1911; SMG: PPSh; rifle: AK-47; shotgun: Mossberg / Nova; sniper: Mosin / Tikka; heavy: Marlin 336 / .300 Blackout. The game's
+  files keep their own names. Also from CC0 packs: the magazine, shell and single-round reloads, two explosions, and sword clashes
+  for the parry (`CREDITS_AUDIO.md`).
+- Levelling changed in both importers: a sound is raised toward the old sound's average loudness only as far as its peak allows
+  (no limiter). Matching averages had pushed the real shots up to +11.6 dB into the limiter and squashed their crack; real shots
+  are now a little quieter on average than the generated ones but keep their attack. Both imports were rebuilt from the original
+  generated sounds. Previews: `maps/renders/sound/guns_preview.mp3`, `new_sounds_preview.mp3`. Still generated: the rail gun,
+  thunder, wind, the Zone hum, creatures, psi, hurt, glint, sting, finisher.

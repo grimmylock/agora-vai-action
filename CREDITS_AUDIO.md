@@ -3,7 +3,8 @@
 Every recording below is **CC0 (public domain)** - free to use in a commercial game, no credit required. The licence of each pack
 was checked on its own OpenGameArt page on 2026-11-03. Credit is given anyway, with thanks. The sounds are converted, trimmed and
 levelled by `ArtSource/audio/import_cc0.py` (sources kept in `ArtSource/audio/cc0/`); the game's file names are its own.
-Sounds not listed here are generated in code by `ArtSource/audio/sfx.py`.
+Gunfire, reloads, explosions and the parry clang come from `ArtSource/audio/import_guns.py` (single shots cut out of the
+library's takes; the cuts kept in `ArtSource/audio/cc0/guns/`). Sounds not listed here are generated in code by `ArtSource/audio/sfx.py`.
 
 | Pack (OpenGameArt) | Author | Used for |
 |-|-|-|
@@ -21,3 +22,10 @@ Sounds not listed here are generated in code by `ArtSource/audio/sfx.py`.
 | [Rain + Long Thunder](https://opengameart.org/content/rain-long-thunder) | WuxiaScrub | `amb_storm` |
 | [Loopable Dungeon Ambience](https://opengameart.org/content/loopable-dungeon-ambience) | JaggedStone | `amb_cave` |
 | [Crickets Ambient Noise - loopable](https://opengameart.org/content/crickets-ambient-noise-loopable) | Wolfgang_ | `amb_marsh` |
+| [The Free Firearm Sound Library](https://opengameart.org/content/the-free-firearm-sound-library) | Ben Jaszczak et al. | `shot_pistol_*`, `shot_smg_*`, `shot_rifle_*`, `shot_shotgun_*`, `shot_sniper_*`, `shot_heavy_*` |
+| [Gun reload sounds](https://opengameart.org/content/gun-reload-sounds) | SpringySpringo | `reload_mag` |
+| [Shotgun Reload Sound effects](https://opengameart.org/content/shotgun-reload-sound-effects) | zer0_sol | `reload_shell` |
+| [Gun Reload Sound Effects](https://opengameart.org/content/gun-reload-sound-effects) | BMacZero | `reload_cylinder` |
+| [Explosion](https://opengameart.org/content/explosion-0) | TinyWorlds | `explosion_0` |
+| [25 CC0 bang / firework SFX](https://opengameart.org/content/25-cc0-bang-firework-sfx) | rubberduck | `explosion_1` |
+| [20 Sword Sound Effects (Attacks and Clashes)](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) | StarNinjas | `parry_0`, `parry_1`, `parry_perfect` |
