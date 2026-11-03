@@ -54,10 +54,15 @@ namespace GameCore
 
         /// <summary>From the main menu: a fresh Scavenger dropped on the range with a fat purse, a big carry limit, and every
         /// faction hostile so whatever you spawn fights you.</summary>
+        /// <summary>True from the main menu's Testing Ground until a new game or a load: the death screen offers Respawn.</summary>
+        public static bool Session;
+        static (int x, int y) _spawn;
+
         public static void Start()
         {
             GameBootstrap.StartNewGame(new CharacterSpec(), Zone);
             var p = Player.Current;
+            Session = true; _spawn = (p.X, p.Y);
             foreach (var f in FactionDatabase.Factions.Keys) p.Reputation[f] = -3 * Player.RepPoint;
             p.Ru = 999999; p.CarryCapacityBonus = 500; p.ApplyCarryEffects();
             Dummies.Clear(); Numbers.Clear(); LastHp.Clear(); Noted.Clear();
@@ -98,6 +103,38 @@ namespace GameCore
         {
             var (x, y) = TerrainMap.FindNearestEnterable(p.X + 5, p.Y);
             Boss.WakeVisor(p, x, y);
+        }
+
+        /// <summary>Boss 2 (Yan: "add a 'go to brain boss' button in the testing ground, if you just spawn him there the fight wont work"):
+        /// the brain needs its own room - the lab's breakable cover, the walls that stop its orbs and beams, the pulse's reach - so this
+        /// takes you to Secret Lab Alpha with your range kit: the vat fresh (even if it escaped before), the lab's other occupants
+        /// gone, you at the room's south side. Back to the range: the main menu's Testing Ground.</summary>
+        public static void BrainFight(Player p)
+        {
+            MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped);
+            MacroState.Current.CurrentZoneId = BrainBoss.Lab;
+            ZoneTravel.EnterZone(BrainBoss.Lab);
+            EncounterState.Enemies.RemoveAll(e => !BrainBoss.Is(e));
+            EncounterState.InCombat = false;
+            var (x, y) = TerrainMap.FindNearestEnterable(BrainBoss.VatX, BrainBoss.VatY + 7);
+            p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
+            GameLog.Write("[TESTING GROUND] Secret Lab Alpha, the vat room. Walk up to it. Main menu > Testing Ground to come back.");
+        }
+
+        /// <summary>Yan: "when i die in the testing ground i have to leave to the menu, add a respawn button in the death screen only for
+        /// there". Back on your feet with your kit: on the range at the start (the range cleared, the dummies kept), or - died to the
+        /// brain - straight back into a fresh brain fight.</summary>
+        public static void Respawn(Player p)
+        {
+            Body.Reset();
+            p.HealPermanent(p.MaxHp * 2); p.Hp = p.MaxHp; p.StatusEffects.Bleeding = false;
+            var s = Rt.Of(p); s.DiveUntil = -1f; s.ProneUntil = -1f; s.Stamina = Rt.StaminaMax; s.Slow = false; Rt.SetSlow(false);
+            GameState.Current.CurrentTurn = Turn.Player;
+            if (TerrainMap.ZoneId == BrainBoss.Lab) { BrainFight(p); return; }
+            if (!Here) { MacroState.Current.CurrentZoneId = Zone; ZoneTravel.EnterZone(Zone); }
+            Clear();
+            p.X = _spawn.x; p.Y = _spawn.y; Rt.SetOffset(p, 0f, 0f);
+            GameLog.Write("[TESTING GROUND] Respawned.");
         }
 
         /// <summary>300 rounds of every ammo kind for every gun you carry, and full magazines.</summary>

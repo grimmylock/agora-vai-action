@@ -118,6 +118,7 @@ namespace GameCore
         public static void StartNewGame(CharacterSpec spec = null, string startZone = null, bool save = true)
         {
             Survival.Stop();                                                       // a new game is never a survival run (Survival.Begin turns it on)
+            TestingGround.Session = false;                                         // TestingGround.Start sets it again after this
             spec = spec ?? new CharacterSpec();
             SaveSystem.CharacterId = SaveSystem.WorldId = null;   // RT 7x: a new slot is made at the end (none for the Testing Ground)
             GameState.Current = new GameState();

@@ -1327,6 +1327,16 @@ static class Program {
     Check(f.Gone && !EncounterState.Enemies.Contains(b) && Story.Has(BrainBoss.Escaped), "Boss 2: the void takes it - gone, flagged to come back later");
     BrainBoss.OnEnterZone(BrainBoss.Lab);
     Check(BrainBoss.Current == null, "Boss 2: once it has escaped, the lab is empty of it");
+    // the Testing Ground's "Go" (Yan: "if you just spawn him there the fight wont work"): to the lab, the vat fresh, nobody else there
+    Story.Set(BrainBoss.Escaped); var gp = Player.Current;
+    TestingGround.BrainFight(gp);
+    Check(TerrainMap.ZoneId == BrainBoss.Lab && BrainBoss.Current != null && !BrainBoss.Current.Started && EncounterState.Enemies.Count == 1 && BrainBoss.Is(EncounterState.Enemies[0])
+      && Math.Abs(gp.X - BrainBoss.VatX) <= 3 && gp.Y > BrainBoss.VatY + 3 && TerrainMap.GetTile(gp.X, gp.Y).Type == TileType.Empty,
+      $"Boss 2: the Testing Ground's Go puts you in the vat room ({gp.X},{gp.Y}), the vat fresh and alone");
+    // Respawn (Testing Ground only): died to the brain -> straight back into a fresh fight
+    gp.Hp = 0; GameState.Current.CurrentTurn = Turn.CombatOver; TestingGround.Respawn(gp);
+    Check(gp.IsAlive() && GameState.Current.CurrentTurn == Turn.Player && TerrainMap.ZoneId == BrainBoss.Lab && BrainBoss.Current != null && !BrainBoss.Current.Started,
+      "Testing Ground: Respawn after dying to the brain - alive, a fresh fight");
     MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped); BrainBoss.Reset(); Rt.On = false;
   }
 
@@ -1833,6 +1843,10 @@ static class Program {
       Check(TerrainMap.ZoneId == TestingGround.Zone && Live() == 0 && TestingGround.Dummies.Count == 3 && EncounterState.Anomalies.Count == 0
         && new[] { TestingGround.Armory, TestingGround.Spawner, TestingGround.Pad }.All(n => TerrainMap.Landmarks.Any(l => l.Name == n)),
         $"testing ground: you arrive alone ({Live()} enemies, {TestingGround.Dummies.Count} dummies, {EncounterState.Anomalies.Count} anomalies) with the crate, terminal and pad");
+      { int sx = tp.X, sy = tp.Y; tp.X += 3; tp.Hp = 0; GameState.Current.CurrentTurn = Turn.CombatOver;
+        TestingGround.Respawn(tp);
+        Check(TestingGround.Session && tp.IsAlive() && tp.X == sx && tp.Y == sy && GameState.Current.CurrentTurn == Turn.Player && TestingGround.Dummies.Count == 3,
+          "testing ground: Respawn puts you back on your feet at the start, the dummies kept"); }
       var pad = TerrainMap.Landmarks.First(l => l.Name == TestingGround.Pad);
       Check(Pathfinding.FindPath(tp.X, tp.Y, pad.X, pad.Y, tp) != null, "testing ground: the pad can be walked to");
       var gun = ShopDatabase.Items.First(d => d.Type == "weapon" && d.Key == "VKS74U");

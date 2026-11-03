@@ -4623,3 +4623,16 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   - all drawn by `CombatFxView.DrawOrbs` from BrainBoss's state each frame. Co-op: host-side state, clients don't draw it yet.
 - Checks rewritten (`BrainChecks`, 25). Preview `brain_fight.mp4` (`Tools/render/brain_fight.py`): ~60 s, the bot (kept alive
   for the preview) took 9 hits. Not checked in Unity.
+
+## Testing Ground: go to the brain, respawn (2026-11-03)
+
+- Yan: "add a 'go to brain boss' button in the testing ground, if you just spawn him there the fight wont work". Spawner >
+  Humans tab, under the Visor: "The Specimen - brain in the vat (goes to its lab)" > Go (`TestingGround.BrainFight`): Secret Lab
+  Alpha with your range kit, the escaped flag cleared so the vat is there fresh, the lab's other occupants removed, you on the
+  vat room's south side. Back to the range: main menu > Testing Ground.
+- Yan: "when i die in the testing ground i have to leave to the menu, add a respawn button in the death screen only for there".
+  `TestingGround.Session` (set by `TestingGround.Start`, cleared by a new game or a load) shows a Respawn button on the death
+  screen; `TestingGround.Respawn` heals you (wounds, bleeding, stamina, bullet time off) and puts you at the range's start with
+  the range cleared and the dummies kept - or, if you died in the brain's lab, straight into a fresh brain fight.
+- Checks: Go lands you in the vat room with the vat fresh and alone; Respawn on the range and after dying to the brain.
+  Not checked in Unity.

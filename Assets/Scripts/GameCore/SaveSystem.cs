@@ -193,6 +193,7 @@ namespace GameCore
         public static bool Load(string characterId)
         {
             Survival.Stop();                                                       // loading a character ends a survival run
+            TestingGround.Session = false;
             if (Dir == null || string.IsNullOrEmpty(characterId) || !File.Exists(CharFile(characterId)))
             {
                 GameLog.Write("No save file found.");
