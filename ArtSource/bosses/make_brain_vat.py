@@ -2,7 +2,7 @@
 Drawn at double resolution like the HD mutants (96x144, ppu 32 -> 3x4.5 tiles; Yan: "go bigger" than 2x3). States: full, crack1-3 (liquid drains), drained
 (eyes shut), awake (eyes open, before the void pull takes it away). Procedural shapes snapped to the pixel grid, the locked
 palette rules (near-black outline, flat 3-tone shading, saturated colour only in the eyes/psi glow).
-    python3 ArtSource/bosses/make_brain_vat.py [out_dir]
+    python3 ArtSource/bosses/make_brain_vat.py [out_dir] [game]     - 'game' also writes the sprites into Assets/Resources
 """
 import sys, os, math, random
 from PIL import Image
@@ -152,4 +152,19 @@ if __name__ == '__main__':
     strip = Image.new('RGBA', (W * len(STATES), H))
     for i, s in enumerate(STATES): strip.alpha_composite(vat(s), (i * W, 0))
     strip.save(os.path.join(out, 'boss_brain_vat_strip.png'))
+    orb = Image.new('RGBA', (12 * 2, 12))           # the psychic orb, two frames (a pulse), 12x12 at ppu 16
+    for fr in range(2):
+        for y in range(12):
+            for x in range(12):
+                d = math.hypot(x - 5.5, y - 5.5)
+                c = None
+                if d < 2.0 - fr * 0.5: c = hexc('#f0e0ff')
+                elif d < 3.3: c = hexc('#c06bff')
+                elif d < 4.3: c = hexc('#7a3aa8')
+                elif d < 5.5: c = hexc('#c06bff', 70 + fr * 40)
+                if c: orb.putpixel((fr * 12 + x, y), c)
+    orb.save(os.path.join(out, 'boss_brain_orb.png'))
+    if len(sys.argv) > 2 and sys.argv[2] == 'game':   # into the game: the vat with the mutants, the orb with the effects
+        game = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Assets', 'Resources', 'Sprites')
+        strip.save(os.path.join(game, 'Mutants', 'boss_brain_vat_strip.png')); orb.save(os.path.join(game, 'Fx', 'boss_brain_orb.png'))
     print('wrote', os.path.join(out, 'boss_brain_vat_strip.png'))

@@ -79,6 +79,7 @@ namespace GameCore
                 float raw = saved ? damage / 2f : damage;
                 int dealt = (int)combat.CalculateDamage(raw, "Standard", v.PhysDR, 0f);
                 v.Hp = System.Math.Max(0, v.Hp - dealt);
+                Boss.OnDamaged(v);
                 if (v is Mutant m && !(v is HumanEnemy)) m.DamageTakenThisRound += dealt;
                 string who = v is Player ? "Player" : v.Name;
                 if (saved)

@@ -4557,3 +4557,31 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   a sixth eye, riveted lid, thicker hoses and pipes. The escape shot uses the full-size black hole. Renders replaced.
 - Yan also: Secret Lab Alpha "looks very even in space, it doesn't have a linear progression" - on the to-do list in
   ACTION_DESIGN ("Dungeons you figure out").
+
+## Boss 2 - the brain in the vat, the fight (2026-11-03)
+
+- Yan: "go bigger, then start the fight code". `BrainBoss.cs` ("The Specimen", Secret Lab Alpha, spawned at (37,9) when you
+  enter, unless the story flag `brain_escaped` is set):
+  - the vat is a Mutant unit (6000 HP, 4.5 tiles tall for bullets: `Ballistics.MutantSize`); `BrainBoss.Tick` runs it every frame
+    on the host (`Rt.WorldTick`; the normal mutant AI skips it). It wakes when a player is within 4 tiles, or 9 and in sight.
+  - moves from a shuffled bag (each once before repeats, the bag grows with each crack): ring (10 orbs +2 a crack), aimed (3-orb
+    volleys, more when angry), spiral (two arms), props (telekinesis via `Props.Push`: some hurled at you - barrels bowl you over -
+    the rest dragged sideways into lanes), and from crack 2 the void pull (3 s, drags everyone within 14 tiles at 1.3 tiles/s while
+    rings keep coming; touching the glass = 220 damage and thrown back). Each move has a 0.6 s wind-up with a purple glint.
+  - orbs: slow (3.2 tiles/s +0.3 a crack), stopped by walls, hard cover and doors, 110 damage (minus anomaly protection), pass
+    through a diving player. Drawn by `CombatFxView.DrawOrbs` (`Sprites/Fx/boss_brain_orb.png`).
+  - one HP pool, a crack at 75/50/25% (hit-stop, the art frame changes, 1.5 s breather); at 0 it holds at 1 HP, slumps (3.5 s),
+    its eyes open (1.6 s), then the full-size void takes it: gone, `brain_escaped` set, Focus refilled. (`Boss.OnDamaged` calls
+    `BrainBoss.OnDamaged`; explosions now call `Boss.OnDamaged` too.)
+  - art: the vat strip in `Sprites/Mutants/boss_brain_vat_strip.png` (`UnitSprites.HD` picks the frame by phase), the void pull
+    and escape as pixelfx strips (`px_void_pull`, `px_void_escape`).
+- Checks (`BrainChecks`): spawn, wake, a ring's 10 orbs, an orb hurts, not mid-dive, walls stop orbs, cracks at the quarters,
+  telekinesis moves props, no death at 0, eyes open, escape + flag, the lab stays empty after. Two older checks made sturdier
+  after the random sequence shifted: the co-op Raider check puts both units at tile centres (it's about who it shoots, a random
+  stand spot 0.13 tiles off the line made every round miss), the mid-dive gunslinger check counts a jam as a pulled trigger.
+- Preview: `dotnet /tmp/test.dll brainframes <json>` (the fight vs a dodging bot, the vat losing HP at a steady rate) ->
+  `Tools/render/brain_fight.py` -> `maps/renders/boss_brain/brain_fight.mp4`. 38 s, every phase, 7 props moved, 3 orb hits.
+- Yan's next art ask, not done yet: "the brain starts the fight with 2 eyes and sprouts more, they grow as he gets angrier, before he
+  teleports away ... he floats into the air and a giant eye (roughly the same size as the brain itself ...) connected to a kind of
+  umbilical cord comes from 'behind' him and looks at the player, THEN he teleports away".
+- Not checked in Unity: all of it (the sprite pivot, orb height, the HUD splash, saving mid-fight - the vat respawns full on re-entry).

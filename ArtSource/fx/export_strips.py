@@ -21,6 +21,8 @@ RENDERS = {
     "ricochet": ("impacts/ricochet", dict(GUN, stone="#6b6a60"), 0), "bullet_impact": ("impacts/bullet-impact", dict(GUN, stone="#6b6a60"), 24),
     # electrified wraps pixelfx's own 24x38 character (its outline shows), so the Livewire field is the drifting ball lightning
     "anomaly_livewire": ("lightning/ball-lightning", {}, 0), "zap_hit": ("lightning/zap-hit", {}, 0),
+    # Boss 2: the brain's void pull (our small black hole) and its escape (the library's full-size one)
+    "void_pull": ("zone/void-pull", {}, 0), "void_escape": ("shadow/black-hole", {}, 0),
 }
 MAX_W = 16384
 

@@ -136,7 +136,7 @@ namespace GameCore
         }
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); _round = 0f; }
+        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); BrainBoss.Reset(); _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -658,11 +658,13 @@ namespace GameCore
             Survival.Tick(local);                                                  // Survival: the waves
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
             Boss.TickAll();                                                        // Boss 1: the hit-stop, a looted boss's smoke
+            BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
             foreach (var e in EncounterState.Enemies.ToList())
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
                 if (Boss.Of(e) is Boss.Fight bf) { Boss.Tick(bf, TargetOf(e, local)); continue; }   // Boss 1: a boss runs his own moves
+                if (BrainBoss.Is(e)) continue;                                   // Boss 2: BrainBoss.Tick runs it
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
                 p = Companion.Is(e) ? local : TargetOf(e, local);                // co-op: each enemy fights the player nearest it

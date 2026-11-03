@@ -229,6 +229,8 @@ namespace GameCore
                 if (p.Fade) { var c = p.Sr.color; c.a = p.Alpha * (1f - t / p.Life); p.Sr.color = c; }
             }
 
+            DrawOrbs();
+
             float st = now - _shakeAt;
             float amp = st < ShakeTime ? _shakeAmp * (1f - st / ShakeTime) : 0f;
             ShakeOffset = amp > 0f ? new Vector3(Random.Range(-amp, amp), Random.Range(-amp, amp), 0f) : Vector3.zero;
@@ -323,6 +325,14 @@ namespace GameCore
                 case "kill":                                    // blown up: outward from the blast centre
                     var (bx, by) = Dir(TacticalGridView.GridToWorld(e.FromX, e.FromY), to);
                     Wound(e, to, bx, by, false);
+                    break;
+                case "void":                                    // Boss 2: the void pull opens over the vat
+                    PxFx("void_pull", from + new Vector3(0f, 0.6f, 0f), 0f, 0f, PxFull);
+                    Sfx.Play("psi", from, 1f, 0.05f, 0.6f);
+                    break;
+                case "escape":                                  // Boss 2: the full-size void swallows it
+                    PxFx("void_escape", from + new Vector3(0f, 0.6f, 0f), 0f, 0f, PxFull);
+                    Sfx.Play("psi", from, 1f, 0.05f, 0.4f); Shake(0.3f);
                     break;
                 case "zap":                                     // RT fx 3: a Livewire anomaly discharges into someone
                     PxFx("zap_hit", to + new Vector3(0f, 0.4f, 0f), 0f, 0f, PxFull);
@@ -468,6 +478,27 @@ namespace GameCore
             else sr.transform.position = muzzle;
             if (frames == null) sr.transform.localScale = Vector3.one * 0.15f;
             _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames });
+        }
+
+        // ---- Boss 2: the vat's psychic orbs, one sprite each, pooled ----
+        readonly List<SpriteRenderer> _orbs = new List<SpriteRenderer>();
+        void DrawOrbs()
+        {
+            var orbs = BrainBoss.Orbs;
+            if (orbs.Count == 0 && _orbs.Count == 0) return;
+            var frames = Strip("Sprites/Fx/boss_brain_orb", 0, PxFull, new Vector2(0.5f, 0.5f));
+            while (_orbs.Count < orbs.Count) _orbs.Add(NewSprite("Orb", frames?[0], new Color(0.75f, 0.42f, 1f), _root, 9));
+            for (int i = 0; i < _orbs.Count; i++)
+            {
+                var sr = _orbs[i];
+                if (sr == null) continue;
+                bool on = i < orbs.Count;
+                if (sr.gameObject.activeSelf != on) sr.gameObject.SetActive(on);
+                if (!on) continue;
+                sr.transform.position = new Vector3(orbs[i].X, -orbs[i].Y + 0.35f, 0f);   // tile space (y down) -> world, at chest height
+                if (frames != null) sr.sprite = frames[(int)(Time.time * 8f + i) % frames.Length];
+                if (frames == null) sr.transform.localScale = Vector3.one * 0.35f;
+            }
         }
 
         // ---- RT fx 3: pixelfx strips (ArtSource/fx/export_strips.py): square frames centred on the effect's origin, facing right,

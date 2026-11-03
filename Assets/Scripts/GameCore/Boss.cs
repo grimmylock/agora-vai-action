@@ -252,6 +252,7 @@ namespace GameCore
         /// <summary>After any damage (Gunplay.Resolve, Melee.Strike): a boss at 0 doesn't die, he breaks.</summary>
         public static void OnDamaged(ICombatant u)
         {
+            BrainBoss.OnDamaged(u);                                        // Boss 2: cracks, and no death at 0
             var f = Of(u);
             if (f == null || f.Finished || f.Broken || u.Hp > 1) return;   // Unkillable holds him at 1: that's the break
             f.Broken = true; f.Doing = null;

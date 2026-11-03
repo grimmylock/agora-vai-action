@@ -18,7 +18,7 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { _hd = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; _poses.Clear(); }
+        private static void ResetCaches() { _hd = null; _vat = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; _poses.Clear(); }
 
         // Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings"): the swing poses of every suit
         // (ArtSource/make_poses.py atlas): armor_pose_<key> / armor_back_pose_<key>, laid out like the armor atlases, plus a unique
@@ -53,6 +53,19 @@ namespace GameCore
         }
 
 
+        static Sprite[] _vat;
+        /// <summary>Boss 2: the vat's six states (ArtSource/bosses/make_brain_vat.py), 96x144 at double resolution, base on the tile.</summary>
+        static Sprite[] VatFrames()
+        {
+            if (_vat != null) return _vat.Length > 0 ? _vat : null;
+            var tex = Resources.Load<Texture2D>("Sprites/Mutants/boss_brain_vat_strip");
+            if (tex == null) { _vat = new Sprite[0]; return null; }
+            tex.filterMode = FilterMode.Point;
+            int n = tex.width / 96; _vat = new Sprite[n];
+            for (int i = 0; i < n; i++) _vat[i] = Sprite.Create(tex, new Rect(i * 96, 0, 96, tex.height), new Vector2(0.5f, 10f / tex.height), 2 * Cell);
+            return _vat;
+        }
+
         public static Sprite For(ICombatant unit)
         {
             Load();
@@ -77,6 +90,7 @@ namespace GameCore
         private static Dictionary<string, Sprite> _hd;
         public static Sprite HD(string name)
         {
+            if (name == BrainBoss.Name) return VatFrames()?[BrainBoss.ArtFrame];   // Boss 2: the vat, its frame by phase
             if (_hd == null)
             {
                 _hd = new Dictionary<string, Sprite>();
