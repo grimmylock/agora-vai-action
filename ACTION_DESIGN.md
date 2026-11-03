@@ -63,7 +63,7 @@ armor; AP/HP ammo plug in here). Weight, wear, jams (d100 as now, 1% +2% per wea
   prone and open. V (rebindable): bullet time on/off, drains Focus (Yan, 2026-11-03: "unbinding bullet time from the dodge,
   having it be a separate key ... and use the dodge for mechanics like those, having it be invulnerable").
 - **On landing you are prone ~0.6 s** (can't move or dodge, getting up included): diving into cover is safe, into the open is risky.
-- Costs **Focus** (meter filled by kills and near misses), so no chaining.
+- The dive costs **stamina** (30 of 100). **Focus** (filled by kills and near misses) feeds bullet time only.
 - In bullet time the body part under the crosshair is highlighted and hits on it get a better wound chance.
 - **Co-op:** bullet time slows everyone within ~40 tiles / in the same fight, and they can all use it (team effort).
 
