@@ -4451,3 +4451,9 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   outdoor recordings: -50 dB comes after ~0.5 s, the faint echo runs on another second), capped per type (pistol 1.8 s, SMG 1.2,
   rifle 2, shotgun 2.4, heavy 2.6, sniper 3) and faded out; the shots now run 1.2-3 s. And the game had 20 voices
   (`Sfx.Voices`), stealing the oldest when busy - a burst with real tails would have cut its own echoes: now 48.
+- Sound part 2c (Yan: "add a bit of reverb to the gunshots, also the explosion one sounds straight out of a game like the old
+  CONTRA games"): the explosions came from two CC0 game packs (TinyWorlds' "Explosion", rubberduck's cannon), both thin (energy
+  ~2.5 kHz, ~10% under 200 Hz). Now built from real recordings in layers (`import_guns.EXPLOSIONS`): a heavy rifle shot slowed to
+  40-45% (the boom), a cannon / bang (the crack), the CC0 "Muffled Distant Explosion" (the rumble) and falling rock from 0.25 s
+  (debris) - 3.5 s, 40-51% under 200 Hz. Reverb (`add_reverb`): an outdoor impulse made in code - six early reflections (23-187 ms)
+  and a dark noise tail decaying over ~1 s - mixed under the dry sound (35% on shots, 25% on explosions).

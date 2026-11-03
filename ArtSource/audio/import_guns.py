@@ -5,7 +5,7 @@ A gun take holds several shots: Shot() finds where a shot starts (the loudness j
 tail, up to the next shot or the type's length. Then the same treatment as import_cc0.py: 16-bit mono 44.1 kHz, a short fade,
 loudness matched to the generated sound it replaces. The cut is kept in ArtSource/audio/cc0/guns/ so this reruns without the
 library.
-    python3 ArtSource/audio/import_guns.py <library dir> <small packs dir>   (or no args: rebuild from ArtSource/audio/cc0/guns)"""
+    python3 ArtSource/audio/import_guns.py <library dir> <small packs dir> [more pack dirs]   (or no args: rebuild from ArtSource/audio/cc0/guns)"""
 import os, sys, glob, subprocess, shutil
 import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -29,10 +29,63 @@ DECAY_DB = -60.0          # the echo is over once it stays this far under the sh
 # target -> (file name in the small packs, seconds kept)
 OTHERS = {
     "reload_mag": ("assaultriflereload1_0.wav", 2.0), "reload_shell": ("Subsequent Shells.mp3", 0.7), "reload_cylinder": ("singlebullet1.wav", 0.6),
-    "explosion_0": ("explosion.wav", 2.5), "explosion_1": ("cannon_01.ogg", 2.5),
     "parry_0": ("sword_clash.1.ogg", 0.8), "parry_1": ("sword_clash.2.ogg", 0.8), "parry_perfect": ("sword_clash.3.ogg", 1.2),
 }
 SR = 44100
+
+# Yan: "the explosion one sounds straight out of a game like the old CONTRA games" - the CC0 explosions are thin (their energy
+# around 2.5 kHz, ~10% under 200 Hz). Built instead from real recordings in layers: a heavy rifle shot slowed right down (the
+# boom), a cannon / bang (the crack), the CC0 "Muffled Distant Explosion" under it (88% of it under 200 Hz: the rumble), and
+# falling rock a quarter second in (debris). (gain, delay s, speed) per layer; speed < 1 = slowed and lower.
+EXPLOSIONS = {
+    "explosion_0": [("lib:Marlin 336", 0.9, 0.0, 0.4), ("cannon_02.ogg", 0.7, 0.0, 1.0), ("NenadSimic_-_Muffled_Distant_Explosion.wav", 1.0, 0.0, 1.0),
+                    ("bfh1_rock_falling_01.ogg", 0.35, 0.25, 1.0), ("bfh1_rock_breaking_01.ogg", 0.25, 0.4, 0.8)],
+    "explosion_1": [("lib:Savage 10 .300 Blackout", 0.9, 0.0, 0.45), ("bang_03.ogg", 0.8, 0.0, 1.0), ("NenadSimic_-_Muffled_Distant_Explosion.wav", 1.0, 0.05, 0.9),
+                    ("bfh1_rock_falling_02.ogg", 0.35, 0.3, 1.0), ("bfh1_rock_falling_03.ogg", 0.25, 0.5, 0.9)],
+}
+EXPLOSION_LEN = 3.2
+
+# Yan: "add a bit of reverb to the gunshots": an outdoor space - a few early reflections (walls, the ground, trees) and a soft,
+# dark decay - mixed in under the dry shot, which keeps its crack. (wet level for shots, for explosions)
+REVERB = (0.35, 0.25)
+def reverb_ir(seconds=1.2, seed=7):
+    rng = np.random.default_rng(seed); n = int(seconds * SR); ir = np.zeros(n, np.float32)
+    for ms, g in ((23, 0.45), (37, 0.32), (61, 0.26), (89, 0.18), (131, 0.13), (187, 0.09)):   # early reflections
+        ir[int(ms / 1000 * SR)] += g
+    t = np.arange(n) / SR
+    tail = rng.standard_normal(n).astype(np.float32) * np.exp(-t / 0.32) * 0.09 * np.clip((t - 0.03) / 0.05, 0, 1)
+    k = 12; tail = np.convolve(tail, np.ones(k) / k, mode="same")                              # darker: high end rolled off
+    return ir + tail.astype(np.float32)
+def add_reverb(x, wet):
+    ir = reverb_ir(); n = len(x) + len(ir) - 1; N = 1 << (n - 1).bit_length()
+    y = np.fft.irfft(np.fft.rfft(x, N) * np.fft.rfft(ir, N), N)[:n]
+    out = np.zeros(n, np.float32); out[:len(x)] += x; out += wet * y.astype(np.float32)
+    nz = np.nonzero(np.abs(out) > np.abs(out).max() * 10 ** (-60 / 20))[0]                     # stop where the tail dies away
+    out = out[:nz[-1] + 1] if len(nz) else out
+    f = min(len(out), int(0.15 * SR)); out[-f:] *= np.linspace(1, 0, f) ** 2
+    return out
+
+def resample(x, speed):
+    if speed == 1.0: return x
+    idx = np.arange(0, len(x) - 1, speed); i = idx.astype(int)
+    return (x[i] * (1 - (idx - i)) + x[np.minimum(i + 1, len(x) - 1)] * (idx - i)).astype(np.float32)
+
+def compose(layers, lib, packs):
+    out = np.zeros(int(EXPLOSION_LEN * SR), np.float32)
+    for src, gain, delay, speed in layers:
+        if src.startswith("lib:"):
+            takes = sorted(glob.glob(os.path.join(lib, src[4:], "*.wav")))
+            x = shot(load(takes[0]), 99, 3.0, 0.3)
+        else:
+            hits = [p for p in glob.glob(os.path.join(packs, "**", src), recursive=True) if "__MACOSX" not in p]
+            if not hits: print("missing", src); continue
+            x = load(hits[0])
+        x = resample(x / (np.abs(x).max() + 1e-9), speed) * gain
+        d = int(delay * SR); m = min(len(x), len(out) - d)
+        if m > 0: out[d:d + m] += x[:m]
+    out /= np.abs(out).max() + 1e-9
+    f = int(0.4 * SR); out[-f:] *= np.linspace(1, 0, f) ** 2
+    return out
 
 def load(path):
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True, check=True).stdout
@@ -73,6 +126,7 @@ def finish(src_wav, target, cap=None):
     if os.path.exists(dst): shutil.copy(dst, old)
     x = load(src_wav)
     if cap: x = x[:int(cap * SR)]
+    if target.startswith("shot_") or target.startswith("explosion_"): x = add_reverb(x, REVERB[0] if target.startswith("shot_") else REVERB[1])
     nz = np.nonzero(np.abs(x) > 0.02 * (np.abs(x).max() + 1e-9))[0]
     if len(nz): x = x[max(0, nz[0] - int(0.003 * SR)):]                                      # trim the lead-in
     x = x.copy()
@@ -92,12 +146,28 @@ if __name__ == "__main__":
             takes = sorted(glob.glob(os.path.join(lib, folder, "*.wav")))
             if not takes: print("missing", folder); continue
             save(shot(load(takes[min(take, len(takes) - 1)]), idx, keep, 0.05 if t.startswith("shot_smg") else 0.3), os.path.join(KEEP, t + ".wav"))
+        packs2 = [packs] + sys.argv[3:]                                  # (extra dirs: the first CC0 batch, for the rumble and the debris)
+        for t, layers in EXPLOSIONS.items():
+            found = None
+            for d in packs2:
+                ok = all(l[0].startswith("lib:") or glob.glob(os.path.join(d, "**", l[0]), recursive=True) for l in layers)
+                if ok: found = d; break
+            if found is None:                                               # layers spread over the pack dirs: look in all of them
+                tmpd = os.path.join(KEEP, "_layers"); os.makedirs(tmpd, exist_ok=True)
+                for l in layers:
+                    if l[0].startswith("lib:"): continue
+                    for d in packs2:
+                        h = [p for p in glob.glob(os.path.join(d, "**", l[0]), recursive=True) if "__MACOSX" not in p]
+                        if h: shutil.copy(h[0], os.path.join(tmpd, l[0])); break
+                found = tmpd
+            save(compose(layers, lib, found), os.path.join(KEEP, t + ".wav"))
+            shutil.rmtree(os.path.join(KEEP, "_layers"), ignore_errors=True)
         for t, (name, keep) in OTHERS.items():
             hits = [p for p in glob.glob(os.path.join(packs, "**", name), recursive=True) if "__MACOSX" not in p]
             if not hits: print("missing", name); continue
             save(load(hits[0])[:int(keep * SR)], os.path.join(KEEP, t + ".wav"))
     n = 0
-    for t in list(SHOTS) + list(OTHERS):
+    for t in list(SHOTS) + list(EXPLOSIONS) + list(OTHERS):
         src = os.path.join(KEEP, t + ".wav")
         if os.path.exists(src): finish(src, t); n += 1
     print(n, "sounds replaced")
