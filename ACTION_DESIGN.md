@@ -261,6 +261,14 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 
 ## Later list
 
+- **Dungeons you figure out, not corridors with rooms (Yan, 2026-11-03):** "right now it looks very even in space, it doesn't have
+  a linear progression ... Most rooms are locked, the few that are open have either a key, a hole in the wall going into the other
+  room, maybe something else? recently i played scavland and its 'bunkers' are basically just a loooot of corridors with rooms
+  branching off of them ... 20 rooms that look the same and corridors, i'd like to avoid this here and have them be engaging to
+  explore and figure out". Ideas to bring him: a locked spine where each opened room gives the way into the next (key cards,
+  a code on a note, a breakable wall, a vent you crawl, power you restore to a door, a flooded room you drain), rooms with one job
+  each (a lab, a cell block, a generator, an office with the code) so they look and play different, shortcuts back to the
+  entrance once opened, and the boss room last. Start with Secret Lab Alpha (the brain's lab).
 - **Poses (Yan, 2026-10-29):** extra body frames besides front/back (crouch, kneel, sit, leans for cover, lunge, stagger,
   lying, with in-betweens), the floating hands doing the expressive part. Prototype sheet: `maps/renders/poses/poses_preview.png`
   (`ArtSource/make_poses.py`, any suit). Waiting on Yan's picks before anything goes in the game.
