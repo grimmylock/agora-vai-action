@@ -15,14 +15,17 @@ sys.path.insert(0, HERE)
 from import_cc0 import level_gain
 
 # target -> (library folder, take index, shot index in the take, seconds kept); an SMG's shots are 60-90 ms apart (full auto)
+# Yan: "the sounds cut off before the echoes are done": every shot (99) is the one in its take with the most room after it - no
+# shot right behind it, so its echo runs out on its own - kept until the echo dies away (DECAY_DB) with a generous cap per type.
 SHOTS = {
-    "shot_pistol_0": ("Walther PPQ", 0, 0, 0.7), "shot_pistol_1": ("1911", 0, 0, 0.7),
-    "shot_smg_0": ("PPSh", 0, 99, 0.45), "shot_smg_1": ("PPSh", 1, 99, 0.45),   # the last shot of a burst: it keeps its tail
-    "shot_rifle_0": ("AK-47", 0, 99, 0.9), "shot_rifle_1": ("AK-47", 1, 0, 0.9),
-    "shot_shotgun_0": ("Mossberg", 0, 0, 1.1), "shot_shotgun_1": ("Nova", 0, 0, 1.1),
-    "shot_sniper_0": ("Mosin Nagant", 0, 0, 1.4), "shot_sniper_1": ("Tikka", 0, 0, 1.4),
-    "shot_heavy_0": ("Marlin 336", 0, 0, 1.3), "shot_heavy_1": ("Savage 10 .300 Blackout", 0, 0, 1.3),
+    "shot_pistol_0": ("Walther PPQ", 0, 99, 1.8), "shot_pistol_1": ("1911", 0, 99, 1.8),
+    "shot_smg_0": ("PPSh", 0, 99, 1.2), "shot_smg_1": ("PPSh", 1, 99, 1.2),
+    "shot_rifle_0": ("AK-47", 0, 99, 2.0), "shot_rifle_1": ("AK-47", 1, 99, 2.0),
+    "shot_shotgun_0": ("Mossberg", 0, 99, 2.4), "shot_shotgun_1": ("Nova", 0, 99, 2.4),
+    "shot_sniper_0": ("Mosin Nagant", 0, 99, 3.0), "shot_sniper_1": ("Tikka", 0, 99, 3.0),
+    "shot_heavy_0": ("Marlin 336", 0, 99, 2.6), "shot_heavy_1": ("Savage 10 .300 Blackout", 0, 99, 2.6),
 }
+DECAY_DB = -60.0          # the echo is over once it stays this far under the shot's peak
 # target -> (file name in the small packs, seconds kept)
 OTHERS = {
     "reload_mag": ("assaultriflereload1_0.wav", 2.0), "reload_shell": ("Subsequent Shells.mp3", 0.7), "reload_cylinder": ("singlebullet1.wav", 0.6),
@@ -53,10 +56,16 @@ def onsets(x, gap):
 def shot(x, idx, keep, gap):
     on = onsets(x, gap)
     if not on: return x[:int(keep * SR)]
+    if idx == 99:                                   # the shot with the most room after it - its echo is the longest one left alone
+        gaps = [((on[i + 1] if i + 1 < len(on) else len(x)) - on[i], i) for i in range(len(on))]
+        idx = max(gaps)[1]
     s = max(0, on[min(idx, len(on) - 1)] - int(0.004 * SR))
     nxt = [o for o in on if o > s + int(gap * SR)]
     e = min(s + int(keep * SR), (nxt[0] - int(0.004 * SR)) if nxt else len(x))
-    y = x[s:e].copy(); f = min(len(y), int(0.06 * SR)); y[-f:] *= np.linspace(1, 0, f)   # fade the tail
+    y = x[s:e].copy()
+    loud = np.nonzero(np.abs(y) > np.abs(y).max() * 10 ** (DECAY_DB / 20))[0]        # where the echo is still above the floor
+    if len(loud): y = y[:min(len(y), loud[-1] + int(0.05 * SR))]
+    f = min(len(y), int(0.12 * SR)); y[-f:] *= np.linspace(1, 0, f) ** 2              # a gentle fade over the last of it
     return y
 
 def finish(src_wav, target, cap=None):
@@ -66,7 +75,8 @@ def finish(src_wav, target, cap=None):
     if cap: x = x[:int(cap * SR)]
     nz = np.nonzero(np.abs(x) > 0.02 * (np.abs(x).max() + 1e-9))[0]
     if len(nz): x = x[max(0, nz[0] - int(0.003 * SR)):]                                      # trim the lead-in
-    f = min(len(x), int(0.04 * SR)); x = x.copy(); x[-f:] *= np.linspace(1, 0, f)
+    x = x.copy()
+    if not target.startswith("shot_"): f = min(len(x), int(0.04 * SR)); x[-f:] *= np.linspace(1, 0, f)   # (shots already fade out with their echo)
     tmp = dst + ".tmp.wav"; save(x, tmp)
     if os.path.exists(old):
         g = max(-20.0, min(20.0, level_gain(tmp, old)))

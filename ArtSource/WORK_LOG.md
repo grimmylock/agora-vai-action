@@ -4446,3 +4446,8 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   are now a little quieter on average than the generated ones but keep their attack. Both imports were rebuilt from the original
   generated sounds. Previews: `maps/renders/sound/guns_preview.mp3`, `new_sounds_preview.mp3`. Still generated: the rail gun,
   thunder, wind, the Zone hum, creatures, psi, hurt, glint, sting, finisher.
+- Sound part 2b (Yan: "the sounds cut off before the echoes are done"): two causes. My cuts were short (0.45-0.9 s) - now each shot
+  is the one in its take with the most room after it, kept until its echo stays 60 dB under the shot's peak (these are fairly dry
+  outdoor recordings: -50 dB comes after ~0.5 s, the faint echo runs on another second), capped per type (pistol 1.8 s, SMG 1.2,
+  rifle 2, shotgun 2.4, heavy 2.6, sniper 3) and faded out; the shots now run 1.2-3 s. And the game had 20 voices
+  (`Sfx.Voices`), stealing the oldest when busy - a burst with real tails would have cut its own echoes: now 48.
