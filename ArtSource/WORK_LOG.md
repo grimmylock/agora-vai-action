@@ -4499,3 +4499,13 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   v2 calmer streaks and a bigger dark core, v3 the bright side toned down; `check.mjs` passes clean. At this size it reads like
   a floating eye, which suits a psychic mutant. On a map: `maps/renders/fx/void_pull_on_map.gif`.
 - Not done: which mutant uses it and how (a pull? damage over time?), the Unity side (a strip like the anomaly strips).
+
+## RT fx 2 - gun and electric effects, side by side at two sizes (2026-11-03)
+
+- Yan: "go ahead with the gun effects and electric ones". Rendered from the library (guns in the muted fire ramp, light 0.4,
+  stone #6b6a60; electric ones as they are): muzzle-pistol/smg/shotgun, hit-spark, ricochet, bullet-impact, electrified,
+  spark-arc, zap-hit, charge-up. pixelfx has no size knob and draws for a 24x38 character (ours: 16), so two takes on a real map:
+  `maps/renders/fx/gun_electric_half.mp4` (effect pixels half a world pixel, like the HD mutants) and `gun_electric_full.mp4`.
+- spark-arc draws its own two poles (fits an anomaly built around pylons, not a free spark). Not in Unity yet: waiting on the size.
+- Yan on bosses: "some of them a bullet-hell style bossfight ... more akin to Binding of Isaac where it's kinda bullet hell but
+  not really? you have to dodge stuff". Discussed in chat, nothing built. Note: the dive (`Rt.cs:469`, 0.55 s) has no i-frames.
