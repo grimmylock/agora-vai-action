@@ -790,54 +790,69 @@ static class Program {
   // bullet time). The bot parries his white glints on time (most of them: some it blocks late, some it misses), dives away from
   // the red ones, hacks at him while he's staggered, walks up and executes him when he breaks, opens his body. Every frame: both
   // bodies, their held weapons' poses (HeldPoseMath), the boss's state, the events the view would play, the HUD's numbers.
-  // Boss 2 preview (Tools/render/brain_fight.py): the brain fights a bot in Secret Lab Alpha. The bot circles the vat, sidesteps
-  // orbs that would hit it and dives through the ones it can't; the vat loses HP at a steady rate (the bot's gunfire) so every
-  // phase shows. Frames at 15 fps: the vat's frame, the orbs, the bot, the pull, props that moved, the log.
+  // Boss 2 preview (Tools/render/brain_fight.py): the brain fights a bot in Secret Lab Alpha's vat room. The bot circles the vat,
+  // sidesteps orbs, dives through pulses and beams; the vat loses HP at a steady rate (the bot's gunfire) so every phase shows.
+  // Frames at 15 fps: the vat's sheet cell, orbs (kind, heading), beams, the pulse, thrown cover, cover gone or landed, the log.
   static void BrainFrames(string path) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
     MacroState.Current.CurrentZoneId = BrainBoss.Lab; TerrainMap.BuildTerrainForZone(BrainBoss.Lab); EncounterState.Enemies.Clear(); Props.Slides.Clear();
     UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
-    var f = BrainBoss.Spawn(BrainBoss.VatX, BrainBoss.VatY); var b = f.Unit;
-    var start = TerrainMap.FindNearestEnterable(BrainBoss.VatX - 3, BrainBoss.VatY + 5); p.X = start.x; p.Y = start.y;
+    var f = BrainBoss.Spawn(BrainBoss.VatX, BrainBoss.VatY); var b = f.Unit; Rt.SetOffset(b, 0f, 0f);
+    var start = TerrainMap.FindNearestEnterable(BrainBoss.VatX - 3, BrainBoss.VatY + 6); p.X = start.x; p.Y = start.y;
     Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); p.Hp = p.MaxHp;
+    var cover0 = new Dictionary<(int, int), string>();
+    for (int y = 3; y <= 19; y++) for (int x = 27; x <= 47; x++) { var t0 = TerrainMap.GetTile(x, y); if (BrainBoss.CoverHp(t0.Look) > 0) cover0[(x, y)] = t0.Look; }
     var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
     var sb = new System.Text.StringBuilder("{\"vat\":[" + b.X + "," + b.Y + "],\"frames\":[");
-    const float dt = 1f / 30f; int k = 0, slides = 0, hits = 0, dives = 0; int lastHp = p.Hp;
+    const float dt = 1f / 30f; int k = 0, hits = 0, dives = 0; int lastHp = p.Hp;
     var ll = new ListLog(); var log = ll.L; GameLog.Target = ll;
-    for (float t = 0f; t < 60f && !f.Gone; t += dt, k++) {
+    for (float t = 0f; t < 80f && !f.Gone; t += dt, k++) {
       UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt;
-      var (px, py) = Ballistics.Pos(p); var (vx, vy) = Ballistics.Pos(b);
-      // the bot: an orb about to hit -> step aside (dive if it's close); otherwise circle the vat at ~5.5 tiles
+      var (px, py) = Ballistics.Pos(p); var (cx, cy) = BrainBoss.Center(f);
       float ix = 0f, iy = 0f; bool jump = false;
       foreach (var o in BrainBoss.Orbs) {
         float rx = px - o.X, ry = py - o.Y, along = rx * o.Dx + ry * o.Dy, off = rx * o.Dy - ry * o.Dx;
         if (along < 0f || along > 2.2f || Math.Abs(off) > 0.75f) continue;
         ix = off >= 0 ? o.Dy : -o.Dy; iy = off >= 0 ? -o.Dx : o.Dx;
-        if (along < 0.9f && Rt.Of(p).Stamina >= Rt.DiveStamina && !Rt.Of(p).Diving) jump = true;
+        if (along < 0.9f) jump = true;
         break;
       }
-      if (ix == 0f && iy == 0f) {
-        float dx = px - vx, dy = py - (vy - 1f), d = (float)Math.Sqrt(dx * dx + dy * dy) + 0.001f;
-        ix = -dy / d + (5.5f - d) * 0.4f * dx / d; iy = dx / d + (5.5f - d) * 0.4f * dy / d;
+      float dv = (float)Math.Sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy)) + 0.001f;
+      if (BrainBoss.Pulse != null && dv - BrainBoss.Pulse.R < 1.1f && dv > BrainBoss.Pulse.R) { jump = true; ix = (px - cx) / dv; iy = (py - cy) / dv; }   // dive through the wave
+      foreach (var bm in BrainBoss.Beams) {
+        float bearing = (float)(Math.Atan2(py - cy, px - cx) * 180 / Math.PI), diff = ((bearing - bm.Angle) % 360 + 540) % 360 - 180;
+        if (diff > 0f && diff < 16f) { jump = true; ix = -(py - cy) / dv; iy = (px - cx) / dv; }   // the beam is about to reach: dive across it, against its turn
       }
+      foreach (var th in BrainBoss.Throws) if (th.Flying && Math.Abs(th.X - px) + Math.Abs(th.Y - py) < 2.2f) { jump = true; ix = -th.Dy; iy = th.Dx; }
+      if (ix == 0f && iy == 0f) { ix = -(py - cy) / dv + (5.5f - dv) * 0.4f * (px - cx) / dv; iy = (px - cx) / dv + (5.5f - dv) * 0.4f * (py - cy) / dv; }
+      jump = jump && Rt.Of(p).Stamina >= Rt.DiveStamina && !Rt.Of(p).Diving && UnityEngine.Time.time >= Rt.Of(p).ProneUntil;
       if (jump) dives++;
-      Rt.PlayerTick(p, new Rt.Input { X = ix, Y = iy, Jump = jump, Sprint = !jump, Mouse = (vx, vy - 1f) });
-      if (!f.Drained && f.Started && b.Hp > 1) { b.Hp = Math.Max(0, b.Hp - (int)(BrainBoss.MaxHp / 36f * dt + 0.5f)); Boss.OnDamaged(b); }   // the bot's gunfire, 36 s of it
+      Rt.PlayerTick(p, new Rt.Input { X = ix, Y = iy, Jump = jump, Sprint = !jump, Mouse = (cx, cy) });
+      if (!f.Drained && f.Started && f.PulseAt < 0f && b.Hp > 1) { b.Hp = Math.Max(0, b.Hp - (int)(BrainBoss.MaxHp / 48f * dt + 0.5f)); Boss.OnDamaged(b); }   // the bot's gunfire, ~48 s of it
       BrainBoss.Tick(dt); Boss.TickAll();
-      if (p.Hp < lastHp) hits++; lastHp = p.Hp;
+      if (p.Hp < lastHp) hits++;
+      if (p.Hp < p.MaxHp / 3) { p.Hp = p.MaxHp; Body.Reset(); }   // the preview's bot never goes down: the fight plays to the end (hits are still counted)
+      lastHp = p.Hp;
       UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
       if (k % 2 != 0) continue;
       var (qx, qy) = Ballistics.Pos(p);
-      sb.Append(k > 0 ? "," : "").Append("{\"t\":" + F(t) + ",\"art\":" + BrainBoss.ArtFrame + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"pull\":" + (UnityEngine.Time.time < f.PullUntil ? 1 : 0)
-        + ",\"doing\":\"" + (f.Doing ?? "") + "\",\"orbs\":[" + string.Join(",", BrainBoss.Orbs.Select(o => "[" + F(o.X) + "," + F(o.Y) + "]")) + "]"
-        + ",\"slides\":[" + string.Join(",", Props.Slides.Skip(slides).Select(sl => $"[{sl.fromX},{sl.fromY},{sl.x},{sl.y}]")) + "]"
+      var gone = cover0.Where(kv => TerrainMap.GetTile(kv.Key.Item1, kv.Key.Item2).Look != kv.Value).Select(kv => $"[{kv.Key.Item1},{kv.Key.Item2}]");
+      var landed = new List<string>();
+      for (int y = 3; y <= 19; y++) for (int x = 27; x <= 47; x++) { var tl = TerrainMap.GetTile(x, y); if (BrainBoss.CoverHp(tl.Look) > 0 && !(cover0.TryGetValue((x, y), out var l0) && l0 == tl.Look)) landed.Add($"[{x},{y},\"{tl.Look}\"]"); }
+      sb.Append(k > 0 ? "," : "").Append("{\"t\":" + F(t) + ",\"row\":" + BrainBoss.ArtRow + ",\"col\":" + BrainBoss.ArtCol + ",\"c\":[" + F(cx) + "," + F(cy) + "]"
+        + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"pull\":" + (UnityEngine.Time.time < f.PullUntil ? 1 : 0) + ",\"wind\":" + (BrainBoss.Winding(f) ? 1 : 0)
+        + ",\"doing\":\"" + (f.Doing ?? (f.PulseAt >= 0f ? "pulse" : "")) + "\",\"orbs\":[" + string.Join(",", BrainBoss.Orbs.Select(o => "[" + F(o.X) + "," + F(o.Y) + "," + F(o.Dx) + "," + F(o.Dy) + ",\"" + o.Kind + "\"," + F(o.Age) + "]")) + "]"
+        + ",\"beams\":[" + string.Join(",", BrainBoss.Beams.Select(bm => "[" + F(bm.Angle) + "," + F(bm.Length) + "]")) + "]"
+        + ",\"pulse\":" + (BrainBoss.Pulse != null ? F(BrainBoss.Pulse.R) : "-1")
+        + ",\"throws\":[" + string.Join(",", BrainBoss.Throws.Select(th => "[" + F(th.X) + "," + F(th.Y) + ",\"" + th.Look + "\"," + (th.Flying ? 1 : 0) + "," + F(UnityEngine.Time.time - th.Born) + "]")) + "]"
+        + ",\"gone\":[" + string.Join(",", gone) + "],\"landed\":[" + string.Join(",", landed) + "]"
         + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
-      slides = Props.Slides.Count; log.Clear();
+      log.Clear();
     }
     sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
     System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
-    Console.WriteLine($"brain fight: {k * dt:0.0} s, escaped {f.Gone}, orb hits on the bot {hits}, dives {dives}, props moved {Props.Slides.Count}");
+    Console.WriteLine($"brain fight: {k * dt:0.0} s, escaped {f.Gone}, hits on the bot {hits}, dives {dives}, hp left {p.Hp}");
   }
 
   static void BossFrames(string path) {
@@ -1245,45 +1260,70 @@ static class Program {
   // what doesn't fit stays out (never lost), and the grid survives a save
   // Survival: 5 then +3 a wave, a 15 s breather after a clear, a minute at most, every 5th wave a boss that waits to be killed and
   // raises the tier, humans' loot pristine
-  // Boss 2 (Yan, 2026-11-03): the brain in the vat - orbs you dodge, cracks at each quarter, no death at 0: it goes still, wakes, escapes
+  // Boss 2 (Yan, 2026-11-03): the brain in the vat - wind-ups with its eyes shut, orbs stopped by cover, pulses that wear cover down
+  // (boxes 3, tables 6, cabinets 9, 3 a pulse), rip (your cover hurled at you), a sweeping laser, no death at 0 - still, rise, the eye, gone
   static void BrainChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 9000f; UnityEngine.Time.deltaTime = 0.02f;
     Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped);
-    var f = BrainBoss.Spawn(px + 4, py); var b = f.Unit;
-    Check(BrainBoss.Is(b) && EncounterState.Enemies.Contains(b) && b.Hp == BrainBoss.MaxHp && BrainBoss.ArtFrame == 0, "Boss 2: the vat spawns, full");
+    var f = BrainBoss.Spawn(px + 4, py); var b = f.Unit; Rt.SetOffset(b, 0f, 0f);
+    Check(BrainBoss.Is(b) && EncounterState.Enemies.Contains(b) && b.Hp == BrainBoss.MaxHp && BrainBoss.ArtRow == 0, "Boss 2: the vat spawns, full, eyes open");
     BrainBoss.Tick(0.02f);
     Check(f.Started, "Boss 2: it wakes when you come close");
-    f.Doing = "ring"; f.DoneAt = UnityEngine.Time.time; BrainBoss.Tick(0.02f);
-    Check(BrainBoss.Orbs.Count == 10, $"Boss 2: a ring fires 10 orbs ({BrainBoss.Orbs.Count})");
+    f.Bag.Clear(); f.Bag.Add("ring"); f.Next = 0f; BrainBoss.Tick(0.02f);
+    Check(f.Doing == "ring" && BrainBoss.Winding(f) && BrainBoss.ArtRow == 4 && BrainBoss.Orbs.Count == 0, "Boss 2: before a move its eyes shut (the wind-up), nothing fired yet");
+    UnityEngine.Time.time = f.WindUntil + 0.01f; BrainBoss.Tick(0.02f);
+    Check(BrainBoss.Orbs.Count == 10 && BrainBoss.Orbs.All(o => o.Kind == "ring") && BrainBoss.ArtRow == 0, $"Boss 2: then they open and a ring of 10 orbs flies ({BrainBoss.Orbs.Count})");
     BrainBoss.Orbs.Clear(); f.Next = UnityEngine.Time.time + 999f; f.Doing = null;
+    void Tick(int n) { for (int i = 0; i < n; i++) { BrainBoss.Tick(0.02f); UnityEngine.Time.time += 0.02f; } }
     var (x0, y0) = Ballistics.Pos(p); int hp = p.Hp;
-    BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f);
-    for (int i = 0; i < 40 && BrainBoss.Orbs.Count > 0; i++) BrainBoss.Tick(0.02f);
+    BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f); Tick(40);
     Check(p.Hp < hp && BrainBoss.Orbs.Count == 0, $"Boss 2: an orb that reaches you hurts ({hp} -> {p.Hp})");
-    hp = p.Hp; Rt.Of(p).Stamina = Rt.StaminaMax; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f;   // mid-dive (held in the air for the check)
-    BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f);
-    for (int i = 0; i < 60; i++) BrainBoss.Tick(0.02f);
+    hp = p.Hp; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f;   // mid-dive (held in the air for the check)
+    BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f); Tick(60);
     Check(p.Hp == hp, "Boss 2: mid-dive an orb passes through you");
     Rt.Of(p).DiveUntil = -1f; BrainBoss.Orbs.Clear();
-    TerrainMap.SetTileType(px - 2, py, TileType.Solid); BrainBoss.Shoot(px - 0.5f, py + 0.5f, 180f, 3f);
-    for (int i = 0; i < 60; i++) BrainBoss.Tick(0.02f);
-    Check(BrainBoss.Orbs.Count == 0, "Boss 2: a wall stops an orb");
-    TerrainMap.SetTileType(px - 2, py, TileType.Empty);
-    b.Hp = BrainBoss.MaxHp * 7 / 10; Boss.OnDamaged(b);
-    Check(f.Phase == 1 && BrainBoss.ArtFrame == 1, "Boss 2: under 75% the glass cracks");
-    b.Hp = BrainBoss.MaxHp / 5; Boss.OnDamaged(b);
-    Check(f.Phase == 3 && BrainBoss.ArtFrame == 3, "Boss 2: under 25% the brain is half bare");
-    TerrainMap.SetTileType(px + 4, py + 3, TileType.Barrel, "barrel");
-    int before = 0; for (int y = py - 9; y <= py + 9; y++) for (int x = px - 7; x <= px + 15; x++) if (Props.Movable(x, y)) before++;
-    f.Doing = "props"; f.DoneAt = UnityEngine.Time.time; f.Next = 0f; BrainBoss.Tick(0.02f);
-    Check(before > 0 && !Props.Movable(px + 4, py + 3), $"Boss 2: telekinesis moves the room's props ({before} movable)");
+    TerrainMap.SetTileType(px - 2, py, TileType.ScatterCover, "crate"); BrainBoss.Shoot(px - 0.5f, py + 0.5f, 180f, 3f); Tick(60);
+    Check(BrainBoss.Orbs.Count == 0, "Boss 2: cover stops an orb (and it doesn't wear the cover)");
+    Check(TerrainMap.GetTile(px - 2, py).Look == "crate" && TerrainMap.GetTile(px - 2, py).Damage == 0, "Boss 2: the crate is still whole");
+    // the pulses: a crate, a table and a cabinet near the vat
+    int cX = px + 2, cY = py + 3;
+    TerrainMap.SetTileType(cX, cY, TileType.ScatterCover, "crate"); TerrainMap.SetTileType(cX + 1, cY, TileType.ScatterCover, "labtable"); TerrainMap.SetTileType(cX + 2, cY, TileType.HardCover, "cabinet");
+    string Look(int x) => TerrainMap.GetTile(x, cY).Look;
+    hp = p.Hp; b.Hp = BrainBoss.MaxHp * 7 / 10; Boss.OnDamaged(b);
+    Check(f.Phase == 1 && BrainBoss.Winding(f) && BrainBoss.ArtRow == 5 && BrainBoss.Pulse == null, "Boss 2: under 75% the glass cracks, its eyes shut - the pulse gathers");
+    UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(1);
+    Check(BrainBoss.Pulse != null, "Boss 2: then the pulse rolls out");
+    Tick(150);
+    Check(Look(cX) != "crate" && Look(cX + 1) == "labtable" && Look(cX + 2) == "cabinet", $"Boss 2: the first pulse breaks the boxes only ({Look(cX)}, {Look(cX + 1)}, {Look(cX + 2)})");
+    Check(p.Hp < hp, $"Boss 2: the pulse hurts whoever it passes ({hp} -> {p.Hp})");
+    b.Hp = BrainBoss.MaxHp * 4 / 10; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; hp = p.Hp; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f; Tick(150);
+    Check(Look(cX + 1) != "labtable" && Look(cX + 2) == "cabinet", "Boss 2: the second pulse breaks the tables");
+    Check(p.Hp == hp, "Boss 2: diving through the pulse, it doesn't touch you");
+    Rt.Of(p).DiveUntil = -1f;
+    b.Hp = BrainBoss.MaxHp / 5; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(150);
+    Check(f.Phase == 3 && Look(cX + 2) != "cabinet", "Boss 2: the third breaks the file cabinets - no cover left");
+    // rip: the crate beside you comes off the floor and flies at you
+    TerrainMap.SetTileType(px + 1, py, TileType.ScatterCover, "crate"); hp = p.Hp; f.Bag.Clear(); f.Bag.Add("rip"); f.Next = 0f; f.Doing = null;
+    Tick(1); UnityEngine.Time.time = f.WindUntil + 0.01f; Tick(1);
+    Check(BrainBoss.Throws.Count == 1 && TerrainMap.GetTile(px + 1, py).Look != "crate", "Boss 2: rip tears the crate beside you off the floor");
+    Tick(80);
+    Check(BrainBoss.Throws.Count == 0 && p.Hp < hp, $"Boss 2: and hurls it at you ({hp} -> {p.Hp})");
+    // the laser sweeps; cover doesn't stop it, a dive does
+    f.Bag.Clear(); f.Bag.Add("laser"); f.Next = 0f; f.Doing = null; Tick(1); UnityEngine.Time.time = f.WindUntil + 0.01f; hp = p.Hp; Tick(1);
+    Check(BrainBoss.Beams.Count == 2, $"Boss 2: the laser - two beams when it's at its angriest ({BrainBoss.Beams.Count})");
+    TerrainMap.SetTileType(px + 1, py, TileType.HardCover, "cabinet");
+    Tick((int)(BrainBoss.LaserFor / 0.02f) + 5);
+    Check(p.Hp < hp && BrainBoss.Beams.Count == 0, $"Boss 2: it sweeps over you even behind cover ({hp} -> {p.Hp})");
+    // the end
     b.Hp = 0; Boss.OnDamaged(b);
-    Check(b.IsAlive() && f.Drained && BrainBoss.ArtFrame == 4, "Boss 2: at 0 it doesn't die - it slumps, still");
+    Check(b.IsAlive() && f.Drained && f.Stage == "still" && BrainBoss.ArtRow == 8, "Boss 2: at 0 it doesn't die - it slumps, still");
     b.Hp = 0; Boss.OnDamaged(b);
     Check(b.Hp == 1, "Boss 2: drained, more hits don't kill it");
-    UnityEngine.Time.time += BrainBoss.StillFor + 0.1f; BrainBoss.Tick(0.02f);
-    Check(f.Awake && BrainBoss.ArtFrame == 5, "Boss 2: its eyes open again");
-    UnityEngine.Time.time += BrainBoss.AwakeFor + 0.1f; BrainBoss.Tick(0.02f);
+    UnityEngine.Time.time += BrainBoss.StillFor + 0.05f; Tick(1);
+    Check(f.Stage == "rise" && BrainBoss.ArtRow == 9, "Boss 2: its eyes open and it floats up");
+    UnityEngine.Time.time += BrainBoss.RiseFor + 0.05f; Tick(1);
+    Check(f.Stage == "eye" && BrainBoss.ArtRow == 10, "Boss 2: the giant eye comes out and looks at you");
+    UnityEngine.Time.time += BrainBoss.EyeFor + 0.05f; Tick(1);
     Check(f.Gone && !EncounterState.Enemies.Contains(b) && Story.Has(BrainBoss.Escaped), "Boss 2: the void takes it - gone, flagged to come back later");
     BrainBoss.OnEnterZone(BrainBoss.Lab);
     Check(BrainBoss.Current == null, "Boss 2: once it has escaped, the lab is empty of it");

@@ -54,15 +54,18 @@ namespace GameCore
 
 
         static Sprite[] _vat;
-        /// <summary>Boss 2: the vat's six states (ArtSource/bosses/make_brain_vat.py), 96x144 at double resolution, base on the tile.</summary>
+        /// <summary>Boss 2: the vat sheet (ArtSource/bosses/make_brain_vat.py): 8 columns x 11 rows of 128x160 at double resolution,
+        /// row-major from the top (BrainBoss.ArtRow/ArtCol), the base on the tile.</summary>
         static Sprite[] VatFrames()
         {
             if (_vat != null) return _vat.Length > 0 ? _vat : null;
-            var tex = Resources.Load<Texture2D>("Sprites/Mutants/boss_brain_vat_strip");
+            var tex = Resources.Load<Texture2D>("Sprites/Mutants/boss_brain_vat");
             if (tex == null) { _vat = new Sprite[0]; return null; }
             tex.filterMode = FilterMode.Point;
-            int n = tex.width / 96; _vat = new Sprite[n];
-            for (int i = 0; i < n; i++) _vat[i] = Sprite.Create(tex, new Rect(i * 96, 0, 96, tex.height), new Vector2(0.5f, 10f / tex.height), 2 * Cell);
+            int cols = tex.width / 128, rows = tex.height / 160; _vat = new Sprite[cols * rows];
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                    _vat[r * cols + c] = Sprite.Create(tex, new Rect(c * 128, tex.height - (r + 1) * 160, 128, 160), new Vector2(0.5f, 10f / 160f), 2 * Cell);
             return _vat;
         }
 
@@ -90,7 +93,7 @@ namespace GameCore
         private static Dictionary<string, Sprite> _hd;
         public static Sprite HD(string name)
         {
-            if (name == BrainBoss.Name) return VatFrames()?[BrainBoss.ArtFrame];   // Boss 2: the vat, its frame by phase
+            if (name == BrainBoss.Name) { var v = VatFrames(); return v == null ? null : v[BrainBoss.ArtRow * 8 + BrainBoss.ArtCol]; }   // Boss 2: the vat, by phase and moment
             if (_hd == null)
             {
                 _hd = new Dictionary<string, Sprite>();

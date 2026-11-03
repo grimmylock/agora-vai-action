@@ -326,6 +326,20 @@ namespace GameCore
                     var (bx, by) = Dir(TacticalGridView.GridToWorld(e.FromX, e.FromY), to);
                     Wound(e, to, bx, by, false);
                     break;
+                case "charge":                                  // Boss 2: its eyes shut, it gathers itself
+                    Sfx.Play("psi", from, 0.5f, 0.05f, 0.7f);
+                    break;
+                case "release":                                 // Boss 2: the eyes snap open - a flash at the brain
+                    Puff("fx_hit_spark", from + new Vector3(0f, 1.3f, 0f), 0.22f, 0f, new Color(0.85f, 0.6f, 1f), 3.5f);
+                    Sfx.Play("psi", from, 0.8f, 0.05f, 1.2f);
+                    break;
+                case "pulse":                                   // Boss 2: the wave of force at a crack
+                    Puff("fx_hit_spark", from + new Vector3(0f, 1.3f, 0f), 0.4f, 0f, new Color(0.85f, 0.6f, 1f), 6f);
+                    Sfx.Play("psi", from, 1f, 0.02f, 0.35f); Shake(0.35f);
+                    break;
+                case "psihit":                                  // Boss 2: one of its attacks lands on someone
+                    if (e.Target != null) Wound(e, to, 0f, 0f, true);
+                    break;
                 case "void":                                    // Boss 2: the void pull opens over the vat
                     PxFx("void_pull", from + new Vector3(0f, 0.6f, 0f), 0f, 0f, PxFull);
                     Sfx.Play("psi", from, 1f, 0.05f, 0.6f);
@@ -480,25 +494,106 @@ namespace GameCore
             _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames });
         }
 
-        // ---- Boss 2: the vat's psychic orbs, one sprite each, pooled ----
-        readonly List<SpriteRenderer> _orbs = new List<SpriteRenderer>();
+        // ---- Boss 2: the brain's attacks, drawn from BrainBoss's state every frame (pooled sprites) ----
+        //      orbs by kind (pale ring orbs, dark void orbs, aimed bolts with a trail), the sweeping beams, the pulse's wave front,
+        //      ripped cover hanging and flying, the glow gathering while its eyes are shut
+        readonly List<SpriteRenderer> _orbs = new List<SpriteRenderer>(), _beams = new List<SpriteRenderer>(), _throws = new List<SpriteRenderer>();
+        SpriteRenderer _wave, _glow;
+        SpriteRenderer Pooled(List<SpriteRenderer> pool, int i, string name, int order)
+        {
+            while (pool.Count <= i) pool.Add(NewSprite(name, null, Color.white, _root, order));
+            var sr = pool[i];
+            if (sr != null && !sr.gameObject.activeSelf) sr.gameObject.SetActive(true);
+            return sr;
+        }
+        static void HideFrom(List<SpriteRenderer> pool, int n) { for (int i = n; i < pool.Count; i++) if (pool[i] != null && pool[i].gameObject.activeSelf) pool[i].gameObject.SetActive(false); }
+        static Vector3 W(float x, float y, float up = 0f) => new Vector3(x, -y + up, 0f);   // tile space (y down) -> world
+
         void DrawOrbs()
         {
-            var orbs = BrainBoss.Orbs;
-            if (orbs.Count == 0 && _orbs.Count == 0) return;
-            var frames = Strip("Sprites/Fx/boss_brain_orb", 0, PxFull, new Vector2(0.5f, 0.5f));
-            while (_orbs.Count < orbs.Count) _orbs.Add(NewSprite("Orb", frames?[0], new Color(0.75f, 0.42f, 1f), _root, 9));
-            for (int i = 0; i < _orbs.Count; i++)
+            var f = BrainBoss.Current;
+            var orbF = Strip("Sprites/Fx/boss_brain_orbs", 4, PxFull, new Vector2(0.5f, 0.5f));
+            var boltF = Strip("Sprites/Fx/boss_brain_bolt", 2, PxFull, new Vector2(0.72f, 0.5f));
+            int n = 0, anim = (int)(Time.time * 8f) % 2;
+            foreach (var o in BrainBoss.Orbs)
             {
-                var sr = _orbs[i];
-                if (sr == null) continue;
-                bool on = i < orbs.Count;
-                if (sr.gameObject.activeSelf != on) sr.gameObject.SetActive(on);
-                if (!on) continue;
-                sr.transform.position = new Vector3(orbs[i].X, -orbs[i].Y + 0.35f, 0f);   // tile space (y down) -> world, at chest height
-                if (frames != null) sr.sprite = frames[(int)(Time.time * 8f + i) % frames.Length];
-                if (frames == null) sr.transform.localScale = Vector3.one * 0.35f;
+                if (o.Kind == "bolt")
+                {
+                    float deg = Mathf.Atan2(-o.Dy, o.Dx) * Mathf.Rad2Deg;
+                    for (int k = 0; k < 3; k++)                  // the bolt and two fading copies behind it: a trail
+                    {
+                        var b = Pooled(_orbs, n++, "Bolt", 9); if (b == null) continue;
+                        b.sprite = boltF?[anim]; b.color = new Color(1f, 1f, 1f, 1f - 0.35f * k);
+                        b.transform.position = W(o.X - o.Dx * 0.35f * k, o.Y - o.Dy * 0.35f * k, 0.35f);
+                        b.transform.rotation = Quaternion.Euler(0f, 0f, deg); b.transform.localScale = Vector3.one * (1f - 0.15f * k);
+                    }
+                    continue;
+                }
+                var sr = Pooled(_orbs, n++, "Orb", 9); if (sr == null) continue;
+                sr.sprite = orbF?[(o.Kind == "void" ? 2 : 0) + (anim + n) % 2]; sr.color = Color.white;
+                sr.transform.position = W(o.X, o.Y, 0.35f); sr.transform.rotation = Quaternion.identity;
+                sr.transform.localScale = Vector3.one * Mathf.Min(1f, 0.4f + o.Age * 3f);   // they swell out of the brain
             }
+            HideFrom(_orbs, n);
+            if (f == null || f.Gone) { HideFrom(_beams, 0); HideFrom(_throws, 0); if (_wave != null) _wave.gameObject.SetActive(false); if (_glow != null) _glow.gameObject.SetActive(false); return; }
+            var (cx, cy) = BrainBoss.Center(f);
+            // the beams: a wide faint glow and a thin white core from the brain to the wall; while it winds up, a hairline where it will start
+            int nb = 0;
+            void Line(float deg, float len, float width, Color col)
+            {
+                var sr = Pooled(_beams, nb++, "Beam", 9); if (sr == null) return;
+                sr.sprite = White(); sr.color = col;
+                float r = deg * Mathf.Deg2Rad;
+                sr.transform.position = W(cx + Mathf.Cos(r) * len / 2f, cy + Mathf.Sin(r) * len / 2f, 0.35f);
+                sr.transform.rotation = Quaternion.Euler(0f, 0f, -deg);
+                sr.transform.localScale = new Vector3(len, width, 1f);   // White() is one world unit (= one tile) square
+            }
+            foreach (var b in BrainBoss.Beams)
+            {
+                float flick = 0.85f + 0.15f * Mathf.Sin(Time.time * 60f);
+                Line(b.Angle, b.Length, 0.42f, new Color(0.75f, 0.42f, 1f, 0.35f * flick));
+                Line(b.Angle, b.Length, 0.12f, new Color(1f, 0.95f, 1f, flick));
+            }
+            if (f.Doing == "laser" && BrainBoss.Winding(f) && Player.Current != null)
+            {
+                var (px, py) = Ballistics.Pos(Player.Current);
+                Line(Mathf.Atan2(py - cy, px - cx) * Mathf.Rad2Deg + 90f, 14f, 0.04f, new Color(0.9f, 0.6f, 1f, 0.5f + 0.5f * Mathf.Sin(Time.time * 20f)));
+            }
+            HideFrom(_beams, nb);
+            // the pulse's wave front, fading as it spreads
+            if (BrainBoss.Pulse != null)
+            {
+                if (_wave == null) _wave = NewSprite("Wave", Strip("Sprites/Fx/boss_brain_ring", 1, 32f, new Vector2(0.5f, 0.5f))?[0], new Color(0.75f, 0.42f, 1f), _root, 8);
+                _wave.gameObject.SetActive(true);
+                _wave.transform.position = W(cx, cy, 0f);
+                _wave.transform.localScale = new Vector3(1f, 0.75f, 1f) * BrainBoss.Pulse.R;   // 64 px at 32 ppu = 2 tiles across: scale = radius
+                _wave.color = new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - BrainBoss.Pulse.R / BrainBoss.PulseReach));
+            }
+            else if (_wave != null) _wave.gameObject.SetActive(false);
+            // ripped cover: it hangs and turns, then flies
+            int nt = 0;
+            foreach (var t in BrainBoss.Throws)
+            {
+                var sr = Pooled(_throws, nt++, "Thrown", 9); if (sr == null) continue;
+                var spr = WorldArt.Get("p_" + t.Look + "_0") ?? WorldArt.Get("p_" + t.Look);
+                sr.sprite = WorldArt.SpriteOf(spr); sr.color = new Color(0.92f, 0.85f, 1f);
+                float age = Time.time - t.Born, up = Mathf.Min(1f, age / 0.25f) * (0.6f + 0.08f * Mathf.Sin(age * 14f));
+                sr.transform.position = W(t.X, t.Y, up);
+                sr.transform.rotation = Quaternion.Euler(0f, 0f, t.Flying ? age * 540f : Mathf.Sin(age * 18f) * 8f);
+            }
+            HideFrom(_throws, nt);
+            // the glow gathering at the brain while it concentrates
+            bool wind = BrainBoss.Winding(f);
+            if (wind)
+            {
+                if (_glow == null) _glow = NewSprite("Glow", orbF?[0], Color.white, _root, 9);
+                _glow.gameObject.SetActive(true);
+                float k = Mathf.Abs(Time.time * 3f % 2f - 1f);
+                _glow.transform.position = W(cx, cy, 0.4f);
+                _glow.transform.localScale = Vector3.one * (1.5f + 1.5f * k + (f.PulseAt >= 0f ? 1.5f : 0f));
+                _glow.color = new Color(1f, 1f, 1f, 0.35f + 0.3f * k);
+            }
+            else if (_glow != null) _glow.gameObject.SetActive(false);
         }
 
         // ---- RT fx 3: pixelfx strips (ArtSource/fx/export_strips.py): square frames centred on the effect's origin, facing right,

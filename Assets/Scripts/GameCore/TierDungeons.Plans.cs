@@ -60,6 +60,15 @@ namespace GameCore
                         case 'l': c.Put(x, y, HardCover, "lockers"); break;
                         case 'd': c.Put(x, y, ScatterCover, "desk"); break;
                         case 'c': c.Put(x, y, ScatterCover, "crate"); break;
+                        // Boss 2: the lab (lab_plans.py vat_room) - 'f' file cabinet, 'a' metal table, 'g' lab bench, 'o' console,
+                        // 'j' specimen jars, 'u' a smashed small vat, 'q' cables on the floor
+                        case 'f': c.Put(x, y, HardCover, "cabinet"); break;
+                        case 'a': c.Put(x, y, ScatterCover, "labtable"); break;
+                        case 'g': c.Put(x, y, ScatterCover, "labbench"); break;
+                        case 'o': c.Put(x, y, HardCover, "console"); break;
+                        case 'j': c.Put(x, y, HardCover, "jars"); break;
+                        case 'u': c.Put(x, y, HardCover, "vatsmall"); break;
+                        case 'q': c.Put(x, y, Empty); c.Deco(x, y, "cables"); break;
                         case 'p': c.Put(x, y, Empty); c.Deco(x, y, "floorpipe"); break;   // Batch 99: on the floor, not the overhead line
                         case 'x': c.Put(x, y, HardCover, "debris"); break;
                         case 'b': c.Put(x, y, ScatterCover, "rustbarrel"); break;

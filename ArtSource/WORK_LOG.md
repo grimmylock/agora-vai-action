@@ -4585,3 +4585,41 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   teleports away ... he floats into the air and a giant eye (roughly the same size as the brain itself ...) connected to a kind of
   umbilical cord comes from 'behind' him and looks at the player, THEN he teleports away".
 - Not checked in Unity: all of it (the sprite pivot, orb height, the HUD splash, saving mid-fight - the vat respawns full on re-entry).
+
+## Boss 2, v2 - wind-ups, cover that breaks, rip, laser, a real lab, the animated vat (2026-11-03)
+
+- Yan on v1: "way too simple. Standing behind something completely nullifies the boss ... the visual effects also are very simple
+  looking, there's no buildup or animation for each attack, the orbs just spawn in and look exactly the same for every attack";
+  asked for the brain floating up and down, bubbles, electronics on the vat, a real lab, eyes that close and twitch before an
+  attack. His calls on my proposals: "telekinesis rips the cover off the nearest player and throws it at them"; bursting orbs
+  "unbalanced and unavoidable, no"; ground attacks "not now"; the dive-only wave "will be the pulse that destroys cover"; the
+  spiral "could be a straight laser that circles the room"; and his cover rule: "cover in the room are boxes, metal tables and
+  file cabinets, at 75% he emits a pulse that destroys the boxes, at 50% the tables and at 25% the file cabinets so there's no
+  more cover (items could be coded as having 3, 6 and 9 cover 'health' and each pulse does 3 damage?)". Earlier: "the brain starts
+  the fight with 2 eyes and sprouts more ... before he teleports away ... he floats into the air and a giant eye ... connected
+  to a kind of umbilical cord comes from 'behind' him and looks at the player, THEN he teleports away".
+- Art (`ArtSource/bosses/make_brain_vat.py`, `Sprites/Mutants/boss_brain_vat.png`): 128x160 at double resolution (4x5 tiles), an
+  8-frame sheet x 11 rows - phases 0-3 eyes open (2/3/4/6 eyes, bigger each crack; the brain bobs, bubbles rise, the monitor's
+  trace runs, lights blink), the same with eyes shut and twitching (wind-ups), drained, rising, the giant eye on its cord sliding
+  out and turning to look down-left at you. Machines: a pump with a gauge, a rack with a monitor and lights, a cable bundle out of
+  the lid, electrode wires to the brain, a lit panel and hazard stripes on the base. Attack sprites: pale ring orbs, dark void
+  orbs, an elongated bolt, the pulse's ring (`Sprites/Fx/boss_brain_orbs|bolt|ring.png`).
+- The lab: 7 new world props (`props.py`): file cabinet, metal table, lab bench (microscope, tubes), control console (two
+  monitors), specimen jar shelf, a smashed small vat, floor cables; atlas repacked (11 new sprites, nothing else changed). Plan
+  letters f a g o j u q (`TierDungeons.Plans.cs`); `lab_plans.py vat_room` lays out the vat room: jars, consoles and broken vats
+  against the walls, benches, cables to the vat, cover = 11 crates, 8 tables/benches, 6 cabinets in rings round it.
+  Render `maps/renders/boss_brain/vat_room_lab.png`. Materials: tin (console steel).
+- Fight (`BrainBoss.cs`):
+  - every move winds up 0.65-1 s with the eyes shut (the sheet's shut rows) and a glow gathering, then a flash as they open
+  - cover HP (`CoverHp`: crate 3, labtable/labbench/desk 6, cabinet 9, worn in `TerrainTile.Damage`); every orb stops on cover
+  - a crack: eyes shut 1.1 s, then the pulse - a ring at 8 tiles/s to 16 tiles, 3 cover damage to everything it passes (boxes
+    break at the first, tables at the second, cabinets at the third), 150 to a player it passes and a shove, nothing mid-dive
+  - rip: the cover beside the nearest player (the vat side first; else the nearest within 7) tears loose, hangs 0.7 s, flies at
+    them (9 tiles/s, 180); one more piece from crack 2; it lands as cover again (dented) or breaks
+  - laser (from crack 1): a beam from the brain to the first wall, turning 105 deg/s for 3.4 s; cover doesn't stop it, the dive
+    does; two beams at crack 3; a hairline shows where it will start while it winds up
+  - ring orbs (pale), aimed bolts (fat, with a trail), dark void orbs during the pull
+  - the end: still 3 s, rising 1.4 s, the eye 2.4 s, then the void
+  - all drawn by `CombatFxView.DrawOrbs` from BrainBoss's state each frame. Co-op: host-side state, clients don't draw it yet.
+- Checks rewritten (`BrainChecks`, 25). Preview `brain_fight.mp4` (`Tools/render/brain_fight.py`): ~60 s, the bot (kept alive
+  for the preview) took 9 hits. Not checked in Unity.

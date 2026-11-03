@@ -1030,6 +1030,94 @@ def pda(seed, open_=False):
     else: px(im, 1, 1, hx("#a8e4ef")); px(im, 5, 2, hx("#c8443a"))
     return finish(im, (3, 4), shadow=(7, 2, 0, -1))
 
+# ------------------------------------------------------------------ the lab (Boss 2, Yan 2026-11-03: "it also seems very out of place in a room with
+# only boxes and desks, needs to be an actual lab"; cover there = boxes, metal tables and file cabinets)
+SCREEN, TRACE, LED = hx("#10241a"), hx("#7fe08a"), (hx("#5ee07a"), hx("#e0503a"), hx("#f0c040"))
+GLASS, GLASS_HI, SPECIMEN = hx("#5d7470"), hx("#c4dcd6"), (hx("#34502c"), hx("#4f7440"), hx("#6e4e56"))
+
+def cabinet(seed):
+    """A steel filing cabinet, four drawers with handles and paper labels, one left a crack open."""
+    s = P["steel"]; r = rng(seed)
+    def top(im, x0, y0, w, h): flat(s[3], edge=s[4])(im, x0, y0, w, h)
+    def front(im, x0, y0, w, h):
+        flat(s[2], bottom=s[0], left=s[3])(im, x0, y0, w, h)
+        for k in range(4):
+            y = y0 + 1 + k * 4
+            for x in range(x0 + 1, x0 + w - 1): px(im, x, y + 3, s[0])                    # drawer seams
+            px(im, x0 + w // 2 - 1, y + 1, s[4]); px(im, x0 + w // 2, y + 1, s[4])          # handle
+            px(im, x0 + 3, y + 1, hx("#d8d0b8")); px(im, x0 + 4, y + 1, hx("#d8d0b8"))      # label
+        o = r.randrange(4); [px(im, x, y0 + 4 + o * 4, s[1]) for x in range(x0 + 1, x0 + w - 1)]   # one drawer ajar
+    return finish(box(12, 4, 17, top, front), (6, 20), shadow=(12, 4, 2, -1), tall=True)
+
+def labtable(seed, gear=False):
+    """A steel lab table: a lit top on four thin legs, a shelf under it; `gear` = a bench with a microscope, tubes and papers."""
+    s = P["steel"]; r = rng(seed); im = blank(18, 14)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 2, 17, 6], fill=s[3]); d.line([(0, 2), (17, 2)], fill=s[4]); d.rectangle([0, 7, 17, 8], fill=s[1])   # top and its edge
+    for x in (1, 16): d.line([(x, 9), (x, 13)], fill=s[0])                                  # legs
+    d.line([(1, 11), (16, 11)], fill=s[1])                                                   # shelf
+    if gear:
+        d.line([(3, 0), (3, 4)], fill=s[0]); d.line([(4, 0), (5, 1)], fill=s[0]); px(im, 2, 5, s[0]); px(im, 4, 5, s[0])   # microscope
+        for i, x in enumerate((8, 10, 12)):                                                 # tubes in a rack
+            col = (hx("#7fa45e"), hx("#c06bff"), hx("#c8443a"))[(i + seed) % 3]
+            px(im, x, 1, GLASS_HI); px(im, x, 2, GLASS); px(im, x, 3, col); px(im, x, 4, col)
+        d.line([(7, 5), (13, 5)], fill=s[1])
+        px(im, 15, 4, hx("#d8d0b8")); px(im, 16, 4, hx("#d8d0b8")); px(im, 15, 5, hx("#c8c0a8"))  # papers
+    else:
+        for _ in range(2): px(im, r.randrange(2, 16), r.randrange(3, 6), s[2])               # scuffs
+        px(im, 4 + seed % 6, 1, GLASS_HI); px(im, 4 + seed % 6, 2, GLASS); px(im, 4 + seed % 6, 3, SPECIMEN[1])   # a beaker
+    return finish(im, (9, 13), shadow=(18, 4, 1, -1))
+
+def console(seed):
+    """The control desk facing the vat: a dark steel desk, a keyboard, two old monitors with traces, lights along the front."""
+    s = P["steel"]; im = blank(20, 18); d = ImageDraw.Draw(im)
+    d.rectangle([0, 9, 19, 12], fill=s[2]); d.line([(0, 9), (19, 9)], fill=s[3])           # desk top
+    d.rectangle([0, 13, 19, 17], fill=s[1]); d.line([(0, 17), (19, 17)], fill=s[0])        # front
+    for i in range(6): px(im, 2 + i * 3, 15, LED[(i + seed) % 3] if (i + seed) % 4 else s[0])
+    d.rectangle([3, 10, 12, 11], fill=s[0]); [px(im, x, 10, s[1]) for x in range(4, 12, 2)]   # keyboard
+    for mx in (1, 10):                                                                       # monitors
+        d.rectangle([mx, 0, mx + 8, 7], fill=s[1]); d.rectangle([mx + 1, 1, mx + 7, 5], fill=SCREEN)
+        for x in range(mx + 1, mx + 8): px(im, x, 3 + round(math.sin((x + mx * 2 + seed) * 1.3) * 1.2), TRACE)
+        d.line([(mx + 3, 8), (mx + 5, 8)], fill=s[0])
+    return finish(im, (10, 17), shadow=(20, 4, 2, -1))
+
+def jars(seed):
+    """A steel shelf of specimen jars: murky green, pale shapes inside, one cracked and empty."""
+    s = P["steel"]; r = rng(seed); im = blank(16, 20); d = ImageDraw.Draw(im)
+    for x in (0, 15): d.line([(x, 0), (x, 19)], fill=s[1])
+    for row in range(2):
+        y0 = 1 + row * 9; d.line([(0, y0 + 8), (15, y0 + 8)], fill=s[3])                   # shelves
+        for j in range(3):
+            x0 = 2 + j * 4; empty = (row * 3 + j + seed) % 5 == 0
+            d.rectangle([x0, y0 + 1, x0 + 2, y0 + 7], fill=(28, 35, 38, 255) if empty else SPECIMEN[0])
+            if not empty: d.rectangle([x0, y0 + 3, x0 + 2, y0 + 7], fill=SPECIMEN[1]); px(im, x0 + 1, y0 + 4 + r.randrange(2), SPECIMEN[2])
+            d.line([(x0, y0), (x0 + 2, y0)], fill=s[2]); px(im, x0, y0 + 2, GLASS_HI)          # lid, glint
+            if empty: px(im, x0 + 1, y0 + 3, GLASS_HI); px(im, x0 + 2, y0 + 4, GLASS_HI)
+    return finish(im, (8, 19), shadow=(16, 4, 2, -1), tall=True)
+
+def vatsmall(seed):
+    """A small specimen vat, smashed: the steel base and lid, broken glass between them, the floor wet and littered with shards."""
+    s = P["steel"]; r = rng(seed); im = blank(14, 24); d = ImageDraw.Draw(im)
+    d.rectangle([1, 0, 12, 2], fill=s[3]); d.line([(1, 0), (12, 0)], fill=s[4])            # lid
+    for y in range(3, 18):                                                                  # what's left of the glass
+        for x in (2, 11):
+            if y < 12 or (y + x + seed) % 3: px(im, x, y, GLASS if x == 11 else GLASS_HI)
+        if 3 <= y < 7 and (y + seed) % 2: px(im, 3, y, GLASS_HI)
+    for (x, y) in ((4, 6), (5, 7), (7, 9), (9, 5), (8, 11)): px(im, x, y, GLASS_HI)        # jagged edges
+    d.rectangle([0, 18, 13, 22], fill=s[2]); d.line([(0, 18), (13, 18)], fill=s[4]); d.line([(0, 22), (13, 22)], fill=s[0])   # base
+    for _ in range(4): px(im, r.randrange(0, 14), 23, GLASS_HI)
+    return finish(im, (7, 23), shadow=(14, 4, 2, -1), tall=True)
+
+def cables(seed):
+    """Thick cables snaking across the floor (no cover - you walk over them)."""
+    r = rng(seed); im = blank(16, 6)
+    for k, col in enumerate((hx("#2a2420"), hx("#7a2a26"))):
+        ph = r.uniform(0, 6)
+        for x in range(16):
+            y = 2 + k + round(math.sin(x * 0.5 + ph) * 1.2)
+            px(im, x, y, col); px(im, x, y + 1, (20, 18, 16, 255))
+    return Prop(im, (8, 5), None, False)
+
 STASHES = {"footlocker": footlocker, "chest": chest, "duffel": duffel, "toolbox": toolbox, "cache": cache, "safe": wallsafe, "pda": pda}
 
 PROPS = {
@@ -1052,10 +1140,11 @@ PROPS = {
     "lamp": lamp_concrete, "busstop": busstop_soviet, "bus": lambda s: _zone().bus(s),
     "dumpster": dumpster_steel, "trash": trash,
     "tank": lambda s: _zone().tank(s), "flatcar": lambda s: _zone().flatcar(s),
+    "cabinet": cabinet, "labtable": labtable, "labbench": lambda s: labtable(s, True), "console": console, "jars": jars, "vatsmall": vatsmall, "cables": cables,
     "pipe": lambda s: heatpipe(s, False), "pipepost": lambda s: heatpipe(s, True), "floorpipe": floorpipe, "roots": roots,
 }
 for _k, _f in STASHES.items():   # Batch 124
     PROPS["stash_" + _k] = (lambda f: lambda s: f(s))(_f)
     PROPS["stash_" + _k + "_open"] = (lambda f: lambda s: f(s, True))(_f)
 VARIANTS = {"tree": 10, "pine": 8, "deadtree": 6, "redtree": 6, "bush": 4, "redbush": 2, "reeds": 6, "sunktruck": 2, "lamp": 2, "bus": 2, "tank": 3, "pipe": 2, "dumpster": 3, "trash": 3, "armchair": 3, "brush": 2, "rock": 14, "debris": 3,
-            "scrap": 3, "wreck": 4, "stash_duffel": 2, "stash_duffel_open": 2, "container": 3, "crate": 2, "rustbarrel": 2, "machine": 2, "lockers": 2, "pipes": 2, "rubble": 3, "stones": 2}
+            "scrap": 3, "wreck": 4, "stash_duffel": 2, "stash_duffel_open": 2, "container": 3, "crate": 2, "rustbarrel": 2, "machine": 2, "lockers": 2, "pipes": 2, "rubble": 3, "stones": 2, "labtable": 2, "labbench": 2, "jars": 2, "cables": 2}

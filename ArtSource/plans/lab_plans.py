@@ -131,6 +131,36 @@ def visor_wing(rows):
     g[31][63] = 'V'; g[31][62] = '*'; g[32][63] = '*'
     return ["".join(r) for r in g]
 
+# Boss 2 (Yan, 2026-11-03): the brain's room in Secret Lab Alpha is a real lab - "lab benches, monitors, specimen jars, broken
+# smaller vats, cable runs on the floor, a control desk"; the cover is "boxes, metal tables and file cabinets" (c, a/g, f),
+# which the brain's pulses break at 75/50/25% - the rest (jars j, consoles o, broken vats u) stands against the walls.
+# The vat itself sits at (37, 9) (BrainBoss.VatX/VatY), the floor round it clear. q = cables on the floor.
+VAT_ROOM = [            # x 27..47, y 3..19
+    "jj.u..o..q.q..o..u.jj",
+    "g...................g",
+    "g..c....q...q....c..g",
+    "u...a...q...q...a...u",
+    ".......q.....q.......",
+    "f..c..qq.....qq..c..f",
+    "....a..q.....q..a....",
+    "..c.....:...:.....c..",
+    "......f.........f....",
+    "i..a.............a..i",
+    "...........*.........",
+    "..c...f.......f...c..",
+    ".....................",
+    "u..a......e......a..u",
+    "....c...........c....",
+    "g......%...%.......g.",
+    ".....................",   # y 19 sits behind the bottom wall's face
+]
+def vat_room(rows):
+    rows = [list(r) for r in rows]
+    for dy, line in enumerate(VAT_ROOM):
+        assert len(line) == 21, line
+        for dx, ch in enumerate(line): rows[3 + dy][27 + dx] = ch
+    return ["".join(r) for r in rows]
+
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     for name, kw in LABS.items():
@@ -141,4 +171,5 @@ if __name__ == "__main__":
         print(name, p.w, "x", p.h, "walkable", n, "unreachable", len(cut), cut[:6])
         assert not cut, (name, cut)
         if name == "secret_lab_beta": rows = visor_wing(rows)
+        if name == "secret_lab_alpha": rows = vat_room(rows)
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))
