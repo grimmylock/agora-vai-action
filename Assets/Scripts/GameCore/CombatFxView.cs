@@ -324,6 +324,9 @@ namespace GameCore
                     var (bx, by) = Dir(TacticalGridView.GridToWorld(e.FromX, e.FromY), to);
                     Wound(e, to, bx, by, false);
                     break;
+                case "zap":                                     // RT fx 3: a Livewire anomaly discharges into someone
+                    PxFx("zap_hit", to + new Vector3(0f, 0.4f, 0f), 0f, 0f, PxFull);
+                    break;
                 case "reload":
                     if (held == null) break;
                     if (e.Jammed)                               // RT 6f: clearing a jam - slap the magazine, rack the action
@@ -370,7 +373,7 @@ namespace GameCore
                     Sfx.Play(Sfx.Shot(e.Weapon?.Db, feel), muzzle, feel.Flash == 0 ? 0.35f : 1f, 0.07f, feel.Flash == 0 ? 1.35f : 1f);
                     if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);
                     else if (feel.Flash == 0) Puff("fx_muzzle_puff", muzzle, 0.3f, 0.3f);
-                    else Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
+                    else Muzzle(e, feel, held, muzzle, to);
                     if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
                 }
                 if (e.Flying) return;                                          // RT 8: the round itself is drawn while it flies (TickRounds)
@@ -385,7 +388,7 @@ namespace GameCore
             Sfx.Play(Sfx.Shot(e.Weapon?.Db, feel), muzzle, feel.Flash == 0 ? 0.35f : 1f, 0.07f, feel.Flash == 0 ? 1.35f : 1f);   // suppressed: quieter, thinner
             if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);
             else if (feel.Flash == 0) Puff("fx_muzzle_puff", muzzle, 0.3f, 0.3f);
-            else Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
+            else Muzzle(e, feel, held, muzzle, to);
 
             var end = to;
             float mx = to.x - muzzle.x, my = to.y - muzzle.y, len = Mathf.Max(0.01f, Mathf.Sqrt(mx * mx + my * my));
@@ -406,7 +409,7 @@ namespace GameCore
             if (!last) return;
             if (e.CoverHit || e.Through) CoverImpact(e, nx, ny);
             if (e.Hit && e.Target != null) Wound(e, to, nx, ny, false);
-            else if ((e.Hit || e.NoLos) && !e.CoverHit) { Puff("fx_hit_spark", end, 0.18f); Sfx.Play("hit_hard", end, 0.6f, 0.15f); }     // a door, a barrel, a wall
+            else if ((e.Hit || e.NoLos) && !e.CoverHit) { if (!PxFx("hit_spark", end, -nx, -ny, PxHalf)) Puff("fx_hit_spark", end, 0.18f); Sfx.Play("hit_hard", end, 0.6f, 0.15f); }     // a door, a barrel, a wall
         }
 
         /// <summary>A blow lands on a unit: flash, knockback, blood puff, a splatter on the ground behind
@@ -429,7 +432,8 @@ namespace GameCore
             at.y += 0.25f;
             var m = e.CoverMat;
             var (r, g, b) = Materials.Chip(m);
-            if (Materials.Sparks(m)) Puff("fx_hit_spark", at, 0.18f);
+            if (Materials.Sparks(m)) { if (!PxFx("ricochet", at, -dx, -dy, PxHalf)) Puff("fx_hit_spark", at, 0.18f); }   // RT fx 3: metal rings off
+            else if (!e.Through) PxFx("bullet_impact", at, dx, dy, PxHalf);                                                // concrete, wood, earth: a puff of grit
             for (int k = 0; k < (e.Through ? 6 : 4); k++)   // chips fly back toward the shooter, or out the far side when it goes through
             {
                 float side = e.Through ? 1f : -1f, sp = Random.Range(0.6f, 1.6f);
@@ -464,6 +468,29 @@ namespace GameCore
             else sr.transform.position = muzzle;
             if (frames == null) sr.transform.localScale = Vector3.one * 0.15f;
             _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames });
+        }
+
+        // ---- RT fx 3: pixelfx strips (ArtSource/fx/export_strips.py): square frames centred on the effect's origin, facing right,
+        //      15 fps, played once. Yan, 2026-11-03: "full size for electric, half for guns" - guns at half-pixels (ppu 32, like the
+        //      HD mutants), electric at the map's own pixels (ppu 16). False when the strip is missing (the old sprite plays instead).
+        public const float PxFps = 15f, PxHalf = 32f, PxFull = 16f;
+        bool PxFx(string name, Vector3 at, float dx, float dy, float ppu)
+        {
+            var frames = Strip("Sprites/Fx/px_" + name, 0, ppu, new Vector2(0.5f, 0.5f));
+            if (frames == null) return false;
+            var sr = NewSprite("px_" + name, frames[0], Color.white, _root, 9);
+            sr.transform.position = new Vector3(at.x, at.y, 0f);
+            if (dx != 0f || dy != 0f) { sr.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dy, dx) * Mathf.Rad2Deg); sr.flipY = dx < 0f; }
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = frames.Length / PxFps, Frames = frames });
+            return true;
+        }
+
+        /// <summary>The muzzle: pixelfx flash and smoke by gun class; the old flash sprite if the strip isn't there.</summary>
+        void Muzzle(FxEvent e, WeaponFeel feel, HeldWeaponView held, Vector3 muzzle, Vector3 to)
+        {
+            string cat = CombatRules.Category(e.Weapon?.Db);
+            string px = cat == "shotgun" ? "muzzle_shotgun" : cat == "sidearm" ? "muzzle_pistol" : "muzzle_smg";
+            if (!PxFx(px, muzzle, to.x - muzzle.x, to.y - muzzle.y, PxHalf)) Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
         }
 
         private void Puff(string strip, Vector3 at, float life, float rise = 0f, Color? tint = null, float scale = 1f)
@@ -649,6 +676,7 @@ namespace GameCore
             if (tex != null)
             {
                 tex.filterMode = FilterMode.Point;
+                if (count <= 0) count = Mathf.Max(1, tex.width / tex.height);   // RT fx 3: square frames, as many as fit
                 int w = tex.width / count;
                 frames = new Sprite[count];
                 for (int i = 0; i < count; i++) frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), pivot, ppu);

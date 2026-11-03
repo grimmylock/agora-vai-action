@@ -287,7 +287,7 @@ namespace GameCore
                 var frames = AnomalyFrames(an.AnomalyType);
                 if (frames != null)
                 {
-                    _anomalyMarkers[i].sprite = frames[(int)(Time.time / 0.11f + an.X * 7 + an.Y * 3) % frames.Length];
+                    _anomalyMarkers[i].sprite = frames[(int)(Time.time / (frames.Length > 6 ? 1f / CombatFxView.PxFps : 0.11f) + an.X * 7 + an.Y * 3) % frames.Length];
                     _anomalyMarkers[i].transform.localScale = Vector3.one * TileWorldSize;
                 }
                 var baseCol = _spriteAnomaly != null || frames != null ? Color.white : new Color(0.7f, 0.2f, 0.9f);
@@ -1120,7 +1120,9 @@ namespace GameCore
         private static Sprite[] AnomalyFrames(string type)
         {
             string key = AnomalyArtKey(type);
-            return key == null ? null : CombatFxView.Strip($"Sprites/anomaly_{key}_strip", 6, 16, new Vector2(0.5f, 0.5f));
+            if (key == null) return null;
+            return CombatFxView.Strip($"Sprites/Fx/px_anomaly_{key}", 0, CombatFxView.PxFull, new Vector2(0.5f, 0.5f))   // RT fx 3: pixelfx (Livewire)
+                ?? CombatFxView.Strip($"Sprites/anomaly_{key}_strip", 6, 16, new Vector2(0.5f, 0.5f));
         }
 
         /// <summary>Where the player aims: the mouse over the map, or null (keep the last angle) when a

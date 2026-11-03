@@ -4523,3 +4523,19 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Checks: no stamina no dive; a dive spends stamina and doesn't slow time; mid-dive every round passes; landing prone and
   hittable; a friend's bullet time slows a shared fight, not one 45 tiles off; it drains and stops when dry.
 - Not checked in Unity.
+
+## RT fx 3 - pixelfx gun and electric effects in the game (2026-11-03)
+
+- Yan: "full size for electric, half for guns". `ArtSource/fx/export_strips.py` renders the effects (guns in the muted fire ramp)
+  and writes `Assets/Resources/Sprites/Fx/px_<name>.png`: one strip of square frames at 15 fps, the game's anchor in the middle of
+  every frame (pixelfx draws from the ground under a 24x38 character, so muzzles and impacts are lifted by their `height` option),
+  with a .meta allowing 16384 px wide, uncompressed. `CombatFxView.Strip(path, 0, ...)` counts square frames by itself.
+- `CombatFxView.PxFx` plays one, rotated to the shot's direction (flipped when it points left), 32 ppu for guns (half-pixels),
+  16 for electric. Hooks: the muzzle by gun class (`Muzzle`: shotgun / sidearm / everything else = SMG flash), a round hitting a
+  door/barrel/wall = hit-spark, cover: metal = ricochet, other materials = bullet-impact (the material chips stay). Each falls
+  back to the old sprite when its strip is missing.
+- Livewire anomaly: the drifting ball lightning (`px_anomaly_livewire`, looped at 15 fps) instead of the old 6-frame strip; a
+  discharge into someone pushes a "zap" event -> zap-hit at full size. `electrified` was dropped: it wraps pixelfx's own
+  character, whose outline would show. spark-arc (its own poles) and charge-up not used yet.
+- Not checked in Unity: rotation of pixel art at odd angles, the 16k-wide strip import, how busy automatic fire gets (an SMG
+  flash lives 1 s with its smoke).

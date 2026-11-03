@@ -144,6 +144,7 @@ namespace GameCore
             {
                 unit.PendingApDrain += 2;
                 GameLog.Write($"{label} will lose 2 AP on next turn due to Livewire failure.");
+                CombatFx.Push("zap", unit, unit).Now = true;                                  // RT fx 3: the discharge (pixelfx zap)
             }
 
             if (anomaly.AnomalyType == "Acid Bloom")
