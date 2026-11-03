@@ -4509,3 +4509,17 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - spark-arc draws its own two poles (fits an anomaly built around pylons, not a free spark). Not in Unity yet: waiting on the size.
 - Yan on bosses: "some of them a bullet-hell style bossfight ... more akin to Binding of Isaac where it's kinda bullet hell but
   not really? you have to dodge stuff". Discussed in chat, nothing built. Note: the dive (`Rt.cs:469`, 0.55 s) has no i-frames.
+
+## RT 9 - invulnerable dive, bullet time on its own key (2026-11-03)
+
+- Yan: "I was thinking about unbinding bullet time from the dodge, having it be a separate key to activate and use the dodge for
+  mechanics like those [boss patterns], having it be invunerable".
+- Space: the dive costs 30 stamina (`Rt.DiveStamina`), not Focus, and no longer slows time. While airborne the player is
+  `Rt.Untouchable`: rounds pass (`Ballistics.HalfWidth`), blades miss (`Melee.Land`), blasts skip you (`Explosions.Blast`). The
+  landing stays prone for 0.6 s and can be hit (Yan's earlier "risky" landing kept).
+- V (rebindable in Options, `Keybinds.Slow`): bullet time on/off. Needs 10 Focus to start, drains 25 Focus a real second, stops at
+  0. Co-op: per player (`Rt.State.Slow`), sent as an input bit (2048); slows the shared clock only when every living player is
+  within 40 tiles of the one using it (same rule as before). HUD shows BULLET TIME as before; controls text and ACTION_DESIGN updated.
+- Checks: no stamina no dive; a dive spends stamina and doesn't slow time; mid-dive every round passes; landing prone and
+  hittable; a friend's bullet time slows a shared fight, not one 45 tiles off; it drains and stops when dry.
+- Not checked in Unity.

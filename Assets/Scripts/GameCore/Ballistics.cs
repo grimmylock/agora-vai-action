@@ -50,6 +50,7 @@ namespace GameCore
                 part = h >= 0.7f * size / BodyTiles ? "Head" : "Body";
                 return h <= size / BodyTiles ? 0.25f * size : -1f;
             }
+            if (Rt.Untouchable(u)) { part = null; return -1f; }   // RT 9: the dive's i-frames - the round passes
             float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;   // RT batch 3: diving or sprawled, low   // RT batch 2: someone down lies flat
             if (h > s) { part = null; return -1f; }        // over the head
             if (h >= HeadFrom * s) { part = "Head"; return HeadHalf; }

@@ -1496,12 +1496,13 @@ static class Program {
       Rt.PlayerTick(p, new Rt.Input { FireDown = true, Mouse = at });
       Check(main.CurrentMagazine == m0 - 1 && off.CurrentMagazine == o0 - 1, "RT 7z-c: the left button fires the right-hand gun");
       UnityEngine.Time.time += 1f;
-      Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { Y = -1f, Jump = true, Mouse = at });
+      Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { Y = -1f, Jump = true, BulletTime = true, Mouse = at });
       UnityEngine.Time.time += 0.1f;
       Rt.PlayerTick(p, new Rt.Input { FireDown = true, Fire2Down = true, Mouse = at });
       Check(Rt.Of(p).Diving && main.CurrentMagazine == m0 - 2 && off.CurrentMagazine == o0 - 2, "RT 7z-c: both guns fire mid-dive");
       Check(Rt.SlowMo && main.Db != null && System.Math.Abs(Gunplay.AimOf(p).NextShot - UnityEngine.Time.time - 60f / Gunplay.For(main).Rpm * Rt.SlowScale) < 0.001f,
         "RT 7z-g: in bullet time the player's guns keep their real-time rate (the game-time gap shrinks with the time scale)");
+      Rt.PlayerTick(p, new Rt.Input { BulletTime = true, Mouse = at });                    // RT 9: bullet time off again
       for (int f = 0; f < 60; f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
       Rt.PlayerTick(p, new Rt.Input { Reload = true, Mouse = at });
       for (int f = 0; f < 400 && (main.CurrentMagazine < main.MagCapacity || off.CurrentMagazine < off.MagCapacity); f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
@@ -1760,13 +1761,18 @@ static class Program {
       EncounterState.InCombat = true; Contact.Spot(q); int qh = q.Hp, ph = p.Hp;
       for (int f = 0; f < 1500 && q.Hp == qh; f++) { Rt.WorldTick(p); UnityEngine.Time.time += 0.02f; }
       Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
-      Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
-      Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Focus < 50f, "co-op: a dive spends that player's Focus and only they dive");
-      Check(Rt.SlowMo, "co-op: bullet time when the players are together");
+      Rt.Of(q).Stamina = 50f; float pst = Rt.Of(p).Stamina; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
+      Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Stamina < 50f && Rt.Of(p).Stamina == pst, "co-op: a dive spends that player's stamina and only they dive");
       for (int f = 0; f < 60 && Rt.Of(q).Diving; f++) { Rt.PlayerTick(q, default); UnityEngine.Time.time += 0.02f; }
-      q.X = px + 45; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).Focus = 50f; Rt.Of(q).ProneUntil = -1f; Rt.PlayerTick(q, new Rt.Input { X = 1f, Jump = true });
-      Check(Rt.Of(q).Diving && !Rt.SlowMo, $"co-op: a friend 45 tiles off dives without slowing your fight");
-      for (int f = 0; f < 60 && Rt.Of(q).Diving; f++) { Rt.PlayerTick(q, default); UnityEngine.Time.time += 0.02f; }
+      Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { BulletTime = true });
+      Check(Rt.SlowMo && Rt.Of(q).Slow && !Rt.Of(p).Slow, "co-op: a friend's bullet time slows the fight when the players are together");
+      Rt.PlayerTick(q, new Rt.Input { BulletTime = true });
+      q.X = px + 45; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).ProneUntil = -1f; Rt.PlayerTick(q, new Rt.Input { BulletTime = true });
+      Check(Rt.Of(q).Slow && !Rt.SlowMo, $"co-op: a friend 45 tiles off uses bullet time without slowing your fight");
+      { float u0 = UnityEngine.Time.unscaledDeltaTime; UnityEngine.Time.unscaledDeltaTime = 0.1f; int nd = 0;
+        for (; nd < 100 && Rt.Of(q).Slow; nd++) Rt.PlayerTick(q, default);
+        UnityEngine.Time.unscaledDeltaTime = u0;
+        Check(!Rt.Of(q).Slow && Rt.Of(q).Focus == 0f && nd >= 18 && nd <= 22, $"RT 9: bullet time drains {Rt.SlowDrain} Focus a real second and stops when dry ({nd} x 0.1 s from 50)"); }
       // Yan: "downed players can be revived by holding E over them for a few seconds, 'game over' only if everyone dies"
       q.X = px + 1; q.Y = py; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).ProneUntil = -1f; Body.GoDown(q);
       Rt.On = false; int ph0 = p.Hp; p.Hp = 0; bool over = TurnLoop.AllDead; Rt.On = true; p.HealPermanent(5000);   // (in real time 0 HP is "down", not dead)
@@ -1925,15 +1931,17 @@ static class Program {
       foreach (var f in typeof(UnityEngine.InputSystem.Keyboard).GetFields()) if (f.FieldType == typeof(UnityEngine.InputSystem.KeyControl)) f.SetValue(kb, new UnityEngine.InputSystem.KeyControl());
       UnityEngine.Time.deltaTime = 0.02f; UnityEngine.Time.unscaledDeltaTime = 0.02f; UnityEngine.Time.time = 1000f;
       void Frame() { Rt.PlayerTick(p, Rt.Read(kb, null)); UnityEngine.Time.time += UnityEngine.Time.deltaTime; kb.spaceKey.wasPressedThisFrame = false; }
-      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.Of(p).Focus = 0f;
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.Of(p).Stamina = 10f; Rt.Of(p).StaminaRest = 5f;
       kb.spaceKey.wasPressedThisFrame = true; Frame();
-      Check(!Rt.Of(p).Diving, "no Focus, no dive");
-      Rt.Of(p).Focus = 50f; kb.dKey.isPressed = true; kb.spaceKey.wasPressedThisFrame = true;
+      Check(!Rt.Of(p).Diving, "too winded (no stamina), no dive");
+      // RT 9 (Yan: "unbinding bullet time from the dodge ... having it be invulnerable"): Space dives on stamina, no slow-mo, untouchable
+      Rt.Of(p).Stamina = 50f; Rt.Of(p).Focus = 0f; kb.dKey.isPressed = true; kb.spaceKey.wasPressedThisFrame = true;
       var (sx, _) = Ballistics.Pos(p); Frame();
-      Check(Rt.Of(p).Diving && Rt.SlowMo && UnityEngine.Time.timeScale == Rt.SlowScale && Math.Abs(Rt.Of(p).Focus - 10f) < 0.01f, $"Space dives: bullet time on, 40 Focus spent ({Rt.Of(p).Focus})");
+      Check(Rt.Of(p).Diving && !Rt.SlowMo && UnityEngine.Time.timeScale == 1f && Math.Abs(Rt.Of(p).Stamina - 20f) < 0.5f, $"Space dives: {Rt.DiveStamina} stamina spent ({Rt.Of(p).Stamina:0.0}), no bullet time");
+      Check(PartAt(r, p, 0.2f) == "miss" && PartAt(r, p, 0.5f) == "miss" && Rt.Untouchable(p), "RT 9: mid-dive every round passes (i-frames)");
       for (int i = 0; i < 40 && Rt.Of(p).Diving; i++) Frame();
       var (lx, _) = Ballistics.Pos(p);
-      Check(!Rt.Of(p).Diving && Rt.Low(p) && !Rt.SlowMo && UnityEngine.Time.timeScale == 1f && lx - sx > 2f && lx - sx < 3f, $"lands {lx - sx:0.0} tiles on, prone, back to full speed");
+      Check(!Rt.Of(p).Diving && Rt.Low(p) && !Rt.Untouchable(p) && lx - sx > 2f && lx - sx < 3f, $"lands {lx - sx:0.0} tiles on, prone, no longer untouchable");
       Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.2f) != "miss", "sprawled on the ground: a head-height round goes over, a low one hits");
       for (int i = 0; i < 10; i++) Frame();
       var (px2, _) = Ballistics.Pos(p);

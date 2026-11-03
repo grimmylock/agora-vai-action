@@ -73,7 +73,7 @@ namespace GameCore
             var combat = GameServices.RequireCombat();
             foreach (var v in victims)
             {
-                if (System.Math.Max(System.Math.Abs(v.X - cx), System.Math.Abs(v.Y - cy)) > radius) continue;
+                if (System.Math.Max(System.Math.Abs(v.X - cx), System.Math.Abs(v.Y - cy)) > radius || Rt.Untouchable(v)) continue;
                 int roll = Random.Range(1, 21) + (int)v.AgilityMod;
                 bool saved = roll >= SaveDc;
                 float raw = saved ? damage / 2f : damage;

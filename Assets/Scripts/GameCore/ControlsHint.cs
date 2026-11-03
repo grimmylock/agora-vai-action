@@ -17,7 +17,8 @@ namespace GameCore
         public const string Text =
             "--- CONTROLS (real-time) ---\n" +
             "WASD: move   Shift: sprint   Ctrl: crouch\n" +
-            "Space: dive + bullet time (40 Focus)\n" +
+            "Space: dive (stamina, nothing hits you mid-air)\n" +
+            "V: bullet time on/off (drains Focus)\n" +
             "Right mouse: aim (steadier, look further)\n" +
             "Left mouse: fire (hold for automatics)\n" +
             "Crosshair height on a body = where you hit\n" +

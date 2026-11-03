@@ -91,7 +91,7 @@ namespace UnityEngine.InputSystem
 {
     public class Keyboard { public static Keyboard current; public KeyControl this[Key k] => null; public KeyControl[] allKeys = new KeyControl[0]; public KeyControl escapeKey, leftShiftKey, leftCtrlKey, f10Key, f11Key, spaceKey, enterKey, tabKey, iKey, jKey, mKey, rKey, eKey, fKey, gKey, qKey, cKey, lKey, kKey, oKey, pKey, sKey, tKey, wKey, aKey, dKey, bKey, nKey, vKey, xKey, zKey, hKey, yKey, uKey, digit1Key, digit2Key, digit3Key, digit4Key, digit5Key, f5Key, f8Key, f9Key, leftArrowKey, rightArrowKey, upArrowKey, downArrowKey, f1Key; }
     public class KeyControl { public bool wasPressedThisFrame, isPressed; public Key keyCode; }
-    public enum Key { None, Escape = 6, F = 20, G = 21 }
+    public enum Key { None, Escape = 6, F = 20, G = 21, V = 36 }
     public class Mouse { public static Mouse current; public ButtonControl leftButton, rightButton; public Vector2Control position, scroll; }
     public class ButtonControl { public bool wasReleasedThisFrame; public bool wasPressedThisFrame, isPressed; }
     public class Vector2Control { public UnityEngine.Vector2 ReadValue() => default(UnityEngine.Vector2); }

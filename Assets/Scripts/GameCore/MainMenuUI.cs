@@ -158,9 +158,9 @@ namespace GameCore
             Text(fill.transform, "OptionsTitle", new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.96f), "CONTROLS", true, 22, HudView.Yellow);
             Text(fill.transform, "OptionsText", new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.86f), ControlsHint.Text, false, 16, HudView.Cream, TextAlignmentOptions.TopLeft);
             // Boss 1 (Yan: the parry key "customizable in options"): click, then press the new key
-            foreach (var (name, x0) in new[] { ("parry", 0.06f), ("search", 0.5f) })
+            foreach (var (name, x0) in new[] { ("parry", 0.06f), ("search", 0.36f), ("slow", 0.66f) })
             {
-                var b = UIBuildUtil.CreateButton(fill.transform, "Bind_" + name, new Vector2(x0, 0.13f), new Vector2(x0 + 0.44f, 0.2f), "", () => _rebinding = name);
+                var b = UIBuildUtil.CreateButton(fill.transform, "Bind_" + name, new Vector2(x0, 0.13f), new Vector2(x0 + 0.28f, 0.2f), "", () => _rebinding = name);
                 _binds.Add((name, b.GetComponentInChildren<TextMeshProUGUI>()));
             }
             var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.11f), "Back", () => _optionsPanel.SetActive(false));
@@ -181,7 +181,7 @@ namespace GameCore
                 if (key != Key.None) { if (key != Key.Escape) Keybinds.Set(_rebinding, key); _rebinding = null; }
             }
             foreach (var (name, label) in _binds)
-                if (label != null) label.text = _rebinding == name ? $"{name.ToUpperInvariant()}: press a key..." : $"{name.ToUpperInvariant()}: {(name == "parry" ? Keybinds.Parry : Keybinds.Search)}";
+                if (label != null) label.text = _rebinding == name ? $"{name.ToUpperInvariant()}: press a key..." : $"{(name == "slow" ? "BULLET TIME" : name.ToUpperInvariant())}: {(name == "parry" ? Keybinds.Parry : name == "slow" ? Keybinds.Slow : Keybinds.Search)}";
             if (_log == null) _log = GameObject.Find("CombatLogBackground");
             if (_log != null && _log.activeSelf) _log.SetActive(false);
             if (_clock != null) _clock.text = MenuBackdrop.Ready ? MenuBackdrop.Label() : "";

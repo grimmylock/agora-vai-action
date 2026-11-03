@@ -69,6 +69,7 @@ namespace GameCore
         // is Me (Player.Current); a joined player (Player.Join) gets its own State and is driven by its own Input packets.
         public class State
         {
+            public bool Slow;                                         // RT 9: this player has bullet time on (its own key, drains Focus)
             public float Stamina = StaminaMax, StaminaRest, Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f, DiveX, DiveY;
             public float VaultFrom = -1f, VaultLen, VaultX, VaultY, VaultDist, UseDone, UseFrom;
             public float LookReach = Vision.MaxRadius;                // how far this player sees where they look (Vision, for fair shots)
@@ -99,6 +100,7 @@ namespace GameCore
             public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload, Use;   // held / held / held / held / pressed / pressed / pressed / held (E)
             public bool Fire2Down;                                    // RT 7z-c: right mouse pressed - a Gunslinger's left-hand gun
             public bool Parry;                                        // Boss 1: the parry key pressed (F by default, Keybinds)
+            public bool BulletTime;                                   // RT 9: the bullet-time key pressed (V by default, Keybinds)
             public (float x, float y)? Mouse;                         // the crosshair, tile space
         }
         public static Input Read(Keyboard k, Mouse m) => new Input
@@ -109,6 +111,7 @@ namespace GameCore
             Aim = m != null && m.rightButton.isPressed, Fire = m != null && m.leftButton.isPressed, FireDown = m != null && m.leftButton.wasPressedThisFrame,
             Fire2Down = m != null && m.rightButton.wasPressedThisFrame,
             Parry = Keybinds.Pressed(k, Keybinds.Parry),
+            BulletTime = Keybinds.Pressed(k, Keybinds.Slow),
             Mouse = MouseTile(m),
         };
         static float _round;
@@ -301,6 +304,8 @@ namespace GameCore
             if (Time.time < s.ProneUntil) speed = 0f;                 // RT batch 3: sprawled after a dive
             float l = Mathf.Sqrt(ix * ix + iy * iy);
             s.Moving = l > 0f && speed > 0f ? (sprint ? 2 : 1) : 0;
+            if (i.BulletTime && !down) ToggleSlow(p);
+            if (s.Slow && (s.Focus -= SlowDrain * Time.unscaledDeltaTime) <= 0f) { s.Focus = 0f; s.Slow = false; UpdateSlow(); }
             if (!down && i.Jump && !s.Diving && !s.Vaulting && Time.time >= s.ProneUntil && s.UsingId == null && !TryVault(p, ix, iy, i.Mouse))
                 TryDive(p, ix, iy, i.Mouse);                          // Space at low cover vaults it; anywhere else it dives
             if (s.Vaulting) { s.Moving = 0; TickVault(p, dt); }
@@ -465,8 +470,13 @@ namespace GameCore
         //      ~0.55 s of game time, time runs at 30% meanwhile, you can aim and fire (the aim steadies at real-time speed).
         //      Landing: prone 0.6 s (Tumbler: 0.35) - no moving, but you can still shoot. Costs 40 Focus, so no chaining.
         //      Focus fills from kills (+25), hits (+4) and enemy rounds that just miss you (+6, Cold Blood x2). ----
+        //      RT 9 (Yan, 2026-11-03: "unbinding bullet time from the dodge, having it be a separate key ... and use the dodge for
+        //      mechanics like those, having it be invulnerable"): the dive costs stamina (DiveStamina) and nothing hits you while
+        //      it lasts (Untouchable: rounds pass, blades miss, blasts skip you); the landing is still prone and open. Bullet time is
+        //      its own key (V, Keybinds.Slow): on/off, drains Focus (SlowDrain a real second), stops when it runs dry.
         public const int SlowReach = 40;
-        public const float DiveCost = 40f, DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
+        public const float DiveStamina = 30f, SlowDrain = 25f, SlowMin = 10f;
+        public const float DiveSpeed = 4.5f, DiveTime = 0.55f, ProneTime = 0.6f, SlowScale = 0.3f, FocusMax = 100f;
         const float DiveSpeedFloor = 1f;                              // moved slower than this (tiles/s): hit a wall, land now
         public static bool SlowMo;                                    // ponytail: one time scale for everyone - step 4 makes it per fight
 
@@ -546,17 +556,14 @@ namespace GameCore
         static bool TryDive(Player p, float ix, float iy, (float x, float y)? mouse)
         {
             var s = Of(p);
-            if (s.Focus < DiveCost) { GameLog.Write($"Not enough Focus to dive ({Mathf.FloorToInt(s.Focus)}/{DiveCost:0})."); return false; }
+            if (s.Stamina < DiveStamina) { GameLog.Write("Too winded to dive."); return false; }
             float dx = ix, dy = iy;
             if (dx == 0f && dy == 0f && mouse.HasValue) { var (px, py) = Ballistics.Pos(p); dx = mouse.Value.x - px; dy = mouse.Value.y - py; }
             float l = Mathf.Sqrt(dx * dx + dy * dy);
             if (l < 0.01f) return false;
             s.DiveX = dx / l; s.DiveY = dy / l;
-            s.Focus -= DiveCost;
+            s.Stamina -= DiveStamina; s.StaminaRest = 0.8f;
             s.DiveUntil = Time.time + DiveTime;
-            // co-op step 4 (ACTION_DESIGN: "bullet time slows everyone within ~40 tiles / in the same fight"): Unity has one clock, so
-            // it slows only when every living player is within 40 tiles of the diver; a friend far off in their own fight keeps full speed
-            if (Player.All.All(o => o == p || !o.IsAlive() || CombatantUtil.Distance(o, p) <= SlowReach)) SetSlow(true);
             Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 1f, 0.05f, 0.6f);
             return true;
         }
@@ -567,9 +574,25 @@ namespace GameCore
             s.DiveUntil = -1f;
             Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f, 0.1f, 0.7f);   // RT 7z: the body hits the ground
             s.ProneUntil = Time.time + (CombatantUtil.HasPerk(p, "Tumbler") ? 0.35f : ProneTime);
-            if (!Player.All.Any(o => Of(o).Diving)) SetSlow(false);   // still slow while a friend is mid-dive
             Sfx.Play("hit_dirt", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f);
         }
+
+        /// <summary>RT 9: nothing touches a diving player (rounds, blades, blasts); the prone landing is fair game.</summary>
+        public static bool Untouchable(ICombatant u) => On && u is Player p && Of(p).Diving;
+
+        static void ToggleSlow(Player p)
+        {
+            var s = Of(p);
+            if (!s.Slow && s.Focus < SlowMin) { GameLog.Write($"Not enough Focus for bullet time ({Mathf.FloorToInt(s.Focus)}/{SlowMin:0})."); return; }
+            s.Slow = !s.Slow;
+            if (s.Slow) Sfx.Play("swing", TacticalGridView.GridToWorld(p.X, p.Y), 0.8f, 0.05f, 0.5f);
+            UpdateSlow();
+        }
+
+        // co-op step 4 (ACTION_DESIGN: "bullet time slows everyone within ~40 tiles / in the same fight"): Unity has one clock, so a
+        // player's bullet time counts only when every living player is within 40 tiles of them; a friend far off keeps full speed
+        static void UpdateSlow() =>
+            SetSlow(Player.All.Any(p => p.IsAlive() && Of(p).Slow && Player.All.All(o => o == p || !o.IsAlive() || CombatantUtil.Distance(o, p) <= SlowReach)));
 
         public static void SetSlow(bool on) { SlowMo = on; if (!Paused) Time.timeScale = on ? SlowScale : 1f; }
 
