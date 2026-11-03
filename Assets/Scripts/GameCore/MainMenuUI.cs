@@ -125,7 +125,7 @@ namespace GameCore
         public const string CreditsText =
             "<b>Made by</b> Yan, with Claude.\n\n" +
             "<b>Sound - CC-BY 3.0</b> (creativecommons.org/licenses/by/3.0)\n" +
-            "Jack Menhorn - FPS Placeholder Sounds (pain, body impact)\n" +
+            "Jack Menhorn - FPS Placeholder Sounds (body impact)\n" +
             "Mike Koenig, via SoundBible - Shotgun Shoot/Reload (dry fire)\n\n" +
             "<b>Sound - CC0, with thanks</b>\n" +
             "Ben Jaszczak et al. - The Free Firearm Sound Library\n" +

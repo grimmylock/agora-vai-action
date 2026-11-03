@@ -4471,3 +4471,6 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   OpenGameArt's "gun" tag. Sheet: `maps/renders/gun_refs/oga_gun_tag_sheet.png`. Verdict in chat: useful as drawing references
   only, mostly for proportions; the one worth keeping is "Weapon Inventory Graphics" (CC0, `best_weapon_inventory_graphics.png`).
 - Not checked: how the new sounds sound (preview `maps/renders/sound/ccby_sounds_preview.mp3`), the Credits panel in Unity.
+- Follow-up: the pain grunts are out (Yan: "LOL 'ouch' 'oww' 'you're hurting me' ... Scrap those please, they are way too
+  monotonous and funny sounding ... we might not even add voices tbh, i don't think it fits with the artstyle having them speak").
+  `hurt_0-1` back to the generated sounds, `hurt_2` and the sources removed. No voice lines from now on unless Yan asks.

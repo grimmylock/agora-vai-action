@@ -36,8 +36,8 @@ MAP = {
     "swing_0": ("swish-1.wav", 0.4), "swing_1": ("swish-3.wav", 0.4),
     "ui_click": ("click_001.ogg", 0.15), "pickup": ("handleSmallLeather.ogg", 0.5),
     "smoke": ("sfx100v2_air_01.ogg", 2.0),
-    # CC-BY (Yan, 2026-11-03: a credits screen is fine): the player's pain grunts, a body thud, a real dry-fire click
-    "hurt_0": ("pain_jack_01.wav", 0.6), "hurt_1": ("pain_jack_02.wav", 0.6), "hurt_2": ("pain_jack_03.wav", 0.8),
+    # CC-BY (Yan, 2026-11-03: a credits screen is fine): a body thud, a real dry-fire click. No voices: Yan scrapped the pain
+    # grunts ("way too monotonous and funny sounding ... i don't think it fits with the artstyle having them speak") - hurt stays generated
     "hit_flesh_3": ("bodyimpact_jack_01.wav", 0.4), "dryfire": ("Dry Fire Gun-SoundBible.com-2053652037.wav", 0.4),
     # ambience loops (Sfx.Ambient)
     "amb_rain": ("1.ogg", "loop"), "amb_storm": ("rain-thunder.ogg", "loop"),  # amb_wind stays generated: the only CC0 wind here is a 5 s gust (a short loop repeats)

@@ -31,5 +31,5 @@ library's takes; the cuts kept in `ArtSource/audio/cc0/guns/`). Sounds not liste
 | [Explosion](https://opengameart.org/content/explosion-0) | TinyWorlds | `explosion_0` |
 | [25 CC0 bang / firework SFX](https://opengameart.org/content/25-cc0-bang-firework-sfx) | rubberduck | `explosion_1` |
 | [20 Sword Sound Effects (Attacks and Clashes)](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) | StarNinjas | `parry_0`, `parry_1`, `parry_perfect` |
-| [FPS Placeholder Sounds](https://opengameart.org/content/fps-placeholder-sounds) - **CC-BY 3.0** | Jack Menhorn | `hurt_0-2`, `hit_flesh_3` |
+| [FPS Placeholder Sounds](https://opengameart.org/content/fps-placeholder-sounds) - **CC-BY 3.0** | Jack Menhorn | `hit_flesh_3` |
 | [Shotgun Shoot/Reload](https://opengameart.org/content/shotgun-shoot-reload) - **CC-BY 3.0** | Mike Koenig (via SoundBible) | `dryfire` |
