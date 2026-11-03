@@ -126,6 +126,19 @@ parry him with it. Secret Lab Beta's south-west rooms have a cracked wall (E bre
   perfect parry, glints, the sting, the finisher, the smoke).
 - Not yet: mutants' claws can't be parried (they don't go through `Melee.Strike`); finishers on normal enemies; the melee slot.
 
+## Dodge bosses (Yan, 2026-11-03: "some of them a bullet-hell style bossfight ... more akin to Binding of Isaac where it's kinda
+bullet hell but not really? you have to dodge stuff")
+
+- For mutant and anomaly bosses; human bosses stay duels (the Visor). Few, slow, big projectiles you can read; simple patterns
+  (rings, spirals, aimed bursts, slams that leave something on the floor); a short wind-up before each; a closed room (a lair).
+- The dodge is the tool: Space dives with i-frames on stamina; bullet time is its own key (V, drains Focus) - RT 9.
+- **First one - the brain in the vat** (Yan: "a mutant brain and eyes inside a vat of liquid inside a lab? his attacks hit world
+  objects like desks and stuff throwing, pulling, rearranging them into stuff you have to dodge while dodging his attacks"):
+  a psychic mutant in a Tier 2-3 lab. Void orbs in rings and spirals (the `zone/void-pull` look); the big move opens a full-size
+  void pull that drags you toward him while orbs fly. Telekinesis on the room's props (`Props.cs`): desks, crates and barrels
+  thrown at you, pulled across the floor, set up as walls and lanes you have to weave through.
+- Not built yet.
+
 ## Weight and stamina
 
 Carried weight slows you and drains stamina faster (sprint, dive, melee). Looting becomes a choice.
