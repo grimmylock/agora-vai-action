@@ -1271,9 +1271,9 @@ static class Program {
     Check(f.Started, "Boss 2: it wakes when you come close");
     f.Bag.Clear(); f.Bag.Add("ring"); f.Next = 0f; BrainBoss.Tick(0.02f);
     Check(f.Doing == "ring" && BrainBoss.Winding(f) && BrainBoss.ArtRow == 4 && BrainBoss.Orbs.Count == 0, "Boss 2: before a move its eyes shut (the wind-up), nothing fired yet");
-    UnityEngine.Time.time = f.WindUntil + 0.01f; BrainBoss.Tick(0.02f);
+    UnityEngine.Time.time = f.Moves.Max(m => m.WindUntil) + 0.01f; BrainBoss.Tick(0.02f);
     Check(BrainBoss.Orbs.Count == 10 && BrainBoss.Orbs.All(o => o.Kind == "ring") && BrainBoss.ArtRow == 0, $"Boss 2: then they open and a ring of 10 orbs flies ({BrainBoss.Orbs.Count})");
-    BrainBoss.Orbs.Clear(); f.Next = UnityEngine.Time.time + 999f; f.Doing = null;
+    BrainBoss.Orbs.Clear(); f.Next = UnityEngine.Time.time + 999f; f.Moves.Clear();
     void Tick(int n) { for (int i = 0; i < n; i++) { BrainBoss.Tick(0.02f); UnityEngine.Time.time += 0.02f; } }
     var (x0, y0) = Ballistics.Pos(p); int hp = p.Hp;
     BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f); Tick(40);
@@ -1293,23 +1293,32 @@ static class Program {
     Check(f.Phase == 1 && BrainBoss.Winding(f) && BrainBoss.ArtRow == 5 && BrainBoss.Pulse == null, "Boss 2: under 75% the glass cracks, its eyes shut - the pulse gathers");
     UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(1);
     Check(BrainBoss.Pulse != null, "Boss 2: then the pulse rolls out");
-    Tick(150);
+    Tick(1); f.Next = UnityEngine.Time.time + 999f; Tick(149);   // only the pulse: no volleys meanwhile
     Check(Look(cX) != "crate" && Look(cX + 1) == "labtable" && Look(cX + 2) == "cabinet", $"Boss 2: the first pulse breaks the boxes only ({Look(cX)}, {Look(cX + 1)}, {Look(cX + 2)})");
     Check(p.Hp < hp, $"Boss 2: the pulse hurts whoever it passes ({hp} -> {p.Hp})");
-    b.Hp = BrainBoss.MaxHp * 4 / 10; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; hp = p.Hp; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f; Tick(150);
+    b.Hp = BrainBoss.MaxHp * 4 / 10; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; hp = p.Hp; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f; Tick(1); f.Next = UnityEngine.Time.time + 999f; Tick(149);   // only the pulse: no volleys meanwhile
     Check(Look(cX + 1) != "labtable" && Look(cX + 2) == "cabinet", "Boss 2: the second pulse breaks the tables");
     Check(p.Hp == hp, "Boss 2: diving through the pulse, it doesn't touch you");
     Rt.Of(p).DiveUntil = -1f;
-    b.Hp = BrainBoss.MaxHp / 5; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(150);
+    b.Hp = BrainBoss.MaxHp / 5; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(1); f.Next = UnityEngine.Time.time + 999f; Tick(149);   // only the pulse: no volleys meanwhile
     Check(f.Phase == 3 && Look(cX + 2) != "cabinet", "Boss 2: the third breaks the file cabinets - no cover left");
     // rip: the crate beside you comes off the floor and flies at you
-    TerrainMap.SetTileType(px + 1, py, TileType.ScatterCover, "crate"); hp = p.Hp; f.Bag.Clear(); f.Bag.Add("rip"); f.Next = 0f; f.Doing = null;
-    Tick(1); UnityEngine.Time.time = f.WindUntil + 0.01f; Tick(1);
-    Check(BrainBoss.Throws.Count == 1 && TerrainMap.GetTile(px + 1, py).Look != "crate", "Boss 2: rip tears the crate beside you off the floor");
+    BrainBoss.Beams.Clear(); BrainBoss.Orbs.Clear(); f.PullUntil = -1f;
+    TerrainMap.SetTileType(px + 1, py, TileType.ScatterCover, "crate"); hp = p.Hp; f.Bag.Clear(); f.Bag.Add("rip"); f.Next = 0f; f.Moves.Clear();
+    Tick(1); UnityEngine.Time.time = f.Moves.Max(m => m.WindUntil) + 0.01f; Tick(1);
+    Check(BrainBoss.Throws.Count >= 1 && TerrainMap.GetTile(px + 1, py).Look != "crate", "Boss 2: rip tears the crate beside you off the floor");
     Tick(80);
     Check(BrainBoss.Throws.Count == 0 && p.Hp < hp, $"Boss 2: and hurls it at you ({hp} -> {p.Hp})");
+    Check(f.Phase >= 2 && f.Moves.Count == 0, "Boss 2: (that volley done)");
+    // from 50% two moves at once (Yan: "make it so he can use 2 attacks at the same time after 50%"), never laser with the pull
+    { BrainBoss.Beams.Clear(); f.PullUntil = -1f; f.Moves.Clear(); f.Bag.Clear(); f.Next = 0f; Tick(1); var ks = f.Moves.Select(m => m.Kind).ToList();
+      Check(ks.Count == 2 && ks[0] != ks[1] && !(ks.Contains("laser") && ks.Contains("pull")), $"Boss 2: past 50% a volley is two moves at once ({string.Join("+", ks)})");
+      BrainBoss.Orbs.Clear(); BrainBoss.Throws.Clear(); BrainBoss.Beams.Clear(); f.PullUntil = -1f; f.Moves.Clear(); f.Next = UnityEngine.Time.time + 999f; }
+    // a vat never walks: moves are refused, and anything that shifts it puts it back
+    Check(!GameServices.Grid.AttemptMove(b, b.X - 1, b.Y), "Boss 2: the vat refuses to move");
+    { int hx = b.X; b.X += 2; Tick(1); Check(b.X == hx, "Boss 2: shoved off its spot, it's back on it at once"); }
     // the laser sweeps; cover doesn't stop it, a dive does
-    f.Bag.Clear(); f.Bag.Add("laser"); f.Next = 0f; f.Doing = null; Tick(1); UnityEngine.Time.time = f.WindUntil + 0.01f; hp = p.Hp; Tick(1);
+    f.Bag.Clear(); f.Bag.AddRange(new[] { "ring", "laser" }); f.Next = 0f; f.Moves.Clear(); Tick(1); UnityEngine.Time.time = f.Moves.Max(m => m.WindUntil) + 0.01f; hp = p.Hp; Tick(1);
     Check(BrainBoss.Beams.Count == 2, $"Boss 2: the laser - two beams when it's at its angriest ({BrainBoss.Beams.Count})");
     TerrainMap.SetTileType(px + 1, py, TileType.HardCover, "cabinet");
     Tick((int)(BrainBoss.LaserFor / 0.02f) + 5);

@@ -4636,3 +4636,17 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   the range cleared and the dummies kept - or, if you died in the brain's lab, straight into a fresh brain fight.
 - Checks: Go lands you in the vat room with the vat fresh and alone; Respawn on the range and after dying to the brain.
   Not checked in Unity.
+
+## Boss 2 fixes after Yan's first Unity try (2026-11-03)
+
+- Yan (screenshot: the vat gone, "The Specimen opens a door", the beam coming out of a wall): "the boss dissapeared, started
+  walking around, lol". Something outside `BrainBoss.Tick` still walked it (the mutant wandering goes through
+  `TacticalGridSystem.AttemptMove`). Now `AttemptMove` refuses the vat outright, and `BrainBoss.Tick` puts it back on its home
+  tile if anything else shifts it.
+- Yan: "he is not tanky enough" -> "triple his hp": 6000 -> 18000 (cracks still at the quarters).
+- Yan: "make it so he can use 2 attacks at the same time after 50%": a fight now runs a list of moves (`Fight.Moves`); from the
+  second crack each volley draws two different moves from the bag at once (each winds up and fires on its own clock), never the
+  laser together with the pull. A new volley waits for the last one, the beams and the pull to end.
+- Checks: two moves past 50% (never laser + pull), the vat refuses to move, a shoved vat is back at once; the pulse checks hold
+  the volleys off so random moves can't carry their props away.
+- Preview video re-rendered (the bot's damage there is time-based, so the triple HP doesn't show in it). Not checked in Unity.

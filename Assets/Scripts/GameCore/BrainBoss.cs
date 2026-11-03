@@ -22,7 +22,7 @@ namespace GameCore
     public static class BrainBoss
     {
         public const string Lab = "secret_lab_alpha", Name = "The Specimen", Escaped = "brain_escaped";
-        public const int VatX = 37, VatY = 9, MaxHp = 6000, Wake = 9;
+        public const int VatX = 37, VatY = 9, MaxHp = 18000, Wake = 9;   // Yan: "not tanky enough" -> "triple his hp"
         public const float StillFor = 3f, RiseFor = 1.4f, EyeFor = 2.4f;
         public const float OrbSpeed = 3.2f, BoltSpeed = 4.6f, OrbRadius = 0.3f, OrbLife = 9f, PullFor = 3f, PullSpeed = 1.3f, PullReach = 14f;
         public const float PulseSpeed = 8f, PulseReach = 16f, PulseWind = 1.1f, LaserTurn = 105f, LaserFor = 3.4f, LaserHitGap = 0.6f;
@@ -36,11 +36,14 @@ namespace GameCore
         {
             public Mutant Unit; public bool Started, Drained, Gone;
             public int Phase;                                   // 0 full, 1-3 cracks (3 = the brain half bare)
-            public string Doing, Stage;                         // the move; the end: "still" -> "rise" -> "eye" -> gone
-            public float WindUntil, DoneAt, Next, StageAt, PullUntil = -1f, NextOrb, PulseAt = -1f;
-            public int Count;
+            public string Stage;                                // the end: "still" -> "rise" -> "eye" -> gone
+            public float Next, StageAt, PullUntil = -1f, NextOrb, PulseAt = -1f;
+            public int HomeX, HomeY;                            // where the vat stands - it never leaves it
+            public readonly List<Move> Moves = new List<Move>();   // what it's doing now: one move, two at once from the second crack
+            public string Doing => Moves.Count > 0 ? Moves[0].Kind : null;
             public readonly List<string> Bag = new List<string>();   // the moves left this round (each once, then reshuffled)
         }
+        public class Move { public string Kind; public float WindUntil, DoneAt; public int Count; public bool Finished; }
         public class Orb { public float X, Y, Dx, Dy, Speed, Age; public string Map, Kind; }   // Kind: ring | bolt | void
         public class Thrown { public float X, Y, Dx, Dy, Born, Gone; public string Look; public int Damage; public Player Target; public bool Flying; }
         public class Beam { public float Angle, Until, Length; }
@@ -84,7 +87,7 @@ namespace GameCore
                 return (int)(Time.time * 8f) % 8;
             }
         }
-        public static bool Winding(Fight f) => f != null && !f.Drained && (f.Doing != null && Time.time < f.WindUntil || f.PulseAt >= 0f);
+        public static bool Winding(Fight f) => f != null && !f.Drained && (f.Moves.Any(m => Time.time < m.WindUntil) || f.PulseAt >= 0f);
 
         // ---------------- spawning and damage ----------------
 
@@ -100,7 +103,7 @@ namespace GameCore
             var m = new Mutant(Name, x, y, Def) { Hp = MaxHp };
             EncounterState.Enemies.Add(m);
             Orbs.Clear(); Throws.Clear(); Beams.Clear(); Pulse = null;
-            return Current = new Fight { Unit = m };
+            return Current = new Fight { Unit = m, HomeX = m.X, HomeY = m.Y };
         }
 
         static int PhaseOf(int hp) => hp > MaxHp * 3 / 4 ? 0 : hp > MaxHp / 2 ? 1 : hp > MaxHp / 4 ? 2 : 3;
@@ -114,7 +117,7 @@ namespace GameCore
             if (f.Drained) { u.Hp = System.Math.Max(1, u.Hp); return; }
             if (u.Hp <= 1)
             {
-                u.Hp = 1; f.Drained = true; f.Doing = null; f.PullUntil = -1f; f.PulseAt = -1f;
+                u.Hp = 1; f.Drained = true; f.Moves.Clear(); f.PullUntil = -1f; f.PulseAt = -1f;
                 Orbs.Clear(); Beams.Clear(); Pulse = null;
                 f.Stage = "still"; f.StageAt = Time.time;
                 Boss.HitStop(0.4f);
@@ -124,7 +127,7 @@ namespace GameCore
             }
             int ph = PhaseOf(u.Hp);
             if (ph <= f.Phase) return;
-            f.Phase = ph; f.Doing = null; f.PullUntil = -1f; Beams.Clear(); f.Bag.Clear();
+            f.Phase = ph; f.Moves.Clear(); f.PullUntil = -1f; Beams.Clear(); f.Bag.Clear();
             f.PulseAt = Time.time + PulseWind;                   // eyes shut, gathering - then the pulse
             Boss.HitStop(0.25f);
             CombatFx.Push("stagger", u, null, null).Now = true;
@@ -153,6 +156,7 @@ namespace GameCore
                 if (players.Any(p => CombatantUtil.Distance(p, f.Unit) <= 4 || CombatantUtil.Distance(p, f.Unit) <= Wake && Vision.Sees(f.Unit.X, f.Unit.Y))) Start(f);
                 else return;
             }
+            if (f.Unit.X != f.HomeX || f.Unit.Y != f.HomeY) { f.Unit.X = f.HomeX; f.Unit.Y = f.HomeY; }   // it's a vat: nothing walks it off its spot
             FlyOrbs(dt, players);
             FlyThrows(dt, players, now);
             SweepBeams(dt, players, now);
@@ -169,25 +173,38 @@ namespace GameCore
             }
             if (players.Count == 0) return;
             var target = players.OrderBy(p => CombatantUtil.Distance(p, f.Unit)).First();
-            if (now < f.PullUntil) { Pull(f, players, dt, now); return; }
-            if (Beams.Count > 0) return;                         // the laser runs its sweep before the next move
-            if (f.Doing == null)
+            if (now < f.PullUntil) Pull(f, players, dt, now);
+            foreach (var m in f.Moves.ToList()) if (now >= m.DoneAt) Act(f, m, target, players, now);
+            f.Moves.RemoveAll(m => m.Finished);
+            if (f.Moves.Count > 0 || now < f.PullUntil || Beams.Count > 0 || now < f.Next) return;   // a volley runs out before the next
+            // the next volley: one move, two at once from the second crack (Yan: "make it so he can use 2 attacks at the same time after 50%")
+            for (int i = 0; i < (f.Phase >= 2 ? 2 : 1); i++)
             {
-                if (now < f.Next) return;
-                f.Doing = Pick(f); f.Count = 0;
-                f.WindUntil = now + (f.Doing == "laser" || f.Doing == "pull" ? 1.0f : f.Doing == "rip" ? 0.8f : 0.65f);
-                f.DoneAt = f.WindUntil;
-                CombatFx.Push("charge", f.Unit, target, null).Now = true;
-                return;
+                var k = Pick(f);
+                if (k == null) break;
+                float w = now + (k == "laser" || k == "pull" ? 1.0f : k == "rip" ? 0.8f : 0.65f);
+                f.Moves.Add(new Move { Kind = k, WindUntil = w, DoneAt = w });
             }
-            if (now < f.DoneAt) return;
-            Act(f, target, players, now);
+            CombatFx.Push("charge", f.Unit, target, null).Now = true;
         }
 
         /// <summary>The next move: a shuffled bag that grows with each crack - every move once before any repeats.</summary>
         static string Pick(Fight f)
         {
-            if (f.Bag.Count == 0)
+            for (int i = f.Bag.Count - 1; i >= 0; i--)          // the first in the bag that can go alongside what's already chosen
+                if (Fits(f, f.Bag[i])) { var k = f.Bag[i]; f.Bag.RemoveAt(i); return k; }
+            if (f.Bag.Count > 0) return null;                    // only clashing moves left: this volley is a single
+            Refill(f);
+            for (int i = f.Bag.Count - 1; i >= 0; i--)
+                if (Fits(f, f.Bag[i])) { var k = f.Bag[i]; f.Bag.RemoveAt(i); return k; }
+            return null;
+        }
+
+        /// <summary>Two moves at once must differ, and the laser never runs with the pull (no escape from both).</summary>
+        static bool Fits(Fight f, string k) => f.Moves.All(m => m.Kind != k && !(m.Kind == "laser" && k == "pull" || m.Kind == "pull" && k == "laser"));
+
+        static void Refill(Fight f)
+        {
             {
                 f.Bag.AddRange(new[] { "ring", "aimed", "rip" });
                 if (f.Phase >= 1) f.Bag.Add("laser");
@@ -195,52 +212,49 @@ namespace GameCore
                 if (f.Phase >= 3) { f.Bag.Add("ring"); f.Bag.Add("rip"); }
                 for (int i = f.Bag.Count - 1; i > 0; i--) { int j = Random.Range(0, i + 1); (f.Bag[i], f.Bag[j]) = (f.Bag[j], f.Bag[i]); }
             }
-            var m = f.Bag[f.Bag.Count - 1]; f.Bag.RemoveAt(f.Bag.Count - 1);
-            return m;
         }
 
         static float Gap(Fight f) => 2.2f - 0.3f * f.Phase;
 
-        static void Act(Fight f, Player target, List<Player> players, float now)
+        static void Act(Fight f, Move mv, Player target, List<Player> players, float now)
         {
             var (cx, cy) = Center(f);
-            if (f.Count == 0) CombatFx.Push("release", f.Unit, target, null).Now = true;   // the eyes snap open
-            switch (f.Doing)
+            if (mv.Count == 0) CombatFx.Push("release", f.Unit, target, null).Now = true;   // the eyes snap open
+            switch (mv.Kind)
             {
                 case "ring":
                     Ring(cx, cy, 10 + 2 * f.Phase, Random.value * 360f, OrbSpeed + 0.3f * f.Phase, "ring");
-                    if (f.Phase >= 2 && ++f.Count < 2) { f.DoneAt = now + 0.5f; return; }   // a second ring, offset, when angry
-                    Done(f, now);
+                    if (f.Phase >= 2 && ++mv.Count < 2) { mv.DoneAt = now + 0.5f; return; }   // a second ring, offset, when angry
+                    Done(f, mv, now);
                     break;
                 case "aimed":
                     var (tx, ty) = Ballistics.Pos(target);
                     float a = Mathf.Atan2(ty - cy, tx - cx) * Mathf.Rad2Deg;
                     for (int k = -1; k <= 1; k++) Shoot(cx, cy, a + k * 11f, BoltSpeed, "bolt");
-                    if (++f.Count < 2 + f.Phase / 2) { f.DoneAt = now + 0.45f; return; }
-                    Done(f, now);
+                    if (++mv.Count < 2 + f.Phase / 2) { mv.DoneAt = now + 0.45f; return; }
+                    Done(f, mv, now);
                     break;
                 case "rip":
                     Rip(f, players, now);
-                    Done(f, now);
+                    Done(f, mv, now);
                     break;
                 case "laser":
                     float start = Mathf.Atan2(target.Y - f.Unit.Y, target.X - f.Unit.X) * Mathf.Rad2Deg + 90f;   // starts off to your side, comes round
                     Beams.Add(new Beam { Angle = start, Until = now + LaserFor });
                     if (f.Phase >= 3) Beams.Add(new Beam { Angle = start + 180f, Until = now + LaserFor });
                     GameLog.Write("A beam lances out of the vat and starts to sweep the room.");
-                    Done(f, now);
-                    f.Next += LaserFor;
+                    Done(f, mv, now);
                     break;
                 case "pull":
-                    f.PullUntil = now + PullFor; f.NextOrb = now + 0.4f; f.Doing = null;
+                    f.PullUntil = now + PullFor; f.NextOrb = now + 0.4f; Done(f, mv, now);
                     CombatFx.Push("void", f.Unit, null, null).Now = true;
                     GameLog.Write("The air bends toward the vat.");
                     break;
-                default: Done(f, now); break;
+                default: Done(f, mv, now); break;
             }
         }
 
-        static void Done(Fight f, float now) { f.Doing = null; f.Next = now + Gap(f); }
+        static void Done(Fight f, Move mv, float now) { mv.Finished = true; mv.Count = System.Math.Max(1, mv.Count); f.Next = System.Math.Max(f.Next, now + Gap(f)); }
 
         // ---------------- the moves ----------------
 
@@ -257,7 +271,7 @@ namespace GameCore
                 Rt.MoveBy(p, dx / d * PullSpeed * dt, dy / d * PullSpeed * dt);
             }
             if (now >= f.NextOrb) { Ring(cx, cy, 8, Random.value * 360f, OrbSpeed * 0.8f, "void"); f.NextOrb = now + 0.8f; }
-            if (now + dt >= f.PullUntil) Done(f, now);
+            if (now + dt >= f.PullUntil) f.Next = System.Math.Max(f.Next, now + Gap(f));
         }
 
         /// <summary>Rip: for each player (nearest first, one more piece when it's angry) the cover beside them - the piece between them and
