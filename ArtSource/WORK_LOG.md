@@ -4419,3 +4419,17 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   `HudView.UpdateHurt`): a red vignette closes in round the screen edges (`EdgeImage`, shared with the parry's cold edge), stronger
   for a bigger hit (a sixth of your health or more = full), fading over 0.5 s; and your body flashes red for 0.3 s
   (`HudView.PlayerHurt` -> TacticalGridView). Not checked in Unity.
+
+## Sound: real recordings, part 1 (2026-11-03)
+- Yan: "we'll need better sound effects, is there a free repository somewhere?" ... "start with what you can do by yourself, i'll
+  do the others [the Sonniss bundles] and tell you when im done".
+- From here only OpenGameArt was reachable (kenney.nl and freesound.org answer 403). 22 packs there, each checked CC0 on its own
+  page; 44 of the game's sounds now come from them (`ArtSource/audio/import_cc0.py`, sources in `ArtSource/audio/cc0/`, credits in
+  `CREDITS_AUDIO.md`): all footsteps (stone, sand, grass, wood, water), the bullet/blade impacts by material (wood, tin, concrete,
+  hard metal, flesh), door opening and breaking, the melee swish, the UI click, picking up, the dry-fire click, the smoke hiss, and
+  the rain, storm, cave and marsh ambiences. Same file names (Sfx.cs unchanged), the game's format (16-bit mono 44.1 kHz WAV),
+  leading silence trimmed, one-shots capped, each one's loudness matched to the sound it replaced (within ~1-3 dB), ambience
+  seams crossfaded.
+- Picked by file name and checked by length and level - I can't listen here, so Yan's ears decide. Kept generated: gunshots,
+  reloads, explosions, thunder, wind (the only CC0 wind was a 5 s gust), the Zone hum, creatures, psi, hurt, and the boss/parry set
+  - waiting on Sonniss.
