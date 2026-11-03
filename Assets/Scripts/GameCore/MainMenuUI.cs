@@ -44,6 +44,7 @@ namespace GameCore
             _panel.SetActive(true);
             _panel.transform.SetAsLastSibling();
             if (_optionsPanel != null) _optionsPanel.SetActive(false);
+            if (_creditsPanel != null) _creditsPanel.SetActive(false);
             CloseSlots();
             bool any = SaveSystem.HasSave();
             if (_loadButton != null) _loadButton.interactable = any;
@@ -70,7 +71,7 @@ namespace GameCore
 
         private Button Item(Transform parent, int row, string label, System.Action onClick)
         {
-            float y1 = 0.6f - row * 0.065f, y0 = y1 - 0.052f;
+            float y1 = 0.62f - row * 0.055f, y0 = y1 - 0.048f;   // 9 rows clear the place/clock lines
             var go = UIBuildUtil.CreatePanel(parent, label + "Button", new Vector2(0.1f, y0), new Vector2(0.92f, y1), new Color(0, 0, 0, 0));
             var b = go.AddComponent<Button>();
             b.targetGraphic = go.GetComponent<Image>();
@@ -107,13 +108,42 @@ namespace GameCore
             Item(col.transform, 4, "Testing Ground", () => { Hide(); TestingGround.Start(); });
             Item(col.transform, 5, "Survival", () => { Hide(); Survival.Start(); });
             Item(col.transform, 6, "Options", ToggleOptions);
-            Item(col.transform, 7, "Quit", OnQuit);
+            Item(col.transform, 7, "Credits", () => { CloseSlots(); _optionsPanel.SetActive(false); _creditsPanel.SetActive(!_creditsPanel.activeSelf); });
+            Item(col.transform, 8, "Quit", OnQuit);
 
             // where you are and when: the menu's own clock (MenuBackdrop) ticking along
             Text(col.transform, "Place", new Vector2(0.1f, 0.09f), new Vector2(0.95f, 0.125f), "BONFIRE VILLAGE", true, 16, HudView.Cream);
             _clock = Text(col.transform, "Clock", new Vector2(0.1f, 0.055f), new Vector2(0.95f, 0.09f), "", true, 13, HudView.Dim);
 
             BuildOptionsPanel();
+            BuildCreditsPanel();
+        }
+
+        GameObject _creditsPanel;
+        /// <summary>The CC-BY sound authors must be named in the game (Yan, 2026-11-03: "i don't mind"); the CC0 ones are thanked too.
+        /// Keep in step with CREDITS_AUDIO.md.</summary>
+        public const string CreditsText =
+            "<b>Made by</b> Yan, with Claude.\n\n" +
+            "<b>Sound - CC-BY 3.0</b> (creativecommons.org/licenses/by/3.0)\n" +
+            "Jack Menhorn - FPS Placeholder Sounds (pain, body impact)\n" +
+            "Mike Koenig, via SoundBible - Shotgun Shoot/Reload (dry fire)\n\n" +
+            "<b>Sound - CC0, with thanks</b>\n" +
+            "Ben Jaszczak et al. - The Free Firearm Sound Library\n" +
+            "Kenney, rubberduck, qubodup, Fantozzi, Independent.nu, artisticdude, Ylmir, WuxiaScrub, JaggedStone, Wolfgang_, " +
+            "SpringySpringo, zer0_sol, BMacZero, TinyWorlds, StarNinjas\n" +
+            "All found on OpenGameArt.org. Sounds trimmed, levelled and layered for this game.\n\n" +
+            "<b>Fonts</b> - Silkscreen, Pixelify Sans (SIL Open Font License)";
+
+        private void BuildCreditsPanel()
+        {
+            _creditsPanel = UIBuildUtil.CreatePanel(_panel.transform, "CreditsPanel", new Vector2(0.34f, 0.1f), new Vector2(0.78f, 0.9f), HudView.Edge);
+            var fill = UIBuildUtil.CreatePanel(_creditsPanel.transform, "Fill", Vector2.zero, Vector2.one, new Color(0.06f, 0.065f, 0.07f, 0.96f));
+            var fr = fill.GetComponent<RectTransform>(); fr.offsetMin = new Vector2(2, 2); fr.offsetMax = new Vector2(-2, -2);
+            Text(fill.transform, "CreditsTitle", new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.96f), "CREDITS", true, 22, HudView.Yellow);
+            Text(fill.transform, "CreditsText", new Vector2(0.06f, 0.14f), new Vector2(0.94f, 0.86f), CreditsText, false, 15, HudView.Cream, TextAlignmentOptions.TopLeft);
+            var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.11f), "Back", () => _creditsPanel.SetActive(false));
+            back.GetComponent<Image>().color = HudView.Lip;
+            _creditsPanel.SetActive(false);
         }
 
         /// <summary>ponytail: one screen, controls only (the ask) - a settings list/tabs can be
@@ -165,7 +195,7 @@ namespace GameCore
             }
         }
 
-        private void ToggleOptions() { CloseSlots(); _optionsPanel.SetActive(!_optionsPanel.activeSelf); }
+        private void ToggleOptions() { CloseSlots(); _creditsPanel.SetActive(false); _optionsPanel.SetActive(!_optionsPanel.activeSelf); }
 
         private void CloseSlots() { if (_slotsPanel != null) Destroy(_slotsPanel); _slotsPanel = null; }
 
@@ -175,6 +205,7 @@ namespace GameCore
         {
             CloseSlots();
             if (_optionsPanel != null) _optionsPanel.SetActive(false);
+            if (_creditsPanel != null) _creditsPanel.SetActive(false);
             _slotsPanel = UIBuildUtil.CreatePanel(_panel.transform, "SlotsPanel", new Vector2(0.34f, 0.1f), new Vector2(0.9f, 0.9f), HudView.Edge);
             var fill = UIBuildUtil.CreatePanel(_slotsPanel.transform, "Fill", Vector2.zero, Vector2.one, new Color(0.06f, 0.065f, 0.07f, 0.96f));
             var fr = fill.GetComponent<RectTransform>(); fr.offsetMin = new Vector2(2, 2); fr.offsetMax = new Vector2(-2, -2);

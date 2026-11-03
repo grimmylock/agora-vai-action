@@ -9,6 +9,7 @@ was. Ambience loops get a crossfaded seam.
 import os, sys, glob, shutil, subprocess, json
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "cc0")
+CCBY = os.path.join(HERE, "ccby")         # CC-BY sources (credited in CREDITS_AUDIO.md and the in-game Credits screen)
 OUT = os.path.join(HERE, "..", "..", "Assets", "Resources", "Audio")
 
 # target -> (source file name, max seconds or "loop"); variations _0.._n of one sound come from different takes
@@ -33,8 +34,11 @@ MAP = {
     # the world
     "door_open": ("qubodup-DoorOpen01.ogg", 1.2), "door_break": ("bfh1_wood_breaking_01.ogg", 1.0),
     "swing_0": ("swish-1.wav", 0.4), "swing_1": ("swish-3.wav", 0.4),
-    "ui_click": ("click_001.ogg", 0.15), "pickup": ("handleSmallLeather.ogg", 0.5), "dryfire": ("metalClick.ogg", 0.3),
+    "ui_click": ("click_001.ogg", 0.15), "pickup": ("handleSmallLeather.ogg", 0.5),
     "smoke": ("sfx100v2_air_01.ogg", 2.0),
+    # CC-BY (Yan, 2026-11-03: a credits screen is fine): the player's pain grunts, a body thud, a real dry-fire click
+    "hurt_0": ("pain_jack_01.wav", 0.6), "hurt_1": ("pain_jack_02.wav", 0.6), "hurt_2": ("pain_jack_03.wav", 0.8),
+    "hit_flesh_3": ("bodyimpact_jack_01.wav", 0.4), "dryfire": ("Dry Fire Gun-SoundBible.com-2053652037.wav", 0.4),
     # ambience loops (Sfx.Ambient)
     "amb_rain": ("1.ogg", "loop"), "amb_storm": ("rain-thunder.ogg", "loop"),  # amb_wind stays generated: the only CC0 wind here is a 5 s gust (a short loop repeats)
     "amb_cave": ("dungeon_ambient_1_0.ogg", "loop"), "amb_marsh": ("crickets_1.mp3", "loop"),
@@ -92,10 +96,12 @@ if __name__ == "__main__":
     done = {}
     for t, (name, cap) in MAP.items():
         src = os.path.join(SRC, name)
+        if not os.path.exists(src): src = os.path.join(CCBY, name)
         if not os.path.exists(src): print("skip (no source):", t); continue
         dst = os.path.join(OUT, t + ".wav")
         old = dst + ".old.wav"
-        if os.path.exists(dst): shutil.copy(dst, old)
+        ref = dst if os.path.exists(dst) else os.path.join(OUT, t.rsplit("_", 1)[0] + "_0.wav")   # a new variant levels like its first
+        if os.path.exists(ref): shutil.copy(ref, old)
         convert(src, dst, cap, old if os.path.exists(old) else None)
         if os.path.exists(old): os.remove(old)
         done[t] = name

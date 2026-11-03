@@ -4457,3 +4457,17 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   40-45% (the boom), a cannon / bang (the crack), the CC0 "Muffled Distant Explosion" (the rumble) and falling rock from 0.25 s
   (debris) - 3.5 s, 40-51% under 200 Hz. Reverb (`add_reverb`): an outdoor impulse made in code - six early reflections (23-187 ms)
   and a dark noise tail decaying over ~1 s - mixed under the dry sound (35% on shots, 25% on explosions).
+
+## RT sound 3 - CC-BY sounds, Credits screen, gun reference review (2026-11-03)
+
+- Yan: "i don't mind" a credits screen naming CC-BY authors. Added from CC-BY 3.0 packs (OpenGameArt, licences read on the pages and
+  in the archives' readmes): Jack Menhorn's FPS Placeholder Sounds -> `hurt_0-2` (the player's pain grunts, were synthetic) and
+  `hit_flesh_3` (body thud); Mike Koenig's Shotgun Shoot/Reload (SoundBible) -> `dryfire` (a real dry-fire click). Sources in
+  `ArtSource/audio/ccby/`, wired through `import_cc0.py` (a new variant levels like its `_0`). Skipped Michel Baradari's shots:
+  designed game shots; the real firearm recordings we have are better. Avoided CC-BY-SA/GPL packs.
+- Main menu: a **Credits** button (row 7, Quit moved to 8, rows a little tighter) opening `MainMenuUI.CreditsText` - the CC-BY
+  authors with the licence, the CC0 authors thanked, the fonts (OFL). `CREDITS_AUDIO.md` updated; keep the two in step.
+- Gun references (Yan: "take a look at all the free pixel ones that could be used as references"): reviewed the 28 2D entries of
+  OpenGameArt's "gun" tag. Sheet: `maps/renders/gun_refs/oga_gun_tag_sheet.png`. Verdict in chat: useful as drawing references
+  only, mostly for proportions; the one worth keeping is "Weapon Inventory Graphics" (CC0, `best_weapon_inventory_graphics.png`).
+- Not checked: how the new sounds sound (preview `maps/renders/sound/ccby_sounds_preview.mp3`), the Credits panel in Unity.

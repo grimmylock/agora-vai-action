@@ -1,6 +1,8 @@
 # Audio credits
 
-Every recording below is **CC0 (public domain)** - free to use in a commercial game, no credit required. The licence of each pack
+Most recordings below are **CC0 (public domain)** - free to use in a commercial game, no credit required. Two packs are **CC-BY 3.0**:
+their authors must be credited, which the main menu's Credits screen does (`MainMenuUI.CreditsText` - keep it in step with this file;
+sources in `ArtSource/audio/ccby/`). The licence of each pack
 was checked on its own OpenGameArt page on 2026-11-03. Credit is given anyway, with thanks. The sounds are converted, trimmed and
 levelled by `ArtSource/audio/import_cc0.py` (sources kept in `ArtSource/audio/cc0/`); the game's file names are its own.
 Gunfire, reloads, explosions and the parry clang come from `ArtSource/audio/import_guns.py` (single shots cut out of the
@@ -9,7 +11,7 @@ library's takes; the cuts kept in `ArtSource/audio/cc0/guns/`). Sounds not liste
 | Pack (OpenGameArt) | Author | Used for |
 |-|-|-|
 | [Fantozzi's Footsteps (Grass/Sand & Stone)](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone) | Fantozzi (submitted by qubodup) | `step_hard_*`, `step_dirt_*` |
-| [50 RPG sound effects](https://opengameart.org/content/50-rpg-sound-effects) | Kenney | `step_grass_*`, `hit_flesh_2`, `pickup`, `dryfire` |
+| [50 RPG sound effects](https://opengameart.org/content/50-rpg-sound-effects) | Kenney | `step_grass_*`, `hit_flesh_2`, `pickup` |
 | [100 CC0 SFX #2](https://opengameart.org/content/100-cc0-sfx-2) | rubberduck | `step_wood_*`, `step_water_0-2`, `hit_hard_0-1`, `smoke` |
 | [40 CC0 water / splash / slime SFX](https://opengameart.org/content/40-cc0-water-splash-slime-sfx) | rubberduck | `step_water_3` |
 | [35 wooden cracks/hits/destructions](https://opengameart.org/content/35-wooden-crackshitsdestructions) | Independent.nu (submitted by qubodup) | `hit_wood_*` |
@@ -29,3 +31,5 @@ library's takes; the cuts kept in `ArtSource/audio/cc0/guns/`). Sounds not liste
 | [Explosion](https://opengameart.org/content/explosion-0) | TinyWorlds | `explosion_0` |
 | [25 CC0 bang / firework SFX](https://opengameart.org/content/25-cc0-bang-firework-sfx) | rubberduck | `explosion_1` |
 | [20 Sword Sound Effects (Attacks and Clashes)](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) | StarNinjas | `parry_0`, `parry_1`, `parry_perfect` |
+| [FPS Placeholder Sounds](https://opengameart.org/content/fps-placeholder-sounds) - **CC-BY 3.0** | Jack Menhorn | `hurt_0-2`, `hit_flesh_3` |
+| [Shotgun Shoot/Reload](https://opengameart.org/content/shotgun-shoot-reload) - **CC-BY 3.0** | Mike Koenig (via SoundBible) | `dryfire` |
