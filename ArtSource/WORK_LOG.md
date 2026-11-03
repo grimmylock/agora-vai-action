@@ -4552,3 +4552,8 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   like "$"; fixed in v2.
 - Real render: `maps/renders/boss_brain/brain_vat_in_lab.png` (the vat in Secret Lab Alpha's big room at in-game size, a person
   for scale, the void pull over the awake state), states sheet `brain_vat_states.png`. Not in the game yet.
+- Round 2 (Yan: "go bigger"): redrawn at 96x144 (3x4.5 tiles at double resolution) from the same layout scaled by `K` - not an
+  upscale. The brain's folds redone as wavy loops round the middle with a lumpy edge (the first pass at this size read as bricks),
+  a sixth eye, riveted lid, thicker hoses and pipes. The escape shot uses the full-size black hole. Renders replaced.
+- Yan also: Secret Lab Alpha "looks very even in space, it doesn't have a linear progression" - on the to-do list in
+  ACTION_DESIGN ("Dungeons you figure out").
