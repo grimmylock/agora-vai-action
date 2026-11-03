@@ -4475,3 +4475,12 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   monotonous and funny sounding ... we might not even add voices tbh, i don't think it fits with the artstyle having them speak").
   `hurt_0-1` back to the generated sounds, `hurt_2` and the sources removed. Yan: "speak vocally i mean" - no recorded voices;
   the on-screen banter text (`Banter.cs`) stays.
+
+## RT fx 0 - pixelfx test renders (2026-11-03)
+
+- Yan showed reels of pixelfx (patch-gg/pixelfx, MIT: 244 code-drawn pixel effects plus a Claude Code skill for making new ones)
+  and okayed running its render tool. On colours, Yan: the glowing ones could fit "some of the mutants maybe, psychic mutants,
+  anomalies". Rendered 23 effects (guns/explosions/blood recoloured to Zone ramps, anomaly/psi ones as they are), pasted at 1:1
+  on a real Tier 1 render with a 16 px unit: `maps/renders/fx/pixelfx_muted.png`, `pixelfx_anomaly.png`.
+- Verdict: muzzle flashes, hit spark, ricochet, bullet impact, smoke bomb and the electric ones fit; ground effects are side-view
+  (flat lines on our top-down map) and most anomaly effects are 2-5x too big. Nothing in the game yet; waiting on Yan.
