@@ -4539,3 +4539,16 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   character, whose outline would show. spark-arc (its own poles) and charge-up not used yet.
 - Not checked in Unity: rotation of pixel art at odd angles, the 16k-wide strip import, how busy automatic fire gets (an SMG
   flash lives 1 s with its smoke).
+
+## Boss 2 art, round 1 - the brain in the vat (2026-11-03)
+
+- Yan: Secret Lab Alpha "sure"; crack the vat, drain in phases, the brain bare at the end "sounds good"; art first "ok". And the
+  brain comes back: "when it drains completely it sits still for a few moments, then its eyes open again and it uses a
+  portal/black hole thingy to teleport away, then we fight it again with enhanced mechanics in another place" (ACTION_DESIGN).
+- `ArtSource/bosses/make_brain_vat.py`: 64x96 at double resolution (like the HD mutants: 2x3 tiles), six states - full, crack1-3
+  (the liquid drops, the brain rides half under the surface), drained (slumped, eyes shut as slits), awake (eyes open, psi specks).
+  Five eyes with the psi purple iris (Mind Weaver palette), murky green liquid, steel lid with hoses, riveted base with pipes.
+  Two rounds: v1 folds read as speckle, shut eyes as mush, the brain floated above the liquid, a crack sat on it, the hoses looked
+  like "$"; fixed in v2.
+- Real render: `maps/renders/boss_brain/brain_vat_in_lab.png` (the vat in Secret Lab Alpha's big room at in-game size, a person
+  for scale, the void pull over the awake state), states sheet `brain_vat_states.png`. Not in the game yet.

@@ -20,3 +20,4 @@ __pycache__/
 *.pyc
 offline_squads.json
 ArtSource/fx/pixelfx/records/
+ArtSource/bosses/_out/
