@@ -334,6 +334,7 @@ namespace GameCore
             if (k.f5Key.wasPressedThisFrame) { SaveSystem.Save(); return; }
             if (k.f9Key.wasPressedThisFrame) { SaveSystem.Load(); return; }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (k.f7Key.wasPressedThisFrame) { Lighting.Toggle(); return; }   // lighting v2 on/off, to compare with the old night overlay
             if (k.f8Key.wasPressedThisFrame) { ColorGrade.Off = !ColorGrade.Off; return; }
             if (k.f10Key.wasPressedThisFrame) { Atmosphere.Advance(60f); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); return; }
             if (k.f11Key.wasPressedThisFrame) { Atmosphere.Current = (Weather)(((int)Atmosphere.Current + 1) % 5); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); }

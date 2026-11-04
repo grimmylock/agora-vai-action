@@ -117,13 +117,19 @@ namespace GameCore
             DrawLight(c, vw, vh, l);
         }
 
-        /// <summary>Darkness outside your light and outside your line of sight, two texels per tile.</summary>
+        /// <summary>Darkness outside your light and outside your line of sight, two texels per tile - or, with Lighting v2 and a lamp in
+        /// view, eight, with the lamps' own light and shadows merged in (DrawLightFine).</summary>
         void DrawLight(Vector3 c, float vw, float vh, AtmosphereLook l)
         {
-            int tw = Mathf.CeilToInt(vw) * TexelsPerTile + 6, th = Mathf.CeilToInt(vh) * TexelsPerTile + 6;
-            if (_lightTex == null || tw != _tw || th != _th)
+            if (Lighting.Enabled && !Lighting.Failed && (l.Night > 0.02f || _fineHold > 0))
             {
-                _tw = tw; _th = th;
+                try { if (DrawLightFine(c, vw, vh, l)) return; }
+                catch (System.Exception e) { Lighting.Fail(e); }
+            }
+            int tw = Mathf.CeilToInt(vw) * TexelsPerTile + 6, th = Mathf.CeilToInt(vh) * TexelsPerTile + 6;
+            if (_lightTex == null || tw != _tw || th != _th || _ppu != TexelsPerTile)
+            {
+                _tw = tw; _th = th; _ppu = TexelsPerTile;
                 _lightTex = new Texture2D(tw, th, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
                 _px = new Color32[tw * th];
                 _light.sprite = Sprite.Create(_lightTex, new Rect(0, 0, tw, th), new Vector2(0f, 1f), TexelsPerTile);
@@ -163,6 +169,87 @@ namespace GameCore
                 }
             _lightTex.SetPixels32(_px);
             _lightTex.Apply();
+        }
+
+        // ------------------------------------------------------------------ Lighting v2
+        const int FineTexels = 8, Coarse = TexelsPerTile, Ratio = FineTexels / Coarse;   // 8 texels a tile for the lamp field, the vision work stays at 2
+        int _ppu = TexelsPerTile, _fineHold;
+        float[] _cLit, _cSight; Color32[] _fpx;
+
+        /// <summary>The night overlay with Lighting v2: your own light and line of sight as before (at two texels a tile), plus the placed lights' field
+        /// from WorldArt's bake (eight a tile): where a lamp reaches the dark lifts, in its shadows it stays, round a flame it warms.
+        /// False (the caller draws the old overlay) when no placed light reaches the view and it's day.</summary>
+        bool DrawLightFine(Vector3 c, float vw, float vh, AtmosphereLook l)
+        {
+            int tw = Mathf.CeilToInt(vw) * Coarse + 6, th = Mathf.CeilToInt(vh) * Coarse + 6;
+            float left = Mathf.Floor((c.x - vw / 2f) * Coarse) / Coarse - 1.5f, top = Mathf.Ceil((c.y + vh / 2f) * Coarse) / Coarse + 1.5f;
+            int gx0 = Mathf.RoundToInt(left * WorldArt.Px), gy0 = Mathf.RoundToInt(-top * WorldArt.Px), rw = tw * (WorldArt.Px / Coarse), rh = th * (WorldArt.Px / Coarse);
+            bool lamps = Lighting.Field(gx0, gy0, rw, rh, WorldArt.Px / FineTexels, Time.time, out var lr, out var lg, out var lb);
+            if (!lamps && l.Night <= 0.02f) { _fineHold = 0; return false; }      // day and no lamp in view: the cheap overlay
+            _fineHold = lamps ? 60 : _fineHold - 1;                              // stay fine a second after the last lamp leaves (no flicker between the two)
+            int fw = tw * Ratio, fh = th * Ratio;
+            if (_lightTex == null || fw != _tw || fh != _th || _ppu != FineTexels)
+            {
+                _tw = fw; _th = fh; _ppu = FineTexels;
+                _lightTex = new Texture2D(fw, fh, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                _fpx = new Color32[fw * fh];
+                _light.sprite = Sprite.Create(_lightTex, new Rect(0, 0, fw, fh), new Vector2(0f, 1f), FineTexels);
+            }
+            if (_cLit == null || _cLit.Length < tw * th) { _cLit = new float[tw * th]; _cSight = new float[tw * th]; }
+            _light.transform.position = new Vector3(left, top, 0f);
+            float mist = Mathf.Clamp01(l.Fog * (1f - l.Night * 2f));
+            var night = new Color32((byte)(5 + 145 * mist), (byte)(7 + 149 * mist), (byte)(13 + 137 * mist), 255);
+            // 1. the coarse part, as before: line of sight and your own light (the placed lamps are the field's now)
+            for (int j = 0; j < th; j++)
+                for (int i = 0; i < tw; i++)
+                {
+                    float wx = left + (i + 0.5f) / Coarse, wy = top - (j + 0.5f) / Coarse, gx = wx - 0.5f, gy = -wy - 0.5f;
+                    int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
+                    bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);
+                    _cSight[j * tw + i] = sight ? 1f : 0f;
+                    _cLit[j * tw + i] = _backdrop ? 0f : sight ? Vision.Light(gx, gy, false) : 0f;
+                }
+            // 2. the fine part: each texel looks its coarse neighbours up (bilinear) and adds the lamp field
+            for (int j = 0; j < fh; j++)
+            {
+                float cj = (j + 0.5f) / Ratio - 0.5f; int j0 = Mathf.Clamp(Mathf.FloorToInt(cj), 0, th - 1), j1 = Mathf.Min(j0 + 1, th - 1); float fy = Mathf.Clamp01(cj - j0);
+                for (int i = 0; i < fw; i++)
+                {
+                    float ci = (i + 0.5f) / Ratio - 0.5f; int i0 = Mathf.Clamp(Mathf.FloorToInt(ci), 0, tw - 1), i1 = Mathf.Min(i0 + 1, tw - 1); float fx = Mathf.Clamp01(ci - i0);
+                    int a = j0 * tw + i0, b = j0 * tw + i1, d = j1 * tw + i0, e = j1 * tw + i1;
+                    float sight = (_cSight[a] * (1 - fx) + _cSight[b] * fx) * (1 - fy) + (_cSight[d] * (1 - fx) + _cSight[e] * fx) * fy;
+                    float litV = (_cLit[a] * (1 - fx) + _cLit[b] * fx) * (1 - fy) + (_cLit[d] * (1 - fx) + _cLit[e] * fx) * fy;
+                    int k = j * fw + i;
+                    _fpx[(fh - 1 - j) * fw + i] = FineTexel(sight, litV, lamps, lamps ? lr[k] : 0f, lamps ? lg[k] : 0f, lamps ? lb[k] : 0f, _backdrop, l.Night, night);
+                }
+            }
+            _lightTex.SetPixels32(_fpx);
+            _lightTex.Apply();
+            return true;
+        }
+
+        static float LightingShoulder(float v) => WorldArt.ShoulderOf(v);
+
+        /// <summary>One texel of the Lighting v2 night overlay (alpha-blended over the picture: out = picture * (1 - alpha) + colour * alpha). `sight` 0..1 is
+        /// whether it's in your line of sight, `litV` your own light there, (lr, lg, lb) the placed lights' summed light (WorldArt.AddLight); `night` the
+        /// hour's darkness and `nightCol` the colour of the dark. Shared with the offline render (Tools/render, LIGHTS=.. GAME=1) so what it shows is what
+        /// the game draws.</summary>
+        public static Color32 FineTexel(float sight, float litV, bool lamps, float rr, float gg, float bb, bool backdrop, float nightAmount, Color32 nightCol)
+        {
+            float lampE = lamps ? Mathf.Clamp01(0.30f * LightingShoulder(rr) + 0.59f * LightingShoulder(gg) + 0.11f * LightingShoulder(bb)) * (backdrop ? 1f : sight) : 0f;
+            float lit = Mathf.Max(litV, lampE);
+            float unseen = backdrop ? 0f : 0.6f * (1f - lit);
+            float dark = nightAmount * (1f - lit);
+            float al = 1f - (1f - unseen) * (1f - dark);
+            var col = nightCol;
+            if (lampE > 0.02f && nightAmount > 0.3f)                          // the lamp's pool is tinted by its light (warm work light, red emergency light)
+            {
+                float m = Mathf.Max(rr, Mathf.Max(gg, bb)) + 0.0001f; var tc = new Color32((byte)(255 * rr / m), (byte)(255 * gg / m), (byte)(255 * bb / m), 255);
+                float ta = lampE * (1f - al) * (tc.r > tc.g * 2 ? 0.30f : 0.20f), oa = 1f - (1f - al) * (1f - ta);
+                if (oa > 0.001f) col = new Color32((byte)((col.r * al * (1f - ta) + tc.r * ta) / oa), (byte)((col.g * al * (1f - ta) + tc.g * ta) / oa), (byte)((col.b * al * (1f - ta) + tc.b * ta) / oa), 255);
+                al = oa;
+            }
+            return new Color32(col.r, col.g, col.b, (byte)(Mathf.Clamp01(al) * 255f));
         }
 
         // ------------------------------------------------------------------ generated textures

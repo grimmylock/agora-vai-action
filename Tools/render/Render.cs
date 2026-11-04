@@ -66,6 +66,20 @@ static class RenderMain {
         var all = WorldArt.PlacedLights(q[0] - 12, q[1] - 12, q[2] + 12, q[3] + 12);
         Console.WriteLine($"lights: {all.Count} (night {n:0.00})");
         float amb(float day, float night) => day + (night - day) * n;
+        if (Environment.GetEnvironmentVariable("GAME") == "1") {   // what the game's night overlay (AtmosphereView.FineTexel) draws from the same light field: an alpha overlay, not a multiply
+          int gx0 = q[0] * 16, gy0 = q[1] * 16, lw = (q[2] - q[0] + 1) * 16, lh = (q[3] - q[1] + 1) * 16, W = TerrainMap.Width * 16, Hh = TerrainMap.Height * 16;
+          Lighting.Reset(); Lighting.Enabled = true;
+          var nightCol = new UnityEngine.Color32(5, 7, 13, 255); int st = 2, fw = lw / st;
+          for (int pass = 0; pass <= all.Count + 1; pass++) {               // a light bakes per call, as in game: call until every one has
+            if (!Lighting.Field(gx0, gy0, lw, lh, st, 0f, out var lr, out var lg, out var lb)) break;
+            if (pass < all.Count + 1) continue;
+            for (int gy = gy0; gy < gy0 + lh; gy++) for (int gx = gx0; gx < gx0 + lw; gx++) {
+              int k = ((gy - gy0) / st) * fw + (gx - gx0) / st; int pi = (Hh - 1 - gy) * W + gx; var c = px[pi];
+              var o = AtmosphereView.FineTexel(1f, 0f, true, lr[k], lg[k], lb[k], true, n, nightCol); float a = o.a / 255f;
+              px[pi] = new UnityEngine.Color32((byte)(c.r * (1 - a) + o.r * a), (byte)(c.g * (1 - a) + o.g * a), (byte)(c.b * (1 - a) + o.b * a), c.a);
+            }
+          }
+        } else
         WorldArt.ApplyLights(px, q[0] * 16, q[1] * 16, (q[2] + 1) * 16, (q[3] + 1) * 16, amb(1f, 0.10f), amb(1f, 0.135f), amb(1f, 0.25f), all, 0f);
       }
       else if (Environment.GetEnvironmentVariable("LIT") == "1") {   // Batch 92: darkness and placed lights as the game draws them (no player light)

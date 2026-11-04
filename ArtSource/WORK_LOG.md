@@ -4700,3 +4700,25 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   random order: 1500 shots now, same bar.
 - Render: `maps/renders/dungeon/secret_lab_alpha_before_after.jpg` (old vs new, annotated). Not checked in Unity. Not done: enemies in the
   new rooms (the squad system fills them as before), a save-room before the boss door, the Archive's far-end stash.
+
+## Real lighting in the game, v2 (2026-11-04)
+
+- Yan: "lets follow with it for now" (the Octopath-style prototype), and "do both [the dungeon and the in-game lighting], then show me". The
+  depth of field he wanted "just a render for me to see how it looks" - it stays out of the game.
+- `WorldArt.Lights.cs` split into the part that costs (`BakeLight`: a light's shadows and what every nearby sprite pixel is) and the part
+  that's cheap (`AddLight`: the light's contribution into a buffer, one sample every `step` px); `ApplyLights` (the offline true multiply) is
+  just both - its render is pixel-identical to before the split.
+- `Lighting.cs` (runtime): the map's placed lights (lamps, campfires, ceiling and emergency lights) are baked at most one a frame, dropped
+  when a prop moves or a wall breaks near them (`WorldArt.Refresh` -> `Lighting.Invalidate`), and summed over the view at 8 samples a tile.
+- `AtmosphereView.DrawLightFine`: the night overlay at 8 texels a tile when it's night or a lamp is in view (the cheap 2-texel overlay
+  by day): line of sight and your own light still at 2 texels (`Vision.Light(x, y, lamps: false)` - the placed lamps are the field's
+  now, with shadows; the stealth rules still use the old pools), the lamp field merged in at 8, and the dark tinted warm (red for emergency
+  lights) round a flame. The texel formula is `AtmosphereView.FineTexel`, shared with the offline render. An alpha overlay can only
+  darken and tint, not multiply: the pools lose some of the preview's warm punch, the shadows and pools are the same.
+- F7 (editor) toggles it to compare with the old overlay (saved in PlayerPrefs "lighting_v2"); anything that throws turns it off for the
+  session and logs why. The main-menu backdrop (Bonfire Village at night) uses it too.
+- Preview: `GAME=1 LIGHTS=x0,y0,x1,y1 RENDER_HOUR=23.5 Tools/render/render.sh <map>` draws what the game's overlay would (omit GAME for the ideal multiply).
+  Renders: `maps/renders/lighting/night_street_today_vs_ingame_vs_ideal.jpg`, `secret_lab_alpha_lit_ingame.jpg`.
+- Not checked in Unity: all of it - the 8-texel texture and its cost per frame (the bake is one light a frame; the field is a few ms at most
+  by my count, not measured), the overlay's look on a real screen, F7. Not done: units' light shadows (they don't cast any), glow from
+  windows and gun flashes, normal maps, the Octopath finish (bloom, depth of field) as a switchable screen effect.
