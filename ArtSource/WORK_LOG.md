@@ -4769,3 +4769,18 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   dead stairwell. It also flagged the vault as a dead end with no reward: it now holds the researcher's notes (OSEI-2).
   Now: goal reachable, 17/17, no softlocks, 3 loops; each of the 7 keys required, each of the 3 shortcuts optional.
 - Not built: anything. Next: art (the eel lurking, wrapped, half out; the three water levels) as real renders for Yan.
+
+## The eel, art round 2 (2026-11-04, renders only)
+
+- Yan on round 1: "the water version looks fine, but it's waaay to short for our purposes of i wrapping around, the drawn version is
+  terrible quality compared to the brain and mutants we have today"; then "Redraw the eel in the locked style ... use the brain as the
+  model: dark outline, flat 3-tone shading, one accent colour, and the moray's features from the photo (heavy jaw, long dorsal ridge,
+  mottled pattern). Build the body from segments along a curve. Show it at 1:1 in the real basin render next to a player".
+- `ArtSource/bosses/make_eel.py` rewritten: HD (32 px a tile, as the brain); segments along a curve drawn back to front by screen
+  height (so it coils over and under itself and a platform); a moray mottle (irregular blotches, a broken dark net) in body space so
+  it runs on across the joints; a dorsal fin ridge along the spine; one accent (a sick yellow: a few spots, the electricity); a heavy-jawed
+  head in profile (flipped, never rotated), needle fangs, milky blind eyes. 54 tiles long, 1.25 thick (round 1 was ~17).
+- The skill Yan sent (zip) is identical to the account copy; not put in the repo.
+- Renders (1:1 in the real Depths basin render at game scale, a player for scale): `maps/renders/boss_eel/eel_basin_surfaced.png`,
+  `_lurking`, `_strike` (wrapped 1.5 times round a stand-in 3x3 slab: the flooded levels aren't drawn), `_rear` (the last level isn't
+  drawn: shown in this basin), `eel_closeup_4x.png`. The eel is pasted onto the map render, not drawn by the game. No fight code.

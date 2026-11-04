@@ -1,290 +1,254 @@
 """The eel of Sub-Station Depths (Yan, 2026-11-04: "moray eel but reeeeealy long, darker green swamp like color with colored spots
-around, white eyes as if blind"), art round 1 - not in the game yet. Drawn at double resolution like the HD mutants and the brain
-(32 px a tile, ppu 32). Procedural shapes snapped to the pixel grid, the locked rules: near-black outline, flat 3-4 tone shading,
-saturated colour only in the spots, the eyes and the electricity.
-    python3 ArtSource/bosses/make_eel.py [depths_render.png]   -> maps/renders/boss_eel/
-Poses: the head (side, the name card), swimming (top-down), lurking under black water, wrapped round a platform, half out of the water.
+around, white eyes as if blind"), art round 2 - not in the game. Round 1 was "waaay to short" and "terrible quality compared to the
+brain and mutants"; this one follows the brain (make_brain_vat.py): HD like the brain and the HD mutants (32 px a tile, ppu 32),
+the near-black outline, flat 3-tone shading lit from the top-left, one accent colour (a sick yellow: the spots, the electricity).
+The body is segments along a curve (each an oval drawn back to front by screen height, so it can coil and bend); a moray's mottled
+net runs along it in body space so it doesn't break at the joints; a dorsal fin ridge along the spine; a heavy-jawed moray head
+in profile (only ever flipped, never rotated) with needle teeth and milky blind eyes.
+    python3 ArtSource/bosses/make_eel.py <depths_render.png>   -> maps/renders/boss_eel/  (the render: Tools/render/render.sh sub_station_depths)
 """
 import sys, os, math, random
 import numpy as np
 from PIL import Image, ImageDraw
 
-T = 32                                                           # px a tile at HD
+T = 32                                               # px a tile (HD)
+R = 20                                               # body radius: 1.25 tiles thick
 def hexc(h, a=255): h = h.lstrip('#'); return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), a)
 OUT = hexc('#141617')
-SKIN = [hexc(c) for c in ('#1b2414', '#2b3820', '#3e4d2b', '#56653a')]      # shade, base, lit, highlight: dark swamp green
-BELLY = [hexc('#4e5230'), hexc('#6b6a3a'), hexc('#868248')]
-SPOTS = [hexc('#a8792c'), hexc('#94502a'), hexc('#3a7a70'), hexc('#a9a24a')]   # ochre, rust, teal, sick yellow (muted)
-EYE_W, EYE_R, EYE_C = hexc('#eef0ea'), hexc('#aeb6ae'), hexc('#d3d8d0')      # milky, blind: no pupil
-MOUTH, MOUTH_L, TOOTH = hexc('#3e1416'), hexc('#6e2426'), hexc('#e8e0c8')
-ZAP, ZAP_C, ZAP_G = hexc('#ffd23c'), hexc('#fff27a'), hexc('#ffd23c', 70)
+LIT, BASE, SHADE, NET = hexc('#55673b'), hexc('#3a4a28'), hexc('#242e19'), hexc('#161d10')
+FIN, FIN_L = hexc('#2c3820'), hexc('#4a5a33')
+ACC, ACC_D = hexc('#c9b04a'), hexc('#8a7a34')        # the one accent: spots (and the electricity)
+JAW_L, JAW = hexc('#6d7044'), hexc('#4f5532')         # the pale underside of the jaw, in the body's family
+MOUTH, MOUTH_L, GUM = hexc('#3a1013'), hexc('#5e1c1f'), hexc('#7e3436')
+TOOTH, TOOTH_D = hexc('#e8e0c8'), hexc('#a59d86')
+EYE, EYE_C, EYE_R = hexc('#e9ece4'), hexc('#c4cac0'), hexc('#7d867a')
 SHADOW = hexc('#081008', 165)
-WATER = [hexc('#141c1a'), hexc('#1a2422'), hexc('#24302c')]
-LIGHT = np.array([-0.55, -0.6, 0.58]); LIGHT /= np.linalg.norm(LIGHT)
+LX, LY = -0.55, -0.83                                # light from the top-left (screen)
 
-def outline(im, col=OUT):
-    a = np.array(im)[:, :, 3] > 0
-    n = np.zeros_like(a)
-    n[1:] |= a[:-1]; n[:-1] |= a[1:]; n[:, 1:] |= a[:, :-1]; n[:, :-1] |= a[:, 1:]
-    o = np.array(im); o[n & ~a] = col
-    return Image.fromarray(o)
-
-# ------------------------------------------------------------------ the body: discs along a path, later discs on top
-def body(path, radius, w, h, seed=1, head=True):
-    """Renders a tube along `path` (list of (x, y), 1 px apart, head first). Returns an RGBA layer and the owner index per pixel."""
-    P = np.array(path, float); N = len(P)
-    tang = np.gradient(P, axis=0); tang /= np.linalg.norm(tang, axis=1, keepdims=True) + 1e-9
-    nrm = np.stack([-tang[:, 1], tang[:, 0]], 1)
-    own = np.full((h, w), -1, int); S = np.zeros((h, w))
-    order = range(N - 1, -1, -1)                                 # draw tail -> head: the head ends on top
-    for i in order:
-        r = radius(i, N); x, y = P[i]
-        x0, x1, y0, y1 = int(x - r - 1), int(x + r + 2), int(y - r - 1), int(y + r + 2)
-        for yy in range(max(0, y0), min(h, y1)):
-            for xx in range(max(0, x0), min(w, x1)):
-                dx, dy = xx + 0.5 - x, yy + 0.5 - y
-                if dx * dx + dy * dy <= r * r:
-                    own[yy, xx] = i; S[yy, xx] = (dx * nrm[i, 0] + dy * nrm[i, 1]) / r
-    rnd = random.Random(seed)
-    spots = []
-    i = 22 if head else 4
-    while i < N - 6:                                             # spots every few px, either side of the ridge
-        spots.append((i, rnd.uniform(-0.7, 0.7), rnd.uniform(2.2, 3.6) * max(0.5, radius(i, N) / 22), rnd.choice(SPOTS)))
-        i += rnd.randint(9, 16)
-    img = np.zeros((h, w, 4), np.uint8)
-    ys, xs = np.nonzero(own >= 0)
-    for yy, xx in zip(ys, xs):
-        i = own[yy, xx]; s = max(-1, min(1, S[yy, xx])); r = radius(i, N)
-        n3 = np.array([nrm[i, 0] * s, nrm[i, 1] * s, math.sqrt(max(0, 1 - s * s))])
-        L = float(n3 @ LIGHT)
-        c = SKIN[3] if L > 0.86 else SKIN[2] if L > 0.6 else SKIN[1] if L > 0.25 else SKIN[0]
-        if abs(s) < 0.1 and i > 14: c = SKIN[0]                  # the dorsal fin's ridge
-        for (si, ss, sr, sc) in spots:
-            if abs(si - i) < sr + 1 and (si - i) ** 2 + ((ss - s) * r) ** 2 <= sr * sr:
-                c = sc if L > 0.25 else tuple(int(v * 0.65) for v in sc[:3]) + (255,)
-        img[yy, xx] = c
-    if head:                                                     # blind white eyes either side of the head, two nostril tubes
-        for side in (-1, 1):
-            i = 9; cx, cy = P[i] + nrm[i] * side * radius(i, N) * 0.62
-            for yy in range(int(cy) - 2, int(cy) + 3):
-                for xx in range(int(cx) - 2, int(cx) + 3):
-                    d = (xx + 0.5 - cx) ** 2 + (yy + 0.5 - cy) ** 2
-                    if 0 <= xx < w and 0 <= yy < h and d <= 5.2: img[yy, xx] = EYE_R if d > 3.2 else EYE_W
-            img[int(cy), int(cx)] = EYE_C
-            nx, ny = P[1] + nrm[1] * side * 2.2
-            if 0 <= int(nx) < w and 0 <= int(ny) < h: img[int(ny), int(nx)] = OUT
-    lay = Image.fromarray(img)
-    lay = outline(lay)
-    o = np.array(lay)                                             # where a body crosses over itself, a line between them
-    for yy, xx in zip(ys, xs):
-        i = own[yy, xx]
-        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            y2, x2 = yy + dy, xx + dx
-            if 0 <= y2 < h and 0 <= x2 < w and own[y2, x2] >= 0 and own[y2, x2] < i - 2 * radius(i, N) - 4:
-                o[y2, x2] = OUT
-    return Image.fromarray(o), own
-
-def taper(R, head_len=16):
-    """Radius along the body: a blunt snout, the head a bit wider behind the eyes, a long even body, a thin tail."""
-    def r(i, N):
-        if i < head_len: return 4 + (R * 1.08 - 4) * min(1, i / (head_len * 0.8))
-        t = (i - head_len) / max(1, N - head_len)
-        return max(2.0, R * (1.0 if t < 0.55 else 1 - ((t - 0.55) / 0.45) ** 1.3 * 0.92))
-    return r
+def outline(a):
+    """a: HxWx4 uint8. The near-black outline round everything opaque."""
+    m = a[:, :, 3] > 0; n = np.zeros_like(m)
+    n[1:] |= m[:-1]; n[:-1] |= m[1:]; n[:, 1:] |= m[:, :-1]; n[:, :-1] |= m[:, 1:]
+    a = a.copy(); a[n & ~m] = OUT; return a
 
 def resample(pts, step=1.0):
-    out = [pts[0]]; acc = 0
+    out = [pts[0]]; acc = 0.0
     for a, b in zip(pts, pts[1:]):
         d = math.dist(a, b); k = 0
-        while acc + d >= step * (k + 1):
+        while d > 0 and acc + d >= step * (k + 1):
             t = (step * (k + 1) - acc) / d; out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)); k += 1
         acc = acc + d - step * k
-    return out
+    return np.array(out)
 
-# ------------------------------------------------------------------ the head from the side (name card, the strike)
-HEAD_ANCHOR = (8, 30)        # the back of the head's middle, where the body joins (facing right, scale 1)
+def bez(*pts, n=60):
+    """A smooth curve through control points (Catmull-Rom), as a dense point list."""
+    P = [pts[0]] + list(pts) + [pts[-1]]; out = []
+    for i in range(1, len(P) - 2):
+        p0, p1, p2, p3 = map(np.array, (P[i - 1], P[i], P[i + 1], P[i + 2]))
+        for t in np.linspace(0, 1, n, endpoint=False):
+            out.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
+    out.append(np.array(pts[-1])); return [tuple(p) for p in out]
 
-def side_head(scale=1.0, gape=0.55, face=1):
-    """A moray's head in profile: a tall bulky back, a long snout tapering to a point, the long lower jaw hinged open, needle
-    teeth, a milky blind eye high above the mouth's corner, a nostril tube at the tip. RGBA, facing right if face=1."""
-    s = scale; W, H = int(124 * s), int(84 * s)
-    ang = math.radians(14 + gape * 32)
-    hx, hy = 46, 33                                                    # the jaw's hinge (the mouth's corner)
-    tip = (hx + 50 * math.cos(ang), hy + 50 * math.sin(ang))   # shorter than the upper jaw: the snout overhangs to a point
-    dorsal = [(0, 5), (18, 3), (36, 5), (58, 11), (80, 19), (98, 26), (114, 31)]            # top of the head to the snout tip
-    upper = [(114, 31), (104, 32), (84, 31), (62, 31), (hx, hy - 1)]                         # the upper jaw's edge
-    lower_top = [(hx, hy + 1), ((hx + tip[0]) / 2, (hy + tip[1]) / 2 + 2), (tip[0] - 2, tip[1] + 1), (tip[0] + 2, tip[1] - 3)]   # the jaw's tip hooks up               # the lower jaw's edge
-    lower_bot = [(tip[0] + 3, tip[1] + 1), ((hx + tip[0]) / 2 + 2, (hy + tip[1]) / 2 + 9), (hx - 4, hy + 18), (22, 56), (0, 58)]
-    def S(pts): return [(x * s, y * s) for x, y in pts]
-    head = Image.new('L', (W, H)); ImageDraw.Draw(head).polygon(S(dorsal + upper + lower_top + lower_bot), fill=255)
-    mouth = Image.new('L', (W, H)); ImageDraw.Draw(mouth).polygon(S(upper[1:] + lower_top[::-1][:-1] + [lower_top[-1]]), fill=255)
-    hm, mm = np.array(head) > 0, np.array(mouth) > 0
-    hm &= ~mm
-    a = np.zeros((H, W, 4), np.uint8)
-    top = np.full(W, H); bot = np.full(W, -1)
-    for x in range(W):
-        ys = np.nonzero(hm[:, x])[0]
-        if len(ys): top[x], bot[x] = ys.min(), ys.max()
-    jaw = np.zeros((H, W), bool)                                       # the lower jaw: below the line hinge -> tip
-    for y in range(H):
-        for x in range(W):
-            if hm[y, x]:
-                X, Y = x / s, y / s
-                if X > hx - 6 and Y > hy + (X - hx) * math.tan(ang) * 0.98: jaw[y, x] = True
-    for y in range(H):
-        for x in range(W):
-            if not hm[y, x]: continue
-            d = (y - top[x]) / s; e = (bot[x] - y) / s
-            if jaw[y, x]:
-                a[y, x] = BELLY[2] if e < 2.5 else BELLY[1] if e < 5 else SKIN[1] if d > 0 else SKIN[2]
+# ------------------------------------------------------------------ the mottled net, in body space (s along, v across)
+class Mottle:
+    """A moray's mottling: big irregular blotches (cells ~12 px, jittered hard), a dark net between them that breaks up in places,
+    and a few small accent spots (the one accent colour stays rare)."""
+    C = 12
+    def __init__(self, length, seed=2):
+        rnd = random.Random(seed); self.grid = {}; self.rnd = rnd
+        for s in range(-14, int(length) + 14, self.C):
+            for v in range(-R - 6, R + 8, self.C):
+                q = (s + rnd.uniform(-5, 5), v + rnd.uniform(-5, 5), rnd.random() < 0.07, rnd.random() < 0.35)
+                self.grid.setdefault(int(q[0] // self.C), []).append(q)
+    def at(self, s, v):
+        k = int(s // self.C)
+        near = [q for kk in (k - 1, k, k + 1) for q in self.grid.get(kk, [])]
+        d = sorted(((s - a) ** 2 + (v - b) ** 2, sp, gap) for a, b, sp, gap in near)
+        d1, d2 = math.sqrt(d[0][0]), math.sqrt(d[1][0])
+        if d2 - d1 < 1.6 and not (d[0][2] and d[1][2]): return 'net'       # the net, broken where two "gap" cells meet
+        if d[0][1] and d1 < 1.8: return 'spot'
+        if d1 < 3.2 and d[0][2]: return 'blot'                            # some cells carry a dark blotch at the middle
+        return None
+
+def radius_at(j, n, head):
+    """Full thickness behind the head, a long even body, a tail that thins to a point over its last third."""
+    t = j / max(1, n - 1)
+    if not head and t < 0.03: return R * (0.75 + 8 * t)
+    return R if t < 0.66 else max(3.0, R * (1 - ((t - 0.66) / 0.34) ** 1.15 * 0.88))
+
+def body(P, w, h, head=True, seed=2, split_y=None):
+    """Draws the body along the spine P (head end first). Returns (back, front) layers: segments whose middle is above split_y go
+    in back (behind a platform there), the rest in front. With split_y None everything is in front."""
+    n = len(P); tang = np.gradient(P, axis=0); tang /= np.linalg.norm(tang, axis=1, keepdims=True) + 1e-9
+    mot = Mottle(n, seed)
+    step = int(R * 0.55); segs = list(range(0, n, step))
+    order = sorted(segs, key=lambda c: P[c][1])                 # back to front by screen height
+    layers = {'back': np.zeros((h, w, 4), np.uint8), 'front': np.zeros((h, w, 4), np.uint8)}
+    for c in order:
+        r = radius_at(c, n, head); hl = max(r * 0.95, step * 1.2)
+        tx, ty = tang[c]; nx, ny = -ty, tx
+        if ny > 0.15 or (abs(ny) <= 0.15 and nx < 0): nx, ny = -nx, -ny          # the fin side: up the screen (or right, for a column)
+        L = layers['back' if split_y is not None and P[c][1] < split_y else 'front']
+        cx, cy = P[c]; lo, hi = max(0, c - step * 2), min(n, c + step * 2 + 1)
+        ext = int(hl + r + 8)
+        for y in range(max(0, int(cy) - ext), min(h, int(cy) + ext)):
+            for x in range(max(0, int(cx) - ext), min(w, int(cx) + ext)):
+                dx, dy = x + 0.5 - cx, y + 0.5 - cy
+                u, v = dx * tx + dy * ty, dx * nx + dy * ny                         # along / across (v > 0 = fin side)
+                fin = r * 0.95 <= v <= r * 0.95 + max(2.5, r * 0.3) and abs(u) <= hl * 0.9 and r > 6
+                if (u / hl) ** 2 + (v / r) ** 2 > 1 and not fin: continue
+                d2 = ((P[lo:hi, 0] - x - 0.5) ** 2 + (P[lo:hi, 1] - y - 0.5) ** 2); j = lo + int(np.argmin(d2))
+                ax, ay = x + 0.5 - P[j][0], y + 0.5 - P[j][1]; rj = radius_at(j, n, head)
+                vv = ax * nx + ay * ny
+                if fin and (u / hl) ** 2 + (v / r) ** 2 > 1:                       # the dorsal fin: a dark frill, a lit edge, rays
+                    top = v > r * 0.95 + max(2.5, r * 0.3) - 1.2
+                    L[y, x] = FIN_L if top else (NET if (j // 3) % 2 else FIN); continue
+                ln = (ax * LX + ay * LY) / rj
+                tone = LIT if ln > 0.38 else SHADE if ln < -0.3 else BASE
+                if abs(vv) < 1.0 and rj > 6: tone = SHADE                         # the spine, under the fin
+                m = mot.at(j, vv)
+                if m in ('net', 'blot'): tone = NET if tone is SHADE else SHADE
+                elif m == 'spot': tone = ACC if tone is not SHADE else ACC_D
+                L[y, x] = tone
+    return outline(layers['back']), outline(layers['front'])
+
+# ------------------------------------------------------------------ the head, in profile, facing right; the body joins at ANCHOR
+HW, HH = 80, 56
+ANCHOR = (4, 26)                                     # the back of the head's middle (matches the body's thickness, 2R = 40)
+def head(gape=0.7):
+    a = np.zeros((HH, HW, 4), np.uint8)
+    ang = math.radians(12 + 26 * gape); hx, hy = 32, 31                               # the jaw hinge: far back, a heavy jaw
+    tip = (hx + 40 * math.cos(ang), hy + 40 * math.sin(ang))
+    skull = [(0, 6), (12, 3), (26, 4), (42, 9), (58, 16), (70, 22), (76, 25), (77, 28), (73, 30), (58, 30), (44, 31), (hx, hy)]
+    jaw = [(hx - 2, hy - 1), (hx + 8, hy + 2), tip, (tip[0] + 2, tip[1] - 3), (tip[0] + 3, tip[1] + 1), (tip[0] - 4, tip[1] + 5),
+           (hx + 12, hy + 16), (16, 48), (0, 46)]
+    mouth = [(hx + 1, hy), (58, 30.5), (73, 30.5), (tip[0] + 1, tip[1] - 2), (hx + 8, hy + 2)]
+    def mask(poly):
+        im = Image.new('L', (HW, HH)); ImageDraw.Draw(im).polygon(poly, fill=255); return np.array(im) > 0
+    S, J, M = mask(skull + [(0, 30)]), mask(jaw + [(0, 30), (0, 6)]), mask(mouth)
+    S &= ~M; J &= ~M & ~S
+    top = {x: (np.nonzero(S[:, x] | J[:, x])[0].min() if (S[:, x] | J[:, x]).any() else 0) for x in range(HW)}
+    bot = {x: (np.nonzero(S[:, x] | J[:, x])[0].max() if (S[:, x] | J[:, x]).any() else 0) for x in range(HW)}
+    mot = Mottle(HW + 20, 5)
+    for y in range(HH):
+        for x in range(HW):
+            if not (S[y, x] or J[y, x]): continue
+            f = (y - top[x]) / max(1, bot[x] - top[x])
+            if J[y, x] and x > 36 and y > hy + 4 and f > 0.5:            # only the jaw itself, not the throat behind it
+                c = JAW_L if f < 0.8 else JAW                                       # the pale lower jaw / throat
             else:
-                a[y, x] = SKIN[3] if d < 1.6 else SKIN[2] if d < 6 else SKIN[1] if (bot[x] - y) / s > 9 or x / s > hx else \
-                          (BELLY[0] if e < 6 else SKIN[0])
-    a[mm] = MOUTH
-    for y in range(H):                                                 # the mouth's lit inside along the upper jaw
-        for x in range(W):
-            if mm[y, x] and y > 0 and not mm[y - 1, x]: a[y, x] = MOUTH_L
-    im = Image.fromarray(a); d = ImageDraw.Draw(im)
-    rnd = random.Random(7)
-    for k in range(7):                                                 # needle fangs: upper row down, lower row up, uneven
-        X = hx + 8 + k * 8 + rnd.randint(-1, 1); Y = 31
-        L = rnd.choice((3, 4, 5, 6)); d.line(S([(X, Y), (X - 1, Y + L)]), fill=TOOTH, width=max(1, int(s)))
-    for k in range(6):
-        t = (k + 1) / 7.5; X = hx + (tip[0] - hx) * t; Y = hy + (tip[1] - hy) * t + 1
-        L = rnd.choice((3, 4, 5)); d.line(S([(X, Y), (X + 1, Y - L)]), fill=TOOTH, width=max(1, int(s)))
-    ex, ey, er = 64 * s, 17 * s, 4.6 * s                               # the blind eye: milky, no pupil, a grey rim
-    d.ellipse([ex - er - s, ey - er - s, ex + er + s, ey + er + s], fill=EYE_R); d.ellipse([ex - er, ey - er, ex + er, ey + er], fill=EYE_W)
-    for (dx, dy) in ((1, 1), (-1, 0), (0, -1)): im.putpixel((int(ex + dx * s), int(ey + dy * s)), EYE_C)
-    for (X, Y, r, c) in ((16, 16, 3.2, SPOTS[0]), (30, 30, 2.6, SPOTS[2]), (40, 12, 2.4, SPOTS[3]), (10, 40, 3, SPOTS[1]), (52, 22, 2, SPOTS[1]), (26, 46, 2.4, SPOTS[0])):
-        d.ellipse([(X - r) * s, (Y - r) * s, (X + r) * s, (Y + r) * s], fill=c)
-    d.line(S([(104, 25), (108, 21)]), fill=OUT, width=max(1, int(s)))  # the nostril tube
-    im = outline(im)
-    return im if face == 1 else im.transpose(Image.FLIP_LEFT_RIGHT)
+                c = LIT if f < 0.2 else SHADE if f > 0.68 else BASE
+            m = mot.at(80 - x, y - 26)
+            if m in ('net', 'blot') and not (J[y, x] and f > 0.55): c = NET if c is SHADE else SHADE
+            elif m == 'spot' and x < 50 and c in (LIT, BASE): c = ACC
+            a[y, x] = c
+    a[M] = MOUTH
+    for y in range(1, HH):
+        for x in range(HW):
+            if M[y, x] and not M[y - 1, x]: a[y, x] = GUM                            # the gum along the roof of the mouth
+            elif M[y, x] and y + 1 < HH and not M[y + 1, x]: a[y, x] = MOUTH_L
+    d = Image.fromarray(a); dr = ImageDraw.Draw(d)
+    for x, L in ((38, 4), (44, 6), (49, 4), (55, 7), (61, 5), (66, 4), (71, 8)):      # needle fangs down from the roof, the front one longest
+        dr.line([(x, 31), (x - 1, 31 + L)], fill=TOOTH); dr.point((x, 31), fill=TOOTH_D)
+    for t, L in ((0.3, 4), (0.45, 5), (0.6, 4), (0.75, 6), (0.9, 5)):                 # and up from the lower jaw
+        x, y = hx + 8 + (tip[0] - hx - 8) * t, hy + 2 + (tip[1] - hy - 2) * t
+        dr.line([(x, y), (x + 1, y - L)], fill=TOOTH)
+    dr.line([(hx - 2, hy + 1), (14, 38)], fill=SHADE); dr.line([(hx - 3, hy + 3), (16, 40)], fill=NET)   # the jaw muscle's crease
+    dr.line([(8, 30), (9, 36)], fill=NET)                                             # the gill slit
+    ex, ey = 48, 14                                                                   # the blind eye: milky, no pupil
+    dr.ellipse([ex - 5, ey - 4, ex + 5, ey + 4], fill=EYE_R); dr.ellipse([ex - 4, ey - 3, ex + 4, ey + 3], fill=EYE)
+    for p in ((ex + 1, ey), (ex, ey + 1), (ex - 1, ey), (ex + 2, ey + 1)): dr.point(p, fill=EYE_C)
+    dr.point((ex - 2, ey - 2), fill=hexc('#ffffff'))
+    dr.line([(74, 24), (76, 20)], fill=SHADE); dr.point((76, 20), fill=OUT)          # the nostril tube
+    return outline(np.array(d))
 
-def put_head(im, hd, at, scale, face):
-    """Pastes a side head so its back (HEAD_ANCHOR) sits on `at`, the end of the body it grows from."""
-    ax, ay = HEAD_ANCHOR[0] * scale, HEAD_ANCHOR[1] * scale
-    if face == -1: ax = hd.width - ax
-    im.alpha_composite(hd, (int(at[0] - ax), int(at[1] - ay)))
+def put_head(layer, hd, at, face):
+    """Paste the head so its back (ANCHOR) sits on the body's end `at`; face -1 = looking left (flipped, never rotated)."""
+    im = Image.fromarray(hd if face == 1 else hd[:, ::-1].copy())
+    ax = ANCHOR[0] if face == 1 else HW - 1 - ANCHOR[0]
+    L = Image.fromarray(layer); L.alpha_composite(im, (int(at[0] - ax), int(at[1] - ANCHOR[1]))); return np.array(L)
 
-def zap(im, pts, seed, n=3):
-    """Electric arcs crawling along the coils: jagged pixel lines with a soft glow."""
-    rnd = random.Random(seed); d = ImageDraw.Draw(im)
-    for k in range(n):
-        i = rnd.randrange(0, len(pts) - 30); seg = pts[i:i + rnd.randint(14, 30):3]
-        jag = [(x + rnd.randint(-5, 5), y + rnd.randint(-5, 5)) for x, y in seg]
-        d.line(jag, fill=ZAP_G, width=5); d.line(jag, fill=ZAP, width=1)
-        for x, y in jag[::2]: im.putpixel((int(x), int(y)), ZAP_C)
-
-def water(w, h, seed=3):
-    rnd = random.Random(seed); a = np.zeros((h, w, 4), np.uint8); a[:] = WATER[1]
-    for _ in range(w * h // 60):
-        x, y = rnd.randrange(w), rnd.randrange(h); a[y, x:x + rnd.randint(2, 6)] = WATER[rnd.choice((0, 2))]
-    return Image.fromarray(a)
+def zap(a, P, seed, n=4):
+    rnd = random.Random(seed); im = Image.fromarray(a); d = ImageDraw.Draw(im)
+    for _ in range(n):
+        i = rnd.randrange(0, len(P) - 60); pts = [(P[j][0] + rnd.randint(-R // 2, R // 2), P[j][1] + rnd.randint(-R // 2, R // 3)) for j in range(i, i + rnd.randint(30, 60), 6)]
+        d.line(pts, fill=hexc('#c9b04a', 90), width=3); d.line(pts, fill=ACC, width=1)
+        for p in pts[::2]: d.point(p, fill=hexc('#fff2a0'))
+    return np.array(im)
 
 def platform(w, h):
-    """A stand-in raised platform (the flooded levels aren't built): a concrete slab with a face."""
-    im = Image.new('RGBA', (w, h + 12)); d = ImageDraw.Draw(im)
-    d.rectangle([0, 0, w - 1, h - 1], fill=hexc('#6b6e6a')); d.rectangle([0, h, w - 1, h + 11], fill=hexc('#3e413e'))
-    d.rectangle([0, 0, w - 1, 2], fill=hexc('#8a8d88'))
+    """A stand-in raised platform for the flooded levels (not drawn yet): concrete slab, a face, a lit edge."""
+    a = np.zeros((h + 12, w, 4), np.uint8); a[:h] = hexc('#6b6e6a'); a[:2] = hexc('#8a8d88'); a[h:] = hexc('#3e413e')
     rnd = random.Random(5)
-    for _ in range(40): x, y = rnd.randrange(w), rnd.randrange(h); d.point((x, y), fill=hexc('#5a5d59'))
-    return outline(im)
+    for _ in range(w * h // 30): a[rnd.randrange(2, h), rnd.randrange(w)] = hexc('#5c5f5b')
+    return outline(a)
 
-# ------------------------------------------------------------------ the poses
-def swim(w=560, h=200, R=22):
-    pts = resample([(40 + x, h / 2 + math.sin(x / 70) * 42 + math.sin(x / 23) * 6) for x in range(0, w - 80, 2)])
-    return body(pts, taper(R), w, h)[0]
+def shadow_of(layer):
+    m = layer[:, :, 3] > 0; eye = (layer[:, :, :3] == EYE[:3]).all(2)
+    o = np.zeros_like(layer); o[m] = SHADOW; o[eye] = hexc('#e9ece4', 110); return o
 
-def lurk(w=560, h=200, R=22):
-    im = swim(w, h, R); a = np.array(im); m = a[:, :, 3] > 0
-    eye = (a[:, :, :3] == EYE_W[:3]).all(2)
-    out = np.zeros_like(a); out[m] = SHADOW; out[eye] = hexc('#eef0ea', 110)       # only a shadow, and the eyes glimmer
-    return Image.fromarray(out)
-
-def wrap(R=22):
-    w, h = 340, 300; cx, cy = 170, 160; pw, ph = 112, 84
-    # path: the head reared up at the top right, the body round the slab 1.25 times, then away down-left into the water
-    pts = []
-    for k in range(0, 470):
-        a = -0.6 + k / 470 * 2 * math.pi * 1.25
-        rx, ry = pw * 0.62 + 6 + k * 0.03, ph * 0.62 + 4 + k * 0.03
-        pts.append((cx + math.cos(a) * rx, cy + math.sin(a) * ry))
-    tail = [(pts[-1][0] - k * 1.6, pts[-1][1] + k * 0.5) for k in range(1, 100)]
-    pts = resample(pts + tail)
-    eel, own = body(pts, taper(R, head_len=1), w, h, seed=4, head=False)
-    P = np.array(pts)
-    bg = water(w, h); plat = platform(pw, ph)
-    ea = np.array(eel); back = ea.copy(); front = ea.copy()
-    behind = np.zeros(own.shape, bool); ok = own >= 0; behind[ok] = P[own[ok], 1] < cy
-    a3 = ea[:, :, 3] > 0
-    back[~behind] = 0; front[behind] = 0
-    # outline pixels (own = -1) go with whichever body part is next to them: put them in both, the platform covers the back ones
-    od = own.copy()                                             # each outline pixel takes the owner of the body pixel next to it
-    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)): od = np.maximum(od, np.roll(np.roll(own, dy, 0), dx, 1))
-    edge = a3 & ~ok; eb = np.zeros(own.shape, bool); eb[edge] = P[np.clip(od[edge], 0, None), 1] < cy
-    back[edge & ~eb] = 0; front[edge & eb] = 0
-    bg.alpha_composite(Image.fromarray(back)); bg.alpha_composite(plat, (cx - pw // 2, cy - ph // 2 - 6)); bg.alpha_composite(Image.fromarray(front))
-    sc = R * 0.95 / 29                                          # the head's back is as tall as the body is wide
-    hd = side_head(sc, gape=0.7, face=-1)                       # the head rises off the coil and strikes at you
-    neck = resample([(pts[0][0], pts[0][1]), (pts[0][0] + 14, pts[0][1] - 36), (pts[0][0] + 2, pts[0][1] - 70)])
-    nk, _ = body(neck[::-1], lambda i, N: R * 0.95, w, h, seed=9, head=False)
-    bg.alpha_composite(nk); put_head(bg, hd, neck[-1], sc, -1)
-    zap(bg, pts[:320], 11, 5)
-    return bg
-
-def rear(R=24):
-    w, h = 340, 420; bx, by = 170, 330
-    coil = resample([(bx + math.cos(a) * (70 - a * 4), by + math.sin(a) * (40 - a * 2.2)) for a in np.linspace(0, 2 * math.pi * 1.6, 260)])
-    eel, _ = body(coil, taper(R, head_len=1), w, h, seed=6, head=False)
-    im = water(w, h)
-    d = ImageDraw.Draw(im); d.ellipse([bx - 52, by - 20, bx + 52, by + 20], fill=SHADOW)          # its shadow on the water
-    for k in range(0, 360, 9):                                                                     # a ring of disturbed water
-        a = math.radians(k); im.putpixel((int(bx + math.cos(a) * 96), int(by + math.sin(a) * 50)), hexc('#7d8d86'))
-    im.alpha_composite(eel)
-    col = resample([(bx, by - 6)] + [(bx + math.sin(t * 5.2) * 34 * min(1, t * 1.6), by - 6 - t * 220) for t in np.linspace(0.05, 1, 30)])   # an S up the screen
-    up, _ = body(col[::-1], lambda i, N: R * (0.88 + 0.12 * i / N), w, h, seed=8, head=False)   # thicker at the water
-    im.alpha_composite(up)
-    sc = R * 0.88 / 29
-    hd = side_head(sc * 1.15, gape=0.9, face=-1)
-    put_head(im, hd, col[-1], sc * 1.15, -1)
-    zap(im, col, 13, 3)
-    return im
+# ------------------------------------------------------------------ in the real basin (crop of the Depths render at 2x = game scale)
+CROP = (33, 25, 58, 43)                              # tiles: the basin, its ledge and the hall's south wall
+def basin(render):
+    m = Image.open(render).convert('RGBA'); m = m.resize((m.width * 2, m.height * 2), Image.NEAREST)
+    return m.crop(tuple(v * T for v in CROP))
+def tile(x, y): return (int(round((x - CROP[0]) * T)), int(round((y - CROP[1]) * T)))
 
 def label(im, text):
-    d = ImageDraw.Draw(im); d.rectangle([4, 4, 8 + 6 * len(text), 16], fill=hexc('#1b1d1f')); d.text((6, 5), text, fill=hexc('#b8bcc0'))
-
-def x(im, k): return im.resize((im.width * k, im.height * k), Image.NEAREST)
+    d = ImageDraw.Draw(im); d.rectangle([0, 0, 9 + 6 * len(text), 13], fill=hexc('#1b1d1f')); d.text((4, 1), text, fill=hexc('#d0d4d8'))
 
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); root = os.path.join(here, '..', '..')
     out = os.path.join(root, 'maps', 'renders', 'boss_eel'); os.makedirs(out, exist_ok=True)
     ar = Image.open(os.path.join(root, 'Assets', 'Resources', 'Sprites', 'armor_atlas.png')).convert('RGBA')
-    man = x(ar.crop((0, 0, 16, 16)), 2)                                                            # a character at HD scale (1 tile = 32 px)
-    head = side_head(1.0); sw = swim(); lk = lurk(); wr = wrap(); re_ = rear()
-    for n, im in (('eel_head', head), ('eel_swim', sw), ('eel_lurk', lk), ('eel_wrap', wr), ('eel_rear', re_)): im.save(os.path.join(out, n + '.png'))
-    # the sheet: everything at 2x (so a game pixel is 2x2), a character beside each for scale
-    bgc = hexc('#1b1d1f')
-    swb = water(sw.width, sw.height); swb.alpha_composite(sw); swb.alpha_composite(man, (8, 20))
-    lkb = water(lk.width, lk.height); lkb.alpha_composite(lk); lkb.alpha_composite(man, (8, 20))
-    wr.alpha_composite(man, (wr.width // 2 + 10, 150)); re_.alpha_composite(man, (40, 300))
-    hb = Image.new('RGBA', (head.width + 16, head.height + 16), bgc); hb.alpha_composite(head, (8, 8))
-    tiles = [(x(hb, 3), "1  the head, side view (name card) - 3x"), (x(swb, 2), "2  swimming, from above (part of it) - 2x"),
-             (x(lkb, 2), "3  lurking under black water: only its shadow and the blind eyes - 2x"),
-             (x(wr, 2), "4  the strike: wrapped round a platform (stand-in slab) - 2x"), (x(re_, 2), "5  half out of the water, about to strike - 2x")]
-    W = max(t[0].width for t in tiles[:3]) + tiles[3][0].width + tiles[4][0].width + 60
-    H = max(sum(t[0].height + 30 for t in tiles[:3]), tiles[3][0].height + 30, tiles[4][0].height + 30) + 10
-    sheet = Image.new('RGBA', (W, H), bgc); y = 10
-    for im, t in tiles[:3]: sheet.alpha_composite(im, (10, y + 20)); ImageDraw.Draw(sheet).text((10, y + 4), t, fill=hexc('#b8bcc0')); y += im.height + 30
-    xx = max(t[0].width for t in tiles[:3]) + 30
-    for im, t in tiles[3:]: sheet.alpha_composite(im, (xx, 30)); ImageDraw.Draw(sheet).text((xx, 14), t, fill=hexc('#b8bcc0')); xx += im.width + 20
-    sheet.convert('RGB').save(os.path.join(out, 'eel_sheet.png'))
-    # in the real map: the Depths render (unlit), the basin at HD scale, the eel lurking and half out, a character on the ledge
-    if len(sys.argv) > 1:
-        m = Image.open(sys.argv[1]).convert('RGBA'); m = x(m, 2)
-        crop = m.crop((33 * T, 25 * T, 58 * T, 43 * T)).copy()                                    # the basin and the hall's south wall
-        lk2 = lurk(520, 200, 22); crop.alpha_composite(lk2, (90, 190))
-        crop.alpha_composite(man, (6 * T + 8, 4 * T))                                             # on the ledge
-        label(crop, "in the real Depths basin: a character on the ledge, the eel lurking under the black water")
-        crop.convert('RGB').save(os.path.join(out, 'eel_in_basin.png'))
+    man = ar.crop((0, 0, 16, 16)).resize((32, 32), Image.NEAREST)  # the player at game scale (a tile)
+    hd = head(0.75)
+    B = basin(sys.argv[1]); W, H = B.size
+
+    # 1. surfaced: the whole length snaking through the basin, the head at the ledge, jaws open at the player on it
+    P = resample(bez(tile(44, 31.6), tile(50, 32.0), tile(55.3, 33.3), tile(54, 35.4), tile(46, 35.2), tile(38, 35.0), tile(36.2, 37.0),
+                     tile(39, 38.8), tile(47, 38.6), tile(53, 38.4), tile(56.0, 38.8)))
+    back, front = body(P, W, H, seed=2)
+    front = put_head(front, hd, P[0], -1)
+    a = B.copy(); a.alpha_composite(man, tile(42, 29.2)); a.alpha_composite(Image.fromarray(front))
+    label(a, f"1:1 game scale - surfaced, the whole body: {len(P) / T:.0f} tiles long, 1.25 thick; the player on the ledge")
+    a.convert('RGB').save(os.path.join(out, 'eel_basin_surfaced.png'))
+
+    # 2. lurking: the same, only its shadow under the black water ("the water version looks fine")
+    s = B.copy(); s.alpha_composite(man, tile(42, 29.2)); s.alpha_composite(Image.fromarray(shadow_of(front)))
+    label(s, "1:1 - lurking: only its shadow and the blind eyes under the water")
+    s.convert('RGB').save(os.path.join(out, 'eel_basin_lurking.png'))
+
+    # 3. the strike: wrapped round a platform (a stand-in slab in the basin) 1.5 times, the head up over you, the rest trailing away
+    px0, py0 = tile(44, 34); pw = 3 * T; cx, cy = px0 + pw / 2, py0 + pw / 2
+    ring = [(cx + math.cos(t) * (pw / 2 + R + 2 + t * 1.2), cy + math.sin(t) * (pw / 2 + R - 4 + t * 1.0)) for t in np.linspace(-0.35, -0.35 + 2 * math.pi * 1.5, 160)]
+    tail = bez(ring[-1], tile(41.5, 35.5), tile(37.5, 34.2), tile(36.2, 37.8), tile(40, 38.8), tile(48, 38.6), tile(55.5, 38.8))
+    neck = bez(tile(47.2, 33.0), tile(47.6, 33.6), ring[0])
+    P = resample(neck + ring + tail[1:])
+    back, front = body(P, W, H, head=True, seed=3, split_y=cy)
+    front = put_head(front, hd, P[0], -1); front = zap(front, P[40:400], 7, 5)
+    c = B.copy(); c.alpha_composite(Image.fromarray(back)); c.alpha_composite(Image.fromarray(platform(pw, pw)), (px0, py0 - 6))
+    c.alpha_composite(man, (int(cx - 16), int(cy - 26))); c.alpha_composite(Image.fromarray(front))
+    label(c, f"1:1 - the strike: wrapped 1.5 times round a 3x3 platform (stand-in slab), {len(P) / T:.0f} tiles")
+    c.convert('RGB').save(os.path.join(out, 'eel_basin_strike.png'))
+
+    # 4. half out of the water (the last level isn't drawn: shown in the basin), coiled at the base, the head over the player
+    base = tile(47, 37.6)
+    coil = [(base[0] + math.cos(t) * (60 - t * 4), base[1] + math.sin(t) * (34 - t * 2)) for t in np.linspace(0, 2 * math.pi * 1.4, 120)]
+    col = bez(tile(44.2, 32.4), tile(45.3, 33.6), tile(46.6, 35.0), tile(46.0, 36.6), tile(47.4, 38.0), base)
+    tail = bez(coil[-1], tile(41, 38.6), tile(37, 38.8))
+    Pc = resample(col + coil + tail[1:])
+    back, front = body(Pc, W, H, seed=4)
+    front = put_head(front, hd, Pc[0], -1)
+    im = Image.new('RGBA', (W, H)); ImageDraw.Draw(im).ellipse([base[0] - 80, base[1] - 22, base[0] + 80, base[1] + 30], fill=SHADOW)
+    r_ = B.copy(); r_.alpha_composite(im); r_.alpha_composite(man, tile(41.5, 34.8)); r_.alpha_composite(Image.fromarray(front))
+    label(r_, "1:1 - half out of the water, about to strike (the last level, shown in this basin); the player in front")
+    r_.convert('RGB').save(os.path.join(out, 'eel_basin_rear.png'))
+
+    # close-up: the head and a stretch of body at 4x, for the detail (not game scale)
+    seg = resample(bez((84, 40), (150, 30), (210, 50), (276, 36)))
+    _, f2 = body(seg, 280, 90, head=True, seed=6); f2 = put_head(f2, hd, seg[0], -1)
+    cu = Image.new('RGBA', (280, 90), hexc('#1b1d1f')); cu.alpha_composite(Image.fromarray(f2))
+    cu = cu.resize((280 * 4, 90 * 4), Image.NEAREST); label(cu, "4x close-up (detail only, not game scale)")
+    cu.convert('RGB').save(os.path.join(out, 'eel_closeup_4x.png'))
     print("written", out)
