@@ -1,0 +1,24 @@
+%% Sub-Station Depths with the eel (planned, Yan 2026-11-04; not built). Four maps: the station (as built) + three flooded levels.
+%% Map changes are stairs (two-way); the stairwell is dead until the power is on (the hole only shows it). Keys are saved with the world, so nothing re-floods. "eel_down" = the boss beaten.
+%% start: E
+%% goal: Z
+flowchart TD
+  E["F0 Flooded Corridor: the ladder in {start}"] --> H["F0 Switchyard Hall: the hub"]
+  E --> Q["F0 Workers' Quarters {item:fuse}"]
+  H --> K["F0 Control Room {item:badge}"]
+  H -->|req:badge| Y["F0 Cable Gallery"]
+  E -->|req:badge| Y
+  Y --> B["F0 Battery Room"]
+  B -->|req:fuse| BS["F0 Battery breaker {item:power}"]
+  H -->|req:power| U["F0 Pump Room: the stairwell down"]
+  Q -->|hole| U
+  H --> L["F0 Basin ledge: black water, the vault door beyond"]
+  U -->|req:power| P1["F-1 Level 1: platforms, the eel's first strike"]
+  P1 --> W1["F-1 Pump 1 {item:drain1}"]
+  P1 -->|req:drain1| P2["F-2 Level 2: lower platforms, strikes and false alarms"]
+  P2 --> W2["F-2 Pump 2 {item:drain2}"]
+  P2 -->|req:drain2| A["F-3 Level 3: the eel half out of the water {item:eel_down}"]
+  A -->|req:eel_down| W3["F-3 Last pump {item:drain3}"]
+  A -->|req:drain3| Z["F-3 The bottom: eel parts, the tier chest, one tier-4 item {goal}"]
+  Z -->|req:drain3| L
+  L -->|req:drain3| V["F0 Transformer Vault: the researcher's notes {item:notes}"]

@@ -146,6 +146,24 @@ bullet hell but not really? you have to dodge stuff")
 - Art first: the vat, the brain and the eyes drawn in our style and shown to Yan as a real render before any fight code.
 - Not built yet.
 
+**Second one - the eel of Sub-Station Depths (Yan, 2026-11-04; not built, name to pick):** a very big electric eel mutant lurking in
+the flooded levels under the Depths' basin.
+- **Levels are separate maps** (Yan: "you go down the stairs and it loads a diferent map that is the lower level, and again after the
+  water lowers again"), linked by stairs like the Flats' floors. The drains are keys, so they stay drained (dying never refills them).
+- **Level 1:** raised platforms over deep water; the eel swims below (its shadow) until you near the pump, then it **attacks**: coils burst
+  up round your platform (Yan: "kind of jump-scare style stuff, where it's actually attacking the player"). The burst hits; a quick
+  dive gets through it. Caught inside, you shoot the coils until it lets go; **touching it electrocutes you**; the ring tightens (a clock).
+- **Level 2:** the same, but it strikes at several set points of the search for the pump, varied (wrap, tail sweep, surge wave, spit).
+- **Fair scare rule:** never a real strike without its tell - nearby lamps flicker, buzz and dim as it draws power, then silence. On
+  Level 2 some flickers are **false alarms**.
+- **Level 3:** the water is so low it has to rise half out of it, like a snake about to strike; it blocks the last pump. **The boss fight**,
+  in the open. Put it down, run the pump, the lab drains completely.
+- **It's big** (Yan: "yes, its pretty big"): with more players it can wrap two platforms at once, or go for whoever is nearest the pump.
+- **Damage carries over** from Levels 1-2, **capped at 20% of its max HP** (Yan: "it can, but not much"); shown as scorched, torn coils.
+- **The reward** (Yan: "every boss needs a reward"): special eel parts that sell for a good profit (above a normal mutant part, which is
+  400-600 RU at Tier 3 in `MutantLootSystem`), a chest of random loot of the dungeon's tier (3), and **one** armor or weapon a tier above (4).
+- Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
+
 ## Weight and stamina
 
 Carried weight slows you and drains stamina faster (sprint, dive, melee). Looting becomes a choice.

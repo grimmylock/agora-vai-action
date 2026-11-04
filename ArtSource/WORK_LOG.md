@@ -4755,3 +4755,17 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   ~250 tiles at once), the darker water's look on screen, how the squads fill the new rooms, lighting in the new rooms. Not done: a story
   terminal or note in the vault for OSEI-2, enemies placed for the rooms, the other dungeons (waiting on Yan).
 
+
+## The eel of Sub-Station Depths: design and mission graph (2026-11-04, no code)
+
+- Yan's concept, worked out over a few messages (his words in ACTION_DESIGN "Dodge bosses" -> "Second one"): a very big electric eel
+  under the Depths' basin; the flooded levels are separate maps down stairs; Level 1 one jump-scare strike (coils burst round your
+  platform, shoot it off, touching it electrocutes), Level 2 several strikes and false alarms while you search for the pump, Level 3
+  it rises half out of the low water and blocks the last pump (the fight). Damage carries over, capped at 20% of its max HP. Reward:
+  eel parts that sell well, a tier-3 loot chest, one tier-4 armor or weapon. Tell for every strike: lamps flicker and dim.
+- Mission graph: `ArtSource/plans/sub_station_depths_eel.mmd` (the built level's graph stays in `sub_station_depths.mmd`).
+  `graph_check.py` caught a hole in the first draft: the hole from the quarters led into the stairwell, so the power (and the badge
+  and fuse) could be skipped ("without power: goal reachable"). Fixed by making the stairs down need the power; the hole only shows the
+  dead stairwell. It also flagged the vault as a dead end with no reward: it now holds the researcher's notes (OSEI-2).
+  Now: goal reachable, 17/17, no softlocks, 3 loops; each of the 7 keys required, each of the 3 shortcuts optional.
+- Not built: anything. Next: art (the eel lurking, wrapped, half out; the three water levels) as real renders for Yan.
