@@ -439,7 +439,10 @@ static class Program {
       MacroState.Current.CurrentZoneId = zone.Id;
       MacroState.Current.PersistedZoneTerrain.Remove(zone.Id);
       foreach (var h in zone.HiddenConnections ?? new System.Collections.Generic.List<string>()) if (!MacroState.Current.DiscoveredHiddenNodes.Contains(h)) MacroState.Current.DiscoveredHiddenNodes.Add(h);
+      var keys = LabLocks.KeysOf(zone.Id).Where(k => MacroState.Current.Keys.Add(k)).ToList();   // a locked dungeon: walk it with the keys its route gives (DepthsChecks/AlphaChecks test the order)
       TerrainMap.BuildTerrainForZone(zone.Id);
+      foreach (var k in keys) MacroState.Current.Keys.Remove(k);
+      if (keys.Count > 0) MacroState.Current.PersistedZoneTerrain.Remove(zone.Id);   // the unlocked copy mustn't follow into the lock checks
       if (zone.Id == TestingGround.Zone) continue;   // the menu's dev range: walled in on purpose (its own check below)
       if (TerrainMap.Exits.Count == 0) { Check(false, zone.Id + " has no exits"); continue; }
       var start = (TerrainMap.Exits[0].X, TerrainMap.Exits[0].Y);

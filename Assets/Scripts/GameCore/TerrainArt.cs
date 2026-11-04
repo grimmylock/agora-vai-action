@@ -99,6 +99,7 @@ namespace GameCore
                 case TileType.DoorOpen: return t.Look == "broken" ? "door_broken" : "door_open";
                 case TileType.Barrel: return "barrel";
                 case TileType.Difficult:
+                    if (t.Look == "deepwater") return null;   // LabLocks' deep water: drawn darker by WorldArt, no sprite
                     if (t.Look != null) return t.Look;
                     return t.Ground == GroundType.Water || t.Ground == GroundType.Mud ? null : "rubble";
                 default: return t.Look;

@@ -531,6 +531,7 @@ namespace GameCore
                     string ml = _look[ci];
                     var coreStyle = !core ? null : ml == "cliff" ? RockTop : ml == "foliage" ? ForestFloor : ml == "redfoliage" ? RedFloor : ScrapTop;
                     int hgt = TileAt(cx, cy).Height;
+                    bool deep = TileAt(cx, cy).Look == "deepwater";
                     // a kerb where pavement meets the road (N, E, S, W)
                     bool kerb = own == GroundType.Concrete && !core && !buried;
                     bool kN = kerb && cy > 0 && _ground[ci - _w] == GroundType.Asphalt, kS = kerb && cy < _h - 1 && _ground[ci + _w] == GroundType.Asphalt;
@@ -564,6 +565,7 @@ namespace GameCore
                                     if (gy > 0 && GroundPx(gx, gy - 1) != GroundType.Water) c = Lerp(c, new Color32(0x5A, 0x48, 0x38, 255), 0.85f);       // muddy lip
                                     else if (gy > 2 && (GroundPx(gx, gy - 2) != GroundType.Water || GroundPx(gx, gy - 3) != GroundType.Water)) c = Mul(c, 0.72f);   // bank shadow
                                 }
+                                if (deep && g == GroundType.Water) c = Mul(c, 0.55f);   // LabLocks' deep water: black until it's drained
                             }
                             if (g != GroundType.Floor && g != GroundType.LabTile)
                             {

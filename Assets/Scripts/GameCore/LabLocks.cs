@@ -1,12 +1,15 @@
 // Boss 2 (Yan, 2026-11-03: "right now it looks very even in space, it doesn't have a linear progression ... most rooms are locked,
 // the few that are open have either a key, a hole in the wall going into the other room ... i'd like them to be engaging to explore
-// and figure out"): the locks of Secret Lab Alpha's redesign (ArtSource/plans/lab_plans.py alpha_plan, a mission graph checked with
-// the level-design skill's graph_check.py). One lock type, one look, everywhere:
-//   staff badge - blue-lit doors (plan '1'); the badge is in the Security Office's locker ('3'), open from the start
-//   power       - dead hazard-striped blast doors (plan '2'); the generator switch ('5') in the generator room needs a fuse, and the
-//                 fuse is in a crate ('4') inside the badge-locked Labs wing
-// Keys live in MacroState.Keys (saved with the world); a locked door is a wall to everyone until the player holds its key, then it's
-// a door like any other (walk into it, it opens). Nothing is spent, so nothing can strand you.
+// and figure out"): the dungeons' locks (ArtSource/plans/lab_plans.py alpha_plan / depths_plan, each a mission graph checked on the
+// plan grid). One lock type, one look, everywhere:
+//   staff badge - blue-lit doors (plan '1'); the badge is in a locker ('3')
+//   power       - dead hazard-striped blast doors (plan '2'); a switch ('5') that needs a fuse from a crate ('4')
+//   drain       - black deep water (plan 'W', Sub-Station Depths): over your head until the pump switch ('6', needs power) runs
+// Keys live in MacroState.Keys (saved with the world), one set per dungeon ("alpha_staff", "depths_power"...): a lock is a wall to
+// everyone until the player holds that dungeon's key, then it's a door like any other (or knee-deep water). Nothing is spent, so
+// nothing can strand you.
+using System.Collections.Generic;
+using System.Linq;
 using GameData;
 using UnityEngine;
 
@@ -14,24 +17,66 @@ namespace GameCore
 {
     public static class LabLocks
     {
+        // Secret Lab Alpha's keys by name (the harness and older code use these)
         public const string Staff = "alpha_staff", Fuse = "alpha_fuse", Power = "alpha_power";
         public const string Locker = "Security Locker", Crate = "Fuse Crate", Switch = "Generator Switch";
+        public const string Depths = "sub_station_depths";
 
-        public static bool Is(string key) => key == Staff || key == Fuse || key == Power;
+        /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
+        class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        /// <summary>The key a door's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
-        public static string KeyOf(string look) => look == "door_badge" ? Staff : look == "door_power" ? Power : null;
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths" };
 
-        /// <summary>A door nobody can pass yet: it has a lock and the player doesn't hold the key.</summary>
+        static readonly Dictionary<string, Dictionary<char, Thing>> Things = new Dictionary<string, Dictionary<char, Thing>>
+        {
+            ["secret_lab_alpha"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = Locker, Look = "stash_footlocker", Kind = "staff", Ru = 60, Desc = "A dented steel locker, SECURITY stencilled on the door.",
+                                    Says = "[LAB] A staff badge on a blue lanyard, still warm from nobody's neck. The card readers will know it." },
+                ['4'] = new Thing { Name = Crate, Look = "stash_toolbox", Kind = "fuse", Desc = "A crate of electrical spares.",
+                                    Says = "[LAB] A heavy fuse in a greased sleeve, stamped GEN-2. It would fit a generator." },
+                ['5'] = new Thing { Name = Switch, Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The generator's main switch. The fuse slot is empty: you'd need a fuse from somewhere in the labs.",
+                                    Says = "[LAB] The generator coughs, catches. Somewhere deep in the walls a lot of locks let go at once." },
+            },
+            // Sub-Station Depths (Tier 3, under the Dried Lake): a flooded switching station. Badge in the dispatcher's locker -> the cable
+            // gallery -> the battery room's breaker (needs the fuse from the workers' quarters) -> the pump room -> the basin drains -> the vault.
+            [Depths] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Dispatcher's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 80, Desc = "A grey locker, the shift roster still taped to it.",
+                                    Says = "[DEPTHS] A staff badge clipped inside the door, the photo bleached to nothing. The card readers down here still take it." },
+                ['4'] = new Thing { Name = "Spares Crate", Look = "stash_toolbox", Kind = "fuse", Desc = "A crate of electrical spares under a bunk.",
+                                    Says = "[DEPTHS] A cartridge fuse as long as your forearm, BATTERY BANK B on the tag." },
+                ['5'] = new Thing { Name = "Battery Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The battery bank's breaker. One fuse holder is empty and scorched.",
+                                    Says = "[DEPTHS] The breaker slams home. The batteries hum, and down the halls the blast doors' lights wake up." },
+                ['6'] = new Thing { Name = "Pump Controls", Look = "labswitch", Kind = "drain", Needs = "power",
+                                    Desc = "The sump pumps' panel. Every lamp on it is dark: there's no power down here.",
+                                    Says = "[DEPTHS] The pumps shudder and roar. Out in the basin the black water starts to fall." },
+            },
+        };
+
+        static string Zone => TerrainMap.ZoneId;
+        static string KeyIn(string zone, string kind) => Prefix.TryGetValue(zone ?? "", out var p) ? p + "_" + kind : null;
+        /// <summary>This map's key of a kind ("staff", "fuse", "power", "drain"), or null if the map has no locks.</summary>
+        public static string Key(string kind) => KeyIn(Zone, kind);
+        static bool Has(string key) => key != null && MacroState.Current != null && MacroState.Current.Keys.Contains(key);
+
+        public static bool Is(string key) => key != null && Prefix.Values.Any(p => key.StartsWith(p + "_"));
+
+        /// <summary>The key a lock's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
+        public static string KeyOf(string look) => look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key("drain") : null;
+
+        /// <summary>A lock nobody can pass yet: it has a lock and the player doesn't hold the key.</summary>
         public static bool Locked(TerrainTile t)
         {
-            if (t == null || t.Type != TileType.Door || t.Look == null) return false;
+            if (t == null || t.Look == null || !(t.Type == TileType.Door || t.Type == TileType.Difficult)) return false;
             var k = KeyOf(t.Look);
-            return k != null && !(MacroState.Current != null && MacroState.Current.Keys.Contains(k));
+            return k != null && !Has(k);
         }
 
         static float _nagAt = -99f;
-        /// <summary>Bumping into a locked door says what it wants (not more than every 2 seconds). True if (x, y) was one.</summary>
+        /// <summary>Bumping into a lock says what it wants (not more than every 2 seconds). True if (x, y) was one.</summary>
         public static bool Nag(int x, int y)
         {
             var t = x >= 0 && y >= 0 && x < TerrainMap.Width && y < TerrainMap.Height ? TerrainMap.GetTile(x, y) : null;
@@ -40,22 +85,20 @@ namespace GameCore
             {
                 _nagAt = Time.time;
                 GameLog.Write(t.Look == "door_badge" ? "The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED."
-                                                      : "The blast door is dead. A hazard light: NO POWER ON THIS LEVEL.");
+                            : t.Look == "door_power" ? "The blast door is dead. A hazard light: NO POWER ON THIS LEVEL."
+                            : "The water is black and over your head. Somewhere a pump would have to run to clear it.");
             }
             return true;
         }
 
-        /// <summary>What picking a key up says and does. Power turns every dead door's light green; the badge does the same for the card doors.</summary>
+        /// <summary>What picking a key up says and does: the badge and the power relight their doors green, the drain empties the deep water.</summary>
         public static void Granted(string key)
         {
-            switch (key)
-            {
-                case Staff: GameLog.Write("[LAB] A staff badge on a blue lanyard, still warm from nobody's neck. The card readers will know it."); Relight("door_badge"); break;
-                case Fuse: GameLog.Write("[LAB] A heavy fuse in a greased sleeve, stamped GEN-2. It would fit a generator."); break;
-                case Power:
-                    GameLog.Write("[LAB] The generator coughs, catches. Somewhere deep in the walls a lot of locks let go at once.");
-                    Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); break;
-            }
+            var thing = Things.SelectMany(z => z.Value.Values.Select(v => (z.Key, v))).FirstOrDefault(p => KeyIn(p.Key, p.v.Kind) == key);
+            if (thing.v != null) GameLog.Write(thing.v.Says);
+            if (key == Key("staff")) Relight("door_badge");
+            if (key == Key("power")) { Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); }
+            if (key == Key("drain")) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Drain(); }
         }
 
         /// <summary>The doors of one kind stop looking locked (their look gets "_on": a green light) - they're ordinary doors now.</summary>
@@ -69,35 +112,46 @@ namespace GameCore
                 }
         }
 
-        /// <summary>Called when a map is built: doors whose key the player already holds start unlocked (a save, a second visit).</summary>
-        public static void Refresh()
+        /// <summary>The deep water drops to knee height: plain flooded floor (slow, like any 'w').</summary>
+        static void Drain()
         {
-            if (MacroState.Current == null) return;
-            foreach (var key in new[] { Staff, Power })
-                if (MacroState.Current.Keys.Contains(key)) Relight(key == Staff ? "door_badge" : "door_power");
+            for (int y = 0; y < TerrainMap.Height; y++)
+                for (int x = 0; x < TerrainMap.Width; x++)
+                {
+                    var t = TerrainMap.GetTile(x, y);
+                    if (t.Type == TileType.Difficult && t.Look == "deepwater") { t.Look = null; TerrainMap.DirtyTiles.Add((x, y)); }
+                }
         }
 
-        static readonly InteractiveObjectDef SwitchDef = new InteractiveObjectDef { Name = Switch, Stat = new[] { "Strength" }, Dc = 0,
-            Description = "The generator's main switch. The fuse slot is empty: you'd need a fuse from somewhere in the labs." };
-        static readonly InteractiveObjectDef LockerDef = new InteractiveObjectDef { Name = Locker, Stat = new[] { "Strength" }, Dc = 0,
-            Reward = new InteractiveReward { Ru = 60 }, Description = "A dented steel locker, SECURITY stencilled on the door." };
-        static readonly InteractiveObjectDef CrateDef = new InteractiveObjectDef { Name = Crate, Stat = new[] { "Strength" }, Dc = 0,
-            Description = "A crate of electrical spares." };
+        /// <summary>Called when a map is built: locks whose key the player already holds start open (a save, a second visit).</summary>
+        public static void Refresh()
+        {
+            if (Has(Key("staff"))) Relight("door_badge");
+            if (Has(Key("power"))) Relight("door_power");
+            if (Has(Key("drain"))) Drain();
+        }
 
-        /// <summary>The map's interactive objects for the three named stashes; false for any other name.</summary>
+        /// <summary>Every key a dungeon's locks ask for (tests: walk the whole map as someone who found them all).</summary>
+        public static IEnumerable<string> KeysOf(string zone) =>
+            Things.TryGetValue(zone, out var d) ? d.Values.Select(v => KeyIn(zone, v.Kind)) : Enumerable.Empty<string>();
+
+        /// <summary>The plan letters of a dungeon's key objects, as stash names for FloorPlan (null if it has none).</summary>
+        public static Dictionary<char, string> StashesOf(string zone) =>
+            Things.TryGetValue(zone, out var d) ? d.ToDictionary(kv => kv.Key, kv => kv.Value.Name) : null;
+
+        /// <summary>The map's interactive object for a named key object of this dungeon; false for any other name.</summary>
         public static bool Spawn(string name, int x, int y)
         {
-            InteractiveObjectDef db; string look, grants, requires = null;
-            if (name == Locker) { db = LockerDef; look = "stash_footlocker"; grants = Staff; }
-            else if (name == Crate) { db = CrateDef; look = "stash_toolbox"; grants = Fuse; }
-            else if (name == Switch) { db = SwitchDef; look = "labswitch"; grants = Power; requires = Fuse; }
-            else return false;
+            if (Zone == null || !Things.TryGetValue(Zone, out var d)) return false;
+            var th = d.Values.FirstOrDefault(v => v.Name == name);
+            if (th == null) return false;
             TerrainMap.InteractiveObjects.Add(new InteractiveObjectInstance
             {
-                X = x, Y = y, Name = db.Name, Stat = db.Stat, Dc = 0, Reward = db.Reward, Description = db.Description, GrantsKey = grants, Requires = requires,
+                X = x, Y = y, Name = th.Name, Stat = new[] { "Strength" }, Dc = 0, Reward = th.Ru > 0 ? new InteractiveReward { Ru = th.Ru } : null,
+                Description = th.Desc, GrantsKey = Key(th.Kind), Requires = th.Needs == null ? null : Key(th.Needs),
             });
             var t = TerrainMap.Tiles[y, x];
-            if (t.Look == null) { t.Look = look; if (look != "labswitch") t.Type = TileType.Difficult; }   // boxes are climbed over; the switch is a panel on the floor
+            if (t.Look == null) { t.Look = th.Look; if (th.Look != "labswitch") t.Type = TileType.Difficult; }   // boxes are climbed over; a switch is a panel on the floor
             return true;
         }
     }

@@ -77,6 +77,7 @@ namespace GameCore
                         case 't': c.Put(x, y, ScatterCover, "trash"); break;
                         case 'r': c.Put(x, y, Difficult, "rubble"); break;
                         case 'w': c.Put(x, y, Difficult); c.Paint(x, y, 1, 1, Water); continue;
+                        case 'W': c.Put(x, y, Difficult, "deepwater"); c.Paint(x, y, 1, 1, Water); continue;   // over your head until it's drained (LabLocks)
                         case 'i': c.Put(x, y, Empty); c.Deco(x, y, "light"); break;
                         case 'e': c.Put(x, y, Empty); c.Deco(x, y, "redlight"); break;
                         case 'k': c.Put(x, y, HardCover, "rock"); break;          // Batch 100: a boulder
@@ -127,7 +128,7 @@ namespace GameCore
         public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent) =>
             FloorPlan(id, LabPlans[id], wallLook, floor,
                 new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) },   // Boss 1
-                new Dictionary<char, string> { ['3'] = LabLocks.Locker, ['4'] = LabLocks.Crate, ['5'] = LabLocks.Switch });   // Boss 2: Secret Lab Alpha's keys
+                LabLocks.StashesOf(id));   // Boss 2: the dungeon's key objects (badge locker, fuse crate, switches)
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)
 
