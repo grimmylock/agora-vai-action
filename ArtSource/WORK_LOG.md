@@ -4725,3 +4725,33 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 
 ## Brain floating clip (2026-11-04)
 Yan asked for a render of the brain floating round his enclosure with blinking eyes: `maps/renders/boss_brain/brain_floating.mp4/.gif` (vat sheet rows 0-3 open / 4-7 shut, composited in the vat room render, phases 1-4 in turn). To-dos added to ACTION_DESIGN Later list (other dungeons, Unity lighting check). Nothing checked in Unity.
+
+## Sub-Station Depths redone with locks; the deep-water lock (2026-11-04)
+
+- Yan: "Take #1: redo one dungeon with lock-and-key (pick the one that fits best and tell me why) ... then wait for my go before the
+  rest", then "Draw the mission graph first and run it through graph_check.py. Then change the plan to match the graph, not the other
+  way round." Picked Sub-Station Depths: Tier 3, the next lab after Alpha (Tier 2); concrete walls, so Alpha's door art fits; and it
+  was already flooded, which is where the "a flooded room you drain" lock belongs.
+- The skill: `level-design` (https://github.com/Scouten2/LevelDesignSkill), read (SKILL.md and all 8 scripts: stdlib only, no network,
+  read-only) and installed at account level (`~/.claude/skills`), not in the repo.
+- Mission graph first: `ArtSource/plans/sub_station_depths.mmd`. `graph_check.py`: goal reachable, 11/11 nodes, no softlocks, 2 loops;
+  key order fuse -> badge -> power -> drain; dropping either shortcut (the corridor's badge door, the hole) still passes, dropping the
+  fuse or the badge fails (both are needed). Rooms, one job each: Flooded Corridor (the ladder in), Switchyard Hall (the hub), Workers'
+  Quarters (the fuse), Control Room (the staff badge), Cable Gallery (badge doors, dark), Battery Room (the breaker, needs the fuse),
+  Pump Room (power door; the dead pump panel is seen early through a hole from the quarters), the Basin (black deep water, the vault
+  door across it, seen from the hall's windows), the Transformer Vault (the goal; no boss here).
+- The plan (`lab_plans.py depths_plan`, Alpha's model): `depths_check` walks it key by key, and `plan_edges` reads every passage and
+  lock off the grid and asserts it equals the graph's edges (`graph_edges` parses the .mmd). Broken on purpose four ways (a badge door
+  made plain, the power door made plain, an extra door, the hole filled): each caught.
+- Mechanics (`LabLocks.cs`, its own commit so it can be reverted alone): per-dungeon keys (`alpha_*`, `depths_*`); one table of key
+  objects per dungeon (`StashesOf` feeds the plan); the deep-water lock (`W`: Difficult + look "deepwater", a wall to everyone until the
+  "drain" key, then plain knee-deep water; drawn as darker water by `WorldArt`, no sprite). `runtest.sh` finds whichever .NET 8 is installed.
+- Checks: `DepthsChecks` floods the real built map with each key set (start: the locker, the crate, the dead pump panel, no breaker, no
+  vault; Alpha's keys open nothing here; badge+fuse+power: the gallery and pump room, not the vault; drain: the vault; a rebuilt map
+  remembers). The every-zone landmark walk now hands a locked dungeon its own keys (`LabLocks.KeysOf`) instead of failing on the vault.
+  ALL CHECKS PASSED.
+- Render: `maps/renders/dungeon/sub_station_depths_before_after.jpg` (annotated), `sub_station_depths_after.png`.
+- Not checked in Unity: all of it - walking the locks, the bump messages, the pump panel draining the basin mid-visit (tile redraw of
+  ~250 tiles at once), the darker water's look on screen, how the squads fill the new rooms, lighting in the new rooms. Not done: a story
+  terminal or note in the vault for OSEI-2, enemies placed for the rooms, the other dungeons (waiting on Yan).
+

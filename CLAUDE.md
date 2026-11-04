@@ -123,26 +123,34 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
 
 Paths in older Python files point to `C:/Users/yan-s/Desktop/agora vai/agora vai/...`; search and replace if they break.
 
-## State (2026-10-20, after RT 7s)
+## State (2026-11-04)
 
-**Nothing since RT 7 has been checked in Unity yet** - Yan has only played up to the first real-time playtest. Since then:
-hitboxes, look cone, fair shots, cover/vault, radio icon, mutants/blood, HD mutant sprites, co-op groundwork, death states,
-rank XP, Testing Ground dummies.
+**Checked in Unity by Yan:** the first real-time playtest (RT 7), the melee/Visor work (Visor 4: heads clipping, parry too hard ->
+wider windows), the brain boss once (Boss 2 fixes: it walked off, triple HP, two moves at once past 50%). The fixes after each were
+not re-checked. **Not played in Unity yet:** everything else since RT 7 - hitboxes, look cone, cover/vault, co-op groundwork and the
+networking test, death states, save slots, gun feel, dives and bullet time on V (RT 9), poses, the pack, survival mode, sounds,
+pixelfx effects, the brain boss after its fixes, Secret Lab Alpha's locks, Sub-Station Depths' locks, lighting v2 (F7).
+
+**Done lately (WORK_LOG for detail):** story Tiers 1-3 and Tier 1 missions; Boss 1 (the Visor, parry duels); Boss 2 (the brain in the
+vat, Secret Lab Alpha); the backpack; survival mode; recorded sounds; pixelfx; in-game lighting v2; lock-and-key dungeons (Alpha,
+then Sub-Station Depths with the new deep-water lock; per-dungeon keys in `LabLocks.cs`).
 
 **Waiting on Yan:**
-- His map and quest spots for the starting area (Bonfire Village as a real Safe Zone with perimeter, guards, trader, medic,
-  bar, and two tutorial jobs). Renders: `maps/renders/start_area/`.
-- Approval of the birch redraw (`maps/renders/start_area/birch_*.png`; `zone_style.big_birch`, not in the atlas yet).
+- His review of Sub-Station Depths (`maps/renders/dungeon/sub_station_depths_before_after.jpg`) before any other dungeon is redone.
+- A Unity play session: lighting (night too bright or flat? does F7 show a difference? cost per frame unmeasured), locks, brain boss.
+- Pose picks (`maps/renders/poses/poses_preview.png`); his map and quest spots for the starting area; the birch redraw.
 - Should solo death use the camp respawn too? Merge `realtime-proto` into `main`?
 
-**Next (agreed order):** the networking test (Unity Netcode for GameObjects + Relay; host runs the world, others send
-`Rt.Input`; test with Multiplayer Play Mode in the editor), then save slots + character naming + the save at creation, then
-the starting area and tutorial. The melee set: art done and in the game (RT 7v, `ArtSource/weapons/hand/melee_px.py`,
-hand-placed pixel grids), and the 6 new ones have stats and loot (`Melee.For`: weight sets speed, `Melee.Blunt` concusses);
-still missing: the second hand on two-handed handles (bats, fire axe, sledge). Longer list: `ACTION_DESIGN.md` "Later list".
+**Next:** the other dungeons the same way (after Yan's go on Depths), lighting follow-ups after his check, the co-op test of enemies
+and the boss on clients. Pending tasks: #19 (building fronts, scale, power lines), #36 (why Yan loses to humans as Ex-Military).
+Longer list: `ACTION_DESIGN.md` "Later list".
 
 ## Working from a cloud session
 
 - The session needs `grimmylock/agora-vai-action` attached; work on `realtime-proto`, push it; Yan pulls in GitHub Desktop.
-- `apt-get install -y dotnet-sdk-8.0` for the harness and renders; python3 with numpy and pillow is there.
+- `apt-get update && apt-get install -y dotnet-sdk-8.0` for the harness and renders; python3 with numpy and pillow is there.
 - Send Yan the review images (renders, GIFs) directly, and say plainly what wasn't checked.
+- **Skills used** (install at account level only, never into this repo; read each SKILL.md and its scripts first; a cloud container
+  loses them, so reinstall per session): `level-design` https://github.com/Scouten2/LevelDesignSkill (dungeon mission graphs,
+  `graph_check.py`) - `agora-vai-pixel-art` (Yan's own, on the account). `pixelfx` (https://github.com/patch-gg/pixelfx, effects) is
+  already in the repo at `.claude/skills/pixelfx`: nothing to install.

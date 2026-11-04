@@ -278,6 +278,13 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
   **Secret Lab Alpha done (2026-11-04)**: see WORK_LOG "Secret Lab Alpha redesigned" - the lock types (staff badge, power), the hole, the shortcut loops,
   the boss room last, checked with the level-design skill's graph_check. The other dungeons are still corridors-with-rooms.
   **To do (Yan, 2026-11-04):** redo the rest of the dungeons the same way (lock-and-key spine, rooms with one job each), after Alpha.
+  **Lock types (one look each, everywhere):** staff badge (blue card-reader doors), power (dead hazard-striped blast doors; a switch
+  that may need a fuse), and **deep water (Yan, 2026-11-04, a new lock type): a flooded room you drain** - black water over your head
+  blocks everyone until the dungeon's pump panel runs (it needs the power), then it's knee-deep water you wade through (`LabLocks.cs`,
+  plan letter `W`). Keys are per dungeon: one lab's badge never opens another's doors.
+  **Sub-Station Depths done (2026-11-04, waiting on Yan's review)**: mission graph first (`ArtSource/plans/sub_station_depths.mmd`,
+  checked with `graph_check.py`), then the plan (`lab_plans.py depths_plan`), which the generator proves matches the graph room by
+  room. Render: `maps/renders/dungeon/sub_station_depths_before_after.jpg`. The other dungeons wait for Yan's go.
 - **To do - Unity lighting check (Yan, 2026-11-04):** play the new in-game lighting and report: night too bright or too flat? does F7 (lights on/off) show an obvious difference? Cost per frame not measured yet.
 - **Poses (Yan, 2026-10-29):** extra body frames besides front/back (crouch, kneel, sit, leans for cover, lunge, stagger,
   lying, with in-betweens), the floating hands doing the expressive part. Prototype sheet: `maps/renders/poses/poses_preview.png`
