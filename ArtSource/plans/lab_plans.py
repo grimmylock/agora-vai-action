@@ -131,10 +131,16 @@ def visor_wing(rows):
     g[31][63] = 'V'; g[31][62] = '*'; g[32][63] = '*'
     return ["".join(r) for r in g]
 
-# Boss 2 (Yan, 2026-11-03): the brain's room in Secret Lab Alpha is a real lab - "lab benches, monitors, specimen jars, broken
-# smaller vats, cable runs on the floor, a control desk"; the cover is "boxes, metal tables and file cabinets" (c, a/g, f),
-# which the brain's pulses break at 75/50/25% - the rest (jars j, consoles o, broken vats u) stands against the walls.
-# The vat itself sits at (37, 9) (BrainBoss.VatX/VatY), the floor round it clear. q = cables on the floor.
+# Boss 2 (Yan, 2026-11-03): Secret Lab Alpha, redesigned: "right now it looks very even in space, it doesn't have a linear progression ...
+# most rooms are locked, the few that are open have either a key, a hole in the wall going into the other room ... avoid 20 rooms that
+# look the same and corridors". A mission graph first (checked with the level-design skill's graph_check.py - see WORK_LOG), then rooms:
+#   E  Reception Airlock (the start; a dead guard's keycard)     A  Atrium (the hub: three locked doors in sight, windows onto the vat room)
+#   S  Security office (the staff badge, in a locker, 3)          C  Canteen   M  Maintenance corridor (dark)   P  Generator hall (the switch, 5)
+#   L  Labs wing (badge door 1; the fuse crate, 4)                R  Archive (badge door 1; a hole in the wall from Security)
+#   G  Sample Storage (the story terminal)                        V  the vat room (power doors 2, from the Atrium and from the Labs): the boss
+# Locks: staff badge = blue doors (1), power = dead hazard doors (2); the generator switch needs the fuse. Loops: the hole S-R, the door
+# E-P (south from the airlock to the generator hall: the lock you can see before you can open it), the Labs-vat door. Nothing is spent.
+# Legend additions: 1 badge door, 2 power door, 3 badge locker, 4 fuse crate, 5 generator switch (see TierDungeons.Plans.cs).
 VAT_ROOM = [            # x 27..47, y 3..19
     "jj.u..o..q.q..o..u.jj",
     "g...................g",
@@ -152,18 +158,124 @@ VAT_ROOM = [            # x 27..47, y 3..19
     "u..a......e......a..u",
     "....c...........c....",
     "g......%...%.......g.",
-    ".....................",   # y 19 sits behind the bottom wall's face
+    ".....................",
 ]
-def vat_room(rows):
-    rows = [list(r) for r in rows]
+
+def alpha_plan():
+    p = Plan(72, 44, 201); R = p.room
+    R(3, 22, 7, 9); R(21, 21, 32, 10)                                   # E: the Reception Airlock; A: the Atrium
+    p.hline(11, 19, 25, 3); p.put(10, 26, 'D'); p.put(20, 26, 'D')      # the corridor between, a door at each end
+    R(54, 22, 15, 9); p.put(53, 26, 'D')                                # S: Security
+    R(3, 3, 22, 17); R(27, 3, 21, 17); R(51, 3, 18, 17)                 # L: Labs, V: the vat room, R: the Archive
+    R(27, 32, 19, 11); R(48, 32, 21, 11)                                # C: the Canteen, G: Sample Storage
+    p.put(36, 31, 'D'); p.put(50, 31, 'D')                              # the atrium's south doors
+    R(15, 36, 11, 3); p.put(26, 37, 'D'); R(3, 33, 12, 10)              # M: the maintenance corridor (canteen west door), P: the generator hall
+    p.put(5, 31, 'D'); p.put(5, 32, 'D')                                # the E-P shortcut: south from the airlock
+    for x in (22, 51): p.put(x, 20, '1')                                # badge doors: Atrium -> Labs, Atrium -> Archive
+    p.put(37, 20, '2'); p.put(25, 12, '2'); p.put(26, 12, '2')          # power doors: Atrium -> vat room, Labs -> vat room
+    for x in (30, 31, 32, 33, 34, 40, 41, 42, 43, 44): p.put(x, 20, 'n')   # windows from the atrium onto the vat room
+    for x in (66, 67):
+        for y in (20, 21): p.put(x, y, 'r')                             # the hole in the wall: Security <-> Archive
+    # the vat room (the boss fight's arena)
     for dy, line in enumerate(VAT_ROOM):
-        assert len(line) == 21, line
-        for dx, ch in enumerate(line): rows[3 + dy][27 + dx] = ch
-    return ["".join(r) for r in rows]
+        for dx, ch in enumerate(line): p.put(27 + dx, 3 + dy, ch)
+    # E: the airlock. The way in, a dead guard's desk, a light.
+    p.put(5, 26, 'E'); p.put(6, 22, 'i'); p.put(8, 29, 'c'); p.put(3, 23, 'd'); p.put(3, 24, 'd'); p.put(9, 23, 'b'); p.put(7, 26, '*'); p.put(6, 27, '&')
+    p.hline(12, 18, 24, 1, 'p') if False else None
+    p.put(15, 26, 'i')
+    # A: the atrium: a reception desk, pillars you can fight round, the locked doors' lights, a blood trail from the power door
+    for x in (23, 24, 25): p.put(x, 22, 'd')
+    for (x, y) in ((31, 25), (43, 25), (31, 28), (43, 28)): p.put(x, y, 'h')
+    for (x, y) in ((26, 23), (37, 24), (48, 23), (26, 28), (48, 28)): p.put(x, y, 'i')
+    for y in range(22, 27): p.put(37, y, '~')
+    for (x, y) in ((22, 29), (23, 29), (49, 29), (50, 29)): p.put(x, y, 'l')
+    p.put(52, 22, 'e'); p.put(21, 22, 'e')
+    # S: Security: lockers along the wall, the duty desk, the locker with the badge in the far corner
+    for x in (55, 56, 57, 58, 59): p.put(x, 22, 'l')
+    for (x, y) in ((58, 26), (59, 26), (58, 27)): p.put(x, y, 'd')
+    p.put(67, 23, '3'); p.put(61, 25, 'i'); p.put(65, 29, 'c'); p.put(55, 28, 'b'); p.put(64, 27, ':')
+    # R: the Archive: rows of shelving with aisles, papers everywhere
+    for y in (5, 8, 11, 14, 17):
+        for x in range(53, 67):
+            if x not in (59, 60): p.put(x, y, 'l')                      # a gap in each row to cross
+    for (x, y) in ((54, 3), (58, 12), (62, 15), (65, 6)): p.put(x, y, '"')
+    p.put(60, 3, 'i'); p.put(60, 19, 'i')
+    # L: the Labs wing: benches and tables in work bays, a divider with one doorway, jars along the north wall, the fuse crate far away
+    p.vline(13, 3, 14, 1, '#'); p.put(13, 8, 'D'); p.put(13, 9, 'D')        # a divider: west bays / east cold room
+    p.hline(14, 24, 14, 1, '#'); p.put(19, 14, 'D'); p.put(20, 14, 'D')
+    for (x, y) in ((4, 3), (5, 3), (6, 3), (8, 3), (9, 3)): p.put(x, y, 'j')
+    for (x, y) in ((4, 6), (6, 6), (8, 6), (10, 6), (4, 11), (6, 11), (8, 11), (10, 11)): p.put(x, y, 'g')
+    for (x, y) in ((5, 8), (9, 8), (5, 13), (9, 13)): p.put(x, y, 'a')
+    for (x, y) in ((11, 16), (4, 16), (4, 18)): p.put(x, y, 'u')
+    for (x, y) in ((16, 4), (18, 4), (20, 4), (22, 4), (16, 8), (22, 8), (18, 11), (20, 11)): p.put(x, y, 'm')
+    p.put(23, 4, 'j'); p.put(4, 4, '4'); p.put(21, 17, 'f'); p.put(22, 17, 'f')
+    for (x, y) in ((8, 14), (7, 16), (12, 18), (16, 16), (6, 9)): p.put(x, y, '~')
+    p.put(7, 5, 'i'); p.put(18, 7, 'i'); p.put(8, 17, 'i'); p.put(20, 17, 'i')
+    # C: the Canteen: long tables, a kitchen counter
+    for y in (34, 37, 40):
+        for x in (30, 31, 32, 33, 37, 38, 39, 40): p.put(x, y, 'd')
+    for x in range(42, 45): p.put(x, 33, 'm')
+    p.put(29, 41, 'b'); p.put(43, 40, 't'); p.put(36, 33, 'i'); p.put(36, 41, 'i'); p.put(34, 38, '*'); p.put(35, 38, '&')
+    # M: the maintenance corridor: dark, pipes, a leak
+    for (x, y) in ((17, 35), (19, 39), (22, 35)): p.put(x, y, 'p')
+    for (x, y) in ((18, 37), (19, 37), (23, 37)): p.put(x, y, 'w')
+    # P: the generator hall: two rows of generators, the switch in the far corner, standing water, a red emergency light
+    for x in (5, 7, 9, 11): p.put(x, 36, 'm'); p.put(x, 39, 'm')
+    p.put(4, 41, '5'); p.put(12, 41, 'p'); p.put(13, 35, 'p'); p.put(3, 36, 'p')
+    for (x, y) in ((6, 38), (7, 38), (8, 38), (10, 41), (11, 41)): p.put(x, y, 'w')
+    p.put(6, 34, 'e'); p.put(12, 40, 'e')
+    # G: Sample Storage: shelves of samples, the terminal at the back, crates
+    for y in (34, 37, 40):
+        for x in range(51, 62):
+            if x % 5 != 0: p.put(x, y, 'l' if y != 37 else 'j')
+    p.put(65, 37, 'G'); p.put(66, 36, 'o'); p.put(66, 38, 'o'); p.put(62, 41, 'c'); p.put(67, 41, 'c'); p.put(58, 33, 'i'); p.put(64, 40, 'i')
+    p.dirty()
+    return p
+
+def alpha_check(p):
+    """The plan itself, not the graph: walk it from E picking up keys (3 -> badge, 4 -> fuse, 5 needs the fuse -> power) until nothing changes.
+    Returns {'noKeys': set of landmarks reachable with nothing, 'badge': .., 'full': ..} - the same story as the mission graph."""
+    g = p.rows(); H, W = len(g), len(g[0])
+    spots = {'E': 'E', 'G': 'G', '3': 'S', '4': 'L(fuse)', '5': 'P(switch)'}
+    start = next((x, y) for y in range(H) for x in range(W) if g[y][x] == 'E')
+    keys = set(); changed = True
+    def walk(keys):
+        seen = {start}; q = [start]
+        while q:
+            x, y = q.pop()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if n in seen or not (0 <= n[0] < W and 0 <= n[1] < H): continue
+                ch = g[n[1]][n[0]]
+                if ch in '#n': continue
+                if ch == '1' and 'badge' not in keys: continue
+                if ch == '2' and 'power' not in keys: continue
+                seen.add(n); q.append(n)
+        return seen
+    stages = []
+    while changed:
+        changed = False; seen = walk(keys); stages.append((set(keys), seen))
+        for (x, y) in seen:
+            ch = g[y][x]
+            if ch == '3' and 'badge' not in keys: keys.add('badge'); changed = True
+            if ch == '4' and 'fuse' not in keys: keys.add('fuse'); changed = True
+            if ch == '5' and 'fuse' in keys and 'power' not in keys: keys.add('power'); changed = True
+    seen = walk(keys); stages.append((set(keys), seen))
+    return stages, g
 
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     for name, kw in LABS.items():
+        if name == "secret_lab_alpha":      # Boss 2: hand-planned, not generated (alpha_plan); its checks run on the real grid
+            p = alpha_plan(); stages, g = alpha_check(p); rows = p.rows()
+            def where(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
+            s0, s1, sN = stages[0][1], stages[1][1], stages[-1][1]
+            vat = lambda seen: any(27 <= x <= 47 and 3 <= y <= 19 for (x, y) in seen)   # anywhere inside the vat room
+            print(name, p.w, "x", p.h, "keys by stage:", [sorted(st[0]) for st in stages])
+            assert where(s0, 'G') and where(s0, '3') and not where(s0, '4'), "start: Sample Storage and the badge locker open, the fuse crate not"
+            assert not vat(s0) and not vat(stages[1][1]), "the vat room must stay shut until the power is on"
+            assert vat(sN) and where(sN, '5') and where(sN, '4'), "with every key the whole lab opens"
+            open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows)); continue
         p = institute(**kw)
         rows = p.rows(); start = next((x, y) for y, row in enumerate(rows) for x, ch in enumerate(row) if ch == 'E')
         n, cut = p.check(start)

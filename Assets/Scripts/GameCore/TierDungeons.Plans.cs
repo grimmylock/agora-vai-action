@@ -54,6 +54,8 @@ namespace GameCore
                         case 's': c.Put(x, y, HardCover, "sandbags"); break;
                         case ',': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Concrete); continue;
                         case 'D': c.Put(x, y, Door); c.Paint(x, y, 1, 1, floor); continue;
+                        case '1': c.Put(x, y, Door, "door_badge"); c.Paint(x, y, 1, 1, floor); continue;   // Boss 2: a lock you need the staff badge for (LabLocks)
+                        case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
                         case 'Z': c.Put(x, y, Solid, wallLook); break;            // Boss 1: a cracked wall (E breaks it; a landmark marks it)
                         case 'h': c.Put(x, y, HardCover, "block"); break;
                         case 'm': c.Put(x, y, HardCover, "machine"); break;
@@ -124,7 +126,8 @@ namespace GameCore
 
         public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent) =>
             FloorPlan(id, LabPlans[id], wallLook, floor,
-                new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) });   // Boss 1
+                new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) },   // Boss 1
+                new Dictionary<char, string> { ['3'] = LabLocks.Locker, ['4'] = LabLocks.Crate, ['5'] = LabLocks.Switch });   // Boss 2: Secret Lab Alpha's keys
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)
 

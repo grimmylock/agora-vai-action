@@ -170,7 +170,7 @@ namespace GameCore
         /// them (TacticalGridSystem.AttemptMove) - so A* routes through buildings normally.</summary>
         public static bool CanEnterTile(int x, int y)
         {
-            return x >= 0 && x < Width && y >= 0 && y < Height && !TileRules.BlocksMovement(GetTile(x, y).Type);
+            return x >= 0 && x < Width && y >= 0 && y < Height && !TileRules.BlocksMovement(GetTile(x, y).Type) && !LabLocks.Locked(GetTile(x, y));
         }
 
         /// <summary>The living unit standing on a tile (player or enemy), ignoring `except`.
@@ -411,6 +411,7 @@ namespace GameCore
                 SpawnInteractiveObjects(objectCount);
                 SpawnLandmarks(zoneId);
                 Checkpoints.Dress(zoneId);   // Batch 126
+                LabLocks.Refresh();          // Boss 2: doors whose key you already hold start unlocked
                 GroundItems = new List<GroundItem>(); // a freshly generated zone has nothing dropped on it yet
                 PersistZoneTerrain(zoneId);
                 // Play on the persisted copy itself, so doors opened and cover destroyed on this
@@ -498,6 +499,7 @@ namespace GameCore
                                 if (qx < 1 || qy < 1 || qx >= Width - 1 || qy >= Height - 1 || Tiles[qy, qx].Type != TileType.Empty || Tiles[qy, qx].Look != null) continue;
                                 sx0 = qx; sy0 = qy; found = 1; break;
                             }
+                    if (LabLocks.Spawn(name, sx0, sy0)) continue;   // Boss 2: Secret Lab Alpha's badge locker, fuse crate and generator switch
                     string look = name.Contains("Footlocker") ? "stash_footlocker" : new[] { "stash_cache", "stash_chest", "stash_duffel" }[StableIndex(name, 3)];
                     Put(sx0, sy0, InteractiveObjectDatabase.All["Footlocker"], look, name, "Somebody hid this here on purpose.", StashKeys.TryGetValue(name, out var k) ? k : null);
                 }

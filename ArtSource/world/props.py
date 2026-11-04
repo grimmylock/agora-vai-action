@@ -1118,6 +1118,16 @@ def cables(seed):
             px(im, x, y, col); px(im, x, y + 1, (20, 18, 16, 255))
     return Prop(im, (8, 5), None, False)
 
+def labswitch(seed):
+    """Boss 2: the generator room's main switch - a steel control cabinet on the floor, a big lever, a fuse slot with its cover open, lights."""
+    s = P["steel"]; im = blank(14, 20); d = ImageDraw.Draw(im)
+    d.rectangle([1, 3, 12, 18], fill=s[2]); d.line([(1, 3), (12, 3)], fill=s[4]); d.line([(1, 18), (12, 18)], fill=s[0]); d.line([(1, 4), (1, 17)], fill=s[3])
+    d.rectangle([3, 5, 10, 9], fill=hx("#10241a")); [px(im, x, 7 + (x % 3 == 0), hx("#7fe08a")) for x in range(4, 10)]   # a gauge
+    d.rectangle([5, 11, 8, 13], fill=s[0]); px(im, 6, 12, hx("#c8a02a")); px(im, 7, 12, hx("#c8a02a"))              # the empty fuse slot
+    d.line([(10, 15), (12, 9)], fill=hx("#c8443a")); px(im, 12, 8, hx("#e8d0c8")); px(im, 12, 9, hx("#e8d0c8"))         # the lever, thrown down
+    px(im, 3, 16, hx("#e0503a")); px(im, 5, 16, hx("#f0c040"))
+    return finish(im, (7, 19), shadow=(14, 4, 2, -1))
+
 STASHES = {"footlocker": footlocker, "chest": chest, "duffel": duffel, "toolbox": toolbox, "cache": cache, "safe": wallsafe, "pda": pda}
 
 PROPS = {
@@ -1140,7 +1150,7 @@ PROPS = {
     "lamp": lamp_concrete, "busstop": busstop_soviet, "bus": lambda s: _zone().bus(s),
     "dumpster": dumpster_steel, "trash": trash,
     "tank": lambda s: _zone().tank(s), "flatcar": lambda s: _zone().flatcar(s),
-    "cabinet": cabinet, "labtable": labtable, "labbench": lambda s: labtable(s, True), "console": console, "jars": jars, "vatsmall": vatsmall, "cables": cables,
+    "labswitch": labswitch, "cabinet": cabinet, "labtable": labtable, "labbench": lambda s: labtable(s, True), "console": console, "jars": jars, "vatsmall": vatsmall, "cables": cables,
     "pipe": lambda s: heatpipe(s, False), "pipepost": lambda s: heatpipe(s, True), "floorpipe": floorpipe, "roots": roots,
 }
 for _k, _f in STASHES.items():   # Batch 124

@@ -51,7 +51,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1349,6 +1349,41 @@ static class Program {
     MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped); BrainBoss.Reset(); Rt.On = false;
   }
 
+  // Boss 2: Secret Lab Alpha's lock-and-key progression, on the real built map (the plan's mission graph was checked with graph_check.py):
+  // a staff-badge door and a dead power door are walls until you hold their key; the generator switch needs a fuse; the badge, fuse and
+  // power come in that order; Sample Storage, Security and (through the hole in the wall) the Archive are open from the start
+  static void AlphaChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear();
+    MacroState.Current.CurrentZoneId = BrainBoss.Lab; TerrainMap.BuildTerrainForZone(BrainBoss.Lab); EncounterState.Enemies.Clear();
+    int Doors(string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Door && t.Look == look) n++; } return n; }
+    Check(Doors("door_badge") == 2 && Doors("door_power") == 3, $"Alpha: two staff-badge doors and three power doors ({Doors("door_badge")}, {Doors("door_power")})");
+    var air = TerrainMap.Landmarks.First(l => l.Name == "Reception Airlock"); var stor = TerrainMap.Landmarks.First(l => l.Name == "Sample Storage");
+    HashSet<(int, int)> Flood() {
+      var seen = new HashSet<(int, int)> { (air.X, air.Y) }; var q = new Queue<(int, int)>(); q.Enqueue((air.X, air.Y));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    InteractiveObjectInstance Obj(string name) => TerrainMap.InteractiveObjects.FirstOrDefault(o => o.Name == name);
+    var locker = Obj(LabLocks.Locker); var crate = Obj(LabLocks.Crate); var sw = Obj(LabLocks.Switch);
+    Check(locker != null && crate != null && sw != null && locker.GrantsKey == LabLocks.Staff && crate.GrantsKey == LabLocks.Fuse && sw.GrantsKey == LabLocks.Power && sw.Requires == LabLocks.Fuse,
+      "Alpha: the badge locker, the fuse crate and the generator switch are there, with their keys");
+    var s0 = Flood();
+    Check(s0.Contains((stor.X, stor.Y)) && s0.Contains((locker.X, locker.Y)) && s0.Contains((sw.X, sw.Y)) && s0.Contains((60, 10)),
+      "Alpha: from the start you can reach Sample Storage, the badge locker, the generator room and (through the hole in the wall) the Archive");
+    Check(!s0.Contains((crate.X, crate.Y)) && !s0.Contains((BrainBoss.VatX, BrainBoss.VatY + 3)), "Alpha: with no key the Labs wing and the vat room stay shut");
+    Check(Stashes.Blocked(sw), "Alpha: the generator switch won't throw without its fuse");
+    MacroState.Current.Keys.Add(LabLocks.Staff); LabLocks.Granted(LabLocks.Staff);
+    var s1 = Flood();
+    Check(s1.Contains((crate.X, crate.Y)) && !s1.Contains((BrainBoss.VatX, BrainBoss.VatY + 3)) && Doors("door_badge") == 0, "Alpha: the staff badge opens the Labs wing (and its door lights go green) but not the vat room");
+    MacroState.Current.Keys.Add(LabLocks.Fuse);
+    Check(!Stashes.Blocked(sw), "Alpha: with the fuse, the generator switch throws");
+    MacroState.Current.Keys.Add(LabLocks.Power); LabLocks.Granted(LabLocks.Power);
+    Check(Doors("door_power") == 0 && Flood().Contains((BrainBoss.VatX, BrainBoss.VatY + 3)), "Alpha: power on - the blast doors unlock and the vat room is reachable");
+    MacroState.Current.Keys.Clear(); BrainBoss.Reset(); Rt.On = false;
+  }
+
   static void SurvivalChecks() {
     var p = Arena(out int px, out int py); Rt.On = true;
     Survival.Now = 0f; Survival.Begin(p); p.X = px; p.Y = py;
@@ -1727,9 +1762,9 @@ static class Program {
       var dummy = new HumanEnemy("Target", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
       EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
       float spread = Gunplay.Spread(Gunplay.For(w), new Gunplay.Aim { Steady = 0.25f }, 0, false);
-      int hits = 0; for (int i = 0; i < 300; i++) { dummy.Hp = 100000; w.CurrentMagazine = 5; if (Landed(Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)).Unit == dummy) hits++; }
+      int hits = 0; for (int i = 0; i < 1500; i++) { dummy.Hp = 100000; w.CurrentMagazine = 5; if (Landed(Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)).Unit == dummy) hits++; }   // 1500 shots: 300 sat right on the 80% line and flipped with the dice order
       var (_, npc) = Gunplay.NpcAim(new HumanEnemy("R", px, py, "Raiders", "Rookie", null, null), w, p);
-      Check(hits > 240 && npc > spread * 1.5f, $"RT 7z: the starter pistol from the hip hits {hits * 100 / 300}% at 5 tiles (spread {spread:0.0} deg; a Rookie's stays {npc:0.0})");
+      Check(hits > 1200 && npc > spread * 1.5f, $"RT 7z: the starter pistol from the hip hits {hits * 100 / 1500}% at 5 tiles (spread {spread:0.0} deg; a Rookie's stays {npc:0.0})");
     } finally { EncounterState.Enemies.Clear(); Rt.On = false; }
   }
 

@@ -275,6 +275,8 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
   a code on a note, a breakable wall, a vent you crawl, power you restore to a door, a flooded room you drain), rooms with one job
   each (a lab, a cell block, a generator, an office with the code) so they look and play different, shortcuts back to the
   entrance once opened, and the boss room last. Start with Secret Lab Alpha (the brain's lab).
+  **Secret Lab Alpha done (2026-11-04)**: see WORK_LOG "Secret Lab Alpha redesigned" - the lock types (staff badge, power), the hole, the shortcut loops,
+  the boss room last, checked with the level-design skill's graph_check. The other dungeons are still corridors-with-rooms.
 - **Poses (Yan, 2026-10-29):** extra body frames besides front/back (crouch, kneel, sit, leans for cover, lunge, stagger,
   lying, with in-betweens), the floating hands doing the expressive part. Prototype sheet: `maps/renders/poses/poses_preview.png`
   (`ArtSource/make_poses.py`, any suit). Waiting on Yan's picks before anything goes in the game.

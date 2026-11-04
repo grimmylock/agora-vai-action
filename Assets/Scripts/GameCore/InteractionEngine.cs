@@ -82,7 +82,8 @@ namespace GameCore
                         GameLog.Write("A new path has been opened.");
                     }
                 }
-                if (obj.GrantsKey != null && unit is Player && MacroState.Current.Keys.Add(obj.GrantsKey))   // the map overhaul: a key for a locked dungeon
+                if (obj.GrantsKey != null && unit is Player && LabLocks.Is(obj.GrantsKey)) { if (MacroState.Current.Keys.Add(obj.GrantsKey)) LabLocks.Granted(obj.GrantsKey); }   // Boss 2: a badge, a fuse, the power
+                else if (obj.GrantsKey != null && unit is Player && MacroState.Current.Keys.Add(obj.GrantsKey))   // the map overhaul: a key for a locked dungeon
                     GameLog.Write($"Under the junk there's a heavy key on a wire tag - it opens the {MacroMapDatabase.Find(obj.GrantsKey)?.Name ?? obj.GrantsKey}.");
                 TerrainMap.MarkOpened(obj);   // Batch 124: it stays, open and empty
                 TerrainMap.InteractiveObjects.Remove(obj);

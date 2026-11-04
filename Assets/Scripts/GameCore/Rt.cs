@@ -144,8 +144,8 @@ namespace GameCore
         {
             var (ox, oy) = Offset(p);
             float x = p.X + 0.5f + ox, y = p.Y + 0.5f + oy;
-            if (dx != 0f && Clear(p, x + dx, y) && !Crowds(p, x, y, x + dx, y)) x += dx;
-            if (dy != 0f && Clear(p, x, y + dy) && !Crowds(p, x, y, x, y + dy)) y += dy;
+            if (dx != 0f && Clear(p, x + dx, y) && !Crowds(p, x, y, x + dx, y)) x += dx; else if (dx != 0f) LabLocks.Nag(Mathf.FloorToInt(x + dx + (dx > 0f ? Radius : -Radius)), Mathf.FloorToInt(y));   // Boss 2: bumping a locked door says why
+            if (dy != 0f && Clear(p, x, y + dy) && !Crowds(p, x, y, x, y + dy)) y += dy; else if (dy != 0f) LabLocks.Nag(Mathf.FloorToInt(x), Mathf.FloorToInt(y + dy + (dy > 0f ? Radius : -Radius)));
             int tx = Mathf.FloorToInt(x), ty = Mathf.FloorToInt(y);
             if (tx != p.X || ty != p.Y)
             {

@@ -51,7 +51,7 @@ namespace GameCore
 
             if (!CanEnterTile(newX, newY))
             {
-                GameLog.Write($"{unitLabel} cannot move: blocked by solid obstacle.");
+                if (!(unit is Player && LabLocks.Nag(newX, newY))) GameLog.Write($"{unitLabel} cannot move: blocked by solid obstacle.");   // Boss 2: or a locked door
                 return false;
             }
 

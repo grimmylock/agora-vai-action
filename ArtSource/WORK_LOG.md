@@ -4672,3 +4672,31 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
   no window glow, the finish is a Python pass - and nothing of it is in the game. In game the sprites are separate renderers, so
   this would be baked to a light texture over the view and re-baked when lights or occluders change (like the sun's shadows),
   or done with Unity's Light2D + shadow casters + normal-mapped sprites. Open call for Yan.
+
+## Secret Lab Alpha redesigned: a lock-and-key progression (2026-11-04)
+
+- Yan (2026-11-03): "right now it looks very even in space, it doesn't have a linear progression ... most rooms are locked, the few
+  that are open have either a key, a hole in the wall going into the other room, maybe something else? ... [Scavland's bunkers] are
+  basically just a loooot of corridors with rooms branching off of them ... 20 rooms that look the same and corridors, i'd like to
+  avoid this here and have them be engaging to explore and figure out". Then "do both" (this and the lighting), "then show me".
+- Method (the new `level-design` skill, `references/genre-dungeon-metroidvania.md`): the mission graph first, folded into space second.
+  `graph_check.py` on the graph: goal reachable, 100% of nodes, no softlocks, 3 loops; the three shortcuts (hole, shortcut door, the
+  Labs-vat door) were each removed in turn and it still passes (they're loops, not requirements).
+- The lab (`ArtSource/plans/lab_plans.py alpha_plan`, hand-planned, no longer generated): the Reception Airlock (start; the story's
+  dead guard and keycard) -> the Atrium (hub: three locked doors in sight, windows onto the vat room) with Security (the staff badge,
+  in a locker), the Canteen -> a dark maintenance corridor -> the Generator hall (the switch), Sample Storage (the story terminal, open
+  from the start), the Labs wing (badge door; the fuse in a crate at the far corner), the Archive (badge door, or the hole in the wall
+  from Security), and the vat room (power doors from the Atrium and from the Labs: the boss, last). A door from the airlock straight
+  south to the generator hall is the loop you see before you can use it (the generator needs a fuse). Nothing is spent, so nothing strands you.
+- Mechanics (`LabLocks.cs`): keys in `MacroState.Keys` (`alpha_staff`, `alpha_fuse`, `alpha_power`); plan letters 1 (badge door), 2 (power door),
+  3/4/5 (the locker, crate and switch, as interactive objects with `GrantsKey`, the switch also `Requires` the fuse - `Stashes.Blocked`
+  honours it). A locked door is a wall to everyone (`TerrainMap.CanEnterTile`) until the player holds the key; bumping it says what it
+  wants; picking the key up relights every door of that kind green. One lock type, one look: blue card-reader doors and hazard-striped
+  dead blast doors (`walls.py` badgedoor/powerdoor and `_on`, concrete only, +189 atlas sprites), a generator switch prop; `TerrainArt`
+  now lets the lock looks through (it collapsed every door to "door"/"metaldoor").
+- Checks: `AlphaChecks` floods the real built map with each key set (start: Sample Storage, the locker, the generator room, the Archive
+  through the hole; no Labs, no vat room; badge: the Labs; fuse: the switch throws; power: the vat room), and `alpha_check` in the plan
+  generator does the same on the text grid. One older dice check (the pistol from the hip, 300 shots at exactly 80%) flipped with the
+  random order: 1500 shots now, same bar.
+- Render: `maps/renders/dungeon/secret_lab_alpha_before_after.jpg` (old vs new, annotated). Not checked in Unity. Not done: enemies in the
+  new rooms (the squad system fills them as before), a save-room before the boss door, the Archive's far-end stash.

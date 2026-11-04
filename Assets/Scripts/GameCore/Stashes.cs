@@ -159,6 +159,7 @@ namespace GameCore
         public static bool Blocked(InteractiveObjectInstance o)
         {
             var keys = MacroState.Current.Keys;
+            if (o.Requires != null && !keys.Contains(o.Requires)) { GameLog.Write($"{o.Name}: {o.Description}"); return true; }   // Boss 2: the generator needs its fuse
             if (o.Lock == "note")
             {
                 keys.Add(o.Opens);

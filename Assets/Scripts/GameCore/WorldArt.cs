@@ -305,6 +305,11 @@ namespace GameCore
             return Same(x, y - 1) || Same(x, y + 1) || Same(x - 1, y) || Same(x + 1, y);
         }
 
+        /// <summary>Which face a door wears: an ordinary one, a blast door, or Boss 2's lab locks (blue badge readers, hazard-striped power doors,
+        /// each lit green once unlocked - LabLocks).</summary>
+        static string DoorFace(string look) => look == "metaldoor" ? "metaldoor" : look == "door_badge" ? "badgedoor" : look == "door_badge_on" ? "badgedoor_on"
+            : look == "door_power" ? "powerdoor" : look == "door_power_on" ? "powerdoor_on" : "door";
+
         /// <summary>What stands on a cell (0 or 1 sprite).</summary>
         public static bool StandingAt(int x, int y, out Standing st)
         {
@@ -328,7 +333,8 @@ namespace GameCore
             }
             if (t.Type == TileType.Door)
             {
-                s = Get($"w_{HostMaterial(x, y)}_{WallKey(x, y)}_{(l == "metaldoor" ? "metaldoor" : "door")}"); wall = true;
+                string hm = HostMaterial(x, y), wk = WallKey(x, y), face = DoorFace(l);   // Boss 2: staff-badge and power doors have their own faces
+                s = Get($"w_{hm}_{wk}_{face}") ?? Get($"w_{hm}_{wk}_metaldoor"); wall = true;
             }
             else if (t.Type == TileType.Solid && l != null && (BuiltWall.Contains(l) || Mass.Contains(l) || l == "window" || l == "metaldoor"))
             {
