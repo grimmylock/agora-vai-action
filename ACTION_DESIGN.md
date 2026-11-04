@@ -261,6 +261,12 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 
 ## Later list
 
+- **Real lighting (Yan, 2026-11-04):** "Eventually i'd like real lighting in the game with shadows reacting to light sources,
+  similar to how octopath traveler looks, instead of flat lighting we have today." Today: the time-of-day wash and the
+  darkness/flashlight texture in `AtmosphereView`, `LightMap` for lamps (they change how bright a tile is, nothing casts a shadow
+  from them), and the sun's baked shadows in `WorldArt`. To look into: URP 2D `Light2D` point/spot lights on the scene's Global Light 2D
+  with shadow casters on walls and props, normal maps for the sprites (we draw in Python: derive them from a height pass), plus the
+  HD-2D finish (bloom, a soft depth-of-field band, warm/cool light colours). Needs a test render on one map before committing to it.
 - **Dungeons you figure out, not corridors with rooms (Yan, 2026-11-03):** "right now it looks very even in space, it doesn't have
   a linear progression ... Most rooms are locked, the few that are open have either a key, a hole in the wall going into the other
   room, maybe something else? recently i played scavland and its 'bunkers' are basically just a loooot of corridors with rooms
