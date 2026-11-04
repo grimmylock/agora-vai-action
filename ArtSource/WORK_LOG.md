@@ -4805,3 +4805,17 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   `DepthsChecks` rewritten for four maps (each pump in reach, the way on only after it, the lift, a rebuilt map stays drained). ALL CHECKS PASSED.
 - Not done: the eel gate on the last pump (it just works until the fight exists), the reward chest and tier-4 item, stair/lift art on
   the exits (nothing shows on the tile yet), enemies. Not checked in Unity: any of it.
+
+## The flooded levels' platforms are steel catwalks (2026-11-04)
+
+- Yan (two reference photos of industrial steel platforms): "i was thinking some walk in platforms, not raised ground ... all rusted up
+  and maybe with some moss from being wet all the time", then "maybe without the guard-rails for better scare factor".
+- New ground `GroundType.Grate` (plan letter `=`): a 64x64 bar-grating texture (`ArtSource/world/ground.py grate`: 1 px slots with the
+  water showing through, cross rods, a panel seam a tile). Rust and moss are laid on by `WorldArt.Rusty` from the renderer's own noise,
+  so they don't repeat every 4 tiles like a baked texture did. Under a deck's south edge over water: the frame beam, legs every two
+  tiles going down into the water, rusted at the waterline, X-bracing, the deck's shadow (`WorldArt.UnderDeck`); the deck's side edges
+  get a dark frame line (`DeckEdge`). No floor scatter on a grate. No guard rails.
+- Levels 1-2 are catwalks now (and their markers stand on grate: `DepthsLevel` takes the map's floor); the Sump stays concrete sump floor.
+- Not done: the game atlas (`Assets/Resources/Sprites/world_atlas.bytes`) doesn't have `g_grate` yet - only after Yan approves the look;
+  until then Unity draws the decks a flat grey. Stairs between deck and water level, a metal footstep sound (it uses the hard one).
+- Renders: `maps/renders/dungeon/sub_station_depths_levels.jpg`, `sub_station_depths_catwalks_closeup.png`. ALL CHECKS PASSED.

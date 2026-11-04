@@ -112,6 +112,40 @@ namespace GameCore
         private static GroundType[] _ground;
         private static bool[] _uniform, _buried, _core;
 
+        // a steel catwalk standing in the water (the Depths' flooded levels; Yan: "walk in platforms ... all rusted up and maybe with some
+        // moss", "without the guard-rails for better scare factor"): under the deck's south edge its frame beam, legs every two tiles going
+        // down into the water with X-bracing between them and rust at the waterline, the deck's shadow on the water
+        static readonly Color32 StL = new Color32(0x7a, 0x81, 0x84, 255), StM = new Color32(0x5c, 0x62, 0x65, 255), StD = new Color32(0x45, 0x4a, 0x4d, 255),
+                                StK = new Color32(0x26, 0x29, 0x2b, 255), RuD = new Color32(0x3e, 0x25, 0x19, 255), RuM = new Color32(0x5a, 0x35, 0x24, 255),
+                                Glint = new Color32(0x4f, 0x64, 0x58, 255);
+        static Color32 UnderDeck(Color32 water, int gx, int py)
+        {
+            if (py == 0) return StM; if (py == 1) return StD; if (py == 2) return StK;               // the frame beam's face
+            if (py > 12) return py == 13 && (gx & 31) is >= 3 and <= 7 ? Glint : water;           // a ripple round each leg
+            int lx = gx & 31;
+            if (lx >= 4 && lx <= 6) return py > 9 ? (lx == 4 ? RuM : RuD) : lx == 4 ? StM : lx == 5 ? StD : StK;   // a leg, rusted at the waterline
+            float t = (py - 3) / 9f; int a = 7 + (int)(t * 23), b = 30 - (int)(t * 23);            // the X-brace between this leg and the next
+            if (Mathf.Abs(lx - a) <= 0 || Mathf.Abs(lx - b) <= 0) return py > 9 ? RuD : StK;
+            return Mul(water, 0.6f);                                                               // the deck's shadow
+        }
+        static readonly Color32 Ru0 = new Color32(0x3e, 0x25, 0x19, 255), Ru1 = new Color32(0x5a, 0x35, 0x24, 255), Ru2 = new Color32(0x77, 0x48, 0x2e, 255),
+                                Mo0 = new Color32(0x3a, 0x44, 0x28, 255), Mo1 = new Color32(0x4c, 0x58, 0x33, 255);
+        /// <summary>Rust in patches and moss where it stays wet, on the steel (never on the slots, where the water shows through).</summary>
+        static Color32 Rusty(Color32 c, float rust, float moss, float speck)
+        {
+            int lum = c.r + c.g + c.b; if (lum < 90) return c;                                     // a slot: the water below
+            if (moss > 0.74f) return moss > 0.82f || lum < 200 ? Mo0 : Mo1;
+            if (rust > 0.68f || rust > 0.62f && speck < 0.4f) return rust > 0.8f ? Ru0 : lum > 250 ? Ru2 : Ru1;
+            return c;
+        }
+        static Color32 DeckEdge(Color32 c, int cx, int cy, int pxl, int py)
+        {
+            bool W(int x, int y) => x >= 0 && y >= 0 && x < _w && y < _h && _ground[y * _w + x] == GroundType.Water;
+            if (py == 0 && W(cx, cy - 1)) return StL;                                              // the lit back edge
+            if ((pxl == 0 && W(cx - 1, cy)) || (pxl == Px - 1 && W(cx + 1, cy))) return StK;      // the side rails of the frame
+            return c;
+        }
+
         // the face of a raised platform over deep water (the Depths' flooded levels)
         static readonly Color32 PlatTop = new Color32(0x7a, 0x7d, 0x78, 255), PlatFace = new Color32(0x4a, 0x4d, 0x49, 255), PlatFoot = new Color32(0x14, 0x1a, 0x18, 255);
         private static string LookAt(int x, int y) => x < 0 || y < 0 || x >= _w || y >= _h ? null : _look[y * _w + x];
@@ -371,7 +405,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ ground layer
-        private static bool Crisp(GroundType g) => g == GroundType.Floor || g == GroundType.LabTile;
+        private static bool Crisp(GroundType g) => g == GroundType.Floor || g == GroundType.LabTile || g == GroundType.Grate;
         private static bool Paved(GroundType g) => g == GroundType.Concrete || g == GroundType.Asphalt;
         private const float Warp = 11f;
 
@@ -447,6 +481,7 @@ namespace GameCore
             /* Gravel    */ new Style { Ramp = Ramp("3f3d3a", "4f4c47", "57534d", "605c55"), Cuts = Cuts3, Big = 18, Mid = 4, SpeckA = Hex("757067"), SpeckB = Hex("2c2d2e"), DensA = .07f, DensB = .05f },
             /* Water     */ new Style { Ramp = Ramp("1d2624", "212b28", "24302c", "283430"), Cuts = Cuts3, Big = 34, Mid = 12, SpeckA = Hex("4F6458"), SpeckB = Hex("1B2422"), DensA = .004f, DensB = .01f },
             /* CaveFloor */ new Style { Ramp = Ramp("232220", "2c2a27", "322f2b", "36332f"), Cuts = Cuts3, Big = 22, Mid = 7, SpeckA = Hex("423e39"), SpeckB = Hex("1a1918"), DensA = .03f, DensB = .02f },
+            /* Grate     */ null,                                   // a texture (g_grate), like Floor and LabTile
         };
 
         private static void Prime(Style st, int gi)
@@ -483,7 +518,7 @@ namespace GameCore
             return c;
         }
 
-        private static readonly string[] GroundName = { "grass", "darkgrass", "dirt", "mud", "asphalt", "concrete", "floor", "labtile", "sand", "gravel", "water", "cavefloor" };
+        private static readonly string[] GroundName = { "grass", "darkgrass", "dirt", "mud", "asphalt", "concrete", "floor", "labtile", "sand", "gravel", "water", "cavefloor", "grate" };
         private static readonly Color32 KerbLight = new Color32(0x8f, 0x8c, 0x83, 255), KerbDark = new Color32(0x4a, 0x48, 0x44, 255);
         private static readonly Color32 ShadowCol = new Color32(0x32, 0x21, 0x25, 255);
         private static readonly Color32 Black = new Color32(0, 0, 0, 255), White = new Color32(255, 255, 255, 255);
@@ -517,7 +552,7 @@ namespace GameCore
 
             // 1. floors, warped borders, water banks, elevation tint - cell by cell, so per-cell facts are read once
             var dark = new Color32(18, 18, 19, 255);
-            var macroLat = GetLat(80, 31);
+            var macroLat = GetLat(80, 31); var rustLat = GetLat(12, 41); var mossLat = GetLat(20, 43);
             var stainLat = GetLat(40, 92); var stainLat2 = GetLat(11, 93); var Grime = new Color32(34, 30, 24, 255);   // Batch 92
             // every lattice the loop can touch is made up front, so the rows can be painted in parallel
             if (_wx1 == null) { _wx1 = GetLat(23, 21); _wx2 = GetLat(7, 23); _wy1 = GetLat(23, 22); _wy2 = GetLat(7, 24); }
@@ -568,8 +603,10 @@ namespace GameCore
                                     else if (gy > 2 && (GroundPx(gx, gy - 2) != GroundType.Water || GroundPx(gx, gy - 3) != GroundType.Water)) c = Mul(c, 0.72f);   // bank shadow
                                 }
                                 if (deep && g == GroundType.Water) c = Mul(c, 0.55f);   // LabLocks' deep water: black until it's drained
-                                if (deep && g == GroundType.Water && cy > 0 && _ground[ci - _w] != GroundType.Water && py < 6)   // a raised platform's face over it
+                                if (g == GroundType.Water && cy > 0 && _ground[ci - _w] == GroundType.Grate) c = UnderDeck(c, gx, py);   // a catwalk's frame and legs
+                                else if (deep && g == GroundType.Water && cy > 0 && _ground[ci - _w] != GroundType.Water && py < 6)   // a raised platform's face over it
                                     c = py == 0 ? PlatTop : py == 5 ? PlatFoot : Lerp(PlatFace, Black, 0.04f * py);
+                                if (g == GroundType.Grate) c = DeckEdge(Rusty(c, rustLat.At(gx, gy), mossLat.At(gx, gy), H01(gx, gy, 47)), cx, cy, pxl, py);
                             }
                             if (g != GroundType.Floor && g != GroundType.LabTile)
                             {
@@ -823,6 +860,7 @@ namespace GameCore
         {
             switch (g)
             {
+                case GroundType.Grate: return null;                                  // nothing lies on a grate
                 case GroundType.Grass: case GroundType.DarkGrass:
                     return r < 0.45f ? "d_tallgrass" : r < 0.72f ? "d_tallgrass_dry" : r < 0.8f ? "d_tuft" : r < 0.86f ? "d_flowers" : r < 0.93f ? "d_pebbles" : "d_leaves";
                 case GroundType.Dirt: return r < 0.4f ? "d_pebbles" : r < 0.65f ? "d_tallgrass_dry" : r < 0.85f ? "d_leaves" : "d_litter";

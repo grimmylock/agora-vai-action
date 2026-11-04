@@ -53,6 +53,7 @@ namespace GameCore
                         case 'n': c.Put(x, y, Solid, "window"); continue;
                         case 's': c.Put(x, y, HardCover, "sandbags"); break;
                         case ',': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Concrete); continue;
+                        case '=': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Grate); continue;     // a steel catwalk deck
                         case 'D': c.Put(x, y, Door); c.Paint(x, y, 1, 1, floor); continue;
                         case '1': c.Put(x, y, Door, "door_badge"); c.Paint(x, y, 1, 1, floor); continue;   // Boss 2: a lock you need the staff badge for (LabLocks)
                         case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
@@ -139,13 +140,13 @@ namespace GameCore
 
         /// <summary>The flooded levels under Sub-Station Depths (the eel, ACTION_DESIGN "Dodge bosses"): 'U' stairs up, 'S' stairs down,
         /// 'G' the goal, 'Y' the service lift, '6' the level's pump (LabLocks), 'W' its deep water.</summary>
-        public static MapLayout DepthsLevel(string id, string up, string down, string goal = null, string lift = null)
+        public static MapLayout DepthsLevel(string id, GroundType floor, string up, string down, string goal = null, string lift = null)
         {
             var marks = new Dictionary<char, (string, string)> { ['U'] = ("Stairs Up", up) };
             if (down != null) marks['S'] = ("Stairs Down", down);
             if (goal != null) marks['G'] = (goal, null);
             if (lift != null) marks['Y'] = ("Service Lift", lift);
-            return FloorPlan(id, LabPlans[id], "concrete", Concrete, marks, LabLocks.StashesOf(id));
+            return FloorPlan(id, LabPlans[id], "concrete", floor, marks, LabLocks.StashesOf(id));   // floor: what markers stand on (the catwalks' Grate)
         }
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)

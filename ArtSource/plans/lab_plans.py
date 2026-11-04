@@ -398,18 +398,19 @@ def key_walk(p, start_ch, gives, blocks, held=()):
 
 
 # ------------------------------------------------------------------ the eel's flooded levels (Yan, 2026-11-04; sub_station_depths.mmd F-1..F-3)
-# Each is a cistern under the station: deep water ('W', over your head) with raised concrete platforms (',') and catwalks over it.
+# Each is a cistern under the station: deep water ('W', over your head) with steel catwalks ('=': grated decks on legs, rusted,
+# mossy, no guard rails - Yan) over it.
 # The level's pump ('6') drops the water, which opens its stairs down ('S', on a landing under the water). 'U' = stairs up.
 # Islands of 3x3 or more stand clear in open water so the eel has room to wrap round them; catwalks are 1-2 wide (tense to cross).
 def cistern(w, h, seed):
     p = Plan(w, h, seed); p.room(2, 2, w - 4, h - 4, 'W'); return p
 
-def isle(p, x, y, w, h):                                       # a raised platform, its edge chipped a little
-    p.room(x, y, w, h, ',')
+def isle(p, x, y, w, h):                                       # a steel catwalk deck on legs, a corner rusted away now and then
+    p.room(x, y, w, h, '=')
     for (cx, cy) in ((x, y), (x + w - 1, y), (x, y + h - 1), (x + w - 1, y + h - 1)):
         if p.r.random() < 0.5 and w > 3 and h > 3: p.put(cx, cy, 'W')
 
-def walk(p, x0, y0, x1, y1, wide=1, ch=','):                 # a catwalk: along x, then along y
+def walk(p, x0, y0, x1, y1, wide=1, ch='='):                 # a catwalk: along x, then along y
     p.hline(x0, x1, y0, wide, ch); p.vline(x1, y0, y1, wide, ch)
 
 def depths_level1():
@@ -427,7 +428,6 @@ def depths_level1():
     p.put(56, 26, '6'); p.put(53, 25, 'm'); p.put(57, 31, 'b'); p.put(50, 32, 'i'); p.put(49, 26, 'p')
     isle(p, 40, 8, 6, 5); p.put(42, 10, 'S'); p.put(44, 9, 'e')              # the stairs down: in sight, cut off ...
     p.hline(37, 39, 14, 2, 'W')                                               # ... by deep water from D (the catwalk is under it)
-    for (x, y) in ((24, 17), (41, 29), (18, 11)): p.put(x, y, '%')
     p.put(20, 6, '*'); p.put(32, 29, '~'); p.put(33, 30, '&')                # someone didn't make it
     return p
 
@@ -446,7 +446,6 @@ def depths_level2():
     p.put(57, 30, '6'); p.put(52, 29, 'm'); p.put(53, 29, 'm'); p.put(58, 35, 'x'); p.put(55, 34, 'e')
     isle(p, 24, 10, 5, 5); p.put(26, 12, 'S')                                 # the stairs down, under the water ...
     p.hline(22, 23, 14, 1, 'W'); p.put(22, 15, 'W')                          # ... between D and the landing
-    for (x, y) in ((44, 6), (37, 13), (27, 19), (18, 25), (38, 26), (45, 33)): p.put(x, y, 'r' if p.r.random() < 0.5 else '%')   # broken spots
     p.put(36, 33, 'e')
     return p
 
