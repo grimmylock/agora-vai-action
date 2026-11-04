@@ -4722,3 +4722,6 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Not checked in Unity: all of it - the 8-texel texture and its cost per frame (the bake is one light a frame; the field is a few ms at most
   by my count, not measured), the overlay's look on a real screen, F7. Not done: units' light shadows (they don't cast any), glow from
   windows and gun flashes, normal maps, the Octopath finish (bloom, depth of field) as a switchable screen effect.
+
+## Brain floating clip (2026-11-04)
+Yan asked for a render of the brain floating round his enclosure with blinking eyes: `maps/renders/boss_brain/brain_floating.mp4/.gif` (vat sheet rows 0-3 open / 4-7 shut, composited in the vat room render, phases 1-4 in turn). To-dos added to ACTION_DESIGN Later list (other dungeons, Unity lighting check). Nothing checked in Unity.
