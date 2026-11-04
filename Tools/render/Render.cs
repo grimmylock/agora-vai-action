@@ -58,7 +58,17 @@ static class RenderMain {
           px[i] = new UnityEngine.Color32((byte)(Math.Clamp(r, 0, 1) * 255), (byte)(Math.Clamp(gg, 0, 1) * 255), (byte)(Math.Clamp(b, 0, 1) * 255), c.a);
         }
       }
-      if (Environment.GetEnvironmentVariable("LIT") == "1") {   // Batch 92: darkness and placed lights as the game draws them (no player light)
+      if (Environment.GetEnvironmentVariable("FIND") is string fl)   // light sources and other looks by name: where they are
+        foreach (var look in fl.Split(',')) for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++)
+          if (TerrainMap.GetTile(x, y).Look == look) Console.WriteLine($"find {look} {x},{y}");
+      if (Environment.GetEnvironmentVariable("LIGHTS") is string lq) {   // Lighting prototype (WorldArt.Lights.cs): real point lights with shadows on a region, x0,y0,x1,y1 in tiles
+        var q = Array.ConvertAll(lq.Split(','), int.Parse); var l = Atmosphere.Look(); float n = l.Night;
+        var all = WorldArt.PlacedLights(q[0] - 12, q[1] - 12, q[2] + 12, q[3] + 12);
+        Console.WriteLine($"lights: {all.Count} (night {n:0.00})");
+        float amb(float day, float night) => day + (night - day) * n;
+        WorldArt.ApplyLights(px, q[0] * 16, q[1] * 16, (q[2] + 1) * 16, (q[3] + 1) * 16, amb(1f, 0.10f), amb(1f, 0.135f), amb(1f, 0.25f), all, 0f);
+      }
+      else if (Environment.GetEnvironmentVariable("LIT") == "1") {   // Batch 92: darkness and placed lights as the game draws them (no player light)
         var l = Atmosphere.Look(); float night = l.Night;
         float L(int x, int y) => LightMap.At(x, y);
         for (int py = 0; py < h; py++) for (int pxx = 0; pxx < w; pxx++) {

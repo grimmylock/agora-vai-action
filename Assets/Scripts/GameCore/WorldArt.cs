@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace GameCore
 {
-    public static class WorldArt
+    public static partial class WorldArt
     {
         public const int Px = 16;
         public const int SortBase = 100;      // ground stuff below this; standing things = SortBase + foot pixel row

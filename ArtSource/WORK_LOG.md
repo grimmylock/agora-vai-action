@@ -4650,3 +4650,25 @@ the edges? After that's done try rendering the fight". Mutant parries and co-op 
 - Checks: two moves past 50% (never laser + pull), the vat refuses to move, a shoved vat is back at once; the pulse checks hold
   the volleys off so random moves can't carry their props away.
 - Preview video re-rendered (the bot's damage there is time-based, so the triple HP doesn't show in it). Not checked in Unity.
+
+## Real lighting, first prototype (2026-11-04)
+
+- Yan: "Eventually i'd like real lighting in the game with shadows reacting to light sources, similar to how octopath traveler
+  looks, instead of flat lighting we have today" - then "we can move onto the lighting stuff". Read first: today's night is one
+  dark overlay texture (2 texels a tile, `AtmosphereView.DrawLight`) with lamp pools tinted into it from `LightMap`; nothing
+  casts a shadow from a lamp. Unity's 2D renderer is already set up with lit sprites (`Renderer2D.asset`, default material Lit),
+  and nothing in the project uses Light2D, Tilemap or 2D physics.
+- `WorldArt.Lights.cs` (WorldArt is now `partial`): the sun's shadow method, generalised to point lights. Every standing sprite
+  pixel is a point (x, foot row, height above ground); a light at height H throws it to `pixel + (pixel - light) * h / (H - h)`,
+  so trees, walls, crates and cabinets cast shadows shaped like themselves. Ground is lit by distance and angle (bright core,
+  long soft skirt), wall faces by whether the light is on their side, props by a soft front/top term; lights have colour,
+  height and reach (lamp 56 px up and warm, campfire low, orange and flickering, ceiling light cool white, emergency light red);
+  a soft shoulder keeps overlapping pools from clipping; lamp heads burn white. `PlacedLights` reads the same looks `LightMap` does.
+- Preview only: `LIGHTS=x0,y0,x1,y1 Tools/render/render.sh <map>` (tiles; `RENDER_HOUR=23.5`, `FIND=lamp,campfire` lists where
+  looks are), then `Tools/render/light_finish.py in out` for the Octopath finish (bloom, tilt-shift depth of field, a little
+  grade and vignette). Renders: `maps/renders/lighting/night_street_flat_vs_lit.jpg` (Tier 1 road with five lamps and a
+  campfire: today vs lit vs lit + finish), `vat_room_flat_vs_lit.jpg` (the brain's lab). 3 tuning rounds on the street.
+- What it does not do yet: units cast no light shadows (the dynamic ones), no normal maps (walls are shaded by a facing rule),
+  no window glow, the finish is a Python pass - and nothing of it is in the game. In game the sprites are separate renderers, so
+  this would be baked to a light texture over the view and re-baked when lights or occluders change (like the sun's shadows),
+  or done with Unity's Light2D + shadow casters + normal-mapped sprites. Open call for Yan.
