@@ -163,6 +163,12 @@ the flooded levels under the Depths' basin.
 - **The reward** (Yan: "every boss needs a reward"): special eel parts that sell for a good profit (above a normal mutant part, which is
   400-600 RU at Tier 3 in `MutantLootSystem`), a chest of random loot of the dungeon's tier (3), and **one** armor or weapon a tier above (4).
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
+- **Maps first, then the fight (Yan: "We need the Maps before the fight, otherwise well have to rework it later").** Built 2026-11-04:
+  `sub_station_depths_1` Cistern, `_2` Lower Cistern, `_3` Sump (plans in `lab_plans.py`, graph `sub_station_depths.mmd`). Each level's
+  deep water answers to its own pump (`LabLocks`: drain1 needs the power, drain2 needs drain1, drain3 needs drain2); the station's pump
+  room became the stairwell (behind its own power door) and its basin drains with the last pump; a service lift links the bottom and
+  the station's basin. Not yet: the eel gate on the last pump (it just works until the fight exists), the reward chest and tier-4 item,
+  stair art on the exits. Render: `maps/renders/dungeon/sub_station_depths_levels.jpg`.
 
 ## Weight and stamina
 

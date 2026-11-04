@@ -1,18 +1,24 @@
-%% Sub-Station Depths (Tier 3) - mission graph, drawn before the floor plan (level-design skill, graph_check.py).
-%% Keys: badge (blue card doors), fuse, power (dead blast doors), drain (deep water). Nothing is spent.
-%% Seen before it opens: the power door and the black basin from the hall, the dead pump panel through the hole, the vault door across the water.
+%% Sub-Station Depths with the eel (planned, Yan 2026-11-04; not built). Four maps: the station (as built) + three flooded levels.
+%% Map changes are stairs (two-way); the stairwell is dead until the power is on (the hole only shows it). Keys are saved with the world, so nothing re-floods. "eel_down" = the boss beaten.
 %% start: E
-%% goal: V
+%% goal: Z
 flowchart TD
-  E["Flooded Corridor: the ladder in {start}"] --> H["Switchyard Hall: the hub"]
-  E --> Q["Workers' Quarters {item:fuse}"]
-  H --> K["Control Room: dispatcher's locker {item:badge}"]
-  H -->|req:badge| Y["Cable Gallery: long, dark"]
+  E["F0 Flooded Corridor: the ladder in {start}"] --> H["F0 Switchyard Hall: the hub"]
+  E --> Q["F0 Workers' Quarters {item:fuse}"]
+  H --> K["F0 Control Room {item:badge}"]
+  H -->|req:badge| Y["F0 Cable Gallery"]
   E -->|req:badge| Y
-  Y --> B["Battery Room"]
-  B -->|req:fuse| BS["Battery breaker {item:power}"]
-  H -->|req:power| U["Pump Room"]
+  Y --> B["F0 Battery Room"]
+  B -->|req:fuse| BS["F0 Battery breaker {item:power}"]
+  H -->|req:power| U["F0 Pump Room: the stairwell down"]
   Q -->|hole| U
-  U -->|req:power| P["Pump panel {item:drain}"]
-  H --> L["Basin ledge: black water, the vault door beyond"]
-  L -->|req:drain| V["Transformer Vault {goal}"]
+  H --> L["F0 Basin ledge: black water, the vault door beyond"]
+  U -->|req:power| P1["F-1 Level 1: platforms, the eel's first strike"]
+  P1 --> W1["F-1 Pump 1 {item:drain1}"]
+  P1 -->|req:drain1| P2["F-2 Level 2: lower platforms, strikes and false alarms"]
+  P2 --> W2["F-2 Pump 2 {item:drain2}"]
+  P2 -->|req:drain2| A["F-3 Level 3: the eel half out of the water {item:eel_down}"]
+  A -->|req:eel_down| W3["F-3 Last pump {item:drain3}"]
+  A -->|req:drain3| Z["F-3 The bottom: eel parts, the tier chest, one tier-4 item {goal}"]
+  Z -->|req:drain3| L
+  L -->|req:drain3| V["F0 Transformer Vault: the researcher's notes {item:notes}"]

@@ -386,6 +386,10 @@ namespace GameData
                 L("Flooded Corridor", "Ankle-to-knee-deep water throughout - difficult terrain."),
                 L("Transformer Vault", "The lowest chamber - heart of the old power system."),
             },
+            ["sub_station_depths_3"] = new List<LandmarkDef>   // the eel's lair, the Sump (2026-11-04)
+            {
+                L("The Bottom", "The station's lowest sump, under the last of the water. Whatever the eel was guarding is down here."),
+            },
             ["maintenance_tunnels"] = new List<LandmarkDef>
             {
                 L("Tunnel Junction", "A four-way branch point - easy to get turned around."),

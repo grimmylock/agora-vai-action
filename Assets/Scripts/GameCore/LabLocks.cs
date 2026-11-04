@@ -20,12 +20,18 @@ namespace GameCore
         // Secret Lab Alpha's keys by name (the harness and older code use these)
         public const string Staff = "alpha_staff", Fuse = "alpha_fuse", Power = "alpha_power";
         public const string Locker = "Security Locker", Crate = "Fuse Crate", Switch = "Generator Switch";
-        public const string Depths = "sub_station_depths";
+        public const string Depths = "sub_station_depths", Depths1 = "sub_station_depths_1", Depths2 = "sub_station_depths_2", Depths3 = "sub_station_depths_3";
 
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths" };
+
+        /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
+        /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
+        static readonly Dictionary<string, string> Water = new Dictionary<string, string>
+            { [Depths] = "drain3", [Depths1] = "drain1", [Depths2] = "drain2", [Depths3] = "drain3" };
+        static string WaterKind(string zone) => Water.TryGetValue(zone ?? "", out var k) ? k : "drain";
 
         static readonly Dictionary<string, Dictionary<char, Thing>> Things = new Dictionary<string, Dictionary<char, Thing>>
         {
@@ -50,10 +56,18 @@ namespace GameCore
                 ['5'] = new Thing { Name = "Battery Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The battery bank's breaker. One fuse holder is empty and scorched.",
                                     Says = "[DEPTHS] The breaker slams home. The batteries hum, and down the halls the blast doors' lights wake up." },
-                ['6'] = new Thing { Name = "Pump Controls", Look = "labswitch", Kind = "drain", Needs = "power",
-                                    Desc = "The sump pumps' panel. Every lamp on it is dark: there's no power down here.",
-                                    Says = "[DEPTHS] The pumps shudder and roar. Out in the basin the black water starts to fall." },
             },
+            // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
+            // ponytail: the last pump has no eel gate yet ("eel_down" in sub_station_depths.mmd) - it comes with the fight code.
+            [Depths1] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Cistern Pump", Look = "labswitch", Kind = "drain1", Needs = "power",
+                Desc = "A sump pump's panel, its lamps dark: no power reaches this level.",
+                Says = "[DEPTHS] The pump bangs into life. The black water slides off the stairs going down." } },
+            [Depths2] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Lower Pump", Look = "labswitch", Kind = "drain2", Needs = "drain1",
+                Desc = "The lower pump's panel.",
+                Says = "[DEPTHS] Somewhere below, a second pump answers. The water drops again." } },
+            [Depths3] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Main Sump Pump", Look = "labswitch", Kind = "drain3", Needs = "drain2",
+                Desc = "The last pump, at the very bottom of the station.",
+                Says = "[DEPTHS] The last pump screams, then settles. The whole station drains, all the way up to the basin." } },
         };
 
         static string Zone => TerrainMap.ZoneId;
@@ -65,7 +79,7 @@ namespace GameCore
         public static bool Is(string key) => key != null && Prefix.Values.Any(p => key.StartsWith(p + "_"));
 
         /// <summary>The key a lock's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
-        public static string KeyOf(string look) => look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key("drain") : null;
+        public static string KeyOf(string look) => look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key(WaterKind(Zone)) : null;
 
         /// <summary>A lock nobody can pass yet: it has a lock and the player doesn't hold the key.</summary>
         public static bool Locked(TerrainTile t)
@@ -98,7 +112,7 @@ namespace GameCore
             if (thing.v != null) GameLog.Write(thing.v.Says);
             if (key == Key("staff")) Relight("door_badge");
             if (key == Key("power")) { Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); }
-            if (key == Key("drain")) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Drain(); }
+            if (key == Key(WaterKind(Zone))) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Drain(); }
         }
 
         /// <summary>The doors of one kind stop looking locked (their look gets "_on": a green light) - they're ordinary doors now.</summary>
@@ -128,12 +142,14 @@ namespace GameCore
         {
             if (Has(Key("staff"))) Relight("door_badge");
             if (Has(Key("power"))) Relight("door_power");
-            if (Has(Key("drain"))) Drain();
+            if (Has(Key(WaterKind(Zone)))) Drain();
         }
 
         /// <summary>Every key a dungeon's locks ask for (tests: walk the whole map as someone who found them all).</summary>
         public static IEnumerable<string> KeysOf(string zone) =>
-            Things.TryGetValue(zone, out var d) ? d.Values.Select(v => KeyIn(zone, v.Kind)) : Enumerable.Empty<string>();
+            !Prefix.ContainsKey(zone ?? "") ? Enumerable.Empty<string>()
+            : (Things.TryGetValue(zone, out var d) ? d.Values.Select(v => KeyIn(zone, v.Kind)) : Enumerable.Empty<string>())
+              .Concat(new[] { KeyIn(zone, "power"), KeyIn(zone, WaterKind(zone)) }).Distinct();   // keys found on another level count too
 
         /// <summary>The plan letters of a dungeon's key objects, as stash names for FloorPlan (null if it has none).</summary>
         public static Dictionary<char, string> StashesOf(string zone) =>

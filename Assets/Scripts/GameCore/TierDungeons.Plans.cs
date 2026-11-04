@@ -125,10 +125,28 @@ namespace GameCore
             c.Keep(x, y, rows[0].Length, rows.Length);
         }
 
-        public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent) =>
-            FloorPlan(id, LabPlans[id], wallLook, floor,
-                new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) },   // Boss 1
+        public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent, string down = null, string lift = null) =>
+            FloorPlan(id, LabPlans[id], wallLook, floor, LabMarks(first, second, parent, down, lift),
                 LabLocks.StashesOf(id));   // Boss 2: the dungeon's key objects (badge locker, fuse crate, switches)
+
+        static Dictionary<char, (string, string)> LabMarks(string first, string second, string parent, string down, string lift)
+        {
+            var m = new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) };   // Boss 1
+            if (down != null) m['S'] = ("Stairs Down", down);                                           // the Depths: stairs to the flooded levels
+            if (lift != null) m['Y'] = ("Service Lift", lift);                                         // and the lift from their bottom
+            return m;
+        }
+
+        /// <summary>The flooded levels under Sub-Station Depths (the eel, ACTION_DESIGN "Dodge bosses"): 'U' stairs up, 'S' stairs down,
+        /// 'G' the goal, 'Y' the service lift, '6' the level's pump (LabLocks), 'W' its deep water.</summary>
+        public static MapLayout DepthsLevel(string id, string up, string down, string goal = null, string lift = null)
+        {
+            var marks = new Dictionary<char, (string, string)> { ['U'] = ("Stairs Up", up) };
+            if (down != null) marks['S'] = ("Stairs Down", down);
+            if (goal != null) marks['G'] = (goal, null);
+            if (lift != null) marks['Y'] = ("Service Lift", lift);
+            return FloorPlan(id, LabPlans[id], "concrete", Concrete, marks, LabLocks.StashesOf(id));
+        }
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)
 

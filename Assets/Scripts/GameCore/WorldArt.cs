@@ -112,6 +112,8 @@ namespace GameCore
         private static GroundType[] _ground;
         private static bool[] _uniform, _buried, _core;
 
+        // the face of a raised platform over deep water (the Depths' flooded levels)
+        static readonly Color32 PlatTop = new Color32(0x7a, 0x7d, 0x78, 255), PlatFace = new Color32(0x4a, 0x4d, 0x49, 255), PlatFoot = new Color32(0x14, 0x1a, 0x18, 255);
         private static string LookAt(int x, int y) => x < 0 || y < 0 || x >= _w || y >= _h ? null : _look[y * _w + x];
         private static TerrainTile TileAt(int x, int y) => TerrainMap.Tiles[y, x] ?? new TerrainTile();
 
@@ -566,6 +568,8 @@ namespace GameCore
                                     else if (gy > 2 && (GroundPx(gx, gy - 2) != GroundType.Water || GroundPx(gx, gy - 3) != GroundType.Water)) c = Mul(c, 0.72f);   // bank shadow
                                 }
                                 if (deep && g == GroundType.Water) c = Mul(c, 0.55f);   // LabLocks' deep water: black until it's drained
+                                if (deep && g == GroundType.Water && cy > 0 && _ground[ci - _w] != GroundType.Water && py < 6)   // a raised platform's face over it
+                                    c = py == 0 ? PlatTop : py == 5 ? PlatFoot : Lerp(PlatFace, Black, 0.04f * py);
                             }
                             if (g != GroundType.Floor && g != GroundType.LabTile)
                             {
@@ -803,7 +807,7 @@ namespace GameCore
                 s = Pick("d_" + l, H01(x, y, 7));
                 dx = (int)((H01(x, y, 8) - 0.5f) * 6); dy = (int)((H01(x, y, 10) - 0.5f) * 6);
             }
-            else if (l == null && (t.Type == TileType.Empty || t.Type == TileType.Difficult && (_ground[y * _w + x] == GroundType.Water || _ground[y * _w + x] == GroundType.Mud)) && H01(x, y, 11) < (_ground[y * _w + x] == GroundType.Grass || _ground[y * _w + x] == GroundType.DarkGrass || _ground[y * _w + x] == GroundType.Mud ? 0.24f : 0.1f))
+            else if (l == null && t.Look != "deepwater" && (t.Type == TileType.Empty || t.Type == TileType.Difficult && (_ground[y * _w + x] == GroundType.Water || _ground[y * _w + x] == GroundType.Mud)) && H01(x, y, 11) < (_ground[y * _w + x] == GroundType.Grass || _ground[y * _w + x] == GroundType.DarkGrass || _ground[y * _w + x] == GroundType.Mud ? 0.24f : 0.1f))
             {
                 s = Pick(ScatterDecal(_ground[y * _w + x], H01(x, y, 12)), H01(x, y, 13));
                 dx = (int)((H01(x, y, 8) - 0.5f) * 8); dy = (int)((H01(x, y, 10) - 0.5f) * 8);

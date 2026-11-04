@@ -3,7 +3,7 @@
 # corridor for a second way round, one long hall for the long guns, holes knocked through walls, a cave-in, blood, and lamps that
 # mostly don't work. Writes <id>.txt next to itself; TierDungeons.Plans.cs holds the pasted plans.
 # Marks: 'E' = entry (first landmark + the exit), 'G' = the goal room's landmark. Legend: see foundry_plans.py.
-import os, sys
+import os, sys, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from foundry_plans import Plan
 
@@ -322,9 +322,14 @@ def depths_plan():
     # U: the pump room: three pumps, pipes to the basin, the dead panel
     for x in (22, 26, 30): p.put(x, 33, 'm'); p.put(x, 34, 'm')
     for x in range(21, 33, 2): p.put(x, 37, 'p')
-    p.put(31, 31, '6'); p.put(19, 40, 'b'); p.put(32, 40, 'w'); p.put(31, 40, 'w'); p.put(24, 31, 'e')
+    p.put(19, 40, 'b'); p.put(32, 40, 'w'); p.put(31, 40, 'w'); p.put(24, 31, 'e')
     # G: the vault: transformers round the walls, a console in the middle, the researcher's last stand
     for (x, y) in ((59, 30), (60, 30), (66, 30), (67, 30), (59, 40), (60, 40), (66, 40), (67, 40)): p.put(x, y, 'm')
+    # the stairwell down to the flooded levels: a walled corner of the pump room behind its own power door (the hole only shows it)
+    for y in range(37, 41): p.put(29, y, '#')
+    for x in range(29, 33): p.put(x, 36, '#')
+    p.room(30, 37, 3, 4); p.put(29, 38, '2'); p.put(31, 39, 'S'); p.put(32, 37, 'e')
+    p.put(55, 40, 'Y')                                                                      # the service lift up from the bottom, in the drained basin
     p.put(64, 35, 'G'); p.put(63, 34, 'o'); p.put(65, 37, '*'); p.put(66, 37, '&'); p.put(61, 33, '"'); p.put(68, 35, 'e'); p.put(62, 38, 'i')
     p.dirty()
     return p
@@ -332,7 +337,7 @@ def depths_plan():
 # The rooms of depths_plan (x, y, w, h), named as in sub_station_depths.mmd; anything walkable outside them is a passage.
 DEPTHS_ROOMS = {'E': (3, 16, 12, 8), 'H': (21, 14, 25, 13), 'K': (47, 18, 13, 9), 'Y': (5, 5, 47, 3), 'B': (53, 3, 15, 12),
                 'Q': (3, 28, 14, 14), 'U': (19, 30, 14, 11), 'L': (35, 28, 22, 14), 'V': (58, 29, 11, 13)}
-DEPTHS_SWITCHES = {'BS': ('B', '5'), 'P': ('U', '6'), 'Q': ('Q', '4'), 'K': ('K', '3')}   # graph node -> (room, plan letter)
+DEPTHS_SWITCHES = {'BS': ('B', '5'), 'Q': ('Q', '4'), 'K': ('K', '3')}   # graph node -> (room, plan letter)
 
 def graph_edges(path):
     """The passages of a Mermaid mission graph as {(frozenset(a, b), req or None)} (the subset graph_check.py reads)."""
@@ -345,9 +350,9 @@ def graph_edges(path):
             out.add((frozenset((m.group(1), m.group(3))), req))
     return out
 
-def plan_edges(g, rooms):
+def plan_edges(g, rooms, locks=None):
     """The same thing read off the grid: which rooms reach which through passages, and the locks on the way ('W' = drain)."""
-    locks = {'1': 'badge', '2': 'power', 'W': 'drain'}
+    locks = locks or {'1': 'badge', '2': 'power', 'W': 'drain'}
     def room_of(x, y):
         if g[y][x] == 'W': return None                      # deep water is a lock, never a room
         return next((r for r, (rx, ry, rw, rh) in rooms.items() if rx <= x < rx + rw and ry <= y < ry + rh), None)
@@ -367,11 +372,11 @@ def plan_edges(g, rooms):
                 if st not in seen: seen.add(st); q.append(st)
     return out
 
-def depths_check(p):
-    """Walks the plan from E picking up keys in order (3 badge, 4 fuse, 5 power needs fuse, 6 drain needs power) until nothing changes."""
+def key_walk(p, start_ch, gives, blocks, held=()):
+    """Walks a plan from start_ch picking up keys until nothing changes. gives: plan letter -> (key, needs or None); blocks: plan
+    letter -> key; held: keys from other maps. Returns [(keys, tiles reached)] per stage."""
     g = p.rows(); H, W = len(g), len(g[0])
-    start = next((x, y) for y in range(H) for x in range(W) if g[y][x] == 'E')
-    blocks = {'1': 'badge', '2': 'power', 'W': 'drain'}
+    start = next((x, y) for y in range(H) for x in range(W) if g[y][x] == start_ch)
     def walk(keys):
         seen = {start}; q = [start]
         while q:
@@ -383,14 +388,91 @@ def depths_check(p):
                 if ch in '#n' or (ch in blocks and blocks[ch] not in keys): continue
                 seen.add(n); q.append(n)
         return seen
-    gives = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse'), '6': ('drain', 'power')}
-    keys = set(); stages = []
+    keys = set(held); stages = []
     while True:
-        seen = walk(keys); stages.append((set(keys), seen)); new = False
+        seen = walk(keys); stages.append((keys - set(held), seen)); new = False
         for (x, y) in seen:
             k = gives.get(g[y][x])
             if k and k[0] not in keys and (k[1] is None or k[1] in keys): keys.add(k[0]); new = True
         if not new: return stages, g
+
+
+# ------------------------------------------------------------------ the eel's flooded levels (Yan, 2026-11-04; sub_station_depths.mmd F-1..F-3)
+# Each is a cistern under the station: deep water ('W', over your head) with raised concrete platforms (',') and catwalks over it.
+# The level's pump ('6') drops the water, which opens its stairs down ('S', on a landing under the water). 'U' = stairs up.
+# Islands of 3x3 or more stand clear in open water so the eel has room to wrap round them; catwalks are 1-2 wide (tense to cross).
+def cistern(w, h, seed):
+    p = Plan(w, h, seed); p.room(2, 2, w - 4, h - 4, 'W'); return p
+
+def isle(p, x, y, w, h):                                       # a raised platform, its edge chipped a little
+    p.room(x, y, w, h, ',')
+    for (cx, cy) in ((x, y), (x + w - 1, y), (x, y + h - 1), (x + w - 1, y + h - 1)):
+        if p.r.random() < 0.5 and w > 3 and h > 3: p.put(cx, cy, 'W')
+
+def walk(p, x0, y0, x1, y1, wide=1, ch=','):                 # a catwalk: along x, then along y
+    p.hline(x0, x1, y0, wide, ch); p.vline(x1, y0, y1, wide, ch)
+
+def depths_level1():
+    """The Cistern: the eel's first strike. A path of islands from the stairs to the pump on the far side; the stairs down sit on a
+    landing in the middle, plainly in sight, under the water until the pump runs."""
+    p = cistern(64, 40, 211)
+    isle(p, 3, 3, 8, 6); p.put(5, 4, 'U'); p.put(4, 3, 'e')                   # the landing at the foot of the stairs
+    walk(p, 11, 6, 15, 6, 2); isle(p, 16, 4, 5, 5)                            # A: the first island
+    walk(p, 18, 9, 18, 14, 2); isle(p, 14, 15, 6, 4)                          # B
+    walk(p, 8, 16, 13, 16); isle(p, 4, 14, 4, 4); p.put(5, 15, 'c'); p.put(6, 16, '"')   # C: a dead end with a crate (it pays)
+    walk(p, 20, 17, 30, 17, 2); isle(p, 31, 13, 6, 6); p.put(33, 15, 'h')     # D: the middle island, a pillar for cover
+    walk(p, 34, 19, 34, 26, 1)                                                # a 1-wide catwalk south: the tense one
+    isle(p, 30, 27, 5, 5)                                                     # E: the strike island (clear water all round)
+    walk(p, 35, 29, 47, 29, 2); isle(p, 48, 25, 10, 9)                        # F: the pump platform
+    p.put(56, 26, '6'); p.put(53, 25, 'm'); p.put(57, 31, 'b'); p.put(50, 32, 'i'); p.put(49, 26, 'p')
+    isle(p, 40, 8, 6, 5); p.put(42, 10, 'S'); p.put(44, 9, 'e')              # the stairs down: in sight, cut off ...
+    p.hline(37, 39, 14, 2, 'W')                                               # ... by deep water from D (the catwalk is under it)
+    for (x, y) in ((24, 17), (41, 29), (18, 11)): p.put(x, y, '%')
+    p.put(20, 6, '*'); p.put(32, 29, '~'); p.put(33, 30, '&')                # someone didn't make it
+    return p
+
+def depths_level2():
+    """The Lower Cistern: darker, more broken, a search. The pump is the farthest island; three dead ends; set points for the eel's
+    strikes on the long catwalks. The stairs down are on a landing in the middle, under the water."""
+    p = cistern(64, 40, 212)
+    isle(p, 52, 3, 8, 6); p.put(56, 4, 'U')                                   # the landing (stairs up, north-east)
+    walk(p, 40, 6, 51, 6, 2); isle(p, 35, 4, 5, 5)                           # A
+    walk(p, 20, 6, 34, 6, 1); isle(p, 14, 3, 6, 6); p.put(15, 4, 'c'); p.put(18, 7, '"')   # C: a dead end (north-west), a crate, papers
+    walk(p, 37, 9, 37, 16, 2); isle(p, 34, 17, 6, 5)                         # B
+    walk(p, 22, 19, 33, 19, 1); isle(p, 16, 16, 6, 6)                        # D: west, over the long narrow catwalk
+    walk(p, 18, 22, 18, 28, 1); isle(p, 14, 29, 7, 6); p.put(15, 33, 't'); p.put(19, 30, '*')   # E: a dead end (south-west)
+    walk(p, 38, 22, 38, 30, 2); isle(p, 35, 31, 7, 6)                        # F: south
+    walk(p, 42, 33, 49, 33, 1); isle(p, 50, 28, 10, 9)                       # G: the pump, the farthest platform
+    p.put(57, 30, '6'); p.put(52, 29, 'm'); p.put(53, 29, 'm'); p.put(58, 35, 'x'); p.put(55, 34, 'e')
+    isle(p, 24, 10, 5, 5); p.put(26, 12, 'S')                                 # the stairs down, under the water ...
+    p.hline(22, 23, 14, 1, 'W'); p.put(22, 15, 'W')                          # ... between D and the landing
+    for (x, y) in ((44, 6), (37, 13), (27, 19), (18, 25), (38, 26), (45, 33)): p.put(x, y, 'r' if p.r.random() < 0.5 else '%')   # broken spots
+    p.put(36, 33, 'e')
+    return p
+
+def depths_level3():
+    """The Sump: the arena. The water is low (knee-deep, slow), dry patches and pillars for cover, a deep pool in the middle where the
+    eel lies and rises; the last pump past it on a plinth to the south; the bottom (the goal) and the service lift behind a band of
+    deep water that only the last pump empties."""
+    p = Plan(60, 42, 213)
+    p.room(26, 3, 8, 5, ','); p.put(29, 4, 'U')                              # the landing, steps down into the sump
+    p.room(6, 9, 48, 24, 'w'); p.hline(28, 31, 8, 1, ',')
+    for (x, y, w, h) in ((9, 11, 6, 4), (44, 11, 7, 4), (8, 26, 7, 4), (45, 26, 7, 4), (20, 12, 4, 3), (36, 12, 4, 3), (19, 27, 5, 3), (36, 27, 5, 3)):
+        p.room(x, y, w, h, ',')                                               # dry patches
+    for (x, y) in ((12, 18), (47, 18), (17, 22), (42, 22), (24, 30), (35, 30)): p.put(x, y, 'h')   # pillars to break its line
+    for y in range(13, 25):                                                   # the eel's pool, deep, in the middle: a ragged round sump
+        for x in range(21, 39):
+            if ((x + 0.5 - 30) / 7.2) ** 2 + ((y + 0.5 - 18.5) / 5.0) ** 2 <= 1 + 0.18 * math.sin(x * 1.7 + y * 2.3): p.put(x, y, 'W')
+    p.room(26, 33, 8, 3, ','); p.put(29, 34, '6'); p.put(27, 33, 'i')        # the last pump, on a plinth past the pool
+    p.room(42, 35, 13, 5, ','); p.put(50, 37, 'G'); p.put(53, 38, 'Y'); p.put(45, 36, 'c'); p.put(46, 36, 'c')   # the bottom, the lift
+    p.room(36, 34, 6, 2, 'W'); p.room(38, 33, 2, 1, 'W')                     # the deep band between the sump and the bottom
+    for (x, y) in ((8, 10), (51, 10), (8, 31), (51, 31), (30, 12)): p.put(x, y, 'e')
+    p.put(29, 24, '~'); p.put(30, 25, '*')
+    return p
+
+DEPTHS_LEVELS = {"sub_station_depths_1": (depths_level1, 'drain1', 'power', 'S'),
+                 "sub_station_depths_2": (depths_level2, 'drain2', 'drain1', 'S'),
+                 "sub_station_depths_3": (depths_level3, 'drain3', 'drain2', 'G')}
 
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
@@ -405,26 +487,26 @@ if __name__ == "__main__":
             assert not vat(s0) and not vat(stages[1][1]), "the vat room must stay shut until the power is on"
             assert vat(sN) and where(sN, '5') and where(sN, '4'), "with every key the whole lab opens"
             open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows)); continue
-        if name == "sub_station_depths":    # redone like Alpha (2026-11-04): depths_plan, checked key by key
-            p = depths_plan(); stages, g = depths_check(p); rows = p.rows()
+        if name == "sub_station_depths":    # the station (2026-11-04, then the eel's levels below it): checked key by key and against the graph
+            p = depths_plan(); rows = p.rows()
+            stages, g = key_walk(p, 'E', {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse')}, {'1': 'badge', '2': 'power', 'W': 'drain3'})
             def has(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
             print(name, p.w, "x", p.h, "keys by stage:", [sorted(st[0]) for st in stages])
-            got = [st[0] for st in stages]
-            assert got == [set(), {'badge', 'fuse'}, {'badge', 'fuse', 'power'}, {'badge', 'fuse', 'power', 'drain'}], "badge and fuse first, then power, then the drain"
-            s0 = stages[0][1]
-            assert has(s0, '3') and has(s0, '4') and has(s0, '6') and not has(s0, '5') and not has(s0, 'G'), "start: locker, fuse crate and the dead pump panel; not the breaker, not the vault"
-            assert not any(has(st[1], 'G') for st in stages[:-1]) and has(stages[-1][1], 'G'), "the vault only after the drain"
+            assert [st[0] for st in stages] == [set(), {'badge', 'fuse'}, {'badge', 'fuse', 'power'}], "badge and fuse first, then power"
+            assert has(stages[0][1], '3') and has(stages[0][1], '4') and not has(stages[0][1], '5'), "start: the locker and the crate, not the breaker"
+            assert not has(stages[1][1], 'S') and has(stages[2][1], 'S'), "the stairs down need the power (the hole only shows them)"
+            assert not has(stages[-1][1], 'G') and not has(stages[-1][1], 'Y'), "the vault and the lift wait for the last level's drain"
+            full, _ = key_walk(p, 'E', {}, {'1': 'badge', '2': 'power', 'W': 'drain3'}, held=('badge', 'fuse', 'power', 'drain3'))
             floor = {(x, y) for y in range(p.h) for x in range(p.w) if g[y][x] not in '#n'}
-            assert floor <= stages[-1][1], ("with every key the whole station opens", sorted(floor - stages[-1][1])[:8])
-            # the plan is the graph: the same passages with the same locks, the key objects in the graph's rooms
-            want = {e for e in graph_edges(os.path.join(here, "sub_station_depths.mmd")) if not (e[0] & set(DEPTHS_SWITCHES) - set(DEPTHS_ROOMS))}
-            got = plan_edges(g, DEPTHS_ROOMS)
-            hole = {(frozenset(('Q', 'U')), 'hole')}                      # the hole is a plain passage on the grid
-            assert got == {(e, None if r == 'hole' else r) for e, r in want}, ("plan != graph", sorted(map(lambda e: (sorted(e[0]), str(e[1])), got ^ {(e, None if r == 'hole' else r) for e, r in want})))
+            assert floor <= full[-1][1] and has(full[-1][1], 'G') and has(full[-1][1], 'Y'), "drained, the whole station opens"
+            # the plan is the graph: this map's passages and locks equal the graph's edges between its rooms
+            want = {(e, None if r == 'hole' else r) for e, r in graph_edges(os.path.join(here, "sub_station_depths.mmd")) if e <= set(DEPTHS_ROOMS)}
+            got = plan_edges(g, DEPTHS_ROOMS, {'1': 'badge', '2': 'power', 'W': 'drain3'})
+            assert got == want, ("plan != graph", sorted(map(lambda e: (sorted(e[0]), str(e[1])), got ^ want)))
             for node, (room, ch) in DEPTHS_SWITCHES.items():
                 rx, ry, rw, rh = DEPTHS_ROOMS[room]
                 assert sum(row[rx:rx + rw].count(ch) for row in g[ry:ry + rh]) == 1, (node, "not in", room)
-            print(name, "matches sub_station_depths.mmd:", len(got), "passages")
+            print(name, "matches sub_station_depths.mmd:", len(got), "passages on this map")
             open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows)); continue
         p = institute(**kw)
         rows = p.rows(); start = next((x, y) for y, row in enumerate(rows) for x, ch in enumerate(row) if ch == 'E')
@@ -434,4 +516,14 @@ if __name__ == "__main__":
         assert not cut, (name, cut)
         if name == "secret_lab_beta": rows = visor_wing(rows)
         if name == "secret_lab_alpha": rows = vat_room(rows)
+        open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))
+    for name, (fn, drain, needs, goal) in DEPTHS_LEVELS.items():   # the eel's levels: the pump in reach, the way on only after it
+        p = fn(); rows = p.rows()
+        stages, g = key_walk(p, 'U', {'6': (drain, needs)}, {'W': drain}, held=(needs,))
+        def has(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
+        assert [st[0] for st in stages] == [set(), {drain}], (name, [st[0] for st in stages])
+        assert has(stages[0][1], '6') and not has(stages[0][1], goal), (name, "the pump in reach, the way on not")
+        floor = {(x, y) for y in range(p.h) for x in range(p.w) if g[y][x] not in '#n'}
+        assert floor <= stages[-1][1], (name, "drained, every tile", sorted(floor - stages[-1][1])[:6])
+        print(name, p.w, "x", p.h, "pump in reach at the start,", goal, "only after", drain)
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))

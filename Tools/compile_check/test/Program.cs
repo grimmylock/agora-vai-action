@@ -1387,38 +1387,64 @@ static class Program {
     MacroState.Current.Keys.Clear(); BrainBoss.Reset(); Rt.On = false;
   }
 
-  // Sub-Station Depths, redone with locks (2026-11-04): badge + fuse from the start, then the breaker, then the pumps drain the basin
+  // Sub-Station Depths, redone with locks (2026-11-04), then the eel's three flooded levels under it (sub_station_depths.mmd): each map
+  // flooded from its way in with each key set, on the real built map.
   static void DepthsChecks() {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
-    MacroState.Current.Keys.Clear(); MacroState.Current.Keys.Add(LabLocks.Staff); MacroState.Current.Keys.Add(LabLocks.Power);   // Alpha's keys open nothing here
-    MacroState.Current.CurrentZoneId = LabLocks.Depths; TerrainMap.BuildTerrainForZone(LabLocks.Depths); EncounterState.Enemies.Clear();
+    var keys = MacroState.Current.Keys;
+    void Build(string zone) { MacroState.Current.PersistedZoneTerrain.Remove(zone); MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone); EncounterState.Enemies.Clear(); }
     int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
-    Check(Count(TileType.Door, "door_badge") == 2 && Count(TileType.Door, "door_power") == 1 && Count(TileType.Difficult, "deepwater") > 200,
-      $"Depths: two badge doors, one power door, a basin of deep water ({Count(TileType.Door, "door_badge")}, {Count(TileType.Door, "door_power")}, {Count(TileType.Difficult, "deepwater")})");
-    var start = TerrainMap.Landmarks.First(l => l.Name == "Flooded Corridor"); var vault = TerrainMap.Landmarks.First(l => l.Name == "Transformer Vault");
-    HashSet<(int, int)> Flood() {
-      var seen = new HashSet<(int, int)> { (start.X, start.Y) }; var q = new Queue<(int, int)>(); q.Enqueue((start.X, start.Y));
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
       while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
       return seen;
     }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
     InteractiveObjectInstance Obj(string key) => TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == key);
-    var locker = Obj("depths_staff"); var crate = Obj("depths_fuse"); var breaker = Obj("depths_power"); var pumps = Obj("depths_drain");
-    Check(locker != null && crate != null && breaker != null && pumps != null && breaker.Requires == "depths_fuse" && pumps.Requires == "depths_power",
-      "Depths: the locker, the spares crate, the breaker (needs the fuse) and the pump panel (needs power) are there");
-    bool In(HashSet<(int, int)> s, InteractiveObjectInstance o) => s.Contains((o.X, o.Y)) || s.Contains((o.X + 1, o.Y)) || s.Contains((o.X - 1, o.Y)) || s.Contains((o.X, o.Y + 1)) || s.Contains((o.X, o.Y - 1));
-    var s0 = Flood();
-    Check(In(s0, locker) && In(s0, crate) && In(s0, pumps) && !In(s0, breaker) && !s0.Contains((vault.X, vault.Y)), "Depths: at the start the locker, the crate and the dead pump panel, not the breaker or the vault");
-    Check(Stashes.Blocked(pumps), "Depths: the pumps won't run without power");
-    foreach (var k in new[] { "depths_staff", "depths_fuse", "depths_power" }) { MacroState.Current.Keys.Add(k); LabLocks.Granted(k); }
-    var s1 = Flood();
-    Check(In(s1, breaker) && Count(TileType.Door, "door_badge") == 0 && Count(TileType.Door, "door_power") == 0 && !s1.Contains((vault.X, vault.Y)) && !Stashes.Blocked(pumps),
-      "Depths: badge and power open the gallery and the pump room, the basin still holds you back");
-    MacroState.Current.Keys.Add("depths_drain"); LabLocks.Granted("depths_drain");
-    Check(Count(TileType.Difficult, "deepwater") == 0 && Flood().Contains((vault.X, vault.Y)), "Depths: drained - the vault is reachable");
-    TerrainMap.BuildTerrainForZone(LabLocks.Depths);
-    Check(Count(TileType.Difficult, "deepwater") == 0 && Count(TileType.Door, "door_power_on") == 1, "Depths: a rebuilt map remembers the keys");
-    MacroState.Current.Keys.Clear(); Rt.On = false;
+    ZoneExit Exit(string to) => TerrainMap.Exits.FirstOrDefault(e => e.TargetZoneId == to);
+    void Give(string k) { keys.Add(k); LabLocks.Granted(k); }
+
+    // the station: badge and fuse, then the breaker, then the stairs down; the basin (vault, lift) waits for the last level's drain
+    keys.Clear(); keys.Add(LabLocks.Staff); keys.Add(LabLocks.Power);                       // Alpha's keys open nothing here
+    Build(LabLocks.Depths);
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Flooded Corridor"); var vault = TerrainMap.Landmarks.First(l => l.Name == "Transformer Vault");
+    var down = Exit(LabLocks.Depths1); var lift = Exit(LabLocks.Depths3);
+    Check(Count(TileType.Door, "door_badge") == 2 && Count(TileType.Door, "door_power") == 2 && Count(TileType.Difficult, "deepwater") > 200 && down != null && lift != null,
+      $"Depths: two badge doors, two power doors, the deep basin, stairs down and the lift ({Count(TileType.Door, "door_badge")}, {Count(TileType.Door, "door_power")}, {Count(TileType.Difficult, "deepwater")})");
+    var locker = Obj("depths_staff"); var crate = Obj("depths_fuse"); var breaker = Obj("depths_power");
+    Check(locker != null && crate != null && breaker != null && breaker.Requires == "depths_fuse" && Obj("depths_drain") == null,
+      "Depths: the locker, the spares crate and the breaker (needs the fuse); no pump up here any more");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, locker.X, locker.Y) && In(s0, crate.X, crate.Y) && !In(s0, breaker.X, breaker.Y) && !s0.Contains((down.X, down.Y)) && !s0.Contains((vault.X, vault.Y)),
+      "Depths: at the start the locker and the crate; not the breaker, the stairs down or the vault");
+    foreach (var k in new[] { "depths_staff", "depths_fuse", "depths_power" }) Give(k);
+    var s1 = Flood(start.X, start.Y);
+    Check(In(s1, breaker.X, breaker.Y) && s1.Contains((down.X, down.Y)) && !s1.Contains((vault.X, vault.Y)) && !s1.Contains((lift.X, lift.Y)),
+      "Depths: badge and power open the gallery and the stairs down; the basin still holds you back");
+
+    // the levels: each pump needs the key above it, its drain opens the way on
+    foreach (var (zone, drain, needs, on) in new[] { (LabLocks.Depths1, "depths_drain1", "depths_power", LabLocks.Depths2),
+                                                     (LabLocks.Depths2, "depths_drain2", "depths_drain1", LabLocks.Depths3),
+                                                     (LabLocks.Depths3, "depths_drain3", "depths_drain2", (string)null) }) {
+      Build(zone);
+      var up = TerrainMap.Exits.FirstOrDefault(e => e.TargetZoneId == (zone == LabLocks.Depths1 ? LabLocks.Depths : zone == LabLocks.Depths2 ? LabLocks.Depths1 : LabLocks.Depths2));
+      var pump = Obj(drain); var next = on != null ? Exit(on) : null; var goal = on == null ? TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "The Bottom") : null;
+      int gx = next?.X ?? goal?.X ?? 0, gy = next?.Y ?? goal?.Y ?? 0;
+      Check(up != null && pump != null && pump.Requires == needs && (next != null || goal != null) && Count(TileType.Difficult, "deepwater") > 20,
+        $"{zone}: stairs up, the pump (needs {needs}), the way on, deep water");
+      var a0 = Flood(up.X, up.Y);
+      Check(In(a0, pump.X, pump.Y) && !a0.Contains((gx, gy)), $"{zone}: the pump is in reach, the way on is under the water");
+      Give(drain);
+      Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(up.X, up.Y).Contains((gx, gy)), $"{zone}: pumped - the water drops, the way on is open");
+      if (on == null) Check(Flood(up.X, up.Y).Contains((Exit(LabLocks.Depths).X, Exit(LabLocks.Depths).Y)), $"{zone}: the service lift up to the station is reachable at the bottom");
+    }
+    Build(LabLocks.Depths);
+    Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(start.X, start.Y).Contains((vault.X, vault.Y)) && Flood(start.X, start.Y).Contains((Exit(LabLocks.Depths3).X, Exit(LabLocks.Depths3).Y)),
+      "Depths: the last pump drained the station's basin too - the vault and the lift");
+    Build(LabLocks.Depths1);
+    Check(Count(TileType.Difficult, "deepwater") == 0, "Depths: a level rebuilt later stays drained");
+    keys.Clear(); Rt.On = false;
   }
 
   static void SurvivalChecks() {

@@ -4784,3 +4784,24 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
 - Renders (1:1 in the real Depths basin render at game scale, a player for scale): `maps/renders/boss_eel/eel_basin_surfaced.png`,
   `_lurking`, `_strike` (wrapped 1.5 times round a stand-in 3x3 slab: the flooded levels aren't drawn), `_rear` (the last level isn't
   drawn: shown in this basin), `eel_closeup_4x.png`. The eel is pasted onto the map render, not drawn by the game. No fight code.
+
+## The eel's flooded levels: three maps under Sub-Station Depths (2026-11-04)
+
+- Yan: "We need the Maps before the fight, otherwise well have to rework it later". Built from the checked graph
+  (`ArtSource/plans/sub_station_depths.mmd`, the eel graph now replaces the station-only one: 17/17 nodes, no softlocks, 3 loops).
+- New maps: `sub_station_depths_1` Cistern (islands over deep water from the stairs to the pump; the stairs down in sight on a landing
+  cut off by water; a strike island with clear water all round; a 1-wide catwalk), `_2` Lower Cistern (a search: three dead ends, long
+  narrow catwalks for the strikes, the pump on the farthest platform), `_3` Sump (the arena: knee-deep water, dry patches, pillars, the
+  eel's round deep pool in the middle, the last pump in an alcove past it, the bottom and the service lift behind a deep band).
+  `TierDungeons.DepthsLevel`, zones in `MacroMapDatabase`, `ZoneThemes`, a landmark "The Bottom".
+- The station: the pump panel is gone; the pump room is the stairwell (a walled corner behind its own power door, so the hole can't skip
+  the power); the basin's deep water drains with the last level's pump; a service lift at its bottom (`Lab(..., down, lift)`).
+- Locks (`LabLocks`): one key set for all four maps ("depths_*"), but each map's deep water answers to its own drain (`Water`: the
+  station and the Sump drain3, the Cistern drain1, the Lower Cistern drain2). Pumps need the key above them. `KeysOf` also gives the power
+  and the map's drain, so the every-zone walk can cross levels.
+- Gotcha: an exit within 3 tiles of the map edge gets a 3x3 gate carved (`ZoneExits.CarveGate`); it ate the first stairwell's door.
+- Art: a raised platform's south face over deep water (`WorldArt`, 6 px of concrete); no lily pads on deep water.
+- Checks: `lab_plans.py` (`key_walk`, generalised from the station's check; the station still matched against the graph room by room),
+  `DepthsChecks` rewritten for four maps (each pump in reach, the way on only after it, the lift, a rebuilt map stays drained). ALL CHECKS PASSED.
+- Not done: the eel gate on the last pump (it just works until the fight exists), the reward chest and tier-4 item, stair/lift art on
+  the exits (nothing shows on the tile yet), enemies. Not checked in Unity: any of it.
