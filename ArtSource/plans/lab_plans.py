@@ -263,6 +263,135 @@ def alpha_check(p):
     seen = walk(keys); stages.append((set(keys), seen))
     return stages, g
 
+# Sub-Station Depths (Tier 3, under the Dried Lake), redesigned the same way (Yan, 2026-11-04: "redo the rest of the dungeons the same way").
+# A flooded switching station; every room has one job:
+#   E  Flooded Corridor (the ladder in; knee-deep water)        H  Switchyard Hall (the hub: breaker rows, the badge door, the dead power
+#   Q  Workers' Quarters (bunks; the fuse in a crate, 4)            door to the pumps, windows onto the black basin and the vault door beyond)
+#   K  Control Room (the dispatcher's locker: the staff badge, 3; windows onto the basin)
+#   Y  Cable Gallery (badge doors 1 from the hall and from the corridor: long, dark)   B  Battery Room (the breaker, 5, needs the fuse)
+#   U  Pump Room (power door 2; a hole from the quarters lets you see the dead pump panel, 6, early)
+#   W  the Basin (deep water: over your head until the pumps run)   G  Transformer Vault (the goal, across the basin)
+# Keys: badge -> fuse -> power -> drain. Loops: the corridor's own badge door into the gallery, the hole quarters <-> pump room.
+def depths_plan():
+    p = Plan(72, 44, 205); R = p.room
+    R(3, 16, 12, 8); p.hline(16, 19, 18, 3); p.put(15, 19, 'D'); p.put(20, 19, 'D')         # E -> the hall
+    R(21, 14, 25, 13)                                                                       # H: the Switchyard Hall
+    R(47, 18, 13, 9); p.put(46, 22, 'D')                                                    # K: the Control Room
+    p.hline(5, 51, 5, 3); R(53, 3, 15, 12); p.put(52, 6, 'D')                               # Y: the Cable Gallery, B: the Battery Room
+    p.vline(33, 8, 12); p.put(33, 13, '1'); p.vline(6, 8, 14); p.put(6, 15, '1')            # badge doors: hall -> gallery, corridor -> gallery
+    R(3, 28, 14, 14); p.vline(8, 25, 26); p.put(8, 24, 'D'); p.put(8, 27, 'D')              # Q: the Quarters, off the corridor
+    R(19, 30, 14, 11); p.put(26, 27, '2'); p.put(26, 28, '.'); p.put(26, 29, 'D')           # U: the Pump Room, behind a dead blast door
+    for (x, y) in ((17, 35), (18, 35), (17, 36), (18, 36)): p.put(x, y, 'r')               # the hole: quarters <-> pump room
+    R(35, 28, 22, 14, 'W'); p.put(40, 27, 'D')                                              # the Basin, all deep water ...
+    for y in (28, 29, 30):
+        for x in range(35, 51): p.put(x, y, ',')                                            # ... but a concrete ledge under the hall
+    for y in (31, 32, 33): p.put(44, y, 'w')                                                # a drowned stair: it just goes down
+    R(58, 29, 11, 13); p.put(57, 36, 'D')                                                   # G: the Transformer Vault, across the water
+    for x in (36, 37, 38, 42, 43, 44): p.put(x, 27, 'n')                                    # windows: hall -> basin
+    for x in (50, 51, 52): p.put(x, 27, 'n')                                                # control room -> basin
+    # E: the corridor. The ladder, knee-deep water, a body that tried the deep end
+    p.put(4, 17, 'E'); p.put(5, 16, 'i')
+    for (x, y) in ((7, 19), (8, 19), (9, 20), (10, 20), (11, 19), (12, 21), (9, 22), (10, 22), (11, 22), (12, 18), (13, 18)): p.put(x, y, 'w')
+    p.put(13, 22, '*'); p.put(14, 22, '&'); p.put(3, 23, 'b'); p.put(14, 16, 'c')
+    # H: the hall: three rows of breaker cabinets with gaps, pillars, cables everywhere, one working light
+    for y in (16, 20, 24):
+        for x in range(23, 44):
+            if x not in (28, 29, 38, 39): p.put(x, y, 'm' if y != 20 else 'f')
+    for (x, y) in ((22, 18), (44, 18), (22, 22), (44, 22)): p.put(x, y, 'h')
+    for (x, y) in ((25, 18), (30, 22), (36, 18), (41, 22), (33, 26), (27, 26)): p.put(x, y, 'q')
+    p.put(33, 14, 'i'); p.put(21, 26, 'e'); p.put(45, 14, 'e'); p.put(39, 26, ';'); p.put(40, 26, ';')
+    # K: the control room: the dispatcher's desk, consoles along the windows, the locker in the corner
+    for x in (49, 50, 51, 52, 53): p.put(x, 25, 'o')
+    for (x, y) in ((50, 21), (51, 21), (55, 21)): p.put(x, y, 'd')
+    p.put(58, 19, '3'); p.put(56, 19, 'l'); p.put(57, 19, 'l'); p.put(48, 18, 'f'); p.put(53, 19, 'i'); p.put(52, 22, '"'); p.put(54, 23, '"')
+    # Y: the gallery: cable trays, pipes, dead red lights, a trail of blood toward the battery room
+    for x in range(8, 50, 3): p.put(x, 5, 'q')
+    for x in range(10, 50, 7): p.put(x, 7, 'p')
+    for x in (14, 30, 46): p.put(x, 6, 'e')
+    for x in range(36, 51): p.put(x, 6, '~') if x % 2 else None
+    # B: the battery room: rows of cells, acid, the breaker on the far wall
+    for y in (6, 9, 12):
+        for x in range(55, 66):
+            if x != 60: p.put(x, y, 'm')
+    p.put(66, 4, '5'); p.put(54, 3, 'i'); p.put(62, 10, ';'); p.put(63, 11, ';'); p.put(57, 14, 'b'); p.put(67, 14, 'x')
+    # Q: the quarters: bunks (lockers), a table, the crate with the fuse under the far bunk
+    for y in (29, 33, 37):
+        p.put(4, y, 'l'); p.put(5, y, 'l'); p.put(14, y, 'l'); p.put(15, y, 'l')
+    p.put(9, 34, 'd'); p.put(10, 34, 'd'); p.put(4, 40, '4'); p.put(9, 31, 'i'); p.put(12, 39, 't'); p.put(16, 41, 'c')
+    p.put(10, 36, '*'); p.put(11, 37, '\''); p.put(6, 41, '"')
+    # U: the pump room: three pumps, pipes to the basin, the dead panel
+    for x in (22, 26, 30): p.put(x, 33, 'm'); p.put(x, 34, 'm')
+    for x in range(21, 33, 2): p.put(x, 37, 'p')
+    p.put(31, 31, '6'); p.put(19, 40, 'b'); p.put(32, 40, 'w'); p.put(31, 40, 'w'); p.put(24, 31, 'e')
+    # G: the vault: transformers round the walls, a console in the middle, the researcher's last stand
+    for (x, y) in ((59, 30), (60, 30), (66, 30), (67, 30), (59, 40), (60, 40), (66, 40), (67, 40)): p.put(x, y, 'm')
+    p.put(64, 35, 'G'); p.put(63, 34, 'o'); p.put(65, 37, '*'); p.put(66, 37, '&'); p.put(61, 33, '"'); p.put(68, 35, 'e'); p.put(62, 38, 'i')
+    p.dirty()
+    return p
+
+# The rooms of depths_plan (x, y, w, h), named as in sub_station_depths.mmd; anything walkable outside them is a passage.
+DEPTHS_ROOMS = {'E': (3, 16, 12, 8), 'H': (21, 14, 25, 13), 'K': (47, 18, 13, 9), 'Y': (5, 5, 47, 3), 'B': (53, 3, 15, 12),
+                'Q': (3, 28, 14, 14), 'U': (19, 30, 14, 11), 'L': (35, 28, 22, 14), 'V': (58, 29, 11, 13)}
+DEPTHS_SWITCHES = {'BS': ('B', '5'), 'P': ('U', '6'), 'Q': ('Q', '4'), 'K': ('K', '3')}   # graph node -> (room, plan letter)
+
+def graph_edges(path):
+    """The passages of a Mermaid mission graph as {(frozenset(a, b), req or None)} (the subset graph_check.py reads)."""
+    import re
+    out = set()
+    for line in open(path):
+        m = re.match(r'\s*(\w+)(?:\[".*?"\])?\s*-->(?:\|([^|]*)\|)?\s*(\w+)', line)
+        if m:
+            req = next((t[4:] for t in (m.group(2) or '').split(',') if t.startswith('req:')), None)
+            out.add((frozenset((m.group(1), m.group(3))), req))
+    return out
+
+def plan_edges(g, rooms):
+    """The same thing read off the grid: which rooms reach which through passages, and the locks on the way ('W' = drain)."""
+    locks = {'1': 'badge', '2': 'power', 'W': 'drain'}
+    def room_of(x, y):
+        if g[y][x] == 'W': return None                      # deep water is a lock, never a room
+        return next((r for r, (rx, ry, rw, rh) in rooms.items() if rx <= x < rx + rw and ry <= y < ry + rh), None)
+    H, W = len(g), len(g[0]); out = set()
+    for r in rooms:
+        cells = [(x, y) for y in range(H) for x in range(W) if g[y][x] not in '#n' and room_of(x, y) == r]
+        seen = {(c, None) for c in cells}; q = list(seen)
+        while q:
+            (x, y), lock = q.pop()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < W and 0 <= ny < H) or g[ny][nx] in '#n': continue
+                other = room_of(nx, ny)
+                if other == r: continue
+                if other is not None: out.add((frozenset((r, other)), lock)); continue
+                st = ((nx, ny), locks.get(g[ny][nx], lock))
+                if st not in seen: seen.add(st); q.append(st)
+    return out
+
+def depths_check(p):
+    """Walks the plan from E picking up keys in order (3 badge, 4 fuse, 5 power needs fuse, 6 drain needs power) until nothing changes."""
+    g = p.rows(); H, W = len(g), len(g[0])
+    start = next((x, y) for y in range(H) for x in range(W) if g[y][x] == 'E')
+    blocks = {'1': 'badge', '2': 'power', 'W': 'drain'}
+    def walk(keys):
+        seen = {start}; q = [start]
+        while q:
+            x, y = q.pop()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if n in seen or not (0 <= n[0] < W and 0 <= n[1] < H): continue
+                ch = g[n[1]][n[0]]
+                if ch in '#n' or (ch in blocks and blocks[ch] not in keys): continue
+                seen.add(n); q.append(n)
+        return seen
+    gives = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse'), '6': ('drain', 'power')}
+    keys = set(); stages = []
+    while True:
+        seen = walk(keys); stages.append((set(keys), seen)); new = False
+        for (x, y) in seen:
+            k = gives.get(g[y][x])
+            if k and k[0] not in keys and (k[1] is None or k[1] in keys): keys.add(k[0]); new = True
+        if not new: return stages, g
+
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     for name, kw in LABS.items():
@@ -275,6 +404,27 @@ if __name__ == "__main__":
             assert where(s0, 'G') and where(s0, '3') and not where(s0, '4'), "start: Sample Storage and the badge locker open, the fuse crate not"
             assert not vat(s0) and not vat(stages[1][1]), "the vat room must stay shut until the power is on"
             assert vat(sN) and where(sN, '5') and where(sN, '4'), "with every key the whole lab opens"
+            open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows)); continue
+        if name == "sub_station_depths":    # redone like Alpha (2026-11-04): depths_plan, checked key by key
+            p = depths_plan(); stages, g = depths_check(p); rows = p.rows()
+            def has(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
+            print(name, p.w, "x", p.h, "keys by stage:", [sorted(st[0]) for st in stages])
+            got = [st[0] for st in stages]
+            assert got == [set(), {'badge', 'fuse'}, {'badge', 'fuse', 'power'}, {'badge', 'fuse', 'power', 'drain'}], "badge and fuse first, then power, then the drain"
+            s0 = stages[0][1]
+            assert has(s0, '3') and has(s0, '4') and has(s0, '6') and not has(s0, '5') and not has(s0, 'G'), "start: locker, fuse crate and the dead pump panel; not the breaker, not the vault"
+            assert not any(has(st[1], 'G') for st in stages[:-1]) and has(stages[-1][1], 'G'), "the vault only after the drain"
+            floor = {(x, y) for y in range(p.h) for x in range(p.w) if g[y][x] not in '#n'}
+            assert floor <= stages[-1][1], ("with every key the whole station opens", sorted(floor - stages[-1][1])[:8])
+            # the plan is the graph: the same passages with the same locks, the key objects in the graph's rooms
+            want = {e for e in graph_edges(os.path.join(here, "sub_station_depths.mmd")) if not (e[0] & set(DEPTHS_SWITCHES) - set(DEPTHS_ROOMS))}
+            got = plan_edges(g, DEPTHS_ROOMS)
+            hole = {(frozenset(('Q', 'U')), 'hole')}                      # the hole is a plain passage on the grid
+            assert got == {(e, None if r == 'hole' else r) for e, r in want}, ("plan != graph", sorted(map(lambda e: (sorted(e[0]), str(e[1])), got ^ {(e, None if r == 'hole' else r) for e, r in want})))
+            for node, (room, ch) in DEPTHS_SWITCHES.items():
+                rx, ry, rw, rh = DEPTHS_ROOMS[room]
+                assert sum(row[rx:rx + rw].count(ch) for row in g[ry:ry + rh]) == 1, (node, "not in", room)
+            print(name, "matches sub_station_depths.mmd:", len(got), "passages")
             open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows)); continue
         p = institute(**kw)
         rows = p.rows(); start = next((x, y) for y, row in enumerate(rows) for x, ch in enumerate(row) if ch == 'E')

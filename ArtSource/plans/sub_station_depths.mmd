@@ -1,0 +1,18 @@
+%% Sub-Station Depths (Tier 3) - mission graph, drawn before the floor plan (level-design skill, graph_check.py).
+%% Keys: badge (blue card doors), fuse, power (dead blast doors), drain (deep water). Nothing is spent.
+%% Seen before it opens: the power door and the black basin from the hall, the dead pump panel through the hole, the vault door across the water.
+%% start: E
+%% goal: V
+flowchart TD
+  E["Flooded Corridor: the ladder in {start}"] --> H["Switchyard Hall: the hub"]
+  E --> Q["Workers' Quarters {item:fuse}"]
+  H --> K["Control Room: dispatcher's locker {item:badge}"]
+  H -->|req:badge| Y["Cable Gallery: long, dark"]
+  E -->|req:badge| Y
+  Y --> B["Battery Room"]
+  B -->|req:fuse| BS["Battery breaker {item:power}"]
+  H -->|req:power| U["Pump Room"]
+  Q -->|hole| U
+  U -->|req:power| P["Pump panel {item:drain}"]
+  H --> L["Basin ledge: black water, the vault door beyond"]
+  L -->|req:drain| V["Transformer Vault {goal}"]
