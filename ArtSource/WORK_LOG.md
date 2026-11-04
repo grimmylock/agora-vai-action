@@ -4830,3 +4830,17 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   wrapping several catwalks at once) is kept for the fight: the catwalks are spaced so it can loop across them.
 - New plan check: before the drain, no dry tile may stand cut off in the water except round the way on (it caught a blood mark and a
   lamp left in open water by the redraw). ALL CHECKS PASSED. Render: `maps/renders/dungeon/sub_station_depths_levels.jpg`.
+
+## RT fx 4 - which ready-made pixelfx effects fit (2026-11-04, review only)
+
+- Yan: "take a look at the redy made ones and see if any fit in our game". Already in: muzzle flashes, hit spark, ricochet, bullet impact,
+  zap hit, the livewire ball, our void pull. Rendered 40 more against what the game has but draws no effect for.
+- Fit (recoloured to Zone ramps, played at game scale on the real Depths renders with a character, effect pixels at half size like the
+  gun effects): small explosion (frag), smoke bomb in grey (smoke grenade, the Visor's vanishing smoke), parry (the perfect parry),
+  blunt hit in dust (blunt melee, concussion), acid splash (the acid anomaly, a mutant's spit), campfire (camps, bonfires), and for the
+  eel and the flooded levels: splash (its strike), ripples (it lurking, wading), whirlpool (a pump draining a level), thunderclap
+  (electrified water). `maps/renders/fx/pixelfx_candidates.gif` / `_still.png` (script kept in the session scratchpad, not the repo).
+- Don't fit: the status effects and hit-flash (drawn round pixelfx's own character), side-view ones (bubbles, drip, fog, poison
+  cloud), fantasy/cartoon ones (torch, brazier, key glint, loot beam, chest open, bat, fish, frog, poof, stunned stars), too big for
+  now (fire ring, flame pillar - maybe a Pyre anomaly flare-up), EMP (too sci-fi), heavy cleave (side view, fantasy).
+- Nothing in the game yet: waiting on Yan's picks.
