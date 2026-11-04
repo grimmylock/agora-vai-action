@@ -4819,3 +4819,14 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
 - Not done: the game atlas (`Assets/Resources/Sprites/world_atlas.bytes`) doesn't have `g_grate` yet - only after Yan approves the look;
   until then Unity draws the decks a flat grey. Stairs between deck and water level, a metal footstep sound (it uses the hard one).
 - Renders: `maps/renders/dungeon/sub_station_depths_levels.jpg`, `sub_station_depths_catwalks_closeup.png`. ALL CHECKS PASSED.
+
+## Thinner catwalks, pumps on spurs (2026-11-04)
+
+- Yan (a sketch over the Level 1 render: the eel's coils across several catwalks and round the pump): "they're a little too wide, also
+  the pumps should be at the end of a thin catwalk not in a whole platform, otherwise the eel can't block it by wraping around, unless
+  it reveals even more of it's body and wraps around like the image".
+- Levels 1-2 redrawn: every island 3x3 (the landings 4x4/5x4), every catwalk 1 wide, each pump at the end of a 9-tile spur off the last
+  island (`pump_spur`), so a coil round the spur cuts you off from it. The sketch's other idea (the eel showing more of its body and
+  wrapping several catwalks at once) is kept for the fight: the catwalks are spaced so it can loop across them.
+- New plan check: before the drain, no dry tile may stand cut off in the water except round the way on (it caught a blood mark and a
+  lamp left in open water by the redraw). ALL CHECKS PASSED. Render: `maps/renders/dungeon/sub_station_depths_levels.jpg`.

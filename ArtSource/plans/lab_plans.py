@@ -413,40 +413,43 @@ def isle(p, x, y, w, h):                                       # a steel catwalk
 def walk(p, x0, y0, x1, y1, wide=1, ch='='):                 # a catwalk: along x, then along y
     p.hline(x0, x1, y0, wide, ch); p.vline(x1, y0, y1, wide, ch)
 
+def pump_spur(p, x, y0, y1):
+    """The pump at the end of a long 1-wide catwalk (Yan: "the pumps should be at the end of a thin catwalk not in a whole platform,
+    otherwise the eel can't block it by wraping around"): the catwalk from y0 up to y1, the pump on its last tile, a lamp before it."""
+    p.vline(x, y1, y0, 1, '='); p.put(x, y1, '6'); p.put(x, y1 + 1, 'i')
+
 def depths_level1():
-    """The Cistern: the eel's first strike. A path of islands from the stairs to the pump on the far side; the stairs down sit on a
-    landing in the middle, plainly in sight, under the water until the pump runs."""
+    """The Cistern: the eel's first strike. Small islands (3x3, room for it to wrap) on single catwalks from the stairs to the last
+    island, then a long thin spur out to the pump. The stairs down sit on a landing in plain sight, under the water until the pump runs."""
     p = cistern(64, 40, 211)
-    isle(p, 3, 3, 8, 6); p.put(5, 4, 'U'); p.put(4, 3, 'e')                   # the landing at the foot of the stairs
-    walk(p, 11, 6, 15, 6, 2); isle(p, 16, 4, 5, 5)                            # A: the first island
-    walk(p, 18, 9, 18, 14, 2); isle(p, 14, 15, 6, 4)                          # B
-    walk(p, 8, 16, 13, 16); isle(p, 4, 14, 4, 4); p.put(5, 15, 'c'); p.put(6, 16, '"')   # C: a dead end with a crate (it pays)
-    walk(p, 20, 17, 30, 17, 2); isle(p, 31, 13, 6, 6); p.put(33, 15, 'h')     # D: the middle island, a pillar for cover
-    walk(p, 34, 19, 34, 26, 1)                                                # a 1-wide catwalk south: the tense one
-    isle(p, 30, 27, 5, 5)                                                     # E: the strike island (clear water all round)
-    walk(p, 35, 29, 47, 29, 2); isle(p, 48, 25, 10, 9)                        # F: the pump platform
-    p.put(56, 26, '6'); p.put(53, 25, 'm'); p.put(57, 31, 'b'); p.put(50, 32, 'i'); p.put(49, 26, 'p')
-    isle(p, 40, 8, 6, 5); p.put(42, 10, 'S'); p.put(44, 9, 'e')              # the stairs down: in sight, cut off ...
-    p.hline(37, 39, 14, 2, 'W')                                               # ... by deep water from D (the catwalk is under it)
-    p.put(20, 6, '*'); p.put(32, 29, '~'); p.put(33, 30, '&')                # someone didn't make it
+    isle(p, 3, 3, 5, 4); p.put(5, 4, 'U'); p.put(4, 3, 'e')                   # the landing at the foot of the stairs
+    walk(p, 8, 5, 15, 5); isle(p, 16, 4, 3, 3)                                # A
+    walk(p, 17, 7, 17, 14); isle(p, 16, 15, 3, 3)                             # B
+    walk(p, 8, 16, 15, 16); isle(p, 5, 15, 3, 3); p.put(5, 15, 'c')           # C: a dead end with a crate (it pays)
+    walk(p, 19, 16, 30, 16); isle(p, 31, 15, 3, 3)                            # D: the middle
+    walk(p, 32, 18, 32, 26)                                                   # south: the long one
+    isle(p, 31, 27, 3, 3); p.put(33, 29, '*'); p.put(32, 29, '&')            # E: the strike island (clear water all round), someone who didn't make it
+    walk(p, 34, 28, 47, 28); isle(p, 48, 27, 3, 3)                            # F: the last island
+    pump_spur(p, 49, 26, 18)                                                  # the pump, out on its spur
+    isle(p, 40, 8, 4, 4); p.put(41, 9, 'S'); p.put(43, 8, 'e')               # the stairs down: in sight, cut off by the water
+    p.put(17, 5, '*')
     return p
 
 def depths_level2():
-    """The Lower Cistern: darker, more broken, a search. The pump is the farthest island; three dead ends; set points for the eel's
-    strikes on the long catwalks. The stairs down are on a landing in the middle, under the water."""
+    """The Lower Cistern: a search over longer, thinner catwalks (the eel's strikes come on them), three dead ends, the pump on a spur
+    off the farthest island. The stairs down are on a landing in the middle, under the water."""
     p = cistern(64, 40, 212)
-    isle(p, 52, 3, 8, 6); p.put(56, 4, 'U')                                   # the landing (stairs up, north-east)
-    walk(p, 40, 6, 51, 6, 2); isle(p, 35, 4, 5, 5)                           # A
-    walk(p, 20, 6, 34, 6, 1); isle(p, 14, 3, 6, 6); p.put(15, 4, 'c'); p.put(18, 7, '"')   # C: a dead end (north-west), a crate, papers
-    walk(p, 37, 9, 37, 16, 2); isle(p, 34, 17, 6, 5)                         # B
-    walk(p, 22, 19, 33, 19, 1); isle(p, 16, 16, 6, 6)                        # D: west, over the long narrow catwalk
-    walk(p, 18, 22, 18, 28, 1); isle(p, 14, 29, 7, 6); p.put(15, 33, 't'); p.put(19, 30, '*')   # E: a dead end (south-west)
-    walk(p, 38, 22, 38, 30, 2); isle(p, 35, 31, 7, 6)                        # F: south
-    walk(p, 42, 33, 49, 33, 1); isle(p, 50, 28, 10, 9)                       # G: the pump, the farthest platform
-    p.put(57, 30, '6'); p.put(52, 29, 'm'); p.put(53, 29, 'm'); p.put(58, 35, 'x'); p.put(55, 34, 'e')
-    isle(p, 24, 10, 5, 5); p.put(26, 12, 'S')                                 # the stairs down, under the water ...
-    p.hline(22, 23, 14, 1, 'W'); p.put(22, 15, 'W')                          # ... between D and the landing
-    p.put(36, 33, 'e')
+    isle(p, 55, 3, 4, 4); p.put(57, 4, 'U')                                   # the landing (stairs up, north-east)
+    walk(p, 43, 5, 54, 5); isle(p, 40, 4, 3, 3)                               # A
+    walk(p, 22, 5, 39, 5); isle(p, 19, 4, 3, 3); p.put(19, 4, 'c')            # C: a dead end over the longest catwalk, a crate
+    walk(p, 41, 7, 41, 15); isle(p, 40, 16, 3, 3)                             # B
+    walk(p, 24, 17, 39, 17); isle(p, 21, 16, 3, 3)                            # D: west
+    walk(p, 22, 19, 22, 28); isle(p, 21, 29, 3, 3); p.put(23, 31, 't'); p.put(21, 29, '*')   # E: a dead end (south-west)
+    walk(p, 41, 19, 41, 29); isle(p, 40, 30, 3, 3)                            # F: south
+    walk(p, 43, 31, 50, 31); isle(p, 51, 30, 3, 3)                            # G: the farthest island
+    pump_spur(p, 52, 29, 21)                                                  # the pump, out on its spur
+    isle(p, 28, 9, 4, 4); p.put(29, 10, 'S')                                  # the stairs down, under the water
+    p.put(41, 25, 'e'); p.put(30, 17, 'e')
     return p
 
 def depths_level3():
@@ -524,5 +527,9 @@ if __name__ == "__main__":
         assert has(stages[0][1], '6') and not has(stages[0][1], goal), (name, "the pump in reach, the way on not")
         floor = {(x, y) for y in range(p.h) for x in range(p.w) if g[y][x] not in '#n'}
         assert floor <= stages[-1][1], (name, "drained, every tile", sorted(floor - stages[-1][1])[:6])
+        # before the drain: the only dry tiles out of reach are the ones round the way on (no stray bits standing in the water)
+        dry = {t for t in floor if g[t[1]][t[0]] != 'W'}
+        way = key_walk(p, goal, {}, {'W': 'never'})[0][-1][1]
+        assert dry - stages[0][1] <= way, (name, "dry tiles cut off in the water", sorted(dry - stages[0][1] - way)[:6])
         print(name, p.w, "x", p.h, "pump in reach at the start,", goal, "only after", drain)
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))
