@@ -4936,3 +4936,17 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   marker is now digit 0, which is deep water itself (`StampPlan`: case '0'). Decals meant for the shore had done the same and were moved.
 - Harness: the plan's digits (0 and 9 once each), two far stashes in reach at the start and a third at the bottom. ALL CHECKS PASSED.
   Not done: the fight, the flicker, enemies; not checked in Unity.
+
+## The eel's animation frames (2026-11-05, no fight code)
+
+- `ArtSource/bosses/eel_anim.py` moves the paths eel_poses.py bends his pixels along: 9 strips, 118 frames, all facing left as he drew it, 15 fps,
+  32 px a tile, on one fixed canvas each with an anchor (the pivot) in `boss_eel_anims.json`: `rear_idle` 12 (loop), `lunge` 14, `slam` 10, `hurt` 8
+  (a white flash), `die` 18, `wrap_back` + `wrap_front` 22 each (burst 8, hold 6 looping with electricity along the coils, release 8; split at the
+  platform's centre row so the game draws the platform between them), `swim` 16 and `swim_shadow` 16 (a wave from head to tail, one wavelength a
+  cycle, so it loops). Strips under Unity's 16384 px, imported with the same settings as the pixelfx strips (`.meta` from `fx_hit_spark`).
+- Checked frame by frame on filmstrips (`maps/renders/boss_eel/sheet_*.png`) and the lunge and the wrap as GIFs over the real arena / a stand-in
+  platform (`anim_lunge.gif`, `anim_wrap.gif`): no tearing or patches in any frame (the painter fixes of the same day hold on motion).
+- Limits, on purpose: a lunge is left (right = flipped); toward up or down the fight code lines the eel up or uses the slam; the head is never rotated
+  (a profile only); the die ends in a slumped heap, not a sinking. The strike's splash (px_splash) and the thunderclap are the game's, not baked in.
+- Not done: the game side (an `EelBoss` that plays these: the sprite follows the pool's centre, the platform's centre, the head), the fight itself,
+  sound. Not checked in Unity. The harness wasn't re-run for this commit: only art, scripts and data files changed since the last green run.

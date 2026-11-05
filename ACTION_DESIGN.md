@@ -163,6 +163,13 @@ the flooded levels under the Depths' basin.
 - **The reward** (Yan: "every boss needs a reward"): special eel parts that sell for a good profit (above a normal mutant part, which is
   400-600 RU at Tier 3 in `MutantLootSystem`), a chest of random loot of the dungeon's tier (3), and **one** armor or weapon a tier above (4).
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
+- **The eel's animation frames (2026-11-05, `ArtSource/bosses/eel_anim.py`, strips `Assets/Resources/Sprites/Fx/boss_eel_*.png` + `boss_eel_anims.json`)**,
+  all bent from his own pixels, facing left as drawn (the game flips for right), 15 fps, 32 px a tile: `rear_idle` (loop, half out of the water, swaying),
+  `lunge` (wind-up, the head darts left, hold, recover), `slam` (rears and crashes down in front), `hurt` (a white flash and a recoil), `die` (the head
+  drops, the coil slackens, it goes dark), `wrap_back` / `wrap_front` (burst, a hold that loops with electricity along the coils, release: round a 3x3
+  platform, split at the platform's row so the game draws the platform between them), `swim` and `swim_shadow` (a travelling wave, the lurking one).
+  The json holds each strip's frames, fps, loop, frame size and anchor (the pivot: the pool's centre, the platform's centre, the head). A lunge toward
+  up or down isn't baked: the fight code lines the eel up, or uses the slam. No fight code yet.
 - **The Sump, the arena (2026-11-05, built; `sub_station_depths_3.mmd`, `lab_plans.py depths_level3`)**: one wide room of knee-deep water (slow), 60x44;
   the eel lies in a deep pool (102 tiles, centre marked with plan digit 0) at its south end; the only way to the last pump is the 5-wide channel just
   south of the pool along a 2-tile shore its neck reaches (digit 9 = the channel mouth, 3 tiles from the pool): its coil blocks the way, you put it down

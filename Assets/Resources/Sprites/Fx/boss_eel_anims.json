@@ -1,0 +1,167 @@
+{
+ "rear_idle": {
+  "loop": true,
+  "anchor": [
+   450,
+   235
+  ],
+  "faces": "left",
+  "file": "boss_eel_rear_idle",
+  "frames": 12,
+  "fps": 15,
+  "frame": [
+   620,
+   340
+  ]
+ },
+ "lunge": {
+  "loop": false,
+  "anchor": [
+   450,
+   235
+  ],
+  "faces": "left",
+  "file": "boss_eel_lunge",
+  "frames": 14,
+  "fps": 15,
+  "frame": [
+   620,
+   340
+  ]
+ },
+ "slam": {
+  "loop": false,
+  "anchor": [
+   450,
+   235
+  ],
+  "faces": "left",
+  "file": "boss_eel_slam",
+  "frames": 10,
+  "fps": 15,
+  "frame": [
+   620,
+   340
+  ]
+ },
+ "hurt": {
+  "loop": false,
+  "anchor": [
+   450,
+   235
+  ],
+  "faces": "left",
+  "file": "boss_eel_hurt",
+  "frames": 8,
+  "fps": 15,
+  "frame": [
+   620,
+   340
+  ]
+ },
+ "die": {
+  "loop": false,
+  "anchor": [
+   450,
+   235
+  ],
+  "faces": "left",
+  "file": "boss_eel_die",
+  "frames": 18,
+  "fps": 15,
+  "frame": [
+   620,
+   340
+  ]
+ },
+ "wrap_back": {
+  "loop": false,
+  "anchor": [
+   350,
+   215
+  ],
+  "faces": "left",
+  "segments": {
+   "burst": [
+    0,
+    7
+   ],
+   "hold": [
+    8,
+    13
+   ],
+   "release": [
+    14,
+    21
+   ]
+  },
+  "loops": "hold",
+  "file": "boss_eel_wrap_back",
+  "frames": 22,
+  "fps": 15,
+  "frame": [
+   560,
+   420
+  ]
+ },
+ "wrap_front": {
+  "loop": false,
+  "anchor": [
+   350,
+   215
+  ],
+  "faces": "left",
+  "segments": {
+   "burst": [
+    0,
+    7
+   ],
+   "hold": [
+    8,
+    13
+   ],
+   "release": [
+    14,
+    21
+   ]
+  },
+  "loops": "hold",
+  "file": "boss_eel_wrap_front",
+  "frames": 22,
+  "fps": 15,
+  "frame": [
+   560,
+   420
+  ]
+ },
+ "swim": {
+  "loop": true,
+  "anchor": [
+   140,
+   120
+  ],
+  "faces": "left",
+  "file": "boss_eel_swim",
+  "frames": 16,
+  "fps": 15,
+  "frame": [
+   900,
+   240
+  ]
+ },
+ "swim_shadow": {
+  "loop": true,
+  "anchor": [
+   140,
+   120
+  ],
+  "faces": "left",
+  "file": "boss_eel_swim_shadow",
+  "frames": 16,
+  "fps": 15,
+  "frame": [
+   900,
+   240
+  ]
+ }
+}
