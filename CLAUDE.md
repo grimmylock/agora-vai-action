@@ -134,7 +134,9 @@ pixelfx effects, the brain boss after its fixes, Secret Lab Alpha's locks, Sub-S
 **Done lately (WORK_LOG for detail):** story Tiers 1-3 and Tier 1 missions; Boss 1 (the Visor, parry duels); Boss 2 (the brain in the
 vat, Secret Lab Alpha); the backpack; survival mode; recorded sounds; pixelfx; in-game lighting v2; lock-and-key dungeons (Alpha,
 then Sub-Station Depths with the new deep-water lock; per-dungeon keys in `LabLocks.cs`); the Depths eel boss designed and its
-three flooded levels built as maps (`sub_station_depths_1..3`), art round 2 waiting on Yan, no fight code yet.
+three flooded levels built as maps (`sub_station_depths_1..3`; levels 1-2 are mazes built from their mission graphs, with the eel's
+strike spots marked in the plan), the eel's art is Yan's own drawing recovered to game pixels and bent along paths (`eel_native.py`,
+`eel_poses.py`, waiting on his look), no fight code yet; ten ready-made pixelfx effects in the game (`CombatFx.PxAt`, RT fx 5).
 
 **Waiting on Yan:**
 - His review of Sub-Station Depths (`maps/renders/dungeon/sub_station_depths_before_after.jpg`) before any other dungeon is redone.

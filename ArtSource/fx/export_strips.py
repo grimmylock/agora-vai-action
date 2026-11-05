@@ -13,6 +13,10 @@ OUT = os.path.join(HERE, "..", "..", "Assets", "Resources", "Sprites", "Fx")
 TEMPLATE = os.path.join(OUT, "fx_hit_spark.png.meta")
 FIRE = ["#1a1210", "#3a2218", "#6a3a20", "#9a5a2a", "#c4823a", "#dcae62", "#eed69a", "#fbf2d8"]
 GUN = {"palette": FIRE, "light": 0.4}
+SMOKE = ["#121314", "#1f2122", "#2e3132", "#43474a", "#5c6164", "#7c8184", "#a2a6a8"]
+DUST = ["#1c1813", "#3a3229", "#5a4f40", "#7d7052", "#a0936f", "#cfc4a4", "#efe8d4"]
+GOLD = ["#2a1a08", "#5a3a12", "#8a6020", "#b88c3a", "#dcb862", "#efdca0", "#fbf4dc"]
+MURK = ["#0b100f", "#141c1a", "#1d2a26", "#2a3b35", "#3e554b", "#5d7a6c", "#8aa596", "#c4d6ca"]
 # game name -> (pixelfx id, render options, lift). lift = px above the pixelfx origin where the game's anchor is: pixelfx stands
 # effects on the ground under a 24x38 character, so a muzzle flash sits `height` px up (26) - the game anchors it at the muzzle itself. Guns are drawn at half-pixels in game (ppu 32), electric at full (ppu 16): Yan, 2026-11-03.
 RENDERS = {
@@ -23,6 +27,16 @@ RENDERS = {
     "anomaly_livewire": ("lightning/ball-lightning", {}, 0), "zap_hit": ("lightning/zap-hit", {}, 0),
     # Boss 2: the brain's void pull (our small black hole) and its escape (the library's full-size one)
     "void_pull": ("zone/void-pull", {}, 0), "void_escape": ("shadow/black-hole", {}, 0),
+    # RT fx 4 (Yan: "if they fit add them, we can change later"): the library's ready-made ones that fit, in the Zone's ramps, half-pixels
+    "small_explosion": ("explosions/small-explosion", {"palette": FIRE, "stone": "#5d5c56"}, 0),        # the frag, the barrel, a cooked-off grenade
+    "smoke_bomb": ("explosions/smoke-bomb", {"palette": SMOKE}, 0),                                     # the smoke grenade, the Visor's vanishing
+    "parry": ("impacts/parry", {"palette": GOLD}, 30),                                                  # the perfect parry
+    "blunt_hit": ("impacts/blunt-hit", {"palette": DUST}, 22),                                          # the bat, the hammer, the sledge
+    "acid_splash": ("nature/acid-splash", {}, 0),                                                       # the acid anomaly going off
+    "splash": ("water/splash", {"palette": MURK, "stone": False}, 0),                                   # the eel bursting out (no trigger yet)
+    "ripples": ("water/ripples", {"palette": MURK}, 0),                                                 # wading
+    "whirlpool": ("water/whirlpool", {"palette": MURK}, 0),                                             # a pump draining a level
+    "thunderclap": ("lightning/thunderclap", {}, 0),                                                    # the electrified water (no trigger yet)
 }
 MAX_W = 16384
 
@@ -54,4 +68,6 @@ def export(name, fid, opts, lift):
     return len(pick), 30 // step
 
 if __name__ == "__main__":
-    for n, (fid, o, lift) in RENDERS.items(): export(n, fid, o, lift)
+    import sys                                      # python3 export_strips.py [name ...]: only those (the default: all)
+    for n, (fid, o, lift) in RENDERS.items():
+        if len(sys.argv) < 2 or n in sys.argv[1:]: export(n, fid, o, lift)

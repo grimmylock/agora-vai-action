@@ -283,6 +283,7 @@ namespace GameCore
             var (dx, dy) = Dir(from, to);
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
+            if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
             if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
@@ -312,6 +313,8 @@ namespace GameCore
                     held?.Swing();
                     Sfx.Play("swing", from);
                     if (e.Hit) At(now + 0.1f, () => Wound(e, to, dx, dy, false));
+                    if (e.Hit && e.Weapon?.Db != null && Melee.Blunt.Contains(e.Weapon.Db.Name))           // RT fx 4: the bat, the hammer, the sledge land with a dust-coloured thump
+                        At(now + 0.1f, () => PxFx("blunt_hit", to + new Vector3(0f, 0.35f, 0f), 0f, 0f, PxHalf));
                     break;
                 case "impact":                                  // RT 7a: a thrown weapon lands in a body
                     if (e.Hit) Wound(e, to, dx, dy, false);
@@ -656,7 +659,8 @@ namespace GameCore
                     break;
                 case "parry":      // blade on blade between the two of you
                     var mid = Vector3.Lerp(from, to, 0.45f) + new Vector3(0f, 0.45f, 0f);
-                    Puff("fx_hit_spark", mid, e.Hit ? 0.3f : 0.15f, 0f, Steel, e.Hit ? 3f : 1.6f);
+                    if (!(e.Hit && PxFx("parry", mid, 0f, 0f, PxHalf)))                                 // RT fx 4: the perfect parry's gold star and sparks
+                        Puff("fx_hit_spark", mid, e.Hit ? 0.3f : 0.15f, 0f, Steel, e.Hit ? 3f : 1.6f);
                     Burst(mid, Steel, e.Hit ? 22 : 8, e.Hit ? 3.2f : 1.8f, e.Hit ? 0.5f : 0.3f);
                     if (e.Hit) Burst(mid, Color.white, 10, 4.5f, 0.35f, 2);
                     Sfx.Play(e.Hit ? "parry_perfect" : "parry", mid, 1f, e.Hit ? 0f : 0.08f);
@@ -681,6 +685,7 @@ namespace GameCore
                     if (e.Target != null) Wound(e, to, fx, fy, false);
                     break;
                 case "smoke":      // the smoke grenade: he's gone
+                    if (PxFx("smoke_bomb", from + new Vector3(0f, 0.2f, 0f), 0f, 0f, PxHalf)) { Sfx.Play("smoke", from, 0.9f); break; }   // RT fx 4
                     for (int k = 0; k < 14; k++)
                         Puff("fx_muzzle_puff", from + new Vector3(Random.Range(-0.8f, 0.8f), Random.Range(-0.2f, 0.8f), 0f), Random.Range(1.4f, 2.4f), Random.Range(0.2f, 0.6f), new Color(0.72f, 0.74f, 0.72f, 0.9f), Random.Range(3f, 5f));
                     Sfx.Play("smoke", from, 0.9f);

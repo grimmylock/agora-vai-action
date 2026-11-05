@@ -4888,3 +4888,22 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
 - Not done: animation (swimming, strike, rear-up), the game side (the sprite path and a body that follows a path at runtime), the Sump arena.
   Not checked in Unity. The body is about 1.7 tiles thick, a little fatter than the 1.25 I'd assumed: the 3x3 islands and 3-tile clearances
   were already built with room for it.
+
+## RT fx 5 - the ready-made pixelfx effects that fit, in the game (2026-11-05)
+
+- Yan: "if they fit add them, we can change later". Strips exported by `ArtSource/fx/export_strips.py` (Zone ramps, half-pixels, 15 fps):
+  `px_small_explosion`, `px_smoke_bomb`, `px_parry`, `px_blunt_hit`, `px_acid_splash`, `px_splash`, `px_ripples`, `px_whirlpool`, `px_thunderclap`.
+  One generic event, kind "px" (`CombatFx.PxAt(name, x, y)`, played by `CombatFxView.PxFx`), so a trigger is one line.
+- Wired: the frag, a barrel and a cooked-off grenade (`Explosions.Blast`: it had a sound and no picture at all); the smoke grenade
+  (`Explosions.Throw`) and the Visor's vanishing (`BossFx`, the old puffs stay as the fallback); the perfect parry (`parry`: the gold star
+  replaces the old spark puff, the bursts, sound and shake stay); blunt melee hits (bat, hammer, sledge: `Melee.Blunt`); the Acid Bloom
+  anomaly's discharge (`AnomalyEngine`); wading in water (ripples every 0.6 s at most, `TacticalGridView`); a pump starting
+  (`LabLocks.Whirlpools`: up to three whirlpools in the deep water round it, nearest first, 3+ tiles apart).
+- Not wired, on purpose: the campfire (the game already has an animated bonfire from Batch 68 in the Pyre's flame: swapping would change a
+  look Yan approved), `splash` (the eel bursting out) and `thunderclap` (electrified water): their strips are in, the triggers come with the eel
+  fight (`CombatFx.PxAt("splash", x, y)`).
+- Two long ones lost frames to fit the 16384 px texture limit, and the game plays every strip at a fixed 15 fps, so the explosion plays about
+  2x and the smoke bomb 1.5x faster than the library's own timing (2.7 s and 3.4 s): a snappier grenade. A per-strip fps is the fix if
+  that's wrong. `thunderclap` is at half-pixels (full size would be 18 tiles across).
+- Harness: whirlpools asserted on all three flooded levels. ALL CHECKS PASSED. Not checked in Unity: how any of it looks and sounds next to the
+  existing effects, how busy automatic explosions get, the ripples' cost when wading far.

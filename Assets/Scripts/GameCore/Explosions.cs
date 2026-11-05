@@ -39,7 +39,7 @@ namespace GameCore
             switch (def.Throwable)
             {
                 case "frag": Blast(x, y, ThrowRadius, 400, thrower, "frag blast"); break;
-                case "smoke": TerrainMap.AddSmoke(x, y, ThrowRadius, 3); GameLog.Write("Thick smoke blocks sight through the area."); break;
+                case "smoke": CombatFx.PxAt("smoke_bomb", x, y); TerrainMap.AddSmoke(x, y, ThrowRadius, 3); GameLog.Write("Thick smoke blocks sight through the area."); break;
                 case "flash": Flash(x, y, ThrowRadius); break;
             }
         }
@@ -65,6 +65,7 @@ namespace GameCore
         public static void Blast(int cx, int cy, int radius, int damage, ICombatant attacker, string label)
         {
             Sfx.Play("explosion", TacticalGridView.GridToWorld(cx, cy), 1f, 0.08f);
+            CombatFx.PxAt("small_explosion", cx, cy);   // RT fx 4: the frag, the barrel, a cooked-off grenade finally have a picture
             Noise.Make(cx, cy, Noise.Blast, attacker);   // Batch 47
             var victims = new List<ICombatant>();
             if (Player.Current != null && Player.Current.IsAlive()) victims.Add(Player.Current);

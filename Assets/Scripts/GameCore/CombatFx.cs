@@ -31,6 +31,7 @@ namespace GameCore
         public bool Now, Pellet;
         public bool Flying, Landed;    // RT 8: the trigger pull (flash, kick, no tracer) / where a flying round came down (impact only)
         public float Delay, EndX = -1f, EndY = -1f;
+        public string Px;              // RT fx 4: kind "px" plays this pixelfx strip (Sprites/Fx/px_<Px>) at (FromX, FromY) - see CombatFx.PxAt
         public float Seconds;          // (RT 6h: < 0 = the reload stopped; Rounds = the hand's trips, one per round)          // RT 6d: a reload's real length (0 = the gun's own animation length)
     }
 
@@ -54,6 +55,13 @@ namespace GameCore
 
         /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer. jam (RT 6f): clearing a jam.</summary>
         public static void Reload(ICombatant u, Weapon w, float seconds, bool jam = false, int rounds = 0) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; e.Jammed = jam; e.Rounds = rounds; }
+
+        /// <summary>RT fx 4: a ready-made pixelfx strip (ArtSource/fx/export_strips.py) played once at a tile, at half-pixels like the gun effects:
+        /// "small_explosion", "smoke_bomb", "parry", "blunt_hit", "acid_splash", "splash", "ripples", "whirlpool", "thunderclap".</summary>
+        public static void PxAt(string name, int x, int y)
+        {
+            var e = Push("px", null, null); e.Px = name; e.FromX = x; e.FromY = y; e.Now = true;
+        }
 
         public static FxEvent Push(string kind, ICombatant actor, ICombatant target, Weapon weapon = null)
         {

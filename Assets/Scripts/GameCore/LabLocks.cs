@@ -112,7 +112,7 @@ namespace GameCore
             if (thing.v != null) GameLog.Write(thing.v.Says);
             if (key == Key("staff")) Relight("door_badge");
             if (key == Key("power")) { Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); }
-            if (key == Key(WaterKind(Zone))) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Drain(); }
+            if (key == Key(WaterKind(Zone))) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Whirlpools(key); Drain(); }
         }
 
         /// <summary>The doors of one kind stop looking locked (their look gets "_on": a green light) - they're ordinary doors now.</summary>
@@ -124,6 +124,26 @@ namespace GameCore
                     var t = TerrainMap.GetTile(x, y);
                     if (t.Type == TileType.Door && t.Look == look) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
                 }
+        }
+
+        /// <summary>RT fx 4: as a pump starts, up to three whirlpools turn in the deep water round it (nearest first, 3+ tiles apart).</summary>
+        static void Whirlpools(string key)
+        {
+            var pump = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == key);
+            if (pump == null) return;
+            var spots = new List<(int x, int y)>();
+            for (int r = 1; r <= 7 && spots.Count < 3; r++)
+                for (int dy = -r; dy <= r && spots.Count < 3; dy++)
+                    for (int dx = -r; dx <= r && spots.Count < 3; dx++)
+                    {
+                        int x = pump.X + dx, y = pump.Y + dy;
+                        if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r || x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height) continue;
+                        var t = TerrainMap.GetTile(x, y);
+                        if (t.Type != TileType.Difficult || t.Look != "deepwater") continue;
+                        if (spots.Any(s => Mathf.Max(Mathf.Abs(s.x - x), Mathf.Abs(s.y - y)) < 3)) continue;
+                        spots.Add((x, y));
+                    }
+            foreach (var s in spots) CombatFx.PxAt("whirlpool", s.x, s.y);
         }
 
         /// <summary>The deep water drops to knee height: plain flooded floor (slow, like any 'w').</summary>

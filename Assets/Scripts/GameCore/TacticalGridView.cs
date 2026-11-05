@@ -81,6 +81,7 @@ namespace GameCore
         private readonly HashSet<int> _fires = new HashSet<int>();   // standing cells drawn with the animated bonfire
         private readonly HashSet<SpriteRenderer> _faded = new HashSet<SpriteRenderer>();
         private readonly Dictionary<SpriteRenderer, int> _lastFoot = new Dictionary<SpriteRenderer, int>();
+        float _rippleAt;   // RT fx 4: the last wading ripple (one every 0.6 s at most)
         private readonly Dictionary<SpriteRenderer, SpriteRenderer> _shadows = new Dictionary<SpriteRenderer, SpriteRenderer>();
         private static Sprite _shadowSprite;
 
@@ -799,6 +800,8 @@ namespace GameCore
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))
                 Sfx.Play(Sfx.Step(TerrainMap.GetTile(u.X, u.Y).Ground), marker.transform.position, u is Player ? 0.6f : 0.4f, 0.12f);
+            if (wf >= 0 && wf != lastWf && u is Player && TerrainMap.GetTile(u.X, u.Y).Ground == GroundType.Water && Time.time - _rippleAt > 0.6f)
+            { _rippleAt = Time.time; CombatFx.PxAt("ripples", u.X, u.Y); }   // RT fx 4: wading sets the water moving
             _lastFoot[marker] = wf;
             return up;
         }

@@ -150,6 +150,7 @@ namespace GameCore
             if (anomaly.AnomalyType == "Acid Bloom")
             {
                 unit.StatusEffects.ToxicBleed = true;
+                CombatFx.PxAt("acid_splash", unit.X, unit.Y);                                  // RT fx 4: the bloom splashes
                 GameLog.Write("Toxic Bleed has been inflicted and will deal 50 HP per turn until treated.");
             }
 

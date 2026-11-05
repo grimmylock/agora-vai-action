@@ -1442,7 +1442,10 @@ static class Program {
         Check(caches.Count == want && caches.All(o => In(a0, o.X, o.Y)), $"{zone}: {want} dead-end stashes, all in reach at the start ({caches.Count})");
         Check(Digits('7') == strikes && Digits('8') == lures, $"{zone}: {strikes} strike spots and {lures} false alarms marked in the plan ({Digits('7')}, {Digits('8')})");
       }
-      Give(drain);
+      CombatFx.Pending.Clear(); Give(drain);
+      var swirls = CombatFx.Pending.Where(e => e.Kind == "px" && e.Px == "whirlpool").ToList();   // RT fx 4: the pump starts, whirlpools turn in the deep water round it
+      Check(swirls.Count >= 1 && swirls.Count <= 3 && swirls.All(e => Math.Max(Math.Abs(e.FromX - pump.X), Math.Abs(e.FromY - pump.Y)) <= 7), $"{zone}: 1-3 whirlpools near the pump when it starts ({swirls.Count})");
+      for (int i = 0; i < swirls.Count; i++) for (int j = i + 1; j < swirls.Count; j++) Check(Math.Max(Math.Abs(swirls[i].FromX - swirls[j].FromX), Math.Abs(swirls[i].FromY - swirls[j].FromY)) >= 3, $"{zone}: whirlpools are 3+ tiles apart");
       Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(up.X, up.Y).Contains((gx, gy)), $"{zone}: pumped - the water drops, the way on is open");
       if (on == null) Check(Flood(up.X, up.Y).Contains((Exit(LabLocks.Depths).X, Exit(LabLocks.Depths).Y)), $"{zone}: the service lift up to the station is reachable at the bottom");
     }
