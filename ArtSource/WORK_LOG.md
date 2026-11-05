@@ -5036,3 +5036,19 @@ springs alone); the retreat after the platform strike bunched up (release the te
   (0.61), sort order, and the head is >= 0.5 tiles up whenever it is on top of its own body (0.79). ALL CHECKS PASSED. `maps/renders/boss_eel/eel_rig.mp4` re-rendered.
 - Not checked: how it feels in motion (all new numbers are first guesses: spacing 0.5, pitch 0.4, lift 0.7/0.8, dive 14 t/s); with the spacing at 0.5 the drawn body is half as long during the squeeze (the
   painter draws along the chain); the head's look-at is a profile flip, not a rotation; the tail-radius change (-0.25) only just clears its check; nothing in Unity (no view draws the chain).
+
+## Eel: new fight style - storyboard (2026-11-05)
+Yan: the eel "is way too wiggly ... maybe if it was more scripted and slower"; "all attack animations do is a little pounce"; wants the Hydra of God of War 1 (slamming its body around, tail or
+head swinging in circles); the entire body out of the water like that doesn't work in the fight; "change the map to have several deep pools where it can come up from to attack players in
+different parts of the arena, maybe its head attacks one while its tail comes out of the other pool". Decided with him: YES to the redesign, **4 pools**, **the tail can be targeted and goes back
+down after a set amount of damage**, **an attack where it comes fully out of a pool and goes down into another in a snake-like motion, damaging whoever is in the way**, and **IMPACT: heavy and strong**.
+- `Tools/render/eel_storyboard.py` -> `maps/renders/boss_eel/eel_storyboard.mp4` (15.7 s, 30 fps): the current Sump render with three pools painted in (west, east, north, plus the original big one).
+  Scripted, no physics wiggle: the body is a 35-tile spine laid out in 3D by hand-made curves, only the part above the water is painted (his drawing, the real painter, pieces sliced from the same texture
+  order so it does not crawl), the rest is under the surface. Attacks: 1 head strike (west pool) + tail sweep (north pool) at the same time, the tail has a damage bar and goes down; 2 arch slam (east pool,
+  over the arena, crash into the big pool, the whole body pours in after the head); 3 snake dash (out of the west pool, an S across the arena, down into the east pool).
+  Weight: a 1.5 s slow emerge, a rear and creep, then a strike that ACCELERATES into the hit (full speed at impact), 3-5 frames of hit-stop, screen shake and a zoom punch, shockwave rings, the game's own
+  splash/ripple/thunderclap strips, debris and droplets, dust, cracks and scorch that stay, afterimages on the fast parts, ground shadows under the arch, red telegraphs (circle, band, ring), bodies flung, damage numbers.
+- NOT game code and not the real map: nothing in `EelBoss.cs`, `EelRig.cs` or the plan changed. If Yan likes it the real work is: the Sump plan with four deep pools (graph, harness, render), an
+  authored-spine attack system in EelBoss (curves + timeline, the tail with its own HP), a view that clips the body at each pool's surface, the pools' foam/ripples, and sound.
+- Placeholders: timings, damage numbers, the thunderclap strip (blue, electric) used for ground impacts, players are bots with scripted dodges and hits, the pools are painted over the render (the north one covers a pillar).
+  Not checked in Unity. The old rig clips (`eel_rig.mp4`) and strip clips are the previous style.
