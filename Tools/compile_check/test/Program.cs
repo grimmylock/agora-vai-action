@@ -15,6 +15,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
@@ -51,7 +52,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DepthsChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -796,6 +797,103 @@ static class Program {
   // Boss 2 preview (Tools/render/brain_fight.py): the brain fights a bot in Secret Lab Alpha's vat room. The bot circles the vat,
   // sidesteps orbs, dives through pulses and beams; the vat loses HP at a steady rate (the bot's gunfire) so every phase shows.
   // Frames at 15 fps: the vat's sheet cell, orbs (kind, heading), beams, the pulse, thrown cover, cover gone or landed, the log.
+  // Boss 3 preview (the real EelBoss code): a bot fights it - Level 1's platform (wrap, shock, strike), then the Sump (reveal, rear-up fight, vomit, retreat).
+  // Writes the frames for Tools/render/eel_fight.py:   dotnet /tmp/test.dll eelframes frames.json
+  static void EelFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear(); EelBoss.Reset();
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
+    var ll = new ListLog(); var log = ll.L; GameLog.Target = ll;
+    const float dt = 1f / 30f; int k = 0, hits = 0, dives = 0, lastHp = 0; var sb = new System.Text.StringBuilder("{\"segs\":[");
+    void Build(string zone) { MacroState.Current.PersistedZoneTerrain.Remove(zone); MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone); EncounterState.Enemies.Clear(); }
+    List<(int, int)> Path((int, int) from, (int, int) to) {
+      var prev = new Dictionary<(int, int), (int, int)> { [from] = from }; var q = new Queue<(int, int)>(); q.Enqueue(from);
+      while (q.Count > 0) { var c = q.Dequeue(); if (c == to) break; foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (c.Item1 + dx, c.Item2 + dy); if (!prev.ContainsKey(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { prev[n] = c; q.Enqueue(n); } } }
+      var r = new List<(int, int)>(); if (!prev.ContainsKey(to)) return r; for (var c = to; c != from; c = prev[c]) r.Add(c); r.Add(from); r.Reverse(); return r;
+    }
+    void Seg(string zone, EelBoss.Fight f, Func<float, bool> until, Action<float, float, float, float> bot, float maxT, bool firstSeg) {
+      sb.Append(firstSeg ? "" : ",").Append("{\"zone\":\"" + zone + "\",\"armor\":" + (f.BodyArmor == null ? -1 : Array.IndexOf(SpriteAtlasIndex.Armor, f.BodyArmor)) + ",\"frames\":["); int n = 0; var b = f.Unit;
+      for (float t = 0f; t < maxT && !until(t); t += dt, k++) {
+        UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt;
+        var (px, py) = Ballistics.Pos(p); float ix = 0f, iy = 0f; bool jump = false; float vx = 0f, vy = 0f;
+        var tmp = new float[4]; bot(t, px, py, dt); (ix, iy, jump) = (BotX, BotY, BotJump);
+        jump = jump && Rt.Of(p).Stamina >= Rt.DiveStamina && !Rt.Of(p).Diving && UnityEngine.Time.time >= Rt.Of(p).ProneUntil; if (jump) dives++;
+        Rt.PlayerTick(p, new Rt.Input { X = ix, Y = iy, Jump = jump, Sprint = !jump, Mouse = (f.Level == "platform" ? f.SX : f.CX, f.Level == "platform" ? f.SY : f.CY) });
+        if (BotShoot && b.Hp > 1) { int dmg = (int)(EelBoss.MaxHp / 50f * dt + 0.5f); if (f.Level == "sump" && f.Stage == "hidden") dmg = 1; b.Hp = Math.Max(1, b.Hp - dmg); Boss.OnDamaged(b); }
+        EelBoss.Tick(dt); Boss.TickAll(); if (p.Hp < lastHp) hits++;
+        if (p.Hp < p.MaxHp / 3) { p.Hp = p.MaxHp; Body.Reset(); }
+        lastHp = p.Hp; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+        if (k % 2 != 0) continue;
+        var (qx, qy) = Ballistics.Pos(p);
+        sb.Append(n++ > 0 ? "," : "").Append("{\"t\":" + F(t) + ",\"stage\":\"" + f.Stage + "\",\"age\":" + F(EelBoss.Age(f)) + ",\"move\":\"" + (f.Move ?? "") + "\",\"label\":\"" + f.Label.Replace("\"", "'") + "\",\"phase\":" + f.Phase + ",\"enraged\":" + (f.Enraged ? 1 : 0)
+          + ",\"hp\":" + b.Hp + ",\"side\":" + f.Side + ",\"chain\":" + f.Chain + ",\"shadow\":[" + F(f.SX) + "," + F(f.SY) + "],\"plat\":[" + F(f.PX) + "," + F(f.PY) + "],\"wraps\":" + f.Wraps
+          + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"php\":" + p.Hp + ",\"body\":[" + (f.Swallowed && !f.Ejected ? -1 : f.Body == null ? -2 : f.BodyX) + "," + f.BodyY + "],"
+          + "\"zones\":[" + string.Join(",", f.Zones.Select(z => "[" + F(z.X) + "," + F(z.Y) + "," + F(z.R) + ",\"" + z.Kind + "\"," + (z.Live ? 1 : 0) + "]")) + "],\"shock\":" + f.Shocked.Count
+          + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
+        log0.AddRange(log.Where(l => l.Contains("coils shock"))); if (f.Stage == "move") moves.Add(f.Chain > 0 ? "smash" : f.Move);
+        log.Clear();
+      }
+      sb.Append("]}");
+    }
+    // --- 1. Level 1: walk the catwalk to the strike platform
+    Build(LabLocks.Depths1); var up = TerrainMap.Exits.First(e => e.TargetZoneId == LabLocks.Depths);
+    var plat = EelBoss.Marks(LabLocks.Depths1, '7')[0]; var route = Path((up.X, up.Y), plat);
+    if (route.Count < 4) throw new Exception("no catwalk route to the strike platform");
+    int si = Math.Max(0, route.Count - 16); var startAt = route[si]; p.X = startAt.Item1; p.Y = startAt.Item2; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); p.Hp = p.MaxHp; lastHp = p.Hp;
+    var f1 = EelBoss.SpawnPlatform(LabLocks.Depths1, plat.x - 12f, plat.y + 3f); f1.StageAt = UnityEngine.Time.time;
+    int ri = si; float wrapAge0 = -1f; int lastWraps = 0; var dive = false;
+    BotShoot = true;
+    Seg(LabLocks.Depths1, f1, t => f1.Stage == "done" && EelBoss.Age(f1) > 2.5f, (t, px, py, d) => {
+      BotX = 0; BotY = 0; BotJump = false; float gx, gy;
+      if (f1.Stage == "wrap" || f1.Stage == "release" || f1.Stage == "strike" || f1.Stage == "recover" || f1.Stage == "wind") {
+        float cxp = plat.x + 0.5f, cyp = plat.y + 0.5f; float dd = (float)Math.Sqrt((px - cxp) * (px - cxp) + (py - cyp) * (py - cyp));
+        var away = route[Math.Max(0, route.Count - 6)]; float ax = away.Item1 + 0.5f - cxp, ay = away.Item2 + 0.5f - cyp, al = (float)Math.Sqrt(ax * ax + ay * ay) + 0.001f;
+        if (f1.Stage == "wrap" && f1.Wraps == 1 && EelBoss.Age(f1) > 1.2f && f1.Shocked.Count == 0) { BotX = ax / al; BotY = ay / al; }              // wrap 1: try to walk out - and touch the coils
+        else if (f1.Stage == "wrap" && f1.Wraps >= 2 && EelBoss.Age(f1) > 2.0f) { BotX = ax / al; BotY = ay / al; BotJump = dd < 3.6f; }       // wrap 2: dive out through them
+        else if (f1.Stage == "strike" || f1.Stage == "release") { var z = f1.Zones.FirstOrDefault(); if (z != null) { float zx = px - z.X, zy = py - z.Y, zl = (float)Math.Sqrt(zx * zx + zy * zy) + 0.001f; if (zl < z.R + 1.2f) { BotX = zx / zl; BotY = zy / zl; BotJump = EelBoss.Age(f1) > 0.3f && zl < z.R + 0.4f; } } }
+        else if (dd > 0.8f && f1.Stage != "wrap") { BotX = (cxp - px) / dd; BotY = (cyp - py) / dd; }
+      } else {
+        var tgt = route[Math.Min(route.Count - 1, ri)]; gx = tgt.Item1 + 0.5f; gy = tgt.Item2 + 0.5f; float dx = gx - px, dy = gy - py, dl = (float)Math.Sqrt(dx * dx + dy * dy);
+        if (dl < 0.5f && ri < route.Count - 1) ri++; else if (dl > 0.001f) { BotX = dx / dl; BotY = dy / dl; }
+      }
+    }, 60f, true);
+    // --- 2. Level 3, the Sump: into the room, shoot once, the reveal, the fight, the vomit and the retreat
+    Build(LabLocks.Depths3); EelBoss.Reset(); var f3 = EelBoss.SpawnSump(LabLocks.Depths3); f3.StageAt = UnityEngine.Time.time;
+    p.X = 22; p.Y = 20; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; lastHp = p.Hp; Body.Reset();
+    var baited = new HashSet<string>(); string bait = ""; int patrol = 0, pdir = 1;
+    Seg(LabLocks.Depths3, f3, t => f3.Gone, (t, px, py, d) => {
+      BotX = 0; BotY = 0; BotJump = false; BotShoot = t > 1.5f;
+      float cx = f3.CX, cy = f3.CY, rx = px - cx, ry = py - cy, rl = (float)Math.Sqrt(rx * rx + ry * ry) + 0.001f;
+      // patrol the open north side of the pool: waypoints round it (the south is the channel), back and forth
+      var wps = new[] { (22.5f, 24f), (23f, 18.5f), (29f, 17f), (35.5f, 18.5f), (38f, 24f) };
+      var wp = wps[Math.Min(wps.Length - 1, Math.Max(0, patrol))]; float wx = wp.Item1 - px, wy = wp.Item2 - py, wl = (float)Math.Sqrt(wx * wx + wy * wy) + 0.001f;
+      if (wl < 0.7f) { if (patrol + pdir < 0 || patrol + pdir >= wps.Length) pdir = -pdir; patrol += pdir; } else { BotX = wx / wl * 0.6f; BotY = wy / wl * 0.6f; }
+      foreach (var z in f3.Zones) {
+        string kind = f3.Chain > 0 ? "smash" : z.Kind;
+        if (!baited.Contains(kind) && Math.Abs(px - z.X) + Math.Abs(py - z.Y) < 5f) { baited.Add(kind); bait = kind; }                    // the first time of each move the bot stands in it, so the preview shows the hit
+        if (bait == kind && f3.Stage == "move") { float tx = z.X - px, ty = z.Y - py, tl = (float)Math.Sqrt(tx * tx + ty * ty); if (tl > 0.5f) { BotX = tx / tl; BotY = ty / tl; } continue; }
+        float zx = px - z.X, zy = py - z.Y, zl = (float)Math.Sqrt(zx * zx + zy * zy) + 0.001f; float close = z.Kind == "sweep" ? 3.2f : z.R + 1.3f;
+        if (zl < close) { BotX = zx / zl; BotY = zy / zl; BotJump = (z.Live || (f3.Stage == "move" && EelBoss.Age(f3) > 0.45f)) && zl < close - 0.3f; }
+      }
+      if (f3.Stage != "move") bait = "";
+      if (f3.Stage == "vomit" || f3.Stage == "retreat") { BotX *= 0.3f; BotY *= 0.3f; }
+    }, 110f, false);
+    sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
+    System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
+    EelRun = (f1.Wraps, f1.Unit.Hp, f3.Gone, f3.Ejected, Story.Has(EelBoss.Fled), log0.Count(l => l.Contains("coils shock")), moves.Count);
+    Console.WriteLine($"eel fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}, sump gone {f3.Gone}, body ejected {f3.Ejected}, flag {Story.Has(EelBoss.Fled)}");
+  }
+  static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;
+  static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
+  static void EelChecks() {
+    EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
+    Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
+    Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
+    Check(r.gone && r.ejected && r.flag, "Eel: the Sump ends with the body vomited up on the slab and the eel gone (eel_fled)");
+    Check(r.moves >= 5, $"Eel: snap, lunge, slam, sweep and smash all get played ({r.moves} kinds)");
+  }
+
   static void BrainFrames(string path) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();

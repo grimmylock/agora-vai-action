@@ -4966,3 +4966,15 @@ player, smashing around when enraged, circular sweeps".
   act 3 = Gamma's Sealed Vault, unlocked today). The key's target is a proposal, not wired.
 - Not done: any game code (no EelBoss, no body spawn, no key, no fight, no sounds), smash = chained slams is design only, the eel parts reward is undecided.
   The swallow lump is subtle at thumbnail size and not checked at 1:1 in the game. Nothing checked in Unity.
+
+## Eel fight code (first pass) and the two preview clips (2026-11-05)
+Yan: eel parts still drop; keep the levels 1-2 stashes; the body's key is a to-do. Asked for two clips like the brain's: an art clip and a fight clip through the real boss code.
+- `Assets/Scripts/GameCore/EelBoss.cs` (new, host-side like BrainBoss; hooked in `Rt.WorldTick`, `Boss.OnDamaged`, `TacticalGridSystem.AttemptMove`, `Ballistics.MutantSize`):
+  Level 1-2 form = lurk (shadow) -> wind-up -> WRAP (coils round a '7' platform) -> SHOCK when the ring is touched -> release -> STRIKE; its HP can't drop below 80 % there (the 20 % carry-over).
+  Sump form = reveal (swallows the body on the '8' slab) -> rear-up fight: snap, lunge, slam, sweep, and smash (3 slams) from the 50 % wound stage; wounds at 75/50/25 %;
+  at 0 HP it vomits the body up (tier-4 armour, random human, `RollSpawnStash`) and retreats (`eel_fled`). Every move has a wind-up (zone shown) and a real hitbox; a dive passes through.
+- Harness: `dotnet /tmp/test.dll eelframes frames.json` (a bot: Level 1 platform, then the Sump) and `EelChecks()` (2 wraps, a shock, 20 % carry cap, body + flag, all five moves). ALL CHECKS PASSED.
+- Renderers: `Tools/render/eel_common.py`, `eel_art.py` (-> `maps/renders/boss_eel/eel_art.mp4`), `eel_fight.py` (-> `eel_fight.mp4`).
+- Not done / placeholder: no view in the game yet (nothing draws the eel in Unity, no spawn on entering the maps, no HUD bar, no co-op sync); the platform STRIKE reuses the rear-up snap strip;
+  the body is drawn as an armour sprite lying down; the body's key is a to-do; no sounds; the name "The Drowner" is a placeholder; the bot is simple (it stands in the first hit of each kind on purpose).
+  Numbers (damage, timings, ranges) are first guesses. Nothing checked in Unity.

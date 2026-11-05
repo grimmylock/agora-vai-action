@@ -659,12 +659,13 @@ namespace GameCore
             Melee.Tick(Time.deltaTime);                                            // RT 7a: thrown weapons fly, stuck blades come out
             Boss.TickAll();                                                        // Boss 1: the hit-stop, a looted boss's smoke
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
+            EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
             foreach (var e in EncounterState.Enemies.ToList())
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
                 if (Boss.Of(e) is Boss.Fight bf) { Boss.Tick(bf, TargetOf(e, local)); continue; }   // Boss 1: a boss runs his own moves
-                if (BrainBoss.Is(e)) continue;                                   // Boss 2: BrainBoss.Tick runs it
+                if (BrainBoss.Is(e) || EelBoss.Is(e)) continue;                  // Boss 2/3: their own Tick runs them
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
                 p = Companion.Is(e) ? local : TargetOf(e, local);                // co-op: each enemy fights the player nearest it
