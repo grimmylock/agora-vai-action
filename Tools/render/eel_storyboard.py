@@ -19,7 +19,8 @@ from eel_common import *
 import eel_poses as E, make_eel as M
 
 random.seed(7); np.random.seed(7)
-FPS, VW, VH, PAD, NS = 30, 1280, 720, 24, 1120            # 32 spine points a tile: 35 tiles of eel
+FPS, VW, VH, PAD, NS = 30, 1280, 720, 24, 1120            # NS: 32 spine points a tile, 35 tiles of eel
+SPEED = 0.8                                  # the script clock runs at 0.8 x real time: every wind-up, strike, effect and recovery is 25% longer (Yan: 'maybe a bit too fast, slow them 20%'); hit-stop is counted in frames, so it stays
 OX, OY = int(30.5 * T - VW / 2) - PAD, int(20.0 * T - VH / 2) - PAD
 WW, WH = VW + 2 * PAD, VH + 2 * PAD
 def sp(x, y, z=0.0): return (x * T - OX, (y - z) * T - OY)       # a point in the world (tiles, height) -> pixels on the padded canvas
@@ -273,7 +274,7 @@ def run(out, probe=None):
     probes = sorted(probe) if probe else None; sheet = []; maxt = 15.2
     while simt < maxt:
         if frozen > 0: frozen -= 1; step = 0.0
-        else: step = dtf
+        else: step = dtf * SPEED
         for e in list(events):
             if simt < e[0] <= simt + step: e[1](); events.remove(e)
         simt += step; t = simt

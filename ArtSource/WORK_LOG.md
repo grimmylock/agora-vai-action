@@ -5052,3 +5052,6 @@ down after a set amount of damage**, **an attack where it comes fully out of a p
   authored-spine attack system in EelBoss (curves + timeline, the tail with its own HP), a view that clips the body at each pool's surface, the pools' foam/ripples, and sound.
 - Placeholders: timings, damage numbers, the thunderclap strip (blue, electric) used for ground impacts, players are bots with scripted dodges and hits, the pools are painted over the render (the north one covers a pillar).
   Not checked in Unity. The old rig clips (`eel_rig.mp4`) and strip clips are the previous style.
+
+Storyboard v2 (2026-11-05): Yan - the phase 1 attacks look good but "maybe a bit too fast, slow them down by 20%". The script clock now runs at 0.8x (`SPEED` in eel_storyboard.py): every wind-up, strike,
+recovery and effect is 25% longer, the clip is about 19 s; hit-stop stays in frames. Phase 2 moves proposed in chat (tail grab and drag, flood surge): not built.
