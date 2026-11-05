@@ -12,12 +12,12 @@
 #####wwwwwwwwwwwwwwwwwwwwwwwwwewwwwwwwwwwwwwwwwwwwwwwww#####
 #####wwwe,,,,,wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww,,,,,ewww#####
 #####www,,,,,,wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww,,,,,,www#####
-#####www,,,J,,wwwwwwwwwwwwwwwwhwwwwwwwwwwwwwww,,,K,,www#####
+#####www,,,,,,wwwwwwwwwwwwwwwwhwwwwwwwwwwwwwww,,,,,,www#####
 #####wwwe,,,,,wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww,,,,,ewww#####
 #####wwwwwwwwwwwwwwwwwwwhwwwwwwwwwwwhwwwwwwwwwwwwwwwwww#####
 #####wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww#####
-#####wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww#####
-#####wwwwwwwwwwwwwwwwe,,,wwwwwwwwwww,,,ewwwwwwwwwwwwwww#####
+#####wwwwwwwwwwwwwwwwwwwwwww,,,,,wwwwwwwwwwwwwwwwwwwwww#####
+#####wwwwwwwwwwwwwwwwe,,,www,,8,,www,,,ewwwwwwwwwwwwwww#####
 #####wwwwwwwwwwwwwwww,,,,wwwwWWwwwww,,,,wwwwwwwwwwwwwww#####
 #####wwwwwwwwwwwwwwww,,,WWWWWWWWWWWW,,,,wwwwwwwwwwwwwww#####
 #####wwwwwwwwwwwwwwwwwwWWWWWWWWWWWWWwwwwwwwwwwwwwwwwwww#####
@@ -36,7 +36,7 @@
 ############################wwwww###########################
 #########################,,,,,,,,,,,######,,,,,,,,,,,,,#####
 #########################,,,i,,,,e,,WWWWWW,,c,c,,,,,,,,#####
-#########################,,,,,6,,,,,WWWWWW,,,L,,,,,,,,,#####
+#########################,,,,,6,,,,,WWWWWW,,,,,,,,,,,,,#####
 #########################,,,,,,,,,,,WWWWWW,,,,,,,G,,,,,#####
 #########################,,,,,,,,,,,######,,,,,,,,,,Y,,#####
 #########################,,,,,,,,,,,######,,,,,,,,,,,,,#####

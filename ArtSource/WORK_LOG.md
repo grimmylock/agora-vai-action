@@ -4950,3 +4950,19 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   (a profile only); the die ends in a slumped heap, not a sinking. The strike's splash (px_splash) and the thunderclap are the game's, not baked in.
 - Not done: the game side (an `EelBoss` that plays these: the sprite follows the pool's centre, the platform's centre, the head), the fight itself,
   sound. Not checked in Unity. The harness wasn't re-run for this commit: only art, scripts and data files changed since the last green run.
+
+## Eel: damage marks, swallow/vomit/retreat, Hydra attacks, Sump without stashes (2026-11-05)
+Yan: "i'd like for it to have damage marks, similar to how the brain has it's phases ... remove all the stashes, make it so the boss reveal is it coming
+out of the deep pool, swallowing a body that was there (the dead sprite of a random human npc, but with tier 4 armor) ... for its death, it will vomit up
+the body and then run away going back down the pool, we'll fight it again later in another place. the body it throws up ... has tier 4 armor, some random
+loot similar to a stash, and a key for something related to the storylines or a quest" and "attacks similar to the hydra in god of war 1: snapping at the
+player, smashing around when enraged, circular sweeps".
+- Art (`eel_poses.py`, `eel_anim.py`): 27 wound sites along his spine + head damage, 4 stages; `bulge` (the lump swallowed/spat up) and `mouth_at`. New
+  strips `snap`, `reveal` (26), `vomit` (24), `retreat` (14), `sweep` (18, faces right, 780x540); `die` removed. Every strip has `_d1.._d3` overlays; the json
+  has `damage`, per-frame `mouth` points, `swallow_frame` 13, `eject_frame` 13. Review sheets in `maps/renders/boss_eel/` (snap, reveal, vomit, retreat, sweep).
+- Map: Sump stashes J/K/L removed, a slab north of the pool with plan digit `8` for the body, graph gets the body node `{item:eel_key}`; harness updated
+  (no stashes; digits 0, 9, 8 once each). Levels 1-2 dead-end stashes kept. Harness: ALL CHECKS PASSED.
+- Looked at the game: corpses = `HumanEnemy` stash (`HumanLootSystem`, `CorpseLootUI`); keys are `MacroState.Keys` (`LabLocks`) and story flags (`StorySystem`,
+  act 3 = Gamma's Sealed Vault, unlocked today). The key's target is a proposal, not wired.
+- Not done: any game code (no EelBoss, no body spawn, no key, no fight, no sounds), smash = chained slams is design only, the eel parts reward is undecided.
+  The swallow lump is subtle at thumbnail size and not checked at 1:1 in the game. Nothing checked in Unity.

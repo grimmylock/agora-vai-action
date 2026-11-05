@@ -162,6 +162,21 @@ the flooded levels under the Depths' basin.
 - **Damage carries over** from Levels 1-2, **capped at 20% of its max HP** (Yan: "it can, but not much"); shown as scorched, torn coils.
 - **The reward** (Yan: "every boss needs a reward"): special eel parts that sell for a good profit (above a normal mutant part, which is
   400-600 RU at Tier 3 in `MutantLootSystem`), a chest of random loot of the dungeon's tier (3), and **one** armor or weapon a tier above (4).
+- **Sump fight redesign (Yan, 2026-11-05) - proposed details marked (P), not built (art, map and data only):**
+  - **Damage marks** like the brain's phases: the sprite gets wounds at **75 / 50 / 25 % HP** (stepped; stage 1 gashes and a torn fin, 2 flesh and
+    blood on the flank, 3 open wounds, bone, drips; head: scratches, cracked then bloodshot eye). Art: overlay strips `boss_eel_<anim>_d1..d3`
+    drawn over the base strip (same frames; the one of the stage reached holds every earlier wound); listed under `damage` in `boss_eel_anims.json`.
+  - **Attacks, like the Hydra in God of War 1 (Yan):** *snap* (a short fast bite at the player), *smash* when enraged (chained slams; **P**: enrage from
+    50 % HP, three slams in a row with a short gap), *circular sweep* (the head swings round the pool in an arc, the neck trailing: a flail you
+    dive or vault over). Plus the lunge and slam already drawn. Strips: `snap`, `slam`, `lunge`, `sweep`.
+  - **Reveal:** a body lies on a small slab on the pool's north rim (plan digit `8`). The eel rises out of the pool, swoops at the body, bites
+    it, gulps it down its neck, settles into the rear-up pose and the fight starts (`reveal`; the json gives the mouth's position in every frame and the swallow frame).
+  - **Death:** it isn't killed. It **vomits up the same body** (`vomit`, eject frame in the json) and **sinks back down the pool** (`retreat`) - "we'll
+    fight it again later in another place" (**P**: the next fight is the Level-3 deep dungeon / a later map; it keeps its wounds).
+  - **The body** = the loot: a dead random human NPC (dead sprite) in **tier-4 armor**, with random loot like a stash (`HumanLootSystem` corpse
+    stash, tier 3-4) and **a key tied to the story** (**P**: the Sealed Vault key of Secret Lab Gamma, main-story act 3 - `StorySystem` has no lock there yet;
+    or an OSEI quest item). **No other stashes in the Sump** (removed). Levels 1-2 dead-end stashes stay unless Yan says otherwise.
+  - **Open:** do eel parts still drop (design above) or is the body the whole reward?
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
 - **The eel's animation frames (2026-11-05, `ArtSource/bosses/eel_anim.py`, strips `Assets/Resources/Sprites/Fx/boss_eel_*.png` + `boss_eel_anims.json`)**,
   all bent from his own pixels, facing left as drawn (the game flips for right), 15 fps, 32 px a tile: `rear_idle` (loop, half out of the water, swaying),

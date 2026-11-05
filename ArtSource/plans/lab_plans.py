@@ -531,23 +531,24 @@ def depths_level3():
     """The Sump: the eel's arena (sub_station_depths_3.mmd), designed round the fight. One wide room of knee-deep water (slow); the eel lies
     in a deep pool at its south end; the only way to the last pump is the narrow channel just south of the pool, along a two-tile shore its
     neck reaches, so its coil blocks the way. Pillars are cover from its lunges, two dry patches stand inside its reach, two far ones are
-    out of it (safe, each with a stash). Plan digits: 0 = where it rises (the pool's centre, itself deep water), 9 = the way it blocks (the channel mouth)."""
+    out of it (safe). No stashes: the loot is the body it swallows and spits up. Plan digits: 0 = where it rises (the pool's centre, itself deep water),
+    9 = the way it blocks (the channel mouth), 8 = where the body lies (a small slab on the pool's north rim)."""
     p = Plan(60, 44, 213); cx, cy, ra, rb = SUMP['pool']
     p.room(26, 3, 8, 5, ','); p.put(29, 4, 'U'); p.put(27, 3, 'i'); p.put(32, 3, 'e')           # the landing, the stairs up
     p.room(28, 8, 4, 1, ',')                                                                   # the steps down into the sump
     p.room(5, 9, 50, 22, 'w')                                                                  # the sump: knee-deep, x 5..54, y 9..30
-    for (x, y, w, h, cache) in ((8, 12, 6, 4, 'J'), (46, 12, 6, 4, 'K'), (21, 19, 4, 3, None), (36, 19, 4, 3, None)):
-        p.room(x, y, w, h, ',')                                                                # dry patches
-        if cache: p.put(x + w // 2, y + h // 2, cache)
+    for (x, y, w, h) in ((8, 12, 6, 4), (46, 12, 6, 4), (21, 19, 4, 3), (36, 19, 4, 3)):
+        p.room(x, y, w, h, ',')                                                                # dry patches (no stashes: the only loot is the body)
     for (x, y) in ((24, 16), (36, 16), (19, 23), (41, 23), (21, 29), (39, 29), (30, 14), (14, 26), (46, 26)): p.put(x, y, 'h')   # pillars: cover from its lunges
     for y in range(int(cy - rb - 2), int(cy + rb + 3)):                                        # the pool: deep, a ragged ellipse
         for x in range(int(cx - ra - 2), int(cx + ra + 3)):
             if ((x + 0.5 - cx) / ra) ** 2 + ((y + 0.5 - cy) / rb) ** 2 <= 1 + 0.16 * math.sin(x * 1.7 + y * 2.3): p.put(x, y, 'W')
     p.put(int(cx), int(cy), '0')                                                               # the eel rises here (0 is deep water too)
+    p.room(28, 18, 5, 2, ','); p.put(30, 19, '8')                                              # the slab just north of the pool: the body it swallows lies here (8)
     p.room(28, 31, 5, 5, 'w'); p.put(30, 31, '9')                                              # the channel to the pump (5 wide), the mouth is where it blocks
     p.room(25, 36, 11, 6, ','); p.put(30, 38, '6'); p.put(28, 37, 'i'); p.put(33, 37, 'e')    # the pump alcove
     p.room(36, 37, 6, 3, 'W')                                                                  # the deep band between the alcove and the bottom
-    p.room(42, 36, 13, 6, ','); p.put(49, 39, 'G'); p.put(52, 40, 'Y'); p.put(45, 38, 'L'); p.put(44, 37, 'c'); p.put(46, 37, 'c')   # the bottom, the lift, a stash
+    p.room(42, 36, 13, 6, ','); p.put(49, 39, 'G'); p.put(52, 40, 'Y'); p.put(44, 37, 'c'); p.put(46, 37, 'c')   # the bottom, the lift
     for (x, y) in ((8, 12), (51, 12), (8, 15), (51, 15), (21, 19), (39, 19), (30, 11)): p.put(x, y, 'e')    # red lamps: the tell, a flicker before a strike
     p.put(26, 30, '~'); p.put(27, 29, '*'); p.put(34, 30, '&')                                 # someone who didn't make it past the pool, on the shore
     return p
