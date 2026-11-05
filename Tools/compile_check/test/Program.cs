@@ -1435,6 +1435,13 @@ static class Program {
         $"{zone}: stairs up, the pump (needs {needs}), the way on, deep water");
       var a0 = Flood(up.X, up.Y);
       Check(In(a0, pump.X, pump.Y) && !a0.Contains((gx, gy)), $"{zone}: the pump is in reach, the way on is under the water");
+      if (on != null) {       // the mazes (sub_station_depths_N.mmd): every dead end pays, and the eel's spots are marked in the plan
+        var caches = TerrainMap.InteractiveObjects.Where(o => o.GrantsKey == null && (o.Name == "Rusted Cache" || o.Name == "Drowned Locker" || o.Name == "Crew's Bag" || o.Name == "Maintenance Box")).ToList();
+        int want = zone == LabLocks.Depths1 ? 3 : 4, strikes = zone == LabLocks.Depths1 ? 1 : 3, lures = zone == LabLocks.Depths1 ? 0 : 2;
+        var rows = TierDungeons.LabPlans[zone]; int Digits(char c) => rows.Sum(r => r.Count(ch => ch == c));
+        Check(caches.Count == want && caches.All(o => In(a0, o.X, o.Y)), $"{zone}: {want} dead-end stashes, all in reach at the start ({caches.Count})");
+        Check(Digits('7') == strikes && Digits('8') == lures, $"{zone}: {strikes} strike spots and {lures} false alarms marked in the plan ({Digits('7')}, {Digits('8')})");
+      }
       Give(drain);
       Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(up.X, up.Y).Contains((gx, gy)), $"{zone}: pumped - the water drops, the way on is open");
       if (on == null) Check(Flood(up.X, up.Y).Contains((Exit(LabLocks.Depths).X, Exit(LabLocks.Depths).Y)), $"{zone}: the service lift up to the station is reachable at the bottom");

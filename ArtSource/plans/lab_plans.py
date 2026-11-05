@@ -402,55 +402,128 @@ def key_walk(p, start_ch, gives, blocks, held=()):
 # mossy, no guard rails - Yan) over it.
 # The level's pump ('6') drops the water, which opens its stairs down ('S', on a landing under the water). 'U' = stairs up.
 # Islands of 3x3 or more stand clear in open water so the eel has room to wrap round them; catwalks are 1-2 wide (tense to cross).
-def cistern(w, h, seed):
-    p = Plan(w, h, seed); p.room(2, 2, w - 4, h - 4, 'W'); return p
+# The first two levels are built FROM their mission graphs (sub_station_depths_1.mmd / _2.mmd, checked with graph_check.py): ids are grid
+# cells (cXrY), the labels carry the roles. The plan is then checked against the graph, and against the eel: where it appears and attacks.
+LEVEL_GRID = {1: dict(w=64, h=40, x0=7, dx=10, y0=6, dy=9, seed=211, ratio=1.7, dead=3, forks=5, loops=2),
+              2: dict(w=72, h=48, x0=7, dx=10, y0=6, dy=9, seed=212, ratio=2.0, dead=4, forks=4, loops=0)}
+CACHE_CHARS = "JKLM"                                           # a dead end's stash (TierDungeons.DepthsCaches names them)
+SPUR = 9                                                       # the pump's thin catwalk, in tiles
+EEL_CLEAR = 3                                                  # water all round a strike spot and the pump spur, in tiles: room to wrap
 
-def isle(p, x, y, w, h):                                       # a steel catwalk deck on legs, a corner rusted away now and then
-    p.room(x, y, w, h, '=')
-    for (cx, cy) in ((x, y), (x + w - 1, y), (x, y + h - 1), (x + w - 1, y + h - 1)):
-        if p.r.random() < 0.5 and w > 3 and h > 3: p.put(cx, cy, 'W')
+def read_graph(path):
+    """nodes {id: label}, edges [(a, b, req or None)] from a Mermaid mission graph (the subset graph_check.py reads)."""
+    import re
+    nodes, edges = {}, []
+    for line in open(path):
+        if line.lstrip().startswith('%%'): continue
+        for m in re.finditer(r'(\w+)\["([^"]*)"\]', line): nodes[m.group(1)] = m.group(2)
+        m = re.match(r'\s*(\w+)(?:\["[^"]*"\])?\s*-->(?:\|([^|]*)\|)?\s*(\w+)', line)
+        if m: edges.append((m.group(1), m.group(3), next((t[4:] for t in (m.group(2) or '').split(',') if t.startswith('req:')), None)))
+    for a, b, _ in edges: assert a in nodes and b in nodes, ("a node with no label", a, b)
+    return nodes, edges
 
-def walk(p, x0, y0, x1, y1, wide=1, ch='='):                 # a catwalk: along x, then along y
-    p.hline(x0, x1, y0, wide, ch); p.vline(x1, y0, y1, wide, ch)
+def level_plan(n):
+    import re
+    G = LEVEL_GRID[n]; nodes, edges = read_graph(os.path.join(os.path.dirname(os.path.abspath(__file__)), f"sub_station_depths_{n}.mmd"))
+    p = Plan(G['w'], G['h'], G['seed']); rnd = p.r; p.room(2, 2, G['w'] - 4, G['h'] - 4, 'W')
+    rect, ctr = {}, {}
+    for nid, lab in nodes.items():                             # an island on every grid cell the graph names
+        m = re.fullmatch(r'c(\d)r(\d)', nid)
+        if not m: continue
+        jx, jy = (0, 0) if '{start}' in lab else (rnd.randint(-1, 1), rnd.randint(-1, 1))
+        cx, cy = G['x0'] + G['dx'] * int(m[1]) + jx, G['y0'] + G['dy'] * int(m[2]) + jy
+        w, h = (5, 4) if '{start}' in lab else (4, 4) if '{goal}' in lab else (3, 3)
+        rect[nid] = (cx - 2, cy - 2, w, h) if w > 3 else (cx - 1, cy - 1, 3, 3); ctr[nid] = (cx, cy)
+        p.room(*rect[nid], '=')
+    walk = {}                                                  # edge -> its catwalk cells (a bend half way, so no two islands line up)
+    def x1(r): return r[0] + r[2] - 1
+    def y1(r): return r[1] + r[3] - 1
+    for a, b, req in edges:
+        if req or b == 'pump': continue
+        A, B = rect[a], rect[b]; cells = []
+        if abs(ctr[a][1] - ctr[b][1]) <= 3 and ctr[a][0] != ctr[b][0] and abs(ctr[a][0] - ctr[b][0]) > 5:          # along a row
+            if ctr[a][0] > ctr[b][0]: A, B, a2, b2 = B, A, b, a
+            else: a2, b2 = a, b
+            ya, yb, xm = ctr[a2][1], ctr[b2][1], (x1(A) + B[0]) // 2
+            cells = [(x, ya) for x in range(x1(A) + 1, xm + 1)] + [(xm, y) for y in range(min(ya, yb), max(ya, yb) + 1)] + [(x, yb) for x in range(xm, B[0])]
+        else:                                                                                                       # down a column
+            if ctr[a][1] > ctr[b][1]: A, B, a2, b2 = B, A, b, a
+            else: a2, b2 = a, b
+            xa, xb, ym = ctr[a2][0], ctr[b2][0], (y1(A) + B[1]) // 2
+            cells = [(xa, y) for y in range(y1(A) + 1, ym + 1)] + [(x, ym) for x in range(min(xa, xb), max(xa, xb) + 1)] + [(xb, y) for y in range(ym, B[1])]
+        for (x, y) in cells: p.put(x, y, '=')
+        walk[frozenset((a, b))] = set(cells)
+    # the pump: at the end of a thin spur off the island the graph names, running the way the label says
+    par = next(a for a, b, _ in edges if b == 'pump'); d = re.search(r'spur:([NSEW])', nodes['pump'])[1]; R = rect[par]; cx, cy = ctr[par]
+    step = {'S': (0, 1), 'N': (0, -1), 'E': (1, 0), 'W': (-1, 0)}[d]
+    edge0 = {'S': (cx, y1(R)), 'N': (cx, R[1]), 'E': (x1(R), cy), 'W': (R[0], cy)}[d]
+    spur = [(edge0[0] + step[0] * k, edge0[1] + step[1] * k) for k in range(1, SPUR + 1)]
+    for (x, y) in spur: p.put(x, y, '=')
+    p.put(*spur[-1], '6'); p.put(*spur[-2], 'i')
+    rect['pump'] = (min(x for x, _ in spur), min(y for _, y in spur), 1 if step[0] == 0 else SPUR, SPUR if step[0] == 0 else 1)
+    walk[frozenset((par, 'pump'))] = set(spur)
+    # the roles the labels name
+    for nid, lab in nodes.items():
+        if nid not in ctr: continue
+        cx, cy = ctr[nid]; R = rect[nid]; low = lab.lower()
+        if '{start}' in lab: p.put(cx, cy, 'U'); p.put(R[0], R[1], 'i'); p.put(x1(R), R[1], 'e')
+        elif '{goal}' in lab: p.put(cx, cy, 'S'); p.put(R[0], R[1], 'e')
+        if 'strike' in low: p.put(cx, cy, '7')                  # the eel bursts out here (fight code reads the digit from LabPlans)
+        if 'false' in low: p.put(cx, cy, '8')                   # the lamps flicker here and nothing comes
+        if 'lamp' in low: p.put(x1(R), R[1], 'i')               # ... the tell
+        m = re.search(r'\{item:cache(\d)\}', lab)
+        if m: p.put(cx, cy, CACHE_CHARS[int(m[1]) - 1]); p.put(R[0], y1(R), '"' if 'papers' in low else '&' if 'bones' in low else 'c')
+    p.put(rect[par][0], rect[par][1], 'e')                      # a red lamp on the pump island: the beacon seen from afar
+    return p, nodes, edges, rect, ctr, walk, spur
 
-def pump_spur(p, x, y0, y1):
-    """The pump at the end of a long 1-wide catwalk (Yan: "the pumps should be at the end of a thin catwalk not in a whole platform,
-    otherwise the eel can't block it by wraping around"): the catwalk from y0 up to y1, the pump on its last tile, a lamp before it."""
-    p.vline(x, y1, y0, 1, '='); p.put(x, y1, '6'); p.put(x, y1 + 1, 'i')
+def level_checks(n, p, nodes, edges, rect, ctr, walk, spur):
+    """The layout is the graph, it is a maze, and the eel has room: all asserted on the plan grid."""
+    import re, collections
+    G = LEVEL_GRID[n]; g = p.rows(); H, W = len(g), len(g[0])
+    want = {frozenset((a, b)) for a, b, req in edges if not req}
+    got = {e for e, lock in plan_edges(g, rect, {'W': 'water'}) if lock is None}
+    assert got == want, (n, "plan != graph", sorted(map(sorted, got ^ want)))
+    adj = collections.defaultdict(set)
+    for e in want: a, b = tuple(e); adj[a].add(b); adj[b].add(a)
+    start = next(i for i, l in nodes.items() if '{start}' in l); par = next(a for a, b, _ in edges if b == 'pump')
+    prev = {start: None}; q = collections.deque([start])
+    while q:
+        u = q.popleft()
+        for v in adj[u]:
+            if v not in prev: prev[v] = u; q.append(v)
+    route = []; u = 'pump'
+    while u: route.append(u); u = prev[u]
+    route.reverse()
+    forks = sum(1 for u in route[:-1] if len(adj[u]) >= (2 if u == start else 3)); dead = [u for u in adj if len(adj[u]) == 1 and u not in (start, 'pump')]
+    loops = len(want) - len(adj) + 1                                                      # one component
+    assert forks >= G['forks'] and len(dead) >= G['dead'] and loops >= G['loops'], (n, "not maze enough", forks, dead, loops)
+    # the walk on the grid: how far, against how far as the crow flies
+    sx, sy = next((x, y) for y in range(H) for x in range(W) if g[y][x] == 'U'); px, py = next((x, y) for y in range(H) for x in range(W) if g[y][x] == '6')
+    dist = {(sx, sy): 0}; q = collections.deque([(sx, sy)])
+    while q:
+        x, y = q.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            t = (x + dx, y + dy)
+            if t not in dist and 0 <= t[0] < W and 0 <= t[1] < H and g[t[1]][t[0]] not in '#nW': dist[t] = dist[(x, y)] + 1; q.append(t)
+    crow = abs(px - sx) + abs(py - sy); ratio = dist[(px, py)] / crow
+    assert ratio >= G['ratio'], (n, "too straight a shot", round(ratio, 2))
+    # the eel: every strike and false-alarm island, and the pump's spur, have water all round (a coil needs room to wrap)
+    def clear(own, x0, y0, x1_, y1_, what):
+        bad = [(x, y) for y in range(max(0, y0 - EEL_CLEAR), min(H, y1_ + EEL_CLEAR + 1)) for x in range(max(0, x0 - EEL_CLEAR), min(W, x1_ + EEL_CLEAR + 1))
+               if g[y][x] not in '#nW' and (x, y) not in own]
+        assert not bad, (n, what, "no room for the eel", bad[:5])
+    cells = lambda R: {(x, y) for y in range(R[1], R[1] + R[3]) for x in range(R[0], R[0] + R[2])}
+    for nid, lab in nodes.items():
+        if nid in rect and nid != 'pump' and ('strike' in lab.lower() or 'false' in lab.lower() or nid == par):
+            own = cells(rect[nid]).union(*[walk[e] for e in walk if nid in e]); R = rect[nid]
+            clear(own, R[0], R[1], R[0] + R[2] - 1, R[1] + R[3] - 1, nid)
+    own = cells(rect[par]).union(*[walk[e] for e in walk if par in e]); far = spur[3:]
+    clear(own, min(x for x, _ in far), min(y for _, y in far), max(x for x, _ in far), max(y for _, y in far), "the pump spur")
+    nstrike = sum('strike' in l.lower() for l in nodes.values()); nfalse = sum('false' in l.lower() for l in nodes.values())
+    return dict(route=len(route) - 1, forks=forks, dead=len(dead), loops=loops, ratio=round(ratio, 2), steps=dist[(px, py)], strikes=nstrike, false=nfalse)
 
-def depths_level1():
-    """The Cistern: the eel's first strike. Small islands (3x3, room for it to wrap) on single catwalks from the stairs to the last
-    island, then a long thin spur out to the pump. The stairs down sit on a landing in plain sight, under the water until the pump runs."""
-    p = cistern(64, 40, 211)
-    isle(p, 3, 3, 5, 4); p.put(5, 4, 'U'); p.put(4, 3, 'e')                   # the landing at the foot of the stairs
-    walk(p, 8, 5, 15, 5); isle(p, 16, 4, 3, 3)                                # A
-    walk(p, 17, 7, 17, 14); isle(p, 16, 15, 3, 3)                             # B
-    walk(p, 8, 16, 15, 16); isle(p, 5, 15, 3, 3); p.put(5, 15, 'c')           # C: a dead end with a crate (it pays)
-    walk(p, 19, 16, 30, 16); isle(p, 31, 15, 3, 3)                            # D: the middle
-    walk(p, 32, 18, 32, 26)                                                   # south: the long one
-    isle(p, 31, 27, 3, 3); p.put(33, 29, '*'); p.put(32, 29, '&')            # E: the strike island (clear water all round), someone who didn't make it
-    walk(p, 34, 28, 47, 28); isle(p, 48, 27, 3, 3)                            # F: the last island
-    pump_spur(p, 49, 26, 18)                                                  # the pump, out on its spur
-    isle(p, 40, 8, 4, 4); p.put(41, 9, 'S'); p.put(43, 8, 'e')               # the stairs down: in sight, cut off by the water
-    p.put(17, 5, '*')
-    return p
-
-def depths_level2():
-    """The Lower Cistern: a search over longer, thinner catwalks (the eel's strikes come on them), three dead ends, the pump on a spur
-    off the farthest island. The stairs down are on a landing in the middle, under the water."""
-    p = cistern(64, 40, 212)
-    isle(p, 55, 3, 4, 4); p.put(57, 4, 'U')                                   # the landing (stairs up, north-east)
-    walk(p, 43, 5, 54, 5); isle(p, 40, 4, 3, 3)                               # A
-    walk(p, 22, 5, 39, 5); isle(p, 19, 4, 3, 3); p.put(19, 4, 'c')            # C: a dead end over the longest catwalk, a crate
-    walk(p, 41, 7, 41, 15); isle(p, 40, 16, 3, 3)                             # B
-    walk(p, 24, 17, 39, 17); isle(p, 21, 16, 3, 3)                            # D: west
-    walk(p, 22, 19, 22, 28); isle(p, 21, 29, 3, 3); p.put(23, 31, 't'); p.put(21, 29, '*')   # E: a dead end (south-west)
-    walk(p, 41, 19, 41, 29); isle(p, 40, 30, 3, 3)                            # F: south
-    walk(p, 43, 31, 50, 31); isle(p, 51, 30, 3, 3)                            # G: the farthest island
-    pump_spur(p, 52, 29, 21)                                                  # the pump, out on its spur
-    isle(p, 28, 9, 4, 4); p.put(29, 10, 'S')                                  # the stairs down, under the water
-    p.put(41, 25, 'e'); p.put(30, 17, 'e')
-    return p
+def depths_level1(): return level_plan(1)[0]
+def depths_level2(): return level_plan(2)[0]
 
 def depths_level3():
     """The Sump: the arena. The water is low (knee-deep, slow), dry patches and pillars for cover, a deep pool in the middle where the
@@ -520,7 +593,9 @@ if __name__ == "__main__":
         if name == "secret_lab_alpha": rows = vat_room(rows)
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))
     for name, (fn, drain, needs, goal) in DEPTHS_LEVELS.items():   # the eel's levels: the pump in reach, the way on only after it
-        p = fn(); rows = p.rows()
+        built = level_plan(int(name[-1])) if name[-1] in '12' else (fn(),)       # levels 1-2 come from their graphs
+        p = built[0]; rows = p.rows()
+        stats = level_checks(int(name[-1]), *built) if len(built) > 1 else None
         stages, g = key_walk(p, 'U', {'6': (drain, needs)}, {'W': drain}, held=(needs,))
         def has(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
         assert [st[0] for st in stages] == [set(), {drain}], (name, [st[0] for st in stages])
@@ -531,5 +606,5 @@ if __name__ == "__main__":
         dry = {t for t in floor if g[t[1]][t[0]] != 'W'}
         way = key_walk(p, goal, {}, {'W': 'never'})[0][-1][1]
         assert dry - stages[0][1] <= way, (name, "dry tiles cut off in the water", sorted(dry - stages[0][1] - way)[:6])
-        print(name, p.w, "x", p.h, "pump in reach at the start,", goal, "only after", drain)
+        print(name, p.w, "x", p.h, "pump in reach at the start,", goal, "only after", drain, "|", stats or "arena")
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))

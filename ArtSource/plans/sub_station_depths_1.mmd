@@ -1,0 +1,34 @@
+%% Sub-Station Depths, Level 1 (the Cistern) - the maze of catwalks, drawn before the plan (level-design skill, graph_check.py).
+%% Ids are grid cells: cXrY = column X, row Y (the plan puts an island there). Labels carry roles the plan reads:
+%%   {start} the landing (stairs up)   {item:drain1} the pump, at the end of a thin spur (spur:S = it runs south)   {goal} the stairs down
+%%   strike = where the eel bursts out and wraps (clear water all round); lamp = a lamp that flickers first   {item:cacheN} = the stash a dead end pays
+%% The stairs down are in sight across the water from the start and cut off until the pump runs (the wade edge).
+%% Rule (Yan): a long way round with dead ends and loops, no straight shot: the pump is ~80 tiles away as the crow flies.
+%% start: c0r0
+%% goal: c4r0
+flowchart TD
+  c0r0["Landing {start}"] --> c1r0["Junction"]
+  c0r0 --> c0r1["Dead end: papers {item:cache1}"]
+  c1r0 --> c2r0["Walkway"]
+  c2r0 --> c3r0["Loop end by the stairs"]
+  c3r0 --> c3r1["Island"]
+  c1r0 --> c1r1["Island"]
+  c1r1 --> c2r1["Junction"]
+  c2r1 --> c3r1
+  c2r1 --> c2r2["Junction"]
+  c3r1 --> c3r2["Island"]
+  c3r2 --> c2r2
+  c2r2 --> c1r2["Island"]
+  c1r2 --> c1r3["Junction"]
+  c1r3 --> c0r3["Dead end: crate {item:cache2}"]
+  c1r3 --> c2r3["Island"]
+  c2r3 --> c3r3["Island"]
+  c3r3 --> c4r3["Island"]
+  c4r3 --> c4r2["Island"]
+  c4r2 --> c4r1["Island"]
+  c4r1 --> c5r1["Junction"]
+  c5r1 --> c5r0["Dead end: bones {item:cache3}"]
+  c5r1 --> c5r2["Last island: strike lamp"]
+  c5r2 --> pump["Pump 1 {item:drain1} spur:S"]
+  c4r0["Stairs down: cut off {goal}"]
+  c5r2 -->|req:drain1| c4r0

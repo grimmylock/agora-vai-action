@@ -140,13 +140,21 @@ namespace GameCore
 
         /// <summary>The flooded levels under Sub-Station Depths (the eel, ACTION_DESIGN "Dodge bosses"): 'U' stairs up, 'S' stairs down,
         /// 'G' the goal, 'Y' the service lift, '6' the level's pump (LabLocks), 'W' its deep water.</summary>
+        /// <summary>The stashes at the flooded levels' dead ends (plan letters J K L M; any stash name that isn't a key object is a loot container).
+        /// Plan digits are for the eel (ACTION_DESIGN "Dodge bosses"): '7' a strike spot (it bursts out and wraps there), '8' a false alarm
+        /// (the lamps flicker, nothing comes); the fight code finds them in LabPlans[zone].</summary>
+        static readonly Dictionary<char, string> DepthsCaches = new Dictionary<char, string>
+            { ['J'] = "Rusted Cache", ['K'] = "Drowned Locker", ['L'] = "Crew's Bag", ['M'] = "Maintenance Box" };
+
         public static MapLayout DepthsLevel(string id, GroundType floor, string up, string down, string goal = null, string lift = null)
         {
             var marks = new Dictionary<char, (string, string)> { ['U'] = ("Stairs Up", up) };
             if (down != null) marks['S'] = ("Stairs Down", down);
             if (goal != null) marks['G'] = (goal, null);
             if (lift != null) marks['Y'] = ("Service Lift", lift);
-            return FloorPlan(id, LabPlans[id], "concrete", floor, marks, LabLocks.StashesOf(id));   // floor: what markers stand on (the catwalks' Grate)
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf(id) ?? new Dictionary<char, string>());
+            foreach (var kv in DepthsCaches) stashes[kv.Key] = kv.Value;                          // what a dead end pays (a plan only uses the letters it has)
+            return FloorPlan(id, LabPlans[id], "concrete", floor, marks, stashes);   // floor: what markers stand on (the catwalks' Grate)
         }
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)

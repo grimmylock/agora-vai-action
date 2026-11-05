@@ -4844,3 +4844,25 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   cloud), fantasy/cartoon ones (torch, brazier, key glint, loot beam, chest open, bat, fish, frog, poof, stunned stars), too big for
   now (fire ring, flame pillar - maybe a Pyre anomaly flare-up), EMP (too sci-fi), heavy cleave (side view, fantasy).
 - Nothing in the game yet: waiting on Yan's picks.
+
+## The catwalk levels become mazes, built round where the eel appears and attacks (2026-11-05)
+
+- Yan: "rework the raised platform maps to be harder to navigate, players need to find their way around to the drain pump and lower
+  level, right now it's just a straight shot to it", then "take into consideration where the boss will appear and attack".
+- Graph first: `ArtSource/plans/sub_station_depths_1.mmd` and `_2.mmd` (ids are grid cells, labels carry roles), checked with
+  `graph_check.py`: reachable, no softlocks, every path edge required, every loop optional. It caught three dead ends that paid nothing
+  ("a dead end must pay"): each now holds a stash (plan letters J K L M, `TierDungeons.DepthsCaches`, a plain loot container).
+- The plan is built FROM the graph (`lab_plans.py level_plan`: an island on each named cell with a +-1 jitter, catwalks with a bend half way
+  so nothing lines up, the pump at the end of a 9-tile spur) and then checked on the grid (`level_checks`): its passages equal the graph's
+  edges; it's a maze (Level 1: the walk is 146 tiles for 76 as the crow flies, 1.9x, 6 forks on the way, 3 paying dead ends, 2 loops;
+  Level 2, now 72x48: 226 tiles, 2.6x, 4 forks, 4 dead ends); and the eel has room.
+- Where the eel appears and attacks (marked in the plan, read by the fight code later from `TierDungeons.LabPlans[zone]`): digit 7 = a strike
+  spot (it bursts out and wraps the island), 8 = a false alarm (the lamps flicker, nothing comes). Level 1: one strike, on the last island,
+  with the pump out on its spur in sight; Level 2: three strikes (the corner where the way turns and a dead-end branch starts, by the stairs
+  in sight, the last island before the pump) and two false alarms. Each strike island has a lamp for the tell. Checked: 3 tiles of water all
+  round every strike and false-alarm island and the pump's spur (a coil needs room to wrap), i.e. water to rise in and to circle. The
+  eel can't be seen on the map; its pool in the Sump is unchanged.
+- Mutation tests: an island on the pump's spur, a shortcut across the maze, rows squeezed together - each caught.
+- Harness: `DepthsChecks` now also asserts the dead-end stashes are in reach at the start and the strike/false-alarm digits are in the plan
+  (1+0 and 3+2). Render: `maps/renders/dungeon/sub_station_depths_levels.jpg` (the route dotted), `..._catwalks_closeup.png`.
+- Not done: the fight, the flicker (lighting is unchecked in Unity), the deck art in the game atlas (waits for Yan's approval of the look).
