@@ -176,6 +176,12 @@ the flooded levels under the Depths' basin.
   - **The body** = the loot: a dead random human NPC (dead sprite) in **tier-4 armor**, with random loot like a stash (`HumanLootSystem` corpse
     stash, tier 3-4) and **a key tied to the story** (**P**: the Sealed Vault key of Secret Lab Gamma, main-story act 3 - `StorySystem` has no lock there yet;
     or an OSEI quest item). **No other stashes in the Sump** (removed). Levels 1-2 dead-end stashes stay unless Yan says otherwise.
+  - **Phase 2 moves (Yan, 2026-11-05; storyboarded, not built):**
+    - **Tail Snare:** the TAIL comes out of one pool (not from under the player), catches a player, drags him back to the pool with it, then THROWS him out of ANOTHER free pool (never the one the head is in): he flies up
+      into the air and crashes down (heavy damage, drowned). The head keeps striking at the other players meanwhile. The tail is targetable (its own damage bar): shoot it enough, or in co-op have a teammate shoot it, and
+      it lets go; diving out during the ~1 s telegraph also works.
+    - **Flood Surge:** all four pools overflow and the floor between them turns to deep water for ~6 s; only the dry patches and the slab stay as islands. The eel glides through the flood as a shadow and bursts out under
+      whoever is standing in the water; phase 1 moves keep coming from the pools so waiting on an island is not safe either. (Yan: "sounds cool".)
   - **Open:** do eel parts still drop (design above) or is the body the whole reward?
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
 - **The eel's animation frames (2026-11-05, `ArtSource/bosses/eel_anim.py`, strips `Assets/Resources/Sprites/Fx/boss_eel_*.png` + `boss_eel_anims.json`)**,

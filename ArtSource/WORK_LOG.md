@@ -5055,3 +5055,13 @@ down after a set amount of damage**, **an attack where it comes fully out of a p
 
 Storyboard v2 (2026-11-05): Yan - the phase 1 attacks look good but "maybe a bit too fast, slow them down by 20%". The script clock now runs at 0.8x (`SPEED` in eel_storyboard.py): every wind-up, strike,
 recovery and effect is 25% longer, the clip is about 19 s; hit-stop stays in frames. Phase 2 moves proposed in chat (tail grab and drag, flood surge): not built.
+
+## Eel: phase 2 storyboard (2026-11-05)
+Yan: Tail Snare changed - "the tail doesn't erupt from under a player, it is the tail coming out of one of the pools, this is a grab attack, it catches the player, drags him down to the pool with it, then
+throws him out of another free pool (not the one the head is in), he flies a little up in the sky and crashes down"; Flood Surge: "sounds cool".
+- `Tools/render/eel_storyboard2.py` -> `maps/renders/boss_eel/eel_storyboard2.mp4` (23 s, same style and the 0.8x speed as the first storyboard, which it imports for the world, painter and effects):
+  A the tail comes out of the north pool along the floor, lunges at the red ring, coils round the player (the tip winds into a helix), drags him back to the pool (dust, a damage bar on the tail, a teammate shooting it),
+  pulls him under, then the west pool throws him: the tail comes straight up, stops dead, he flies on and crashes (shockwave, cracks, damage number) while the head strikes at a second player from the east pool.
+  B the four pools swell and the dry patches light up, the floor floods with the pool's water (foam edge, ripples, islands stay dry), one player wades, the eel glides through as a shadow and bursts out under him; it drains.
+- Same limits as the first storyboard: no game code, no sound, placeholder timings and numbers, pools painted over the render, bot players. The grab's coil, the throw column and the flood spread are the new
+  things to judge. Not checked in Unity.
