@@ -163,6 +163,12 @@ the flooded levels under the Depths' basin.
 - **The reward** (Yan: "every boss needs a reward"): special eel parts that sell for a good profit (above a normal mutant part, which is
   400-600 RU at Tier 3 in `MutantLootSystem`), a chest of random loot of the dungeon's tier (3), and **one** armor or weapon a tier above (4).
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
+- **The Sump, the arena (2026-11-05, built; `sub_station_depths_3.mmd`, `lab_plans.py depths_level3`)**: one wide room of knee-deep water (slow), 60x44;
+  the eel lies in a deep pool (102 tiles, centre marked with plan digit 0) at its south end; the only way to the last pump is the 5-wide channel just
+  south of the pool along a 2-tile shore its neck reaches (digit 9 = the channel mouth, 3 tiles from the pool): its coil blocks the way, you put it down
+  first. Tools for the player: 7 pillars as cover from its lunges (4-12 tiles from the pool), two dry patches inside its reach (10.5 tiles) to stand on,
+  two far ones outside it, safe, each with a stash; red lamps for the tell. The pump is 14 tiles from the pool; the bottom (the reward), a stash and the
+  service lift up lie past a deep band the last pump drains. The eel itself isn't a lock in the graph (`{item:eel_down}` stands for the fight).
 - **The eel's art is Yan's own drawing** (2026-11-05, `ArtSource/refs/eel/yan_eel_reference.jpg`: "a higher quality image of the eel boss, just
   like the ones we used for the mutants"): moray head with a blind white eye and spines, a long dorsal fin, mottled green with gold flecks.
   Recovered to the pixel grid it was drawn on (480x268 art pixels, one per game pixel, 27 colours: `eel_native.py`) and bent along any path

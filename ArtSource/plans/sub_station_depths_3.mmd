@@ -1,0 +1,20 @@
+%% Sub-Station Depths, Level 3 (the Sump) - the eel's arena, drawn before the plan (level-design skill, graph_check.py).
+%% Not a maze: one wide room, designed round the fight. The eel lies in a deep pool at the south end; the only way to the last pump
+%% is the narrow channel south of it, along a shore the eel's neck can reach: its coil blocks the way ("it blocks the final pump and
+%% you have to put it down before reaching it"). {item:eel_down} stands for the fight (the fight code grants it); {item:drain3} is the pump.
+%% Tools for the player: pillars (hard cover from its lunges), dry patches inside its reach (a place to stand out of the shallows) and two
+%% far dry patches out of its reach (safe, each with a stash). Rule: out of its reach you are safe but can't touch the pump.
+%% start: u
+%% goal: z
+flowchart TD
+  u["Landing {start}"] --> n["North shore: the way down into the shallows"]
+  n --> wp["West patch, out of its reach {item:cache1}"]
+  n --> ep["East patch, out of its reach {item:cache2}"]
+  n --> wr["West shore: pillars, a patch in reach"]
+  n --> er["East shore: pillars, a patch in reach"]
+  wr --> pool["The pool: the eel {item:eel_down}"]
+  er --> pool
+  pool -->|req:eel_down| ch["The channel to the pump"]
+  ch --> pa["Pump alcove {item:drain3}"]
+  pa -->|req:drain3| z["The bottom: the reward {goal}"]
+  z --> lift["Service lift up: a shortcut back to the station {item:shortcut}"]

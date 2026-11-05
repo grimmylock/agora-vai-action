@@ -1441,6 +1441,11 @@ static class Program {
         var rows = TierDungeons.LabPlans[zone]; int Digits(char c) => rows.Sum(r => r.Count(ch => ch == c));
         Check(caches.Count == want && caches.All(o => In(a0, o.X, o.Y)), $"{zone}: {want} dead-end stashes, all in reach at the start ({caches.Count})");
         Check(Digits('7') == strikes && Digits('8') == lures, $"{zone}: {strikes} strike spots and {lures} false alarms marked in the plan ({Digits('7')}, {Digits('8')})");
+      } else {                // the Sump, the eel's arena (sub_station_depths_3.mmd): where it rises and what it blocks are marked, the stashes are there
+        var rows = TierDungeons.LabPlans[zone]; int Digits(char c) => rows.Sum(r => r.Count(ch => ch == c));
+        var far = TerrainMap.InteractiveObjects.Where(o => o.Name == "Rusted Cache" || o.Name == "Drowned Locker").ToList();
+        Check(Digits('0') == 1 && Digits('9') == 1, $"{zone}: the pool's centre (0) and the channel mouth (9) are marked in the plan ({Digits('0')}, {Digits('9')})");
+        Check(far.Count == 2 && far.All(o => In(a0, o.X, o.Y)) && TerrainMap.InteractiveObjects.Any(o => o.Name == "Crew's Bag"), $"{zone}: two stashes out of the eel's reach, in reach at the start, and one at the bottom");
       }
       CombatFx.Pending.Clear(); Give(drain);
       var swirls = CombatFx.Pending.Where(e => e.Kind == "px" && e.Px == "whirlpool").ToList();   // RT fx 4: the pump starts, whirlpools turn in the deep water round it

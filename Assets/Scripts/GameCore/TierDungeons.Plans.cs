@@ -78,7 +78,7 @@ namespace GameCore
                         case 't': c.Put(x, y, ScatterCover, "trash"); break;
                         case 'r': c.Put(x, y, Difficult, "rubble"); break;
                         case 'w': c.Put(x, y, Difficult); c.Paint(x, y, 1, 1, Water); continue;
-                        case 'W': c.Put(x, y, Difficult, "deepwater"); c.Paint(x, y, 1, 1, Water); continue;   // over your head until it's drained (LabLocks)
+                        case 'W': case '0': c.Put(x, y, Difficult, "deepwater"); c.Paint(x, y, 1, 1, Water); continue;   // '0' = deep water that also marks where the eel rises   // over your head until it's drained (LabLocks)
                         case 'i': c.Put(x, y, Empty); c.Deco(x, y, "light"); break;
                         case 'e': c.Put(x, y, Empty); c.Deco(x, y, "redlight"); break;
                         case 'k': c.Put(x, y, HardCover, "rock"); break;          // Batch 100: a boulder
@@ -142,7 +142,8 @@ namespace GameCore
         /// 'G' the goal, 'Y' the service lift, '6' the level's pump (LabLocks), 'W' its deep water.</summary>
         /// <summary>The stashes at the flooded levels' dead ends (plan letters J K L M; any stash name that isn't a key object is a loot container).
         /// Plan digits are for the eel (ACTION_DESIGN "Dodge bosses"): '7' a strike spot (it bursts out and wraps there), '8' a false alarm
-        /// (the lamps flicker, nothing comes); the fight code finds them in LabPlans[zone].</summary>
+        /// (the lamps flicker, nothing comes), in the Sump '0' the pool's centre (deep water: where it rises) and '9' the channel mouth (the way it
+        /// blocks); the fight code finds them in LabPlans[zone].</summary>
         static readonly Dictionary<char, string> DepthsCaches = new Dictionary<char, string>
             { ['J'] = "Rusted Cache", ['K'] = "Drowned Locker", ['L'] = "Crew's Bag", ['M'] = "Maintenance Box" };
 

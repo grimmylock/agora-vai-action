@@ -525,25 +525,53 @@ def level_checks(n, p, nodes, edges, rect, ctr, walk, spur):
 def depths_level1(): return level_plan(1)[0]
 def depths_level2(): return level_plan(2)[0]
 
+SUMP = dict(pool=(30.0, 24.5, 8.2, 4.0), reach=10.5)   # the eel's pool: centre x, y and half-axes (tiles); how far its neck reaches from the centre
+
 def depths_level3():
-    """The Sump: the arena. The water is low (knee-deep, slow), dry patches and pillars for cover, a deep pool in the middle where the
-    eel lies and rises; the last pump past it on a plinth to the south; the bottom (the goal) and the service lift behind a band of
-    deep water that only the last pump empties."""
-    p = Plan(60, 42, 213)
-    p.room(26, 3, 8, 5, ','); p.put(29, 4, 'U')                              # the landing, steps down into the sump
-    p.room(6, 9, 48, 24, 'w'); p.hline(28, 31, 8, 1, ',')
-    for (x, y, w, h) in ((9, 11, 6, 4), (44, 11, 7, 4), (8, 26, 7, 4), (45, 26, 7, 4), (20, 12, 4, 3), (36, 12, 4, 3), (19, 27, 5, 3), (36, 27, 5, 3)):
-        p.room(x, y, w, h, ',')                                               # dry patches
-    for (x, y) in ((12, 18), (47, 18), (17, 22), (42, 22), (24, 30), (35, 30)): p.put(x, y, 'h')   # pillars to break its line
-    for y in range(13, 25):                                                   # the eel's pool, deep, in the middle: a ragged round sump
-        for x in range(21, 39):
-            if ((x + 0.5 - 30) / 7.2) ** 2 + ((y + 0.5 - 18.5) / 5.0) ** 2 <= 1 + 0.18 * math.sin(x * 1.7 + y * 2.3): p.put(x, y, 'W')
-    p.room(26, 33, 8, 3, ','); p.put(29, 34, '6'); p.put(27, 33, 'i')        # the last pump, on a plinth past the pool
-    p.room(42, 35, 13, 5, ','); p.put(50, 37, 'G'); p.put(53, 38, 'Y'); p.put(45, 36, 'c'); p.put(46, 36, 'c')   # the bottom, the lift
-    p.room(36, 34, 6, 2, 'W'); p.room(38, 33, 2, 1, 'W')                     # the deep band between the sump and the bottom
-    for (x, y) in ((8, 10), (51, 10), (8, 31), (51, 31), (30, 12)): p.put(x, y, 'e')
-    p.put(29, 24, '~'); p.put(30, 25, '*')
+    """The Sump: the eel's arena (sub_station_depths_3.mmd), designed round the fight. One wide room of knee-deep water (slow); the eel lies
+    in a deep pool at its south end; the only way to the last pump is the narrow channel just south of the pool, along a two-tile shore its
+    neck reaches, so its coil blocks the way. Pillars are cover from its lunges, two dry patches stand inside its reach, two far ones are
+    out of it (safe, each with a stash). Plan digits: 0 = where it rises (the pool's centre, itself deep water), 9 = the way it blocks (the channel mouth)."""
+    p = Plan(60, 44, 213); cx, cy, ra, rb = SUMP['pool']
+    p.room(26, 3, 8, 5, ','); p.put(29, 4, 'U'); p.put(27, 3, 'i'); p.put(32, 3, 'e')           # the landing, the stairs up
+    p.room(28, 8, 4, 1, ',')                                                                   # the steps down into the sump
+    p.room(5, 9, 50, 22, 'w')                                                                  # the sump: knee-deep, x 5..54, y 9..30
+    for (x, y, w, h, cache) in ((8, 12, 6, 4, 'J'), (46, 12, 6, 4, 'K'), (21, 19, 4, 3, None), (36, 19, 4, 3, None)):
+        p.room(x, y, w, h, ',')                                                                # dry patches
+        if cache: p.put(x + w // 2, y + h // 2, cache)
+    for (x, y) in ((24, 16), (36, 16), (19, 23), (41, 23), (21, 29), (39, 29), (30, 14), (14, 26), (46, 26)): p.put(x, y, 'h')   # pillars: cover from its lunges
+    for y in range(int(cy - rb - 2), int(cy + rb + 3)):                                        # the pool: deep, a ragged ellipse
+        for x in range(int(cx - ra - 2), int(cx + ra + 3)):
+            if ((x + 0.5 - cx) / ra) ** 2 + ((y + 0.5 - cy) / rb) ** 2 <= 1 + 0.16 * math.sin(x * 1.7 + y * 2.3): p.put(x, y, 'W')
+    p.put(int(cx), int(cy), '0')                                                               # the eel rises here (0 is deep water too)
+    p.room(28, 31, 5, 5, 'w'); p.put(30, 31, '9')                                              # the channel to the pump (5 wide), the mouth is where it blocks
+    p.room(25, 36, 11, 6, ','); p.put(30, 38, '6'); p.put(28, 37, 'i'); p.put(33, 37, 'e')    # the pump alcove
+    p.room(36, 37, 6, 3, 'W')                                                                  # the deep band between the alcove and the bottom
+    p.room(42, 36, 13, 6, ','); p.put(49, 39, 'G'); p.put(52, 40, 'Y'); p.put(45, 38, 'L'); p.put(44, 37, 'c'); p.put(46, 37, 'c')   # the bottom, the lift, a stash
+    for (x, y) in ((8, 12), (51, 12), (8, 15), (51, 15), (21, 19), (39, 19), (30, 11)): p.put(x, y, 'e')    # red lamps: the tell, a flicker before a strike
+    p.put(26, 30, '~'); p.put(27, 29, '*'); p.put(34, 30, '&')                                 # someone who didn't make it past the pool, on the shore
     return p
+
+def sump_checks(p):
+    """The arena is built for the fight: asserted on the plan grid."""
+    import collections
+    g = p.rows(); H, W = len(g), len(g[0]); cx, cy, ra, rb = SUMP['pool']; R = SUMP['reach']
+    at = lambda ch: [(x, y) for y in range(H) for x in range(W) if g[y][x] == ch]
+    pool = {(x, y) for y in range(H) for x in range(W) if g[y][x] in 'W0' and y < 31}
+    assert len(pool) >= 90, ("the pool is too small to hold a coiled eel", len(pool))
+    dist = lambda a, b=(cx, cy): math.hypot(a[0] + 0.5 - b[0], a[1] + 0.5 - b[1])
+    gate = at('9')[0]; pump = at('6')[0]
+    assert dist(gate) <= R - 1 and min(dist(gate, t) for t in pool) <= 4.0, ("the channel mouth is out of the pool's reach: its coil wouldn't block the way", gate)
+    assert dist(pump) <= 16, ("the pump is too far from the pool for it to guard", dist(pump))
+    pillars = [t for t in at('h') if 4 <= dist(t) <= 12]
+    assert len(pillars) >= 4, ("cover from its lunges: pillars within 4-12 tiles of the pool", len(pillars))
+    assert not [t for t in at('h') if ((t[0] + 0.5 - cx) / (ra + 1.5)) ** 2 + ((t[1] + 0.5 - cy) / (rb + 1.5)) ** 2 < 1], "a pillar inside the pool's coil room"
+    patches = [t for t in at(',') if 9 <= t[1] <= 30]; near = [t for t in patches if dist(t) <= R]; far = [t for t in patches if dist(t) >= R + 5]
+    assert len(near) >= 12 and len(far) >= 30, ("dry ground in its reach to stand on, and out of it to rest", len(near), len(far))
+    shore = min(sum(1 for y in range(H) if g[y][x] in 'w' and y > cy and y < 31) for x in range(int(cx - 6), int(cx + 7)))
+    assert shore >= 2, ("the shore south of the pool must be at least 2 tiles wide to run along", shore)
+    reach = lambda t: dist(t) <= R
+    return dict(pool=len(pool), gate_to_pool=round(min(dist(gate, t) for t in pool), 1), pump_to_pool=round(dist(pump), 1), pillars=len(pillars), near=len(near), far=len(far), shore=shore)
 
 DEPTHS_LEVELS = {"sub_station_depths_1": (depths_level1, 'drain1', 'power', 'S'),
                  "sub_station_depths_2": (depths_level2, 'drain2', 'drain1', 'S'),
@@ -595,16 +623,16 @@ if __name__ == "__main__":
     for name, (fn, drain, needs, goal) in DEPTHS_LEVELS.items():   # the eel's levels: the pump in reach, the way on only after it
         built = level_plan(int(name[-1])) if name[-1] in '12' else (fn(),)       # levels 1-2 come from their graphs
         p = built[0]; rows = p.rows()
-        stats = level_checks(int(name[-1]), *built) if len(built) > 1 else None
-        stages, g = key_walk(p, 'U', {'6': (drain, needs)}, {'W': drain}, held=(needs,))
+        stats = level_checks(int(name[-1]), *built) if len(built) > 1 else sump_checks(p)
+        stages, g = key_walk(p, 'U', {'6': (drain, needs)}, {'W': drain, '0': drain}, held=(needs,))
         def has(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
         assert [st[0] for st in stages] == [set(), {drain}], (name, [st[0] for st in stages])
         assert has(stages[0][1], '6') and not has(stages[0][1], goal), (name, "the pump in reach, the way on not")
         floor = {(x, y) for y in range(p.h) for x in range(p.w) if g[y][x] not in '#n'}
         assert floor <= stages[-1][1], (name, "drained, every tile", sorted(floor - stages[-1][1])[:6])
         # before the drain: the only dry tiles out of reach are the ones round the way on (no stray bits standing in the water)
-        dry = {t for t in floor if g[t[1]][t[0]] != 'W'}
-        way = key_walk(p, goal, {}, {'W': 'never'})[0][-1][1]
+        dry = {t for t in floor if g[t[1]][t[0]] not in 'W0'}
+        way = key_walk(p, goal, {}, {'W': 'never', '0': 'never'})[0][-1][1]
         assert dry - stages[0][1] <= way, (name, "dry tiles cut off in the water", sorted(dry - stages[0][1] - way)[:6])
         print(name, p.w, "x", p.h, "pump in reach at the start,", goal, "only after", drain, "|", stats or "arena")
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))

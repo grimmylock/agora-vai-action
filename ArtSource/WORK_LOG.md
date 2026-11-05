@@ -4923,3 +4923,16 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   4. **Streaks at a tight neck turn** (his thin fin spikes fanned out): a gentler neck curve.
 - Checked on: the strike (round a platform), the rear-up, the lurk, plus two stress poses now in the script: a figure-eight (crosses itself)
   and a tight hairpin (`eel_stress_eight.png`, `eel_stress_hairpin.png`). Not checked in Unity (it isn't in the game yet).
+
+## The Sump, the eel's arena (2026-11-05)
+
+- Yan: "Yes, go ahead with the animation frames and the Sump arena". The Sump was a first guess (a room with a pool in the middle); redone round
+  the fight. Graph first (`ArtSource/plans/sub_station_depths_3.mmd`, `graph_check.py`: reachable, no softlocks, each key required; two breaks tested).
+- The design (in ACTION_DESIGN "Dodge bosses"): the pool sits at the south end so its coil physically blocks the only way to the last pump, the narrow
+  channel just south of it, along a shore its neck reaches. Player tools: pillars (cover), dry ground in its reach, safe dry ground outside it (a stash
+  each). `lab_plans.py sump_checks` asserts all of it on the plan: pool size, the channel mouth within reach and 4 tiles of the pool, the pump within
+  16 tiles, 4+ pillars 4-12 tiles out and none inside the coil room, 12+ dry tiles in reach and 30+ out of it, a shore 2+ tiles wide.
+- Found by the existing checks: my "where it rises" marker (digit 7) replaced a pool tile with walkable floor, leaving a dry spot in the pool; the
+  marker is now digit 0, which is deep water itself (`StampPlan`: case '0'). Decals meant for the shore had done the same and were moved.
+- Harness: the plan's digits (0 and 9 once each), two far stashes in reach at the start and a third at the bottom. ALL CHECKS PASSED.
+  Not done: the fight, the flicker, enemies; not checked in Unity.
