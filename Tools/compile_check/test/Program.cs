@@ -830,7 +830,11 @@ static class Program {
           + ",\"hp\":" + b.Hp + ",\"side\":" + f.Side + ",\"chain\":" + f.Chain + ",\"shadow\":[" + F(f.SX) + "," + F(f.SY) + "],\"plat\":[" + F(f.PX) + "," + F(f.PY) + "],\"wraps\":" + f.Wraps
           + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"php\":" + p.Hp + ",\"body\":[" + (f.Swallowed && !f.Ejected ? -1 : f.Body == null ? -2 : f.BodyX) + "," + f.BodyY + "],"
           + "\"zones\":[" + string.Join(",", f.Zones.Select(z => "[" + F(z.X) + "," + F(z.Y) + "," + F(z.R) + ",\"" + z.Kind + "\"," + (z.Live ? 1 : 0) + "]")) + "],\"shock\":" + f.Shocked.Count
+          + ",\"under\":" + (f.Rig.Under ? 1 : 0) + ",\"face\":" + (f.Rig.Face > 0 ? 1 : -1) + ",\"disch\":" + (f.Discharged ? 1 : 0) + ",\"nvis\":" + EelBoss.Surfaced(f)
+          + ",\"rig\":[" + F(f.Rig.HX) + "," + F(f.Rig.HY) + string.Concat(Enumerable.Range(0, EelRig.Count).Select(i => "," + F(f.Rig.RX[i]) + "," + F(f.Rig.RY[i]))) + "]"
           + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
+        { var rg = f.Rig; for (int i = 0; i + 1 < EelRig.Count; i++) { float dx = rg.X[i + 1] - rg.X[i], dy = rg.Y[i + 1] - rg.Y[i]; eelSpacing = Math.Max(eelSpacing, Math.Abs((float)Math.Sqrt(dx * dx + dy * dy) - EelRig.Spacing)); }
+          if (f.Level == "platform" && f.Stage == "wrap" && f.Discharged) for (int i = 0; i < EelRig.Count; i++) eelCoil = Math.Max(eelCoil, (float)Math.Sqrt((rg.X[i] - f.PX) * (rg.X[i] - f.PX) + (rg.Y[i] - f.PY) * (rg.Y[i] - f.PY))); }
         log0.AddRange(log.Where(l => l.Contains("coils shock"))); if (f.Stage == "move") moves.Add(f.Chain > 0 ? "smash" : f.Move);
         log.Clear();
       }
@@ -885,12 +889,14 @@ static class Program {
     Console.WriteLine($"eel fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}, sump gone {f3.Gone}, body ejected {f3.Ejected}, flag {Story.Has(EelBoss.Fled)}");
   }
   static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;
-  static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
+  static float eelSpacing, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
   static void EelChecks() {
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
     Check(r.gone && r.ejected && r.flag, "Eel: the Sump ends with the body vomited up on the slab and the eel gone (eel_fled)");
+    Check(eelSpacing < 0.02f, $"Eel: every segment stays one spacing behind the one ahead (worst error {eelSpacing:0.000} tiles)");
+    Check(eelCoil > 0f && eelCoil < 3.6f, $"Eel: once the coil is discharged the whole body lies within the touch ring ({eelCoil:0.0} tiles from the platform's centre)");
     Check(r.moves >= 5, $"Eel: snap, lunge, slam, sweep and smash all get played ({r.moves} kinds)");
   }
 

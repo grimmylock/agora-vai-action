@@ -4978,3 +4978,23 @@ Yan: eel parts still drop; keep the levels 1-2 stashes; the body's key is a to-d
 - Not done / placeholder: no view in the game yet (nothing draws the eel in Unity, no spawn on entering the maps, no HUD bar, no co-op sync); the platform STRIKE reuses the rear-up snap strip;
   the body is drawn as an armour sprite lying down; the body's key is a to-do; no sounds; the name "The Drowner" is a placeholder; the bot is simple (it stands in the first hit of each kind on purpose).
   Numbers (damage, timings, ranges) are first guesses. Nothing checked in Unity.
+
+## Eel: procedural body (EelRig) and eased attacks (2026-11-05)
+Yan: the animations look stiff (one static sprite translated and swapped); wants a segmented body (a Head and a chain of segments, each following the one ahead at a fixed
+distance, a slither sine wave across the movement vector, no Rigidbody2D joints), the Lunge/Slam with a 0.6 s anticipation and a rapid strike with easing (ease-in-back wind-up,
+ease-out-expo strike), the Sweep on a quadratic Bezier over the pool, and the Wrap as the head circling the 3x3 platform and pulling the body into a coil, then the discharge and a 4 s hold.
+- `Assets/Scripts/GameCore/EelRig.cs` (new): `Ease` (InBack, OutExpo, InOutSine, OutCubic, quadratic Bezier) and `EelRig` (56 segments, 0.62 tiles apart, kinematic follow in
+  sub-steps so a fast head drags a clean trail, `SlitherAmount`/`SlitherSpeed` sine wave perpendicular to each segment's heading with its envelope, slots that pull the coil/neck back to a pose).
+- `EelBoss.cs`: `DriveBody` sets the head every tick as a pure function of stage and age (no clips): strikes = 0.6 s pull-back with ease-in-back (0.3 s between smashes), then ease-out-expo to
+  the landing point, arriving exactly when the hit lands, hold, ease back; sweep = pull back to the arc start, then a quadratic Bezier over the pool (the head IS the hitbox), recover;
+  wrap = the head spirals out in half a turn and circles 2.5 times on a ring that widens 0.28 a turn (inside the 1.9-3.1 touch ring) while the coil's slots pull the trailing body in,
+  discharge when the burst ends (shock only from then on), held 4 s, then released outward. The platform strike now has the same 0.6 s anticipation (hit at 0.75 s, was 0.55).
+- Deviations from the brief, on purpose: plain float maths and time-driven curves, NOT Transforms and Coroutines (the harness stubs have no working Transform/coroutines, the boss is
+  host-side like BrainBoss, and co-op needs it deterministic); a view copies the drawn points RX/RY onto Transforms one to one. A pure leader-follower chain cuts every corner inward (a coil
+  spirals to the centre), so the wrap uses the rig's slot pull to lay the body on the ring - that is the "pulling the segments into a coil".
+- Harness: the eelframes dump now carries the chain per frame; `EelChecks` also asserts the segment spacing (< 0.02 tiles) and that the discharged coil lies inside the touch ring. ALL CHECKS PASSED.
+- Preview: `Tools/render/eel_rig_clip.py` bends Yan's drawing (the real painter) along the dumped chain: `maps/renders/boss_eel/eel_rig.mp4` (wrap on Level 1, then the Sump attacks and a smash).
+- Not done: reveal, vomit and retreat still play the baked strips (they need the swallowed lump); the damage stages are painted in the clip (stage per HP) but no Unity view draws the chain
+  yet (so nothing of this is visible in the game); the segment art is NOT cut into sprites: the clip uses the Python painter, and a runtime bend of his pixels in Unity (a mesh strip along the
+  chain, or baked frames from the chain) is the open decision; `eel_fight.mp4` and `eel_art.mp4` still show the old strip-based motion; the new timings (strike 0.75 s) are first guesses.
+  Nothing checked in Unity.
