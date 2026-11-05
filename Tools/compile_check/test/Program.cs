@@ -833,7 +833,7 @@ static class Program {
           + ",\"under\":" + (f.Rig.Under ? 1 : 0) + ",\"face\":" + (f.Rig.Face > 0 ? 1 : -1) + ",\"disch\":" + (f.Discharged ? 1 : 0) + ",\"nvis\":" + EelBoss.Surfaced(f)
           + ",\"rig\":[" + F(f.Rig.HX) + "," + F(f.Rig.HY) + string.Concat(Enumerable.Range(0, EelRig.Count).Select(i => "," + F(f.Rig.RX[i]) + "," + F(f.Rig.RY[i]))) + "]"
           + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
-        { var rg = f.Rig; for (int i = 0; i + 1 < EelRig.Count; i++) { float dx = rg.X[i + 1] - rg.X[i], dy = rg.Y[i + 1] - rg.Y[i]; eelSpacing = Math.Max(eelSpacing, Math.Abs((float)Math.Sqrt(dx * dx + dy * dy) - EelRig.Spacing)); }
+        { var rg = f.Rig; for (int i = 0; i + 1 < EelRig.Count; i++) { float dx = rg.X[i + 1] - rg.X[i], dy = rg.Y[i + 1] - rg.Y[i]; { float rr = (float)Math.Sqrt(dx * dx + dy * dy) / EelRig.Spacing; eelMaxStretch = Math.Max(eelMaxStretch, rr); eelMinStretch = Math.Min(eelMinStretch, rr); } }
           if (f.Level == "platform" && f.Stage == "wrap" && f.Discharged) for (int i = 0; i < EelRig.Count; i++) eelCoil = Math.Max(eelCoil, (float)Math.Sqrt((rg.X[i] - f.PX) * (rg.X[i] - f.PX) + (rg.Y[i] - f.PY) * (rg.Y[i] - f.PY))); }
         log0.AddRange(log.Where(l => l.Contains("coils shock"))); if (f.Stage == "move") moves.Add(f.Chain > 0 ? "smash" : f.Move);
         log.Clear();
@@ -889,13 +889,39 @@ static class Program {
     Console.WriteLine($"eel fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}, sump gone {f3.Gone}, body ejected {f3.Ejected}, flag {Story.Has(EelBoss.Fled)}");
   }
   static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;
-  static float eelSpacing, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
+  static float eelMaxStretch, eelMinStretch = 9f, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
+  // The rope's own physics (EelRig), on a bare rig: it bunches up when told to, stretches back past normal, and keeps its momentum when the head stops.
+  static void EelRigChecks() {
+    float NeckMean(EelRig r) { float t = 0f; for (int i = 0; i < 18; i++) { float ax = i == 0 ? r.HX : r.X[i - 1], ay = i == 0 ? r.HY : r.Y[i - 1]; t += (float)Math.Sqrt((r.X[i] - ax) * (r.X[i] - ax) + (r.Y[i] - ay) * (r.Y[i] - ay)); } return t / 18f / EelRig.Spacing; }
+    const float dt = 1f / 30f; var rig = new EelRig(); rig.Place(0f, 0f, 1f, 0f);
+    for (int i = 0; i < 20; i++) rig.Step(dt, 0f, 0f);
+    Check(Math.Abs(NeckMean(rig) - 1f) < 0.05f, $"EelRig: at rest the neck sits at the normal spacing ({NeckMean(rig):0.00})");
+    rig.SpacingTarget = 0.45f; for (int i = 0; i < 18; i++) rig.Step(dt, 0f, 0f);               // the 0.6 s anticipation
+    float squeezed = NeckMean(rig); Check(squeezed < 0.7f, $"EelRig: during the anticipation the neck bunches up ({squeezed:0.00} x normal)");
+    rig.SpacingTarget = 1.22f; float peak = 0f; for (int i = 0; i < 12; i++) { rig.Step(dt, 0f, 0f); peak = Math.Max(peak, NeckMean(rig)); }   // the strike
+    Check(peak > 1.05f, $"EelRig: on the strike it stretches past normal ({peak:0.00} x normal)");
+    rig.SpacingTarget = 1f; for (int i = 0; i < 60; i++) rig.Step(dt, 0f, 0f); Check(Math.Abs(NeckMean(rig) - 1f) < 0.06f, $"EelRig: and settles back ({NeckMean(rig):0.00})");
+    // inertia: the head runs 8 tiles left at 8 tiles/s and stops dead; the body must lag while it runs and keep moving after the head has stopped, the tail later than the neck
+    rig = new EelRig(); rig.Place(0f, 0f, 1f, 0f); for (int i = 0; i < 20; i++) rig.Step(dt, 0f, 0f);
+    int near = 6, far = 38; float lagFar = 0f, lastX = 0f; var px = new float[EelRig.Count]; for (int i = 0; i < EelRig.Count; i++) px[i] = rig.X[i];
+    float peakNearT = -1f, peakFarT = -1f, peakNear = 0f, peakFar = 0f, movingAfter = 0f; float hx = 0f;
+    for (int k = 0; k < 90; k++) {
+      float t = k * dt; if (k < 30) hx -= 8f * dt; rig.Step(dt, hx, 0f);
+      float vn = Math.Abs(rig.X[near] - px[near]) / dt, vf = Math.Abs(rig.X[far] - px[far]) / dt; for (int i = 0; i < EelRig.Count; i++) px[i] = rig.X[i];
+      if (k >= 30) { if (vn > peakNear) { peakNear = vn; peakNearT = t; } if (vf > peakFar) { peakFar = vf; peakFarT = t; } if (k >= 36 && vf > 0.3f) movingAfter += dt; }
+      if (k == 29) lagFar = Math.Abs(rig.X[far] - rig.X[0]) ;
+    }
+    Check(peakFarT > peakNearT, $"EelRig: after the head stops the tail's momentum peaks later than the neck's (neck {peakNearT:0.00} s, tail {peakFarT:0.00} s)");
+    Console.WriteLine($"  eel rope: bunched to {squeezed:0.00}x, stretched to {peak:0.00}x, tail peak {peakFar:0.0} t/s at {peakFarT:0.00} s vs neck {peakNear:0.0} t/s at {peakNearT:0.00} s, tail still moving {movingAfter:0.00} s");
+    Check(movingAfter > 0.08f, $"EelRig: the tail is still moving 0.2 s after the head stopped ({movingAfter:0.00} s of it)");
+  }
   static void EelChecks() {
+    EelRigChecks();
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
     Check(r.gone && r.ejected && r.flag, "Eel: the Sump ends with the body vomited up on the slab and the eel gone (eel_fled)");
-    Check(eelSpacing < 0.02f, $"Eel: every segment stays one spacing behind the one ahead (worst error {eelSpacing:0.000} tiles)");
+    Check(eelMinStretch > 0.12f && eelMaxStretch < 2.3f, $"Eel: the rope is elastic but never breaks or folds through itself (neighbour spacing {eelMinStretch:0.00}-{eelMaxStretch:0.00} x rest)");
     Check(eelCoil > 0f && eelCoil < 3.6f, $"Eel: once the coil is discharged the whole body lies within the touch ring ({eelCoil:0.0} tiles from the platform's centre)");
     Check(r.moves >= 5, $"Eel: snap, lunge, slam, sweep and smash all get played ({r.moves} kinds)");
   }

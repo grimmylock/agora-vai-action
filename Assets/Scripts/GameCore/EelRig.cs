@@ -24,33 +24,61 @@ namespace GameCore
     public class EelRig
     {
         public const int Count = 56;                 // segments behind the head
-        public const float Spacing = 0.62f;          // tiles between neighbours: 56 x 0.62 = about 35 tiles of eel
+        public const float Spacing = 0.62f;          // tiles between neighbours at rest: 56 x 0.62 = about 35 tiles of eel
         public float SlitherAmount = 0.3f, SlitherSpeed = 6f, WaveSpacing = 0.5f;   // tiles of sideways swing, radians per second, radians between neighbours
         public float HX, HY, HRot, VX, VY, Face = -1f;   // the head: position, direction of travel, velocity (tiles/s), which way it looks (+1 right)
         public bool Under;                           // below the water (drawn as a shadow, or not at all)
-        public bool AnchorOn; public float AnchorK = 7f; public int AnchorFrom = 12;     // rear-up: the coil is pulled back to its slots, only the neck swings free
-        public readonly float[] X = new float[Count], Y = new float[Count], Rot = new float[Count];     // the chain: [0] follows the head
-        public readonly float[] RX = new float[Count], RY = new float[Count];                              // what is drawn: the chain plus the slither
+        public bool AnchorOn; public float AnchorK = 7f; public int AnchorFrom = 12;     // rear-up / coil: the body is pulled toward its slots (a rest pose), only the neck swings free
+        // --- mass, water and springs (Yan, 2026-11-05: "it looks like a train following a track ... no sense of mass, muscular tension or momentum")
+        public float SpacingTarget = 1f;             // where the rest spacing (x Spacing) is heading: the state machine sets it (0.45 = bunched up like a spring, 1.2 = stretched)
+        public float SpacingNow = 1f, SpacingVel;    // the spacing itself runs on an under-damped spring, so it overshoots a little when released
+        public float SpringK = 150f, SpringC = 9f, WaveLag = 110f;      // the spacing spring; how fast the squeeze/stretch travels down the body (per second: lower = slower wave)
+        public bool CompressAll; public int NeckSegs = 22;             // the squeeze is for the neck (the coil stays where it is), or for the whole body (the wrap's constriction)
+        public float DragBase = 1.3f, DragTail = 3.2f, MassTail = 3f;  // water resistance per second (more toward the tail), and how much heavier the tail end is than the neck
+        public int Iterations = 10;                  // distance-solver passes per sub-step
+        public readonly float[] X = new float[Count], Y = new float[Count], Rot = new float[Count];     // the body: [0] is next to the head
+        public readonly float[] PX = new float[Count], PY = new float[Count];                              // where each was one sub-step ago: its velocity is X - PX (Verlet), so it keeps its momentum
+        public readonly float[] Sc = new float[Count], M = new float[Count];                               // each segment's squeeze/stretch now (a delayed copy of SpacingNow) and its mass
+        public readonly float[] RX = new float[Count], RY = new float[Count];                              // what is drawn: the body plus the slither
         public float[] SlotX, SlotY;
         float phase;
+        public EelRig() { for (int i = 0; i < Count; i++) { Sc[i] = 1f; M[i] = 1f + (MassTail - 1f) * i / (Count - 1f); } }
 
         /// <summary>Lay the body out in a straight line behind the head along (dx, dy).</summary>
         public void Place(float hx, float hy, float dx, float dy)
         {
             float l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-5f; dx /= l; dy /= l; HX = hx; HY = hy;
-            for (int i = 0; i < Count; i++) { X[i] = hx + dx * Spacing * (i + 1); Y[i] = hy + dy * Spacing * (i + 1); Rot[i] = Mathf.Atan2(-dy, -dx); }
-            Render();
+            for (int i = 0; i < Count; i++) { X[i] = PX[i] = hx + dx * Spacing * (i + 1); Y[i] = PY[i] = hy + dy * Spacing * (i + 1); Rot[i] = Mathf.Atan2(-dy, -dx); Sc[i] = 1f; }
+            SpacingNow = SpacingTarget = 1f; SpacingVel = 0f; Render();
         }
         /// <summary>Put the body exactly on a rest shape (the slots: [i] is where segment i belongs).</summary>
-        public void Snap(float hx, float hy) { HX = hx; HY = hy; if (SlotX == null) return; for (int i = 0; i < Count; i++) { X[i] = SlotX[i]; Y[i] = SlotY[i]; } Follow(0f); Render(); }
+        public void Snap(float hx, float hy) { HX = hx; HY = hy; if (SlotX == null) return; for (int i = 0; i < Count; i++) { X[i] = PX[i] = SlotX[i]; Y[i] = PY[i] = SlotY[i]; } Render(); }
 
-        /// <summary>Move the head to (tx, ty) over dt: in sub-steps no longer than the segment spacing, so a fast head drags a clean trail (a coil) behind it, not a straight chord.</summary>
+        float Rest(int i) { float w = CompressAll ? 1f : Mathf.Clamp01((NeckSegs + 8 - i) / 8f); return Spacing * (1f + (Sc[i] - 1f) * w); }
+
+        /// <summary>Move the head to (tx, ty) over dt. The head is the one kinematic thing; everything behind it is a rope: a Verlet integration with water drag (heavier toward the tail), a
+        /// weighted distance solver, and a rest spacing that compresses and stretches on a spring. Run in sub-steps no longer than the segment spacing so a fast head cannot tunnel.</summary>
         public void Step(float dt, float tx, float ty)
         {
+            float acc = SpringK * (SpacingTarget - SpacingNow) - SpringC * SpacingVel;
+            SpacingVel += acc * dt; SpacingNow = Mathf.Clamp(SpacingNow + SpacingVel * dt, 0.2f, 1.6f);
+            float lag = 1f - Mathf.Exp(-WaveLag * dt);
+            for (int i = 0; i < Count; i++) Sc[i] += ((i == 0 ? SpacingNow : Sc[i - 1]) - Sc[i]) * lag;       // the squeeze or stretch travels down the body, it does not happen everywhere at once
             float ox = HX, oy = HY, dx = tx - ox, dy = ty - oy, dist = Mathf.Sqrt(dx * dx + dy * dy);
-            int n = Mathf.Clamp((int)Mathf.Ceil(dist / (Spacing * 0.7f)), 1, 24);
-            float pull = AnchorOn && SlotX != null ? 1f - Mathf.Exp(-AnchorK * dt / n) : 0f;
-            for (int k = 1; k <= n; k++) { HX = ox + dx * k / n; HY = oy + dy * k / n; Follow(pull); }
+            int n = Mathf.Clamp((int)Mathf.Ceil(dist / (Spacing * 0.7f)), 1, 24); float h = dt / n;
+            float pull = AnchorOn && SlotX != null ? 1f - Mathf.Exp(-AnchorK * h) : 0f;
+            for (int k = 1; k <= n; k++)
+            {
+                HX = ox + dx * k / n; HY = oy + dy * k / n;
+                for (int i = 0; i < Count; i++)                                                                 // inertia: it keeps going the way it was going, less so in the water the further down it is
+                {
+                    float ret = Mathf.Exp(-(DragBase + DragTail * i / (Count - 1f)) * h), vx = (X[i] - PX[i]) * ret, vy = (Y[i] - PY[i]) * ret;
+                    PX[i] = X[i]; PY[i] = Y[i]; X[i] += vx; Y[i] += vy;
+                    if (pull > 0f) { float w = pull * (i < AnchorFrom ? 0.12f : Mathf.Clamp01((i - AnchorFrom) / 6f + 0.3f)); X[i] += (SlotX[i] - X[i]) * w; Y[i] += (SlotY[i] - Y[i]) * w; }
+                }
+                for (int it = 0; it < Iterations; it++) { for (int i = 0; i < Count; i++) Project(i); for (int i = Count - 1; i >= 0; i--) Project(i); }
+            }
+            for (int i = 0; i < Count; i++) { float ax = i == 0 ? HX : X[i - 1], ay = i == 0 ? HY : Y[i - 1]; Rot[i] = Mathf.Atan2(ay - Y[i], ax - X[i]); }
             if (dt > 1e-5f) { VX = (HX - ox) / dt; VY = (HY - oy) / dt; }
             float speed = Mathf.Sqrt(VX * VX + VY * VY);
             if (speed > 0.6f) { HRot = Mathf.Atan2(VY, VX); if (Mathf.Abs(VX) > 0.4f) Face = VX > 0f ? 1f : -1f; }
@@ -58,23 +86,18 @@ namespace GameCore
             Render();
         }
 
-        /// <summary>Kinematic follow, head to tail: each segment goes to the fixed distance from the one ahead, along the line to where it was. The coil's segments are first
-        /// pulled toward their slots (rear-up only) so the body keeps its shape round the pool while the neck follows the head.</summary>
-        void Follow(float pull)
+        /// <summary>One distance constraint (segment i to the one ahead of it, the head for i = 0) pulled to its rest length: the heavier of the two moves less, the head not at all.</summary>
+        void Project(int i)
         {
-            float px = HX, py = HY;
-            for (int i = 0; i < Count; i++)
-            {
-                if (pull > 0f) { float w = pull * (i < AnchorFrom ? 0.12f : Mathf.Clamp01((i - AnchorFrom) / 6f + 0.3f)); X[i] += (SlotX[i] - X[i]) * w; Y[i] += (SlotY[i] - Y[i]) * w; }
-                float dx = X[i] - px, dy = Y[i] - py, d = Mathf.Sqrt(dx * dx + dy * dy);
-                if (d < 1e-4f) { dx = 1f; dy = 0f; d = 1f; }
-                X[i] = px + dx / d * Spacing; Y[i] = py + dy / d * Spacing;
-                Rot[i] = Mathf.Atan2(py - Y[i], px - X[i]); px = X[i]; py = Y[i];
-            }
+            float ax = i == 0 ? HX : X[i - 1], ay = i == 0 ? HY : Y[i - 1], dx = X[i] - ax, dy = Y[i] - ay, d = Mathf.Sqrt(dx * dx + dy * dy);
+            if (d < 1e-5f) { dx = 1e-3f; dy = 0f; d = 1e-3f; }
+            float diff = (d - Rest(i)) / d, wa = i == 0 ? 0f : 1f / M[i - 1], wb = 1f / M[i], sum = wa + wb;
+            if (i > 0) { X[i - 1] += dx * diff * wa / sum; Y[i - 1] += dy * diff * wa / sum; }
+            X[i] -= dx * diff * wb / sum; Y[i] -= dy * diff * wb / sum;
         }
 
-        /// <summary>The drawn points: the chain pushed sideways by a sine wave that travels down the body, perpendicular to each segment's own heading (the direction it
-        /// is moving along). Nothing at the head (it leads clean) and full strength from the 8th segment on; it dies down when the head stands still.</summary>
+        /// <summary>The drawn points: the body pushed sideways by a sine wave that travels down it, perpendicular to each segment's own heading (the direction it is moving along). Nothing at
+        /// the head (it leads clean) and full strength from the 8th segment on; it dies down when the head stands still.</summary>
         void Render()
         {
             float speed = Mathf.Sqrt(VX * VX + VY * VY), amp = SlitherAmount * (0.3f + 0.7f * Mathf.Clamp01(speed / 4f));

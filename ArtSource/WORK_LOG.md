@@ -4998,3 +4998,22 @@ ease-out-expo strike), the Sweep on a quadratic Bezier over the pool, and the Wr
   yet (so nothing of this is visible in the game); the segment art is NOT cut into sprites: the clip uses the Python painter, and a runtime bend of his pixels in Unity (a mesh strip along the
   chain, or baked frames from the chain) is the open decision; `eel_fight.mp4` and `eel_art.mp4` still show the old strip-based motion; the new timings (strike 0.75 s) are first guesses.
   Nothing checked in Unity.
+
+## Eel: mass, springs and constriction (2026-11-05, after "it looks like a train following a track")
+Yan: dynamic spacing (bunch up during the 0.6 s anticipation of lunge/slam, stretch on the strike), inertia and damping so the sweep has weight (the lower body lags, then snaps
+into alignment sequentially when the head stops), and an organic constriction for the wrap (over the first 1.5 s of the hold the coil tightens toward the player before the discharge).
+- `EelRig.cs` rewritten: the chain is now a Verlet rope. Water drag per segment (more toward the tail), a mass gradient (tail 3x heavier), a weighted iterative distance solver
+  (10 passes, both directions, the head pinned), and a rest spacing on an under-damped spring (`SpacingTarget` -> `SpacingNow`) that travels down the body as a delayed wave (`Sc[]`),
+  so the squeeze/stretch is not everywhere at once. Squeeze applies to the neck (the coil stays put) or, for the wrap, to the whole body (`CompressAll`). The old hard follow is gone.
+- `EelBoss.DriveBody`: strikes (lunge/slam/snap/smash, and the platform strike) set `SpacingTarget` 0.45 during the pull-back, 1.22 on the strike, 1.0 after. The wrap:
+  burst, then over `ConstrictFor` = 1.5 s the head keeps circling (0.6 more turn) while the ring radius goes to 0.73x and the spacing to 0.78, the coil's slots shrink with it
+  (`SetCoilSlots` every tick), then the DISCHARGE (it used to fire at the end of the burst), held until the 4 s are up. Before the charge the coil is a wall: it holds you at its
+  inner edge with no damage ("the coil won't let you through"); after it, touching shocks as before.
+- Deviations (same reasons as the rig): time-driven spring curves, not Coroutines; plain maths, not Vector3.SmoothDamp (neither runs in the harness, the boss is host-side).
+- Harness: the fixed-spacing check is replaced by a sanity band (neighbour spacing 0.12-2.3 x rest) and `EelRigChecks` tests a bare rig: at rest 1.0x, bunches under 0.7x in 0.6 s
+  (measured 0.62x), stretches past 1.05x on release (1.41x), settles back, and after the head stops dead the tail's speed peaks later than the neck's (0.07 s later) and it keeps moving.
+  ALL CHECKS PASSED.
+- Preview: `maps/renders/boss_eel/eel_rig.mp4` re-rendered (same renderer, new chain).
+- Not checked: how it feels (all constants are first guesses: spring 150/9, wave 110/s, drag 1.3-4.5/s, mass 3x, 0.45/1.22, 0.73/0.78); the bunch-up reads as the neck shortening and
+  curling, not a visible zig-zag (the painter draws the body along the chain, so a shorter chain is a shorter neck); the tail keeps drifting for over a second after a hard stop (low drag at
+  the tail end: raise `DragTail` if it looks too floaty); the wall-before-charge is new gameplay (Yan to confirm); nothing in Unity (no view draws the chain yet); reveal/vomit/retreat still strips.
