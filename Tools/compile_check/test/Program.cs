@@ -873,31 +873,11 @@ static class Program {
         if (dl < 0.5f && ri < route.Count - 1) ri++; else if (dl > 0.001f) { BotX = dx / dl; BotY = dy / dl; }
       }
     }, 60f, true);
-    // --- 2. Level 3, the Sump: into the room, shoot once, the reveal, the fight, the vomit and the retreat
-    Build(LabLocks.Depths3); EelBoss.Reset(); var f3 = EelBoss.SpawnSump(LabLocks.Depths3); f3.StageAt = UnityEngine.Time.time;
-    p.X = 22; p.Y = 20; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; lastHp = p.Hp; Body.Reset();
-    var baited = new HashSet<string>(); string bait = ""; int patrol = 0, pdir = 1;
-    Seg(LabLocks.Depths3, f3, t => f3.Gone, (t, px, py, d) => {
-      BotX = 0; BotY = 0; BotJump = false; BotShoot = t > 1.5f;
-      float cx = f3.CX, cy = f3.CY, rx = px - cx, ry = py - cy, rl = (float)Math.Sqrt(rx * rx + ry * ry) + 0.001f;
-      // patrol the open north side of the pool: waypoints round it (the south is the channel), back and forth
-      var wps = new[] { (22.5f, 24f), (23f, 18.5f), (29f, 17f), (35.5f, 18.5f), (38f, 24f) };
-      var wp = wps[Math.Min(wps.Length - 1, Math.Max(0, patrol))]; float wx = wp.Item1 - px, wy = wp.Item2 - py, wl = (float)Math.Sqrt(wx * wx + wy * wy) + 0.001f;
-      if (wl < 0.7f) { if (patrol + pdir < 0 || patrol + pdir >= wps.Length) pdir = -pdir; patrol += pdir; } else { BotX = wx / wl * 0.6f; BotY = wy / wl * 0.6f; }
-      foreach (var z in f3.Zones) {
-        string kind = f3.Chain > 0 ? "smash" : z.Kind;
-        if (!baited.Contains(kind) && Math.Abs(px - z.X) + Math.Abs(py - z.Y) < 5f) { baited.Add(kind); bait = kind; }                    // the first time of each move the bot stands in it, so the preview shows the hit
-        if (bait == kind && f3.Stage == "move") { float tx = z.X - px, ty = z.Y - py, tl = (float)Math.Sqrt(tx * tx + ty * ty); if (tl > 0.5f) { BotX = tx / tl; BotY = ty / tl; } continue; }
-        float zx = px - z.X, zy = py - z.Y, zl = (float)Math.Sqrt(zx * zx + zy * zy) + 0.001f; float close = z.Kind == "sweep" ? 3.2f : z.R + 1.3f;
-        if (zl < close) { BotX = zx / zl; BotY = zy / zl; BotJump = (z.Live || (f3.Stage == "move" && EelBoss.Age(f3) > 0.45f)) && zl < close - 0.3f; }
-      }
-      if (f3.Stage != "move") bait = "";
-      if (f3.Stage == "vomit" || f3.Stage == "retreat") { BotX *= 0.3f; BotY *= 0.3f; }
-    }, 110f, false);
+    // (the Sump fight has its own dump and checks: EelSumpFrames / EelSumpChecks)
     sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
     System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
-    EelRun = (f1.Wraps, f1.Unit.Hp, f3.Gone, f3.Ejected, Story.Has(EelBoss.Fled), log0.Count(l => l.Contains("coils shock")), moves.Count);
-    Console.WriteLine($"eel fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}, sump gone {f3.Gone}, body ejected {f3.Ejected}, flag {Story.Has(EelBoss.Fled)}");
+    EelRun = (f1.Wraps, f1.Unit.Hp, false, false, false, log0.Count(l => l.Contains("coils shock")), 0);
+    Console.WriteLine($"eel platform fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}");
   }
   static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;
   static (float, float) eelHeadAt; static float eelHeadDrift, eelR0 = -1f, eelR1, eelTailIn = -9f, eelLift = 9f, eelInward = 9f, eelEscape = 99f; static float eelMaxStretch, eelMinStretch = 9f, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
@@ -926,12 +906,105 @@ static class Program {
     Console.WriteLine($"  eel rope: bunched to {squeezed:0.00}x, stretched to {peak:0.00}x, tail peak {peakFar:0.0} t/s at {peakFarT:0.00} s vs neck {peakNear:0.0} t/s at {peakNearT:0.00} s, tail still moving {movingAfter:0.00} s");
     Check(movingAfter > 0.08f, $"EelRig: the tail is still moving 0.2 s after the head stopped ({movingAfter:0.00} s of it)");
   }
+  // ---------------------------------------------------------------- the Sump fight on the real map (EelSump): one scenario per move, and the frame dump for Tools/render/eel_real_clip.py
+  class SumpStats { public List<EelSump.Ev> Ev = new List<EelSump.Ev>(); public float MaxCross; public int FloodPeak, FloodEnd, Moves; public float EndT; public HashSet<string> Seen = new HashSet<string>(); public EelBoss.Fight F; public int DeepStart, DeepEnd; public float MinPlayerHp = 99999; }
+  static Player SP1, SP2;
+  static void SumpPlace(Player p, float x, float y) { p.X = (int)Math.Floor(x); p.Y = (int)Math.Floor(y); Rt.SetOffset(p, x - p.X - 0.5f, y - p.Y - 0.5f); }
+  static EelBoss.Fight SumpStart(bool two, int phase) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear(); EelBoss.Reset();
+    string z = LabLocks.Depths3; MacroState.Current.PersistedZoneTerrain.Remove(z); MacroState.Current.CurrentZoneId = z; TerrainMap.BuildTerrainForZone(z); EncounterState.Enemies.Clear();
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
+    SP1 = p; p.HealPermanent(100000); p.Hp = p.MaxHp; SP2 = null; if (two) { SP2 = Player.Join(); SP2.HealPermanent(100000); SP2.Hp = SP2.MaxHp; }
+    var f = EelBoss.SpawnSump(z); f.Unit.IsAggroed = true; f.Started = true; f.Phase = phase; f.Enraged = phase >= 2; EelBoss.GoStage(f, "idle"); f.Next = UnityEngine.Time.time; return f;
+  }
+  static int DeepCount() { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Difficult && t.Look == "deepwater") n++; } return n; }
+  static void SumpTick(EelBoss.Fight f, SumpStats st, float dt) {
+    UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; EelBoss.Tick(dt);
+    var s = f.Sump; st.Ev.AddRange(s.Events);
+    for (int i = 0; i + 1 < EelSump.N; i++) {                                             // every crossing of the water's surface must be at a pool's centre (Yan: it always comes up and goes down the middle)
+      float a = s.Z[i] - EelSump.Surface, b = s.Z[i + 1] - EelSump.Surface; if ((a > 0f) == (b > 0f)) continue;
+      float u = a / (a - b), cx = s.X[i] + (s.X[i + 1] - s.X[i]) * u, cy = s.Y[i] + (s.Y[i + 1] - s.Y[i]) * u; float best = 99f;
+      foreach (var q in s.Pools) best = Math.Min(best, (float)Math.Sqrt((cx - q.X) * (cx - q.X) + (cy - q.Y) * (cy - q.Y))); if (best > 1.0f && Environment.GetEnvironmentVariable("EELDBG") != null) Console.WriteLine($"   DBG cross {best:0.0} at ({cx:0.0},{cy:0.0}) i={i} z={s.Z[i]:0.00}->{s.Z[i + 1]:0.00} move={f.Move} age={(UnityEngine.Time.time - f.StageAt) * EelSump.Speed:0.00}"); if (best > 1.0f && Environment.GetEnvironmentVariable("EELDBG") != null) { var sb2 = new System.Text.StringBuilder("      "); for (int k = Math.Max(0, i - 5); k < Math.Min(EelSump.N, i + 6); k++) sb2.Append($"[{k}:{s.X[k]:0.0},{s.Y[k]:0.0},{s.Z[k]:0.00}] "); Console.WriteLine(sb2 + " tailpool=" + s.P1?.Name + " snared=" + (s.Snared != null)); } st.MaxCross = Math.Max(st.MaxCross, best);
+    }
+    st.FloodPeak = Math.Max(st.FloodPeak, s.Flooded); if (f.Move != null) { st.Seen.Add(f.Move); }
+    foreach (var pl in Player.All) { st.MinPlayerHp = Math.Min(st.MinPlayerHp, pl.Hp); if (pl.Hp < pl.MaxHp / 3) { pl.Hp = pl.MaxHp; Body.Reset(); } }
+    UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+  }
+  static SumpStats SumpRun(bool two, int phase, string queue, Action<EelBoss.Fight> setup, Action<EelBoss.Fight, float> each, float maxT) {
+    var f = SumpStart(two, phase); var st = new SumpStats { F = f }; if (queue != null) f.Sump.Queue.Add(queue); setup?.Invoke(f); st.DeepStart = DeepCount();
+    const float dt = 1f / 30f; bool moved = false; float t0 = UnityEngine.Time.time;
+    for (float t = 0f; t < maxT; t += dt) {
+      each?.Invoke(f, t); SumpTick(f, st, dt); if (f.Stage == "move") moved = true;
+      if (moved && f.Stage == "idle") { st.EndT = t; break; }
+    }
+    st.FloodEnd = f.Sump.Flooded; st.DeepEnd = DeepCount(); Console.WriteLine($"  eel sump {queue}: over in {st.EndT:0.0} s, worst surface crossing {st.MaxCross:0.00} tiles from a pool's centre"); return st;
+  }
+  static int Hits(SumpStats st, int who, int dmg = -1) => st.Ev.Count(e => e.Kind == "hit" && e.Who == who && (dmg < 0 || e.Dmg == dmg));
+  static void EelSumpChecks() {
+    float cross = 0f; string cell;
+    // COMBO: a head strike out of the pool nearest one player, a tail sweep round a far pool through the other
+    var st = SumpRun(true, 0, "combo", f => { SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.Moves >= 0 && st.EndT > 3f && st.Ev.Count(e => e.Kind == "impact") >= 2 && Hits(st, 0) >= 1 && Hits(st, 1) >= 1, $"EelSump combo: a head slam and a tail slam land and both players are hit (impacts {st.Ev.Count(e => e.Kind == "impact")}, hits {Hits(st, 0)}/{Hits(st, 1)}, over {st.EndT:0.0} s)");
+    // ARCH: crashes down the big pool's centre; the shockwave hits whoever is near it, not the far player
+    st = SumpRun(true, 0, "arch:east", f => { SumpPlace(SP1, 34.0f, 26.5f); SumpPlace(SP2, 12.0f, 12.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    var imp = st.Ev.FirstOrDefault(e => e.Kind == "impact" && e.Water && e.Power >= 2f);
+    Check(imp != null && Math.Abs(imp.X - 30.5f) < 0.8f && Math.Abs(imp.Y - 24.5f) < 0.8f && Hits(st, 0, 190) == 1 && Hits(st, 1) == 0, $"EelSump arch: it crashes into the big pool's centre ({(imp == null ? "none" : imp.X.ToString("0.0") + "," + imp.Y.ToString("0.0"))}), the shockwave hits the near player and not the far one ({Hits(st, 0)}/{Hits(st, 1)})");
+    // DASH: out of the west pool, an S across the arena, into the east one: a player on the path is flung, one off it is not
+    {
+      var f0 = SumpStart(true, 0); var pw = f0.Sump.Pools.First(q => q.Name == "west"); var pe = f0.Sump.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
+      st = SumpRun(true, 0, "dash:west>east", f => { SumpPlace(SP1, onp.x, onp.y); SumpPlace(SP2, 30.5f, 10.5f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+      Check(Hits(st, 0, 310) == 1 && Hits(st, 1) == 0, $"EelSump dash: the body flings the player on its path and misses the one off it ({Hits(st, 0)}/{Hits(st, 1)})");
+    }
+    // SNARE (launch): the tail out of one pool catches him, drags him down it, a DIFFERENT pool throws him up; he crashes
+    st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
+    var wat = st.Ev.Where(e => e.Kind == "impact" && e.Water).Select(e => ((int)Math.Round(e.X * 2), (int)Math.Round(e.Y * 2))).Distinct().Count(); var crash = st.Ev.FirstOrDefault(e => e.Kind == "impact" && e.Power >= 1.3f && !e.Water);
+    Check(Hits(st, 0, 420) == 1 && wat >= 2 && crash != null, $"EelSump snare (launch): caught, dragged under one pool, thrown out of another, crashes for 420 (water splashes at {wat} different spots, crash {(crash != null)})");
+    // SNARE (hurl): thrown at the other player: both take it
+    st = SumpRun(true, 2, "snare:hurl", f => { SumpPlace(SP1, 36.0f, 20.0f); SumpPlace(SP2, 22.0f, 22.0f); }, null, 16f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.Ev.Any(e => e.Kind == "hit" && e.Dmg == 260 && e.Text == "hurled") && st.Ev.Any(e => e.Kind == "hit" && e.Dmg == 210), "EelSump snare (hurl): the snared player is thrown at the other one and both are hurt");
+    // SNARE: shoot the tail while it drags: it lets go, the thrower never comes, the tail goes down
+    st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), (f, t) => { if (t > 3.6f && f.Sump.Tail.Hp > 1 && f.Sump.TailOut) { f.Sump.Tail.Hp = Math.Max(1, f.Sump.Tail.Hp - 90); Boss.OnDamaged(f.Sump.Tail); } }, 16f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.F.Sump.TailBroken && Hits(st, 0, 420) == 0 && st.EndT > 0f && st.EndT < 12f, $"EelSump snare: shooting the tail makes it let go (broken {st.F.Sump.TailBroken}, no throw {Hits(st, 0, 420) == 0}, over in {st.EndT:0.0} s)");
+    // FLOOD: the floor turns to deep water, then comes back; it bursts out under the player standing in it
+    st = SumpRun(false, 2, "flood", f => SumpPlace(SP1, 35.5f, 26.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.FloodPeak >= 400 && st.FloodEnd == 0 && st.DeepEnd == st.DeepStart && Hits(st, 0, 380) == 1, $"EelSump flood: {st.FloodPeak} tiles go under, all {st.DeepStart} deep tiles are back to {st.DeepEnd} afterwards, and it bursts out under him ({Hits(st, 0)})");
+    // REVEAL then DEATH: it swallows the body, fights, then brings it back up and goes down the big pool
+    {
+      var f = SumpStart(false, 0); EelBoss.GoStage(f, "hidden"); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit);
+      for (float t = 0f; t < 8f && f.Stage != "idle"; t += dt) SumpTick(f, sst, dt);
+      bool swallowed = f.Swallowed && !EncounterState.Enemies.Contains(f.Body); f.Sump.Dying = true; f.Next = UnityEngine.Time.time; var tf = f.Unit;
+      for (float t = 0f; t < 10f && !f.Gone; t += dt) SumpTick(f, sst, dt); cross = Math.Max(cross, sst.MaxCross);
+      Check(swallowed && f.Gone && f.Ejected && EncounterState.Enemies.Contains(f.Body) && Story.Has(EelBoss.Fled), $"EelSump: it swallows the body on the slab, and at the end brings it back up and goes down the big pool (swallowed {swallowed}, gone {f.Gone}, ejected {f.Ejected})");
+    }
+    // TARGETING: nothing lands on the head or the tail while they are under the water; shots land while they are out
+    {
+      var f = SumpStart(true, 0); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); SumpTick(f, sst, dt); int before = f.Unit.Hp; f.Unit.Hp -= 1000; Boss.OnDamaged(f.Unit);
+      bool shed = f.Unit.Hp == before; f.Sump.Queue.Add("combo"); bool headLanded = false, tailLanded = false;
+      for (float t = 0f; t < 8f; t += dt) {
+        SumpTick(f, sst, dt);
+        if (!headLanded && f.Sump.HeadOut && f.Stage == "move") { int h = f.Unit.Hp; f.Unit.Hp -= 500; Boss.OnDamaged(f.Unit); headLanded = f.Unit.Hp == h - 500; }
+        if (!tailLanded && f.Sump.TailOut && f.Stage == "move") { int h = f.Sump.Tail.Hp; f.Sump.Tail.Hp -= 300; Boss.OnDamaged(f.Sump.Tail); tailLanded = f.Sump.Tail.Hp == h - 300; }
+      }
+      Check(shed && headLanded && tailLanded, $"EelSump: shots do nothing while it is under the water (shed {shed}) and land on the head ({headLanded}) and the tail ({tailLanded}) while they are out");
+    }
+    // PHASES: above half HP it only uses the first three moves; from half HP the snare and the flood join in
+    {
+      var seen0 = new HashSet<string>(); var seen2 = new HashSet<string>(); foreach (int ph in new[] { 0, 2 }) {
+        var f = SumpStart(true, ph); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
+        for (float t = 0f; t < 140f; t += dt) { SumpTick(f, sst, dt); if (f.Stage == "idle" && t % 5f < dt) { SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); } } (ph == 0 ? seen0 : seen2).UnionWith(sst.Seen); cross = Math.Max(cross, sst.MaxCross);
+      }
+      Check(!seen0.Contains("snare") && !seen0.Contains("flood") && seen0.Count == 3 && seen2.Contains("snare") && seen2.Contains("flood"), $"EelSump phases: phase 1 uses {string.Join(",", seen0.OrderBy(x => x))}; phase 2 adds the snare and the flood (saw {string.Join(",", seen2.OrderBy(x => x))})");
+    }
+    Check(cross <= 0.5f, $"EelSump: every time the head or tail goes through the water's surface it is at a pool's centre (worst {cross:0.00} tiles off, over all the moves)");
+    EelBoss.Reset(); Rt.On = false;
+  }
+
   static void EelChecks() {
-    EelRigChecks();
+    EelRigChecks(); EelSumpChecks();
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
-    Check(r.gone && r.ejected && r.flag, "Eel: the Sump ends with the body vomited up on the slab and the eel gone (eel_fled)");
     Check(eelMinStretch > 0.12f && eelMaxStretch < 2.3f, $"Eel: the rope is elastic but never breaks or folds through itself (neighbour spacing {eelMinStretch:0.00}-{eelMaxStretch:0.00} x rest)");
     Console.WriteLine($"  eel wrap: head drift in the constriction {eelHeadDrift:0.00} t, tail radius change {eelTailIn:0.00} t, coil lift head-tail {eelLift:0.00} t, tail-vs-head radius {eelInward:0.00} t, head height over its own body {eelEscape:0.00} t, best ray score at the dive {EelBoss.EscScore:0.00}");
     Check(eelHeadDrift < 0.05f, $"Eel: during the constriction the head stays anchored ({eelHeadDrift:0.00} tiles of drift)");
@@ -941,7 +1014,6 @@ static class Program {
     Check(EelRig.SortOrder(0) > EelRig.SortOrder(1) && EelRig.SortOrder(1) > EelRig.SortOrder(55) && EelRig.HeadOrder() > EelRig.SortOrder(0), "Eel: sort order puts the head over every segment and each segment over the one behind it");
     Check(eelEscape > 0.5f, $"Eel: its dart and dive go OVER its own coil, never through it (lowest the head was while on top of its body: {eelEscape:0.00} tiles)");
     Check(eelCoil > 0f && eelCoil < 3.6f, $"Eel: once the coil is discharged the whole body lies within the touch ring ({eelCoil:0.0} tiles from the platform's centre)");
-    Check(r.moves >= 5, $"Eel: snap, lunge, slam, sweep and smash all get played ({r.moves} kinds)");
   }
 
   static void BrainFrames(string path) {

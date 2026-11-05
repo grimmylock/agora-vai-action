@@ -1,0 +1,482 @@
+// Boss 3, the Sump fight (Yan, 2026-11-05: "it having the entire body out of the water doesn't work during the bossfight ... several deep pools where it can come up from to attack players in
+// different parts of the arena ... the head attacks one while the tail comes out of the other pool ... IMPACT, heavy and strong like the hydra in God of War").
+// The eel lives under FOUR deep pools (EelSump.Pools: the big one and the west, east and north ones, marked in the plan by 0 y z N). Only what is out of the water exists above the surface.
+// Nothing is a physics rope any more: every move is AUTHORED - the eel's body is a 35-tile spine (N samples, head first, x/y in tiles, Z = height, Z < 0 = under the water) laid along hand-made
+// curves, the head (or the tail tip) is driven along a curve by a timeline, and the body follows the same curve. Slow and readable wind-ups, a strike that accelerates INTO the hit, then it stays.
+// RULE (Yan): it always comes up out of a pool's CENTRE and goes down its CENTRE - every curve starts and ends vertical over a pool centre (EelSumpChecks asserts every surface crossing).
+// Phase 1 (above half HP): COMBO (head strike from one pool + a tail sweep round another), ARCH (out of one pool, over the arena, crash into the big one), DASH (fully out of one pool, an S across the
+// arena, down into another: whoever is on the path is flung). Phase 2 (half HP and below) adds SNARE (the tail comes out of a pool, catches a player, drags him to the pool, throws him out of ANOTHER
+// pool: LAUNCH = straight up and crash, or HURL = at another player) and FLOOD (the floor turns to deep water for a while, it glides through as a shadow and bursts out under someone).
+// The head and the tail are separate targets (the main Unit and a tail Unit with its own HP): shoot the tail enough and it lets go and goes down. Script times are x1/Speed: Yan slowed it 20%.
+// Host-side (Rt.WorldTick); co-op: moves pick targets among Player.All; every player in a zone is hit. All damage, timings and radii are first guesses.
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GameData;
+using UnityEngine;
+
+namespace GameCore
+{
+    public static class EelSump
+    {
+        public const int N = 140; public const float PerTile = 4f, Speed = 0.8f, HideZ = -5f, Surface = 0.02f;   // 35 tiles of spine, 4 samples a tile; "out of the water" = Z above Surface
+        public const int TailMax = 2600; public const string TailName = "The Drowner's tail";
+        public static readonly MutantDef TailDef = new MutantDef { Name = TailName, Tier = 3, Hp = TailMax, PhysDR = 0.1f, AnomDR = 0.3f, Ap = 0, Mp = 0, Ac = 10, AttackDamage = 0, Behavior = "boss", PanicThreshold = 0f };
+
+        public class Pool { public string Name; public float X, Y, RX, RY; public bool Big; }
+        public class Ev { public string Kind, Text; public float X, Y, Power; public bool Water; public int Who, Dmg; }
+        public class Fling { public float X0, Y0, X1, Y1, T0, Dur, Apex, Z0, Spin, Z, Rot; public string Land; public Player Hurled; }
+        public class State
+        {
+            public List<Pool> Pools = new List<Pool>(); public Pool Big; public float SlabX, SlabY;
+            public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
+            public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
+            public readonly List<Ev> Events = new List<Ev>(); public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>();
+            public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
+            public string Variant, RevealKey; public float FloodR; public int Flooded;
+            // the move in progress
+            public Strike Hs; public Curve Cur, Cur2; public Pool P1, P2, P3; public Player Tg, Tg2, Snared; public (float x, float y) GP, LP; public float TH0, EndAt = -1f, BreakTs = -1f, BreakQ;
+            public bool Hit1, Hit2, Missed, Grabbed, Released, Crossed, Threw; public readonly HashSet<Player> Hurt = new HashSet<Player>(); public float PrevHZ = 9f;
+            public List<(int x, int y, float d)> Shallow; public readonly HashSet<(int, int)> Flip = new HashSet<(int, int)>();
+        }
+
+        // ------------------------------------------------------------------ curves
+        public class Curve
+        {
+            readonly float[] px, py, pz, cum; readonly int n; public readonly float L; readonly float[] d0 = new float[3], d1 = new float[3];
+            public Curve(List<(float x, float y, float z)> pts)
+            {
+                var p = new List<(float x, float y, float z)>();
+                foreach (var q in pts) if (p.Count == 0 || D3(p[p.Count - 1], q) > 1e-4f) p.Add(q);
+                if (p.Count < 2) p.Add((p[0].x, p[0].y, p[0].z - 1f));
+                n = p.Count; px = new float[n]; py = new float[n]; pz = new float[n]; cum = new float[n];
+                for (int i = 0; i < n; i++) { px[i] = p[i].x; py[i] = p[i].y; pz[i] = p[i].z; cum[i] = i == 0 ? 0f : cum[i - 1] + D3(p[i - 1], p[i]); }
+                L = cum[n - 1];
+                float a = 1f / Mathf.Max(1e-4f, cum[1]); d0[0] = (px[1] - px[0]) * a; d0[1] = (py[1] - py[0]) * a; d0[2] = (pz[1] - pz[0]) * a;
+                float b = 1f / Mathf.Max(1e-4f, cum[n - 1] - cum[n - 2]); d1[0] = (px[n - 1] - px[n - 2]) * b; d1[1] = (py[n - 1] - py[n - 2]) * b; d1[2] = (pz[n - 1] - pz[n - 2]) * b;
+            }
+            public (float x, float y, float z) At(float s)       // before the start and past the end it carries straight on (down into the pool)
+            {
+                if (s <= 0f) return (px[0] + d0[0] * s, py[0] + d0[1] * s, pz[0] + d0[2] * s);
+                if (s >= L) { float e = s - L; return (px[n - 1] + d1[0] * e, py[n - 1] + d1[1] * e, pz[n - 1] + d1[2] * e); }
+                int lo = 0, hi = n - 1; while (hi - lo > 1) { int m = (lo + hi) >> 1; if (cum[m] <= s) lo = m; else hi = m; }
+                float u = (s - cum[lo]) / Mathf.Max(1e-6f, cum[hi] - cum[lo]); return (px[lo] + (px[hi] - px[lo]) * u, py[lo] + (py[hi] - py[lo]) * u, pz[lo] + (pz[hi] - pz[lo]) * u);
+            }
+            public List<(float x, float y, float z)> Points() { var l = new List<(float, float, float)>(); for (int i = 0; i < n; i++) l.Add((px[i], py[i], pz[i])); return l; }
+        }
+        static float D3((float x, float y, float z) a, (float x, float y, float z) b) { float dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z; return Mathf.Sqrt(dx * dx + dy * dy + dz * dz); }
+        public static List<(float x, float y, float z)> Bez((float x, float y, float z) a, (float x, float y, float z) b, (float x, float y, float z) c, (float x, float y, float z) d, int n = 60)
+        {
+            var l = new List<(float, float, float)>();
+            for (int i = 0; i <= n; i++) { float t = i / (float)n, u = 1f - t, w0 = u * u * u, w1 = 3f * u * u * t, w2 = 3f * u * t * t, w3 = t * t * t; l.Add((w0 * a.x + w1 * b.x + w2 * c.x + w3 * d.x, w0 * a.y + w1 * b.y + w2 * c.y + w3 * d.y, w0 * a.z + w1 * b.z + w2 * c.z + w3 * d.z)); }
+            return l;
+        }
+        static float Smr(float u) { u = Mathf.Clamp01(u); return u * u * u * (u * (6f * u - 15f) + 10f); }      // slow start, slow end: heavy
+        static float Ein(float u, float p = 3f) => Mathf.Pow(Mathf.Clamp01(u), p);                                // accelerates the whole way: it hits at full speed
+        static float Eout(float u, float p = 3f) => 1f - Mathf.Pow(1f - Mathf.Clamp01(u), p);                      // fast then settling: momentum
+        static float Lerp(float a, float b, float u) => a + (b - a) * u;
+
+        /// <summary>A head strike: it comes up the pool's centre as a column that leans toward the target (the head and neck hover there: the rear-up), the target is locked part way through,
+        /// then it arcs down onto it. Timeline (script s after t0): emerge 0-1.6, creep 1.6-2.1, STRIKE 2.1-2.3 (accelerating), press 2.3-3.0, withdraw 3.0-4.1.</summary>
+        public class Strike
+        {
+            public Pool P; public (float x, float y) T; public Curve C1, Full; public float L1, Apex, StrikeEnd = 2.3f;
+            public Strike(Pool p, (float x, float y) t)
+            {
+                P = p; T = t; float dx = t.x - p.X, dy = t.y - p.Y, d = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f; Apex = 4.2f + 0.3f * Mathf.Min(d, 12f); float lx = 0.22f * dx, ly = 0.22f * dy;
+                C1 = new Curve(Bez((p.X, p.Y, -3.2f), (p.X, p.Y, 1.8f), (p.X + 0.1f * dx, p.Y + 0.1f * dy, Apex - 1.4f), (p.X + lx, p.Y + ly, Apex))); L1 = C1.L;
+            }
+            public void Lock((float x, float y) t)
+            {
+                T = t; float dx = t.x - P.X, dy = t.y - P.Y; var pts = C1.Points(); var a = pts[pts.Count - 1];
+                pts.AddRange(Bez(a, (a.x + 0.18f * dx, a.y + 0.18f * dy, a.z + 1.6f), (t.x - 0.2f * dx, t.y - 0.2f * dy, 3.0f + 0.2f * Apex), (t.x, t.y, 0.45f)).Skip(1)); Full = new Curve(pts);
+            }
+            public Curve Cur => Full ?? C1;
+            public float Sigma(float u)
+            {
+                if (u < 0f) return 0f;
+                if (u < 1.6f) return L1 * Smr(u / 1.6f);
+                if (Full == null) return L1;
+                float c = L1 + 0.05f * (Full.L - L1);
+                if (u < 2.1f) return Lerp(L1, c, (u - 1.6f) / 0.5f);
+                if (u < 2.3f) return Lerp(c, Full.L, Ein((u - 2.1f) / 0.2f, 2.6f));
+                if (u < 3.0f) return Full.L;
+                if (u < 4.1f) return Full.L * (1f - Smr((u - 3.0f) / 1.1f));
+                return 0f;
+            }
+        }
+
+        // ------------------------------------------------------------------ the world
+        public static State Create(string zone)
+        {
+            var s = new State();
+            foreach (var (ch, name, rx, ry, big) in new[] { ('0', "big", 8.2f, 4.0f, true), ('y', "west", 3.7f, 2.4f, false), ('z', "east", 3.7f, 2.4f, false), ('N', "north", 3.5f, 2.3f, false) })
+            { var m = EelBoss.Marks(zone, ch); if (m.Count == 1) s.Pools.Add(new Pool { Name = name, X = m[0].x + 0.5f, Y = m[0].y + 0.5f, RX = rx, RY = ry, Big = big }); }
+            s.Big = s.Pools.First(p => p.Big); var b = EelBoss.Marks(zone, '8'); s.SlabX = b[0].x + 0.5f; s.SlabY = b[0].y + 0.5f; Hide(s, s.Big); return s;
+        }
+        static void Hide(State s, Pool p, int from = 0, int to = N) { for (int i = from; i < to; i++) { s.X[i] = p.X; s.Y[i] = p.Y; s.Z[i] = HideZ - i * 0.01f; } }
+        static void FillHead(State s, Curve c, float sig) { for (int i = 0; i < N; i++) { var q = c.At(sig - i / PerTile); s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }
+        static void FillTail(State s, Curve fromTip, float sig = 0f) { for (int i = N / 2; i < N; i++) { var q = fromTip.At(sig + (N - 1 - i) / PerTile); s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }   // a curve ordered tip first
+        static (float x, float y) Pos(Player p) => Ballistics.Pos(p);
+        static void Place(Player p, float x, float y) { int tx = (int)Mathf.Floor(x), ty = (int)Mathf.Floor(y); p.X = tx; p.Y = ty; Rt.SetOffset(p, x - tx - 0.5f, y - ty - 0.5f); }
+        static Pool Nearest(State s, float x, float y, Func<Pool, bool> ok = null) => s.Pools.Where(p => ok == null || ok(p)).OrderBy(p => (p.X - x) * (p.X - x) + (p.Y - y) * (p.Y - y)).FirstOrDefault();
+        static float Dist(float ax, float ay, float bx, float by) => Mathf.Sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
+        static int Index(Player p) => Player.All.ToList().IndexOf(p);
+        static System.Random Rng = new System.Random(5);
+        static T Pick<T>(IList<T> l) => l[Rng.Next(l.Count)];
+
+        // ------------------------------------------------------------------ the clock
+        public static void Tick(EelBoss.Fight f, List<Player> players, float now, float dt)
+        {
+            var s = f.Sump; s.Events.Clear(); float ts = (now - f.StageAt) * Speed;
+            switch (f.Stage)
+            {
+                case "hidden": f.Label = "in the pools"; Hide(s, s.Big); break;
+                case "reveal": Reveal(f, s, ts, now, false); break;
+                case "vomit": Reveal(f, s, ts, now, true); break;
+                case "idle":
+                    f.Label = "under the water"; Hide(s, s.Big); f.Zones.Clear();
+                    if (s.Dying) { EelBoss.GoStage(f, "vomit"); break; }
+                    if (now >= f.Next) StartMove(f, s, players, now);
+                    break;
+                case "move": RunMove(f, s, players, now, ts); break;
+            }
+            Fly(f, s, players, now); UpdateUnits(f, s); s.LastHp = f.Unit.Hp; s.LastTailHp = s.Tail.Hp;
+            if (s.TailDownUntil >= 0f && now >= s.TailDownUntil) { s.TailDownUntil = -1f; s.Tail.Hp = TailMax; s.TailBroken = false; }
+        }
+
+        static void UpdateUnits(EelBoss.Fight f, State s)
+        {
+            int hi = 0, ti = N - 1; s.HeadOut = s.Z[hi] > 0.3f; s.TailOut = s.Z[ti] > 0.3f;
+            var hp = s.HeadOut ? (s.X[hi], s.Y[hi]) : (s.Big.X, s.Big.Y); var tp = s.TailOut ? (s.X[ti], s.Y[ti]) : (s.Big.X, s.Big.Y);
+            f.Unit.X = (int)Mathf.Floor(hp.Item1); f.Unit.Y = (int)Mathf.Floor(hp.Item2); Rt.SetOffset(f.Unit, hp.Item1 - f.Unit.X - 0.5f, hp.Item2 - f.Unit.Y - 0.5f);
+            s.Tail.X = (int)Mathf.Floor(tp.Item1); s.Tail.Y = (int)Mathf.Floor(tp.Item2); Rt.SetOffset(s.Tail, tp.Item1 - s.Tail.X - 0.5f, tp.Item2 - s.Tail.Y - 0.5f);
+        }
+
+        // ------------------------------------------------------------------ picking the next move
+        static void StartMove(EelBoss.Fight f, State s, List<Player> players, float now)
+        {
+            string kind = null; s.Variant = null;
+            if (s.Queue.Count > 0) { kind = s.Queue[0]; s.Queue.RemoveAt(0); if (kind.Contains(":")) { var sp = kind.Split(':'); kind = sp[0]; s.Variant = sp[1]; } }
+            else
+            {
+                if (s.Bag.Count == 0) { s.Bag.AddRange(new[] { "combo", "arch", "dash" }); if (f.Phase >= 2 || f.Enraged) s.Bag.AddRange(new[] { "snare", "flood" }); s.Bag.Sort((a, b) => Rng.Next(2) == 0 ? -1 : 1); }
+                kind = s.Bag[0]; s.Bag.RemoveAt(0);
+            }
+            if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
+            if (kind == "snare" && s.Variant == null) s.Variant = players.Count >= 2 && Rng.Next(2) == 0 ? "hurl" : "launch";
+            if (kind == "snare" && s.Variant == "hurl" && players.Count < 2) s.Variant = "launch";
+            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
+            s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
+            EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
+            switch (kind)
+            {
+                case "combo":
+                    s.P1 = Nearest(s, tp.x, tp.y, p => Dist(p.X, p.Y, tp.x, tp.y) >= 3.8f) ?? Nearest(s, tp.x, tp.y);
+                    s.P2 = s.Pools.Where(p => p != s.P1).OrderByDescending(p => Dist(p.X, p.Y, s.P1.X, s.P1.Y) - (Dist(p.X, p.Y, t2.x, t2.y) > 11f ? 30f : 0f)).First();
+                    s.Hs = new Strike(s.P1, tp); s.TH0 = Mathf.Atan2(t2.y - s.P2.Y, t2.x - s.P2.X) - 2f * Mathf.PI * 1.15f * Mathf.Pow(0.55f, 1.7f); f.Label = "COMBO: head strike + tail sweep - wind-up"; break;
+                case "arch":
+                    s.P1 = s.Pools.FirstOrDefault(p => p.Name == s.Variant && !p.Big) ?? Pick(s.Pools.Where(p => !p.Big).ToList()); var b = s.Big;
+                    s.Cur = new Curve(Bez((s.P1.X, s.P1.Y, -3.2f), (s.P1.X, s.P1.Y, 13f), (b.X, b.Y, 13f), (b.X, b.Y, -3.5f), 90)); break;
+                case "dash":
+                    var ends = s.Pools.Where(p => !p.Big).ToList(); var named = s.Variant != null && s.Variant.Contains(">") ? s.Variant.Split('>') : null;
+                    s.P1 = named != null ? ends.First(p => p.Name == named[0]) : Pick(ends); s.P2 = named != null ? ends.First(p => p.Name == named[1]) : ends.Where(p => p != s.P1).OrderByDescending(p => Dist(p.X, p.Y, s.P1.X, s.P1.Y)).First(); s.Cur = Dash(s.P1, s.P2); break;
+                case "snare": StartSnare(f, s, players, tp, t2); break;
+                case "flood": StartFlood(f, s, players, tp); break;
+            }
+        }
+        public static Curve Dash(Pool a, Pool b)
+        {
+            float dx = b.X - a.X, dy = b.Y - a.Y, d = Mathf.Sqrt(dx * dx + dy * dy), ux = dx / d, uy = dy / d, px = -uy, py = ux; var pts = new List<(float, float, float)>();
+            pts.AddRange(Bez((a.X, a.Y, -4f), (a.X, a.Y, 3.8f), (a.X + 3f * ux, a.Y + 3f * uy, 3.6f), (a.X + 5.5f * ux, a.Y + 5.5f * uy, 0.45f)));      // up the centre, rears, comes down to the floor
+            for (int i = 1; i <= 160; i++) { float s0 = 5.5f + (d - 11f) * i / 160f, off = 2.3f * Mathf.Sin(s0 / 14f * 2f * Mathf.PI); pts.Add((a.X + ux * s0 + px * off, a.Y + uy * s0 + py * off, 0.45f + 0.2f * Mathf.Sin(s0 / 7f * 2f * Mathf.PI))); }   // the S across the arena
+            pts.Add((b.X - 1.7f * ux, b.Y - 1.7f * uy, 0.5f)); pts.Add((b.X - 0.7f * ux, b.Y - 0.7f * uy, 1.3f)); pts.Add((b.X, b.Y, 1.7f)); pts.Add((b.X, b.Y, 0.6f)); pts.Add((b.X, b.Y, -1f)); pts.Add((b.X, b.Y, -4f));      // and down the other pool's centre, straight
+            return new Curve(pts);
+        }
+
+        static void End(EelBoss.Fight f, State s, float now)
+        {
+            f.Stage = "idle"; f.StageAt = now; f.Move = null; f.Zones.Clear(); f.Next = now + (f.Phase >= 2 ? 1.5f : 2.2f); f.Label = "under the water";
+            Restore(s, true); if (s.Snared != null) { s.Snared = null; }
+        }
+
+        // ------------------------------------------------------------------ the moves
+        static void RunMove(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            switch (f.Move)
+            {
+                case "combo": Combo(f, s, players, now, ts); break;
+                case "arch": Arch(f, s, players, now, ts); break;
+                case "dash": DashRun(f, s, players, now, ts); break;
+                case "snare": SnareRun(f, s, players, now, ts); break;
+                case "flood": FloodRun(f, s, players, now, ts); break;
+            }
+        }
+
+        static void Knock(Player p, float fx, float fy, float dist, float prone, float now)
+        {
+            var q = Pos(p); float dx = q.x - fx, dy = q.y - fy, l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f; Rt.MoveBy(p, dx / l * dist, dy / l * dist); Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + prone);
+        }
+        static bool Damage(State s, Player p, int dmg, string what, float fx, float fy, float knock, float prone, float now)
+        {
+            if (Rt.Untouchable(p) || s.Air.ContainsKey(p)) return false;
+            EelBoss.HurtPublic(p, dmg, what, "Blunt"); Knock(p, fx, fy, knock, prone, now); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = dmg, Text = what, X = Pos(p).x, Y = Pos(p).y }); return true;
+        }
+        static void Impact(State s, float x, float y, float power, bool water) => s.Events.Add(new Ev { Kind = "impact", X = x, Y = y, Power = power, Water = water });
+        static void Ring(EelBoss.Fight f, float x, float y, float r, bool live = false, string kind = "ring") => f.Zones.Add(new EelBoss.Zone { X = x, Y = y, R = r, Kind = kind, Live = live });
+
+        // ---- COMBO: a head strike out of one pool, a tail sweep round another
+        static void Combo(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            var hs = s.Hs; f.Zones.Clear();
+            if (ts >= 1.2f && hs.Full == null) { var q = Pos(s.Tg); hs.Lock(q); }
+            if (hs.Full != null) Ring(f, hs.T.x, hs.T.y, 2.0f, ts >= 2.3f);
+            float sg = hs.Sigma(ts); FillHead(s, hs.Cur, sg);
+            float u, k, th, tz; TailPar(s, ts, out u, out k, out th, out tz); float om = (TailTh(s, ts + 0.03f) - TailTh(s, ts - 0.03f)) / 0.06f;
+            if (s.TailBroken && s.BreakTs < 0f) { s.BreakTs = ts; s.BreakQ = u; }
+            if (s.BreakTs >= 0f) { u = Mathf.Max(0f, s.BreakQ - (ts - s.BreakTs) / 0.7f); k = 1f; }
+            var arm = Arm(s.P2, u, k, th, tz, om, 8.4f); FillTail(s, new Curve(Enumerable.Reverse(arm).ToList()));
+            if (ts > 0.6f && ts < 3.4f && s.BreakTs < 0f) Ring(f, s.P2.X, s.P2.Y, 8.4f, ts >= 2.3f, "sweep");
+            if (!s.Hit1 && ts >= 2.3f && hs.Full != null) { s.Hit1 = true; f.Label = "COMBO: HEAD STRIKE"; Impact(s, hs.T.x, hs.T.y, 1.0f, false); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, hs.T.x, hs.T.y) <= 2.0f) Damage(s, p, 260, "The head slams down", hs.T.x, hs.T.y, 3f, 1.0f, now); }
+            if (ts >= 2.3f && ts < 3.4f && u > 0.5f && s.BreakTs < 0f) { f.Label = "COMBO: TAIL SWEEP"; foreach (var p in players) { if (s.Hurt.Contains(p)) continue; var q = Pos(p); if (ArmNear(arm, q.x, q.y, 1.15f)) { if (Damage(s, p, 200, "The tail sweeps you", s.P2.X, s.P2.Y, 3.5f, 1.0f, now)) s.Hurt.Add(p); } } }
+            if (!s.Hit2 && ts >= 3.4f && u > 0.5f && s.BreakTs < 0f) { s.Hit2 = true; var tipP = arm[arm.Count - 1]; Impact(s, tipP.x, tipP.y, 0.75f, false); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, tipP.x, tipP.y) <= 2.0f) Damage(s, p, 240, "The tail slams down", tipP.x, tipP.y, 3f, 1.0f, now); }
+            if (ts >= 4.4f) End(f, s, now);
+        }
+        static float TailTh(State s, float ts) { float tau = Mathf.Clamp01((ts - 2.3f) / 1.1f); return s.TH0 + 2f * Mathf.PI * 1.15f * Mathf.Pow(tau, 1.7f); }
+        static void TailPar(State s, float ts, out float u, out float k, out float th, out float tz)
+        {
+            th = s.TH0; tz = 0.4f; k = 0f; u = 0f;
+            if (ts < 0.4f) return;
+            if (ts < 1.6f) { u = Smr((ts - 0.4f) / 1.2f); return; }
+            u = 1f; if (ts < 2.0f) return;
+            if (ts < 2.3f) { k = Ein((ts - 2.0f) / 0.3f, 2.2f); return; }
+            k = 1f;
+            if (ts < 3.4f) { float tau = (ts - 2.3f) / 1.1f; th = TailTh(s, ts); tz = Lerp(0.5f, 0.12f, Mathf.Clamp01((tau - 0.8f) / 0.2f)); return; }
+            th = TailTh(s, 3.4f); tz = 0.12f; if (ts < 4.3f) u = 1f - Smr((ts - 3.4f) / 0.9f); else u = 0f;
+        }
+        /// <summary>The tail as an arm from the pool: it comes straight up the centre (a stub), then rises as a column or topples over into a low arm that swings round (the lag makes it whip).</summary>
+        static List<(float x, float y, float z)> Arm(Pool p, float u, float k, float th, float tz, float om, float R)
+        {
+            var l = new List<(float, float, float)>(); float h0 = 0.9f * Mathf.Clamp01(u * 5f); l.Add((p.X, p.Y, -2.5f)); l.Add((p.X, p.Y, h0));
+            if (u < 0.01f) { l.Add((p.X, p.Y, h0 - 0.02f)); return l; }
+            for (int j = 1; j <= 50; j++)
+            {
+                float r = j / 50f, thr = th - 0.1f * om * Mathf.Pow(1f - r, 1.4f), rho = R * u * r * k;
+                float z = h0 * (1f - r) * (1f - r) + (1f - k) * 7.4f * u * r + k * (2.4f * u * Mathf.Sin(Mathf.PI * r) + tz * r * r);
+                l.Add((p.X + rho * Mathf.Cos(thr), p.Y + rho * Mathf.Sin(thr), z));
+            }
+            return l;
+        }
+        static bool ArmNear(List<(float x, float y, float z)> arm, float x, float y, float r)
+        { foreach (var a in arm) if (a.z > Surface && a.z < 2.6f && Dist(a.x, a.y, x, y) <= r) return true; return false; }
+
+        // ---- ARCH: out of one pool, over the arena, down the big pool's centre; the whole body pours in after the head
+        static void Arch(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            var c = s.Cur; float L = c.L, sg;
+            if (ts < 1.5f) sg = 7.5f * Smr(ts / 1.5f); else if (ts < 2.0f) sg = Lerp(7.5f, 8.5f, (ts - 1.5f) / 0.5f); else if (ts < 2.45f) sg = Lerp(8.5f, L + 1.5f, Ein((ts - 2.0f) / 0.45f, 2.4f)); else if (ts < 4.5f) sg = Lerp(L + 1.5f, L + 37f, Eout((ts - 2.45f) / 2.05f, 2.2f)); else sg = L + 37f;
+            FillHead(s, c, sg); f.Zones.Clear();
+            if (ts < 2.45f) { var path = new List<float>(); for (int i = 0; i <= 24; i++) { var q = c.At(L * (0.3f + 0.7f * i / 24f)); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.Big.X, Y = s.Big.Y, R = 4.7f, Kind = "band", Live = false, Path = path.ToArray() }); }
+            float hz = s.Z[0];
+            if (!s.Crossed && s.PrevHZ > Surface && hz <= Surface && sg > 12f) { s.Crossed = true; f.Label = "ARCH: SLAM"; Impact(s, s.X[0], s.Y[0], 2.0f, true); foreach (var p in players) { var q = Pos(p); if (Dist(q.x, q.y, s.Big.X, s.Big.Y) <= 8f) Damage(s, p, 190, "The shockwave throws you", s.Big.X, s.Big.Y, 4f, 1.2f, now); } }
+            s.PrevHZ = hz; if (ts >= 4.6f) End(f, s, now);
+        }
+
+        // ---- DASH: fully out of one pool, an S across the arena, down into another
+        static void DashRun(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            var c = s.Cur; float L = c.L, sg;
+            if (ts < 1.5f) sg = 6f * Smr(ts / 1.5f); else if (ts < 1.95f) sg = Lerp(6f, 6.8f, (ts - 1.5f) / 0.45f); else if (ts < 4.5f) sg = Lerp(6.8f, L + 37f, Smr((ts - 1.95f) / 2.55f)); else sg = L + 37f;
+            FillHead(s, c, sg); f.Zones.Clear();
+            if (ts < 1.95f) { var path = new List<float>(); for (int i = 0; i <= 30; i++) { var q = c.At(5.5f + (L - 11f) * i / 30f); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.P2.X, Y = s.P2.Y, R = 1f, Kind = "band", Live = false, Path = path.ToArray() }); }
+            else if (ts < 4.5f)
+            {
+                f.Label = "DASH!";
+                foreach (var p in players)
+                {
+                    if (s.Hurt.Contains(p)) continue; var q = Pos(p);
+                    for (int i = 0; i < N; i++) if (s.Z[i] > Surface && s.Z[i] < 1.3f && Dist(s.X[i], s.Y[i], q.x, q.y) <= 1.15f) { if (Damage(s, p, 310, "The body flings you", s.X[i], s.Y[i], 5f, 1.5f, now)) s.Hurt.Add(p); break; }
+                }
+            }
+            if (!s.Crossed && s.PrevHZ > Surface && s.Z[0] <= Surface && sg > c.L * 0.8f) { s.Crossed = true; Impact(s, s.X[0], s.Y[0], 0.8f, true); }
+            s.PrevHZ = s.Z[0]; if (ts >= 4.6f) End(f, s, now);
+        }
+
+        // ---- SNARE (phase 2): the tail out of a pool, a grab, a drag, a throw out of another pool (LAUNCH or HURL)
+        const float Rim = 3.3f;
+        static float ZProf(float d) => d >= Rim ? 0.45f : d > 0.15f ? 0.45f + 1.6f * Mathf.Sin(Mathf.PI * (Rim - d) / (Rim - 0.15f)) : 0.45f - (0.15f - d) / 0.15f * 4.05f;     // over the water on an arch, the dive at the centre
+        static void StartSnare(EelBoss.Fight f, State s, List<Player> players, (float x, float y) tp, (float x, float y) t2)
+        {
+            var byReach = s.Pools.OrderBy(p => Mathf.Abs(Dist(p.X, p.Y, tp.x, tp.y) - 7f)).ToList(); s.P1 = byReach[0];
+            bool two = players.Count >= 2 && s.Tg2 != s.Tg; var rest = s.Pools.Where(p => p != s.P1).ToList();
+            s.P2 = two ? rest.OrderBy(p => Dist(p.X, p.Y, t2.x, t2.y)).First() : null;                    // the head's pool: it strikes at the other player meanwhile
+            var left = rest.Where(p => p != s.P2).ToList();
+            s.P3 = s.Variant == "hurl" ? left.OrderBy(p => Mathf.Abs(Dist(p.X, p.Y, t2.x, t2.y) - 9f)).First() : left.OrderByDescending(p => Dist(p.X, p.Y, tp.x, tp.y)).First();   // the throwing pool is a free one
+            s.GP = tp; s.Tail.Hp = TailMax; s.TailBroken = false; s.TailDownUntil = -1f; f.Label = "SNARE (" + s.Variant + "): the tail surfaces";
+            if (two) s.Hs = new Strike(s.P2, t2);
+        }
+        static float Dq(State s, float ts, float dG)
+        {
+            if (ts < 0.3f) return 0f; if (ts < 1.9f) return Rim * Smr((ts - 0.3f) / 1.6f);
+            if (ts < 2.25f) return Lerp(Rim, dG, Ein((ts - 1.9f) / 0.35f, 2.2f)); if (ts < 2.75f) return dG;
+            if (s.Missed || s.BreakTs >= 0f) { float t0 = s.BreakTs >= 0f ? s.BreakTs : 2.75f, q0 = s.BreakTs >= 0f ? s.BreakQ : dG; return Lerp(q0, 0f, Smr((ts - t0) / 0.9f)); }
+            if (ts < 5.0f) return Lerp(dG, 0f, Ein((ts - 2.75f) / 2.25f, 1.5f)); return 0f;
+        }
+        static void SnareRun(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            var pn = s.P1; float dx0 = s.GP.x - pn.X, dy0 = s.GP.y - pn.Y, dG = Mathf.Sqrt(dx0 * dx0 + dy0 * dy0) + 1e-3f, ux = dx0 / dG, uy = dy0 / dG;
+            if (ts < 1.0f) { s.GP = Pos(s.Tg); }                                                                            // it keeps aiming until a second before the lunge
+            if (s.TailBroken && s.BreakTs < 0f && ts < 6.2f) { s.BreakTs = ts; s.BreakQ = Dq(s, ts - 0.001f, dG); if (s.Snared != null) ReleaseSnared(s, now); s.EndAt = ts + 1.6f; f.Label = "SNARE: THE TAIL LETS GO"; }
+            f.Zones.Clear(); if (ts > 0.3f && ts < 2.25f) Ring(f, s.GP.x, s.GP.y, 1.5f, false);
+            // the head: it strikes at the other player from its own pool while the tail does its work
+            if (s.Hs != null)
+            {
+                float hts = ts - 1.2f; if (ts >= 2.4f && s.Hs.Full == null) s.Hs.Lock(Pos(s.Tg2));
+                FillHead(s, s.Hs.Cur, s.Hs.Sigma(hts)); if (s.Hs.Full != null && hts < 2.3f) Ring(f, s.Hs.T.x, s.Hs.T.y, 2.0f, false);
+                if (!s.Hit2 && hts >= 2.3f && s.Hs.Full != null) { s.Hit2 = true; Impact(s, s.Hs.T.x, s.Hs.T.y, 1.0f, false); foreach (var p in players) if (p != s.Snared && Dist(Pos(p).x, Pos(p).y, s.Hs.T.x, s.Hs.T.y) <= 2.0f) Damage(s, p, 260, "The head slams down", s.Hs.T.x, s.Hs.T.y, 3f, 1.0f, now); }
+            }
+            else Hide(s, s.Big, 0, N / 2);
+            // the tail
+            if (ts < 6.2f)
+            {
+                float d = Dq(s, ts, dG), h = ts < 2.25f ? 0f : ts < 2.75f ? Smr((ts - 2.25f) / 0.5f) : (s.Missed || s.BreakTs >= 0f) ? 0f : ts < 5.0f ? 1f : 0f; if (d < 0.05f) { FillTail(s, new Curve(new List<(float, float, float)> { (pn.X, pn.Y, -3.6f), (pn.X, pn.Y, -4.6f) })); }
+                else
+                {
+                    var pts = new List<(float x, float y, float z)>(); pts.Add((pn.X, pn.Y, -3.6f)); float px = -uy, py = ux;
+                    for (int i = 1; i <= 60; i++) { float sv = i / 60f, dist = d * sv, off = 0.45f * Mathf.Sin(sv * 2f * Mathf.PI * 1.1f) * Mathf.Sin(sv * Mathf.PI); pts.Add((pn.X + ux * dist + px * off, pn.Y + uy * dist + py * off, ZProf(dist))); }
+                    if (h > 0.02f) { var e = pts[pts.Count - 1]; for (int i = 1; i <= 30; i++) { float a = 2f * Mathf.PI * 1.6f * i / 30f, r = 0.62f * h * Mathf.Clamp01((d - 0.5f) / 1.2f); pts.Add((e.x + r * (Mathf.Cos(a + 1f) - Mathf.Cos(1f)), e.y + r * (Mathf.Sin(a + 1f) - Mathf.Sin(1f)), e.z + 0.15f + 0.55f * h * i / 30f)); } }
+                    pts.Reverse(); FillTail(s, new Curve(pts));
+                }
+                var tip = (s.X[N - 1], s.Y[N - 1], s.Z[N - 1]);
+                if (!s.Grabbed && !s.Missed && ts >= 2.25f)
+                {
+                    var q = Pos(s.Tg); if (Dist(q.x, q.y, tip.Item1, tip.Item2) <= 1.7f && !Rt.Untouchable(s.Tg)) { s.Grabbed = true; s.Snared = s.Tg; f.Label = "SNARE: CAUGHT"; Impact(s, tip.Item1, tip.Item2, 0.55f, false); Rt.Of(s.Tg).DiveUntil = -1f; }
+                    else { s.Missed = true; f.Label = "SNARE: missed"; Impact(s, tip.Item1, tip.Item2, 0.55f, false); s.EndAt = ts + 1.4f; }
+                }
+                if (s.Snared != null)
+                {
+                    var p = s.Snared; Rt.Of(p).ProneUntil = now + 0.25f;
+                    if (tip.Item3 > 0f) { Place(p, tip.Item1, tip.Item2); s.Air[p] = new Fling { X0 = tip.Item1, Y0 = tip.Item2, Z0 = Mathf.Max(tip.Item3, 0.3f), T0 = -1f, Dur = 0f, Land = "carried" }; f.Label = ts < 2.75f ? "SNARE: coiled round him" : "SNARE: DRAGGED - shoot the tail!"; }
+                    else { s.Air[p] = new Fling { X0 = pn.X, Y0 = pn.Y, Z0 = -3f, T0 = -1f, Dur = 0f, Land = "under" }; Place(p, pn.X, pn.Y); if (!s.Crossed) { s.Crossed = true; Impact(s, pn.X, pn.Y, 0.8f, true); f.Label = "SNARE: pulled under"; } }
+                }
+            }
+            else if (s.Missed || s.BreakTs >= 0f) Hide(s, s.Big, N / 2, N);
+            else
+            {
+                var tp = s.P3; float lx = 0f, ly = 0f; (float x, float y) land = s.GP;
+                if (s.Variant == "hurl") { land = Pos(s.Tg2 == s.Snared ? s.Tg : s.Tg2); lx = 0.4f * (land.x - tp.X) / 9f; ly = 0.4f * (land.y - tp.Y) / 9f; } else { lx = 0.3f; ly = -0.3f; }
+                var wc = new Curve(Bez((tp.X, tp.Y, -3.6f), (tp.X, tp.Y, 2f), (tp.X + lx, tp.Y + ly, 5f), (tp.X + lx, tp.Y + ly, 8.2f)));
+                float sg = ts < 6.5f ? 0f : ts < 6.95f ? wc.L * 0.97f * Ein((ts - 6.5f) / 0.45f, 2f) : ts < 7.1f ? wc.L * 0.97f : ts < 8.1f ? wc.L * 0.97f * (1f - Smr((ts - 7.1f) / 1f)) : 0f;
+                var rev = wc.Points(); rev.Reverse(); FillTail(s, new Curve(rev), -sg + wc.L); if (s.BreakTs >= 0f) { }
+                if (ts < 6.95f && s.Snared != null) { var p = s.Snared; Rt.Of(p).ProneUntil = now + 0.25f; var t = wc.At(sg); Place(p, t.x, t.y); s.Air[p] = new Fling { X0 = t.x, Y0 = t.y, Z0 = Mathf.Max(t.z - 0.3f, -3f), T0 = -1f, Land = t.z > 0f ? "carried" : "under" }; if (ts > 6.0f && ts < 6.95f) Ring(f, tp.X, tp.Y, 2.2f, false); }
+                if (!s.Threw && ts >= 6.95f && s.Snared != null)
+                {
+                    s.Threw = true; var p = s.Snared; var tipEnd = wc.At(wc.L * 0.97f); Impact(s, tp.X, tp.Y, 1.0f, true); f.Label = s.Variant == "hurl" ? "SNARE: HURLED at the other player" : "SNARE: THROWN into the air";
+                    if (s.Variant == "hurl") { s.Air[p] = new Fling { X0 = tipEnd.x, Y0 = tipEnd.y, Z0 = tipEnd.z, X1 = land.x, Y1 = land.y, T0 = ts, Dur = 0.8f, Apex = 3f, Land = "hurl", Spin = 540f, Hurled = s.Tg2 == p ? s.Tg : s.Tg2 }; }
+                    else { var lp = TerrainMap.FindNearestEnterable((int)Mathf.Floor(tp.X + (s.Big.X - tp.X) * 0.5f), (int)Mathf.Floor(tp.Y + (s.Big.Y - tp.Y) * 0.5f)); s.LP = (lp.x + 0.5f, lp.y + 0.5f); s.Air[p] = new Fling { X0 = tipEnd.x, Y0 = tipEnd.y, Z0 = tipEnd.z, X1 = s.LP.x, Y1 = s.LP.y, T0 = ts, Dur = 1.45f, Apex = 7.5f, Land = "launch", Spin = 720f }; }
+                    s.Snared = null;
+                }
+                if (s.Variant != "hurl" && ts >= 6.0f && ts < 8.4f && s.LP.x > 0f) Ring(f, s.LP.x, s.LP.y, 1.3f, false);
+            }
+            if (s.EndAt > 0f && ts >= s.EndAt || ts >= 9.0f) End(f, s, now);
+        }
+        static void ReleaseSnared(State s, float now)
+        {
+            var p = s.Snared; if (p == null) return; var q = Pos(p); s.Snared = null; s.Air[p] = new Fling { X0 = q.x, Y0 = q.y, Z0 = 0.6f, X1 = q.x, Y1 = q.y, T0 = -2f, Dur = 0.35f, Apex = 0.3f, Land = "drop" };
+        }
+
+        // ---- players in the air (thrown, hurled, dropped, flung by the flood)
+        static void Fly(EelBoss.Fight f, State s, List<Player> players, float now)
+        {
+            float ts = (now - f.StageAt) * Speed;
+            foreach (var kv in s.Air.ToList())
+            {
+                var p = kv.Key; var a = kv.Value;
+                if (a.T0 == -2f) a.T0 = ts;                                                                     // a drop starts now
+                if (a.Dur <= 0f) { a.Z = a.Z0; a.Rot = 25f * Mathf.Sin(now * 9f); if (a.Land == "carried" || a.Land == "under") { if (f.Move != "snare" && f.Stage != "move") s.Air.Remove(p); } continue; }
+                float u = Mathf.Clamp01((ts - a.T0) / a.Dur); float x = Lerp(a.X0, a.X1, u), y = Lerp(a.Y0, a.Y1, u), z = a.Z0 * (1f - u) + a.Apex * 4f * u * (1f - u);
+                Place(p, x, y); Rt.Of(p).ProneUntil = now + 0.25f; a.Z = z; a.Rot = a.Spin * u;
+                if (u >= 1f)
+                {
+                    s.Air.Remove(p); Rt.Of(p).ProneUntil = now + (a.Land == "launch" ? 2.0f : 1.2f);
+                    if (a.Land == "launch") { Impact(s, a.X1, a.Y1, 1.3f, false); EelBoss.HurtPublic(p, 420, "You crash down, half drowned", "Blunt"); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = 420, Text = "drowned", X = a.X1, Y = a.Y1 }); }
+                    else if (a.Land == "hurl") { Impact(s, a.X1, a.Y1, 1.0f, false); EelBoss.HurtPublic(p, 260, "You crash into your friend", "Blunt"); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = 260, Text = "hurled", X = a.X1, Y = a.Y1 }); if (a.Hurled != null && Dist(Pos(a.Hurled).x, Pos(a.Hurled).y, a.X1, a.Y1) <= 1.9f) Damage(s, a.Hurled, 210, "A flying friend flattens you", a.X0, a.Y0, 4f, 1.2f, now); }
+                    else if (a.Land == "drop") { EelBoss.HurtPublic(p, 40, "The tail drops you", "Blunt"); }
+                }
+            }
+        }
+
+        // ---- FLOOD (phase 2): the floor between the pools turns to deep water, the eel glides through as a shadow and bursts out under someone
+        static void StartFlood(EelBoss.Fight f, State s, List<Player> players, (float x, float y) tp)
+        {
+            s.Shallow = new List<(int, int, float)>(); s.Flip.Clear();
+            for (int y = 9; y <= 30; y++) for (int x = 5; x <= 54; x++)
+            { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Difficult && t.Look == null) { float d = 99f; foreach (var p in s.Pools) d = Mathf.Min(d, Dist(x + 0.5f, y + 0.5f, p.X, p.Y) - (p.RX + p.RY) / 2f); s.Shallow.Add((x, y, d)); } }
+            s.P1 = s.Pools.Where(p => !p.Big).OrderByDescending(p => Dist(p.X, p.Y, tp.x, tp.y)).First(); s.GP = tp; f.Label = "FLOOD: the pools swell";
+        }
+        static float FloodRadius(float ts) => ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : ts < 6.4f ? 17f : ts < 7.7f ? 17f * (1f - Smr((ts - 6.4f) / 1.3f)) : 0f;
+        static void FloodTiles(State s, float r)
+        {
+            foreach (var (x, y, d) in s.Shallow)
+            {
+                bool want = d <= r && r > 0.05f, has = s.Flip.Contains((x, y));
+                if (want && !has) { TerrainMap.SetTileType(x, y, TileType.Difficult, "deepwater"); s.Flip.Add((x, y)); }
+                else if (!want && has) { TerrainMap.SetTileType(x, y, TileType.Difficult, null); s.Flip.Remove((x, y)); }
+            }
+            s.Flooded = s.Flip.Count; s.FloodR = r;
+        }
+        static void Restore(State s, bool all) { if (s.Flip.Count > 0 && all) FloodTiles(s, 0f); s.FloodR = 0f; }
+        static void FloodRun(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            FloodTiles(s, FloodRadius(ts)); f.Zones.Clear();
+            if (ts < 1.5f) { f.Label = "FLOOD: the pools swell, the dry patches light up"; Hide(s, s.Big); return; }
+            if (ts < 3.1f) f.Label = "FLOOD: THE FLOOR TURNS TO DEEP WATER";
+            if (s.Cur == null && ts >= 3.0f)      // lock the swim at 3.0 s: from the far pool, through the flood, to where the nearest player stands
+            {
+                var q = players.OrderBy(p => Dist(Pos(p).x, Pos(p).y, s.P1.X, s.P1.Y)).First(); var t = Pos(q); s.GP = t; s.Tg = q; float dx = t.x - s.P1.X, dy = t.y - s.P1.Y, d = Mathf.Sqrt(dx * dx + dy * dy), ux = dx / d, uy = dy / d, px = -uy, py = ux;
+                var pts = new List<(float x, float y, float z)> { (s.P1.X, s.P1.Y, -3.2f), (s.P1.X, s.P1.Y, 0.05f) };                                    // up the centre to the surface, then it glides
+                int m = 120; for (int i = 1; i <= m; i++) { float sv = i / (float)m, dist = 1.0f + (d - 5.5f) * sv; pts.Add((s.P1.X + ux * dist + px * 0.9f * Mathf.Sin(sv * Mathf.PI * 3f), s.P1.Y + uy * dist + py * 0.9f * Mathf.Sin(sv * Mathf.PI * 3f), 0.05f)); }
+                s.Cur2 = new Curve(pts); var e = pts[pts.Count - 1]; pts.AddRange(Bez(e, (e.x + 0.7f * ux, e.y + 0.7f * uy, 6.5f), (t.x - 0.9f * ux, t.y - 0.9f * uy, 7.2f), (t.x, t.y, 0.3f), 40).Skip(1)); s.Cur = new Curve(pts);
+            }
+            if (s.Cur == null || ts < 3.1f) { Hide(s, s.Big); return; }
+            float L = s.Cur.L, Lsw = s.Cur2.L, sg;
+            if (ts < 4.7f) sg = Lsw * Smr((ts - 3.1f) / 1.6f); else if (ts < 5.5f) sg = Lsw; else if (ts < 6.1f) sg = Lsw + 0.42f * (L - Lsw) * Smr((ts - 5.5f) / 0.6f); else if (ts < 6.3f) sg = Lerp(Lsw + 0.42f * (L - Lsw), L, Ein((ts - 6.1f) / 0.2f, 2.6f)); else if (ts < 7.0f) sg = L; else if (ts < 8.1f) sg = L * (1f - Smr((ts - 7.0f) / 1.1f)); else sg = 0f;
+            FillHead(s, s.Cur, sg);
+            if (ts < 6.3f && ts > 4.4f) Ring(f, s.GP.x, s.GP.y, 2.2f, false);
+            if (ts < 4.7f) f.Label = "FLOOD: it swims through as a shadow"; else if (ts < 6.1f) f.Label = "FLOOD: it rears up under him";
+            if (!s.Hit1 && ts >= 6.3f) { s.Hit1 = true; f.Label = "FLOOD: BURSTS OUT"; Impact(s, s.GP.x, s.GP.y, 1.3f, true); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, s.GP.x, s.GP.y) <= 2.4f && Damage(s, p, 380, "It bursts out under you", s.GP.x, s.GP.y, 0f, 1.5f, now)) { var q = Pos(p); s.Air[p] = new Fling { X0 = q.x, Y0 = q.y, Z0 = 0.4f, X1 = q.x - 2.6f, Y1 = q.y + 2.8f, T0 = ts, Dur = 0.9f, Apex = 3.0f, Land = "fling", Spin = 400f }; } }
+            if (ts >= 8.2f) End(f, s, now);
+        }
+
+        // ---- the reveal (it swallows the body on the slab) and the death (it brings the body back up, then goes down the big pool's centre)
+        static void Reveal(EelBoss.Fight f, State s, float ts, float now, bool vomit)
+        {
+            var b = s.Big; if (s.RevealKey != f.Stage) { s.RevealKey = f.Stage; s.Hs = new Strike(b, (s.SlabX, s.SlabY)); s.Hs.Lock((s.SlabX, s.SlabY)); } var hs = s.Hs;
+            float u = ts; FillHead(s, hs.Cur, hs.Sigma(u)); f.Zones.Clear();
+            if (!vomit)
+            {
+                f.Label = u < 1.6f ? "REVEAL: it rises out of the big pool" : u < 2.3f ? "REVEAL: it swoops at the body" : u < 3.0f ? "REVEAL: it swallows the body" : "REVEAL: it sinks back to start the fight";
+                if (u >= 2.3f && !f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
+                if (u >= 4.2f) { f.Stage = "idle"; f.StageAt = now; f.Next = now + 1.0f; s.Hs = null; GameLog.Write("The Drowner settles in under the pools."); }
+            }
+            else
+            {
+                f.Label = u < 2.3f ? "VOMIT: it rises with the body in its throat" : u < 3.0f ? "VOMIT: the body is thrown up on the slab" : "RETREAT: it sinks down the big pool's centre";
+                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); HumanLootSystem.RollSpawnStash(f.Body, 4); GameLog.Write("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
+                if (u >= 4.2f) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); EncounterState.Enemies.Remove(s.Tail); Story.Set(EelBoss.Fled); GameLog.Write("The Drowner slides back down the pool. This isn't over."); }
+            }
+        }
+
+        // ------------------------------------------------------------------ damage routing (called from EelBoss.OnDamaged)
+        public static void OnHeadHit(EelBoss.Fight f, ICombatant u)
+        {
+            var s = f.Sump; if (!s.HeadOut || f.Stage == "reveal" || f.Stage == "vomit") { u.Hp = System.Math.Max(s.LastHp, 1); return; }       // under the water, or busy: nothing lands
+            if (u.Hp <= 1) { u.Hp = 1; s.Dying = true; f.Label = "it gags - the body comes back up"; return; }
+        }
+        public static void OnTailHit(EelBoss.Fight f, ICombatant u)
+        {
+            var s = f.Sump; if (!s.TailOut) { u.Hp = System.Math.Max(s.LastTailHp, 1); return; }
+            if (u.Hp <= 1) { u.Hp = 1; s.TailBroken = true; s.TailDownUntil = Time.time + 9f; GameLog.Write("The Drowner's tail is torn up - it goes down."); }
+        }
+    }
+}

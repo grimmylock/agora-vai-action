@@ -24,16 +24,9 @@ namespace GameCore
         public const float CarryCap = 0.2f, F = 1f / 15f;      // the strips play at 15 fps
         public const float RingIn = 1.9f, RingOut = 3.4f, ShockGap = 0.7f, SweepR = 215f / 32f;
         public const float Burst = 0.9f, Hold = 4.0f, ConstrictFor = 1.5f, ConstrictSpacing = 0.5f, ReleaseFor = 0.7f, Turns = 2.5f, RingR = 3.2f, Pitch = 0.4f, CoilRise = 0.7f;   // 2.5 turns of a ring that widens 0.28 a turn (2.3 -> 3.0, inside the 1.9-3.1 touch ring): the whole 35 tiles of body fits   // the wrap: the head circles for Burst s, the coil is held for Hold s (after the discharge), then it lets go
-        // the head's landing point for each move, in tiles from the pool's centre, for an eel facing left (from the strips); x is mirrored for the right
-        static readonly Dictionary<string, (float x, float y, float r, float hitAt, float len, int dmg)> Moves = new Dictionary<string, (float, float, float, float, float, int)>
-        {
-            ["snap"] = (-6.25f, -2.4f, 1.8f, 3 * F, 10 * F, SnapDamage), ["lunge"] = (-8.9f, -3.25f, 1.9f, 6 * F, 14 * F, LungeDamage), ["slam"] = (-4.4f, -0.95f, 2.4f, 5 * F, 10 * F, SlamDamage),
-        };
-        public const float RevealFor = 26 * F, HurtFor = 8 * F, SweepFor = 18 * F, VomitFor = 24 * F, EjectAt = 13 * F, RetreatFor = 14 * F;
-
         public static readonly MutantDef Def = new MutantDef { Name = Name, Tier = 3, Hp = MaxHp, PhysDR = 0.2f, AnomDR = 0.3f, Ap = 0, Mp = 0, Ac = 10, AttackDamage = 0, Behavior = "boss", PanicThreshold = 0f };
 
-        public class Zone { public float X, Y, R; public string Kind; public bool Live; }      // where a move lands (Live = it can hurt now)
+        public class Zone { public float X, Y, R; public string Kind; public bool Live; public float[] Path; }      // where a move lands (Live = it can hurt now)
         public class Fight
         {
             public Mutant Unit; public string Level = "platform", Stage = "lurk", Move; public float StageAt, MoveAt = -1f, Next;
@@ -41,6 +34,7 @@ namespace GameCore
             public float SX, SY, CX, CY, PX, PY;                 // the shadow / pool centre / the platform being wrapped (tiles)
             public string Label = "";                            // what it is doing, for the screen
             public HumanEnemy Body; public int BodyX, BodyY; public string BodyArmor;
+            public EelSump.State Sump;                          // the Sump fight (four pools, authored moves, a targetable tail): EelSump.cs
             public readonly EelRig Rig = new EelRig();          // the procedural body: the state machine moves the head, the segments trail
             public float WindFor = Wind, FromX, FromY, PullX, PullY, S0X, S0Y, S1X, S1Y, S2X, S2Y; public bool Discharged;   // the current move: where the head started, its pull-back point, the sweep's Bezier
             public float TgtX, TgtY, EscX, EscY;                   // the player it is watching; the way it dives after a strike
@@ -52,7 +46,7 @@ namespace GameCore
         static readonly Dictionary<Player, float> ShockAt = new Dictionary<Player, float>();
         static readonly List<string> Bag = new List<string>();
         public static void Reset() { Current = null; ShockAt.Clear(); Bag.Clear(); }
-        public static bool Is(ICombatant u) => Current != null && !Current.Gone && Current.Unit == u;
+        public static bool Is(ICombatant u) => Current != null && !Current.Gone && (Current.Unit == u || Current.Sump != null && Current.Sump.Tail == u);
         static int PhaseOf(int hp) => hp > MaxHp * 3 / 4 ? 0 : hp > MaxHp / 2 ? 1 : hp > MaxHp / 4 ? 2 : 3;
         public static float Age(Fight f) => Time.time - f.StageAt;
 
@@ -77,27 +71,31 @@ namespace GameCore
         public static Fight SpawnSump(string zone)
         {
             var c = Marks(zone, '0')[0]; var b = Marks(zone, '8')[0];
-            var m = new Mutant(Name, c.x, c.y, Def) { Hp = MaxHp }; EncounterState.Enemies.Add(m); Bag.Clear();
+            var m = new Mutant(Name, c.x, c.y, Def) { Hp = MaxHp }; EncounterState.Enemies.Add(m);
             var f = new Fight { Unit = m, Level = "sump", Stage = "hidden", CX = c.x + 0.5f, CY = c.y + 0.5f, BodyX = b.x, BodyY = b.y, StageAt = Time.time };
             var suit = ArmorDatabase.Tiers["tier4"].Values.OrderBy(_ => Random.value).First(); f.BodyArmor = suit.Name;        // a random human in tier-4 armour
             f.Body = new HumanEnemy("Drowned crewman", b.x, b.y, "Contractors", "Veteran", null, suit) { Hp = 0 };
             EncounterState.Enemies.Add(f.Body);
-            SetSlots(f); f.Rig.AnchorOn = true; f.Rig.Under = true; f.Rig.Snap(f.Rest.x, f.Rest.y);
+            f.Sump = EelSump.Create(zone); f.Sump.Tail = new Mutant(EelSump.TailName, c.x, c.y, EelSump.TailDef) { Hp = EelSump.TailMax }; EncounterState.Enemies.Add(f.Sump.Tail);   // the tail is its own target
+            f.Sump.LastHp = m.Hp; f.Sump.LastTailHp = f.Sump.Tail.Hp;
             return Current = f;
         }
 
+        public static void GoStage(Fight f, string stage) => Go(f, stage);
+        public static void HurtPublic(Player p, int dmg, string what, string kind) => Hurt(p, dmg, what, kind);
         static void Go(Fight f, string stage) { f.Stage = stage; f.StageAt = Time.time; f.Move = null; f.Hit = false; f.Zones.Clear(); }
 
         public static void OnDamaged(ICombatant u)
         {
             if (!Is(u)) return;
-            var f = Current; f.Unit.IsAggroed = true; f.Started = true;
+            var f = Current;
+            if (f.Level == "sump" && u == f.Sump.Tail) { EelSump.OnTailHit(f, u); return; }                          // the tail: its own HP; at 0 it lets go and goes down
+            f.Unit.IsAggroed = true; f.Started = true;
             if (f.Level == "platform") { u.Hp = System.Math.Max(u.Hp, (int)(MaxHp * (1f - CarryCap))); return; }     // Levels 1-2: at most 20% carries over
             if (f.Stage == "hidden") Go(f, "reveal");
-            if (f.Stage == "vomit" || f.Stage == "retreat" || f.Stage == "reveal") { u.Hp = System.Math.Max(u.Hp, 1); return; }
-            if (u.Hp <= 1) { u.Hp = 1; Go(f, "vomit"); f.Label = "it gags - the body comes back up"; GameLog.Write("The Drowner heaves."); return; }
+            EelSump.OnHeadHit(f, u);                                                                                 // under the water or busy: nothing lands; at 0 it is taken to the vomit when its move ends
             int ph = PhaseOf(u.Hp);
-            if (ph > f.Phase) { f.Phase = ph; f.Enraged = ph >= 2; Bag.Clear(); Go(f, "hurt"); f.Label = ph >= 2 ? $"wounds open ({ph}) - ENRAGED: smashes" : $"wounds open ({ph})"; Sfx.Play("boss_sting", null, 0.7f, 0f, 1f); }
+            if (ph > f.Phase) { f.Phase = ph; f.Enraged = ph >= 2; f.Sump.Bag.Clear(); GameLog.Write(ph >= 2 ? $"The Drowner's wounds open ({ph}): it gets worse." : $"The Drowner's wounds open ({ph})."); Sfx.Play("boss_sting", null, 0.7f, 0f, 1f); }
         }
 
         // ---------------------------------------------------------------- the clock
@@ -109,8 +107,8 @@ namespace GameCore
             var (ex, ey) = f.Level == "platform" ? (f.SX, f.SY) : (f.CX, f.CY);
             var tgt = players.OrderBy(p => { var (x, y) = Ballistics.Pos(p); return (x - ex) * (x - ex) + (y - ey) * (y - ey); }).First();
             var (px, py) = Ballistics.Pos(tgt);
-            if (f.Level == "platform") Platform(f, players, tgt, px, py, now, age, dt); else Sump(f, players, tgt, px, py, now, age);
-            f.TgtX = px; f.TgtY = py; DriveBody(f, dt);
+            if (f.Level == "platform") { Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); }
+            else EelSump.Tick(f, players, now, dt);
         }
 
         // ---------------------------------------------------------------- Levels 1-2: the shadow, the wrap, the shock, the strike
@@ -162,111 +160,8 @@ namespace GameCore
             }
         }
 
-        // ---------------------------------------------------------------- Level 3: the reveal, the rear-up fight, the vomit, the retreat
-        static void Sump(Fight f, List<Player> players, Player tgt, float px, float py, float now, float age)
-        {
-            int sd = px >= f.CX ? 1 : -1; if (sd != f.Side && f.Stage != "move") { f.Side = sd; SetSlots(f); }          // it turns to face you between moves, not in the middle of one
-            switch (f.Stage)
-            {
-                case "hidden": f.Label = "in the pool"; break;
-                case "reveal":
-                    f.Label = age < 8 * F ? "REVEAL: it rises" : age < 13 * F ? "REVEAL: it swoops at the body" : age < 15 * F ? "REVEAL: bite" : "REVEAL: it swallows the body";
-                    if (age >= 13 * F && !f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
-                    if (age >= RevealFor) { Go(f, "rear"); f.Next = now + 1.0f; f.Label = "rear-up"; GameLog.Write("The Drowner settles in over the pool."); }
-                    break;
-                case "hurt": if (age >= HurtFor) { Go(f, "rear"); f.Next = now + 0.8f; } break;
-                case "rear":
-                    if (now >= f.Next) Begin(f, tgt, px, py, now);
-                    break;
-                case "move":
-                    Move(f, players, px, py, now, age);
-                    break;
-                case "vomit":
-                    if (age >= EjectAt && !f.Ejected)
-                    {
-                        f.Ejected = true; f.Label = "VOMIT: the body is thrown up on the slab"; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body);
-                        HumanLootSystem.RollSpawnStash(f.Body, 4);        // stash-like loot; the story key is a to-do (Yan: "to-do later")
-                        GameLog.Write("It heaves the body up onto the slab.");
-                    }
-                    if (age >= VomitFor) { Go(f, "retreat"); f.Label = "it sinks back down the pool"; }
-                    break;
-                case "retreat":
-                    if (age >= RetreatFor) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); Story.Set(Fled); GameLog.Write("The Drowner slides back down the pool. This isn't over."); }
-                    break;
-            }
-        }
+        const float Wind = 0.6f;                                  // the platform strike's pull-back (the Sump fight is EelSump)
 
-        static void Begin(Fight f, Player tgt, float px, float py, float now)
-        {
-            float d = Mathf.Sqrt((px - f.CX) * (px - f.CX) + (py - f.CY) * (py - f.CY));
-            if (Bag.Count == 0) { Bag.AddRange(new[] { "snap", "sweep", "lunge", "slam" }); if (f.Enraged) Bag.AddRange(new[] { "smash", "smash" }); Bag.Sort((a, b) => Random.value < 0.5f ? -1 : 1); }
-            float Near(string m) { var (zx, zy) = Land(f, m == "smash" ? "slam" : m); return Mathf.Sqrt((px - zx) * (px - zx) + (py - zy) * (py - zy)); }   // how far you are from where the head would land
-            string pick = Bag.FirstOrDefault(m => m == "sweep" ? Mathf.Abs(d - SweepR) < 4f : Near(m) <= 6.8f);       // a move that goes for where you are
-            if (pick == null) { Bag.Clear(); pick = new[] { "snap", "lunge", "slam" }.OrderBy(Near).First(); }           // nothing fits: the nearest one
-            Bag.Remove(pick); f.Chain = pick == "smash" ? 3 : 0; f.Move = pick == "smash" ? "slam" : pick; f.MoveAt = now; f.Stage = "move"; f.StageAt = now; f.Hit = false; f.Zones.Clear();
-            Aim(f); f.WindFor = Wind; f.FromX = f.Rig.HX; f.FromY = f.Rig.HY; Prepare(f);
-            f.Label = pick == "smash" ? "SMASH: wind-up (x3)" : pick.ToUpper() + ": wind-up";
-        }
-
-        static (float x, float y) Land(Fight f, string mv) { var m = Moves[mv]; return (f.CX - f.Side * m.x, f.CY + m.y); }       // x mirrored: native is left, side -1 -> as drawn
-        static void Aim(Fight f)
-        {
-            f.Zones.Clear();
-            if (f.Move == "sweep") return;
-            var (zx, zy) = Land(f, f.Move); f.Zones.Add(new Zone { X = zx, Y = zy, R = Moves[f.Move].r, Kind = f.Move });
-        }
-
-        const float Wind = 0.6f, SweepRecover = 0.45f;
-        static void Move(Fight f, List<Player> players, float px, float py, float now, float age)
-        {
-            string mv = f.Move; float t = age - f.WindFor;       // the first WindFor seconds are the telegraph: the head pulls back (DriveBody), then it strikes
-            if (t < 0f) return;
-            if (mv == "sweep")
-            {
-                bool live = t > 0.2f * SweepFor && t < 0.9f * SweepFor;
-                f.Zones.Clear(); f.Zones.Add(new Zone { X = f.Rig.HX, Y = f.Rig.HY, R = 1.8f, Kind = "sweep", Live = live }); f.Label = "SWEEP!";      // the hitbox is the head itself, wherever the curve has taken it
-                if (live) foreach (var p in players) Strike(p, f.Zones[0], SweepDamage, "The sweeping head catches you", true);
-                if (t >= SweepFor + SweepRecover) End(f, now);
-                return;
-            }
-            var m = Moves[mv];
-            if (!f.Hit && t >= m.hitAt) { f.Hit = true; var z = f.Zones[0]; z.Live = true; f.Label = (f.Chain > 0 ? "SMASH!" : mv.ToUpper() + "!"); foreach (var p in players) Strike(p, z, m.dmg, "The Drowner's " + mv + " hits you"); }
-            if (t >= m.len)
-            {
-                if (f.Chain > 1) { f.Chain--; f.MoveAt = now; f.StageAt = now; f.WindFor = Wind * 0.5f; f.Hit = false; Aim(f); f.FromX = f.Rig.HX; f.FromY = f.Rig.HY; Prepare(f); f.Label = "SMASH: again"; }   // the next slam comes at once (half the wind-up)
-                else End(f, now);
-            }
-        }
-        static void End(Fight f, float now) { f.Stage = "rear"; f.StageAt = now; f.Move = null; f.Zones.Clear(); f.Next = now + (f.Enraged ? 0.9f : 1.5f); f.Label = "rear-up"; f.Chain = 0; }
-
-        // ---------------------------------------------------------------- the procedural body: where the head goes
-        /// <summary>The rear-up pose as slots for the chain: the same curve ArtSource/bosses/eel_anim.py draws (neck, coil, tail), in tiles, mirrored when it faces right.</summary>
-        static void SetSlots(Fight f)
-        {
-            var pts = new List<(float x, float y)> { (-96f, -134f) };
-            pts.AddRange(Bez(new[] { (-70f, -134f), (-22f, -102f), (-6f, -58f), (-32f, -26f), (13f, -6f), (0f, 0f) }, 40));
-            for (int i = 0; i <= 60; i++) { float t = i / 60f * 2f * Mathf.PI * 1.4f; pts.Add((Mathf.Cos(t) * (76f - t * 5f), Mathf.Sin(t) * (40f - t * 3f))); }
-            var end = pts[pts.Count - 1]; pts.AddRange(Bez(new[] { end, (-192f, 32f), (-320f, 38f) }, 24).Skip(1));
-            var d = (x: pts[pts.Count - 1].x - pts[pts.Count - 2].x, y: pts[pts.Count - 1].y - pts[pts.Count - 2].y); float dl = Mathf.Sqrt(d.x * d.x + d.y * d.y) + 1e-4f;
-            for (int i = 1; i <= 40; i++) pts.Add((pts[pts.Count - 1].x + d.x / dl * 8f, pts[pts.Count - 1].y + d.y / dl * 8f));       // if the body is longer than the drawing: straight on
-            var rig = f.Rig; rig.SlotX = new float[EelRig.Count]; rig.SlotY = new float[EelRig.Count];
-            float step = EelRig.Spacing * 32f, acc = 0f; int k = 1, n = 0; var a = pts[0];
-            while (n < EelRig.Count && k < pts.Count)
-            {
-                var b = pts[k]; float seg = Mathf.Sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
-                if (acc + seg >= step * (n + 1)) { float u = (step * (n + 1) - acc) / (seg + 1e-6f); float px = a.x + (b.x - a.x) * u, py = a.y + (b.y - a.y) * u; rig.SlotX[n] = f.CX - f.Side * px / 32f; rig.SlotY[n] = f.CY + py / 32f; n++; continue; }
-                acc += seg; a = b; k++;
-            }
-        }
-        static List<(float x, float y)> Bez((float x, float y)[] p, int n)      // a Bezier of any degree (de Casteljau)
-        {
-            var r = new List<(float, float)>();
-            for (int i = 0; i <= n; i++) { float t = i / (float)n; var q = new (float x, float y)[p.Length]; System.Array.Copy(p, q, p.Length);
-                for (int m = p.Length - 1; m > 0; m--) for (int j = 0; j < m; j++) q[j] = (q[j].x + (q[j + 1].x - q[j].x) * t, q[j].y + (q[j + 1].y - q[j].y) * t); r.Add(q[0]); }
-            return r;
-        }
-
-        /// <summary>The wrap's end pose as slots: the body laid round the platform on the ring, walking back from where the head stops (2.5 turns of a ring that widens a little each turn).</summary>
         static float GuideR(float turnsDone) => RingR - Pitch * turnsDone;          // the coil is a slight INWARD spiral: the outer start is on the outside, the head's end is the innermost loop
 
         static void SetCoilSlots(Fight f, float sp = 1f)
@@ -304,19 +199,6 @@ namespace GameCore
         {
             float dx = f.FromX - tx, dy = f.FromY - ty, l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-4f; f.PullX = f.FromX + dx / l * 1.3f; f.PullY = f.FromY + dy / l * 1.3f;
         }
-        /// <summary>A move has been picked: its pull-back (strikes) or its Bezier (the sweep: from where the head is, over the top of the pool, through the control point).</summary>
-        static void Prepare(Fight f)
-        {
-            if (f.Move == "sweep")
-            {
-                float sg = f.Side > 0 ? -1f : 1f, a0 = Mathf.PI + 0.5f, a1 = 2f * Mathf.PI - 0.5f;
-                f.S0X = f.CX + Mathf.Cos(a0) * SweepR * sg; f.S0Y = f.CY + Mathf.Sin(a0) * SweepR; f.S2X = f.CX + Mathf.Cos(a1) * SweepR * sg; f.S2Y = f.CY + Mathf.Sin(a1) * SweepR;
-                f.S1X = f.CX; f.S1Y = f.CY - SweepR * 1.45f;                                // the control point: a quadratic through both ends with its top about R above the pool
-                PullBack(f, f.S0X, f.S0Y);
-            }
-            else { var z = f.Zones[0]; PullBack(f, z.X, z.Y); }
-        }
-
         /// <summary>Every tick, after the state machine: where the head is now (a pure function of the stage and its age: easing curves, no animation clips), then the chain follows.</summary>
         static void DriveBody(Fight f, float dt)
         {
@@ -368,32 +250,6 @@ namespace GameCore
                     }
                 }
                 if (f.Stage != "lurk") { f.SX = head.x; f.SY = head.y; }
-            }
-            else
-            {
-                var rest = f.Rest; r.AnchorFrom = 12; r.AnchorK = 7f; r.AnchorOn = f.Stage != "hidden"; r.Under = f.Stage == "hidden"; r.SlitherAmount = 0.1f; r.SlitherSpeed = 2.5f;
-                head = (rest.x + 0.12f * Mathf.Sin(t * 2.2f), rest.y + 0.08f * Mathf.Cos(t * 1.7f));
-                if (f.Stage == "hurt") { float k = 1f - Ease.InOutSine(age / HurtFor); head = (rest.x - f.Side * 1.4f * k, rest.y - 0.6f * k); }
-                else if (f.Stage == "move" && f.Move != null)
-                {
-                    r.SlitherAmount = 0.22f; r.SlitherSpeed = 6f; var from = (f.FromX, f.FromY); var pull = (f.PullX, f.PullY); float w = f.WindFor, s = age - w;
-                    if (f.Move == "sweep")
-                    {
-                        var p0 = (f.S0X, f.S0Y); var p1 = (f.S1X, f.S1Y); var p2 = (f.S2X, f.S2Y);
-                        if (s < 0f) head = Ease.Lerp(from, p0, Ease.InBack(age / w));                                                                        // pulls back to where the arc starts
-                        else if (s < SweepFor) head = Ease.Bezier(p0, p1, p2, Ease.InOutSine(s / SweepFor));                                                 // over the top of the pool on a quadratic Bezier
-                        else head = Ease.Lerp(p2, rest, Ease.InOutSine((s - SweepFor) / SweepRecover));
-                    }
-                    else
-                    {
-                        var m = Moves[f.Move]; var z = f.Zones.Count > 0 ? f.Zones[0] : null; var land = z != null ? (z.X, z.Y) : pull;
-                        r.SpacingTarget = s < 0f ? 0.45f : s < m.hitAt + 0.1f ? 1.22f : 1f;                                                                  // the neck bunches up like a coiled spring, then stretches as it strikes
-                        if (s < 0f) head = Ease.Lerp(from, pull, Ease.InBack(age / w));                                                                      // anticipation: 0.6 s (0.3 between smashes)
-                        else if (s < m.hitAt) head = Ease.Lerp(pull, land, Ease.OutExpo(s / m.hitAt));                                                       // the strike: it arrives exactly when the hit lands
-                        else if (s < m.hitAt + 0.12f) head = land;
-                        else head = Ease.Lerp(land, rest, Ease.InOutSine((s - m.hitAt - 0.12f) / (m.len - m.hitAt - 0.12f)));
-                    }
-                }
             }
             r.Step(dt, head.x, head.y);
         }
