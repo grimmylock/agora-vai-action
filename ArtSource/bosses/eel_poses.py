@@ -17,6 +17,7 @@ MASK = NATIVE[:, :, 3] > 0; SH, SW = MASK.shape
 # the stretches of his spine used for the body, as indices into the traced spine (found by looking at the trace: A the top trunk, B the
 # lower trunk, C the tail); HEAD is the cut-out and the spine point it grows from
 A, B, C = (0, 232), (362, 625), (690, 1085)
+OVERLAP_ARC = 45                              # two parts of the body this far apart along it are different passes when they touch on screen
 FADE = 10                                     # half the dithered cross-fade where his upper trunk meets the lower one
 HEAD_BOX = (28, 8, 152, 107)
 
@@ -43,11 +44,14 @@ def trace():
     pad = np.pad(P, ((k, k), (0, 0)), mode="edge"); Ps = np.stack([np.convolve(pad[:, i], np.ones(2 * k + 1) / (2 * k + 1), "valid") for i in (0, 1)], 1)
     return Ps
 
-def frames(P):
-    """tangent and the normal that points up the screen (right when vertical), per point"""
+def frames(P, screen_up=True):
+    """tangent and the back-side normal per point. screen_up: the normal that points up the screen (right when vertical) - for his own
+    near-horizontal trunks, where up is the fin side. Not for a pose: there the fin stays on the LEFT of the way the body goes, all the
+    way round (screen_up flips sides the moment the body heads straight down, tearing the texture along that line)"""
     T = np.gradient(P, axis=0); T /= np.linalg.norm(T, axis=1, keepdims=True) + 1e-9
     n = np.stack([T[:, 1], -T[:, 0]], 1)
-    flip = (n[:, 1] > 1e-3) | ((np.abs(n[:, 1]) <= 1e-3) & (n[:, 0] < 0)); n[flip] *= -1
+    if screen_up:
+        flip = (n[:, 1] > 1e-3) | ((np.abs(n[:, 1]) <= 1e-3) & (n[:, 0] < 0)); n[flip] *= -1
     return T, n
 
 SRC = trace(); SRC_T, SRC_N = frames(SRC)
@@ -85,28 +89,49 @@ def body_order(length):
 
 BAYER = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
 
-def paint(canvas, P, order, chunk=12, reach=48):
-    """bend the body along path P (head end first, 1 px apart): chunks back to front by height, so it coils over and under itself"""
-    n = len(P); T, U = frames(P); H, W = canvas.shape[:2]; order, order2, wmix = (np.array(x) for x in order)
-    ch = list(range(0, n, chunk)); ch.sort(key=lambda c: P[min(n - 1, c + chunk // 2)][1])
-    for c0 in ch:
-        c1 = min(n, c0 + chunk); lo, hi = max(0, c0 - 24), min(n, c1 + 24); seg = P[lo:hi]
-        x0, x1 = int(seg[:, 0].min()) - reach, int(seg[:, 0].max()) + reach; y0, y1 = int(seg[:, 1].min()) - reach, int(seg[:, 1].max()) + reach
-        x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
-        if x1 <= x0 or y1 <= y0: continue
-        gy, gx = np.mgrid[y0:y1, x0:x1]; px = gx.ravel() + 0.5; py = gy.ravel() + 0.5
-        d2 = (px[:, None] - seg[None, :, 0]) ** 2 + (py[:, None] - seg[None, :, 1]) ** 2
-        j = np.argmin(d2, axis=1) + lo; own = (j >= c0) & (j < c1) & (d2.min(axis=1) < reach * reach)
-        v = (px - P[j, 0]) * U[j, 0] + (py - P[j, 1]) * U[j, 1]
-        along = (px - P[j, 0]) * T[j, 0] + (py - P[j, 1]) * T[j, 1]
-        own &= ~(((j == 0) & (along < -0.5)) | ((j == n - 1) & (along > 0.5)))        # nothing past the ends of the spine (it would smear the end column out)
-        jj = np.clip(j, 0, n - 1); k = np.where(BAYER[(py.astype(int)) % 4, (px.astype(int)) % 4] < wmix[jj], order2[jj], order[jj])
-        sx = SRC[k, 0] + SRC_N[k, 0] * v; sy = SRC[k, 1] + SRC_N[k, 1] * v
-        ix, iy = np.rint(sx).astype(int), np.rint(sy).astype(int)
-        ok = own & (ix >= 0) & (ix < SW) & (iy >= 0) & (iy < SH) & (v <= UP_EXT[k] + 1) & (-v <= DN_EXT[k] + 1)
-        ix, iy = np.where(ok, ix, 0), np.where(ok, iy, 0); ok &= NATIVE[iy, ix, 3] > 0
-        sel = np.nonzero(ok)[0]
-        canvas[py[sel].astype(int), px[sel].astype(int)] = NATIVE[iy[sel], ix[sel]]
+def paint(canvas, P, order, ds=0.35, dv=0.5):
+    """Bend the body along path P (head end first, 1 px apart) by painting ALONG the spine: every tiny step (ds px) lays down its own
+    cross-section line of his pixels (v from the belly side to the back side, dv apart). All the samples go through one depth test, and
+    the rule is the simplest that can't patch: the part of the body nearer the head is always in front of what comes after it, so where one
+    coil passes over another (or the neck over the loops) the same one is on top along the whole crossing. (Ordering by height instead put some
+    of a coil in front of the other and some behind: patches with straight edges. A nearest-spine-point test per pixel tore the texture
+    wherever the body bent tighter than it is thick.) On the inside of a tight bend the body is thinned to the bend's radius, so the cross-sections can't fold over each other."""
+    n = len(P); T, U = frames(P, screen_up=False); H, W = canvas.shape[:2]; order, order2, wmix = (np.array(x) for x in order)
+    dT = np.gradient(T, axis=0); curv = np.linalg.norm(dT, axis=1)                         # 1/radius
+    k9 = 5; curv = np.convolve(np.pad(curv, k9, mode="edge"), np.ones(2 * k9 + 1) / (2 * k9 + 1), "valid")
+    toward_up = (dT * U).sum(1)                                                            # > 0: the path curves toward the back side
+    rad = 1.0 / np.maximum(curv, 1e-3)
+    sel = np.arange(0.0, n - 1.0001, ds)
+    j0 = np.floor(sel).astype(int); f = (sel - j0)[:, None]; j1 = np.minimum(j0 + 1, n - 1)
+    pos = P[j0] * (1 - f) + P[j1] * f; nrm = U[j0] * (1 - f) + U[j1] * f; nrm /= np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-9
+    kk = order[j0]; up = UP_EXT[kk] + 1.0; dn = DN_EXT[kk] + 1.0
+    r = rad[j0]; inner_up = toward_up[j0] > 0
+    up = np.where(inner_up, np.minimum(up, 0.85 * r), up); dn = np.where(~inner_up, np.minimum(dn, 0.85 * r), dn)       # thin the inside of a tight bend
+    vmax = int(np.ceil(max(up.max(), dn.max()) / dv)); vs = np.arange(-vmax, vmax + 1) * dv
+    vv = np.broadcast_to(vs[None, :], (len(sel), len(vs)))
+    okv = (vv <= up[:, None]) & (-vv <= dn[:, None])
+    ox = pos[:, None, 0] + nrm[:, None, 0] * vv; oy = pos[:, None, 1] + nrm[:, None, 1] * vv
+    ixo, iyo = np.floor(ox).astype(int), np.floor(oy).astype(int)
+    mix = BAYER[np.clip(iyo, 0, H - 1) % 4, np.clip(ixo, 0, W - 1) % 4] < wmix[j0][:, None]
+    k = np.where(mix, order2[j0][:, None], kk[:, None])
+    sx = SRC[k, 0] + SRC_N[k, 0] * vv; sy = SRC[k, 1] + SRC_N[k, 1] * vv
+    ix, iy = np.rint(sx).astype(int), np.rint(sy).astype(int)
+    ok = okv & (ixo >= 0) & (ixo < W) & (iyo >= 0) & (iyo < H) & (ix >= 0) & (ix < SW) & (iy >= 0) & (iy < SH)
+    ix, iy = np.where(ok, ix, 0), np.where(ok, iy, 0); ok &= NATIVE[iy, ix, 3] > 0
+    depth = np.broadcast_to((-sel)[:, None], ok.shape)                                          # the part nearer the head is always in front
+    m = ok.ravel(); idx = np.nonzero(m)[0]; idx = idx[np.argsort(depth.ravel()[idx], kind="stable")]  # far first, so the nearest is written last
+    canvas[iyo.ravel()[idx], ixo.ravel()[idx]] = NATIVE[iy.ravel()[idx], ix.ravel()[idx]]
+    # where one part of the body passes in front of another (their places along the body are far apart), the one behind gets a dark outline
+    # along the front one's edge, as any outline does: without it their textures butt together and read as a pasted patch
+    arc = np.full((H, W), -1.0); dep = np.full((H, W), -1e9)
+    arc[iyo.ravel()[idx], ixo.ravel()[idx]] = np.broadcast_to(sel[:, None], ok.shape).ravel()[idx]
+    dep[iyo.ravel()[idx], ixo.ravel()[idx]] = depth.ravel()[idx]
+    behind = np.zeros((H, W), bool)
+    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        an = np.roll(np.roll(arc, dy, 0), dx, 1); dn_ = np.roll(np.roll(dep, dy, 0), dx, 1)
+        behind |= (arc >= 0) & (an >= 0) & (np.abs(arc - an) > OVERLAP_ARC) & (dn_ > dep + 0.05)
+    canvas[behind] = (20, 22, 23, 255)
+    paint.last_arc = arc                                                    # for debugging: where along the body each pixel came from
 
 def put_head(canvas, at, face):
     """paste the head so the body grows from `at` (a point on the path): face=-1 as drawn (looking left), +1 mirrored"""
@@ -145,8 +170,8 @@ if __name__ == "__main__":
     a.convert("RGB").save(os.path.join(out, "eel_ref_basin.png"))
     # 2. the strike: wrapped 1.5 times round a stand-in 3x3 platform, bent from his own pixels
     px0, py0 = tile(44, 34); pw = 3 * 32; cx, cy = px0 + pw / 2, py0 + pw / 2; rx, ry = pw / 2 + 36, pw / 2 + 31
-    ring = [(cx + math.cos(t) * (rx + t * 1.2), cy + math.sin(t) * (ry + t * 1.0)) for t in np.linspace(-0.35, -0.35 + 2 * math.pi * 1.5, 150)]
-    h0 = tile(47.3, 32.2); neck = lead(h0) + M.bez((h0[0] + LEAD, h0[1]), (h0[0] + LEAD + 14, h0[1] + 20), ring[0])[1:]
+    ring = [(cx + math.cos(t) * (rx + t * 4.0), cy + math.sin(t) * (ry + t * 3.4)) for t in np.linspace(-0.35, -0.35 + 2 * math.pi * 1.5, 150)]   # loops 25 px apart
+    h0 = tile(47.3, 32.2); neck = lead(h0) + M.bez((h0[0] + LEAD, h0[1]), (h0[0] + LEAD + 40, h0[1] + 6), ring[0])[1:]
     tail = M.bez(ring[-1], tile(41.5, 35.5), tile(37.5, 34.2), tile(36.2, 37.8), tile(40, 39.4), tile(48, 38.8))
     P = M.resample(neck + ring + tail[1:])
     lay = eel_layer(W, H, P, -1)
@@ -174,4 +199,11 @@ if __name__ == "__main__":
     sh = shadow(lay4); k = Bg.copy(); k.alpha_composite(man, tile(42, 28.0)); k.alpha_composite(Image.fromarray(sh))
     M.label(k, "1:1 - lurking: only its shadow under the black water (the player on the ledge)")
     k.convert("RGB").save(os.path.join(out, "eel_lurk_ref.png"))
+    # 5. the cases that broke it: the body crossing itself (a figure-eight) and a tight hairpin; looked at on every change
+    SW2, SH2 = 700, 420; flat = Image.new("RGBA", (SW2, SH2), (14, 20, 18, 255))
+    e0 = (150, 110); eight = lead(e0) + M.bez((e0[0] + LEAD, e0[1]), (260, 150), (330, 210), (420, 270), (480, 210), (420, 150), (330, 210), (240, 270), (190, 210), (240, 150), (330, 210), (400, 300), (520, 330))[1:]
+    h0_ = (120, 70); hairpin = lead(h0_) + M.bez((h0_[0] + LEAD, h0_[1]), (300, 75), (400, 110), (380, 170), (300, 185), (180, 180), (150, 230), (220, 280), (400, 285), (560, 260))[1:]
+    for name, path in (("eight", eight), ("hairpin", hairpin)):
+        t = flat.copy(); t.alpha_composite(Image.fromarray(eel_layer(SW2, SH2, M.resample(path), -1)))
+        t.resize((SW2 * 2, SH2 * 2), Image.NEAREST).convert("RGB").save(os.path.join(out, f"eel_stress_{name}.png"))
     print("written", out)

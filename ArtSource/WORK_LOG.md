@@ -4907,3 +4907,19 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
   that's wrong. `thunderclap` is at half-pixels (full size would be 18 tiles across).
 - Harness: whirlpools asserted on all three flooded levels. ALL CHECKS PASSED. Not checked in Unity: how any of it looks and sounds next to the
   existing effects, how busy automatic explosions get, the ripples' cost when wading far.
+
+## The eel's coils: bugs where it bent tight or passed over itself, fixed (2026-11-05)
+
+- Yan: "eel bugs a lot when coilling up or when it's sprite passes over itself, can it be fixed?" (three screenshots: blocky bands and a patch
+  with straight edges). Four separate faults in `eel_poses.py`, found by zooming into my own renders at the same places:
+  1. **Torn texture on bends**: each pixel took the nearest spine point, so where the body bent tighter than it is thick (or two coils were
+     close) neighbouring pixels picked different spine points. Now the body is painted ALONG the spine: every 0.35 px step lays its own
+     cross-section line of his pixels; on the inside of a tight bend the body is thinned to the bend's radius so lines can't fold over.
+  2. **A hard line across the neck**: "back always up the screen" has to jump to the other side of the body the moment it heads straight
+     down. Now the fin stays on the left of the way the body goes, all the way round (the outside of a clockwise coil).
+  3. **Patches where it crosses itself**: order by height put some of a coil in front of another and some behind, and my strike pose's second
+     loop was only 7 px outside the first (the loops almost coincided, so any order flipped). Now the part nearer the head is always in
+     front, and the loops are 25 px apart. A dark outline is drawn on the body behind along the front one's edge.
+  4. **Streaks at a tight neck turn** (his thin fin spikes fanned out): a gentler neck curve.
+- Checked on: the strike (round a platform), the rear-up, the lurk, plus two stress poses now in the script: a figure-eight (crosses itself)
+  and a tight hairpin (`eel_stress_eight.png`, `eel_stress_hairpin.png`). Not checked in Unity (it isn't in the game yet).
