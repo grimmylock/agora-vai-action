@@ -22,8 +22,8 @@ namespace GameCore
         public const string Name = "The Drowner", Fled = "eel_fled";
         public const int MaxHp = 24000, ShockDamage = 90, StrikeDamage = 220, SnapDamage = 170, LungeDamage = 200, SlamDamage = 240, SweepDamage = 200;
         public const float CarryCap = 0.2f, F = 1f / 15f;      // the strips play at 15 fps
-        public const float RingIn = 1.9f, RingOut = 3.1f, ShockGap = 0.7f, SweepR = 215f / 32f;
-        public const float Burst = 0.9f, Hold = 4.0f, ConstrictFor = 1.5f, ConstrictTo = 0.73f, ReleaseFor = 0.7f, Turns = 2.5f, RingR = 2.3f;   // 2.5 turns of a ring that widens 0.28 a turn (2.3 -> 3.0, inside the 1.9-3.1 touch ring): the whole 35 tiles of body fits   // the wrap: the head circles for Burst s, the coil is held for Hold s (after the discharge), then it lets go
+        public const float RingIn = 1.9f, RingOut = 3.4f, ShockGap = 0.7f, SweepR = 215f / 32f;
+        public const float Burst = 0.9f, Hold = 4.0f, ConstrictFor = 1.5f, ConstrictSpacing = 0.5f, ReleaseFor = 0.7f, Turns = 2.5f, RingR = 3.2f, Pitch = 0.4f, CoilRise = 0.7f;   // 2.5 turns of a ring that widens 0.28 a turn (2.3 -> 3.0, inside the 1.9-3.1 touch ring): the whole 35 tiles of body fits   // the wrap: the head circles for Burst s, the coil is held for Hold s (after the discharge), then it lets go
         // the head's landing point for each move, in tiles from the pool's centre, for an eel facing left (from the strips); x is mirrored for the right
         static readonly Dictionary<string, (float x, float y, float r, float hitAt, float len, int dmg)> Moves = new Dictionary<string, (float, float, float, float, float, int)>
         {
@@ -43,6 +43,7 @@ namespace GameCore
             public HumanEnemy Body; public int BodyX, BodyY; public string BodyArmor;
             public readonly EelRig Rig = new EelRig();          // the procedural body: the state machine moves the head, the segments trail
             public float WindFor = Wind, FromX, FromY, PullX, PullY, S0X, S0Y, S1X, S1Y, S2X, S2Y; public bool Discharged;   // the current move: where the head started, its pull-back point, the sweep's Bezier
+            public float TgtX, TgtY, EscX, EscY;                   // the player it is watching; the way it dives after a strike
             public (float x, float y) Rest => (CX - Side * -3f, CY - 134f / 32f);           // the rear-up head
             public readonly List<Zone> Zones = new List<Zone>(); public readonly List<(float x, float y)> Platforms = new List<(float, float)>();
             public readonly HashSet<Player> Shocked = new HashSet<Player>();
@@ -109,7 +110,7 @@ namespace GameCore
             var tgt = players.OrderBy(p => { var (x, y) = Ballistics.Pos(p); return (x - ex) * (x - ex) + (y - ey) * (y - ey); }).First();
             var (px, py) = Ballistics.Pos(tgt);
             if (f.Level == "platform") Platform(f, players, tgt, px, py, now, age, dt); else Sump(f, players, tgt, px, py, now, age);
-            DriveBody(f, dt);
+            f.TgtX = px; f.TgtY = py; DriveBody(f, dt);
         }
 
         // ---------------------------------------------------------------- Levels 1-2: the shadow, the wrap, the shock, the strike
@@ -143,7 +144,7 @@ namespace GameCore
                         f.Shocked.Add(p); f.Label = "SHOCK: you touched the coils"; Hurt(p, ShockDamage, "The coils shock you", "Psi");
                         float k = rd < 0.01f ? 0f : 1f / rd; Rt.MoveBy(p, (f.PX - qx) * k * 1.6f, (f.PY - qy) * k * 1.6f);
                     }
-                    if (age >= Burst + Hold) { Go(f, "release"); f.Label = "it lets go"; }
+                    if (age >= Burst + Hold) { Go(f, "release"); f.Discharged = false; f.Label = "it lets go"; }
                     break;
                 case "release":
                     if (age >= ReleaseFor) { Go(f, "strike"); f.Label = "STRIKE: wind-up"; var (sx, sy) = Ballistics.Pos(tgt); f.Zones.Add(new Zone { X = sx, Y = sy, R = 1.7f, Kind = "strike" });
@@ -152,7 +153,7 @@ namespace GameCore
                 case "strike":
                     var z = f.Zones.FirstOrDefault();
                     if (z != null && age >= StrikeAt && !f.Hit) { f.Hit = true; z.Live = true; f.Label = "STRIKE!"; foreach (var p in players) Strike(p, z, StrikeDamage, "It strikes out of the water"); }
-                    if (age >= StrikeAt + 0.4f) { Go(f, "recover"); f.Label = "it sinks back"; }
+                    if (age >= StrikeAt + 0.4f) { Go(f, "recover"); f.Label = "it sinks back"; PickEscape(f); }
                     break;
                 case "recover":
                     if (age >= 1.4f) { f.Next = now + 1.5f; Go(f, f.Wraps >= 2 ? "done" : "lurk"); }      // it has swum off by itself (DriveBody): SX, SY follow the head
@@ -266,17 +267,36 @@ namespace GameCore
         }
 
         /// <summary>The wrap's end pose as slots: the body laid round the platform on the ring, walking back from where the head stops (2.5 turns of a ring that widens a little each turn).</summary>
-        static void SetCoilSlots(Fight f, float turns = Turns, float k = 1f, float sp = 1f)
+        static float GuideR(float turnsDone) => RingR - Pitch * turnsDone;          // the coil is a slight INWARD spiral: the outer start is on the outside, the head's end is the innermost loop
+
+        static void SetCoilSlots(Fight f, float sp = 1f)
         {
-            var rig = f.Rig; rig.SlotX = new float[EelRig.Count]; rig.SlotY = new float[EelRig.Count];
-            float a0 = -Mathf.PI / 2f, th = a0 + 2f * Mathf.PI * turns, step = EelRig.Spacing * sp; (float x, float y) prev = (f.PX + Mathf.Cos(th) * (RingR + 0.28f * turns) * k, f.PY + Mathf.Sin(th) * (RingR + 0.28f * turns) * k); float acc = 0f; int n = 0;
+            var rig = f.Rig; rig.SlotX = new float[EelRig.Count]; rig.SlotY = new float[EelRig.Count]; rig.SlotZ = new float[EelRig.Count];
+            float a0 = -Mathf.PI / 2f, th = a0 + 2f * Mathf.PI * Turns, step = EelRig.Spacing * sp; (float x, float y) prev = (f.PX + Mathf.Cos(th) * GuideR(Turns), f.PY + Mathf.Sin(th) * GuideR(Turns)); float acc = 0f; int n = 0;
             for (int guard = 0; n < EelRig.Count && guard < 4000; guard++)
             {
-                th -= 0.02f; float rad = Mathf.Max(0.3f, (RingR + 0.28f * (th - a0) / (2f * Mathf.PI)) * k); var q = (x: f.PX + Mathf.Cos(th) * rad, y: f.PY + Mathf.Sin(th) * rad);
+                th -= 0.02f; float rad = Mathf.Max(0.3f, GuideR((th - a0) / (2f * Mathf.PI))); var q = (x: f.PX + Mathf.Cos(th) * rad, y: f.PY + Mathf.Sin(th) * rad);
                 acc += Mathf.Sqrt((q.x - prev.x) * (q.x - prev.x) + (q.y - prev.y) * (q.y - prev.y)); prev = q;
                 while (n < EelRig.Count && acc >= step * (n + 1)) { rig.SlotX[n] = q.x; rig.SlotY[n] = q.y; n++; }
             }
             for (; n < EelRig.Count; n++) { rig.SlotX[n] = f.PX; rig.SlotY[n] = f.PY; }
+            for (int i = 0; i < EelRig.Count; i++) rig.SlotZ[i] = CoilRise * (1f - i / (EelRig.Count - 1f));        // the loops stack: the head end lies on top of the tail end
+        }
+
+        /// <summary>After a strike: the dive's direction, pointing OUT: away from the platform, turned (up to 80 degrees) to whichever way keeps furthest from its own body, so it never cuts back through its coil.</summary>
+        public static float EscScore;
+        static void PickEscape(Fight f)
+        {
+            var r = f.Rig; float dx = r.HX - f.PX, dy = r.HY - f.PY, l = Mathf.Sqrt(dx * dx + dy * dy); if (l < 0.05f) { dx = 1f; dy = 0f; l = 1f; }
+            float baseA = Mathf.Atan2(dy, dx), best = -1f; f.EscX = dx / l; f.EscY = dy / l;
+            foreach (var deg in new[] { 0f, 20f, -20f, 40f, -40f, 60f, -60f, 80f, -80f })
+            {
+                float a = baseA + deg * Mathf.Deg2Rad, ux = Mathf.Cos(a), uy = Mathf.Sin(a), score = 99f;
+                for (float d = 0.8f; d <= 6f; d += 0.4f) for (int i = 3; i < EelRig.Count; i++) { float qx = r.HX + ux * d - r.X[i], qy = r.HY + uy * d - r.Y[i]; score = Mathf.Min(score, Mathf.Sqrt(qx * qx + qy * qy)); }
+                score -= Mathf.Abs(deg) * 0.004f;                      // all else equal, straight out
+                if (score > best) { best = score; f.EscX = ux; f.EscY = uy; }
+            }
+            EscScore = best;
         }
 
         /// <summary>The anticipation point: the head backs off from where it is about to strike (1.3 tiles).</summary>
@@ -300,7 +320,7 @@ namespace GameCore
         /// <summary>Every tick, after the state machine: where the head is now (a pure function of the stage and its age: easing curves, no animation clips), then the chain follows.</summary>
         static void DriveBody(Fight f, float dt)
         {
-            var r = f.Rig; float age = Time.time - f.StageAt, t = Time.time; (float x, float y) head = (r.HX, r.HY); r.SpacingTarget = 1f; r.CompressAll = false;
+            var r = f.Rig; float age = Time.time - f.StageAt, t = Time.time; (float x, float y) head = (r.HX, r.HY); r.SpacingTarget = 1f; r.CompressAll = false; r.LookActive = false; r.HeadLift = 0f;
             if (f.Level == "platform")
             {
                 var c = (x: f.PX, y: f.PY); float ringA0 = -Mathf.PI / 2f; r.AnchorOn = f.Stage == "wrap"; r.AnchorFrom = 2; r.AnchorK = 16f * Mathf.Clamp01(age / Burst) * Mathf.Clamp01(age / Burst);   // the coil's slots pull the trailing body in as the burst goes on
@@ -310,36 +330,41 @@ namespace GameCore
                     case "wind": head = (c.x + 0.3f * Mathf.Sin(age * 22f), c.y + 0.3f * Mathf.Cos(age * 19f)); r.Under = true; r.SlitherAmount = 0.5f; r.SlitherSpeed = 10f; break;
                     case "wrap":
                     {
-                        r.Under = false; r.SlitherAmount = f.Discharged ? 0.03f : 0.2f; r.SlitherSpeed = f.Discharged ? 3f : 9f;
-                        r.CompressAll = true; float cf = Ease.InOutSine((age - Burst) / ConstrictFor);                     // the constriction: over the first ConstrictFor s of the hold the coil closes in
-                        r.SpacingTarget = Mathf.Lerp(1f, 0.78f, cf);                                                       // the segments pack closer ...
-                        if (age >= Burst) { SetCoilSlots(f, Turns + 0.6f * cf, Mathf.Lerp(1f, ConstrictTo, cf), r.SpacingNow); r.AnchorK = 16f; }   // ... and the slots they are pulled to shrink with the ring
-                        (float x, float y) RingAt(float ag)       // where the head is on the ring at stage age `ag`: out of the middle in the first half turn (the radius follows the ANGLE, so the path is long), then round and round, then on round and inward while it squeezes
+                        r.Under = false; r.SlitherAmount = f.Discharged ? 0.03f : 0.2f; r.SlitherSpeed = f.Discharged ? 3f : 9f; r.CompressAll = true;
+                        float cf = Ease.InOutSine((age - Burst) / ConstrictFor); r.HeadLift = age > Burst + Hold - 0.35f ? 0.8f : 0f;       // just before it lets go the head rears up: it will have to cross its own coil
+                        if (age >= Burst)      // the constriction is the spring system alone: the head is anchored and watches you, the rest spacing falls, and the body is pulled in along the spiral
                         {
-                            float cc = Ease.InOutSine((ag - Burst) / ConstrictFor), done = Turns * Ease.OutCubic(Mathf.Clamp01(ag / Burst)) + 0.6f * cc, ang = ringA0 + 2f * Mathf.PI * done;
-                            float rad = Mathf.Lerp(0.3f, RingR + 0.28f * done, Ease.OutCubic(done / 0.6f)) * Mathf.Lerp(1f, ConstrictTo, cc);
+                            r.SpacingTarget = Mathf.Lerp(1f, ConstrictSpacing, cf); SetCoilSlots(f, r.SpacingNow); r.AnchorK = 16f; r.LookActive = true; r.LookX = f.TgtX; r.LookY = f.TgtY;
+                        }
+                        (float x, float y) RingAt(float ag)       // the head's path: out of the middle in the first half turn (the radius follows the ANGLE, so the path is long), then round an inward spiral; after the burst it stays where it ended
+                        {
+                            float done = Turns * Ease.OutCubic(Mathf.Clamp01(ag / Burst)), ang = ringA0 + 2f * Mathf.PI * done, rad = Mathf.Lerp(0.3f, GuideR(done), Ease.OutCubic(done / 0.6f));
                             return (c.x + Mathf.Cos(ang) * rad, c.y + Mathf.Sin(ang) * rad);
                         }
-                        const int Sub = 10;                       // the head races (up to 100 tiles/s): sampled finely so it traces the circle and the body follows the circle, not the chords
+                        const int Sub = 10;                       // the head races (up to 100 tiles/s): sampled finely so it traces the spiral and the body follows the spiral, not the chords
                         for (int k = 1; k <= Sub; k++) { var q = RingAt(age - dt + dt * k / Sub); r.Step(dt / Sub, q.x, q.y); }
                         f.SX = r.HX; f.SY = r.HY; return;
                     }
                     case "release":
                     {
-                        float ang = ringA0 + 2f * Mathf.PI * (Turns + 0.6f), u = Ease.OutExpo(age / ReleaseFor); r.SlitherAmount = 0.35f; r.SlitherSpeed = 8f;
-                        float re = (RingR + 0.28f * (Turns + 0.6f)) * ConstrictTo + 4f * u; head = (c.x + Mathf.Cos(ang) * re, c.y + Mathf.Sin(ang) * re); break;                                     // the head uncoils outward, the body follows it off the platform
+                        float ang = ringA0 + 2f * Mathf.PI * Turns, u = Ease.OutExpo(age / ReleaseFor); r.SlitherAmount = 0.35f; r.SlitherSpeed = 8f; r.HeadLift = 0.8f;
+                        float re = GuideR(Turns) + 4f * u; head = (c.x + Mathf.Cos(ang) * re, c.y + Mathf.Sin(ang) * re); break;                                     // the head uncoils outward, the body follows it off the platform
                     }
                     case "strike":
                     {
                         var z = f.Zones.FirstOrDefault(); float zx = z?.X ?? f.Rig.HX, zy = z?.Y ?? f.Rig.HY; r.SlitherAmount = 0.2f; r.SlitherSpeed = 6f;
+                        r.HeadLift = age >= 0.25f ? 0.8f : 0f;                                                                                       // the dart goes OVER its own coil, not through it
                         r.SpacingTarget = age < Wind ? 0.45f : age < StrikeAt + 0.1f ? 1.22f : 1f;                                                          // bunched up like a spring while it draws back, then stretched as it strikes
                         if (age < Wind) head = Ease.Lerp((f.FromX, f.FromY), (f.PullX, f.PullY), Ease.InBack(age / Wind));                            // 0.6 s: it draws back (and dips the wrong way first)
                         else head = Ease.Lerp((f.PullX, f.PullY), (zx, zy), Ease.OutExpo((age - Wind) / 0.15f)); break;                               // then it is just there
                     }
                     case "recover":
                     {
-                        float dx = f.PX + 5f - r.HX, dy = f.PY + 1f - r.HY, d = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f; r.SlitherAmount = 0.5f; r.SlitherSpeed = 7f;
-                        head = age < 0.3f ? (r.HX, r.HY) : (r.HX + dx / d * Mathf.Min(d, 3.4f * dt), r.HY + dy / d * Mathf.Min(d, 3.4f * dt)); r.Under = age > 0.3f; break;   // it sinks and swims off
+                        r.SlitherAmount = 0.5f; r.SlitherSpeed = 7f;
+                        r.HeadLift = age < 0.7f ? 0.8f : 0f;                                                   // and the dive too, until it is clear of the loops and under the water
+                        r.SpacingTarget = age < 0.5f ? 1.15f : 1f;                                             // let go of the tension at once: no bunching up on the way down
+                        float spd = 14f * (1f - Ease.InOutSine(age / 1f)) + 3.4f;                              // a fast dive that eases into a swim; the mass and the drag pull the loosened body straight after it
+                        head = (r.HX + f.EscX * spd * dt, r.HY + f.EscY * spd * dt); r.Under = age > 0.35f; break;
                     }
                 }
                 if (f.Stage != "lurk") { f.SX = head.x; f.SY = head.y; }

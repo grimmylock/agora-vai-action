@@ -831,10 +831,21 @@ static class Program {
           + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"php\":" + p.Hp + ",\"body\":[" + (f.Swallowed && !f.Ejected ? -1 : f.Body == null ? -2 : f.BodyX) + "," + f.BodyY + "],"
           + "\"zones\":[" + string.Join(",", f.Zones.Select(z => "[" + F(z.X) + "," + F(z.Y) + "," + F(z.R) + ",\"" + z.Kind + "\"," + (z.Live ? 1 : 0) + "]")) + "],\"shock\":" + f.Shocked.Count
           + ",\"under\":" + (f.Rig.Under ? 1 : 0) + ",\"face\":" + (f.Rig.Face > 0 ? 1 : -1) + ",\"disch\":" + (f.Discharged ? 1 : 0) + ",\"nvis\":" + EelBoss.Surfaced(f)
-          + ",\"rig\":[" + F(f.Rig.HX) + "," + F(f.Rig.HY) + string.Concat(Enumerable.Range(0, EelRig.Count).Select(i => "," + F(f.Rig.RX[i]) + "," + F(f.Rig.RY[i]))) + "]"
+          + ",\"rig\":[" + F(f.Rig.HX) + "," + F(f.Rig.HY - f.Rig.HeadZ) + string.Concat(Enumerable.Range(0, EelRig.Count).Select(i => "," + F(f.Rig.RX[i]) + "," + F(f.Rig.RY[i]))) + "]"
           + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
         { var rg = f.Rig; for (int i = 0; i + 1 < EelRig.Count; i++) { float dx = rg.X[i + 1] - rg.X[i], dy = rg.Y[i + 1] - rg.Y[i]; { float rr = (float)Math.Sqrt(dx * dx + dy * dy) / EelRig.Spacing; eelMaxStretch = Math.Max(eelMaxStretch, rr); eelMinStretch = Math.Min(eelMinStretch, rr); } }
           if (f.Level == "platform" && f.Stage == "wrap" && f.Discharged) for (int i = 0; i < EelRig.Count; i++) eelCoil = Math.Max(eelCoil, (float)Math.Sqrt((rg.X[i] - f.PX) * (rg.X[i] - f.PX) + (rg.Y[i] - f.PY) * (rg.Y[i] - f.PY))); }
+        if (f.Level == "platform") {
+          var rg2 = f.Rig; float ag = EelBoss.Age(f);
+          float MeanR(int from, int to) { float t2 = 0f; for (int i = from; i < to; i++) t2 += (float)Math.Sqrt((rg2.X[i] - f.PX) * (rg2.X[i] - f.PX) + (rg2.Y[i] - f.PY) * (rg2.Y[i] - f.PY)); return t2 / (to - from); }
+          if (f.Stage == "wrap" && ag >= EelBoss.Burst + 0.05f && ag <= EelBoss.Burst + EelBoss.ConstrictFor) {
+            if (eelHeadAt.Item1 == 0f) eelHeadAt = (rg2.HX, rg2.HY); eelHeadDrift = Math.Max(eelHeadDrift, (float)Math.Sqrt((rg2.HX - eelHeadAt.Item1) * (rg2.HX - eelHeadAt.Item1) + (rg2.HY - eelHeadAt.Item2) * (rg2.HY - eelHeadAt.Item2)));
+            if (eelR0 < 0f) eelR0 = MeanR(20, 50); eelR1 = MeanR(20, 50);
+          }
+          if (f.Stage == "release") { eelHeadAt = (0f, 0f); if (eelR0 >= 0f) { eelTailIn = Math.Max(eelTailIn, eelR1 - eelR0); eelR0 = -1f; } }
+          if (f.Stage == "wrap" && f.Discharged && ag > EelBoss.Burst + EelBoss.ConstrictFor + 0.3f) { eelLift = Math.Min(eelLift, rg2.Z[2] - rg2.Z[50]); eelInward = Math.Min(eelInward, MeanR(40, 56) - MeanR(0, 8)); }
+          if (f.Stage == "recover" || f.Stage == "strike" || f.Stage == "release") for (int i = 8; i < EelRig.Count; i++) if ((rg2.HX - rg2.X[i]) * (rg2.HX - rg2.X[i]) + (rg2.HY - rg2.Y[i]) * (rg2.HY - rg2.Y[i]) < 0.45f * 0.45f) eelEscape = Math.Min(eelEscape, rg2.HeadZ);   // whenever the head is on top of its own body, how high is it
+        }
         log0.AddRange(log.Where(l => l.Contains("coils shock"))); if (f.Stage == "move") moves.Add(f.Chain > 0 ? "smash" : f.Move);
         log.Clear();
       }
@@ -889,7 +900,7 @@ static class Program {
     Console.WriteLine($"eel fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}, sump gone {f3.Gone}, body ejected {f3.Ejected}, flag {Story.Has(EelBoss.Fled)}");
   }
   static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;
-  static float eelMaxStretch, eelMinStretch = 9f, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
+  static (float, float) eelHeadAt; static float eelHeadDrift, eelR0 = -1f, eelR1, eelTailIn = -9f, eelLift = 9f, eelInward = 9f, eelEscape = 99f; static float eelMaxStretch, eelMinStretch = 9f, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
   // The rope's own physics (EelRig), on a bare rig: it bunches up when told to, stretches back past normal, and keeps its momentum when the head stops.
   static void EelRigChecks() {
     float NeckMean(EelRig r) { float t = 0f; for (int i = 0; i < 18; i++) { float ax = i == 0 ? r.HX : r.X[i - 1], ay = i == 0 ? r.HY : r.Y[i - 1]; t += (float)Math.Sqrt((r.X[i] - ax) * (r.X[i] - ax) + (r.Y[i] - ay) * (r.Y[i] - ay)); } return t / 18f / EelRig.Spacing; }
@@ -922,6 +933,13 @@ static class Program {
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
     Check(r.gone && r.ejected && r.flag, "Eel: the Sump ends with the body vomited up on the slab and the eel gone (eel_fled)");
     Check(eelMinStretch > 0.12f && eelMaxStretch < 2.3f, $"Eel: the rope is elastic but never breaks or folds through itself (neighbour spacing {eelMinStretch:0.00}-{eelMaxStretch:0.00} x rest)");
+    Console.WriteLine($"  eel wrap: head drift in the constriction {eelHeadDrift:0.00} t, tail radius change {eelTailIn:0.00} t, coil lift head-tail {eelLift:0.00} t, tail-vs-head radius {eelInward:0.00} t, head height over its own body {eelEscape:0.00} t, best ray score at the dive {EelBoss.EscScore:0.00}");
+    Check(eelHeadDrift < 0.05f, $"Eel: during the constriction the head stays anchored ({eelHeadDrift:0.00} tiles of drift)");
+    Check(eelTailIn < -0.25f, $"Eel: the constriction pulls the tail in toward the platform (change in the tail's mean radius {eelTailIn:0.00} tiles)");
+    Check(eelInward > 0.15f, $"Eel: the coil is an inward spiral - the tail lies outside the head's loop ({eelInward:0.00} tiles)");
+    Check(eelLift > 0.4f, $"Eel: the loops stack - the head end lies above the tail end ({eelLift:0.00} tiles of lift)");
+    Check(EelRig.SortOrder(0) > EelRig.SortOrder(1) && EelRig.SortOrder(1) > EelRig.SortOrder(55) && EelRig.HeadOrder() > EelRig.SortOrder(0), "Eel: sort order puts the head over every segment and each segment over the one behind it");
+    Check(eelEscape > 0.5f, $"Eel: its dart and dive go OVER its own coil, never through it (lowest the head was while on top of its body: {eelEscape:0.00} tiles)");
     Check(eelCoil > 0f && eelCoil < 3.6f, $"Eel: once the coil is discharged the whole body lies within the touch ring ({eelCoil:0.0} tiles from the platform's centre)");
     Check(r.moves >= 5, $"Eel: snap, lunge, slam, sweep and smash all get played ({r.moves} kinds)");
   }

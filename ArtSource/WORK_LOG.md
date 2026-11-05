@@ -5017,3 +5017,22 @@ into alignment sequentially when the head stops), and an organic constriction fo
 - Not checked: how it feels (all constants are first guesses: spring 150/9, wave 110/s, drag 1.3-4.5/s, mass 3x, 0.45/1.22, 0.73/0.78); the bunch-up reads as the neck shortening and
   curling, not a visible zig-zag (the painter draws the body along the chain, so a shorter chain is a shorter neck); the tail keeps drifting for over a second after a hard stop (low drag at
   the tail end: raise `DragTail` if it looks too floaty); the wall-before-charge is new gameplay (Yan to confirm); nothing in Unity (no view draws the chain yet); reveal/vomit/retreat still strips.
+
+## Eel: inward-spiral coil, stacking, anchored constriction, dive that clears the coil (2026-11-05)
+Yan: the wrap was a flat circle that scaled down and crushed into itself like a donut; the constriction should not keep orbiting (anchor the head, look at the player, tighten through the
+springs alone); the retreat after the platform strike bunched up (release the tension, high-velocity escape pointing outward, never back through its own coil).
+- Path: the coil is a slight INWARD spiral (`GuideR`: outer start 3.2 tiles, 0.4 a turn, 2.5 turns: the head ends on the innermost loop, the tail on the outside). The touch ring is now 1.9-3.4.
+- Layering: `EelRig.SortOrder(i)` / `HeadOrder()` (the head above everything, each segment above the one behind it) for a view's Y-sort or Z offset - the painter in the preview clip already used the same rule.
+  Plus real stacking: in a coil each segment has a height (`SlotZ`, 0.7 tiles from tail to head) drawn as a lift up the screen, so the loops lie on top of each other like a real coil in the 3/4 view
+  instead of crushing in the same plane.
+- Constriction: after the burst the head is ANCHORED (no more orbiting) and looks at the nearest player (`LookActive`: it turns its profile toward them; the painter never rotates the head, so only the
+  flip is visible). It runs entirely through the springs: the target rest spacing falls 1.0 -> 0.5 over 1.5 s (`ConstrictSpacing`), the coil's guide slots are recomputed from the live spacing each tick, so
+  the tail is drawn in along the spiral toward the pinned head. Discharge after it; the 4 s hold is unchanged. Before the charge the coil is a wall (no damage); a discharge ends at the release.
+- Retreat (the platform's `recover`): the spring target goes to 1.15 at once (then 1.0), the head gets a 14 tiles/s dive that eases to a swim (`PickEscape`: outward from the platform, turned up to 80 degrees
+  toward whichever way crosses its own body least), and the mass/drag pull the body after it. HONEST LIMIT: at that moment the coil is still a loose ring round the head (the release only unwinds ~6 tiles) and every
+  outward ray crosses it (best clear ray 0.27 tiles). So the head also RISES over its body: `HeadLift` 0.8 tiles from the end of the hold, through release, dart and dive (the neck is lifted behind it), sorted on top, and
+  it goes under the water 0.35 s into the dive. It does not path through the coil, it goes over it. A cleaner fix needs a longer release that unwinds the whole coil first (not done).
+- Harness: new `EelChecks` assertions: head drift in the constriction < 0.05 (0.00), the tail's mean radius falls (-0.25), the tail lies outside the head's loop (0.36), the head end is above the tail end
+  (0.61), sort order, and the head is >= 0.5 tiles up whenever it is on top of its own body (0.79). ALL CHECKS PASSED. `maps/renders/boss_eel/eel_rig.mp4` re-rendered.
+- Not checked: how it feels in motion (all new numbers are first guesses: spacing 0.5, pitch 0.4, lift 0.7/0.8, dive 14 t/s); with the spacing at 0.5 the drawn body is half as long during the squeeze (the
+  painter draws along the chain); the head's look-at is a profile flip, not a rotation; the tail-radius change (-0.25) only just clears its check; nothing in Unity (no view draws the chain).

@@ -40,8 +40,14 @@ namespace GameCore
         public readonly float[] PX = new float[Count], PY = new float[Count];                              // where each was one sub-step ago: its velocity is X - PX (Verlet), so it keeps its momentum
         public readonly float[] Sc = new float[Count], M = new float[Count];                               // each segment's squeeze/stretch now (a delayed copy of SpacingNow) and its mass
         public readonly float[] RX = new float[Count], RY = new float[Count];                              // what is drawn: the body plus the slither
-        public float[] SlotX, SlotY;
+        public float[] SlotX, SlotY, SlotZ;          // the rest pose; SlotZ = how high each segment lies in a coil (tiles): the head end on top, like a real coil seen from the 3/4 view
+        public readonly float[] Z = new float[Count];      // each segment's height now (it eases toward its slot's): drawn as a lift up the screen
+        public float HeadLift, HeadZ;                // the boss sets HeadLift (tiles): the head rears up OVER its own body (and drags the neck up behind it); HeadZ is where it is now
+        public bool LookActive; public float LookX, LookY;     // the head holds still and watches this point (the player): it turns its profile that way
         float phase;
+        /// <summary>Sorting order for a view (Y-sort or a manual Z offset): the head above everything, then each segment above the one behind it, so where the body loops over itself the part nearer the head is on top.</summary>
+        public static int SortOrder(int i, int baseOrder = 0) => baseOrder + Count - i;
+        public static int HeadOrder(int baseOrder = 0) => baseOrder + Count + 1;
         public EelRig() { for (int i = 0; i < Count; i++) { Sc[i] = 1f; M[i] = 1f + (MassTail - 1f) * i / (Count - 1f); } }
 
         /// <summary>Lay the body out in a straight line behind the head along (dx, dy).</summary>
@@ -82,6 +88,9 @@ namespace GameCore
             if (dt > 1e-5f) { VX = (HX - ox) / dt; VY = (HY - oy) / dt; }
             float speed = Mathf.Sqrt(VX * VX + VY * VY);
             if (speed > 0.6f) { HRot = Mathf.Atan2(VY, VX); if (Mathf.Abs(VX) > 0.4f) Face = VX > 0f ? 1f : -1f; }
+            if (LookActive) { HRot = Mathf.Atan2(LookY - HY, LookX - HX); Face = LookX >= HX ? 1f : -1f; }       // anchored and menacing: it looks at you, not where it is going
+            HeadZ += (HeadLift - HeadZ) * (1f - Mathf.Exp(-12f * dt));
+            float zk = 1f - Mathf.Exp(-9f * dt); for (int i = 0; i < Count; i++) Z[i] += ((AnchorOn && SlotZ != null ? SlotZ[i] : 0f) - Z[i]) * zk;
             phase += SlitherSpeed * dt * (0.35f + Mathf.Clamp01(speed / 5f));          // it swims faster the faster it moves
             Render();
         }
@@ -105,7 +114,7 @@ namespace GameCore
             {
                 float fx = Mathf.Cos(Rot[i]), fy = Mathf.Sin(Rot[i]), env = Mathf.Clamp01(i / 8f);
                 float off = Mathf.Sin(phase - i * WaveSpacing) * amp * env;
-                RX[i] = X[i] - fy * off; RY[i] = Y[i] + fx * off;
+                RX[i] = X[i] - fy * off; RY[i] = Y[i] + fx * off - Z[i] - HeadZ * Mathf.Exp(-i * 0.18f);
             }
         }
 
