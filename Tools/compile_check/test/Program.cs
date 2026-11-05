@@ -16,6 +16,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
@@ -967,7 +968,7 @@ static class Program {
     st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), (f, t) => { if (t > 3.6f && f.Sump.Tail.Hp > 1 && f.Sump.TailOut) { f.Sump.Tail.Hp = Math.Max(1, f.Sump.Tail.Hp - 90); Boss.OnDamaged(f.Sump.Tail); } }, 16f); cross = Math.Max(cross, st.MaxCross);
     Check(st.F.Sump.TailBroken && Hits(st, 0, 420) == 0 && st.EndT > 0f && st.EndT < 12f, $"EelSump snare: shooting the tail makes it let go (broken {st.F.Sump.TailBroken}, no throw {Hits(st, 0, 420) == 0}, over in {st.EndT:0.0} s)");
     // FLOOD: the floor turns to deep water, then comes back; it bursts out under the player standing in it
-    st = SumpRun(false, 2, "flood", f => SumpPlace(SP1, 35.5f, 26.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
+    st = SumpRun(false, 2, "flood", f => SumpPlace(SP1, 42.5f, 26.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
     Check(st.FloodPeak >= 400 && st.FloodEnd == 0 && st.DeepEnd == st.DeepStart && Hits(st, 0, 380) == 1, $"EelSump flood: {st.FloodPeak} tiles go under, all {st.DeepStart} deep tiles are back to {st.DeepEnd} afterwards, and it bursts out under him ({Hits(st, 0)})");
     // REVEAL then DEATH: it swallows the body, fights, then brings it back up and goes down the big pool
     {
@@ -998,6 +999,37 @@ static class Program {
     }
     Check(cross <= 0.5f, $"EelSump: every time the head or tail goes through the water's surface it is at a pool's centre (worst {cross:0.00} tiles off, over all the moves)");
     EelBoss.Reset(); Rt.On = false;
+  }
+
+  // The whole Sump fight in one run for the clip: reveal, then each move in turn with the players placed for it (a bait that stands still, a second player), then the death.
+  // dotnet /tmp/test.dll eelsump frames.json  ->  Tools/render/eel_real_clip.py
+  static void EelSumpFrames(string path) {
+    var f = SumpStart(true, 2); EelBoss.GoStage(f, "hidden"); var st = new SumpStats { F = f }; var s = f.Sump; var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
+    var sb = new System.Text.StringBuilder("{\"pools\":[" + string.Join(",", s.Pools.Select(q => $"[\"{q.Name}\",{F(q.X)},{F(q.Y)},{F(q.RX)},{F(q.RY)},{(q.Big ? 1 : 0)}]")) + "],\"slab\":[" + F(s.SlabX) + "," + F(s.SlabY) + "],\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, f.BodyArmor) + ",\"tailmax\":" + EelSump.TailMax + ",\"maxhp\":" + EelBoss.MaxHp + ",\"frames\":[");
+    var pw = s.Pools.First(q => q.Name == "west"); var pe = s.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
+    var plan = new List<(string q, (float, float) a, (float, float) b)> {
+      ("combo", (20.5f, 20.0f), (41.0f, 22.0f)), ("arch:east", (34.0f, 26.5f), (36.0f, 17.0f)), ("dash:west>east", (onp.x, onp.y), (30.5f, 10.5f)),
+      ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f)), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f)), ("flood", (42.5f, 26.0f), (22.5f, 20.0f)) };
+    int step = -1, evDone = 0; const float dt = 1f / 30f; int k = 0, outn = 0; bool dyingSet = false; float tHit = 0.5f; var shoot = 0;
+    SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
+    for (float t = 0f; t < 140f && !f.Gone; t += dt, k++) {
+      if (f.Stage == "hidden" && t > tHit) { f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit); }
+      if (f.Stage == "idle" && !s.Dying) {
+        if (step + 1 < plan.Count && s.Queue.Count == 0) { step++; SumpPlace(SP1, plan[step].a.Item1, plan[step].a.Item2); SumpPlace(SP2, plan[step].b.Item1, plan[step].b.Item2); s.Queue.Add(plan[step].q); f.Next = UnityEngine.Time.time + 0.7f; }
+        else if (step + 1 >= plan.Count && s.Queue.Count == 0 && !dyingSet) { dyingSet = true; s.Dying = true; }
+      }
+      shoot = 0; if (f.Move == "snare" && s.Snared != null && s.TailOut && (UnityEngine.Time.time - f.StageAt) * EelSump.Speed > 3.0f && s.Tail.Hp > 1300 && k % 3 == 0) { s.Tail.Hp -= 45; Boss.OnDamaged(s.Tail); shoot = 1; }     // a teammate shoots the tail a while (not enough to break it)
+      SumpTick(f, st, dt);
+      if (k % 2 != 0) continue;
+      sb.Append(outn++ > 0 ? "," : "").Append("{\"t\":" + F(k * dt) + ",\"stage\":\"" + f.Stage + "\",\"move\":\"" + (f.Move ?? "") + "\",\"var\":\"" + (s.Variant ?? "") + "\",\"label\":\"" + f.Label.Replace("\"", "'") + "\",\"hp\":" + f.Unit.Hp + ",\"thp\":" + s.Tail.Hp + ",\"hout\":" + (s.HeadOut ? 1 : 0) + ",\"tout\":" + (s.TailOut ? 1 : 0) + ",\"flood\":" + F(s.FloodR) + ",\"shoot\":" + shoot + ",\"swallowed\":" + (f.Swallowed && !f.Ejected ? 1 : 0) + ",\"ejected\":" + (f.Ejected ? 1 : 0)
+        + ",\"spine\":[" + string.Join(",", Enumerable.Range(0, EelSump.N).Select(i => F(s.X[i]) + "," + F(s.Y[i]) + "," + F(s.Z[i]))) + "]"
+        + ",\"pl\":[" + string.Join(",", Player.All.Select(pl => { var q = Ballistics.Pos(pl); s.Air.TryGetValue(pl, out var a); return "[" + F(q.x) + "," + F(q.y) + "," + F(a == null ? 0f : a.Z) + "," + F(a == null ? 0f : a.Rot) + "," + pl.Hp + "," + (Rt.Of(pl).ProneUntil > UnityEngine.Time.time ? 1 : 0) + "]"; })) + "]"
+        + ",\"ev\":[" + string.Join(",", st.Ev.Skip(evDone).Select(e => $"[\"{e.Kind}\",{F(e.X)},{F(e.Y)},{F(e.Power)},{(e.Water ? 1 : 0)},{e.Who},{e.Dmg},\"{(e.Text ?? "").Replace("\"", "'")}\"]")) + "]"
+        + ",\"zones\":[" + string.Join(",", f.Zones.Select(z => $"[{F(z.X)},{F(z.Y)},{F(z.R)},\"{z.Kind}\",{(z.Live ? 1 : 0)}" + (z.Path != null ? ",[" + string.Join(",", z.Path.Select(F)) + "]" : "") + "]")) + "]}");
+      evDone = st.Ev.Count;
+    }
+    sb.Append("],\"seconds\":" + F(k * dt) + "}"); System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null; Rt.On = false; EelBoss.Reset();
+    Console.WriteLine($"eel sump fight: {k * dt:0.0} s, {outn} frames, gone {f.Gone}, moves {string.Join(",", st.Seen.OrderBy(x => x))}");
   }
 
   static void EelChecks() {

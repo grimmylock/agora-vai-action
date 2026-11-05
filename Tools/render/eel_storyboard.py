@@ -50,7 +50,7 @@ for name, (cx, cy, ra, rb) in POOLS.items():
 def frames_of(name):
     im = Image.open(os.path.join(FXD, f'px_{name}.png')).convert('RGBA'); h = im.height
     return [im.crop((i * h, 0, i * h + h, h)) for i in range(im.width // h)]
-SPLASH, RIPPLES, THUNDER, SMOKE, WHIRL = (frames_of(n) for n in ('splash', 'ripples', 'thunderclap', 'smoke_bomb', 'whirlpool'))
+SPLASH, RIPPLES, THUNDER, SMOKE, WHIRL, BLUNT = (frames_of(n) for n in ('splash', 'ripples', 'thunderclap', 'smoke_bomb', 'whirlpool', 'blunt_hit'))
 MAN = player(); FNT = font(15)
 def stamp(c, fr, wx, wy, scale=1.0, alpha=1.0, up=0.0):
     im = fr.resize((int(fr.width * scale), int(fr.height * scale)), Image.NEAREST)
@@ -211,7 +211,7 @@ def impact(t, x, y, power, water=False, stop=4, crackn=7):
     global shake_amp, flash, zoom, frozen
     rings.append(dict(x=x, y=y, t0=t, r1=5.5 * power, life=0.55, w=7)); rings.append(dict(x=x, y=y, t0=t + 0.07, r1=8.5 * power, life=0.8, w=4))
     if water: splashes.append(dict(fr=SPLASH, x=x, y=y, s=2.0 * power, t0=t)); splashes.append(dict(fr=SPLASH, x=x - 0.5 * power, y=y + 0.2, s=1.3 * power, t0=t + 0.12))
-    else: splashes.append(dict(fr=THUNDER, x=x, y=y, s=1.1 * power, t0=t)); crack_set(x, y, crackn, 5.5 * power); scorch.append((x, y, 1.5 * power))
+    else: splashes.append(dict(fr=BLUNT, x=x, y=y, s=2.6 * power, t0=t)); splashes.append(dict(fr=SMOKE[:30], x=x, y=y, s=0.9 * power, t0=t + 0.04, a=0.5)); crack_set(x, y, crackn, 5.5 * power); scorch.append((x, y, 1.5 * power))
     debris(x, y, int(26 * power), 8 * power, 'drop' if water else 'rock'); dust(x, y, int(10 * power), 3.5 * power)
     shake_amp = max(shake_amp, 11 * power); flash = max(flash, 0.55 * min(power, 1.4)); zoom = max(zoom, 0.045 * power); frozen = max(frozen, stop)
 
@@ -315,7 +315,7 @@ def run(out, probe=None):
             idx = int((t - s_['t0']) * 15)
             if idx < 0: continue
             if idx >= len(s_['fr']): splashes.remove(s_); continue
-            stamp(c, s_['fr'][idx], s_['x'], s_['y'], s_['s'], 1.0, up=20 * s_['s'])
+            stamp(c, s_['fr'][idx], s_['x'], s_['y'], s_['s'], s_.get('a', 1.0), up=20 * s_['s'])
         if probe is None or True:
             if att == 3 and 12.0 < t < 14.6 and step:                                          # the belly drags: dust all along the body that is on the ground
                 for q in range(0, NS, 90):

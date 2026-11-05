@@ -33,7 +33,7 @@ namespace GameCore
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
             public readonly List<Ev> Events = new List<Ev>(); public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>();
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
-            public string Variant, RevealKey; public float FloodR; public int Flooded;
+            public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
             // the move in progress
             public Strike Hs; public Curve Cur, Cur2; public Pool P1, P2, P3; public Player Tg, Tg2, Snared; public (float x, float y) GP, LP; public float TH0, EndAt = -1f, BreakTs = -1f, BreakQ;
             public bool Hit1, Hit2, Missed, Grabbed, Released, Crossed, Threw; public readonly HashSet<Player> Hurt = new HashSet<Player>(); public float PrevHZ = 9f;
@@ -414,6 +414,8 @@ namespace GameCore
             { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Difficult && t.Look == null) { float d = 99f; foreach (var p in s.Pools) d = Mathf.Min(d, Dist(x + 0.5f, y + 0.5f, p.X, p.Y) - (p.RX + p.RY) / 2f); s.Shallow.Add((x, y, d)); } }
             s.P1 = s.Pools.Where(p => !p.Big).OrderByDescending(p => Dist(p.X, p.Y, tp.x, tp.y)).First(); s.GP = tp; f.Label = "FLOOD: the pools swell";
         }
+        // it goes for someone standing in the water: the islands are safe from this move
+        static bool InFlood(State s, Player p) { var q = Pos(p); return s.Flip.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y))); }
         static float FloodRadius(float ts) => ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : ts < 6.4f ? 17f : ts < 7.7f ? 17f * (1f - Smr((ts - 6.4f) / 1.3f)) : 0f;
         static void FloodTiles(State s, float r)
         {
@@ -433,7 +435,7 @@ namespace GameCore
             if (ts < 3.1f) f.Label = "FLOOD: THE FLOOR TURNS TO DEEP WATER";
             if (s.Cur == null && ts >= 3.0f)      // lock the swim at 3.0 s: from the far pool, through the flood, to where the nearest player stands
             {
-                var q = players.OrderBy(p => Dist(Pos(p).x, Pos(p).y, s.P1.X, s.P1.Y)).First(); var t = Pos(q); s.GP = t; s.Tg = q; float dx = t.x - s.P1.X, dy = t.y - s.P1.Y, d = Mathf.Sqrt(dx * dx + dy * dy), ux = dx / d, uy = dy / d, px = -uy, py = ux;
+                var q = players.OrderBy(p => InFlood(s, p) ? 0 : 1).ThenBy(p => Dist(Pos(p).x, Pos(p).y, s.P1.X, s.P1.Y)).First(); var t = Pos(q); s.GP = t; s.Tg = q; s.NoStrike = !InFlood(s, q); float dx = t.x - s.P1.X, dy = t.y - s.P1.Y, d = Mathf.Sqrt(dx * dx + dy * dy), ux = dx / d, uy = dy / d, px = -uy, py = ux;
                 var pts = new List<(float x, float y, float z)> { (s.P1.X, s.P1.Y, -3.2f), (s.P1.X, s.P1.Y, 0.05f) };                                    // up the centre to the surface, then it glides
                 int m = 120; for (int i = 1; i <= m; i++) { float sv = i / (float)m, dist = 1.0f + (d - 5.5f) * sv; pts.Add((s.P1.X + ux * dist + px * 0.9f * Mathf.Sin(sv * Mathf.PI * 3f), s.P1.Y + uy * dist + py * 0.9f * Mathf.Sin(sv * Mathf.PI * 3f), 0.05f)); }
                 s.Cur2 = new Curve(pts); var e = pts[pts.Count - 1]; pts.AddRange(Bez(e, (e.x + 0.7f * ux, e.y + 0.7f * uy, 6.5f), (t.x - 0.9f * ux, t.y - 0.9f * uy, 7.2f), (t.x, t.y, 0.3f), 40).Skip(1)); s.Cur = new Curve(pts);
@@ -444,6 +446,7 @@ namespace GameCore
             FillHead(s, s.Cur, sg);
             if (ts < 6.3f && ts > 4.4f) Ring(f, s.GP.x, s.GP.y, 2.2f, false);
             if (ts < 4.7f) f.Label = "FLOOD: it swims through as a shadow"; else if (ts < 6.1f) f.Label = "FLOOD: it rears up under him";
+            if (!s.Hit1 && ts >= 6.3f && s.NoStrike) { s.Hit1 = true; f.Label = "FLOOD: nobody in the water - it rears up and sinks back"; }
             if (!s.Hit1 && ts >= 6.3f) { s.Hit1 = true; f.Label = "FLOOD: BURSTS OUT"; Impact(s, s.GP.x, s.GP.y, 1.3f, true); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, s.GP.x, s.GP.y) <= 2.4f && Damage(s, p, 380, "It bursts out under you", s.GP.x, s.GP.y, 0f, 1.5f, now)) { var q = Pos(p); s.Air[p] = new Fling { X0 = q.x, Y0 = q.y, Z0 = 0.4f, X1 = q.x - 2.6f, Y1 = q.y + 2.8f, T0 = ts, Dur = 0.9f, Apex = 3.0f, Land = "fling", Spin = 400f }; } }
             if (ts >= 8.2f) End(f, s, now);
         }

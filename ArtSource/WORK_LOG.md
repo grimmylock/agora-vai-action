@@ -5065,3 +5065,24 @@ throws him out of another free pool (not the one the head is in), he flies a lit
   B the four pools swell and the dry patches light up, the floor floods with the pool's water (foam edge, ripples, islands stay dry), one player wades, the eel glides through as a shadow and bursts out under him; it drains.
 - Same limits as the first storyboard: no game code, no sound, placeholder timings and numbers, pools painted over the render, bot players. The grab's coil, the throw column and the flood spread are the new
   things to judge. Not checked in Unity.
+
+## Eel: the real build of the new Sump fight (2026-11-05)
+Yan: "go ahead and do the real build" (after the storyboards), plus: two variants of the grab ("one that launches the player up and other that throws him at another player"), a lightning effect on the
+thrown player's crash that is "probably an error", and "make sure they always come up from the middle, and go down the middle too, during the attacks that move it around".
+- Map: `ArtSource/plans/lab_plans.py` `depths_level3` now has four pools (`SUMP_POOLS`: west `y`, east `z`, north `N`, plus the big `0`), checks in `sump_checks`, `StampPlan` takes `y z N` as deep water, harness checks the markers
+  and the deep water. (Commit 6b94a54.)
+- `Assets/Scripts/GameCore/EelSump.cs` (new, ~480 lines): the Sump fight. Spine of 140 samples (4 a tile), head first, x/y/height; every move is a curve + a timeline (script times /0.8: Yan slowed phase 1 by 20%).
+  COMBO (head strike from one pool + tail sweep round another), ARCH (out of a pool, over the arena, down the big pool's centre, shockwave), DASH (out of one pool, an S, into another: flings whoever is on the path),
+  SNARE (the tail out of a pool along the floor, coils the target, drags him to the pool, throws him out of a different one: LAUNCH = up and crash for 420, HURL = at the other player: 260 + 210), FLOOD (the shallow floor
+  tiles really turn to deep water and back; it glides as a shadow and bursts out under a player standing in the water, 380). Reveal (it swallows the body on the slab) and death (vomits it up, goes down the big pool's centre).
+  Head = the boss Unit, tail = a second Unit with its own HP (`EelSump.TailDef`, 2600); under the water both shed damage; the tail at 0 lets go and stays down 9 s. Phase 2 = half HP (adds snare and flood).
+  `EelBoss.cs`: the old Sump code (the rope, the strip timings, the old moves) is gone; the platform form (wrap, shock, strike) and `EelRig.cs` stay for Levels 1-2. `Zone` got a `Path`.
+- THE CENTRE RULE: every curve starts and ends vertical over a pool centre; the harness (`EelSumpChecks`) asserts every crossing of the water's surface is within 0.5 tiles of a pool centre (worst now 0.39). It found real bugs
+  on the way: a hidden-tail placeholder ordered upward (its straight extension shot out of the water), the dash's dive into its end pool, the snare's dive, and the coil round the snared player still wound out when the tip dived.
+- Harness: `dotnet /tmp/test.dll eelsump frames.json` runs the whole fight (reveal, the five moves with the players placed for each, the death) and dumps the spine, players, zones, events, flood and tail HP; `EelSumpChecks` =
+  one scenario per move (who is hit and who is not, the pools, the throw from another pool, the hurl, the tail shot off, the flood tiles back to normal, the reveal/death, targeting while under water, phase gating).
+  ALL CHECKS PASSED.
+- `Tools/render/eel_real_clip.py` draws that dump (Yan's drawing bent along the real spine, real Sump render, impact treatment) -> `maps/renders/boss_eel/eel_real.mp4` (64 s). Ground impacts no longer use the blue thunderclap strip
+  (that was the "lightning" he saw: a placeholder strip I had flagged): a blunt-hit flash and a dust cloud instead.
+- Not done: any Unity view (nothing draws the eel in the game: a runtime bend of his pixels along the spine, clipped at each pool's surface, is the open job), sounds, the body's story key (to-do), the eel parts drop, wiring the
+  spawn into the map's entry, tuning (every damage number, timing and radius is a guess), co-op sync (host-side only; players are picked from `Player.All`), the old strips/rig clips are the previous style. Nothing checked in Unity.

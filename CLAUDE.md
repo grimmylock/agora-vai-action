@@ -136,8 +136,8 @@ vat, Secret Lab Alpha); the backpack; survival mode; recorded sounds; pixelfx; i
 then Sub-Station Depths with the new deep-water lock; per-dungeon keys in `LabLocks.cs`); the Depths eel boss designed and its
 three flooded levels built as maps (`sub_station_depths_1..3`; levels 1-2 are mazes built from their mission graphs, with the eel's
 strike spots marked in the plan), the eel's art is Yan's own drawing recovered to game pixels and bent along paths (`eel_native.py`,
-`eel_poses.py`, `eel_anim.py`: animation strips for rear-up, lunge, snap, slam, sweep, hurt, reveal (swallows a body), vomit and retreat (its 'death'), the wrap and the swim, each with damage overlays at 75/50/25 %, waiting on his look), the Sump arena built
-round the fight, no fight code yet; ten ready-made pixelfx effects in the game (`CombatFx.PxAt`, RT fx 5).
+`eel_poses.py`, `eel_anim.py`: animation strips for rear-up, lunge, snap, slam, sweep, hurt, reveal (swallows a body), vomit and retreat (its 'death'), the wrap and the swim, each with damage overlays at 75/50/25 %, waiting on his look), the Sump fight built (2026-11-05, see
+`ACTION_DESIGN.md` "Dodge bosses"): four deep pools, authored spine moves in `EelSump.cs` (combo, arch, dash; phase 2: snare launch/hurl, flood), a targetable tail, always up and down a pool's centre; the platform form (wrap, shock, strike) is `EelBoss.cs` + `EelRig.cs`; no Unity view draws any of it yet, clips come from the harness dump (`eelsump`, `Tools/render/eel_real_clip.py`); ten ready-made pixelfx effects in the game (`CombatFx.PxAt`, RT fx 5).
 
 **Waiting on Yan:**
 - His review of Sub-Station Depths (`maps/renders/dungeon/sub_station_depths_before_after.jpg`) before any other dungeon is redone.
