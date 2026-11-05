@@ -1591,6 +1591,7 @@ static class Program {
         Check(Digits('7') == strikes && Digits('8') == lures, $"{zone}: {strikes} strike spots and {lures} false alarms marked in the plan ({Digits('7')}, {Digits('8')})");
       } else {                // the Sump, the eel's arena (sub_station_depths_3.mmd): where it rises, what it blocks and where the body lies are marked; no stashes
         var rows = TierDungeons.LabPlans[zone]; int Digits(char c) => rows.Sum(r => r.Count(ch => ch == c));
+        Check(Digits('y') == 1 && Digits('z') == 1 && Digits('N') == 1 && Count(TileType.Difficult, "deepwater") > 150, $"{zone}: the three other pools' centres (y z N) are marked once each, and there is deep water for all four");
         Check(Digits('0') == 1 && Digits('9') == 1 && Digits('8') == 1, $"{zone}: the pool's centre (0), the channel mouth (9) and the body's slab (8) are marked once in the plan ({Digits('0')}, {Digits('9')}, {Digits('8')})");
         Check(!TerrainMap.InteractiveObjects.Any(o => o.GrantsKey == null && (o.Name == "Rusted Cache" || o.Name == "Drowned Locker" || o.Name == "Crew's Bag" || o.Name == "Maintenance Box")), $"{zone}: no stashes - the loot is the body");
       }

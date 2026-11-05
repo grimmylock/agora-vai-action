@@ -78,7 +78,7 @@ namespace GameCore
                         case 't': c.Put(x, y, ScatterCover, "trash"); break;
                         case 'r': c.Put(x, y, Difficult, "rubble"); break;
                         case 'w': c.Put(x, y, Difficult); c.Paint(x, y, 1, 1, Water); continue;
-                        case 'W': case '0': c.Put(x, y, Difficult, "deepwater"); c.Paint(x, y, 1, 1, Water); continue;   // '0' = deep water that also marks where the eel rises   // over your head until it's drained (LabLocks)
+                        case 'W': case '0': case 'y': case 'z': case 'N': c.Put(x, y, Difficult, "deepwater"); c.Paint(x, y, 1, 1, Water); continue;   // '0' = deep water that also marks where the eel rises ('y' west, 'z' east, 'N' north: the Sump's other three pools, EelSump.Pools)   // over your head until it's drained (LabLocks)
                         case 'i': c.Put(x, y, Empty); c.Deco(x, y, "light"); break;
                         case 'e': c.Put(x, y, Empty); c.Deco(x, y, "redlight"); break;
                         case 'k': c.Put(x, y, HardCover, "rock"); break;          // Batch 100: a boulder

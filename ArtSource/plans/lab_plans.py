@@ -525,6 +525,7 @@ def level_checks(n, p, nodes, edges, rect, ctr, walk, spur):
 def depths_level1(): return level_plan(1)[0]
 def depths_level2(): return level_plan(2)[0]
 
+SUMP_POOLS = {'west': (14.5, 18.0, 3.7, 2.4, 'y'), 'east': (46.5, 18.0, 3.7, 2.4, 'z'), 'north': (30.5, 14.0, 3.5, 2.3, 'N')}   # Yan: four deep pools in all; centre, half-axes, the plan char that marks the centre
 SUMP = dict(pool=(30.0, 24.5, 8.2, 4.0), reach=10.5)   # the eel's pool: centre x, y and half-axes (tiles); how far its neck reaches from the centre
 
 def depths_level3():
@@ -537,13 +538,18 @@ def depths_level3():
     p.room(26, 3, 8, 5, ','); p.put(29, 4, 'U'); p.put(27, 3, 'i'); p.put(32, 3, 'e')           # the landing, the stairs up
     p.room(28, 8, 4, 1, ',')                                                                   # the steps down into the sump
     p.room(5, 9, 50, 22, 'w')                                                                  # the sump: knee-deep, x 5..54, y 9..30
+    for name, (px_, py_, ra_, rb_, mark) in SUMP_POOLS.items():                                # three more deep pools (Yan, 2026-11-05: four in all) the eel comes up from; the dry patches are drawn over their edges
+        for y in range(int(py_ - rb_ - 2), int(py_ + rb_ + 3)):
+            for x in range(int(px_ - ra_ - 2), int(px_ + ra_ + 3)):
+                if ((x + 0.5 - px_) / ra_) ** 2 + ((y + 0.5 - py_) / rb_) ** 2 <= 1 + 0.2 * math.sin(x * 1.7 + y * 2.3 + len(name)): p.put(x, y, 'W')
     for (x, y, w, h) in ((8, 12, 6, 4), (46, 12, 6, 4), (21, 19, 4, 3), (36, 19, 4, 3)):
         p.room(x, y, w, h, ',')                                                                # dry patches (no stashes: the only loot is the body)
-    for (x, y) in ((24, 16), (36, 16), (19, 23), (41, 23), (21, 29), (39, 29), (30, 14), (14, 26), (46, 26)): p.put(x, y, 'h')   # pillars: cover from its lunges
+    for (x, y) in ((24, 16), (36, 16), (19, 23), (41, 23), (21, 29), (39, 29), (35, 12), (14, 26), (46, 26)): p.put(x, y, 'h')   # pillars: cover from its lunges
     for y in range(int(cy - rb - 2), int(cy + rb + 3)):                                        # the pool: deep, a ragged ellipse
         for x in range(int(cx - ra - 2), int(cx + ra + 3)):
             if ((x + 0.5 - cx) / ra) ** 2 + ((y + 0.5 - cy) / rb) ** 2 <= 1 + 0.16 * math.sin(x * 1.7 + y * 2.3): p.put(x, y, 'W')
     p.put(int(cx), int(cy), '0')                                                               # the eel rises here (0 is deep water too)
+    for name, (px_, py_, ra_, rb_, mark) in SUMP_POOLS.items(): p.put(int(px_), int(py_), mark)   # each pool's centre: it always comes up and goes down THERE (y west, z east, N north)
     p.room(28, 18, 5, 2, ','); p.put(30, 19, '8')                                              # the slab just north of the pool: the body it swallows lies here (8)
     p.room(28, 31, 5, 5, 'w'); p.put(30, 31, '9')                                              # the channel to the pump (5 wide), the mouth is where it blocks
     p.room(25, 36, 11, 6, ','); p.put(30, 38, '6'); p.put(28, 37, 'i'); p.put(33, 37, 'e')    # the pump alcove
@@ -572,6 +578,13 @@ def sump_checks(p):
     shore = min(sum(1 for y in range(H) if g[y][x] in 'w' and y > cy and y < 31) for x in range(int(cx - 6), int(cx + 7)))
     assert shore >= 2, ("the shore south of the pool must be at least 2 tiles wide to run along", shore)
     reach = lambda t: dist(t) <= R
+    for nm, (px_, py_, ra_, rb_, mark) in SUMP_POOLS.items():
+        c_ = at(mark); assert len(c_) == 1, ("pool centre marker", nm)
+        tiles = [(x, y) for y in range(H) for x in range(W) if g[y][x] in 'W0yzN' and abs(x + 0.5 - px_) <= ra_ + 1 and abs(y + 0.5 - py_) <= rb_ + 1]
+        assert len(tiles) >= 24, ("the pool is too small to come up from", nm, len(tiles))
+        assert math.hypot(px_ - cx, py_ - cy) >= 8, ("a pool too close to the big one", nm)
+    ps = [(v[0], v[1]) for v in SUMP_POOLS.values()]
+    assert all(math.hypot(a[0] - b[0], a[1] - b[1]) >= 14 for i, a in enumerate(ps) for b in ps[i + 1:]), "pools too close together (the body needs room between them)"
     return dict(pool=len(pool), gate_to_pool=round(min(dist(gate, t) for t in pool), 1), pump_to_pool=round(dist(pump), 1), pillars=len(pillars), near=len(near), far=len(far), shore=shore)
 
 DEPTHS_LEVELS = {"sub_station_depths_1": (depths_level1, 'drain1', 'power', 'S'),
@@ -625,15 +638,15 @@ if __name__ == "__main__":
         built = level_plan(int(name[-1])) if name[-1] in '12' else (fn(),)       # levels 1-2 come from their graphs
         p = built[0]; rows = p.rows()
         stats = level_checks(int(name[-1]), *built) if len(built) > 1 else sump_checks(p)
-        stages, g = key_walk(p, 'U', {'6': (drain, needs)}, {'W': drain, '0': drain}, held=(needs,))
+        stages, g = key_walk(p, 'U', {'6': (drain, needs)}, {'W': drain, '0': drain, 'y': drain, 'z': drain, 'N': drain}, held=(needs,))
         def has(seen, ch): return any(g[y][x] == ch for (x, y) in seen)
         assert [st[0] for st in stages] == [set(), {drain}], (name, [st[0] for st in stages])
         assert has(stages[0][1], '6') and not has(stages[0][1], goal), (name, "the pump in reach, the way on not")
         floor = {(x, y) for y in range(p.h) for x in range(p.w) if g[y][x] not in '#n'}
         assert floor <= stages[-1][1], (name, "drained, every tile", sorted(floor - stages[-1][1])[:6])
         # before the drain: the only dry tiles out of reach are the ones round the way on (no stray bits standing in the water)
-        dry = {t for t in floor if g[t[1]][t[0]] not in 'W0'}
-        way = key_walk(p, goal, {}, {'W': 'never', '0': 'never'})[0][-1][1]
+        dry = {t for t in floor if g[t[1]][t[0]] not in 'W0yzN'}
+        way = key_walk(p, goal, {}, {'W': 'never', '0': 'never', 'y': 'never', 'z': 'never', 'N': 'never'})[0][-1][1]
         assert dry - stages[0][1] <= way, (name, "dry tiles cut off in the water", sorted(dry - stages[0][1] - way)[:6])
         print(name, p.w, "x", p.h, "pump in reach at the start,", goal, "only after", drain, "|", stats or "arena")
         open(os.path.join(here, f"{name}.txt"), "w").write("\n".join(rows))
