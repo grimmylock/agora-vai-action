@@ -31,7 +31,7 @@ namespace GameCore
             public List<Pool> Pools = new List<Pool>(); public Pool Big; public float SlabX, SlabY;
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
-            public readonly List<Ev> Events = new List<Ev>(); public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>();
+            public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>();
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
             // the move in progress
@@ -131,7 +131,11 @@ namespace GameCore
             var s = f.Sump; s.Events.Clear(); float ts = (now - f.StageAt) * Speed;
             switch (f.Stage)
             {
-                case "hidden": f.Label = "in the pools"; Hide(s, s.Big); break;
+                case "hidden":
+                    f.Label = "in the pools"; Hide(s, s.Big);
+                    if (players.Any(p => { var q = Pos(p); return q.x >= 5f && q.x <= 55f && q.y >= 9f && q.y <= 31f; })) s.Entered += dt; else s.Entered = 0f;
+                    if (s.Entered >= 1.5f) { f.Started = true; f.Unit.IsAggroed = true; EelBoss.GoStage(f, "reveal"); GameLog.Write("The water in the pools goes very still."); }       // it comes for you when you step into its room (or when it is shot)
+                    break;
                 case "reveal": Reveal(f, s, ts, now, false); break;
                 case "vomit": Reveal(f, s, ts, now, true); break;
                 case "idle":
@@ -142,6 +146,7 @@ namespace GameCore
                 case "move": RunMove(f, s, players, now, ts); break;
             }
             Fly(f, s, players, now); UpdateUnits(f, s); s.LastHp = f.Unit.Hp; s.LastTailHp = s.Tail.Hp;
+            s.Out.AddRange(s.Events); if (s.Out.Count > 200) s.Out.RemoveRange(0, s.Out.Count - 200);       // the view drains these (impacts, hits)
             if (s.TailDownUntil >= 0f && now >= s.TailDownUntil) { s.TailDownUntil = -1f; s.Tail.Hp = TailMax; s.TailBroken = false; }
         }
 
@@ -469,6 +474,13 @@ namespace GameCore
                 if (u >= 4.2f) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); EncounterState.Enemies.Remove(s.Tail); Story.Set(EelBoss.Fled); GameLog.Write("The Drowner slides back down the pool. This isn't over."); }
             }
         }
+
+        // ------------------------------------------------------------------ for the views
+        /// <summary>How high a player is drawn (tiles): carried by the tail, thrown, hurled, flung.</summary>
+        public static float LiftOf(Player p) { var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone) return 0f; return f.Sump.Air.TryGetValue(p, out var a) ? Mathf.Max(a.Z, 0f) : 0f; }
+        /// <summary>Pulled under the water in the tail's grip: not drawn until it throws him.</summary>
+        public static bool UnderWater(Player p) { var f = EelBoss.Current; return f != null && f.Sump != null && !f.Gone && f.Sump.Air.TryGetValue(p, out var a) && a.Z < -0.5f; }
+        public static List<Ev> Drain() { var f = EelBoss.Current; if (f == null || f.Sump == null) return null; var l = new List<Ev>(f.Sump.Out); f.Sump.Out.Clear(); return l; }
 
         // ------------------------------------------------------------------ damage routing (called from EelBoss.OnDamaged)
         public static void OnHeadHit(EelBoss.Fight f, ICombatant u)

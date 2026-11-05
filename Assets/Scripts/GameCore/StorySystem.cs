@@ -303,6 +303,7 @@ namespace GameCore
         {
             Boss.OnEnterZone(zone?.Id);   // Boss 1: the Visor's body in Lab Beta
             BrainBoss.OnEnterZone(zone?.Id);   // Boss 2: the vat in Lab Alpha
+            EelBoss.OnEnterZone(zone?.Id);   // Boss 3: the eel in the Sump
             if (zone == null || zone.IsSafeZone) return;
             bool guardian = zone.Id == "siege_catacombs" && !Has("lucifer") && !Has("named:siege_catacombs");
             int tier = _originalTiers != null && _originalTiers.TryGetValue(zone.Id, out var t) ? t : zone.Tier;

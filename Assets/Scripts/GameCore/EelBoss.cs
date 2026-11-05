@@ -45,6 +45,8 @@ namespace GameCore
         public static Fight Current;
         static readonly Dictionary<Player, float> ShockAt = new Dictionary<Player, float>();
         static readonly List<string> Bag = new List<string>();
+        /// <summary>On entering a zone (StorySystem.OnEnterZone): the Sump's eel, until it has fled (Story flag eel_fled) - hidden in its pools until you step into the room.</summary>
+        public static void OnEnterZone(string zoneId) { Reset(); if (zoneId == LabLocks.Depths3 && !Story.Has(Fled)) SpawnSump(zoneId); }
         public static void Reset() { Current = null; ShockAt.Clear(); Bag.Clear(); }
         public static bool Is(ICombatant u) => Current != null && !Current.Gone && (Current.Unit == u || Current.Sump != null && Current.Sump.Tail == u);
         static int PhaseOf(int hp) => hp > MaxHp * 3 / 4 ? 0 : hp > MaxHp / 2 ? 1 : hp > MaxHp / 4 ? 2 : 3;

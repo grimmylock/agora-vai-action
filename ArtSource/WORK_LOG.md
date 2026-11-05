@@ -5086,3 +5086,17 @@ thrown player's crash that is "probably an error", and "make sure they always co
   (that was the "lightning" he saw: a placeholder strip I had flagged): a blunt-hit flash and a dust cloud instead.
 - Not done: any Unity view (nothing draws the eel in the game: a runtime bend of his pixels along the spine, clipped at each pool's surface, is the open job), sounds, the body's story key (to-do), the eel parts drop, wiring the
   spawn into the map's entry, tuning (every damage number, timing and radius is a guess), co-op sync (host-side only; players are picked from `Player.All`), the old strips/rig clips are the previous style. Nothing checked in Unity.
+
+## Eel: the Testing Ground entry and a first-pass Unity view (2026-11-05)
+Yan: "make the bossfight work in the testing ground similar to the brain boss, where you get teleported to the arena and fight it".
+- Entry: main menu > Testing Ground > "BOSS The Drowner - the eel in the Sump (goes to its arena)" -> `TestingGround.EelFight(p)` (clears the `eel_fled` flag, `ZoneTravel.EnterZone(sub_station_depths_3)`,
+  you on the steps above the room). `StorySystem.OnEnterZone` -> `EelBoss.OnEnterZone` spawns the fight in the Sump (hidden in its pools); `EelSump` starts the reveal 1.5 s after you step into the room
+  (or when it is shot). Dying in the arena and respawning gives a fresh fight (`TestingGround.Respawn`). Harness: `EelFightChecks`.
+- View (`CombatFxView.Eel.cs`, CombatFxView is now partial; nothing in Unity has run it): the body is Yan's drawing baked STRAIGHT (`ArtSource/bosses/eel_bake_unity.py` -> `Assets/Resources/Sprites/Fx/boss_eel_body_s0..3.png`
+  1120x80 and `boss_eel_head_s0..3.png`, one per wound stage); each of the 140 spine samples gets a 12 px slice of it, turned along the spine (flipped, not upside down, when going left); the head profile on the end;
+  samples under the surface are not drawn (that is the coming up and going down); height = a lift up the screen; shadows under the raised parts; the telegraphs (rings, the sweep circle, the arch/dash bands)
+  in red, white once live; impacts play the game's splash / blunt-hit strips with a shake and a short hit-stop. `TacticalGridView` lifts a carried/thrown player and hides one pulled under (`EelSump.LiftOf/UnderWater`).
+  `HudView.Boss.cs`: the eel uses the boss bar (head HP, its label as the state line, placeholder name) and a second small bar for the tail while it is out of the water.
+- Known limits of this first pass: slices leave small seams on tight bends (the Python painter in the clips is smoother); the tail is not thickened like in the clips; a player under the water only goes transparent
+  (a held weapon may still show); the eel is always drawn over players; no damage numbers (the game log has the hits); no sound; the body that is swallowed/vomited is not drawn yet (it spawns as the game's corpse at the vomit);
+  the platform form (Levels 1-2) has no view and no spawn. Nothing run in Unity: first things to look at are the Console for red, then whether the pools show and the eel comes up out of them.

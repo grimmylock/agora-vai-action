@@ -176,7 +176,7 @@ the flooded levels under the Depths' basin.
   - **The body** = the loot: a dead random human NPC (dead sprite) in **tier-4 armor**, with random loot like a stash (`HumanLootSystem` corpse
     stash, tier 3-4) and **a key tied to the story** (**P**: the Sealed Vault key of Secret Lab Gamma, main-story act 3 - `StorySystem` has no lock there yet;
     or an OSEI quest item). **No other stashes in the Sump** (removed). Levels 1-2 dead-end stashes stay unless Yan says otherwise.
-  - **The real build (2026-11-05, `EelSump.cs`, harness-tested, no Unity view yet):** the Sump has FOUR deep pools (the big one + west, east, north; plan chars `0 y z N`) and the eel's body is an authored 35-tile spine along
+  - **The real build (2026-11-05, `EelSump.cs`, harness-tested; a first-pass Unity view and the Testing Ground entry exist, not yet run in Unity):** the Sump has FOUR deep pools (the big one + west, east, north; plan chars `0 y z N`) and the eel's body is an authored 35-tile spine along
     hand-made curves (no physics rope in the Sump). **Rule (Yan): the head and tail always come up out of a pool's CENTRE and go down its centre** - every curve starts and ends vertical over a pool centre, and the harness
     asserts every surface crossing (worst 0.39 tiles off). Phase 1 (above half HP): COMBO, ARCH, DASH. Phase 2 (half HP and below): SNARE (**two variants** - LAUNCH: thrown out of another pool straight up, crashes;
     HURL: thrown out of another pool AT the other player, both are hurt) and FLOOD (only players standing in the water are hit; islands are safe from this move). Head and tail are separate targets (the tail has its own 2600 HP,

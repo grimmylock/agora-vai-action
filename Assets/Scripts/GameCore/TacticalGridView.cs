@@ -768,10 +768,12 @@ namespace GameCore
             bool known = _motion.Known(u);
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
             marker.transform.position = _motion.Place(u, logical);
+            if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }   // Boss 3: carried by the tail, thrown, hurled
             var group = marker.GetComponent<UnityEngine.Rendering.SortingGroup>();
             if (group != null) group.sortingOrder = SortAt(marker.transform.position.y);
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
+            if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);   // Boss 3: pulled under the water in the tail's grip
             var aim = AimPoint(u, marker);
             if (aim.HasValue) _away[marker] = UnitSprites.Away(marker.transform.position, aim.Value);   // no mouse: keep the last
             bool away = up && Away(marker);

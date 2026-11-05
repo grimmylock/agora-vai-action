@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace GameCore
 {
-    public class CombatFxView
+    public partial class CombatFxView
     {
         private class Particle
         {
@@ -230,6 +230,7 @@ namespace GameCore
             }
 
             DrawOrbs();
+            DrawEel();
 
             float st = now - _shakeAt;
             float amp = st < ShakeTime ? _shakeAmp * (1f - st / ShakeTime) : 0f;

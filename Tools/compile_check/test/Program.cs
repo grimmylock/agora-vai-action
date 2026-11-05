@@ -1032,8 +1032,25 @@ static class Program {
     Console.WriteLine($"eel sump fight: {k * dt:0.0} s, {outn} frames, gone {f.Gone}, moves {string.Join(",", st.Seen.OrderBy(x => x))}");
   }
 
+  // The Testing Ground's way in (Yan: "make the bossfight work in the testing ground similar to the brain boss, where you get teleported to the arena and fight it")
+  static void EelFightChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); MacroState.Current.StoryFlags.Add("f:" + EelBoss.Fled);          // it fled before: the Testing Ground gives a fresh one
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp;
+    TestingGround.EelFight(p); var f = EelBoss.Current;
+    Check(f != null && f.Sump != null && f.Level == "sump" && f.Stage == "hidden" && TerrainMap.ZoneId == LabLocks.Depths3 && !Story.Has(EelBoss.Fled), $"EelFight: you are taken to the Sump and a fresh eel waits hidden in the pools (zone {TerrainMap.ZoneId}, stage {f?.Stage})");
+    Check(f != null && p.Y <= 8 && EncounterState.Enemies.Contains(f.Unit) && EncounterState.Enemies.Contains(f.Sump.Tail) && f.Sump.Pools.Count == 4, $"EelFight: you stand on the steps above the room, the head and the tail are both in the fight, four pools (y {p.Y})");
+    const float dt = 1f / 30f; for (int i = 0; i < 90; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "hidden", "EelFight: it waits while you stay out of the room");
+    SumpPlace(p, 30.5f, 11.0f); bool came = false; for (int i = 0; i < 150 && !came; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; came = f.Stage == "reveal"; }
+    Check(came, "EelFight: it comes (the reveal starts) when you step into the room");
+    for (int i = 0; i < 400 && f.Stage != "idle"; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "idle" || f.Stage == "move", $"EelFight: the reveal ends and the fight begins ({f.Stage})");
+    var dead = p.Hp; p.Hp = 0; Body.Reset(); TestingGround.Respawn(p); Check(EelBoss.Current != null && EelBoss.Current.Stage == "hidden" && EelBoss.Current != f, "EelFight: dying in the arena and respawning puts you into a fresh fight");
+    EelBoss.Reset(); Rt.On = false;
+  }
   static void EelChecks() {
-    EelRigChecks(); EelSumpChecks();
+    EelRigChecks(); EelSumpChecks(); EelFightChecks();
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");

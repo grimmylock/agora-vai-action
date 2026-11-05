@@ -12,6 +12,7 @@ namespace GameCore
         Image _edge;
         RectTransform _bossBar; Image _bossFill, _bossGhost; TextMeshProUGUI _bossName, _bossState, _splash, _splashSub;
         float _ghost = 1f;
+        Image _tailEdge, _tailFill;                                  // Boss 3: the eel's tail is a target of its own
         const float BossW = 560f;
 
         void UpdateBoss()
@@ -40,10 +41,19 @@ namespace GameCore
             _edge.gameObject.SetActive(punch > 0.01f);
             if (punch > 0.01f) _edge.color = new Color(0.72f, 0.9f, 1f, 0.6f * punch);
 
-            var f = Boss.Current;
-            bool on = f != null && !GameState.Current.ModalOpen;
+            var f = Boss.Current; var ef = EelBoss.Current; bool eel = f == null && ef != null && !ef.Gone && ef.Started && ef.Sump != null;       // Boss 3: the eel in the Sump uses the same bar
+            bool on = (f != null || eel) && !GameState.Current.ModalOpen;
             _bossBar.gameObject.SetActive(on); _bossName.gameObject.SetActive(on); _bossState.gameObject.SetActive(on);
-            if (on)
+            if (on && f == null)
+            {
+                float hp = Mathf.Clamp01(ef.Unit.Hp / (float)EelBoss.MaxHp);
+                _ghost = Mathf.Max(hp, Mathf.MoveTowards(_ghost, hp, Time.unscaledDeltaTime * 0.35f));
+                _bossFill.rectTransform.sizeDelta = new Vector2((BossW - 4f) * hp, 10f); _bossGhost.rectTransform.sizeDelta = new Vector2((BossW - 4f) * _ghost, 10f);
+                _bossFill.color = ef.Phase >= 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)) : C("b8302a");
+                _bossName.text = "THE DROWNER" + (ef.Phase >= 2 ? "  <color=#ff5a3a>II</color>" : "");        // placeholder name
+                _bossState.text = ef.Label ?? ""; _bossState.color = Yellow;
+            }
+            else if (on)
             {
                 float hp = Mathf.Clamp01(f.Unit.Hp / (float)f.Def.Hp);
                 if (f.Broken || f.Finished) hp = 0f;
@@ -58,6 +68,13 @@ namespace GameCore
                 _bossState.color = f.Broken ? new Color(1f, 0.35f, 0.3f) : Yellow;
             }
             else _ghost = 1f;
+            if (_tailEdge == null)
+            {
+                _tailEdge = Img(_root.transform, "TailBar", new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(BossW * 0.5f, 10f), Edge);
+                _tailFill = Img(_tailEdge.transform, "Fill", new Vector2(0f, 1f), new Vector2(2f, -2f), new Vector2(BossW * 0.5f - 4f, 6f), C("d0642a"));
+            }
+            bool tailOn = eel && ef.Sump.TailOut && !GameState.Current.ModalOpen; _tailEdge.gameObject.SetActive(tailOn);        // shoot the tail: it lets go at 0
+            if (tailOn) _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(ef.Sump.Tail.Hp / (float)EelSump.TailMax), 6f);
 
             float age = Time.unscaledTime - Boss.SplashAt;
             bool splash = age >= 0f && age < Boss.SplashSeconds && !GameState.Current.ModalOpen;

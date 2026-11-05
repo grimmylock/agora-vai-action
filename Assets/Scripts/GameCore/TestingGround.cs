@@ -121,6 +121,19 @@ namespace GameCore
             GameLog.Write("[TESTING GROUND] Secret Lab Alpha, the vat room. Walk up to it. Main menu > Testing Ground to come back.");
         }
 
+        /// <summary>Boss 3: the eel's arena (Sub-Station Depths, the Sump): four deep pools, the eel fresh (even if it fled before), you on the steps down into the room - it comes when you step in.</summary>
+        public static void EelFight(Player p)
+        {
+            MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled);
+            MacroState.Current.CurrentZoneId = LabLocks.Depths3;
+            ZoneTravel.EnterZone(LabLocks.Depths3);
+            EncounterState.Enemies.RemoveAll(e => !EelBoss.Is(e) && !(EelBoss.Current != null && EelBoss.Current.Body == e));
+            EncounterState.InCombat = false;
+            var (x, y) = TerrainMap.FindNearestEnterable(30, 7);
+            p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
+            GameLog.Write("[TESTING GROUND] The Sump: four deep pools. Walk down into the room and it comes for you. Main menu > Testing Ground to come back.");
+        }
+
         /// <summary>Yan: "when i die in the testing ground i have to leave to the menu, add a respawn button in the death screen only for
         /// there". Back on your feet with your kit: on the range at the start (the range cleared, the dummies kept), or - died to the
         /// brain - straight back into a fresh brain fight.</summary>
@@ -131,6 +144,7 @@ namespace GameCore
             var s = Rt.Of(p); s.DiveUntil = -1f; s.ProneUntil = -1f; s.Stamina = Rt.StaminaMax; s.Slow = false; Rt.SetSlow(false);
             GameState.Current.CurrentTurn = Turn.Player;
             if (TerrainMap.ZoneId == BrainBoss.Lab) { BrainFight(p); return; }
+            if (TerrainMap.ZoneId == LabLocks.Depths3) { EelFight(p); return; }
             if (!Here) { MacroState.Current.CurrentZoneId = Zone; ZoneTravel.EnterZone(Zone); }
             Clear();
             p.X = _spawn.x; p.Y = _spawn.y; Rt.SetOffset(p, 0f, 0f);
