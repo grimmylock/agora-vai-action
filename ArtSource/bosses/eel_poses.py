@@ -73,6 +73,105 @@ def head_sprite():
 
 HEAD, HEAD_ANCHOR = head_sprite()
 
+# ------------------------------------------------------------------ damage marks (Yan: "damage marks, similar to how the brain has its phases split by the sprite
+# changing ... at 75%, 50%, 25%"). Wounds are drawn onto his pixels at fixed places along his spine and on the head, so every pose and animation carries them.
+# Stage 1 (75%): gashes and scratches; 2 (50%): the gashes open, a cracked eye, a bleeding cheek; 3 (25%): open wounds with bone, the eye bloodied, drips.
+# set_stage(n) swaps NATIVE and HEAD for the damaged ones; the animations render each stage and keep what differs from stage 0 as a thin overlay.
+import random
+BLOOD = {"ex": (28, 12, 14), "dk": (58, 12, 16), "bl": (104, 20, 24), "br": (152, 36, 36), "fl": (178, 108, 100), "bn": (210, 200, 174)}
+NATIVE_CLEAN, HEAD_CLEAN = NATIVE.copy(), HEAD.copy()
+
+def _dot(a, x, y, c, only_light=False):
+    x, y = int(round(x)), int(round(y))
+    if 0 <= y < a.shape[0] and 0 <= x < a.shape[1] and a[y, x, 3] > 0 and (not only_light or int(a[y, x, :3].sum()) > 330): a[y, x, :3] = BLOOD[c]
+
+def _line(a, p0, p1, c, shadow=True, width=1):
+    n = int(max(abs(p1[0] - p0[0]), abs(p1[1] - p0[1]), 1))
+    for i in range(n + 1):
+        x = p0[0] + (p1[0] - p0[0]) * i / n; y = p0[1] + (p1[1] - p0[1]) * i / n
+        if shadow: _dot(a, x, y + 1, "dk")
+        for w in range(width): _dot(a, x, y + w, c)
+
+def _blob(a, cx, cy, rx, ry, drip=0, bone=True, ang=0.0):
+    for dy in range(-int(ry) - 2, int(ry) + 3):
+        for dx in range(-int(rx) - 2, int(rx) + 3):
+            ux, uy = (dx * math.cos(ang) + dy * math.sin(ang)) / rx, (-dx * math.sin(ang) + dy * math.cos(ang)) / ry; d = ux * ux + uy * uy
+            if d <= 1.0: _dot(a, cx + dx, cy + dy, "ex" if d < 0.55 else "bl")
+            elif d <= 1.45: _dot(a, cx + dx, cy + dy, "dk")
+    if bone:
+        _dot(a, cx - 1, cy, "bn"); _dot(a, cx, cy, "bn"); _dot(a, cx + 1, cy - 1, "fl")
+    for j in range(drip): _dot(a, cx + (1 if j % 4 == 0 else 0), cy + ry + 1 + j, "bl")
+
+def _sites():
+    r = random.Random(77); out = []
+    for (lo, hi), n in ((A, 10), (B, 11), (C, 8)):
+        for j in range(n):
+            k = max(lo, min(hi - 1, int(lo + (j + 0.5) * (hi - lo) / n + r.uniform(-6, 6))))
+            if UP_EXT[k] + DN_EXT[k] < 18: continue                                          # too thin (the tail's tip)
+            out.append((k, r.uniform(-DN_EXT[k] * 0.55, UP_EXT[k] * 0.3), r.uniform(-1.0, 1.0), r.choice(("gash", "gash", "patch", "fin"))))
+    r.shuffle(out); n = len(out)
+    return [(k, v, ang, kind, 1 if i < n // 3 else 2 if i < 2 * n // 3 else 3) for i, (k, v, ang, kind) in enumerate(out)]
+SITES = _sites()
+
+def damaged_native(stage):
+    a = NATIVE_CLEAN.copy()
+    for (k, v, ang, kind, onset) in SITES:
+        if stage < onset: continue
+        lvl = stage - onset + 1; c = SRC[k] + SRC_N[k] * v; t = SRC_T[k]; nrm = SRC_N[k]
+        d = np.array([t[0] * math.cos(ang * 0.9) - t[1] * math.sin(ang * 0.9), t[0] * math.sin(ang * 0.9) + t[1] * math.cos(ang * 0.9)])
+        if kind == "fin":                                                                    # the fin torn: a ragged bloody bite out of its edge
+            c = SRC[k] + nrm * (UP_EXT[k] - 5); L = 8 + 6 * lvl
+            for q in range(-L // 2, L // 2 + 1):
+                for w in range(0, 3 + lvl * 2):
+                    col = "dk" if w > 2 + lvl else "bl" if (q + w) % 3 else "br"
+                    _dot(a, *(c + t * q + nrm * (w - 2)), col)
+        elif kind == "patch":                                                                # scales lost, the flesh showing
+            rx, ry = 4 + 2 * lvl, 2.5 + 1.2 * lvl
+            for dy in range(-12, 13):
+                for dx in range(-12, 13):
+                    u = dx * t[0] + dy * t[1]; w_ = -dx * t[1] + dy * t[0]; dd = (u / rx) ** 2 + (w_ / ry) ** 2
+                    if dd <= 1.0: _dot(a, c[0] + dx, c[1] + dy, "fl" if dd < 0.5 and lvl > 1 else "br" if dd < 0.7 else "bl")
+                    elif dd <= 1.4: _dot(a, c[0] + dx, c[1] + dy, "dk")
+        else:
+            if lvl == 1: _line(a, c, c + d * 12, "bl", width=2); _dot(a, c[0], c[1], "br")
+            elif lvl == 2:
+                _line(a, c, c + d * 16, "dk", width=3); _line(a, c + (0, -1), c + d * 16 + (0, -1), "br", shadow=False)
+                for q in (3, 8, 13): _dot(a, *(c + d * q + (0, 2)), "fl")
+            else: _blob(a, c[0], c[1], 8.5, 5.0, drip=14, ang=math.atan2(d[1], d[0]))
+        if lvl >= 2 and kind != "fin":                                                       # a streak of blood running down the flank toward the belly
+            for q in range(0, 10 + 5 * lvl):
+                _dot(a, *(c - nrm * (3 + q) + (0, 0)), "bl" if q % 5 else "br")
+    return a
+
+def damaged_head(stage):
+    h = HEAD_CLEAN.copy(); light = (h[:, :, :3].astype(int).sum(2) > 420) & (h[:, :, 3] > 0); light[60:] = False
+    ys, xs = np.nonzero(light); ex, ey = (xs.mean(), ys.mean()) if len(xs) else (40, 40)                    # the blind eye's centre, found
+    if stage >= 1: _line(h, (ex + 12, ey + 2), (ex + 26, ey + 14), "bl"); _line(h, (ex + 16, ey - 6), (ex + 24, ey - 2), "br")
+    if stage >= 2:
+        for pa, pb in (((ex - 6, ey - 5), (ex, ey)), ((ex, ey), (ex + 5, ey + 6)), ((ex, ey), (ex + 6, ey - 4))): _line(h, pa, pb, "dk", shadow=False)   # the eye cracks
+        for j in range(10): _dot(h, ex + 1, ey + 7 + j, "bl")                                              # a bloody tear
+        _line(h, (ex - 30, ey + 14), (ex - 18, ey + 18), "br")
+    if stage >= 3:
+        for dy in range(0, 8):
+            for dx in range(-7, 8):
+                if dx * dx + dy * dy <= 49 and (dy > 0 or dx > 0): _dot(h, ex + dx, ey + dy, "br" if (dx + dy) % 3 else "bl", only_light=True)   # the eye goes bloodshot
+        _blob(h, ex + 22, ey + 10, 5.5, 3.4, drip=9, ang=0.4)
+    return h
+
+def _mouth():
+    """the inside of the mouth in the head sprite (the maroon), as an offset from the point the body grows from: where a swallowed or coughed-up body goes"""
+    r, g, b = (HEAD_CLEAN[:, :, i].astype(int) for i in range(3)); m = (HEAD_CLEAN[:, :, 3] > 0) & (r > g + 22) & (r > 50) & (r < 175) & (b < 90)
+    ys, xs = np.nonzero(m); return (xs.mean() - HEAD_ANCHOR[0], ys.mean() - HEAD_ANCHOR[1])
+MOUTH = _mouth()
+def mouth_at(at, face=-1):
+    """where the mouth is on the canvas for a head placed at `at` (the end of the path)"""
+    return (at[0] + (MOUTH[0] if face == -1 else -MOUTH[0]), at[1] + MOUTH[1])
+
+def set_stage(stage):
+    """swap in the stage-0..3 body and head (0 = clean); the pose functions read NATIVE and HEAD"""
+    global NATIVE, HEAD
+    NATIVE = NATIVE_CLEAN if stage == 0 else damaged_native(stage); HEAD = HEAD_CLEAN if stage == 0 else damaged_head(stage)
+
 def body_order(length):
     """source indices for a body `length` points long: the top trunk, then the lower trunk (repeated as needed), then his tail"""
     tail = list(range(C[0], C[1])); a = list(range(A[0], A[1])); b = list(range(B[0], B[1]))
@@ -89,7 +188,7 @@ def body_order(length):
 
 BAYER = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
 
-def paint(canvas, P, order, ds=0.35, dv=0.5):
+def paint(canvas, P, order, ds=0.35, dv=0.5, bulge=None):
     """Bend the body along path P (head end first, 1 px apart) by painting ALONG the spine: every tiny step (ds px) lays down its own
     cross-section line of his pixels (v from the belly side to the back side, dv apart). All the samples go through one depth test, and
     the rule is the simplest that can't patch: the part of the body nearer the head is always in front of what comes after it, so where one
@@ -107,6 +206,9 @@ def paint(canvas, P, order, ds=0.35, dv=0.5):
     kk = order[j0]; up = UP_EXT[kk] + 1.0; dn = DN_EXT[kk] + 1.0
     r = rad[j0]; inner_up = toward_up[j0] > 0
     up = np.where(inner_up, np.minimum(up, 0.85 * r), up); dn = np.where(~inner_up, np.minimum(dn, 0.85 * r), dn)       # thin the inside of a tight bend
+    # a swallowed (or coughed-up) lump travelling along the body: bulge = (arc position, half-width, amount); the body swells there and his texture stretches over it
+    bb = 1.0 + bulge[2] * np.exp(-((sel - bulge[0]) / bulge[1]) ** 2) if bulge else np.ones(len(sel))
+    up = up * bb; dn = dn * bb
     vmax = int(np.ceil(max(up.max(), dn.max()) / dv)); vs = np.arange(-vmax, vmax + 1) * dv
     vv = np.broadcast_to(vs[None, :], (len(sel), len(vs)))
     okv = (vv <= up[:, None]) & (-vv <= dn[:, None])
@@ -114,7 +216,7 @@ def paint(canvas, P, order, ds=0.35, dv=0.5):
     ixo, iyo = np.floor(ox).astype(int), np.floor(oy).astype(int)
     mix = BAYER[np.clip(iyo, 0, H - 1) % 4, np.clip(ixo, 0, W - 1) % 4] < wmix[j0][:, None]
     k = np.where(mix, order2[j0][:, None], kk[:, None])
-    sx = SRC[k, 0] + SRC_N[k, 0] * vv; sy = SRC[k, 1] + SRC_N[k, 1] * vv
+    vs_ = vv / bb[:, None]; sx = SRC[k, 0] + SRC_N[k, 0] * vs_; sy = SRC[k, 1] + SRC_N[k, 1] * vs_
     ix, iy = np.rint(sx).astype(int), np.rint(sy).astype(int)
     ok = okv & (ixo >= 0) & (ixo < W) & (iyo >= 0) & (iyo < H) & (ix >= 0) & (ix < SW) & (iy >= 0) & (iy < SH)
     ix, iy = np.where(ok, ix, 0), np.where(ok, iy, 0); ok &= NATIVE[iy, ix, 3] > 0
@@ -149,10 +251,10 @@ def outline_layer(layer):
 LEAD = 26                                       # a straight neck behind the head, as he drew it, before the body bends
 def lead(at): return [(at[0] + k, at[1]) for k in range(0, LEAD)]
 
-def eel_layer(W, H, P, face):
+def eel_layer(W, H, P, face, bulge=None):
     """a transparent W x H layer holding the eel along path P: the head at its start, facing `face`"""
     layer = np.zeros((H, W, 4), np.uint8); P = np.array(P)
-    paint(layer, P, body_order(len(P))); put_head(layer, P[0], face)
+    paint(layer, P, body_order(len(P)), bulge=bulge); put_head(layer, P[0], face)
     return outline_layer(layer)
 
 def shadow(layer):

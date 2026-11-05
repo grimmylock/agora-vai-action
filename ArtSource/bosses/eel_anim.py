@@ -6,7 +6,12 @@ by side, under Unity's 16384 px) and an entry in boss_eel_anims.json (frames, fp
   lunge       once    wind-up, the head darts left, hold, recover  (right: the game flips it)
   slam        once    the head rears and crashes down in front
   hurt        once    a flinch: the head recoils, the body ripples, a white flash
-  die         once    the head drops, the coil slackens, it goes dark
+  snap        once    the Hydra bite: short, fast, cracks forward and down
+  reveal      once    rises out of the pool, swoops at the body, bites, gulps it down the neck (mouth points + swallow frame in the json)
+  vomit       once    the body comes back up the neck and is spat out (mouth points + eject frame)
+  retreat     once    sinks under the surface (its death: it runs, it is not killed)
+  sweep       once    the head swings round the pool in an arc, the neck trailing (faces right, 780x540)
+  every strip also has boss_eel_<name>_d1..d3: the wounds at 75/50/25 % hp as overlays on the same frames
   wrap_back / wrap_front   burst / hold (loop) / release   round a 3x3 platform: two strips, the part behind the platform and the part in
               front, cut at the anchor's row (the game draws the platform between them); anchor = the platform's centre
   swim / swim_shadow   loop   a travelling wave along the body, heading left (the shadow is the lurking one)   anchor = the head
@@ -73,12 +78,85 @@ def anim_hurt():
     d = [1.0, 1.0, 0.7, 0.45, 0.25, 0.12, 0.05, 0.0]
     return [tint(rear_layer(head=(26 * d[i], -14 * d[i]), breathe=0.05 * d[i]), white=(0.55 if i < 2 else 0.2 if i == 2 else 0.0)) for i in range(8)]
 
-def anim_die(n=18):
+MOUTHS = {}          # per animation: the mouth's position in every frame, relative to the anchor (the game puts the body there)
+WATERLINE = 14       # rows below the anchor where the pool's surface cuts the body in the reveal and the retreat
+def shifted(layer, dy, clip):
+    """the layer moved down dy px, everything below row `clip` cut off (it is under the water)"""
+    out = np.zeros_like(layer); H = layer.shape[0]; dy = int(dy)
+    if dy < H: out[dy:] = layer[:H - dy]
+    out[clip:] = 0; return out
+
+def rear_mouth(name, **kw):
+    P = rear_path(**kw); m = E.mouth_at(P[0], -1); MOUTHS.setdefault(name, []).append([round(m[0] - REAR["anchor"][0], 1), round(m[1] - REAR["anchor"][1], 1)])
+
+BODY = (0.0, -176.0)        # where the body lies, relative to the pool's centre: just north of the pool
+BITE = (BODY[0] - E.MOUTH[0] + 96, BODY[1] - E.MOUTH[1] + 134)    # the head offset that puts the mouth on it
+def rpose(name, i, **kw):
+    rear_mouth(name, **kw); return rear_layer(**kw)
+
+def anim_snap():
+    """Hydra's bite: short and fast, a quick pull-back and the head cracks forward and down, then it draws back (shorter than the lunge)"""
     f = []
-    for i in range(n):
-        e = ease(i / 12)
-        f.append(tint(rear_layer(head=(-122 * e, 152 * e), breathe=-0.22 * e, follow=(0.9, 0.8, 0.5, 0.1)), dark=0.25 * ease((i - 8) / 9)))
+    for i in range(10):
+        if i < 2: e = ease((i + 1) / 2); hd = (22 * e, -14 * e)
+        elif i < 4: e = ease((i - 1) / 2); hd = (lerp(22, -104, e), lerp(-14, 58, e))
+        elif i < 5: hd = (-104, 58)
+        else: e = ease((i - 4) / 5); hd = (-104 * (1 - e), 58 * (1 - e))
+        f.append(rpose("snap", i, head=hd, follow=(0.8, 0.6, 0.35, 0.05)))
     return f
+
+def anim_reveal():
+    """out of the pool: it rises through the surface, swoops at the body, bites, gulps it down the neck, and settles into the rear-idle pose"""
+    f = []; MOUTHS["reveal"] = []
+    for i in range(8): e = ease((i + 1) / 8); f.append(shifted(rear_layer(head=(0, 0)), (1 - e) * 250, REAR["anchor"][1] + WATERLINE)); rear_mouth("reveal", head=(0, 0))
+    for i in range(5): e = ease((i + 1) / 5); hd = (BITE[0] * e, BITE[1] * e); f.append(rpose("reveal", i, head=hd, follow=(0.8, 0.6, 0.4, 0.1)))
+    for i in range(2): f.append(rpose("reveal", i, head=(BITE[0] + 3 * (i % 2), BITE[1]), follow=(0.8, 0.6, 0.4, 0.1)))     # the bite: the body is gone from here (swallow frame 13)
+    for i in range(8):
+        e = ease((i + 1) / 8); hd = (BITE[0] * (1 - e), BITE[1] * (1 - e)); c = LEAD_ + 190 * e
+        P = rear_path(head=hd, follow=(0.8, 0.6, 0.4, 0.1)); rear_mouth("reveal", head=hd, follow=(0.8, 0.6, 0.4, 0.1))
+        f.append(E.eel_layer(REAR["W"], REAR["H"], P, -1, bulge=(c, 16, 0.55 * (1 - e * 0.4))))
+    for i in range(3): f.append(rpose("reveal", i, head=(0, 0)))
+    return f
+
+def anim_vomit(n=24):
+    """the body comes back up the neck as a lump, it rears back, thrusts and spits it out in front of the pool, then droops"""
+    f = []; MOUTHS["vomit"] = []
+    for i in range(n):
+        if i < 8: e = ease((i + 1) / 8); hd = (10 * e, 4 * e); c = LEAD_ + 190 * (1 - e); amt = 0.55
+        elif i < 12: e = ease((i - 7) / 4); hd = (lerp(10, 36, e), lerp(4, -36, e)); c = LEAD_ + 10 * (1 - e); amt = 0.55
+        elif i < 14: e = ease((i - 11) / 2); hd = (lerp(36, BITE[0], e), lerp(-36, BITE[1], e)); c = LEAD_; amt = 0.55 * (1 - e)
+        elif i < 17: hd = (BITE[0] + (i % 2) * 2, BITE[1]); c = LEAD_; amt = 0.0
+        else: e = ease((i - 16) / 7); hd = (BITE[0] * (1 - e) , BITE[1] * (1 - e) + 14 * math.sin(math.pi * e)); c = LEAD_; amt = 0.0
+        kw = dict(head=hd, follow=(0.8, 0.6, 0.4, 0.1)); rear_mouth("vomit", **kw)
+        f.append(E.eel_layer(REAR["W"], REAR["H"], rear_path(**kw), -1, bulge=(c, 16, amt) if amt else None))
+    return f
+
+def anim_retreat(n=14):
+    """done and beaten: the head dips and the whole body sinks under the surface (the pool is dark below: the clip hides it)"""
+    return [shifted(tint(rear_layer(head=(-30 * ease(i / 6), 40 * ease(i / 6)), breathe=-0.1 * ease(i / 8), follow=(0.9, 0.8, 0.5, 0.1)), dark=0.25 * ease(i / n)), ease(i / (n - 1)) * 300, REAR["anchor"][1] + WATERLINE) for i in range(n)]
+
+# the circular sweep: the head swings round the pool in an arc over its far side, the neck trailing behind it like a flail
+SW = dict(W=780, H=540, anchor=(390, 410))
+def sweep_path(th, lean=1.0, R=215.0, direction=1):
+    ax, ay = SW["anchor"]; hx, hy = ax + math.cos(th) * R, ay + math.sin(th) * R
+    tx, ty = -math.sin(th) * direction, math.cos(th) * direction           # the head's direction of travel
+    c1 = (hx - tx * 70 * lean + (ax - hx) * 0.2, hy - ty * 70 * lean + (ay - hy) * 0.2); c2 = (hx + (ax - hx) * 0.65 - tx * 40 * lean, hy + (ay - hy) * 0.65 - ty * 40 * lean)
+    west = direction > 0 and False
+    lead = [(hx - k, hy) for k in range(E.LEAD)] if direction > 0 else [(hx + k, hy) for k in range(E.LEAD)]
+    nk = lead[-1]; neck = lead + M.bez(nk, c1, c2, (ax, ay))[1:]
+    t = np.linspace(0, 2 * math.pi * 1.4, 130); coil = [(ax + math.cos(a) * (76 - a * 5), ay + math.sin(a) * (40 - a * 3)) for a in t]
+    tail = M.bez(coil[-1], (ax - 192, ay + 32), (ax - 320, ay + 38))
+    return M.resample(neck + coil + tail[1:])
+
+def anim_sweep(n=18):
+    f = []; MOUTHS["sweep"] = []
+    for i in range(n):
+        e = ease(i / (n - 1)); th = lerp(math.pi + 0.5, 2 * math.pi - 0.5, e)         # left of the pool, over the top, to the right
+        P = sweep_path(th, direction=1); f.append(E.eel_layer(SW["W"], SW["H"], P, 1))
+        m = E.mouth_at(P[0], 1); MOUTHS["sweep"].append([round(m[0] - SW["anchor"][0], 1), round(m[1] - SW["anchor"][1], 1)])
+    return f
+
+LEAD_ = E.LEAD
 
 # ------------------------------------------------------------------ wrapped round a 3x3 platform, anchored at the platform's centre
 WRAP = dict(W=560, H=420, anchor=(350, 215))
@@ -118,6 +196,18 @@ def anim_swim(n=16, length=780, amp=36, lam=260):
         f.append(E.eel_layer(SWIM["W"], SWIM["H"], P, -1))
     return f
 
+# ------------------------------------------------------------------ damage: the same frames re-rendered at stage 1..3 (75 / 50 / 25 % hp), kept as overlays
+DAMAGE_AT = [0.75, 0.5, 0.25]
+def overlay_set(name, fn, base, entry, make=None):
+    """overlay strips boss_eel_<name>_d1..d3: only the pixels that differ from the clean frame, same size and frame order. The game draws the base strip and
+    the overlay of the stage it has reached (each already holds every earlier wound), so nothing is stored twice but the wounds"""
+    entry["damage"] = dict(at=DAMAGE_AT, files=[])
+    for st in (1, 2, 3):
+        E.set_stage(st); fr = fn(); E.set_stage(0); ov = []
+        for b, d in zip(base, fr):
+            diff = (b != d).any(axis=2); o = np.zeros_like(d); o[diff] = d[diff]; ov.append(o)
+        write_strip(f"{name}_d{st}", ov, {}); entry["damage"]["files"].append(f"boss_eel_{name}_d{st}")
+
 # ------------------------------------------------------------------ export
 def strip(frames): return np.concatenate(frames, axis=1)
 
@@ -145,10 +235,16 @@ if __name__ == "__main__":
         bg = S.crop((VX0, VY0, VX0 + VW, VY0 + VH)); bg.alpha_composite(man, (player[0] * 32 - VX0, player[1] * 32 - VY0))
         bg.alpha_composite(Image.fromarray(layer), (PX - ax_ - VX0, PY - ay_ - VY0)); return bg.convert("RGB")
     ax, ay = REAR["anchor"]
-    for name, fr, loop in (("rear_idle", anim_rear_idle(), True), ("lunge", anim_lunge(), False), ("slam", anim_slam(), False), ("hurt", anim_hurt(), False), ("die", anim_die(), False)):
-        anims[name] = write_strip(name, fr, dict(loop=loop, anchor=[ax, ay], faces="left"))
-        if name == "lunge": gif(os.path.join(OUT, f"anim_{name}.gif"), [on_sump(l, ax, ay) for l in fr], None)          # GIFs only for the key ones (11 MB for all)
+    SPECS = (("rear_idle", anim_rear_idle, True, REAR), ("lunge", anim_lunge, False, REAR), ("snap", anim_snap, False, REAR), ("slam", anim_slam, False, REAR), ("hurt", anim_hurt, False, REAR),
+             ("reveal", anim_reveal, False, REAR), ("vomit", anim_vomit, False, REAR), ("retreat", anim_retreat, False, REAR), ("sweep", anim_sweep, False, SW))
+    for name, fn, loop, cv in SPECS:
+        E.set_stage(0); fr = fn(); a_ = cv["anchor"]
+        anims[name] = write_strip(name, fr, dict(loop=loop, anchor=list(a_), faces="left" if cv is REAR else "right"))
+        if name in MOUTHS: anims[name]["mouth"] = MOUTHS[name]
+        overlay_set(name, fn, fr, anims[name])
+        if name in ("lunge", "snap", "sweep"): gif(os.path.join(OUT, f"anim_{name}.gif"), [on_sump(l, a_[0], a_[1]) for l in fr], None)
         print(name, len(fr), "frames")
+    anims["reveal"]["swallow_frame"] = 13; anims["vomit"]["eject_frame"] = 13
     # the wrap: back and front strips, cut at the anchor's row; the review puts them either side of a stand-in platform
     wf, seg = anim_wrap()
     for i in range(8, 14): wf[i] = zap_layer(wf[i], wrap_path()[40:420], 100 + i)
@@ -182,7 +278,7 @@ if __name__ == "__main__":
             im = Image.new("RGBA", (w_, h_), (14, 20, 18, 255)); im.alpha_composite(Image.fromarray(l)); sh.paste(im.resize((w, h), Image.NEAREST).convert("RGB"), ((k % cols) * w, (k // cols) * h)); d.text(((k % cols) * w + 3, (k // cols) * h + 2), t, fill=(230, 220, 190))
         sh.save(os.path.join(OUT, out)); return sh.size
     sheet([("rear_idle", anim_rear_idle())], 6, 0.33, "sheet_rear_idle.png"); sheet([("hurt", anim_hurt()), ("slam", anim_slam())], 6, 0.33, "sheet_hurt_slam.png")
-    sheet([("lunge", anim_lunge())], 4, 0.5, "sheet_lunge.png"); sheet([("die", anim_die())], 5, 0.4, "sheet_die.png"); sheet([("swim", sw)], 4, 0.45, "sheet_swim.png")
+    sheet([("lunge", anim_lunge())], 4, 0.5, "sheet_lunge.png"); sheet([("snap", anim_snap())], 5, 0.5, "sheet_snap.png"); sheet([("reveal", anim_reveal())], 6, 0.4, "sheet_reveal.png"); sheet([("vomit", anim_vomit())], 6, 0.4, "sheet_vomit.png"); sheet([("retreat", anim_retreat())], 5, 0.4, "sheet_retreat.png"); sheet([("sweep", anim_sweep())], 5, 0.4, "sheet_sweep.png"); sheet([("swim", sw)], 4, 0.45, "sheet_swim.png")
     wsh = []
     for i in range(len(back)):
         t = np.zeros_like(back[i]); pl = np.array(plat.convert("RGBA")); t[:] = back[i]
