@@ -1,4 +1,7 @@
-"""The eel of Sub-Station Depths (Yan, 2026-11-04: "moray eel but reeeeealy long, darker green swamp like color with colored spots
+"""SUPERSEDED as the eel's art by Yan's own drawing (eel_native.py / eel_poses.py, 2026-11-05); kept as the helper library eel_poses.py uses
+(basin crops, the stand-in platform, curves) and for round 2's procedural look.
+
+The eel of Sub-Station Depths (Yan, 2026-11-04: "moray eel but reeeeealy long, darker green swamp like color with colored spots
 around, white eyes as if blind"), art round 2 - not in the game. Round 1 was "waaay to short" and "terrible quality compared to the
 brain and mutants"; this one follows the brain (make_brain_vat.py): HD like the brain and the HD mutants (32 px a tile, ppu 32),
 the near-black outline, flat 3-tone shading lit from the top-left, one accent colour (a sick yellow: the spots, the electricity).

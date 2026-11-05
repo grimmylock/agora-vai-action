@@ -4866,3 +4866,25 @@ Yan asked for a render of the brain floating round his enclosure with blinking e
 - Harness: `DepthsChecks` now also asserts the dead-end stashes are in reach at the start and the strike/false-alarm digits are in the plan
   (1+0 and 3+2). Render: `maps/renders/dungeon/sub_station_depths_levels.jpg` (the route dotted), `..._catwalks_closeup.png`.
 - Not done: the fight, the flicker (lighting is unchecked in Unity), the deck art in the game atlas (waits for Yan's approval of the look).
+
+## The eel: Yan's own art, recovered and bent (2026-11-05, renders only)
+
+- Yan: "this is a higher quality image of the eel boss, just like the ones we used for the mutants", then the file (`eel.7z`: one
+  2752x1536 JPEG, named like a Gemini export). Rule 2 of CLAUDE.md says never AI image generation but copy his supplied art faithfully; Batch
+  130c reduced his references the same way and flagged the same question, and he accepted ("the 5 you did look great"). So: his art is the
+  source, reduced, not redrawn. The reference is in `ArtSource/refs/eel/`. (The earlier procedural eel, round 2, is superseded.)
+- `eel_native.py`: his grid is 5.73 source px per art pixel both ways (found from the edge periodicity: the same scale as his hatchet), so
+  the drawing is 480x268 art pixels. Each cell takes the median of its centre 3x3, colours are snapped to a palette that keeps rare colours
+  (cream teeth, white eye, red mouth, gold flecks: a median cut flattened them all to green), the silhouette is the flood-filled background's
+  complement. One art pixel = one game pixel (32 px a tile): no resampling blur. 27 colours.
+- `eel_poses.py`: traces his spine (1,087 px: 34 tiles) from the neck to the tail tip, with the back always up the screen as in his drawing;
+  a pose pixel takes the source pixel at the same place along the spine and across it. Head cut out whole (only flipped, never rotated, a
+  straight 26 px neck behind it); trunk A, then the lower trunk back and forth (mirror seams keep the texture running), then his tail; a
+  dithered cross-fade where his green upper trunk meets the browner lower one; never samples beyond the body's own measured thickness (it
+  picked up his neighbouring coil otherwise) or past the ends of the spine (it smeared the end column).
+- Renders (1:1 in the real Depths basin, a player for scale): `maps/renders/boss_eel/eel_ref_basin.png` (his drawing as drawn),
+  `eel_strike_ref.png` (wrapped 1.5 times round a stand-in 3x3 platform), `eel_rear_ref.png` (half out of the water), `eel_lurk_ref.png` (the
+  shadow). The earlier procedural renders are removed.
+- Not done: animation (swimming, strike, rear-up), the game side (the sprite path and a body that follows a path at runtime), the Sump arena.
+  Not checked in Unity. The body is about 1.7 tiles thick, a little fatter than the 1.25 I'd assumed: the 3x3 islands and 3-tile clearances
+  were already built with room for it.

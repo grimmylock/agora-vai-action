@@ -163,6 +163,11 @@ the flooded levels under the Depths' basin.
 - **The reward** (Yan: "every boss needs a reward"): special eel parts that sell for a good profit (above a normal mutant part, which is
   400-600 RU at Tier 3 in `MutantLootSystem`), a chest of random loot of the dungeon's tier (3), and **one** armor or weapon a tier above (4).
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
+- **The eel's art is Yan's own drawing** (2026-11-05, `ArtSource/refs/eel/yan_eel_reference.jpg`: "a higher quality image of the eel boss, just
+  like the ones we used for the mutants"): moray head with a blind white eye and spines, a long dorsal fin, mottled green with gold flecks.
+  Recovered to the pixel grid it was drawn on (480x268 art pixels, one per game pixel, 27 colours: `eel_native.py`) and bent along any path
+  from his own pixels (`eel_poses.py`: coiled, rearing, lurking); about 34 tiles of body from his one S, as long as a pose needs by repeating
+  the trunk. At 32 px a tile its body is about 1.7 tiles thick (his drawing is 15 tiles across). Not in the game yet.
 - **Maps first, then the fight (Yan: "We need the Maps before the fight, otherwise well have to rework it later").** Built 2026-11-04:
   `sub_station_depths_1` Cistern, `_2` Lower Cistern, `_3` Sump (plans in `lab_plans.py`, graph `sub_station_depths.mmd`). Each level's
   deep water answers to its own pump (`LabLocks`: drain1 needs the power, drain2 needs drain1, drain3 needs drain2); the station's pump
