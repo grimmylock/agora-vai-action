@@ -98,7 +98,10 @@ def run(probe=None):
         flooding = fl > 0.5 and f['move'] == 'flood'
         if flooding:
             Sr = S.copy(); Sr[:, 2] = np.where(S[:, 2] > 0.5, S[:, 2], -1.0); layers, P, vis = pieces(Sr, face)
-            Ss = S.copy(); Ss[:, 2] = np.where(S[:, 2] > -0.2, 0.02, -1.0); lsh, _, _ = pieces(Ss, face); mf = flood_mask(fl)
+            Ss = S.copy(); Ss[:, 2] = np.where(S[:, 2] > -0.2, 0.02, -1.0); Ss[40:, 2] = -1.0
+            if S[0, 2] > 0.5: Ss[:, 2] = -1.0   # rearing/bursting: the rest of the body is the shadow no more
+            # the swim is a shadow of the first 10 tiles only (a 35-tile smear cut by the dry islands read as two eels)
+            lsh, _, _ = pieces(Ss, face); mf = flood_mask(fl)
             for a, ly in lsh:
                 sh = Image.fromarray(E.shadow(ly)); im2 = Image.fromarray(ly)
                 sh.putalpha(Image.fromarray(np.minimum(np.array(sh.getchannel('A')), (np.array(mf) * 0.9).astype(np.uint8)))); im2.putalpha(Image.fromarray(np.minimum(np.array(im2.getchannel('A')), (np.array(mf) * 0.35).astype(np.uint8)))); c.alpha_composite(sh); c.alpha_composite(im2)

@@ -11,21 +11,24 @@ namespace GameCore
 {
     public partial class CombatFxView
     {
-        readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>();
+        readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>(), _eelFoam = new List<SpriteRenderer>();
         SpriteRenderer _eelHead;
+        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.3f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
+        static readonly Color EelShade = new Color(0.02f, 0.08f, 0.09f, 0.55f);                      // the body's half thickness in tiles, for thinning the inside of a tight bend
         const bool EelTelegraphs = false;                    // Yan, 2026-11-06: "remove the red telegraphs for now, they look pretty bad" - the zones are still computed (EelBoss.Fight.Zones), just not drawn
         static readonly List<EelBoss.Zone> NoZones = new List<EelBoss.Zone>();
         static readonly Sprite[][] EelSlices = new Sprite[4][];
         static readonly Sprite[] EelHeads = new Sprite[4];
         static Sprite _eelRing, _eelRingFill;
-        const float EelPpu = 32f; const int EelBodyW = 1120, EelBodyH = 80, EelSliceW = 12, EelHeadW = 117, EelHeadH = 92;
+        const float EelPpu = 32f; const int EelBodyW = 1120, EelBodyH = 80, EelSliceW = 6, EelSub = 2, EelHeadW = 117, EelHeadH = 92;
 
-        static Sprite[] EelBodySlices(int stage)
+        static Sprite[] EelBodySlices(int stage)                       // EelSub thin slices per spine sample (each sample is 8 columns of the strip): thinner slices make a bend a smoother polygon
         {
             if (EelSlices[stage] != null) return EelSlices[stage];
-            var tex = Resources.Load<Texture2D>("Sprites/Fx/boss_eel_body_s" + stage); if (tex == null) return EelSlices[stage] = new Sprite[EelSump.N];
-            tex.filterMode = FilterMode.Point; var l = new Sprite[EelSump.N];
-            for (int i = 0; i < EelSump.N; i++) l[i] = Sprite.Create(tex, new Rect(Mathf.Clamp(i * 8 - 2, 0, EelBodyW - EelSliceW), 0, EelSliceW, EelBodyH), new Vector2(0.5f, 0.5f), EelPpu);
+            int cnt = EelSump.N * EelSub;
+            var tex = Resources.Load<Texture2D>("Sprites/Fx/boss_eel_body_s" + stage); if (tex == null) return EelSlices[stage] = new Sprite[cnt];
+            tex.filterMode = FilterMode.Point; var l = new Sprite[cnt];
+            for (int q = 0; q < cnt; q++) l[q] = Sprite.Create(tex, new Rect(Mathf.Clamp(q * (8 / EelSub) - 1, 0, EelBodyW - EelSliceW), 0, EelSliceW, EelBodyH), new Vector2(0.5f, 0.5f), EelPpu);
             return EelSlices[stage] = l;
         }
         static Sprite EelHead(int stage)
@@ -48,7 +51,7 @@ namespace GameCore
             var f = EelBoss.Current;
             if (f == null || f.Gone || f.Sump == null)
             {
-                HideFrom(_eelBody, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
+                HideFrom(_eelBody, 0); HideFrom(_eelFoam, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
             }
             var s = f.Sump; int stage = Mathf.Clamp(f.Phase, 0, 3);
             var evs = EelSump.Drain();                                                                       // impacts: the game's own strips, a shake, a moment of hit-stop
@@ -59,25 +62,62 @@ namespace GameCore
                     Shake(Mathf.Min(0.35f, 0.14f * e.Power)); Boss.HitStop(0.05f * Mathf.Min(2f, e.Power));
                 }
             int baseOrder = WorldArt.SortTop - 3000;
-            var sl = EelBodySlices(stage); int n = 0;
-            for (int i = 0; i < EelSump.N; i++)
+            var sl = EelBodySlices(stage); int n = 0, NN = EelSump.N;
+            var sp = new Vector3[NN]; var ag = new float[NN]; var rd = new float[NN];                           // each sample's screen point, the way the body runs there (degrees) and the bend's radius in tiles
+            for (int i = 0; i < NN; i++) sp[i] = W(s.X[i], s.Y[i], s.Z[i]);
+            for (int i = 0; i < NN; i++)
             {
-                if (s.Z[i] <= EelSump.Surface) continue;
-                int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(EelSump.N - 1, i + 1);
-                var a = W(s.X[i0], s.Y[i0], s.Z[i0]); var b = W(s.X[i1], s.Y[i1], s.Z[i1]);
-                float ang = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg; bool left = b.x < a.x;       // turned along the body; going left it is flipped, not upside down: the back stays on top
-                var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
-                sr.sprite = sl[i]; sr.flipX = left; sr.color = Color.white; sr.sortingOrder = baseOrder + (EelSump.N - i);
-                sr.transform.position = W(s.X[i], s.Y[i], s.Z[i]); sr.transform.rotation = Quaternion.Euler(0f, 0f, left ? ang + 180f : ang);
-                float step = Mathf.Sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)) / Mathf.Max(1, i1 - i0);                           // on screen the samples drift apart where the body climbs: stretch the slice to still touch the next one (4 px overlap = 1.5 x the step)
-                sr.transform.localScale = new Vector3(Mathf.Clamp(step * 1.5f / (EelSliceW / EelPpu), 1f, 6f), 1f, 1f);
+                int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(NN - 1, i + 1);
+                ag[i] = Mathf.Atan2(sp[i1].y - sp[i0].y, sp[i1].x - sp[i0].x) * Mathf.Rad2Deg;
+            }
+            for (int i = 0; i < NN; i++)
+            {
+                int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(NN - 1, i + 1);
+                float da = Mathf.DeltaAngle(ag[i0], ag[i1]) * Mathf.Deg2Rad, len = Mathf.Sqrt((sp[i1].x - sp[i0].x) * (sp[i1].x - sp[i0].x) + (sp[i1].y - sp[i0].y) * (sp[i1].y - sp[i0].y));
+                rd[i] = Mathf.Abs(da) < 0.02f ? 99f : len / Mathf.Abs(da);                                       // a hairpin has a radius smaller than the body is thick
+            }
+            for (int i = 0; i + 1 < NN; i++)
+            {
+                if (s.Z[i] <= EelSump.Surface || s.Z[i + 1] <= EelSump.Surface) continue;
+                bool left = sp[Mathf.Min(NN - 1, i + 1)].x < sp[Mathf.Max(0, i - 1)].x;                          // going left it is flipped, not upside down: the back stays on top
+                float seg = Mathf.Sqrt((sp[i + 1].x - sp[i].x) * (sp[i + 1].x - sp[i].x) + (sp[i + 1].y - sp[i].y) * (sp[i + 1].y - sp[i].y));
+                for (int kq = 0; kq < EelSub; kq++)
+                {
+                    float u = kq / (float)EelSub; var pos = Vector3.Lerp(sp[i], sp[i + 1], u);
+                    float ang = ag[i] + Mathf.DeltaAngle(ag[i], ag[i + 1]) * u, r = Mathf.Lerp(rd[i], rd[i + 1], u), rot = left ? ang + 180f : ang;
+                    float sy = 1f, shift = 0f;                                                                       // a bend tighter than the body is thick: thin the INSIDE of it to the radius (the painter does the same), keeping the outside where it was
+                    if (r < EelHalfThick)
+                    {
+                        float da = Mathf.DeltaAngle(ag[Mathf.Max(0, i - 1)], ag[Mathf.Min(NN - 1, i + 1)]); float turn = da >= 0f ? 1f : -1f;      // + = turning left of the way it runs
+                        float ar = ang * Mathf.Deg2Rad, rr = rot * Mathf.Deg2Rad; var centre = new Vector2(-Mathf.Sin(ar) * turn, Mathf.Cos(ar) * turn); var back = new Vector2(-Mathf.Sin(rr), Mathf.Cos(rr));
+                        float inner = Mathf.Max(0.25f, 0.85f * r); sy = (EelHalfThick + inner) / (2f * EelHalfThick); float outwardShift = EelHalfThick * (1f - sy);
+                        float toward = (centre.x * back.x + centre.y * back.y) > 0f ? -1f : 1f;                 // which way along the sprite's back/belly axis is outward
+                        shift = outwardShift * toward;
+                        pos += new Vector3(back.x, back.y, 0f) * shift;
+                    }
+                    float zs = Mathf.Lerp(s.Z[i], s.Z[i + 1], u); bool shade = zs <= EelSolidZ; if (shade && (i >= EelShadowLen || s.Z[0] > EelSolidZ + 0.2f)) continue;     // the shadow shows only while the head is down in the water (the swim)
+                    if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, zs / EelDipH);                                      // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut
+                    var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
+                    sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : Color.white; sr.sortingOrder = baseOrder + (NN - i) * EelSub - kq;
+                    sr.transform.position = pos; sr.transform.rotation = Quaternion.Euler(0f, 0f, rot);
+                    sr.transform.localScale = new Vector3(Mathf.Clamp(seg / EelSub * 1.5f / (EelSliceW / EelPpu), 1f, 6f), sy, 1f);   // on screen the samples drift apart where the body climbs: stretch the slice to still touch the next one (1.5 x the step)
+                }
             }
             HideFrom(_eelBody, n);
+            int fo = 0;                                                                                       // foam where the body goes under or comes up: the water closes round it
+            for (int i = 0; i + 1 < NN; i++)
+                if ((s.Z[i] > EelSump.Surface) != (s.Z[i + 1] > EelSump.Surface))
+                {
+                    int up = s.Z[i] > EelSump.Surface ? i : i + 1; var fr = Pooled(_eelFoam, fo++, "EelFoam", 2); if (fr == null) continue;
+                    fr.sprite = EelCircle(false); fr.sortingOrder = baseOrder + 300; fr.color = new Color(0.8f, 0.95f, 1f, 0.4f + 0.2f * Mathf.Sin(Time.time * 6f + i));
+                    fr.transform.position = W(s.X[up], s.Y[up]); fr.transform.localScale = new Vector3(1.7f, 0.9f, 1f);
+                }
+            HideFrom(_eelFoam, fo);
             if (_eelHead == null) _eelHead = NewSprite("EelHead", null, Color.white, _root, 2);
             bool headOut = s.Z[0] > EelSump.Surface; _eelHead.gameObject.SetActive(headOut);
             if (headOut)
             {
-                _eelHead.sprite = EelHead(stage); _eelHead.flipX = s.X[Mathf.Min(8, EelSump.N - 1)] < s.X[0];      // it looks away from its neck
+                _eelHead.sprite = EelHead(stage); _eelHead.color = s.Z[0] <= EelSolidZ ? EelShade : Color.white; _eelHead.flipX = s.X[Mathf.Min(8, EelSump.N - 1)] < s.X[0];      // it looks away from its neck
                 _eelHead.sortingOrder = baseOrder + 400; _eelHead.transform.position = W(s.X[0], s.Y[0], s.Z[0]);
                 var nk = W(s.X[Mathf.Min(8, EelSump.N - 1)], s.Y[Mathf.Min(8, EelSump.N - 1)], s.Z[Mathf.Min(8, EelSump.N - 1)]) - _eelHead.transform.position;      // where the neck goes: tilt the head about its anchor so it meets it (a straight profile left a gap when the neck climbs)
                 float tilt = Mathf.Atan2(nk.y, Mathf.Abs(nk.x)) * Mathf.Rad2Deg; tilt = Mathf.Clamp(_eelHead.flipX ? -tilt : tilt, -55f, 55f);

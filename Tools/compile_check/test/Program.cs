@@ -994,13 +994,19 @@ static class Program {
       }
       Check(shed && headLanded && tailLanded, $"EelSump: shots do nothing while it is under the water (shed {shed}) and land on the head ({headLanded}) and the tail ({tailLanded}) while they are out");
     }
-    // PHASES: above half HP it only uses the first three moves; from half HP the snare and the flood join in
+    // PHASES: above 75% HP it only uses the first three moves; from 75% the snare and the flood join in, the first flood being the forced transition
     {
-      var seen0 = new HashSet<string>(); var seen2 = new HashSet<string>(); foreach (int ph in new[] { 0, 2 }) {
+      var seen0 = new HashSet<string>(); var seen2 = new HashSet<string>(); foreach (int ph in new[] { 0, 1 }) {
         var f = SumpStart(true, ph); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
         for (float t = 0f; t < 140f; t += dt) { SumpTick(f, sst, dt); if (f.Stage == "idle" && t % 5f < dt) { SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); } } (ph == 0 ? seen0 : seen2).UnionWith(sst.Seen); cross = Math.Max(cross, sst.MaxCross);
       }
-      Check(!seen0.Contains("snare") && !seen0.Contains("flood") && seen0.Count == 3 && seen2.Contains("snare") && seen2.Contains("flood"), $"EelSump phases: phase 1 uses {string.Join(",", seen0.OrderBy(x => x))}; phase 2 adds the snare and the flood (saw {string.Join(",", seen2.OrderBy(x => x))})");
+      Check(!seen0.Contains("snare") && !seen0.Contains("flood") && seen0.Count == 3 && seen2.Contains("snare") && seen2.Contains("flood"), $"EelSump phases: phase 1 (above 75%) uses {string.Join(",", seen0.OrderBy(x => x))}; from 75% it adds the snare and the flood (saw {string.Join(",", seen2.OrderBy(x => x))})");
+    }
+    // THE 75% TRANSITION: dropping under 75% queues a flood surge first, once
+    {
+      var f = SumpStart(true, 0); f.Sump.Queue.Clear(); f.Sump.Bag.Clear(); f.Stage = "idle"; f.Sump.HeadOut = true; f.Unit.Hp = EelBoss.MaxHp * 3 / 4 - 50; EelBoss.OnDamaged(f.Unit);
+      bool queued = f.Sump.Queue.Count > 0 && f.Sump.Queue[0] == "flood" && f.Phase == 1; int n0 = f.Sump.Queue.Count; f.Unit.Hp -= 100; EelBoss.OnDamaged(f.Unit);
+      Check(queued && f.Sump.Queue.Count == n0, $"EelSump: under 75% HP the next move is a flood surge, queued once (queue {string.Join(",", f.Sump.Queue)}, phase {f.Phase})");
     }
     Check(cross <= 0.5f, $"EelSump: every time the head or tail goes through the water's surface it is at a pool's centre (worst {cross:0.00} tiles off, over all the moves)");
     EelBoss.Reset(); Rt.On = false;
@@ -1013,7 +1019,7 @@ static class Program {
     var sb = new System.Text.StringBuilder("{\"pools\":[" + string.Join(",", s.Pools.Select(q => $"[\"{q.Name}\",{F(q.X)},{F(q.Y)},{F(q.RX)},{F(q.RY)},{(q.Big ? 1 : 0)}]")) + "],\"slab\":[" + F(s.SlabX) + "," + F(s.SlabY) + "],\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, f.BodyArmor) + ",\"tailmax\":" + EelSump.TailMax + ",\"maxhp\":" + EelBoss.MaxHp + ",\"frames\":[");
     var pw = s.Pools.First(q => q.Name == "west"); var pe = s.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
     var plan = new List<(string q, (float, float) a, (float, float) b)> {
-      ("combo", (20.5f, 20.0f), (41.0f, 22.0f)), ("arch:east", (34.0f, 26.5f), (36.0f, 17.0f)), ("dash:west>east", (onp.x, onp.y), (30.5f, 10.5f)),
+      ("combo", (20.5f, 20.0f), (41.0f, 22.0f)), ("arch:east", (30.5f, 19.0f), (30.5f, 30.5f)), ("dash:west>east", (onp.x, onp.y), (46.5f, 22.5f)),
       ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f)), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f)), ("flood", (42.5f, 26.0f), (22.5f, 20.0f)) };
     int step = -1, evDone = 0; const float dt = 1f / 30f; int k = 0, outn = 0; bool dyingSet = false; float tHit = 0.5f; var shoot = 0;
     SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);

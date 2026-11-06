@@ -32,6 +32,7 @@ namespace GameCore
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
             public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
+            public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
             // the move in progress
@@ -158,14 +159,14 @@ namespace GameCore
             s.Tail.X = (int)Mathf.Floor(tp.Item1); s.Tail.Y = (int)Mathf.Floor(tp.Item2); Rt.SetOffset(s.Tail, tp.Item1 - s.Tail.X - 0.5f, tp.Item2 - s.Tail.Y - 0.5f);
         }
 
-        // ------------------------------------------------------------------ picking the next move
+        // ------------------------------------------------------------------ picking the next move (the snare and the flood join from 75% HP, Yan 2026-11-06)
         static void StartMove(EelBoss.Fight f, State s, List<Player> players, float now)
         {
             string kind = null; s.Variant = null;
             if (s.Queue.Count > 0) { kind = s.Queue[0]; s.Queue.RemoveAt(0); if (kind.Contains(":")) { var sp = kind.Split(':'); kind = sp[0]; s.Variant = sp[1]; } }
             else
             {
-                if (s.Bag.Count == 0) { s.Bag.AddRange(new[] { "combo", "arch", "dash" }); if (f.Phase >= 2 || f.Enraged) s.Bag.AddRange(new[] { "snare", "flood" }); s.Bag.Sort((a, b) => Rng.Next(2) == 0 ? -1 : 1); }
+                if (s.Bag.Count == 0) { s.Bag.AddRange(new[] { "combo", "arch", "dash" }); if (f.Phase >= 1) s.Bag.AddRange(new[] { "snare", "flood" }); s.Bag.Sort((a, b) => Rng.Next(2) == 0 ? -1 : 1); }
                 kind = s.Bag[0]; s.Bag.RemoveAt(0);
             }
             if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
