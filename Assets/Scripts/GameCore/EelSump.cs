@@ -32,6 +32,7 @@ namespace GameCore
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
             public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
+            public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3; public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
@@ -166,13 +167,13 @@ namespace GameCore
             if (s.Queue.Count > 0) { kind = s.Queue[0]; s.Queue.RemoveAt(0); if (kind.Contains(":")) { var sp = kind.Split(':'); kind = sp[0]; s.Variant = sp[1]; } }
             else
             {
-                if (s.Bag.Count == 0) { s.Bag.AddRange(new[] { "combo", "arch", "dash" }); if (f.Phase >= 1) s.Bag.AddRange(new[] { "snare", "flood" }); s.Bag.Sort((a, b) => Rng.Next(2) == 0 ? -1 : 1); }
+                if (s.Bag.Count == 0) { s.Bag.AddRange(new[] { "combo", "arch", "dash" }); if (f.Phase >= 1) s.Bag.AddRange(new[] { "snare", "flood" }); if (f.Phase >= 2) s.Bag.Add("storm"); s.Bag.Sort((a, b) => Rng.Next(2) == 0 ? -1 : 1); }
                 kind = s.Bag[0]; s.Bag.RemoveAt(0);
             }
             if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
             if (kind == "snare" && s.Variant == null) s.Variant = players.Count >= 2 && Rng.Next(2) == 0 ? "hurl" : "launch";
             if (kind == "snare" && s.Variant == "hurl" && players.Count < 2) s.Variant = "launch";
-            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
+            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
             s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
             EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
             switch (kind)
@@ -189,6 +190,7 @@ namespace GameCore
                     s.P1 = named != null ? ends.First(p => p.Name == named[0]) : Pick(ends); s.P2 = named != null ? ends.First(p => p.Name == named[1]) : ends.Where(p => p != s.P1).OrderByDescending(p => Dist(p.X, p.Y, s.P1.X, s.P1.Y)).First(); s.Cur = Dash(s.P1, s.P2); break;
                 case "snare": StartSnare(f, s, players, tp, t2); break;
                 case "flood": StartFlood(f, s, players, tp); break;
+                case "storm": StartStorm(f, s, players); break;
             }
         }
         public static Curve Dash(Pool a, Pool b)
@@ -216,6 +218,7 @@ namespace GameCore
                 case "dash": DashRun(f, s, players, now, ts); break;
                 case "snare": SnareRun(f, s, players, now, ts); break;
                 case "flood": FloodRun(f, s, players, now, ts); break;
+                case "storm": StormRun(f, s, players, now, ts); break;
             }
         }
 
@@ -465,11 +468,15 @@ namespace GameCore
         }
 
         // ---- FLOOD (phase 2): the floor between the pools turns to deep water, the eel glides through as a shadow and bursts out under someone
+        static void ScanShallow(State s)                                                                   // the knee-deep water the flood can take (and the storm electrifies): everything that is not a dry patch
+        {
+            s.Shallow = new List<(int, int, float)>(); s.Flip.Clear(); s.Wet.Clear();
+            for (int y = 9; y <= 30; y++) for (int x = 5; x <= 54; x++)
+            { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Difficult && t.Look == null) { float d = 99f; foreach (var p in s.Pools) d = Mathf.Min(d, Dist(x + 0.5f, y + 0.5f, p.X, p.Y) - (p.RX + p.RY) / 2f); s.Shallow.Add((x, y, d)); s.Wet.Add((x, y)); } }
+        }
         static void StartFlood(EelBoss.Fight f, State s, List<Player> players, (float x, float y) tp)
         {
-            s.Shallow = new List<(int, int, float)>(); s.Flip.Clear();
-            for (int y = 9; y <= 30; y++) for (int x = 5; x <= 54; x++)
-            { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Difficult && t.Look == null) { float d = 99f; foreach (var p in s.Pools) d = Mathf.Min(d, Dist(x + 0.5f, y + 0.5f, p.X, p.Y) - (p.RX + p.RY) / 2f); s.Shallow.Add((x, y, d)); } }
+            ScanShallow(s);
             s.P1 = s.Pools.Where(p => !p.Big).OrderByDescending(p => Dist(p.X, p.Y, tp.x, tp.y)).First(); s.GP = tp; f.Label = "FLOOD: the pools swell";
         }
         // it goes for someone standing in the water: the islands are safe from this move
@@ -507,6 +514,37 @@ namespace GameCore
             if (!s.Hit1 && ts >= 6.3f && s.NoStrike) { s.Hit1 = true; f.Label = "FLOOD: nobody in the water - it rears up and sinks back"; }
             if (!s.Hit1 && ts >= 6.3f) { s.Hit1 = true; f.Label = "FLOOD: BURSTS OUT"; Impact(s, s.GP.x, s.GP.y, 1.3f, true); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, s.GP.x, s.GP.y) <= 2.4f && Damage(s, p, 380, "It bursts out under you", s.GP.x, s.GP.y, 0f, 1.5f, now)) { var q = Pos(p); s.Air[p] = new Fling { X0 = q.x, Y0 = q.y, Z0 = 0.4f, X1 = q.x - 2.6f, Y1 = q.y + 2.8f, T0 = ts, Dur = 0.9f, Apex = 3.0f, Land = "fling", Spin = 400f }; } }
             if (ts >= 8.2f) End(f, s, now);
+        }
+
+        // ---- STORM (phase 3, Yan 2026-11-06; the 50% transition, then one of the moves): the arena floods, the eel comes up out of a pool and charges for ~4 s with sparks all round it, then it
+        // "explodes", electrifying all the water of the map: anyone not on a dry patch (an island, the slab, a platform) is shocked. Wind-ups: the pools swell (the dry patches light up), the
+        // floor floods, it rears up, the sparks thicken for 4 s - the burst never comes unannounced. (The bite that follows is built in the next step.)
+        const float StormCharge = 4f, StormDamage = 450f;
+        static float StormRadius(float ts, float end) => ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : ts < end ? 17f : ts < end + 1.3f ? 17f * (1f - Smr((ts - end) / 1.3f)) : 0f;
+        static void StartStorm(EelBoss.Fight f, State s, List<Player> players)
+        {
+            ScanShallow(s); s.P1 = Pick(s.Pools); var p = s.P1;
+            s.Cur = new Curve(Bez((p.X, p.Y, -3.6f), (p.X, p.Y, 2.5f), (p.X + 0.5f, p.Y + 0.3f, 4.6f), (p.X + 0.9f, p.Y + 0.4f, 6.2f)));
+            f.Label = "STORM: the pools swell";
+        }
+        static void StormRun(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            float rise = 3.1f, hold = rise + 1.2f, burst = hold + StormCharge, sink = burst + 1.2f, end = sink + 1.2f;                    // 3.1 rises, 4.3 charging, 8.3 the burst, 9.5 sinks, 10.7 over
+            FloodTiles(s, StormRadius(ts, sink)); f.Zones.Clear();
+            var c = s.Cur; float sg = ts < rise ? 0f : ts < hold ? c.L * 0.97f * Smr((ts - rise) / 1.2f) : ts < sink ? c.L * 0.97f : ts < end ? c.L * 0.97f * (1f - Smr((ts - sink) / 1.2f)) : 0f;
+            FillHead(s, c, sg);
+            if (ts < 1.5f) f.Label = "STORM: the pools swell, the dry patches light up"; else if (ts < rise) f.Label = "STORM: the floor turns to deep water"; else if (ts < hold) f.Label = "STORM: it rears up out of the water";
+            else if (ts < burst)
+            {
+                f.Label = "STORM: it is charging - get onto dry ground!";
+                if (ts >= s.SparkAt) { s.SparkAt = ts + 0.2f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = (ts - hold) / StormCharge }); }
+            }
+            if (!s.Hit1 && ts >= burst)
+            {
+                s.Hit1 = true; f.Label = "STORM: THE WATER IS ELECTRIC"; s.Events.Add(new Ev { Kind = "storm", X = s.X[0], Y = s.Y[0], Power = 1.5f, Water = true });
+                foreach (var p in players) { var q = Pos(p); if (s.Wet.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y)))) Damage(s, p, (int)StormDamage, "The water electrocutes you", s.X[0], s.Y[0], 0f, 1.2f, now); }
+            }
+            if (ts >= end + 0.2f) End(f, s, now);
         }
 
         // ---- the reveal (it swallows the body on the slab) and the death (it brings the body back up, then goes down the big pool's centre)

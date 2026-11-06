@@ -122,7 +122,7 @@ namespace GameCore
         }
 
         /// <summary>Boss 3: the eel's arena (Sub-Station Depths, the Sump): four deep pools, the eel fresh (even if it fled before), you on the steps down into the room - it comes when you step in.</summary>
-        public static void EelFight(Player p)
+        public static void EelFight(Player p, float hpFraction = 1f)
         {
             MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled);
             MacroState.Current.CurrentZoneId = LabLocks.Depths3;
@@ -131,6 +131,13 @@ namespace GameCore
             EncounterState.InCombat = false;
             var (x, y) = TerrainMap.FindNearestEnterable(30, 7);
             p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
+            var ef = EelBoss.Current;
+            if (ef != null && ef.Sump != null && hpFraction < 1f)                                      // start part-way: its HP, its wounds, and the phase transitions it would have had (a flood at 75%, a storm at 50%)
+            {
+                ef.Unit.Hp = System.Math.Max(2, (int)(EelBoss.MaxHp * hpFraction)); ef.Phase = hpFraction > 0.75f ? 0 : hpFraction > 0.5f ? 1 : hpFraction > 0.25f ? 2 : 3; ef.Enraged = ef.Phase >= 2;
+                ef.Sump.Queue.Clear(); ef.Sump.Bag.Clear(); ef.Sump.Stage2 = ef.Phase >= 1; ef.Sump.Stage3 = ef.Phase >= 2;
+                if (ef.Phase >= 1) ef.Sump.Queue.Add("flood"); if (ef.Phase >= 2) ef.Sump.Queue.Add("storm");
+            }
             GameLog.Write("[TESTING GROUND] The Sump: four deep pools. Walk down into the room and it comes for you. Main menu > Testing Ground to come back.");
         }
 

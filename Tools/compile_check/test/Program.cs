@@ -994,6 +994,10 @@ static class Program {
       }
       Check(shed && headLanded && tailLanded, $"EelSump: shots do nothing while it is under the water (shed {shed}) and land on the head ({headLanded}) and the tail ({tailLanded}) while they are out");
     }
+    // STORM (phase 3): the arena floods, it rears up and charges ~4 s with sparks, then every water tile is electric: a player on a dry patch is safe, one in the water is shocked
+    st = SumpRun(true, 2, "storm", f => { SumpPlace(SP1, 22.5f, 20.5f); SumpPlace(SP2, 41.0f, 22.0f); }, null, 20f); cross = Math.Max(cross, st.MaxCross);
+    var sparks = st.Ev.Count(e => e.Kind == "spark"); var bolt = st.Ev.FirstOrDefault(e => e.Kind == "storm");
+    Check(Hits(st, 0) == 0 && Hits(st, 1, 450) == 1 && sparks >= 15 && bolt != null && st.FloodPeak > 100 && st.FloodEnd == 0 && st.F.Sump.Wet.Contains((41, 22)) && !st.F.Sump.Wet.Contains((22, 20)), $"EelSump storm: the arena floods (peak {st.FloodPeak} tiles, {st.FloodEnd} left), {sparks} sparks while it charges, the burst shocks the player in the water ({Hits(st, 1, 450)}) and spares the one on the dry patch ({Hits(st, 0)}), over in {st.EndT:0.0} s");
     // PHASES: above 75% HP it only uses the first three moves; from 75% the snare and the flood join in, the first flood being the forced transition
     {
       var seen0 = new HashSet<string>(); var seen2 = new HashSet<string>(); foreach (int ph in new[] { 0, 1 }) {
@@ -1058,6 +1062,8 @@ static class Program {
     for (int i = 0; i < 400 && f.Stage != "idle"; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
     Check(f.Stage == "idle" || f.Stage == "move", $"EelFight: the reveal ends and the fight begins ({f.Stage})");
     var dead = p.Hp; p.Hp = 0; Body.Reset(); TestingGround.Respawn(p); Check(EelBoss.Current != null && EelBoss.Current.Stage == "hidden" && EelBoss.Current != f, "EelFight: dying in the arena and respawning puts you into a fresh fight");
+    p.Hp = p.MaxHp; TestingGround.EelFight(p, 0.49f); var g = EelBoss.Current;
+    Check(g != null && g.Phase == 2 && g.Unit.Hp < EelBoss.MaxHp / 2 && string.Join(",", g.Sump.Queue) == "flood,storm", $"EelFight: 'From 50%' starts with half its HP, its phase 3 wounds, and the flood and the storm transitions queued (phase {g?.Phase}, queue {(g == null ? "" : string.Join(",", g.Sump.Queue))})");
     EelBoss.Reset(); Rt.On = false;
   }
   static void EelChecks() {

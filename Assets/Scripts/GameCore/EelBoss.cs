@@ -98,6 +98,7 @@ namespace GameCore
             EelSump.OnHeadHit(f, u);                                                                                 // under the water or busy: nothing lands; at 0 it is taken to the vomit when its move ends
             int ph = PhaseOf(u.Hp);
             if (ph >= 1 && f.Sump != null && !f.Sump.Stage2) { f.Sump.Stage2 = true; f.Sump.Queue.Insert(0, "flood"); }      // 75% HP: the flood surge is the phase transition, and the snare and the flood join the moves
+            if (ph >= 2 && f.Sump != null && !f.Sump.Stage3) { f.Sump.Stage3 = true; f.Sump.Queue.Add("storm"); }      // 50% HP: the storm is the third phase's transition, then one of the moves
             if (ph > f.Phase) { f.Phase = ph; f.Enraged = ph >= 2; f.Sump.Bag.Clear(); GameLog.Write(ph >= 2 ? $"The Drowner's wounds open ({ph}): it gets worse." : $"The Drowner's wounds open ({ph})."); Sfx.Play("boss_sting", null, 0.7f, 0f, 1f); }
         }
 

@@ -64,7 +64,7 @@ namespace GameCore
             {
                 list.Add(("<color=#ff5a3a>BOSS</color> The Visor - hatchet duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.VisorDuel(p)) }));   // Boss 1
                 list.Add(("<color=#ff5a3a>BOSS</color> The Specimen - brain in the vat (goes to its lab)", new (string, System.Action)[] { ("Go", () => { Close(); TestingGround.BrainFight(p); }) }));   // Boss 2
-                list.Add(("<color=#ff5a3a>BOSS</color> The Drowner - the eel in the Sump (goes to its arena)", new (string, System.Action)[] { ("Go", () => { Close(); TestingGround.EelFight(p); }) }));   // Boss 3
+                list.Add(("<color=#ff5a3a>BOSS</color> The Drowner - the eel in the Sump (goes to its arena)", new (string, System.Action)[] { ("Go", () => { Close(); TestingGround.EelFight(p); }), ("From 75%", () => { Close(); TestingGround.EelFight(p, 0.74f); }), ("From 50%", () => { Close(); TestingGround.EelFight(p, 0.49f); }) }));   // Boss 3: start at a phase to test it
                 list.Add(("Target dummy, no armor", new (string, System.Action)[] { ("Dummy", () => TestingGround.SpawnDummy(p, null, null, _near)) }));
                 foreach (var f in Factions)   // "Dummy": kitted as this faction at the chosen rank, but it never moves or fights
                     list.Add(($"{f}", new (string, System.Action)[] { ("Dummy", () => TestingGround.SpawnDummy(p, f, CombatRules.RankOrder[_rank], _near)),

@@ -61,6 +61,17 @@ namespace GameCore
                     CombatFx.PxAt(e.Water ? "splash" : "blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y));
                     Shake(Mathf.Min(0.35f, 0.14f * e.Power)); Boss.HitStop(0.05f * Mathf.Min(2f, e.Power));
                 }
+                else if (e.Kind == "spark")                                                              // the storm's charge: crackles round the head, thicker as it fills
+                {
+                    int nSp = 1 + (int)(2.5f * e.Power);
+                    for (int q = 0; q < nSp; q++) CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Random.Range(-2.5f, 2.5f)), Mathf.FloorToInt(e.Y + Random.Range(-1.5f, 3.5f)));
+                    Shake(0.03f + 0.06f * e.Power);
+                }
+                else if (e.Kind == "storm")                                                              // the burst: lightning crawls over the water all round
+                {
+                    for (int ring = 1; ring <= 3; ring++) for (int q = 0; q < 6; q++) { float a = (q + 0.5f * ring) / 6f * Mathf.PI * 2f, r = 4f * ring; CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Mathf.Cos(a) * r), Mathf.FloorToInt(e.Y + Mathf.Sin(a) * r * 0.7f)); }
+                    Shake(0.5f); Boss.HitStop(0.12f);
+                }
             int baseOrder = WorldArt.SortTop - 3000;
             var sl = EelBodySlices(stage); int n = 0, NN = EelSump.N;
             var sp = new Vector3[NN]; var ag = new float[NN]; var rd = new float[NN];                           // each sample's screen point, the way the body runs there (degrees) and the bend's radius in tiles
