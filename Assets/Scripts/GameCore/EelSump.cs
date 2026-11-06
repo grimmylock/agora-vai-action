@@ -241,6 +241,7 @@ namespace GameCore
             if (Rt.Untouchable(p) || s.Air.ContainsKey(p)) return false;
             EelBoss.HurtPublic(p, dmg, what, "Blunt"); Knock(p, fx, fy, knock, prone, now); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = dmg, Text = what, X = Pos(p).x, Y = Pos(p).y }); return true;
         }
+        static void Snd(string name, float x, float y, float vol = 1f) => Sfx.Play(name, new Vector3(x, -y, 0f), vol, 0.04f, 1f);   // host-side, like the boss sting (co-op: clients get no eel sounds yet)
         static void Impact(State s, float x, float y, float power, bool water) => s.Events.Add(new Ev { Kind = "impact", X = x, Y = y, Power = power, Water = water });
         static void Ring(EelBoss.Fight f, float x, float y, float r, bool live = false, string kind = "ring") => f.Zones.Add(new EelBoss.Zone { X = x, Y = y, R = r, Kind = kind, Live = live });
 
@@ -545,7 +546,7 @@ namespace GameCore
         public static bool GrappleInput(Player p)
         {
             var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone) return false; var s = f.Sump;
-            if (s.Bite != "grapple" || s.Victim != p) return false; s.Mash++; s.Grip = Mathf.Min(1f, s.Grip + GripPerPress); s.Twitch = 1f; if (s.Grip >= 1f) s.Won = true; return true;
+            if (s.Bite != "grapple" || s.Victim != p) return false; s.Mash++; s.Grip = Mathf.Min(1f, s.Grip + GripPerPress); s.Twitch = 1f; if (s.Grip >= 1f) s.Won = true; Snd("eel_strain", s.BiteSpot.x, s.BiteSpot.y, 0.8f); return true;
         }
         /// <summary>For the view: how open the mouth is (-1 = not controlled: the head as he drew it; 0 shut .. 1 as drawn .. 1.4 forced wide), and the twitch of the last press (1 .. 0).</summary>
         public static float MouthOpen(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Mouth : -1f;
@@ -563,7 +564,7 @@ namespace GameCore
         }
         static void BiteContact(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
         {
-            var sp = s.BiteSpot; Impact(s, sp.x, sp.y, 1.0f, false);
+            var sp = s.BiteSpot; Impact(s, sp.x, sp.y, 1.0f, false); Snd("eel_bite", sp.x, sp.y);
             var v = players.Where(p => !Rt.Untouchable(p) && !s.Air.ContainsKey(p) && Dist(Pos(p).x, Pos(p).y, sp.x, sp.y) <= 1.8f).OrderBy(p => Dist(Pos(p).x, Pos(p).y, sp.x, sp.y)).FirstOrDefault();
             if (v == null) { f.Label = "BITE: it misses and slams the ground"; s.Bite = "recover"; s.BiteT = ts; s.Mouth = 0.3f; return; }
             float since = now - Rt.Of(v).GrabAt;
@@ -587,13 +588,13 @@ namespace GameCore
                 else
                 {
                     f.Label = "STORM: it is charging - get onto dry ground!";
-                    if (ts >= s.SparkAt && ts < burst) { s.SparkAt = ts + 0.2f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = (ts - hold) / StormCharge }); }
+                    if (ts >= s.SparkAt && ts < burst) { if (s.SparkAt <= 0f) Snd("eel_charge", s.X[0], s.Y[0]); s.SparkAt = ts + 0.2f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = (ts - hold) / StormCharge }); }
                 }
                 if (ts >= burst)
                 {
-                    f.Label = "STORM: THE WATER IS ELECTRIC"; s.Events.Add(new Ev { Kind = "storm", X = s.X[0], Y = s.Y[0], Power = 1.5f, Water = true });
+                    f.Label = "STORM: THE WATER IS ELECTRIC"; Snd("eel_burst", s.X[0], s.Y[0], 1.2f); s.Events.Add(new Ev { Kind = "storm", X = s.X[0], Y = s.Y[0], Power = 1.5f, Water = true });
                     foreach (var p in players) { var q = Pos(p); if (s.Wet.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y)))) Damage(s, p, (int)StormDamage, "The water electrocutes you", s.X[0], s.Y[0], 0f, 1.2f, now); }
-                    s.Bite = "open"; s.BiteT = ts; s.Victim = s.ForcedVictim ?? Pick(players);
+                    s.Bite = "open"; s.BiteT = ts; s.Victim = s.ForcedVictim ?? Pick(players); Snd("eel_mouth", s.X[0], s.Y[0]);
                 }
             }
             else switch (s.Bite)
@@ -618,12 +619,12 @@ namespace GameCore
                         if (s.Won)
                         {
                             Boss.Release(); s.Air.Remove(v); Impact(s, s.BiteSpot.x, s.BiteSpot.y, 2.0f, false); s.Events.Add(new Ev { Kind = "slam", X = s.BiteSpot.x, Y = s.BiteSpot.y, Power = 2f, Who = Index(v) });
-                            f.Unit.Hp = System.Math.Max(2, f.Unit.Hp - SlamDamage); Boss.OnDamaged(f.Unit); s.Bite = "slump"; s.BiteT = ts; s.StunUntil = now + StunSeconds; s.Mouth = 0f; f.Label = "THE JAWS SLAM SHUT - it is stunned!";
+                            f.Unit.Hp = System.Math.Max(2, f.Unit.Hp - SlamDamage); Boss.OnDamaged(f.Unit); Snd("eel_slam", s.BiteSpot.x, s.BiteSpot.y, 1.2f); s.Bite = "slump"; s.BiteT = ts; s.StunUntil = now + StunSeconds; s.Mouth = 0f; f.Label = "THE JAWS SLAM SHUT - it is stunned!";
                         }
                         else if (Time.unscaledTime - s.GrabStart > MashSeconds) { Boss.Release(); ThrowBitten(f, s, v, now, ts); }
                     }
                     break;
-                case "slump": if (now >= s.StunUntil) { s.Bite = "wake"; s.BiteT = ts; f.Label = "It wakes and shakes its head"; } break;
+                case "slump": if (now >= s.StunUntil) { s.Bite = "wake"; s.BiteT = ts; f.Label = "It wakes and shakes its head"; Snd("eel_wake", s.BiteSpot.x, s.BiteSpot.y); } break;
                 case "wake": if (ts - s.BiteT >= 0.9f) { s.Bite = "sink"; s.BiteT = ts; s.SinkT = ts; s.SinkFrom = s.StormSg; } break;
                 case "recover": if (ts - s.BiteT >= 1.0f) { s.Bite = "sink"; s.BiteT = ts; s.SinkT = ts; s.SinkFrom = s.StormSg; } break;
                 case "sink": s.StormSg = s.SinkFrom * (1f - Smr((ts - s.BiteT) / 1.4f)); if (ts - s.BiteT >= 1.6f) End(f, s, now); break;

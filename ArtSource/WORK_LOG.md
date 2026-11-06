@@ -5158,3 +5158,6 @@ Yan: "the struggle needs to feel real, the player closing the eel's mouth equate
 - ALL CHECKS PASSED. Not seen in Unity; every number is a guess.
 
 Yan (camera): "the camera can get pretty close to the action, at least for the player who parried, for the other it can highlight the parry". `TacticalGridView.FollowCamera`: while someone holds the jaws (`EelSump.GrappleSpot`), the one who parried leans in 55% and is framed on the eel's head; everyone else eases 70% of the way to the spot and zooms 30% (`_hl`), so they watch it happen (and can keep shooting). Not seen in Unity.
+
+## Eel: sounds (2026-11-06)
+The eel had no sound. `ArtSource/audio/sfx_eel.py` (same synthesis helpers as `sfx.py`; `python3 ArtSource/audio/sfx_eel.py Assets/Resources/Audio`) makes: `eel_charge` (the storm's 4 s hum climbing with crackle), `eel_burst` (the water going electric), `eel_mouth` (the slow opening groan, 2.8 s), `eel_bite` (the snap), `eel_strain_0..2` (one per press of the struggle: a wet creak and grunt), `eel_slam` (jaws shut, head hits the ground), `eel_wake` (it shakes its head awake). Played from `EelSump` (`Snd`, host-side like the boss sting; co-op clients get none yet). NOT heard: I can't listen from here; the files are valid (no clipping or NaN) but the character of each is a first guess. Still silent: the older moves (combo, arch, dash, snare, flood).
