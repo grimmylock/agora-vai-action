@@ -925,7 +925,7 @@ static class Program {
     var s = f.Sump; st.Ev.AddRange(s.Events);
     for (int i = 0; i + 1 < EelSump.N; i++) {                                             // every crossing of the water's surface must be at a pool's centre (Yan: it always comes up and goes down the middle)
       float a = s.Z[i] - EelSump.Surface, b = s.Z[i + 1] - EelSump.Surface; if ((a > 0f) == (b > 0f)) continue;
-      float u = a / (a - b), cx = s.X[i] + (s.X[i + 1] - s.X[i]) * u, cy = s.Y[i] + (s.Y[i + 1] - s.Y[i]) * u; float best = 99f;
+      float u = a / (a - b); if (Math.Abs(s.X[i + 1] - s.X[i]) + Math.Abs(s.Y[i + 1] - s.Y[i]) > 2f) u = Math.Abs(a) < Math.Abs(b) ? 0f : 1f; float cx = s.X[i] + (s.X[i + 1] - s.X[i]) * u, cy = s.Y[i] + (s.Y[i + 1] - s.Y[i]) * u; float best = 99f;   // a jump to the hidden part of the body (another pool) is not drawn: the crossing is the sample nearest the surface
       foreach (var q in s.Pools) best = Math.Min(best, (float)Math.Sqrt((cx - q.X) * (cx - q.X) + (cy - q.Y) * (cy - q.Y))); if (best > 1.0f && Environment.GetEnvironmentVariable("EELDBG") != null) Console.WriteLine($"   DBG cross {best:0.0} at ({cx:0.0},{cy:0.0}) i={i} z={s.Z[i]:0.00}->{s.Z[i + 1]:0.00} move={f.Move} age={(UnityEngine.Time.time - f.StageAt) * EelSump.Speed:0.00}"); if (best > 1.0f && Environment.GetEnvironmentVariable("EELDBG") != null) { var sb2 = new System.Text.StringBuilder("      "); for (int k = Math.Max(0, i - 5); k < Math.Min(EelSump.N, i + 6); k++) sb2.Append($"[{k}:{s.X[k]:0.0},{s.Y[k]:0.0},{s.Z[k]:0.00}] "); Console.WriteLine(sb2 + " tailpool=" + s.P1?.Name + " snared=" + (s.Snared != null)); } st.MaxCross = Math.Max(st.MaxCross, best);
     }
     st.FloodPeak = Math.Max(st.FloodPeak, s.Flooded); if (f.Move != null) { st.Seen.Add(f.Move); }
@@ -948,14 +948,19 @@ static class Program {
     var st = SumpRun(true, 0, "combo", f => { SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
     Check(st.Moves >= 0 && st.EndT > 3f && st.Ev.Count(e => e.Kind == "impact") >= 2 && Hits(st, 0) >= 1 && Hits(st, 1) >= 1, $"EelSump combo: a head slam and a tail slam land and both players are hit (impacts {st.Ev.Count(e => e.Kind == "impact")}, hits {Hits(st, 0)}/{Hits(st, 1)}, over {st.EndT:0.0} s)");
     // ARCH: crashes down the big pool's centre; the shockwave hits whoever is near it, not the far player
-    st = SumpRun(true, 0, "arch:east", f => { SumpPlace(SP1, 34.0f, 26.5f); SumpPlace(SP2, 12.0f, 12.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    st = SumpRun(true, 0, "arch:east", f => { SumpPlace(SP1, 30.5f, 30.5f); SumpPlace(SP2, 12.0f, 12.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
     var imp = st.Ev.FirstOrDefault(e => e.Kind == "impact" && e.Water && e.Power >= 2f);
-    Check(imp != null && Math.Abs(imp.X - 30.5f) < 0.8f && Math.Abs(imp.Y - 24.5f) < 0.8f && Hits(st, 0, 190) == 1 && Hits(st, 1) == 0, $"EelSump arch: it crashes into the big pool's centre ({(imp == null ? "none" : imp.X.ToString("0.0") + "," + imp.Y.ToString("0.0"))}), the shockwave hits the near player and not the far one ({Hits(st, 0)}/{Hits(st, 1)})");
+    var big = ((EelBoss.Current).Sump.Big); var near = Ballistics.Pos(SP1); var far = Ballistics.Pos(SP2);
+    float dBefore = (float)Math.Sqrt((30.5f - big.X) * (30.5f - big.X) + (30.5f - big.Y) * (30.5f - big.Y)), dAfter = (float)Math.Sqrt((near.x - big.X) * (near.x - big.X) + (near.y - big.Y) * (near.y - big.Y));
+    Check(imp != null && Math.Abs(imp.X - 30.5f) < 0.8f && Math.Abs(imp.Y - 24.5f) < 0.8f && Hits(st, 0) == 0 && Hits(st, 1) == 0 && dAfter > dBefore + 0.8f && Math.Abs(far.x - 12.0f) < 0.2f && Math.Abs(far.y - 12.0f) < 0.2f, $"EelSump arch: it crashes into the big pool's centre ({(imp == null ? "none" : imp.X.ToString("0.0") + "," + imp.Y.ToString("0.0"))}), the water shoves the near player back ({dBefore:0.0} -> {dAfter:0.0} tiles from the pool) with no damage and leaves the far one alone ({Hits(st, 0)}/{Hits(st, 1)} hits)");
+    // ARCH, a player between the big pool and the north one: the shove carries him into it, the tail throws him out (no damage but the crash)
+    st = SumpRun(true, 0, "arch:east", f => { SumpPlace(SP1, 30.5f, 19.0f); SumpPlace(SP2, 12.0f, 12.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    Check(Hits(st, 0, 0) == 1 && Hits(st, 0, 420) == 1 && Hits(st, 1) == 0, $"EelSump arch: pushed into the north pool he is pulled under and thrown out for 420 (ends at {Ballistics.Pos(SP1).x:0.0},{Ballistics.Pos(SP1).y:0.0}; {Hits(st, 0, 0)} pulled, {Hits(st, 0, 420)} crash, other player {Hits(st, 1)})");
     // DASH: out of the west pool, an S across the arena, into the east one: a player on the path is flung, one off it is not
     {
       var f0 = SumpStart(true, 0); var pw = f0.Sump.Pools.First(q => q.Name == "west"); var pe = f0.Sump.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
       st = SumpRun(true, 0, "dash:west>east", f => { SumpPlace(SP1, onp.x, onp.y); SumpPlace(SP2, 30.5f, 10.5f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
-      Check(Hits(st, 0, 310) == 1 && Hits(st, 1) == 0, $"EelSump dash: the body flings the player on its path and misses the one off it ({Hits(st, 0)}/{Hits(st, 1)})");
+      Check(Hits(st, 0) == 0 && Hits(st, 1) == 0, $"EelSump dash: the body itself no longer hurts, even a player on its path ({Hits(st, 0)}/{Hits(st, 1)} hits)");
     }
     // SNARE (launch): the tail out of one pool catches him, drags him down it, a DIFFERENT pool throws him up; he crashes
     st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);

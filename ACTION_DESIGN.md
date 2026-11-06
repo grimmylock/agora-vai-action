@@ -187,6 +187,7 @@ the flooded levels under the Depths' basin.
       it lets go; diving out during the ~1 s telegraph also works.
     - **Flood Surge:** all four pools overflow and the floor between them turns to deep water for ~6 s; only the dry patches and the slab stay as islands. The eel glides through the flood as a shadow and bursts out under
       whoever is standing in the water; phase 1 moves keep coming from the pools so waiting on an island is not safe either. (Yan: "sounds cool".)
+  - **Pool-to-pool dives (Yan, 2026-11-06):** the ARCH and the DASH no longer hurt with the body. Landing in a pool throws its water out: players are shoved away from that pool (harder the closer; no damage). A shove into another pool pulls the player under and the tail throws him out (the snare's LAUNCH). Telegraphs are not drawn for now.
   - **Open:** do eel parts still drop (design above) or is the body the whole reward?
 - Art first: the eel lurking (shadow), wrapped round a platform, and half out of the water, plus the three water levels, as real renders.
 - **The eel's animation frames (2026-11-05, `ArtSource/bosses/eel_anim.py`, strips `Assets/Resources/Sprites/Fx/boss_eel_*.png` + `boss_eel_anims.json`)**,

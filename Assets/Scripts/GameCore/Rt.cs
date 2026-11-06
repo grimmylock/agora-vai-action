@@ -630,6 +630,7 @@ namespace GameCore
             {
                 if (u is Player || !u.IsAlive() || !Vision.Shows(u)) continue;
                 var (ux, uy) = Ballistics.Pos(u);
+                uy -= EelSump.LiftOfUnit(u);                       // Boss 3: a raised eel is drawn higher up the screen than its ground spot; the crosshair is over the sprite
                 float tall = u is Mutant mm && !(u is HumanEnemy) ? Ballistics.MutantSize(mm) : 1f;
                 // the sprite covers half a tile each side and from its feet up to its crown
                 if (System.Math.Abs(x - ux) > 0.45f * tall || y > uy + 0.5f || y < uy + 0.44f - Ballistics.BodyTiles * tall - 0.1f) continue;

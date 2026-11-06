@@ -13,6 +13,8 @@ namespace GameCore
     {
         readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>();
         SpriteRenderer _eelHead;
+        const bool EelTelegraphs = false;                    // Yan, 2026-11-06: "remove the red telegraphs for now, they look pretty bad" - the zones are still computed (EelBoss.Fight.Zones), just not drawn
+        static readonly List<EelBoss.Zone> NoZones = new List<EelBoss.Zone>();
         static readonly Sprite[][] EelSlices = new Sprite[4][];
         static readonly Sprite[] EelHeads = new Sprite[4];
         static Sprite _eelRing, _eelRingFill;
@@ -64,17 +66,22 @@ namespace GameCore
                 int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(EelSump.N - 1, i + 1);
                 var a = W(s.X[i0], s.Y[i0], s.Z[i0]); var b = W(s.X[i1], s.Y[i1], s.Z[i1]);
                 float ang = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg; bool left = b.x < a.x;       // turned along the body; going left it is flipped, not upside down: the back stays on top
-                var sr = Pooled(_eelBody, n++, "EelBody", baseOrder); if (sr == null) continue;
+                var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
                 sr.sprite = sl[i]; sr.flipX = left; sr.color = Color.white; sr.sortingOrder = baseOrder + (EelSump.N - i);
-                sr.transform.position = W(s.X[i], s.Y[i], s.Z[i]); sr.transform.rotation = Quaternion.Euler(0f, 0f, left ? ang + 180f : ang); sr.transform.localScale = Vector3.one;
+                sr.transform.position = W(s.X[i], s.Y[i], s.Z[i]); sr.transform.rotation = Quaternion.Euler(0f, 0f, left ? ang + 180f : ang);
+                float step = Mathf.Sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)) / Mathf.Max(1, i1 - i0);                           // on screen the samples drift apart where the body climbs: stretch the slice to still touch the next one (4 px overlap = 1.5 x the step)
+                sr.transform.localScale = new Vector3(Mathf.Clamp(step * 1.5f / (EelSliceW / EelPpu), 1f, 6f), 1f, 1f);
             }
             HideFrom(_eelBody, n);
-            if (_eelHead == null) _eelHead = NewSprite("EelHead", null, Color.white, _root, baseOrder + 400);
+            if (_eelHead == null) _eelHead = NewSprite("EelHead", null, Color.white, _root, 2);
             bool headOut = s.Z[0] > EelSump.Surface; _eelHead.gameObject.SetActive(headOut);
             if (headOut)
             {
                 _eelHead.sprite = EelHead(stage); _eelHead.flipX = s.X[Mathf.Min(8, EelSump.N - 1)] < s.X[0];      // it looks away from its neck
-                _eelHead.sortingOrder = baseOrder + 400; _eelHead.transform.position = W(s.X[0], s.Y[0], s.Z[0]); _eelHead.transform.rotation = Quaternion.identity;
+                _eelHead.sortingOrder = baseOrder + 400; _eelHead.transform.position = W(s.X[0], s.Y[0], s.Z[0]);
+                var nk = W(s.X[Mathf.Min(8, EelSump.N - 1)], s.Y[Mathf.Min(8, EelSump.N - 1)], s.Z[Mathf.Min(8, EelSump.N - 1)]) - _eelHead.transform.position;      // where the neck goes: tilt the head about its anchor so it meets it (a straight profile left a gap when the neck climbs)
+                float tilt = Mathf.Atan2(nk.y, Mathf.Abs(nk.x)) * Mathf.Rad2Deg; tilt = Mathf.Clamp(_eelHead.flipX ? -tilt : tilt, -55f, 55f);
+                _eelHead.transform.rotation = Quaternion.Euler(0f, 0f, tilt);
             }
             int k = 0;                                                                                       // shadows on the ground under what is raised
             for (int i = 0; i < EelSump.N; i += 2)
@@ -85,7 +92,7 @@ namespace GameCore
             }
             HideFrom(_eelShadow, k);
             int z = 0; float pulse = 0.65f + 0.35f * Mathf.Sin(Time.time * 9f);                                // the telegraphs: red, white once they can hurt
-            foreach (var zn in f.Zones)
+            foreach (var zn in EelTelegraphs ? f.Zones : NoZones)
             {
                 var col = zn.Live ? new Color(1f, 1f, 1f, 0.9f) : new Color(1f, 0.2f, 0.14f, 0.55f + 0.3f * pulse);
                 if (zn.Kind == "band" && zn.Path != null)

@@ -116,7 +116,7 @@ namespace GameCore
         }
         static void Hide(State s, Pool p, int from = 0, int to = N) { for (int i = from; i < to; i++) { s.X[i] = p.X; s.Y[i] = p.Y; s.Z[i] = HideZ - i * 0.01f; } }
         static void FillHead(State s, Curve c, float sig) { for (int i = 0; i < N; i++) { var q = c.At(sig - i / PerTile); s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }
-        static void FillTail(State s, Curve fromTip, float sig = 0f) { for (int i = N / 2; i < N; i++) { var q = fromTip.At(sig + (N - 1 - i) / PerTile); s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }   // a curve ordered tip first
+        static void FillTail(State s, Curve fromTip, float sig = 0f, bool keepHead = false) { for (int i = N / 2; i < N; i++) { var q = fromTip.At(sig + (N - 1 - i) / PerTile); if (keepHead && q.z <= Surface && s.Z[i] > Surface) continue; s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }   // a hidden tail never cuts the head's column off in mid-air (it left the neck floating above the water, 2026-11-06)   // a curve ordered tip first
         static (float x, float y) Pos(Player p) => Ballistics.Pos(p);
         static void Place(Player p, float x, float y) { int tx = (int)Mathf.Floor(x), ty = (int)Mathf.Floor(y); p.X = tx; p.Y = ty; Rt.SetOffset(p, x - tx - 0.5f, y - ty - 0.5f); }
         static Pool Nearest(State s, float x, float y, Func<Pool, bool> ok = null) => s.Pools.Where(p => ok == null || ok(p)).OrderBy(p => (p.X - x) * (p.X - x) + (p.Y - y) * (p.Y - y)).FirstOrDefault();
@@ -240,7 +240,7 @@ namespace GameCore
             float u, k, th, tz; TailPar(s, ts, out u, out k, out th, out tz); float om = (TailTh(s, ts + 0.03f) - TailTh(s, ts - 0.03f)) / 0.06f;
             if (s.TailBroken && s.BreakTs < 0f) { s.BreakTs = ts; s.BreakQ = u; }
             if (s.BreakTs >= 0f) { u = Mathf.Max(0f, s.BreakQ - (ts - s.BreakTs) / 0.7f); k = 1f; }
-            var arm = Arm(s.P2, u, k, th, tz, om, 8.4f); FillTail(s, new Curve(Enumerable.Reverse(arm).ToList()));
+            var arm = Arm(s.P2, u, k, th, tz, om, 8.4f); FillTail(s, new Curve(Enumerable.Reverse(arm).ToList()), 0f, true);   // the head was filled this frame: keep its column down to the water
             if (ts > 0.6f && ts < 3.4f && s.BreakTs < 0f) Ring(f, s.P2.X, s.P2.Y, 8.4f, ts >= 2.3f, "sweep");
             if (!s.Hit1 && ts >= 2.3f && hs.Full != null) { s.Hit1 = true; f.Label = "COMBO: HEAD STRIKE"; Impact(s, hs.T.x, hs.T.y, 1.0f, false); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, hs.T.x, hs.T.y) <= 2.0f) Damage(s, p, 260, "The head slams down", hs.T.x, hs.T.y, 3f, 1.0f, now); }
             if (ts >= 2.3f && ts < 3.4f && u > 0.5f && s.BreakTs < 0f) { f.Label = "COMBO: TAIL SWEEP"; foreach (var p in players) { if (s.Hurt.Contains(p)) continue; var q = Pos(p); if (ArmNear(arm, q.x, q.y, 1.15f)) { if (Damage(s, p, 200, "The tail sweeps you", s.P2.X, s.P2.Y, 3.5f, 1.0f, now)) s.Hurt.Add(p); } } }
@@ -283,7 +283,7 @@ namespace GameCore
             FillHead(s, c, sg); f.Zones.Clear();
             if (ts < 2.45f) { var path = new List<float>(); for (int i = 0; i <= 24; i++) { var q = c.At(L * (0.3f + 0.7f * i / 24f)); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.Big.X, Y = s.Big.Y, R = 4.7f, Kind = "band", Live = false, Path = path.ToArray() }); }
             float hz = s.Z[0];
-            if (!s.Crossed && s.PrevHZ > Surface && hz <= Surface && sg > 12f) { s.Crossed = true; f.Label = "ARCH: SLAM"; Impact(s, s.X[0], s.Y[0], 2.0f, true); foreach (var p in players) { var q = Pos(p); if (Dist(q.x, q.y, s.Big.X, s.Big.Y) <= 8f) Damage(s, p, 190, "The shockwave throws you", s.Big.X, s.Big.Y, 4f, 1.2f, now); } }
+            if (!s.Crossed && s.PrevHZ > Surface && hz <= Surface && sg > 12f) { s.Crossed = true; f.Label = "ARCH: SLAM"; Impact(s, s.X[0], s.Y[0], 2.0f, true); Surge(f, s, players, s.Big, now); }
             s.PrevHZ = hz; if (ts >= 4.6f) End(f, s, now);
         }
 
@@ -294,17 +294,48 @@ namespace GameCore
             if (ts < 1.5f) sg = 6f * Smr(ts / 1.5f); else if (ts < 1.95f) sg = Lerp(6f, 6.8f, (ts - 1.5f) / 0.45f); else if (ts < 4.5f) sg = Lerp(6.8f, L + 37f, Smr((ts - 1.95f) / 2.55f)); else sg = L + 37f;
             FillHead(s, c, sg); f.Zones.Clear();
             if (ts < 1.95f) { var path = new List<float>(); for (int i = 0; i <= 30; i++) { var q = c.At(5.5f + (L - 11f) * i / 30f); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.P2.X, Y = s.P2.Y, R = 1f, Kind = "band", Live = false, Path = path.ToArray() }); }
-            else if (ts < 4.5f)
-            {
-                f.Label = "DASH!";
-                foreach (var p in players)
-                {
-                    if (s.Hurt.Contains(p)) continue; var q = Pos(p);
-                    for (int i = 0; i < N; i++) if (s.Z[i] > Surface && s.Z[i] < 1.3f && Dist(s.X[i], s.Y[i], q.x, q.y) <= 1.15f) { if (Damage(s, p, 310, "The body flings you", s.X[i], s.Y[i], 5f, 1.5f, now)) s.Hurt.Add(p); break; }
-                }
-            }
-            if (!s.Crossed && s.PrevHZ > Surface && s.Z[0] <= Surface && sg > c.L * 0.8f) { s.Crossed = true; Impact(s, s.X[0], s.Y[0], 0.8f, true); }
+            else if (ts < 4.5f) f.Label = "DASH!";                                                             // the body itself no longer hurts (Yan, 2026-11-06): the water it throws does the work, see Surge
+            if (!s.Crossed && s.PrevHZ > Surface && s.Z[0] <= Surface && sg > c.L * 0.8f) { s.Crossed = true; Impact(s, s.X[0], s.Y[0], 0.8f, true); Surge(f, s, players, s.P2, now); }
             s.PrevHZ = s.Z[0]; if (ts >= 4.6f) End(f, s, now);
+        }
+
+        // ---- SURGE: the water a landing dive throws out (Yan, 2026-11-06: "the mass of water it displaces pushes the players back based on where they are and which pool it jumped into;
+        // if players fall into the pool it does the second part of the grab attack, where it launches them up in the air with its tail"). Everyone within SurgeReach of the landing
+        // pool's edge is shoved straight away from its centre, harder the closer they stand; no damage by itself. A player the shove carries into ANOTHER pool is caught by the tail
+        // and thrown up and out, crashing where he stood (the snare's LAUNCH). Dive i-frames and people already in the air are skipped.
+        const float SurgeReach = 9f, SurgeStep = 0.5f;
+        static bool DeepAt(float x, float y)
+        {
+            int tx = (int)Mathf.Floor(x), ty = (int)Mathf.Floor(y); if (tx < 0 || ty < 0 || tx >= TerrainMap.Width || ty >= TerrainMap.Height) return false;
+            var t = TerrainMap.GetTile(tx, ty); return t.Type == TileType.Difficult && t.Look == "deepwater";
+        }
+        static Pool OwnerOf(State s, float x, float y) => s.Pools.OrderBy(o => ((x - o.X) / o.RX) * ((x - o.X) / o.RX) + ((y - o.Y) / o.RY) * ((y - o.Y) / o.RY)).First();   // which pool a deep tile belongs to (the pools are ellipses)
+        public static float SurgePush(Pool dest, float x, float y)
+        {
+            float d = Dist(x, y, dest.X, dest.Y) - Mathf.Max(dest.RX, dest.RY);                            // from the pool's edge
+            return d >= SurgeReach ? 0f : Lerp(7f, 1.5f, Mathf.Clamp01(d / SurgeReach));
+        }
+        static void Surge(EelBoss.Fight f, State s, List<Player> players, Pool dest, float now)
+        {
+            if (dest == null) return;
+            foreach (var p in players)
+            {
+                if (Rt.Untouchable(p) || s.Air.ContainsKey(p)) continue;
+                var q0 = Pos(p); float dx = q0.x - dest.X, dy = q0.y - dest.Y, d = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f, push = SurgePush(dest, q0.x, q0.y);
+                if (push <= 0f) continue;
+                float ux = dx / d, uy = dy / d; Pool into = null;
+                for (int i = 0, n = Mathf.CeilToInt(push / SurgeStep); i < n; i++)
+                {
+                    var c = Pos(p); float nx = c.x + ux * SurgeStep, ny = c.y + uy * SurgeStep;
+                    if (DeepAt(nx, ny)) { var own = OwnerOf(s, nx, ny); if (own == dest) break; into = own; break; }      // the landing pool's own rim just stops the shove; any other pool takes him
+                    Rt.MoveBy(p, ux * SurgeStep, uy * SurgeStep); var c2 = Pos(p); if (Dist(c.x, c.y, c2.x, c2.y) < 0.1f) { if (DeepAt(c.x + ux * 0.6f, c.y + uy * 0.6f)) { var own2 = OwnerOf(s, c.x + ux * 0.6f, c.y + uy * 0.6f); if (own2 != dest) into = own2; } break; }      // a wall or a friend stops the shove
+                }
+                Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + 0.8f);
+                if (into == null) continue;
+                Place(p, into.X, into.Y); Impact(s, into.X, into.Y, 1.0f, true); GameLog.Write("The wave drags you into the pool - the tail throws you out.");
+                s.Air[p] = new Fling { X0 = into.X, Y0 = into.Y, Z0 = 0.4f, X1 = q0.x, Y1 = q0.y, T0 = -2f, Dur = 1.45f, Apex = 7.5f, Land = "launch", Spin = 720f };
+                s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = 0, Text = "pulled under", X = into.X, Y = into.Y });
+            }
         }
 
         // ---- SNARE (phase 2): the tail out of a pool, a grab, a drag, a throw out of another pool (LAUNCH or HURL)
@@ -479,6 +510,15 @@ namespace GameCore
         /// <summary>How high a player is drawn (tiles): carried by the tail, thrown, hurled, flung.</summary>
         public static float LiftOf(Player p) { var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone) return 0f; return f.Sump.Air.TryGetValue(p, out var a) ? Mathf.Max(a.Z, 0f) : 0f; }
         /// <summary>Pulled under the water in the tail's grip: not drawn until it throws him.</summary>
+        /// <summary>How far up the screen a boss part is drawn above its ground spot (tiles), plus half its sprite: the crosshair sits there when a player aims at the eel,
+        /// so Rt.UnitUnder and Ballistics read it (0 for anything else, and for a part under the water).</summary>
+        public static float LiftOfUnit(ICombatant u)
+        {
+            var f = EelBoss.Current; if (u == null || f == null || f.Sump == null || f.Gone) return 0f; var s = f.Sump;
+            if (ReferenceEquals(u, f.Unit)) return s.Z[0] > 0.3f ? s.Z[0] + 1.3f : 0f;
+            if (ReferenceEquals(u, s.Tail)) return s.Z[N - 1] > 0.3f ? s.Z[N - 1] + 0.6f : 0f;
+            return 0f;
+        }
         public static bool UnderWater(Player p) { var f = EelBoss.Current; return f != null && f.Sump != null && !f.Gone && f.Sump.Air.TryGetValue(p, out var a) && a.Z < -0.5f; }
         public static List<Ev> Drain() { var f = EelBoss.Current; if (f == null || f.Sump == null) return null; var l = new List<Ev>(f.Sump.Out); f.Sump.Out.Clear(); return l; }
 
