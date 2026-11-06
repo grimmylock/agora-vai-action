@@ -31,7 +31,7 @@ namespace GameCore
             public List<Pool> Pools = new List<Pool>(); public Pool Big; public float SlabX, SlabY;
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
-            public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>();
+            public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
             // the move in progress
@@ -171,7 +171,7 @@ namespace GameCore
             if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
             if (kind == "snare" && s.Variant == null) s.Variant = players.Count >= 2 && Rng.Next(2) == 0 ? "hurl" : "launch";
             if (kind == "snare" && s.Variant == "hurl" && players.Count < 2) s.Variant = "launch";
-            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
+            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
             s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
             EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
             switch (kind)
@@ -284,7 +284,7 @@ namespace GameCore
             if (ts < 2.45f) { var path = new List<float>(); for (int i = 0; i <= 24; i++) { var q = c.At(L * (0.3f + 0.7f * i / 24f)); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.Big.X, Y = s.Big.Y, R = 4.7f, Kind = "band", Live = false, Path = path.ToArray() }); }
             float hz = s.Z[0];
             if (!s.Crossed && s.PrevHZ > Surface && hz <= Surface && sg > 12f) { s.Crossed = true; f.Label = "ARCH: SLAM"; Impact(s, s.X[0], s.Y[0], 2.0f, true); Surge(f, s, players, s.Big, now); }
-            s.PrevHZ = hz; if (ts >= 4.6f) End(f, s, now);
+            s.PrevHZ = hz; if (ts >= 4.6f && !Rescue(f, s, now, ts, 4.6f)) End(f, s, now);
         }
 
         // ---- DASH: fully out of one pool, an S across the arena, down into another
@@ -296,14 +296,14 @@ namespace GameCore
             if (ts < 1.95f) { var path = new List<float>(); for (int i = 0; i <= 30; i++) { var q = c.At(5.5f + (L - 11f) * i / 30f); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.P2.X, Y = s.P2.Y, R = 1f, Kind = "band", Live = false, Path = path.ToArray() }); }
             else if (ts < 4.5f) f.Label = "DASH!";                                                             // the body itself no longer hurts (Yan, 2026-11-06): the water it throws does the work, see Surge
             if (!s.Crossed && s.PrevHZ > Surface && s.Z[0] <= Surface && sg > c.L * 0.8f) { s.Crossed = true; Impact(s, s.X[0], s.Y[0], 0.8f, true); Surge(f, s, players, s.P2, now); }
-            s.PrevHZ = s.Z[0]; if (ts >= 4.6f) End(f, s, now);
+            s.PrevHZ = s.Z[0]; if (ts >= 4.6f && !Rescue(f, s, now, ts, 4.6f)) End(f, s, now);
         }
 
         // ---- SURGE: the water a landing dive throws out (Yan, 2026-11-06: "the mass of water it displaces pushes the players back based on where they are and which pool it jumped into;
         // if players fall into the pool it does the second part of the grab attack, where it launches them up in the air with its tail"). Everyone within SurgeReach of the landing
         // pool's edge is shoved straight away from its centre, harder the closer they stand; no damage by itself. A player the shove carries into ANOTHER pool is caught by the tail
         // and thrown up and out, crashing where he stood (the snare's LAUNCH). Dive i-frames and people already in the air are skipped.
-        const float SurgeReach = 9f, SurgeStep = 0.5f;
+        const float SurgeReach = 9f, SurgeStep = 0.5f; const int FallDamage = 120;
         static bool DeepAt(float x, float y)
         {
             int tx = (int)Mathf.Floor(x), ty = (int)Mathf.Floor(y); if (tx < 0 || ty < 0 || tx >= TerrainMap.Width || ty >= TerrainMap.Height) return false;
@@ -332,10 +332,31 @@ namespace GameCore
                 }
                 Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + 0.8f);
                 if (into == null) continue;
-                Place(p, into.X, into.Y); Impact(s, into.X, into.Y, 1.0f, true); GameLog.Write("The wave drags you into the pool - the tail throws you out.");
-                s.Air[p] = new Fling { X0 = into.X, Y0 = into.Y, Z0 = 0.4f, X1 = q0.x, Y1 = q0.y, T0 = -2f, Dur = 1.45f, Apex = 7.5f, Land = "launch", Spin = 720f };
-                s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = 0, Text = "pulled under", X = into.X, Y = into.Y });
+                Place(p, into.X, into.Y); Impact(s, into.X, into.Y, 1.0f, true); GameLog.Write("The wave drags you into the pool...");
+                EelBoss.HurtPublic(p, FallDamage, "The wave drags you under", "Blunt"); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = FallDamage, Text = "pulled under", X = into.X, Y = into.Y });
+                s.Air[p] = new Fling { X0 = into.X, Y0 = into.Y, Z0 = -3f, T0 = -1f, Dur = 0f, Land = "under" }; s.Pulled.Add((p, into, q0.x, q0.y));      // stays under until the dive is over
             }
+        }
+
+        // ---- RESCUE (Yan, 2026-11-06): a second after the dive is over, the TAIL comes out of the pool the wave dragged players into and throws them out (the snare's LAUNCH): up, spin, crash
+        // where they stood. Runs inside the arch's and the dash's last seconds (they call it instead of ending); true while it is still going.
+        static bool Rescue(EelBoss.Fight f, State s, float now, float ts, float diveEnd)
+        {
+            if (s.Pulled.Count == 0) return false;
+            float tt = ts - (diveEnd + 1.0f);
+            if (tt < 0f) return true;
+            var first = s.Pulled[0]; var pool = first.pool; const float lx = 0.3f, ly = -0.3f;
+            var wc = new Curve(Bez((pool.X, pool.Y, -3.6f), (pool.X, pool.Y, 2f), (pool.X + lx, pool.Y + ly, 5f), (pool.X + lx, pool.Y + ly, 8.2f)));
+            float sg = tt < 0.45f ? wc.L * 0.97f * Ein(tt / 0.45f, 2f) : tt < 0.6f ? wc.L * 0.97f : tt < 1.6f ? wc.L * 0.97f * (1f - Smr((tt - 0.6f) / 1f)) : 0f;
+            var rev = wc.Points(); rev.Reverse(); FillTail(s, new Curve(rev), -sg + wc.L);
+            if (tt < 0.45f) { var tp = wc.At(sg); Place(first.p, tp.x, tp.y); s.Air[first.p] = new Fling { X0 = tp.x, Y0 = tp.y, Z0 = Mathf.Max(tp.z - 0.3f, -3f), T0 = -1f, Land = tp.z > 0f ? "carried" : "under" }; }
+            if (!s.Threw && tt >= 0.45f)
+            {
+                s.Threw = true; var tipEnd = wc.At(wc.L * 0.97f); Impact(s, pool.X, pool.Y, 1.0f, true); f.Label = "THE TAIL THROWS YOU OUT";
+                foreach (var e in s.Pulled) s.Air[e.p] = new Fling { X0 = tipEnd.x, Y0 = tipEnd.y, Z0 = tipEnd.z, X1 = e.x, Y1 = e.y, T0 = ts, Dur = 1.45f, Apex = 7.5f, Land = "launch", Spin = 720f };
+            }
+            if (tt >= 2.0f) { s.Pulled.Clear(); return false; }
+            return true;
         }
 
         // ---- SNARE (phase 2): the tail out of a pool, a grab, a drag, a throw out of another pool (LAUNCH or HURL)
