@@ -1022,6 +1022,13 @@ static class Program {
       var st4 = storm("miss", (f, tt) => { if (f.Sump.Bite == "lunge") SumpPlace(SP1, 22.5f, 27.5f); });
       Check(Hits(st4, 0) == 0 && !st4.Ev.Any(e => e.Kind == "parry"), $"EelSump bite: a player who steps away is missed ({Hits(st4, 0)} hits)");
       cross = Math.Max(cross, Math.Max(st2.MaxCross, Math.Max(st3.MaxCross, st4.MaxCross)));
+      // e) the struggle is real: 2 presses a second is not enough (the eel pushes the jaws back open), 8 a second wins; each press shuts the mouth a little
+      int lastSlow = -1, lastFast = -1; float mStart = -9f, mAfter5 = -9f;
+      var st5 = storm("slow", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 2f); if (s.Bite == "grapple" && k != lastSlow) { lastSlow = k; EelSump.GrappleInput(SP1); } });
+      Check(st5.Ev.Any(e => e.Kind == "parry") && !st5.Ev.Any(e => e.Kind == "slam") && Hits(st5, 0, 200) == 1, $"EelSump struggle: 2 presses a second loses the fight, the bite lands ({Hits(st5, 0, 200)})");
+      var st6 = storm("fast", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 8f); if (s.Bite == "grapple") { if (mStart < -1f) mStart = s.Mouth; if (k != lastFast) { lastFast = k; EelSump.GrappleInput(SP1); if (s.Mash == 8) mAfter5 = s.Mouth; } } });
+      Check(st6.Ev.Any(e => e.Kind == "slam") && Hits(st6, 0) == 0 && mStart > 1.3f && mAfter5 >= 0f && mAfter5 < mStart - 0.4f, $"EelSump struggle: 8 presses a second wins, and the mouth closes with the presses (wide {mStart:0.0} -> {mAfter5:0.0} after 8)");
+      cross = Math.Max(cross, Math.Max(st5.MaxCross, st6.MaxCross));
     }
     // PHASES: above 75% HP it only uses the first three moves; from 75% the snare and the flood join in, the first flood being the forced transition
     {

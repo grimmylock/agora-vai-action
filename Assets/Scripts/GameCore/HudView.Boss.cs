@@ -73,8 +73,10 @@ namespace GameCore
                 _tailEdge = Img(_root.transform, "TailBar", new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(BossW * 0.5f, 10f), Edge);
                 _tailFill = Img(_tailEdge.transform, "Fill", new Vector2(0f, 1f), new Vector2(2f, -2f), new Vector2(BossW * 0.5f - 4f, 6f), C("d0642a"));
             }
-            bool tailOn = eel && ef.Sump.TailOut && !GameState.Current.ModalOpen; _tailEdge.gameObject.SetActive(tailOn);        // shoot the tail: it lets go at 0
-            if (tailOn) _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(ef.Sump.Tail.Hp / (float)EelSump.TailMax), 6f);
+            bool grip = eel && EelSump.Gripping(Player.Current), tailOn = eel && ef.Sump.TailOut && !GameState.Current.ModalOpen;           // the tail's bar slot doubles as the jaw-hold's struggle bar
+            _tailEdge.gameObject.SetActive(tailOn || grip);
+            if (grip) { _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(EelSump.GripOf(ef)), 6f); _tailFill.color = Color.Lerp(Yellow, Color.white, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 24f)); _bossState.text = "MASH THE PARRY KEY!"; }
+            else if (tailOn) { _tailFill.color = C("d0642a"); _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(ef.Sump.Tail.Hp / (float)EelSump.TailMax), 6f); }
 
             float age = Time.unscaledTime - Boss.SplashAt;
             bool splash = age >= 0f && age < Boss.SplashSeconds && !GameState.Current.ModalOpen;

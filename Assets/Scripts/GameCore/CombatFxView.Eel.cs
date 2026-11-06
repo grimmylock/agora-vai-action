@@ -31,6 +31,18 @@ namespace GameCore
             for (int q = 0; q < cnt; q++) l[q] = Sprite.Create(tex, new Rect(Mathf.Clamp(q * (8 / EelSub) - 1, 0, EelBodyW - EelSliceW), 0, EelSliceW, EelBodyH), new Vector2(0.5f, 0.5f), EelPpu);
             return EelSlices[stage] = l;
         }
+        static readonly Sprite[][] EelJaws = new Sprite[4][];
+        const int JawFrames = 7, JawW = 117, JawH = 101; const float JawAnchorX = 116.38f, JawAnchorY = 52.02f;     // ArtSource/bosses/eel_bake_jaw.py: openness 0 .2 .4 .6 .8 1 (as drawn) 1.4 (forced wide), cut from his drawing
+        static Sprite EelJaw(int stage, float open)
+        {
+            if (EelJaws[stage] == null)
+            {
+                var tex = Resources.Load<Texture2D>("Sprites/Fx/boss_eel_jaw_s" + stage); var l = new Sprite[JawFrames];
+                if (tex != null) { tex.filterMode = FilterMode.Point; for (int i = 0; i < JawFrames; i++) l[i] = Sprite.Create(tex, new Rect(i * JawW, 0, JawW, JawH), new Vector2(JawAnchorX / JawW, 1f - JawAnchorY / JawH), EelPpu); }
+                EelJaws[stage] = l;
+            }
+            int k = open > 1.2f ? JawFrames - 1 : Mathf.Clamp(Mathf.RoundToInt(Mathf.Clamp01(open) * 5f), 0, 5); return EelJaws[stage][k];
+        }
         static Sprite EelHead(int stage)
         {
             if (EelHeads[stage] != null) return EelHeads[stage];
@@ -130,10 +142,11 @@ namespace GameCore
             bool headOut = s.Z[0] > EelSump.Surface; _eelHead.gameObject.SetActive(headOut);
             if (headOut)
             {
-                _eelHead.sprite = EelHead(stage); _eelHead.color = s.Z[0] <= EelSolidZ ? EelShade : Color.white; _eelHead.flipX = s.X[Mathf.Min(8, EelSump.N - 1)] < s.X[0];      // it looks away from its neck
+                float mouth = EelSump.MouthOpen(f); var jaw = mouth >= 0f ? EelJaw(stage, mouth) : null; _eelHead.sprite = jaw != null ? jaw : EelHead(stage); _eelHead.color = s.Z[0] <= EelSolidZ ? EelShade : Color.white; _eelHead.flipX = s.X[Mathf.Min(8, EelSump.N - 1)] < s.X[0];      // it looks away from its neck
                 _eelHead.sortingOrder = baseOrder + 400; _eelHead.transform.position = W(s.X[0], s.Y[0], s.Z[0]);
                 var nk = W(s.X[Mathf.Min(8, EelSump.N - 1)], s.Y[Mathf.Min(8, EelSump.N - 1)], s.Z[Mathf.Min(8, EelSump.N - 1)]) - _eelHead.transform.position;      // where the neck goes: tilt the head about its anchor so it meets it (a straight profile left a gap when the neck climbs)
                 float tilt = Mathf.Atan2(nk.y, Mathf.Abs(nk.x)) * Mathf.Rad2Deg; tilt = Mathf.Clamp(_eelHead.flipX ? -tilt : tilt, -55f, 55f);
+                float tw = EelSump.TwitchOf(f); if (tw > 0f) { _eelHead.transform.position += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f) * 0.14f * tw; tilt += Random.Range(-7f, 7f) * tw; }   // each press of the struggle jolts it
                 _eelHead.transform.rotation = Quaternion.Euler(0f, 0f, tilt);
             }
             int k = 0;                                                                                       // shadows on the ground under what is raised

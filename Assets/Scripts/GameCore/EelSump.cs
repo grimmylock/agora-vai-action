@@ -32,7 +32,7 @@ namespace GameCore
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
             public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
-            public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth, GrabStart, GrabLast, StunUntil; public int Mash; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
+            public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth = -1f, GrabStart, GrabLast, StunUntil; public int Mash; public float Grip, Twitch, GrabLastU; public bool Won; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
             public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3; public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
@@ -119,7 +119,16 @@ namespace GameCore
         }
         static void Hide(State s, Pool p, int from = 0, int to = N) { for (int i = from; i < to; i++) { s.X[i] = p.X; s.Y[i] = p.Y; s.Z[i] = HideZ - i * 0.01f; } }
         static void FillHead(State s, Curve c, float sig) { for (int i = 0; i < N; i++) { var q = c.At(sig - i / PerTile); s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }
-        static void FillTail(State s, Curve fromTip, float sig = 0f, bool keepHead = false) { for (int i = N / 2; i < N; i++) { var q = fromTip.At(sig + (N - 1 - i) / PerTile); if (keepHead && q.z <= Surface && s.Z[i] > Surface) continue; s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z; } }   // a hidden tail never cuts the head's column off in mid-air (it left the neck floating above the water, 2026-11-06)   // a curve ordered tip first
+        static void FillTail(State s, Curve fromTip, float sig = 0f, bool keepHead = false)
+        {
+            for (int i = N / 2 - 10; i < N; i++)                                                                       // 10 samples (2.5 tiles) further back than the half: the tail's root runs on down into its pool instead of ending in mid-air
+            {
+                var q = fromTip.At(sig + (N - 1 - i) / PerTile);
+                if (i < N / 2 && s.Z[i] > Surface) continue;                                                           // those only where the head's half is hidden anyway
+                if (keepHead && q.z <= Surface && s.Z[i] > Surface) continue; s.X[i] = q.x; s.Y[i] = q.y; s.Z[i] = q.z;
+            }
+        }
+        // (a hidden tail never cuts the head's column off in mid-air: keepHead; the tail curve is ordered tip first)
         static (float x, float y) Pos(Player p) => Ballistics.Pos(p);
         static void Place(Player p, float x, float y) { int tx = (int)Mathf.Floor(x), ty = (int)Mathf.Floor(y); p.X = tx; p.Y = ty; Rt.SetOffset(p, x - tx - 0.5f, y - ty - 0.5f); }
         static Pool Nearest(State s, float x, float y, Func<Pool, bool> ok = null) => s.Pools.Where(p => ok == null || ok(p)).OrderBy(p => (p.X - x) * (p.X - x) + (p.Y - y) * (p.Y - y)).FirstOrDefault();
@@ -174,7 +183,7 @@ namespace GameCore
             if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
             if (kind == "snare" && s.Variant == null) s.Variant = players.Count >= 2 && Rng.Next(2) == 0 ? "hurl" : "launch";
             if (kind == "snare" && s.Variant == "hurl" && players.Count < 2) s.Variant = "launch";
-            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Bite = null; s.BiteCur = null; s.SinkT = -1f; s.Victim = null; s.Mouth = 0f; s.StormSg = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
+            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Bite = null; s.BiteCur = null; s.SinkT = -1f; s.Victim = null; s.Mouth = -1f; s.StormSg = 0f; s.Grip = 0f; s.Twitch = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
             s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
             EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
             switch (kind)
@@ -519,12 +528,13 @@ namespace GameCore
 
         // ---- STORM (phase 3, Yan 2026-11-06; the 50% transition, then one of the moves): the arena floods, the eel comes up out of a pool and charges for ~4 s with sparks all round it, then it
         // "explodes", electrifying all the water of the map: anyone not on a dry patch (an island, the slab, a platform) is shocked. THEN the BITE (chained): it turns on a player and opens its mouth
-        // slowly (2.8 s), then springs. A player who presses the parry key just before it lands PARRIES it bare-handed (anyone can) and holds the jaws open: mash the parry key (MashNeed presses in
+        // slowly (2.8 s), then springs. A player who presses the parry key just before it lands PARRIES it bare-handed (anyone can) and holds the jaws open: mash the parry key (presses that outpace its push-back, within
         // MashSeconds, slow motion for everyone, the others can keep shooting) to shut its mouth and slam its head down - it is stunned for StunSeconds (slumped on the ground), then wakes, shakes its head and
         // sinks. Fail the mash, or never parry, and the jaws close: BiteDamage, then it throws him like the tail's LAUNCH. A dive through the lunge (i-frames), or stepping away, makes it miss.
         // Wind-ups all the way: the pools swell, the floor floods, it rears up, 4 s of sparks, the mouth slowly opening.
         const float StormCharge = 4f, StormDamage = 450f, BiteOpen = 2.8f, BiteLunge = 0.4f, BiteWindow = 0.6f, MashSeconds = 4.5f, StunSeconds = 4f;
-        const int MashNeed = 16, SlamDamage = 1800, BiteDamage = 200;
+        const int SlamDamage = 1800, BiteDamage = 200;
+        const float GripPerPress = 0.085f, GripDecay = 0.2f;   // each press shuts the jaws a little (twitch), and the eel pushes them back open between presses: it takes ~6 presses a second to win in MashSeconds
         static void StartStorm(EelBoss.Fight f, State s, List<Player> players)
         {
             ScanShallow(s); s.P1 = Pick(s.Pools); var p = s.P1;
@@ -535,10 +545,15 @@ namespace GameCore
         public static bool GrappleInput(Player p)
         {
             var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone) return false; var s = f.Sump;
-            if (s.Bite != "grapple" || s.Victim != p) return false; s.Mash++; return true;
+            if (s.Bite != "grapple" || s.Victim != p) return false; s.Mash++; s.Grip = Mathf.Min(1f, s.Grip + GripPerPress); s.Twitch = 1f; if (s.Grip >= 1f) s.Won = true; return true;
         }
-        /// <summary>For the view: how open the mouth is (0 shut .. 1 wide).</summary>
-        public static float MouthOpen(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Mouth : 0f;
+        /// <summary>For the view: how open the mouth is (-1 = not controlled: the head as he drew it; 0 shut .. 1 as drawn .. 1.4 forced wide), and the twitch of the last press (1 .. 0).</summary>
+        public static float MouthOpen(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Mouth : -1f;
+        public static bool Gripping(Player p) { var f = EelBoss.Current; return p != null && f != null && f.Sump != null && !f.Gone && f.Sump.Bite == "grapple" && f.Sump.Victim == p; }
+        /// <summary>While someone holds the eel's jaws: where (tile space), for the camera to close in on or highlight.</summary>
+        public static bool GrappleSpot(out float x, out float y) { var f = EelBoss.Current; x = y = 0f; if (f == null || f.Sump == null || f.Gone || f.Sump.Bite != "grapple") return false; x = f.Sump.BiteSpot.x; y = f.Sump.BiteSpot.y; return true; }
+        public static float GripOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Grip : 0f;
+        public static float TwitchOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Twitch : 0f;
         static void ThrowBitten(EelBoss.Fight f, State s, Player v, float now, float ts)
         {
             s.Air.Remove(v); var sp = s.BiteSpot; Damage(s, v, BiteDamage, "The jaws close on you", sp.x, sp.y, 0f, 0.5f, now);
@@ -554,7 +569,7 @@ namespace GameCore
             float since = now - Rt.Of(v).GrabAt;
             if (since >= 0f && since <= BiteWindow)                                                                    // parried: he holds the jaws
             {
-                s.Bite = "grapple"; s.Victim = v; s.Mash = 0; s.GrabStart = Time.unscaledTime; s.GrabLast = now; s.Mouth = 1f; Place(v, sp.x, sp.y);
+                s.Bite = "grapple"; s.Victim = v; s.Mash = 0; s.Grip = 0f; s.Twitch = 0f; s.Won = false; s.GrabStart = Time.unscaledTime; s.GrabLastU = Time.unscaledTime; s.GrabLast = now; s.Mouth = 1.4f; Place(v, sp.x, sp.y);
                 s.Air[v] = new Fling { X0 = sp.x, Y0 = sp.y, Z0 = 0f, T0 = -1f, Dur = 0f, Land = "grip" }; f.Label = "BITE: PARRIED! Hold its jaws - mash the parry key!";
                 s.Events.Add(new Ev { Kind = "parry", X = sp.x, Y = sp.y, Power = 1f, Who = Index(v) }); Boss.Hold(MashSeconds + 0.5f);
             }
@@ -595,10 +610,12 @@ namespace GameCore
                 case "lunge":
                     { float u = Mathf.Clamp01((ts - s.BiteT) / BiteLunge); s.StormSg = Lerp(L0, s.BiteCur.L, Ein(u, 2.2f)); if (u >= 1f) BiteContact(f, s, players, now, ts); }
                     break;
-                case "grapple":                                                                                           // the scene: the clock stands still, the victim holds the jaws
+                case "grapple":                                                                                           // the scene: the clock stands still, the victim holds the jaws and fights them shut
                     {
-                        f.StageAt += now - s.GrabLast; s.GrabLast = now; var v = s.Victim; Place(v, s.BiteSpot.x, s.BiteSpot.y); Rt.Of(v).ProneUntil = now + 0.25f; s.Mouth = 1f;
-                        if (s.Mash >= MashNeed)
+                        f.StageAt += now - s.GrabLast; s.GrabLast = now; var v = s.Victim; Place(v, s.BiteSpot.x, s.BiteSpot.y); Rt.Of(v).ProneUntil = now + 0.25f;
+                        float du = Time.unscaledTime - s.GrabLastU; s.GrabLastU = Time.unscaledTime;
+                        s.Grip = Mathf.Max(0f, s.Grip - GripDecay * du); s.Twitch = Mathf.Max(0f, s.Twitch - 7f * du); s.Mouth = Lerp(1.4f, 0f, s.Grip);      // the mouth IS the progress: every press closes it a little, it creeps back open
+                        if (s.Won)
                         {
                             Boss.Release(); s.Air.Remove(v); Impact(s, s.BiteSpot.x, s.BiteSpot.y, 2.0f, false); s.Events.Add(new Ev { Kind = "slam", X = s.BiteSpot.x, Y = s.BiteSpot.y, Power = 2f, Who = Index(v) });
                             f.Unit.Hp = System.Math.Max(2, f.Unit.Hp - SlamDamage); Boss.OnDamaged(f.Unit); s.Bite = "slump"; s.BiteT = ts; s.StunUntil = now + StunSeconds; s.Mouth = 0f; f.Label = "THE JAWS SLAM SHUT - it is stunned!";

@@ -1063,6 +1063,9 @@ namespace GameCore
             if (cam == null) return;
             var me = target;
             var off = speaker.HasValue ? (speaker.Value - target) * 0.5f + new Vector3(0f, -cam.orthographicSize * 0.3f, 0f) : Vector3.zero;   // the dialog covers the bottom third
+            bool holding = EelSump.GrappleSpot(out var gx, out var gy), mine = holding && EelSump.Gripping(Player.Current);   // Boss 3: the jaw-hold - the one who parried is right on it, everyone else is shown the moment
+            if (holding) off += mine ? new Vector3(0f, 0.7f, 0f) : (new Vector3(gx, -gy, 0f) - target) * 0.7f;
+            _hl = Mathf.MoveTowards(_hl, holding && !mine ? 1f : 0f, Time.unscaledDeltaTime * 3f);
             _focus = Vector3.Lerp(_focus, off, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 6f));
             target += _focus;
             _lookAhead = Vector3.Lerp(_lookAhead, Rt.On && !speaker.HasValue ? Rt.Me.Look : Vector3.zero, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 4f));   // real-time fork: look toward the mouse
@@ -1090,9 +1093,10 @@ namespace GameCore
             if (speaker.HasValue) need = Mathf.Max(need, Mathf.Max(Mathf.Abs(speaker.Value.y - me.y) * 2f + 2f, Mathf.Abs(speaker.Value.x - me.x) / Mathf.Max(0.5f, cam.aspect) + 2f));
             float want = Mathf.Clamp(Mathf.Max(_zoom, need), CameraViewHalfHeightTiles, CameraMaxHalfHeightTiles);
             _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * 6f);
-            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch);   // Boss 1: the perfect parry's little zoom-in
+            _close = Mathf.MoveTowards(_close, EelSump.Gripping(Player.Current) ? 1f : 0f, Time.unscaledDeltaTime * 4f);   // Boss 3: the jaw-hold's close-up, leaning in on the player holding the eel's mouth
+            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.55f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
         }
-        private static float _shown;
+        private static float _shown, _close, _hl;
 
         /// <summary>New: draws a unit with its own pixel art (UnitSprites - humans in the armor they
         /// wear, mutants as themselves) at full tile size, untinted; a corpse is darkened. Units with
