@@ -82,6 +82,7 @@ namespace GameCore
             public bool ReloadOffhand;                                // RT 7z-c: R was pressed while the right-hand gun reloaded: the left one is next
             public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
             public float ParryAt = -99f, ParryReady;                  // Boss 1: when the parry key went down, when it can again
+            public float GrabAt = -99f;                               // Boss 3: when the parry key last went down, weapon or not (the eel's bite is parried bare-handed)
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
             public bool Vaulting => VaultFrom >= 0f;

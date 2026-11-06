@@ -994,10 +994,35 @@ static class Program {
       }
       Check(shed && headLanded && tailLanded, $"EelSump: shots do nothing while it is under the water (shed {shed}) and land on the head ({headLanded}) and the tail ({tailLanded}) while they are out");
     }
-    // STORM (phase 3): the arena floods, it rears up and charges ~4 s with sparks, then every water tile is electric: a player on a dry patch is safe, one in the water is shocked
-    st = SumpRun(true, 2, "storm", f => { SumpPlace(SP1, 22.5f, 20.5f); SumpPlace(SP2, 41.0f, 22.0f); }, null, 20f); cross = Math.Max(cross, st.MaxCross);
-    var sparks = st.Ev.Count(e => e.Kind == "spark"); var bolt = st.Ev.FirstOrDefault(e => e.Kind == "storm");
-    Check(Hits(st, 0) == 0 && Hits(st, 1, 450) == 1 && sparks >= 15 && bolt != null && st.FloodPeak > 100 && st.FloodEnd == 0 && st.F.Sump.Wet.Contains((41, 22)) && !st.F.Sump.Wet.Contains((22, 20)), $"EelSump storm: the arena floods (peak {st.FloodPeak} tiles, {st.FloodEnd} left), {sparks} sparks while it charges, the burst shocks the player in the water ({Hits(st, 1, 450)}) and spares the one on the dry patch ({Hits(st, 0)}), over in {st.EndT:0.0} s");
+    // STORM (phase 3): the arena floods, it rears up and charges ~4 s with sparks, then every water tile is electric (a dry patch is safe), then it BITES: a parry + mash slams its head down and stuns it,
+    // no parry (or no mash) and the jaws close and throw the player, a dive or a step away makes it miss
+    {
+      Func<string, Action<EelBoss.Fight, float>, SumpStats> storm = (what, each) => SumpRun(true, 2, "storm", f => { SumpPlace(SP1, 22.5f, 20.5f); SumpPlace(SP2, 41.0f, 22.0f); f.Sump.ForcedVictim = SP1; }, each, 45f);
+      Action<EelBoss.Fight> press = f => { Rt.Of(SP1).GrabAt = UnityEngine.Time.time; };
+      // a) parry bare-handed, mash: the jaws shut, the head slams, it is stunned
+      float stunStart = -1f, stunEnd = -1f; int hp0 = 0, hp1 = 0;
+      var st1 = storm("parry", (f, tt) => {
+        var s = f.Sump; if (hp0 == 0) hp0 = f.Unit.Hp;
+        if (s.Bite == "lunge") press(f);
+        if (s.Bite == "grapple") EelSump.GrappleInput(SP1);
+        if (s.Bite == "slump" && stunStart < 0f) { stunStart = UnityEngine.Time.time; hp1 = f.Unit.Hp; }
+        if (stunStart >= 0f && stunEnd < 0f && s.Bite != "slump") stunEnd = UnityEngine.Time.time;
+      });
+      cross = Math.Max(cross, st1.MaxCross); var sparks = st1.Ev.Count(e => e.Kind == "spark");
+      Check(Hits(st1, 0) == 0 && Hits(st1, 1, 450) == 1 && sparks >= 15 && st1.Ev.Any(e => e.Kind == "storm") && st1.Ev.Any(e => e.Kind == "parry") && st1.Ev.Any(e => e.Kind == "slam") && st1.FloodPeak > 100 && st1.FloodEnd == 0 && st1.F.Sump.Wet.Contains((41, 22)) && !st1.F.Sump.Wet.Contains((22, 20)),
+        $"EelSump storm: floods (peak {st1.FloodPeak}, {st1.FloodEnd} left), {sparks} sparks, the burst shocks the one in the water ({Hits(st1, 1, 450)}) and spares the one on the dry patch, the parried bite ends in a slam ({Hits(st1, 0)} hits on him)");
+      Check(stunStart > 0f && stunEnd - stunStart >= 3.9f && stunEnd - stunStart < 4.3f && hp0 - hp1 >= 1800, $"EelSump bite: the slam costs it {hp0 - hp1} HP and stuns it {stunEnd - stunStart:0.0} s (4 s, then it wakes)");
+      // b) no parry: the jaws close (200) and throw him (crash 420)
+      var st2 = storm("nobite", null);
+      Check(Hits(st2, 0, 200) == 1 && Hits(st2, 0, 420) == 1 && !st2.Ev.Any(e => e.Kind == "parry"), $"EelSump bite: never parried, the jaws close for 200 and he is thrown (crash 420): {Hits(st2, 0, 200)}/{Hits(st2, 0, 420)}");
+      // c) parry but no mash: the scene times out and the bite lands
+      var st3 = storm("nomash", (f, tt) => { if (f.Sump.Bite == "lunge") press(f); });
+      Check(st3.Ev.Any(e => e.Kind == "parry") && !st3.Ev.Any(e => e.Kind == "slam") && Hits(st3, 0, 200) == 1 && Hits(st3, 0, 420) == 1, $"EelSump bite: parried but not mashed, the bite lands after the scene ({Hits(st3, 0, 200)}/{Hits(st3, 0, 420)})");
+      // d) he steps away from where it locked: it misses
+      var st4 = storm("miss", (f, tt) => { if (f.Sump.Bite == "lunge") SumpPlace(SP1, 22.5f, 27.5f); });
+      Check(Hits(st4, 0) == 0 && !st4.Ev.Any(e => e.Kind == "parry"), $"EelSump bite: a player who steps away is missed ({Hits(st4, 0)} hits)");
+      cross = Math.Max(cross, Math.Max(st2.MaxCross, Math.Max(st3.MaxCross, st4.MaxCross)));
+    }
     // PHASES: above 75% HP it only uses the first three moves; from 75% the snare and the flood join in, the first flood being the forced transition
     {
       var seen0 = new HashSet<string>(); var seen2 = new HashSet<string>(); foreach (int ph in new[] { 0, 1 }) {

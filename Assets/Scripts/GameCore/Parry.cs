@@ -37,6 +37,7 @@ namespace GameCore
         public static void Press(Player p)
         {
             var s = Rt.Of(p); float now = Time.time;
+            s.GrabAt = now; if (EelSump.GrappleInput(p)) return;                      // Boss 3: any press counts against the eel's bite; holding its jaws, the key is the mash
             if (now < s.ParryReady || s.Diving || p == null || Body.Down(p)) return;
             if (!CanParry(p))                                                      // a gun in hand: the knife comes out with the guard
             {

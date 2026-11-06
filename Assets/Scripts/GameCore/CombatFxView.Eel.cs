@@ -67,6 +67,8 @@ namespace GameCore
                     for (int q = 0; q < nSp; q++) CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Random.Range(-2.5f, 2.5f)), Mathf.FloorToInt(e.Y + Random.Range(-1.5f, 3.5f)));
                     Shake(0.03f + 0.06f * e.Power);
                 }
+                else if (e.Kind == "parry") { CombatFx.PxAt("parry", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.3f); }                // the bite is caught in bare hands
+                else if (e.Kind == "slam") { CombatFx.PxAt("blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); CombatFx.PxAt("splash", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.6f); }   // the jaws shut and the head hits the ground
                 else if (e.Kind == "storm")                                                              // the burst: lightning crawls over the water all round
                 {
                     for (int ring = 1; ring <= 3; ring++) for (int q = 0; q < 6; q++) { float a = (q + 0.5f * ring) / 6f * Mathf.PI * 2f, r = 4f * ring; CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Mathf.Cos(a) * r), Mathf.FloorToInt(e.Y + Mathf.Sin(a) * r * 0.7f)); }

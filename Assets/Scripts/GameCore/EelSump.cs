@@ -32,6 +32,7 @@ namespace GameCore
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
             public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
+            public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth, GrabStart, GrabLast, StunUntil; public int Mash; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
             public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3; public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
@@ -173,7 +174,7 @@ namespace GameCore
             if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
             if (kind == "snare" && s.Variant == null) s.Variant = players.Count >= 2 && Rng.Next(2) == 0 ? "hurl" : "launch";
             if (kind == "snare" && s.Variant == "hurl" && players.Count < 2) s.Variant = "launch";
-            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
+            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Bite = null; s.BiteCur = null; s.SinkT = -1f; s.Victim = null; s.Mouth = 0f; s.StormSg = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
             s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
             EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
             switch (kind)
@@ -517,34 +518,100 @@ namespace GameCore
         }
 
         // ---- STORM (phase 3, Yan 2026-11-06; the 50% transition, then one of the moves): the arena floods, the eel comes up out of a pool and charges for ~4 s with sparks all round it, then it
-        // "explodes", electrifying all the water of the map: anyone not on a dry patch (an island, the slab, a platform) is shocked. Wind-ups: the pools swell (the dry patches light up), the
-        // floor floods, it rears up, the sparks thicken for 4 s - the burst never comes unannounced. (The bite that follows is built in the next step.)
-        const float StormCharge = 4f, StormDamage = 450f;
-        static float StormRadius(float ts, float end) => ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : ts < end ? 17f : ts < end + 1.3f ? 17f * (1f - Smr((ts - end) / 1.3f)) : 0f;
+        // "explodes", electrifying all the water of the map: anyone not on a dry patch (an island, the slab, a platform) is shocked. THEN the BITE (chained): it turns on a player and opens its mouth
+        // slowly (2.8 s), then springs. A player who presses the parry key just before it lands PARRIES it bare-handed (anyone can) and holds the jaws open: mash the parry key (MashNeed presses in
+        // MashSeconds, slow motion for everyone, the others can keep shooting) to shut its mouth and slam its head down - it is stunned for StunSeconds (slumped on the ground), then wakes, shakes its head and
+        // sinks. Fail the mash, or never parry, and the jaws close: BiteDamage, then it throws him like the tail's LAUNCH. A dive through the lunge (i-frames), or stepping away, makes it miss.
+        // Wind-ups all the way: the pools swell, the floor floods, it rears up, 4 s of sparks, the mouth slowly opening.
+        const float StormCharge = 4f, StormDamage = 450f, BiteOpen = 2.8f, BiteLunge = 0.4f, BiteWindow = 0.6f, MashSeconds = 4.5f, StunSeconds = 4f;
+        const int MashNeed = 16, SlamDamage = 1800, BiteDamage = 200;
         static void StartStorm(EelBoss.Fight f, State s, List<Player> players)
         {
             ScanShallow(s); s.P1 = Pick(s.Pools); var p = s.P1;
             s.Cur = new Curve(Bez((p.X, p.Y, -3.6f), (p.X, p.Y, 2.5f), (p.X + 0.5f, p.Y + 0.3f, 4.6f), (p.X + 0.9f, p.Y + 0.4f, 6.2f)));
             f.Label = "STORM: the pools swell";
         }
+        /// <summary>The parry key went down while someone is holding the eel's jaws: it is a mash press (Parry.Press).</summary>
+        public static bool GrappleInput(Player p)
+        {
+            var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone) return false; var s = f.Sump;
+            if (s.Bite != "grapple" || s.Victim != p) return false; s.Mash++; return true;
+        }
+        /// <summary>For the view: how open the mouth is (0 shut .. 1 wide).</summary>
+        public static float MouthOpen(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Mouth : 0f;
+        static void ThrowBitten(EelBoss.Fight f, State s, Player v, float now, float ts)
+        {
+            s.Air.Remove(v); var sp = s.BiteSpot; Damage(s, v, BiteDamage, "The jaws close on you", sp.x, sp.y, 0f, 0.5f, now);
+            float ux = 30.5f - sp.x, uy = 20f - sp.y, d = Mathf.Sqrt(ux * ux + uy * uy) + 1e-3f; var lp = TerrainMap.FindNearestEnterable((int)Mathf.Floor(sp.x + 5f * ux / d), (int)Mathf.Floor(sp.y + 5f * uy / d));
+            s.Air[v] = new Fling { X0 = sp.x, Y0 = sp.y, Z0 = 0.6f, X1 = lp.x + 0.5f, Y1 = lp.y + 0.5f, T0 = ts, Dur = 1.45f, Apex = 7.5f, Land = "launch", Spin = 720f };
+            f.Label = "BITE: it grabs you and throws you!"; s.Bite = "recover"; s.BiteT = ts; s.Mouth = 0.4f;
+        }
+        static void BiteContact(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
+        {
+            var sp = s.BiteSpot; Impact(s, sp.x, sp.y, 1.0f, false);
+            var v = players.Where(p => !Rt.Untouchable(p) && !s.Air.ContainsKey(p) && Dist(Pos(p).x, Pos(p).y, sp.x, sp.y) <= 1.8f).OrderBy(p => Dist(Pos(p).x, Pos(p).y, sp.x, sp.y)).FirstOrDefault();
+            if (v == null) { f.Label = "BITE: it misses and slams the ground"; s.Bite = "recover"; s.BiteT = ts; s.Mouth = 0.3f; return; }
+            float since = now - Rt.Of(v).GrabAt;
+            if (since >= 0f && since <= BiteWindow)                                                                    // parried: he holds the jaws
+            {
+                s.Bite = "grapple"; s.Victim = v; s.Mash = 0; s.GrabStart = Time.unscaledTime; s.GrabLast = now; s.Mouth = 1f; Place(v, sp.x, sp.y);
+                s.Air[v] = new Fling { X0 = sp.x, Y0 = sp.y, Z0 = 0f, T0 = -1f, Dur = 0f, Land = "grip" }; f.Label = "BITE: PARRIED! Hold its jaws - mash the parry key!";
+                s.Events.Add(new Ev { Kind = "parry", X = sp.x, Y = sp.y, Power = 1f, Who = Index(v) }); Boss.Hold(MashSeconds + 0.5f);
+            }
+            else { s.Victim = v; ThrowBitten(f, s, v, now, ts); }
+        }
         static void StormRun(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
         {
-            float rise = 3.1f, hold = rise + 1.2f, burst = hold + StormCharge, sink = burst + 1.2f, end = sink + 1.2f;                    // 3.1 rises, 4.3 charging, 8.3 the burst, 9.5 sinks, 10.7 over
-            FloodTiles(s, StormRadius(ts, sink)); f.Zones.Clear();
-            var c = s.Cur; float sg = ts < rise ? 0f : ts < hold ? c.L * 0.97f * Smr((ts - rise) / 1.2f) : ts < sink ? c.L * 0.97f : ts < end ? c.L * 0.97f * (1f - Smr((ts - sink) / 1.2f)) : 0f;
-            FillHead(s, c, sg);
-            if (ts < 1.5f) f.Label = "STORM: the pools swell, the dry patches light up"; else if (ts < rise) f.Label = "STORM: the floor turns to deep water"; else if (ts < hold) f.Label = "STORM: it rears up out of the water";
-            else if (ts < burst)
+            float rise = 3.1f, hold = rise + 1.2f, burst = hold + StormCharge;                                              // 3.1 rises, 4.3 charging, 8.3 the burst, then the bite
+            float fr = ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : 17f; if (s.SinkT >= 0f) fr = 17f * (1f - Smr((ts - s.SinkT) / 1.3f));
+            FloodTiles(s, fr); f.Zones.Clear(); var c = s.Cur; float L0 = c.L * 0.97f;
+            if (s.Bite == null)
             {
-                f.Label = "STORM: it is charging - get onto dry ground!";
-                if (ts >= s.SparkAt) { s.SparkAt = ts + 0.2f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = (ts - hold) / StormCharge }); }
+                s.StormSg = ts < rise ? 0f : ts < hold ? L0 * Smr((ts - rise) / 1.2f) : L0;
+                if (ts < 1.5f) f.Label = "STORM: the pools swell, the dry patches light up"; else if (ts < rise) f.Label = "STORM: the floor turns to deep water"; else if (ts < hold) f.Label = "STORM: it rears up out of the water";
+                else
+                {
+                    f.Label = "STORM: it is charging - get onto dry ground!";
+                    if (ts >= s.SparkAt && ts < burst) { s.SparkAt = ts + 0.2f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = (ts - hold) / StormCharge }); }
+                }
+                if (ts >= burst)
+                {
+                    f.Label = "STORM: THE WATER IS ELECTRIC"; s.Events.Add(new Ev { Kind = "storm", X = s.X[0], Y = s.Y[0], Power = 1.5f, Water = true });
+                    foreach (var p in players) { var q = Pos(p); if (s.Wet.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y)))) Damage(s, p, (int)StormDamage, "The water electrocutes you", s.X[0], s.Y[0], 0f, 1.2f, now); }
+                    s.Bite = "open"; s.BiteT = ts; s.Victim = s.ForcedVictim ?? Pick(players);
+                }
             }
-            if (!s.Hit1 && ts >= burst)
+            else switch (s.Bite)
             {
-                s.Hit1 = true; f.Label = "STORM: THE WATER IS ELECTRIC"; s.Events.Add(new Ev { Kind = "storm", X = s.X[0], Y = s.Y[0], Power = 1.5f, Water = true });
-                foreach (var p in players) { var q = Pos(p); if (s.Wet.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y)))) Damage(s, p, (int)StormDamage, "The water electrocutes you", s.X[0], s.Y[0], 0f, 1.2f, now); }
+                case "open":                                                                                              // the mouth opens slowly
+                    s.Mouth = Mathf.Clamp01((ts - s.BiteT) / BiteOpen); f.Label = "BITE: it turns on " + (s.Victim == Player.Current ? "you" : "a player") + " and opens its mouth";
+                    if (s.BiteCur == null && ts - s.BiteT >= BiteOpen - 0.8f)                                              // the aim locks 0.8 s before it springs
+                    {
+                        var q = Pos(s.Victim); s.BiteSpot = q; var pts = new List<(float x, float y, float z)>(c.Points()); var a = pts[pts.Count - 1]; float dx = q.x - a.x, dy = q.y - a.y;
+                        pts.AddRange(Bez(a, (a.x + 0.18f * dx, a.y + 0.18f * dy, a.z + 1.6f), (q.x - 0.2f * dx, q.y - 0.2f * dy, 3.0f), (q.x, q.y, 0.45f)).Skip(1)); s.BiteCur = new Curve(pts);
+                    }
+                    if (ts - s.BiteT >= BiteOpen) { s.Bite = "lunge"; s.BiteT = ts; f.Label = "BITE: it springs!"; }
+                    break;
+                case "lunge":
+                    { float u = Mathf.Clamp01((ts - s.BiteT) / BiteLunge); s.StormSg = Lerp(L0, s.BiteCur.L, Ein(u, 2.2f)); if (u >= 1f) BiteContact(f, s, players, now, ts); }
+                    break;
+                case "grapple":                                                                                           // the scene: the clock stands still, the victim holds the jaws
+                    {
+                        f.StageAt += now - s.GrabLast; s.GrabLast = now; var v = s.Victim; Place(v, s.BiteSpot.x, s.BiteSpot.y); Rt.Of(v).ProneUntil = now + 0.25f; s.Mouth = 1f;
+                        if (s.Mash >= MashNeed)
+                        {
+                            Boss.Release(); s.Air.Remove(v); Impact(s, s.BiteSpot.x, s.BiteSpot.y, 2.0f, false); s.Events.Add(new Ev { Kind = "slam", X = s.BiteSpot.x, Y = s.BiteSpot.y, Power = 2f, Who = Index(v) });
+                            f.Unit.Hp = System.Math.Max(2, f.Unit.Hp - SlamDamage); Boss.OnDamaged(f.Unit); s.Bite = "slump"; s.BiteT = ts; s.StunUntil = now + StunSeconds; s.Mouth = 0f; f.Label = "THE JAWS SLAM SHUT - it is stunned!";
+                        }
+                        else if (Time.unscaledTime - s.GrabStart > MashSeconds) { Boss.Release(); ThrowBitten(f, s, v, now, ts); }
+                    }
+                    break;
+                case "slump": if (now >= s.StunUntil) { s.Bite = "wake"; s.BiteT = ts; f.Label = "It wakes and shakes its head"; } break;
+                case "wake": if (ts - s.BiteT >= 0.9f) { s.Bite = "sink"; s.BiteT = ts; s.SinkT = ts; s.SinkFrom = s.StormSg; } break;
+                case "recover": if (ts - s.BiteT >= 1.0f) { s.Bite = "sink"; s.BiteT = ts; s.SinkT = ts; s.SinkFrom = s.StormSg; } break;
+                case "sink": s.StormSg = s.SinkFrom * (1f - Smr((ts - s.BiteT) / 1.4f)); if (ts - s.BiteT >= 1.6f) End(f, s, now); break;
             }
-            if (ts >= end + 0.2f) End(f, s, now);
+            if (f.Move == "storm") FillHead(s, s.BiteCur != null && s.Bite != null ? s.BiteCur : c, s.StormSg);
         }
 
         // ---- the reveal (it swallows the body on the slab) and the death (it brings the body back up, then goes down the big pool's centre)

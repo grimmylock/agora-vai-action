@@ -72,7 +72,7 @@ namespace GameCore
         public static string SplashTitle, SplashSub; public static float SplashAt = -99f, SplashSeconds = 3.2f;
         static void Splash(string title, string sub) { SplashTitle = title; SplashSub = sub; SplashAt = Time.unscaledTime; }
 
-        public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; Parry.Unparryable = false; SplashAt = -99f; }
+        public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; _holdUntil = -1f; Parry.Unparryable = false; SplashAt = -99f; }
 
         // ---------------- the first boss ----------------
 
@@ -365,7 +365,7 @@ namespace GameCore
 
         // ---------------- hit-stop and the perfect parry's moment ----------------
 
-        static float _stopUntil = -1f, _slowUntil = -1f, _momentAt = -99f;
+        static float _stopUntil = -1f, _slowUntil = -1f, _momentAt = -99f, _holdUntil = -1f;
         public const float MomentStop = 0.14f, MomentSlow = 1.0f, MomentScale = 0.25f;
 
         /// <summary>A moment of near-frozen time (real seconds): the weight on a parry, a phase change, the finisher.</summary>
@@ -385,11 +385,23 @@ namespace GameCore
             _slowUntil = Time.unscaledTime + MomentStop + MomentSlow;
         }
 
+        /// <summary>Boss 3 (the eel's jaw-hold): a hit-stop, then slow motion held for `seconds` with the camera leaning in, until Release.</summary>
+        public static void Hold(float seconds)
+        {
+            HitStop(0.12f); _momentAt = Time.unscaledTime; _slowUntil = Time.unscaledTime + 0.12f + seconds; _holdUntil = _slowUntil;
+        }
+        public static void Release()
+        {
+            _holdUntil = -1f; _slowUntil = -1f; _momentAt = -99f;
+            if (_stopUntil < 0f && !Rt.Paused) Time.timeScale = Rt.SlowMo ? Rt.SlowScale : 1f;
+        }
+
         /// <summary>0..1: how far into the parry moment's lean-in we are (fast in, held, eased out).</summary>
         public static float Punch
         {
             get
             {
+                if (Time.unscaledTime < _holdUntil) return Mathf.Clamp01((Time.unscaledTime - _momentAt) / 0.12f);   // the held scene: leaned in the whole time
                 float t = Time.unscaledTime - _momentAt, len = MomentStop + MomentSlow;
                 if (t < 0f || t > len) return 0f;
                 return Mathf.Clamp01(t / 0.08f) * Mathf.Clamp01((len - t) / 0.45f);
