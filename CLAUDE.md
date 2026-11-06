@@ -123,7 +123,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
 
 Paths in older Python files point to `C:/Users/yan-s/Desktop/agora vai/agora vai/...`; search and replace if they break.
 
-## State (2026-11-04)
+## State (2026-11-06)
 
 **Checked in Unity by Yan:** the first real-time playtest (RT 7), the melee/Visor work (Visor 4: heads clipping, parry too hard ->
 wider windows), the brain boss once (Boss 2 fixes: it walked off, triple HP, two moves at once past 50%). The fixes after each were
@@ -140,12 +140,13 @@ strike spots marked in the plan), the eel's art is Yan's own drawing recovered t
 `ACTION_DESIGN.md` "Dodge bosses"): four deep pools, authored spine moves in `EelSump.cs` (combo, arch, dash; phase 2: snare launch/hurl, flood), a targetable tail, always up and down a pool's centre; the platform form (wrap, shock, strike) is `EelBoss.cs` + `EelRig.cs`; a FIRST-PASS Unity view (`CombatFxView.Eel.cs`: the baked body strips `boss_eel_body_s0..3.png` laid along the spine, the head, shadows, telegraphs, impacts; `HudView.Boss.cs`: its bars) and the Testing Ground entry (main menu > Testing Ground > BOSS The Drowner, `TestingGround.EelFight`) exist but have NEVER been run in Unity; clips of the real fight come from the harness dump (`eelsump`, `Tools/render/eel_real_clip.py`); ten ready-made pixelfx effects in the game (`CombatFx.PxAt`, RT fx 5).
 
 **Waiting on Yan:**
+- **The eel boss, never run in Unity:** a Unity play session of Testing Ground > BOSS The Drowner (Console first, then: do the four pools show, does it come up out of a pool's centre, telegraphs, impacts, bars, lifted/thrown players). Then his tuning notes (all damage/timing/radius numbers are guesses) and: what the body's story key opens (Gamma's Sealed Vault is the proposal), the final boss name ("The Drowner" is a placeholder).
 - His review of Sub-Station Depths (`maps/renders/dungeon/sub_station_depths_before_after.jpg`) before any other dungeon is redone.
 - A Unity play session: lighting (night too bright or flat? does F7 show a difference? cost per frame unmeasured), locks, brain boss.
 - Pose picks (`maps/renders/poses/poses_preview.png`); his map and quest spots for the starting area; the birch redraw.
 - Should solo death use the camp respawn too? Merge `realtime-proto` into `main`?
 
-**Next:** the other dungeons the same way (after Yan's go on Depths), lighting follow-ups after his check, the co-op test of enemies
+**Next:** the eel (see WORK_LOG's last entries and HANDOFF notes): fix what the Unity run finds in the first-pass view (`CombatFxView.Eel.cs`: seams on tight bends, the thin tail, draw order vs players, damage numbers, sound, the swallowed body), tune `EelSump.cs`, then the Levels 1-2 platform form's view/spawn and the last pump's gate, the story key and the eel-parts drop, co-op sync; then the other dungeons the same way (after Yan's go on Depths), lighting follow-ups after his check, the co-op test of enemies
 and the boss on clients. Pending tasks: #19 (building fronts, scale, power lines), #36 (why Yan loses to humans as Ex-Military).
 Longer list: `ACTION_DESIGN.md` "Later list".
 
