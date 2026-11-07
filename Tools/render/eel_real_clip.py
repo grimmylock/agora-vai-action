@@ -265,7 +265,9 @@ def run(probe=None):
         if adv: fi += 1
     if probe:
         w, h, cols = 640, 360, 3; rows = (len(sheet) + cols - 1) // cols; sh = Image.new('RGB', (cols * w, rows * h))
-        for k, (pt, im) in enumerate(sheet): sh.paste(im.resize((w, h)).convert('RGB'), ((k % cols) * w, (k // cols) * h))
+        for k, (pt, im) in enumerate(sheet):
+            if os.environ.get("PROBE_FULL"): im.convert("RGB").save(os.path.splitext(out)[0] + "_%d.png" % k)
+            sh.paste(im.resize((w, h)).convert('RGB'), ((k % cols) * w, (k // cols) * h))
         sh.save(out); print(out, len(sheet), 'moments')
     else: video(tmp, out, FPS); print(out, n, 'frames', round(n / FPS, 1), 's')
 
