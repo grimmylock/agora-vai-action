@@ -28,24 +28,34 @@ def zigzag(p0, p1, n=7, j=14):
     for i in range(1, n): u = i / n; pts.append((p0[0] + (p1[0] - p0[0]) * u + random.uniform(-j, j), p0[1] + (p1[1] - p0[1]) * u + random.uniform(-j, j)))
     pts.append(p1); return pts
 
-def aura(S, k, t, n_arcs, big=False):
-    """small lightning all over the body (Yan, 2026-11-07: 'like going super saiyan 2 but only the lightning'): many short, thin, chunky-pixel arcs that hug the body's outline and flicker every frame.
-    Drawn at half resolution and scaled up with NEAREST so it reads as pixel art; k 0..1 = how charged it is (more arcs, longer, brighter)"""
-    lo = Image.new('RGBA', (WW // 2, WH // 2), (0, 0, 0, 0)); d = ImageDraw.Draw(lo)
-    vis = [i for i in range(2, NS - 2) if S[i, 2] > 1.3]
-    if not vis: return None
-    for _ in range(n_arcs):
-        i = random.choice(vis); q = sp(S[i, 0], S[i, 1], S[i, 2]); qa = sp(S[i - 2, 0], S[i - 2, 1], S[i - 2, 2]); qb = sp(S[i + 2, 0], S[i + 2, 1], S[i + 2, 2])
-        tx, ty = qb[0] - qa[0], qb[1] - qa[1]; ln = math.hypot(tx, ty) or 1.0; tx, ty = tx / ln, ty / ln; nx, ny = -ty, tx
-        side = random.choice((-1, 1)); hw = random.uniform(0.3, 1.15) * 0.5 * T * 0.9                                   # starts on the skin, inside to just past the edge
-        x, y = q[0] + nx * side * hw, q[1] + ny * side * hw; pts = [(x / 2, y / 2)]
-        seg = random.randint(3, 5); step_ = random.uniform(1.2, 2.2) * (1 + 0.5 * k)
-        dx, dy = tx * random.choice((-1, 1)), ty * random.choice((-1, 1))
-        for _s in range(seg):                                                                          # a jagged little run: mostly along the body, sometimes jumping out
-            a = random.uniform(-1.0, 1.0); ox_, oy_ = (dx + nx * side * 0.6 * a), (dy + ny * side * 0.6 * a); m_ = math.hypot(ox_, oy_) or 1.0
-            x += ox_ / m_ * step_ * 2; y += oy_ / m_ * step_ * 2; pts.append((x / 2, y / 2))
-        d.line(pts, fill=(110, 200, 255, 150), width=2); d.line(pts, fill=(235, 250, 255, 255), width=1)
-    return lo.resize((WW, WH), Image.NEAREST)
+BODYMASK = None
+def aura(S, k, t, n_strands, big=False):
+    """lightning that COILS AROUND the eel (Yan, 2026-11-07: 'around it, coiling, not on the sprite, much smaller'): thin 1 px strands winding round the body like a helix, floating a little off the skin.
+    The body's silhouette (the painted layers) gives the centre line and the width at every row, so the coils follow the real sprite. The back of each turn is hidden behind the body (drawn only where it is
+    outside the outline), the front crosses it. Tiny forks and sparks. Native resolution, 1 px core."""
+    if BODYMASK is None: return None
+    ys_, xs_ = np.nonzero(BODYMASK)
+    if len(ys_) < 50: return None
+    top, bot = ys_.min(), ys_.max(); y_a = top + int(0.28 * (bot - top)); y_b = bot - 2                             # below the head
+    cx = {}; hw = {}
+    for y in range(y_a, y_b + 1):
+        xr = np.nonzero(BODYMASK[y])[0]
+        if len(xr): cx[y] = (xr.min() + xr.max()) / 2.0; hw[y] = max(4.0, (xr.max() - xr.min()) / 2.0)
+    if len(cx) < 20: return None
+    lo = Image.new('RGBA', (WW, WH), (0, 0, 0, 0)); d = ImageDraw.Draw(lo)
+    for _ in range(n_strands):
+        L = int(random.uniform(0.45, 0.8 + 0.2 * k) * (y_b - y_a)); y0 = random.randint(y_a, max(y_a, y_b - L)); ph = random.uniform(0, 6.283)
+        pitch = random.uniform(80, 130); direction = random.choice((-1, 1)); prev = None; y = y0
+        while y < min(y_b, y0 + L):
+            if y in cx:
+                a = ph + direction * 6.283 * (y - y0) / pitch; sn = math.sin(a); front = math.cos(a) > 0; R = hw[y] * 1.28                                    # a little wider than the skin
+                x = cx[y] + R * sn + random.uniform(-1.0, 1.0); yy = y + random.uniform(-1.0, 1.0); shown = front or abs(sn) * 1.28 > 1.02
+                if shown and prev is not None: d.line((prev[0], prev[1], x, yy), fill=(120, 200, 255, 80), width=3); d.line((prev[0], prev[1], x, yy), fill=(238, 251, 255, 255), width=1)
+                prev = (x, yy) if shown else None
+                if shown and random.random() < 0.05 * (1 + k) and abs(sn) > 0.5:                                  # a tiny fork off the outer loops
+                    sg = 1 if sn > 0 else -1; fx = x + sg * random.uniform(4, 10); fy = yy + random.uniform(-7, 7); d.line((x, yy, (x + fx) / 2, (yy + fy) / 2 + random.uniform(-2, 2), fx, fy), fill=(238, 251, 255, 235), width=1); d.point((fx, fy), fill=(255, 255, 255, 255))
+            y += 1
+    return lo
 ZAPS = []; close = 0.0; HROT = 0.0; CHG0 = None
 def grip_points(S, face, mo):
     """the jaw-hold in the preview: the two gloves on the jaw tips (eel_jaw_tips.py), and where he stands, in front of the face: (upper, lower, stand) as (x, y, z) tile points"""
@@ -199,6 +209,9 @@ def run(probe=None):
                 if g is not None: gi = Image.fromarray(g); gi.putalpha(gi.getchannel('A').point(lambda v, al=alpha: int(v * al))); c.alpha_composite(gi)
         if adv: prev = [prev[1], cur]
         for a, ly in sorted(layers, key=lambda z: -z[0]): c.alpha_composite(Image.fromarray(ly))
+        global BODYMASK
+        BODYMASK = np.zeros((WH, WW), bool)
+        for a, ly in layers: BODYMASK |= ly[..., 3] > 0
         if f.get('bite') in ('grapple', 'lift', 'smash'):                                                   # Yan's sketch: a glove on each jaw tip - and he stays where he stood
             gu, gl, _ = grip_points(S, face, f.get('mouth', -1)); glove(c, gu, face == 1); glove(c, gl, face == 1)
             if os.environ.get('EELDBG') and abs(t - 33.0) < 0.04: print('DBG face', face, 'player', sp(pl[0][0], pl[0][1], 0), 'glove up', sp(*gu), 'glove lo', sp(*gl), 'head', sp(S[0,0], S[0,1], S[0,2]), 'T', T, 'MAN', MAN.size)
@@ -236,9 +249,9 @@ def run(probe=None):
         lab_ = f['label']
         if f['move'] == 'storm' and 'charging' in lab_:
             if CHG0 is None: CHG0 = t
-            kk = c01((t - CHG0) / 4.7); au = aura(S, kk, t, int(5 + 70 * kk * kk), False)                                 # builds slowly, then crackles all over
+            kk = c01((t - CHG0) / 4.7); au = aura(S, kk, t, int(1 + 5 * kk), False)                                 # builds slowly, then crackles all over
         elif f['move'] == 'storm' and ('ELECTRIC' in lab_ or 'SCREAMS' in lab_):
-            au = aura(S, 1.0, t, 80, True)                                                                              # at the scream: everywhere
+            au = aura(S, 1.0, t, 9, True)                                                                              # at the scream: everywhere
         else: CHG0 = None; au = None
         if au is not None: c.alpha_composite(au)
         for i in range(NS - 1):                                                                # foam and ripples where the body goes through the water: always a pool's centre
