@@ -859,9 +859,13 @@ static class Program {
     int si = Math.Max(0, route.Count - 16); var startAt = route[si]; p.X = startAt.Item1; p.Y = startAt.Item2; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); p.Hp = p.MaxHp; lastHp = p.Hp;
     var f1 = EelBoss.SpawnPlatform(LabLocks.Depths1, plat.x - 12f, plat.y + 3f); f1.StageAt = UnityEngine.Time.time;
     int ri = si; float wrapAge0 = -1f; int lastWraps = 0; var dive = false;
-    BotShoot = true;
+    BotShoot = true; bool spineLeak = false; int spineWrap = 0, spineHit = 0;
     Seg(LabLocks.Depths1, f1, t => f1.Stage == "done" && EelBoss.Age(f1) > 2.5f, (t, px, py, d) => {
       BotX = 0; BotY = 0; BotJump = false; float gx, gy;
+      if (f1.View != null) {                                                                         // the view's spine: nothing out of the water while it lurks, a coil out while it wraps, and the coil can be shot
+        if ((f1.Stage == "lurk" || f1.Stage == "wind") && f1.View.BodyOut) spineLeak = true;
+        if (f1.Stage == "wrap" && f1.View.BodyOut) { spineWrap++; var hs = f1.View.Z.Select((z, i) => (z, i)).First(q => q.z > EelSump.Surface).i; if (EelSump.BodyUnder(f1.View.X[hs], f1.View.Y[hs] - f1.View.Z[hs], out var bu, out _, out _) && EelBoss.Is(bu)) spineHit++; }
+      }
       if (f1.Stage == "wrap" || f1.Stage == "release" || f1.Stage == "strike" || f1.Stage == "recover" || f1.Stage == "wind") {
         float cxp = plat.x + 0.5f, cyp = plat.y + 0.5f; float dd = (float)Math.Sqrt((px - cxp) * (px - cxp) + (py - cyp) * (py - cyp));
         var away = route[Math.Max(0, route.Count - 6)]; float ax = away.Item1 + 0.5f - cxp, ay = away.Item2 + 0.5f - cyp, al = (float)Math.Sqrt(ax * ax + ay * ay) + 0.001f;
@@ -878,6 +882,10 @@ static class Program {
     sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
     System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
     EelRun = (f1.Wraps, f1.Unit.Hp, false, false, false, log0.Count(l => l.Contains("coils shock")), 0);
+    Check(!spineLeak && spineWrap > 20 && spineHit == spineWrap, $"Eel Levels 1-2: the platform form has a view spine - nothing above the water while it lurks, a coil above it while it wraps ({spineWrap} ticks), and the crosshair finds it ({spineHit})");
+    { EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); var e2 = EelBoss.Current; bool spawned = e2 != null && e2.Level == "platform" && e2.View != null && !EelBoss.Is(null);
+      var keys = MacroState.Current.Keys; keys.Add("depths_drain2"); EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); bool drained = EelBoss.Current == null; keys.Remove("depths_drain2"); EelBoss.Reset();
+      Check(spawned && drained, $"Eel Levels 1-2: it is there when you enter the level ({spawned}) and gone once that level's pump has run ({drained})"); }
     Console.WriteLine($"eel platform fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}");
   }
   static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;

@@ -685,7 +685,7 @@ namespace GameCore
         /// so Rt.UnitUnder and Ballistics read it (0 for anything else, and for a part under the water).</summary>
         public static float LiftOfUnit(ICombatant u)
         {
-            var f = EelBoss.Current; if (u == null || f == null || f.Sump == null || f.Gone) return 0f; var s = f.Sump;
+            var f = EelBoss.Current; var s = SpineOf(f); if (u == null || s == null) return 0f;
             if (ReferenceEquals(u, f.Unit)) return s.Z[0] > 0.3f ? s.Z[0] + 1.3f : 0f;
             if (ReferenceEquals(u, s.Tail)) return s.Z[N - 1] > 0.3f ? s.Z[N - 1] + 0.6f : 0f;
             return 0f;
@@ -699,13 +699,15 @@ namespace GameCore
         // by any round that passes them, the airborne ones only by a round aimed at the eel (a column from the floor would wall the whole arena under an arch). Head zone: the head unit, part
         // "Head", HeadBonus x on top of the normal head multiplier; the tail zone (the last TailSamples): the tail unit; the rest: the head unit's HP, part "Body", normal damage.
         public const int HeadSamples = 9, TailSamples = 24; public const float BodyHalf = 0.95f, HeadHalf = 1.5f, LowZ = 2.5f, HeadBonus = 1.5f;
-        static ICombatant ZoneUnit(EelBoss.Fight f, int i, out string part) { if (i <= HeadSamples) { part = "Head"; return f.Unit; } part = "Body"; return i >= N - TailSamples ? (ICombatant)f.Sump.Tail : f.Unit; }
+        static ICombatant ZoneUnit(EelBoss.Fight f, int i, out string part) { if (i <= HeadSamples) { part = "Head"; return f.Unit; } part = "Body"; return f.Sump != null && i >= N - TailSamples ? (ICombatant)f.Sump.Tail : f.Unit; }
+        /// <summary>The spine the view draws and the hit tests read: the Sump's own, or (Levels 1-2) the one EelBoss.FillView lays along the platform form's rig, so both forms share the drawing and the hitbox.</summary>
+        public static State SpineOf(EelBoss.Fight f) => f == null || f.Gone ? null : f.Sump ?? f.View;
         /// <summary>The nearest spine sample a round's line passes (tile space, from (x0, y0) along the unit vector (dx, dy), nearer than `limit` along it), for Ballistics.Trace.</summary>
         public static bool TraceBody(float x0, float y0, float dx, float dy, float range, float limit, bool atEel, out float bestT, out ICombatant unit, out string part, out float bestSide)
         {
             bestT = limit; unit = null; part = null; bestSide = 0f;
-            var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Stage == "hidden") return false;
-            var s = f.Sump; int hit = -1;
+            var f = EelBoss.Current; var s = SpineOf(f); if (s == null || f.Stage == "hidden") return false;
+            int hit = -1;
             for (int i = 0; i < N; i++)
             {
                 if (s.Z[i] <= Surface || s.Z[i] > LowZ && !atEel) continue;
@@ -720,8 +722,8 @@ namespace GameCore
         /// <summary>The part of the eel the crosshair (tile space) is over - the sprite is drawn lifted by each sample's height - with that sample's spot on the ground (where the round should be aimed).</summary>
         public static bool BodyUnder(float mx, float my, out ICombatant unit, out float fx, out float fy)
         {
-            unit = null; fx = fy = 0f; var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Stage == "hidden") return false;
-            var s = f.Sump; int best = -1; float bk = 1f;
+            unit = null; fx = fy = 0f; var f = EelBoss.Current; var s = SpineOf(f); if (s == null || f.Stage == "hidden") return false;
+            int best = -1; float bk = 1f;
             for (int i = 0; i < N; i++)
             {
                 if (s.Z[i] <= Surface) continue;
@@ -736,8 +738,8 @@ namespace GameCore
         /// whose column (BodyHalf / HeadHalf round) the swing reaches. `d` is the distance to the column's edge. The whole body is the target, as for guns; the head zone is part "Head".</summary>
         public static bool MeleeBody(float px, float py, float dx, float dy, float reach, float arcDeg, out ICombatant unit, out string part, out float d)
         {
-            unit = null; part = null; d = 0f; var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Stage == "hidden") return false;
-            var s = f.Sump; int hit = -1; float best = reach + 1f;
+            unit = null; part = null; d = 0f; var f = EelBoss.Current; var s = SpineOf(f); if (s == null || f.Stage == "hidden") return false;
+            int hit = -1; float best = reach + 1f;
             for (int i = 0; i < N; i++)
             {
                 if (s.Z[i] <= Surface || s.Z[i] > LowZ) continue;

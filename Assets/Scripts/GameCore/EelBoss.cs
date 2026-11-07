@@ -35,6 +35,7 @@ namespace GameCore
             public string Label = "";                            // what it is doing, for the screen
             public HumanEnemy Body; public int BodyX, BodyY; public string BodyArmor;
             public EelSump.State Sump;                          // the Sump fight (four pools, authored moves, a targetable tail): EelSump.cs
+            public EelSump.State View;                          // Levels 1-2: a spine laid along the rig (FillView) so the platform form is drawn and shot like the Sump's
             public readonly EelRig Rig = new EelRig();          // the procedural body: the state machine moves the head, the segments trail
             public float WindFor = Wind, FromX, FromY, PullX, PullY, S0X, S0Y, S1X, S1Y, S2X, S2Y; public bool Discharged;   // the current move: where the head started, its pull-back point, the sweep's Bezier
             public float TgtX, TgtY, EscX, EscY;                   // the player it is watching; the way it dives after a strike
@@ -46,7 +47,17 @@ namespace GameCore
         static readonly Dictionary<Player, float> ShockAt = new Dictionary<Player, float>();
         static readonly List<string> Bag = new List<string>();
         /// <summary>On entering a zone (StorySystem.OnEnterZone): the Sump's eel, until it has fled (Story flag eel_fled) - hidden in its pools until you step into the room.</summary>
-        public static void OnEnterZone(string zoneId) { Reset(); if (zoneId == LabLocks.Depths3 && !Story.Has(Fled)) SpawnSump(zoneId); }
+        public static void OnEnterZone(string zoneId)
+        {
+            Reset();
+            if (zoneId == LabLocks.Depths3 && !Story.Has(Fled)) { SpawnSump(zoneId); return; }
+            // Levels 1-2 (Yan, 2026-11-04: "kind of jump-scare style stuff"): it lurks below as a shadow, follows you, and wraps the platform near the pump; gone once that level's pump has run
+            string drain = zoneId == LabLocks.Depths1 ? "depths_drain1" : zoneId == LabLocks.Depths2 ? "depths_drain2" : null;
+            if (drain == null || MacroState.Current != null && MacroState.Current.Keys.Contains(drain) || !TierDungeons.LabPlans.ContainsKey(zoneId)) return;
+            var marks = Marks(zoneId, '7'); if (marks.Count == 0) return;
+            var me = Player.Current; var far = marks.OrderByDescending(m => me == null ? 0f : (m.x - me.X) * (m.x - me.X) + (m.y - me.Y) * (m.y - me.Y)).First();      // it starts at the strike platform farthest from where you came in
+            SpawnPlatform(zoneId, far.x + 0.5f, far.y + 0.5f);
+        }
         public static void Reset() { Current = null; ShockAt.Clear(); Bag.Clear(); }
         public static bool Is(ICombatant u) => Current != null && !Current.Gone && (Current.Unit == u || Current.Sump != null && Current.Sump.Tail == u);
         static int PhaseOf(int hp) => hp > MaxHp * 3 / 4 ? 0 : hp > MaxHp / 2 ? 1 : hp > MaxHp / 4 ? 2 : 3;
@@ -65,8 +76,27 @@ namespace GameCore
             var m = new Mutant(Name, (int)sx, (int)sy, Def) { Hp = MaxHp }; EncounterState.Enemies.Add(m); Bag.Clear();
             var f = new Fight { Unit = m, Level = "platform", SX = sx, SY = sy, StageAt = Time.time, Next = Time.time + 1f };
             foreach (var (x, y) in Marks(zone, '7')) f.Platforms.Add((x + 0.5f, y + 0.5f));
-            f.Rig.Place(sx, sy, 1f, 0f); f.Rig.Under = true;
+            f.Rig.Place(sx, sy, 1f, 0f); f.Rig.Under = true; f.View = new EelSump.State(); FillView(f);
             return Current = f;
+        }
+
+        /// <summary>Lays the EelSump spine (140 samples, 4 a tile, head first) along the rig: the head, then its 56 segments; whatever is under the water (the whole body while it lurks, the part away from
+        /// the platform while it wraps) gets Z -1, which the view draws as the swimming shadow and the hit tests ignore. Called every tick of the platform fight.</summary>
+        public static void FillView(Fight f)
+        {
+            var v = f.View; if (v == null) return; var r = f.Rig; int n = EelRig.Count, up = r.Under ? 0 : Surfaced(f);
+            var px = new float[n + 1]; var py = new float[n + 1]; var pz = new float[n + 1];
+            px[0] = r.HX; py[0] = r.HY; pz[0] = up > 0 ? Mathf.Max(0.12f, r.HeadZ) : -1f;
+            for (int i = 0; i < n; i++) { px[i + 1] = r.RX[i]; py[i + 1] = r.RY[i]; pz[i + 1] = i < up ? Mathf.Max(0.1f, r.Z[i]) : -1f; }
+            bool any = false;
+            for (int j = 0; j < EelSump.N; j++)
+            {
+                float u = j / (float)(EelSump.N - 1) * n; int k = Mathf.Min(n - 1, (int)u); float t = u - k;
+                v.X[j] = Mathf.Lerp(px[k], px[k + 1], t); v.Y[j] = Mathf.Lerp(py[k], py[k + 1], t);
+                v.Z[j] = pz[k] < 0f || pz[k + 1] < 0f ? -1f : Mathf.Lerp(pz[k], pz[k + 1], t);
+                if (v.Z[j] > EelSump.Surface) any = true;
+            }
+            v.BodyOut = any; v.HeadOut = v.Z[0] > EelSump.Surface;
         }
 
         /// <summary>The Sump: it lies in the pool until the first shot or step into its room; the body is on the slab (plan digit 8).</summary>
@@ -130,7 +160,7 @@ namespace GameCore
             var (ex, ey) = f.Level == "platform" ? (f.SX, f.SY) : (f.CX, f.CY);
             var tgt = players.OrderBy(p => { var (x, y) = Ballistics.Pos(p); return (x - ex) * (x - ex) + (y - ey) * (y - ey); }).First();
             var (px, py) = Ballistics.Pos(tgt);
-            if (f.Level == "platform") { Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); }
+            if (f.Level == "platform") { Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); FillView(f); }
             else EelSump.Tick(f, players, now, dt);
         }
 

@@ -85,12 +85,12 @@ namespace GameCore
         void DrawEel()
         {
             var f = EelBoss.Current;
-            if (f == null || f.Gone || f.Sump == null)
+            if (f == null || f.Gone || EelSump.SpineOf(f) == null)
             {
                 Vision.Glows.Clear(); if (_eelFlood != null && _eelFlood.gameObject.activeSelf) _eelFlood.gameObject.SetActive(false);
                 HideFrom(_eelBody, 0); HideFrom(_eelFoam, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
             }
-            var s = f.Sump; int stage = Mathf.Clamp(f.Phase, 0, 3);
+            var s = EelSump.SpineOf(f); int stage = Mathf.Clamp(f.Phase, 0, 3);          // the Sump's spine, or (Levels 1-2) the one laid along the platform form's rig
             DrawFlood(s);
             Vision.Glows.Clear();                                                                           // it glows a little (Yan: its body was lost in the dark): a soft light along the part that is out of the water, where it is DRAWN (lifted by its height)
             for (int gi = 0; gi < EelSump.N; gi += 5) if (s.Z[gi] > EelSump.Surface) Vision.Glows.Add((s.X[gi] - 0.5f, s.Y[gi] - s.Z[gi] - 0.5f, gi == 0 ? 4.2f : 3.2f, gi == 0 ? 0.85f : 0.7f));   // (-0.5: the overlay's cell coordinates have tile centres on whole numbers)
