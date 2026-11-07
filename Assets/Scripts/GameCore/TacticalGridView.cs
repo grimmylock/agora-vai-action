@@ -262,6 +262,7 @@ namespace GameCore
             for (int i = 0; i < EncounterState.Enemies.Count; i++)
             {
                 var enemy = EncounterState.Enemies[i];
+                if (EelBoss.Is(enemy)) { _enemyMarkers[i].gameObject.SetActive(false); _alertMarks[i].gameObject.SetActive(false); continue; }   // the eel draws itself (CombatFxView.Eel): its two units are hitboxes, not a person (Yan: the testing-ground dummy showed up as its hitbox)
                 // Fix: dead enemies used to just be hidden (SetActive(false)) - that made a
                 // HumanEnemy corpse invisible right when CorpseLootUI made it worth clicking on.
                 // Keep the marker up so a body stays a visible thing in the world (Batch 24: as a
@@ -789,6 +790,11 @@ namespace GameCore
             if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }   // Boss 3: carried by the tail, thrown, hurled
             var group = marker.GetComponent<UnityEngine.Rendering.SortingGroup>();
             if (group != null) group.sortingOrder = SortAt(marker.transform.position.y);
+            if (u is Player gp && EelSump.Gripping(gp) && EelSump.MouthWorld(out float mouthX, out float mouthY))   // Boss 3: holding the jaws - drawn in the open mouth, in front of the head (the eel's head is order SortTop - 3000 + 400)
+            {
+                marker.transform.position = new Vector3(mouthX, mouthY, 0f);
+                if (group != null) group.sortingOrder = WorldArt.SortTop - 3000 + 500;
+            }
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
             if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);   // Boss 3: pulled under the water in the tail's grip

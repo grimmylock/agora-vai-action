@@ -604,6 +604,10 @@ namespace GameCore
         //      15 fps, played once. Yan, 2026-11-03: "full size for electric, half for guns" - guns at half-pixels (ppu 32, like the
         //      HD mutants), electric at the map's own pixels (ppu 16). False when the strip is missing (the old sprite plays instead).
         public const float PxFps = 15f, PxHalf = 32f, PxFull = 16f;
+        // Yan, 2026-11-06: "when shooting the shot visual effects linger for a while". The strips are whole acted-out effects at 15 fps (px_muzzle_shotgun is 49 frames = 3.3 s, the pistol's flash
+        // 1.9 s, a bullet impact 1.5 s): right for a void pull or a splash, far too long for a muzzle flash or a hit. These play faster (x speed); the others play as made.
+        static readonly System.Collections.Generic.Dictionary<string, float> PxSpeed = new System.Collections.Generic.Dictionary<string, float>
+        { { "muzzle_shotgun", 6f }, { "muzzle_pistol", 5f }, { "muzzle_smg", 3f }, { "bullet_impact", 3.5f }, { "ricochet", 3f }, { "hit_spark", 1.5f }, { "blunt_hit", 1.5f }, { "zap_hit", 1.5f } };
         bool PxFx(string name, Vector3 at, float dx, float dy, float ppu)
         {
             var frames = Strip("Sprites/Fx/px_" + name, 0, ppu, new Vector2(0.5f, 0.5f));
@@ -611,7 +615,7 @@ namespace GameCore
             var sr = NewSprite("px_" + name, frames[0], Color.white, _root, 9);
             sr.transform.position = new Vector3(at.x, at.y, 0f);
             if (dx != 0f || dy != 0f) { sr.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dy, dx) * Mathf.Rad2Deg); sr.flipY = dx < 0f; }
-            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = frames.Length / PxFps, Frames = frames });
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = frames.Length / PxFps / (PxSpeed.TryGetValue(name, out var sp) ? sp : 1f), Frames = frames });
             return true;
         }
 

@@ -35,6 +35,7 @@ namespace GameCore
             public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth = -1f, GrabStart, GrabLast, StunUntil; public int Mash; public float Grip, Twitch, GrabLastU; public bool Won; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
             public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3; public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
             public int FloodVer;  // counts changes of Flip, for the view's flood texture
+            public bool BodyOut;  // any of the body is above the water: that much of it can be shot
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
@@ -166,6 +167,7 @@ namespace GameCore
         static void UpdateUnits(EelBoss.Fight f, State s)
         {
             int hi = 0, ti = N - 1; s.HeadOut = s.Z[hi] > 0.3f; s.TailOut = s.Z[ti] > 0.3f;
+            s.BodyOut = false; for (int i = 0; i < N; i++) if (s.Z[i] > Surface) { s.BodyOut = true; break; }
             var hp = s.HeadOut ? (s.X[hi], s.Y[hi]) : (s.Big.X, s.Big.Y); var tp = s.TailOut ? (s.X[ti], s.Y[ti]) : (s.Big.X, s.Big.Y);
             f.Unit.X = (int)Mathf.Floor(hp.Item1); f.Unit.Y = (int)Mathf.Floor(hp.Item2); Rt.SetOffset(f.Unit, hp.Item1 - f.Unit.X - 0.5f, hp.Item2 - f.Unit.Y - 0.5f);
             s.Tail.X = (int)Mathf.Floor(tp.Item1); s.Tail.Y = (int)Mathf.Floor(tp.Item2); Rt.SetOffset(s.Tail, tp.Item1 - s.Tail.X - 0.5f, tp.Item2 - s.Tail.Y - 0.5f);
@@ -560,6 +562,14 @@ namespace GameCore
         public static bool Gripping(Player p) { var f = EelBoss.Current; return p != null && f != null && f.Sump != null && !f.Gone && f.Sump.Bite == "grapple" && f.Sump.Victim == p; }
         /// <summary>While someone holds the eel's jaws: where (tile space), for the camera to close in on or highlight.</summary>
         public static bool GrappleSpot(out float x, out float y) { var f = EelBoss.Current; x = y = 0f; if (f == null || f.Sump == null || f.Gone || f.Sump.Bite != "grapple") return false; x = f.Sump.BiteSpot.x; y = f.Sump.BiteSpot.y; return true; }
+        /// <summary>While someone holds the jaws: where the open mouth is on screen (world space, y up) - the head's anchor (its neck end) and about two tiles toward the way it faces - so the view can draw
+        /// the player there, in front of the head, with his hands on the jaws (Yan: "can't see myself": he stood under the head's sprite).</summary>
+        public static bool MouthWorld(out float wx, out float wy)
+        {
+            wx = wy = 0f; var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Sump.Bite != "grapple") return false;
+            var s = f.Sump; float face = s.X[Mathf.Min(8, N - 1)] < s.X[0] ? 1f : -1f;      // the head looks away from its neck (the view flips it the same way)
+            wx = s.X[0] + face * 2.0f; wy = -s.Y[0] + s.Z[0] - 0.25f; return true;
+        }
         public static float GripOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Grip : 0f;
         public static float TwitchOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Twitch : 0f;
         static void ThrowBitten(EelBoss.Fight f, State s, Player v, float now, float ts)
@@ -677,14 +687,54 @@ namespace GameCore
         public static List<Ev> Drain() { var f = EelBoss.Current; if (f == null || f.Sump == null) return null; var l = new List<Ev>(f.Sump.Out); f.Sump.Out.Clear(); return l; }
 
         // ------------------------------------------------------------------ damage routing (called from EelBoss.OnDamaged)
+        // ---- THE HITBOX IS THE BODY (Yan, 2026-11-06: "its hitbox is still only in the base of the sprite where it connects to water, all of it should be a hitbox, only the head takes extra damage").
+        // Every spine sample that is out of the water is a round column on the ground (BodyHalf wide; the head zone, the first HeadSamples, wider) that a round can hit: the low parts (Z <= LowZ)
+        // by any round that passes them, the airborne ones only by a round aimed at the eel (a column from the floor would wall the whole arena under an arch). Head zone: the head unit, part
+        // "Head", HeadBonus x on top of the normal head multiplier; the tail zone (the last TailSamples): the tail unit; the rest: the head unit's HP, part "Body", normal damage.
+        public const int HeadSamples = 9, TailSamples = 24; public const float BodyHalf = 0.95f, HeadHalf = 1.5f, LowZ = 2.5f, HeadBonus = 1.5f;
+        static ICombatant ZoneUnit(EelBoss.Fight f, int i, out string part) { if (i <= HeadSamples) { part = "Head"; return f.Unit; } part = "Body"; return i >= N - TailSamples ? (ICombatant)f.Sump.Tail : f.Unit; }
+        /// <summary>The nearest spine sample a round's line passes (tile space, from (x0, y0) along the unit vector (dx, dy), nearer than `limit` along it), for Ballistics.Trace.</summary>
+        public static bool TraceBody(float x0, float y0, float dx, float dy, float range, float limit, bool atEel, out float bestT, out ICombatant unit, out string part, out float bestSide)
+        {
+            bestT = limit; unit = null; part = null; bestSide = 0f;
+            var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Stage == "hidden") return false;
+            var s = f.Sump; int hit = -1;
+            for (int i = 0; i < N; i++)
+            {
+                if (s.Z[i] <= Surface || s.Z[i] > LowZ && !atEel) continue;
+                float rx = s.X[i] - x0, ry = s.Y[i] - y0, t = rx * dx + ry * dy;
+                if (t <= 0.05f || t > range || t >= bestT) continue;
+                float side = rx * dy - ry * dx; if (Mathf.Abs(side) > (i <= HeadSamples ? HeadHalf : BodyHalf)) continue;
+                bestT = t; bestSide = side; hit = i;
+            }
+            if (hit < 0) return false;
+            unit = ZoneUnit(f, hit, out part); return true;
+        }
+        /// <summary>The part of the eel the crosshair (tile space) is over - the sprite is drawn lifted by each sample's height - with that sample's spot on the ground (where the round should be aimed).</summary>
+        public static bool BodyUnder(float mx, float my, out ICombatant unit, out float fx, out float fy)
+        {
+            unit = null; fx = fy = 0f; var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Stage == "hidden") return false;
+            var s = f.Sump; int best = -1; float bk = 1f;
+            for (int i = 0; i < N; i++)
+            {
+                if (s.Z[i] <= Surface) continue;
+                float r = i <= HeadSamples ? 1.8f : 1.1f, ddx = mx - s.X[i], ddy = my - (s.Y[i] - s.Z[i]), k = Mathf.Sqrt(ddx * ddx + ddy * ddy) / r;
+                if (k < bk) { bk = k; best = i; }
+            }
+            if (best < 0) return false;
+            unit = ZoneUnit(f, best, out _); fx = s.X[best]; fy = s.Y[best]; return true;
+        }
+        public static bool IsEelHead(ICombatant u, string part) => part == "Head" && EelBoss.Is(u);
+
         public static void OnHeadHit(EelBoss.Fight f, ICombatant u)
         {
-            var s = f.Sump; if (!s.HeadOut || f.Stage == "reveal" || f.Stage == "vomit") { u.Hp = System.Math.Max(s.LastHp, 1); return; }       // under the water, or busy: nothing lands
+            var s = f.Sump; if (!s.BodyOut || f.Stage == "reveal" || f.Stage == "vomit") { u.Hp = System.Math.Max(s.LastHp, 1); return; }       // all of it under the water, or busy: nothing lands
             if (u.Hp <= 1) { u.Hp = 1; s.Dying = true; f.Label = "it gags - the body comes back up"; return; }
         }
         public static void OnTailHit(EelBoss.Fight f, ICombatant u)
         {
-            var s = f.Sump; if (!s.TailOut) { u.Hp = System.Math.Max(s.LastTailHp, 1); return; }
+            var s = f.Sump; bool tailVisible = false; for (int i = N - TailSamples; i < N; i++) if (s.Z[i] > Surface) { tailVisible = true; break; }
+            if (!tailVisible) { u.Hp = System.Math.Max(s.LastTailHp, 1); return; }          // no part of the tail is out of the water: nothing lands
             if (u.Hp <= 1) { u.Hp = 1; s.TailBroken = true; s.TailDownUntil = Time.time + 9f; GameLog.Write("The Drowner's tail is torn up - it goes down."); }
         }
     }

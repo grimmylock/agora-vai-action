@@ -13,7 +13,7 @@ namespace GameCore
     {
         readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>(), _eelFoam = new List<SpriteRenderer>();
         SpriteRenderer _eelHead;
-        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.3f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
+        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.08f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
         static readonly Color EelShade = new Color(0.02f, 0.08f, 0.09f, 0.55f);                      // the body's half thickness in tiles, for thinning the inside of a tight bend
         const bool EelTelegraphs = false;                    // Yan, 2026-11-06: "remove the red telegraphs for now, they look pretty bad" - the zones are still computed (EelBoss.Fight.Zones), just not drawn
         static readonly List<EelBoss.Zone> NoZones = new List<EelBoss.Zone>();

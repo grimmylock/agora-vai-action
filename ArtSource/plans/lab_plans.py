@@ -544,7 +544,7 @@ def depths_level3():
                 if ((x + 0.5 - px_) / ra_) ** 2 + ((y + 0.5 - py_) / rb_) ** 2 <= 1 + 0.2 * math.sin(x * 1.7 + y * 2.3 + len(name)): p.put(x, y, 'W')
     for (x, y, w, h) in ((8, 12, 6, 4), (46, 12, 6, 4), (21, 19, 4, 3), (36, 19, 4, 3)):
         p.room(x, y, w, h, ',')                                                                # dry patches (no stashes: the only loot is the body)
-    for (x, y) in ((24, 16), (36, 16), (19, 23), (41, 23), (21, 29), (39, 29), (35, 12), (14, 26), (46, 26)): p.put(x, y, 'h')   # pillars: cover from its lunges
+    # (no pillars: Yan, 2026-11-06 - the 'h' blocks stopped bullets, hid the eel and tangled its body; the dry patches are the only solid ground)
     for y in range(int(cy - rb - 2), int(cy + rb + 3)):                                        # the pool: deep, a ragged ellipse
         for x in range(int(cx - ra - 2), int(cx + ra + 3)):
             if ((x + 0.5 - cx) / ra) ** 2 + ((y + 0.5 - cy) / rb) ** 2 <= 1 + 0.16 * math.sin(x * 1.7 + y * 2.3): p.put(x, y, 'W')
@@ -570,9 +570,8 @@ def sump_checks(p):
     gate = at('9')[0]; pump = at('6')[0]
     assert dist(gate) <= R - 1 and min(dist(gate, t) for t in pool) <= 4.0, ("the channel mouth is out of the pool's reach: its coil wouldn't block the way", gate)
     assert dist(pump) <= 16, ("the pump is too far from the pool for it to guard", dist(pump))
-    pillars = [t for t in at('h') if 4 <= dist(t) <= 12]
-    assert len(pillars) >= 4, ("cover from its lunges: pillars within 4-12 tiles of the pool", len(pillars))
-    assert not [t for t in at('h') if ((t[0] + 0.5 - cx) / (ra + 1.5)) ** 2 + ((t[1] + 0.5 - cy) / (rb + 1.5)) ** 2 < 1], "a pillar inside the pool's coil room"
+    pillars = at('h')
+    assert not pillars, ("the Sump has no pillars (Yan, 2026-11-06: they blocked bullets and bugged the eel)", len(pillars))
     patches = [t for t in at(',') if 9 <= t[1] <= 30]; near = [t for t in patches if dist(t) <= R]; far = [t for t in patches if dist(t) >= R + 5]
     assert len(near) >= 12 and len(far) >= 30, ("dry ground in its reach to stand on, and out of it to rest", len(near), len(far))
     shore = min(sum(1 for y in range(H) if g[y][x] in 'w' and y > cy and y < 31) for x in range(int(cx - 6), int(cx + 7)))

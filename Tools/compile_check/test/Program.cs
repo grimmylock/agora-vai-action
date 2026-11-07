@@ -994,6 +994,25 @@ static class Program {
       }
       Check(shed && headLanded && tailLanded, $"EelSump: shots do nothing while it is under the water (shed {shed}) and land on the head ({headLanded}) and the tail ({tailLanded}) while they are out");
     }
+    // HITBOX (Yan, 2026-11-06): the whole body that is out of the water can be shot, the head part is "Head" (it takes the bonus), the rest is "Body"; the eel's two base units are no hitbox
+    {
+      bool did = false; string pBody = null, pHead = null; ICombatant uBody = null, uHead = null; int bodyIdx = -1; bool under = false; ICombatant uUnder = null; float fxOk = 99f; bool baseUnitMiss = false;
+      SumpRun(true, 2, "dash:west>east", f => { SumpPlace(SP1, 30.5f, 28.5f); SumpPlace(SP2, 41.0f, 22.0f); }, (f, tt) => {
+        var s = f.Sump; if (did || s.Z[0] < 0.3f) return;
+        int a = -1; for (int i = 14; i < 100; i++) if (s.Z[i] > 0.1f && s.Z[i] <= 2.0f) { a = i; break; }
+        if (a < 0) return; did = true; bodyIdx = a;
+        var (px, py) = Ballistics.Pos(SP1);
+        Func<int, bool, Ballistics.Hit> shot = (i, air) => { float dx = s.X[i] - px, dy = s.Y[i] - py, l = (float)Math.Sqrt(dx * dx + dy * dy); return Ballistics.Trace(SP1, px, py, dx / l, dy / l, l + 3f, 0.45f, Gunplay.Targets(SP1), air); };
+        var hb = shot(a, false); uBody = hb.Unit; pBody = hb.Part;
+        var hh = shot(2, true); uHead = hh.Unit; pHead = hh.Part;
+        under = EelSump.BodyUnder(s.X[a], s.Y[a] - s.Z[a], out uUnder, out float bx, out float by); fxOk = (float)Math.Sqrt((bx - s.X[a]) * (bx - s.X[a]) + (by - s.Y[a]) * (by - s.Y[a]));
+        var u0 = f.Unit; float ox = s.X[0], oy = s.Y[0]; s.X[0] = 0f; s.Y[0] = 0f;
+        baseUnitMiss = Ballistics.Trace(SP1, px, py, 0f, -1f, 1f, 0.45f, Gunplay.Targets(SP1)).Unit == null; s.X[0] = ox; s.Y[0] = oy;   // (nothing at the head's ground spot but air: the units themselves are not hit boxes)
+      }, 45f);
+      Check(did && uBody != null && EelBoss.Is(uBody) && pBody != null && (pBody == "Body" || pBody == "Head") && uHead != null && EelBoss.Is(uHead) && pHead == "Head" && under && EelBoss.Is(uUnder) && fxOk < 0.6f,
+        $"EelSump hitbox: a round at a low part of the body (spine sample {bodyIdx}) lands on the eel (part {pBody}), one at the head is a Head hit ({pHead}), the crosshair finds the part ({under}, {fxOk:0.00} tiles off)");
+      Check(EelSump.HeadBonus > 1f && EelSump.IsEelHead(uHead, "Head") && !EelSump.IsEelHead(uBody, "Body"), "EelSump hitbox: only the head part takes the extra damage");
+    }
     // STORM (phase 3): the arena floods, it rears up and charges ~4 s with sparks, then every water tile is electric (a dry patch is safe), then it BITES: a parry + mash slams its head down and stuns it,
     // no parry (or no mash) and the jaws close and throw the player, a dive or a step away makes it miss
     {
@@ -1049,7 +1068,7 @@ static class Program {
     }
     // THE 75% TRANSITION: dropping under 75% queues a flood surge first, once
     {
-      var f = SumpStart(true, 0); f.Sump.Queue.Clear(); f.Sump.Bag.Clear(); f.Stage = "idle"; f.Sump.HeadOut = true; f.Unit.Hp = EelBoss.MaxHp * 3 / 4 - 50; EelBoss.OnDamaged(f.Unit);
+      var f = SumpStart(true, 0); f.Sump.Queue.Clear(); f.Sump.Bag.Clear(); f.Stage = "idle"; f.Sump.HeadOut = true; f.Sump.BodyOut = true; f.Unit.Hp = EelBoss.MaxHp * 3 / 4 - 50; EelBoss.OnDamaged(f.Unit);
       bool queued = f.Sump.Queue.Count > 0 && f.Sump.Queue[0] == "flood" && f.Phase == 1; int n0 = f.Sump.Queue.Count; f.Unit.Hp -= 100; EelBoss.OnDamaged(f.Unit);
       Check(queued && f.Sump.Queue.Count == n0, $"EelSump: under 75% HP the next move is a flood surge, queued once (queue {string.Join(",", f.Sump.Queue)}, phase {f.Phase})");
     }

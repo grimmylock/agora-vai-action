@@ -232,10 +232,11 @@ namespace GameCore
             public ICombatant Shooter; public Weapon W; public string Map;
             public float X, Y, Dx, Dy, H, Up, Gone, Range, Speed, Wait, X0, Y0, Through = 1f;
             public int CoverX = -1, CoverY = -1, Pellets = 1;
-            public bool Ambush, First;
+            public bool Ambush, First, AtEel;                  // AtEel: aimed at the eel (it may hit the parts of its body that are in the air)
             public Ballistics.Hit Hit;                         // set when it lands
         }
         public static readonly List<Round> Flying = new List<Round>();
+        public static bool AimAtEel;                           // set by the player's fire code while the crosshair is over the eel, read when the rounds are made
 
         /// <summary>One trigger pull: rounds leave the muzzle, scattered by `spread` degrees sideways and up/down, at aim
         /// height h. Ammo, jams and the fire rate are the caller's (PlayerShoot / NpcShoot). RT 8: they fly (Fly), nothing lands yet.</summary>
@@ -250,7 +251,7 @@ namespace GameCore
                 float side = (aimSide + Gauss() * hd.Choke) * 0.0174533f, up = (aimUp + Gauss() * hd.Choke) * 0.0174533f;
                 float c = (float)System.Math.Cos(side), s = (float)System.Math.Sin(side);
                 var r = new Round { Shooter = shooter, W = w, Map = TerrainMap.ZoneId, X = x0, Y = y0, X0 = x0, Y0 = y0, Dx = dx * c - dy * s, Dy = dx * s + dy * c,
-                    H = h, Up = (float)System.Math.Tan(up), Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0 };
+                    H = h, Up = (float)System.Math.Tan(up), Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0, AtEel = AimAtEel };
                 Flying.Add(r); rounds.Add(r);
             }
             // the trigger pull itself: flash, sound, kick, casing (CombatFxView); the gun points along the shot
@@ -276,7 +277,7 @@ namespace GameCore
                 if (r.Wait > 0f) { r.Wait -= dt; continue; }
                 float step = System.Math.Min(r.Speed * dt, r.Range - r.Gone);
                 float h = r.H + r.Up * (r.Gone + step * 0.5f) / Ballistics.BodyTiles;
-                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, Targets(r.Shooter));
+                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, Targets(r.Shooter), r.AtEel);
                 r.Through *= hit.Through;
                 if (hit.CoverX >= 0) { r.CoverX = hit.CoverX; r.CoverY = hit.CoverY; }
                 r.X = hit.EndX; r.Y = hit.EndY; r.Gone += hit.Dist;
@@ -353,6 +354,7 @@ namespace GameCore
                 }
                 float raw = RoundDamage(w, hit.Part, hit.Dist, pellets) * hit.Through;
                 if (ambush) raw *= 1.3f;                                       // they never saw it coming (Batch 64, as a bonus now)
+                if (EelSump.IsEelHead(target, hit.Part)) raw *= EelSump.HeadBonus;   // Boss 3: only the eel's head takes extra damage (Yan, 2026-11-06)
                 if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
                 if (shooter is Player) raw *= CombatRules.PlayerDamage;
                 raw *= CombatRules.Lethality;
