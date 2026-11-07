@@ -85,6 +85,20 @@ namespace GameCore
 
         public static void GoStage(Fight f, string stage) => Go(f, stage);
 
+        // ---- the reward (Yan 2026-11-07: "do the story key and eel-parts drop"): what is on the crewman it brings back up. He is looted like any body (CorpseLootUI): his tier-4 suit, a tier-3 chest's worth
+        // of random loot, the eel's parts (worth far more than a mutant part: a tier-3 one is 400-600 RU) and THE STORY KEY - the Sealed Vault's, in Secret Lab Gamma (StorySystem, act 3).
+        public const string VaultKeyId = "story_gamma_vault_key";
+        public static readonly (string name, int price, int qty)[] Parts = { ("Drowner's Shock Gland", 2400, 1), ("Drowner's Spine Plate", 900, 3), ("Drowner's Blind Eye", 1300, 2) };
+        public static void GiveSpoils(Fight f)
+        {
+            var inv = f.Body.Inventory.Items;
+            if (!inv.Any(i => i.Id == VaultKeyId)) inv.Add(new InventoryItem { Id = VaultKeyId, Name = "Sealed Vault key (Depths crew)", Type = "key", Qty = 1, WeightKg = 0.1f, Price = 0 });
+            foreach (var (name, price, qty) in Parts) inv.Add(new InventoryItem { Id = "eel_part_" + name.Replace("'", "").Replace(' ', '_').ToLowerInvariant(), Name = name, Type = "mutantPart", Qty = qty, WeightKg = 2.5f, Price = price, Category = "4" });
+            HumanLootSystem.RollSpawnStash(f.Body, 3);                                                     // a tier-3 chest's worth of random loot
+            for (int n = 0; n < 2; n++) { LootRoll r = null; for (int k = 0; k < 10 && (r == null || r.Type == "junk" || r.Type == "cash"); k++) r = Economy.Roll(3, trader: false); if (r != null && r.Type != "junk" && r.Type != "cash") inv.Add(r.ToItem(ItemCondition.Working)); }
+            GameLog.Write("The crewman's armour is split open. Something heavy is taped inside it, and the eel's own parts are caught in his pack.");
+        }
+
         // ---- the introduction: E on the body (Yan 2026-11-07); the cutscene is EelSump.Intro
         /// <summary>Is `p` close enough to the drowned crewman on the slab, with the eel still hidden, to examine him? (the prompt and the key)</summary>
         public static bool CanExamine(Player p, out int x, out int y)

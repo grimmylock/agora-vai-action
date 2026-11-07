@@ -982,6 +982,8 @@ static class Program {
       for (float t = 0f; t < 25f && f.Stage != "idle"; t += dt) SumpTick(f, sst, dt);
       bool swallowed = f.Swallowed && !EncounterState.Enemies.Contains(f.Body); f.Sump.Dying = true; f.Next = UnityEngine.Time.time; var tf = f.Unit;
       for (float t = 0f; t < 10f && !f.Gone; t += dt) SumpTick(f, sst, dt); cross = Math.Max(cross, sst.MaxCross);
+      { var bi = f.Body.Inventory.Items; var parts = bi.Where(i => i.Type == "mutantPart" && i.Id.StartsWith("eel_part_")).ToList(); int value = parts.Sum(i => (i.Price ?? 0) * i.Qty);
+        Check(bi.Any(i => i.Id == EelBoss.VaultKeyId && i.Type == "key") && parts.Count == 3 && parts.All(i => (i.Price ?? 0) >= 900) && value >= 6000 && f.Body.EquippedArmor != null, $"EelSump: the body it brings up carries the Sealed Vault key, three kinds of eel parts worth {value} RU in all (a tier-3 mutant part is 400-600), and his tier-4 suit"); }
       Check(swallowed && f.Gone && f.Ejected && EncounterState.Enemies.Contains(f.Body) && Story.Has(EelBoss.Fled), $"EelSump: it swallows the body on the slab, and at the end brings it back up and goes down the big pool (swallowed {swallowed}, gone {f.Gone}, ejected {f.Ejected})");
     }
     // TARGETING: nothing lands on the head or the tail while they are under the water; shots land while they are out
@@ -3509,6 +3511,8 @@ static class Program {
       Check(StoryAt("secret_lab_beta", "Archive Room") && StorySystem.Has("beta_drive"), "beta drive");
       Check(!ShopSystem.SellItem("story_drive_beta"), "key items can't be sold");
       Check(StoryAt("dried_lake", "Sub-Station House") && StorySystem.Act == 3, "osei decodes");
+      Check(StoryAt("secret_lab_gamma", "Sealed Vault") && !StorySystem.Has("gamma"), "the vault is locked without the Depths crew's key");
+      p.AddItem(new InventoryItem { Id = EelBoss.VaultKeyId, Name = "Sealed Vault key (Depths crew)", Type = "key", Qty = 1 });
       Check(StoryAt("secret_lab_gamma", "Sealed Vault"), "vault reachable");
       if (!StorySystem.Has("gamma")) { foreach (var e in EncounterState.Enemies) e.Hp = 0; StoryAt("secret_lab_gamma", "Sealed Vault"); }
       Check(StorySystem.Act == 4 && p.Inventory.Items.Any(i => i.Id == "theLodestone") && p.MainStoryAct3Done, "gamma + compass");

@@ -33,7 +33,7 @@ namespace GameCore
                 {
                     case 1: return Has("keycard") ? "Open Sample Storage's sealed terminal in Secret Lab Alpha." : "Find Secret Lab Alpha (under the Industrial Basin's Loading Dock) and get the access keycard.";
                     case 2: return Has("beta_drive") ? "Have the Lab Beta drive decoded: Dr. Osei at the Sub-Station House (Dried Lake), or crack it yourself at a lab terminal (Intelligence DC 18)." : "Recover the Research Drive from Secret Lab Beta's Archive Room (under Ghost Town's Town Hall).";
-                    case 3: return "Get into Secret Lab Gamma (under the Antenna Grid) and open the Sealed Vault.";
+                    case 3: return "Get into Secret Lab Gamma (under the Antenna Grid) and open the Sealed Vault. Its lock wants a key the Sub-Station Depths crew carried.";
                     case 4: return "Choose who backs you at the Garrison Barricade in the Abandoned City - or go alone.";
                     case 5: return Has("control_room") ? "Open The Last Gate in the Reactor Core." : "Fight through the Reactor Core's Containment Hall and Control Room.";
                     default: return $"Done. Ending: {MacroState.Current.Ending}.";
@@ -120,6 +120,7 @@ namespace GameCore
             }
             if (zone == "secret_lab_gamma" && Has("beta") && !Has("gamma") && Near(p, "Sealed Vault") != null)
             {
+                if (!p.Inventory.Items.Any(i => i.Id == EelBoss.VaultKeyId)) { GameLog.Write("[STORY] The Sealed Vault's door has a brass lock plate stamped SUB-STATION DEPTHS. The crew who sealed it never came back up. You need their key."); return true; }   // Boss 3: the eel's crewman carries it
                 if (HostilesNear(p, 10)) { GameLog.Write("[STORY] Not with them still on you. Clear the room first."); return true; }
                 Set("gamma");
                 p.MainStoryAct3Done = true;

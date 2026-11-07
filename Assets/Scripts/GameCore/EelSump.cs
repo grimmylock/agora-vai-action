@@ -875,7 +875,7 @@ namespace GameCore
             else
             {
                 f.Label = u < 2.3f ? "VOMIT: it rises with the body in its throat" : u < 3.0f ? "VOMIT: the body is thrown up on the slab" : "RETREAT: it sinks down the big pool's centre";
-                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); HumanLootSystem.RollSpawnStash(f.Body, 4); GameLog.Write("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
+                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); EelBoss.GiveSpoils(f); GameLog.Write("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
                 if (u >= 4.2f) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); EncounterState.Enemies.Remove(s.Tail); Story.Set(EelBoss.Fled); GameLog.Write("The Drowner slides back down the pool. This isn't over."); }
             }
         }
