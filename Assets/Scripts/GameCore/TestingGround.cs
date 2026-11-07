@@ -121,6 +121,17 @@ namespace GameCore
             GameLog.Write("[TESTING GROUND] Secret Lab Alpha, the vat room. Walk up to it. Main menu > Testing Ground to come back.");
         }
 
+        /// <summary>Boss 3: the platform form (Levels 1-2 of Sub-Station Depths): the flooded level with its water deep again and the eel in it. `level` 1 or 2.</summary>
+        public static void EelPlatformFight(Player p, int level)
+        {
+            string zone = level == 2 ? LabLocks.Depths2 : LabLocks.Depths1; var keys = MacroState.Current.Keys;
+            foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k);
+            keys.Add("depths_staff"); keys.Add("depths_fuse"); keys.Add("depths_power"); if (level == 2) keys.Add("depths_drain1");        // the way down is open; level 2's pump needs level 1's (its own water stays deep)
+            MacroState.Current.CurrentZoneId = zone; ZoneTravel.EnterZone(zone);
+            EncounterState.Enemies.RemoveAll(e => !EelBoss.Is(e)); EncounterState.InCombat = false;
+            GameLog.Write($"[TESTING GROUND] Sub-Station Depths, level {level}: deep water and the eel, which hunts you across the catwalks. Run the pump to drain it. Main menu > Testing Ground to come back.");
+        }
+
         /// <summary>Boss 3: the eel's arena (Sub-Station Depths, the Sump): four deep pools, the eel fresh (even if it fled before), you on the steps down into the room - it comes when you step in.</summary>
         public static void EelFight(Player p, float hpFraction = 1f)
         {

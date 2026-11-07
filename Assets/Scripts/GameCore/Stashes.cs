@@ -160,6 +160,8 @@ namespace GameCore
         {
             var keys = MacroState.Current.Keys;
             if (o.Requires != null && !keys.Contains(o.Requires)) { GameLog.Write($"{o.Name}: {o.Description}"); return true; }   // Boss 2: the generator needs its fuse
+            if (o.Name == "Main Sump Pump" && TerrainMap.ZoneId == LabLocks.Depths3 && !Story.Has(EelBoss.Fled)) { GameLog.Write("The last pump's intake is the middle pool, and something huge is sitting in it. The pump won't run with it there."); return true; }   // Boss 3: put the eel down first
+
             if (o.Lock == "note")
             {
                 keys.Add(o.Opens);

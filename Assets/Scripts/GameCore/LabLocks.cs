@@ -58,7 +58,7 @@ namespace GameCore
                                     Says = "[DEPTHS] The breaker slams home. The batteries hum, and down the halls the blast doors' lights wake up." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
-            // ponytail: the last pump has no eel gate yet ("eel_down" in sub_station_depths.mmd) - it comes with the fight code.
+            // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)
             [Depths1] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Cistern Pump", Look = "labswitch", Kind = "drain1", Needs = "power",
                 Desc = "A sump pump's panel, its lamps dark: no power reaches this level.",
                 Says = "[DEPTHS] The pump bangs into life. The black water slides off the stairs going down." } },
@@ -74,6 +74,8 @@ namespace GameCore
         static string KeyIn(string zone, string kind) => Prefix.TryGetValue(zone ?? "", out var p) ? p + "_" + kind : null;
         /// <summary>This map's key of a kind ("staff", "fuse", "power", "drain"), or null if the map has no locks.</summary>
         public static string Key(string kind) => KeyIn(Zone, kind);
+        /// <summary>Has this flooded level's pump run (its water is gone)?</summary>
+        public static bool Drained(string zone) => Has(KeyIn(zone, WaterKind(zone)));
         static bool Has(string key) => key != null && MacroState.Current != null && MacroState.Current.Keys.Contains(key);
 
         public static bool Is(string key) => key != null && Prefix.Values.Any(p => key.StartsWith(p + "_"));

@@ -46,7 +46,21 @@ namespace GameCore
         static readonly Dictionary<Player, float> ShockAt = new Dictionary<Player, float>();
         static readonly List<string> Bag = new List<string>();
         /// <summary>On entering a zone (StorySystem.OnEnterZone): the Sump's eel, until it has fled (Story flag eel_fled) - hidden in its pools until you step into the room.</summary>
-        public static void OnEnterZone(string zoneId) { Reset(); if (zoneId == LabLocks.Depths3 && !Story.Has(Fled)) SpawnSump(zoneId); }
+        public static void OnEnterZone(string zoneId)
+        {
+            Reset();
+            if (zoneId == LabLocks.Depths3 && !Story.Has(Fled)) SpawnSump(zoneId);
+            else if ((zoneId == LabLocks.Depths1 || zoneId == LabLocks.Depths2) && !LabLocks.Drained(zoneId)) SpawnPlatformLevel(zoneId);       // the flooded levels: it hunts you until their pump has drained the water
+        }
+        /// <summary>Levels 1-2 (Yan 2026-11-07): it starts in the deep water 12 tiles from the first strike platform and lurks as a shadow that follows you.</summary>
+        public static Fight SpawnPlatformLevel(string zone)
+        {
+            var plat = Marks(zone, '7')[0]; var rows = TierDungeons.LabPlans[zone]; int bx = plat.x - 12, by = plat.y + 3; (int x, int y) best = (plat.x, plat.y); float bd = 1e9f;
+            for (int y = 0; y < rows.Length; y++) for (int x = 0; x < rows[y].Length; x++) if (rows[y][x] == 'W') { float d = (x - bx) * (x - bx) + (y - by) * (y - by); if (d < bd) { bd = d; best = (x, y); } }
+            var f = SpawnPlatform(zone, best.x + 0.5f, best.y + 0.5f); f.Next = Time.time + 6f;                    // a few seconds before its first strike
+            int carry = 0; for (int p = 20; p >= 5 && carry == 0; p -= 5) if (Story.Has("eelwound" + p.ToString("00"))) carry = p;       // wounds from the other level (at most 20%)
+            if (carry > 0) f.Unit.Hp = (int)(MaxHp * (1f - carry / 100f)); return f;
+        }
         public static void Reset() { Current = null; ShockAt.Clear(); Bag.Clear(); }
         public static bool Is(ICombatant u) => Current != null && !Current.Gone && (Current.Unit == u || Current.Sump != null && Current.Sump.Tail == u);
         static int PhaseOf(int hp) => hp > MaxHp * 3 / 4 ? 0 : hp > MaxHp / 2 ? 1 : hp > MaxHp / 4 ? 2 : 3;
@@ -63,7 +77,7 @@ namespace GameCore
         public static Fight SpawnPlatform(string zone, float sx, float sy)
         {
             var m = new Mutant(Name, (int)sx, (int)sy, Def) { Hp = MaxHp }; EncounterState.Enemies.Add(m); Bag.Clear();
-            var f = new Fight { Unit = m, Level = "platform", SX = sx, SY = sy, StageAt = Time.time, Next = Time.time + 1f };
+            var f = new Fight { Unit = m, Level = "platform", SX = sx, SY = sy, StageAt = Time.time, Next = Time.time + 1f }; f.Sump = EelSump.PlatformProxy(m);       // for the view and the co-op snapshot
             foreach (var (x, y) in Marks(zone, '7')) f.Platforms.Add((x + 0.5f, y + 0.5f));
             f.Rig.Place(sx, sy, 1f, 0f); f.Rig.Under = true;
             return Current = f;
@@ -80,10 +94,17 @@ namespace GameCore
             EncounterState.Enemies.Add(f.Body);
             f.Sump = EelSump.Create(zone); f.Sump.Tail = new Mutant(EelSump.TailName, c.x, c.y, EelSump.TailDef) { Hp = EelSump.TailMax }; EncounterState.Enemies.Add(f.Sump.Tail);   // the tail is its own target
             f.Sump.LastHp = m.Hp; f.Sump.LastTailHp = f.Sump.Tail.Hp;
+            int carry = 0; for (int p = 20; p >= 5 && carry == 0; p -= 5) if (Story.Has("eelwound" + p.ToString("00"))) carry = p;        // what you did to it on the levels above carries over (at most 20%)
+            if (carry > 0) { m.Hp = (int)(MaxHp * (1f - carry / 100f)); f.Sump.LastHp = m.Hp; }
             return Current = f;
         }
 
         public static void GoStage(Fight f, string stage) => Go(f, stage);
+        static void Despawn(Fight f)
+        {
+            int pct = Mathf.Clamp(Mathf.RoundToInt((1f - f.Unit.Hp / (float)MaxHp) * 100f / 5f) * 5, 0, 20); if (pct > 0) Story.Set("eelwound" + pct.ToString("00"));          // the level below remembers the wounds
+            f.Gone = true; EncounterState.Enemies.Remove(f.Unit); GameLog.Write("The pump drags the black water down. Far below, something huge thrashes in the dark, and goes quiet.");
+        }
 
         // ---- the reward (Yan 2026-11-07: "do the story key and eel-parts drop"): what is on the crewman it brings back up. He is looted like any body (CorpseLootUI): his tier-4 suit, a tier-3 chest's worth
         // of random loot, the eel's parts (worth far more than a mutant part: a tier-3 one is 400-600 RU) and THE STORY KEY - the Sealed Vault's, in Secret Lab Gamma (StorySystem, act 3).
@@ -109,7 +130,7 @@ namespace GameCore
         public static bool TryExamine(Player p) { if (!CanExamine(p, out _, out _)) return false; GameLog.Write($"A drowned crewman in {Current.BodyArmor}, soaked through. The water round the slab is very still."); StartIntro(Current); return true; }
         public static void StartIntro(Fight f) { f.Started = true; Go(f, "intro"); EelSump.BeginIntro(f); }
         /// <summary>A client that has just entered the map (Net.OnSnapshot clears the enemy list): put the dormant eel and the body back, so the host's snapshots have something to move.</summary>
-        public static void NetRestore() { var f = Current; if (f == null || f.Gone || f.Sump == null) return; foreach (var u in new ICombatant[] { f.Unit, f.Sump.Tail }) if (!EncounterState.Enemies.Contains(u)) EncounterState.Enemies.Add((Mutant)u); if (!f.Swallowed && !EncounterState.Enemies.Contains(f.Body)) EncounterState.Enemies.Add(f.Body); }
+        public static void NetRestore() { var f = Current; if (f == null || f.Gone || f.Sump == null || f.Level != "sump") return; foreach (var u in new ICombatant[] { f.Unit, f.Sump.Tail }) if (!EncounterState.Enemies.Contains(u)) EncounterState.Enemies.Add((Mutant)u); if (!f.Swallowed && !EncounterState.Enemies.Contains(f.Body)) EncounterState.Enemies.Add(f.Body); }
         public static void SkipIntro() { var f = Current; if (f != null && f.Stage == "intro" && f.Sump != null) f.Sump.IntroSkip = true; }
         public static void HurtPublic(Player p, int dmg, string what, string kind) => Hurt(p, dmg, what, kind);
         static void Go(Fight f, string stage) { f.Stage = stage; f.StageAt = Time.time; f.Move = null; f.Hit = false; f.Zones.Clear(); }
@@ -138,7 +159,11 @@ namespace GameCore
             var (ex, ey) = f.Level == "platform" ? (f.SX, f.SY) : (f.CX, f.CY);
             var tgt = players.OrderBy(p => { var (x, y) = Ballistics.Pos(p); return (x - ex) * (x - ex) + (y - ey) * (y - ey); }).First();
             var (px, py) = Ballistics.Pos(tgt);
-            if (f.Level == "platform") { Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); }
+            if (f.Level == "platform")
+            {
+                if (LabLocks.Drained(TerrainMap.ZoneId)) { Despawn(f); return; }                                  // the pump ran: the water is gone, so is it
+                Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); EelSump.FillFromRig(f);
+            }
             else EelSump.Tick(f, players, now, dt);
         }
 
@@ -154,10 +179,10 @@ namespace GameCore
                     float gx = Mathf.Abs(pl.x - px) < 9f && Mathf.Abs(pl.y - py) < 9f ? pl.x : px, gy = gx == pl.x ? pl.y : py;      // it shadows you; near a strike platform it goes for that
                     float dx = gx - f.SX, dy = gy - f.SY, d = Mathf.Sqrt(dx * dx + dy * dy) + 0.001f;
                     f.SX += dx / d * Mathf.Min(d, 3.4f * dt); f.SY += dy / d * Mathf.Min(d, 3.4f * dt); f.Unit.X = (int)f.SX; f.Unit.Y = (int)f.SY;
-                    if (d < 0.6f && now >= f.Next && gx == pl.x) { f.PX = pl.x; f.PY = pl.y; Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The water swells under the platform."); }
+                    if (d < 0.6f && now >= f.Next && gx == pl.x) { f.PX = pl.x; f.PY = pl.y; f.Started = true; EelSump.PlatformEvent(f, "ripple", pl.x, pl.y, 1f, true); Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The water swells under the platform."); }
                     break;
                 case "wind":
-                    if (age >= 1.3f) { Go(f, "wrap"); f.Wraps++; f.Discharged = false; SetCoilSlots(f); f.Label = "WRAP: coils burst round the platform"; f.Shocked.Clear(); Sfx.Play("explosion", null, 0.5f, 0.05f, 0.6f); GameLog.Write("It bursts out and coils round the platform!"); }
+                    if (age >= 1.3f) { EelSump.PlatformEvent(f, "impact", f.PX, f.PY, 2f, true); Go(f, "wrap"); f.Wraps++; f.Discharged = false; SetCoilSlots(f); f.Label = "WRAP: coils burst round the platform"; f.Shocked.Clear(); Sfx.Play("explosion", null, 0.5f, 0.05f, 0.6f); GameLog.Write("It bursts out and coils round the platform!"); }
                     break;
                 case "wrap":
                     if (age >= Burst + ConstrictFor && !f.Discharged) { f.Discharged = true; Sfx.Play("explosion", null, 0.4f, 0.1f, 1.4f); GameLog.Write("The coils crackle with current."); }   // the segments are in place: the discharge
@@ -181,7 +206,7 @@ namespace GameCore
                     break;
                 case "strike":
                     var z = f.Zones.FirstOrDefault();
-                    if (z != null && age >= StrikeAt && !f.Hit) { f.Hit = true; z.Live = true; f.Label = "STRIKE!"; foreach (var p in players) Strike(p, z, StrikeDamage, "It strikes out of the water"); }
+                    if (z != null && age >= StrikeAt && !f.Hit) { f.Hit = true; z.Live = true; EelSump.PlatformEvent(f, "impact", z.X, z.Y, 1.6f, false); f.Label = "STRIKE!"; foreach (var p in players) Strike(p, z, StrikeDamage, "It strikes out of the water"); }
                     if (age >= StrikeAt + 0.4f) { Go(f, "recover"); f.Label = "it sinks back"; PickEscape(f); }
                     break;
                 case "recover":

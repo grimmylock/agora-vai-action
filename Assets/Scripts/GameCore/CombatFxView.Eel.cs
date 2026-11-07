@@ -72,6 +72,15 @@ namespace GameCore
                         }
                     }
                 }
+                else                                                                                           // a coiled body (the platform form's wrap): short arcs crackle over the parts that are out of the water
+                {
+                    var up = new List<int>(); for (int i = 0; i < NN; i++) if (s.Z[i] > 0.3f) up.Add(i);
+                    for (int a = 0; a < 5 + (int)(10f * charge) && up.Count > 0; a++)
+                    {
+                        int i = up[rng.Next(up.Count)]; var q = W(s.X[i], s.Y[i], s.Z[i]) + new Vector3(((float)rng.NextDouble() - 0.5f) * 1.4f, ((float)rng.NextDouble() - 0.5f) * 0.8f, 0f); float ang = (float)rng.NextDouble() * 6.283f; Vector3 prev = q;
+                        for (int sg = 0; sg < 3; sg++) { ang += ((float)rng.NextDouble() - 0.5f) * 1.8f; var nq = prev + new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f) * (0.12f + 0.12f * (float)rng.NextDouble()); n = Line(_eelBolt, n, prev, nq, baseOrder + 340, 0.06f, 0.026f, 0.3f); prev = nq; }
+                    }
+                }
             }
             HideFrom(_eelBolt, n);
             DrawStormWater(s, charge, baseOrder);

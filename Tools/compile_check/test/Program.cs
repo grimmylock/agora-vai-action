@@ -1143,7 +1143,7 @@ static class Program {
     EelBoss.Reset(); Rt.On = false;
   }
   static void EelChecks() {
-    EelRigChecks(); EelSumpChecks(); EelFightChecks();
+    EelRigChecks(); EelSumpChecks(); EelFightChecks(); EelPlatformFormChecks();
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
@@ -2295,6 +2295,33 @@ static class Program {
     } finally { Net.Reset(); Net.Link = null; Rt.On = false; }
   }
 
+
+
+  // Levels 1-2: the platform form is spawned on entering the flooded level while its water is deep, drawn through the proxy spine, gone when the pump runs, its wounds carry down, and the last pump waits for the eel
+  static void EelPlatformFormChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); var keys = MacroState.Current.Keys; foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k);
+    MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled); foreach (var w in new[] { "05", "10", "15", "20" }) MacroState.Current.StoryFlags.Remove("f:eelwound" + w);
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp; const float dt = 1f / 30f;
+    try {
+      MacroState.Current.CurrentZoneId = LabLocks.Depths1; ZoneTravel.EnterZone(LabLocks.Depths1); var f = EelBoss.Current;
+      Check(f != null && f.Level == "platform" && f.Sump != null && EncounterState.Enemies.Contains(f.Unit) && !EncounterState.Enemies.Contains(f.Sump.Tail) && f.Platforms.Count == 1, $"Eel platform form: entering Level 1 puts the eel in its deep water ({f?.Level})");
+      for (int i = 0; i < 60; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+      var s = f.Sump; Check(f.Stage == "lurk" && !s.HeadOut && Enumerable.Range(0, 40).All(i => s.Z[i] <= 0.3f && s.Z[i] > 0f), "Eel platform form: lurking, the view's spine is a shadow in the water");
+      var plat = EelBoss.Marks(LabLocks.Depths1, '7')[0]; SumpPlace(p, plat.x + 0.5f, plat.y + 0.5f); f.Next = UnityEngine.Time.time; bool wrapped = false; int solid = 0; bool charged = false;
+      for (int i = 0; i < 900 && !(wrapped && f.Discharged); i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; if (f.Stage == "wrap") { wrapped = true; solid = Math.Max(solid, Enumerable.Range(0, EelSump.N).Count(j => s.Z[j] > 0.3f)); charged |= s.Charge > 0.5f; } }
+      Check(wrapped && solid >= 20 && charged, $"Eel platform form: round the platform the proxy spine has {solid} solid samples and the discharge shows as charge ({charged})");
+      var net = Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel; Check(net != null && net.Has && net.HasSpine && net.Stage == "wrap", "Eel platform form: the co-op snapshot carries it like the Sump's");
+      f.Unit.Hp -= 1300; EelBoss.OnDamaged(f.Unit); keys.Add("depths_drain1"); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt);
+      Check(f.Gone && !EncounterState.Enemies.Contains(f.Unit) && Story.Has("eelwound05"), $"Eel platform form: when the pump runs the eel is gone and its wounds are remembered ({f.Unit.Hp})");
+      EncounterState.Enemies.Clear(); MacroState.Current.CurrentZoneId = LabLocks.Depths1; ZoneTravel.EnterZone(LabLocks.Depths1); Check(EelBoss.Current == null, "Eel platform form: a drained level has no eel");
+      MacroState.Current.CurrentZoneId = LabLocks.Depths3; ZoneTravel.EnterZone(LabLocks.Depths3); var g = EelBoss.Current;
+      Check(g != null && g.Level == "sump" && g.Unit.Hp == (int)(EelBoss.MaxHp * 0.95f), $"Eel platform form: the Sump's eel starts with the wound from above ({g?.Unit.Hp})");
+      keys.Add("depths_drain2"); var pump = TerrainMap.InteractiveObjects.First(o => o.Name == "Main Sump Pump");
+      Check(Stashes.Blocked(pump), "Eel platform form: the last pump won't run with the eel in its pool");
+      Story.Set(EelBoss.Fled); Check(!Stashes.Blocked(pump), "Eel platform form: once the eel has fled the last pump runs");
+    } finally { foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k); MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled); MacroState.Current.StoryFlags.Remove("f:eelwound05"); EelBoss.Reset(); Rt.On = false; }
+  }
 
   // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it
   static void NetEelChecks() {

@@ -710,7 +710,7 @@ namespace GameCore
         static short Q(float v) => (short)Mathf.Clamp(Mathf.RoundToInt(v * 256f), -32768, 32767);
         public static void WriteNet(System.IO.BinaryWriter w)
         {
-            var f = EelBoss.Current; var s = f?.Sump; bool has = s != null && f.Level == "sump"; w.Write(has); if (!has) return;
+            var f = EelBoss.Current; var s = f?.Sump; bool has = s != null; w.Write(has); if (!has) return;
             bool spine = f.Stage != "hidden"; int flags = (f.Started ? 1 : 0) | (f.Swallowed ? 2 : 0) | (Story.Letterbox ? 4 : 0) | (Story.InCutscene ? 8 : 0) | (Story.CamLock.HasValue ? 16 : 0) | (Story.CamCut ? 32 : 0) | (spine ? 64 : 0);
             w.Write(f.Stage ?? ""); w.Write((byte)flags); w.Write(s.Rear); w.Write(s.Mouth); w.Write(s.Twitch); w.Write(s.Charge); w.Write(s.SkyK); w.Write(s.Lump);
             if (Story.CamLock.HasValue) { w.Write(Story.CamLock.Value.x); w.Write(Story.CamLock.Value.y); w.Write(Story.CamHalf); w.Write(Story.CamRate); }
@@ -764,6 +764,33 @@ namespace GameCore
             }
             else if (_netCine) { Story.CineEnd(); _netCine = false; }
         }
+
+
+        // ------------------------------------------------------------------ the platform form (Levels 1-2) as the views see it
+        // The platform fight (EelBoss.Platform, EelRig) moves a 56-segment rope; the view and the co-op snapshot know one thing, the Sump's spine (N samples, a quarter tile apart, head first, with a height). So the
+        // platform fight carries a PROXY State, refilled from the rig every tick: the rope resampled into the spine; under the water (lurking, winding up, diving) it is a shadow (height 0.05: the view draws the first 10 tiles
+        // as a dark shape), above it the body lies on the floor (0.55 + the coil's height), and the part of it that is under the water goes down (-1.5: the view narrows it to a rounded end at the waterline).
+        public static State PlatformProxy(Mutant head)
+        {
+            var s = new State { Tail = new Mutant(TailName, head.X, head.Y, TailDef) { Hp = TailMax } };             // the tail is never in the fight here (not in the enemy list)
+            for (int i = 0; i < N; i++) { s.X[i] = head.X; s.Y[i] = head.Y; s.Z[i] = HideZ; } return s;
+        }
+        public static void FillFromRig(EelBoss.Fight f)
+        {
+            var s = f.Sump; var r = f.Rig; int C = EelRig.Count; var px = new float[C + 1]; var py = new float[C + 1]; var pz = new float[C + 1]; var cum = new float[C + 1];
+            px[0] = r.HX; py[0] = r.HY; pz[0] = r.HeadZ; for (int i = 0; i < C; i++) { px[i + 1] = r.RX[i]; py[i + 1] = r.RY[i]; pz[i + 1] = r.Z[i]; }
+            for (int i = 1; i <= C; i++) cum[i] = cum[i - 1] + Mathf.Max(0.01f, Dist(px[i], py[i], px[i - 1], py[i - 1]));
+            int vis = r.Under ? 0 : EelBoss.Surfaced(f); float visLen = vis > 0 ? cum[Mathf.Min(C, vis)] : 0f; int k = 0;
+            for (int i = 0; i < N; i++)
+            {
+                float d = i / PerTile; while (k < C - 1 && cum[k + 1] < d) k++;
+                float u = Mathf.Clamp01((d - cum[k]) / Mathf.Max(0.01f, cum[k + 1] - cum[k])); s.X[i] = Lerp(px[k], px[k + 1], u); s.Y[i] = Lerp(py[k], py[k + 1], u); float z0 = Lerp(pz[k], pz[k + 1], u);
+                s.Z[i] = r.Under ? 0.05f : d <= visLen ? 0.55f + Mathf.Max(0f, z0) : -1.5f;
+            }
+            s.HeadOut = s.Z[0] > 0.3f; s.TailOut = false; s.Charge = f.Stage == "wrap" && f.Discharged ? 1f : 0f; s.Mouth = -1f; s.Rear = 0f;
+            s.Out.AddRange(s.Events); foreach (var ev in s.Events) { ev.Id = ++s.NetSeq; s.NetOut.Add((ev, Time.time)); } s.Events.Clear(); if (s.Out.Count > 200) s.Out.RemoveRange(0, s.Out.Count - 200);
+        }
+        public static void PlatformEvent(EelBoss.Fight f, string kind, float x, float y, float power, bool water) { if (f?.Sump != null) f.Sump.Events.Add(new Ev { Kind = kind, X = x, Y = y, Power = power, Water = water }); }
 
         // ------------------------------------------------------------------ the introduction (a cutscene, Yan 2026-11-07)
         // You walk up to the drowned crewman on the slab and EXAMINE him (E, EelBoss.TryExamine). Everything stands still and the camera takes over (Story.CamLock + letterbox): the pools go still and swell, the
