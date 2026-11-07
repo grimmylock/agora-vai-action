@@ -5,7 +5,7 @@
 //   Rt.Remote and PlayerController ticks them like the local player; ~20 times a second every client gets a snapshot.
 // - Client: sends its Input every frame, runs no world of its own (no clock, no AI, no squads), and puts every player where the
 //   host's snapshot says - itself included.
-// ponytail: the test covers players only. Enemies, shots and effects, items, quests, characters travelling with their owner,
+// ponytail: players, and the Sump's eel for its cutscene (EelSump.WriteNet). Other enemies, shots and effects, items, quests, characters travelling with their owner,
 // the "everyone at the exit" vote and the host saving everyone's character are the next steps (WORK_LOG RT 7y).
 using System.Collections.Generic;
 using System.IO;
@@ -140,7 +140,7 @@ namespace GameCore
         {
             if (Mode != Role.Client || Player.Current == null) return;
             var s = DecodeSnapshot(data);
-            if (!string.IsNullOrEmpty(s.Map) && s.Map != TerrainMap.ZoneId) { ZoneTravel.EnterZone(s.Map); EncounterState.Enemies.Clear(); }
+            if (!string.IsNullOrEmpty(s.Map) && s.Map != TerrainMap.ZoneId) { ZoneTravel.EnterZone(s.Map); EncounterState.Enemies.Clear(); EelBoss.NetRestore(); }
             MacroState.Current.Hour = s.Hour;
             var seen = new HashSet<ulong>();
             ulong me = Link?.LocalId ?? ulong.MaxValue;
@@ -159,6 +159,7 @@ namespace GameCore
                 st.ProneUntil = now + e.ProneLeft; st.DiveX = e.DiveX; st.DiveY = e.DiveY;
             }
             foreach (var gone in ByOwner.Keys.Where(k => !seen.Contains(k)).ToList()) { Player.All.Remove(ByOwner[gone]); ByOwner.Remove(gone); }
+            EelSump.ApplyNet(s.Eel);                                                       // the Sump's eel and its cutscene
         }
 
         // ---------------- the wire format ----------------
@@ -187,7 +188,7 @@ namespace GameCore
 
         public class PlayerEntry { public ulong Owner; public int X, Y, Hp; public float Ox, Oy; public bool Aiming;
             public bool HasAim; public float AimX, AimY, DiveT = -1f, ProneLeft, DiveX, DiveY; }   // RT 7z: where they aim, the dive's moment
-        public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); }
+        public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); public EelSump.NetState Eel; }     // Eel: the Sump's boss and its cutscene (EelSump.WriteNet)
 
         public static byte[] EncodeSnapshot()
         {
@@ -202,6 +203,7 @@ namespace GameCore
                 w.Write(st.AimAt.HasValue); w.Write(st.AimAt?.x ?? 0f); w.Write(st.AimAt?.y ?? 0f);
                 w.Write(st.Diving ? Rt.DiveTime - (st.DiveUntil - now) : -1f); w.Write(Mathf.Max(0f, st.ProneUntil - now)); w.Write(st.DiveX); w.Write(st.DiveY);
             }
+            EelSump.WriteNet(w);
             return ms.ToArray();
         }
 
@@ -213,6 +215,7 @@ namespace GameCore
             for (int k = 0; k < n; k++)
                 s.Players.Add(new PlayerEntry { Owner = r.ReadUInt64(), X = r.ReadInt32(), Y = r.ReadInt32(), Ox = r.ReadSingle(), Oy = r.ReadSingle(), Hp = r.ReadInt32(), Aiming = r.ReadBoolean(),
                     HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveX = r.ReadSingle(), DiveY = r.ReadSingle() });
+            s.Eel = EelSump.ReadNet(r);
             return s;
         }
     }

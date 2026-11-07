@@ -94,6 +94,8 @@ namespace GameCore
         }
         public static bool TryExamine(Player p) { if (!CanExamine(p, out _, out _)) return false; GameLog.Write($"A drowned crewman in {Current.BodyArmor}, soaked through. The water round the slab is very still."); StartIntro(Current); return true; }
         public static void StartIntro(Fight f) { f.Started = true; Go(f, "intro"); EelSump.BeginIntro(f); }
+        /// <summary>A client that has just entered the map (Net.OnSnapshot clears the enemy list): put the dormant eel and the body back, so the host's snapshots have something to move.</summary>
+        public static void NetRestore() { var f = Current; if (f == null || f.Gone || f.Sump == null) return; foreach (var u in new ICombatant[] { f.Unit, f.Sump.Tail }) if (!EncounterState.Enemies.Contains(u)) EncounterState.Enemies.Add((Mutant)u); if (!f.Swallowed && !EncounterState.Enemies.Contains(f.Body)) EncounterState.Enemies.Add(f.Body); }
         public static void SkipIntro() { var f = Current; if (f != null && f.Stage == "intro" && f.Sump != null) f.Sump.IntroSkip = true; }
         public static void HurtPublic(Player p, int dmg, string what, string kind) => Hurt(p, dmg, what, kind);
         static void Go(Fight f, string stage) { f.Stage = stage; f.StageAt = Time.time; f.Move = null; f.Hit = false; f.Zones.Clear(); }

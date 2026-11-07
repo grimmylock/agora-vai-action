@@ -290,19 +290,25 @@ namespace GameCore
 
         /// <summary>Real-time fork (ACTION_DESIGN.md): the controls without turns. Movement, aim, fire and reload are Rt's;
         /// the rest are the old keys that still make sense. E also loots a body or picks up what's at your feet.</summary>
+        static readonly HashSet<Player> _remoteUse = new HashSet<Player>();       // joined players whose E (Use) was already down: the examine fires on the press, not the hold
         private static void RealTime(Player player, Keyboard k, Mouse m)
         {
             bool panel = GameState.Current.ModalOpen || Story.InCutscene;   // a panel (or a cutscene) is up: you stand still, everything else runs
             if (k == null && !panel) return;
             if (HudView.TargetingOpen) HudView.CloseTargeting();
             if (!panel && k.escapeKey.wasPressedThisFrame && Time.frameCount != HudView.PackClosedFrame && (Rt.Paused || !HudView.CloseOldPanels())) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
-            if (Story.InCutscene && k != null && k.escapeKey.wasPressedThisFrame) EelBoss.SkipIntro();     // ESC skips the eel's introduction
+            if (Story.InCutscene && !Net.Client && k != null && k.escapeKey.wasPressedThisFrame) EelBoss.SkipIntro();     // ESC skips the eel's introduction
             if (Rt.Paused && !Net.Client) return;                   // ponytail: ESC still pauses a host's whole world (Yan's rule: no pausing in co-op - with the menu work)
             var mine = panel || k == null ? default : Rt.Read(k, m);
             Net.Tick(Time.unscaledTime, mine);                       // RT 7y: a client sends this; a host sends snapshots
             if (Net.Client) return;                                  // the host's world is the only one: no tick here, the snapshot places you
             if (player.IsAlive()) Rt.PlayerTick(player, mine);       // co-op: the local player's devices become one Input packet
-            foreach (var j in Player.All) if (j != player && j.IsAlive()) Rt.PlayerTick(j, Net.TakeInput(j));   // joined players, on their last packet (presses spent once)
+            foreach (var j in Player.All) if (j != player && j.IsAlive())                         // joined players, on their last packet (presses spent once)
+            {
+                var ji = Net.TakeInput(j); bool edge = ji.Use && !_remoteUse.Contains(j); if (ji.Use) _remoteUse.Add(j); else _remoteUse.Remove(j);
+                if (edge && EelBoss.TryExamine(j)) continue;                                      // a friend presses E at the crewman on the slab: the eel's cutscene
+                Rt.PlayerTick(j, Story.InCutscene ? default : ji);                                // and in a cutscene they stand still, like the host
+            }
             TickClock(player);
             Rt.WorldTick(player);
             if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }   // dead: the world still runs above while a friend lives

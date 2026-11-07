@@ -24,14 +24,14 @@ namespace GameCore
         public static readonly MutantDef TailDef = new MutantDef { Name = TailName, Tier = 3, Hp = TailMax, PhysDR = 0.1f, AnomDR = 0.3f, Ap = 0, Mp = 0, Ac = 10, AttackDamage = 0, Behavior = "boss", PanicThreshold = 0f };
 
         public class Pool { public string Name; public float X, Y, RX, RY; public bool Big; }
-        public class Ev { public string Kind, Text; public float X, Y, Power; public bool Water; public int Who, Dmg; }
+        public class Ev { public string Kind, Text; public float X, Y, Power; public bool Water; public int Who, Dmg, Id; }
         public class Fling { public float X0, Y0, X1, Y1, T0, Dur, Apex, Z0, Spin, Z, Rot; public string Land; public Player Hurled; }
         public class State
         {
             public List<Pool> Pools = new List<Pool>(); public Pool Big; public float SlabX, SlabY;
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
-            public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
+            public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public readonly List<(Ev e, float t)> NetOut = new List<(Ev, float)>(); public int NetSeq; public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
             public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth = -1f, GrabStart, GrabLast, StunUntil; public int Mash; public float Grip, Twitch, GrabLastU, BiteU, SkyK; public (float x, float y) VictimPos, BiteFrom; public (float sx, float sy) GrabShift; public float BiteSide; public (float x, float y) BiteEnd; public bool Parried; public bool Won; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
             public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3, FloodSnd, RushSnd, GlintSnd; public float Rear, Charge; public float SparkAt;   // Rear: degrees the head is thrown back (charging, screaming, rearing back to strike); public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
             public int FloodVer;  // counts changes of Flip, for the view's flood texture
@@ -159,6 +159,7 @@ namespace GameCore
                 case "move": RunMove(f, s, players, now, ts); break;
             }
             Fly(f, s, players, now); UpdateUnits(f, s); s.LastHp = f.Unit.Hp; s.LastTailHp = s.Tail.Hp;
+            foreach (var ev in s.Events) { ev.Id = ++s.NetSeq; s.NetOut.Add((ev, Time.time)); }          // the clients get the same events (WriteNet)
             s.Out.AddRange(s.Events); if (s.Out.Count > 200) s.Out.RemoveRange(0, s.Out.Count - 200);       // the view drains these (impacts, hits)
             if (s.TailDownUntil >= 0f && now >= s.TailDownUntil) { s.TailDownUntil = -1f; s.Tail.Hp = TailMax; s.TailBroken = false; }
         }
@@ -696,6 +697,56 @@ namespace GameCore
             }
         }
 
+
+
+        // ------------------------------------------------------------------ co-op: the host's eel for the clients (Net.cs puts this after the players in every snapshot)
+        // The host runs the fight; a client runs no world, so it is told what to DRAW and how to FEEL: the stage, the spine (every second sample, 1/256-tile shorts: 420 bytes, the rest interpolated), the head's pose
+        // (mouth, rear, twitch, charge, the swallowed lump), the events the view plays (ripples, impacts: the last 0.3 s each time, with ids, so a lost packet costs nothing), and the cutscene itself: whether the
+        // world stands still (Freeze), the cinematic camera (point, zoom, rate, cut) and the bars. Not yet synced (the fight, not the cutscene): the flood, players in the air, the grapple, the bars' HP.
+        public class NetState { public bool Has, Started, Swallowed, Letterbox, Freeze, Cut, HasCam, HasSpine; public string Stage = ""; public float CamX, CamY, CamHalf, CamRate, Rear, Mouth, Twitch, Charge, SkyK, Lump; public short[] Spine; public List<Ev> Events = new List<Ev>(); }
+        static short Q(float v) => (short)Mathf.Clamp(Mathf.RoundToInt(v * 256f), -32768, 32767);
+        public static void WriteNet(System.IO.BinaryWriter w)
+        {
+            var f = EelBoss.Current; var s = f?.Sump; bool has = s != null && !f.Gone && f.Level == "sump"; w.Write(has); if (!has) return;
+            bool spine = f.Stage != "hidden"; int flags = (f.Started ? 1 : 0) | (f.Swallowed ? 2 : 0) | (Story.Letterbox ? 4 : 0) | (Story.InCutscene ? 8 : 0) | (Story.CamLock.HasValue ? 16 : 0) | (Story.CamCut ? 32 : 0) | (spine ? 64 : 0);
+            w.Write(f.Stage ?? ""); w.Write((byte)flags); w.Write(s.Rear); w.Write(s.Mouth); w.Write(s.Twitch); w.Write(s.Charge); w.Write(s.SkyK); w.Write(s.Lump);
+            if (Story.CamLock.HasValue) { w.Write(Story.CamLock.Value.x); w.Write(Story.CamLock.Value.y); w.Write(Story.CamHalf); w.Write(Story.CamRate); }
+            if (spine) for (int i = 0; i < N; i += 2) { w.Write(Q(s.X[i])); w.Write(Q(s.Y[i])); w.Write(Q(s.Z[i])); }
+            s.NetOut.RemoveAll(e => Time.time - e.t > 0.3f); w.Write((byte)Mathf.Min(s.NetOut.Count, 24));
+            foreach (var (e, _) in s.NetOut.Skip(Mathf.Max(0, s.NetOut.Count - 24))) { w.Write(e.Id); w.Write(e.Kind ?? ""); w.Write(e.X); w.Write(e.Y); w.Write(e.Power); w.Write(e.Water); }
+        }
+        public static NetState ReadNet(System.IO.BinaryReader r)
+        {
+            var n = new NetState { Has = r.ReadBoolean() }; if (!n.Has) return n;
+            n.Stage = r.ReadString(); int fl = r.ReadByte(); n.Started = (fl & 1) != 0; n.Swallowed = (fl & 2) != 0; n.Letterbox = (fl & 4) != 0; n.Freeze = (fl & 8) != 0; n.HasCam = (fl & 16) != 0; n.Cut = (fl & 32) != 0; n.HasSpine = (fl & 64) != 0;
+            n.Rear = r.ReadSingle(); n.Mouth = r.ReadSingle(); n.Twitch = r.ReadSingle(); n.Charge = r.ReadSingle(); n.SkyK = r.ReadSingle(); n.Lump = r.ReadSingle();
+            if (n.HasCam) { n.CamX = r.ReadSingle(); n.CamY = r.ReadSingle(); n.CamHalf = r.ReadSingle(); n.CamRate = r.ReadSingle(); }
+            if (n.HasSpine) { n.Spine = new short[N / 2 * 3]; for (int i = 0; i < n.Spine.Length; i++) n.Spine[i] = r.ReadInt16(); }
+            int c = r.ReadByte(); for (int i = 0; i < c; i++) n.Events.Add(new Ev { Id = r.ReadInt32(), Kind = r.ReadString(), X = r.ReadSingle(), Y = r.ReadSingle(), Power = r.ReadSingle(), Water = r.ReadBoolean() });
+            return n;
+        }
+        static bool _netCine; static int _netSeen;
+        /// <summary>On a client: make the local (dormant) eel look like the host's, play the events it has not seen, and run the host's cutscene (freeze, camera, bars).</summary>
+        public static void ApplyNet(NetState n)
+        {
+            var f = EelBoss.Current; var s = f?.Sump;
+            if (n == null || !n.Has || s == null) { if (_netCine) { Story.CineEnd(); _netCine = false; } return; }
+            f.Stage = n.Stage; f.Started = n.Started; if (n.Swallowed && !f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
+            s.Rear = n.Rear; s.Mouth = n.Mouth; s.Twitch = n.Twitch; s.Charge = n.Charge; s.SkyK = n.SkyK; s.Lump = n.Lump;
+            if (n.HasSpine)
+            {
+                int h = N / 2; for (int k = 0; k < h; k++) { s.X[2 * k] = n.Spine[3 * k] / 256f; s.Y[2 * k] = n.Spine[3 * k + 1] / 256f; s.Z[2 * k] = n.Spine[3 * k + 2] / 256f; }
+                for (int k = 0; k < h; k++) { int i = 2 * k + 1, j = Mathf.Min(h - 1, k + 1); s.X[i] = (n.Spine[3 * k] + n.Spine[3 * j]) / 512f; s.Y[i] = (n.Spine[3 * k + 1] + n.Spine[3 * j + 1]) / 512f; s.Z[i] = (n.Spine[3 * k + 2] + n.Spine[3 * j + 2]) / 512f; }
+            }
+            s.HeadOut = s.Z[0] > 0.3f; s.TailOut = s.Z[N - 1] > 0.3f;
+            foreach (var e in n.Events) if (e.Id > _netSeen) { _netSeen = e.Id; s.Out.Add(e); }
+            if (n.Freeze || n.HasCam || n.Letterbox)
+            {
+                _netCine = true; if (n.Freeze) Story.CutsceneUntil = Time.time + 0.4f; Story.Letterbox = n.Letterbox;
+                if (n.HasCam) { Story.CamLock = (n.CamX, n.CamY); Story.CamHalf = n.CamHalf; Story.CamRate = n.CamRate; if (n.Cut) Story.CamCut = true; } else Story.CamLock = null;
+            }
+            else if (_netCine) { Story.CineEnd(); _netCine = false; }
+        }
 
         // ------------------------------------------------------------------ the introduction (a cutscene, Yan 2026-11-07)
         // You walk up to the drowned crewman on the slab and EXAMINE him (E, EelBoss.TryExamine). Everything stands still and the camera takes over (Story.CamLock + letterbox): the pools go still and swell, the

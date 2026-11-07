@@ -47,6 +47,7 @@ static class Program {
     TestingGroundChecks();
     SaveSlotChecks();
     NetChecks();
+    NetEelChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2290,6 +2291,39 @@ static class Program {
       Net.Tick(2000f, new Rt.Input { X = -1f });
       Check(link.ToHost == 1 && Net.DecodeInput(link.Last).X == -1f, "RT 7y: a client sends its input every frame");
     } finally { Net.Reset(); Net.Link = null; Rt.On = false; }
+  }
+
+
+  // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it
+  static void NetEelChecks() {
+    var link = new FakeLink(); Net.Link = link;
+    try {
+      GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+      var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled);
+      UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp;
+      Net.Host(); var q = Net.OnJoin(7); TestingGround.EelFight(p); var f = EelBoss.Current; const float dt = 1f / 30f;
+      SumpPlace(p, 30.5f, 11f); SumpPlace(q, f.BodyX + 0.5f, f.BodyY + 1.5f);
+      var hidden = Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel;
+      Check(hidden != null && hidden.Has && hidden.Stage == "hidden" && !hidden.HasSpine, "Co-op eel: a hidden eel goes over the wire without a spine");
+      Check(EelBoss.CanExamine(q, out _, out _) && EelBoss.TryExamine(q) && f.Stage == "intro", "Co-op eel: a joined friend next to the body can start the introduction");
+      byte[] mid = null, end = null; float hx10 = 0f; int evSeen = 0;
+      for (int i = 0; i < 1500 && f.Stage == "intro"; i++) {
+        UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt;
+        if (mid == null && f.Swallowed && f.Sump.Z[0] > 1f) { mid = Net.EncodeSnapshot(); hx10 = f.Sump.X[10]; }
+      }
+      end = Net.EncodeSnapshot();
+      Check(mid != null && mid.Length < 1300, $"Co-op eel: a snapshot in the middle of the cutscene fits one packet ({mid?.Length} bytes)");
+      var m = Net.DecodeSnapshot(mid).Eel;
+      Check(m.Has && m.Stage == "intro" && m.Swallowed && m.Letterbox && m.Freeze && m.HasCam && m.HasSpine && m.Spine.Length == EelSump.N / 2 * 3, "Co-op eel: the snapshot carries the stage, the freeze, the camera and the spine");
+      Net.Reset(); Net.Link = link; link.Id = 7; Story.Reset(); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient();
+      Net.OnSnapshot(mid); var cf = EelBoss.Current;
+      Check(cf != null && cf.Sump != null && cf.Stage == "intro" && cf.Swallowed && !EncounterState.Enemies.Contains(cf.Body) && EncounterState.Enemies.Contains(cf.Unit), "Co-op eel: a client's eel is where the host's is in the cutscene, the body swallowed, the eel back in the fight's roster");
+      Check(Math.Abs(cf.Sump.X[10] - hx10) < 0.02f && cf.Sump.HeadOut == (cf.Sump.Z[0] > 0.3f), $"Co-op eel: the client's spine matches the host's (sample 10 {cf.Sump.X[10]:0.00} vs {hx10:0.00})");
+      Check(Story.InCutscene && Story.Letterbox && Story.CamLock.HasValue, "Co-op eel: a client stands still, with the bars and the host's camera");
+      int nev = cf.Sump.Out.Count; Net.OnSnapshot(mid); Check(cf.Sump.Out.Count == nev, "Co-op eel: the same events resent in the next snapshot are not played twice");
+      Net.OnSnapshot(end);
+      Check(cf.Stage == "idle" && !Story.CamLock.HasValue && !Story.Letterbox && !Story.InCutscene, $"Co-op eel: when the host's cutscene ends the client's camera and freeze end ({cf.Stage})");
+    } finally { Net.Reset(); Net.Link = null; Rt.On = false; Story.Reset(); }
   }
 
   // RT 7x: save slots - a character file + a world file per New Game (saved at creation), load by slot, delete, the old single
