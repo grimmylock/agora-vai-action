@@ -171,13 +171,31 @@ namespace GameCore
 
             if (TerrainMap.DirtyTiles.Count > 0 && _mapTex != null && _bake == null)   // during a re-bake they wait a frame or two
             {
-                _worldStamp++;
-                foreach (var d in TerrainMap.DirtyTiles)
+                // Water rising or draining (the eel's flood: Difficult tiles with no look or "deepwater") changes neither sight nor light: no new line-of-sight pass
+                // (Vision.Update redoes ~4000 rays whenever the stamp moves, and bumps Vision.Version, which makes the overlays redraw) and no light re-bake.
+                bool waterOnly = true;
+                foreach (var d in TerrainMap.DirtyTiles) { var dt = TerrainMap.GetTile(d.x, d.y); if (dt == null || dt.Type != TileType.Difficult || dt.Look != null && dt.Look != "deepwater") { waterOnly = false; break; } }
+                if (!waterOnly) _worldStamp++;
+                if (!_world) foreach (var d in TerrainMap.DirtyTiles) TerrainArt.Recompose(_mapPx, _builtZoneId, d.x, d.y);
+                else
                 {
-                    if (!_world) { TerrainArt.Recompose(_mapPx, _builtZoneId, d.x, d.y); continue; }
-                    for (int y = d.y - 1; y <= d.y + 1; y++) for (int x = d.x - 1; x <= d.x + 1; x++) WorldArt.Refresh(x, y);
-                    WorldArt.PaintGround(_mapPx, d.x - 2, d.y - 2, d.x + 2, d.y + 2);
-                    for (int y = d.y - 1; y <= d.y + 1; y++) for (int x = d.x - 1; x <= d.x + 1; x++) PlaceStanding(x, y);
+                    // Batched (2026-11-06, the eel's flood froze the game for seconds: it flips hundreds of tiles, and doing 3x3 refreshes, a 5x5 ground repaint
+                    // and 3x3 placements PER dirty tile did the same cells ~25 times over). Every cell is refreshed, painted and placed once; the paint goes in horizontal runs.
+                    var refresh = new HashSet<(int x, int y)>(); var paint = new HashSet<(int x, int y)>();
+                    foreach (var d in TerrainMap.DirtyTiles)
+                    {
+                        for (int y = d.y - 2; y <= d.y + 2; y++) for (int x = d.x - 2; x <= d.x + 2; x++) { paint.Add((x, y)); if (System.Math.Abs(x - d.x) <= 1 && System.Math.Abs(y - d.y) <= 1) refresh.Add((x, y)); }
+                    }
+                    foreach (var c in refresh) WorldArt.Refresh(c.x, c.y, !waterOnly);
+                    var rows = new Dictionary<int, List<int>>();
+                    foreach (var c in paint) { if (!rows.TryGetValue(c.y, out var xs)) rows[c.y] = xs = new List<int>(); xs.Add(c.x); }
+                    foreach (var kv in rows)
+                    {
+                        var xs = kv.Value; xs.Sort(); int a = xs[0], b = a;
+                        for (int i = 1; i < xs.Count; i++) { if (xs[i] == b + 1) b = xs[i]; else { WorldArt.PaintGround(_mapPx, a, kv.Key, b, kv.Key); a = b = xs[i]; } }
+                        WorldArt.PaintGround(_mapPx, a, kv.Key, b, kv.Key);
+                    }
+                    foreach (var c in refresh) PlaceStanding(c.x, c.y);
                 }
                 TerrainMap.DirtyTiles.Clear();
                 _mapTex.SetPixels32(_mapPx);

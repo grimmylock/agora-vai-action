@@ -58,14 +58,42 @@ namespace GameCore
             if (fill) _eelRingFill = sp; else _eelRing = sp; return sp;
         }
 
+        // The flood (EelSump.State.Flip): ONE texture, a pixel a tile, redrawn when the set changes - dark water over the floor, soft at the edges (bilinear), under everything that stands.
+        // The tiles themselves are not touched: they stay knee-deep and passable, so nothing is repainted and nobody is locked in.
+        SpriteRenderer _eelFlood; Texture2D _eelFloodTex; Color32[] _eelFloodPx; int _eelFloodVer = -1;
+        void DrawFlood(EelSump.State s)
+        {
+            int w = TerrainMap.Width, h = TerrainMap.Height;
+            if (_eelFlood == null) _eelFlood = NewSprite("EelFlood", null, Color.white, _root, 6);
+            if (_eelFloodTex == null || _eelFloodTex.width != w || _eelFloodTex.height != h)
+            {
+                _eelFloodTex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                _eelFloodPx = new Color32[w * h]; _eelFloodVer = -1;
+                _eelFlood.sprite = Sprite.Create(_eelFloodTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f);       // pixel (x, y from the top) = tile (x, y); the sprite hangs from world (0, 0), tile y runs down
+                _eelFlood.transform.position = Vector3.zero;
+            }
+            bool any = s.Flip.Count > 0;
+            if (_eelFlood.gameObject.activeSelf != any) _eelFlood.gameObject.SetActive(any);
+            if (!any || _eelFloodVer == s.FloodVer) return;
+            _eelFloodVer = s.FloodVer;
+            var clear = new Color32(8, 26, 38, 0); for (int i = 0; i < _eelFloodPx.Length; i++) _eelFloodPx[i] = clear;
+            var wet = new Color32(8, 26, 38, 215);
+            foreach (var t in s.Flip) if (t.Item1 >= 0 && t.Item2 >= 0 && t.Item1 < w && t.Item2 < h) _eelFloodPx[(h - 1 - t.Item2) * w + t.Item1] = wet;
+            _eelFloodTex.SetPixels32(_eelFloodPx); _eelFloodTex.Apply();
+        }
+
         void DrawEel()
         {
             var f = EelBoss.Current;
             if (f == null || f.Gone || f.Sump == null)
             {
+                Vision.Glows.Clear(); if (_eelFlood != null && _eelFlood.gameObject.activeSelf) _eelFlood.gameObject.SetActive(false);
                 HideFrom(_eelBody, 0); HideFrom(_eelFoam, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
             }
             var s = f.Sump; int stage = Mathf.Clamp(f.Phase, 0, 3);
+            DrawFlood(s);
+            Vision.Glows.Clear();                                                                           // it glows a little (Yan: its body was lost in the dark): a soft light along the part that is out of the water, where it is DRAWN (lifted by its height)
+            for (int gi = 0; gi < EelSump.N; gi += 5) if (s.Z[gi] > EelSump.Surface) Vision.Glows.Add((s.X[gi] - 0.5f, s.Y[gi] - s.Z[gi] - 0.5f, gi == 0 ? 4.2f : 3.2f, gi == 0 ? 0.85f : 0.7f));   // (-0.5: the overlay's cell coordinates have tile centres on whole numbers)
             var evs = EelSump.Drain();                                                                       // impacts: the game's own strips, a shake, a moment of hit-stop
             if (evs != null) foreach (var e in evs)
                 if (e.Kind == "impact")
@@ -79,6 +107,7 @@ namespace GameCore
                     for (int q = 0; q < nSp; q++) CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Random.Range(-2.5f, 2.5f)), Mathf.FloorToInt(e.Y + Random.Range(-1.5f, 3.5f)));
                     Shake(0.03f + 0.06f * e.Power);
                 }
+                else if (e.Kind == "cue") { CombatFx.PxAt("parry", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.12f); }                  // the bite's aim is locked: a flash at the mouth, THIS is the moment to press the parry key
                 else if (e.Kind == "parry") { CombatFx.PxAt("parry", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.3f); }                // the bite is caught in bare hands
                 else if (e.Kind == "slam") { CombatFx.PxAt("blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); CombatFx.PxAt("splash", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.6f); }   // the jaws shut and the head hits the ground
                 else if (e.Kind == "storm")                                                              // the burst: lightning crawls over the water all round
@@ -101,6 +130,10 @@ namespace GameCore
                 float da = Mathf.DeltaAngle(ag[i0], ag[i1]) * Mathf.Deg2Rad, len = Mathf.Sqrt((sp[i1].x - sp[i0].x) * (sp[i1].x - sp[i0].x) + (sp[i1].y - sp[i0].y) * (sp[i1].y - sp[i0].y));
                 rd[i] = Mathf.Abs(da) < 0.02f ? 99f : len / Mathf.Abs(da);                                       // a hairpin has a radius smaller than the body is thick
             }
+            var dh = new float[NN];                                                                          // how far (tiles along the body) each sample is from the nearest part that is under the water
+            for (int i = 0; i < NN; i++) dh[i] = s.Z[i] <= EelSump.Surface ? 0f : 99f;
+            for (int i = 1; i < NN; i++) dh[i] = Mathf.Min(dh[i], dh[i - 1] + 1f / EelSump.PerTile);
+            for (int i = NN - 2; i >= 0; i--) dh[i] = Mathf.Min(dh[i], dh[i + 1] + 1f / EelSump.PerTile);
             for (int i = 0; i + 1 < NN; i++)
             {
                 if (s.Z[i] <= EelSump.Surface || s.Z[i + 1] <= EelSump.Surface) continue;
@@ -121,7 +154,7 @@ namespace GameCore
                         pos += new Vector3(back.x, back.y, 0f) * shift;
                     }
                     float zs = Mathf.Lerp(s.Z[i], s.Z[i + 1], u); bool shade = zs <= EelSolidZ; if (shade && (i >= EelShadowLen || s.Z[0] > EelSolidZ + 0.2f)) continue;     // the shadow shows only while the head is down in the water (the swim)
-                    if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, zs / EelDipH);                                      // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut
+                    if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, Mathf.Lerp(dh[i], dh[i + 1], u) / EelDipH);       // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut: judged by the distance along the body to the waterline, NOT by height (the dash glides at z 0.45 and was pinched all along: 2026-11-06)
                     var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
                     sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : Color.white; sr.sortingOrder = baseOrder + (NN - i) * EelSub - kq;
                     sr.transform.position = pos; sr.transform.rotation = Quaternion.Euler(0f, 0f, rot);

@@ -103,6 +103,8 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
    cd Tools/compile_check
    bash runtest.sh ../../Assets/Scripts       # every check (test/Program.cs); must end with "ALL CHECKS PASSED"
    ```
+   On Windows (needs the .NET 8 SDK: `winget install Microsoft.DotNet.SDK.8`): `powershell -ExecutionPolicy Bypass -File Tools\compile_check\runtest.ps1`
+   (builds in `%TEMP%\agora_harness`; extra harness commands via `-HarnessArgs eelsump,frames.json`).
    It compiles all scripts except `Editor/` and `Net/` (Unity packages) against `stubs.cs`, a fake UnityEngine (add a minimal stub when you use a Unity
    API it lacks; C# 9). `RtChecks()`, `TestingGroundChecks()` and the co-op block test the real-time game with `Rt.On`;
    the rest are older turn-based checks that still guard shared code. Checks that roll dice depend on the order of random
