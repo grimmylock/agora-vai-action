@@ -39,7 +39,7 @@ namespace GameCore
             public float WindFor = Wind, FromX, FromY, PullX, PullY, S0X, S0Y, S1X, S1Y, S2X, S2Y; public bool Discharged;   // the current move: where the head started, its pull-back point, the sweep's Bezier
             public float TgtX, TgtY, EscX, EscY;                   // the player it is watching; the way it dives after a strike
             public (float x, float y) Rest => (CX - Side * -3f, CY - 134f / 32f);           // the rear-up head
-            public readonly List<Zone> Zones = new List<Zone>(); public readonly List<(float x, float y)> Platforms = new List<(float, float)>();
+            public readonly List<Zone> Zones = new List<Zone>(); public readonly List<(float x, float y)> Platforms = new List<(float, float)>(), Lures = new List<(float, float)>(); public bool WantFeint;     // Lures: Level 2's false-alarm spots (plan digit 8)
             public readonly HashSet<Player> Shocked = new HashSet<Player>();
         }
         public static Fight Current;
@@ -61,7 +61,7 @@ namespace GameCore
             int carry = 0; for (int p = 20; p >= 5 && carry == 0; p -= 5) if (Story.Has("eelwound" + p.ToString("00"))) carry = p;       // wounds from the other level (at most 20%)
             if (carry > 0) f.Unit.Hp = (int)(MaxHp * (1f - carry / 100f)); return f;
         }
-        public static void Reset() { Current = null; ShockAt.Clear(); Bag.Clear(); }
+        public static void Reset() { Current = null; ShockAt.Clear(); Bag.Clear(); EelLamps.Tell = null; }
         public static bool Is(ICombatant u) => Current != null && !Current.Gone && (Current.Unit == u || Current.Sump != null && Current.Sump.Tail == u);
         static int PhaseOf(int hp) => hp > MaxHp * 3 / 4 ? 0 : hp > MaxHp / 2 ? 1 : hp > MaxHp / 4 ? 2 : 3;
         public static float Age(Fight f) => Time.time - f.StageAt;
@@ -79,6 +79,7 @@ namespace GameCore
             var m = new Mutant(Name, (int)sx, (int)sy, Def) { Hp = MaxHp }; EncounterState.Enemies.Add(m); Bag.Clear();
             var f = new Fight { Unit = m, Level = "platform", SX = sx, SY = sy, StageAt = Time.time, Next = Time.time + 1f }; f.Sump = EelSump.PlatformProxy(m);       // for the view and the co-op snapshot
             foreach (var (x, y) in Marks(zone, '7')) f.Platforms.Add((x + 0.5f, y + 0.5f));
+            foreach (var (x, y) in Marks(zone, '8')) f.Lures.Add((x + 0.5f, y + 0.5f)); f.WantFeint = f.Lures.Count > 0;
             f.Rig.Place(sx, sy, 1f, 0f); f.Rig.Under = true;
             return Current = f;
         }
@@ -100,8 +101,22 @@ namespace GameCore
         }
 
         public static void GoStage(Fight f, string stage) => Go(f, stage);
+        // ---- the tell (ACTION_DESIGN "Fair scare rule": never a real strike without it): the lamps near the platform flicker, buzz and dim as it draws power. A REAL strike (stage wind, 1.3 s) flickers for 1 s and then
+        // the lamps go completely dark for 0.3 s - the silence - and it bursts. A FALSE ALARM (stage feint, Level 2) flickers for 1.3 s and the lamps simply come back.
+        public const float TellRadius = 10f;
+        static float _buzzAt;
+        static void UpdateTell(Fight f, float now)
+        {
+            float age = now - f.StageAt; int mode = 0; float k = 0f;
+            if (f.Stage == "wind") { if (age < 1.0f) { mode = 1; k = Mathf.Clamp01(0.2f + age / 1.0f * 0.8f); } else mode = 2; }
+            else if (f.Stage == "feint") { mode = 1; k = Mathf.Clamp01(0.2f + age / 1.3f * 0.8f); }
+            if (mode == 0) { EelLamps.Tell = null; return; }
+            EelLamps.Tell = (f.PX, f.PY, TellRadius, mode, k);
+            if (mode == 1 && now >= _buzzAt) { _buzzAt = now + 0.22f; EelSump.PlatformSound(f, "eel_charge", f.PX, f.PY, 0.12f + 0.3f * k); }          // the buzz: louder as it fills, cut off in the silence
+        }
         static void Despawn(Fight f)
         {
+            EelLamps.Tell = null;
             int pct = Mathf.Clamp(Mathf.RoundToInt((1f - f.Unit.Hp / (float)MaxHp) * 100f / 5f) * 5, 0, 20); if (pct > 0) Story.Set("eelwound" + pct.ToString("00"));          // the level below remembers the wounds
             f.Gone = true; EncounterState.Enemies.Remove(f.Unit); GameLog.Write("The pump drags the black water down. Far below, something huge thrashes in the dark, and goes quiet.");
         }
@@ -162,7 +177,7 @@ namespace GameCore
             if (f.Level == "platform")
             {
                 if (LabLocks.Drained(TerrainMap.ZoneId)) { Despawn(f); return; }                                  // the pump ran: the water is gone, so is it
-                Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); EelSump.FillFromRig(f);
+                Platform(f, players, tgt, px, py, now, age, dt); f.TgtX = px; f.TgtY = py; DriveBody(f, dt); EelSump.FillFromRig(f); UpdateTell(f, now);
             }
             else EelSump.Tick(f, players, now, dt);
         }
@@ -177,9 +192,14 @@ namespace GameCore
                     f.Label = "lurking";
                     var pl = f.Platforms.OrderBy(q => (q.x - px) * (q.x - px) + (q.y - py) * (q.y - py)).First();
                     float gx = Mathf.Abs(pl.x - px) < 9f && Mathf.Abs(pl.y - py) < 9f ? pl.x : px, gy = gx == pl.x ? pl.y : py;      // it shadows you; near a strike platform it goes for that
+                    bool feint = false; if (f.WantFeint && f.Lures.Count > 0) { var lu = f.Lures.OrderBy(q => (q.x - px) * (q.x - px) + (q.y - py) * (q.y - py)).First(); if (Mathf.Abs(lu.x - px) < 9f && Mathf.Abs(lu.y - py) < 9f) { gx = lu.x; gy = lu.y; feint = true; } }      // a false alarm: it goes for a spot where it will NOT strike
                     float dx = gx - f.SX, dy = gy - f.SY, d = Mathf.Sqrt(dx * dx + dy * dy) + 0.001f;
                     f.SX += dx / d * Mathf.Min(d, 3.4f * dt); f.SY += dy / d * Mathf.Min(d, 3.4f * dt); f.Unit.X = (int)f.SX; f.Unit.Y = (int)f.SY;
-                    if (d < 0.6f && now >= f.Next && gx == pl.x) { f.PX = pl.x; f.PY = pl.y; f.Started = true; EelSump.PlatformEvent(f, "ripple", pl.x, pl.y, 1f, true); Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The water swells under the platform."); }
+                    if (d < 0.6f && now >= f.Next && feint) { f.PX = gx; f.PY = gy; f.WantFeint = false; Go(f, "feint"); f.Label = "the lamps flicker..."; EelSump.PlatformEvent(f, "ripple", gx, gy, 1f, true); break; }
+                    if (d < 0.6f && now >= f.Next && gx == pl.x && !feint) { f.PX = pl.x; f.PY = pl.y; f.Started = true; EelSump.PlatformEvent(f, "ripple", pl.x, pl.y, 1f, true); Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The water swells under the platform."); }
+                    break;
+                case "feint":                                                                                   // a false alarm: the lamps flicker and buzz as if it were drawing power, then they come back - no silence, no strike
+                    f.Label = "the lamps flicker..."; if (age >= 1.3f) { f.Next = now + 5f; Go(f, "lurk"); f.Label = "lurking"; GameLog.Write("The lamps steady again. Nothing came."); }
                     break;
                 case "wind":
                     if (age >= 1.3f) { EelSump.PlatformEvent(f, "impact", f.PX, f.PY, 2f, true); Go(f, "wrap"); f.Wraps++; f.Discharged = false; SetCoilSlots(f); f.Label = "WRAP: coils burst round the platform"; f.Shocked.Clear(); Sfx.Play("explosion", null, 0.5f, 0.05f, 0.6f); GameLog.Write("It bursts out and coils round the platform!"); }
@@ -210,7 +230,7 @@ namespace GameCore
                     if (age >= StrikeAt + 0.4f) { Go(f, "recover"); f.Label = "it sinks back"; PickEscape(f); }
                     break;
                 case "recover":
-                    if (age >= 1.4f) { f.Next = now + 1.5f; Go(f, f.Wraps >= 2 ? "done" : "lurk"); }      // it has swum off by itself (DriveBody): SX, SY follow the head
+                    if (age >= 1.4f) { f.Next = now + 1.5f; f.WantFeint = f.Lures.Count > 0 && Random.value < 0.6f; Go(f, f.Wraps >= 2 ? "done" : "lurk"); }      // it has swum off by itself (DriveBody): SX, SY follow the head
                     break;
                 case "done": f.Label = "swims off - the pump is waiting"; break;
             }
@@ -265,7 +285,7 @@ namespace GameCore
                 switch (f.Stage)
                 {
                     case "lurk": case "done": head = (f.SX, f.SY); r.Under = true; r.SlitherAmount = 0.55f; r.SlitherSpeed = 7f; break;                     // swimming: the wave runs down the whole body
-                    case "wind": head = (c.x + 0.3f * Mathf.Sin(age * 22f), c.y + 0.3f * Mathf.Cos(age * 19f)); r.Under = true; r.SlitherAmount = 0.5f; r.SlitherSpeed = 10f; break;
+                    case "wind": case "feint": head = (c.x + 0.3f * Mathf.Sin(age * 22f), c.y + 0.3f * Mathf.Cos(age * 19f)); r.Under = true; r.SlitherAmount = 0.5f; r.SlitherSpeed = 10f; break;
                     case "wrap":
                     {
                         r.Under = false; r.SlitherAmount = f.Discharged ? 0.03f : 0.2f; r.SlitherSpeed = f.Discharged ? 3f : 9f; r.CompressAll = true;
@@ -330,6 +350,19 @@ namespace GameCore
             if (p.IsAlive()) Body.Hit(p, "Torso", 0f, dealt, kind);
             GameLog.Write($"{what} for {dealt}.");
             if (p.Hp <= 0) TurnLoop.CheckCombatEnd();
+        }
+    }
+
+    /// <summary>The eel's tell on the map's lamps (Levels 1-2): within `r` tiles of (x, y) the lamps flicker (mode 1, `k` 0..1 = how hard) or are dark (mode 2). WorldArt.AddLight asks Factor for each lamp.</summary>
+    public static class EelLamps
+    {
+        public static (float x, float y, float r, int mode, float k)? Tell;
+        public static float Factor(float tx, float ty, float time)
+        {
+            if (!Tell.HasValue) return 1f; var v = Tell.Value; float dx = tx - v.x, dy = ty - v.y; if (dx * dx + dy * dy > v.r * v.r) return 1f;
+            if (v.mode == 2) return 0f;
+            float n = Mathf.Abs(Mathf.Sin((Mathf.Floor(time * 16f) + tx * 7f + ty * 13f) * 12.9898f) * 43758.5453f) % 1f;           // irregular: on and off, more off as it fills
+            return n < Mathf.Lerp(0.15f, 0.7f, v.k) ? 0.06f : 1f - 0.35f * v.k;
         }
     }
 }

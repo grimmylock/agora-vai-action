@@ -706,7 +706,7 @@ namespace GameCore
         // The host runs the fight; a client runs no world, so it is told what to DRAW and how to FEEL: the stage, the spine (every second sample, 1/256-tile shorts: 420 bytes, the rest interpolated), the head's pose
         // (mouth, rear, twitch, charge, the swallowed lump), the events the view plays (ripples, impacts: the last 0.3 s each time, with ids, so a lost packet costs nothing), and the cutscene itself: whether the
         // world stands still (Freeze), the cinematic camera (point, zoom, rate, cut) and the bars. Not yet synced (the fight, not the cutscene): the flood, players in the air, the grapple, the bars' HP.
-        public class NetState { public bool Has, Started, Swallowed, Letterbox, Freeze, Cut, HasCam, HasSpine, Enraged, Gone, Ejected, Glint; public string Stage = "", Label = "", Bite = ""; public int Hp, TailHp, Phase; public float FloodR, Grip, VictimX, VictimY, SpotX, SpotY; public ulong Victim = ulong.MaxValue; public List<(ulong who, float z, float rot)> Air = new List<(ulong, float, float)>(); public float CamX, CamY, CamHalf, CamRate, Rear, Mouth, Twitch, Charge, SkyK, Lump; public short[] Spine; public List<Ev> Events = new List<Ev>(); }
+        public class NetState { public int TellMode; public float TellX, TellY, TellK; public bool Has, Started, Swallowed, Letterbox, Freeze, Cut, HasCam, HasSpine, Enraged, Gone, Ejected, Glint; public string Stage = "", Label = "", Bite = ""; public int Hp, TailHp, Phase; public float FloodR, Grip, VictimX, VictimY, SpotX, SpotY; public ulong Victim = ulong.MaxValue; public List<(ulong who, float z, float rot)> Air = new List<(ulong, float, float)>(); public float CamX, CamY, CamHalf, CamRate, Rear, Mouth, Twitch, Charge, SkyK, Lump; public short[] Spine; public List<Ev> Events = new List<Ev>(); }
         static short Q(float v) => (short)Mathf.Clamp(Mathf.RoundToInt(v * 256f), -32768, 32767);
         public static void WriteNet(System.IO.BinaryWriter w)
         {
@@ -717,6 +717,7 @@ namespace GameCore
             // the fight: HP and phase (the bars), the label, the flood's radius (the client rebuilds the same tiles), the bite and the jaw-hold, who is in the air or under the water
             w.Write((byte)((f.Enraged ? 1 : 0) | (f.Gone ? 2 : 0) | (f.Ejected ? 4 : 0) | (s.GlintSnd ? 8 : 0))); w.Write(f.Unit.Hp); w.Write(s.Tail.Hp); w.Write((byte)f.Phase); w.Write(f.Label ?? ""); w.Write(s.FloodR); w.Write(s.Bite ?? ""); w.Write(s.Grip);
             w.Write(s.Victim != null ? Net.OwnerOf(s.Victim) : ulong.MaxValue); w.Write(s.VictimPos.x); w.Write(s.VictimPos.y); w.Write(s.BiteSpot.x); w.Write(s.BiteSpot.y);
+            var tl = EelLamps.Tell; w.Write((byte)(tl.HasValue ? tl.Value.mode : 0)); if (tl.HasValue) { w.Write(tl.Value.x); w.Write(tl.Value.y); w.Write(tl.Value.k); }      // the lamps' tell
             var air = s.Air.Where(kv => kv.Key != null).Take(8).ToList(); w.Write((byte)air.Count); foreach (var kv in air) { w.Write(Net.OwnerOf(kv.Key)); w.Write(kv.Value.Z); w.Write(kv.Value.Rot); }
             if (spine) for (int i = 0; i < N; i += 2) { w.Write(Q(s.X[i])); w.Write(Q(s.Y[i])); w.Write(Q(s.Z[i])); }
             s.NetOut.RemoveAll(e => Time.time - e.t > 0.3f); var evs = s.NetOut.Where(q => q.e.Kind != "hit").Skip(Mathf.Max(0, s.NetOut.Count(q => q.e.Kind != "hit") - 12)).ToList(); w.Write((byte)evs.Count);
@@ -729,7 +730,9 @@ namespace GameCore
             n.Rear = r.ReadSingle(); n.Mouth = r.ReadSingle(); n.Twitch = r.ReadSingle(); n.Charge = r.ReadSingle(); n.SkyK = r.ReadSingle(); n.Lump = r.ReadSingle();
             if (n.HasCam) { n.CamX = r.ReadSingle(); n.CamY = r.ReadSingle(); n.CamHalf = r.ReadSingle(); n.CamRate = r.ReadSingle(); }
             int f2 = r.ReadByte(); n.Enraged = (f2 & 1) != 0; n.Gone = (f2 & 2) != 0; n.Ejected = (f2 & 4) != 0; n.Glint = (f2 & 8) != 0; n.Hp = r.ReadInt32(); n.TailHp = r.ReadInt32(); n.Phase = r.ReadByte(); n.Label = r.ReadString(); n.FloodR = r.ReadSingle(); n.Bite = r.ReadString(); n.Grip = r.ReadSingle();
-            n.Victim = r.ReadUInt64(); n.VictimX = r.ReadSingle(); n.VictimY = r.ReadSingle(); n.SpotX = r.ReadSingle(); n.SpotY = r.ReadSingle(); int na = r.ReadByte(); for (int i = 0; i < na; i++) n.Air.Add((r.ReadUInt64(), r.ReadSingle(), r.ReadSingle()));
+            n.Victim = r.ReadUInt64(); n.VictimX = r.ReadSingle(); n.VictimY = r.ReadSingle(); n.SpotX = r.ReadSingle(); n.SpotY = r.ReadSingle();
+            n.TellMode = r.ReadByte(); if (n.TellMode > 0) { n.TellX = r.ReadSingle(); n.TellY = r.ReadSingle(); n.TellK = r.ReadSingle(); }
+            int na = r.ReadByte(); for (int i = 0; i < na; i++) n.Air.Add((r.ReadUInt64(), r.ReadSingle(), r.ReadSingle()));
             if (n.HasSpine) { n.Spine = new short[N / 2 * 3]; for (int i = 0; i < n.Spine.Length; i++) n.Spine[i] = r.ReadInt16(); }
             int c = r.ReadByte(); for (int i = 0; i < c; i++) n.Events.Add(new Ev { Id = r.ReadInt32(), Kind = r.ReadString(), Text = r.ReadString(), X = r.ReadSingle(), Y = r.ReadSingle(), Power = r.ReadSingle(), Water = r.ReadBoolean() });
             return n;
@@ -739,6 +742,7 @@ namespace GameCore
         public static void ApplyNet(NetState n)
         {
             var f = EelBoss.Current; var s = f?.Sump;
+            if (n != null && n.Has) EelLamps.Tell = n.TellMode > 0 ? (n.TellX, n.TellY, EelBoss.TellRadius, n.TellMode, n.TellK) : ((float, float, float, int, float)?)null; else EelLamps.Tell = null;
             if (n == null || !n.Has || s == null) { if (_netCine) { Story.CineEnd(); _netCine = false; } return; }
             f.Stage = n.Stage; f.Started = n.Started; if (n.Swallowed && !f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
             f.Enraged = n.Enraged; f.Phase = n.Phase; f.Label = n.Label; f.Unit.Hp = n.Hp; s.Tail.Hp = n.TailHp; s.Bite = string.IsNullOrEmpty(n.Bite) ? null : n.Bite; s.Grip = n.Grip; s.GlintSnd = n.Glint; s.VictimPos = (n.VictimX, n.VictimY); s.BiteSpot = (n.SpotX, n.SpotY);
@@ -790,6 +794,7 @@ namespace GameCore
             s.HeadOut = s.Z[0] > 0.3f; s.TailOut = false; s.Charge = f.Stage == "wrap" && f.Discharged ? 1f : 0f; s.Mouth = -1f; s.Rear = 0f;
             s.Out.AddRange(s.Events); foreach (var ev in s.Events) { ev.Id = ++s.NetSeq; s.NetOut.Add((ev, Time.time)); } s.Events.Clear(); if (s.Out.Count > 200) s.Out.RemoveRange(0, s.Out.Count - 200);
         }
+        public static void PlatformSound(EelBoss.Fight f, string name, float x, float y, float vol) => Snd(name, x, y, vol);
         public static void PlatformEvent(EelBoss.Fight f, string kind, float x, float y, float power, bool water) { if (f?.Sump != null) f.Sump.Events.Add(new Ev { Kind = kind, X = x, Y = y, Power = power, Water = water }); }
 
         // ------------------------------------------------------------------ the introduction (a cutscene, Yan 2026-11-07)

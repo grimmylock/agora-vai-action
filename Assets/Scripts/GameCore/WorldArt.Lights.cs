@@ -109,7 +109,8 @@ namespace GameCore
         public static void AddLight(LightBake b, float time, float[] lr, float[] lg, float[] lb, int gx0, int gy0, int rw, int rh, int step = 1)
         {
             var lamp = b.L; int tw = rw / step;
-            float pw = lamp.Power * (1f + lamp.Flicker * (Mathf.Sin(time * 11f) * 0.5f + Mathf.Sin(time * 17.3f + 1f) * 0.5f));
+            float tell = EelLamps.Factor(lamp.X / Px, lamp.Y / Px, time);                                       // the eel's tell: the lamps near it flicker, then go dark (EelBoss.UpdateTell)
+            float pw = lamp.Power * tell * (1f + lamp.Flicker * (Mathf.Sin(time * 11f) * 0.5f + Mathf.Sin(time * 17.3f + 1f) * 0.5f));
             int x0 = System.Math.Max(gx0, b.Ox), x1 = System.Math.Min(gx0 + rw, b.Ox + b.Mw), y0 = System.Math.Max(gy0, b.Oy), y1 = System.Math.Min(gy0 + rh, b.Oy + b.Mw);
             for (int gy = y0 + (step - (y0 - gy0) % step) % step; gy < y1; gy += step)
                 for (int gx = x0 + (step - (x0 - gx0) % step) % step; gx < x1; gx += step)
@@ -137,7 +138,7 @@ namespace GameCore
                 {
                     if (gx < gx0 || gx >= gx0 + rw || gy < gy0 || gy >= gy0 + rh || (gx - gx0) % step != 0 || (gy - gy0) % step != 0) continue;
                     float d = Mathf.Sqrt((gx - hx) * (gx - hx) + (gy - hy) * (gy - hy)); if (d > hr) continue;
-                    int i = ((gy - gy0) / step) * tw + (gx - gx0) / step; float e = 5.5f * (1f - d / (hr + 1f));
+                    int i = ((gy - gy0) / step) * tw + (gx - gx0) / step; float e = 5.5f * tell * (1f - d / (hr + 1f));
                     lr[i] += lamp.Cr * e; lg[i] += lamp.Cg * e; lb[i] += lamp.Cb * e;
                 }
         }

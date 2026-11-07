@@ -1143,7 +1143,7 @@ static class Program {
     EelBoss.Reset(); Rt.On = false;
   }
   static void EelChecks() {
-    EelRigChecks(); EelSumpChecks(); EelFightChecks(); EelPlatformFormChecks();
+    EelRigChecks(); EelSumpChecks(); EelFightChecks(); EelPlatformFormChecks(); EelLampChecks();
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
     Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
@@ -2321,6 +2321,34 @@ static class Program {
       Check(Stashes.Blocked(pump), "Eel platform form: the last pump won't run with the eel in its pool");
       Story.Set(EelBoss.Fled); Check(!Stashes.Blocked(pump), "Eel platform form: once the eel has fled the last pump runs");
     } finally { foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k); MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled); MacroState.Current.StoryFlags.Remove("f:eelwound05"); EelBoss.Reset(); Rt.On = false; }
+  }
+
+
+  // Levels 1-2: the lamps' tell - a false alarm flickers and the lamps come back; a real strike flickers, goes dark (the silence) and bursts
+  static void EelLampChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); var keys = MacroState.Current.Keys; foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k);
+    foreach (var w in new[] { "05", "10", "15", "20" }) MacroState.Current.StoryFlags.Remove("f:eelwound" + w);
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp; const float dt = 1f / 30f;
+    try {
+      MacroState.Current.CurrentZoneId = LabLocks.Depths2; ZoneTravel.EnterZone(LabLocks.Depths2); var f = EelBoss.Current;
+      Check(f != null && f.Lures.Count == 2 && f.Platforms.Count == 3 && f.WantFeint, $"Eel lamps: Level 2's eel knows its 2 false-alarm spots ({f?.Lures.Count}) and its 3 strike platforms");
+      var lure = f.Lures.OrderBy(q => q.y).First(); SumpPlace(p, lure.x, lure.y + 1f); int wraps0 = f.Wraps; bool feint = false, flick = false, dark = false; float next0 = 0f; float tellX = 0f;
+      for (int i = 0; i < 3000 && !(feint && f.Stage == "lurk"); i++) {
+        UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; p.Hp = p.MaxHp;
+        if (f.Stage == "feint") { feint = true; if (EelLamps.Tell.HasValue) { if (EelLamps.Tell.Value.mode == 1) flick = true; if (EelLamps.Tell.Value.mode == 2) dark = true; tellX = EelLamps.Tell.Value.x; } if (i % 5 == 0 && Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel.TellMode == 0) flick = false; }
+      }
+      Check(feint && flick && !dark && f.Wraps == wraps0 && f.Stage == "lurk" && !EelLamps.Tell.HasValue && !f.WantFeint && Math.Abs(tellX - lure.x) < 0.1f, $"Eel lamps: a false alarm at a lure - the lamps flicker (never dark), nothing strikes, they steady ({feint}, flicker {flick}, dark {dark}, wraps {f.Wraps})");
+      var plat = f.Platforms.OrderBy(q => (q.x - 38.5f) * (q.x - 38.5f) + (q.y - 5.5f) * (q.y - 5.5f)).First(); SumpPlace(p, plat.x, plat.y); f.Next = UnityEngine.Time.time; var order = new List<string>(); int tellSnap = 0;
+      for (int i = 0; i < 3000 && f.Stage != "wrap"; i++) {
+        UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; p.Hp = p.MaxHp;
+        if (f.Stage == "wind" && EelLamps.Tell.HasValue) { string m = EelLamps.Tell.Value.mode == 1 ? "flicker" : "dark"; if (order.Count == 0 || order[order.Count - 1] != m) order.Add(m); if (i % 6 == 0 && Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel.TellMode > 0) tellSnap++; }
+      }
+      Check(f.Stage == "wrap" && string.Join(",", order) == "flicker,dark", $"Eel lamps: a real strike flickers, then the silence (lamps dark), then the burst ({string.Join(",", order)})");
+      Check(tellSnap > 0, "Eel lamps: the tell goes over the wire to the clients");
+      EelLamps.Tell = (10f, 10f, 10f, 2, 1f); Check(EelLamps.Factor(12f, 10f, 1f) == 0f && EelLamps.Factor(30f, 10f, 1f) == 1f, "Eel lamps: in the silence the lamps in range are dark and the ones far away are not");
+      EelLamps.Tell = (10f, 10f, 10f, 1, 1f); int dim = 0; for (int i = 0; i < 100; i++) if (EelLamps.Factor(12f, 10f, i * 0.07f) < 0.5f) dim++; Check(dim > 20 && dim < 95, $"Eel lamps: flickering is on and off, not steady ({dim} of 100 samples dim)");
+    } finally { EelLamps.Tell = null; EelBoss.Reset(); Rt.On = false; }
   }
 
   // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it
