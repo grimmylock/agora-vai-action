@@ -17,7 +17,7 @@ namespace GameCore
             public float Born, Life, Gravity, Alpha = 1f;
             public Vector3 Vel;
             public Sprite[] Frames;
-            public bool Fade;
+            public bool Fade; public float FadeFrom;                  // Fade: alpha falls to 0 over the life, starting at FadeFrom (0..1) of it
             public float Friction;   // top-down slide that slows down (gibs)
             public bool Stick;       // stays on the ground as a decal when its life ends (blood, gibs)
         }
@@ -226,7 +226,7 @@ namespace GameCore
                 p.Vel.y -= p.Gravity * dt;
                 if (p.Friction > 0f) p.Vel *= Mathf.Exp(-p.Friction * dt);
                 p.Sr.transform.position += p.Vel * dt;
-                if (p.Fade) { var c = p.Sr.color; c.a = p.Alpha * (1f - t / p.Life); p.Sr.color = c; }
+                if (p.Fade) { var c = p.Sr.color; c.a = p.Alpha * (1f - Mathf.Clamp01((t / p.Life - p.FadeFrom) / Mathf.Max(0.01f, 1f - p.FadeFrom))); p.Sr.color = c; }
             }
 
             DrawOrbs();
@@ -604,14 +604,22 @@ namespace GameCore
         //      15 fps, played once. Yan, 2026-11-03: "full size for electric, half for guns" - guns at half-pixels (ppu 32, like the
         //      HD mutants), electric at the map's own pixels (ppu 16). False when the strip is missing (the old sprite plays instead).
         public const float PxFps = 15f, PxHalf = 32f, PxFull = 16f;
+        // Yan, 2026-11-07: "when shooting, weapons leave a lingering effect of the vfx, we need to shorten the shot vfx". The ready-made muzzle and impact strips are a flash (the first 2-4 frames) and then a
+        // long smoke / dust tail (the pistol's lasted 1.9 s, the shotgun's 3.3 s, a bullet impact 1.5 s, a ricochet 1.1 s at 15 fps). Shots now play only the first `keep` frames, faster, fading out over the second half.
+        static readonly Dictionary<string, (int keep, float fps)> PxShort = new Dictionary<string, (int, float)>
+        { ["muzzle_pistol"] = (7, 30f), ["muzzle_smg"] = (4, 30f), ["muzzle_shotgun"] = (9, 30f), ["bullet_impact"] = (8, 30f), ["ricochet"] = (7, 30f), ["hit_spark"] = (8, 24f) };
+        static readonly Dictionary<string, Sprite[]> _pxCut = new Dictionary<string, Sprite[]>();
         bool PxFx(string name, Vector3 at, float dx, float dy, float ppu)
         {
             var frames = Strip("Sprites/Fx/px_" + name, 0, ppu, new Vector2(0.5f, 0.5f));
             if (frames == null) return false;
+            float fps = PxFps; bool shorten = PxShort.TryGetValue(name, out var cut);
+            if (shorten && frames.Length > cut.keep) { string key = name + ppu; if (!_pxCut.TryGetValue(key, out var kept)) _pxCut[key] = kept = frames.Take(cut.keep).ToArray(); frames = kept; }
+            if (shorten) fps = cut.fps;
             var sr = NewSprite("px_" + name, frames[0], Color.white, _root, 9);
             sr.transform.position = new Vector3(at.x, at.y, 0f);
             if (dx != 0f || dy != 0f) { sr.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dy, dx) * Mathf.Rad2Deg); sr.flipY = dx < 0f; }
-            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = frames.Length / PxFps, Frames = frames });
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = frames.Length / fps, Frames = frames, Fade = shorten, FadeFrom = 0.5f, Alpha = 1f });
             return true;
         }
 
