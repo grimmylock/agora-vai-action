@@ -103,6 +103,15 @@ def eel_flood():
     return fit(rumble * 1.2, wash, lp(bubbles, 8000) * .5)
 
 
+def eel_buzz():
+    """The tell on Levels 1-2: the lamps buzz and flicker as it draws power (a hum with crackle swelling for a second), then cut to silence. Real strikes and false alarms sound the same."""
+    d = 1.5; x = t(d); ramp = np.clip(x / 1.0, 0, 1) ** 1.4; gate = (x < 1.1) * 1.0
+    hum = (np.sign(np.sin(2 * np.pi * 100 * x)) * .5 + np.sin(2 * np.pi * 50 * x)) * (.1 + .9 * ramp) * gate
+    flick = (rs.rand(len(x)) < (0.002 + 0.03 * ramp)) * 2.5 * gate
+    zaps = lp(hp(noise(d), 2500) * flick, 9000)
+    return fit(lp(hum, 2500) * .8, zaps * .7)
+
+
 def main(d):
     os.makedirs(d, exist_ok=True)
     save(d, "eel_charge", eel_charge(), .8); save(d, "eel_burst", eel_burst(), .95); save(d, "eel_mouth", eel_mouth(), .7)
@@ -115,6 +124,7 @@ def main(d):
     save(d, "eel_splash_big", eel_splash(3300, True), .95)
     for v in range(2): save(d, f"eel_thud_{v}", eel_thud(3400 + v * 3), .85)
     save(d, "eel_flood", eel_flood(), .8)
+    save(d, "eel_buzz", eel_buzz(), .75)
     print("eel sounds written to", d)
 
 
