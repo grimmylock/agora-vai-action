@@ -189,12 +189,12 @@ namespace GameCore
                     if (f.Zone == LabLocks.Depths2)                                                // the fair scare rule's false alarms (Yan: "on Level 2 some flickers are false alarms"): the lamps buzz and dim by a marked spot as you pass, and nothing comes
                         foreach (var (fxm, fym) in Marks(f.Zone, '8'))
                             if (!f.FalseDone.Contains((fxm, fym)) && (fxm + 0.5f - px) * (fxm + 0.5f - px) + (fym + 0.5f - py) * (fym + 0.5f - py) < 6.5f * 6.5f)
-                            { f.FalseDone.Add((fxm, fym)); Sfx.Play("eel_buzz", new Vector3(fxm + 0.5f, -(fym + 0.5f), 0f), 0.9f, 0.04f, 1f); GameLog.Write("The lamps buzz and dim... then settle. Nothing comes. This time."); }
+                            { f.FalseDone.Add((fxm, fym)); Sfx.Play("eel_buzz", new Vector3(fxm + 0.5f, -(fym + 0.5f), 0f), 0.9f, 0.04f, 1f); WorldArt.Brownout(1.4f); GameLog.Write("The lamps buzz and dim... then settle. Nothing comes. This time."); }
                     var pl =f.Platforms.OrderBy(q => (q.x - px) * (q.x - px) + (q.y - py) * (q.y - py)).First();
                     float gx = Mathf.Abs(pl.x - px) < 9f && Mathf.Abs(pl.y - py) < 9f ? pl.x : px, gy = gx == pl.x ? pl.y : py;      // it shadows you; near a strike platform it goes for that
                     float dx = gx - f.SX, dy = gy - f.SY, d = Mathf.Sqrt(dx * dx + dy * dy) + 0.001f;
                     f.SX += dx / d * Mathf.Min(d, 3.4f * dt); f.SY += dy / d * Mathf.Min(d, 3.4f * dt); f.Unit.X = (int)f.SX; f.Unit.Y = (int)f.SY;
-                    if (d < 0.6f && now >= f.Next && gx == pl.x) { f.PX = pl.x; f.PY = pl.y; Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The lamps buzz and dim. The water swells under the platform."); Sfx.Play("eel_buzz", new Vector3(f.PX, -f.PY, 0f), 1f, 0.04f, 1f); }
+                    if (d < 0.6f && now >= f.Next && gx == pl.x) { f.PX = pl.x; f.PY = pl.y; Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The lamps buzz and dim. The water swells under the platform."); Sfx.Play("eel_buzz", new Vector3(f.PX, -f.PY, 0f), 1f, 0.04f, 1f); WorldArt.Brownout(1.4f); }
                     break;
                 case "wind":
                     if (age >= 1.3f) { Go(f, "wrap"); f.Wraps++; f.Discharged = false; SetCoilSlots(f); f.Label = "WRAP: coils burst round the platform"; f.Shocked.Clear(); Sfx.Play("explosion", null, 0.5f, 0.05f, 0.6f); GameLog.Write("It bursts out and coils round the platform!"); }

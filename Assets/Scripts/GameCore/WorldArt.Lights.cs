@@ -47,6 +47,22 @@ namespace GameCore
             return list;
         }
 
+        static float _brownStart, _brownEnd;
+
+        /// <summary>The eel draws power (Levels 1-2): every lamp and ceiling light flickers hard, sinks nearly dark and then comes back, over `seconds`.
+        /// Global on purpose: it is a map-wide tell and it is the same for every player on the map.</summary>
+        public static void Brownout(float seconds) { _brownStart = Time.time; _brownEnd = Time.time + seconds; }
+
+        /// <summary>1 normally; during a brownout a harsh flicker that dies away to near dark in its last third, then snaps back.</summary>
+        public static float LampScale(float time)
+        {
+            if (time >= _brownEnd || time < _brownStart) return 1f;
+            float u = (time - _brownStart) / System.Math.Max(0.01f, _brownEnd - _brownStart);
+            if (u > 0.66f) return 0.08f;
+            float f = Mathf.Sin(time * 41f) + Mathf.Sin(time * 27.3f + 1f);
+            return f > 0.2f ? 0.85f : 0.18f;
+        }
+
         /// <summary>Up to 1 the light is what it is; past it, lights add up more and more gently (to about 2), so overlapping pools and a
         /// lamp's head glow without clipping the picture to flat orange.</summary>
         static float Shoulder(float v) => v <= 1f ? v : 1f + (v - 1f) / (1f + (v - 1f));
@@ -110,6 +126,7 @@ namespace GameCore
         {
             var lamp = b.L; int tw = rw / step;
             float pw = lamp.Power * (1f + lamp.Flicker * (Mathf.Sin(time * 11f) * 0.5f + Mathf.Sin(time * 17.3f + 1f) * 0.5f));
+            if (lamp.Flicker == 0f && lamp.Cb > 0.3f) pw *= LampScale(time);                                       // not fires, not the red emergency lights
             int x0 = System.Math.Max(gx0, b.Ox), x1 = System.Math.Min(gx0 + rw, b.Ox + b.Mw), y0 = System.Math.Max(gy0, b.Oy), y1 = System.Math.Min(gy0 + rh, b.Oy + b.Mw);
             for (int gy = y0 + (step - (y0 - gy0) % step) % step; gy < y1; gy += step)
                 for (int gx = x0 + (step - (x0 - gx0) % step) % step; gx < x1; gx += step)

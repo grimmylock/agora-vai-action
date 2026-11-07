@@ -895,7 +895,9 @@ static class Program {
       EelBoss.Reset(); }
     { EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); var e2 = EelBoss.Current; bool spawned = e2 != null && e2.Level == "platform" && e2.View != null && !EelBoss.Is(null);
       var keys = MacroState.Current.Keys; keys.Add("depths_drain2"); EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); bool drained = EelBoss.Current == null; keys.Remove("depths_drain2"); EelBoss.Reset();
-      Check(spawned && drained, $"Eel Levels 1-2: it is there when you enter the level ({spawned}) and gone once that level's pump has run ({drained})"); }
+      Check(spawned && drained, $"Eel Levels 1-2: it is there when you enter the level ({spawned}) and gone once that level's pump has run ({drained})");
+      float t0 = UnityEngine.Time.time; WorldArt.Brownout(1.4f); float before = WorldArt.LampScale(t0 - 1f), late = WorldArt.LampScale(t0 + 1.2f), after = WorldArt.LampScale(t0 + 2f); float lo = 9f; for (float q = 0f; q < 0.9f; q += 0.01f) lo = Math.Min(lo, WorldArt.LampScale(t0 + q));
+      Check(before == 1f && late < 0.1f && after == 1f && lo < 0.3f, $"Eel tell: the lamps flicker, sink dark ({late:0.00}) and come back ({before}/{after}, low {lo:0.00})"); }
     Console.WriteLine($"eel platform fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}");
   }
   static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;

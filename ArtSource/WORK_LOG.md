@@ -5228,3 +5228,7 @@ Eel Levels 1-2, the tell (2026-11-06): the fair-scare rule's sound and the false
 
 ## Eel in co-op: the host's spine reaches a joined friend (2026-11-06)
 `Net.EncodeSnapshot/DecodeSnapshot` carry an optional eel block (phase, HP, mouth, twitch, and the 140-sample spine as shorts: x, y in 1/32 tile, z in 1/64; about 0.9 KB a snapshot at 20 Hz) after the players (a snapshot without it still decodes). A client (`Net.OnSnapshot` -> `EelBoss.ClientApply`) keeps a view-only fight (Level "client": no units in the world, never ticked, hits change nothing, `OnEnterZone` spawns nothing for a client) that the same view draws, so a friend now SEES the eel. Still not sent: impacts and their sounds and shakes, players thrown or held in the jaws (`Air`), the bite and its mash, the flood and the storm's water, the tail's HP bar, what the client's own shots do (the host decides; the client's inputs already reach it). Harness: the snapshot round trip and the client's fight; not tested over a real connection.
+
+## RT eel 12 - lamp brownout (2026-11-07)
+The Levels 1-2 tell now really dims the lights: WorldArt.Lights.cs Brownout/LampScale (a harsh flicker, near-dark in the last third of 1.4 s, then back; not fires or red emergency lights), called from EelBoss.cs on the wind-up and on each false alarm. Harness check added, ALL CHECKS PASSED. Not seen in Unity (timing and how dark it reads are guesses). Co-op: brownout is local to whoever triggers it; clients do not see it yet.
+
