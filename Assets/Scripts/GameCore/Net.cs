@@ -159,6 +159,7 @@ namespace GameCore
                 st.ProneUntil = now + e.ProneLeft; st.DiveX = e.DiveX; st.DiveY = e.DiveY;
             }
             foreach (var gone in ByOwner.Keys.Where(k => !seen.Contains(k)).ToList()) { Player.All.Remove(ByOwner[gone]); ByOwner.Remove(gone); }
+            EelBoss.ClientApply(s);                                                              // the eel's spine, drawn by the same view (the host runs the fight)
         }
 
         // ---------------- the wire format ----------------
@@ -187,7 +188,11 @@ namespace GameCore
 
         public class PlayerEntry { public ulong Owner; public int X, Y, Hp; public float Ox, Oy; public bool Aiming;
             public bool HasAim; public float AimX, AimY, DiveT = -1f, ProneLeft, DiveX, DiveY; }   // RT 7z: where they aim, the dive's moment
-        public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); }
+        public class Snapshot
+        {
+            public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>();
+            public bool HasEel; public int EelPhase, EelHp; public float EelMouth = -1f, EelTwitch; public float[] EelX, EelY, EelZ;     // the eel boss (RT 7y, test stage): its spine, so a joined friend sees it; nothing else of the fight is sent yet (impacts, throws, the bite)
+        }
 
         public static byte[] EncodeSnapshot()
         {
@@ -202,6 +207,13 @@ namespace GameCore
                 w.Write(st.AimAt.HasValue); w.Write(st.AimAt?.x ?? 0f); w.Write(st.AimAt?.y ?? 0f);
                 w.Write(st.Diving ? Rt.DiveTime - (st.DiveUntil - now) : -1f); w.Write(Mathf.Max(0f, st.ProneUntil - now)); w.Write(st.DiveX); w.Write(st.DiveY);
             }
+            var ef = EelBoss.Current; var sp = EelSump.SpineOf(ef);                              // the eel: phase, HP, mouth, then the 140-sample spine as shorts (x, y in 1/32 tile, z in 1/64)
+            w.Write(sp != null && ef.Level != "client");
+            if (sp != null && ef.Level != "client")
+            {
+                w.Write((byte)ef.Phase); w.Write(ef.Unit.Hp); w.Write(sp.Mouth); w.Write(sp.Twitch);
+                for (int j = 0; j < EelSump.N; j++) { w.Write((short)Mathf.Clamp(Mathf.RoundToInt(sp.X[j] * 32f), short.MinValue, short.MaxValue)); w.Write((short)Mathf.Clamp(Mathf.RoundToInt(sp.Y[j] * 32f), short.MinValue, short.MaxValue)); w.Write((short)Mathf.Clamp(Mathf.RoundToInt(sp.Z[j] * 64f), short.MinValue, short.MaxValue)); }
+            }
             return ms.ToArray();
         }
 
@@ -213,6 +225,12 @@ namespace GameCore
             for (int k = 0; k < n; k++)
                 s.Players.Add(new PlayerEntry { Owner = r.ReadUInt64(), X = r.ReadInt32(), Y = r.ReadInt32(), Ox = r.ReadSingle(), Oy = r.ReadSingle(), Hp = r.ReadInt32(), Aiming = r.ReadBoolean(),
                     HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveX = r.ReadSingle(), DiveY = r.ReadSingle() });
+            if (r.BaseStream.Position < r.BaseStream.Length && r.ReadBoolean())
+            {
+                s.HasEel = true; s.EelPhase = r.ReadByte(); s.EelHp = r.ReadInt32(); s.EelMouth = r.ReadSingle(); s.EelTwitch = r.ReadSingle();
+                s.EelX = new float[EelSump.N]; s.EelY = new float[EelSump.N]; s.EelZ = new float[EelSump.N];
+                for (int j = 0; j < EelSump.N; j++) { s.EelX[j] = r.ReadInt16() / 32f; s.EelY[j] = r.ReadInt16() / 32f; s.EelZ[j] = r.ReadInt16() / 64f; }
+            }
             return s;
         }
     }

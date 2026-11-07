@@ -883,6 +883,16 @@ static class Program {
     System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
     EelRun = (f1.Wraps, f1.Unit.Hp, false, false, false, log0.Count(l => l.Contains("coils shock")), 0);
     Check(!spineLeak && spineWrap > 20 && spineHit == spineWrap, $"Eel Levels 1-2: the platform form has a view spine - nothing above the water while it lurks, a coil above it while it wraps ({spineWrap} ticks), and the crosshair finds it ({spineHit})");
+    { // co-op: the host's snapshot carries the eel's spine and a client rebuilds a view-only fight from it
+      EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths1); var host = EelBoss.Current; var hs0 = host.View; for (int j = 0; j < EelSump.N; j++) { hs0.X[j] = 20f + j * 0.25f; hs0.Y[j] = 30f + (float)Math.Sin(j * 0.1) * 3f; hs0.Z[j] = j < 60 ? 0.5f + 0.01f * j : -1f; }
+      host.Phase = 2; host.Unit.Hp = 12345; hs0.Mouth = 0.4f;
+      var snapEel = Net.DecodeSnapshot(Net.EncodeSnapshot()); EelBoss.Reset();
+      Check(snapEel.HasEel && snapEel.EelPhase == 2 && snapEel.EelHp == 12345 && Math.Abs(snapEel.EelMouth - 0.4f) < 1e-4f && Math.Abs(snapEel.EelX[100] - hs0.X[100]) < 0.04f && Math.Abs(snapEel.EelZ[10] - hs0.Z[10]) < 0.02f && snapEel.EelZ[100] < 0f, "Co-op: a snapshot carries the eel's spine, phase, HP and mouth");
+      EelBoss.ClientApply(snapEel); var cf = EelBoss.Current; bool made = cf != null && cf.Level == "client" && cf.View.BodyOut && Math.Abs(cf.View.X[50] - snapEel.EelX[50]) < 1e-4f && EelSump.SpineOf(cf) == cf.View;
+      EelBoss.Tick(0.02f); cf.Unit.Hp = 5; EelBoss.OnDamaged(cf.Unit); bool inert = cf.Unit.Hp == EelBoss.MaxHp;                       // never ticked, and a client's shots change nothing there
+      var noEel = new Net.Snapshot { Map = "x" }; EelBoss.ClientApply(noEel);
+      Check(made && inert && EelBoss.Current == null, $"Co-op: a client builds a view-only eel from the snapshot ({made}), it is inert ({inert}) and goes when the host's eel does");
+      EelBoss.Reset(); }
     { EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); var e2 = EelBoss.Current; bool spawned = e2 != null && e2.Level == "platform" && e2.View != null && !EelBoss.Is(null);
       var keys = MacroState.Current.Keys; keys.Add("depths_drain2"); EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); bool drained = EelBoss.Current == null; keys.Remove("depths_drain2"); EelBoss.Reset();
       Check(spawned && drained, $"Eel Levels 1-2: it is there when you enter the level ({spawned}) and gone once that level's pump has run ({drained})"); }

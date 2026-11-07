@@ -48,9 +48,22 @@ namespace GameCore
         static readonly Dictionary<Player, float> ShockAt = new Dictionary<Player, float>();
         static readonly List<string> Bag = new List<string>();
         /// <summary>On entering a zone (StorySystem.OnEnterZone): the Sump's eel, until it has fled (Story flag eel_fled) - hidden in its pools until you step into the room.</summary>
+        /// <summary>A joined friend (Net client): the host runs the fight and sends its spine; this keeps a view-only fight (Level "client", no units in the world, never ticked) so the same view draws it.
+        /// Nothing else of the fight reaches a client yet (impacts, throws, the bite, sounds).</summary>
+        public static void ClientApply(Net.Snapshot s)
+        {
+            if (!s.HasEel) { if (Current != null && Current.Level == "client") Current = null; return; }
+            if (Current == null || Current.Level != "client")
+                Current = new Fight { Unit = new Mutant(Name, 0, 0, Def) { Hp = MaxHp }, Level = "client", Stage = "fight", Started = true, View = new EelSump.State(), StageAt = Time.time };
+            var f = Current; f.Phase = s.EelPhase; f.Unit.Hp = s.EelHp; f.View.Mouth = s.EelMouth; f.View.Twitch = s.EelTwitch;
+            for (int j = 0; j < EelSump.N; j++) { f.View.X[j] = s.EelX[j]; f.View.Y[j] = s.EelY[j]; f.View.Z[j] = s.EelZ[j]; }
+            f.View.BodyOut = f.View.Z.Any(z => z > EelSump.Surface); f.View.HeadOut = f.View.Z[0] > EelSump.Surface;
+        }
+
         public static void OnEnterZone(string zoneId)
         {
             Reset();
+            if (Net.Mode == Net.Role.Client) return;                                           // a client never runs the fight: the host's spine arrives in the snapshots
             if (zoneId == LabLocks.Depths3 && !Story.Has(Fled)) { SpawnSump(zoneId); return; }
             // Levels 1-2 (Yan, 2026-11-04: "kind of jump-scare style stuff"): it lurks below as a shadow, follows you, and wraps the platform near the pump; gone once that level's pump has run
             string drain = zoneId == LabLocks.Depths1 ? "depths_drain1" : zoneId == LabLocks.Depths2 ? "depths_drain2" : null;
@@ -140,7 +153,7 @@ namespace GameCore
         public static void OnDamaged(ICombatant u)
         {
             if (!Is(u)) return;
-            var f = Current;
+            var f = Current; if (f.Level == "client") { u.Hp = MaxHp; return; }                                    // a client's copy: the host decides what lands
             if (f.Level == "sump" && u == f.Sump.Tail) { EelSump.OnTailHit(f, u); return; }                          // the tail: its own HP; at 0 it lets go and goes down
             f.Unit.IsAggroed = true; f.Started = true;
             if (f.Level == "platform") { u.Hp = System.Math.Max(u.Hp, (int)(MaxHp * (1f - CarryCap))); return; }     // Levels 1-2: at most 20% carries over
@@ -155,7 +168,7 @@ namespace GameCore
         // ---------------------------------------------------------------- the clock
         public static void Tick(float dt)
         {
-            var f = Current; if (f == null || f.Gone) return;
+            var f = Current; if (f == null || f.Gone || f.Level == "client") return;
             var players = Player.All.Where(p => p.IsAlive()).ToList(); if (players.Count == 0) return;
             float now = Time.time, age = now - f.StageAt;
             var (ex, ey) = f.Level == "platform" ? (f.SX, f.SY) : (f.CX, f.CY);

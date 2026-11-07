@@ -565,7 +565,7 @@ namespace GameCore
             if (s.Bite != "grapple" || s.Victim != p) return false; s.Mash++; s.Grip = Mathf.Min(1f, s.Grip + GripPerPress); s.Twitch = 1f; if (s.Grip >= 1f) s.Won = true; Snd("eel_strain", s.BiteSpot.x, s.BiteSpot.y, 0.8f); return true;
         }
         /// <summary>For the view: how open the mouth is (-1 = not controlled: the head as he drew it; 0 shut .. 1 as drawn .. 1.4 forced wide), and the twitch of the last press (1 .. 0).</summary>
-        public static float MouthOpen(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Mouth : -1f;
+        public static float MouthOpen(EelBoss.Fight f) { var s = SpineOf(f); return s != null ? s.Mouth : -1f; }
         public static bool Gripping(Player p) { var f = EelBoss.Current; return p != null && f != null && f.Sump != null && !f.Gone && f.Sump.Bite == "grapple" && f.Sump.Victim == p; }
         /// <summary>While someone holds the eel's jaws: where (tile space), for the camera to close in on or highlight.</summary>
         public static bool GrappleSpot(out float x, out float y) { var f = EelBoss.Current; x = y = 0f; if (f == null || f.Sump == null || f.Gone || f.Sump.Bite != "grapple") return false; x = f.Sump.BiteSpot.x; y = f.Sump.BiteSpot.y; return true; }
@@ -578,7 +578,7 @@ namespace GameCore
             wx = s.X[0] + face * 2.0f; wy = -s.Y[0] + s.Z[0] - 0.25f; return true;
         }
         public static float GripOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Grip : 0f;
-        public static float TwitchOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Twitch : 0f;
+        public static float TwitchOf(EelBoss.Fight f) { var s = SpineOf(f); return s != null ? s.Twitch : 0f; }
         static void ThrowBitten(EelBoss.Fight f, State s, Player v, float now, float ts)
         {
             s.Air.Remove(v); var sp = s.BiteSpot; Damage(s, v, BiteDamage, "The jaws close on you", sp.x, sp.y, 0f, 0.5f, now);
