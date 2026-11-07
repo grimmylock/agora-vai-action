@@ -11,6 +11,7 @@ namespace GameCore
 {
     public partial class CombatFxView
     {
+        readonly List<SpriteRenderer> _eelBolt = new List<SpriteRenderer>(); float _stormUntil;
         readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>(), _eelFoam = new List<SpriteRenderer>();
         SpriteRenderer _eelHead;
         const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.3f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
@@ -21,6 +22,99 @@ namespace GameCore
         static readonly Sprite[] EelHeads = new Sprite[4];
         static Sprite _eelRing, _eelRingFill;
         const float EelPpu = 32f; const int EelBodyW = 1120, EelBodyH = 80, EelSliceW = 6, EelSub = 2, EelHeadW = 117, EelHeadH = 92;
+
+        int Bolt(int n, Vector3 a, Vector3 b, int baseOrder)                                              // one jagged segment of electricity: a wide cold glow and a white core, laid between two points
+        {
+            float dx = b.x - a.x, dy = b.y - a.y, len = Mathf.Sqrt(dx * dx + dy * dy); if (len < 0.01f) return n;
+            var mid = (a + b) * 0.5f; float ang = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
+            for (int layer = 0; layer < 2; layer++)
+            {
+                var sr = Pooled(_eelBolt, n++, "EelBolt", 2); if (sr == null) continue;
+                sr.sprite = White(); sr.sortingOrder = baseOrder + 340 + layer; sr.color = layer == 0 ? new Color(0.45f, 0.85f, 1f, 0.45f) : new Color(0.95f, 1f, 1f, 0.95f);
+                sr.transform.position = mid; sr.transform.rotation = Quaternion.Euler(0f, 0f, ang); sr.transform.localScale = new Vector3(len + 0.05f, layer == 0 ? 0.2f : 0.07f, 1f);
+            }
+            return n;
+        }
+        // The electricity belongs to the body: arcs crawl ALONG it, following its outline (re-rolled 18 times a second, so it flickers), and others jump from it to the water right beneath;
+        // the body itself flickers cold where they pass (DrawEel). `charge` 0..1: the storm's charge, the scream, the burst.
+        void DrawBolts(EelSump.State s, float charge, int baseOrder)
+        {
+            int n = 0;
+            if (charge > 0.01f)
+            {
+                var rng = new System.Random(Mathf.FloorToInt(Time.time * 18f) * 7919 + 13); int crawl = 2 + (int)(9f * charge);
+                for (int a = 0; a < crawl; a++)
+                {
+                    int i0 = rng.Next(0, EelSump.N - 24), len = 8 + rng.Next(0, 16); Vector3 prev = default; bool have = false;
+                    for (int i = i0; i < i0 + len; i += 2)
+                    {
+                        if (s.Z[i] <= 0.3f) { have = false; continue; }
+                        var p = W(s.X[i], s.Y[i], s.Z[i]) + new Vector3(((float)rng.NextDouble() - 0.5f) * 0.7f, ((float)rng.NextDouble() - 0.5f) * 0.7f, 0f);
+                        if (have) n = Bolt(n, prev, p, baseOrder); prev = p; have = true;
+                    }
+                }
+                int drops = 1 + (int)(6f * charge);
+                for (int d2 = 0; d2 < drops; d2++)
+                {
+                    int i = rng.Next(0, EelSump.N / 2); if (s.Z[i] <= 0.6f) continue;
+                    var top = W(s.X[i], s.Y[i], s.Z[i]); var bot = W(s.X[i] + ((float)rng.NextDouble() - 0.5f) * 1.6f, s.Y[i] + ((float)rng.NextDouble() - 0.5f) * 1.6f, 0f); Vector3 prev = top;
+                    for (int k3 = 1; k3 <= 4; k3++) { var p = Vector3.Lerp(top, bot, k3 / 4f) + (k3 < 4 ? new Vector3(((float)rng.NextDouble() - 0.5f) * 0.6f, ((float)rng.NextDouble() - 0.5f) * 0.3f, 0f) : Vector3.zero); n = Bolt(n, prev, p, baseOrder); prev = p; }
+                }
+            }
+            HideFrom(_eelBolt, n);
+        }
+        // ---- the flood is WATER: the flooded tiles get a teal, shimmering water surface (runs of tiles, a sprite per run) with ripples breaking on it - no outlines, no black holes
+        readonly List<SpriteRenderer> _eelWater = new List<SpriteRenderer>(); readonly List<(int y, int x0, int x1)> _eelRuns = new List<(int, int, int)>(); readonly List<(int x, int y)> _eelWet = new List<(int, int)>(); int _eelRunsSig = -1; float _ripT;
+        void DrawFlood(EelSump.State s)
+        {
+            int cnt = s.Flip.Count, n = 0;
+            if (cnt != _eelRunsSig)
+            {
+                _eelRunsSig = cnt; _eelRuns.Clear(); _eelWet.Clear();
+                for (int y = 0; y < TerrainMap.Height && cnt > 0; y++)
+                {
+                    int x0 = -1;
+                    for (int x = 0; x <= TerrainMap.Width; x++)
+                    {
+                        bool wet = x < TerrainMap.Width && s.Flip.Contains((x, y));
+                        if (wet) { if (x0 < 0) x0 = x; _eelWet.Add((x, y)); } else if (x0 >= 0) { _eelRuns.Add((y, x0, x - 1)); x0 = -1; }
+                    }
+                }
+            }
+            for (int r = 0; r < _eelRuns.Count; r++)
+            {
+                var run = _eelRuns[r]; var sr = Pooled(_eelWater, n++, "EelWater", 4); if (sr == null) continue;
+                float sh = 0.5f + 0.5f * Mathf.Sin(Time.time * 1.9f + run.y * 0.8f + run.x0 * 0.13f);
+                sr.sprite = White(); sr.color = new Color(0.03f, 0.10f + 0.04f * sh, 0.20f + 0.05f * sh, 0.22f + 0.06f * sh);                  // the room's own water, a little deeper and bluer: a translucent tint, not a different colour
+                sr.transform.position = new Vector3((run.x0 + run.x1 + 1) * 0.5f, -(run.y + 0.5f), 0f); sr.transform.localScale = new Vector3(run.x1 - run.x0 + 1, 1f, 1f);
+            }
+            HideFrom(_eelWater, n);
+            if (_eelWet.Count > 0 && Time.time >= _ripT)                                                                // ripples breaking on the surface
+            {
+                _ripT = Time.time + 0.09f;
+                for (int q = 0; q < 2; q++) { var tile = _eelWet[Random.Range(0, _eelWet.Count)]; CombatFx.PxAt("ripples", tile.x, tile.y); }
+            }
+        }
+        void BodySparks(EelSump.State s, int count)                                                      // small lightning arcs at random points along the part of the body that is out of the water
+        {
+            for (int k2 = 0; k2 < count; k2++)
+            {
+                int i = Random.Range(0, EelSump.N); if (s.Z[i] <= 0.3f) { i = Random.Range(0, EelSump.N / 3); if (s.Z[i] <= 0.3f) continue; }
+                PxFx("thunderclap", W(s.X[i], s.Y[i], s.Z[i]) + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.4f, 0.4f), 0f), 0f, 0f, 64f);
+            }
+        }
+        public static Vector3? EelStand, EelHandUp, EelHandLo; public static float EelFace = 1f;         // the jaw-hold: where he stands (in front of the jaws), where his two gloves go (the tips of the upper and lower jaw), which way he faces
+        // the jaw tips for each jaw frame, in tiles from the anchor for the head as drawn (looking left), x right / y up: ArtSource/bosses/eel_jaw_tips.py
+        static readonly float[] JawUpX = { -3.199f, -3.199f, -3.199f, -3.199f, -3.199f, -3.199f, -3.199f }, JawUpY = { 0.188f, 0.188f, 0.188f, 0.188f, 0.188f, 0.188f, 0.188f };
+        static readonly float[] JawLoX = { -2.944f, -2.944f, -2.939f, -2.927f, -2.910f, -2.887f, -2.782f }, JawLoY = { -0.120f, -0.234f, -0.348f, -0.462f, -0.575f, -0.687f, -1.013f };
+        readonly List<SpriteRenderer> _eelStars = new List<SpriteRenderer>(); static Sprite _eelStar;
+        static Sprite EelStarSprite()                                                                     // a 7x7 pixel star: what circles its head while it is stunned
+        {
+            if (_eelStar != null) return _eelStar;
+            string[] rows = { "...Y...", "...Y...", "..YYY..", "YYYWYYY", "..YYY..", "...Y...", "...Y..." }; var tex = new Texture2D(7, 7) { filterMode = FilterMode.Point };
+            for (int y = 0; y < 7; y++) for (int x = 0; x < 7; x++) { char ch = rows[y][x]; tex.SetPixel(x, 6 - y, ch == 'W' ? new Color(1f, 1f, 0.9f, 1f) : ch == 'Y' ? new Color(1f, 0.85f, 0.25f, 1f) : new Color(0f, 0f, 0f, 0f)); }
+            tex.Apply(); return _eelStar = Sprite.Create(tex, new Rect(0, 0, 7, 7), new Vector2(0.5f, 0.5f), 32f);
+        }                                                                  // where the jaws are, for the player held in them (TacticalGridView)
 
         static Sprite[] EelBodySlices(int stage)                       // EelSub thin slices per spine sample (each sample is 8 columns of the strip): thinner slices make a bend a smoother polygon
         {
@@ -63,7 +157,7 @@ namespace GameCore
             var f = EelBoss.Current;
             if (f == null || f.Gone || f.Sump == null)
             {
-                HideFrom(_eelBody, 0); HideFrom(_eelFoam, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
+                HideFrom(_eelBody, 0); HideFrom(_eelWater, 0); _eelRunsSig = -1; HideFrom(_eelBolt, 0); EelStand = EelHandUp = EelHandLo = null; HideFrom(_eelStars, 0); HideFrom(_eelFoam, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
             }
             var s = f.Sump; int stage = Mathf.Clamp(f.Phase, 0, 3);
             var evs = EelSump.Drain();                                                                       // impacts: the game's own strips, a shake, a moment of hit-stop
@@ -72,22 +166,22 @@ namespace GameCore
                 {
                     CombatFx.PxAt(e.Water ? "splash" : "blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y));
                     Shake(Mathf.Min(0.35f, 0.14f * e.Power)); Boss.HitStop(0.05f * Mathf.Min(2f, e.Power));
+                    Sfx.Play(e.Water ? "eel_splash" : "eel_slam", new Vector3(e.X, -e.Y, 0f), Mathf.Clamp(0.35f + 0.4f * e.Power, 0.3f, 1.2f), 0.05f, e.Power >= 1.5f ? 0.85f : 1.1f);
                 }
-                else if (e.Kind == "spark")                                                              // the storm's charge: crackles round the head, thicker as it fills
+                else if (e.Kind == "spark")                                                              // the storm's charge: many small crackles across the body, thicker as it fills
                 {
-                    int nSp = 1 + (int)(2.5f * e.Power);
-                    for (int q = 0; q < nSp; q++) CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Random.Range(-2.5f, 2.5f)), Mathf.FloorToInt(e.Y + Random.Range(-1.5f, 3.5f)));
                     Shake(0.03f + 0.06f * e.Power);
                 }
                 else if (e.Kind == "parry") { CombatFx.PxAt("parry", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.3f); }                // the bite is caught in bare hands
-                else if (e.Kind == "slam") { CombatFx.PxAt("blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); CombatFx.PxAt("splash", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.6f); }   // the jaws shut and the head hits the ground
-                else if (e.Kind == "storm")                                                              // the burst: lightning crawls over the water all round
+                else if (e.Kind == "slam") { CombatFx.PxAt("blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); CombatFx.PxAt("splash", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); Shake(0.9f); Boss.HitStop(0.22f); }   // the jaws shut and the head hits the ground
+                else if (e.Kind == "storm")                                                              // the burst: the whole body lights up with small arcs, and the water all round
                 {
-                    for (int ring = 1; ring <= 3; ring++) for (int q = 0; q < 6; q++) { float a = (q + 0.5f * ring) / 6f * Mathf.PI * 2f, r = 4f * ring; CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Mathf.Cos(a) * r), Mathf.FloorToInt(e.Y + Mathf.Sin(a) * r * 0.7f)); }
+                    _stormUntil = Time.time + 0.8f; for (int q = 0; q < 8; q++) { float ang = q / 8f * Mathf.PI * 2f, r = 5f + 4f * (q % 2); CombatFx.PxAt("thunderclap", Mathf.FloorToInt(e.X + Mathf.Cos(ang) * r), Mathf.FloorToInt(e.Y + Mathf.Sin(ang) * r * 0.7f)); }
                     Shake(0.5f); Boss.HitStop(0.12f);
                 }
+                else if (e.Kind == "glint") { for (int g2 = 0; g2 < 3; g2++) PxFx("parry", W(s.X[0] + Random.Range(-0.5f, 0.5f), s.Y[0], s.Z[0] + 0.4f + Random.Range(-0.3f, 0.5f)), 0f, 0f, 20f); Shake(0.2f); Boss.HitStop(0.06f); }                  // the white glint: parry now
             int baseOrder = WorldArt.SortTop - 3000;
-            var sl = EelBodySlices(stage); int n = 0, NN = EelSump.N;
+            var sl = EelBodySlices(stage); int n = 0, NN = EelSump.N; float chg = Mathf.Max(EelSump.ChargeOf(f), Time.time < _stormUntil ? 1f : 0f); float strainShake = EelSump.GrappleSpot(out _, out _) ? 0.05f + 0.07f * EelSump.TwitchOf(f) : 0f;
             var sp = new Vector3[NN]; var ag = new float[NN]; var rd = new float[NN];                           // each sample's screen point, the way the body runs there (degrees) and the bend's radius in tiles
             for (int i = 0; i < NN; i++) sp[i] = W(s.X[i], s.Y[i], s.Z[i]);
             for (int i = 0; i < NN; i++)
@@ -123,12 +217,13 @@ namespace GameCore
                     float zs = Mathf.Lerp(s.Z[i], s.Z[i + 1], u); bool shade = zs <= EelSolidZ; if (shade && (i >= EelShadowLen || s.Z[0] > EelSolidZ + 0.2f)) continue;     // the shadow shows only while the head is down in the water (the swim)
                     if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, zs / EelDipH);                                      // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut
                     var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
-                    sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : Color.white; sr.sortingOrder = baseOrder + (NN - i) * EelSub - kq;
+                    sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : EelSump.Stunned(f) ? new Color(0.78f, 0.82f, 0.95f, 1f) : chg > 0.01f && ((i * 13 + Mathf.FloorToInt(Time.time * 24f) * 7) % 11) < chg * 5f ? new Color(0.7f, 0.93f, 1f, 1f) : Color.white;       // cold flicker where the electricity passes sr.sortingOrder = baseOrder + (NN - i) * EelSub - kq;
+                    if (strainShake > 0f) pos += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f) * strainShake;                          // the whole body shakes with the strain
                     sr.transform.position = pos; sr.transform.rotation = Quaternion.Euler(0f, 0f, rot);
                     sr.transform.localScale = new Vector3(Mathf.Clamp(seg / EelSub * 1.5f / (EelSliceW / EelPpu), 1f, 6f), sy, 1f);   // on screen the samples drift apart where the body climbs: stretch the slice to still touch the next one (1.5 x the step)
                 }
             }
-            HideFrom(_eelBody, n);
+            HideFrom(_eelBody, n); DrawBolts(s, chg, baseOrder); DrawFlood(s);
             int fo = 0;                                                                                       // foam where the body goes under or comes up: the water closes round it
             for (int i = 0; i + 1 < NN; i++)
                 if ((s.Z[i] > EelSump.Surface) != (s.Z[i + 1] > EelSump.Surface))
@@ -139,15 +234,30 @@ namespace GameCore
                 }
             HideFrom(_eelFoam, fo);
             if (_eelHead == null) _eelHead = NewSprite("EelHead", null, Color.white, _root, 2);
-            bool headOut = s.Z[0] > EelSump.Surface; _eelHead.gameObject.SetActive(headOut);
+            bool headOut = s.Z[0] > EelSump.Surface; _eelHead.gameObject.SetActive(headOut); if (!headOut) { EelStand = EelHandUp = EelHandLo = null; HideFrom(_eelStars, 0); }
             if (headOut)
             {
                 float mouth = EelSump.MouthOpen(f); var jaw = mouth >= 0f ? EelJaw(stage, mouth) : null; _eelHead.sprite = jaw != null ? jaw : EelHead(stage); _eelHead.color = s.Z[0] <= EelSolidZ ? EelShade : Color.white; _eelHead.flipX = s.X[Mathf.Min(8, EelSump.N - 1)] < s.X[0];      // it looks away from its neck
+                int gface = EelSump.GrabFace(f); if (gface != 0) _eelHead.flipX = gface > 0;                       // held: it faces HIM, whatever the neck does
                 _eelHead.sortingOrder = baseOrder + 400; _eelHead.transform.position = W(s.X[0], s.Y[0], s.Z[0]);
                 var nk = W(s.X[Mathf.Min(8, EelSump.N - 1)], s.Y[Mathf.Min(8, EelSump.N - 1)], s.Z[Mathf.Min(8, EelSump.N - 1)]) - _eelHead.transform.position;      // where the neck goes: tilt the head about its anchor so it meets it (a straight profile left a gap when the neck climbs)
-                float tilt = Mathf.Atan2(nk.y, Mathf.Abs(nk.x)) * Mathf.Rad2Deg; tilt = Mathf.Clamp(_eelHead.flipX ? -tilt : tilt, -55f, 55f);
-                float tw = EelSump.TwitchOf(f); if (tw > 0f) { _eelHead.transform.position += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f) * 0.14f * tw; tilt += Random.Range(-7f, 7f) * tw; }   // each press of the struggle jolts it
+                float tilt = Mathf.Atan2(nk.y, Mathf.Abs(nk.x)) * Mathf.Rad2Deg; tilt = Mathf.Clamp(_eelHead.flipX ? -tilt : tilt, -88f, 88f);
+                float tw = EelSump.TwitchOf(f); if (tw > 0f) { _eelHead.transform.position += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f) * 0.14f * tw; tilt += Random.Range(-7f, 7f) * tw; }
                 _eelHead.transform.rotation = Quaternion.Euler(0f, 0f, tilt);
+                bool stun = EelSump.Stunned(f);                                                                   // stunned: dimmed, with stars circling its head
+                if (stun) _eelHead.color = new Color(0.7f, 0.76f, 0.95f, 1f);
+                int ns = 0; if (stun) for (int q = 0; q < 4; q++) { var st2 = Pooled(_eelStars, ns++, "EelStar", 2); if (st2 == null) continue; float an = Time.time * 3.2f + q * Mathf.PI * 0.5f; st2.sprite = EelStarSprite(); st2.sortingOrder = baseOrder + 420; st2.color = Color.white; st2.transform.position = _eelHead.transform.position + new Vector3(Mathf.Cos(an) * 0.95f, 1.25f + Mathf.Sin(an) * 0.28f, 0f); st2.transform.localScale = Vector3.one * (1f + 0.25f * Mathf.Sin(an * 2f)); }
+                HideFrom(_eelStars, ns);
+                if (EelSump.GrappleSpot(out var gsx, out var gsy))                                                // the jaw-hold: the two gloves on the jaw tips, him standing in front of the face
+                {
+                    int jk = mouth >= 0f ? (mouth > 1.2f ? JawFrames - 1 : Mathf.Clamp(Mathf.RoundToInt(Mathf.Clamp01(mouth) * 5f), 0, 5)) : 5;
+                    float mir = _eelHead.flipX ? -1f : 1f, rr = tilt * Mathf.Deg2Rad, cs = Mathf.Cos(rr), sn2 = Mathf.Sin(rr); var hp0 = _eelHead.transform.position;
+                    Vector3 Tip(float ox, float oy) { float x = mir * ox, y = oy; return hp0 + new Vector3(x * cs - y * sn2, x * sn2 + y * cs, 0f); }
+                    EelHandUp = Tip(JawUpX[jk], JawUpY[jk]); EelHandLo = Tip(JawLoX[jk], JawLoY[jk]);
+                    float outward = _eelHead.flipX ? 1f : -1f; EelFace = -outward;                              // he stands out in front of its face, looking at it
+                    EelStand = new Vector3((EelHandUp.Value.x + EelHandLo.Value.x) * 0.5f, (EelHandUp.Value.y + EelHandLo.Value.y) * 0.5f, 0f);   // the middle of his hands: where the camera closes in (he is not moved)
+                }
+                else EelStand = EelHandUp = EelHandLo = null;
             }
             int k = 0;                                                                                       // shadows on the ground under what is raised
             for (int i = 0; i < EelSump.N; i += 2)

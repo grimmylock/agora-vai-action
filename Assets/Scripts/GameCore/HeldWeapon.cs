@@ -799,6 +799,24 @@ namespace GameCore
             return new Vector3((g[4] - g[0]) / WeaponArt.PixelsPerUnit, side * (g[1] - g[5]) / WeaponArt.PixelsPerUnit, 0f);
         }
 
+        /// <summary>Boss 3 (the jaw-hold, Yan's sketch): no weapon in sight, the two big gloves go to two world points - one on the front of the
+        /// upper jaw, one on the front of the lower - fingers toward the head (faceX: +1 = the head is to his right, -1 = to his left).
+        /// Called after Show each frame while he holds the eel's jaws.</summary>
+        public void GripHands(ArmorDef armor, Vector3 upperWorld, Vector3 lowerWorld, float faceX)
+        {
+            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false);
+            foreach (var sm in _smear) sm.gameObject.SetActive(false);
+            var big = HandSprite(armor, false);
+            for (int h = 0; h < 2; h++)
+            {
+                var sr = h == 0 ? _grip : _support; var w = h == 0 ? upperWorld : lowerWorld;
+                sr.gameObject.SetActive(true); sr.sprite = big; sr.flipY = false; sr.flipX = faceX < 0f;                 // the glove's fingers point right at 0 degrees (cuff on the left): mirrored when the head is on his left
+                sr.transform.position = new Vector3(w.x, w.y, 0f); sr.transform.rotation = Quaternion.Euler(0f, 0f, (h == 0 ? -10f : 10f) * (faceX < 0f ? -1f : 1f));
+                sr.sortingOrder = _base + 4;
+            }
+            _g = null;
+        }
+
         private static SpriteRenderer Child(SpriteRenderer body, string name, int order)
         {
             var go = new GameObject(name);

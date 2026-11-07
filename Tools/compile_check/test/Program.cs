@@ -16,7 +16,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
-    if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1], args.Length > 2 ? args[2] : ""); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
@@ -1000,14 +1000,20 @@ static class Program {
       Func<string, Action<EelBoss.Fight, float>, SumpStats> storm = (what, each) => SumpRun(true, 2, "storm", f => { SumpPlace(SP1, 22.5f, 20.5f); SumpPlace(SP2, 41.0f, 22.0f); f.Sump.ForcedVictim = SP1; }, each, 45f);
       Action<EelBoss.Fight> press = f => { Rt.Of(SP1).GrabAt = UnityEngine.Time.time; };
       // a) parry bare-handed, mash: the jaws shut, the head slams, it is stunned
-      float stunStart = -1f, stunEnd = -1f; int hp0 = 0, hp1 = 0;
+      float stunStart = -1f, stunEnd = -1f; int hp0 = 0, hp1 = 0; float maxJump = 0f, shiftMag = -1f, lungeEndX = -99f, grabHeadX = -99f, slumpHeadX = -99f, smashHeadX = -99f; (float, float, float)? lastHead = null; string lastBite = null;
       var st1 = storm("parry", (f, tt) => {
         var s = f.Sump; if (hp0 == 0) hp0 = f.Unit.Hp;
+        if (s.Bite != null) { var hd = (s.X[0], s.Y[0], s.Z[0]); if (lastHead.HasValue && s.Bite != "lunge" && s.Bite != "smash" && lastBite != "lunge" && lastBite != "smash") maxJump = Math.Max(maxJump, (float)Math.Sqrt(Math.Pow(hd.Item1 - lastHead.Value.Item1, 2) + Math.Pow(hd.Item2 - lastHead.Value.Item2, 2) + Math.Pow(hd.Item3 - lastHead.Value.Item3, 2))); lastHead = hd; lastBite = s.Bite;
+          if (s.Bite == "grapple" && shiftMag < 0f) { shiftMag = (float)Math.Sqrt(s.GrabShift.sx * s.GrabShift.sx + s.GrabShift.sy * s.GrabShift.sy); lungeEndX = s.BiteEnd.x; }
+          if (s.Bite == "smash") smashHeadX = s.X[0]; if (s.Bite == "slump" && slumpHeadX < -90f) slumpHeadX = s.X[0]; }
         if (s.Bite == "lunge") press(f);
         if (s.Bite == "grapple") EelSump.GrappleInput(SP1);
         if (s.Bite == "slump" && stunStart < 0f) { stunStart = UnityEngine.Time.time; hp1 = f.Unit.Hp; }
         if (stunStart >= 0f && stunEnd < 0f && s.Bite != "slump") stunEnd = UnityEngine.Time.time;
       });
+      Check(maxJump < 0.9f, $"EelSump bite: the head never teleports (the biggest step between two frames outside the lunge and the slam: {maxJump:0.00} tiles)");
+      Check(shiftMag >= 0f && shiftMag < 0.8f && Math.Abs(lungeEndX - (22.5f + (lungeEndX > 22.5f ? 3.4f : -3.4f))) < 0.4f, $"EelSump bite: the lunge ends beside him (anchor {lungeEndX:0.0}), so the parry only nudges it ({shiftMag:0.00} tiles)");
+      Check(Math.Abs(slumpHeadX - smashHeadX) < 0.7f, $"EelSump bite: after the slam the head stays where it landed ({smashHeadX:0.0} -> {slumpHeadX:0.0})");
       cross = Math.Max(cross, st1.MaxCross); var sparks = st1.Ev.Count(e => e.Kind == "spark");
       Check(Hits(st1, 0) == 0 && Hits(st1, 1, 450) == 1 && sparks >= 15 && st1.Ev.Any(e => e.Kind == "storm") && st1.Ev.Any(e => e.Kind == "parry") && st1.Ev.Any(e => e.Kind == "slam") && st1.FloodPeak > 100 && st1.FloodEnd == 0 && st1.F.Sump.Wet.Contains((41, 22)) && !st1.F.Sump.Wet.Contains((22, 20)),
         $"EelSump storm: floods (peak {st1.FloodPeak}, {st1.FloodEnd} left), {sparks} sparks, the burst shocks the one in the water ({Hits(st1, 1, 450)}) and spares the one on the dry patch, the parried bite ends in a slam ({Hits(st1, 0)} hits on him)");
@@ -1026,8 +1032,8 @@ static class Program {
       int lastSlow = -1, lastFast = -1; float mStart = -9f, mAfter5 = -9f;
       var st5 = storm("slow", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 2f); if (s.Bite == "grapple" && k != lastSlow) { lastSlow = k; EelSump.GrappleInput(SP1); } });
       Check(st5.Ev.Any(e => e.Kind == "parry") && !st5.Ev.Any(e => e.Kind == "slam") && Hits(st5, 0, 200) == 1, $"EelSump struggle: 2 presses a second loses the fight, the bite lands ({Hits(st5, 0, 200)})");
-      var st6 = storm("fast", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 8f); if (s.Bite == "grapple") { if (mStart < -1f) mStart = s.Mouth; if (k != lastFast) { lastFast = k; EelSump.GrappleInput(SP1); if (s.Mash == 8) mAfter5 = s.Mouth; } } });
-      Check(st6.Ev.Any(e => e.Kind == "slam") && Hits(st6, 0) == 0 && mStart > 1.3f && mAfter5 >= 0f && mAfter5 < mStart - 0.4f, $"EelSump struggle: 8 presses a second wins, and the mouth closes with the presses (wide {mStart:0.0} -> {mAfter5:0.0} after 8)");
+      var st6 = storm("fast", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 8f); if (s.Bite == "grapple") { if (mStart < -1f) mStart = s.Mouth; if (k != lastFast) { lastFast = k; EelSump.GrappleInput(SP1); if (s.Mash == 15) mAfter5 = s.Mouth; } } });
+      Check(st6.Ev.Any(e => e.Kind == "slam") && Hits(st6, 0) == 0 && mStart > 1.3f && mAfter5 >= 0f && mAfter5 < mStart - 0.4f, $"EelSump struggle: 8 presses a second wins, and the mouth closes with the presses (wide {mStart:0.0} -> {mAfter5:0.0} after 15)");
       cross = Math.Max(cross, Math.Max(st5.MaxCross, st6.MaxCross));
     }
     // PHASES: above 75% HP it only uses the first three moves; from 75% the snare and the flood join in, the first flood being the forced transition
@@ -1050,29 +1056,35 @@ static class Program {
 
   // The whole Sump fight in one run for the clip: reveal, then each move in turn with the players placed for it (a bait that stands still, a second player), then the death.
   // dotnet /tmp/test.dll eelsump frames.json  ->  Tools/render/eel_real_clip.py
-  static void EelSumpFrames(string path) {
+  static void EelSumpFrames(string path, string kind = "") {
     var f = SumpStart(true, 2); EelBoss.GoStage(f, "hidden"); var st = new SumpStats { F = f }; var s = f.Sump; var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
     var sb = new System.Text.StringBuilder("{\"pools\":[" + string.Join(",", s.Pools.Select(q => $"[\"{q.Name}\",{F(q.X)},{F(q.Y)},{F(q.RX)},{F(q.RY)},{(q.Big ? 1 : 0)}]")) + "],\"slab\":[" + F(s.SlabX) + "," + F(s.SlabY) + "],\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, f.BodyArmor) + ",\"tailmax\":" + EelSump.TailMax + ",\"maxhp\":" + EelBoss.MaxHp + ",\"frames\":[");
     var pw = s.Pools.First(q => q.Name == "west"); var pe = s.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
-    var plan = new List<(string q, (float, float) a, (float, float) b)> {
-      ("combo", (20.5f, 20.0f), (41.0f, 22.0f)), ("arch:east", (30.5f, 19.0f), (30.5f, 30.5f)), ("dash:west>east", (onp.x, onp.y), (46.5f, 22.5f)),
-      ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f)), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f)), ("flood", (42.5f, 26.0f), (22.5f, 20.0f)) };
-    int step = -1, evDone = 0; const float dt = 1f / 30f; int k = 0, outn = 0; bool dyingSet = false; float tHit = 0.5f; var shoot = 0;
+    var plan = new List<(string q, (float, float) a, (float, float) b, string mode)> {
+      ("combo", (20.5f, 20.0f), (41.0f, 22.0f), ""), ("arch:east", (30.5f, 19.0f), (30.5f, 30.5f), ""), ("dash:west>east", (onp.x, onp.y), (46.5f, 22.5f), ""),
+      ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("flood", (42.5f, 26.0f), (22.5f, 20.0f), "") };
+    if (kind == "storm") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> {      // the 75% flood transition, then the 50% storm three times: parried and won, never parried, parried but too slow
+      ("flood", (42.5f, 26.0f), (22.5f, 20.5f), ""), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry"), ("storm:north", (22.5f, 20.5f), (41.0f, 22.0f), "none"), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "slow") };
+    if (kind == "transition") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> { ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry") };      // only the 50% transition: the storm, parried and won
+    int step = -1, evDone = 0, lastPress = -1; const float dt = 1f / 30f; int k = 0, outn = 0; bool dyingSet = false; float tHit = 0.5f; var shoot = 0;
     SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
     for (float t = 0f; t < 140f && !f.Gone; t += dt, k++) {
       if (f.Stage == "hidden" && t > tHit) { f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit); }
       if (f.Stage == "idle" && !s.Dying) {
-        if (step + 1 < plan.Count && s.Queue.Count == 0) { step++; SumpPlace(SP1, plan[step].a.Item1, plan[step].a.Item2); SumpPlace(SP2, plan[step].b.Item1, plan[step].b.Item2); s.Queue.Add(plan[step].q); f.Next = UnityEngine.Time.time + 0.7f; }
+        if (step + 1 < plan.Count && s.Queue.Count == 0) { step++; SumpPlace(SP1, plan[step].a.Item1, plan[step].a.Item2); SumpPlace(SP2, plan[step].b.Item1, plan[step].b.Item2); s.Queue.Add(plan[step].q); if (plan[step].q.StartsWith("storm")) s.ForcedVictim = SP1; f.Next = UnityEngine.Time.time + 0.7f; }
         else if (step + 1 >= plan.Count && s.Queue.Count == 0 && !dyingSet) { dyingSet = true; s.Dying = true; }
       }
       shoot = 0; if (f.Move == "snare" && s.Snared != null && s.TailOut && (UnityEngine.Time.time - f.StageAt) * EelSump.Speed > 3.0f && s.Tail.Hp > 1300 && k % 3 == 0) { s.Tail.Hp -= 45; Boss.OnDamaged(s.Tail); shoot = 1; }     // a teammate shoots the tail a while (not enough to break it)
+      { string mode = step >= 0 ? plan[step].mode : "";                                           // the bot's hands: parry the lunge, then mash (8 a second) or struggle too slowly (2 a second)
+        if (mode != "none" && mode != "" && s.Bite == "lunge") Rt.Of(SP1).GrabAt = UnityEngine.Time.time;
+        if (s.Bite == "grapple") { float rate = mode == "parry" ? 8f : 2f; int kk = (int)(UnityEngine.Time.unscaledTime * rate); if (kk != lastPress) { lastPress = kk; EelSump.GrappleInput(SP1); } } }
       SumpTick(f, st, dt);
       if (k % 2 != 0) continue;
       sb.Append(outn++ > 0 ? "," : "").Append("{\"t\":" + F(k * dt) + ",\"stage\":\"" + f.Stage + "\",\"move\":\"" + (f.Move ?? "") + "\",\"var\":\"" + (s.Variant ?? "") + "\",\"label\":\"" + f.Label.Replace("\"", "'") + "\",\"hp\":" + f.Unit.Hp + ",\"thp\":" + s.Tail.Hp + ",\"hout\":" + (s.HeadOut ? 1 : 0) + ",\"tout\":" + (s.TailOut ? 1 : 0) + ",\"flood\":" + F(s.FloodR) + ",\"shoot\":" + shoot + ",\"swallowed\":" + (f.Swallowed && !f.Ejected ? 1 : 0) + ",\"ejected\":" + (f.Ejected ? 1 : 0)
         + ",\"spine\":[" + string.Join(",", Enumerable.Range(0, EelSump.N).Select(i => F(s.X[i]) + "," + F(s.Y[i]) + "," + F(s.Z[i]))) + "]"
         + ",\"pl\":[" + string.Join(",", Player.All.Select(pl => { var q = Ballistics.Pos(pl); s.Air.TryGetValue(pl, out var a); return "[" + F(q.x) + "," + F(q.y) + "," + F(a == null ? 0f : a.Z) + "," + F(a == null ? 0f : a.Rot) + "," + pl.Hp + "," + (Rt.Of(pl).ProneUntil > UnityEngine.Time.time ? 1 : 0) + "]"; })) + "]"
         + ",\"ev\":[" + string.Join(",", st.Ev.Skip(evDone).Select(e => $"[\"{e.Kind}\",{F(e.X)},{F(e.Y)},{F(e.Power)},{(e.Water ? 1 : 0)},{e.Who},{e.Dmg},\"{(e.Text ?? "").Replace("\"", "'")}\"]")) + "]"
-        + ",\"zones\":[" + string.Join(",", f.Zones.Select(z => $"[{F(z.X)},{F(z.Y)},{F(z.R)},\"{z.Kind}\",{(z.Live ? 1 : 0)}" + (z.Path != null ? ",[" + string.Join(",", z.Path.Select(F)) + "]" : "") + "]")) + "]}");
+        + ",\"zones\":[" + string.Join(",", f.Zones.Select(z => $"[{F(z.X)},{F(z.Y)},{F(z.R)},\"{z.Kind}\",{(z.Live ? 1 : 0)}" + (z.Path != null ? ",[" + string.Join(",", z.Path.Select(F)) + "]" : "") + "]")) + "]" + ",\"rear\":" + F(s.Rear) + ",\"mouth\":" + F(s.Mouth) + ",\"tw\":" + F(s.Twitch) + ",\"bite\":\"" + (s.Bite ?? "") + "\",\"grip\":" + F(s.Grip) + ",\"spot\":[" + F(s.BiteSpot.x) + "," + F(s.BiteSpot.y) + "]}");
       evDone = st.Ev.Count;
     }
     sb.Append("],\"seconds\":" + F(k * dt) + "}"); System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null; Rt.On = false; EelBoss.Reset();

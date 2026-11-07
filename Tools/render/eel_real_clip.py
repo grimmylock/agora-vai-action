@@ -12,7 +12,45 @@ import eel_storyboard as SB
 from eel_storyboard import pieces, shadow, stamp, SPLASH, RIPPLES, WHIRL, MAN, FNT, WW, WH, VW, VH, PAD, NS, T, OX, OY, sp, c01
 from eel_common import render, plan, banner, video, dead_body, font
 import eel_poses as E
+import eel_bake_jaw as J
+import eel_jaw_tips as JT
 random.seed(3)
+H0, A0 = E.HEAD.copy(), tuple(E.HEAD_ANCHOR); _jawc = {}
+def jaw_head(o):
+    """the head with its mouth open by `o` (0 shut .. 1 as drawn .. 1.4 forced wide), cut from his drawing (eel_bake_jaw.py), cropped, with its anchor"""
+    key = round(min(1.4, max(0.0, o)) * 10) / 10
+    if key not in _jawc:
+        fr_ = J.jaw_frame(H0, key); ys_, xs_ = np.nonzero(fr_[:, :, 3] > 0); bx0, by0 = xs_.min(), ys_.min()
+        _jawc[key] = (fr_[ys_.min():ys_.max() + 1, xs_.min():xs_.max() + 1], (A0[0] + J.PAD - bx0, A0[1] + J.PAD - by0))
+    return _jawc[key]
+def zigzag(p0, p1, n=7, j=14):
+    pts = [p0]
+    for i in range(1, n): u = i / n; pts.append((p0[0] + (p1[0] - p0[0]) * u + random.uniform(-j, j), p0[1] + (p1[1] - p0[1]) * u + random.uniform(-j, j)))
+    pts.append(p1); return pts
+ZAPS = []; close = 0.0; HROT = 0.0
+def grip_points(S, face, mo):
+    """the jaw-hold in the preview: the two gloves on the jaw tips (eel_jaw_tips.py), and where he stands, in front of the face: (upper, lower, stand) as (x, y, z) tile points"""
+    jk = 6 if mo > 1.2 else int(round(min(max(mo, 0.0), 1.0) * 5)) if mo >= 0 else 5
+    ux, uy, lx, ly = JT.TIPS[jk]; mir = 1 if face == -1 else -1
+    a_ = math.radians(HROT) * (1 if face == -1 else -1); ca, sa = math.cos(a_), math.sin(a_)                  # the head is turned about its anchor (screen y down): turn the tips with it
+    def turn(x, y): x *= mir; return (x * ca - y * sa, x * sa + y * ca)
+    (tux, tuy), (tlx, tly) = turn(ux, uy), turn(lx, ly)
+    up = (S[0, 0] + tux / 32.0, S[0, 1], S[0, 2] - tuy / 32.0); lo = (S[0, 0] + tlx / 32.0, S[0, 1], S[0, 2] - tly / 32.0)
+    return up, lo, None
+def glove(c, p, flip):
+    """the game's big glove (5x4 character pixels: HeldWeaponView.GloveBig, the suit's cuff and glove colours) at the body's own pixel scale, fingers toward the head"""
+    cp = max(1, MAN.width // 16); cols = {'K': (20, 22, 23, 255), 'c': (38, 36, 37, 255), 'l': (88, 94, 104, 255), 'g': (61, 65, 72, 255), 'd': (39, 42, 46, 255)}      # the suit's own cuff #262425 and glove #3d4148 (SpriteAtlasIndex, the first armor: what the preview's player wears)
+    img = Image.new('RGBA', (5, 4))
+    for y, row in enumerate([".KKK.", "KcllK", "KcgdK", ".KKK."]):
+        for x, ch in enumerate(row):
+            if ch != '.': img.putpixel((x, y), cols[ch])
+    if flip: img = img.transpose(Image.FLIP_LEFT_RIGHT)
+    img = img.resize((5 * cp, 4 * cp), Image.NEAREST); x, y = sp(*p); c.alpha_composite(img, (int(x - img.width / 2), int(y - img.height / 2)))
+def stars(c, S, t):
+    hx, hy = sp(S[0, 0], S[0, 1], max(S[0, 2], 0) + 1.3); d = ImageDraw.Draw(c, 'RGBA')
+    for q in range(4):
+        an = t * 3.2 * 1.0 + q * math.pi / 2; x = hx + math.cos(an) * 30; y = hy + math.sin(an) * 9
+        d.line((x - 6, y, x + 6, y), fill=(255, 216, 64, 255), width=3); d.line((x, y - 6, x, y + 6), fill=(255, 216, 64, 255), width=3); d.rectangle((x - 1, y - 1, x + 1, y + 1), fill=(255, 255, 230, 255))
 d = json.load(open(sys.argv[1])); out = sys.argv[2]; FR = d['frames']; FPS = 15
 W3 = render('sub_station_depths_3').crop((OX, OY, OX + WW, OY + WH)).convert('RGBA'); PLAN = plan('sub_station_depths_3')
 POOLS = [(p[1], p[2], p[3], p[4], p[0], p[5]) for p in d['pools']]; SLAB = d['slab']; BODY = dead_body(d['armor']); TAILMAX, MAXHP = d['tailmax'], d['maxhp']
@@ -21,6 +59,7 @@ tex = W3.crop((int(30.5 * T - OX) - 150, int(24.5 * T - OY) - 50, int(30.5 * T -
 for ty in range(0, WATER.height, tex.height):
     for tx in range(0, WATER.width, tex.width): WATER.paste(tex, (tx, ty))
 WATER = WATER.crop((0, 0, WW, WH))
+POOLM = Image.fromarray(((np.array(W3)[..., :3].max(axis=2) < 34) & (np.array(W3)[..., 3] > 0)).astype(np.uint8) * 255)       # the base render's black holes = the pools
 ISL = [(8, 12, 6, 4), (46, 12, 6, 4), (21, 19, 4, 3), (36, 19, 4, 3), (28, 18, 5, 2)]
 def interp(spine):
     a = np.array(spine, float).reshape(-1, 3); n = len(a); idx = np.linspace(0, n - 1, NS); i0 = np.floor(idx).astype(int).clip(0, n - 2); u = (idx - i0)[:, None]; return a[i0] * (1 - u) + a[i0 + 1] * u
@@ -45,6 +84,7 @@ def draw_player(c, q, flash):
     sx, sy = sp(x, y, max(z, 0)); c.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height / 2 - 6)))
 
 def run(probe=None):
+    global close
     tmp = tempfile.mkdtemp(); fi = 0; n = 0; shown = -1; pops = []; hitat = {}; sheet = []; probes = sorted(probe) if probe else None; prev = [None, None]; prevhead = None
     while fi < len(FR):
         f = FR[fi]; t = f['t']; adv = SB.frozen == 0
@@ -54,21 +94,41 @@ def run(probe=None):
             for e in f['ev']:
                 if e[0] == 'impact': SB.impact(t, e[1], e[2], e[3], bool(e[4]), stop=2, crackn=7); SB.frozen = min(SB.frozen, 2)
                 elif e[0] == 'hit': pops.append((t, e[5], e[6], e[7])); hitat[e[5]] = t
+                elif e[0] == 'spark': ZAPS.append(('spark', t, e[1], e[2], e[3]))
+                elif e[0] == 'storm': ZAPS.append(('burst', t, e[1], e[2], 1.0)); SB.flash = 0.6; SB.shake_amp = max(SB.shake_amp, 14); SB.zoom = max(SB.zoom, 0.08)
+                elif e[0] == 'parry': ZAPS.append(('parry', t, e[1], e[2], 1.0)); SB.flash = 0.4; SB.shake_amp = max(SB.shake_amp, 8)
+                elif e[0] == 'glint': ZAPS.append(('glint', t, e[1], e[2], 1.0)); SB.flash = 0.25
         step = 1.0 / FPS if adv else 0.0
         c = W3.copy(); S = interp(f['spine']); fl = f['flood']
+        if f.get('bite') in ('grapple', 'lift', 'smash'): S[:, 0] += random.uniform(-0.09, 0.09) * (0.5 + f.get('tw', 0)); S[:, 1] += random.uniform(-0.06, 0.06) * (0.5 + f.get('tw', 0))   # the whole body shakes with the strain
+        mo = f.get('mouth', -1); E.HEAD, E.HEAD_ANCHOR = jaw_head(mo) if mo >= 0 else (H0, A0)                       # the mouth: shut, opening, held wide, closing with every press
+        global HROT
+        HROT = 0.0; SB.HEAD_ROT = 0.0
+        if f.get('rear', 0) > 2:                                                                           # thrown back / reared: the head turns with its neck, the neck's first stretch follows it (no break at the joint)
+            p0x, p0y = S[0, 0] * T, (S[0, 1] - S[0, 2]) * T; p8x, p8y = S[8, 0] * T, (S[8, 1] - S[8, 2]) * T
+            HROT = max(-88.0, min(88.0, math.degrees(math.atan2(p8y - p0y, abs(p8x - p0x)))))                # + = the neck leaves downward = nose up
+            hh, aa = E.HEAD, E.HEAD_ANCHOR; P_ = 40; big = Image.new('RGBA', (hh.shape[1] + 2 * P_, hh.shape[0] + 2 * P_), (0, 0, 0, 0)); big.alpha_composite(Image.fromarray(hh), (P_, P_))
+            big = np.array(big.rotate(-HROT, center=(aa[0] + P_, aa[1] + P_), resample=Image.NEAREST)); ys_, xs_ = np.nonzero(big[:, :, 3] > 0)
+            E.HEAD, E.HEAD_ANCHOR = big[ys_.min():ys_.max() + 1, xs_.min():xs_.max() + 1], (aa[0] + P_ - xs_.min(), aa[1] + P_ - ys_.min()); SB.HEAD_ROT = HROT
+        if f.get('tw', 0) > 0.3: SB.shake_amp = max(SB.shake_amp, 3.0 * f['tw'])                                      # every press of the struggle jolts it
         if 'swell' in f['label'] or ('wind-up' in f['label'] and f['move'] in ('arch', 'dash', 'snare', 'combo')) and False:
             pass
         if 'swell' in f['label']:
             for px, py, rx, ry, nm, bg in POOLS: stamp(c, WHIRL[int(t * 15) % len(WHIRL)], px, py, 2.6 if bg else 1.9, 0.6)
-            ov = Image.new('RGBA', c.size, (0, 0, 0, 0)); dr = ImageDraw.Draw(ov)
-            for x, y, w, h in ISL: dr.rectangle((*sp(x - 0.3, y - 0.3), *sp(x + w + 0.3, y + h + 0.3)), outline=(255, 255, 255, int(150 + 90 * math.sin(n * 0.5))), width=3)
-            c.alpha_composite(ov)
         if fl > 0.05:                                                                         # the flood: the game's own tiles, the pool's water over them, foam at the edge
-            m = flood_mask(fl); wl = WATER.copy(); wl.putalpha(m.point(lambda v: int(v * 0.94))); c.alpha_composite(wl)
-            edge = Image.fromarray(np.clip(np.array(m).astype(int) - np.array(m.filter(ImageFilter.MinFilter(7))).astype(int), 0, 255).astype(np.uint8)); fo = Image.new('RGBA', c.size, (210, 230, 235, 0)); fo.putalpha(edge.point(lambda v: int(v * 0.65))); c.alpha_composite(fo)
-            for k in range(14):
+            m = flood_mask(fl); arr_ = np.array(W3).astype(float); arr_[..., :3] = np.clip(arr_[..., :3] * np.array([0.9, 0.92, 0.92]), 0, 255)    # the room's own water, just a little deeper: SAME colour (no tint)
+            wl = Image.fromarray(arr_.astype(np.uint8)); wl.putalpha(m.point(lambda v: int(v * 0.9))); c.alpha_composite(wl)
+            dp = Image.new('RGBA', c.size, (4, 12, 12, 0)); dp.putalpha(POOLM.point(lambda v: int(v * 0.5))); c.alpha_composite(dp)                  # the pools are deep water: a darker, bluer one
+            hl = Image.new('RGBA', c.size, (0, 0, 0, 0)); hd = ImageDraw.Draw(hl)                                      # light moving on the surface
+            for _k in range(70):
+                gx = random.uniform(5, 55); gy = random.uniform(9, 31); sx_, sy_ = sp(gx, gy)
+                if 0 <= sx_ < m.width and 0 <= sy_ < m.height and m.getpixel((int(sx_), int(sy_))) > 200: hd.line((sx_, sy_, sx_ + random.randint(6, 16), sy_), fill=(190, 235, 245, 120), width=2)
+            c.alpha_composite(hl)
+            for k in range(22):
                 gx = 8 + (k * 37 % 46); gy = 11 + (k * 53 % 19)
-                if m.getpixel((int(sp(gx, gy)[0]), int(sp(gx, gy)[1]))) > 200: stamp(c, RIPPLES[(int(t * 15) + k * 3) % len(RIPPLES)], gx, gy, 0.8, 0.45)
+                if m.getpixel((int(sp(gx, gy)[0]), int(sp(gx, gy)[1]))) > 200: stamp(c, RIPPLES[(int(t * 15) + k * 3) % len(RIPPLES)], gx, gy, 0.9, 0.7)
+        if fl > 0.05 and f['move'] == 'storm' and ('charging' in f['label'] or 'ELECTRIC' in f['label']):                  # the water crackles while it charges
+            m_ = flood_mask(fl); el = Image.new('RGBA', c.size, (120, 220, 255, 0)); el.putalpha(m_.point(lambda v: int(v * (0.03 + 0.05 * random.random())))); c.alpha_composite(el)
         for z in f['zones']:                                                                  # telegraphs (red) and live zones (white), exactly where the code will hurt
             x, y = sp(z[0], z[1]); live = z[4]; col = (255, 255, 255, 235) if live else (255, 60, 40, 150 + 80 * (n // 2 % 2))
             if z[3] == 'band' and len(z) > 5:
@@ -91,10 +151,16 @@ def run(probe=None):
         c.alpha_composite(ov); c.alpha_composite(shadow(S))
         if not f['swallowed'] and f['stage'] not in ('vomit',) or f['ejected']:
             c.alpha_composite(BODY, (int(sp(SLAB[0], SLAB[1])[0] - BODY.width / 2), int(sp(SLAB[0], SLAB[1])[1] - BODY.height / 2)))
-        pl = f['pl']
+        pl = [list(q) for q in f['pl']]
+        grip_on = f.get('bite') in ('grapple', 'lift', 'smash')
+        if grip_on and pl:
+            tw_ = f.get('tw', 0); sgn_ = 1 if face == -1 else -1                                              # he leans toward the head (it is on his right when the head looks left)
+            pl[0][0] += random.uniform(-0.07, 0.07) * tw_ - sgn_ * 0.2 * (1 - f.get('grip', 0)); pl[0][1] += random.uniform(-0.04, 0.04) * tw_
+            pl[0][3] = sgn_ * (14 if (n // 2) % 2 == 0 else 6) * -1                                           # pressing in, alternating
         for i, q in enumerate(pl):
             if q[2] <= 0.3: draw_player(c, q, 0.9 * c01(1 - (t - hitat.get(i, -9)) / 0.5))
-        face = -1 if S[min(8, NS - 1), 0] > S[0, 0] else 1                                    # the head looks away from its neck
+        face = -1 if S[min(8, NS - 1), 0] > S[0, 0] else 1
+        if f.get('bite') in ('grapple', 'lift', 'smash'): face = 1 if f['pl'][0][0] >= S[0, 0] else -1                   # held: it faces HIM                                    # the head looks away from its neck
         flooding = fl > 0.5 and f['move'] == 'flood'
         if flooding:
             Sr = S.copy(); Sr[:, 2] = np.where(S[:, 2] > 0.5, S[:, 2], -1.0); layers, P, vis = pieces(Sr, face)
@@ -114,6 +180,42 @@ def run(probe=None):
                 if g is not None: gi = Image.fromarray(g); gi.putalpha(gi.getchannel('A').point(lambda v, al=alpha: int(v * al))); c.alpha_composite(gi)
         if adv: prev = [prev[1], cur]
         for a, ly in sorted(layers, key=lambda z: -z[0]): c.alpha_composite(Image.fromarray(ly))
+        if f.get('bite') in ('grapple', 'lift', 'smash'):                                                   # Yan's sketch: a glove on each jaw tip - and he stays where he stood
+            gu, gl, _ = grip_points(S, face, f.get('mouth', -1)); glove(c, gu, face == 1); glove(c, gl, face == 1)
+            if os.environ.get('EELDBG') and abs(t - 33.0) < 0.04: print('DBG face', face, 'player', sp(pl[0][0], pl[0][1], 0), 'glove up', sp(*gu), 'glove lo', sp(*gl), 'head', sp(S[0,0], S[0,1], S[0,2]), 'T', T, 'MAN', MAN.size)
+        if f.get('bite') == 'slump': stars(c, S, t)                                                       # stunned: stars circle its head
+        zo = Image.new('RGBA', c.size, (0, 0, 0, 0)); zd = ImageDraw.Draw(zo); hx_, hy_ = sp(S[0, 0], S[0, 1], max(S[0, 2], 0) + 0.6)
+        for z in list(ZAPS):
+            kind, z0, zx, zy, zp = z; age = t - z0; life = 0.22 if kind == 'spark' else 0.7 if kind == 'burst' else 0.45 if kind == 'glint' else 0.5
+            if age > life: ZAPS.remove(z); continue
+            if age < 0: continue
+            vis_ = [i for i in range(NS) if S[i, 2] > 0.3]
+            def crawl(i0, ln, wd):                                                                    # electricity that follows the body's outline
+                pts = []
+                for i in range(i0, min(NS, i0 + ln), 3):
+                    if S[i, 2] <= 0.3: pts = []; continue
+                    q = sp(S[i, 0], S[i, 1], S[i, 2]); pts.append((q[0] + random.uniform(-9, 9), q[1] + random.uniform(-9, 9)))
+                    if len(pts) >= 2: zd.line(pts[-2:], fill=(120, 210, 255, 130), width=wd + 4); zd.line(pts[-2:], fill=(235, 250, 255, 245), width=max(2, wd - 2))
+            def drop(i):                                                                              # a bolt from the body down to the water beneath it
+                if S[i, 2] <= 0.6: return
+                q0 = sp(S[i, 0], S[i, 1], S[i, 2]); q1 = sp(S[i, 0] + random.uniform(-0.8, 0.8), S[i, 1] + random.uniform(-0.8, 0.8), 0.0); pts = zigzag(q0, q1, 5, 10)
+                zd.line(pts, fill=(120, 210, 255, 130), width=8); zd.line(pts, fill=(235, 250, 255, 245), width=3)
+            if kind == 'spark' and vis_:
+                for _ in range(2 + int(8 * zp)): crawl(random.randint(0, max(0, NS - 24)), random.randint(8, 24), 5)
+                for _ in range(1 + int(5 * zp)): drop(random.choice(vis_))
+            elif kind == 'burst':
+                for _ in range(14 if vis_ else 0): crawl(random.randint(0, max(0, NS - 24)), random.randint(10, 26), 6)
+                for _ in range(10 if vis_ else 0): drop(random.choice(vis_))
+                for _ in range(8):
+                    tx_, ty_, dd_ = random.choice([q for q in SHALLOW if q[2] <= max(fl, 1.0)] or SHALLOW); p0 = sp(tx_ + 0.5, ty_ + 0.5); p1 = (p0[0] + random.uniform(-60, 60), p0[1] + random.uniform(-40, 40)); pts = zigzag(p0, p1, 4, 9)
+                    zd.line(pts, fill=(120, 210, 255, int(150 * (1 - age / life))), width=6); zd.line(pts, fill=(240, 252, 255, int(255 * (1 - age / life))), width=2)
+                m_ = flood_mask(max(fl, 1.0)); el = Image.new('RGBA', c.size, (150, 230, 255, 0)); el.putalpha(m_.point(lambda v, k=age / life: int(v * 0.35 * (1 - k) * (0.5 + 0.5 * random.random())))); c.alpha_composite(el)
+            elif kind == 'glint':
+                gx_, gy_ = sp(S[0, 0], S[0, 1], max(S[0, 2], 0) + 0.5); rr_ = 14 + 70 * (age / life)
+                for ang_ in range(0, 360, 45): zd.line((gx_ - math.cos(math.radians(ang_)) * rr_, gy_ - math.sin(math.radians(ang_)) * rr_, gx_ + math.cos(math.radians(ang_)) * rr_, gy_ + math.sin(math.radians(ang_)) * rr_), fill=(255, 255, 255, int(255 * (1 - age / life))), width=4)
+            elif kind == 'parry':
+                px_, py_ = sp(zx, zy, 0.8); rr_ = 20 + 150 * (age / life); zd.ellipse((px_ - rr_, py_ - rr_ * 0.8, px_ + rr_, py_ + rr_ * 0.8), outline=(255, 255, 255, int(255 * (1 - age / life))), width=5)
+        c.alpha_composite(zo)
         for i in range(NS - 1):                                                                # foam and ripples where the body goes through the water: always a pool's centre
             if (S[i, 2] > 0.02) != (S[i + 1, 2] > 0.02) and not (fl > 0.05): stamp(c, RIPPLES[int(t * 15) % len(RIPPLES)], S[i, 0], S[i, 1], 0.9, 0.85)
         for s_ in list(SB.splashes):
@@ -138,15 +240,22 @@ def run(probe=None):
         if SB.flash > 0.02: c.alpha_composite(Image.new('RGBA', c.size, (255, 255, 255, int(255 * SB.flash))))
         sx_ = sy_ = 0
         if SB.shake_amp > 0.3: sx_ = int(random.uniform(-1, 1) * SB.shake_amp); sy_ = int(random.uniform(-1, 1) * SB.shake_amp)
-        z_ = 1.0 + SB.zoom; w_, h_ = int(VW / z_), int(VH / z_); cx_, cy_ = PAD + sx_ + VW // 2, PAD + sy_ + VH // 2
+        close += (1.0 - close) * 0.18 if f.get('bite') in ('grapple', 'lift', 'smash') else (0.0 - close) * 0.25                                  # the jaw-hold: the camera leans right in on the player holding the mouth
+        z_ = 1.0 + SB.zoom + 2.6 * close; w_, h_ = int(VW / z_), int(VH / z_); cx_, cy_ = PAD + sx_ + VW // 2, PAD + sy_ + VH // 2
+        if close > 0.01:
+            _gu, _gl, _gs = grip_points(S, face, f.get('mouth', -1)); spx, spy = sp(((_gu[0] + _gl[0]) / 2 + pl[0][0]) / 2, S[0, 1], (_gu[2] + _gl[2]) / 2 * 0.8); cx_ = int(cx_ + (spx - cx_) * 0.95 * close); cy_ = int(cy_ + (spy - cy_) * 0.95 * close)
+        cx_ = max(w_ // 2, min(WW - w_ // 2, cx_)); cy_ = max(h_ // 2, min(WH - h_ // 2, cy_))
         fr = c.crop((cx_ - w_ // 2, cy_ - h_ // 2, cx_ - w_ // 2 + w_, cy_ - h_ // 2 + h_)); fr = fr.resize((VW, VH), Image.NEAREST) if z_ > 1.001 else fr
-        ttl = {'combo': '1  COMBO: head strike + tail sweep', 'arch': '2  ARCH SLAM', 'dash': '3  SNAKE DASH', 'snare': '4  TAIL SNARE (' + f['var'] + ')', 'flood': '5  FLOOD SURGE'}.get(f['move'], 'REVEAL' if f['stage'] == 'reveal' else 'DEATH: it brings the body back up' if f['stage'] == 'vomit' else '')
+        ttl = {'combo': '1  COMBO: head strike + tail sweep', 'arch': '2  ARCH SLAM', 'dash': '3  SNAKE DASH', 'snare': '4  TAIL SNARE (' + f['var'] + ')', 'flood': '5  FLOOD SURGE', 'storm': '6  STORM: electric flood + the bite'}.get(f['move'], 'REVEAL' if f['stage'] == 'reveal' else 'DEATH: it brings the body back up' if f['stage'] == 'vomit' else '')
         if ttl: banner(fr, ttl, 12, size=24)
         lab = f['label']; hot = 'wind-up' in lab or 'swell' in lab
-        banner(fr, lab, 50, size=22, fill=(255, 140, 110) if hot else (255, 235, 150) if any(k in lab for k in ('STRIKE', 'SLAM', 'SWEEP', 'DASH!', 'CAUGHT', 'DRAGGED', 'THROWN', 'HURLED', 'BURSTS', 'TURNS')) else (225, 225, 215))
+        banner(fr, lab, 50, size=22, fill=(255, 140, 110) if hot else (255, 235, 150) if any(k in lab for k in ('STRIKE', 'SLAM', 'SWEEP', 'DASH!', 'CAUGHT', 'DRAGGED', 'THROWN', 'HURLED', 'BURSTS', 'TURNS', 'ELECTRIC', 'SPRINGS', 'PARRIED', 'SLAM', 'THROWS', 'SCREAMS', 'PARRY on the glint')) else (225, 225, 215))
+        if f.get('bite') == 'grapple':                                                                                       # the struggle bar and the prompt
+            gb = ImageDraw.Draw(fr, 'RGBA'); gp = c01(f['grip']); gb.rectangle((VW // 2 - 182, VH - 128, VW // 2 + 182, VH - 100), fill=(0, 0, 0, 200)); gb.rectangle((VW // 2 - 178, VH - 124, VW // 2 - 178 + 356 * gp, VH - 104), fill=(255, 235, 150, 255))
+            banner(fr, 'MASH THE PARRY KEY!', VH - 168, size=28, fill=(255, 245, 190))
         od = ImageDraw.Draw(fr, 'RGBA'); od.rectangle((VW // 2 - 262, VH - 56, VW // 2 + 262, VH - 40), fill=(0, 0, 0, 190)); od.rectangle((VW // 2 - 260, VH - 54, VW // 2 - 260 + 520 * c01(f['hp'] / MAXHP), VH - 42), fill=(150, 40, 40, 255))
         od.text((VW // 2 - 256, VH - 54), f"THE DROWNER (placeholder name)  head {f['hp']}   tail {f['thp']}", font=font(12), fill=(255, 245, 225))
-        banner(fr, 'drawn from the real fight code (EelSump.cs) by the harness | preview only: no Unity view, no sound | players are bots', VH - 30, size=14, fill=(210, 205, 190), bg=(0, 0, 0, 150))
+        banner(fr, 'drawn from the real fight code (EelSump.cs) by the harness | preview only: no Unity view, silent here (the game has the sounds) | players are bots', VH - 30, size=14, fill=(210, 205, 190), bg=(0, 0, 0, 150))
         SB.shake_amp *= 0.67; SB.flash *= 0.4; SB.zoom *= 0.67
         if probe:
             while probes and t >= probes[0]: sheet.append((probes.pop(0), fr.copy()))

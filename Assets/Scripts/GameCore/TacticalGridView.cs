@@ -207,6 +207,7 @@ namespace GameCore
             Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
             UseOf(Held(_playerMarker), player);
             Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker), player.Gunslinging ? player.OffhandWeapon : null);
+            EelGrip(Held(_playerMarker), player);
             DrawFriends();
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker
@@ -631,6 +632,7 @@ namespace GameCore
         {
             if (u is Player fp && fp != Player.Current)                       // a friend: their own crosshair (their Input packets / the snapshot)
                 return Rt.Of(fp).AimAt is (float, float) a ? new Vector3(a.Item1, -a.Item2, 0f) : (Vector3?)null;
+            if (u is Player gp0 && EelSump.Gripping(gp0) && CombatFxView.EelStand.HasValue) return CombatFxView.EelStand.Value + new Vector3(CombatFxView.EelFace * 2f, 0f, 0f);   // Boss 3: facing the eel
             if (u is Player)
             {
                 var sp = ChoiceUI.Speaker; var sm = sp != null && sp != u ? MarkerOf(sp) : null;
@@ -689,6 +691,7 @@ namespace GameCore
                 PoseBody(m, p, down);
                 UseOf(Held(m), p);
                 Held(m).Show(p.EquippedWeapon, p.EquippedArmor, m.transform.position, AimPoint(p, m), up && !down, Away(m), p.Gunslinging ? p.OffhandWeapon : null);
+                EelGrip(Held(m), p);
             }
             foreach (var gone in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(_friendMarkers.Keys, k => !Player.All.Contains(k))))
             {
@@ -701,6 +704,12 @@ namespace GameCore
             }
         }
         private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
+
+        /// <summary>Boss 3: while he holds the eel's jaws his gloves are on the two jaw tips (no weapon in sight).</summary>
+        private static void EelGrip(HeldWeaponView h, Player p)
+        {
+            if (EelSump.Gripping(p) && CombatFxView.EelHandUp.HasValue && CombatFxView.EelHandLo.HasValue) h.GripHands(p.EquippedArmor, CombatFxView.EelHandUp.Value, CombatFxView.EelHandLo.Value, CombatFxView.EelFace);
+        }
 
         /// <summary>Use: the item a player is using, for the hands (HeldWeaponView.UseKind/UseT).</summary>
         private static void UseOf(HeldWeaponView h, Player p)
@@ -768,12 +777,19 @@ namespace GameCore
             bool known = _motion.Known(u);
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
             marker.transform.position = _motion.Place(u, logical);
-            if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }   // Boss 3: carried by the tail, thrown, hurled
+            if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }
+            bool held = u is Player hp && EelSump.Gripping(hp) && CombatFxView.EelStand.HasValue;                // Boss 3: held in the jaws: drawn AT the mouth, over the eel (it hid him)
+            if (held)                                                                                          // he is NOT moved: he stays where he parried and strains - shoved back a little by the eel, shaking with each press
+            {
+                var ef0 = EelBoss.Current; float tw0 = EelSump.TwitchOf(ef0), gp0 = EelSump.GripOf(ef0);
+                marker.transform.position += new Vector3(-CombatFxView.EelFace * 0.2f * (1f - gp0) + Random.Range(-1f, 1f) * 0.07f * tw0, Random.Range(-1f, 1f) * 0.04f * tw0, 0f);
+            }   // Boss 3: carried by the tail, thrown, hurled
             var group = marker.GetComponent<UnityEngine.Rendering.SortingGroup>();
-            if (group != null) group.sortingOrder = SortAt(marker.transform.position.y);
+            if (group != null) group.sortingOrder = held ? 31990 : SortAt(marker.transform.position.y);
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
-            if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);   // Boss 3: pulled under the water in the tail's grip
+            if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);
+            if (held) marker.transform.rotation = Quaternion.Euler(0f, 0f, 80f);   // lying in the jaws, held between the teeth (not standing up over the head)   // Boss 3: pulled under the water in the tail's grip
             var aim = AimPoint(u, marker);
             if (aim.HasValue) _away[marker] = UnitSprites.Away(marker.transform.position, aim.Value);   // no mouse: keep the last
             bool away = up && Away(marker);
@@ -796,6 +812,7 @@ namespace GameCore
             string bodyPose = _held.TryGetValue(marker, out var hv) ? hv.BodyPose : null;
             if (bodyPose == null && up) bodyPose = StancePose(u, marker, wf >= 0);
             bodyPose = Entering(marker, bodyPose);
+            if (held) { string sd = CombatFxView.EelFace < 0f ? "_l" : "_r"; float tw1 = EelSump.TwitchOf(EelBoss.Current); bodyPose = tw1 > 0.55f ? "lunge" + sd : Mathf.FloorToInt(Time.unscaledTime * 16f) % 2 == 0 ? "lunge_h" + sd : "crouch_h"; }   // Boss 3: straining against the jaws: the lunge frames, pressing in with each press
             if (hv != null) hv.BodyDrop = bodyPose != null && (bodyPose.StartsWith("crouch") || bodyPose.StartsWith("kneel") || bodyPose.StartsWith("sit") || bodyPose.StartsWith("stagger")) ? 1f : 0f;
             if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3 / Poses: the body's frame
             // a footstep each time a foot comes down (Batch 30)
@@ -1064,7 +1081,8 @@ namespace GameCore
             var me = target;
             var off = speaker.HasValue ? (speaker.Value - target) * 0.5f + new Vector3(0f, -cam.orthographicSize * 0.3f, 0f) : Vector3.zero;   // the dialog covers the bottom third
             bool holding = EelSump.GrappleSpot(out var gx, out var gy), mine = holding && EelSump.Gripping(Player.Current);   // Boss 3: the jaw-hold - the one who parried is right on it, everyone else is shown the moment
-            if (holding) off += mine ? new Vector3(0f, 0.7f, 0f) : (new Vector3(gx, -gy, 0f) - target) * 0.7f;
+            Vector3 mouthW = CombatFxView.EelStand ?? new Vector3(gx, -gy, 0f);
+            if (holding) off += mine ? (mouthW - target) : (mouthW - target) * 0.7f;
             _hl = Mathf.MoveTowards(_hl, holding && !mine ? 1f : 0f, Time.unscaledDeltaTime * 3f);
             _focus = Vector3.Lerp(_focus, off, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 6f));
             target += _focus;
@@ -1094,7 +1112,7 @@ namespace GameCore
             float want = Mathf.Clamp(Mathf.Max(_zoom, need), CameraViewHalfHeightTiles, CameraMaxHalfHeightTiles);
             _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * 6f);
             _close = Mathf.MoveTowards(_close, EelSump.Gripping(Player.Current) ? 1f : 0f, Time.unscaledDeltaTime * 4f);   // Boss 3: the jaw-hold's close-up, leaning in on the player holding the eel's mouth
-            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.55f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
+            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.8f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
         }
         private static float _shown, _close, _hl;
 

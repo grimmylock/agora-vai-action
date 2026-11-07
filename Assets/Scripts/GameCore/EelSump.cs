@@ -32,8 +32,8 @@ namespace GameCore
             public readonly float[] X = new float[N], Y = new float[N], Z = new float[N];          // the spine, head first
             public Mutant Tail; public float TailDownUntil = -1f; public int LastHp, LastTailHp; public bool HeadOut, TailOut, TailBroken, Dying;
             public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
-            public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth = -1f, GrabStart, GrabLast, StunUntil; public int Mash; public float Grip, Twitch, GrabLastU; public bool Won; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
-            public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3; public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
+            public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth = -1f, GrabStart, GrabLast, StunUntil; public int Mash; public float Grip, Twitch, GrabLastU, BiteU, SkyK; public (float x, float y) VictimPos, BiteFrom; public (float sx, float sy) GrabShift; public float BiteSide; public (float x, float y) BiteEnd; public bool Parried; public bool Won; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
+            public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3, FloodSnd, RushSnd, GlintSnd; public float Rear, Charge; public float SparkAt;   // Rear: degrees the head is thrown back (charging, screaming, rearing back to strike); public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
@@ -183,7 +183,7 @@ namespace GameCore
             if (kind == "snare" && s.TailBroken) kind = "arch";                                           // the tail is down: something else
             if (kind == "snare" && s.Variant == null) s.Variant = players.Count >= 2 && Rng.Next(2) == 0 ? "hurl" : "launch";
             if (kind == "snare" && s.Variant == "hurl" && players.Count < 2) s.Variant = "launch";
-            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Bite = null; s.BiteCur = null; s.SinkT = -1f; s.Victim = null; s.Mouth = -1f; s.StormSg = 0f; s.Grip = 0f; s.Twitch = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
+            s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.FloodSnd = s.RushSnd = s.GlintSnd = false; s.Rear = 0f; s.Bite = null; s.BiteCur = null; s.Parried = false; s.SkyK = 0f; s.SinkT = -1f; s.Victim = null; s.Mouth = -1f; s.StormSg = 0f; s.Grip = 0f; s.Twitch = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
             s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
             EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
             switch (kind)
@@ -297,6 +297,7 @@ namespace GameCore
             if (ts < 1.5f) sg = 7.5f * Smr(ts / 1.5f); else if (ts < 2.0f) sg = Lerp(7.5f, 8.5f, (ts - 1.5f) / 0.5f); else if (ts < 2.45f) sg = Lerp(8.5f, L + 1.5f, Ein((ts - 2.0f) / 0.45f, 2.4f)); else if (ts < 4.5f) sg = Lerp(L + 1.5f, L + 37f, Eout((ts - 2.45f) / 2.05f, 2.2f)); else sg = L + 37f;
             FillHead(s, c, sg); f.Zones.Clear();
             if (ts < 2.45f) { var path = new List<float>(); for (int i = 0; i <= 24; i++) { var q = c.At(L * (0.3f + 0.7f * i / 24f)); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.Big.X, Y = s.Big.Y, R = 4.7f, Kind = "band", Live = false, Path = path.ToArray() }); }
+            if (!s.RushSnd && ts >= 2.0f) { s.RushSnd = true; Snd("eel_rush", s.X[0], s.Y[0], 0.9f); }
             float hz = s.Z[0];
             if (!s.Crossed && s.PrevHZ > Surface && hz <= Surface && sg > 12f) { s.Crossed = true; f.Label = "ARCH: SLAM"; Impact(s, s.X[0], s.Y[0], 2.0f, true); Surge(f, s, players, s.Big, now); }
             s.PrevHZ = hz; if (ts >= 4.6f && !Rescue(f, s, now, ts, 4.6f)) End(f, s, now);
@@ -310,6 +311,7 @@ namespace GameCore
             FillHead(s, c, sg); f.Zones.Clear();
             if (ts < 1.95f) { var path = new List<float>(); for (int i = 0; i <= 30; i++) { var q = c.At(5.5f + (L - 11f) * i / 30f); path.Add(q.x); path.Add(q.y); } f.Zones.Add(new EelBoss.Zone { X = s.P2.X, Y = s.P2.Y, R = 1f, Kind = "band", Live = false, Path = path.ToArray() }); }
             else if (ts < 4.5f) f.Label = "DASH!";                                                             // the body itself no longer hurts (Yan, 2026-11-06): the water it throws does the work, see Surge
+            if (!s.RushSnd && ts >= 1.95f) { s.RushSnd = true; Snd("eel_rush", s.X[0], s.Y[0], 0.9f); }
             if (!s.Crossed && s.PrevHZ > Surface && s.Z[0] <= Surface && sg > c.L * 0.8f) { s.Crossed = true; Impact(s, s.X[0], s.Y[0], 0.8f, true); Surge(f, s, players, s.P2, now); }
             s.PrevHZ = s.Z[0]; if (ts >= 4.6f && !Rescue(f, s, now, ts, 4.6f)) End(f, s, now);
         }
@@ -508,6 +510,7 @@ namespace GameCore
         {
             FloodTiles(s, FloodRadius(ts)); f.Zones.Clear();
             if (ts < 1.5f) { f.Label = "FLOOD: the pools swell, the dry patches light up"; Hide(s, s.Big); return; }
+            if (!s.FloodSnd && ts >= 1.5f) { s.FloodSnd = true; Snd("eel_flood", s.P1.X, s.P1.Y, 0.9f); }
             if (ts < 3.1f) f.Label = "FLOOD: THE FLOOR TURNS TO DEEP WATER";
             if (s.Cur == null && ts >= 3.0f)      // lock the swim at 3.0 s: from the far pool, through the flood, to where the nearest player stands
             {
@@ -533,12 +536,12 @@ namespace GameCore
         // MashSeconds, slow motion for everyone, the others can keep shooting) to shut its mouth and slam its head down - it is stunned for StunSeconds (slumped on the ground), then wakes, shakes its head and
         // sinks. Fail the mash, or never parry, and the jaws close: BiteDamage, then it throws him like the tail's LAUNCH. A dive through the lunge (i-frames), or stepping away, makes it miss.
         // Wind-ups all the way: the pools swell, the floor floods, it rears up, 4 s of sparks, the mouth slowly opening.
-        const float StormCharge = 4f, StormDamage = 450f, BiteOpen = 2.8f, BiteLunge = 0.4f, BiteWindow = 0.6f, MashSeconds = 4.5f, StunSeconds = 4f;
+        const float StormCharge = 4f, StormDamage = 450f, BiteOpen = 2.8f, BiteCock = 0.8f, StopFront = 3.4f, StopHold = 3.9f, BiteLunge = 0.4f, BiteWindow = 0.7f, MashSeconds = 6f, StunSeconds = 4f;
         const int SlamDamage = 1800, BiteDamage = 200;
-        const float GripPerPress = 0.085f, GripDecay = 0.2f;   // each press shuts the jaws a little (twitch), and the eel pushes them back open between presses: it takes ~6 presses a second to win in MashSeconds
+        const float GripPerPress = 1f / 30f, GripDecay = 0.06f;   // 30 presses fill it (Yan), the eel pushes back 6% a second: ~3 presses a second to make headway, ~8 to win inside MashSeconds;   // each press shuts the jaws a little (twitch), and the eel pushes them back open between presses: it takes ~6 presses a second to win in MashSeconds
         static void StartStorm(EelBoss.Fight f, State s, List<Player> players)
         {
-            ScanShallow(s); s.P1 = Pick(s.Pools); var p = s.P1;
+            ScanShallow(s); s.P1 = (s.Variant != null ? s.Pools.FirstOrDefault(q => q.Name == s.Variant) : null) ?? Pick(s.Pools); var p = s.P1;      // "storm:big" etc. names the pool (the harness and the clips)
             s.Cur = new Curve(Bez((p.X, p.Y, -3.6f), (p.X, p.Y, 2.5f), (p.X + 0.5f, p.Y + 0.3f, 4.6f), (p.X + 0.9f, p.Y + 0.4f, 6.2f)));
             f.Label = "STORM: the pools swell";
         }
@@ -550,10 +553,18 @@ namespace GameCore
         }
         /// <summary>For the view: how open the mouth is (-1 = not controlled: the head as he drew it; 0 shut .. 1 as drawn .. 1.4 forced wide), and the twitch of the last press (1 .. 0).</summary>
         public static float MouthOpen(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Mouth : -1f;
-        public static bool Gripping(Player p) { var f = EelBoss.Current; return p != null && f != null && f.Sump != null && !f.Gone && f.Sump.Bite == "grapple" && f.Sump.Victim == p; }
+        public static bool Gripping(Player p) { var f = EelBoss.Current; return p != null && f != null && f.Sump != null && !f.Gone && (f.Sump.Bite == "grapple" || f.Sump.Bite == "lift" || f.Sump.Bite == "smash") && f.Sump.Victim == p; }
         /// <summary>While someone holds the eel's jaws: where (tile space), for the camera to close in on or highlight.</summary>
-        public static bool GrappleSpot(out float x, out float y) { var f = EelBoss.Current; x = y = 0f; if (f == null || f.Sump == null || f.Gone || f.Sump.Bite != "grapple") return false; x = f.Sump.BiteSpot.x; y = f.Sump.BiteSpot.y; return true; }
+        public static bool GrappleSpot(out float x, out float y) { var f = EelBoss.Current; x = y = 0f; if (f == null || f.Sump == null || f.Gone || (f.Sump.Bite != "grapple" && f.Sump.Bite != "lift" && f.Sump.Bite != "smash")) return false; x = f.Sump.BiteSpot.x; y = f.Sump.BiteSpot.y; return true; }
         public static float GripOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Grip : 0f;
+        /// <summary>True from the glint until the bite lands: the moment to parry (the HUD shouts it).</summary>
+        public static bool ParryCue(EelBoss.Fight f) => f != null && f.Sump != null && f.Sump.GlintSnd && (f.Sump.Bite == "cock" || f.Sump.Bite == "lunge");
+        /// <summary>Slumped on the ground after the slam (the view dims it and circles its head with stars).</summary>
+        /// <summary>While it is held: which way the head must face - +1 = to the right (he is on its right), -1 = to the left, 0 = free (the view picks it from the neck).</summary>
+        public static int GrabFace(EelBoss.Fight f) { if (f == null || f.Sump == null || (f.Sump.Bite != "grapple" && f.Sump.Bite != "lift" && f.Sump.Bite != "smash")) return 0; return f.Sump.VictimPos.x >= f.Sump.X[0] ? 1 : -1; }
+        public static bool Stunned(EelBoss.Fight f) => f != null && f.Sump != null && f.Sump.Bite == "slump";
+        public static float ChargeOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Charge : 0f;
+        public static float RearOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Rear : 0f;
         public static float TwitchOf(EelBoss.Fight f) => f != null && f.Sump != null ? f.Sump.Twitch : 0f;
         static void ThrowBitten(EelBoss.Fight f, State s, Player v, float now, float ts)
         {
@@ -564,14 +575,16 @@ namespace GameCore
         }
         static void BiteContact(EelBoss.Fight f, State s, List<Player> players, float now, float ts)
         {
-            var sp = s.BiteSpot; Impact(s, sp.x, sp.y, 1.0f, false); Snd("eel_bite", sp.x, sp.y);
+            var sp = s.BiteSpot; Impact(s, s.X[0], s.Y[0], 1.0f, false); Snd("eel_bite", s.X[0], s.Y[0]);
             var v = players.Where(p => !Rt.Untouchable(p) && !s.Air.ContainsKey(p) && Dist(Pos(p).x, Pos(p).y, sp.x, sp.y) <= 1.8f).OrderBy(p => Dist(Pos(p).x, Pos(p).y, sp.x, sp.y)).FirstOrDefault();
             if (v == null) { f.Label = "BITE: it misses and slams the ground"; s.Bite = "recover"; s.BiteT = ts; s.Mouth = 0.3f; return; }
             float since = now - Rt.Of(v).GrabAt;
             if (since >= 0f && since <= BiteWindow)                                                                    // parried: he holds the jaws
             {
-                s.Bite = "grapple"; s.Victim = v; s.Mash = 0; s.Grip = 0f; s.Twitch = 0f; s.Won = false; s.GrabStart = Time.unscaledTime; s.GrabLastU = Time.unscaledTime; s.GrabLast = now; s.Mouth = 1.4f; Place(v, sp.x, sp.y);
-                s.Air[v] = new Fling { X0 = sp.x, Y0 = sp.y, Z0 = 0f, T0 = -1f, Dur = 0f, Land = "grip" }; f.Label = "BITE: PARRIED! Hold its jaws - mash the parry key!";
+                s.Bite = "grapple"; s.Victim = v; s.Mash = 0; s.Grip = 0f; s.Twitch = 0f; s.Won = false; s.GrabStart = Time.unscaledTime; s.GrabLastU = Time.unscaledTime; s.GrabLast = now; s.Mouth = 1.4f;
+                var vp = Pos(v); s.VictimPos = vp; s.Parried = true;
+                s.GrabShift = (vp.x + s.BiteSide * StopHold - s.BiteEnd.x, vp.y - s.BiteEnd.y);                                              // stopped dead in front of him, level with him: the jaw tips (3.2 tiles from the head's anchor, to the side) are 0.7 tiles from his hands; he stays where he stands
+                s.Air[v] = new Fling { X0 = vp.x, Y0 = vp.y, Z0 = 0f, T0 = -1f, Dur = 0f, Land = "grip" }; f.Label = "BITE: PARRIED! Hold its jaws - mash the parry key!";
                 s.Events.Add(new Ev { Kind = "parry", X = sp.x, Y = sp.y, Power = 1f, Who = Index(v) }); Boss.Hold(MashSeconds + 0.5f);
             }
             else { s.Victim = v; ThrowBitten(f, s, v, now, ts); }
@@ -580,7 +593,8 @@ namespace GameCore
         {
             float rise = 3.1f, hold = rise + 1.2f, burst = hold + StormCharge;                                              // 3.1 rises, 4.3 charging, 8.3 the burst, then the bite
             float fr = ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : 17f; if (s.SinkT >= 0f) fr = 17f * (1f - Smr((ts - s.SinkT) / 1.3f));
-            FloodTiles(s, fr); f.Zones.Clear(); var c = s.Cur; float L0 = c.L * 0.97f;
+            FloodTiles(s, fr); f.Zones.Clear(); var c = s.Cur; float L0 = c.L * 0.97f; s.Rear = 0f; s.Charge = 0f;
+            if (!s.FloodSnd && ts >= 1.5f) { s.FloodSnd = true; Snd("eel_flood", s.P1.X, s.P1.Y, 0.9f); }
             if (s.Bite == null)
             {
                 s.StormSg = ts < rise ? 0f : ts < hold ? L0 * Smr((ts - rise) / 1.2f) : L0;
@@ -588,40 +602,63 @@ namespace GameCore
                 else
                 {
                     f.Label = "STORM: it is charging - get onto dry ground!";
-                    if (ts >= s.SparkAt && ts < burst) { if (s.SparkAt <= 0f) Snd("eel_charge", s.X[0], s.Y[0]); s.SparkAt = ts + 0.2f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = (ts - hold) / StormCharge }); }
+                    float cu = Mathf.Clamp01((ts - hold) / StormCharge); s.Charge = cu; s.SkyK = 0.85f * cu; s.Rear = 10f + 55f * cu;                                  // it throws its head up and twitches harder as it fills
+                    s.Twitch = Rng.NextDouble() < 0.2 + 0.5 * cu ? 0.35f + 0.65f * cu * (float)Rng.NextDouble() : s.Twitch * 0.7f;
+                    if (ts >= s.SparkAt && ts < burst) { if (s.SparkAt <= 0f) Snd("eel_charge", s.X[0], s.Y[0]); s.SparkAt = ts + 0.1f; s.Events.Add(new Ev { Kind = "spark", X = s.X[0], Y = s.Y[0], Power = cu }); }
                 }
                 if (ts >= burst)
                 {
                     f.Label = "STORM: THE WATER IS ELECTRIC"; Snd("eel_burst", s.X[0], s.Y[0], 1.2f); s.Events.Add(new Ev { Kind = "storm", X = s.X[0], Y = s.Y[0], Power = 1.5f, Water = true });
                     foreach (var p in players) { var q = Pos(p); if (s.Wet.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y)))) Damage(s, p, (int)StormDamage, "The water electrocutes you", s.X[0], s.Y[0], 0f, 1.2f, now); }
-                    s.Bite = "open"; s.BiteT = ts; s.Victim = s.ForcedVictim ?? Pick(players); Snd("eel_mouth", s.X[0], s.Y[0]);
+                    s.Bite = "scream"; s.BiteT = ts; s.Victim = s.ForcedVictim ?? Pick(players); Snd("eel_scream", s.X[0], s.Y[0], 1.3f);       // it lets the charge go with a scream
                 }
             }
             else switch (s.Bite)
             {
-                case "open":                                                                                              // the mouth opens slowly
-                    s.Mouth = Mathf.Clamp01((ts - s.BiteT) / BiteOpen); f.Label = "BITE: it turns on " + (s.Victim == Player.Current ? "you" : "a player") + " and opens its mouth";
+                case "scream":                                                                                            // head thrown back, jaws wide, shaking, while the water goes electric
+                    s.Charge = 1f; s.SkyK = 1f; s.Mouth = 1.4f; s.Rear = 84f + 6f * Mathf.Sin(ts * 40f); s.Twitch = 0.55f + 0.3f * Mathf.Sin(ts * 55f); f.Label = "STORM: IT SCREAMS - the water is electric!";
+                    if (ts - s.BiteT >= 0.9f) { s.Bite = "open"; s.BiteT = ts; s.Mouth = 0f; Snd("eel_mouth", s.X[0], s.Y[0]); }
+                    break;
+                case "open":                                                                                              // it rears back like a snake, the mouth opening slowly
+                    s.Charge = Mathf.Clamp01(1f - (ts - s.BiteT) / 0.8f); s.SkyK = Mathf.Clamp01(1f - (ts - s.BiteT) / 0.5f); s.Mouth = Mathf.Clamp01((ts - s.BiteT) / BiteOpen); s.Rear = 14f + 36f * Smr(Mathf.Clamp01((ts - s.BiteT) / BiteOpen)); f.Label = "BITE: it turns on " + (s.Victim == Player.Current ? "you" : "a player") + " and opens its mouth";
                     if (s.BiteCur == null && ts - s.BiteT >= BiteOpen - 0.8f)                                              // the aim locks 0.8 s before it springs
                     {
-                        var q = Pos(s.Victim); s.BiteSpot = q; var pts = new List<(float x, float y, float z)>(c.Points()); var a = pts[pts.Count - 1]; float dx = q.x - a.x, dy = q.y - a.y;
-                        pts.AddRange(Bez(a, (a.x + 0.18f * dx, a.y + 0.18f * dy, a.z + 1.6f), (q.x - 0.2f * dx, q.y - 0.2f * dy, 3.0f), (q.x, q.y, 0.45f)).Skip(1)); s.BiteCur = new Curve(pts);
+                        var q = Pos(s.Victim); s.BiteSpot = q; var pts = new List<(float x, float y, float z)>(c.Points()); var a = pts[pts.Count - 1];
+                        s.BiteSide = a.x >= q.x ? 1f : -1f; float ex = q.x + s.BiteSide * StopFront, ey = q.y; s.BiteEnd = (ex, ey);                    // the head is a side profile: it ends level with him, on its pool's side, with its snout (3.2 tiles from the anchor) at him
+                        float dx = ex - a.x, dy = ey - a.y;
+                        pts.AddRange(Bez(a, (a.x + 0.18f * dx, a.y + 0.18f * dy, a.z + 1.6f), (ex - 0.2f * dx, ey - 0.2f * dy, 3.0f), (ex, ey, 0.45f)).Skip(1)); s.BiteCur = new Curve(pts); s.BiteFrom = (a.x, a.y);
                     }
-                    if (ts - s.BiteT >= BiteOpen) { s.Bite = "lunge"; s.BiteT = ts; f.Label = "BITE: it springs!"; }
+                    if (ts - s.BiteT >= BiteOpen) { s.Bite = "cock"; s.BiteT = ts; }
+                    break;
+                case "cock":                                                                                              // fully reared back, trembling: the tell. A white glint: parry NOW
+                    s.Mouth = 1.2f; s.Rear = 58f; s.Twitch = 0.45f + 0.25f * Mathf.Sin(ts * 50f); f.Label = "BITE: it is about to strike - PARRY on the glint!";
+                    if (!s.GlintSnd && ts - s.BiteT >= 0.5f) { s.GlintSnd = true; s.Events.Add(new Ev { Kind = "glint", X = s.X[0], Y = s.Y[0], Power = 1f }); Snd("glint", s.X[0], s.Y[0], 0.9f); }
+                    if (ts - s.BiteT >= BiteCock) { s.Bite = "lunge"; s.BiteT = ts; f.Label = "BITE: it springs!"; }
                     break;
                 case "lunge":
                     { float u = Mathf.Clamp01((ts - s.BiteT) / BiteLunge); s.StormSg = Lerp(L0, s.BiteCur.L, Ein(u, 2.2f)); if (u >= 1f) BiteContact(f, s, players, now, ts); }
                     break;
                 case "grapple":                                                                                           // the scene: the clock stands still, the victim holds the jaws and fights them shut
                     {
-                        f.StageAt += now - s.GrabLast; s.GrabLast = now; var v = s.Victim; Place(v, s.BiteSpot.x, s.BiteSpot.y); Rt.Of(v).ProneUntil = now + 0.25f;
+                        f.StageAt += now - s.GrabLast; s.GrabLast = now; var v = s.Victim; Place(v, s.VictimPos.x, s.VictimPos.y);
                         float du = Time.unscaledTime - s.GrabLastU; s.GrabLastU = Time.unscaledTime;
-                        s.Grip = Mathf.Max(0f, s.Grip - GripDecay * du); s.Twitch = Mathf.Max(0f, s.Twitch - 7f * du); s.Mouth = Lerp(1.4f, 0f, s.Grip);      // the mouth IS the progress: every press closes it a little, it creeps back open
-                        if (s.Won)
+                        s.Grip = Mathf.Max(0f, s.Grip - GripDecay * du); s.Twitch = Mathf.Max(0f, s.Twitch - 7f * du); s.Twitch = Mathf.Max(s.Twitch, 0.4f + 0.2f * Mathf.Sin(Time.unscaledTime * 27f)); s.Mouth = Lerp(1.4f, 0f, s.Grip);      // the mouth IS the progress: every press closes it a little, it creeps back open
+                        if (s.Won) { s.Bite = "lift"; s.BiteU = Time.unscaledTime; s.Mouth = 0f; Boss.Hold(1.3f); Snd("eel_rush", s.BiteSpot.x, s.BiteSpot.y, 0.7f); f.Label = "THE JAWS SHUT - it heaves its head up..."; }                        else if (Time.unscaledTime - s.GrabStart > MashSeconds) { Boss.Release(); s.BiteSpot = s.VictimPos; ThrowBitten(f, s, v, now, ts); }
+                    }
+                    break;
+                case "lift":                                                                                              // the jaws are shut: the head is heaved up and back (real time, under the slow motion)
+                    { var v = s.Victim; Place(v, s.VictimPos.x, s.VictimPos.y); s.Mouth = 0f; s.Twitch = 0.5f; s.Rear = 20f + 25f * Smr(Mathf.Clamp01((Time.unscaledTime - s.BiteU) / 0.7f));
+                      if (Time.unscaledTime - s.BiteU >= 0.7f) { s.Bite = "smash"; s.BiteU = Time.unscaledTime; f.Label = "AND SLAMS IT DOWN!"; } }
+                    break;
+                case "smash":                                                                                             // ... and driven into the ground: the moment it lands is the slam
+                    {
+                        var v = s.Victim; Place(v, s.VictimPos.x, s.VictimPos.y); s.Mouth = 0f;
+                        if (Time.unscaledTime - s.BiteU >= 0.16f)
                         {
-                            Boss.Release(); s.Air.Remove(v); Impact(s, s.BiteSpot.x, s.BiteSpot.y, 2.0f, false); s.Events.Add(new Ev { Kind = "slam", X = s.BiteSpot.x, Y = s.BiteSpot.y, Power = 2f, Who = Index(v) });
-                            f.Unit.Hp = System.Math.Max(2, f.Unit.Hp - SlamDamage); Boss.OnDamaged(f.Unit); Snd("eel_slam", s.BiteSpot.x, s.BiteSpot.y, 1.2f); s.Bite = "slump"; s.BiteT = ts; s.StunUntil = now + StunSeconds; s.Mouth = 0f; f.Label = "THE JAWS SLAM SHUT - it is stunned!";
+                            Boss.Release(); s.Air.Remove(v); Impact(s, s.X[0], s.Y[0], 2.4f, false); s.Events.Add(new Ev { Kind = "slam", X = s.X[0], Y = s.Y[0], Power = 2.4f, Who = Index(v) });
+                            f.Unit.Hp = System.Math.Max(2, f.Unit.Hp - SlamDamage); Boss.OnDamaged(f.Unit);
+                            s.Bite = "slump"; s.BiteT = ts; s.StunUntil = now + StunSeconds; Snd("eel_slam", s.X[0], s.Y[0], 1.3f); f.Label = "IT IS STUNNED - slumped on the ground!";
                         }
-                        else if (Time.unscaledTime - s.GrabStart > MashSeconds) { Boss.Release(); ThrowBitten(f, s, v, now, ts); }
                     }
                     break;
                 case "slump": if (now >= s.StunUntil) { s.Bite = "wake"; s.BiteT = ts; f.Label = "It wakes and shakes its head"; Snd("eel_wake", s.BiteSpot.x, s.BiteSpot.y); } break;
@@ -629,7 +666,27 @@ namespace GameCore
                 case "recover": if (ts - s.BiteT >= 1.0f) { s.Bite = "sink"; s.BiteT = ts; s.SinkT = ts; s.SinkFrom = s.StormSg; } break;
                 case "sink": s.StormSg = s.SinkFrom * (1f - Smr((ts - s.BiteT) / 1.4f)); if (ts - s.BiteT >= 1.6f) End(f, s, now); break;
             }
-            if (f.Move == "storm") FillHead(s, s.BiteCur != null && s.Bite != null ? s.BiteCur : c, s.StormSg);
+            if (f.Move == "storm")
+            {
+                FillHead(s, s.BiteCur != null && s.Bite != null ? s.BiteCur : c, s.StormSg);
+                if (s.SkyK > 0.01f)                                                                                // thrown up and back, screaming at the sky
+                {
+                    float sx0 = s.X[0] - 30.5f, sy0 = s.Y[0] - 20f, sl = Mathf.Sqrt(sx0 * sx0 + sy0 * sy0) + 1e-3f;
+                    for (int i = 0; i < 40; i++) { float w = Mathf.Pow(1f - i / 40f, 3f) * s.SkyK; s.X[i] += sx0 / sl * 1.8f * w; s.Y[i] += sy0 / sl * 1.8f * w; s.Z[i] += 1.6f * w; }
+                }
+                if (s.Parried && (s.Bite == "grapple" || s.Bite == "lift" || s.Bite == "smash" || s.Bite == "slump" || s.Bite == "wake" || s.Bite == "sink"))      // stopped short in front of him (the parry): the head holds where its jaw tips are at his hands, through the slam and the stun, and eases back as it sinks
+                {
+                    float gk = s.Bite == "sink" ? 1f - Smr(Mathf.Clamp01((ts - s.BiteT) / 1.4f)) : Smr(Mathf.Clamp01((Time.unscaledTime - s.GrabStart) / 0.18f));
+                    for (int i = 0; i < 48; i++) { float w = (i < 20 ? 1f : Mathf.Pow(1f - (i - 20) / 28f, 2f)) * gk; s.X[i] += s.GrabShift.sx * w; s.Y[i] += s.GrabShift.sy * w; }
+                }
+                if ((s.Bite == "open" || s.Bite == "cock" || s.Bite == "lunge" || s.Bite == "lift" || s.Bite == "smash") && s.Victim != null)                      // the head and neck are drawn back, away from the target, and up: an S-curve like a snake about to strike
+                {
+                    var q = s.Bite == "lift" || s.Bite == "smash" ? (x: 30.5f, y: 20f) : Pos(s.Victim); float dx = s.X[0] - q.x, dy = s.Y[0] - q.y, l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f;
+                    float k = s.Bite == "cock" ? 1f : s.Bite == "open" ? Smr(Mathf.Clamp01((ts - s.BiteT) / BiteOpen)) : s.Bite == "lift" ? Smr(Mathf.Clamp01((Time.unscaledTime - s.BiteU) / 0.7f)) : s.Bite == "smash" ? 1f - Ein(Mathf.Clamp01((Time.unscaledTime - s.BiteU) / 0.16f), 2.6f) : Mathf.Clamp01(1f - (ts - s.BiteT) / 0.12f);      // springs forward out of it; the slam: heaved up, then driven down
+                    float backAmt = s.Bite == "lift" || s.Bite == "smash" ? 0.9f : 4.2f, upAmt = s.Bite == "lift" || s.Bite == "smash" ? 1.7f : 2.6f;      // the rear-back is big: 4 tiles back and 2.6 up, an S in the neck
+                    for (int i = 0; i < 40; i++) { float w = Mathf.Pow(1f - i / 40f, 3f) * k; s.X[i] += dx / l * backAmt * w; s.Y[i] += dy / l * backAmt * w; s.Z[i] += upAmt * w; }
+                }
+            }
         }
 
         // ---- the reveal (it swallows the body on the slab) and the death (it brings the body back up, then goes down the big pool's centre)

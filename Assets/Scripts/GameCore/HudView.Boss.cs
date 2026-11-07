@@ -52,6 +52,7 @@ namespace GameCore
                 _bossFill.color = ef.Phase >= 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)) : C("b8302a");
                 _bossName.text = "THE DROWNER" + (ef.Phase >= 2 ? "  <color=#ff5a3a>II</color>" : "");        // placeholder name
                 _bossState.text = ef.Label ?? ""; _bossState.color = Yellow;
+                if (EelSump.ParryCue(ef)) { _bossState.text = "<size=200%><b>PARRY!</b></size>"; _bossState.color = Color.Lerp(Yellow, Color.white, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 30f)); }   // the tell: parry NOW
             }
             else if (on)
             {

@@ -134,6 +134,7 @@ def spine(t):
 
 # ------------------------------------------------------------------ painting: only what is above the water, Yan's pixels bent along it
 ORDER = E.body_order(NS)
+HEAD_ROT = 0.0
 def pieces(S, face):
     vis = S[:, 2] >= 0.0; P = np.stack([S[:, 0] * T - OX, (S[:, 1] - S[:, 2]) * T - OY], -1); out = []; i = 0
     while i < NS:
@@ -147,7 +148,8 @@ def pieces(S, face):
         pts = P[a:b].copy()
         if a == 0:                                          # the head piece: the first stretch leaves the head level (it is a profile), then bends into the neck
             back = 1 if face < 0 else -1
-            for k in range(min(E.LEAD, len(pts))): u = c01(k / E.LEAD); u = u * u * (3 - 2 * u); pts[k] = (pts[0][0] + back * k * (1 - u) + (pts[k][0] - pts[0][0]) * u, pts[0][1] + (pts[k][1] - pts[0][1]) * u)
+            hr = math.radians(HEAD_ROT)                                                         # a head turned nose-up has its neck leaving DOWN: the lead follows the turn
+            for k in range(min(E.LEAD, len(pts))): u = c01(k / E.LEAD); u = u * u * (3 - 2 * u); pts[k] = (pts[0][0] + back * math.cos(hr) * k * (1 - u) + (pts[k][0] - pts[0][0]) * u, pts[0][1] + math.sin(hr) * k * (1 - u) + (pts[k][1] - pts[0][1]) * u)
         order = tuple(np.array(o[a:b]) for o in ORDER); layer = np.zeros((WH, WW, 4), np.uint8)
         try: E.paint(layer, pts, order, bulge=((0, (b - a) * 0.8, 0.85) if b == NS else None))      # the tail arm: thickened toward the pool (it is a massive thing, not a whip of string)
         except Exception as e: continue

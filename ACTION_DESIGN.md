@@ -331,6 +331,9 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 
 ## Later list
 
+- **A front-facing eel sprite (Yan, 2026-11-06, "might be useful", for later):** the head and neck from the front (his reference: spiny frill, two white eyes, open dripping mouth, ribbed belly, a splash ring where it leaves the water). Use: the scream at the sky/camera, the rear-up, a lunge toward the screen. Save the reference into `ArtSource/refs/eel/` and bend/cut it from his drawing like the profile (`eel_poses.py`), never generate it.
+- **Rework the eel's swallow-the-body reveal (Yan, 2026-11-06: "it looks bad"):** the Sump fight opens with the eel rising out of the big pool, swooping at the body on the slab and swallowing it (`EelSump.Reveal`, the `reveal` stage); in the Unity view the body is not drawn going down the neck and the pose reads wrong. Same for the vomit at its death. Needs the body drawn (the dead-body sprite carried along the spine, a bulge in the neck - the Python painter's `bulge` does this in the clips), the head's approach and the gulp timed to it.
+
 - **Real lighting (Yan, 2026-11-04):** "Eventually i'd like real lighting in the game with shadows reacting to light sources,
   similar to how octopath traveler looks, instead of flat lighting we have today." Today: the time-of-day wash and the
   darkness/flashlight texture in `AtmosphereView`, `LightMap` for lamps (they change how bright a tile is, nothing casts a shadow

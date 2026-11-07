@@ -1,7 +1,8 @@
 # Procedural sounds for the eel boss (Boss 3), made with the same recipes' helpers as sfx.py (synthesized, no samples, no licences).
 #   python3 ArtSource/audio/sfx_eel.py Assets/Resources/Audio
 # eel_charge: the storm's 4 s charge (a hum climbing with crackle that thickens); eel_burst: the water going electric; eel_mouth: the slow opening groan;
-# eel_bite: the snap; eel_strain_0..2: a press of the jaw-hold struggle (wet creak and grunt); eel_slam: the jaws shut and the head hits the ground; eel_wake: it shakes its head awake.
+# eel_splash / eel_flood / eel_rush: a water impact, the flood rising, a big body rushing past (the older moves);
+# eel_scream: the charge let go; eel_bite: the snap; eel_strain_0..2: a press of the jaw-hold struggle (wet creak and grunt); eel_slam: the jaws shut and the head hits the ground; eel_wake: it shakes its head awake.
 import sys, os
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -65,12 +66,52 @@ def eel_wake():
     return groan + shake
 
 
+def eel_splash():
+    d = .9; x = t(d)
+    wash = hp(noise(d), 1100) * env(d, .006, .2) * .8
+    body = lp(noise(d), 700) * env(d, .004, .12)
+    bub = sum(sweep(300 + 200 * i, 900 + 300 * i, .09, .05) * (np.arange(int(SR * d)) < 1).mean() for i in range(1))
+    chirps = np.zeros(len(x))
+    for k in range(6):
+        c = sweep(280 + rs.rand() * 250, 900 + rs.rand() * 500, .1, .05); o = int(SR * (.06 + k * .08 + rs.rand() * .03)); chirps[o:o + len(c)] += c[:len(chirps) - o] * .35
+    return fit(wash, body * .9, chirps)
+
+
+def eel_flood():
+    d = 3.2; x = t(d); ramp = np.clip(x / 1.6, 0, 1) * np.clip((d - x) / .8, 0, 1)
+    rumble = lp(noise(d), 320) * ramp * 1.2
+    surge = bp(noise(d), 300, 1800) * (1 + .5 * np.sin(2 * np.pi * 1.7 * x)) * ramp * .5
+    chirps = np.zeros(len(x))
+    for k in range(14):
+        c = sweep(250 + rs.rand() * 250, 800 + rs.rand() * 500, .1, .05); o = int(SR * (.3 + k * .18 + rs.rand() * .08)); chirps[o:o + len(c)] += c[:len(chirps) - o] * .25
+    return fit(rumble, surge, chirps)
+
+
+def eel_rush():
+    d = 1.0; x = t(d); ramp = np.sin(np.pi * np.clip(x / d, 0, 1)) ** 1.5
+    wind = bp(noise(d), 250, 2400) * ramp
+    low = lp(noise(d), 160) * ramp * 1.3
+    return fit(wind * .8, low)
+
+
+def eel_scream():
+    d = 1.6; x = t(d); e = env(d, .03, .75)
+    f = 620 + 900 * np.sin(np.pi * np.clip(x / 1.0, 0, 1)) ** .8 + 40 * np.sin(2 * np.pi * 11 * x)             # up to a shriek, wobbling, then down
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    voice = (np.sin(ph) + .55 * np.sin(2 * ph + 1) + .3 * np.sin(3 * ph + 2)) * e
+    rasp = hp(noise(d), 1500) * e * .45 * (1 + .6 * np.sin(2 * np.pi * 70 * x))
+    buzz = np.sign(np.sin(2 * np.pi * 95 * x)) * .18 * e
+    low = np.sin(2 * np.pi * np.cumsum(120 - 50 * (x / d)) / SR) * e * .5
+    return tail(voice * .8 + rasp + buzz + low, .6, 2400, .2)
+
+
 def main(d):
     os.makedirs(d, exist_ok=True)
     save(d, "eel_charge", eel_charge(), .8); save(d, "eel_burst", eel_burst(), .95); save(d, "eel_mouth", eel_mouth(), .7)
     save(d, "eel_bite", eel_bite(), .9)
     for v in range(3): save(d, f"eel_strain_{v}", eel_strain(2100 + v * 11), .75)
     save(d, "eel_slam", eel_slam(), .95); save(d, "eel_wake", eel_wake(), .7)
+    save(d, "eel_scream", eel_scream(), .9); save(d, "eel_splash", eel_splash(), .8); save(d, "eel_flood", eel_flood(), .7); save(d, "eel_rush", eel_rush(), .7)
     print("eel sounds written to", d)
 
 
