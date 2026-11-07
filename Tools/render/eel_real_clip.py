@@ -27,7 +27,26 @@ def zigzag(p0, p1, n=7, j=14):
     pts = [p0]
     for i in range(1, n): u = i / n; pts.append((p0[0] + (p1[0] - p0[0]) * u + random.uniform(-j, j), p0[1] + (p1[1] - p0[1]) * u + random.uniform(-j, j)))
     pts.append(p1); return pts
-ZAPS = []; close = 0.0; HROT = 0.0
+
+def aura(S, k, t, n_arcs, big=False):
+    """small lightning all over the body (Yan, 2026-11-07: 'like going super saiyan 2 but only the lightning'): many short, thin, chunky-pixel arcs that hug the body's outline and flicker every frame.
+    Drawn at half resolution and scaled up with NEAREST so it reads as pixel art; k 0..1 = how charged it is (more arcs, longer, brighter)"""
+    lo = Image.new('RGBA', (WW // 2, WH // 2), (0, 0, 0, 0)); d = ImageDraw.Draw(lo)
+    vis = [i for i in range(2, NS - 2) if S[i, 2] > 1.3]
+    if not vis: return None
+    for _ in range(n_arcs):
+        i = random.choice(vis); q = sp(S[i, 0], S[i, 1], S[i, 2]); qa = sp(S[i - 2, 0], S[i - 2, 1], S[i - 2, 2]); qb = sp(S[i + 2, 0], S[i + 2, 1], S[i + 2, 2])
+        tx, ty = qb[0] - qa[0], qb[1] - qa[1]; ln = math.hypot(tx, ty) or 1.0; tx, ty = tx / ln, ty / ln; nx, ny = -ty, tx
+        side = random.choice((-1, 1)); hw = random.uniform(0.3, 1.15) * 0.5 * T * 0.9                                   # starts on the skin, inside to just past the edge
+        x, y = q[0] + nx * side * hw, q[1] + ny * side * hw; pts = [(x / 2, y / 2)]
+        seg = random.randint(3, 5); step_ = random.uniform(1.2, 2.2) * (1 + 0.5 * k)
+        dx, dy = tx * random.choice((-1, 1)), ty * random.choice((-1, 1))
+        for _s in range(seg):                                                                          # a jagged little run: mostly along the body, sometimes jumping out
+            a = random.uniform(-1.0, 1.0); ox_, oy_ = (dx + nx * side * 0.6 * a), (dy + ny * side * 0.6 * a); m_ = math.hypot(ox_, oy_) or 1.0
+            x += ox_ / m_ * step_ * 2; y += oy_ / m_ * step_ * 2; pts.append((x / 2, y / 2))
+        d.line(pts, fill=(110, 200, 255, 150), width=2); d.line(pts, fill=(235, 250, 255, 255), width=1)
+    return lo.resize((WW, WH), Image.NEAREST)
+ZAPS = []; close = 0.0; HROT = 0.0; CHG0 = None
 def grip_points(S, face, mo):
     """the jaw-hold in the preview: the two gloves on the jaw tips (eel_jaw_tips.py), and where he stands, in front of the face: (upper, lower, stand) as (x, y, z) tile points"""
     jk = 6 if mo > 1.2 else int(round(min(max(mo, 0.0), 1.0) * 5)) if mo >= 0 else 5
@@ -201,14 +220,11 @@ def run(probe=None):
                 q0 = sp(S[i, 0], S[i, 1], S[i, 2]); q1 = sp(S[i, 0] + random.uniform(-0.8, 0.8), S[i, 1] + random.uniform(-0.8, 0.8), 0.0); pts = zigzag(q0, q1, 5, 10)
                 zd.line(pts, fill=(120, 210, 255, 130), width=8); zd.line(pts, fill=(235, 250, 255, 245), width=3)
             if kind == 'spark' and vis_:
-                for _ in range(2 + int(8 * zp)): crawl(random.randint(0, max(0, NS - 24)), random.randint(8, 24), 5)
-                for _ in range(1 + int(5 * zp)): drop(random.choice(vis_))
+                pass                                                                                          # the body's lightning is aura() now
             elif kind == 'burst':
-                for _ in range(14 if vis_ else 0): crawl(random.randint(0, max(0, NS - 24)), random.randint(10, 26), 6)
-                for _ in range(10 if vis_ else 0): drop(random.choice(vis_))
                 for _ in range(8):
                     tx_, ty_, dd_ = random.choice([q for q in SHALLOW if q[2] <= max(fl, 1.0)] or SHALLOW); p0 = sp(tx_ + 0.5, ty_ + 0.5); p1 = (p0[0] + random.uniform(-60, 60), p0[1] + random.uniform(-40, 40)); pts = zigzag(p0, p1, 4, 9)
-                    zd.line(pts, fill=(120, 210, 255, int(150 * (1 - age / life))), width=6); zd.line(pts, fill=(240, 252, 255, int(255 * (1 - age / life))), width=2)
+                    zd.line(pts, fill=(120, 210, 255, int(120 * (1 - age / life))), width=4); zd.line(pts, fill=(240, 252, 255, int(255 * (1 - age / life))), width=1)
                 m_ = flood_mask(max(fl, 1.0)); el = Image.new('RGBA', c.size, (150, 230, 255, 0)); el.putalpha(m_.point(lambda v, k=age / life: int(v * 0.35 * (1 - k) * (0.5 + 0.5 * random.random())))); c.alpha_composite(el)
             elif kind == 'glint':
                 gx_, gy_ = sp(S[0, 0], S[0, 1], max(S[0, 2], 0) + 0.5); rr_ = 14 + 70 * (age / life)
@@ -216,6 +232,15 @@ def run(probe=None):
             elif kind == 'parry':
                 px_, py_ = sp(zx, zy, 0.8); rr_ = 20 + 150 * (age / life); zd.ellipse((px_ - rr_, py_ - rr_ * 0.8, px_ + rr_, py_ + rr_ * 0.8), outline=(255, 255, 255, int(255 * (1 - age / life))), width=5)
         c.alpha_composite(zo)
+        global CHG0
+        lab_ = f['label']
+        if f['move'] == 'storm' and 'charging' in lab_:
+            if CHG0 is None: CHG0 = t
+            kk = c01((t - CHG0) / 4.7); au = aura(S, kk, t, int(5 + 70 * kk * kk), False)                                 # builds slowly, then crackles all over
+        elif f['move'] == 'storm' and ('ELECTRIC' in lab_ or 'SCREAMS' in lab_):
+            au = aura(S, 1.0, t, 80, True)                                                                              # at the scream: everywhere
+        else: CHG0 = None; au = None
+        if au is not None: c.alpha_composite(au)
         for i in range(NS - 1):                                                                # foam and ripples where the body goes through the water: always a pool's centre
             if (S[i, 2] > 0.02) != (S[i + 1, 2] > 0.02) and not (fl > 0.05): stamp(c, RIPPLES[int(t * 15) % len(RIPPLES)], S[i, 0], S[i, 1], 0.9, 0.85)
         for s_ in list(SB.splashes):
