@@ -304,11 +304,11 @@ namespace GameCore
         }
 
         /// <summary>Re-reads one cell after it changed (door opened, cover destroyed).</summary>
-        public static void Refresh(int x, int y)
+        public static void Refresh(int x, int y, bool relight = true)
         {
             if (x < 0 || y < 0 || x >= _w || y >= _h) return;
             _look[y * _w + x] = TerrainArt.ObjectLook(x, y, _theme);
-            Lighting.Invalidate(x, y);   // a prop moved, a wall broke: the lights round it must look again
+            if (relight) Lighting.Invalidate(x, y);   // a prop moved, a wall broke: the lights round it must look again (not for water rising: it blocks no light)
             _ground[y * _w + x] = TileAt(x, y).Ground;
             if (_buried != null)
                 for (int dy = -1; dy <= 1; dy++)

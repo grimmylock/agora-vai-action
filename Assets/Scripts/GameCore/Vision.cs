@@ -78,6 +78,18 @@ namespace GameCore
                 }
         }
 
+        /// <summary>Things that glow in the dark (the eel: Yan, 2026-11-06, its body was lost in the black): tile-space centre, radius in tiles and strength 0..1, refilled every frame by the view
+        /// that owns them. They light the picture's dark overlay and count in Sees like any other light.</summary>
+        public static readonly System.Collections.Generic.List<(float x, float y, float r, float k)> Glows = new System.Collections.Generic.List<(float x, float y, float r, float k)>();
+
+        /// <summary>0..1 light from the glowing things at a point, whether or not the player's line of sight reaches it (the overlay uses this for cells the player cannot see: a glow is seen from afar).</summary>
+        public static float GlowAt(float x, float y)
+        {
+            float v = 0f;
+            for (int i = 0; i < Glows.Count; i++) { var g = Glows[i]; float gx = x - g.x, gy = y - g.y, gd = (float)System.Math.Sqrt(gx * gx + gy * gy); if (gd < g.r) v = System.Math.Max(v, g.k * (1f - gd / g.r)); }
+            return v;
+        }
+
         public static void Reset() { _los = null; _show = null; _px = int.MinValue; _radius = MaxRadius; _cone = 0f; _look = 0f; Version++; }
 
         /// <summary>0..1 how lit a cell is from the player's own light (1 inside the radius, the cone
@@ -86,6 +98,7 @@ namespace GameCore
         {
             float dx = x - _px, dy = y - _py, d = (float)System.Math.Sqrt(dx * dx + dy * dy);
             float near = System.Math.Max(Clamp01((_radius - d) / 1.5f + 0.3f), lamps ? LightMap.At((int)System.Math.Round(x), (int)System.Math.Round(y)) : 0f);   // Batch 92: lamps (lamps = false: the picture's own light pass draws them, with shadows)
+            if (Glows.Count > 0) near = System.Math.Max(near, GlowAt(x, y));
             if (_cone <= 0f && _look <= 0f || d < 0.5f) return near;
             float ang = (float)System.Math.Atan2(-dy, dx);                      // grid y points down; aim is world (y up)
             float da = (float)System.Math.Abs(System.Math.IEEERemainder(ang - _aim, 2 * System.Math.PI));

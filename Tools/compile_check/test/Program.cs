@@ -1028,6 +1028,15 @@ static class Program {
       var st4 = storm("miss", (f, tt) => { if (f.Sump.Bite == "lunge") SumpPlace(SP1, 22.5f, 27.5f); });
       Check(Hits(st4, 0) == 0 && !st4.Ev.Any(e => e.Kind == "parry"), $"EelSump bite: a player who steps away is missed ({Hits(st4, 0)} hits)");
       cross = Math.Max(cross, Math.Max(st2.MaxCross, Math.Max(st3.MaxCross, st4.MaxCross)));
+      // d2) pressed at the CUE (the head fully reared back and trembling, the white glint ~0.9 s before the bite lands), not during the lunge: that is the moment it tells him, so it parries (Yan: "the parry does not work")
+      bool cued = false; int floodTiles = 0, floodPassable = 0, floodLocked = 0;
+      var st4b = storm("cue", (f, tt) => { var s = f.Sump; if (floodTiles == 0 && s.Flip.Count > 300) { foreach (var t in s.Flip) { floodTiles++; if (TerrainMap.CanEnterTile(t.Item1, t.Item2)) floodPassable++; if (TerrainMap.GetTile(t.Item1, t.Item2).Look == "deepwater") floodLocked++; } } if (!cued && s.Bite == "cock" && s.GlintSnd) { cued = true; press(f); } if (s.Bite == "grapple") EelSump.GrappleInput(SP1); });
+      Check(st4b.Ev.Any(e => e.Kind == "glint") && st4b.Ev.Any(e => e.Kind == "parry") && st4b.Ev.Any(e => e.Kind == "slam") && Hits(st4b, 0) == 0, $"EelSump bite: a press at the glint (the cue: the head reared back and trembling, a white glint; glint {st4b.Ev.Any(e => e.Kind == "glint")}) parries the bite and the mash wins ({Hits(st4b, 0)} hits on him)");
+      Check(floodTiles > 300 && floodPassable == floodTiles && floodLocked == 0, $"EelSump flood: the flooded floor stays passable (a player caught in it can wade out): {floodPassable}/{floodTiles} flooded tiles enterable, {floodLocked} locked");
+      // d3) pressing long BEFORE the cue does nothing
+      bool early = false;
+      var st4c = storm("early", (f, tt) => { var s = f.Sump; if (!early && s.Bite == "open" && s.BiteCur == null && s.Mouth >= 0f && s.Mouth < 0.2f) { early = true; press(f); } });
+      Check(!st4c.Ev.Any(e => e.Kind == "parry") && Hits(st4c, 0, 200) == 1, $"EelSump bite: a press as the mouth starts opening (long before the cue) does not parry ({Hits(st4c, 0, 200)} bites landed)");
       // e) the struggle is real: 2 presses a second is not enough (the eel pushes the jaws back open), 8 a second wins; each press shuts the mouth a little
       int lastSlow = -1, lastFast = -1; float mStart = -9f, mAfter5 = -9f;
       var st5 = storm("slow", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 2f); if (s.Bite == "grapple" && k != lastSlow) { lastSlow = k; EelSump.GrappleInput(SP1); } });
@@ -1062,7 +1071,7 @@ static class Program {
     var pw = s.Pools.First(q => q.Name == "west"); var pe = s.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
     var plan = new List<(string q, (float, float) a, (float, float) b, string mode)> {
       ("combo", (20.5f, 20.0f), (41.0f, 22.0f), ""), ("arch:east", (30.5f, 19.0f), (30.5f, 30.5f), ""), ("dash:west>east", (onp.x, onp.y), (46.5f, 22.5f), ""),
-      ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("flood", (42.5f, 26.0f), (22.5f, 20.0f), "") };
+      ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("flood", (42.5f, 26.0f), (22.5f, 20.0f), ""), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry") };
     if (kind == "storm") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> {      // the 75% flood transition, then the 50% storm three times: parried and won, never parried, parried but too slow
       ("flood", (42.5f, 26.0f), (22.5f, 20.5f), ""), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry"), ("storm:north", (22.5f, 20.5f), (41.0f, 22.0f), "none"), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "slow") };
     if (kind == "transition") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> { ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry") };      // only the 50% transition: the storm, parried and won

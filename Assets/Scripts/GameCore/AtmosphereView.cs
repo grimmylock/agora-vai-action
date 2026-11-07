@@ -151,7 +151,7 @@ namespace GameCore
                     float gx = wx - 0.5f, gy = -wy - 0.5f;
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
                     bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);   // a roof is seen from outside
-                    float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : sight ? Vision.Light(gx, gy) : 0f;
+                    float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : Mathf.Max(sight ? Vision.Light(gx, gy) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
                     float unseen = _backdrop ? 0f : 0.6f * (1f - lit);                  // day: unseen is dimmed
                     float dark = l.Night * (1f - lit);                                  // night: unlit is black
                     float a = 1f - (1f - unseen) * (1f - dark);
@@ -207,7 +207,7 @@ namespace GameCore
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
                     bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);
                     _cSight[j * tw + i] = sight ? 1f : 0f;
-                    _cLit[j * tw + i] = _backdrop ? 0f : sight ? Vision.Light(gx, gy, false) : 0f;
+                    _cLit[j * tw + i] = _backdrop ? 0f : Mathf.Max(sight ? Vision.Light(gx, gy, false) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
                 }
             // 2. the fine part: each texel looks its coarse neighbours up (bilinear) and adds the lamp field
             for (int j = 0; j < fh; j++)

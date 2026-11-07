@@ -34,6 +34,7 @@ namespace GameCore
             public readonly List<Ev> Events = new List<Ev>(), Out = new List<Ev>(); public float Entered; public readonly Dictionary<Player, Fling> Air = new Dictionary<Player, Fling>(); public readonly List<(Player p, Pool pool, float x, float y)> Pulled = new List<(Player, Pool, float, float)>();   // dragged under by a dive's water: the tail throws them out once the dive is over
             public string Bite; public float BiteT, StormSg, SinkT = -1f, SinkFrom, Mouth = -1f, GrabStart, GrabLast, StunUntil; public int Mash; public float Grip, Twitch, GrabLastU, BiteU, SkyK; public (float x, float y) VictimPos, BiteFrom; public (float sx, float sy) GrabShift; public float BiteSide; public (float x, float y) BiteEnd; public bool Parried; public bool Won; public Player Victim, ForcedVictim; public (float x, float y) BiteSpot; public Curve BiteCur;   // the bite that ends the storm: open, lunge, then grapple / slump / recover / sink
             public readonly HashSet<(int, int)> Wet = new HashSet<(int, int)>(); public bool Stage3, FloodSnd, RushSnd, GlintSnd; public float Rear, Charge; public float SparkAt;   // Rear: degrees the head is thrown back (charging, screaming, rearing back to strike); public float SparkAt;   // Wet: the water tiles the storm electrifies; Stage3: the 50% transition (a storm) has been queued
+            public int FloodVer;  // counts changes of Flip, for the view's flood texture
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
@@ -495,14 +496,20 @@ namespace GameCore
         // it goes for someone standing in the water: the islands are safe from this move
         static bool InFlood(State s, Player p) { var q = Pos(p); return s.Flip.Contains(((int)Mathf.Floor(q.x), (int)Mathf.Floor(q.y))); }
         static float FloodRadius(float ts) => ts < 1.5f ? 0f : ts < 3.1f ? 17f * Smr((ts - 1.5f) / 1.6f) : ts < 6.4f ? 17f : ts < 7.7f ? 17f * (1f - Smr((ts - 6.4f) / 1.3f)) : 0f;
+        // The flood is an OVERLAY (Yan, 2026-11-06: "the flood attack still freezes the game a bit, especially when the water recedes ... if caught in the water the player can't move"):
+        // it used to flip hundreds of tiles to LabLocks' "deepwater" look every frame, which (a) made the view repaint the ground, standing sprites and lights for each one - the freeze - and
+        // (b) made them LOCKED tiles nobody can enter, so a player caught in it could not move at all. Now the tiles stay what they were (knee-deep, slow, passable); only the Flip set changes
+        // (who is "in the water" for the moves) and FloodVer counts the changes so the view can redraw one small texture (CombatFxView.Eel.cs DrawFlood).
         static void FloodTiles(State s, float r)
         {
+            bool changed = false;
             foreach (var (x, y, d) in s.Shallow)
             {
                 bool want = d <= r && r > 0.05f, has = s.Flip.Contains((x, y));
-                if (want && !has) { TerrainMap.SetTileType(x, y, TileType.Difficult, "deepwater"); s.Flip.Add((x, y)); }
-                else if (!want && has) { TerrainMap.SetTileType(x, y, TileType.Difficult, null); s.Flip.Remove((x, y)); }
+                if (want && !has) { s.Flip.Add((x, y)); changed = true; }
+                else if (!want && has) { s.Flip.Remove((x, y)); changed = true; }
             }
+            if (changed) s.FloodVer++;
             s.Flooded = s.Flip.Count; s.FloodR = r;
         }
         static void Restore(State s, bool all) { if (s.Flip.Count > 0 && all) FloodTiles(s, 0f); s.FloodR = 0f; }
@@ -536,7 +543,7 @@ namespace GameCore
         // MashSeconds, slow motion for everyone, the others can keep shooting) to shut its mouth and slam its head down - it is stunned for StunSeconds (slumped on the ground), then wakes, shakes its head and
         // sinks. Fail the mash, or never parry, and the jaws close: BiteDamage, then it throws him like the tail's LAUNCH. A dive through the lunge (i-frames), or stepping away, makes it miss.
         // Wind-ups all the way: the pools swell, the floor floods, it rears up, 4 s of sparks, the mouth slowly opening.
-        const float StormCharge = 4f, StormDamage = 450f, BiteOpen = 2.8f, BiteCock = 0.8f, StopFront = 3.4f, StopHold = 3.9f, BiteLunge = 0.4f, BiteWindow = 0.7f, MashSeconds = 6f, StunSeconds = 4f;
+        const float StormCharge = 4f, StormDamage = 450f, BiteOpen = 2.8f, BiteCock = 0.8f, StopFront = 3.4f, StopHold = 3.9f, BiteLunge = 0.4f, BiteWindow = 1.2f, MashSeconds = 6f, StunSeconds = 4f;
         const int SlamDamage = 1800, BiteDamage = 200;
         const float GripPerPress = 1f / 30f, GripDecay = 0.06f;   // 30 presses fill it (Yan), the eel pushes back 6% a second: ~3 presses a second to make headway, ~8 to win inside MashSeconds;   // each press shuts the jaws a little (twitch), and the eel pushes them back open between presses: it takes ~6 presses a second to win in MashSeconds
         static void StartStorm(EelBoss.Fight f, State s, List<Player> players)
