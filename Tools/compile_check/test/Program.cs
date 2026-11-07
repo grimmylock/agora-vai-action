@@ -2312,6 +2312,12 @@ static class Program {
         if (mid == null && f.Swallowed && f.Sump.Z[0] > 1f) { mid = Net.EncodeSnapshot(); hx10 = f.Sump.X[10]; }
       }
       end = Net.EncodeSnapshot();
+      // the fight: a flood running, hurt, a jaw-hold on the friend, the friend in the air
+      f.Next = UnityEngine.Time.time; f.Sump.Queue.Add("flood"); SumpPlace(p, 22.5f, 12f); SumpPlace(q, 42.5f, 12f);
+      for (int i = 0; i < 900 && f.Sump.FloodR < 8f; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+      int hostFlip = f.Sump.Flip.Count; float hostR = f.Sump.FloodR; f.Unit.Hp = 12345; f.Sump.Tail.Hp = 777; f.Phase = 2; f.Enraged = true; f.Label = "BITE: test label";
+      f.Sump.Bite = "grapple"; f.Sump.Victim = q; f.Sump.Grip = 0.4f; f.Sump.BiteSpot = (41.5f, 20f); f.Sump.VictimPos = (42f, 20f); f.Sump.Air[q] = new EelSump.Fling { Z = 3f, Rot = 90f };
+      var fight = Net.EncodeSnapshot(); Check(fight.Length < 1300, $"Co-op eel: a snapshot in the fight, with the flood, a jaw-hold and a thrown friend, fits one packet ({fight.Length} bytes)");
       Check(mid != null && mid.Length < 1300, $"Co-op eel: a snapshot in the middle of the cutscene fits one packet ({mid?.Length} bytes)");
       var m = Net.DecodeSnapshot(mid).Eel;
       Check(m.Has && m.Stage == "intro" && m.Swallowed && m.Letterbox && m.Freeze && m.HasCam && m.HasSpine && m.Spine.Length == EelSump.N / 2 * 3, "Co-op eel: the snapshot carries the stage, the freeze, the camera and the spine");
@@ -2323,6 +2329,11 @@ static class Program {
       int nev = cf.Sump.Out.Count; Net.OnSnapshot(mid); Check(cf.Sump.Out.Count == nev, "Co-op eel: the same events resent in the next snapshot are not played twice");
       Net.OnSnapshot(end);
       Check(cf.Stage == "idle" && !Story.CamLock.HasValue && !Story.Letterbox && !Story.InCutscene, $"Co-op eel: when the host's cutscene ends the client's camera and freeze end ({cf.Stage})");
+      Net.OnSnapshot(fight); var sf = cf.Sump;
+      Check(sf.Flip.Count == hostFlip && hostFlip > 100 && Math.Abs(sf.FloodR - hostR) < 0.01f, $"Co-op eel: the client rebuilds the host's flood ({sf.Flip.Count} of {hostFlip} tiles)");
+      Check(cf.Unit.Hp == 12345 && sf.Tail.Hp == 777 && cf.Phase == 2 && cf.Enraged && cf.Label == "BITE: test label", "Co-op eel: HP, tail HP, phase and label reach the client (the bars and the state line)");
+      Check(EelSump.Gripping(Player.Current) && EelSump.GrappleSpot(out var gx, out _) && Math.Abs(gx - 41.5f) < 0.01f && Math.Abs(EelSump.GripOf(cf) - 0.4f) < 0.01f && EelSump.GrabFace(cf) == 1, "Co-op eel: the client knows who is held in the jaws, where, and how far the mash has got");
+      Check(Math.Abs(EelSump.LiftOf(Player.Current) - 3f) < 0.01f, "Co-op eel: a thrown friend is drawn in the air on the client");
     } finally { Net.Reset(); Net.Link = null; Rt.On = false; Story.Reset(); }
   }
 

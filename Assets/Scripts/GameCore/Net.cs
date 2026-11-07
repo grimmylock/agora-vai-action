@@ -5,7 +5,7 @@
 //   Rt.Remote and PlayerController ticks them like the local player; ~20 times a second every client gets a snapshot.
 // - Client: sends its Input every frame, runs no world of its own (no clock, no AI, no squads), and puts every player where the
 //   host's snapshot says - itself included.
-// ponytail: players, and the Sump's eel for its cutscene (EelSump.WriteNet). Other enemies, shots and effects, items, quests, characters travelling with their owner,
+// ponytail: players, and the Sump's eel and its cutscene (EelSump.WriteNet). Other enemies, shots and effects, items, quests, characters travelling with their owner,
 // the "everyone at the exit" vote and the host saving everyone's character are the next steps (WORK_LOG RT 7y).
 using System.Collections.Generic;
 using System.IO;
@@ -122,6 +122,8 @@ namespace GameCore
             return i;
         }
 
+        /// <summary>Client: the player a connection id stands for (you, or a mirror of someone else); null when unknown.</summary>
+        public static Player PlayerOf(ulong owner) { if (owner == (Link?.LocalId ?? ulong.MaxValue)) return Player.Current; return ByOwner.TryGetValue(owner, out var p) ? p : null; }
         public static ulong OwnerOf(Player p) => p == Player.Current ? 0UL : ByOwner.FirstOrDefault(kv => kv.Value == p).Key;
 
         // ---------------- every frame (PlayerController) ----------------
