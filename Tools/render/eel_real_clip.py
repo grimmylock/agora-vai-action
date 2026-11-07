@@ -56,7 +56,7 @@ def aura(S, k, t, n_strands, big=False):
                     sg = 1 if sn > 0 else -1; fx = x + sg * random.uniform(4, 10); fy = yy + random.uniform(-7, 7); d.line((x, yy, (x + fx) / 2, (yy + fy) / 2 + random.uniform(-2, 2), fx, fy), fill=(238, 251, 255, 235), width=1); d.point((fx, fy), fill=(255, 255, 255, 255))
             y += 1
     return lo
-ZAPS = []; close = 0.0; HROT = 0.0; CHG0 = None
+ZAPS = []; RIPS = []; close = 0.0; HROT = 0.0; CHG0 = None; CAMS = None; CAMB = 0.0; INTRO0 = None
 def grip_points(S, face, mo):
     """the jaw-hold in the preview: the two gloves on the jaw tips (eel_jaw_tips.py), and where he stands, in front of the face: (upper, lower, stand) as (x, y, z) tile points"""
     jk = 6 if mo > 1.2 else int(round(min(max(mo, 0.0), 1.0) * 5)) if mo >= 0 else 5
@@ -113,7 +113,7 @@ def draw_player(c, q, flash):
     sx, sy = sp(x, y, max(z, 0)); c.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height / 2 - 6)))
 
 def run(probe=None):
-    global close, CHG0
+    global close, CHG0, CAMS, CAMB
     tmp = tempfile.mkdtemp(); fi = 0; n = 0; shown = -1; pops = []; hitat = {}; sheet = []; probes = sorted(probe) if probe else None; prev = [None, None]; prevhead = None
     while fi < len(FR):
         f = FR[fi]; t = f['t']; adv = SB.frozen == 0
@@ -123,6 +123,7 @@ def run(probe=None):
             for e in f['ev']:
                 if e[0] == 'impact': SB.impact(t, e[1], e[2], e[3], bool(e[4]), stop=2, crackn=7); SB.frozen = min(SB.frozen, 2)
                 elif e[0] == 'hit': pops.append((t, e[5], e[6], e[7])); hitat[e[5]] = t
+                elif e[0] == 'ripple': RIPS.append((t, e[1], e[2]))
                 elif e[0] == 'spark': ZAPS.append(('spark', t, e[1], e[2], e[3]))
                 elif e[0] == 'storm': ZAPS.append(('burst', t, e[1], e[2], 1.0)); SB.frozen = 3; SB.flash = 0.6; SB.shake_amp = max(SB.shake_amp, 14); SB.zoom = max(SB.zoom, 0.08)
                 elif e[0] == 'parry': ZAPS.append(('parry', t, e[1], e[2], 1.0)); SB.flash = 0.4; SB.shake_amp = max(SB.shake_amp, 8)
@@ -168,6 +169,10 @@ def run(probe=None):
                     wd.line(pts, fill=(110, 200, 255, 50), width=3); wd.line(pts, fill=(225, 246, 255, int(150 + 100 * kk_)), width=1)
                 wl.putalpha(ImageChops.multiply(wl.getchannel('A'), flood_mask(fl))); c.alpha_composite(wl)
             m_ = flood_mask(fl); el = Image.new('RGBA', c.size, (120, 220, 255, 0)); el.putalpha(m_.point(lambda v: int(v * (0.015 + 0.035 * random.random())))); c.alpha_composite(el)
+        for (rt_, rx_, ry_) in list(RIPS):                                                       # the pools ripple (the introduction)
+            ag_ = t - rt_
+            if ag_ > 0.8: RIPS.remove((rt_, rx_, ry_)); continue
+            if ag_ >= 0: stamp(c, RIPPLES[min(len(RIPPLES) - 1, int(ag_ * 15))], rx_, ry_, 1.0, 0.8)
         for z in f['zones']:                                                                  # telegraphs (red) and live zones (white), exactly where the code will hurt
             x, y = sp(z[0], z[1]); live = z[4]; col = (255, 255, 255, 235) if live else (255, 60, 40, 150 + 80 * (n // 2 % 2))
             if z[3] == 'band' and len(z) > 5:
@@ -302,19 +307,33 @@ def run(probe=None):
         if SB.shake_amp > 0.3: sx_ = int(random.uniform(-1, 1) * SB.shake_amp); sy_ = int(random.uniform(-1, 1) * SB.shake_amp)
         close += (1.0 - close) * 0.18 if f.get('bite') in ('grapple', 'lift', 'smash') else (0.0 - close) * 0.25                                  # the jaw-hold: the camera leans right in on the player holding the mouth
         z_ = 1.0 + SB.zoom + 2.6 * close; w_, h_ = int(VW / z_), int(VH / z_); cx_, cy_ = PAD + sx_ + VW // 2, PAD + sy_ + VH // 2
+        cm = f.get('cam')                                                                                       # the cutscene camera (Story.CamLock): glides to its point and zoom, eases back at the end
+        if cm:
+            if CAMS is None or cm[4] or CAMB <= 0: CAMS = [cm[0], cm[1], cm[2]]
+            kk = 1 - math.exp(-cm[3] / FPS); CAMS[0] += (cm[0] - CAMS[0]) * kk; CAMS[1] += (cm[1] - CAMS[1]) * kk; CAMS[2] += (cm[2] - CAMS[2]) * (1 - math.exp(-max(1.5, cm[3] * 0.6) / FPS)); CAMB = min(1.0, CAMB + 2.5 / FPS)
+        else: CAMB = max(0.0, CAMB - 1.2 / FPS)
+        if CAMB > 0 and CAMS:
+            e_ = CAMB * CAMB * (3 - 2 * CAMB); zc = (VH / 2.0 / T) / CAMS[2]; px_, py_ = sp(CAMS[0], CAMS[1]); z_ = z_ + (zc - z_) * e_; w_, h_ = int(VW / z_), int(VH / z_); cx_ = int(cx_ + (px_ - cx_) * e_); cy_ = int(cy_ + (py_ - cy_) * e_)
         if close > 0.01:
             _gu, _gl, _gs = grip_points(S, face, f.get('mouth', -1)); spx, spy = sp(((_gu[0] + _gl[0]) / 2 + pl[0][0]) / 2, S[0, 1], (_gu[2] + _gl[2]) / 2 * 0.8); cx_ = int(cx_ + (spx - cx_) * 0.95 * close); cy_ = int(cy_ + (spy - cy_) * 0.95 * close)
         cx_ = max(w_ // 2, min(WW - w_ // 2, cx_)); cy_ = max(h_ // 2, min(WH - h_ // 2, cy_))
-        fr = c.crop((cx_ - w_ // 2, cy_ - h_ // 2, cx_ - w_ // 2 + w_, cy_ - h_ // 2 + h_)); fr = fr.resize((VW, VH), Image.NEAREST) if z_ > 1.001 else fr
+        fr = c.crop((cx_ - w_ // 2, cy_ - h_ // 2, cx_ - w_ // 2 + w_, cy_ - h_ // 2 + h_)); fr = fr.resize((VW, VH), Image.NEAREST) if z_ > 1.001 else fr.resize((VW, VH), Image.NEAREST) if (w_, h_) != (VW, VH) else fr
+        if f.get('bars'): bh_ = int(VH * 0.115); ImageDraw.Draw(fr).rectangle((0, 0, VW, bh_), fill=(0, 0, 0)); ImageDraw.Draw(fr).rectangle((0, VH - bh_, VW, VH), fill=(0, 0, 0))
         ttl = {'combo': '1  COMBO: head strike + tail sweep', 'arch': '2  ARCH SLAM', 'dash': '3  SNAKE DASH', 'snare': '4  TAIL SNARE (' + f['var'] + ')', 'flood': '5  FLOOD SURGE', 'storm': '6  STORM: electric flood + the bite'}.get(f['move'], 'REVEAL' if f['stage'] == 'reveal' else 'DEATH: it brings the body back up' if f['stage'] == 'vomit' else '')
+        intro_ = f['stage'] == 'intro'
+        global INTRO0
+        if intro_ and INTRO0 is None: INTRO0 = t
+        if intro_: ttl = ''
         if ttl: banner(fr, ttl, 12, size=24)
+        if intro_ and 16.8 <= t - INTRO0 < 20.0: banner(fr, 'THE DROWNER', VH // 2 - 90, size=64, fill=(238, 232, 214))
         lab = f['label']; hot = 'wind-up' in lab or 'swell' in lab
         banner(fr, lab, 50, size=22, fill=(255, 140, 110) if hot else (255, 235, 150) if any(k in lab for k in ('STRIKE', 'SLAM', 'SWEEP', 'DASH!', 'CAUGHT', 'DRAGGED', 'THROWN', 'HURLED', 'BURSTS', 'TURNS', 'ELECTRIC', 'SPRINGS', 'PARRIED', 'SLAM', 'THROWS', 'SCREAMS', 'PARRY on the glint')) else (225, 225, 215))
         if f.get('bite') == 'grapple':                                                                                       # the struggle bar and the prompt
             gb = ImageDraw.Draw(fr, 'RGBA'); gp = c01(f['grip']); gb.rectangle((VW // 2 - 182, VH - 128, VW // 2 + 182, VH - 100), fill=(0, 0, 0, 200)); gb.rectangle((VW // 2 - 178, VH - 124, VW // 2 - 178 + 356 * gp, VH - 104), fill=(255, 235, 150, 255))
             banner(fr, 'MASH THE PARRY KEY!', VH - 168, size=28, fill=(255, 245, 190))
-        od = ImageDraw.Draw(fr, 'RGBA'); od.rectangle((VW // 2 - 262, VH - 56, VW // 2 + 262, VH - 40), fill=(0, 0, 0, 190)); od.rectangle((VW // 2 - 260, VH - 54, VW // 2 - 260 + 520 * c01(f['hp'] / MAXHP), VH - 42), fill=(150, 40, 40, 255))
-        od.text((VW // 2 - 256, VH - 54), f"THE DROWNER (placeholder name)  head {f['hp']}   tail {f['thp']}", font=font(12), fill=(255, 245, 225))
+        od = ImageDraw.Draw(fr, 'RGBA')
+        if not intro_: od.rectangle((VW // 2 - 262, VH - 56, VW // 2 + 262, VH - 40), fill=(0, 0, 0, 190)); od.rectangle((VW // 2 - 260, VH - 54, VW // 2 - 260 + 520 * c01(f['hp'] / MAXHP), VH - 42), fill=(150, 40, 40, 255))
+        if not intro_: od.text((VW // 2 - 256, VH - 54), f"THE DROWNER (placeholder name)  head {f['hp']}   tail {f['thp']}", font=font(12), fill=(255, 245, 225))
         banner(fr, 'drawn from the real fight code (EelSump.cs) by the harness | preview only: no Unity view, silent here (the game has the sounds) | players are bots', VH - 30, size=14, fill=(210, 205, 190), bg=(0, 0, 0, 150))
         SB.shake_amp *= 0.67; SB.flash *= 0.4; SB.zoom *= 0.67
         if probe:

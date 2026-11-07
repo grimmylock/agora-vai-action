@@ -978,7 +978,7 @@ static class Program {
     // REVEAL then DEATH: it swallows the body, fights, then brings it back up and goes down the big pool
     {
       var f = SumpStart(false, 0); EelBoss.GoStage(f, "hidden"); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit);
-      for (float t = 0f; t < 8f && f.Stage != "idle"; t += dt) SumpTick(f, sst, dt);
+      for (float t = 0f; t < 25f && f.Stage != "idle"; t += dt) SumpTick(f, sst, dt);
       bool swallowed = f.Swallowed && !EncounterState.Enemies.Contains(f.Body); f.Sump.Dying = true; f.Next = UnityEngine.Time.time; var tf = f.Unit;
       for (float t = 0f; t < 10f && !f.Gone; t += dt) SumpTick(f, sst, dt); cross = Math.Max(cross, sst.MaxCross);
       Check(swallowed && f.Gone && f.Ejected && EncounterState.Enemies.Contains(f.Body) && Story.Has(EelBoss.Fled), $"EelSump: it swallows the body on the slab, and at the end brings it back up and goes down the big pool (swallowed {swallowed}, gone {f.Gone}, ejected {f.Ejected})");
@@ -1077,7 +1077,10 @@ static class Program {
     if (kind == "transition") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> { ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry") };      // only the 50% transition: the storm, parried and won
     int step = -1, evDone = 0, lastPress = -1; const float dt = 1f / 30f; int k = 0, outn = 0; bool dyingSet = false; float tHit = 0.5f; var shoot = 0;
     SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
+    if (kind == "intro") plan.Clear();
+    bool seenIntro = false;
     for (float t = 0f; t < 140f && !f.Gone; t += dt, k++) {
+      if (f.Stage == "intro") seenIntro = true; if (kind == "intro" && seenIntro && f.Stage == "idle") break;
       if (f.Stage == "hidden" && t > tHit) { f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit); }
       if (f.Stage == "idle" && !s.Dying) {
         if (step + 1 < plan.Count && s.Queue.Count == 0) { step++; SumpPlace(SP1, plan[step].a.Item1, plan[step].a.Item2); SumpPlace(SP2, plan[step].b.Item1, plan[step].b.Item2); s.Queue.Add(plan[step].q); if (plan[step].q.StartsWith("storm")) s.ForcedVictim = SP1; f.Next = UnityEngine.Time.time + 0.7f; }
@@ -1093,7 +1096,7 @@ static class Program {
         + ",\"spine\":[" + string.Join(",", Enumerable.Range(0, EelSump.N).Select(i => F(s.X[i]) + "," + F(s.Y[i]) + "," + F(s.Z[i]))) + "]"
         + ",\"pl\":[" + string.Join(",", Player.All.Select(pl => { var q = Ballistics.Pos(pl); s.Air.TryGetValue(pl, out var a); return "[" + F(q.x) + "," + F(q.y) + "," + F(a == null ? 0f : a.Z) + "," + F(a == null ? 0f : a.Rot) + "," + pl.Hp + "," + (Rt.Of(pl).ProneUntil > UnityEngine.Time.time ? 1 : 0) + "]"; })) + "]"
         + ",\"ev\":[" + string.Join(",", st.Ev.Skip(evDone).Select(e => $"[\"{e.Kind}\",{F(e.X)},{F(e.Y)},{F(e.Power)},{(e.Water ? 1 : 0)},{e.Who},{e.Dmg},\"{(e.Text ?? "").Replace("\"", "'")}\"]")) + "]"
-        + ",\"zones\":[" + string.Join(",", f.Zones.Select(z => $"[{F(z.X)},{F(z.Y)},{F(z.R)},\"{z.Kind}\",{(z.Live ? 1 : 0)}" + (z.Path != null ? ",[" + string.Join(",", z.Path.Select(F)) + "]" : "") + "]")) + "]" + ",\"rear\":" + F(s.Rear) + ",\"mouth\":" + F(s.Mouth) + ",\"tw\":" + F(s.Twitch) + ",\"bite\":\"" + (s.Bite ?? "") + "\",\"grip\":" + F(s.Grip) + ",\"spot\":[" + F(s.BiteSpot.x) + "," + F(s.BiteSpot.y) + "]}");
+        + ",\"zones\":[" + string.Join(",", f.Zones.Select(z => $"[{F(z.X)},{F(z.Y)},{F(z.R)},\"{z.Kind}\",{(z.Live ? 1 : 0)}" + (z.Path != null ? ",[" + string.Join(",", z.Path.Select(F)) + "]" : "") + "]")) + "]" + ",\"cam\":" + (Story.CamLock.HasValue ? "[" + F(Story.CamLock.Value.x) + "," + F(Story.CamLock.Value.y) + "," + F(Story.CamHalf) + "," + F(Story.CamRate) + "," + (Story.CamCut ? 1 : 0) + "]" : "null") + ",\"bars\":" + (Story.Letterbox ? 1 : 0) + ",\"lump\":" + F(s.Lump) + ",\"rear\":" + F(s.Rear) + ",\"mouth\":" + F(s.Mouth) + ",\"tw\":" + F(s.Twitch) + ",\"bite\":\"" + (s.Bite ?? "") + "\",\"grip\":" + F(s.Grip) + ",\"spot\":[" + F(s.BiteSpot.x) + "," + F(s.BiteSpot.y) + "]}");
       evDone = st.Ev.Count;
     }
     sb.Append("],\"seconds\":" + F(k * dt) + "}"); System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null; Rt.On = false; EelBoss.Reset();
@@ -1110,10 +1113,27 @@ static class Program {
     Check(f != null && p.Y <= 8 && EncounterState.Enemies.Contains(f.Unit) && EncounterState.Enemies.Contains(f.Sump.Tail) && f.Sump.Pools.Count == 4, $"EelFight: you stand on the steps above the room, the head and the tail are both in the fight, four pools (y {p.Y})");
     const float dt = 1f / 30f; for (int i = 0; i < 90; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
     Check(f.Stage == "hidden", "EelFight: it waits while you stay out of the room");
-    SumpPlace(p, 30.5f, 11.0f); bool came = false; for (int i = 0; i < 150 && !came; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; came = f.Stage == "reveal"; }
-    Check(came, "EelFight: it comes (the reveal starts) when you step into the room");
-    for (int i = 0; i < 400 && f.Stage != "idle"; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
-    Check(f.Stage == "idle" || f.Stage == "move", $"EelFight: the reveal ends and the fight begins ({f.Stage})");
+    SumpPlace(p, 30.5f, 11.0f); for (int i = 0; i < 150; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "hidden" && !EelBoss.CanExamine(p, out _, out _), "EelFight: stepping into the room does nothing now - it waits for you to examine the body (too far to examine)");
+    SumpPlace(p, f.BodyX + 0.5f, f.BodyY + 1.5f); var prompts = InteractionPrompts.Near(p); Check(EelBoss.CanExamine(p, out _, out _) && prompts.Any(q => q.Label == "Examine the body" && q.Key == "E") && !prompts.Any(q => q.Label == "Search the body"), "EelFight: next to the body there is an 'Examine the body' prompt on E (and no loot prompt)");
+    Check(EelBoss.TryExamine(p) && f.Stage == "intro" && f.Started, "EelFight: E on the body starts the introduction");
+    bool locked = false, bars = false, camWest = false, camBig = false, hidden0 = true, headWest = false, headEast = false, headBig = false, lumped = false, still = true; float px0 = p.X, py0 = p.Y; var order = new List<string>(); int ripples = 0, impacts = 0; float lastSwallowAt = -1f; float t0 = UnityEngine.Time.time; var west = f.Sump.Pools.First(q => q.Name == "west"); var east = f.Sump.Pools.First(q => q.Name == "east");
+    for (int i = 0; i < 900 && f.Stage == "intro"; i++) {
+      UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; float age = UnityEngine.Time.time - t0; var s = f.Sump;
+      foreach (var e in s.Out) { if (e.Kind == "ripple") ripples++; if (e.Kind == "impact") impacts++; } s.Out.Clear();
+      if (Story.InCutscene) locked = true; else if (f.Stage == "intro") still = false; if (Story.Letterbox) bars = true; if (Story.CamLock.HasValue) { var c = Story.CamLock.Value; if (Math.Abs(c.x - west.X) < 8f && age < 5f) camWest = true; if (Math.Abs(c.y - s.Big.Y) < 4f && age > 14f) camBig = true; }
+      if (s.Z[0] > 0.3f) { if (Math.Abs(s.X[0] - west.X) < 8f && age < 4f) headWest = true; if (Math.Abs(s.X[0] - east.X) < 6f && age > 9f) headEast = true; if (Math.Abs(s.X[0] - s.Big.X) < 3f && age > 15f) headBig = true; }
+      if (age < 2.2f && s.Z[0] > EelSump.Surface) hidden0 = false; if (s.Lump > 2f) lumped = true; if (f.Swallowed && lastSwallowAt < 0f) lastSwallowAt = age;
+      if ((int)p.X != (int)px0 || (int)p.Y != (int)py0) still = false;
+    }
+    Check(f.Stage == "idle" && f.Swallowed && !EncounterState.Enemies.Contains(f.Body), $"EelFight: the introduction ends in the fight's idle, the body swallowed ({f.Stage}, swallowed {f.Swallowed})");
+    Check(locked && bars && camWest && camBig && !Story.CamLock.HasValue && !Story.Letterbox, $"EelFight: the camera is taken over (cutscene {locked}, bars {bars}, west pool {camWest}, middle pool {camBig}) and given back at the end");
+    Check(hidden0 && headWest && headEast && headBig && lastSwallowAt > 5.5f && lastSwallowAt < 7f && lumped, $"EelFight: out of the west pool (hidden before {hidden0}, west {headWest}), swallows the body at {lastSwallowAt:0.0} s with a lump down its neck ({lumped}), dives into the east pool ({headEast}), then rises in the middle pool ({headBig})");
+    Check(ripples >= 6 && impacts >= 4 && still, $"EelFight: the pools ripple ({ripples}), the beats hit ({impacts}) and the player stands still ({still})");
+    for (int i = 0; i < 120; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "idle" || f.Stage == "move", $"EelFight: the fight begins after the introduction ({f.Stage})");
+    { var g0 = EelBoss.Current; TestingGround.EelFight(p); var h0 = EelBoss.Current; SumpPlace(p, h0.BodyX + 0.5f, h0.BodyY + 1.5f); EelBoss.TryExamine(p); for (int i = 0; i < 60; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; } EelBoss.SkipIntro(); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt;
+      Check(h0.Stage == "idle" && h0.Swallowed && !Story.Letterbox && !Story.InCutscene || h0.Stage == "idle" && h0.Swallowed, $"EelFight: ESC skips the introduction ({h0.Stage}, swallowed {h0.Swallowed})"); f = h0; }
     var dead = p.Hp; p.Hp = 0; Body.Reset(); TestingGround.Respawn(p); Check(EelBoss.Current != null && EelBoss.Current.Stage == "hidden" && EelBoss.Current != f, "EelFight: dying in the arena and respawning puts you into a fresh fight");
     p.Hp = p.MaxHp; TestingGround.EelFight(p, 0.49f); var g = EelBoss.Current;
     Check(g != null && g.Phase == 2 && g.Unit.Hp < EelBoss.MaxHp / 2 && string.Join(",", g.Sump.Queue) == "flood,storm", $"EelFight: 'From 50%' starts with half its HP, its phase 3 wounds, and the flood and the storm transitions queued (phase {g?.Phase}, queue {(g == null ? "" : string.Join(",", g.Sump.Queue))})");

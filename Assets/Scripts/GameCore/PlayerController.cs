@@ -296,6 +296,7 @@ namespace GameCore
             if (k == null && !panel) return;
             if (HudView.TargetingOpen) HudView.CloseTargeting();
             if (!panel && k.escapeKey.wasPressedThisFrame && Time.frameCount != HudView.PackClosedFrame && (Rt.Paused || !HudView.CloseOldPanels())) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
+            if (Story.InCutscene && k != null && k.escapeKey.wasPressedThisFrame) EelBoss.SkipIntro();     // ESC skips the eel's introduction
             if (Rt.Paused && !Net.Client) return;                   // ponytail: ESC still pauses a host's whole world (Yan's rule: no pausing in co-op - with the menu work)
             var mine = panel || k == null ? default : Rt.Read(k, m);
             Net.Tick(Time.unscaledTime, mine);                       // RT 7y: a client sends this; a host sends snapshots
@@ -310,7 +311,8 @@ namespace GameCore
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
                 var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);
-                if (corpse != null) { if (!Boss.TryWake(player, corpse)) CorpseLootUI.Open(corpse); }   // Boss 1: the Visor's body
+                if (EelBoss.TryExamine(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
+                else if (corpse != null) { if (!Boss.TryWake(player, corpse)) CorpseLootUI.Open(corpse); }   // Boss 1: the Visor's body
                 else if (ground.Count > 0)
                 {
                     foreach (var g in ground) { player.AddItem(g.Item); TerrainMap.GroundItems.Remove(g); }

@@ -84,6 +84,17 @@ namespace GameCore
         }
 
         public static void GoStage(Fight f, string stage) => Go(f, stage);
+
+        // ---- the introduction: E on the body (Yan 2026-11-07); the cutscene is EelSump.Intro
+        /// <summary>Is `p` close enough to the drowned crewman on the slab, with the eel still hidden, to examine him? (the prompt and the key)</summary>
+        public static bool CanExamine(Player p, out int x, out int y)
+        {
+            x = y = 0; var f = Current; if (f == null || f.Gone || f.Level != "sump" || f.Stage != "hidden" || p == null || !p.IsAlive()) return false;
+            x = f.BodyX; y = f.BodyY; return System.Math.Max(System.Math.Abs(p.X - x), System.Math.Abs(p.Y - y)) <= 2;
+        }
+        public static bool TryExamine(Player p) { if (!CanExamine(p, out _, out _)) return false; GameLog.Write($"A drowned crewman in {Current.BodyArmor}, soaked through. The water round the slab is very still."); StartIntro(Current); return true; }
+        public static void StartIntro(Fight f) { f.Started = true; Go(f, "intro"); EelSump.BeginIntro(f); }
+        public static void SkipIntro() { var f = Current; if (f != null && f.Stage == "intro" && f.Sump != null) f.Sump.IntroSkip = true; }
         public static void HurtPublic(Player p, int dmg, string what, string kind) => Hurt(p, dmg, what, kind);
         static void Go(Fight f, string stage) { f.Stage = stage; f.StageAt = Time.time; f.Move = null; f.Hit = false; f.Zones.Clear(); }
 
@@ -94,7 +105,7 @@ namespace GameCore
             if (f.Level == "sump" && u == f.Sump.Tail) { EelSump.OnTailHit(f, u); return; }                          // the tail: its own HP; at 0 it lets go and goes down
             f.Unit.IsAggroed = true; f.Started = true;
             if (f.Level == "platform") { u.Hp = System.Math.Max(u.Hp, (int)(MaxHp * (1f - CarryCap))); return; }     // Levels 1-2: at most 20% carries over
-            if (f.Stage == "hidden") Go(f, "reveal");
+            if (f.Stage == "hidden") StartIntro(f);                                                                  // shot before it was examined: the introduction plays anyway
             EelSump.OnHeadHit(f, u);                                                                                 // under the water or busy: nothing lands; at 0 it is taken to the vomit when its move ends
             int ph = PhaseOf(u.Hp);
             if (ph >= 1 && f.Sump != null && !f.Sump.Stage2) { f.Sump.Stage2 = true; f.Sump.Queue.Insert(0, "flood"); }      // 75% HP: the flood surge is the phase transition, and the snare and the flood join the moves

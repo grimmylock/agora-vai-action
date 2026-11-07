@@ -244,6 +244,7 @@ namespace GameCore
                     Shake(Mathf.Min(0.35f, 0.14f * e.Power)); Boss.HitStop(0.05f * Mathf.Min(2f, e.Power));
                     Sfx.Play(e.Water ? "eel_splash" : "eel_slam", new Vector3(e.X, -e.Y, 0f), Mathf.Clamp(0.35f + 0.4f * e.Power, 0.3f, 1.2f), 0.05f, e.Power >= 1.5f ? 0.85f : 1.1f);
                 }
+                else if (e.Kind == "ripple") { CombatFx.PxAt("ripples", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); if (e.Power > 0.6f) Shake(0.04f * e.Power); }      // the introduction: the pools swell
                 else if (e.Kind == "spark")                                                              // the storm's charge: many small crackles across the body, thicker as it fills
                 {
                     Shake(0.03f + 0.06f * e.Power);
@@ -296,7 +297,8 @@ namespace GameCore
                         pos += new Vector3(back.x, back.y, 0f) * shift;
                     }
                     float zs = Mathf.Lerp(s.Z[i], s.Z[i + 1], u); bool shade = zs <= EelSolidZ; if (shade && (i >= EelShadowLen || s.Z[0] > EelSolidZ + 0.2f)) continue;     // the shadow shows only while the head is down in the water (the swim)
-                    if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, Mathf.Lerp(dh[i], dh[i + 1], u) / EelDipH);       // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut: judged by the distance along the body to the waterline, NOT by height (the dash glides at z 0.45 and was pinched all along: 2026-11-06)
+                    if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, Mathf.Lerp(dh[i], dh[i + 1], u) / EelDipH);
+                    if (s.Lump >= 0f) { float lz = (i + u - s.Lump) / 3.5f; sy *= 1f + 0.5f * Mathf.Exp(-lz * lz); }                  // the swallowed body travelling down its neck: a bulge       // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut: judged by the distance along the body to the waterline, NOT by height (the dash glides at z 0.45 and was pinched all along: 2026-11-06)
                     var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
                     sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : EelSump.Stunned(f) ? new Color(0.78f, 0.82f, 0.95f, 1f) : chg > 0.01f && ((i * 13 + Mathf.FloorToInt(Time.time * 24f) * 7) % 11) < chg * 5f ? new Color(0.7f, 0.93f, 1f, 1f) : Color.white;       // cold flicker where the electricity passes sr.sortingOrder = baseOrder + (NN - i) * EelSub - kq;
                     if (strainShake > 0f) pos += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f) * strainShake;                          // the whole body shakes with the strain

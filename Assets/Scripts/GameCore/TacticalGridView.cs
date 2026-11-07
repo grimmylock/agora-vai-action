@@ -1131,7 +1131,25 @@ namespace GameCore
             _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * 6f);
             _close = Mathf.MoveTowards(_close, EelSump.Gripping(Player.Current) ? 1f : 0f, Time.unscaledDeltaTime * 4f);   // Boss 3: the jaw-hold's close-up, leaning in on the player holding the eel's mouth
             cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.8f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
+            // Boss 3's introduction: a cinematic camera (Story.CamLock). It glides to its point and zoom; when the lock ends it eases back to the player's own view instead of snapping.
+            var lk = Story.CamLock;
+            if (lk.HasValue)
+            {
+                var lockPos = new Vector3(lk.Value.x, -lk.Value.y, -10f);
+                if (_cineBlend <= 0f || Story.CamCut) { _cinePos = _cineBlend <= 0f && !Story.CamCut ? cam.transform.position : lockPos; _cineSize = _cineBlend <= 0f && !Story.CamCut ? cam.orthographicSize : Story.CamHalf; }
+                float k = Story.CamCut ? 1f : 1f - Mathf.Exp(-Time.unscaledDeltaTime * Story.CamRate);
+                _cinePos = Vector3.Lerp(_cinePos, lockPos, k); _cineSize = Mathf.Lerp(_cineSize, Story.CamHalf, 1f - Mathf.Exp(-Time.unscaledDeltaTime * Mathf.Max(1.5f, Story.CamRate * 0.6f)));
+                _cineBlend = Story.CamCut ? 1f : Mathf.MoveTowards(_cineBlend, 1f, Time.unscaledDeltaTime * 2.5f);
+            }
+            else _cineBlend = Mathf.MoveTowards(_cineBlend, 0f, Time.unscaledDeltaTime * 1.2f);
+            if (_cineBlend > 0f)
+            {
+                float e = _cineBlend * _cineBlend * (3f - 2f * _cineBlend);
+                var pos = Vector3.Lerp(cam.transform.position, new Vector3(_cinePos.x, _cinePos.y, -10f), e); cam.transform.position = pos; cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, _cineSize, e);
+            }
+            Story.CamCut = false;
         }
+        private static float _cineBlend, _cineSize; private static Vector3 _cinePos;
         private static float _shown, _close, _hl;
 
         /// <summary>New: draws a unit with its own pixel art (UnitSprites - humans in the armor they

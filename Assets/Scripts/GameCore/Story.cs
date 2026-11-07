@@ -109,6 +109,11 @@ namespace GameCore
         /// <summary>The camera frames you and (x, y) for `seconds` (game time); you stand still, the world keeps running.</summary>
         public static void Cutscene(float x, float y, float seconds) { LookAt = (x, y); CutsceneUntil = Time.time + seconds; }
 
-        public static void Reset() { LookAt = null; CutsceneUntil = -1f; }
+        // A cinematic camera (Boss 3's introduction): the camera is LOCKED on a point (tile space), at a zoom (half the view's height in tiles), moving to it at `CamRate` (bigger = snappier) with black bars top and
+        // bottom. Whoever drives it sets these every frame and keeps CutsceneUntil ahead of the clock; when CamLock is cleared the camera eases back to the player (TacticalGridView.FollowCamera).
+        public static (float x, float y)? CamLock; public static float CamHalf = 6f, CamRate = 4f; public static bool Letterbox, CamCut;
+        public static void CineEnd() { CamLock = null; Letterbox = false; CutsceneUntil = -1f; }
+
+        public static void Reset() { LookAt = null; CutsceneUntil = -1f; CineEnd(); }
     }
 }

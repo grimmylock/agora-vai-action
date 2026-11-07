@@ -38,6 +38,7 @@ namespace GameCore
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
+            public Curve IntroCur; public Dictionary<string, float> IntroMarks; public Strike IntroBig; public float Lump = -1f, IntroRip; public int IntroEv; public bool IntroSwallowed, IntroSkip;     // the introduction cutscene (Intro)
             // the move in progress
             public Strike Hs; public Curve Cur, Cur2; public Pool P1, P2, P3; public Player Tg, Tg2, Snared; public (float x, float y) GP, LP; public float TH0, EndAt = -1f, BreakTs = -1f, BreakQ;
             public bool Hit1, Hit2, Missed, Grabbed, Released, Crossed, Threw; public readonly HashSet<Player> Hurt = new HashSet<Player>(); public float PrevHZ = 9f;
@@ -145,10 +146,9 @@ namespace GameCore
             switch (f.Stage)
             {
                 case "hidden":
-                    f.Label = "in the pools"; Hide(s, s.Big);
-                    if (players.Any(p => { var q = Pos(p); return q.x >= 5f && q.x <= 55f && q.y >= 9f && q.y <= 31f; })) s.Entered += dt; else s.Entered = 0f;
-                    if (s.Entered >= 1.5f) { f.Started = true; f.Unit.IsAggroed = true; EelBoss.GoStage(f, "reveal"); GameLog.Write("The water in the pools goes very still."); }       // it comes for you when you step into its room (or when it is shot)
+                    f.Label = "in the pools"; Hide(s, s.Big);                                          // it waits until someone examines the body on the slab (EelBoss.TryExamine) or shoots it
                     break;
+                case "intro": Intro(f, s, players, now); break;
                 case "reveal": Reveal(f, s, ts, now, false); break;
                 case "vomit": Reveal(f, s, ts, now, true); break;
                 case "idle":
@@ -696,6 +696,103 @@ namespace GameCore
             }
         }
 
+
+        // ------------------------------------------------------------------ the introduction (a cutscene, Yan 2026-11-07)
+        // You walk up to the drowned crewman on the slab and EXAMINE him (E, EelBoss.TryExamine). Everything stands still and the camera takes over (Story.CamLock + letterbox): the pools go still and swell, the
+        // eel erupts from the WEST pool, slithers across the room, rears over the slab and SWALLOWS the body (it travels down the neck as a lump), slithers on and dives into the EAST pool; the room is quiet,
+        // then it rises out of the BIG pool in the middle, roars (the name card) and sinks: the fight starts. ESC skips it. Times are real seconds since the stage began.
+        public const float IntroEnd = 18.9f;
+        static readonly (float t, string key, char ease)[] IntroKeys = { (2.2f, "start", 'o'), (3.0f, "crest", 'o'), (3.6f, "crest2", 's'), (5.2f, "weaveEnd", 'l'), (6.0f, "rise", 's'), (6.3f, "hit", 'i'), (7.3f, "hold", 's'), (8.1f, "lift", 's'), (9.9f, "eastEnd", 'l'), (13.2f, "end", 'i') };
+        public static void BeginIntro(EelBoss.Fight f)
+        {
+            var s = f.Sump; s.Lump = -1f; s.IntroSwallowed = false; s.IntroSkip = false; s.IntroRip = 0f; s.IntroEv = 0; s.Mouth = -1f; s.Rear = 0f; s.Charge = 0f; BuildIntro(s);
+            GameLog.Write("You lean over the body. The water in the pools goes very still...  (ESC skips the scene)");
+        }
+        static void BuildIntro(State s)
+        {
+            var west = s.Pools.First(p => p.Name == "west"); var east = s.Pools.First(p => p.Name == "east"); var pts = new List<(float x, float y, float z)>(); float d = 0f; var m = new Dictionary<string, float> { ["start"] = 0f };
+            void Add(float x, float y, float z) { var q = (x, y, z); if (pts.Count > 0) d += D3(pts[pts.Count - 1], q); pts.Add(q); }
+            var arc = Bez((west.X, west.Y, -3.5f), (west.X, west.Y, 4.6f), (west.X + 2.6f, west.Y + 0.2f, 4.9f), (west.X + 4.6f, west.Y + 0.6f, 0.55f), 24);
+            for (int i = 0; i < arc.Count; i++) { Add(arc[i].x, arc[i].y, arc[i].z); if (i == 14) m["crest"] = d; }
+            m["crest2"] = m["crest"] + 0.5f; float x0 = west.X + 4.6f, y0 = west.Y + 0.6f, x1 = s.SlabX - 2.4f, y1 = s.SlabY;
+            for (int i = 1; i <= 40; i++) { float u = i / 40f; Add(Lerp(x0, x1, u), Lerp(y0, y1, u) + 2.6f * Mathf.Sin(u * 6.283f * 1.5f) * (1f - 0.25f * u), 0.5f + 0.05f * Mathf.Sin(u * 40f)); }
+            m["weaveEnd"] = d; Add(s.SlabX - 1.4f, s.SlabY, 1.5f); Add(s.SlabX - 0.5f, s.SlabY - 0.15f, 3.3f); m["rise"] = d; Add(s.SlabX + 0.0f, s.SlabY - 0.1f, 3.0f); Add(s.SlabX + 0.35f, s.SlabY, 0.55f); m["hit"] = d;
+            Add(s.SlabX + 0.5f, s.SlabY, 0.5f); m["hold"] = d; Add(s.SlabX + 1.6f, s.SlabY - 0.1f, 2.7f); Add(s.SlabX + 2.7f, s.SlabY, 1.7f); m["lift"] = d;
+            float x2 = s.SlabX + 2.7f, y2 = s.SlabY, x3 = east.X - 4.6f, y3 = east.Y + 0.6f;
+            for (int i = 1; i <= 40; i++) { float u = i / 40f; Add(Lerp(x2, x3, u), Lerp(y2, y3, u) - 2.6f * Mathf.Sin(u * 6.283f * 1.5f) * (1f - 0.25f * u), 0.5f + 0.05f * Mathf.Sin(u * 40f)); }
+            m["eastEnd"] = d; foreach (var q in Bez((x3, y3, 0.5f), (east.X - 2.6f, east.Y + 0.4f, 0.6f), (east.X - 1.6f, east.Y, 0.55f), (east.X - 0.6f, east.Y, 0.45f), 12).Skip(1)) Add(q.x, q.y, q.z);
+            Add(east.X, east.Y, 0.3f); Add(east.X, east.Y, -1.5f); Add(east.X, east.Y, -4.5f);      // into the pool's centre
+            m["end"] = d + N / PerTile + 1f; s.IntroCur = new Curve(pts); s.IntroMarks = m;
+        }
+        static float IntroSigma(State s, float age)
+        {
+            var k = IntroKeys; if (age <= k[0].t) return 0f; var m = s.IntroMarks;
+            for (int i = 1; i < k.Length; i++)
+                if (age <= k[i].t)
+                {
+                    float a = m[k[i - 1].key], b = m[k[i].key], u = Mathf.Clamp01((age - k[i - 1].t) / (k[i].t - k[i - 1].t));
+                    float e = k[i].ease == 'o' ? Eout(u, 2f) : k[i].ease == 's' ? Smr(u) : k[i].ease == 'i' ? Ein(u, 2.2f) : u; return Lerp(a, b, e);
+                }
+            return m["end"];
+        }
+        static void Cam(float x, float y, float half, float rate, bool cut = false) { Story.CamLock = (x, y); Story.CamHalf = half; Story.CamRate = rate; Story.CamCut = cut; }
+        static void Intro(EelBoss.Fight f, State s, List<Player> players, float now)
+        {
+            float age = now - f.StageAt; var west = s.Pools.First(p => p.Name == "west"); var east = s.Pools.First(p => p.Name == "east"); var m = s.IntroMarks; f.Zones.Clear(); f.Label = "";
+            if (s.IntroSkip) { Finish(f, s, now, true); return; }
+            Story.CutsceneUntil = Time.time + 0.4f; Story.Letterbox = age > 0.25f;                                  // everyone stands still while the world runs
+            float hx = s.X[0], hy = s.Y[0] - Mathf.Max(0f, s.Z[0]) * 0.6f; bool head = s.Z[0] > Surface;
+            // ---- the camera
+            if (age < 1.6f) Cam(s.SlabX, s.SlabY - 0.4f, Lerp(5.2f, 3.6f, age / 1.6f), 3f);                          // close on the body, creeping in
+            else if (age < 2.2f) Cam(west.X + 2f, west.Y, 6f, 9f);                                                  // a quick pan to the west pool: something is there
+            else if (age < 6.0f) Cam(head ? hx : west.X, head ? hy : west.Y, 6.6f, age < 3.4f ? 6f : 3.2f);        // it erupts and the camera rides its head
+            else if (age < 7.2f) Cam(s.SlabX, s.SlabY - 1.0f, 3.9f, age < 6.1f ? 7f : 4f);                         // the swallow, in close
+            else if (age < 10.0f) Cam(head ? hx : s.SlabX, head ? hy : s.SlabY, 6.2f, 3.4f);                       // the head leads the camera east
+            else if (age < 13.7f) Cam(east.X - 1f, east.Y - 1f, 7.4f, 4f);                                         // it dives into the east pool, the tail slides in
+            else if (age < 15.2f) Cam(s.Big.X, s.Big.Y - 1.5f, age < 14.4f ? 7f : 5.4f, 2.6f);                   // a long breath: the middle pool
+            else if (age < 17.9f) Cam(head ? hx : s.Big.X, head ? hy : s.Big.Y, age < 16.8f ? 6.4f : 7.6f, 3f);   // it rises and roars
+            // ---- the water and the body
+            if (age < 2.2f)                                                                                          // the pools swell and ripple, more and more
+            {
+                Hide(s, west); s.IntroRip -= Time.deltaTime; if (s.IntroRip <= 0f) { s.IntroRip = Lerp(0.5f, 0.12f, age / 2.2f); var pl = s.Pools[Rng.Next(s.Pools.Count)]; s.Events.Add(new Ev { Kind = "ripple", X = pl.X + (float)(Rng.NextDouble() - 0.5) * pl.RX, Y = pl.Y + (float)(Rng.NextDouble() - 0.5) * pl.RY, Power = 0.3f + age / 2.2f, Water = true }); }
+                if (age > 1.2f && s.IntroEv < 1) { s.IntroEv = 1; Snd("eel_rush", west.X, west.Y, 0.6f); }
+            }
+            else if (age < 13.2f)
+            {
+                if (s.IntroEv < 2) { s.IntroEv = 2; Snd("eel_splash", west.X, west.Y, 1.1f); s.Events.Add(new Ev { Kind = "impact", X = west.X, Y = west.Y, Power = 2.2f, Water = true }); }
+                FillHead(s, s.IntroCur, IntroSigma(s, age));
+                s.Rear = age < 3.9f ? 38f * Smr(Mathf.Clamp01((age - 2.2f) / 0.8f)) * (1f - Smr(Mathf.Clamp01((age - 3.2f) / 0.7f))) : 0f;                     // the head thrown back as it breaks the surface
+                s.Mouth = age < 3.7f ? (age > 2.4f ? 1.0f : -1f) : age >= 6.0f && age < 6.3f ? 1.4f : age >= 5.7f && age < 6.0f ? 1.0f : age >= 6.3f && age < 7.4f ? 0f : -1f;      // roars on the way up, jaws wide for the swallow
+                if (age >= 6.3f && !s.IntroSwallowed)                                                               // the jaws shut on the body
+                {
+                    s.IntroSwallowed = true; f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); Snd("eel_slam", s.SlabX, s.SlabY, 1.0f); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 1.8f, Water = false });
+                    GameLog.Write("The eel snaps the body up in one gulp.");
+                }
+                s.Lump = s.IntroSwallowed ? Mathf.Max(0f, (age - 6.3f) * 11f) : -1f; if (s.Lump > 50f) s.Lump = -1f;                       // down the neck
+                if (age >= 9.9f && s.IntroEv < 3) { s.IntroEv = 3; Snd("eel_rush", east.X, east.Y, 0.9f); }
+                if (age >= 10.9f && s.IntroEv < 4) { s.IntroEv = 4; Snd("eel_splash", east.X, east.Y, 1.0f); s.Events.Add(new Ev { Kind = "impact", X = east.X, Y = east.Y, Power = 1.6f, Water = true }); }
+            }
+            else if (age < 15.2f)
+            {
+                Hide(s, s.Big); s.Lump = -1f; s.Mouth = -1f; s.Rear = 0f;
+                if (age > 14.4f && s.IntroEv < 5) { s.IntroEv = 5; s.IntroRip = 0f; Snd("eel_rush", s.Big.X, s.Big.Y, 0.7f); }
+                if (age > 14.4f) { s.IntroRip -= Time.deltaTime; if (s.IntroRip <= 0f) { s.IntroRip = 0.11f; s.Events.Add(new Ev { Kind = "ripple", X = s.Big.X + (float)(Rng.NextDouble() - 0.5) * s.Big.RX, Y = s.Big.Y + (float)(Rng.NextDouble() - 0.5) * s.Big.RY, Power = 1f, Water = true }); } }
+            }
+            else
+            {
+                var bs = s.IntroBig ?? (s.IntroBig = new Strike(s.Big, (s.SlabX, s.SlabY))); float L1 = bs.L1, sg = age < 17.8f ? L1 * Smr((age - 15.2f) / 1.6f) : L1 * (1f - Smr((age - 17.8f) / 1.1f));
+                FillHead(s, bs.C1, sg); s.Mouth = age >= 16.8f && age < 17.8f ? 1.4f : -1f; s.Rear = age >= 16.4f && age < 17.9f ? 46f * Smr(Mathf.Clamp01((age - 16.4f) / 0.5f)) : 0f; s.Twitch = age >= 16.8f && age < 17.8f ? 0.5f + 0.3f * Mathf.Sin(age * 50f) : 0f;
+                if (age >= 16.8f && s.IntroEv < 6) { s.IntroEv = 6; f.Unit.IsAggroed = true; Snd("eel_burst", s.Big.X, s.Big.Y, 1.3f); Boss.NameCard(EelBoss.Name.ToUpperInvariant(), "the Sump"); s.Events.Add(new Ev { Kind = "impact", X = s.Big.X, Y = s.Big.Y, Power = 2.6f, Water = true }); }
+                if (age >= IntroEnd) Finish(f, s, now, false);
+            }
+        }
+        static void Finish(EelBoss.Fight f, State s, float now, bool skipped)
+        {
+            if (!f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
+            s.Lump = -1f; s.Mouth = -1f; s.Rear = 0f; s.Twitch = 0f; s.IntroBig = null; s.IntroSkip = false; Hide(s, s.Big); f.Unit.IsAggroed = true; f.Started = true; Story.CineEnd();
+            f.Stage = "idle"; f.StageAt = now; f.Next = now + (skipped ? 1.5f : 0.8f); f.Zones.Clear(); GameLog.Write("The Drowner settles in under the pools.");
+        }
+
         // ---- the reveal (it swallows the body on the slab) and the death (it brings the body back up, then goes down the big pool's centre)
         static void Reveal(EelBoss.Fight f, State s, float ts, float now, bool vomit)
         {
@@ -734,7 +831,7 @@ namespace GameCore
         // ------------------------------------------------------------------ damage routing (called from EelBoss.OnDamaged)
         public static void OnHeadHit(EelBoss.Fight f, ICombatant u)
         {
-            var s = f.Sump; if (!s.HeadOut || f.Stage == "reveal" || f.Stage == "vomit") { u.Hp = System.Math.Max(s.LastHp, 1); return; }       // under the water, or busy: nothing lands
+            var s = f.Sump; if (!s.HeadOut || f.Stage == "reveal" || f.Stage == "vomit" || f.Stage == "intro") { u.Hp = System.Math.Max(s.LastHp, 1); return; }       // under the water, or busy: nothing lands
             if (u.Hp <= 1) { u.Hp = 1; s.Dying = true; f.Label = "it gags - the body comes back up"; return; }
         }
         public static void OnTailHit(EelBoss.Fight f, ICombatant u)

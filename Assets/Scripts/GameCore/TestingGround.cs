@@ -138,7 +138,7 @@ namespace GameCore
                 ef.Sump.Queue.Clear(); ef.Sump.Bag.Clear(); ef.Sump.Stage2 = ef.Phase >= 1; ef.Sump.Stage3 = ef.Phase >= 2;
                 if (ef.Phase >= 1) ef.Sump.Queue.Add("flood"); if (ef.Phase >= 2) ef.Sump.Queue.Add("storm");
             }
-            GameLog.Write("[TESTING GROUND] The Sump: four deep pools. Walk down into the room and it comes for you. Main menu > Testing Ground to come back.");
+            GameLog.Write("[TESTING GROUND] The Sump: four deep pools. Walk down to the body on the slab in the middle and press E to examine it. Main menu > Testing Ground to come back.");
         }
 
         /// <summary>Yan: "when i die in the testing ground i have to leave to the menu, add a respawn button in the death screen only for

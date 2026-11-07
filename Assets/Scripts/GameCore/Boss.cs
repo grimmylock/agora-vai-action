@@ -71,6 +71,7 @@ namespace GameCore
         // the name card (HudView.Boss.cs reads it)
         public static string SplashTitle, SplashSub; public static float SplashAt = -99f, SplashSeconds = 3.2f;
         static void Splash(string title, string sub) { SplashTitle = title; SplashSub = sub; SplashAt = Time.unscaledTime; }
+        public static void NameCard(string title, string sub) => Splash(title, sub);      // Boss 3's introduction shows its own card
 
         public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; _holdUntil = -1f; Parry.Unparryable = false; SplashAt = -99f; }
 

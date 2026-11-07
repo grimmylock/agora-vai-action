@@ -9,6 +9,7 @@ namespace GameCore
         /// <summary>Ported from attemptInteract(unit).</summary>
         public static void AttemptInteract(ICombatant unit)
         {
+            if (unit is Player examiner && EelBoss.TryExamine(examiner)) return;          // Boss 3: E on the drowned crewman starts the eel's introduction
             if (unit is Player finisher && Boss.TryFinish(finisher)) return;              // Boss 1: E next to a broken boss
             if (unit is Player breaker && Boss.TryBreakWall(breaker)) return;            // Boss 1: the Visor's cracked wall
             if (unit is Player tester && TestingGround.TryInteract(tester)) return;

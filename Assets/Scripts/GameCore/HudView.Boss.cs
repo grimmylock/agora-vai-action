@@ -9,11 +9,18 @@ namespace GameCore
 {
     public partial class HudView
     {
-        Image _edge;
+        Image _edge, _cineTop, _cineBot; float _cine;                               // the cutscene's black bars (Story.Letterbox)
+
         RectTransform _bossBar; Image _bossFill, _bossGhost; TextMeshProUGUI _bossName, _bossState, _splash, _splashSub;
         float _ghost = 1f;
         Image _tailEdge, _tailFill;                                  // Boss 3: the eel's tail is a target of its own
         const float BossW = 560f;
+
+        Image CineBar(string name, bool top)                          // a black bar across the whole width, top or bottom
+        {
+            var im = Img(_root.transform, name, new Vector2(0.5f, top ? 1f : 0f), Vector2.zero, new Vector2(0f, 0f), Color.black); var rt = im.rectTransform;
+            rt.anchorMin = new Vector2(0f, top ? 1f : 0f); rt.anchorMax = new Vector2(1f, top ? 1f : 0f); rt.pivot = new Vector2(0.5f, top ? 1f : 0f); rt.anchoredPosition = Vector2.zero; rt.sizeDelta = Vector2.zero; return im;
+        }
 
         void UpdateBoss()
         {
@@ -41,7 +48,10 @@ namespace GameCore
             _edge.gameObject.SetActive(punch > 0.01f);
             if (punch > 0.01f) _edge.color = new Color(0.72f, 0.9f, 1f, 0.6f * punch);
 
-            var f = Boss.Current; var ef = EelBoss.Current; bool eel = f == null && ef != null && !ef.Gone && ef.Started && ef.Sump != null;       // Boss 3: the eel in the Sump uses the same bar
+            if (_cineTop == null) { _cineTop = CineBar("CineTop", true); _cineBot = CineBar("CineBot", false); }
+            _cine = Mathf.MoveTowards(_cine, Story.Letterbox ? 1f : 0f, Time.unscaledDeltaTime * 2.2f); float bh = Screen.height * 0.115f * _cine * _cine * (3f - 2f * _cine);
+            _cineTop.gameObject.SetActive(bh > 0.5f); _cineBot.gameObject.SetActive(bh > 0.5f); _cineTop.rectTransform.sizeDelta = new Vector2(0f, bh); _cineBot.rectTransform.sizeDelta = new Vector2(0f, bh);
+            var f = Boss.Current; var ef = EelBoss.Current; bool eel = f == null && ef != null && !ef.Gone && ef.Started && ef.Sump != null && ef.Stage != "intro";       // Boss 3: the eel in the Sump uses the same bar
             bool on = (f != null || eel) && !GameState.Current.ModalOpen;
             _bossBar.gameObject.SetActive(on); _bossName.gameObject.SetActive(on); _bossState.gameObject.SetActive(on);
             if (on && f == null)
