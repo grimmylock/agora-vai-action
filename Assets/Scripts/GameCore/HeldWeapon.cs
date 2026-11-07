@@ -764,6 +764,7 @@ namespace GameCore
         public Melee.Charge MeleeCharge;
         public string BodyPose;                 // Melee 3: the body frame the swing wants (TacticalGridView.DrawUnit swaps it in)
         public string UseKind; public float UseT;   // Use: the item in use (HeldPoseMath.UseKindOf) and how far through (TacticalGridView sets it)
+        public bool JawHold; public float JawGrip, JawTwitch;   // Boss 3: holding the eel's jaws open - hands up over the head (TacticalGridView sets it from EelSump)
         private readonly SpriteRenderer _item;
         private static readonly Dictionary<string, Sprite> ItemSprites = new Dictionary<string, Sprite>();
         static Sprite ItemSprite(string kind)
@@ -823,6 +824,20 @@ namespace GameCore
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
             _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
             _grip.flipY = _support.flipY = back;
+            if (JawHold)
+            {
+                // Boss 3, the jaw-hold (Yan: "can't see myself"; the pose was never built): both gloves up over the head, fingers up, holding the eel's jaws apart. They strain (a fast shake), come
+                // together as the grip fills (the mouth shuts) and shove up and out on every press (JawTwitch 1 .. 0). No weapon in the hands.
+                _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false);
+                var big = HandSprite(armor, false);
+                _grip.sprite = big; _support.sprite = big; _grip.flipX = false; _support.flipX = true;
+                float spread = 5.5f - 3.5f * Mathf.Clamp01(JawGrip), shake = Mathf.Sin(Time.unscaledTime * 38f) * 0.5f, lift = JawTwitch * 1.5f;
+                float jx = Mathf.Round(spread + JawTwitch * 1.2f), jy = Mathf.Round(-1.5f - lift + shake - 0.5f) + 0.5f;
+                _grip.transform.localPosition = Local(8f + jx, jy); _grip.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);           // fingers up
+                _support.transform.localPosition = Local(8f - jx, jy - (Mathf.Sin(Time.unscaledTime * 31f) > 0f ? 0.5f : 0f)); _support.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);
+                _g = null;
+                return;
+            }
             if (!on)
             {
                 // nothing equipped: the big gloves float at the torso's sides (Batch 28, Yan)

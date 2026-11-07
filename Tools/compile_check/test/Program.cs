@@ -996,6 +996,7 @@ static class Program {
     }
     // HITBOX (Yan, 2026-11-06): the whole body that is out of the water can be shot, the head part is "Head" (it takes the bonus), the rest is "Body"; the eel's two base units are no hitbox
     {
+      int mhp0 = 0, mhp1 = 0; ICombatant meleeU = null;
       bool did = false; string pBody = null, pHead = null; ICombatant uBody = null, uHead = null; int bodyIdx = -1; bool under = false; ICombatant uUnder = null; float fxOk = 99f; bool baseUnitMiss = false;
       SumpRun(true, 2, "dash:west>east", f => { SumpPlace(SP1, 30.5f, 28.5f); SumpPlace(SP2, 41.0f, 22.0f); }, (f, tt) => {
         var s = f.Sump; if (did || s.Z[0] < 0.3f) return;
@@ -1008,10 +1009,19 @@ static class Program {
         under = EelSump.BodyUnder(s.X[a], s.Y[a] - s.Z[a], out uUnder, out float bx, out float by); fxOk = (float)Math.Sqrt((bx - s.X[a]) * (bx - s.X[a]) + (by - s.Y[a]) * (by - s.Y[a]));
         var u0 = f.Unit; float ox = s.X[0], oy = s.Y[0]; s.X[0] = 0f; s.Y[0] = 0f;
         baseUnitMiss = Ballistics.Trace(SP1, px, py, 0f, -1f, 1f, 0.45f, Gunplay.Targets(SP1)).Unit == null; s.X[0] = ox; s.Y[0] = oy;   // (nothing at the head's ground spot but air: the units themselves are not hit boxes)
+        // melee: a swing from beside a low part of the body (far from the base units in the pools' centres) cuts it
+        Melee.Reset(); Melee.Now = 0f; SP1.EquipWeapon("melee", "TacticalHatchet"); SumpPlace(SP1, s.X[a] - 1.5f, s.Y[a]);
+        mhp0 = f.Unit.Hp + f.Sump.Tail.Hp; var mu = Melee.Swing(SP1, SP1.EquippedWeapon, 1f, 0f, 0.45f); mhp1 = f.Unit.Hp + f.Sump.Tail.Hp; meleeU = mu;
       }, 45f);
       Check(did && uBody != null && EelBoss.Is(uBody) && pBody != null && (pBody == "Body" || pBody == "Head") && uHead != null && EelBoss.Is(uHead) && pHead == "Head" && under && EelBoss.Is(uUnder) && fxOk < 0.6f,
         $"EelSump hitbox: a round at a low part of the body (spine sample {bodyIdx}) lands on the eel (part {pBody}), one at the head is a Head hit ({pHead}), the crosshair finds the part ({under}, {fxOk:0.00} tiles off)");
       Check(EelSump.HeadBonus > 1f && EelSump.IsEelHead(uHead, "Head") && !EelSump.IsEelHead(uBody, "Body"), "EelSump hitbox: only the head part takes the extra damage");
+      Check(did && meleeU != null && EelBoss.Is(meleeU) && mhp1 < mhp0, $"EelSump hitbox: a melee swing from beside a low part of the body cuts it ({mhp0} -> {mhp1})");
+      // the reward and the gate
+      { var body = new HumanEnemy("Drowned crewman", 1, 1, "Contractors", "Veteran", null, null) { Hp = 0 }; int n0 = body.Inventory.Items.Count; EelBoss.AddParts(body);
+        var parts = body.Inventory.Items.Skip(n0).ToList();
+        Check(parts.Count == 2 && parts.All(q => q.Type == "mutantPart" && q.Price >= 900), $"Eel reward: the body's pack gets two eel parts worth well above a tier 3 mutant part ({string.Join(", ", parts.Select(q => q.Name + " " + q.Price))})");
+        Check(!EelBoss.BlocksPump(null) && !EelBoss.BlocksPump("alpha_drain"), "Eel gate: an ordinary pump is never blocked by the eel"); }
     }
     // STORM (phase 3): the arena floods, it rears up and charges ~4 s with sparks, then every water tile is electric (a dry patch is safe), then it BITES: a parry + mash slams its head down and stuns it,
     // no parry (or no mash) and the jaws close and throw the player, a dive or a step away makes it miss

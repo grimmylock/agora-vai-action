@@ -725,6 +725,7 @@ namespace GameCore
         private static void UseOf(HeldWeaponView h, Player p)
         {
             var s = Rt.On ? Rt.Of(p) : null;
+            var ef = EelBoss.Current; h.JawHold = EelSump.Gripping(p); h.JawGrip = h.JawHold ? EelSump.GripOf(ef) : 0f; h.JawTwitch = h.JawHold ? EelSump.TwitchOf(ef) : 0f;   // Boss 3: the jaw-hold pose (UseOf runs for every player, local and joined)
             h.UseKind = s?.UsingId != null ? HeldPoseMath.UseKindOf(s.UsingId) : null;
             h.UseT = s != null && s.UseDone > s.UseFrom ? Mathf.Clamp01((Time.time - s.UseFrom) / (s.UseDone - s.UseFrom)) : 0f;
         }

@@ -189,6 +189,7 @@ namespace GameCore
             s.Hit1 = s.Hit2 = s.Missed = s.Grabbed = s.Released = s.Crossed = s.Threw = false; s.Hurt.Clear(); s.Pulled.Clear(); s.SparkAt = 0f; s.Bite = null; s.BiteCur = null; s.SinkT = -1f; s.Victim = null; s.Mouth = -1f; s.StormSg = 0f; s.Grip = 0f; s.Twitch = 0f; s.Snared = null; s.EndAt = -1f; s.BreakTs = -1f; s.PrevHZ = 9f; s.Cur = s.Cur2 = null; s.Hs = null;
             s.Tg = players.OrderBy(_ => Rng.Next()).First(); s.Tg2 = players.Where(q => q != s.Tg).OrderBy(_ => Rng.Next()).FirstOrDefault() ?? s.Tg; var tp = Pos(s.Tg); var t2 = Pos(s.Tg2);
             EelBoss.GoStage(f, "move"); f.Move = kind; f.Zones.Clear(); f.Label = kind.ToUpper() + ": wind-up";
+            if (kind == "flood") Snd("eel_flood", tp.x, tp.y, 1f); else if (kind != "storm") Snd("eel_roar", tp.x, tp.y, 0.9f);   // the storm has its own charge hum
             switch (kind)
             {
                 case "combo":
@@ -245,7 +246,13 @@ namespace GameCore
             EelBoss.HurtPublic(p, dmg, what, "Blunt"); Knock(p, fx, fy, knock, prone, now); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = dmg, Text = what, X = Pos(p).x, Y = Pos(p).y }); return true;
         }
         static void Snd(string name, float x, float y, float vol = 1f) => Sfx.Play(name, new Vector3(x, -y, 0f), vol, 0.04f, 1f);   // host-side, like the boss sting (co-op: clients get no eel sounds yet)
-        static void Impact(State s, float x, float y, float power, bool water) => s.Events.Add(new Ev { Kind = "impact", X = x, Y = y, Power = power, Water = water });
+        static void Impact(State s, float x, float y, float power, bool water)
+        {
+            s.Events.Add(new Ev { Kind = "impact", X = x, Y = y, Power = power, Water = water });
+            // sound (the older moves had none): water thrown out of a pool, or a body part hitting the ground (the jaws' slam has its own, eel_slam)
+            if (water) Snd(power >= 1.5f ? "eel_splash_big" : "eel_splash", x, y, Mathf.Clamp(0.55f + 0.3f * power, 0.6f, 1.2f));
+            else if (power < 2f) Snd("eel_thud", x, y, Mathf.Clamp(0.5f + 0.4f * power, 0.5f, 1.1f));
+        }
         static void Ring(EelBoss.Fight f, float x, float y, float r, bool live = false, string kind = "ring") => f.Zones.Add(new EelBoss.Zone { X = x, Y = y, R = r, Kind = kind, Live = live });
 
         // ---- COMBO: a head strike out of one pool, a tail sweep round another
@@ -665,7 +672,7 @@ namespace GameCore
             else
             {
                 f.Label = u < 2.3f ? "VOMIT: it rises with the body in its throat" : u < 3.0f ? "VOMIT: the body is thrown up on the slab" : "RETREAT: it sinks down the big pool's centre";
-                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); HumanLootSystem.RollSpawnStash(f.Body, 4); GameLog.Write("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
+                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); HumanLootSystem.RollSpawnStash(f.Body, 4); EelBoss.AddParts(f.Body); GameLog.Write("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
                 if (u >= 4.2f) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); EncounterState.Enemies.Remove(s.Tail); Story.Set(EelBoss.Fled); GameLog.Write("The Drowner slides back down the pool. This isn't over."); }
             }
         }
@@ -725,6 +732,27 @@ namespace GameCore
             unit = ZoneUnit(f, best, out _); fx = s.X[best]; fy = s.Y[best]; return true;
         }
         public static bool IsEelHead(ICombatant u, string part) => part == "Head" && EelBoss.Is(u);
+        /// <summary>A melee swing from (px, py) facing (dx, dy) (a unit vector) with `reach` and an `arcDeg` wide arc: the nearest part of the body that is out of the water and low enough to cut (Z <= LowZ)
+        /// whose column (BodyHalf / HeadHalf round) the swing reaches. `d` is the distance to the column's edge. The whole body is the target, as for guns; the head zone is part "Head".</summary>
+        public static bool MeleeBody(float px, float py, float dx, float dy, float reach, float arcDeg, out ICombatant unit, out string part, out float d)
+        {
+            unit = null; part = null; d = 0f; var f = EelBoss.Current; if (f == null || f.Sump == null || f.Gone || f.Stage == "hidden") return false;
+            var s = f.Sump; int hit = -1; float best = reach + 1f;
+            for (int i = 0; i < N; i++)
+            {
+                if (s.Z[i] <= Surface || s.Z[i] > LowZ) continue;
+                float rx = s.X[i] - px, ry = s.Y[i] - py, dist = Mathf.Sqrt(rx * rx + ry * ry), r = i <= HeadSamples ? HeadHalf : BodyHalf, edge = Mathf.Max(0f, dist - r);
+                if (edge > reach || edge >= best) continue;
+                if (dist > r)                                                                    // outside the column: the swing's arc, widened by what the column covers from here
+                {
+                    float cos = Mathf.Clamp((rx * dx + ry * dy) / dist, -1f, 1f), slack = Mathf.Asin(Mathf.Min(1f, r / dist)) * Mathf.Rad2Deg;
+                    if (Mathf.Acos(cos) * Mathf.Rad2Deg > arcDeg * 0.5f + slack) continue;
+                }
+                best = edge; hit = i;
+            }
+            if (hit < 0) return false;
+            unit = ZoneUnit(f, hit, out part); d = Mathf.Max(0.01f, best); return true;
+        }
 
         public static void OnHeadHit(EelBoss.Fight f, ICombatant u)
         {

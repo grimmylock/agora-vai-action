@@ -83,6 +83,25 @@ namespace GameCore
             return Current = f;
         }
 
+        /// <summary>The reward's eel parts (Yan: "eel parts still drop"): what it coughs up with the body - two parts that sell for well above a Tier 3 mutant part (400-600 RU, MutantLootSystem):
+        /// a gland (1400-1900 RU) and a spine plate (900-1300 RU). They are in the body's pack with its gear and the story key (still undecided), taken from the corpse like any loot.</summary>
+        public static void AddParts(HumanEnemy body)
+        {
+            if (body == null || body.Inventory == null) return;
+            string Id() => "eel_part_" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
+            body.Inventory.Items.Add(new InventoryItem { Id = Id(), Name = "Drowner Gland", WeightKg = 3f, Qty = 1, Type = "mutantPart", Price = Random.Range(1400, 1901), Category = "3" });
+            body.Inventory.Items.Add(new InventoryItem { Id = Id(), Name = "Drowner Spine Plate", WeightKg = 4f, Qty = 1, Type = "mutantPart", Price = Random.Range(900, 1301), Category = "3" });
+        }
+
+        /// <summary>The last pump (Main Sump Pump, Depths 3) cannot be run while the eel lies in its pool (ACTION_DESIGN: "it blocks the last pump ... put it down, run the pump"): true = blocked, and says so.
+        /// It is "put down" when it has fled (Story flag eel_fled), which also holds for a save that beat it before this gate existed.</summary>
+        public static bool BlocksPump(string grantsKey)
+        {
+            if (grantsKey == null || grantsKey != LabLocks.Key("drain3") || TerrainMap.ZoneId != LabLocks.Depths3 || Story.Has(Fled)) return false;
+            GameLog.Write("The pump's panel sits at the edge of the pool, and something huge is circling right beside it. Nobody is touching that panel until it is put down.");
+            return true;
+        }
+
         public static void GoStage(Fight f, string stage) => Go(f, stage);
         public static void HurtPublic(Player p, int dmg, string what, string kind) => Hurt(p, dmg, what, kind);
         static void Go(Fight f, string stage) { f.Stage = stage; f.StageAt = Time.time; f.Move = null; f.Hit = false; f.Zones.Clear(); }

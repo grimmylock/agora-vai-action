@@ -160,6 +160,7 @@ namespace GameCore
         {
             var keys = MacroState.Current.Keys;
             if (o.Requires != null && !keys.Contains(o.Requires)) { GameLog.Write($"{o.Name}: {o.Description}"); return true; }   // Boss 2: the generator needs its fuse
+            if (EelBoss.BlocksPump(o.GrantsKey)) return true;                                                                   // Boss 3: the last pump, with the eel still in its pool
             if (o.Lock == "note")
             {
                 keys.Add(o.Opens);
