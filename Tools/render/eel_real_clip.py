@@ -6,7 +6,7 @@ on the real Sump render (four pools), with the impact treatment of the storyboar
 Placeholders: the body that is swallowed and brought back is the armour sprite lying down; the thrown/hurled players are bots at fixed spots; no sound; no Unity view exists yet (this is a preview)."""
 import sys, os, json, math, tempfile, random
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageChops
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import eel_storyboard as SB
 from eel_storyboard import pieces, shadow, stamp, SPLASH, RIPPLES, WHIRL, MAN, FNT, WW, WH, VW, VH, PAD, NS, T, OX, OY, sp, c01
@@ -27,7 +27,36 @@ def zigzag(p0, p1, n=7, j=14):
     pts = [p0]
     for i in range(1, n): u = i / n; pts.append((p0[0] + (p1[0] - p0[0]) * u + random.uniform(-j, j), p0[1] + (p1[1] - p0[1]) * u + random.uniform(-j, j)))
     pts.append(p1); return pts
-ZAPS = []; close = 0.0; HROT = 0.0
+
+BODYMASK = None
+def aura(S, k, t, n_strands, big=False):
+    """lightning that COILS AROUND the eel (Yan, 2026-11-07: 'around it, coiling, not on the sprite, much smaller'): thin 1 px strands winding round the body like a helix, floating a little off the skin.
+    The body's silhouette (the painted layers) gives the centre line and the width at every row, so the coils follow the real sprite. The back of each turn is hidden behind the body (drawn only where it is
+    outside the outline), the front crosses it. Tiny forks and sparks. Native resolution, 1 px core."""
+    if BODYMASK is None: return None
+    ys_, xs_ = np.nonzero(BODYMASK)
+    if len(ys_) < 50: return None
+    top, bot = ys_.min(), ys_.max(); y_a = top + int(0.28 * (bot - top)); y_b = bot - 2                             # below the head
+    cx = {}; hw = {}
+    for y in range(y_a, y_b + 1):
+        xr = np.nonzero(BODYMASK[y])[0]
+        if len(xr): cx[y] = (xr.min() + xr.max()) / 2.0; hw[y] = max(4.0, (xr.max() - xr.min()) / 2.0)
+    if len(cx) < 20: return None
+    lo = Image.new('RGBA', (WW, WH), (0, 0, 0, 0)); d = ImageDraw.Draw(lo)
+    for _ in range(n_strands):
+        L = int(random.uniform(0.45, 0.8 + 0.2 * k) * (y_b - y_a)); y0 = random.randint(y_a, max(y_a, y_b - L)); ph = random.uniform(0, 6.283)
+        pitch = random.uniform(80, 130); direction = random.choice((-1, 1)); prev = None; y = y0
+        while y < min(y_b, y0 + L):
+            if y in cx:
+                a = ph + direction * 6.283 * (y - y0) / pitch; sn = math.sin(a); front = math.cos(a) > 0; R = hw[y] * 1.28                                    # a little wider than the skin
+                x = cx[y] + R * sn + random.uniform(-1.0, 1.0); yy = y + random.uniform(-1.0, 1.0); shown = front or abs(sn) * 1.28 > 1.02
+                if shown and prev is not None: d.line((prev[0], prev[1], x, yy), fill=(120, 200, 255, 80), width=3); d.line((prev[0], prev[1], x, yy), fill=(238, 251, 255, 255), width=1)
+                prev = (x, yy) if shown else None
+                if shown and random.random() < 0.05 * (1 + k) and abs(sn) > 0.5:                                  # a tiny fork off the outer loops
+                    sg = 1 if sn > 0 else -1; fx = x + sg * random.uniform(4, 10); fy = yy + random.uniform(-7, 7); d.line((x, yy, (x + fx) / 2, (yy + fy) / 2 + random.uniform(-2, 2), fx, fy), fill=(238, 251, 255, 235), width=1); d.point((fx, fy), fill=(255, 255, 255, 255))
+            y += 1
+    return lo
+ZAPS = []; close = 0.0; HROT = 0.0; CHG0 = None
 def grip_points(S, face, mo):
     """the jaw-hold in the preview: the two gloves on the jaw tips (eel_jaw_tips.py), and where he stands, in front of the face: (upper, lower, stand) as (x, y, z) tile points"""
     jk = 6 if mo > 1.2 else int(round(min(max(mo, 0.0), 1.0) * 5)) if mo >= 0 else 5
@@ -84,7 +113,7 @@ def draw_player(c, q, flash):
     sx, sy = sp(x, y, max(z, 0)); c.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height / 2 - 6)))
 
 def run(probe=None):
-    global close
+    global close, CHG0
     tmp = tempfile.mkdtemp(); fi = 0; n = 0; shown = -1; pops = []; hitat = {}; sheet = []; probes = sorted(probe) if probe else None; prev = [None, None]; prevhead = None
     while fi < len(FR):
         f = FR[fi]; t = f['t']; adv = SB.frozen == 0
@@ -95,7 +124,7 @@ def run(probe=None):
                 if e[0] == 'impact': SB.impact(t, e[1], e[2], e[3], bool(e[4]), stop=2, crackn=7); SB.frozen = min(SB.frozen, 2)
                 elif e[0] == 'hit': pops.append((t, e[5], e[6], e[7])); hitat[e[5]] = t
                 elif e[0] == 'spark': ZAPS.append(('spark', t, e[1], e[2], e[3]))
-                elif e[0] == 'storm': ZAPS.append(('burst', t, e[1], e[2], 1.0)); SB.flash = 0.6; SB.shake_amp = max(SB.shake_amp, 14); SB.zoom = max(SB.zoom, 0.08)
+                elif e[0] == 'storm': ZAPS.append(('burst', t, e[1], e[2], 1.0)); SB.frozen = 3; SB.flash = 0.6; SB.shake_amp = max(SB.shake_amp, 14); SB.zoom = max(SB.zoom, 0.08)
                 elif e[0] == 'parry': ZAPS.append(('parry', t, e[1], e[2], 1.0)); SB.flash = 0.4; SB.shake_amp = max(SB.shake_amp, 8)
                 elif e[0] == 'glint': ZAPS.append(('glint', t, e[1], e[2], 1.0)); SB.flash = 0.25
         step = 1.0 / FPS if adv else 0.0
@@ -127,8 +156,18 @@ def run(probe=None):
             for k in range(22):
                 gx = 8 + (k * 37 % 46); gy = 11 + (k * 53 % 19)
                 if m.getpixel((int(sp(gx, gy)[0]), int(sp(gx, gy)[1]))) > 200: stamp(c, RIPPLES[(int(t * 15) + k * 3) % len(RIPPLES)], gx, gy, 0.9, 0.7)
-        if fl > 0.05 and f['move'] == 'storm' and ('charging' in f['label'] or 'ELECTRIC' in f['label']):                  # the water crackles while it charges
-            m_ = flood_mask(fl); el = Image.new('RGBA', c.size, (120, 220, 255, 0)); el.putalpha(m_.point(lambda v: int(v * (0.03 + 0.05 * random.random())))); c.alpha_composite(el)
+        if fl > 0.05 and f['move'] == 'storm' and ('charging' in f['label']):                  # the water crackles while it charges
+            if 'charging' in f['label'] and CHG0 is not None:                                                         # the water gathers charge: tiny sparks creep in from the eel's pool, more and wider as it charges
+                kk_ = c01((t - CHG0) / 4.7); rr_t = 3 + 14 * kk_; cells_ = [q for q in SHALLOW if q[2] <= max(fl, 1.0)]; bx_, by_ = S[0, 0], S[0, 1]
+                wl = Image.new('RGBA', c.size, (0, 0, 0, 0)); wd = ImageDraw.Draw(wl)
+                for _ in range(int(3 + 26 * kk_ * kk_)):
+                    tx_, ty_, dd_ = random.choice(cells_)
+                    if math.hypot(tx_ + 0.5 - bx_, ty_ + 0.5 - by_) > rr_t: continue
+                    p0 = sp(tx_ + random.random(), ty_ + random.random()); ang = random.uniform(0, 6.283); pts = [p0]
+                    for _s in range(3): pts.append((pts[-1][0] + math.cos(ang + random.uniform(-0.9, 0.9)) * 3, pts[-1][1] + math.sin(ang + random.uniform(-0.9, 0.9)) * 3))
+                    wd.line(pts, fill=(110, 200, 255, 50), width=3); wd.line(pts, fill=(225, 246, 255, int(150 + 100 * kk_)), width=1)
+                wl.putalpha(ImageChops.multiply(wl.getchannel('A'), flood_mask(fl))); c.alpha_composite(wl)
+            m_ = flood_mask(fl); el = Image.new('RGBA', c.size, (120, 220, 255, 0)); el.putalpha(m_.point(lambda v: int(v * (0.015 + 0.035 * random.random())))); c.alpha_composite(el)
         for z in f['zones']:                                                                  # telegraphs (red) and live zones (white), exactly where the code will hurt
             x, y = sp(z[0], z[1]); live = z[4]; col = (255, 255, 255, 235) if live else (255, 60, 40, 150 + 80 * (n // 2 % 2))
             if z[3] == 'band' and len(z) > 5:
@@ -180,13 +219,16 @@ def run(probe=None):
                 if g is not None: gi = Image.fromarray(g); gi.putalpha(gi.getchannel('A').point(lambda v, al=alpha: int(v * al))); c.alpha_composite(gi)
         if adv: prev = [prev[1], cur]
         for a, ly in sorted(layers, key=lambda z: -z[0]): c.alpha_composite(Image.fromarray(ly))
+        global BODYMASK
+        BODYMASK = np.zeros((WH, WW), bool)
+        for a, ly in layers: BODYMASK |= ly[..., 3] > 0
         if f.get('bite') in ('grapple', 'lift', 'smash'):                                                   # Yan's sketch: a glove on each jaw tip - and he stays where he stood
             gu, gl, _ = grip_points(S, face, f.get('mouth', -1)); glove(c, gu, face == 1); glove(c, gl, face == 1)
             if os.environ.get('EELDBG') and abs(t - 33.0) < 0.04: print('DBG face', face, 'player', sp(pl[0][0], pl[0][1], 0), 'glove up', sp(*gu), 'glove lo', sp(*gl), 'head', sp(S[0,0], S[0,1], S[0,2]), 'T', T, 'MAN', MAN.size)
         if f.get('bite') == 'slump': stars(c, S, t)                                                       # stunned: stars circle its head
         zo = Image.new('RGBA', c.size, (0, 0, 0, 0)); zd = ImageDraw.Draw(zo); hx_, hy_ = sp(S[0, 0], S[0, 1], max(S[0, 2], 0) + 0.6)
         for z in list(ZAPS):
-            kind, z0, zx, zy, zp = z; age = t - z0; life = 0.22 if kind == 'spark' else 0.7 if kind == 'burst' else 0.45 if kind == 'glint' else 0.5
+            kind, z0, zx, zy, zp = z; age = t - z0; life = 0.22 if kind == 'spark' else 1.5 if kind == 'burst' else 0.45 if kind == 'glint' else 0.5
             if age > life: ZAPS.remove(z); continue
             if age < 0: continue
             vis_ = [i for i in range(NS) if S[i, 2] > 0.3]
@@ -201,21 +243,39 @@ def run(probe=None):
                 q0 = sp(S[i, 0], S[i, 1], S[i, 2]); q1 = sp(S[i, 0] + random.uniform(-0.8, 0.8), S[i, 1] + random.uniform(-0.8, 0.8), 0.0); pts = zigzag(q0, q1, 5, 10)
                 zd.line(pts, fill=(120, 210, 255, 130), width=8); zd.line(pts, fill=(235, 250, 255, 245), width=3)
             if kind == 'spark' and vis_:
-                for _ in range(2 + int(8 * zp)): crawl(random.randint(0, max(0, NS - 24)), random.randint(8, 24), 5)
-                for _ in range(1 + int(5 * zp)): drop(random.choice(vis_))
-            elif kind == 'burst':
-                for _ in range(14 if vis_ else 0): crawl(random.randint(0, max(0, NS - 24)), random.randint(10, 26), 6)
-                for _ in range(10 if vis_ else 0): drop(random.choice(vis_))
-                for _ in range(8):
-                    tx_, ty_, dd_ = random.choice([q for q in SHALLOW if q[2] <= max(fl, 1.0)] or SHALLOW); p0 = sp(tx_ + 0.5, ty_ + 0.5); p1 = (p0[0] + random.uniform(-60, 60), p0[1] + random.uniform(-40, 40)); pts = zigzag(p0, p1, 4, 9)
-                    zd.line(pts, fill=(120, 210, 255, int(150 * (1 - age / life))), width=6); zd.line(pts, fill=(240, 252, 255, int(255 * (1 - age / life))), width=2)
-                m_ = flood_mask(max(fl, 1.0)); el = Image.new('RGBA', c.size, (150, 230, 255, 0)); el.putalpha(m_.point(lambda v, k=age / life: int(v * 0.35 * (1 - k) * (0.5 + 0.5 * random.random())))); c.alpha_composite(el)
+                pass                                                                                          # the body's lightning is aura() now
+            elif kind == 'burst':                                                                          # the scream: a shock ring races over the water, the whole flood crackles, then it dies down
+                u = age / life; cxp, cyp = sp(zx, zy); rt = min(40.0, age * 56.0); fade = 1.0 - c01((age - 0.45) / 1.05)             # ring radius in tiles (reaches the flood's edge in ~0.3 s), the crackle fades after 0.45 s
+                wl = Image.new('RGBA', c.size, (0, 0, 0, 0)); wd = ImageDraw.Draw(wl); ra = rt * T
+                if rt < 40 and age < 0.55:                                                                  # the ring front: a thin bright circle with a dimmer one behind it
+                    for rr, al, wdt in ((ra, 255, 1), (ra * 0.93, 120, 1), (ra * 0.86, 55, 1)): wd.ellipse((cxp - rr, cyp - rr, cxp + rr, cyp + rr), outline=(235, 250, 255, al), width=wdt)
+                cells = [q for q in SHALLOW if q[2] <= max(fl, 1.0)]
+                for _ in range(int(420 * fade) + 6):                                                          # short thin arcs everywhere on the flood, thickest at the ring front, then everywhere
+                    tx_, ty_, dd_ = random.choice(cells); dist = math.hypot(tx_ + 0.5 - zx, ty_ + 0.5 - zy)
+                    if dist > rt + 1.0 or (age < 0.55 and abs(dist - rt) > 3.5 and random.random() < 0.8): continue
+                    p0 = sp(tx_ + random.random(), ty_ + random.random()); ang = random.uniform(0, 6.283); ln_ = random.uniform(5, 13)
+                    pts = [p0]; 
+                    for _s in range(3): pts.append((pts[-1][0] + math.cos(ang + random.uniform(-0.9, 0.9)) * ln_ / 3, pts[-1][1] + math.sin(ang + random.uniform(-0.9, 0.9)) * ln_ / 3))
+                    wd.line(pts, fill=(110, 200, 255, 70), width=3); wd.line(pts, fill=(238, 251, 255, 255), width=1)
+                for _ in range(int(40 * fade)):                                                               # a few bright sparks of the crackle
+                    tx_, ty_, dd_ = random.choice(cells); p0 = sp(tx_ + random.random(), ty_ + random.random()); wd.point(p0, fill=(255, 255, 255, 255))
+                wl.putalpha(ImageChops.multiply(wl.getchannel('A'), flood_mask(max(fl, 1.0)))); c.alpha_composite(wl)                          # only on the water: dry platforms stay dark and calm
+                m_ = flood_mask(max(fl, 1.0)); el = Image.new('RGBA', c.size, (150, 225, 255, 0)); el.putalpha(m_.point(lambda v, k=fade: int(v * 0.12 * k * (0.4 + 0.6 * random.random())))); c.alpha_composite(el)                  # the flickering electric tint
+                if age < 0.14: zd.ellipse((cxp - ra * 0.2 - 8, cyp - ra * 0.2 - 8, cxp + ra * 0.2 + 8, cyp + ra * 0.2 + 8), fill=(255, 255, 255, int(200 * (1 - age / 0.14))))             # the flash at the eel's base
             elif kind == 'glint':
                 gx_, gy_ = sp(S[0, 0], S[0, 1], max(S[0, 2], 0) + 0.5); rr_ = 14 + 70 * (age / life)
                 for ang_ in range(0, 360, 45): zd.line((gx_ - math.cos(math.radians(ang_)) * rr_, gy_ - math.sin(math.radians(ang_)) * rr_, gx_ + math.cos(math.radians(ang_)) * rr_, gy_ + math.sin(math.radians(ang_)) * rr_), fill=(255, 255, 255, int(255 * (1 - age / life))), width=4)
             elif kind == 'parry':
                 px_, py_ = sp(zx, zy, 0.8); rr_ = 20 + 150 * (age / life); zd.ellipse((px_ - rr_, py_ - rr_ * 0.8, px_ + rr_, py_ + rr_ * 0.8), outline=(255, 255, 255, int(255 * (1 - age / life))), width=5)
         c.alpha_composite(zo)
+        lab_ = f['label']
+        if f['move'] == 'storm' and 'charging' in lab_:
+            if CHG0 is None: CHG0 = t
+            kk = c01((t - CHG0) / 4.7); au = aura(S, kk, t, int(1 + 5 * kk), False)                                 # builds slowly, then crackles all over
+        elif f['move'] == 'storm' and ('ELECTRIC' in lab_ or 'SCREAMS' in lab_):
+            au = aura(S, 1.0, t, 9, True)                                                                              # at the scream: everywhere
+        else: CHG0 = None; au = None
+        if au is not None: c.alpha_composite(au)
         for i in range(NS - 1):                                                                # foam and ripples where the body goes through the water: always a pool's centre
             if (S[i, 2] > 0.02) != (S[i + 1, 2] > 0.02) and not (fl > 0.05): stamp(c, RIPPLES[int(t * 15) % len(RIPPLES)], S[i, 0], S[i, 1], 0.9, 0.85)
         for s_ in list(SB.splashes):
@@ -236,7 +296,7 @@ def run(probe=None):
         for (tp_, who, dmg, txt) in pops:
             if 0 <= t - tp_ < 0.9 and who < len(pl):
                 q = pl[who]; x, y = sp(q[0], q[1], 2.0 + (t - tp_) * 2.2); ov = Image.new('RGBA', c.size, (0, 0, 0, 0)); ImageDraw.Draw(ov).text((x - 55, y), f'-{dmg}  {txt}', font=FNT, fill=(255, 120, 100, int(255 * (1 - (t - tp_) / 0.9)))); c.alpha_composite(ov)
-        SB.flash = min(SB.flash, 0.18)
+        SB.flash = min(SB.flash, 0.34 if any(z_[0] == 'burst' and t - z_[1] < 0.1 for z_ in ZAPS) else 0.18)
         if SB.flash > 0.02: c.alpha_composite(Image.new('RGBA', c.size, (255, 255, 255, int(255 * SB.flash))))
         sx_ = sy_ = 0
         if SB.shake_amp > 0.3: sx_ = int(random.uniform(-1, 1) * SB.shake_amp); sy_ = int(random.uniform(-1, 1) * SB.shake_amp)
@@ -265,7 +325,9 @@ def run(probe=None):
         if adv: fi += 1
     if probe:
         w, h, cols = 640, 360, 3; rows = (len(sheet) + cols - 1) // cols; sh = Image.new('RGB', (cols * w, rows * h))
-        for k, (pt, im) in enumerate(sheet): sh.paste(im.resize((w, h)).convert('RGB'), ((k % cols) * w, (k // cols) * h))
+        for k, (pt, im) in enumerate(sheet):
+            if os.environ.get("PROBE_FULL"): im.convert("RGB").save(os.path.splitext(out)[0] + "_%d.png" % k)
+            sh.paste(im.resize((w, h)).convert('RGB'), ((k % cols) * w, (k // cols) * h))
         sh.save(out); print(out, len(sheet), 'moments')
     else: video(tmp, out, FPS); print(out, n, 'frames', round(n / FPS, 1), 's')
 
