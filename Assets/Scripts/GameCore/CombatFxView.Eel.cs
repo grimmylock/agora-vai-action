@@ -272,16 +272,30 @@ namespace GameCore
             var sl = EelBodySlices(stage); int n = 0, NN = EelSump.N; float scorch = f.Phase == 0 ? Mathf.Clamp01((1f - f.Unit.Hp / (float)EelBoss.MaxHp) / 0.2f) : 0f;       float chg = Mathf.Max(EelSump.ChargeOf(f), Time.time < _stormUntil ? 1f : 0f); float strainShake = EelSump.GrappleSpot(out _, out _) ? 0.05f + 0.07f * EelSump.TwitchOf(f) : 0f;      // the wounds carried down from Levels 1-2 (at most 20%, before the first wound stage): the body is scorched in patches, more the more it was hurt
             var sp = new Vector3[NN]; var ag = new float[NN]; var rd = new float[NN];                           // each sample's screen point, the way the body runs there (degrees) and the bend's radius in tiles
             for (int i = 0; i < NN; i++) sp[i] = W(s.X[i], s.Y[i], s.Z[i]);
+            var tmp = new Vector3[NN];                                                                       // the spine's samples are 0.25 tiles apart, so every kink in a move's path showed as a spiky corner: smooth the drawn line (head fixed) before measuring the way it runs
+            for (int pass = 0; pass < 4; pass++)
+            {
+                for (int i = 1; i < NN - 1; i++) tmp[i] = sp[i] * 0.5f + (sp[i - 1] + sp[i + 1]) * 0.25f;
+                for (int i = 1; i < NN - 1; i++) sp[i] = new Vector3(tmp[i].x, tmp[i].y, sp[i].z);
+            }
+            const int AW = 2, RW = 4;                                                                        // the way it runs over +-2 samples; the bend measured over +-4 (a kink of one sample is not a bend)
             for (int i = 0; i < NN; i++)
             {
-                int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(NN - 1, i + 1);
+                int i0 = Mathf.Max(0, i - AW), i1 = Mathf.Min(NN - 1, i + AW);
                 ag[i] = Mathf.Atan2(sp[i1].y - sp[i0].y, sp[i1].x - sp[i0].x) * Mathf.Rad2Deg;
+            }
+            var kv = new float[NN];
+            for (int i = 0; i < NN; i++)
+            {
+                int i0 = Mathf.Max(0, i - RW), i1 = Mathf.Min(NN - 1, i + RW);
+                float da = Mathf.DeltaAngle(ag[i0], ag[i1]) * Mathf.Deg2Rad, len = 0f;
+                for (int q = i0; q < i1; q++) len += Mathf.Sqrt((sp[q + 1].x - sp[q].x) * (sp[q + 1].x - sp[q].x) + (sp[q + 1].y - sp[q].y) * (sp[q + 1].y - sp[q].y));
+                kv[i] = len < 0.01f ? 0f : Mathf.Abs(da) / len;                                              // curvature = 1 / radius
             }
             for (int i = 0; i < NN; i++)
             {
-                int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(NN - 1, i + 1);
-                float da = Mathf.DeltaAngle(ag[i0], ag[i1]) * Mathf.Deg2Rad, len = Mathf.Sqrt((sp[i1].x - sp[i0].x) * (sp[i1].x - sp[i0].x) + (sp[i1].y - sp[i0].y) * (sp[i1].y - sp[i0].y));
-                rd[i] = Mathf.Abs(da) < 0.02f ? 99f : len / Mathf.Abs(da);                                       // a hairpin has a radius smaller than the body is thick
+                float kc = (kv[Mathf.Max(0, i - 1)] + 2f * kv[i] + kv[Mathf.Min(NN - 1, i + 1)]) * 0.25f;
+                rd[i] = kc < 0.01f ? 99f : 1f / kc;                                                            // a hairpin has a radius smaller than the body is thick
             }
             var dh = new float[NN];                                                                          // how far (tiles along the body) each sample is from the nearest part that is under the water
             for (int i = 0; i < NN; i++) dh[i] = s.Z[i] <= EelSump.Surface ? 0f : 99f;

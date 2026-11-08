@@ -5420,3 +5420,9 @@ Yan after playing it: "the eel zig zags too much, it can be a more continous sli
 - Why the body never vanished: dead crewmen are drawn as ragdoll objects that outlive the enemy list. `UnitMotionView.PruneGone` now destroys the ragdoll of any unit no longer present.
 - Harness: swallow-time bound in EelFight now 7.5 s. All checks pass.
 - NOT checked in Unity. Other moves with tight bends (arch, dash, snare) still use the view's old bend thinning; if the corners still look odd there, the view needs the fix.
+
+## Eel: corners and "suave" zigs and zags on every move (2026-11-08)
+Yan: "fix the corners on the other eel moves too" and "make its zigs and zags be more 'suave'".
+- `EelSump.Curve`: the authored move paths were polylines, so every waypoint was a kink the body had to fold round. The constructor now cuts corners twice (Chaikin, ends kept), so every move (combo, arch, dash, snare, flood, storm, intro) turns in curves. Worst surface crossing from a pool's centre went from 0.39 to 0.50 tiles; the harness still passes.
+- `CombatFxView.Eel.cs`: the drawn spine is smoothed (4 passes, head fixed) and the bend radius is measured over a wider window and averaged, so a one-sample wobble no longer counts as a hairpin and thins the body into a spiky corner. Real hairpins still thin as before.
+- NOT checked in Unity; no render of the other moves yet. If the movement now feels too floaty or a strike misses its pool centre, the smoothing passes are the knobs.

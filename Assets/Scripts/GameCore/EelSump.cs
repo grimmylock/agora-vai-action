@@ -55,6 +55,17 @@ namespace GameCore
                 var p = new List<(float x, float y, float z)>();
                 foreach (var q in pts) if (p.Count == 0 || D3(p[p.Count - 1], q) > 1e-4f) p.Add(q);
                 if (p.Count < 2) p.Add((p[0].x, p[0].y, p[0].z - 1f));
+                for (int it = 0; it < 2 && p.Count >= 3; it++)                                                 // suave: cut every corner of the authored path (Chaikin, ends kept) so a turn is a curve, never a kink the body has to fold round
+                {
+                    var c = new List<(float x, float y, float z)> { p[0] };
+                    for (int i = 0; i + 1 < p.Count; i++)
+                    {
+                        var a0 = p[i]; var a1 = p[i + 1]; float f0 = i == 0 ? 0.5f : 0.25f, f1 = i + 2 == p.Count ? 0.5f : 0.25f;
+                        if (f0 < 0.5f) c.Add((a0.x + (a1.x - a0.x) * f0, a0.y + (a1.y - a0.y) * f0, a0.z + (a1.z - a0.z) * f0));
+                        if (f1 < 0.5f) c.Add((a1.x - (a1.x - a0.x) * f1, a1.y - (a1.y - a0.y) * f1, a1.z - (a1.z - a0.z) * f1));
+                    }
+                    c.Add(p[p.Count - 1]); p = c;
+                }
                 n = p.Count; px = new float[n]; py = new float[n]; pz = new float[n]; cum = new float[n];
                 for (int i = 0; i < n; i++) { px[i] = p[i].x; py[i] = p[i].y; pz[i] = p[i].z; cum[i] = i == 0 ? 0f : cum[i - 1] + D3(p[i - 1], p[i]); }
                 L = cum[n - 1];
