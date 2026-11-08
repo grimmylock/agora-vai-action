@@ -18,6 +18,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1], args.Length > 2 ? args[2] : ""); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
+    if (args.Length > 0 && args[0] == "ttkprobe") { TtkProbe(); return 0; }
     if (args.Length > 0 && args[0] == "rtprobe") { RtLoadoutProbe(args.Length > 1 ? int.Parse(args[1]) : 30); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
@@ -2249,6 +2250,37 @@ static class Program {
     } finally { EncounterState.Enemies.Clear(); Rt.On = false; }
   }
 
+
+
+  // "Shotguns: 3 full patterns to drop a mid-armor target at 5 tiles vs ~1 s for rifles; SMGs still need 14-15 chest hits on the heaviest tier 3 armor" (ACTION_DESIGN Later list): the numbers behind it. For one gun of every kind against a
+  // standing target in each tier's heaviest armor, chest aim, at 5 and 12 tiles, a steadied shooter: the damage a round does on average (misses count), the rounds per second the gun cycles at, and the seconds to take 200 HP.
+  // dotnet /tmp/test.dll ttkprobe
+  static void TtkProbe() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    for (int y = py - 3; y <= py + 3; y++) for (int x = px - 2; x <= px + 22; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    var guns = new (string cat, string name)[] { ("sidearm", "PSh-18 Pchela"), ("sidearm", "Halden .45 Service"), ("smg", "Vosa vz. 62"), ("smg", "Corvan Wasp-9"), ("smg", "Corvan Hornet .45"), ("assault", "VKS-74U"), ("assault", "VK-74"), ("assault", "VK-103"), ("assault", "Corvan Battle Rifle"),
+      ("shotgun", "Hound 13"), ("shotgun", "Sever-34 O/U"), ("shotgun", "Tambour-12"), ("sniper", "SKN Karabin"), ("heavy", "Corvan LMG") };
+    var armors = new (string label, ArmorDef a)[] { ("none", null) }.Concat(new[] { "tier1", "tier2", "tier3", "tier4" }.Select(t => (label: $"{t} (heaviest)", a: ArmorDatabase.Tiers[t].Values.OrderByDescending(x => x.PhysDR).First()))).ToArray();
+    Console.WriteLine("200 HP target, chest aim, steady shooter: seconds to kill (rounds) at 5 tiles / 12 tiles. 999 = not within 60 s");
+    Console.WriteLine($"{"gun",-22}{"rpm",5}  " + string.Join("", armors.Select(a => $"{a.label,-26}")));
+    foreach (var (cat, name) in guns) {
+      var key = WeaponDatabase.Categories[cat].FirstOrDefault(kv => kv.Value.Name == name).Key; if (key == null) continue;
+      p.EquipWeapon(cat, key); var w = p.EquippedWeapon; var hd = Gunplay.For(w); var line = $"{name,-22}{hd.Rpm,5:0}  ";
+      foreach (var (label, armor) in armors) {
+        string cell = "";
+        foreach (int d in new[] { 5, 12 }) {
+          var dummy = new HumanEnemy("Target", px + d, py, "Raiders", "Rookie", null, armor) { IsAggroed = true }; dummy.MaxHp = 1000000; EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
+          var aim = new Gunplay.Aim { Steady = 1f, Bloom = 0f }; float spread = Gunplay.Spread(hd, aim, 0, false); long dmg = 0; int n = 400;
+          for (int i = 0; i < n; i++) { dummy.Hp = 1000000; w.CurrentMagazine = 5; Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false); Gunplay.LandAll(); dmg += 1000000 - dummy.Hp; }
+          double per = dmg / (double)n, rps = hd.Rpm / 60.0; double ttk = per <= 0.01 ? 999 : Math.Min(999, Math.Ceiling(200 / per) / rps); int rounds = per <= 0.01 ? 0 : (int)Math.Ceiling(200 / per);
+          cell += $"{ttk,5:0.0}s({rounds,3}) ";
+        }
+        line += cell.PadRight(26);
+      }
+      Console.WriteLine(line);
+    }
+    Rt.On = false;
+  }
 
   // Task #36 ("why Yan loses to humans as Ex-Military"): the three starting loadouts in REAL-TIME fights against Raiders, through the real Rt.PlayerTick / Rt.WorldTick / RtAi: a bot that aims at the nearest
   // living raider, holds RMB (steady aim) past 5 tiles, fires on the gun's cycle and reloads when dry. No dodging, no cover, no medkit: only the guns and the suits. dotnet /tmp/test.dll rtprobe [runs]
