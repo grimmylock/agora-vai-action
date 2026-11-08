@@ -134,6 +134,10 @@ namespace GameCore
             System.Math.Max(0.25f, System.Math.Min(0.6f, (For(w).ReloadTime - (Revolver(w) ? CylinderOpen : 0f)) / System.Math.Max(1, w.MagCapacity)));
 
         public const float MaxBloom = 10f;                   // degrees of kick at most, however long the trigger is held
+        /// <summary>Task #36 ("why Yan loses to humans as Ex-Military", measured with Program.cs RtLoadoutProbe): a bot holding the trigger with the starting rifle hit 17% of its rounds at 12 tiles (the starting pistol 50%) because a 600 rpm gun
+        /// kicks 19 degrees a second and recovers 11, so the kick sat at the 10 degree cap. YOUR kick tops out lower (the enemies' keep MaxBloom, Yan's rule 6: no enemy nerfs, tools for the player): holding the trigger is still worse than
+        /// bursts, just not worse than a pistol.</summary>
+        public const float PlayerMaxBloom = 6f;
 
         public static Handling For(Weapon w)
         {

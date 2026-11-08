@@ -18,6 +18,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1], args.Length > 2 ? args[2] : ""); return 0; }
     if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
+    if (args.Length > 0 && args[0] == "rtprobe") { RtLoadoutProbe(args.Length > 1 ? int.Parse(args[1]) : 30); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
@@ -2242,6 +2243,51 @@ static class Program {
       var (_, npc) = Gunplay.NpcAim(new HumanEnemy("R", px, py, "Raiders", "Rookie", null, null), w, p);
       Check(hits > 1200 && npc > spread * 1.5f, $"RT 7z: the starter pistol from the hip hits {hits * 100 / 1500}% at 5 tiles (spread {spread:0.0} deg; a Rookie's stays {npc:0.0})");
     } finally { EncounterState.Enemies.Clear(); Rt.On = false; }
+  }
+
+
+  // Task #36 ("why Yan loses to humans as Ex-Military"): the three starting loadouts in REAL-TIME fights against Raiders, through the real Rt.PlayerTick / Rt.WorldTick / RtAi: a bot that aims at the nearest
+  // living raider, holds RMB (steady aim) past 5 tiles, fires on the gun's cycle and reloads when dry. No dodging, no cover, no medkit: only the guns and the suits. dotnet /tmp/test.dll rtprobe [runs]
+  static void RtLoadoutProbe(int runs) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var sets = new (string name, (string rank, int dist)[] foes)[] {
+      ("1 Rookie at 12", new[] { ("Rookie", 12) }), ("3 Rookies at 14", new[] { ("Rookie", 14), ("Rookie", 15), ("Rookie", 16) }), ("2 Veterans at 14", new[] { ("Veteran", 14), ("Veteran", 15) }), ("1 Veteran + 3 Rookies", new[] { ("Veteran", 13), ("Rookie", 14), ("Rookie", 15), ("Rookie", 16) }) };
+    Console.WriteLine("loadout            weapon / suit                               " + string.Join("", sets.Select(q => $"{q.name,-26}")));
+    foreach (var loadout in new[] { "Scavenger", "Ex-Military", "Freelance Trader" }) {
+      var line = new List<string>(); string kit = ""; int shotsMine = 0, hitsMine = 0, shotsTheirs = 0, hitsTheirs = 0;
+      foreach (var set in sets) {
+        int win = 0, dead = 0, timeout = 0; float hpLeft = 0f, ttk = 0f; int fired = 0, hitsOn = 0;
+        for (int run = 0; run < runs; run++) {
+          GameBootstrap.StartNewGame(new CharacterSpec { Loadout = loadout }, null, save: false);
+          GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; var p = Player.Current; int px = p.X, py = p.Y; Rt.On = true; Rt.Reset(); Body.Reset();
+          for (int y = py - 8; y <= py + 8; y++) for (int x = px - 3; x <= px + 22; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+          p.HealPermanent(100000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); EncounterState.ResetFight(); UnityEngine.Time.time = 5000f + run * 100f; UnityEngine.Time.unscaledTime = UnityEngine.Time.time;
+          var foes = new List<HumanEnemy>(); int fi = 0;
+          foreach (var (rank, dist) in set.foes) { var (w1, a1) = EncounterGeneration.PickFactionLoadout("Raiders", rank, 1); var e = new HumanEnemy("Raider", px + dist, py + (fi++ % 2 == 0 ? -1 : 2), "Raiders", rank, w1, a1) { IsAggroed = true }; foes.Add(e); EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0f, 0f); }
+          EncounterState.InCombat = true; Contact.Spot(p); kit = $"{p.EquippedWeapon.Db.Name} {p.EquippedWeapon.RangeTiles}t / {p.EquippedArmor?.Name}";
+          const float dt = 1f / 60f; float cycle = 60f / Gunplay.For(p.EquippedWeapon).Rpm; float nextShot = 0.2f; float t = 0f; bool over = false; int burst = int.Parse(Environment.GetEnvironmentVariable("BURST") ?? "0"), inBurst = 0; float pause = float.Parse(Environment.GetEnvironmentVariable("PAUSE") ?? "0.4", System.Globalization.CultureInfo.InvariantCulture);       // BURST=3 PAUSE=0.4: fire discipline
+          for (int k = 0; k < 60 * 60 && !over; k++, t += dt) {
+            UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt;
+            var tgt = foes.Where(f => f.IsAlive() && !EnemyAI.IsOut(f)).OrderBy(f => CombatantUtil.Distance(p, f)).FirstOrDefault();
+            var input = new Rt.Input();
+            if (tgt != null) {
+              var (tx, ty) = Ballistics.Pos(tgt); input.Mouse = (tx, ty); float d = CombatantUtil.Distance(p, tgt);
+              input.Aim = d > 5f; var w = p.EquippedWeapon; var (ppx, ppy) = Ballistics.Pos(p); if (d > w.RangeTiles * 0.7f) { float mx = tx - ppx, my = ty - ppy, ml = (float)Math.Sqrt(mx * mx + my * my) + 0.001f; input.X = mx / ml; input.Y = my / ml; }       // closes to 70% of its range, then stands and shoots
+              if (!w.IsLoaded || w.IsJammed) input.Reload = true;
+              else if (d <= w.RangeTiles + 2 && t >= nextShot) { input.Fire = true; input.FireDown = true; nextShot = t + cycle; fired++; if (burst > 0 && ++inBurst >= burst) { inBurst = 0; nextShot = t + cycle + pause; } }
+            }
+            int hp0 = p.Hp; Rt.PlayerTick(p, input); Rt.WorldTick(p); UnityEngine.Time.time += dt; foreach (var ce in CombatFx.Pending) if (ce.Kind == "shot" && !ce.Pellet && !ce.Flying) { if (ce.Actor == p) { shotsMine++; if (ce.Hit) hitsMine++; } else if (ce.Actor != null) { shotsTheirs++; if (ce.Hit) hitsTheirs++; } } CombatFx.Pending.Clear();
+            if (!p.IsAlive()) { dead++; hpLeft += 0; over = true; }
+            else if (foes.All(f => !f.IsAlive() || EnemyAI.IsOut(f))) { win++; hpLeft += p.Hp; ttk += t; over = true; }
+          }
+          if (!over) timeout++;
+        }
+        line.Add($"win {win,2} dead {dead,2} to {timeout,2} hp {(win > 0 ? hpLeft / win : 0),4:0} t {(win > 0 ? ttk / win : 0),4:0.0}s".PadRight(26));
+      }
+      Console.WriteLine($"{loadout,-18} {kit,-44} " + string.Join("", line));
+      Console.WriteLine($"{"",-18} accuracy: you {100 * hitsMine / Math.Max(1, shotsMine)}% of {shotsMine} rounds, them {100 * hitsTheirs / Math.Max(1, shotsTheirs)}% of {shotsTheirs}");
+    }
+    Rt.On = false;
   }
 
   // Yan, 2026-10-23: "enemies ... a lot more accurate than the player ... characters past a few 'me's' bullets already fly high or

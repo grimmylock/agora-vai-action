@@ -464,7 +464,7 @@ namespace GameCore
             if (!Of(p).Diving && (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil)) spread += 2f * Gunplay.PlayerSpread;   // RT 8 (Yan): no pinning mid-dive
             if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
             Gunplay.AimAtEel = atEel; try { Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush); } finally { Gunplay.AimAtEel = false; }
-            aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
+            aim.Bloom = System.Math.Min(Gunplay.PlayerMaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out (task #36: lower for the player)
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();
         }
