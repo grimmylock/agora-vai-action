@@ -255,8 +255,46 @@ def harmonize(im):
         for dy in (3, 4): pad.putpixel((xk, int(cy) + dy), (22, 24, 26, 255)); pad.putpixel((xk + 1, int(cy) + dy), (22, 24, 26, 255))
     pad.alpha_composite(outlined); return pad
 
+
+def lid_top(im):
+    """The lid seen from above (Yan, 2026-11-08: "redo the lid and top of the glass from above"): the picture shows the lid as a front-on band; the room is seen from above at 3/4, so its TOP face shows too - a steel plate
+    above the band, a little narrower at the far edge (perspective), lit from the top left, with a bevel highlight, a dark outline, rivets along the far edge, a gland where each cable goes in and a service hatch. Drawn BEHIND the
+    shell so the cables run over it. Rows 17-23, over the cables' feet; the front band (rows 24-34) is his drawing."""
+    lx0, lx1 = 33, 97; y0, y1 = 16, 23; ports = (44, 52, 60, 68, 76, 83)
+    for y in range(y0, y1 + 1):
+        t = (y - y0) / float(y1 - y0); inset = int(round(4 * (1 - t))); xa, xb = lx0 + inset, lx1 - inset
+        for x in range(xa, xb + 1):
+            u = (x - xa) / float(max(1, xb - xa))                                                  # 0 left .. 1 right
+            if y == y0: c = hexc('#1c1e20')                                                         # the far edge's outline
+            elif x == xa or x == xb: c = hexc('#23262a')                                            # the side edges
+            elif y == y0 + 1: c = hexc('#a9afb2') if u < 0.7 else hexc('#8a9094')                    # the bevel catching light
+            elif y == y1: c = hexc('#3a3e42')                                                       # the shadow where it meets the front band
+            else: c = hexc('#838a8e') if u < 0.33 else hexc('#6b7276') if u < 0.7 else hexc('#585e62')
+            px(im, x, y, c)
+    for x in range(lx0 + 9, lx1 - 6, 11):                                                           # rivets along the far edge
+        px(im, x, y0 + 2, hexc('#c4cacd')); px(im, x, y0 + 3, hexc('#2c3034'))
+    for x in ports:                                                                                 # a gland round each cable's entry: dark mouth, a lit lip above it
+        px(im, x - 1, y1 - 2, hexc('#b3b9bc')); px(im, x, y1 - 2, hexc('#b3b9bc')); px(im, x + 1, y1 - 2, hexc('#b3b9bc'))
+        px(im, x - 1, y1 - 1, hexc('#0c0e10')); px(im, x, y1 - 1, hexc('#0c0e10')); px(im, x + 1, y1 - 1, hexc('#0c0e10'))
+    hx = lx1 - 26                                                                                  # a service hatch with its handle
+    for yy in (y0 + 3, y0 + 4):
+        for xx in range(hx, hx + 11): px(im, xx, yy, hexc('#4a5054') if yy == y0 + 3 else hexc('#3a3e42'))
+    for xx in range(hx + 3, hx + 8): px(im, xx, y0 + 3, hexc('#c4cacd'))
+
+
+def glass_top(im):
+    """The top of the glass from above: under the lid's overhang the glass's inside is in the lid's shadow (a dark band that fades down the glass), the front rim of the glass catches a thin pale line, and a dark line under it
+    is the glass's thickness. Drawn over the liquid and the brain, under the vat's shell (its glints stay on top)."""
+    gx0, gx1, gy0 = A.GX0, A.GX1, A.GY0
+    for k in range(7):
+        al = int(150 * (1 - k / 7.0) ** 1.6)
+        for x in range(gx0, gx1 + 1):
+            if al > 0: px(im, x, gy0 + k, (8, 14, 13, al))
+    for x in range(gx0, gx1 + 1):
+        px(im, x, gy0, hexc('#d6ebe3', 190)); px(im, x, gy0 + 1, hexc('#0d1815', 150))
+
 def frame(state, t):
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0)); lid_top(im)                  # the lid's top face first, behind everything (the cables run over it)
     phase = state[1] if isinstance(state, tuple) else 3
     GX0, GX1, GY0, GY1, CX = A.GX0, A.GX1, A.GY0, A.GY1, A.CX
     span = GY1 - GY0; bh = A.bh
@@ -298,6 +336,7 @@ def frame(state, t):
     clip.alpha_composite(sp, (ox, oy))
     ca = np.array(clip); ca[GY1 + 1:, :, 3] = 0; ca[:, :GX0, 3] = 0; ca[:, GX1 + 1:, 3] = 0
     im.alpha_composite(Image.fromarray(ca, 'RGBA'))
+    glass_top(im)
     im.alpha_composite(A.shell)                                               # the vat over everything in it: lid, glass reflections, base, machines, cables
     cracks = [(fx(150), fy(150), [(-3, -12), (7, -18), (4, 11), (10, 17), (-5, 18)]), (fx(228), fy(122), [(-9, -10), (-6, 12), (4, 14), (-14, 4)]), (fx(222), fy(235), [(-6, -14), (6, -8), (-10, 6), (2, 12), (-4, 16)])]
     for ci, (sx, sy, legs) in enumerate(cracks[:3 if not isinstance(state, tuple) else phase]):
