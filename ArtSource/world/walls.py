@@ -295,7 +295,8 @@ def build(mat, mask, variant=0, extra=None, corners=0):
         if lip is not None: im[yb, x] = lip                         # sunlit top edge of the wall
     # openings on a horizontal stretch of built wall
     fx = [x for x in face_top]
-    if extra in ("window", "uwin", "door", "metaldoor") and fx and T < C and not ((mask & 5) == 5 and not (mask & 10)):
+    LOCKS = ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on")   # Boss 2: the lab's lock faces (LabLocks): one lock type, one look
+    if extra in ("window", "uwin", "door", "metaldoor") + LOCKS and fx and T < C and not ((mask & 5) == 5 and not (mask & 10)):
         ft = min(face_top[x] for x in fx)
         two = H >= 36                                                    # Batch 119: two storeys - the top half is the upper floor
         if extra in ("window", "uwin"):
@@ -315,9 +316,28 @@ def build(mat, mask, variant=0, extra=None, corners=0):
                 for x in range(3, 13):
                     edge = x in (3, 12) or k == (H - 19 if two else 1)
                     c = pal[0] if edge else pal[2] if (x % 3) else pal[1]
-                    if extra == "metaldoor" and not edge: c = pal[3] if k in (5, 12) else pal[2]
+                    if extra in ("metaldoor",) + LOCKS and not edge: c = pal[3] if k in (5, 12) else pal[2]
                     im[ft + k, x] = c
             im[ft + (H - 9 if two else H // 2 + 1), 10] = P["steel"][4] if extra == "door" else P["rust"][3]
+            if extra in LOCKS:
+                on = extra.endswith("_on"); badge = extra.startswith("badge")
+                lamp = hx("#5ee07a") if on else hx("#4aa8ff") if badge else hx("#e0503a")   # green once it's unlocked; blue badge reader; red dead power
+                if badge:                                                   # a blue strip over the door and a card reader beside it (dark box, lit LED, a white slot)
+                    for x in range(4, 12): im[ft + 3, x] = hx("#3a7fd0") if not on else hx("#3aa860")
+                    for k in range(11, 17):
+                        for x in (13, 14): im[ft + k, x] = hx("#1a1e22")
+                    im[ft + 12, 13] = lamp; im[ft + 12, 14] = lamp
+                    im[ft + 14, 13] = hx("#e8ecee"); im[ft + 14, 14] = hx("#e8ecee")
+                else:                                                       # hazard stripes low on the door, a big lamp over it, a lit panel beside it
+                    for k in range(H - 9, H - 3):
+                        for x in range(4, 12):
+                            if (x + k) % 4 < 2: im[ft + k, x] = hx("#c8a02a")
+                            else: im[ft + k, x] = hx("#1c1c1c")
+                    for k in (2, 3):
+                        for x in (7, 8): im[ft + k, x] = lamp
+                    for k in range(11, 16):
+                        for x in (13, 14): im[ft + k, x] = hx("#1a1e22")
+                    im[ft + 12, 13] = lamp; im[ft + 12, 14] = lamp
     if extra == "crack" and fx:
         x = r.randrange(3, 13); ft = face_top.get(x, None)
         if ft is not None:
@@ -428,6 +448,8 @@ def all_tiles():
                 key = f"{mask}c{cs}" if cs else f"{mask}"
                 if cs: t[f"w_{mat}_{key}_0"] = build(mat, mask, 0, None, cs)
                 for ex in ("window", "door", "metaldoor", "crack"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
+                if mat == "concrete":                                       # Boss 2: the lab's lock doors (only the lab's wall material needs them)
+                    for ex in ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
                 if H >= 36: t[f"w_{mat}_{key}_uwin"] = build(mat, mask, 0, "uwin", cs)   # Batch 119: an upper-floor window on a plain wall
                 if mat in ("wall", "plaster", "plank"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
                 if mat in ("wall", "plaster", "plank", "concrete"):   # Batch 98: worn, for intact walls

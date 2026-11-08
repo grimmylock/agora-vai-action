@@ -1,0 +1,42 @@
+%% Sub-Station Depths, Level 2 (the Lower Cistern) - a longer, darker search, drawn before the plan (level-design skill, graph_check.py).
+%% Ids are grid cells: cXrY = column X, row Y (7 columns, 5 rows). Roles the plan reads: {start} the landing (stairs up, top right),
+%%   {item:drain2} the pump at the end of a thin spur (spur:N), {goal} the stairs down (in sight in the middle, cut off until the pump runs),
+%%   strike = where the eel bursts out and wraps (three of them, set points), false = the lamps flicker and nothing comes (two),
+%%   lamp = a lamp that flickers first, {item:cacheN} = the stash a dead end pays.
+%% Rule (Yan): the way is long and has to be found: a snake across the whole level, wrong turns that dead-end, shortcuts you can see
+%% across the water but not use. The pump is ~85 tiles away as the crow flies; the way there is more than twice that.
+%% start: c6r0
+%% goal: c2r1
+flowchart TD
+  c6r0["Landing {start}"] --> c5r0["Island"]
+  c5r0 --> c4r0["Island"]
+  c4r0 --> c3r0["Corner: strike lamp"]
+  c3r0 --> c2r0["Walkway"]
+  c2r0 --> c1r0["Walkway"]
+  c1r0 --> c0r0["Dead end: crate {item:cache1}"]
+  c3r0 --> c3r1["Island"]
+  c3r1 --> c4r1["Island"]
+  c4r1 --> c5r1["Junction: false lamp"]
+  c5r1 --> c6r1["Island"]
+  c6r1 --> c6r2["Dead end: bones {item:cache2}"]
+  c5r1 --> c5r2["Junction"]
+  c5r2 --> c5r3["Island"]
+  c5r3 --> c5r4["Dead end: papers {item:cache3}"]
+  c5r2 --> c4r2["Island"]
+  c4r2 --> c3r2["By the stairs: strike lamp"]
+  c3r2 --> c2r2["Island"]
+  c2r2 --> c1r2["Junction"]
+  c1r2 --> c0r2["Island"]
+  c0r2 --> c0r1["Dead end: crate {item:cache4}"]
+  c1r2 --> c1r3["Island"]
+  c1r3 --> c2r3["Island: false lamp"]
+  c2r3 --> c3r3["Island"]
+  c3r3 --> c4r3["Island"]
+  c4r3 --> c4r4["Island"]
+  c4r4 --> c3r4["Island"]
+  c3r4 --> c2r4["Island"]
+  c2r4 --> c1r4["Last island: strike lamp"]
+  c1r4 --> c0r4["Pump island"]
+  c0r4 --> pump["Pump 2 {item:drain2} spur:N"]
+  c2r1["Stairs down: cut off {goal}"]
+  c0r4 -->|req:drain2| c2r1

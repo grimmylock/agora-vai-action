@@ -92,6 +92,7 @@ namespace GameData
             // Tier 1 dungeons (TierDungeons.cs): found by walking up to them, not by a roll
             new ZoneDef { Id = "chapel_crypt", Name = "Chapel Crypt", Tier = 1, BaseHazardModifier = 1, ConnectedZones = { "perimeter" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             // Batch 120: upper floors of buildings, their own small maps (TierDungeons.Upstairs, ArtSource/plans/house_plans.py)
+            new ZoneDef { Id = "testing_ground", Name = "Testing Ground", Tier = 1, BaseHazardModifier = 0 },   // the menu's dev range (TestingGround.cs): no exits, no factions
             new ZoneDef { Id = "farmhouse_upper", Name = "Farmhouse - Upstairs", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter" }, IsDungeon = true, Upstairs = true },
             new ZoneDef { Id = "school_upper", Name = "School - First Floor", Tier = 4, BaseHazardModifier = 2, ConnectedZones = { "ghost_town" }, IsDungeon = true, Upstairs = true },
             new ZoneDef { Id = "flats_2", Name = "The Flats - Second Floor", Tier = 4, BaseHazardModifier = 2, ConnectedZones = { "ghost_town", "flats_3" }, IsDungeon = true, Upstairs = true },
@@ -106,7 +107,11 @@ namespace GameData
             new ZoneDef { Id = "drydock_tunnels", Name = "The Dry Dock Tunnels", Tier = 5, BaseHazardModifier = 5, ConnectedZones = { "ship_graveyard" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "hospital_morgue", Name = "The Hospital Morgue", Tier = 6, BaseHazardModifier = 6, ConnectedZones = { "hospital" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "secret_lab_alpha", Name = "Secret Lab Alpha", Tier = 2, BaseHazardModifier = 2, ConnectedZones = { "industrial_basin" }, AccessCondition = new AccessCondition { RequiresCheck = "Perception", Dc = 15 } },
-            new ZoneDef { Id = "sub_station_depths", Name = "Sub-Station Depths", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "dried_lake" }, AccessCondition = new AccessCondition { RequiresCheck = "Perception", Dc = 16 } },
+            new ZoneDef { Id = "sub_station_depths", Name = "Sub-Station Depths", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "dried_lake", "sub_station_depths_1", "sub_station_depths_3" }, AccessCondition = new AccessCondition { RequiresCheck = "Perception", Dc = 16 } },
+            // the eel's flooded levels (Yan, 2026-11-04): stairs down from the pump room, one level a map
+            new ZoneDef { Id = "sub_station_depths_1", Name = "Sub-Station Depths - Cistern", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "sub_station_depths", "sub_station_depths_2" }, IsDungeon = true },
+            new ZoneDef { Id = "sub_station_depths_2", Name = "Sub-Station Depths - Lower Cistern", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "sub_station_depths_1", "sub_station_depths_3" }, IsDungeon = true },
+            new ZoneDef { Id = "sub_station_depths_3", Name = "Sub-Station Depths - Sump", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "sub_station_depths_2", "sub_station_depths" }, IsDungeon = true },
             new ZoneDef { Id = "maintenance_tunnels", Name = "Maintenance Tunnels", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "rail_yards" }, AccessCondition = new AccessCondition { RequiresCheck = "Perception", Dc = 15 } },
             new ZoneDef { Id = "secret_lab_beta", Name = "Secret Lab Beta", Tier = 4, BaseHazardModifier = 4, ConnectedZones = { "ghost_town" }, AccessCondition = new AccessCondition { RequiresCheck = "Perception", Dc = 17 } },
             new ZoneDef { Id = "deep_caverns", Name = "Deep Caverns", Tier = 4, BaseHazardModifier = 4, ConnectedZones = { "crimson_woods" }, AccessCondition = new AccessCondition { RequiresCheck = "Perception", Dc = 16 } },

@@ -138,7 +138,7 @@ namespace GameCore
 
         static void Bowl(ICombatant v, int speed)
         {
-            int dmg = UnityEngine.Random.Range(1, 4) * speed;
+            int dmg = UnityEngine.Random.Range(1, 4) * speed * 10;
             v.Hp = System.Math.Max(0, v.Hp - dmg);
             v.StatusEffects.Prone = true;
             GameLog.Write($"{(v is Player ? "You are" : v.Name + " is")} bowled over by a rolling barrel: {dmg} damage, knocked down.");

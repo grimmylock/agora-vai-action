@@ -57,6 +57,7 @@ namespace GameCore
         {
             if (unit == null) return null;
             if (unit == Player.Current) return _playerMarker;
+            if (unit is Player fp) return _friendMarkers.TryGetValue(fp, out var fm) ? fm : null;
             int i = unit is Mutant m ? EncounterState.Enemies.IndexOf(m) : -1;
             return i >= 0 && i < _enemyMarkers.Count ? _enemyMarkers[i] : null;
         }
@@ -80,6 +81,7 @@ namespace GameCore
         private readonly HashSet<int> _fires = new HashSet<int>();   // standing cells drawn with the animated bonfire
         private readonly HashSet<SpriteRenderer> _faded = new HashSet<SpriteRenderer>();
         private readonly Dictionary<SpriteRenderer, int> _lastFoot = new Dictionary<SpriteRenderer, int>();
+        float _rippleAt;   // RT fx 4: the last wading ripple (one every 0.6 s at most)
         private readonly Dictionary<SpriteRenderer, SpriteRenderer> _shadows = new Dictionary<SpriteRenderer, SpriteRenderer>();
         private static Sprite _shadowSprite;
 
@@ -169,13 +171,31 @@ namespace GameCore
 
             if (TerrainMap.DirtyTiles.Count > 0 && _mapTex != null && _bake == null)   // during a re-bake they wait a frame or two
             {
-                _worldStamp++;
-                foreach (var d in TerrainMap.DirtyTiles)
+                // Water rising or draining (the eel's flood: Difficult tiles with no look or "deepwater") changes neither sight nor light: no new line-of-sight pass
+                // (Vision.Update redoes ~4000 rays whenever the stamp moves, and bumps Vision.Version, which makes the overlays redraw) and no light re-bake.
+                bool waterOnly = true;
+                foreach (var d in TerrainMap.DirtyTiles) { var dt = TerrainMap.GetTile(d.x, d.y); if (dt == null || dt.Type != TileType.Difficult || dt.Look != null && dt.Look != "deepwater") { waterOnly = false; break; } }
+                if (!waterOnly) _worldStamp++;
+                if (!_world) foreach (var d in TerrainMap.DirtyTiles) TerrainArt.Recompose(_mapPx, _builtZoneId, d.x, d.y);
+                else
                 {
-                    if (!_world) { TerrainArt.Recompose(_mapPx, _builtZoneId, d.x, d.y); continue; }
-                    for (int y = d.y - 1; y <= d.y + 1; y++) for (int x = d.x - 1; x <= d.x + 1; x++) WorldArt.Refresh(x, y);
-                    WorldArt.PaintGround(_mapPx, d.x - 2, d.y - 2, d.x + 2, d.y + 2);
-                    for (int y = d.y - 1; y <= d.y + 1; y++) for (int x = d.x - 1; x <= d.x + 1; x++) PlaceStanding(x, y);
+                    // Batched (2026-11-06, the eel's flood froze the game for seconds: it flips hundreds of tiles, and doing 3x3 refreshes, a 5x5 ground repaint
+                    // and 3x3 placements PER dirty tile did the same cells ~25 times over). Every cell is refreshed, painted and placed once; the paint goes in horizontal runs.
+                    var refresh = new HashSet<(int x, int y)>(); var paint = new HashSet<(int x, int y)>();
+                    foreach (var d in TerrainMap.DirtyTiles)
+                    {
+                        for (int y = d.y - 2; y <= d.y + 2; y++) for (int x = d.x - 2; x <= d.x + 2; x++) { paint.Add((x, y)); if (System.Math.Abs(x - d.x) <= 1 && System.Math.Abs(y - d.y) <= 1) refresh.Add((x, y)); }
+                    }
+                    foreach (var c in refresh) WorldArt.Refresh(c.x, c.y, !waterOnly);
+                    var rows = new Dictionary<int, List<int>>();
+                    foreach (var c in paint) { if (!rows.TryGetValue(c.y, out var xs)) rows[c.y] = xs = new List<int>(); xs.Add(c.x); }
+                    foreach (var kv in rows)
+                    {
+                        var xs = kv.Value; xs.Sort(); int a = xs[0], b = a;
+                        for (int i = 1; i < xs.Count; i++) { if (xs[i] == b + 1) b = xs[i]; else { WorldArt.PaintGround(_mapPx, a, kv.Key, b, kv.Key); a = b = xs[i]; } }
+                        WorldArt.PaintGround(_mapPx, a, kv.Key, b, kv.Key);
+                    }
+                    foreach (var c in refresh) PlaceStanding(c.x, c.y);
                 }
                 TerrainMap.DirtyTiles.Clear();
                 _mapTex.SetPixels32(_mapPx);
@@ -184,6 +204,7 @@ namespace GameCore
             }
 
             SlideProps();
+            if (Rt.On) Rt.Glide(Time.deltaTime);                                 // NPC tile jumps become slides; hitboxes ride them (also under the menu)
             _motion.DrainSteps();
             bool playerUp = DrawUnit(player, _playerMarker, new Color(0.2f, 0.6f, 1f));
             // Batch 31: time of day / weather decide how far you see; the flashlight follows your aim
@@ -192,16 +213,25 @@ namespace GameCore
             _look = look; _lookZone = _builtZoneId;
             var aimAt = MouseWorld();
             if (aimAt.HasValue) _aim = Mathf.Atan2(aimAt.Value.y - _playerMarker.transform.position.y, aimAt.Value.x - _playerMarker.transform.position.x);
-            Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim);
+            float lookReach = Rt.On ? look.Vision * (1f + 0.5f * (1f - Mathf.Clamp01(look.Night / 0.8f))) : 0f;   // real time: the look cone (Vision.LookReach)
+            Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
+            Rt.Me.LookReach = Vision.LookReach;                                  // co-op: fair shots read each player's own reach
             _roofs?.Tick(player);
             _atmo?.Tick(player, look);
             ColorGrade.Apply(look);
             if (look.Rain > 0.75f) Sfx.Ambient("amb_storm"); else if (look.Rain > 0f) Sfx.Ambient("amb_rain"); else Sfx.Ambient(Sfx.AmbientFor(MacroState.Current.CurrentZoneId));   // the map overhaul: the region you stand in
-            Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp, Away(_playerMarker));
+            bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
+            PoseBody(_playerMarker, player, downNow);
+            Held(_playerMarker).MeleeCharge = Melee.ChargeOf(player);                     // RT 7e: the player's wind-ups drive the pose
+            UseOf(Held(_playerMarker), player);
+            Held(_playerMarker).Show(player.EquippedWeapon, player.EquippedArmor, _playerMarker.transform.position, AimPoint(player, _playerMarker), playerUp && !downNow, Away(_playerMarker), player.Gunslinging ? player.OffhandWeapon : null);
+            EelGrip(Held(_playerMarker), player);
+            DrawFriends();
             // Batch 123: while someone on the map talks to you, the camera frames you both (above the dialog panel) and a
             // chevron bobs over the speaker
             var speaker = ChoiceUI.Speaker; var spm = speaker != null && speaker != player ? MarkerOf(speaker) : null;
-            FollowCamera(_playerMarker.transform.position, spm != null ? spm.transform.position : (Vector3?)null);
+            var cut = Story.InCutscene && Story.LookAt.HasValue ? new Vector3(Story.LookAt.Value.x, -Story.LookAt.Value.y, 0f) : (Vector3?)null;   // Story 3: a cutscene frames its point
+            FollowCamera(_playerMarker.transform.position, spm != null ? spm.transform.position : cut);
             if (spm != null && _speakerMark == null) _speakerMark = CreateMarker("Speaker", Color.white, 1f, WorldArt.SortTop, _root.transform, Chevron());
             if (_speakerMark != null)
             {
@@ -233,6 +263,7 @@ namespace GameCore
             for (int i = 0; i < EncounterState.Enemies.Count; i++)
             {
                 var enemy = EncounterState.Enemies[i];
+                if (EelBoss.Is(enemy)) { _enemyMarkers[i].gameObject.SetActive(false); _alertMarks[i].gameObject.SetActive(false); continue; }   // the eel draws itself (CombatFxView.Eel): its two units are hitboxes, not a person (Yan: the testing-ground dummy showed up as its hitbox)
                 // Fix: dead enemies used to just be hidden (SetActive(false)) - that made a
                 // HumanEnemy corpse invisible right when CorpseLootUI made it worth clicking on.
                 // Keep the marker up so a body stays a visible thing in the world (Batch 24: as a
@@ -240,13 +271,18 @@ namespace GameCore
                 bool shown = Vision.Shows(enemy);                // out of sight: not drawn at all
                 _enemyMarkers[i].gameObject.SetActive(shown);
                 bool red = Time.time - enemy.SpottedAt < 2.5f, yellow = !enemy.IsAggroed && enemy.Alert > 0f;
-                _alertMarks[i].gameObject.SetActive(shown && enemy.IsAlive() && (red || yellow));
+                bool calling = EncounterState.Caller == enemy && EncounterState.CallAt >= 0f;
+                _alertMarks[i].sprite = calling ? Radio((Time.time - EncounterState.CallAt) / Rt.RoundSeconds) : Bang();
+                _alertMarks[i].gameObject.SetActive(shown && enemy.IsAlive() && (red || yellow || calling));
                 if (!shown) continue;
                 bool alive = DrawUnit(enemy, _enemyMarkers[i], Companion.Is(enemy) ? new Color(0.45f, 1f, 0.55f) : new Color(1f, 0.25f, 0.2f));
-                if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
+                if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = calling ? Color.white : red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
                 if (enemy is HumanEnemy he)   // aware enemies point at the player, the rest where they look (Batch 128); corpses and the surrendered drop it
+                {
+                    Held(_enemyMarkers[i]).MeleeCharge = Melee.ChargeOf(he);                 // Melee 2c: his swings and moves drive the pose
                     Held(_enemyMarkers[i]).Show(he.EquippedWeapon, he.EquippedArmor, _enemyMarkers[i].transform.position,
                         AimPoint(he, _enemyMarkers[i]), alive && he.Morale != "Surrendered", Away(_enemyMarkers[i]));
+                }
                 else if (_held.TryGetValue(_enemyMarkers[i], out var stale)) stale.Show(null, null, Vector3.zero, null, false);   // slot reused by a mutant
             }
 
@@ -272,7 +308,7 @@ namespace GameCore
                 var frames = AnomalyFrames(an.AnomalyType);
                 if (frames != null)
                 {
-                    _anomalyMarkers[i].sprite = frames[(int)(Time.time / 0.11f + an.X * 7 + an.Y * 3) % frames.Length];
+                    _anomalyMarkers[i].sprite = frames[(int)(Time.time / (frames.Length > 6 ? 1f / CombatFxView.PxFps : 0.11f) + an.X * 7 + an.Y * 3) % frames.Length];
                     _anomalyMarkers[i].transform.localScale = Vector3.one * TileWorldSize;
                 }
                 var baseCol = _spriteAnomaly != null || frames != null ? Color.white : new Color(0.7f, 0.2f, 0.9f);
@@ -340,10 +376,13 @@ namespace GameCore
             _fx.Tick();
             _motion.TickRagdolls();
             _fx.ApplyTo(player, _playerMarker);
+            if (HudView.PlayerHurt > 0.01f)                                         // you were hit: the body flashes red (HudView.UpdateHurt)
+                _playerMarker.color = Color.Lerp(_playerMarker.color, new Color(1f, 0.22f, 0.16f, _playerMarker.color.a), 0.6f * HudView.PlayerHurt);
             for (int i = 0; i < EncounterState.Enemies.Count && i < _enemyMarkers.Count; i++) _fx.ApplyTo(EncounterState.Enemies[i], _enemyMarkers[i]);
             if (Camera.main != null) Camera.main.transform.position += _fx.ShakeOffset;
             UpdateFades();
 
+            if (Rt.On) { Reticle(player); return; }   // real-time fork: no move range, no path dots; a crosshair instead
             if (GameState.Current.CurrentTurn == Turn.Player
                 && (player.X != _highlightX || player.Y != _highlightY || player.Mp != _highlightMp))
             {
@@ -351,6 +390,53 @@ namespace GameCore
                 _highlightX = player.X; _highlightY = player.Y; _highlightMp = player.Mp;
             }
             UpdatePathPreview(player);
+        }
+
+        // Real-time fork: four ticks round the mouse, as far apart as the round can stray at that distance (one spread),
+        // so steadying the aim visibly closes them. Red while reloading or empty; the centre dot turns red over a body.
+        private readonly List<SpriteRenderer> _reticle = new List<SpriteRenderer>();
+        private void Reticle(Player player)
+        {
+            while (_reticle.Count < 6)
+                _reticle.Add(CreateMarker("Reticle", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite()));
+            var mt = Rt.MouseTile(UnityEngine.InputSystem.Mouse.current);
+            var w = player.EquippedWeapon;
+            bool show = mt.HasValue && w != null && player.IsAlive();
+            foreach (var r in _reticle) r.gameObject.SetActive(show);
+            if (!show) return;
+            var (mx, my) = mt.Value;
+            var (px, py) = Ballistics.Pos(player);
+            float dist = Mathf.Sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
+            var aim = Gunplay.AimOf(player);
+            float spread = Gunplay.Spread(Gunplay.For(w), aim, Rt.Me.Moving, player.Sneaking);
+            float gap = Mathf.Clamp(dist * Mathf.Sin(spread * Mathf.Deg2Rad) + 2f / 16f, 2f / 16f, 3f);
+            bool dry = aim.ReloadUntil >= 0f || (!CombatRules.IsMelee(w) && w.CurrentMagazine <= 0) || w.IsJammed;
+            var col = dry ? new Color(1f, 0.35f, 0.3f, 0.9f) : new Color(1f, 1f, 1f, 0.85f);
+            var c = new Vector3(mx, -my, 0f);
+            Vector3[] at = { c + new Vector3(gap, 0f, 0f), c + new Vector3(-gap, 0f, 0f), c + new Vector3(0f, gap, 0f), c + new Vector3(0f, -gap, 0f), c };
+            Vector3[] size = { new Vector3(3f, 1f, 1f), new Vector3(3f, 1f, 1f), new Vector3(1f, 3f, 1f), new Vector3(1f, 3f, 1f), Vector3.one };
+            var over = Rt.UnitUnder(mx, my);
+            for (int i = 0; i < 5; i++)
+            {
+                _reticle[i].transform.position = at[i];
+                _reticle[i].transform.localScale = size[i] * (1f / 16f);
+                _reticle[i].color = i == 4 && over != null ? new Color(1f, 0.3f, 0.25f, 1f) : col;
+            }
+            // RT batch 3: in bullet time the part under the crosshair lights up (head, torso or legs band of the sprite)
+            var box = _reticle[5];
+            bool lit = Rt.SlowMo && over != null && Body.Human(over);
+            box.gameObject.SetActive(lit);
+            if (lit)
+            {
+                float h = Ballistics.AimHeight(over, my), sc = Ballistics.Crouched(over) ? Ballistics.CrouchScale : 1f;
+                float lo = h >= Ballistics.HeadFrom * sc ? Ballistics.HeadFrom * sc : h >= Ballistics.TorsoFrom * sc ? Ballistics.TorsoFrom * sc : 0f;
+                float hi = lo >= Ballistics.HeadFrom * sc ? sc : lo >= Ballistics.TorsoFrom * sc ? Ballistics.HeadFrom * sc : Ballistics.TorsoFrom * sc;
+                var (ux, uy) = Ballistics.Pos(over);
+                float feet = -(uy + 0.44f), wide = lo >= Ballistics.HeadFrom * sc ? 0.28f : 0.4f;
+                box.transform.position = new Vector3(ux, feet + (lo + hi) * 0.5f * Ballistics.BodyTiles, 0f);
+                box.transform.localScale = new Vector3(wide, (hi - lo) * Ballistics.BodyTiles, 1f);
+                box.color = new Color(1f, 0.9f, 0.4f, 0.35f);
+            }
         }
 
         // Batch 116 (Yan: "a line indicating the path the character is gonna take if you click there, it could be green when in
@@ -548,9 +634,12 @@ namespace GameCore
         /// clicked; everyone else has a fixed spot of their own, up to a third of a tile off. Rules still use the tile.</summary>
         public static Vector3 StandOffset(ICombatant u)
         {
-            if (u is Player) return PlayerController.StandAt;
-            int h = u.GetHashCode() * 73856093;
-            return new Vector3(((h & 255) / 255f - 0.5f) * 0.55f, (((h >> 8) & 255) / 255f - 0.5f) * 0.4f, 0f);
+            if (u is Player && !Rt.On) return PlayerController.StandAt;
+            var (ox, oy) = Rt.Offset(u);                                   // real-time fork: where the body really is (tile space, y down)
+            if (!(u is Player up)) return new Vector3(ox, -oy, 0f);
+            var pose = Rt.PoseOf(up);                                          // RT 7z: the dive's arc; a crouch keeps the feet on the ground
+            float feet = 7f / 16f * (1f - pose.SquashY) * Mathf.Cos(pose.Tilt * Mathf.Deg2Rad);
+            return new Vector3(ox, -oy + Rt.Of(up).VaultLift + pose.Lift - feet, 0f);   // vaulting: up and over
         }
 
         /// <summary>Batch 24: positions (walking), art (walk frames) and death (ragdoll) for one unit.
@@ -560,28 +649,173 @@ namespace GameCore
         /// the back sprite (UnitSprites.Away) and the held gun together, so the gun always points where the body faces.</summary>
         private Vector3? AimPoint(ICombatant u, SpriteRenderer m)
         {
+            if (u is Player fp && fp != Player.Current)                       // a friend: their own crosshair (their Input packets / the snapshot)
+                return Rt.Of(fp).AimAt is (float, float) a ? new Vector3(a.Item1, -a.Item2, 0f) : (Vector3?)null;
+            if (u is Player gp0 && EelSump.Gripping(gp0) && CombatFxView.EelStand.HasValue) return CombatFxView.EelStand.Value + new Vector3(CombatFxView.EelFace * 2f, 0f, 0f);   // Boss 3: facing the eel
             if (u is Player)
             {
                 var sp = ChoiceUI.Speaker; var sm = sp != null && sp != u ? MarkerOf(sp) : null;
                 return sm != null ? sm.transform.position : MouseWorld();
             }
             if (u is HumanEnemy h)
-                return h.IsAggroed && h.Morale != "Surrendered" && _playerMarker != null ? _playerMarker.transform.position
-                    : m.transform.position + new Vector3(h.Facing.x, -h.Facing.y, 0f);
+            {
+                if (h.IsAggroed && h.Morale != "Surrendered")
+                {
+                    Player best = null; int bd = int.MaxValue;                            // it aims at the NEAREST player (co-op: not always the one on this screen)
+                    foreach (var q in Player.All) { if (!q.IsAlive()) continue; int d = (q.X - h.X) * (q.X - h.X) + (q.Y - h.Y) * (q.Y - h.Y); if (d < bd) { bd = d; best = q; } }
+                    var tm = best != null ? (best == Player.Current ? _playerMarker : MarkerOf(best)) : _playerMarker; if (tm != null) return tm.transform.position;
+                }
+                return m.transform.position + new Vector3(h.Facing.x, -h.Facing.y, 0f);
+            }
             return null;
         }
         private readonly Dictionary<SpriteRenderer, bool> _away = new Dictionary<SpriteRenderer, bool>();
         private bool Away(SpriteRenderer m) => _away.TryGetValue(m, out var b) && b;
+
+        /// <summary>RT 7z: a player's body turned, squashed and lifted by the moment (Rt.PoseOf: the dive's crouch, arc, landing and
+        /// get-up; down = on their side; else leaning into a swing). While posed, the shadow stays on the ground under them and
+        /// shrinks with the height (a ground-level copy, since the body's own child shadow turns and lifts with it).</summary>
+        private void PoseBody(SpriteRenderer marker, Player p, bool down)
+        {
+            var pose = Rt.PoseOf(p);
+            float tilt = down ? (UnitSprites.Pose(p, "lying", false) != null ? 0f : 90f) : pose.Active ? pose.Tilt : Held(marker).Lean;   // Poses: the lying frame instead of turning the body
+            marker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+            if (!down && pose.Active) marker.transform.localScale = new Vector3(marker.transform.localScale.x * pose.SquashX, marker.transform.localScale.y * pose.SquashY, 1f);
+            bool flying = !down && pose.Active && pose.Lift > 0.01f;
+            if (_shadows.TryGetValue(marker, out var own) && own != null) own.enabled = !flying;
+            if (!_groundShadows.TryGetValue(marker, out var g) || g == null)
+            {
+                if (own == null) return;
+                g = new GameObject("GroundShadow").AddComponent<SpriteRenderer>();
+                g.transform.SetParent(_root.transform, false);
+                g.sprite = own.sprite; g.color = own.color;
+                _groundShadows[marker] = g;
+            }
+            g.enabled = flying;
+            if (!flying) return;
+            var c = marker.transform.position;
+            g.transform.position = new Vector3(c.x, c.y - pose.Lift - 7f / TerrainArt.Px * Mathf.Cos(pose.Tilt * Mathf.Deg2Rad), 0f);
+            g.transform.localScale = new Vector3(pose.Shadow, pose.Shadow, 1f);
+            g.sortingOrder = SortAt(c.y - pose.Lift) - 1;
+        }
+        private readonly Dictionary<SpriteRenderer, SpriteRenderer> _groundShadows = new Dictionary<SpriteRenderer, SpriteRenderer>();
+
+        /// <summary>Co-op: every other player gets a body, their gun pointed at their own crosshair. (Before RT 7z only you were drawn.)</summary>
+        private void DrawFriends()
+        {
+            foreach (var p in Player.All)
+            {
+                if (p == Player.Current) continue;
+                if (!_friendMarkers.TryGetValue(p, out var m) || m == null)
+                {
+                    m = CreateMarker("Friend", new Color(0.3f, 0.85f, 1f), TileWorldSize * 0.7f, 5, _root.transform, _spriteBeing);
+                    m.gameObject.AddComponent<UnityEngine.Rendering.SortingGroup>();
+                    _friendMarkers[p] = m;
+                }
+                bool up = DrawUnit(p, m, new Color(0.3f, 0.85f, 1f));
+                bool down = Body.Down(p);
+                PoseBody(m, p, down);
+                UseOf(Held(m), p);
+                Held(m).Show(p.EquippedWeapon, p.EquippedArmor, m.transform.position, AimPoint(p, m), up && !down, Away(m), p.Gunslinging ? p.OffhandWeapon : null);
+                EelGrip(Held(m), p);
+            }
+            foreach (var gone in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(_friendMarkers.Keys, k => !Player.All.Contains(k))))
+            {
+                var m = _friendMarkers[gone]; _friendMarkers.Remove(gone);
+                if (m == null) continue;
+                _held.Remove(m);
+                if (_groundShadows.TryGetValue(m, out var g) && g != null) Destroy(g.gameObject);
+                _groundShadows.Remove(m);
+                Destroy(m.gameObject);
+            }
+        }
+        private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
+
+        /// <summary>Boss 3: while he holds the eel's jaws his gloves are on the two jaw tips (no weapon in sight).</summary>
+        private static void EelGrip(HeldWeaponView h, Player p)
+        {
+            if (EelSump.Gripping(p) && CombatFxView.EelHandUp.HasValue && CombatFxView.EelHandLo.HasValue) h.GripHands(p.EquippedArmor, CombatFxView.EelHandUp.Value, CombatFxView.EelHandLo.Value, CombatFxView.EelFace);
+        }
+
+        /// <summary>Use: the item a player is using, for the hands (HeldWeaponView.UseKind/UseT).</summary>
+        private static void UseOf(HeldWeaponView h, Player p)
+        {
+            var s = Rt.On ? Rt.Of(p) : null;
+            h.UseKind = s?.UsingId != null ? HeldPoseMath.UseKindOf(s.UsingId) : null;
+            h.UseT = s != null && s.UseDone > s.UseFrom ? Mathf.Clamp01((Time.time - s.UseFrom) / (s.UseDone - s.UseFrom)) : 0f;
+        }
+
+        // ---- Poses (Yan: "keep all of them, wire them into the game"): the body's frame when no swing asks for one ----
+        readonly Dictionary<SpriteRenderer, (Vector3 pos, float since)> _still = new Dictionary<SpriteRenderer, (Vector3, float)>();
+        readonly Dictionary<SpriteRenderer, (string pose, float at)> _posed = new Dictionary<SpriteRenderer, (string, float)>();
+        const float SitAfter = 8f, NpcSitAfter = 10f, HalfFrame = 0.12f;
+
+        /// <summary>Downed: lying. Sneaking: crouched on the move, kneeling when still. Aiming with cover right beside you (between
+        /// you and where you aim): leaning out of it to that side. Out of a fight and still for a while - you, or a calm NPC -
+        /// sitting down, legs out to the side you face.</summary>
+        string StancePose(ICombatant u, SpriteRenderer marker, bool walking)
+        {
+            float now = Time.time; var pos = marker.transform.position;
+            if (!_still.TryGetValue(marker, out var st) || Mathf.Abs(st.pos.x - pos.x) + Mathf.Abs(st.pos.y - pos.y) > 0.02f) _still[marker] = st = (pos, now);
+            float still = now - st.since;
+            if (u is Player p)
+            {
+                if (Body.Down(p)) return "lying";
+                if (p.Sneaking) return walking || still < 0.3f ? "crouch" : "kneel";
+                var aim = AimPoint(p, marker);
+                if (Rt.On && Rt.Of(p).Aiming && aim.HasValue && Lean(p, aim.Value.x - pos.x, aim.Value.y - pos.y) is string lean) return lean;
+                if (!EncounterState.InCombat && still > SitAfter && (!Rt.On || Rt.Of(p).UsingId == null)) return aim.HasValue && aim.Value.x < pos.x ? "sit_l" : "sit_r";
+                return null;
+            }
+            if (u is HumanEnemy h && h.IsAlive())
+            {
+                var aim = AimPoint(h, marker);
+                if (h.IsAggroed && EncounterState.InCombat && aim.HasValue && Lean(h, aim.Value.x - pos.x, aim.Value.y - pos.y) is string lean) return lean;
+                if (!h.IsAggroed && still > NpcSitAfter && h.Morale != "Surrendered") return h.Facing.x < 0 ? "sit_l" : "sit_r";
+            }
+            return null;
+        }
+
+        /// <summary>Cover on the tile beside you toward where you aim (side to side, or up and down the screen): lean out of it to the
+        /// side you aim at.</summary>
+        static string Lean(ICombatant u, float dx, float dy)
+        {
+            int sx = Mathf.Abs(dx) > 0.3f ? (dx > 0 ? 1 : -1) : 0, sy = Mathf.Abs(dy) > 0.3f ? (dy > 0 ? -1 : 1) : 0;   // screen y up = map y down
+            bool Cover(int x, int y) { var t = TerrainMap.GetTile(x, y).Type; return t == TileType.HardCover || t == TileType.ScatterCover || t == TileType.Solid; }
+            bool covered = (sx != 0 && Cover(u.X + sx, u.Y)) || (sy != 0 && Cover(u.X, u.Y + sy));
+            if (!covered) return null;
+            return dx < 0 ? "lean_l" : "lean_r";
+        }
+
+        /// <summary>The in-between frame for an instant on the way into a pose that has one.</summary>
+        string Entering(SpriteRenderer marker, string pose)
+        {
+            float now = Time.time;
+            if (!_posed.TryGetValue(marker, out var was) || was.pose != pose) _posed[marker] = was = (pose, now);
+            if (pose == null || now - was.at >= HalfFrame) return pose;
+            string half = pose == "crouch" ? "crouch_h" : pose == "kneel" ? "kneel_h" : pose.StartsWith("sit_") ? "sit_h_" + pose.Substring(4)
+                : pose.StartsWith("lean_") && !pose.StartsWith("lean_h") ? "lean_h_" + pose.Substring(5) : null;
+            return half ?? pose;
+        }
 
         private bool DrawUnit(ICombatant u, SpriteRenderer marker, Color fallback)
         {
             bool known = _motion.Known(u);
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
             marker.transform.position = _motion.Place(u, logical);
+            if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }
+            bool held = u is Player hp && EelSump.Gripping(hp) && CombatFxView.EelStand.HasValue;                // Boss 3: held in the jaws: drawn AT the mouth, over the eel (it hid him)
+            if (held)                                                                                          // he is NOT moved: he stays where he parried and strains - shoved back a little by the eel, shaking with each press
+            {
+                var ef0 = EelBoss.Current; float tw0 = EelSump.TwitchOf(ef0), gp0 = EelSump.GripOf(ef0);
+                marker.transform.position += new Vector3(-CombatFxView.EelFace * 0.2f * (1f - gp0) + Random.Range(-1f, 1f) * 0.07f * tw0, Random.Range(-1f, 1f) * 0.04f * tw0, 0f);
+            }   // Boss 3: carried by the tail, thrown, hurled
             var group = marker.GetComponent<UnityEngine.Rendering.SortingGroup>();
-            if (group != null) group.sortingOrder = SortAt(marker.transform.position.y);
+            if (group != null) group.sortingOrder = held ? 31990 : SortAt(marker.transform.position.y);
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
+            if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);
+            if (held) marker.transform.rotation = Quaternion.Euler(0f, 0f, 80f);   // lying in the jaws, held between the teeth (not standing up over the head)   // Boss 3: pulled under the water in the tail's grip
             var aim = AimPoint(u, marker);
             if (aim.HasValue) _away[marker] = UnitSprites.Away(marker.transform.position, aim.Value);   // no mouse: keep the last
             bool away = up && Away(marker);
@@ -601,10 +835,18 @@ namespace GameCore
             if (down) { marker.color = new Color(0f, 0f, 0f, 0f); return false; }
             int wf = up ? _motion.WalkFrame(u) : -1;
             if (wf >= 0 && UnitSprites.Walk(u, wf, away) is Sprite ws) marker.sprite = ws;
+            string bodyPose = _held.TryGetValue(marker, out var hv) ? hv.BodyPose : null;
+            if (bodyPose == null && up) bodyPose = StancePose(u, marker, wf >= 0);
+            bodyPose = Entering(marker, bodyPose);
+            if (held) { string sd = CombatFxView.EelFace < 0f ? "_l" : "_r"; float tw1 = EelSump.TwitchOf(EelBoss.Current); bodyPose = tw1 > 0.55f ? "lunge" + sd : Mathf.FloorToInt(Time.unscaledTime * 16f) % 2 == 0 ? "lunge_h" + sd : "crouch_h"; }   // Boss 3: straining against the jaws: the lunge frames, pressing in with each press
+            if (hv != null) hv.BodyDrop = bodyPose != null && (bodyPose.StartsWith("crouch") || bodyPose.StartsWith("kneel") || bodyPose.StartsWith("sit") || bodyPose.StartsWith("stagger")) ? 1f : 0f;
+            if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3 / Poses: the body's frame
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))
                 Sfx.Play(Sfx.Step(TerrainMap.GetTile(u.X, u.Y).Ground), marker.transform.position, u is Player ? 0.6f : 0.4f, 0.12f);
+            if (wf >= 0 && wf != lastWf && u is Player && TerrainMap.GetTile(u.X, u.Y).Ground == GroundType.Water && Time.time - _rippleAt > 0.6f)
+            { _rippleAt = Time.time; CombatFx.PxAt("ripples", u.X, u.Y); }   // RT fx 4: wading sets the water moving
             _lastFoot[marker] = wf;
             return up;
         }
@@ -826,10 +1068,37 @@ namespace GameCore
             tex.SetPixels32(px); tex.Apply();
             return _bang = Sprite.Create(tex, new Rect(0, 0, 3, 8), new Vector2(0.5f, 0f), TerrainArt.Px);
         }
+        // Yan: "add a radio icon in the same style as the ! above the head of the one who is calling for reinforcements, and make it
+        // slowly fill from yellow/white to red representing the 'charging up' of the call": a walkie-talkie in the !'s outline,
+        // its face filling red from the bottom over the round the call takes (TurnLoop.RadioForHelp gets through, or not, then).
+        static Sprite[] _radio;
+        static Sprite Radio(float charge)
+        {
+            if (_radio == null)
+            {
+                string[] rows = { "kk...", "kk...", "kkkkk", "kwwwk", "kwkwk", "kwwwk", "kwkwk", "kwwwk", "kkkkk" };   // antenna, body, grille
+                _radio = new Sprite[8];
+                for (int f = 0; f < 8; f++)
+                {
+                    var px = new Color32[5 * 9];
+                    for (int y = 0; y < 9; y++)
+                        for (int x = 0; x < 5; x++)
+                        {
+                            char c = rows[y][x]; int fromBottom = 7 - y;              // the face spans rows 3-7 (5 rows)
+                            px[(8 - y) * 5 + x] = c == '.' ? new Color32(0, 0, 0, 0) : c == 'k' ? new Color32(40, 34, 28, 255)
+                                : fromBottom < f * 5 / 7f ? (Color32)BangRed : (Color32)Color.Lerp(BangYou, BangYellow, f / 7f);
+                        }
+                    var tex = new Texture2D(5, 9, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+                    tex.SetPixels32(px); tex.Apply();
+                    _radio[f] = Sprite.Create(tex, new Rect(0, 0, 5, 9), new Vector2(0.5f, 0f), TerrainArt.Px);
+                }
+            }
+            return _radio[Mathf.Clamp(Mathf.FloorToInt(charge * 8f), 0, 7)];
+        }
         static readonly Color BangYellow = new Color(0.91f, 0.77f, 0.28f), BangRed = new Color(0.86f, 0.24f, 0.2f), BangYou = new Color(0.95f, 0.94f, 0.86f);
         Vector3 Above(SpriteRenderer m) => m.transform.position + new Vector3(0f, 1.1f + 0.05f * Mathf.Sin(Time.time * 6f), 0f);
 
-        static Vector3 _focus;   // eased camera offset from the player (a speaker pulls it over)
+        static Vector3 _focus, _lookAhead;   // eased camera offset from the player (a speaker pulls it over)
 
         private static void FollowCamera(Vector3 target, Vector3? speaker = null)
         {
@@ -837,8 +1106,14 @@ namespace GameCore
             if (cam == null) return;
             var me = target;
             var off = speaker.HasValue ? (speaker.Value - target) * 0.5f + new Vector3(0f, -cam.orthographicSize * 0.3f, 0f) : Vector3.zero;   // the dialog covers the bottom third
+            bool holding = EelSump.GrappleSpot(out var gx, out var gy), mine = holding && EelSump.Gripping(Player.Current);   // Boss 3: the jaw-hold - the one who parried is right on it, everyone else is shown the moment
+            Vector3 mouthW = CombatFxView.EelStand ?? new Vector3(gx, -gy, 0f);
+            if (holding) off += mine ? (mouthW - target) : (mouthW - target) * 0.7f;
+            _hl = Mathf.MoveTowards(_hl, holding && !mine ? 1f : 0f, Time.unscaledDeltaTime * 3f);
             _focus = Vector3.Lerp(_focus, off, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 6f));
             target += _focus;
+            _lookAhead = Vector3.Lerp(_lookAhead, Rt.On && !speaker.HasValue ? Rt.Me.Look : Vector3.zero, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 4f));   // real-time fork: look toward the mouse
+            target += _lookAhead;
             cam.transform.position = new Vector3(target.x, target.y, -10f);
             // Batch 65: mouse wheel zooms between the close view and twice as far (long guns reach past the close view)
             var mouse = UnityEngine.InputSystem.Mouse.current;
@@ -862,9 +1137,28 @@ namespace GameCore
             if (speaker.HasValue) need = Mathf.Max(need, Mathf.Max(Mathf.Abs(speaker.Value.y - me.y) * 2f + 2f, Mathf.Abs(speaker.Value.x - me.x) / Mathf.Max(0.5f, cam.aspect) + 2f));
             float want = Mathf.Clamp(Mathf.Max(_zoom, need), CameraViewHalfHeightTiles, CameraMaxHalfHeightTiles);
             _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * 6f);
-            cam.orthographicSize = _shown;
+            _close = Mathf.MoveTowards(_close, EelSump.Gripping(Player.Current) ? 1f : 0f, Time.unscaledDeltaTime * 4f);   // Boss 3: the jaw-hold's close-up, leaning in on the player holding the eel's mouth
+            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.8f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
+            // Boss 3's introduction: a cinematic camera (Story.CamLock). It glides to its point and zoom; when the lock ends it eases back to the player's own view instead of snapping.
+            var lk = Story.CamLock;
+            if (lk.HasValue)
+            {
+                var lockPos = new Vector3(lk.Value.x, -lk.Value.y, -10f);
+                if (_cineBlend <= 0f || Story.CamCut) { _cinePos = _cineBlend <= 0f && !Story.CamCut ? cam.transform.position : lockPos; _cineSize = _cineBlend <= 0f && !Story.CamCut ? cam.orthographicSize : Story.CamHalf; }
+                float k = Story.CamCut ? 1f : 1f - Mathf.Exp(-Time.unscaledDeltaTime * Story.CamRate);
+                _cinePos = Vector3.Lerp(_cinePos, lockPos, k); _cineSize = Mathf.Lerp(_cineSize, Story.CamHalf, 1f - Mathf.Exp(-Time.unscaledDeltaTime * Mathf.Max(1.5f, Story.CamRate * 0.6f)));
+                _cineBlend = Story.CamCut ? 1f : Mathf.MoveTowards(_cineBlend, 1f, Time.unscaledDeltaTime * 2.5f);
+            }
+            else _cineBlend = Mathf.MoveTowards(_cineBlend, 0f, Time.unscaledDeltaTime * 1.2f);
+            if (_cineBlend > 0f)
+            {
+                float e = _cineBlend * _cineBlend * (3f - 2f * _cineBlend);
+                var pos = Vector3.Lerp(cam.transform.position, new Vector3(_cinePos.x, _cinePos.y, -10f), e); cam.transform.position = pos; cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, _cineSize, e);
+            }
+            Story.CamCut = false;
         }
-        private static float _shown;
+        private static float _cineBlend, _cineSize; private static Vector3 _cinePos;
+        private static float _shown, _close, _hl;
 
         /// <summary>New: draws a unit with its own pixel art (UnitSprites - humans in the armor they
         /// wear, mutants as themselves) at full tile size, untinted; a corpse is darkened. Units with
@@ -878,6 +1172,15 @@ namespace GameCore
             Color live = art != null ? Color.white : fallbackColor;
             if (unit is HumanEnemy h && h.Morale == "Surrendered") live = new Color(0.7f, 0.75f, 0.9f, 0.85f);   // hands up
             if (unit is Mutant nm && nm.Named) { live = Color.Lerp(Color.white, new Color(1f, 0.55f, 0.2f), 0.35f + 0.25f * Mathf.Sin(Time.time * 3f)); marker.transform.localScale *= 1.2f; }
+            if (unit is Mutant hm && !(unit is HumanEnemy) && !BrainBoss.Is(hm) && art != null && art == UnitSprites.HD(hm.Db?.Name ?? hm.Name))
+            {
+                // they're drawn facing right: turn toward you in a fight, toward where they walk otherwise (kept between moves)
+                var p = Player.Current;
+                int? tx = hm.IsAggroed && p != null ? p.X : hm.PatrolTarget?.x;
+                if (alive && tx.HasValue && tx.Value != unit.X) marker.flipX = tx.Value < unit.X;
+                if (hm.IsCloaked) live.a = 0.3f;                                  // the Veil Prowler's shimmer (no cloaked cell at this size)
+            }
+            else marker.flipX = false;
             marker.color = alive ? live : new Color(0.35f, 0.32f, 0.3f, 0.9f);
         }
 
@@ -888,7 +1191,9 @@ namespace GameCore
         private static Sprite[] AnomalyFrames(string type)
         {
             string key = AnomalyArtKey(type);
-            return key == null ? null : CombatFxView.Strip($"Sprites/anomaly_{key}_strip", 6, 16, new Vector2(0.5f, 0.5f));
+            if (key == null) return null;
+            return CombatFxView.Strip($"Sprites/Fx/px_anomaly_{key}", 0, CombatFxView.PxFull, new Vector2(0.5f, 0.5f))   // RT fx 3: pixelfx (Livewire)
+                ?? CombatFxView.Strip($"Sprites/anomaly_{key}_strip", 6, 16, new Vector2(0.5f, 0.5f));
         }
 
         /// <summary>Where the player aims: the mouse over the map, or null (keep the last angle) when a

@@ -23,7 +23,7 @@ namespace GameCore
 
         private static readonly string[] MedicalItemIds =
         {
-            "basicMedkit", "militaryMedkit", "scientificMedkit", "bandage", "radBlockPill", "mre", "energyDrink",
+            "basicMedkit", "militaryMedkit", "scientificMedkit", "bandage", "splint", "radBlockPill", "mre", "energyDrink",
         };
 
         /// <summary>Ported from removeRandomMedicalConsumable().</summary>

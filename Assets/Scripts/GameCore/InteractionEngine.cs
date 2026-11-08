@@ -9,6 +9,12 @@ namespace GameCore
         /// <summary>Ported from attemptInteract(unit).</summary>
         public static void AttemptInteract(ICombatant unit)
         {
+            if (unit is Player examiner && EelBoss.TryExamine(examiner)) return;          // Boss 3: E on the drowned crewman starts the eel's introduction
+            if (unit is Player finisher && Boss.TryFinish(finisher)) return;              // Boss 1: E next to a broken boss
+            if (unit is Player breaker && Boss.TryBreakWall(breaker)) return;            // Boss 1: the Visor's cracked wall
+            if (unit is Player tester && TestingGround.TryInteract(tester)) return;
+            if (unit is Player teller && Tier1Story.TryInteract(teller)) return;          // Story 4: a mission's conversation (before the bonfire's camp)
+            if (unit is Player camper && Death.TryCamp(camper)) return;                  // E at a bonfire: make camp   // the testing ground's crate and terminal
             if (GameState.Current.CurrentTurn != Turn.Player)
             {
                 GameLog.Write("Cannot interact outside your turn.");
@@ -77,7 +83,8 @@ namespace GameCore
                         GameLog.Write("A new path has been opened.");
                     }
                 }
-                if (obj.GrantsKey != null && unit is Player && MacroState.Current.Keys.Add(obj.GrantsKey))   // the map overhaul: a key for a locked dungeon
+                if (obj.GrantsKey != null && unit is Player && LabLocks.Is(obj.GrantsKey)) { if (MacroState.Current.Keys.Add(obj.GrantsKey)) LabLocks.Granted(obj.GrantsKey); }   // Boss 2: a badge, a fuse, the power
+                else if (obj.GrantsKey != null && unit is Player && MacroState.Current.Keys.Add(obj.GrantsKey))   // the map overhaul: a key for a locked dungeon
                     GameLog.Write($"Under the junk there's a heavy key on a wire tag - it opens the {MacroMapDatabase.Find(obj.GrantsKey)?.Name ?? obj.GrantsKey}.");
                 TerrainMap.MarkOpened(obj);   // Batch 124: it stays, open and empty
                 TerrainMap.InteractiveObjects.Remove(obj);

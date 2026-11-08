@@ -110,6 +110,15 @@ namespace GameCore
             }
 
             foreach (Transform child in _activeList) Destroy(child.gameObject);
+            // Story 3: the story's objectives, then the journal's latest entries
+            var objectives = Story.Objectives.Select(o => $"> {o.text}{(string.IsNullOrEmpty(o.landmark) ? "" : $" ({o.landmark})")}").ToList();
+            var journal = Story.JournalEntries.Reverse().Take(4).Reverse().ToList();
+            if (objectives.Count + journal.Count > 0)
+            {
+                var story = UIBuildUtil.CreateRow(_activeList, "Story", RowHeight * (1.4f + 0.55f * (objectives.Count + journal.Count)), new Color(1f, 0.85f, 0.4f, 0.08f));
+                UIBuildUtil.CreateText(story.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.98f, 1f),
+                    "STORY\n" + string.Join("\n", objectives.Concat(journal.Select(j => "- " + j))), 11, Color.white, TextAlignmentOptions.Left);
+            }
             foreach (var aq in player.ActiveQuests.Take(MaxRowsShown))
             {
                 var q = QuestDatabase.Find(aq.QuestId);

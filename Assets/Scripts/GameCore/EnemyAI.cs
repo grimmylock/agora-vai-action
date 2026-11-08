@@ -261,6 +261,7 @@ namespace GameCore
             if (h.Morale == "Shaken") h.Ap = System.Math.Max(0, h.Ap - 1);   // Batch 127: keeping their head down costs them a shot
             if (h.IsFleeing())
             {
+                if (Rt.On) { RtAi.Flee(h); return; }   // RT batch 4: runs off step by step
                 while (h.Mp > 0 && h.IsAlive() && h.MoveAwayFrom(player)) { }
                 return;
             }
@@ -304,6 +305,7 @@ namespace GameCore
             {
                 h.Frags--;
                 h.Ap -= 2;
+                RtAi.Shout(h, "Grenade!");
                 _playerSpotRounds = 0;
                 Explosions.Throw(h, ConsumableDatabase.All["fragGrenade"], player.X, player.Y);
                 if (!player.IsAlive()) return;
@@ -334,6 +336,7 @@ namespace GameCore
 
             // Move to the best tile this role can reach.
             var best = PickTile(h, player, role, range);
+            if (Rt.On) { RtAi.SetGoal(h, best, role); if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player); return; }   // RT batch 4: RtAi walks there and shoots
             WalkTo(h, best);
             if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player);   // Batch 103: roll a barrel up to you to shoot, or tip a desk for cover
 
@@ -445,6 +448,7 @@ namespace GameCore
 
         private static void WalkTo(Mutant u, (int x, int y) dest)
         {
+            if (Rt.On) { RtAi.GoTo(u, dest); return; }   // RT batch 5: walked step by step in real time
             int guard = 0;
             while ((u.X, u.Y) != dest && u.Mp > 0 && u.IsAlive() && guard++ < 20)
                 if (!u.MoveToward(dest.x, dest.y)) break;
@@ -470,6 +474,7 @@ namespace GameCore
 
             if (m.IsFleeing())
             {
+                if (Rt.On) { RtAi.Flee(m); return; }   // RT batch 5
                 while (m.Mp > 0 && m.IsAlive() && m.MoveAwayFrom(player)) { }
                 return;
             }
@@ -486,7 +491,7 @@ namespace GameCore
                 // Batch 61: circling only works if a leap line opens up; behind a wall or up a ledge it never does
                 if (m.StalkRounds++ < 2) Circle(m, player, 3, 5);
                 else Approach(m, player.X, player.Y, false);
-                if (m.Ap >= 2 && m.IsInEngageRange(player)) { m.Ap -= 2; m.Attack(player); m.StalkRounds = 0; }
+                if (!Rt.On && m.Ap >= 2 && m.IsInEngageRange(player)) { m.Ap -= 2; m.Attack(player); m.StalkRounds = 0; }
                 return;
             }
 
@@ -526,7 +531,7 @@ namespace GameCore
                     break;
             }
 
-            if (m.Ap >= 2 && m.IsInEngageRange(player))
+            if (!Rt.On && m.Ap >= 2 && m.IsInEngageRange(player))   // RT batch 5: RtAi strikes on its own clock
             {
                 m.Ap -= 2;
                 m.Attack(player);
@@ -566,6 +571,7 @@ namespace GameCore
         {
             if (CombatantUtil.IsAdjacent(m, tx, ty)) return;
             var adj = BestAdjacent(m, new Probe(tx, ty), packMate);
+            if (Rt.On) { RtAi.Chase(m); return; }   // RT batch 5: runs at you, re-aiming every step
             if (adj.HasValue) { WalkTo(m, adj.Value); return; }
             int guard = 0;
             while (m.Mp > 0 && !CombatantUtil.IsAdjacent(m, tx, ty) && guard++ < 20)
@@ -621,7 +627,7 @@ namespace GameCore
             return true;
         }
 
-        public const int BoulderAfterTurns = 3, BoulderRange = 10, BoulderDamage = 25;
+        public const int BoulderAfterTurns = 3, BoulderRange = 10, BoulderDamage = 250;
 
         /// <summary>Batch 130: the Blight Brute rips a boulder out of the ground and hurls it (its whole turn). 2d10 + 3 against your AC
         /// (it arcs over cover); a hit does 25 and you start your next turn on half MP.</summary>
@@ -649,7 +655,7 @@ namespace GameCore
             foreach (var v in victims)
             {
                 if (!CombatantUtil.IsAdjacent(m, v) || !v.IsAlive()) continue;
-                int dmg = CombatRules.PhysicalDamage(30, "Standard", v.PhysDR);
+                int dmg = CombatRules.PhysicalDamage(300, "Standard", v.PhysDR);
                 v.Hp = System.Math.Max(0, v.Hp - dmg);
                 int roll = Random.Range(1, 21) + (int)v.AgilityMod;
                 string who = v is Player ? "Player" : v.Name;

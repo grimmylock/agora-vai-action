@@ -53,18 +53,32 @@ namespace GameCore
                         case 'n': c.Put(x, y, Solid, "window"); continue;
                         case 's': c.Put(x, y, HardCover, "sandbags"); break;
                         case ',': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Concrete); continue;
+                        case '=': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Grate); continue;     // a steel catwalk deck
                         case 'D': c.Put(x, y, Door); c.Paint(x, y, 1, 1, floor); continue;
+                        case '1': c.Put(x, y, Door, "door_badge"); c.Paint(x, y, 1, 1, floor); continue;   // Boss 2: a lock you need the staff badge for (LabLocks)
+                        case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
+                        case 'Z': c.Put(x, y, Solid, wallLook); break;            // Boss 1: a cracked wall (E breaks it; a landmark marks it)
                         case 'h': c.Put(x, y, HardCover, "block"); break;
                         case 'm': c.Put(x, y, HardCover, "machine"); break;
                         case 'l': c.Put(x, y, HardCover, "lockers"); break;
                         case 'd': c.Put(x, y, ScatterCover, "desk"); break;
                         case 'c': c.Put(x, y, ScatterCover, "crate"); break;
+                        // Boss 2: the lab (lab_plans.py vat_room) - 'f' file cabinet, 'a' metal table, 'g' lab bench, 'o' console,
+                        // 'j' specimen jars, 'u' a smashed small vat, 'q' cables on the floor
+                        case 'f': c.Put(x, y, HardCover, "cabinet"); break;
+                        case 'a': c.Put(x, y, ScatterCover, "labtable"); break;
+                        case 'g': c.Put(x, y, ScatterCover, "labbench"); break;
+                        case 'o': c.Put(x, y, HardCover, "console"); break;
+                        case 'j': c.Put(x, y, HardCover, "jars"); break;
+                        case 'u': c.Put(x, y, HardCover, "vatsmall"); break;
+                        case 'q': c.Put(x, y, Empty); c.Deco(x, y, "cables"); break;
                         case 'p': c.Put(x, y, Empty); c.Deco(x, y, "floorpipe"); break;   // Batch 99: on the floor, not the overhead line
                         case 'x': c.Put(x, y, HardCover, "debris"); break;
                         case 'b': c.Put(x, y, ScatterCover, "rustbarrel"); break;
                         case 't': c.Put(x, y, ScatterCover, "trash"); break;
                         case 'r': c.Put(x, y, Difficult, "rubble"); break;
                         case 'w': c.Put(x, y, Difficult); c.Paint(x, y, 1, 1, Water); continue;
+                        case 'W': case '0': case 'y': case 'z': case 'N': c.Put(x, y, Difficult, "deepwater"); c.Paint(x, y, 1, 1, Water); continue;   // '0' = deep water that also marks where the eel rises ('y' west, 'z' east, 'N' north: the Sump's other three pools, EelSump.Pools)   // over your head until it's drained (LabLocks)
                         case 'i': c.Put(x, y, Empty); c.Deco(x, y, "light"); break;
                         case 'e': c.Put(x, y, Empty); c.Deco(x, y, "redlight"); break;
                         case 'k': c.Put(x, y, HardCover, "rock"); break;          // Batch 100: a boulder
@@ -112,9 +126,37 @@ namespace GameCore
             c.Keep(x, y, rows[0].Length, rows.Length);
         }
 
-        public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent) =>
-            FloorPlan(id, LabPlans[id], wallLook, floor,
-                new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null) });
+        public static MapLayout Lab(string id, string wallLook, GroundType floor, string first, string second, string parent, string down = null, string lift = null) =>
+            FloorPlan(id, LabPlans[id], wallLook, floor, LabMarks(first, second, parent, down, lift),
+                LabLocks.StashesOf(id));   // Boss 2: the dungeon's key objects (badge locker, fuse crate, switches)
+
+        static Dictionary<char, (string, string)> LabMarks(string first, string second, string parent, string down, string lift)
+        {
+            var m = new Dictionary<char, (string, string)> { ['E'] = (first, parent), ['G'] = (second, null), ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) };   // Boss 1
+            if (down != null) m['S'] = ("Stairs Down", down);                                           // the Depths: stairs to the flooded levels
+            if (lift != null) m['Y'] = ("Service Lift", lift);                                         // and the lift from their bottom
+            return m;
+        }
+
+        /// <summary>The flooded levels under Sub-Station Depths (the eel, ACTION_DESIGN "Dodge bosses"): 'U' stairs up, 'S' stairs down,
+        /// 'G' the goal, 'Y' the service lift, '6' the level's pump (LabLocks), 'W' its deep water.</summary>
+        /// <summary>The stashes at the flooded levels' dead ends (plan letters J K L M; any stash name that isn't a key object is a loot container).
+        /// Plan digits are for the eel (ACTION_DESIGN "Dodge bosses"): '7' a strike spot (it bursts out and wraps there), '8' a false alarm
+        /// (the lamps flicker, nothing comes), in the Sump '0' the pool's centre (deep water: where it rises) and '9' the channel mouth (the way it
+        /// blocks); the fight code finds them in LabPlans[zone].</summary>
+        static readonly Dictionary<char, string> DepthsCaches = new Dictionary<char, string>
+            { ['J'] = "Rusted Cache", ['K'] = "Drowned Locker", ['L'] = "Crew's Bag", ['M'] = "Maintenance Box" };
+
+        public static MapLayout DepthsLevel(string id, GroundType floor, string up, string down, string goal = null, string lift = null)
+        {
+            var marks = new Dictionary<char, (string, string)> { ['U'] = ("Stairs Up", up) };
+            if (down != null) marks['S'] = ("Stairs Down", down);
+            if (goal != null) marks['G'] = (goal, null);
+            if (lift != null) marks['Y'] = ("Service Lift", lift);
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf(id) ?? new Dictionary<char, string>());
+            foreach (var kv in DepthsCaches) stashes[kv.Key] = kv.Value;                          // what a dead end pays (a plan only uses the letters it has)
+            return FloorPlan(id, LabPlans[id], "concrete", floor, marks, stashes);   // floor: what markers stand on (the catwalks' Grate)
+        }
 
         // ------------------------------------------------------------------ the Lattice Foundry (Tier 5, under the Ship Graveyard)
 

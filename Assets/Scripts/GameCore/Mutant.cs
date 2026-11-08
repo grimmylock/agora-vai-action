@@ -19,7 +19,11 @@ namespace GameCore
         public MutantDef Db;
 
         public int MaxHp;
-        public int Hp { get; set; }
+        public int Hp { get => _hp; set => _hp = Unkillable && value < 1 ? 1 : value; }
+        int _hp;
+        /// <summary>Boss 1: a boss can't drop below 1 HP by any road (shots, blades, bleeding, blasts, anomalies) - he breaks
+        /// instead (Boss.cs), and only the execution kills him.</summary>
+        public bool Unkillable;
         public float PhysDR { get; set; }
         public float AnomDR { get; set; }
         public int Ap { get; set; }
@@ -121,7 +125,7 @@ namespace GameCore
             X = spawn.x;
             Y = spawn.y;
             Db = db;
-            MaxHp = db?.Hp ?? 30;
+            MaxHp = db?.Hp ?? 300;
             Hp = MaxHp;
             PhysDR = db?.PhysDR ?? 0f;
             AnomDR = db?.AnomDR ?? 0f;
@@ -304,7 +308,9 @@ namespace GameCore
             }
             else if (target.StatusEffects.EvasiveMelee) ac += target.StatusEffects.TakeCoverAc;
 
-            var result = GameServices.RequireCombat().RollAttack(advantage ? "advantage" : "standard", (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);   // Batch 57: maimed claws
+            if (Rt.On && target is Player diver && Rt.Of(diver).Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
+            var result = Rt.On ? new AttackRollResult { Hit = true, ChosenRoll = 0 }   // real time: no dice - in reach when it strikes = hit
+                : GameServices.RequireCombat().RollAttack(advantage ? "advantage" : "standard", (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);   // Batch 57: maimed claws
             bool crit = result.ChosenRoll == CombatRules.Headshot;
             if (!result.Hit && !crit)
             {
@@ -319,7 +325,7 @@ namespace GameCore
                 GameLog.Write($"Desperate Parry: {pr} vs DC 14 - {(pr >= 14 ? "you knock the blow aside!" : "too slow.")}");
                 if (pr >= 14) return;
             }
-            float tierMult = CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
+            float tierMult = Rt.On ? 1f : CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
             float raw = AttackDamage * tierMult;
             int damage = psi
                 ? CombatRules.AnomalousDamage(raw, target.AnomDR)

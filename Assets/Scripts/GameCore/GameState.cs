@@ -136,6 +136,7 @@ namespace GameCore
         public int SurgeRounds;
         public string SurgeZoneId;
         public int LastRumorDay;
+        public string CampZone; public int CampX = -1, CampY = -1;   // co-op: where the squad wakes after a wipe (Death.TryCamp)
 
         // New (file 09 Part 3) - see StorySystem.cs
         public List<string> StoryFlags = new List<string>();

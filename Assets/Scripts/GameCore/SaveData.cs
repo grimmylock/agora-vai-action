@@ -32,6 +32,7 @@ namespace GameCore
         public string Key;
         public string Upgrades;
         public string Condition;
+        public int GridX = -1, GridY; public bool Rot;   // Pack 1 (an old save has none: -1, settled on load)
     }
 
     [Serializable]
@@ -69,6 +70,9 @@ namespace GameCore
         public bool HiddenNodeCleared, MainStoryAct3Done, MainStoryFinaleDone;
         public int BonusMaxHp;
         public int Exp;
+        public List<string> MilestonesDone = new List<string>();
+        public List<string> DungeonsCleared = new List<string>();
+        public int NamedKilled;
         public List<string> ActivePerks = new List<string>();
 
         public float Hunger, Thirst, Tiredness;
@@ -103,11 +107,31 @@ namespace GameCore
         public List<string> StoryFlags = new List<string>();
         public string Sponsor, Ending;
         public int SurgeRounds, LastRumorDay;
+        public string CampZone; public int CampX = -1, CampY = -1;
         public string SurgeZoneId;
         public float Hour = 7f;
         public string Weather = "Overcast";
     }
 
+    /// <summary>RT 7x: one character (saves/characters/id.json) - the player owns it and can take it into any world.</summary>
+    [Serializable]
+    public class CharacterSave
+    {
+        public int Version = 2;
+        public string Id, Name, WorldId, SavedAtUtc;
+        public PlayerSaveData Player;
+    }
+
+    /// <summary>RT 7x: one world (saves/worlds/id.json) - the host saves it.</summary>
+    [Serializable]
+    public class WorldSave
+    {
+        public int Version = 2;
+        public string Id, HostCharacterId, SavedAtUtc;
+        public MacroSaveData Macro;
+    }
+
+    /// <summary>The old single-file save (savegame.json, before RT 7x); read once to move it into a slot.</summary>
     [Serializable]
     public class SaveData
     {

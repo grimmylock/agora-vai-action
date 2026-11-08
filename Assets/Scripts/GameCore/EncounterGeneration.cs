@@ -45,7 +45,7 @@ namespace GameCore
 
         /// <summary>Batch 96: one-of-a-kind weapons are placed by hand (the G-7 is the Foreman's, G7Lab) - never in random kit,
         /// trader stock or loot. The harness caught a Lattice Foundry guard rolling the G-7.</summary>
-        public static readonly HashSet<string> Unique = new HashSet<string> { "G-7 Rail Prototype" };
+        public static readonly HashSet<string> Unique = new HashSet<string> { "G-7 Rail Prototype", "Tactical Hatchet" };
 
         /// <summary>Ported from pickRandomWeaponByTier(minTier, maxTier).</summary>
         public static WeaponDef PickRandomWeaponByTier(int minTier, int maxTier)

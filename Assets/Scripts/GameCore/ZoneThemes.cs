@@ -55,7 +55,7 @@ namespace GameCore
             ["bonfire_village"] = Field, ["chapel_crypt"] = Cave, ["smugglers_tunnel"] = Cave, ["pumping_basement"] = Tunnel, ["flooded_bunker"] = Tunnel,
             ["crusher_pit"] = Tunnel, ["valley_mine"] = Cave, ["stranded_ferry"] = Tunnel, ["camp_shelter"] = Tunnel, ["drydock_tunnels"] = Tunnel, ["hospital_morgue"] = Lab,
             ["secret_lab_alpha"] = Lab, ["secret_lab_beta"] = Lab, ["secret_lab_gamma"] = Lab, ["lattice_foundry"] = Lab, ["lattice_foundry_lower"] = Lab,
-            ["sub_station_depths"] = Tunnel, ["maintenance_tunnels"] = Tunnel,
+            ["sub_station_depths"] = Tunnel, ["sub_station_depths_1"] = Tunnel, ["sub_station_depths_2"] = Tunnel, ["sub_station_depths_3"] = Tunnel, ["maintenance_tunnels"] = Tunnel,
             ["underground_labyrinth"] = Tunnel, ["underground_bunker"] = Tunnel,
         };
 

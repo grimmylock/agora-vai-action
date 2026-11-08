@@ -33,7 +33,7 @@ namespace GameCore
                 {
                     case 1: return Has("keycard") ? "Open Sample Storage's sealed terminal in Secret Lab Alpha." : "Find Secret Lab Alpha (under the Industrial Basin's Loading Dock) and get the access keycard.";
                     case 2: return Has("beta_drive") ? "Have the Lab Beta drive decoded: Dr. Osei at the Sub-Station House (Dried Lake), or crack it yourself at a lab terminal (Intelligence DC 18)." : "Recover the Research Drive from Secret Lab Beta's Archive Room (under Ghost Town's Town Hall).";
-                    case 3: return "Get into Secret Lab Gamma (under the Antenna Grid) and open the Sealed Vault.";
+                    case 3: return "Get into Secret Lab Gamma (under the Antenna Grid) and open the Sealed Vault. Its lock wants a key the Sub-Station Depths crew carried.";
                     case 4: return "Choose who backs you at the Garrison Barricade in the Abandoned City - or go alone.";
                     case 5: return Has("control_room") ? "Open The Last Gate in the Reactor Core." : "Fight through the Reactor Core's Containment Hall and Control Room.";
                     default: return $"Done. Ending: {MacroState.Current.Ending}.";
@@ -47,6 +47,7 @@ namespace GameCore
         /// <summary>Is this landmark where the story (or a legendary artifact) wants you next?</summary>
         public static bool IsObjective(string zone, string landmark)
         {
+            if (Story.IsObjective(landmark)) return true;   // Story 3: the new missions' objectives
             if (zone == "outskirts" && landmark == "The Wound") return !Has("wound_heart");
             if (zone == "siege_catacombs" && landmark == "Sealed Crypt") return !Has("lucifer");
             switch (Act)
@@ -119,6 +120,7 @@ namespace GameCore
             }
             if (zone == "secret_lab_gamma" && Has("beta") && !Has("gamma") && Near(p, "Sealed Vault") != null)
             {
+                if (!p.Inventory.Items.Any(i => i.Id == EelBoss.VaultKeyId)) { GameLog.Write("[STORY] The Sealed Vault's door has a brass lock plate stamped SUB-STATION DEPTHS. The crew who sealed it never came back up. You need their key."); return true; }   // Boss 3: the eel's crewman carries it
                 if (HostilesNear(p, 10)) { GameLog.Write("[STORY] Not with them still on you. Clear the room first."); return true; }
                 Set("gamma");
                 p.MainStoryAct3Done = true;
@@ -261,7 +263,7 @@ namespace GameCore
                     break;
                 case "Take it":
                     foreach (var f in FactionDatabase.Factions.Keys.Where(f => f != "Mutant")) p.AdjustReputation(f, -Player.RepPoint);
-                    p.BonusMaxHp += 10;
+                    p.BonusMaxHp += 100;
                     p.ApplyArtifactStatBonuses();
                     break;
             }
@@ -283,6 +285,7 @@ namespace GameCore
         /// new game and load, before re-applying the current ending.</summary>
         public static void ResetWorld()
         {
+            Story.Reset();
             if (_originalTiers == null) _originalTiers = MacroMapDatabase.Zones.ToDictionary(z => z.Id, z => z.Tier);
             foreach (var z in MacroMapDatabase.Zones) z.Tier = _originalTiers[z.Id];
         }
@@ -299,6 +302,9 @@ namespace GameCore
         /// and after the ending one Named mutant per Tier 5+ zone until it's killed (file 09).</summary>
         public static void OnEnterZone(ZoneDef zone)
         {
+            Boss.OnEnterZone(zone?.Id);   // Boss 1: the Visor's body in Lab Beta
+            BrainBoss.OnEnterZone(zone?.Id);   // Boss 2: the vat in Lab Alpha
+            EelBoss.OnEnterZone(zone?.Id);   // Boss 3: the eel in the Sump
             if (zone == null || zone.IsSafeZone) return;
             bool guardian = zone.Id == "siege_catacombs" && !Has("lucifer") && !Has("named:siege_catacombs");
             int tier = _originalTiers != null && _originalTiers.TryGetValue(zone.Id, out var t) ? t : zone.Tier;
@@ -309,7 +315,7 @@ namespace GameCore
             var spot = guardian ? TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Sealed Crypt") : null;
             int x = spot?.X ?? UnityEngine.Random.Range(4, TerrainMap.Width - 4), y = spot?.Y ?? UnityEngine.Random.Range(4, TerrainMap.Height - 4);
             var m = new Mutant(pick.Value.Name, x + 1, y, pick.Value);
-            m.MakeNamed(Titles[System.Math.Abs((zone.Id + MacroState.Current.Day).GetHashCode()) % Titles.Length]);
+            m.MakeNamed(Titles[System.Math.Abs(ZoneExitPlacer.StableHash(zone.Id + MacroState.Current.Day)) % Titles.Length]);
             EncounterState.Enemies.Add(m);
             GameLog.Write(guardian
                 ? $"[LEGEND] Something old is curled around the Sealed Crypt: {m.Name}."

@@ -208,6 +208,23 @@ namespace GameCore
             ApplyCarryEffects();
         }
 
+        /// <summary>Pack 1b (Yan: "there's no equip/unequip ui"): the main weapon back into the pack (its rounds into the stash), hands
+        /// empty - the second weapon, if any, comes up instead.</summary>
+        public void UnequipWeapon()
+        {
+            var w = EquippedWeapon;
+            if (w == null) return;
+            if (w.CurrentMagazine > 0 && !CombatRules.IsMelee(w)) Ammo.Add(Inventory, Ammo.Key(w.Db, w.CurrentAmmoType), w.CurrentMagazine);
+            StowOffhand();
+            var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == EquippedWeaponCategory && i.Key == EquippedWeaponKey);
+            var item = new InventoryItem { Id = d?.Id ?? EquippedWeaponKey, Name = d?.Name ?? w.Name, WeightKg = d?.WeightKg ?? 1f, Qty = 1, Type = "weapon", Price = d?.Price,
+                Category = EquippedWeaponCategory, Key = EquippedWeaponKey, Condition = w.Condition, Upgrades = GameCore.Upgrades.Join(w.Upgrades) };
+            EquippedWeapon = null; EquippedWeaponCategory = EquippedWeaponKey = null;
+            AddItem(item);
+            if (SecondaryWeapon != null) SwapWeapons();
+            ApplyCarryEffects();
+        }
+
         /// <summary>Y: swap the two weapons. Both keep their loaded rounds.</summary>
         public bool SwapWeapons()
         {
@@ -359,6 +376,8 @@ namespace GameCore
                 GameLog.Write($"{def.Name} ready - click a tile within 8 to throw it (right-click to put it away).");
                 return;
             }
+            if (Rt.On && !Rt.Applying) { Rt.BeginUse(this, def); return; }   // real-time fork: it takes a few seconds (Rt.UseSeconds)
+            if (Body.Down(this) && !(def.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
             int apCost = def.ApCost > 0 ? def.ApCost : 2;
             bool inPlayerTacticalTurn = GameState.Current.Mode == GameMode.Tactical && GameState.Current.CurrentTurn == Turn.Player;
 
@@ -402,6 +421,8 @@ namespace GameCore
                 else if (StatusEffects.Bleeding) { StatusEffects.Bleeding = false; GameLog.Write("Bleeding has been stopped."); }
                 else GameLog.Write("No bleeding to treat.");
             }
+            if (def.CureFracture && !Body.Splint(this)) GameLog.Write("Nothing broken to splint.");
+            if (Body.Down(this) && def.HealingTemp > 0) Body.GetUp(this);   // RT batch 2: a stim gets you back up
             if (def.CureRadiation)
             {
                 if (StatusEffects.Irradiated) { StatusEffects.Irradiated = false; GameLog.Write("Irradiation has been removed."); }
@@ -427,7 +448,7 @@ namespace GameCore
             int healed = (def.HealingPermanent ?? 0) + (def.HealingTemp ?? 0);
             if (healed > 0 && def.HungerRestore == null && def.ThirstRestore == null)
             {
-                float cost = healed / 10f * GameConstants.SurvivalCostPer10Hp;
+                float cost = healed / 100f * GameConstants.SurvivalCostPer10Hp;   // real-time fork: HP x10 - the cost stays per 10 old HP
                 Hunger = System.Math.Max(0, Hunger - cost);
                 Thirst = System.Math.Max(0, Thirst - cost);
                 Tiredness = System.Math.Max(0, Tiredness - cost);
@@ -510,6 +531,8 @@ namespace GameCore
             var backpackDef = BackpackDatabase.All.TryGetValue(backpackId ?? "none", out var bp) ? bp : null;
             CarryCapacityBonus = backpackDef?.CapacityBonus ?? 0;
             ApplyArmorModsForPlayer();
+            var left = Pack.Refit(this);                                                // Pack 1: everything into the new bag
+            if (left.Count > 0) GameLog.Write($"{left.Count} item{(left.Count > 1 ? "s don't" : " doesn't")} fit in the {backpackDef?.Name ?? "pockets"} - see the pack (I).");
         }
     }
 }

@@ -7,7 +7,7 @@
 #   decals: * blood  ' splat  ~ blood trail  % grime  ` scorch  " papers  : glass  ; oil  & bones   uppercase: landmark
 import math, collections, random, os
 
-WALK = set('.,DpABCEFGHIJKLMNOPQRSTUVWXYZdcbhlmtxrwieskv*\'~%`":;&')
+WALK = set('.,=DpABCEFGHIJKLMNOPQRSTUVWXYZdcbhlmtxrwieskv*\'~%`":;&')
 
 class Plan:
     def __init__(s, w, h, seed): s.w, s.h = w, h; s.g = [['#'] * w for _ in range(h)]; s.r = random.Random(seed)

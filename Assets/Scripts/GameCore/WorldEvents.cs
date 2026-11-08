@@ -171,7 +171,7 @@ namespace GameCore
             if (Sheltered(p)) GameLog.Write("[SURGE] The wave passes overhead. You're safe in here.");
             else
             {
-                int dmg = CombatRules.AnomalousDamage(60, p.AnomDR);
+                int dmg = CombatRules.AnomalousDamage(600, p.AnomDR);
                 p.Hp = System.Math.Max(0, p.Hp - dmg);
                 p.StatusEffects.Irradiated = true;
                 GameLog.Write($"[SURGE] Caught in the open! {dmg} anomalous damage and you're Irradiated.");

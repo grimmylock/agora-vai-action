@@ -27,7 +27,15 @@ namespace GameCore
         /// <summary>A hunter looking for you sees twice its idle range, cut by night and weather (and halved if you sneak).</summary>
         public static bool Sees(Mutant e, Player p) =>
             CombatantUtil.Distance(e, p) <= e.VisionRange * 2 * Atmosphere.SightFactor() * LightMap.Exposure(p) * (p.Sneaking ? 0.5f : 1f)
-            && GameServices.RequireGrid().CheckLineOfSight(e.X, e.Y, p.X, p.Y);
+            && Mutual(e, p);
+
+        /// <summary>Line of sight both ways: a tile line from A to B and the one from B to A can pass different sides of a corner;
+        /// the enemy only gets you when you'd get him too (the player's own view traces from the player).</summary>
+        public static bool Mutual(ICombatant e, Player p)
+        {
+            var g = GameServices.RequireGrid();
+            return g.CheckLineOfSight(e.X, e.Y, p.X, p.Y) && g.CheckLineOfSight(p.X, p.Y, e.X, e.Y);
+        }
 
         public const float RearSight = 3f;
 

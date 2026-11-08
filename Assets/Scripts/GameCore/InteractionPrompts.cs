@@ -22,19 +22,27 @@ namespace GameCore
             void Add(int x, int y, string key, string label) { if (!list.Any(q => q.X == x && q.Y == y)) list.Add(new Prompt { X = x, Y = y, Key = key, Label = label }); }
 
             // E: containers, locks, stashes (InteractionEngine; they're within one tile), and the two special machines
+            var friend = Rt.DownedNear(p);
+            if (friend != null) Add(friend.X, friend.Y, "HOLD E", "Revive");                          // co-op: a downed (or, out of a fight, dead) friend
+            if (Death.Coop) foreach (var (fx, fy) in TerrainMap.GetAdjacentCoords(p.X, p.Y).Append((p.X, p.Y)))
+                if (TerrainMap.GetTile(fx, fy).Look == "campfire") { Add(fx, fy, "E", "Make camp"); break; }
             foreach (var o in TerrainMap.InteractiveObjects) if (D(p, o.X, o.Y) <= 1) Add(o.X, o.Y, "E", o.Name);
             foreach (var l in TerrainMap.Landmarks)
             {
                 if (D(p, l.X, l.Y) > 2) continue;
                 if (l.Name == GarrisonRaid.Armory && GarrisonRaid.InBase(p)) Add(l.X, l.Y, "E", "Armory");
+                if (TestingGround.Here && l.Name == TestingGround.Armory) Add(l.X, l.Y, "E", "Armory: any gear");
+                if (TestingGround.Here && l.Name == TestingGround.Spawner) Add(l.X, l.Y, "E", "Spawn enemies");
                 if (l.Name == G7Lab.Machine && MacroState.Current.CurrentZoneId == G7Lab.Zone) Add(l.X, l.Y, "E", "Feed the synthesizer");
             }
             // F: an anomaly you can comb for an artifact
             var an = AnomalyEngine.SearchableNear(p);
             if (an != null) Add(an.X, an.Y, "F", "Search the " + an.DisplayName);
             // click: bodies with something on them, things on the ground
+            if (EelBoss.CanExamine(p, out var exx, out var exy)) Add(exx, exy, "E", "Examine the body");          // Boss 3: starts the eel's introduction
             foreach (var e in EncounterState.Enemies.OfType<HumanEnemy>())
-                if (!e.IsAlive() && D(p, e.X, e.Y) <= 2 && e.Inventory.Items.Count > 0) Add(e.X, e.Y, "CLICK", "Search the body");
+                if (!e.IsAlive() && !(EelBoss.Current != null && EelBoss.Current.Body == e && EelBoss.Current.Stage == "hidden") && D(p, e.X, e.Y) <= 2 && e.Inventory.Items.Count > 0) Add(e.X, e.Y, "CLICK", "Search the body");
+            foreach (var l in Melee.InCover) if (D(p, l.X, l.Y) <= 1) Add(l.X, l.Y, "E", "Pull out the " + l.Item.Name);   // RT 7a
             foreach (var g in TerrainMap.GroundItems)
                 if (D(p, g.X, g.Y) <= 2) Add(g.X, g.Y, "CLICK", "Pick up " + (g.Item?.Name ?? "item"));
             // the way out: walk onto it

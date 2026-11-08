@@ -14,7 +14,7 @@ namespace GameCore
     public static class Explosions
     {
         public const int BarrelRadius = 1;
-        public const int BarrelDamage = 40;
+        public const int BarrelDamage = 400;
         public const int SaveDc = 13;
 
         public const int ThrowRadius = 1;   // 3x3 (file 01)
@@ -38,8 +38,8 @@ namespace GameCore
 
             switch (def.Throwable)
             {
-                case "frag": Blast(x, y, ThrowRadius, 40, thrower, "frag blast"); break;
-                case "smoke": TerrainMap.AddSmoke(x, y, ThrowRadius, 3); GameLog.Write("Thick smoke blocks sight through the area."); break;
+                case "frag": Blast(x, y, ThrowRadius, 400, thrower, "frag blast"); break;
+                case "smoke": CombatFx.PxAt("smoke_bomb", x, y); TerrainMap.AddSmoke(x, y, ThrowRadius, 3); GameLog.Write("Thick smoke blocks sight through the area."); break;
                 case "flash": Flash(x, y, ThrowRadius); break;
             }
         }
@@ -65,6 +65,7 @@ namespace GameCore
         public static void Blast(int cx, int cy, int radius, int damage, ICombatant attacker, string label)
         {
             Sfx.Play("explosion", TacticalGridView.GridToWorld(cx, cy), 1f, 0.08f);
+            CombatFx.PxAt("small_explosion", cx, cy);   // RT fx 4: the frag, the barrel, a cooked-off grenade finally have a picture
             Noise.Make(cx, cy, Noise.Blast, attacker);   // Batch 47
             var victims = new List<ICombatant>();
             if (Player.Current != null && Player.Current.IsAlive()) victims.Add(Player.Current);
@@ -73,12 +74,13 @@ namespace GameCore
             var combat = GameServices.RequireCombat();
             foreach (var v in victims)
             {
-                if (System.Math.Max(System.Math.Abs(v.X - cx), System.Math.Abs(v.Y - cy)) > radius) continue;
+                if (System.Math.Max(System.Math.Abs(v.X - cx), System.Math.Abs(v.Y - cy)) > radius || Rt.Untouchable(v)) continue;
                 int roll = Random.Range(1, 21) + (int)v.AgilityMod;
                 bool saved = roll >= SaveDc;
                 float raw = saved ? damage / 2f : damage;
                 int dealt = (int)combat.CalculateDamage(raw, "Standard", v.PhysDR, 0f);
                 v.Hp = System.Math.Max(0, v.Hp - dealt);
+                Boss.OnDamaged(v);
                 if (v is Mutant m && !(v is HumanEnemy)) m.DamageTakenThisRound += dealt;
                 string who = v is Player ? "Player" : v.Name;
                 if (saved)

@@ -1,8 +1,27 @@
-using System; using System.Linq; using GameData; using GameCore;
+using System; using System.Collections.Generic; using System.IO; using System.Linq; using GameData; using GameCore;
 static class Program {
   static int fails = 0;
   static void Check(bool ok, string msg) { if (!ok) { fails++; Console.WriteLine("FAIL " + msg); } }
   static int Main(string[] args) {
+    // RT 7z-d: the real JsonUtility stub (RT 7x) made SquadManager's offline_squads.json persist between runs, so every run started
+    // from the last one's squads - the checks and the scene dumps drifted. Every run starts clean.
+    try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
+    if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1], args.Length > 2 ? args[2] : ""); return 0; }
+    if (args.Length > 0 && args[0] == "accuracy") { AccuracyProbe(); return 0; }
+    if (args.Length > 0 && args[0] == "ttkprobe") { TtkProbe(); return 0; }
+    if (args.Length > 0 && args[0] == "rtprobe") { RtLoadoutProbe(args.Length > 1 ? int.Parse(args[1]) : 30); return 0; }
+    if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
+    if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -26,6 +45,23 @@ static class Program {
     FightSim(args);
     Batch72Checks();
     RaidChecks();
+    RtChecks();
+    TestingGroundChecks();
+    SaveSlotChecks();
+    NetChecks();
+    NetEelChecks();
+    NetWorldChecks();
+    SoloDeathChecks();
+    FireModeChecks();
+    NetBrainChecks();
+    GunfeelChecks();
+    DiveChecks();
+    GunslingerChecks();
+    RoundChecks();
+    StorySystemsChecks();
+    Tier1StoryChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DepthsChecks(); EelChecks();
+    TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
     foreach (var kv in FactionArmorDatabase.Lines)
@@ -385,8 +421,8 @@ static class Program {
     var b = new HumanEnemy("b", cx + 2, cy - 2, "Raiders", "Rookie", null, null);
     EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(a); EncounterState.Enemies.Add(b);
     Check(TerrainMap.DamageTile(cx, cy + 2, 1), "barrel didn't blow");
-    Check(a.Hp < 100, "man next to barrel unhurt");
-    Check(b.Hp == 100, "man far away hurt");
+    Check(a.Hp < a.MaxHp, "man next to barrel unhurt");
+    Check(b.Hp == b.MaxHp, "man far away hurt");
     Check(TerrainMap.GetTile(cx + 1, cy + 2).Type == TileType.Difficult, "blast didn't wreck light cover");
     Check(TerrainMap.GetTile(cx - 1, cy + 1).Type == TileType.Difficult, "chain barrel didn't go off");
     Check(TerrainMap.GetTile(cx - 1, cy + 2).Type == TileType.HardCover && TerrainMap.GetTile(cx - 1, cy + 2).Damage == 6 - 0 || TerrainMap.GetTile(cx - 1, cy + 2).Type == TileType.Difficult,
@@ -412,7 +448,11 @@ static class Program {
       MacroState.Current.CurrentZoneId = zone.Id;
       MacroState.Current.PersistedZoneTerrain.Remove(zone.Id);
       foreach (var h in zone.HiddenConnections ?? new System.Collections.Generic.List<string>()) if (!MacroState.Current.DiscoveredHiddenNodes.Contains(h)) MacroState.Current.DiscoveredHiddenNodes.Add(h);
+      var keys = LabLocks.KeysOf(zone.Id).Where(k => MacroState.Current.Keys.Add(k)).ToList();   // a locked dungeon: walk it with the keys its route gives (DepthsChecks/AlphaChecks test the order)
       TerrainMap.BuildTerrainForZone(zone.Id);
+      foreach (var k in keys) MacroState.Current.Keys.Remove(k);
+      if (keys.Count > 0) MacroState.Current.PersistedZoneTerrain.Remove(zone.Id);   // the unlocked copy mustn't follow into the lock checks
+      if (zone.Id == TestingGround.Zone) continue;   // the menu's dev range: walled in on purpose (its own check below)
       if (TerrainMap.Exits.Count == 0) { Check(false, zone.Id + " has no exits"); continue; }
       var start = (TerrainMap.Exits[0].X, TerrainMap.Exits[0].Y);
       var seen = new System.Collections.Generic.HashSet<(int, int)> { start };
@@ -587,7 +627,7 @@ static class Program {
     Check(CombatRules.PhysicalDamage(30, "HollowPoint", 0f) == 38, "HP vs 0% x1.25");
     Check(CombatRules.PhysicalDamage(30, "HollowPoint", 0.1f) == 27, "HP vs 10% no change");
     Check(CombatRules.PhysicalDamage(30, "HollowPoint", 0.3f) == 11, "HP vs 30% x0.5");
-    Check(CombatRules.PhysicalDamage(30, "ArmorPiercing", 0.5f) == 24, "AP x0.4 DR");
+    Check(CombatRules.PhysicalDamage(30, "ArmorPiercing", 0.5f) == 23, "AP halves DR");
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.9f) == 8, "DR cap 75%");
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.5f, 0.2f) == 18, "ignore 20%");
     var vk74 = W("assault", "VK74"); var vk103 = W("assault", "VK103"); var gnat = W("smg", "CorvanGnatPDW"); var pl74 = W("heavy", "PL74");
@@ -610,13 +650,13 @@ static class Program {
       Check(lo >= 2 && hi <= 20 && mid > 700, $"2d10 rolls 2-20 and bunch in the middle ({lo}-{hi}, {mid}/2000 in 9-13)"); }
     Check(CombatRules.RankAc("Rookie") == 10 && CombatRules.RankAc("Expert") == 12, "rank AC");
     Check(CombatRules.TraitToHit(W("shotgun", "RangerP8"), false, 3) == 2, "shotgun close +2");
-    // mutant claws vs armor: 20 dmg Veil Prowler vs 40% armor = 12
+    // mutant claws vs armor: 200 dmg Veil Prowler vs 40% armor = 120 (HP x10, real-time fork)
     var veil = new Mutant("v", 1, 1, MutantDatabase.Get("tier2", "VeilProwler"));
     var man = new HumanEnemy("m", 2, 1, "Raiders", "Rookie", null, ArmorDatabase.Tiers["tier1"].Values.First());
-    Check(CombatRules.PhysicalDamage(veil.AttackDamage, "Standard", 0.4f) == 12, "mutant vs armor");
+    Check(Math.Abs(CombatRules.PhysicalDamage(veil.AttackDamage, "Standard", 0.4f) - 120) <= 1, "mutant vs armor (float rounding: 120 or 121)");
     Check(man.Ac == 10, "rookie NPC AC 10");
     // wounds: a 25-dmg hit on a human always wounds
-    CombatRules.CheckWound(man, 25, false); Check(man.StatusEffects.Wound != null, "wound applied");
+    CombatRules.CheckWound(man, 250, false); Check(man.StatusEffects.Wound != null, "wound applied");
   }
 
   class ConsoleLog : IGameLogTarget { public bool Clicker; public int Lines; public System.Collections.Generic.Dictionary<string, int> Counts;
@@ -704,6 +744,2432 @@ static class Program {
       if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
     p.StartTurn(); p.HealPermanent(100);
     return p;
+  }
+
+  // Real-time fork, batch 1: rounds trace over the ground; the crosshair's height picks the part, from any side; cover by height
+  // RT 6f: frames of the reload and jam-clearing animations straight from HeldPoseMath.Frame (the code HeldWeaponView.Show
+  // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
+  static void HeldFrames(string path) {
+    var sb = new System.Text.StringBuilder("[");
+    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sidearm", "RinaldiR6"), ("sidearm", "RK12Kuvalda"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66") };
+    int armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); if (armor < 0) armor = 0;   // bare hands, red cuffs: the hand work reads
+    bool firstAnim = true;
+    foreach (var (cat, key) in guns) {
+      var db = WeaponDatabase.Categories[cat][key]; var w = W(cat, key);
+      var feel = WeaponFeel.For(db); var g = WeaponArt.GripOf(cat, key);   // the sprite's own points (For() falls back to the category's here: no textures offline)
+      int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1, trips = Gunplay.ByRound(w) ? cap : 1;   // RT 6h: a trip per round, from empty
+      float full = Gunplay.ByRound(w) ? (Gunplay.Revolver(w) ? Gunplay.CylinderOpen : 0f) + cap * Gunplay.PerRound(w) : Gunplay.For(w).ReloadTime;
+      foreach (var (style, secs) in new[] { (feel.Reload, full), ("jam", 0.8f) }) {
+        if (!firstAnim) sb.Append(','); firstAnim = false;
+        sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
+        int n = (int)Math.Ceiling(secs * 30f) + 12;
+        // RT 6j: the dropped magazine, through the same fall the game runs (HeldPoseMath.Fall), in character px (y down)
+        float[] mp = WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null;
+        bool thrown = false, rest = false; float mx = 0, my = 0, mvx = 0, mvy = 0, mdeg = 0, mspin = 0;
+        // RT 6k: a revolver or break-action dumps its spent brass when it opens (from empty here: all of it)
+        bool dumps = style == "cylinder" || style == "break"; float dumpAt = style == "cylinder" ? Math.Min(0.3f, 0.2f * secs) / secs : 0.17f;
+        var brass = new System.Collections.Generic.List<float[]>(); var rnd = new Random(7);
+        for (int i = 0; i < n; i++) {
+          var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
+          if (f.MagDropped && !thrown && mp != null) {
+            thrown = true;
+            double a = f.GunDeg * Math.PI / 180, vx = (mp[2] - g[0]) * 0.5, vy = (mp[3] - g[1]) * 0.5 * (f.Left ? -1 : 1);
+            mx = (float)((f.GunX + vx * Math.Cos(a) + vy * Math.Sin(a) - 8) / 16); my = (float)((8 - (f.GunY - vx * Math.Sin(a) + vy * Math.Cos(a))) / 16);
+            mvx = 0.4f; mvy = 0.5f;   // forward, away from the body (CombatFxView.DropMag) mdeg = f.GunDeg; mspin = -280f;
+          }
+          if (thrown && !rest) rest = HeldPoseMath.Fall(ref mx, ref my, ref mvx, ref mvy, ref mdeg, ref mspin, (8f - 15f) / 16f + 0.06f, 1f / 30f);
+          if (dumps && brass.Count == 0 && i / 30f / secs >= dumpAt)
+            for (int b = 0; b < cap; b++) brass.Add(new[] { (f.GunX - 8) / 16f, (8 - f.GunY) / 16f, (float)(rnd.NextDouble() * 0.8 - 0.4), (float)(rnd.NextDouble() * 0.5 + 0.1), (float)(rnd.NextDouble() * 360), (float)(rnd.NextDouble() * 1440 - 720), 0f });
+          foreach (var b in brass) if (b[6] == 0f) { float x = b[0], y = b[1], vx = b[2], vy = b[3], d = b[4], sp = b[5];
+            if (HeldPoseMath.Fall(ref x, ref y, ref vx, ref vy, ref d, ref sp, (8f - 15f) / 16f + 0.02f, 1f / 30f, 0f)) b[6] = 1f;
+            b[0] = x; b[1] = y; b[2] = vx; b[3] = vy; b[4] = d; b[5] = sp; }
+          sb.Append(System.FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.HasSupport ? 1 : 0)},{(f.Left ? 1 : 0)},{f.MagDX + f.CylDX},{f.MagDY + f.CylDY},{(f.MagShown ? 1 : 0)},{f.BreakDeg},{(thrown ? 1 : 0)},{8 + mx * 16},{8 - my * 16},{mdeg},{(rest ? 1 : 0)},[{string.Join(",", brass.Select(b => FormattableString.Invariant($"[{8 + b[0] * 16},{8 - b[1] * 16},{b[4]},{b[6]}]")))}]]"));
+        }
+        if (mp != null) sb.Append(System.FormattableString.Invariant($"],\"mag\":[{mp[0]},{mp[1]},{mp[2]},{mp[3]}"));
+        if (dumps) sb.Append(mp != null ? "" : "],\"shell\":[" + (style == "break" ? 1 : 0));
+        sb.Append("]}");
+      }
+    }
+    System.IO.File.WriteAllText(path, sb.Append(']').ToString());
+    Console.WriteLine("held frames -> " + path);
+  }
+
+  // RT 7a: two short scenes run through the real melee code (Melee.Swing / Throw / Tick, HeldPoseMath.Frame) at 30 frames a second,
+  // for Tools/render/melee_scene.py: "swing" - a Raider next to you takes two swings (body, then head); "throw" - one 5 tiles away
+  // takes a thrown hatchet, wrenches it out, drops it. Per frame: your hand pose, the Raider, the hatchet's state, blood hits.
+  // Boss 1b (Yan: "try rendering the fight"): the Visor's duel played by a bot through the real code - Rt.PlayerTick / Rt.WorldTick,
+  // Boss.Tick, Parry, Melee - at 30 frames a REAL second (game time follows Time.timeScale: hit-stops, the parry's slow motion,
+  // bullet time). The bot parries his white glints on time (most of them: some it blocks late, some it misses), dives away from
+  // the red ones, hacks at him while he's staggered, walks up and executes him when he breaks, opens his body. Every frame: both
+  // bodies, their held weapons' poses (HeldPoseMath), the boss's state, the events the view would play, the HUD's numbers.
+  // Boss 2 preview (Tools/render/brain_fight.py): the brain fights a bot in Secret Lab Alpha's vat room. The bot circles the vat,
+  // sidesteps orbs, dives through pulses and beams; the vat loses HP at a steady rate (the bot's gunfire) so every phase shows.
+  // Frames at 15 fps: the vat's sheet cell, orbs (kind, heading), beams, the pulse, thrown cover, cover gone or landed, the log.
+  // Boss 3 preview (the real EelBoss code): a bot fights it - Level 1's platform (wrap, shock, strike), then the Sump (reveal, rear-up fight, vomit, retreat).
+  // Writes the frames for Tools/render/eel_fight.py:   dotnet /tmp/test.dll eelframes frames.json
+  static void EelFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear(); EelBoss.Reset();
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
+    var ll = new ListLog(); var log = ll.L; GameLog.Target = ll;
+    const float dt = 1f / 30f; int k = 0, hits = 0, dives = 0, lastHp = 0; var sb = new System.Text.StringBuilder("{\"segs\":[");
+    void Build(string zone) { MacroState.Current.PersistedZoneTerrain.Remove(zone); MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone); EncounterState.Enemies.Clear(); }
+    List<(int, int)> Path((int, int) from, (int, int) to) {
+      var prev = new Dictionary<(int, int), (int, int)> { [from] = from }; var q = new Queue<(int, int)>(); q.Enqueue(from);
+      while (q.Count > 0) { var c = q.Dequeue(); if (c == to) break; foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (c.Item1 + dx, c.Item2 + dy); if (!prev.ContainsKey(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { prev[n] = c; q.Enqueue(n); } } }
+      var r = new List<(int, int)>(); if (!prev.ContainsKey(to)) return r; for (var c = to; c != from; c = prev[c]) r.Add(c); r.Add(from); r.Reverse(); return r;
+    }
+    void Seg(string zone, EelBoss.Fight f, Func<float, bool> until, Action<float, float, float, float> bot, float maxT, bool firstSeg) {
+      sb.Append(firstSeg ? "" : ",").Append("{\"zone\":\"" + zone + "\",\"armor\":" + (f.BodyArmor == null ? -1 : Array.IndexOf(SpriteAtlasIndex.Armor, f.BodyArmor)) + ",\"frames\":["); int n = 0; var b = f.Unit;
+      for (float t = 0f; t < maxT && !until(t); t += dt, k++) {
+        UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt;
+        var (px, py) = Ballistics.Pos(p); float ix = 0f, iy = 0f; bool jump = false; float vx = 0f, vy = 0f;
+        var tmp = new float[4]; bot(t, px, py, dt); (ix, iy, jump) = (BotX, BotY, BotJump);
+        jump = jump && Rt.Of(p).Stamina >= Rt.DiveStamina && !Rt.Of(p).Diving && UnityEngine.Time.time >= Rt.Of(p).ProneUntil; if (jump) dives++;
+        Rt.PlayerTick(p, new Rt.Input { X = ix, Y = iy, Jump = jump, Sprint = !jump, Mouse = (f.Level == "platform" ? f.SX : f.CX, f.Level == "platform" ? f.SY : f.CY) });
+        if (BotShoot && b.Hp > 1) { int dmg = (int)(EelBoss.MaxHp / 50f * dt + 0.5f); if (f.Level == "sump" && f.Stage == "hidden") dmg = 1; b.Hp = Math.Max(1, b.Hp - dmg); Boss.OnDamaged(b); }
+        EelBoss.Tick(dt); Boss.TickAll(); if (p.Hp < lastHp) hits++;
+        if (p.Hp < p.MaxHp / 3) { p.Hp = p.MaxHp; Body.Reset(); }
+        lastHp = p.Hp; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+        if (k % 2 != 0) continue;
+        var (qx, qy) = Ballistics.Pos(p);
+        sb.Append(n++ > 0 ? "," : "").Append("{\"t\":" + F(t) + ",\"stage\":\"" + f.Stage + "\",\"age\":" + F(EelBoss.Age(f)) + ",\"move\":\"" + (f.Move ?? "") + "\",\"label\":\"" + f.Label.Replace("\"", "'") + "\",\"phase\":" + f.Phase + ",\"enraged\":" + (f.Enraged ? 1 : 0)
+          + ",\"hp\":" + b.Hp + ",\"side\":" + f.Side + ",\"chain\":" + f.Chain + ",\"shadow\":[" + F(f.SX) + "," + F(f.SY) + "],\"plat\":[" + F(f.PX) + "," + F(f.PY) + "],\"wraps\":" + f.Wraps
+          + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"php\":" + p.Hp + ",\"body\":[" + (f.Swallowed && !f.Ejected ? -1 : f.Body == null ? -2 : f.BodyX) + "," + f.BodyY + "],"
+          + "\"zones\":[" + string.Join(",", f.Zones.Select(z => "[" + F(z.X) + "," + F(z.Y) + "," + F(z.R) + ",\"" + z.Kind + "\"," + (z.Live ? 1 : 0) + "]")) + "],\"shock\":" + f.Shocked.Count
+          + ",\"under\":" + (f.Rig.Under ? 1 : 0) + ",\"face\":" + (f.Rig.Face > 0 ? 1 : -1) + ",\"disch\":" + (f.Discharged ? 1 : 0) + ",\"nvis\":" + EelBoss.Surfaced(f)
+          + ",\"rig\":[" + F(f.Rig.HX) + "," + F(f.Rig.HY - f.Rig.HeadZ) + string.Concat(Enumerable.Range(0, EelRig.Count).Select(i => "," + F(f.Rig.RX[i]) + "," + F(f.Rig.RY[i]))) + "]"
+          + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
+        { var rg = f.Rig; for (int i = 0; i + 1 < EelRig.Count; i++) { float dx = rg.X[i + 1] - rg.X[i], dy = rg.Y[i + 1] - rg.Y[i]; { float rr = (float)Math.Sqrt(dx * dx + dy * dy) / EelRig.Spacing; eelMaxStretch = Math.Max(eelMaxStretch, rr); eelMinStretch = Math.Min(eelMinStretch, rr); } }
+          if (f.Level == "platform" && f.Stage == "wrap" && f.Discharged) for (int i = 0; i < EelRig.Count; i++) eelCoil = Math.Max(eelCoil, (float)Math.Sqrt((rg.X[i] - f.PX) * (rg.X[i] - f.PX) + (rg.Y[i] - f.PY) * (rg.Y[i] - f.PY))); }
+        if (f.Level == "platform") {
+          var rg2 = f.Rig; float ag = EelBoss.Age(f);
+          float MeanR(int from, int to) { float t2 = 0f; for (int i = from; i < to; i++) t2 += (float)Math.Sqrt((rg2.X[i] - f.PX) * (rg2.X[i] - f.PX) + (rg2.Y[i] - f.PY) * (rg2.Y[i] - f.PY)); return t2 / (to - from); }
+          if (f.Stage == "wrap" && ag >= EelBoss.Burst + 0.05f && ag <= EelBoss.Burst + EelBoss.ConstrictFor) {
+            if (eelHeadAt.Item1 == 0f) eelHeadAt = (rg2.HX, rg2.HY); eelHeadDrift = Math.Max(eelHeadDrift, (float)Math.Sqrt((rg2.HX - eelHeadAt.Item1) * (rg2.HX - eelHeadAt.Item1) + (rg2.HY - eelHeadAt.Item2) * (rg2.HY - eelHeadAt.Item2)));
+            if (eelR0 < 0f) eelR0 = MeanR(20, 50); eelR1 = MeanR(20, 50);
+          }
+          if (f.Stage == "release") { eelHeadAt = (0f, 0f); if (eelR0 >= 0f) { eelTailIn = Math.Max(eelTailIn, eelR1 - eelR0); eelR0 = -1f; } }
+          if (f.Stage == "wrap" && f.Discharged && ag > EelBoss.Burst + EelBoss.ConstrictFor + 0.3f) { eelLift = Math.Min(eelLift, rg2.Z[2] - rg2.Z[50]); eelInward = Math.Min(eelInward, MeanR(40, 56) - MeanR(0, 8)); }
+          if (f.Stage == "recover" || f.Stage == "strike" || f.Stage == "release") for (int i = 8; i < EelRig.Count; i++) if ((rg2.HX - rg2.X[i]) * (rg2.HX - rg2.X[i]) + (rg2.HY - rg2.Y[i]) * (rg2.HY - rg2.Y[i]) < 0.45f * 0.45f) eelEscape = Math.Min(eelEscape, rg2.HeadZ);   // whenever the head is on top of its own body, how high is it
+        }
+        log0.AddRange(log.Where(l => l.Contains("coils shock"))); if (f.Stage == "move") moves.Add(f.Chain > 0 ? "smash" : f.Move);
+        log.Clear();
+      }
+      sb.Append("]}");
+    }
+    // --- 1. Level 1: walk the catwalk to the strike platform
+    Build(LabLocks.Depths1); var up = TerrainMap.Exits.First(e => e.TargetZoneId == LabLocks.Depths);
+    var plat = EelBoss.Marks(LabLocks.Depths1, '7')[0]; var route = Path((up.X, up.Y), plat);
+    if (route.Count < 4) throw new Exception("no catwalk route to the strike platform");
+    int si = Math.Max(0, route.Count - 16); var startAt = route[si]; p.X = startAt.Item1; p.Y = startAt.Item2; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); p.Hp = p.MaxHp; lastHp = p.Hp;
+    var f1 = EelBoss.SpawnPlatform(LabLocks.Depths1, plat.x - 12f, plat.y + 3f); f1.StageAt = UnityEngine.Time.time;
+    int ri = si; float wrapAge0 = -1f; int lastWraps = 0; var dive = false;
+    BotShoot = true; bool spineLeak = false; int spineWrap = 0, spineHit = 0;
+    Seg(LabLocks.Depths1, f1, t => f1.Stage == "done" && EelBoss.Age(f1) > 2.5f, (t, px, py, d) => {
+      BotX = 0; BotY = 0; BotJump = false; float gx, gy;
+      if (f1.Sump != null) {                                                                         // the view's spine: nothing out of the water while it lurks, a coil out while it wraps, and the coil can be shot
+        if ((f1.Stage == "lurk" || f1.Stage == "wind") && f1.Sump.BodyOut) spineLeak = true;
+        if (f1.Stage == "wrap" && f1.Sump.BodyOut) { spineWrap++; var hs = f1.Sump.Z.Select((z, i) => (z, i)).First(q => q.z > EelSump.Surface).i; if (EelSump.BodyUnder(f1.Sump.X[hs], f1.Sump.Y[hs] - f1.Sump.Z[hs], out var bu, out _, out _) && EelBoss.Is(bu)) spineHit++; }
+      }
+      if (f1.Stage == "wrap" || f1.Stage == "release" || f1.Stage == "strike" || f1.Stage == "recover" || f1.Stage == "wind") {
+        float cxp = plat.x + 0.5f, cyp = plat.y + 0.5f; float dd = (float)Math.Sqrt((px - cxp) * (px - cxp) + (py - cyp) * (py - cyp));
+        var away = route[Math.Max(0, route.Count - 6)]; float ax = away.Item1 + 0.5f - cxp, ay = away.Item2 + 0.5f - cyp, al = (float)Math.Sqrt(ax * ax + ay * ay) + 0.001f;
+        if (f1.Stage == "wrap" && f1.Wraps == 1 && EelBoss.Age(f1) > 1.2f && f1.Shocked.Count == 0) { BotX = ax / al; BotY = ay / al; }              // wrap 1: try to walk out - and touch the coils
+        else if (f1.Stage == "wrap" && f1.Wraps >= 2 && EelBoss.Age(f1) > 2.0f) { BotX = ax / al; BotY = ay / al; BotJump = dd < 3.6f; }       // wrap 2: dive out through them
+        else if (f1.Stage == "strike" || f1.Stage == "release") { var z = f1.Zones.FirstOrDefault(); if (z != null) { float zx = px - z.X, zy = py - z.Y, zl = (float)Math.Sqrt(zx * zx + zy * zy) + 0.001f; if (zl < z.R + 1.2f) { BotX = zx / zl; BotY = zy / zl; BotJump = EelBoss.Age(f1) > 0.3f && zl < z.R + 0.4f; } } }
+        else if (dd > 0.8f && f1.Stage != "wrap") { BotX = (cxp - px) / dd; BotY = (cyp - py) / dd; }
+      } else {
+        var tgt = route[Math.Min(route.Count - 1, ri)]; gx = tgt.Item1 + 0.5f; gy = tgt.Item2 + 0.5f; float dx = gx - px, dy = gy - py, dl = (float)Math.Sqrt(dx * dx + dy * dy);
+        if (dl < 0.5f && ri < route.Count - 1) ri++; else if (dl > 0.001f) { BotX = dx / dl; BotY = dy / dl; }
+      }
+    }, 60f, true);
+    // (the Sump fight has its own dump and checks: EelSumpFrames / EelSumpChecks)
+    sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
+    System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
+    EelRun = (f1.Wraps, f1.Unit.Hp, false, false, false, log0.Count(l => l.Contains("coils shock")), 0);
+    Check(!spineLeak && spineWrap > 20 && spineHit == spineWrap, $"Eel Levels 1-2: the platform form has a view spine - nothing above the water while it lurks, a coil above it while it wraps ({spineWrap} ticks), and the crosshair finds it ({spineHit})");
+    { EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); var e2 = EelBoss.Current; bool spawned = e2 != null && e2.Level == "platform" && e2.Sump != null && !EelBoss.Is(null);
+      var keys = MacroState.Current.Keys; keys.Add("depths_drain2"); EelBoss.Reset(); EelBoss.OnEnterZone(LabLocks.Depths2); bool drained = EelBoss.Current == null; keys.Remove("depths_drain2"); EelBoss.Reset();
+      Check(spawned && drained, $"Eel Levels 1-2: it is there when you enter the level ({spawned}) and gone once that level's pump has run ({drained})");
+    }
+    Console.WriteLine($"eel platform fight: {k * dt:0.0} s, hits on the bot {hits}, dives {dives}, wraps {f1.Wraps}");
+  }
+  static float BotX, BotY; static bool BotJump, BotShoot; static (int wraps, int hp1, bool gone, bool ejected, bool flag, int shocks, int moves) EelRun;
+  static (float, float) eelHeadAt; static float eelHeadDrift, eelR0 = -1f, eelR1, eelTailIn = -9f, eelLift = 9f, eelInward = 9f, eelEscape = 99f; static float eelMaxStretch, eelMinStretch = 9f, eelCoil; static readonly List<string> log0 = new List<string>(); static readonly HashSet<string> moves = new HashSet<string>();
+  // The rope's own physics (EelRig), on a bare rig: it bunches up when told to, stretches back past normal, and keeps its momentum when the head stops.
+  static void EelRigChecks() {
+    float NeckMean(EelRig r) { float t = 0f; for (int i = 0; i < 18; i++) { float ax = i == 0 ? r.HX : r.X[i - 1], ay = i == 0 ? r.HY : r.Y[i - 1]; t += (float)Math.Sqrt((r.X[i] - ax) * (r.X[i] - ax) + (r.Y[i] - ay) * (r.Y[i] - ay)); } return t / 18f / EelRig.Spacing; }
+    const float dt = 1f / 30f; var rig = new EelRig(); rig.Place(0f, 0f, 1f, 0f);
+    for (int i = 0; i < 20; i++) rig.Step(dt, 0f, 0f);
+    Check(Math.Abs(NeckMean(rig) - 1f) < 0.05f, $"EelRig: at rest the neck sits at the normal spacing ({NeckMean(rig):0.00})");
+    rig.SpacingTarget = 0.45f; for (int i = 0; i < 18; i++) rig.Step(dt, 0f, 0f);               // the 0.6 s anticipation
+    float squeezed = NeckMean(rig); Check(squeezed < 0.7f, $"EelRig: during the anticipation the neck bunches up ({squeezed:0.00} x normal)");
+    rig.SpacingTarget = 1.22f; float peak = 0f; for (int i = 0; i < 12; i++) { rig.Step(dt, 0f, 0f); peak = Math.Max(peak, NeckMean(rig)); }   // the strike
+    Check(peak > 1.05f, $"EelRig: on the strike it stretches past normal ({peak:0.00} x normal)");
+    rig.SpacingTarget = 1f; for (int i = 0; i < 60; i++) rig.Step(dt, 0f, 0f); Check(Math.Abs(NeckMean(rig) - 1f) < 0.06f, $"EelRig: and settles back ({NeckMean(rig):0.00})");
+    // inertia: the head runs 8 tiles left at 8 tiles/s and stops dead; the body must lag while it runs and keep moving after the head has stopped, the tail later than the neck
+    rig = new EelRig(); rig.Place(0f, 0f, 1f, 0f); for (int i = 0; i < 20; i++) rig.Step(dt, 0f, 0f);
+    int near = 6, far = 38; float lagFar = 0f, lastX = 0f; var px = new float[EelRig.Count]; for (int i = 0; i < EelRig.Count; i++) px[i] = rig.X[i];
+    float peakNearT = -1f, peakFarT = -1f, peakNear = 0f, peakFar = 0f, movingAfter = 0f; float hx = 0f;
+    for (int k = 0; k < 90; k++) {
+      float t = k * dt; if (k < 30) hx -= 8f * dt; rig.Step(dt, hx, 0f);
+      float vn = Math.Abs(rig.X[near] - px[near]) / dt, vf = Math.Abs(rig.X[far] - px[far]) / dt; for (int i = 0; i < EelRig.Count; i++) px[i] = rig.X[i];
+      if (k >= 30) { if (vn > peakNear) { peakNear = vn; peakNearT = t; } if (vf > peakFar) { peakFar = vf; peakFarT = t; } if (k >= 36 && vf > 0.3f) movingAfter += dt; }
+      if (k == 29) lagFar = Math.Abs(rig.X[far] - rig.X[0]) ;
+    }
+    Check(peakFarT > peakNearT, $"EelRig: after the head stops the tail's momentum peaks later than the neck's (neck {peakNearT:0.00} s, tail {peakFarT:0.00} s)");
+    Console.WriteLine($"  eel rope: bunched to {squeezed:0.00}x, stretched to {peak:0.00}x, tail peak {peakFar:0.0} t/s at {peakFarT:0.00} s vs neck {peakNear:0.0} t/s at {peakNearT:0.00} s, tail still moving {movingAfter:0.00} s");
+    Check(movingAfter > 0.08f, $"EelRig: the tail is still moving 0.2 s after the head stopped ({movingAfter:0.00} s of it)");
+  }
+  // ---------------------------------------------------------------- the Sump fight on the real map (EelSump): one scenario per move, and the frame dump for Tools/render/eel_real_clip.py
+  class SumpStats { public List<EelSump.Ev> Ev = new List<EelSump.Ev>(); public float MaxCross; public int FloodPeak, FloodEnd, Moves; public float EndT; public HashSet<string> Seen = new HashSet<string>(); public EelBoss.Fight F; public int DeepStart, DeepEnd; public float MinPlayerHp = 99999; }
+  static Player SP1, SP2;
+  static void SumpPlace(Player p, float x, float y) { p.X = (int)Math.Floor(x); p.Y = (int)Math.Floor(y); Rt.SetOffset(p, x - p.X - 0.5f, y - p.Y - 0.5f); }
+  static EelBoss.Fight SumpStart(bool two, int phase) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear(); EelBoss.Reset();
+    string z = LabLocks.Depths3; MacroState.Current.PersistedZoneTerrain.Remove(z); MacroState.Current.CurrentZoneId = z; TerrainMap.BuildTerrainForZone(z); EncounterState.Enemies.Clear();
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
+    SP1 = p; p.HealPermanent(100000); p.Hp = p.MaxHp; SP2 = null; if (two) { SP2 = Player.Join(); SP2.HealPermanent(100000); SP2.Hp = SP2.MaxHp; }
+    var f = EelBoss.SpawnSump(z); f.Unit.IsAggroed = true; f.Started = true; f.Phase = phase; f.Enraged = phase >= 2; EelBoss.GoStage(f, "idle"); f.Next = UnityEngine.Time.time; return f;
+  }
+  static int DeepCount() { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Difficult && t.Look == "deepwater") n++; } return n; }
+  static void SumpTick(EelBoss.Fight f, SumpStats st, float dt) {
+    UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; EelBoss.Tick(dt);
+    var s = f.Sump; st.Ev.AddRange(s.Events);
+    for (int i = 0; i + 1 < EelSump.N; i++) {                                             // every crossing of the water's surface must be at a pool's centre (Yan: it always comes up and goes down the middle)
+      float a = s.Z[i] - EelSump.Surface, b = s.Z[i + 1] - EelSump.Surface; if ((a > 0f) == (b > 0f)) continue;
+      float u = a / (a - b); if (Math.Abs(s.X[i + 1] - s.X[i]) + Math.Abs(s.Y[i + 1] - s.Y[i]) > 2f) u = Math.Abs(a) < Math.Abs(b) ? 0f : 1f; float cx = s.X[i] + (s.X[i + 1] - s.X[i]) * u, cy = s.Y[i] + (s.Y[i + 1] - s.Y[i]) * u; float best = 99f;   // a jump to the hidden part of the body (another pool) is not drawn: the crossing is the sample nearest the surface
+      foreach (var q in s.Pools) best = Math.Min(best, (float)Math.Sqrt((cx - q.X) * (cx - q.X) + (cy - q.Y) * (cy - q.Y))); if (best > 1.0f && Environment.GetEnvironmentVariable("EELDBG") != null) Console.WriteLine($"   DBG cross {best:0.0} at ({cx:0.0},{cy:0.0}) i={i} z={s.Z[i]:0.00}->{s.Z[i + 1]:0.00} move={f.Move} age={(UnityEngine.Time.time - f.StageAt) * EelSump.Speed:0.00}"); if (best > 1.0f && Environment.GetEnvironmentVariable("EELDBG") != null) { var sb2 = new System.Text.StringBuilder("      "); for (int k = Math.Max(0, i - 5); k < Math.Min(EelSump.N, i + 6); k++) sb2.Append($"[{k}:{s.X[k]:0.0},{s.Y[k]:0.0},{s.Z[k]:0.00}] "); Console.WriteLine(sb2 + " tailpool=" + s.P1?.Name + " snared=" + (s.Snared != null)); } st.MaxCross = Math.Max(st.MaxCross, best);
+    }
+    st.FloodPeak = Math.Max(st.FloodPeak, s.Flooded); if (f.Move != null) { st.Seen.Add(f.Move); }
+    foreach (var pl in Player.All) { st.MinPlayerHp = Math.Min(st.MinPlayerHp, pl.Hp); if (pl.Hp < pl.MaxHp / 3) { pl.Hp = pl.MaxHp; Body.Reset(); } }
+    UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+  }
+  static SumpStats SumpRun(bool two, int phase, string queue, Action<EelBoss.Fight> setup, Action<EelBoss.Fight, float> each, float maxT) {
+    var f = SumpStart(two, phase); var st = new SumpStats { F = f }; if (queue != null) f.Sump.Queue.Add(queue); setup?.Invoke(f); st.DeepStart = DeepCount();
+    const float dt = 1f / 30f; bool moved = false; float t0 = UnityEngine.Time.time;
+    for (float t = 0f; t < maxT; t += dt) {
+      each?.Invoke(f, t); SumpTick(f, st, dt); if (f.Stage == "move") moved = true;
+      if (moved && f.Stage == "idle") { st.EndT = t; break; }
+    }
+    st.FloodEnd = f.Sump.Flooded; st.DeepEnd = DeepCount(); Console.WriteLine($"  eel sump {queue}: over in {st.EndT:0.0} s, worst surface crossing {st.MaxCross:0.00} tiles from a pool's centre"); return st;
+  }
+  static int Hits(SumpStats st, int who, int dmg = -1) => st.Ev.Count(e => e.Kind == "hit" && e.Who == who && (dmg < 0 || e.Dmg == dmg));
+  static void EelSumpChecks() {
+    float cross = 0f; string cell;
+    // COMBO: a head strike out of the pool nearest one player, a tail sweep round a far pool through the other
+    var st = SumpRun(true, 0, "combo", f => { SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.Moves >= 0 && st.EndT > 3f && st.Ev.Count(e => e.Kind == "impact") >= 2 && Hits(st, 0) >= 1 && Hits(st, 1) >= 1, $"EelSump combo: a head slam and a tail slam land and both players are hit (impacts {st.Ev.Count(e => e.Kind == "impact")}, hits {Hits(st, 0)}/{Hits(st, 1)}, over {st.EndT:0.0} s)");
+    // ARCH: crashes down the big pool's centre; the shockwave hits whoever is near it, not the far player
+    st = SumpRun(true, 0, "arch:east", f => { SumpPlace(SP1, 30.5f, 30.5f); SumpPlace(SP2, 12.0f, 12.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    var imp = st.Ev.FirstOrDefault(e => e.Kind == "impact" && e.Water && e.Power >= 2f);
+    var big = ((EelBoss.Current).Sump.Big); var near = Ballistics.Pos(SP1); var far = Ballistics.Pos(SP2);
+    float dBefore = (float)Math.Sqrt((30.5f - big.X) * (30.5f - big.X) + (30.5f - big.Y) * (30.5f - big.Y)), dAfter = (float)Math.Sqrt((near.x - big.X) * (near.x - big.X) + (near.y - big.Y) * (near.y - big.Y));
+    Check(imp != null && Math.Abs(imp.X - 30.5f) < 0.8f && Math.Abs(imp.Y - 24.5f) < 0.8f && Hits(st, 0) == 0 && Hits(st, 1) == 0 && dAfter > dBefore + 0.8f && Math.Abs(far.x - 12.0f) < 0.2f && Math.Abs(far.y - 12.0f) < 0.2f, $"EelSump arch: it crashes into the big pool's centre ({(imp == null ? "none" : imp.X.ToString("0.0") + "," + imp.Y.ToString("0.0"))}), the water shoves the near player back ({dBefore:0.0} -> {dAfter:0.0} tiles from the pool) with no damage and leaves the far one alone ({Hits(st, 0)}/{Hits(st, 1)} hits)");
+    // ARCH, a player between the big pool and the north one: the shove carries him into it, the tail throws him out (no damage but the crash)
+    st = SumpRun(true, 0, "arch:east", f => { SumpPlace(SP1, 30.5f, 19.0f); SumpPlace(SP2, 12.0f, 12.0f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+    Check(Hits(st, 0, 120) == 1 && Hits(st, 0, 420) == 1 && Hits(st, 1) == 0 && Math.Abs(Ballistics.Pos(SP1).x - 30.5f) < 0.3f && Math.Abs(Ballistics.Pos(SP1).y - 19.0f) < 0.3f, $"EelSump arch: pushed into the north pool he is pulled under for 120, a second after the dive the tail throws him out and he crashes where he stood for 420 (ends at {Ballistics.Pos(SP1).x:0.0},{Ballistics.Pos(SP1).y:0.0}; {Hits(st, 0, 120)} pulled, {Hits(st, 0, 420)} crash, other player {Hits(st, 1)})");
+    // DASH: out of the west pool, an S across the arena, into the east one: a player on the path is flung, one off it is not
+    {
+      var f0 = SumpStart(true, 0); var pw = f0.Sump.Pools.First(q => q.Name == "west"); var pe = f0.Sump.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
+      st = SumpRun(true, 0, "dash:west>east", f => { SumpPlace(SP1, onp.x, onp.y); SumpPlace(SP2, 30.5f, 10.5f); }, null, 14f); cross = Math.Max(cross, st.MaxCross);
+      Check(Hits(st, 0) == 0 && Hits(st, 1) == 0, $"EelSump dash: the body itself no longer hurts, even a player on its path ({Hits(st, 0)}/{Hits(st, 1)} hits)");
+    }
+    // SNARE (launch): the tail out of one pool catches him, drags him down it, a DIFFERENT pool throws him up; he crashes
+    st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
+    var wat = st.Ev.Where(e => e.Kind == "impact" && e.Water).Select(e => ((int)Math.Round(e.X * 2), (int)Math.Round(e.Y * 2))).Distinct().Count(); var crash = st.Ev.FirstOrDefault(e => e.Kind == "impact" && e.Power >= 1.3f && !e.Water);
+    Check(Hits(st, 0, 420) == 1 && wat >= 2 && crash != null, $"EelSump snare (launch): caught, dragged under one pool, thrown out of another, crashes for 420 (water splashes at {wat} different spots, crash {(crash != null)})");
+    // SNARE (hurl): thrown at the other player: both take it
+    st = SumpRun(true, 2, "snare:hurl", f => { SumpPlace(SP1, 36.0f, 20.0f); SumpPlace(SP2, 22.0f, 22.0f); }, null, 16f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.Ev.Any(e => e.Kind == "hit" && e.Dmg == 260 && e.Text == "hurled") && st.Ev.Any(e => e.Kind == "hit" && e.Dmg == 210), "EelSump snare (hurl): the snared player is thrown at the other one and both are hurt");
+    // SNARE: shoot the tail while it drags: it lets go, the thrower never comes, the tail goes down
+    st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), (f, t) => { if (t > 3.6f && f.Sump.Tail.Hp > 1 && f.Sump.TailOut) { f.Sump.Tail.Hp = Math.Max(1, f.Sump.Tail.Hp - 90); Boss.OnDamaged(f.Sump.Tail); } }, 16f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.F.Sump.TailBroken && Hits(st, 0, 420) == 0 && st.EndT > 0f && st.EndT < 12f, $"EelSump snare: shooting the tail makes it let go (broken {st.F.Sump.TailBroken}, no throw {Hits(st, 0, 420) == 0}, over in {st.EndT:0.0} s)");
+    // FLOOD: the floor turns to deep water, then comes back; it bursts out under the player standing in it
+    st = SumpRun(false, 2, "flood", f => SumpPlace(SP1, 42.5f, 26.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
+    Check(st.FloodPeak >= 400 && st.FloodEnd == 0 && st.DeepEnd == st.DeepStart && Hits(st, 0, 380) == 1, $"EelSump flood: {st.FloodPeak} tiles go under, all {st.DeepStart} deep tiles are back to {st.DeepEnd} afterwards, and it bursts out under him ({Hits(st, 0)})");
+    // REVEAL then DEATH: it swallows the body, fights, then brings it back up and goes down the big pool
+    {
+      var f = SumpStart(false, 0); EelBoss.GoStage(f, "hidden"); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit);
+      for (float t = 0f; t < 25f && f.Stage != "idle"; t += dt) SumpTick(f, sst, dt);
+      bool swallowed = f.Swallowed && !EncounterState.Enemies.Contains(f.Body); f.Sump.Dying = true; f.Next = UnityEngine.Time.time; var tf = f.Unit;
+      for (float t = 0f; t < 10f && !f.Gone; t += dt) SumpTick(f, sst, dt); cross = Math.Max(cross, sst.MaxCross);
+      { var bi = f.Body.Inventory.Items; var parts = bi.Where(i => i.Type == "mutantPart" && i.Id.StartsWith("eel_part_")).ToList(); int value = parts.Sum(i => (i.Price ?? 0) * i.Qty);
+        Check(bi.Any(i => i.Id == EelBoss.VaultKeyId && i.Type == "key") && parts.Count == 3 && parts.All(i => (i.Price ?? 0) >= 900) && value >= 6000 && f.Body.EquippedArmor != null, $"EelSump: the body it brings up carries the Sealed Vault key, three kinds of eel parts worth {value} RU in all (a tier-3 mutant part is 400-600), and his tier-4 suit"); }
+      Check(swallowed && f.Gone && f.Ejected && EncounterState.Enemies.Contains(f.Body) && Story.Has(EelBoss.Fled), $"EelSump: it swallows the body on the slab, and at the end brings it back up and goes down the big pool (swallowed {swallowed}, gone {f.Gone}, ejected {f.Ejected})");
+    }
+    // TARGETING: nothing lands on the head or the tail while they are under the water; shots land while they are out
+    {
+      var f = SumpStart(true, 0); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); SumpTick(f, sst, dt); int before = f.Unit.Hp; f.Unit.Hp -= 1000; Boss.OnDamaged(f.Unit);
+      bool shed = f.Unit.Hp == before; f.Sump.Queue.Add("combo"); bool headLanded = false, tailLanded = false;
+      for (float t = 0f; t < 8f; t += dt) {
+        SumpTick(f, sst, dt);
+        if (!headLanded && f.Sump.HeadOut && f.Stage == "move") { int h = f.Unit.Hp; f.Unit.Hp -= 500; Boss.OnDamaged(f.Unit); headLanded = f.Unit.Hp == h - 500; }
+        if (!tailLanded && f.Sump.TailOut && f.Stage == "move") { int h = f.Sump.Tail.Hp; f.Sump.Tail.Hp -= 300; Boss.OnDamaged(f.Sump.Tail); tailLanded = f.Sump.Tail.Hp == h - 300; }
+      }
+      Check(shed && headLanded && tailLanded, $"EelSump: shots do nothing while it is under the water (shed {shed}) and land on the head ({headLanded}) and the tail ({tailLanded}) while they are out");
+    }
+    // HITBOX (Yan, 2026-11-06): the whole body that is out of the water can be shot, the head part is "Head" (it takes the bonus), the rest is "Body"; the eel's two base units are no hitbox
+    {
+      int mhp0 = 0, mhp1 = 0; ICombatant meleeU = null;
+      bool did = false; string pBody = null, pHead = null; ICombatant uBody = null, uHead = null; int bodyIdx = -1; bool under = false; ICombatant uUnder = null; float fxOk = 99f; bool baseUnitMiss = false;
+      SumpRun(true, 2, "dash:west>east", f => { SumpPlace(SP1, 30.5f, 28.5f); SumpPlace(SP2, 41.0f, 22.0f); }, (f, tt) => {
+        var s = f.Sump; if (did || s.Z[0] < 0.3f) return;
+        int a = -1; for (int i = 14; i < 100; i++) if (s.Z[i] > 0.1f && s.Z[i] <= 2.0f) { a = i; break; }
+        if (a < 0) return; did = true; bodyIdx = a;
+        var (px, py) = Ballistics.Pos(SP1);
+        Func<int, bool, Ballistics.Hit> shot = (i, air) => { float dx = s.X[i] - px, dy = s.Y[i] - py, l = (float)Math.Sqrt(dx * dx + dy * dy); return Ballistics.Trace(SP1, px, py, dx / l, dy / l, l + 3f, 0.45f, Gunplay.Targets(SP1), air); };
+        var hb = shot(a, false); uBody = hb.Unit; pBody = hb.Part;
+        var hh = shot(2, true); uHead = hh.Unit; pHead = hh.Part;
+        under = EelSump.BodyUnder(s.X[a], s.Y[a] - s.Z[a], out uUnder, out float bx, out float by); fxOk = (float)Math.Sqrt((bx - s.X[a]) * (bx - s.X[a]) + (by - s.Y[a]) * (by - s.Y[a]));
+        var u0 = f.Unit; float ox = s.X[0], oy = s.Y[0]; s.X[0] = 0f; s.Y[0] = 0f;
+        baseUnitMiss = Ballistics.Trace(SP1, px, py, 0f, -1f, 1f, 0.45f, Gunplay.Targets(SP1)).Unit == null; s.X[0] = ox; s.Y[0] = oy;   // (nothing at the head's ground spot but air: the units themselves are not hit boxes)
+        // melee: a swing from beside a low part of the body (far from the base units in the pools' centres) cuts it
+        Melee.Reset(); Melee.Now = 0f; SP1.EquipWeapon("melee", "TacticalHatchet"); SumpPlace(SP1, s.X[a] - 1.5f, s.Y[a]);
+        mhp0 = f.Unit.Hp + f.Sump.Tail.Hp; var mu = Melee.Swing(SP1, SP1.EquippedWeapon, 1f, 0f, 0.45f); mhp1 = f.Unit.Hp + f.Sump.Tail.Hp; meleeU = mu;
+      }, 45f);
+      Check(did && uBody != null && EelBoss.Is(uBody) && pBody != null && (pBody == "Body" || pBody == "Head") && uHead != null && EelBoss.Is(uHead) && pHead == "Head" && under && EelBoss.Is(uUnder) && fxOk < 0.6f,
+        $"EelSump hitbox: a round at a low part of the body (spine sample {bodyIdx}) lands on the eel (part {pBody}), one at the head is a Head hit ({pHead}), the crosshair finds the part ({under}, {fxOk:0.00} tiles off)");
+      Check(EelSump.HeadBonus > 1f && EelSump.IsEelHead(uHead, "Head") && !EelSump.IsEelHead(uBody, "Body"), "EelSump hitbox: only the head part takes the extra damage");
+      Check(did && meleeU != null && EelBoss.Is(meleeU) && mhp1 < mhp0, $"EelSump hitbox: a melee swing from beside a low part of the body cuts it ({mhp0} -> {mhp1})");
+      // the reward and the gate
+      {
+        Check(!EelBoss.BlocksPump(null) && !EelBoss.BlocksPump("alpha_drain"), "Eel gate: an ordinary pump is never blocked by the eel"); }
+    }
+    // STORM (phase 3): the arena floods, it rears up and charges ~4 s with sparks, then every water tile is electric (a dry patch is safe), then it BITES: a parry + mash slams its head down and stuns it,
+    // no parry (or no mash) and the jaws close and throw the player, a dive or a step away makes it miss
+    {
+      Func<string, Action<EelBoss.Fight, float>, SumpStats> storm = (what, each) => SumpRun(true, 2, "storm", f => { SumpPlace(SP1, 22.5f, 20.5f); SumpPlace(SP2, 41.0f, 22.0f); f.Sump.ForcedVictim = SP1; }, each, 45f);
+      Action<EelBoss.Fight> press = f => { Rt.Of(SP1).GrabAt = UnityEngine.Time.time; };
+      // a) parry bare-handed, mash: the jaws shut, the head slams, it is stunned
+      float stunStart = -1f, stunEnd = -1f; int hp0 = 0, hp1 = 0; float maxJump = 0f, shiftMag = -1f, lungeEndX = -99f, grabHeadX = -99f, slumpHeadX = -99f, smashHeadX = -99f; (float, float, float)? lastHead = null; string lastBite = null;
+      var st1 = storm("parry", (f, tt) => {
+        var s = f.Sump; if (hp0 == 0) hp0 = f.Unit.Hp;
+        if (s.Bite != null) { var hd = (s.X[0], s.Y[0], s.Z[0]); if (lastHead.HasValue && s.Bite != "lunge" && s.Bite != "smash" && lastBite != "lunge" && lastBite != "smash") maxJump = Math.Max(maxJump, (float)Math.Sqrt(Math.Pow(hd.Item1 - lastHead.Value.Item1, 2) + Math.Pow(hd.Item2 - lastHead.Value.Item2, 2) + Math.Pow(hd.Item3 - lastHead.Value.Item3, 2))); lastHead = hd; lastBite = s.Bite;
+          if (s.Bite == "grapple" && shiftMag < 0f) { shiftMag = (float)Math.Sqrt(s.GrabShift.sx * s.GrabShift.sx + s.GrabShift.sy * s.GrabShift.sy); lungeEndX = s.BiteEnd.x; }
+          if (s.Bite == "smash") smashHeadX = s.X[0]; if (s.Bite == "slump" && slumpHeadX < -90f) slumpHeadX = s.X[0]; }
+        if (s.Bite == "lunge") press(f);
+        if (s.Bite == "grapple") EelSump.GrappleInput(SP1);
+        if (s.Bite == "slump" && stunStart < 0f) { stunStart = UnityEngine.Time.time; hp1 = f.Unit.Hp; }
+        if (stunStart >= 0f && stunEnd < 0f && s.Bite != "slump") stunEnd = UnityEngine.Time.time;
+      });
+      Check(maxJump < 0.9f, $"EelSump bite: the head never teleports (the biggest step between two frames outside the lunge and the slam: {maxJump:0.00} tiles)");
+      Check(shiftMag >= 0f && shiftMag < 0.8f && Math.Abs(lungeEndX - (22.5f + (lungeEndX > 22.5f ? 3.4f : -3.4f))) < 0.4f, $"EelSump bite: the lunge ends beside him (anchor {lungeEndX:0.0}), so the parry only nudges it ({shiftMag:0.00} tiles)");
+      Check(Math.Abs(slumpHeadX - smashHeadX) < 0.7f, $"EelSump bite: after the slam the head stays where it landed ({smashHeadX:0.0} -> {slumpHeadX:0.0})");
+      cross = Math.Max(cross, st1.MaxCross); var sparks = st1.Ev.Count(e => e.Kind == "spark");
+      Check(Hits(st1, 0) == 0 && Hits(st1, 1, 450) == 1 && sparks >= 15 && st1.Ev.Any(e => e.Kind == "storm") && st1.Ev.Any(e => e.Kind == "parry") && st1.Ev.Any(e => e.Kind == "slam") && st1.FloodPeak > 100 && st1.FloodEnd == 0 && st1.F.Sump.Wet.Contains((41, 22)) && !st1.F.Sump.Wet.Contains((22, 20)),
+        $"EelSump storm: floods (peak {st1.FloodPeak}, {st1.FloodEnd} left), {sparks} sparks, the burst shocks the one in the water ({Hits(st1, 1, 450)}) and spares the one on the dry patch, the parried bite ends in a slam ({Hits(st1, 0)} hits on him)");
+      Check(stunStart > 0f && stunEnd - stunStart >= 3.9f && stunEnd - stunStart < 4.3f && hp0 - hp1 >= 1800, $"EelSump bite: the slam costs it {hp0 - hp1} HP and stuns it {stunEnd - stunStart:0.0} s (4 s, then it wakes)");
+      // b) no parry: the jaws close (200) and throw him (crash 420)
+      var st2 = storm("nobite", null);
+      Check(Hits(st2, 0, 200) == 1 && Hits(st2, 0, 420) == 1 && !st2.Ev.Any(e => e.Kind == "parry"), $"EelSump bite: never parried, the jaws close for 200 and he is thrown (crash 420): {Hits(st2, 0, 200)}/{Hits(st2, 0, 420)}");
+      // c) parry but no mash: the scene times out and the bite lands
+      var st3 = storm("nomash", (f, tt) => { if (f.Sump.Bite == "lunge") press(f); });
+      Check(st3.Ev.Any(e => e.Kind == "parry") && !st3.Ev.Any(e => e.Kind == "slam") && Hits(st3, 0, 200) == 1 && Hits(st3, 0, 420) == 1, $"EelSump bite: parried but not mashed, the bite lands after the scene ({Hits(st3, 0, 200)}/{Hits(st3, 0, 420)})");
+      // d) he steps away from where it locked: it misses
+      var st4 = storm("miss", (f, tt) => { if (f.Sump.Bite == "lunge") SumpPlace(SP1, 22.5f, 27.5f); });
+      Check(Hits(st4, 0) == 0 && !st4.Ev.Any(e => e.Kind == "parry"), $"EelSump bite: a player who steps away is missed ({Hits(st4, 0)} hits)");
+      cross = Math.Max(cross, Math.Max(st2.MaxCross, Math.Max(st3.MaxCross, st4.MaxCross)));
+      // d2) pressed at the CUE (the head fully reared back and trembling, the white glint ~0.9 s before the bite lands), not during the lunge: that is the moment it tells him, so it parries (Yan: "the parry does not work")
+      bool cued = false; int floodTiles = 0, floodPassable = 0, floodLocked = 0;
+      var st4b = storm("cue", (f, tt) => { var s = f.Sump; if (floodTiles == 0 && s.Flip.Count > 300) { foreach (var t in s.Flip) { floodTiles++; if (TerrainMap.CanEnterTile(t.Item1, t.Item2)) floodPassable++; if (TerrainMap.GetTile(t.Item1, t.Item2).Look == "deepwater") floodLocked++; } } if (!cued && s.Bite == "cock" && s.GlintSnd) { cued = true; press(f); } if (s.Bite == "grapple") EelSump.GrappleInput(SP1); });
+      Check(st4b.Ev.Any(e => e.Kind == "glint") && st4b.Ev.Any(e => e.Kind == "parry") && st4b.Ev.Any(e => e.Kind == "slam") && Hits(st4b, 0) == 0, $"EelSump bite: a press at the glint (the cue: the head reared back and trembling, a white glint; glint {st4b.Ev.Any(e => e.Kind == "glint")}) parries the bite and the mash wins ({Hits(st4b, 0)} hits on him)");
+      Check(floodTiles > 300 && floodPassable == floodTiles && floodLocked == 0, $"EelSump flood: the flooded floor stays passable (a player caught in it can wade out): {floodPassable}/{floodTiles} flooded tiles enterable, {floodLocked} locked");
+      // d3) pressing long BEFORE the cue does nothing
+      bool early = false;
+      var st4c = storm("early", (f, tt) => { var s = f.Sump; if (!early && s.Bite == "open" && s.BiteCur == null && s.Mouth >= 0f && s.Mouth < 0.2f) { early = true; press(f); } });
+      Check(!st4c.Ev.Any(e => e.Kind == "parry") && Hits(st4c, 0, 200) == 1, $"EelSump bite: a press as the mouth starts opening (long before the cue) does not parry ({Hits(st4c, 0, 200)} bites landed)");
+      // e) the struggle is real: 2 presses a second is not enough (the eel pushes the jaws back open), 8 a second wins; each press shuts the mouth a little
+      int lastSlow = -1, lastFast = -1; float mStart = -9f, mAfter5 = -9f;
+      var st5 = storm("slow", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 2f); if (s.Bite == "grapple" && k != lastSlow) { lastSlow = k; EelSump.GrappleInput(SP1); } });
+      Check(st5.Ev.Any(e => e.Kind == "parry") && !st5.Ev.Any(e => e.Kind == "slam") && Hits(st5, 0, 200) == 1, $"EelSump struggle: 2 presses a second loses the fight, the bite lands ({Hits(st5, 0, 200)})");
+      var st6 = storm("fast", (f, tt) => { var s = f.Sump; if (s.Bite == "lunge") press(f); int k = (int)(UnityEngine.Time.unscaledTime * 8f); if (s.Bite == "grapple") { if (mStart < -1f) mStart = s.Mouth; if (k != lastFast) { lastFast = k; EelSump.GrappleInput(SP1); if (s.Mash == 15) mAfter5 = s.Mouth; } } });
+      Check(st6.Ev.Any(e => e.Kind == "slam") && Hits(st6, 0) == 0 && mStart > 1.3f && mAfter5 >= 0f && mAfter5 < mStart - 0.4f, $"EelSump struggle: 8 presses a second wins, and the mouth closes with the presses (wide {mStart:0.0} -> {mAfter5:0.0} after 15)");
+      cross = Math.Max(cross, Math.Max(st5.MaxCross, st6.MaxCross));
+    }
+    // PHASES: above 75% HP it only uses the first three moves; from 75% the snare and the flood join in, the first flood being the forced transition
+    {
+      var seen0 = new HashSet<string>(); var seen2 = new HashSet<string>(); foreach (int ph in new[] { 0, 1 }) {
+        var f = SumpStart(true, ph); var sst = new SumpStats { F = f }; const float dt = 1f / 30f; SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
+        for (float t = 0f; t < 140f; t += dt) { SumpTick(f, sst, dt); if (f.Stage == "idle" && t % 5f < dt) { SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f); } } (ph == 0 ? seen0 : seen2).UnionWith(sst.Seen); cross = Math.Max(cross, sst.MaxCross);
+      }
+      Check(!seen0.Contains("snare") && !seen0.Contains("flood") && seen0.Count == 3 && seen2.Contains("snare") && seen2.Contains("flood"), $"EelSump phases: phase 1 (above 75%) uses {string.Join(",", seen0.OrderBy(x => x))}; from 75% it adds the snare and the flood (saw {string.Join(",", seen2.OrderBy(x => x))})");
+    }
+    // THE 75% TRANSITION: dropping under 75% queues a flood surge first, once
+    {
+      var f = SumpStart(true, 0); f.Sump.Queue.Clear(); f.Sump.Bag.Clear(); f.Stage = "idle"; f.Sump.HeadOut = true; f.Sump.BodyOut = true; f.Unit.Hp = EelBoss.MaxHp * 3 / 4 - 50; EelBoss.OnDamaged(f.Unit);
+      bool queued = f.Sump.Queue.Count > 0 && f.Sump.Queue[0] == "flood" && f.Phase == 1; int n0 = f.Sump.Queue.Count; f.Unit.Hp -= 100; EelBoss.OnDamaged(f.Unit);
+      Check(queued && f.Sump.Queue.Count == n0, $"EelSump: under 75% HP the next move is a flood surge, queued once (queue {string.Join(",", f.Sump.Queue)}, phase {f.Phase})");
+    }
+    Check(cross <= 0.5f, $"EelSump: every time the head or tail goes through the water's surface it is at a pool's centre (worst {cross:0.00} tiles off, over all the moves)");
+    EelBoss.Reset(); Rt.On = false;
+  }
+
+  // The whole Sump fight in one run for the clip: reveal, then each move in turn with the players placed for it (a bait that stands still, a second player), then the death.
+  // dotnet /tmp/test.dll eelsump frames.json  ->  Tools/render/eel_real_clip.py
+  static void EelSumpFrames(string path, string kind = "") {
+    var f = SumpStart(true, 2); EelBoss.GoStage(f, "hidden"); var st = new SumpStats { F = f }; var s = f.Sump; var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
+    var sb = new System.Text.StringBuilder("{\"pools\":[" + string.Join(",", s.Pools.Select(q => $"[\"{q.Name}\",{F(q.X)},{F(q.Y)},{F(q.RX)},{F(q.RY)},{(q.Big ? 1 : 0)}]")) + "],\"slab\":[" + F(s.SlabX) + "," + F(s.SlabY) + "],\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, f.BodyArmor) + ",\"tailmax\":" + EelSump.TailMax + ",\"maxhp\":" + EelBoss.MaxHp + ",\"frames\":[");
+    var pw = s.Pools.First(q => q.Name == "west"); var pe = s.Pools.First(q => q.Name == "east"); var onp = EelSump.Dash(pw, pe).At(19f);
+    var plan = new List<(string q, (float, float) a, (float, float) b, string mode)> {
+      ("combo", (20.5f, 20.0f), (41.0f, 22.0f), ""), ("arch:east", (30.5f, 19.0f), (30.5f, 30.5f), ""), ("dash:west>east", (onp.x, onp.y), (46.5f, 22.5f), ""),
+      ("snare:launch", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("snare:hurl", (36.0f, 20.0f), (22.0f, 22.0f), ""), ("flood", (42.5f, 26.0f), (22.5f, 20.0f), ""), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry") };
+    if (kind == "storm") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> {      // the 75% flood transition, then the 50% storm three times: parried and won, never parried, parried but too slow
+      ("flood", (42.5f, 26.0f), (22.5f, 20.5f), ""), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry"), ("storm:north", (22.5f, 20.5f), (41.0f, 22.0f), "none"), ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "slow") };
+    if (kind == "transition") plan = new List<(string q, (float, float) a, (float, float) b, string mode)> { ("storm:big", (22.5f, 20.5f), (41.0f, 22.0f), "parry") };      // only the 50% transition: the storm, parried and won
+    int step = -1, evDone = 0, lastPress = -1; const float dt = 1f / 30f; int k = 0, outn = 0; bool dyingSet = false; float tHit = 0.5f; var shoot = 0;
+    SumpPlace(SP1, 20.5f, 20.0f); SumpPlace(SP2, 41.0f, 22.0f);
+    if (kind == "intro") plan.Clear();
+    bool seenIntro = false;
+    for (float t = 0f; t < 140f && !f.Gone; t += dt, k++) {
+      if (f.Stage == "intro") seenIntro = true; if (kind == "intro" && seenIntro && f.Stage == "idle") break;
+      if (f.Stage == "hidden" && t > tHit) { f.Unit.Hp -= 5; Boss.OnDamaged(f.Unit); }
+      if (f.Stage == "idle" && !s.Dying) {
+        if (step + 1 < plan.Count && s.Queue.Count == 0) { step++; SumpPlace(SP1, plan[step].a.Item1, plan[step].a.Item2); SumpPlace(SP2, plan[step].b.Item1, plan[step].b.Item2); s.Queue.Add(plan[step].q); if (plan[step].q.StartsWith("storm")) s.ForcedVictim = SP1; f.Next = UnityEngine.Time.time + 0.7f; }
+        else if (step + 1 >= plan.Count && s.Queue.Count == 0 && !dyingSet) { dyingSet = true; s.Dying = true; }
+      }
+      shoot = 0; if (f.Move == "snare" && s.Snared != null && s.TailOut && (UnityEngine.Time.time - f.StageAt) * EelSump.Speed > 3.0f && s.Tail.Hp > 1300 && k % 3 == 0) { s.Tail.Hp -= 45; Boss.OnDamaged(s.Tail); shoot = 1; }     // a teammate shoots the tail a while (not enough to break it)
+      { string mode = step >= 0 ? plan[step].mode : "";                                           // the bot's hands: parry the lunge, then mash (8 a second) or struggle too slowly (2 a second)
+        if (mode != "none" && mode != "" && s.Bite == "lunge") Rt.Of(SP1).GrabAt = UnityEngine.Time.time;
+        if (s.Bite == "grapple") { float rate = mode == "parry" ? 8f : 2f; int kk = (int)(UnityEngine.Time.unscaledTime * rate); if (kk != lastPress) { lastPress = kk; EelSump.GrappleInput(SP1); } } }
+      SumpTick(f, st, dt);
+      if (k % 2 != 0) continue;
+      sb.Append(outn++ > 0 ? "," : "").Append("{\"t\":" + F(k * dt) + ",\"stage\":\"" + f.Stage + "\",\"move\":\"" + (f.Move ?? "") + "\",\"var\":\"" + (s.Variant ?? "") + "\",\"label\":\"" + f.Label.Replace("\"", "'") + "\",\"hp\":" + f.Unit.Hp + ",\"thp\":" + s.Tail.Hp + ",\"hout\":" + (s.HeadOut ? 1 : 0) + ",\"tout\":" + (s.TailOut ? 1 : 0) + ",\"flood\":" + F(s.FloodR) + ",\"shoot\":" + shoot + ",\"swallowed\":" + (f.Swallowed && !f.Ejected ? 1 : 0) + ",\"ejected\":" + (f.Ejected ? 1 : 0)
+        + ",\"spine\":[" + string.Join(",", Enumerable.Range(0, EelSump.N).Select(i => F(s.X[i]) + "," + F(s.Y[i]) + "," + F(s.Z[i]))) + "]"
+        + ",\"pl\":[" + string.Join(",", Player.All.Select(pl => { var q = Ballistics.Pos(pl); s.Air.TryGetValue(pl, out var a); return "[" + F(q.x) + "," + F(q.y) + "," + F(a == null ? 0f : a.Z) + "," + F(a == null ? 0f : a.Rot) + "," + pl.Hp + "," + (Rt.Of(pl).ProneUntil > UnityEngine.Time.time ? 1 : 0) + "]"; })) + "]"
+        + ",\"ev\":[" + string.Join(",", st.Ev.Skip(evDone).Select(e => $"[\"{e.Kind}\",{F(e.X)},{F(e.Y)},{F(e.Power)},{(e.Water ? 1 : 0)},{e.Who},{e.Dmg},\"{(e.Text ?? "").Replace("\"", "'")}\"]")) + "]"
+        + ",\"zones\":[" + string.Join(",", f.Zones.Select(z => $"[{F(z.X)},{F(z.Y)},{F(z.R)},\"{z.Kind}\",{(z.Live ? 1 : 0)}" + (z.Path != null ? ",[" + string.Join(",", z.Path.Select(F)) + "]" : "") + "]")) + "]" + ",\"cam\":" + (Story.CamLock.HasValue ? "[" + F(Story.CamLock.Value.x) + "," + F(Story.CamLock.Value.y) + "," + F(Story.CamHalf) + "," + F(Story.CamRate) + "," + (Story.CamCut ? 1 : 0) + "]" : "null") + ",\"bars\":" + (Story.Letterbox ? 1 : 0) + ",\"lump\":" + F(s.Lump) + ",\"rear\":" + F(s.Rear) + ",\"mouth\":" + F(s.Mouth) + ",\"tw\":" + F(s.Twitch) + ",\"bite\":\"" + (s.Bite ?? "") + "\",\"grip\":" + F(s.Grip) + ",\"spot\":[" + F(s.BiteSpot.x) + "," + F(s.BiteSpot.y) + "]}");
+      evDone = st.Ev.Count;
+    }
+    sb.Append("],\"seconds\":" + F(k * dt) + "}"); System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null; Rt.On = false; EelBoss.Reset();
+    Console.WriteLine($"eel sump fight: {k * dt:0.0} s, {outn} frames, gone {f.Gone}, moves {string.Join(",", st.Seen.OrderBy(x => x))}");
+  }
+
+  // The Testing Ground's way in (Yan: "make the bossfight work in the testing ground similar to the brain boss, where you get teleported to the arena and fight it")
+  static void EelFightChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); MacroState.Current.StoryFlags.Add("f:" + EelBoss.Fled);          // it fled before: the Testing Ground gives a fresh one
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp;
+    TestingGround.EelFight(p); var f = EelBoss.Current;
+    Check(f != null && f.Sump != null && f.Level == "sump" && f.Stage == "hidden" && TerrainMap.ZoneId == LabLocks.Depths3 && !Story.Has(EelBoss.Fled), $"EelFight: you are taken to the Sump and a fresh eel waits hidden in the pools (zone {TerrainMap.ZoneId}, stage {f?.Stage})");
+    Check(f != null && p.Y <= 8 && EncounterState.Enemies.Contains(f.Unit) && EncounterState.Enemies.Contains(f.Sump.Tail) && f.Sump.Pools.Count == 4, $"EelFight: you stand on the steps above the room, the head and the tail are both in the fight, four pools (y {p.Y})");
+    const float dt = 1f / 30f; for (int i = 0; i < 90; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "hidden", "EelFight: it waits while you stay out of the room");
+    SumpPlace(p, 30.5f, 11.0f); for (int i = 0; i < 150; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "hidden" && !EelBoss.CanExamine(p, out _, out _), "EelFight: stepping into the room does nothing now - it waits for you to examine the body (too far to examine)");
+    SumpPlace(p, f.BodyX + 0.5f, f.BodyY + 1.5f); var prompts = InteractionPrompts.Near(p); Check(EelBoss.CanExamine(p, out _, out _) && prompts.Any(q => q.Label == "Examine the body" && q.Key == "E") && !prompts.Any(q => q.Label == "Search the body"), "EelFight: next to the body there is an 'Examine the body' prompt on E (and no loot prompt)");
+    Check(EelBoss.TryExamine(p) && f.Stage == "intro" && f.Started, "EelFight: E on the body starts the introduction");
+    bool locked = false, bars = false, camWest = false, camBig = false, hidden0 = true, headWest = false, headEast = false, headBig = false, lumped = false, still = true; float px0 = p.X, py0 = p.Y; var order = new List<string>(); int ripples = 0, impacts = 0; float lastSwallowAt = -1f; float t0 = UnityEngine.Time.time; var west = f.Sump.Pools.First(q => q.Name == "west"); var east = f.Sump.Pools.First(q => q.Name == "east");
+    for (int i = 0; i < 900 && f.Stage == "intro"; i++) {
+      UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; float age = UnityEngine.Time.time - t0; var s = f.Sump;
+      foreach (var e in s.Out) { if (e.Kind == "ripple") ripples++; if (e.Kind == "impact") impacts++; } s.Out.Clear();
+      if (Story.InCutscene) locked = true; else if (f.Stage == "intro") still = false; if (Story.Letterbox) bars = true; if (Story.CamLock.HasValue) { var c = Story.CamLock.Value; if (Math.Abs(c.x - west.X) < 8f && age < 5f) camWest = true; if (Math.Abs(c.y - s.Big.Y) < 4f && age > 14f) camBig = true; }
+      if (s.Z[0] > 0.3f) { if (Math.Abs(s.X[0] - west.X) < 8f && age < 4f) headWest = true; if (Math.Abs(s.X[0] - east.X) < 6f && age > 9f) headEast = true; if (Math.Abs(s.X[0] - s.Big.X) < 3f && age > 15f) headBig = true; }
+      if (age < 2.2f && s.Z[0] > EelSump.Surface) hidden0 = false; if (s.Lump > 2f) lumped = true; if (f.Swallowed && lastSwallowAt < 0f) lastSwallowAt = age;
+      if ((int)p.X != (int)px0 || (int)p.Y != (int)py0) still = false;
+    }
+    Check(f.Stage == "idle" && f.Swallowed && !EncounterState.Enemies.Contains(f.Body), $"EelFight: the introduction ends in the fight's idle, the body swallowed ({f.Stage}, swallowed {f.Swallowed})");
+    Check(locked && bars && camWest && camBig && !Story.CamLock.HasValue && !Story.Letterbox, $"EelFight: the camera is taken over (cutscene {locked}, bars {bars}, west pool {camWest}, middle pool {camBig}) and given back at the end");
+    Check(hidden0 && headWest && headEast && headBig && lastSwallowAt > 5.5f && lastSwallowAt < 7f && lumped, $"EelFight: out of the west pool (hidden before {hidden0}, west {headWest}), swallows the body at {lastSwallowAt:0.0} s with a lump down its neck ({lumped}), dives into the east pool ({headEast}), then rises in the middle pool ({headBig})");
+    Check(ripples >= 6 && impacts >= 4 && still, $"EelFight: the pools ripple ({ripples}), the beats hit ({impacts}) and the player stands still ({still})");
+    for (int i = 0; i < 120; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+    Check(f.Stage == "idle" || f.Stage == "move", $"EelFight: the fight begins after the introduction ({f.Stage})");
+    { var g0 = EelBoss.Current; TestingGround.EelFight(p); var h0 = EelBoss.Current; SumpPlace(p, h0.BodyX + 0.5f, h0.BodyY + 1.5f); EelBoss.TryExamine(p); for (int i = 0; i < 60; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; } EelBoss.SkipIntro(); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt;
+      Check(h0.Stage == "idle" && h0.Swallowed && !Story.Letterbox && !Story.InCutscene || h0.Stage == "idle" && h0.Swallowed, $"EelFight: ESC skips the introduction ({h0.Stage}, swallowed {h0.Swallowed})"); f = h0; }
+    var dead = p.Hp; p.Hp = 0; Body.Reset(); TestingGround.Respawn(p); Check(EelBoss.Current != null && EelBoss.Current.Stage == "hidden" && EelBoss.Current != f, "EelFight: dying in the arena and respawning puts you into a fresh fight");
+    p.Hp = p.MaxHp; TestingGround.EelFight(p, 0.49f); var g = EelBoss.Current;
+    Check(g != null && g.Phase == 2 && g.Unit.Hp < EelBoss.MaxHp / 2 && string.Join(",", g.Sump.Queue) == "flood,storm", $"EelFight: 'From 50%' starts with half its HP, its phase 3 wounds, and the flood and the storm transitions queued (phase {g?.Phase}, queue {(g == null ? "" : string.Join(",", g.Sump.Queue))})");
+    EelBoss.Reset(); Rt.On = false;
+  }
+  static void EelChecks() {
+    EelRigChecks(); EelSumpChecks(); EelFightChecks(); EelPlatformFormChecks(); EelLampChecks();
+    EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
+    Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
+    Check(r.hp1 >= EelBoss.MaxHp * 0.8f - 1, $"Eel: damage on Levels 1-2 carries over at most 20% of its HP ({r.hp1}/{EelBoss.MaxHp})");
+    Check(eelMinStretch > 0.12f && eelMaxStretch < 2.3f, $"Eel: the rope is elastic but never breaks or folds through itself (neighbour spacing {eelMinStretch:0.00}-{eelMaxStretch:0.00} x rest)");
+    Console.WriteLine($"  eel wrap: head drift in the constriction {eelHeadDrift:0.00} t, tail radius change {eelTailIn:0.00} t, coil lift head-tail {eelLift:0.00} t, tail-vs-head radius {eelInward:0.00} t, head height over its own body {eelEscape:0.00} t, best ray score at the dive {EelBoss.EscScore:0.00}");
+    Check(eelHeadDrift < 0.05f, $"Eel: during the constriction the head stays anchored ({eelHeadDrift:0.00} tiles of drift)");
+    Check(eelTailIn < -0.25f, $"Eel: the constriction pulls the tail in toward the platform (change in the tail's mean radius {eelTailIn:0.00} tiles)");
+    Check(eelInward > 0.15f, $"Eel: the coil is an inward spiral - the tail lies outside the head's loop ({eelInward:0.00} tiles)");
+    Check(eelLift > 0.4f, $"Eel: the loops stack - the head end lies above the tail end ({eelLift:0.00} tiles of lift)");
+    Check(EelRig.SortOrder(0) > EelRig.SortOrder(1) && EelRig.SortOrder(1) > EelRig.SortOrder(55) && EelRig.HeadOrder() > EelRig.SortOrder(0), "Eel: sort order puts the head over every segment and each segment over the one behind it");
+    Check(eelEscape > 0.5f, $"Eel: its dart and dive go OVER its own coil, never through it (lowest the head was while on top of its body: {eelEscape:0.00} tiles)");
+    Check(eelCoil > 0f && eelCoil < 3.6f, $"Eel: once the coil is discharged the whole body lies within the touch ring ({eelCoil:0.0} tiles from the platform's centre)");
+  }
+
+  static void BrainFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    MacroState.Current.CurrentZoneId = BrainBoss.Lab; TerrainMap.BuildTerrainForZone(BrainBoss.Lab); EncounterState.Enemies.Clear(); Props.Slides.Clear();
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
+    var f = BrainBoss.Spawn(BrainBoss.VatX, BrainBoss.VatY); var b = f.Unit; Rt.SetOffset(b, 0f, 0f);
+    var start = TerrainMap.FindNearestEnterable(BrainBoss.VatX - 3, BrainBoss.VatY + 6); p.X = start.x; p.Y = start.y;
+    Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); p.Hp = p.MaxHp;
+    var cover0 = new Dictionary<(int, int), string>();
+    for (int y = 3; y <= 19; y++) for (int x = 27; x <= 47; x++) { var t0 = TerrainMap.GetTile(x, y); if (BrainBoss.CoverHp(t0.Look) > 0) cover0[(x, y)] = t0.Look; }
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.##", inv);
+    var sb = new System.Text.StringBuilder("{\"vat\":[" + b.X + "," + b.Y + "],\"frames\":[");
+    const float dt = 1f / 30f; int k = 0, hits = 0, dives = 0; int lastHp = p.Hp;
+    var ll = new ListLog(); var log = ll.L; GameLog.Target = ll;
+    for (float t = 0f; t < 80f && !f.Gone; t += dt, k++) {
+      UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt;
+      var (px, py) = Ballistics.Pos(p); var (cx, cy) = BrainBoss.Center(f);
+      float ix = 0f, iy = 0f; bool jump = false;
+      foreach (var o in BrainBoss.Orbs) {
+        float rx = px - o.X, ry = py - o.Y, along = rx * o.Dx + ry * o.Dy, off = rx * o.Dy - ry * o.Dx;
+        if (along < 0f || along > 2.2f || Math.Abs(off) > 0.75f) continue;
+        ix = off >= 0 ? o.Dy : -o.Dy; iy = off >= 0 ? -o.Dx : o.Dx;
+        if (along < 0.9f) jump = true;
+        break;
+      }
+      float dv = (float)Math.Sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy)) + 0.001f;
+      if (BrainBoss.Pulse != null && dv - BrainBoss.Pulse.R < 1.1f && dv > BrainBoss.Pulse.R) { jump = true; ix = (px - cx) / dv; iy = (py - cy) / dv; }   // dive through the wave
+      foreach (var bm in BrainBoss.Beams) {
+        float bearing = (float)(Math.Atan2(py - cy, px - cx) * 180 / Math.PI), diff = ((bearing - bm.Angle) % 360 + 540) % 360 - 180;
+        if (diff > 0f && diff < 16f) { jump = true; ix = -(py - cy) / dv; iy = (px - cx) / dv; }   // the beam is about to reach: dive across it, against its turn
+      }
+      foreach (var th in BrainBoss.Throws) if (th.Flying && Math.Abs(th.X - px) + Math.Abs(th.Y - py) < 2.2f) { jump = true; ix = -th.Dy; iy = th.Dx; }
+      if (ix == 0f && iy == 0f) { ix = -(py - cy) / dv + (5.5f - dv) * 0.4f * (px - cx) / dv; iy = (px - cx) / dv + (5.5f - dv) * 0.4f * (py - cy) / dv; }
+      jump = jump && Rt.Of(p).Stamina >= Rt.DiveStamina && !Rt.Of(p).Diving && UnityEngine.Time.time >= Rt.Of(p).ProneUntil;
+      if (jump) dives++;
+      Rt.PlayerTick(p, new Rt.Input { X = ix, Y = iy, Jump = jump, Sprint = !jump, Mouse = (cx, cy) });
+      if (!f.Drained && f.Started && f.PulseAt < 0f && b.Hp > 1) { b.Hp = Math.Max(0, b.Hp - (int)(BrainBoss.MaxHp / 48f * dt + 0.5f)); Boss.OnDamaged(b); }   // the bot's gunfire, ~48 s of it
+      BrainBoss.Tick(dt); Boss.TickAll();
+      if (p.Hp < lastHp) hits++;
+      if (p.Hp < p.MaxHp / 3) { p.Hp = p.MaxHp; Body.Reset(); }   // the preview's bot never goes down: the fight plays to the end (hits are still counted)
+      lastHp = p.Hp;
+      UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+      if (k % 2 != 0) continue;
+      var (qx, qy) = Ballistics.Pos(p);
+      var gone = cover0.Where(kv => TerrainMap.GetTile(kv.Key.Item1, kv.Key.Item2).Look != kv.Value).Select(kv => $"[{kv.Key.Item1},{kv.Key.Item2}]");
+      var landed = new List<string>();
+      for (int y = 3; y <= 19; y++) for (int x = 27; x <= 47; x++) { var tl = TerrainMap.GetTile(x, y); if (BrainBoss.CoverHp(tl.Look) > 0 && !(cover0.TryGetValue((x, y), out var l0) && l0 == tl.Look)) landed.Add($"[{x},{y},\"{tl.Look}\"]"); }
+      sb.Append(k > 0 ? "," : "").Append("{\"t\":" + F(t) + ",\"row\":" + BrainBoss.ArtRow + ",\"col\":" + BrainBoss.ArtCol + ",\"c\":[" + F(cx) + "," + F(cy) + "]"
+        + ",\"p\":[" + F(qx) + "," + F(qy) + "," + (Rt.Of(p).Diving ? 1 : 0) + "],\"pull\":" + (UnityEngine.Time.time < f.PullUntil ? 1 : 0) + ",\"wind\":" + (BrainBoss.Winding(f) ? 1 : 0)
+        + ",\"doing\":\"" + (f.Doing ?? (f.PulseAt >= 0f ? "pulse" : "")) + "\",\"orbs\":[" + string.Join(",", BrainBoss.Orbs.Select(o => "[" + F(o.X) + "," + F(o.Y) + "," + F(o.Dx) + "," + F(o.Dy) + ",\"" + o.Kind + "\"," + F(o.Age) + "]")) + "]"
+        + ",\"beams\":[" + string.Join(",", BrainBoss.Beams.Select(bm => "[" + F(bm.Angle) + "," + F(bm.Length) + "]")) + "]"
+        + ",\"pulse\":" + (BrainBoss.Pulse != null ? F(BrainBoss.Pulse.R) : "-1")
+        + ",\"throws\":[" + string.Join(",", BrainBoss.Throws.Select(th => "[" + F(th.X) + "," + F(th.Y) + ",\"" + th.Look + "\"," + (th.Flying ? 1 : 0) + "," + F(UnityEngine.Time.time - th.Born) + "]")) + "]"
+        + ",\"gone\":[" + string.Join(",", gone) + "],\"landed\":[" + string.Join(",", landed) + "]"
+        + ",\"log\":[" + string.Join(",", log.Where(l => !l.StartsWith("Player moved")).Select(l => "\"" + l.Replace("\"", "'") + "\"")) + "]}");
+      log.Clear();
+    }
+    sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
+    System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
+    Console.WriteLine($"brain fight: {k * dt:0.0} s, escaped {f.Gone}, hits on the bot {hits}, dives {dives}, hp left {p.Hp}");
+  }
+
+  static void BossFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
+    Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Rt.Of(p).Focus = Rt.FocusMax;   // full Focus: it can dive his red moves
+    var f = Boss.WakeVisor(p, px + 4, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
+    var gh = WeaponArt.GripOf("melee", "TacticalHatchet"); var gk = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
+    int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "");
+    var sb = new System.Text.StringBuilder();
+    sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#3d4148")
+      + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + Boss.Visor.Hp + ",\"frames\":[");
+    float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f; var moves = new List<string>();
+    for (int k = 0; k < 30 * 300; k++) {
+      float scale = UnityEngine.Time.timeScale, gdt = real * scale;
+      UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
+      float now = UnityEngine.Time.time;
+      var (bx, by) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
+      var input = new Rt.Input { Mouse = (bx, by + 0.44f - 0.45f * Ballistics.BodyTiles) };
+      int dist = CombatantUtil.Distance(p, v); int sx = Math.Sign(v.X - p.X), sy = Math.Sign(v.Y - p.Y);
+      if (p.Hp < p.MaxHp * 0.35f) p.Hp = p.MaxHp * 0.6f is var _ ? (int)(p.MaxHp * 0.6f) : p.Hp;   // the bot drinks a medkit (keeps the clip going)
+      if (Body.Down(p)) { Body.Forget(p); p.Hp = Math.Max(p.Hp, (int)(p.MaxHp * 0.6f)); }   // downed: it jabs a stim and gets up, as you would
+      if (f.Broken && !f.Finished) { if (dist > 1) { input.X = sx; input.Y = sy; } else { p.Ap = 4; InteractionEngine.AttemptInteract(p); } }
+      else if (f.Finished) { if (lootAt < 0f) lootAt = now + 0.8f; if (now >= lootAt && f.LootedAt < 0f) Boss.Looted(v); if (f.Gone && end < 0f) end = UnityEngine.Time.unscaledTime + 2f; }
+      else if (f.Doing != null) {
+        if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; moves.Add(f.Doing.Name); }
+        float left = f.StrikeAt - now;
+        if (f.Doing.Danger) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
+        else if (strike % 6 == 4) { }                                                  // this one it misses: the hit lands
+        else if (strike % 6 == 2) { if (left <= 0.26f && left > 0.2f) input.Parry = true; }   // late: blocked
+        else if (left <= 0.11f && left > 0.11f - 1f / 30f) input.Parry = true;      // a beat after the glint (0.4 s before the hit): perfect
+      }
+      else if (Boss.Staggered(v) || Boss.Open(v)) { if (dist > 1) { input.X = sx; input.Y = sy; } else { fire = !fire; input.Fire = fire; } }   // open: in and hit him
+      else if (now < backUntil) { input.X = -sx; input.Y = 0; input.Sprint = true; }      // after some punishes it sprints off: he lunges
+      else if (dist > 2 && backUntil < 0f) { input.X = sx; input.Y = sy; }
+      bool open = Boss.Staggered(v);
+      if (wasOpen && !open && ++staggers % 2 == 0) backUntil = now + 1.3f;
+      if (!open && now > backUntil + 2.5f) backUntil = -1f;
+      wasOpen = open;
+      if (input.Parry) parryAt = now;
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); Rt.Glide(UnityEngine.Time.deltaTime);   // the view runs Glide every frame (game time): so does the sim
+      var ev = new List<string>();
+      foreach (var e in CombatFx.Pending) {
+        bool byBoss = e.Actor == v;
+        if (e.Kind == "melee" && byBoss) bossSwung = now;
+        ev.Add($"[\"{e.Kind}\",{(byBoss ? 1 : 0)},{(e.Psi ? 1 : 0)},{(e.Hit ? 1 : 0)}]");
+      }
+      CombatFx.Pending.Clear();
+      var pose = Rt.PoseOf(p); (mx, my) = Ballistics.Pos(p); (bx, by) = Ballistics.Pos(v);
+      float aw = UnityEngine.Mathf.Atan2(-(by - my), bx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
+      var mc = Melee.ChargeOf(p); var vc = Melee.ChargeOf(v);                          // Visor 2: both drawn from their own charges, as the view does
+      float ph = mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, bh = vc.SwingFrom >= 0f ? now - vc.SwingFrom : -1f;
+      HeldFrame PAt(float sw) => HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, sw, 1f, "none", 1, null, ph, -1f, 99f,
+        "TacticalHatchet", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
+      HeldFrame BAt(float sw) => HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, sw, 1f, "none", 1, null, bh, -1f, 99f,
+        vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt, vc.OpenK(now));
+      var fp = PAt(mc.Since(now)); var fb = BAt(vc.Since(now));
+      string psm = Smear(PAt, mc.Since(now), ph), bsm = Smear(BAt, vc.Since(now), bh);
+      sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"
+        + $",\"p\":[{F(mx)},{F(my)},{p.Hp},{F(Rt.Of(p).Focus)}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"pf\":{Fr(fp)}"
+        + $",\"b\":[{F(bx)},{F(by)},{v.Hp},{f.Phase},{(f.Broken ? 1 : 0)},{(f.Finished ? 1 : 0)},{(f.Gone ? 1 : 0)},{(Boss.Staggered(v) ? 1 : 0)},{(f.Doing != null && f.Doing.Danger ? 1 : 0)},{Boss.GuardDamage(f)},{(Boss.Open(v) ? 1 : 0)}],\"bf\":{Fr(fb)},\"ps\":{psm},\"bs\":{bsm},\"red\":{(vc.Red ? 1 : 0)}"
+        + $",\"ev\":[{string.Join(",", ev)}],\"splash\":[\"{Boss.SplashTitle}\",\"{Boss.SplashSub}\",{F(UnityEngine.Time.unscaledTime - Boss.SplashAt)}],\"punch\":{F(Boss.Punch)},\"cut\":{(Story.InCutscene ? 1 : 0)}}}");
+      if (end > 0f && UnityEngine.Time.unscaledTime >= end) break;
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString());
+    Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}: {string.Join(", ", moves)}");
+    Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
+  }
+
+  // Pack 1: a pack as the game packs it (Pack.Settle on a real kit + loot, through Player.AddItem) for each bag -> Tools/render/pack_screen.py
+  static void PackDump(string path) {
+    var sb = new System.Text.StringBuilder("{\"bags\":[");
+    var bags = new[] { "none", "backpack_small", "backpack_tourist" };
+    for (int b = 0; b < bags.Length; b++) {
+      var p = Arena(out _, out _); p.Inventory.Items.Clear(); p.Inventory.Backpack = bags[b];
+      p.EquipWeapon("sidearm", "PSh18Pchela"); p.EquipArmor("tier1", "LeatherJacket");
+      void Add(string type, string id, string name, int qty = 1, string cat = null, string key = null) => p.AddItem(new InventoryItem { Id = id, Name = name, Type = type, Qty = qty, Category = cat, Key = key, WeightKg = 0.5f });
+      Add("weapon", "HuntingKnife", "Hunting Knife", 1, "melee", "HuntingKnife");
+      Add("consumable", "basicMedkit", "Basic Medkit", 2); Add("consumable", "bandage", "Bandage", 3); Add("consumable", "splint", "Splint"); Add("consumable", "basicStim", "Basic Stim", 2);
+      Add("consumable", "mre", "MRE"); Add("consumable", "energyDrink", "Energy Drink", 2); Add("consumable", "fragGrenade", "Frag Grenade", 2); Add("consumable", "radBlockPill", "Rad-Block Pill");
+      Add("weapon", "VK74", "VK-74", 1, "assault", "VK74"); Add("armor", "x", "Raider Jacket", 1, "tier1", "RaiderJacket");
+      Add("consumable", "fieldRepairKit", "Field Repair Kit"); Add("loot", "scrap", "Scrap Metal", 4); Add("artifact", "x2", "Pulse Pebble"); Add("key", "k", "Bunker Key");
+      if (bags[b] == "backpack_tourist") { Add("weapon", "SVD", "Long Rifle", 1, "sniper", "SVDx"); Add("consumable", "militaryMedkit", "Military Medkit"); Add("consumable", "smokeGrenade", "Smoke Grenade"); }
+      var bag = Pack.Bag(p);
+      sb.Append((b > 0 ? "," : "") + $"{{\"id\":\"{bag.Id}\",\"name\":\"{bag.Name}\",\"cols\":{bag.Cols},\"rows\":{bag.Rows},\"colour\":\"{bag.Colour}\",\"items\":[");
+      sb.Append(string.Join(",", p.Inventory.Items.Select(i => { var (w, h) = Pack.Size(i);
+        string icon = i.Type == "weapon" ? "Weapons/weapon_" + i.Key + "_hd.png" : i.Type == "armor" ? "armor:" + i.Name : i.Type == "consumable" ? "Items/icon_" + i.Id.Split('~')[0] + ".png" : i.Type == "artifact" ? "Items/icon_artifact_Gravitational.png" : "Items/icon_" + i.Type + ".png";
+        return FormattableString.Invariant($"{{\"name\":\"{i.Name}\",\"x\":{i.GridX},\"y\":{i.GridY},\"rot\":{(i.Rot ? 1 : 0)},\"w\":{w},\"h\":{h},\"qty\":{i.Qty},\"icon\":\"{icon}\"}}"); })));
+      sb.Append("]}");
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString()); Console.WriteLine("pack dump -> " + path);
+  }
+
+  // Use: the item-use animations (HeldPoseMath.Frame + ApplyUse, as HeldWeaponView draws them) with a pistol in hand, facing right
+  // and left, 2 s each -> Tools/render/use_anim.py
+  static void UseFrames(string path) {
+    var g = WeaponArt.GripOf("sidearm", "PSh18Pchela"); var sb = new System.Text.StringBuilder("{\"grip\":[" + FormattableString.Invariant($"{g[0]},{g[1]}") + "],\"kinds\":[");
+    var kinds = new[] { "bandage", "medkit", "syringe", "ration" };
+    for (int k = 0; k < kinds.Length; k++) {
+      var ug = HeldPoseMath.UseGrip(kinds[k]);
+      sb.Append((k > 0 ? "," : "") + "{\"kind\":\"" + kinds[k] + "\"," + FormattableString.Invariant($"\"grip\":[{ug.x},{ug.y}]") + ",\"frames\":[");
+      for (int i = 0; i < 60; i++) {
+        float t = i / 59f; var parts = new List<string>();
+        foreach (float ang in new[] { 0f, 180f }) {
+          var f = HeldPoseMath.Frame("sidearm", g, ang, 0f, 0f, 0f, 99f, 1f, "none", 1);
+          float deg = HeldPoseMath.ApplyUse(ref f, kinds[k], t);
+          parts.Add(FormattableString.Invariant($"[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{f.SupX},{f.SupY},{(f.Left ? 1 : 0)},{deg}]"));
+        }
+        sb.Append((i > 0 ? "," : "") + "[" + string.Join(",", parts) + "]");
+      }
+      sb.Append("]}");
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString()); Console.WriteLine("use frames -> " + path);
+  }
+
+  // Visor 2: the Visor's whole moveset, one move after another, through the real Boss.Begin / Boss.Tick (glint, held wind-up,
+  // each hit's pose) against a player who just stands there (healed every frame) -> Tools/render/melee_moves.py
+  static void VisorMoves(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
+    EncounterState.Enemies.Clear();
+    var f = Boss.Spawn(Boss.Visor, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+    var g = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
+    var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"SerratedTrenchKnife\",\"title\":\"The Visor\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
+    sb.Append(string.Join(",", Boss.Visor.Moves.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
+    int k = 0;
+    for (int mi = 0; mi < Boss.Visor.Moves.Length; mi++) {
+      var m = Boss.Visor.Moves[mi];
+      for (int i = 0; i < 30 * 6; i++) {
+        float dt = 1f / 30f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.timeScale = 1f;
+        float now = UnityEngine.Time.time;
+        p.Hp = p.MaxHp; Body.Forget(p); v.Hp = v.MaxHp; f.Phase = m.Phase2Only ? 2 : 1; f.StaggerUntil = -1f;
+        v.X = px + 1; v.Y = py; p.X = px; p.Y = py;
+        if (i == 15) Boss.Begin(f, m, now, 1f);
+        if (i < 15) { f.NextMoveAt = now + 10f; f.OpenUntil = -1f; }
+        Boss.Tick(f, p); Boss.TickAll(); Melee.Tick(dt); Rt.Glide(dt); CombatFx.Pending.Clear();
+        if (i > 15 && f.Doing == null && i > 30 * 3 && !Boss.Open(v)) break;
+        var c = Melee.ChargeOf(v); var (vx, vy) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
+        float aw = UnityEngine.Mathf.Atan2(-(my - vy), mx - vx) * UnityEngine.Mathf.Rad2Deg;
+        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));
+        sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\"]"));
+      }
+      f.Doing = null;
+    }
+    sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
+    File.WriteAllText(path, sb.ToString()); Console.WriteLine("visor moves -> " + path);
+    Rt.On = false; Boss.Reset(); Melee.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+  }
+
+  // Melee 2c: you (a bot on the real controls: Rt.PlayerTick with an Rt.Input) with a machete against one ordinary Raider with a
+  // knife, run by the real AI (Rt.WorldTick -> RtAi / EnemyAI), 30 frames a second. The bot reads his wind-up like a player would
+  // (Melee.LandsIn) and parries: on the beat (perfect: his guard breaks, it punishes with a combo), once late (blocked), once not
+  // at all (it takes the cut). -> Tools/render/melee_duel.py
+  // Melee 4: the strike's smear - the blade where it was SmearStep, 2x... s ago (as HeldWeaponView draws it), or [] outside a strike
+  static string Smear(Func<float, HeldFrame> at, float since, float hold) {
+    if (!HeldPoseMath.Striking(since, hold)) return "[]";
+    var parts = new List<string>();
+    for (int k = 1; k <= HeldPoseMath.SmearCount; k++) { var g = at(since - k * HeldPoseMath.SmearStep); parts.Add(FormattableString.Invariant($"[{g.GunX},{g.GunY},{g.GunDeg},{(g.Length > 0f ? g.Length : 1f)}]")); }
+    return "[" + string.Join(",", parts) + "]";
+  }
+
+  static void MeleeDuel(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f;
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
+    Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Body.Forget(p);
+    p.EquipWeapon("melee", "SteppeMachete");
+    EncounterState.Enemies.Clear();
+    var r = new HumanEnemy("Raider", px + 4, py, "Raiders", "Veteran", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
+    EncounterState.Enemies.Add(r); EncounterState.InCombat = true; Rt.SetOffset(r, 0f, 0f);
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
+    var gm = WeaponArt.GripOf("melee", "SteppeMachete"); var gk = WeaponArt.GripOf("melee", "HuntingKnife");
+    int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? ""), rar = Array.IndexOf(SpriteAtlasIndex.Armor, r.EquippedArmor?.Name ?? "Raider Jacket");
+    var sb = new System.Text.StringBuilder();
+    sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":[" + armor + ",\"" + SpriteAtlasIndex.ArmorCuff[Math.Max(0, armor)] + "\",\"" + SpriteAtlasIndex.ArmorGlove[Math.Max(0, armor)]
+      + "\"," + rar + ",\"" + SpriteAtlasIndex.ArmorCuff[Math.Max(0, rar)] + "\",\"" + SpriteAtlasIndex.ArmorGlove[Math.Max(0, rar)] + "\"],\"gm\":[" + string.Join(",", gm.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F))
+      + "],\"maxhp\":[" + p.MaxHp + "," + r.Hp + "],\"frames\":[");
+    float real = 1f / 30f, end = -1f, punishUntil = -1f, lastPend = -1f; int seen = 0, perfects = 0, blocks = 0, cuts = 0, clicks = 0; bool mouse = false; string label = ""; float quietSince = UnityEngine.Time.time;
+    for (int k = 0; k < 30 * 60; k++) {
+      float gdt = real * UnityEngine.Time.timeScale;
+      UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
+      float now = UnityEngine.Time.time;
+      var (rx, ry) = Ballistics.Pos(r); var (mx, my) = Ballistics.Pos(p);
+      var input = new Rt.Input { Mouse = (rx, ry + 0.44f - 0.45f * Ballistics.BodyTiles) };
+      float dx = rx - mx, dy = ry - my, d = (float)Math.Sqrt(dx * dx + dy * dy);
+      float lands = r.IsAlive() ? Melee.LandsIn(r) : -1f;
+      if (lands >= 0f && lastPend < 0f) seen++;                                         // a new swing of his is winding up
+      lastPend = lands;
+      var mc = Melee.ChargeOf(p);
+      if (!r.IsAlive()) { if (end < 0f) end = now + 1.5f; label = "he's down"; }
+      else if (lands >= 0f) {
+        int which = seen % 5;                                                              // 1, 3: on the beat; 2: late; 4: no parry; 0: back off
+        if (which == 0) { input.X = -Math.Sign(dx); label = "steps back out of his reach"; }
+        else if (which == 4) label = "misreads it";
+        else if (which == 2) { if (lands <= 0.2f && lands > 0.15f) input.Parry = true; label = "parry (late)"; }
+        else { if (lands <= 0.05f && lands > 0.01f) input.Parry = true; label = "parry on the beat"; }
+      }
+      else if (now < punishUntil || now - Melee.ChargeOf(r).BrokenAt < 0.9f) {
+        if (punishUntil < now) { punishUntil = now + 0.9f; clicks = 0; }
+        if (d > 1.2f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; }
+        mouse = !mouse && clicks < 1; if (mouse) clicks++; input.Fire = mouse; label = "his guard is broken: punish";
+      }
+      else if (now - quietSince > 1.6f) {                                                // he's stopped swinging (backing off, hurt): go in
+        if (d > 1.2f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; }
+        else { mouse = !mouse; input.Fire = mouse; }
+        label = "he backs off: press him";
+      }
+      else { if (d > 1.6f) { input.X = Math.Sign(dx); input.Y = Math.Abs(dy) > 0.4f ? Math.Sign(dy) : 0; } else if (d < 1f) input.X = -Math.Sign(dx); label = "stance, reading him"; }   // keeps a body's width between them
+      if (lands >= 0f || now < punishUntil) quietSince = now;
+      int hp0 = p.Hp, rh0 = r.Hp;
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); Rt.Glide(gdt);                       // the view runs Glide every frame: so does the sim
+      var ev = new List<string>();
+      foreach (var e in CombatFx.Pending) {
+        if (e.Kind == "parry") { if (e.Hit) perfects++; else blocks++; }
+        ev.Add($"[\"{e.Kind}\",{(e.Actor == r ? 1 : 0)},{(e.Hit ? 1 : 0)}]");
+      }
+      CombatFx.Pending.Clear();
+      if (p.Hp < hp0) cuts++;
+      (mx, my) = Ballistics.Pos(p); (rx, ry) = Ballistics.Pos(r);
+      var pose = Rt.PoseOf(p);
+      float aw = UnityEngine.Mathf.Atan2(-(ry - my), rx - mx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, aw - pose.Tilt);
+      mc = Melee.ChargeOf(p); var rc = Melee.ChargeOf(r);
+      var fp = HeldPoseMath.Frame("melee", gm, local, 0f, 0f, 0f, mc.Since(now), 1f, "none", 1, null, mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f, -1f, 99f,
+        "SteppeMachete", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
+      var fr = HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, rc.Since(now), 1f, "none", 1, null, -1f, -1f, 99f, "HuntingKnife", rc.Move, rc.From, now - rc.GuardAt, now - rc.BrokenAt);
+      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"p\":[{F(mx)},{F(my)},{p.Hp},{F(pose.Tilt)}],\"pf\":{Fr(fp)}"
+        + $",\"r\":[{F(rx)},{F(ry)},{r.Hp},{(r.IsAlive() ? 1 : 0)},{(now - rc.BrokenAt < HeldPoseMath.BrokenTime ? 1 : 0)}],\"rf\":{Fr(fr)},\"ev\":[{string.Join(",", ev)}],\"label\":\"{label}\",\"punch\":{F(Boss.Punch)}}}");
+      if (end > 0f && now >= end) break;
+      if (!p.IsAlive() || Body.Down(p)) { if (end < 0f) end = now + 1.5f; label = "you're down"; }
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString());
+    Console.WriteLine($"melee duel: raider {(r.IsAlive() ? "alive " + r.Hp : "down")}, you {p.Hp}/{p.MaxHp}, his swings {seen}, perfect parries {perfects}, blocked {blocks}, cuts taken {cuts}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s");
+    Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Melee.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+  }
+
+  // Melee 2: each kind of melee weapon in its stance, then its whole string of swings clicked through the real Melee.PlayerInput
+  // (each click within the combo gap is the next move), at 30 frames a second -> Tools/render/melee_moves.py
+  static void MeleeMoves(string path) {
+    var p = Arena(out int px, out int py); var sb = new System.Text.StringBuilder("{\"weapons\":[");
+    var keys = new[] { "HuntingKnife", "SteppeMachete", "FireAxe" };
+    for (int k = 0; k < keys.Length; k++) {
+      Melee.Reset(); EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      p.EquipWeapon("melee", keys[k]); var w = p.EquippedWeapon; var g = WeaponArt.GripOf("melee", keys[k]);
+      int moves = HeldPoseMath.MoveCount(HeldPoseMath.StyleOf(keys[k]));
+      // the player mashes: a click every 0.25 s for the whole string (early clicks wait for the follow-through), then lets it settle
+      float every = 0.25f; int n = (int)((0.5f + moves * 0.8f + 0.8f) * 30f); int clicks = 0; bool was = false; float lastAt = -99f;
+      sb.Append(FormattableString.Invariant($"{(k > 0 ? "," : "")}{{\"key\":\"{keys[k]}\",\"grip\":[{g[0]},{g[1]}],\"frames\":["));
+      for (int i = 0; i < n; i++) {
+        float t = i / 30f; Melee.Now = t;
+        float u = t - 0.5f; bool left = u >= 0f && clicks < moves && u % every < 2.5f / 30f;   // a quick click until every move has started
+        if (Melee.ChargeOf(p).SwungAt != lastAt) { lastAt = Melee.ChargeOf(p).SwungAt; clicks++; } was = left;
+        Melee.PlayerInput(p, w, left, false, (px + 1.2f, py + 0.5f - 0.45f * Ballistics.BodyTiles));
+        Melee.Tick(1f / 30f);
+        var mc = Melee.ChargeOf(p);
+        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null, mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, -1f, 99f, keys[k], mc.Move, mc.From);
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(f.HasSupport ? 1 : 0)},{f.SupX},{f.SupY},{f.Lean},{mc.Move},{(t - mc.SwungAt < HeldPoseMath.SwingLength ? 1 : 0)},{(f.Length > 0f ? f.Length : 1f)},{f.HandDeg},\"{f.Body}\"]"));
+      }
+      sb.Append("]}"); Melee.Now = -1f;
+    }
+    var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit");
+    sb.Append(FormattableString.Invariant($"],\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\"]}}"));
+    System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee moves -> " + path);
+  }
+
+  static void MeleeFrames(string path) {
+    var p = Arena(out int px, out int py); Melee.Reset();
+    p.EquipWeapon("melee", "TacticalHatchet");
+    var g = WeaponArt.GripOf("melee", "TacticalHatchet");
+    var sb = new System.Text.StringBuilder("{");
+    foreach (var clip in new[] { "swing", "throw" }) {
+      EncounterState.Enemies.Clear(); Melee.Reset(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      if (p.EquippedWeapon == null) p.EquipWeapon("melee", "TacticalHatchet");
+      var hw = p.EquippedWeapon;
+      var foe = new HumanEnemy("Raider", px + (clip == "swing" ? 1 : 5), py, "Raiders", "Experienced", null, null) { IsAggroed = true };
+      foe.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
+      EncounterState.Enemies.Add(foe);
+      if (clip == "swing") Rt.SetOffset(foe, 0.3f, 0f);                                    // a step back, inside the hatchet's reach (1.35)
+      int maxHp = foe.Hp; float swingAt = -99f, hitAt = -99f; var blood = new System.Collections.Generic.List<string>();
+      sb.Append($"{(clip == "swing" ? "" : ",")}\"{clip}\":{{\"hp\":{maxHp},\"frames\":[");
+      int n = clip == "swing" ? 112 : 230;
+      for (int i = 0; i < n; i++) {
+        float t = i / 30f; Melee.Now = t;
+        int hp0 = foe.Hp;
+        // RT 7e: the mouse as the game reads it - a left tap (body), then the left held 1.5 s (a full charge, body);
+        // the right held 0.7 s (lifted over the head, charged), let go: thrown
+        { var (fpx, fpy) = Ballistics.Pos(foe); var at = (fpx, fpy + 0.44f - 0.45f * Ballistics.BodyTiles);   // the crosshair on his chest
+          bool left = clip == "swing" && (i >= 6 && i < 8 || i >= 36 && i < 81), right = clip == "throw" && i >= 9 && i < 30;
+          if (p.EquippedWeapon != null) Melee.PlayerInput(p, hw, left, right, at); }
+        Melee.Tick(1f / 30f);
+        if (foe.Hp < hp0) { hitAt = t; blood.Add(FormattableString.Invariant($"[{t},{Ballistics.Pos(foe).x},{Ballistics.Pos(foe).y}]")); }
+        // you: the hatchet in hand (swing arc) or empty hands once it's thrown
+        var mc = Melee.ChargeOf(p);
+        var f = HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, t - mc.SwungAt, 1f, "none", 1, null,
+          mc.SwingFrom >= 0f ? t - mc.SwingFrom : -1f, mc.ThrowFrom >= 0f ? t - mc.ThrowFrom : -1f, t - mc.ThrewAt);
+        float lean = f.Lean;
+        bool inHand = p.EquippedWeapon != null;
+        // the hatchet out of your hands
+        string item = "null";
+        var air = Melee.Air.FirstOrDefault(); var stuck = Melee.InBodies.FirstOrDefault(); var lying = Melee.OnFloor.FirstOrDefault();
+        if (air != null) item = FormattableString.Invariant($"[\"air\",{air.X},{air.Y - air.H * Ballistics.BodyTiles + 0.4f},{air.Deg}]");
+        else if (stuck != null) { var (sx, sy) = Ballistics.Pos(stuck.In); var sp = Melee.StuckPose(stuck.Side);
+          item = FormattableString.Invariant($"[\"stuck\",{sx + sp.ox / 16f},{sy + sp.oy / 16f},{sp.deg + (stuck.Pulling ? 12f * (float)Math.Sin(t * 18f) : 0f)},{(sp.flipX ? 1 : 0)}]"); }
+        else if (lying != null) item = FormattableString.Invariant($"[\"floor\",{lying.Wx},{lying.Wy + 0.3f},{lying.Deg}]");
+        var (fx, fy) = Ballistics.Pos(foe);
+        sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}{{\"you\":[{f.GunX},{f.GunY},{f.GunDeg},{f.GripX},{f.GripY},{(inHand ? 1 : 0)},{lean},{(f.Left ? 1 : 0)}],\"foe\":[{fx},{fy},{foe.Hp},{t - hitAt},{(Melee.Busy(foe) ? 1 : 0)}],\"item\":{item}}}"));
+      }
+      sb.Append($"],\"blood\":[{string.Join(",", blood)}],\"you\":[{Ballistics.Pos(p).x},{Ballistics.Pos(p).y}]}}");
+      Melee.Now = -1f;
+    }
+    var armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Wanderer Trail Suit"); var raider = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Jacket");
+    sb.Append(FormattableString.Invariant($",\"armor\":[{armor},\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"{SpriteAtlasIndex.ArmorGlove[armor]}\",{raider},\"{SpriteAtlasIndex.ArmorCuff[raider]}\",\"{SpriteAtlasIndex.ArmorGlove[raider]}\"],\"grip\":[{g[0]},{g[1]}],\"pistol\":[{WeaponArt.GripOf("sidearm", "PSh18Pchela")[0]},{WeaponArt.GripOf("sidearm", "PSh18Pchela")[1]}]}}"));
+    System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("melee frames -> " + path);
+  }
+
+  // RT 7z-c (Yan: "make a scene where he is dual wielding pistols and shooting back at enemies while jumping, like max payne"):
+  // a real fight run frame by frame - the Gunslinger kit, two Raiders who fight back with RtAi, a dive with both guns firing in
+  // turns at whoever is still up - dumped for Tools/render/gunsling_scene.py: bodies, poses, both guns' frames, every round
+  // duel (Yan: "an example of the character dodging a shot with the jump and killing the enemy"): one Raider with a rifle at 5 tiles
+  // who holds his first shot a quarter second (RtAi.Hold - the one staged thing), a dive across his line, both guns as fast as
+  // they cycle until he drops
+  static void GunslingFrames(string path, string mode = "", string pistol = "PSh18Pchela") {
+    bool side = mode == "side", duel = mode == "duel" || side;   // side (RT 7z-g): dive sideways, the Raider up the screen
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 11000f;
+    for (int y = py - 8; y <= py + 5; y++) for (int x = px - 4; x <= px + 13; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    Rt.SetOffset(p, 0f, 0f); TestingGround.GunslingerKit(p); p.HealPermanent(100000); Rt.Of(p).Focus = 100f;
+    if (pistol != "PSh18Pchela") {                                                          // Yan: "give the character a stronger pistols"
+      p.EquipWeapon("sidearm", pistol); p.OffhandWeapon = p.MakeWeapon("sidearm", pistol); p.OffhandKey = pistol;
+      TestingGround.RefillAmmo(p); }
+    var foes = duel ? new List<HumanEnemy> {
+      new HumanEnemy("Raider", side ? px + 1 : px + 5, side ? py - 6 : py, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } }
+      : new List<HumanEnemy> {
+      new HumanEnemy("Raider", px + 8, py - 2, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VKS74U"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true },
+      new HumanEnemy("Raider", px + 9, py + 1, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], ArmorDatabase.Get("tier1", "RaiderJacket")) { IsAggroed = true } };
+    EncounterState.Enemies.Clear(); foreach (var f in foes) { EncounterState.Enemies.Add(f); Rt.SetOffset(f, 0f, 0f); }
+    if (duel) RtAi.Hold(foes[0], 0.25f);
+    var foeGuns = foes.Select(f => f.EquippedWeapon.Db).ToList();
+    EncounterState.InCombat = true; Contact.Spot(p);
+    string Hex(string[] arr, string name) { int i = Array.IndexOf(SpriteAtlasIndex.Armor, name ?? ""); return i >= 0 ? arr[i] : "#3d4148"; }
+    string Who(ICombatant u, Weapon w) => u == p ? (w == p.OffhandWeapon ? "L" : "R") : "e" + foes.IndexOf(u as HumanEnemy);
+    var g = WeaponArt.GripOf("sidearm", pistol); var feel = WeaponFeel.For(p.EquippedWeapon.Db);
+    var last = new Dictionary<string, float> { ["R"] = -99f, ["L"] = -99f, ["e0"] = -99f, ["e1"] = -99f };
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string F(float v) => v.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)}]";
+    var sb = new System.Text.StringBuilder();
+    sb.Append("{\"pistol\":\"" + pistol + "\",\"player\":{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, p.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, p.EquippedArmor?.Name) + "\",\"g\":[" + string.Join(",", g.Select(F)) + "]},\"enemies\":[");
+    for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (cat, key) = WeaponArt.Identify(e.EquippedWeapon.Db);
+      sb.Append((i > 0 ? "," : "") + "{\"armor\":" + Array.IndexOf(SpriteAtlasIndex.Armor, e.EquippedArmor?.Name ?? "") + ",\"cuff\":\"" + Hex(SpriteAtlasIndex.ArmorCuff, e.EquippedArmor?.Name) + "\",\"glove\":\"" + Hex(SpriteAtlasIndex.ArmorGlove, e.EquippedArmor?.Name) + "\",\"gun\":\"" + key + "\",\"cat\":\"" + cat + "\",\"g\":[" + string.Join(",", WeaponArt.GripOf(cat, key).Select(F)) + "]}"); }
+    sb.Append("],\"origin\":[" + px + "," + py + "],\"frames\":[");
+    float cycle = 60f / Gunplay.For(p.EquippedWeapon).Rpm;                                     // each gun's fastest; the two take turns
+    float dt = 1f / 60f; int shot = 0; float nextShot = duel ? 0.2f : 0.3f, gap = duel ? cycle / 2f + 0.005f : 0.11f, end = duel ? 4f : 2.2f, diedAt = -1f; int diveFrame = duel ? 8 : 15;
+    for (int k = 0; k * dt < end; k++) {
+      float t = k * dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = Rt.SlowMo ? dt / Rt.SlowScale : dt;   // bullet time: the aim steadies on real seconds
+      var target = foes.FirstOrDefault(f => f.IsAlive()) ?? foes[0];
+      var (tx, ty) = Ballistics.Pos(target);
+      var input = new Rt.Input { Mouse = (tx, ty) };
+      if (k == diveFrame) { if (side) input.X = 1f; else input.Y = -1f; input.Jump = true; }   // the dive: up the screen, or sideways
+      if (t >= nextShot && foes.Any(f => f.IsAlive())) { if (shot % 2 == 0) input.FireDown = true; else input.Fire2Down = true; shot++; nextShot = t + (Rt.SlowMo ? gap * Rt.SlowScale : gap); }   // RT 7z-g: bullet time keeps the trigger's real rate
+      if (duel && diedAt < 0f && !foes[0].IsAlive()) { diedAt = t; end = t + 0.8f; }
+      if (Environment.GetEnvironmentVariable("SPREAD_DEBUG") == "1" && (input.FireDown || input.Fire2Down)) {
+        var am = input.FireDown ? Gunplay.AimOf(p) : Gunplay.OffAimOf(p); var hdd = Gunplay.For(p.EquippedWeapon);
+        Console.WriteLine($"t {t:0.00} {(input.FireDown ? "R" : "L")} steady {am.Steady:0.00} bloom {am.Bloom:0.0} spread {Gunplay.Spread(hdd, am, Rt.Of(p).Moving, p.Sneaking):0.00} arms {Body.ArmsHurt(p)} pinned {(UnityEngine.Time.time < Rt.Of(p).PinnedUntil || p.StatusEffects.Suppressed)} diving {Rt.Of(p).Diving} low {Rt.Low(p)}"); }
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); UnityEngine.Time.time += dt;
+      var shots = new List<string>(); var fires = new List<string>();
+      foreach (var e in CombatFx.Pending.Where(e => e.Kind == "shot" && !e.Pellet && e.Actor != null)) {
+        string who = Who(e.Actor, e.Weapon);
+        if (e.Flying) { last[who] = t; fires.Add($"\"{who}\""); }                                   // RT 8: the trigger pull
+        else shots.Add($"[\"{who}\",{F(e.EndX)},{F(e.EndY)},{(e.Hit ? 1 : 0)}]"); }               // where a round came down
+      var rounds = Gunplay.Flying.Where(r => r.Wait <= 0f && r.Shooter != null).Select(r => $"[\"{Who(r.Shooter, r.W)}\",{F(r.X)},{F(r.Y)},{F(r.Dx)},{F(r.Dy)},{F(r.H + r.Up * r.Gone / Ballistics.BodyTiles)},{F(r.Gone)},{F(r.Speed)}]");
+      CombatFx.Pending.Clear();
+      var pose = Rt.PoseOf(p); var (ppx, ppy) = Ballistics.Pos(p);
+      float world = UnityEngine.Mathf.Atan2(-(ty - ppy), tx - ppx) * UnityEngine.Mathf.Rad2Deg, local = UnityEngine.Mathf.DeltaAngle(0f, world - pose.Tilt);
+      var fR = HeldPoseMath.Frame("sidearm", g, local, HeldPoseMath.Recoil(t - last["R"], feel.Recover), feel.Climb, feel.Kick, 99f, 1f, "", 1);
+      var fL = HeldPoseMath.Offhand(HeldPoseMath.Frame("sidearm", g, local, HeldPoseMath.Recoil(t - last["L"], feel.Recover), feel.Climb, feel.Kick, 99f, 1f, "", 1), local);
+      var en = new List<string>();
+      for (int i = 0; i < foes.Count; i++) { var e = foes[i]; var (ex, ey) = Ballistics.Pos(e); var edb = e.EquippedWeapon?.Db ?? foeGuns[i];   // dead: he dropped it
+        var (cat, key) = WeaponArt.Identify(edb);
+        var ef = WeaponFeel.For(edb); float ea = UnityEngine.Mathf.Atan2(-(ppy - ey), ppx - ex) * UnityEngine.Mathf.Rad2Deg;
+        var fe = HeldPoseMath.Frame(cat, WeaponArt.GripOf(cat, key), ea, HeldPoseMath.Recoil(t - last["e" + i], ef.Recover), ef.Climb, ef.Kick, 99f, 1f, "", 1);
+        en.Add($"[{F(ex)},{F(ey)},{(e.IsAlive() ? 1 : 0)},{e.Hp},{Fr(fe)}]"); }
+      sb.Append((k > 0 ? "," : "") + $"{{\"t\":{F(t)},\"slow\":{(Rt.SlowMo ? 1 : 0)},\"x\":{F(ppx)},\"y\":{F(ppy)},\"pose\":[{F(pose.Lift)},{F(pose.Tilt)},{F(pose.SquashX)},{F(pose.SquashY)},{F(pose.Shadow)}],\"R\":{Fr(fR)},\"L\":{Fr(fL)},\"shots\":[{string.Join(",", shots)}],\"fires\":[{string.Join(",", fires)}],\"rounds\":[{string.Join(",", rounds)}],\"en\":[{string.Join(",", en)}],\"hp\":{p.Hp},\"low\":{(Rt.Low(p) ? 1 : 0)}}}");
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString());
+    Console.WriteLine($"{shot} trigger pulls; raiders {string.Join(", ", foes.Select(f => f.IsAlive() ? f.Hp + " hp" : "dead"))}");
+    Rt.On = false; Rt.SetSlow(false);
+  }
+
+  // RT 7z-c (Yan: "do 1, build gunslinger for real"): a pistol in each hand - each mouse button fires its own gun, the right one no
+  // longer aims, both fire mid-dive, R reloads both; the left gun's pose sits beside the right one inside the sprite
+  static Ballistics.Hit Landed(List<Gunplay.Round> r) { Gunplay.LandAll(); return r[0].Hit; }   // RT 8: rounds fly
+
+  // Boss 1: the parry (perfect / blocked / missed / cooldown / no melee / unparryable), the Visor's duel frame by frame (telegraphs,
+  // a perfect parry staggers him, bullets glance off unless he's open, phase 2, he breaks at 0, the finisher, the smoke), his lab
+  // Melee 2: a stance and a string of swings per kind of weapon; clicks inside the combo gap walk the string, a pause starts it over
+  // Pack 1: the bag's grid - footprints, first-fit placement (turned when that's the only way), drag, a new bag repacks,
+  // what doesn't fit stays out (never lost), and the grid survives a save
+  // Survival: 5 then +3 a wave, a 15 s breather after a clear, a minute at most, every 5th wave a boss that waits to be killed and
+  // raises the tier, humans' loot pristine
+  // Boss 2 (Yan, 2026-11-03): the brain in the vat - wind-ups with its eyes shut, orbs stopped by cover, pulses that wear cover down
+  // (boxes 3, tables 6, cabinets 9, 3 a pulse), rip (your cover hurled at you), a sweeping laser, no death at 0 - still, rise, the eye, gone
+  static void BrainChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 9000f; UnityEngine.Time.deltaTime = 0.02f;
+    Rt.SetOffset(p, 0f, 0f); p.HealPermanent(100000); MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped);
+    var f = BrainBoss.Spawn(px + 4, py); var b = f.Unit; Rt.SetOffset(b, 0f, 0f);
+    Check(BrainBoss.Is(b) && EncounterState.Enemies.Contains(b) && b.Hp == BrainBoss.MaxHp && BrainBoss.ArtRow == 0, "Boss 2: the vat spawns, full, eyes open");
+    BrainBoss.Tick(0.02f);
+    Check(f.Started, "Boss 2: it wakes when you come close");
+    f.Bag.Clear(); f.Bag.Add("ring"); f.Next = 0f; BrainBoss.Tick(0.02f);
+    Check(f.Doing == "ring" && BrainBoss.Winding(f) && BrainBoss.ArtRow == 4 && BrainBoss.Orbs.Count == 0, "Boss 2: before a move its eyes shut (the wind-up), nothing fired yet");
+    UnityEngine.Time.time = f.Moves.Max(m => m.WindUntil) + 0.01f; BrainBoss.Tick(0.02f);
+    Check(BrainBoss.Orbs.Count == 10 && BrainBoss.Orbs.All(o => o.Kind == "ring") && BrainBoss.ArtRow == 0, $"Boss 2: then they open and a ring of 10 orbs flies ({BrainBoss.Orbs.Count})");
+    BrainBoss.Orbs.Clear(); f.Next = UnityEngine.Time.time + 999f; f.Moves.Clear();
+    void Tick(int n) { for (int i = 0; i < n; i++) { BrainBoss.Tick(0.02f); UnityEngine.Time.time += 0.02f; } }
+    var (x0, y0) = Ballistics.Pos(p); int hp = p.Hp;
+    BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f); Tick(40);
+    Check(p.Hp < hp && BrainBoss.Orbs.Count == 0, $"Boss 2: an orb that reaches you hurts ({hp} -> {p.Hp})");
+    hp = p.Hp; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f;   // mid-dive (held in the air for the check)
+    BrainBoss.Shoot(x0 + 1.5f, y0, 180f, 3f); Tick(60);
+    Check(p.Hp == hp, "Boss 2: mid-dive an orb passes through you");
+    Rt.Of(p).DiveUntil = -1f; BrainBoss.Orbs.Clear();
+    TerrainMap.SetTileType(px - 2, py, TileType.ScatterCover, "crate"); BrainBoss.Shoot(px - 0.5f, py + 0.5f, 180f, 3f); Tick(60);
+    Check(BrainBoss.Orbs.Count == 0, "Boss 2: cover stops an orb (and it doesn't wear the cover)");
+    Check(TerrainMap.GetTile(px - 2, py).Look == "crate" && TerrainMap.GetTile(px - 2, py).Damage == 0, "Boss 2: the crate is still whole");
+    // the pulses: a crate, a table and a cabinet near the vat
+    int cX = px + 2, cY = py + 3;
+    TerrainMap.SetTileType(cX, cY, TileType.ScatterCover, "crate"); TerrainMap.SetTileType(cX + 1, cY, TileType.ScatterCover, "labtable"); TerrainMap.SetTileType(cX + 2, cY, TileType.HardCover, "cabinet");
+    string Look(int x) => TerrainMap.GetTile(x, cY).Look;
+    hp = p.Hp; b.Hp = BrainBoss.MaxHp * 7 / 10; Boss.OnDamaged(b);
+    Check(f.Phase == 1 && BrainBoss.Winding(f) && BrainBoss.ArtRow == 5 && BrainBoss.Pulse == null, "Boss 2: under 75% the glass cracks, its eyes shut - the pulse gathers");
+    UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(1);
+    Check(BrainBoss.Pulse != null, "Boss 2: then the pulse rolls out");
+    Tick(1); f.Next = UnityEngine.Time.time + 999f; Tick(149);   // only the pulse: no volleys meanwhile
+    Check(Look(cX) != "crate" && Look(cX + 1) == "labtable" && Look(cX + 2) == "cabinet", $"Boss 2: the first pulse breaks the boxes only ({Look(cX)}, {Look(cX + 1)}, {Look(cX + 2)})");
+    Check(p.Hp < hp, $"Boss 2: the pulse hurts whoever it passes ({hp} -> {p.Hp})");
+    b.Hp = BrainBoss.MaxHp * 4 / 10; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; hp = p.Hp; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 10f; Tick(1); f.Next = UnityEngine.Time.time + 999f; Tick(149);   // only the pulse: no volleys meanwhile
+    Check(Look(cX + 1) != "labtable" && Look(cX + 2) == "cabinet", "Boss 2: the second pulse breaks the tables");
+    Check(p.Hp == hp, "Boss 2: diving through the pulse, it doesn't touch you");
+    Rt.Of(p).DiveUntil = -1f;
+    b.Hp = BrainBoss.MaxHp / 5; Boss.OnDamaged(b); UnityEngine.Time.time = f.PulseAt + 0.01f; Tick(1); f.Next = UnityEngine.Time.time + 999f; Tick(149);   // only the pulse: no volleys meanwhile
+    Check(f.Phase == 3 && Look(cX + 2) != "cabinet", "Boss 2: the third breaks the file cabinets - no cover left");
+    // rip: the crate beside you comes off the floor and flies at you
+    BrainBoss.Beams.Clear(); BrainBoss.Orbs.Clear(); f.PullUntil = -1f;
+    TerrainMap.SetTileType(px + 1, py, TileType.ScatterCover, "crate"); hp = p.Hp; f.Bag.Clear(); f.Bag.Add("rip"); f.Next = 0f; f.Moves.Clear();
+    Tick(1); UnityEngine.Time.time = f.Moves.Max(m => m.WindUntil) + 0.01f; Tick(1);
+    Check(BrainBoss.Throws.Count >= 1 && TerrainMap.GetTile(px + 1, py).Look != "crate", "Boss 2: rip tears the crate beside you off the floor");
+    Tick(80);
+    Check(BrainBoss.Throws.Count == 0 && p.Hp < hp, $"Boss 2: and hurls it at you ({hp} -> {p.Hp})");
+    Check(f.Phase >= 2 && f.Moves.Count == 0, "Boss 2: (that volley done)");
+    // from 50% two moves at once (Yan: "make it so he can use 2 attacks at the same time after 50%"), never laser with the pull
+    { BrainBoss.Beams.Clear(); f.PullUntil = -1f; f.Moves.Clear(); f.Bag.Clear(); f.Next = 0f; Tick(1); var ks = f.Moves.Select(m => m.Kind).ToList();
+      Check(ks.Count == 2 && ks[0] != ks[1] && !(ks.Contains("laser") && ks.Contains("pull")), $"Boss 2: past 50% a volley is two moves at once ({string.Join("+", ks)})");
+      BrainBoss.Orbs.Clear(); BrainBoss.Throws.Clear(); BrainBoss.Beams.Clear(); f.PullUntil = -1f; f.Moves.Clear(); f.Next = UnityEngine.Time.time + 999f; }
+    // a vat never walks: moves are refused, and anything that shifts it puts it back
+    Check(!GameServices.Grid.AttemptMove(b, b.X - 1, b.Y), "Boss 2: the vat refuses to move");
+    { int hx = b.X; b.X += 2; Tick(1); Check(b.X == hx, "Boss 2: shoved off its spot, it's back on it at once"); }
+    // the laser sweeps; cover doesn't stop it, a dive does
+    f.Bag.Clear(); f.Bag.AddRange(new[] { "ring", "laser" }); f.Next = 0f; f.Moves.Clear(); Tick(1); UnityEngine.Time.time = f.Moves.Max(m => m.WindUntil) + 0.01f; hp = p.Hp; Tick(1);
+    Check(BrainBoss.Beams.Count == 2, $"Boss 2: the laser - two beams when it's at its angriest ({BrainBoss.Beams.Count})");
+    TerrainMap.SetTileType(px + 1, py, TileType.HardCover, "cabinet");
+    Tick((int)(BrainBoss.LaserFor / 0.02f) + 5);
+    Check(p.Hp < hp && BrainBoss.Beams.Count == 0, $"Boss 2: it sweeps over you even behind cover ({hp} -> {p.Hp})");
+    // the end
+    b.Hp = 0; Boss.OnDamaged(b);
+    Check(b.IsAlive() && f.Drained && f.Stage == "still" && BrainBoss.ArtRow == 8, "Boss 2: at 0 it doesn't die - it slumps, still");
+    b.Hp = 0; Boss.OnDamaged(b);
+    Check(b.Hp == 1, "Boss 2: drained, more hits don't kill it");
+    UnityEngine.Time.time += BrainBoss.StillFor + 0.05f; Tick(1);
+    Check(f.Stage == "rise" && BrainBoss.ArtRow == 9, "Boss 2: its eyes open and it floats up");
+    UnityEngine.Time.time += BrainBoss.RiseFor + 0.05f; Tick(1);
+    Check(f.Stage == "eye" && BrainBoss.ArtRow == 10, "Boss 2: the giant eye comes out and looks at you");
+    UnityEngine.Time.time += BrainBoss.EyeFor + 0.05f; Tick(1);
+    Check(f.Gone && !EncounterState.Enemies.Contains(b) && Story.Has(BrainBoss.Escaped), "Boss 2: the void takes it - gone, flagged to come back later");
+    BrainBoss.OnEnterZone(BrainBoss.Lab);
+    Check(BrainBoss.Current == null, "Boss 2: once it has escaped, the lab is empty of it");
+    // the Testing Ground's "Go" (Yan: "if you just spawn him there the fight wont work"): to the lab, the vat fresh, nobody else there
+    Story.Set(BrainBoss.Escaped); var gp = Player.Current;
+    TestingGround.BrainFight(gp);
+    Check(TerrainMap.ZoneId == BrainBoss.Lab && BrainBoss.Current != null && !BrainBoss.Current.Started && EncounterState.Enemies.Count == 1 && BrainBoss.Is(EncounterState.Enemies[0])
+      && Math.Abs(gp.X - BrainBoss.VatX) <= 3 && gp.Y > BrainBoss.VatY + 3 && TerrainMap.GetTile(gp.X, gp.Y).Type == TileType.Empty,
+      $"Boss 2: the Testing Ground's Go puts you in the vat room ({gp.X},{gp.Y}), the vat fresh and alone");
+    // Respawn (Testing Ground only): died to the brain -> straight back into a fresh fight
+    gp.Hp = 0; GameState.Current.CurrentTurn = Turn.CombatOver; TestingGround.Respawn(gp);
+    Check(gp.IsAlive() && GameState.Current.CurrentTurn == Turn.Player && TerrainMap.ZoneId == BrainBoss.Lab && BrainBoss.Current != null && !BrainBoss.Current.Started,
+      "Testing Ground: Respawn after dying to the brain - alive, a fresh fight");
+    MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped); BrainBoss.Reset(); Rt.On = false;
+  }
+
+  // Boss 2: Secret Lab Alpha's lock-and-key progression, on the real built map (the plan's mission graph was checked with graph_check.py):
+  // a staff-badge door and a dead power door are walls until you hold their key; the generator switch needs a fuse; the badge, fuse and
+  // power come in that order; Sample Storage, Security and (through the hole in the wall) the Archive are open from the start
+  static void AlphaChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear();
+    MacroState.Current.CurrentZoneId = BrainBoss.Lab; TerrainMap.BuildTerrainForZone(BrainBoss.Lab); EncounterState.Enemies.Clear();
+    int Doors(string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == TileType.Door && t.Look == look) n++; } return n; }
+    Check(Doors("door_badge") == 2 && Doors("door_power") == 3, $"Alpha: two staff-badge doors and three power doors ({Doors("door_badge")}, {Doors("door_power")})");
+    var air = TerrainMap.Landmarks.First(l => l.Name == "Reception Airlock"); var stor = TerrainMap.Landmarks.First(l => l.Name == "Sample Storage");
+    HashSet<(int, int)> Flood() {
+      var seen = new HashSet<(int, int)> { (air.X, air.Y) }; var q = new Queue<(int, int)>(); q.Enqueue((air.X, air.Y));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    InteractiveObjectInstance Obj(string name) => TerrainMap.InteractiveObjects.FirstOrDefault(o => o.Name == name);
+    var locker = Obj(LabLocks.Locker); var crate = Obj(LabLocks.Crate); var sw = Obj(LabLocks.Switch);
+    Check(locker != null && crate != null && sw != null && locker.GrantsKey == LabLocks.Staff && crate.GrantsKey == LabLocks.Fuse && sw.GrantsKey == LabLocks.Power && sw.Requires == LabLocks.Fuse,
+      "Alpha: the badge locker, the fuse crate and the generator switch are there, with their keys");
+    var s0 = Flood();
+    Check(s0.Contains((stor.X, stor.Y)) && s0.Contains((locker.X, locker.Y)) && s0.Contains((sw.X, sw.Y)) && s0.Contains((60, 10)),
+      "Alpha: from the start you can reach Sample Storage, the badge locker, the generator room and (through the hole in the wall) the Archive");
+    Check(!s0.Contains((crate.X, crate.Y)) && !s0.Contains((BrainBoss.VatX, BrainBoss.VatY + 3)), "Alpha: with no key the Labs wing and the vat room stay shut");
+    Check(Stashes.Blocked(sw), "Alpha: the generator switch won't throw without its fuse");
+    MacroState.Current.Keys.Add(LabLocks.Staff); LabLocks.Granted(LabLocks.Staff);
+    var s1 = Flood();
+    Check(s1.Contains((crate.X, crate.Y)) && !s1.Contains((BrainBoss.VatX, BrainBoss.VatY + 3)) && Doors("door_badge") == 0, "Alpha: the staff badge opens the Labs wing (and its door lights go green) but not the vat room");
+    MacroState.Current.Keys.Add(LabLocks.Fuse);
+    Check(!Stashes.Blocked(sw), "Alpha: with the fuse, the generator switch throws");
+    MacroState.Current.Keys.Add(LabLocks.Power); LabLocks.Granted(LabLocks.Power);
+    Check(Doors("door_power") == 0 && Flood().Contains((BrainBoss.VatX, BrainBoss.VatY + 3)), "Alpha: power on - the blast doors unlock and the vat room is reachable");
+    MacroState.Current.Keys.Clear(); BrainBoss.Reset(); Rt.On = false;
+  }
+
+  // Sub-Station Depths, redone with locks (2026-11-04), then the eel's three flooded levels under it (sub_station_depths.mmd): each map
+  // flooded from its way in with each key set, on the real built map.
+  static void DepthsChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys;
+    void Build(string zone) { MacroState.Current.PersistedZoneTerrain.Remove(zone); MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone); EncounterState.Enemies.Clear(); }
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    InteractiveObjectInstance Obj(string key) => TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == key);
+    ZoneExit Exit(string to) => TerrainMap.Exits.FirstOrDefault(e => e.TargetZoneId == to);
+    void Give(string k) { keys.Add(k); LabLocks.Granted(k); }
+
+    // the station: badge and fuse, then the breaker, then the stairs down; the basin (vault, lift) waits for the last level's drain
+    keys.Clear(); keys.Add(LabLocks.Staff); keys.Add(LabLocks.Power);                       // Alpha's keys open nothing here
+    Build(LabLocks.Depths);
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Flooded Corridor"); var vault = TerrainMap.Landmarks.First(l => l.Name == "Transformer Vault");
+    var down = Exit(LabLocks.Depths1); var lift = Exit(LabLocks.Depths3);
+    Check(Count(TileType.Door, "door_badge") == 2 && Count(TileType.Door, "door_power") == 2 && Count(TileType.Difficult, "deepwater") > 200 && down != null && lift != null,
+      $"Depths: two badge doors, two power doors, the deep basin, stairs down and the lift ({Count(TileType.Door, "door_badge")}, {Count(TileType.Door, "door_power")}, {Count(TileType.Difficult, "deepwater")})");
+    var locker = Obj("depths_staff"); var crate = Obj("depths_fuse"); var breaker = Obj("depths_power");
+    Check(locker != null && crate != null && breaker != null && breaker.Requires == "depths_fuse" && Obj("depths_drain") == null,
+      "Depths: the locker, the spares crate and the breaker (needs the fuse); no pump up here any more");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, locker.X, locker.Y) && In(s0, crate.X, crate.Y) && !In(s0, breaker.X, breaker.Y) && !s0.Contains((down.X, down.Y)) && !s0.Contains((vault.X, vault.Y)),
+      "Depths: at the start the locker and the crate; not the breaker, the stairs down or the vault");
+    foreach (var k in new[] { "depths_staff", "depths_fuse", "depths_power" }) Give(k);
+    var s1 = Flood(start.X, start.Y);
+    Check(In(s1, breaker.X, breaker.Y) && s1.Contains((down.X, down.Y)) && !s1.Contains((vault.X, vault.Y)) && !s1.Contains((lift.X, lift.Y)),
+      "Depths: badge and power open the gallery and the stairs down; the basin still holds you back");
+
+    // the levels: each pump needs the key above it, its drain opens the way on
+    foreach (var (zone, drain, needs, on) in new[] { (LabLocks.Depths1, "depths_drain1", "depths_power", LabLocks.Depths2),
+                                                     (LabLocks.Depths2, "depths_drain2", "depths_drain1", LabLocks.Depths3),
+                                                     (LabLocks.Depths3, "depths_drain3", "depths_drain2", (string)null) }) {
+      Build(zone);
+      var up = TerrainMap.Exits.FirstOrDefault(e => e.TargetZoneId == (zone == LabLocks.Depths1 ? LabLocks.Depths : zone == LabLocks.Depths2 ? LabLocks.Depths1 : LabLocks.Depths2));
+      var pump = Obj(drain); var next = on != null ? Exit(on) : null; var goal = on == null ? TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "The Bottom") : null;
+      int gx = next?.X ?? goal?.X ?? 0, gy = next?.Y ?? goal?.Y ?? 0;
+      Check(up != null && pump != null && pump.Requires == needs && (next != null || goal != null) && Count(TileType.Difficult, "deepwater") > 20,
+        $"{zone}: stairs up, the pump (needs {needs}), the way on, deep water");
+      var a0 = Flood(up.X, up.Y);
+      Check(In(a0, pump.X, pump.Y) && !a0.Contains((gx, gy)), $"{zone}: the pump is in reach, the way on is under the water");
+      if (on != null) {       // the mazes (sub_station_depths_N.mmd): every dead end pays, and the eel's spots are marked in the plan
+        var caches = TerrainMap.InteractiveObjects.Where(o => o.GrantsKey == null && (o.Name == "Rusted Cache" || o.Name == "Drowned Locker" || o.Name == "Crew's Bag" || o.Name == "Maintenance Box")).ToList();
+        int want = zone == LabLocks.Depths1 ? 3 : 4, strikes = zone == LabLocks.Depths1 ? 1 : 3, lures = zone == LabLocks.Depths1 ? 0 : 2;
+        var rows = TierDungeons.LabPlans[zone]; int Digits(char c) => rows.Sum(r => r.Count(ch => ch == c));
+        Check(caches.Count == want && caches.All(o => In(a0, o.X, o.Y)), $"{zone}: {want} dead-end stashes, all in reach at the start ({caches.Count})");
+        Check(Digits('7') == strikes && Digits('8') == lures, $"{zone}: {strikes} strike spots and {lures} false alarms marked in the plan ({Digits('7')}, {Digits('8')})");
+      } else {                // the Sump, the eel's arena (sub_station_depths_3.mmd): where it rises, what it blocks and where the body lies are marked; no stashes
+        var rows = TierDungeons.LabPlans[zone]; int Digits(char c) => rows.Sum(r => r.Count(ch => ch == c));
+        Check(Digits('y') == 1 && Digits('z') == 1 && Digits('N') == 1 && Count(TileType.Difficult, "deepwater") > 150, $"{zone}: the three other pools' centres (y z N) are marked once each, and there is deep water for all four");
+        Check(Digits('0') == 1 && Digits('9') == 1 && Digits('8') == 1, $"{zone}: the pool's centre (0), the channel mouth (9) and the body's slab (8) are marked once in the plan ({Digits('0')}, {Digits('9')}, {Digits('8')})");
+        Check(!TerrainMap.InteractiveObjects.Any(o => o.GrantsKey == null && (o.Name == "Rusted Cache" || o.Name == "Drowned Locker" || o.Name == "Crew's Bag" || o.Name == "Maintenance Box")), $"{zone}: no stashes - the loot is the body");
+      }
+      CombatFx.Pending.Clear(); Give(drain);
+      var swirls = CombatFx.Pending.Where(e => e.Kind == "px" && e.Px == "whirlpool").ToList();   // RT fx 4: the pump starts, whirlpools turn in the deep water round it
+      Check(swirls.Count >= 1 && swirls.Count <= 3 && swirls.All(e => Math.Max(Math.Abs(e.FromX - pump.X), Math.Abs(e.FromY - pump.Y)) <= 7), $"{zone}: 1-3 whirlpools near the pump when it starts ({swirls.Count})");
+      for (int i = 0; i < swirls.Count; i++) for (int j = i + 1; j < swirls.Count; j++) Check(Math.Max(Math.Abs(swirls[i].FromX - swirls[j].FromX), Math.Abs(swirls[i].FromY - swirls[j].FromY)) >= 3, $"{zone}: whirlpools are 3+ tiles apart");
+      Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(up.X, up.Y).Contains((gx, gy)), $"{zone}: pumped - the water drops, the way on is open");
+      if (on == null) Check(Flood(up.X, up.Y).Contains((Exit(LabLocks.Depths).X, Exit(LabLocks.Depths).Y)), $"{zone}: the service lift up to the station is reachable at the bottom");
+    }
+    Build(LabLocks.Depths);
+    Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(start.X, start.Y).Contains((vault.X, vault.Y)) && Flood(start.X, start.Y).Contains((Exit(LabLocks.Depths3).X, Exit(LabLocks.Depths3).Y)),
+      "Depths: the last pump drained the station's basin too - the vault and the lift");
+    Build(LabLocks.Depths1);
+    Check(Count(TileType.Difficult, "deepwater") == 0, "Depths: a level rebuilt later stays drained");
+    keys.Clear(); Rt.On = false;
+  }
+
+  static void SurvivalChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true;
+    Survival.Now = 0f; Survival.Begin(p); p.X = px; p.Y = py;
+    void Run(float until) { while (Survival.Now < until) { Survival.Now += 0.25f; Survival.Tick(p); } }
+    void KillAll() { foreach (var e in Survival.Live) e.Hp = 0; }
+    Run(14.5f); Check(Survival.Wave == 0, "Survival: nothing for the first 15 s");
+    Run(15.5f); Check(Survival.Wave == 1 && Survival.Live.Count == 5, $"Survival: wave 1 is 5 enemies ({Survival.Live.Count})");
+    KillAll(); Run(16f); Run(30f); Check(Survival.Wave == 1, "Survival: 15 s breather after a clear");
+    Run(31.5f); Check(Survival.Wave == 2 && Survival.Live.Count == 8, $"Survival: wave 2 is 8 ({Survival.Live.Count})");
+    Run(31.5f + 59f); Check(Survival.Wave == 2, "Survival: an uncleared wave holds for up to a minute");
+    Run(31.5f + 61f); Check(Survival.Wave == 3, "Survival: then the next comes anyway");
+    while (Survival.Wave < 5 && Survival.Now < 1000f) { KillAll(); Run(Survival.Now + 1f); }
+    Check(Survival.Wave == 5 && Survival.BossWave && Survival.Live.Count(e => e.IsAlive()) == 1, $"Survival: wave 5 is one boss (wave {Survival.Wave}, {Survival.Live.Count})");
+    float t5 = Survival.Now; Run(t5 + 200f); Check(Survival.Wave == 5 && Survival.Tier == 1, "Survival: the boss wave waits for the boss");
+    KillAll(); Run(Survival.Now + 1f); Check(Survival.Tier == 2, "Survival: killing the boss raises the tier");
+    Run(Survival.Now + 15f); Check(Survival.Wave == 6 && Survival.Live.Count == Survival.WaveSize(6), $"Survival: and the next wave comes after a breather ({Survival.Wave}, {Survival.Live.Count})");
+    var raider = Survival.Live.OfType<HumanEnemy>().FirstOrDefault() ?? new HumanEnemy("x", px + 3, py, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], null);
+    HumanLootSystem.GrantDrop(raider, p, 1);
+    Check(raider.Inventory.Items.Where(i => i.Type == "weapon" || i.Type == "armor").All(i => i.Condition == "Working"), "Survival: their gear is pristine");
+    Survival.Stop(); Survival.Now = -1f; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false;
+  }
+
+  static void PackChecks() {
+    var p = Arena(out _, out _); p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
+    var b = Pack.Bag(p);
+    Check(b.Cols == 5 && b.Rows == 4, "Pack: no backpack = 5x4 pockets");
+    InventoryItem W(string cat, string key) => new InventoryItem { Id = key, Name = key, Type = "weapon", Category = cat, Key = key, WeightKg = 1f };
+    var rifle = W("assault", "VK74"); p.Inventory.Items.Add(rifle);
+    Check(Pack.Size(rifle) == (5, 2) && Pack.Place(p, rifle) && rifle.GridX == 0 && rifle.GridY == 0 && !rifle.Rot, "Pack: a rifle takes 5x2 at the top left");
+    var sniper = W("sniper", "x"); p.Inventory.Items.Add(sniper);
+    Check(!Pack.Place(p, sniper) && sniper.GridX < 0, "Pack: a 6x2 sniper rifle doesn't fit 5x4 pockets - it stays out");
+    p.AddItem(new InventoryItem { Id = "bandage", Name = "Bandage", Type = "consumable", Qty = 1, WeightKg = 0.1f });
+    var band = p.Inventory.Items.First(i => i.Id == "bandage");
+    Check(band.GridX == 0 && band.GridY == 2, "Pack: a pickup lands in the first free cell");
+    Check(!Pack.Move(p, band, 1, 1, false) && Pack.Move(p, band, 4, 3, false) && band.GridX == 4, "Pack: you can't drop it on another item, you can on space");
+    var med = new InventoryItem { Id = "basicMedkit", Name = "Basic Medkit", Type = "consumable", WeightKg = 0.5f }; p.Inventory.Items.Add(med);
+    Check(!Pack.Move(p, med, 4, 0, true) && Pack.Move(p, med, 3, 2, true) && Pack.Footprint(med) == (1, 2), "Pack: turned, a 2x1 medkit stands 1x2");
+    p.HandleBackpackChange("backpack_tourist");
+    Check(p.Inventory.Items.All(i => i.GridX >= 0) && sniper.GridX >= 0, "Pack: a bigger bag repacks everything (the sniper rifle fits now)");
+    var save = p.CaptureSaveData(); var q = new Player(); q.ApplyLoadedData(save);
+    var rb = q.Inventory.Items.First(i => i.Id == "VK74");
+    Check(rb.GridX == rifle.GridX && rb.GridY == rifle.GridY && rb.Rot == rifle.Rot, "Pack: places survive a save");
+    // Pack 1b (Yan: "there's no equip/unequip ui"): unequipping puts the gun in the pack and empties your hands
+    p.Inventory.Items.Clear(); p.EquipWeapon("sidearm", "PSh18Pchela"); p.SecondaryWeapon = null;
+    p.UnequipWeapon();
+    var gun = p.Inventory.Items.FirstOrDefault(i => i.Type == "weapon" && i.Key == "PSh18Pchela");
+    Check(p.EquippedWeapon == null && gun != null && gun.GridX >= 0, "Pack: unequipping puts the pistol in the pack, hands empty");
+    p.EquipWeaponFromInventory(gun.Id);
+    Check(p.EquippedWeapon != null && p.Inventory.Items.All(i => i.Type != "weapon"), "Pack: and equipping takes it back out");
+    p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
+  }
+
+  static void MeleeMoveChecks() {
+    Check(HeldPoseMath.StyleOf("HuntingKnife") == HeldPoseMath.Style.Knife && HeldPoseMath.StyleOf("FireAxe") == HeldPoseMath.Style.Heavy
+      && HeldPoseMath.StyleOf("TacticalHatchet") == HeldPoseMath.Style.Chop, "melee styles: knife / two-handed / one-handed");
+    Check(HeldPoseMath.Chop(99f, HeldPoseMath.Style.Knife) == HeldPoseMath.Stance(HeldPoseMath.Style.Knife), "out of a swing: the stance");
+    var c = new Melee.Charge(); c.Next(0f); c.SwungAt = 0f; c.Next(HeldPoseMath.SwingLength + 0.1f); c.SwungAt = HeldPoseMath.SwingLength + 0.1f;
+    Check(c.Move == 1, "a quick second click is the next move");
+    c.Next(c.SwungAt + HeldPoseMath.SwingLength + Melee.ComboGap + 0.5f); Check(c.Move == 0, "a pause starts the string over");
+    var a = HeldPoseMath.Chop(HeldPoseMath.WindUp + HeldPoseMath.ChopTime + 0.01f, HeldPoseMath.Style.Chop, 0);
+    var b = HeldPoseMath.Chop(HeldPoseMath.WindUp + HeldPoseMath.ChopTime + 0.01f, HeldPoseMath.Style.Chop, 1);
+    Check(a != b, "the chop and the sweep end in different places");
+    var f = HeldPoseMath.Frame("melee", WeaponArt.GripOf("melee", "FireAxe"), 0f, 0f, 0f, 0f, 99f, 1f, "none", 1, null, -1f, -1f, 99f, "FireAxe", 0);
+    Check(f.HasSupport && Math.Abs(f.SupX - f.GripX) + Math.Abs(f.SupY - f.GripY) >= 3f, "two-handed: the other hand is on the handle");
+    float into = HeldPoseMath.WindUp + HeldPoseMath.ChopTime + 0.05f;
+    Check(HeldPoseMath.Chop(0f, HeldPoseMath.Style.Knife, 1, into) == HeldPoseMath.Chop(into, HeldPoseMath.Style.Knife, 0), "a combo swing starts where the last one was");
+    { var p = Arena(out int px, out int py); Melee.Reset(); p.EquipWeapon("melee", "HuntingKnife"); var w = p.EquippedWeapon; var at = (px + 1.2f, (float)py);
+      Melee.Now = 0f; Melee.PlayerInput(p, w, true, false, at); Melee.Now = 0.03f; Melee.PlayerInput(p, w, false, false, at);   // a tap
+      Melee.Now = 0.2f; Melee.PlayerInput(p, w, true, false, at); Melee.Now = 0.23f; Melee.PlayerInput(p, w, false, false, at); // too early: queued
+      var mc = Melee.ChargeOf(p); Check(mc.Queued && mc.Move == 0, "a click mid-swing is queued");
+      for (float t = 0.25f; t < 1f && mc.Queued; t += 1f / 30f) { Melee.Now = t; Melee.PlayerInput(p, w, false, false, at); }
+      Check(!mc.Queued && mc.Move == 1 && mc.From > 0f, "the queued click becomes the next move of the combo"); Melee.Now = -1f; Melee.Reset(); }
+    // Yan: "the top of the characters heads get cut off" - nobody stands tilted (a turned 16 px body loses pixel rows)
+    Check(Enum.GetValues(typeof(HeldPoseMath.Style)).Cast<HeldPoseMath.Style>().All(st => HeldPoseMath.Stance(st).lean == 0f), "melee stances: no tilt at rest");
+    // Yan: "make it so he needs 3 parries to get stunned": two perfect parries are deflections, the third opens him; they fade
+    { var p = Arena(out int px, out int py); Boss.Reset(); EncounterState.Enemies.Clear(); var bf = Boss.Spawn(Boss.Visor, px + 1, py);
+      bool a1 = Boss.Stagger(bf.Unit, 1f), a2 = Boss.Stagger(bf.Unit, 1f), a3 = Boss.Stagger(bf.Unit, 1f);
+      Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 4800, "Boss: the Visor (4800 HP) staggers on the 3rd perfect parry, not before");
+      bf.StaggerUntil = -1f; Boss.Stagger(bf.Unit, 1f); bf.LastParryAt -= Boss.GuardRecovers + 1f;
+      Check(!Boss.Stagger(bf.Unit, 1f) && Boss.GuardDamage(bf) == 1, "Boss: parries toward a stagger fade after a while");
+      // "parries are probably too hard": the glint is a fixed beat before each hit, and a parry that lands frees the key for the next hit
+      var pl = Arena(out int qx, out int qy); Rt.On = true; bf.StaggerUntil = -1f; bf.Unit.X = qx + 1; bf.Unit.Y = qy;
+      var mv = Boss.Visor.Moves.First(m => m.Name == "Flurry"); float t0 = UnityEngine.Time.time;
+      Boss.Begin(bf, mv, t0, 1f); float glintAt = -1f;
+      for (int i = 0; i < 60 && glintAt < 0f; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(bf, pl); if (bf.GlintAt >= t0) glintAt = bf.GlintAt; }
+      Check(glintAt > 0f && Math.Abs(bf.StrikeAt - glintAt - Boss.GlintLead) < 0.03f, $"Boss: the glint comes {Boss.GlintLead} s before the hit ({bf.StrikeAt - glintAt:0.00})");
+      Rt.Of(pl).ParryReady = -99f; Parry.Press(pl); Melee.Strike(bf.Unit, bf.Unit.EquippedWeapon, pl, "Torso", 0f);
+      Check(Rt.Of(pl).ParryReady <= UnityEngine.Time.time, "Parry: one that lands frees the key at once (deflections chain)");
+      // "a few in between pauses between his attacks and combos, window of opportunity": after a move he stands open, bullets land
+      { bf.Doing = null; bf.StaggerUntil = -1f; bf.Parries = 0; var slash = Boss.Visor.Moves.First(m => m.Name == "Slash");
+        Boss.Begin(bf, slash, UnityEngine.Time.time, 1f);
+        for (int i = 0; i < 120 && bf.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; pl.Hp = pl.MaxHp; Body.Forget(pl); Boss.Tick(bf, pl); }
+        int bx0 = bf.Unit.X, by0 = bf.Unit.Y; bf.Unit.X = qx + 3;                                        // you stepped back: he'd walk after you
+        bool open = Boss.Open(bf.Unit), deflects = Boss.Deflects(bf.Unit);
+        for (int i = 0; i < 30; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(bf, pl); }
+        Check(open && !deflects && bf.Unit.X == qx + 3, "Boss: after a move he's open (bullets land) and stands still");
+        UnityEngine.Time.time += slash.Open + 1f; Check(!Boss.Open(bf.Unit) && Boss.Deflects(bf.Unit), "Boss: the opening closes"); }
+      Rt.On = false;
+      Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
+  }
+
+  static void BossChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    float T0 = 20000f; UnityEngine.Time.time = T0; UnityEngine.Time.unscaledTime = T0; UnityEngine.Time.deltaTime = 1f / 60f;
+    try {
+      var hatchet = ShopDatabase.Items.First(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "TacticalHatchet");
+      p.AddItem(TestingGround.ItemOf(hatchet)); p.EquipWeaponFromInventory(hatchet.Id); p.HealPermanent(100000);
+      var raider = new HumanEnemy("Raider", px + 1, py, "Raiders", "Rookie", WeaponDatabase.Categories["melee"]["SerratedTrenchKnife"], null) { IsAggroed = true };
+      EncounterState.Enemies.Add(raider); Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(raider, 0f, 0f);
+      int hp = p.Hp;
+      void Hit() => Melee.Strike(raider, raider.EquippedWeapon, p, "Torso", 0f);
+      Parry.Press(p); UnityEngine.Time.time += 0.05f; Hit();
+      Check(p.Hp == hp && Rt.Of(p).ParryAt < 0f, "Boss 1: a hit inside the first 0.2 s of the guard is a perfect parry - no damage");
+      UnityEngine.Time.time += 1f; Parry.Press(p); UnityEngine.Time.time += 0.25f; Hit();
+      Check(p.Hp == hp, "Boss 1: later in the window it's blocked - still no damage");
+      UnityEngine.Time.time += 1f; Hit();
+      Check(p.Hp < hp, "Boss 1: no guard up - the hit lands");
+      hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.4f; Parry.Press(p); UnityEngine.Time.time += 0.08f; Hit();
+      Check(p.Hp < hp, "Boss 1: pressing again inside the cooldown does nothing (no spamming)");
+      UnityEngine.Time.time += 1f; hp = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f; Parry.Unparryable = true; Hit(); Parry.Unparryable = false;
+      Check(p.Hp < hp, "Boss 1: a red-glint hit can't be parried");
+      var pistol = ShopDatabase.Items.First(i => i.Type == "weapon" && i.Category == "sidearm" && i.Key == "PSh18Pchela");
+      p.AddItem(TestingGround.ItemOf(pistol)); p.EquipWeaponFromInventory(pistol.Id);   // the hatchet goes back in the pack
+      UnityEngine.Time.time += 1f; p.Hp = p.MaxHp; Body.Forget(p); hp = p.Hp; Parry.Press(p);
+      UnityEngine.Time.time += 0.05f; Hit();
+      Check(p.Hp == hp && p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "Boss 1: a gun in hand - the parry key draws the hatchet from the pack and parries");
+      Check(Parry.MeleeInPack(p) == null || p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "Boss 1: (the hatchet left the pack for the hand)");
+      // the perfect parry's moment: frozen, then a second of slow motion, then back
+      UnityEngine.Time.unscaledTime += 10f; Boss.ParryMoment(); float u0 = UnityEngine.Time.unscaledTime;
+      Check(UnityEngine.Time.timeScale < 0.1f && Boss.Punch >= 0f, "Boss 1: perfect parry - a hit-stop first");
+      UnityEngine.Time.unscaledTime = u0 + Boss.MomentStop + 0.05f; Boss.TickAll();
+      Check(Math.Abs(UnityEngine.Time.timeScale - Boss.MomentScale) < 0.01f && Boss.Punch > 0.5f, $"Boss 1: then slow motion, the camera leaning in ({UnityEngine.Time.timeScale}, punch {Boss.Punch:0.00})");
+      UnityEngine.Time.unscaledTime = u0 + Boss.MomentStop + Boss.MomentSlow + 0.05f; Boss.TickAll();
+      Check(UnityEngine.Time.timeScale == 1f && Boss.Punch == 0f, "Boss 1: and back to normal after a second");
+      EncounterState.Enemies.Clear();
+
+      // the duel
+      p.Hp = p.MaxHp; Body.Forget(p);
+      var f = Boss.WakeVisor(p, px + 3, py);
+      var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
+      Check(v.EquippedArmor?.Name == "Black Visor Suit", "Boss 1: he wears his own suit (black, red visor, gas mask)");
+      Check(Boss.Is(v) && v.Hp == Boss.Visor.Hp && p.EquippedWeapon?.Db?.Name == "Tactical Hatchet" && Boss.SplashTitle == "THE VISOR", "Boss 1: taking the hatchet wakes him - name card, full health, the hatchet in your hand");
+      int glints = 0, parried = 0, frames = 0; bool staggered = false;
+      for (; frames < 60 * 30 && !staggered; frames++) {
+        UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.unscaledTime += 1f / 60f; p.Hp = p.MaxHp; Body.Forget(p);
+        Rt.WorldTick(p); glints += CombatFx.Pending.Count(e => e.Kind == "glint"); CombatFx.Pending.Clear();
+        if (f.Doing != null && !f.Doing.Danger && f.StrikeAt - UnityEngine.Time.time is float left && left > 0f && left <= 0.06f && Rt.Of(p).ParryReady <= UnityEngine.Time.time) { Parry.Press(p); parried++;
+          if (Environment.GetEnvironmentVariable("BOSS_DEBUG") == "1") Console.WriteLine($"t {UnityEngine.Time.time - T0:0.00} parry before {f.Doing.Name}, dist {CombatantUtil.Distance(p, v)} hp {p.Hp}"); }
+        staggered = Boss.Staggered(v);
+      }
+      Check(glints > 0 && staggered, $"Boss 1: he walks in, glints, swings - a parry timed on the glint staggers him ({frames / 60f:0.0} s, {glints} glints)");
+      int vhp = v.Hp; Gunplay.Shoot(p, p.EquippedWeapon, 1f, 0f, 0.5f, 0f, false);
+      Check(v.Hp == vhp || Boss.Staggered(v), "Boss 1: (setup) still open");
+      UnityEngine.Time.time = f.StaggerUntil + 0.01f;
+      var ak = p.MakeWeapon("assault", "VK74");
+      vhp = v.Hp; Gunplay.Shoot(p, ak, (v.X - p.X) / (float)Math.Max(1, Math.Abs(v.X - p.X)), 0f, 0.5f, 0f, false); Gunplay.LandAll();
+      Check(v.Hp == vhp, "Boss 1: when he isn't staggered, rounds glance off him");
+      f.StaggerUntil = UnityEngine.Time.time + 1f; vhp = v.Hp;
+      Gunplay.Shoot(p, ak, (v.X - p.X) / (float)Math.Max(1, Math.Abs(v.X - p.X)), 0f, 0.5f, 0f, false); Gunplay.LandAll();
+      Check(v.Hp < vhp, "Boss 1: while he's staggered, they land");
+      v.Hp = Boss.Visor.Hp / 2; f.StaggerUntil = -1f; f.NextMoveAt = 0f; UnityEngine.Time.time += 0.1f; Boss.Tick(f, p);
+      Check(f.Phase == 2 && Boss.SplashTitle == "PHASE 2", "Boss 1: half health - phase 2");
+      v.Hp = 10; f.StaggerUntil = UnityEngine.Time.time + 1f; p.X = v.X - 1; p.Y = v.Y;
+      Melee.Strike(p, p.EquippedWeapon, v, "Torso", 0f);
+      Check(f.Broken && v.IsAlive() && v.Hp == 1 && Boss.SplashTitle == "EXECUTE", "Boss 1: at 0 he doesn't die - he breaks, EXECUTE");
+      int fhp = p.Hp; for (int k = 0; k < 120; k++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
+      Check(p.Hp == fhp, "Boss 1: broken, he doesn't fight");
+      Rt.Of(p).Focus = 0f; p.Ap = 4; InteractionEngine.AttemptInteract(p);
+      Check(Rt.Of(p).Focus >= Rt.FocusMax - 0.01f, "Boss 1: executing fills your Focus (slow-mo energy)");
+      Check(f.Finished && !v.IsAlive() && Story.Has("visor_done") && Story.InCutscene, "Boss 1: E next to him - the finisher (cutscene), and he's done");
+      Boss.Looted(v); UnityEngine.Time.time += Boss.SmokeAfter + 0.1f; Boss.TickAll();
+      Check(f.Gone && !EncounterState.Enemies.Contains(v), "Boss 1: looted, and a few seconds later the smoke takes the body");
+      UnityEngine.Time.unscaledTime += 5f; Boss.HitStop(0.2f); Check(UnityEngine.Time.timeScale < 0.1f, "Boss 1: (hit-stop freezes time)");
+      UnityEngine.Time.unscaledTime += 0.3f; Boss.TickAll(); Check(UnityEngine.Time.timeScale == 1f, "Boss 1: and lets it go");
+
+      // the lab: a cracked wall, the corridor behind it, the body
+      MacroState.Current.StoryFlags.Clear(); EncounterState.Enemies.Clear();
+      var marks = MapLayoutDatabase.All["secret_lab_beta"].Anchors.Keys.ToList();
+      Check(marks.Contains(Boss.CrackedWall) && marks.Contains(Boss.VisorMark), "Boss 1: Lab Beta has the cracked wall and the body's room");
+    } finally { Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset(); Parry.Unparryable = false; MacroState.Current.StoryFlags.Clear(); }
+  }
+
+  // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
+  static void Tier1StoryChecks() {
+    var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear();
+    Check(TerrainMap.ZoneId == "perimeter", $"Story 4: the arena is the Tier 1 map ({TerrainMap.ZoneId})");
+    void At(string landmark) { var l = TerrainMap.Landmarks.First(x => x.Name == landmark); p.X = l.X; p.Y = l.Y + 1; }
+    void Kill(string mission) { foreach (var q in MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission)) foreach (var m in q.Members) m.Hp = 0; Tier1Story.Tick(); }
+    int Alive(string mission) => MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission).SelectMany(q => q.Members).Count(m => m.IsAlive());
+    Tier1Story.Tick();
+    Check(Story.Objectives.Any(o => o.mission == "intro" && o.landmark == Tier1Story.Yefim), "Story 4: a new game points you at Yefim");
+    At(Tier1Story.Yefim); p.Ap = 4; InteractionEngine.AttemptInteract(p);
+    string courier = Story.Spot("courier");
+    Check(Story.IsDone("intro") && Story.Step("courier") == 1 && courier != null && Alive("courier") == 3, $"Story 4: E by the fire - Yefim's first job, 3 Maws at the courier's spot ({courier})");
+    var pre = MacroState.Current.OfflineSquads.First(q => q.QuestId == "story:courier").Members[0];
+    var cl = TerrainMap.Landmarks.First(x => x.Name == courier);
+    Check(Math.Max(Math.Abs(pre.X - cl.X), Math.Abs(pre.Y - cl.Y)) <= 4, "Story 4: the Maws stand round the courier's body");
+    int ru = p.Ru;
+    At(courier); Tier1Story.TryInteract(p);
+    At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("courier") && p.Ru == ru + 400 && !p.Inventory.Items.Any(i => i.Id == "story_courier_pack"), "Story 4: the pack, back to Yefim, paid");
+    Tier1Story.TryInteract(p);
+    Check(Story.Step("fence") == 1 && Alive("fence") == 1, "Story 4: then the fence - a Prowler at Watchtower 3");
+    At(Tier1Story.Stas); Tier1Story.TryInteract(p);
+    string camp = Story.Spot("raiders");
+    Check(Story.Step("raiders") == 1 && Alive("raiders") == 3 && camp != courier, $"Story 4: Stas's job - 3 Raiders at a different spot ({camp})");
+    Kill("fence"); At(Tier1Story.Fence); Tier1Story.TryInteract(p);
+    Check(Story.Step("fence") == 2 && Story.Has("fence_inspected") && Story.JournalEntries.Any(j => j.Contains("bolt cutters")), "Story 4: the Prowler dies; the close look finds the cut and the cloth");
+    ru = p.Ru; At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("fence") && p.Ru == ru + 600, "Story 4: the closer look pays the bonus");
+    Kill("raiders"); ru = p.Ru; At(Tier1Story.Stas); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("raiders") && p.Ru == ru + 500, "Story 4: the camp cleared, Stas pays");
+    MacroState.Current.Hour = 14f; Tier1Story.Tick();
+    Check(Story.Step("burst") == 0, "Story 4: no distress loop by day");
+    MacroState.Current.Hour = 22f; Tier1Story.Tick();
+    Check(Story.Step("burst") == 1, "Story 4: at night Yefim's radio picks up the loop");
+    At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+    string distress = Story.Spot("distress");
+    Check(Story.Step("burst") == 2 && distress != courier && distress != camp, $"Story 4: Yefim points at a third spot ({distress})");
+    At(distress); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("burst") && Story.Step("key") == 1 && Story.Objectives.Any(o => o.landmark == Tier1Story.Headman), "Story 4: the note sends you to the Headman");
+    At(Tier1Story.Headman); Tier1Story.TryInteract(p);
+    Check(Story.Step("key") == 2 && Alive("key") == 2, "Story 4: the Headman's favour - Prowlers at the Fisherman's Shack");
+    Kill("key"); Tier1Story.TryInteract(p);
+    Check(Story.IsDone("key") && MacroState.Current.Keys.Contains("flooded_bunker") && Story.Objectives.Any(o => o.mission == "engineer" && o.landmark == "Flooded Bunker"),
+      "Story 4: the key, and the bunker is next");
+    MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Remove("flooded_bunker");
+  }
+
+  // Story 3: the systems the missions use - steps, objectives (and the map marker), the journal, per-world spots, talks, cutscenes
+  static void StorySystemsChecks() {
+    var p = Arena(out int px, out int py);
+    var f = MacroState.Current.StoryFlags;
+    Check(Story.Step("courier") == 0 && !Story.IsDone("courier"), "Story 3: a mission not started is step 0");
+    Story.SetStep("courier", 2); Story.SetStep("fence", 1);
+    Check(Story.Step("courier") == 2 && Story.Step("fence") == 1 && f.Count(x => x.StartsWith("m:courier=")) == 1, "Story 3: steps are kept per mission, one flag each");
+    Story.SetObjective("courier", "Find the courier's pack", "Old Well"); Story.SetObjective("fence", "Talk to Yefim");
+    var obs = Story.Objectives.ToList();
+    Check(obs.Count == 2 && obs.Any(o => o.mission == "courier" && o.text == "Find the courier's pack" && o.landmark == "Old Well")
+      && obs.Any(o => o.mission == "fence" && string.IsNullOrEmpty(o.landmark)), "Story 3: objectives read back with and without a landmark");
+    Check(StorySystem.IsObjective(MacroState.Current.CurrentZoneId, "Old Well") && !StorySystem.IsObjective(MacroState.Current.CurrentZoneId, "Lone Grave"), "Story 3: an objective's landmark gets the map marker");
+    Story.Finish("courier");
+    Check(Story.IsDone("courier") && !Story.Objectives.Any(o => o.mission == "courier"), "Story 3: finishing a mission clears its objective");
+    Story.Journal("The fence was cut."); Story.Journal("The fence was cut."); Story.Journal("A scrap of grey cloth.");
+    Check(Story.JournalEntries.SequenceEqual(new[] { "The fence was cut.", "A scrap of grey cloth." }), "Story 3: journal entries in order, no doubles");
+    var names = TerrainMap.Landmarks.Select(l => l.Name).Where(n => !n.Contains(":")).Distinct().ToList();
+    string a = Story.Spot("courier_spot", names[0]), b = Story.Spot("distress_spot", names[0]);
+    Check(a != null && b != null && a != b && a != names[0] && b != names[0] && Story.Spot("courier_spot") == a, $"Story 3: per-world spots differ, skip reserved ones and stay put ({a}, {b})");
+    int picked = -1, lines = 0;
+    Story.Talk("Yefim", new[] { "One.", "Two.", "Three?" }, new[] { "Yes", "No" }, i => { picked = i; lines++; });
+    Check(picked == 0 && lines == 1, "Story 3: a conversation runs its lines and answers once (no panel in the harness: the first answer)");
+    UnityEngine.Time.time = 500f; Story.Cutscene(px + 5f, py, 2f);
+    Check(Story.InCutscene && Story.LookAt.Value.x == px + 5f, "Story 3: a cutscene frames its point");
+    UnityEngine.Time.time = 502.5f;
+    Check(!Story.InCutscene, "Story 3: and ends on time");
+    var json = UnityEngine.JsonUtility.ToJson(new MacroSaveData { StoryFlags = new List<string>(f) });
+    var back = UnityEngine.JsonUtility.FromJson<MacroSaveData>(json);
+    Check(back.StoryFlags.SequenceEqual(f), "Story 3: story state survives a save (MacroSaveData.StoryFlags)");
+    f.Clear(); Story.Reset();
+  }
+
+  // RT 8 (Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too" / "no pinning mid dive")
+  static void RoundChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 12000f;
+    try {
+      var e = new HumanEnemy("Raider", px + 8, py, "Raiders", "Rookie", WeaponDatabase.Categories["sidearm"]["PSh18Pchela"], null) { IsAggroed = true };
+      EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+      p.EquipWeapon("sidearm", "PSh18Pchela"); var w = p.EquippedWeapon; int hp = e.Hp;
+      var rs = Gunplay.Shoot(p, w, 1f, 0f, 0.5f, 0f, false);
+      Check(e.Hp == hp && Gunplay.Flying.Count == 1, "RT 8: a fired round is in the air, nothing has landed yet");
+      Gunplay.Fly(0.1f);
+      Check(Math.Abs(rs[0].Gone - Gunplay.For(w).Speed * 0.1f) < 0.01f && e.Hp == hp, $"RT 8: it flies at the gun's speed ({rs[0].Gone:0.0} tiles in 0.1 s)");
+      Gunplay.LandAll();
+      Check(e.Hp < hp && rs[0].Hit?.Unit == e, "RT 8: and lands on him");
+      Check(Gunplay.For(p.MakeWeapon("assault", "VK74")).Speed > Gunplay.For(w).Speed, "RT 8: a rifle round is faster than a pistol's");
+      hp = e.Hp; Gunplay.Shoot(p, w, 1f, 0f, 0.5f, 0f, false); Gunplay.Fly(0.05f); e.Y = py + 2; Gunplay.LandAll(); e.Y = py;
+      Check(e.Hp == hp, "RT 8: stepping out of its path after the shot dodges it");
+      for (int f = 0; f < 20; f++) { Rt.SetOffset(p, 0f, f * 0.05f); Gunplay.Fly(1f / 60f); }   // walking down the screen at 3 tiles/s
+      var (lx, ly) = Gunplay.Lead(e, e.EquippedWeapon, p);
+      Check(ly > Ballistics.Pos(p).y + 0.3f, $"RT 8: enemies lead a walking target ({ly - Ballistics.Pos(p).y:0.00} tiles ahead)");
+      Rt.SetOffset(p, 0f, 0f); Rt.Of(p).PinnedUntil = -1f; float focus = Rt.Of(p).Focus;
+      Rt.Of(p).DiveUntil = UnityEngine.Time.time + 1f;
+      var (ex, ey) = Ballistics.Pos(e); Gunplay.Shoot(e, e.EquippedWeapon, -1f, 0f, 1.05f, 0f, false); Gunplay.LandAll();   // over the head
+      Check(Rt.Of(p).PinnedUntil < 0f && Rt.Of(p).Focus > focus, "RT 8: a near miss mid-dive gives Focus but doesn't pin");
+      Rt.Of(p).DiveUntil = -1f; Gunplay.Shoot(e, e.EquippedWeapon, -1f, 0f, 1.05f, 0f, false); Gunplay.LandAll();
+      Check(Rt.Of(p).PinnedUntil > UnityEngine.Time.time, "RT 8: standing, it still pins");
+    } finally { Rt.On = false; Rt.SetSlow(false); Gunplay.Flying.Clear(); }
+  }
+
+  static void GunslingerChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 9000f; UnityEngine.Time.deltaTime = 0.02f;
+    try {
+      TestingGround.GunslingerKit(p);
+      var main = p.EquippedWeapon; var off = p.OffhandWeapon;
+      Check(p.Gunslinging && off != null && off != main, "RT 7z-c: the Testing Ground's kit puts a pistol in each hand");
+      var at = (Ballistics.Pos(p).x + 6f, Ballistics.Pos(p).y);
+      int m0 = main.CurrentMagazine, o0 = off.CurrentMagazine;
+      Rt.PlayerTick(p, new Rt.Input { Aim = true, Fire2Down = true, Mouse = at });
+      Check(off.CurrentMagazine == o0 - 1 && main.CurrentMagazine == m0 && !Rt.Of(p).Aiming, "RT 7z-c: the right button fires the left-hand gun and doesn't aim");
+      Rt.PlayerTick(p, new Rt.Input { FireDown = true, Mouse = at });
+      Check(main.CurrentMagazine == m0 - 1 && off.CurrentMagazine == o0 - 1, "RT 7z-c: the left button fires the right-hand gun");
+      UnityEngine.Time.time += 1f;
+      Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { Y = -1f, Jump = true, BulletTime = true, Mouse = at });
+      UnityEngine.Time.time += 0.1f;
+      Rt.PlayerTick(p, new Rt.Input { FireDown = true, Fire2Down = true, Mouse = at });
+      Check(Rt.Of(p).Diving && (main.CurrentMagazine == m0 - 2 || main.IsJammed) && (off.CurrentMagazine == o0 - 2 || off.IsJammed), "RT 7z-c: both guns fire mid-dive (a jam counts: the trigger was pulled)");
+      Check(Rt.SlowMo && main.Db != null && System.Math.Abs(Gunplay.AimOf(p).NextShot - UnityEngine.Time.time - 60f / Gunplay.For(main).Rpm * Rt.SlowScale) < 0.001f,
+        "RT 7z-g: in bullet time the player's guns keep their real-time rate (the game-time gap shrinks with the time scale)");
+      Rt.PlayerTick(p, new Rt.Input { BulletTime = true, Mouse = at });                    // RT 9: bullet time off again
+      for (int f = 0; f < 60; f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
+      Rt.PlayerTick(p, new Rt.Input { Reload = true, Mouse = at });
+      for (int f = 0; f < 400 && (main.CurrentMagazine < main.MagCapacity || off.CurrentMagazine < off.MagCapacity); f++) { UnityEngine.Time.time += 0.02f; Rt.PlayerTick(p, default); }
+      Check(main.CurrentMagazine == main.MagCapacity && off.CurrentMagazine == off.MagCapacity, $"RT 7z-c: R reloads both guns ({main.CurrentMagazine}/{main.MagCapacity}, {off.CurrentMagazine}/{off.MagCapacity})");
+      var g = WeaponArt.GripOf("sidearm", "PSh18Pchela");
+      foreach (var ang in new[] { 0f, 45f, 135f, 180f, -90f }) {
+        var f1 = HeldPoseMath.Frame("sidearm", g, ang, 0f, 0f, 0f, 99f, 1f, "", 1); var f2 = HeldPoseMath.Offhand(f1, ang);
+        Check((f1.GripX != f2.GripX || f1.GripY != f2.GripY) && f2.GripX >= 0f && f2.GripX <= 16f && f2.GripY <= HeldPoseMath.WaistTopRow + 2.5f && !f2.HasSupport,
+          $"RT 7z-c: the left-hand gun sits beside the right one, aiming {ang} ({f1.GripX},{f1.GripY} / {f2.GripX},{f2.GripY})");
+      }
+    } finally { Rt.On = false; Rt.SetSlow(false); }
+  }
+
+  // RT 7z (Yan: "lowers himself to build momentum before jumping ... no sense of momentum or height"): the dive crouches, rises
+  // and lands flat, then gets up; it still covers the same ground; a friend's dive and aim travel in the snapshot
+  static List<(float t, float x, float y, Rt.Pose pose, bool slow)> DiveRun(Player p, float frame, float dx = 1f, float dy = 0f) {
+    var run = new List<(float, float, float, Rt.Pose, bool)>();
+    Rt.Of(p).Focus = 100f; Rt.PlayerTick(p, new Rt.Input { X = dx, Y = dy, Jump = true });
+    for (float t = 0f; t < Rt.DiveTime + Rt.ProneTime + 0.1f; t += frame) {
+      var (x, y) = Ballistics.Pos(p); run.Add((t, x, y, Rt.PoseOf(p), Rt.SlowMo));
+      UnityEngine.Time.time += frame; UnityEngine.Time.deltaTime = frame; Rt.PlayerTick(p, default);
+    }
+    return run;
+  }
+  static void DiveChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f;
+    try {
+      Rt.SetOffset(p, 0f, 0f);
+      var run = DiveRun(p, 0.01f);
+      var crouch = run.First(r => r.t >= 0.06f).pose; var top = run.OrderByDescending(r => r.pose.Lift).First();
+      var land = run.First(r => r.t >= Rt.DiveTime - 0.03f && r.t < Rt.DiveTime).pose; var after = run.Last().pose;
+      float dist = run.Last().x - run[0].x;
+      Check(crouch.SquashY < 0.9f && crouch.Lift == 0f && top.pose.Lift > 0.4f && top.t > Rt.DiveCrouch && Math.Abs(land.Tilt) == 90f && top.pose.Shadow < 0.7f && !after.Active,
+        $"RT 7z: the dive crouches (squash {crouch.SquashY:0.00}), rises {top.pose.Lift:0.00} tiles at {top.t:0.00} s, lands flat, gets up");
+      Check(Math.Abs(dist - Rt.DiveSpeed * Rt.DiveTime) < 0.35f, $"RT 7z: the dive still covers {Rt.DiveSpeed * Rt.DiveTime:0.00} tiles ({dist:0.00})");
+      UnityEngine.Time.time += 3f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var up = DiveRun(p, 0.01f, 0f, -1f); var upTop = up.First(r => r.t >= 0.3f).pose;
+      UnityEngine.Time.time += 3f; p.X = px; p.Y = py - 2; Rt.SetOffset(p, 0f, 0f);
+      var dn = DiveRun(p, 0.01f, 0f, 1f); var dnTop = dn.First(r => r.t >= 0.3f).pose; var dnCrouch = dn.First(r => r.t >= 0.06f).pose;
+      var sideTop = run.First(r => r.t >= 0.3f).pose;
+      Check(Math.Abs(upTop.Tilt) < 1f && upTop.SquashY > 1.2f && upTop.SquashX > 1.2f && up.Last().y < up[0].y - 2f && Math.Abs(dnTop.Tilt) > 150f && Math.Abs(dnCrouch.Tilt) < 1f
+        && Math.Abs(sideTop.SquashX - 1f) < 0.01f && Math.Abs(sideTop.SquashY - 1f) < 0.01f,
+        $"RT 7z-e: up the screen the body grows with its height (x{upTop.SquashY:0.00}, no squash), head-up; down, head-down ({dnTop.Tilt:0}); a side dive's size is unchanged");
+      // the snapshot carries a diving friend's moment and aim
+      var q = Player.Join(); Rt.Of(q).DiveUntil = UnityEngine.Time.time + 0.3f; Rt.Of(q).DiveX = 1f; Rt.Of(q).AimAt = (3f, 4f);
+      var e = Net.DecodeSnapshot(Net.EncodeSnapshot()).Players.Last();
+      Check(Math.Abs(e.DiveT - (Rt.DiveTime - 0.3f)) < 0.01f && e.DiveX == 1f && e.HasAim && e.AimX == 3f, "RT 7z: a friend's dive and aim travel in the snapshot");
+    } finally { Rt.On = false; Rt.SetSlow(false); }
+  }
+  static void DiveFrames(string path, float dx = 1f, float dy = 0f) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f; Rt.SetOffset(p, 0f, 0f);
+    var run = DiveRun(p, 1f / 60f, dx, dy);
+    var sb = new System.Text.StringBuilder("[");
+    for (int i = 0; i < run.Count; i++) { var r = run[i];
+      sb.Append(FormattableString.Invariant($"{(i > 0 ? "," : "")}[{r.t:0.0000},{r.x - run[0].x:0.0000},{r.y - run[0].y:0.0000},{r.pose.Lift:0.0000},{r.pose.Tilt:0.00},{r.pose.SquashX:0.0000},{r.pose.SquashY:0.0000},{r.pose.Shadow:0.0000},{(r.slow ? 1 : 0)}]")); }
+    File.WriteAllText(path, sb.Append("]").ToString());
+    Rt.On = false; Rt.SetSlow(false);
+  }
+
+  // RT 7z: the starter pistol, fired from the hip at a man 5 tiles off, hits most of the time; enemies' own spread is untouched
+  static void GunfeelChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    try {
+      for (int y = py - 2; y <= py + 2; y++) for (int x = px; x <= px + 7; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      p.EquipWeapon("sidearm", "PSh18Pchela"); var w = p.EquippedWeapon;
+      var dummy = new HumanEnemy("Target", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
+      float spread = Gunplay.Spread(Gunplay.For(w), new Gunplay.Aim { Steady = 0.25f }, 0, false);
+      int hits = 0; for (int i = 0; i < 1500; i++) { dummy.Hp = 100000; w.CurrentMagazine = 5; if (Landed(Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)).Unit == dummy) hits++; }   // 1500 shots: 300 sat right on the 80% line and flipped with the dice order
+      var (_, npc) = Gunplay.NpcAim(new HumanEnemy("R", px, py, "Raiders", "Rookie", null, null), w, p);
+      Check(hits > 1200 && npc > spread * 1.5f, $"RT 7z: the starter pistol from the hip hits {hits * 100 / 1500}% at 5 tiles (spread {spread:0.0} deg; a Rookie's stays {npc:0.0})");
+    } finally { EncounterState.Enemies.Clear(); Rt.On = false; }
+  }
+
+
+
+  // "Shotguns: 3 full patterns to drop a mid-armor target at 5 tiles vs ~1 s for rifles; SMGs still need 14-15 chest hits on the heaviest tier 3 armor" (ACTION_DESIGN Later list): the numbers behind it. For one gun of every kind against a
+  // standing target in each tier's heaviest armor, chest aim, at 5 and 12 tiles, a steadied shooter: the damage a round does on average (misses count), the rounds per second the gun cycles at, and the seconds to take 200 HP.
+  // dotnet /tmp/test.dll ttkprobe
+  static void TtkProbe() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    for (int y = py - 3; y <= py + 3; y++) for (int x = px - 2; x <= px + 22; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    var guns = new (string cat, string name)[] { ("sidearm", "PSh-18 Pchela"), ("sidearm", "Halden .45 Service"), ("smg", "Vosa vz. 62"), ("smg", "Corvan Wasp-9"), ("smg", "Corvan Hornet .45"), ("assault", "VKS-74U"), ("assault", "VK-74"), ("assault", "VK-103"), ("assault", "Corvan Battle Rifle"),
+      ("shotgun", "Hound 13"), ("shotgun", "Sever-34 O/U"), ("shotgun", "Tambour-12"), ("sniper", "SKN Karabin"), ("heavy", "Corvan LMG") };
+    var armors = new (string label, ArmorDef a)[] { ("none", null) }.Concat(new[] { "tier1", "tier2", "tier3", "tier4" }.Select(t => (label: $"{t} (heaviest)", a: ArmorDatabase.Tiers[t].Values.OrderByDescending(x => x.PhysDR).First()))).ToArray();
+    Console.WriteLine("200 HP target, chest aim, steady shooter: seconds to kill (rounds) at 5 tiles / 12 tiles. 999 = not within 60 s");
+    Console.WriteLine($"{"gun",-22}{"rpm",5}  " + string.Join("", armors.Select(a => $"{a.label,-26}")));
+    foreach (var (cat, name) in guns) {
+      var key = WeaponDatabase.Categories[cat].FirstOrDefault(kv => kv.Value.Name == name).Key; if (key == null) continue;
+      p.EquipWeapon(cat, key); var w = p.EquippedWeapon; var hd = Gunplay.For(w); var line = $"{name,-22}{hd.Rpm,5:0}  ";
+      foreach (var (label, armor) in armors) {
+        string cell = "";
+        foreach (int d in new[] { 5, 12 }) {
+          var dummy = new HumanEnemy("Target", px + d, py, "Raiders", "Rookie", null, armor) { IsAggroed = true }; dummy.MaxHp = 1000000; EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
+          var aim = new Gunplay.Aim { Steady = 1f, Bloom = 0f }; float spread = Gunplay.Spread(hd, aim, 0, false); long dmg = 0; int n = 400;
+          for (int i = 0; i < n; i++) { dummy.Hp = 1000000; w.CurrentMagazine = 5; Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false); Gunplay.LandAll(); dmg += 1000000 - dummy.Hp; }
+          double per = dmg / (double)n, rps = hd.Rpm / 60.0; double ttk = per <= 0.01 ? 999 : Math.Min(999, Math.Ceiling(200 / per) / rps); int rounds = per <= 0.01 ? 0 : (int)Math.Ceiling(200 / per);
+          cell += $"{ttk,5:0.0}s({rounds,3}) ";
+        }
+        line += cell.PadRight(26);
+      }
+      Console.WriteLine(line);
+    }
+    Rt.On = false;
+  }
+
+  // Task #36 ("why Yan loses to humans as Ex-Military"): the three starting loadouts in REAL-TIME fights against Raiders, through the real Rt.PlayerTick / Rt.WorldTick / RtAi: a bot that aims at the nearest
+  // living raider, holds RMB (steady aim) past 5 tiles, fires on the gun's cycle and reloads when dry. No dodging, no cover, no medkit: only the guns and the suits. dotnet /tmp/test.dll rtprobe [runs]
+  static void RtLoadoutProbe(int runs) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var sets = new (string name, (string rank, int dist)[] foes)[] {
+      ("1 Rookie at 12", new[] { ("Rookie", 12) }), ("3 Rookies at 14", new[] { ("Rookie", 14), ("Rookie", 15), ("Rookie", 16) }), ("2 Veterans at 14", new[] { ("Veteran", 14), ("Veteran", 15) }), ("1 Veteran + 3 Rookies", new[] { ("Veteran", 13), ("Rookie", 14), ("Rookie", 15), ("Rookie", 16) }) };
+    Console.WriteLine("loadout            weapon / suit                               " + string.Join("", sets.Select(q => $"{q.name,-26}")));
+    foreach (var loadout in new[] { "Scavenger", "Ex-Military", "Freelance Trader" }) {
+      var line = new List<string>(); string kit = ""; int shotsMine = 0, hitsMine = 0, shotsTheirs = 0, hitsTheirs = 0;
+      foreach (var set in sets) {
+        int win = 0, dead = 0, timeout = 0; float hpLeft = 0f, ttk = 0f; int fired = 0, hitsOn = 0;
+        for (int run = 0; run < runs; run++) {
+          GameBootstrap.StartNewGame(new CharacterSpec { Loadout = loadout }, null, save: false);
+          GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; var p = Player.Current; int px = p.X, py = p.Y; Rt.On = true; Rt.Reset(); Body.Reset();
+          for (int y = py - 8; y <= py + 8; y++) for (int x = px - 3; x <= px + 22; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+          p.HealPermanent(100000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); EncounterState.ResetFight(); UnityEngine.Time.time = 5000f + run * 100f; UnityEngine.Time.unscaledTime = UnityEngine.Time.time;
+          var foes = new List<HumanEnemy>(); int fi = 0;
+          foreach (var (rank, dist) in set.foes) { var (w1, a1) = EncounterGeneration.PickFactionLoadout("Raiders", rank, 1); var e = new HumanEnemy("Raider", px + dist, py + (fi++ % 2 == 0 ? -1 : 2), "Raiders", rank, w1, a1) { IsAggroed = true }; foes.Add(e); EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0f, 0f); }
+          EncounterState.InCombat = true; Contact.Spot(p); kit = $"{p.EquippedWeapon.Db.Name} {p.EquippedWeapon.RangeTiles}t / {p.EquippedArmor?.Name}";
+          const float dt = 1f / 60f; float cycle = 60f / Gunplay.For(p.EquippedWeapon).Rpm; float nextShot = 0.2f; float t = 0f; bool over = false; int burst = int.Parse(Environment.GetEnvironmentVariable("BURST") ?? "0"), inBurst = 0; float pause = float.Parse(Environment.GetEnvironmentVariable("PAUSE") ?? "0.4", System.Globalization.CultureInfo.InvariantCulture);       // BURST=3 PAUSE=0.4: fire discipline
+          for (int k = 0; k < 60 * 60 && !over; k++, t += dt) {
+            UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt;
+            var tgt = foes.Where(f => f.IsAlive() && !EnemyAI.IsOut(f)).OrderBy(f => CombatantUtil.Distance(p, f)).FirstOrDefault();
+            var input = new Rt.Input();
+            if (tgt != null) {
+              var (tx, ty) = Ballistics.Pos(tgt); input.Mouse = (tx, ty); float d = CombatantUtil.Distance(p, tgt);
+              input.Aim = d > 5f; var w = p.EquippedWeapon; var (ppx, ppy) = Ballistics.Pos(p); if (d > w.RangeTiles * 0.7f) { float mx = tx - ppx, my = ty - ppy, ml = (float)Math.Sqrt(mx * mx + my * my) + 0.001f; input.X = mx / ml; input.Y = my / ml; }       // closes to 70% of its range, then stands and shoots
+              if (!w.IsLoaded || w.IsJammed) input.Reload = true;
+              else if (d <= w.RangeTiles + 2 && t >= nextShot) { input.Fire = true; input.FireDown = true; nextShot = t + cycle; fired++; if (burst > 0 && ++inBurst >= burst) { inBurst = 0; nextShot = t + cycle + pause; } }
+            }
+            int hp0 = p.Hp; Rt.PlayerTick(p, input); Rt.WorldTick(p); UnityEngine.Time.time += dt; foreach (var ce in CombatFx.Pending) if (ce.Kind == "shot" && !ce.Pellet && !ce.Flying) { if (ce.Actor == p) { shotsMine++; if (ce.Hit) hitsMine++; } else if (ce.Actor != null) { shotsTheirs++; if (ce.Hit) hitsTheirs++; } } CombatFx.Pending.Clear();
+            if (!p.IsAlive()) { dead++; hpLeft += 0; over = true; }
+            else if (foes.All(f => !f.IsAlive() || EnemyAI.IsOut(f))) { win++; hpLeft += p.Hp; ttk += t; over = true; }
+          }
+          if (!over) timeout++;
+        }
+        line.Add($"win {win,2} dead {dead,2} to {timeout,2} hp {(win > 0 ? hpLeft / win : 0),4:0} t {(win > 0 ? ttk / win : 0),4:0.0}s".PadRight(26));
+      }
+      Console.WriteLine($"{loadout,-18} {kit,-44} " + string.Join("", line));
+      Console.WriteLine($"{"",-18} accuracy: you {100 * hitsMine / Math.Max(1, shotsMine)}% of {shotsMine} rounds, them {100 * hitsTheirs / Math.Max(1, shotsTheirs)}% of {shotsTheirs}");
+    }
+    Rt.On = false;
+  }
+
+  // Yan, 2026-10-23: "enemies ... a lot more accurate than the player ... characters past a few 'me's' bullets already fly high or
+  // low". Hit chances (any part, 600 shots each) at a standing target in the open, chest-high aim, through the real Gunplay.Shoot.
+  static void AccuracyProbe() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    for (int y = py - 3; y <= py + 3; y++) for (int x = px - 2; x <= px + 22; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    int[] dists = { 3, 5, 8, 12, 16 };
+    Console.WriteLine("shooter                          " + string.Join("", dists.Select(d => $"{d,6}t")) + "   (tiles; a body is 0.82 tiles tall)");
+    string Pct(Func<bool> shot) { int hit = 0; for (int i = 0; i < 600; i++) if (shot()) hit++; return $"{100 * hit / 600,6}%"; }
+    var dummy = new HumanEnemy("Target", px, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+    void Player(string label, string cat, string key, float steady, float bloom, int move = 0) {
+      p.EquipWeapon(cat, key); var w = p.EquippedWeapon; var hd = Gunplay.For(w);
+      var line = $"you  {label,-28}";
+      foreach (var d in dists) {
+        EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); dummy.X = px + d; dummy.Y = py;
+        p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(dummy, 0f, 0f);
+        var aim = new Gunplay.Aim { Steady = steady, Bloom = bloom };
+        float spread = Gunplay.Spread(hd, aim, move, false);
+        line += Pct(() => { dummy.Hp = 100000; w.CurrentMagazine = 5; return Landed(Gunplay.Shoot(p, w, 1f, 0f, 0.45f, spread, false)).Unit == dummy; });
+      }
+      Console.WriteLine(line);
+    }
+    void Npc(string label, string rank, string cat, string key) {
+      var line = $"them {label,-28}";
+      foreach (var d in dists) {
+        var e = new HumanEnemy("Raider", px + d, py, "Raiders", rank, WeaponDatabase.Categories[cat][key], null) { IsAggroed = true };
+        EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(e); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(e, 0f, 0f);
+        var w = e.EquippedWeapon;
+        line += Pct(() => { p.HealPermanent(100000); Body.Reset(); var (h, spread) = Gunplay.NpcAim(e, w, p); return Landed(Gunplay.Shoot(e, w, -1f, 0f, h, spread, false)).Unit == p; });
+      }
+      Console.WriteLine(line);
+    }
+    Player("pistol, hip (no RMB)", "sidearm", "PSh18Pchela", 0.25f, 0f);
+    Player("pistol, hip, 2nd quick shot", "sidearm", "PSh18Pchela", 0.25f, 2.2f);
+    Player("pistol, hip, walking", "sidearm", "PSh18Pchela", 0.25f, 0f, 1);
+    Player("pistol, aimed (RMB held)", "sidearm", "PSh18Pchela", 1f, 0f);
+    Player("VKS-74U, hip", "assault", "VKS74U", 0.25f, 0f);
+    Player("VKS-74U, aimed", "assault", "VKS74U", 1f, 0f);
+    Npc("Rookie, pistol", "Rookie", "sidearm", "PSh18Pchela");
+    Npc("Rookie, VKS-74U", "Rookie", "assault", "VKS74U");
+    Npc("Veteran, VKS-74U", "Veteran", "assault", "VKS74U");
+  }
+
+  // RT 7y: the networking test's game side through a fake link - the input packet survives the wire, a joining friend gets a body
+  // the host drives from their packets (a press is used once), the snapshot carries everyone, and a client puts players where it says
+  class FakeLink : INetLink {
+    public ulong Id; public int ToHost, ToClients; public byte[] Last;
+    public void Host(Action<string> onCode, Action<string> onError) => onCode("ABC123");
+    public void Join(string code, Action onJoined, Action<string> onError) => onJoined();
+    public void Stop() {}
+    public ulong LocalId => Id;
+    public void SendToHost(byte[] d) { ToHost++; Last = d; }
+    public void SendToClients(byte[] d) { ToClients++; Last = d; }
+  }
+  static void NetChecks() {
+    var link = new FakeLink(); Net.Link = link;
+    try {
+      var sent = new Rt.Input { X = 1f, Y = -0.5f, Sprint = true, FireDown = true, Mouse = (12.5f, 7.25f) };
+      var got = Net.DecodeInput(Net.EncodeInput(sent));
+      Check(got.X == 1f && got.Y == -0.5f && got.Sprint && got.FireDown && !got.Jump && got.Mouse.HasValue && got.Mouse.Value.x == 12.5f, "RT 7y: an input packet survives the wire");
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+      Net.Host();
+      Check(Net.Mode == Net.Role.Host && Net.Code == "ABC123", "RT 7y: hosting gives a join code");
+      var q = Net.OnJoin(7);
+      Check(q != null && Player.All.Count == 2 && q.EquippedWeapon != null && Math.Abs(q.X - p.X) + Math.Abs(q.Y - p.Y) <= 3, "RT 7y: a friend joins next to the host, armed");
+      Net.OnInput(7, Net.EncodeInput(new Rt.Input { X = 1f, FireDown = true }));
+      Net.OnInput(7, Net.EncodeInput(new Rt.Input { X = 1f }));
+      var first = Net.TakeInput(q); var second = Net.TakeInput(q);
+      Check(first.FireDown && !second.FireDown && second.X == 1f, "RT 7y: a press between two host frames is used once, held keys stay");
+      int qx = q.X; UnityEngine.Time.deltaTime = 0.02f;
+      for (int i = 0; i < 50; i++) { Rt.PlayerTick(q, Net.TakeInput(q)); UnityEngine.Time.time += 0.02f; }
+      Check(q.X > qx, $"RT 7y: the friend's packets walk their body on the host ({qx} -> {q.X})");
+      Net.Tick(1000f, default); Net.Tick(1000.01f, default);
+      Check(link.ToClients == 1, "RT 7y: snapshots go out at their own rate, not every frame");
+      var snap = Net.EncodeSnapshot(); var s = Net.DecodeSnapshot(snap);
+      Check(s.Players.Count == 2 && s.Players.Any(e => e.Owner == 7 && e.X == q.X) && s.Players.Any(e => e.Owner == 0 && e.X == p.X) && s.Map == TerrainMap.ZoneId,
+        "RT 7y: the snapshot carries every player and the map");
+      int hostX = p.X, friendX = q.X;
+      Net.Reset(); Net.Link = link; link.Id = 7;
+      GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient();
+      Net.OnSnapshot(snap);
+      Check(Player.Current.X == friendX && Player.All.Count == 2 && Player.All.Any(o => o != Player.Current && o.X == hostX) && SaveSystem.CharacterId == null,
+        "RT 7y: a client stands where the host says and sees the host; it never saves");
+      Net.Tick(2000f, new Rt.Input { X = -1f });
+      Check(link.ToHost == 1 && Net.DecodeInput(link.Last).X == -1f, "RT 7y: a client sends its input every frame");
+    } finally { Net.Reset(); Net.Link = null; Rt.On = false; }
+  }
+
+
+
+  // Levels 1-2: the platform form is spawned on entering the flooded level while its water is deep, drawn through the proxy spine, gone when the pump runs, its wounds carry down, and the last pump waits for the eel
+  static void EelPlatformFormChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); var keys = MacroState.Current.Keys; foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k);
+    MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled); foreach (var w in new[] { "05", "10", "15", "20" }) MacroState.Current.StoryFlags.Remove("f:eelwound" + w);
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp; const float dt = 1f / 30f;
+    try {
+      MacroState.Current.CurrentZoneId = LabLocks.Depths1; ZoneTravel.EnterZone(LabLocks.Depths1); var f = EelBoss.Current;
+      Check(f != null && f.Level == "platform" && f.Sump != null && EncounterState.Enemies.Contains(f.Unit) && !EncounterState.Enemies.Contains(f.Sump.Tail) && f.Platforms.Count == 1, $"Eel platform form: entering Level 1 puts the eel in its deep water ({f?.Level})");
+      for (int i = 0; i < 60; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+      var s = f.Sump; Check(f.Stage == "lurk" && !s.HeadOut && Enumerable.Range(0, 40).All(i => s.Z[i] <= 0.3f && s.Z[i] > 0f), "Eel platform form: lurking, the view's spine is a shadow in the water");
+      var plat = EelBoss.Marks(LabLocks.Depths1, '7')[0]; SumpPlace(p, plat.x + 0.5f, plat.y + 0.5f); f.Next = UnityEngine.Time.time; bool wrapped = false; int solid = 0; bool charged = false;
+      for (int i = 0; i < 900 && !(wrapped && f.Discharged); i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; if (f.Stage == "wrap") { wrapped = true; solid = Math.Max(solid, Enumerable.Range(0, EelSump.N).Count(j => s.Z[j] > 0.3f)); charged |= s.Charge > 0.5f; } }
+      Check(wrapped && solid >= 20 && charged, $"Eel platform form: round the platform the proxy spine has {solid} solid samples and the discharge shows as charge ({charged})");
+      var net = Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel; Check(net != null && net.Has && net.HasSpine && net.Stage == "wrap", "Eel platform form: the co-op snapshot carries it like the Sump's");
+      f.Unit.Hp -= 1300; EelBoss.OnDamaged(f.Unit); keys.Add("depths_drain1"); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt);
+      Check(f.Gone && !EncounterState.Enemies.Contains(f.Unit) && Story.Has("eelwound05"), $"Eel platform form: when the pump runs the eel is gone and its wounds are remembered ({f.Unit.Hp})");
+      EncounterState.Enemies.Clear(); MacroState.Current.CurrentZoneId = LabLocks.Depths1; ZoneTravel.EnterZone(LabLocks.Depths1); Check(EelBoss.Current == null, "Eel platform form: a drained level has no eel");
+      MacroState.Current.CurrentZoneId = LabLocks.Depths3; ZoneTravel.EnterZone(LabLocks.Depths3); var g = EelBoss.Current;
+      Check(g != null && g.Level == "sump" && g.Unit.Hp == (int)(EelBoss.MaxHp * 0.95f), $"Eel platform form: the Sump's eel starts with the wound from above ({g?.Unit.Hp})");
+      keys.Add("depths_drain2"); var pump = TerrainMap.InteractiveObjects.First(o => o.Name == "Main Sump Pump");
+      Check(Stashes.Blocked(pump), "Eel platform form: the last pump won't run with the eel in its pool");
+      Story.Set(EelBoss.Fled); Check(!Stashes.Blocked(pump), "Eel platform form: once the eel has fled the last pump runs");
+    } finally { foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k); MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled); MacroState.Current.StoryFlags.Remove("f:eelwound05"); EelBoss.Reset(); Rt.On = false; }
+  }
+
+
+  // Levels 1-2: the lamps' tell - a false alarm flickers and the lamps come back; a real strike flickers, goes dark (the silence) and bursts
+  static void EelLampChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); var keys = MacroState.Current.Keys; foreach (var k in new[] { "depths_drain1", "depths_drain2", "depths_drain3" }) keys.Remove(k);
+    foreach (var w in new[] { "05", "10", "15", "20" }) MacroState.Current.StoryFlags.Remove("f:eelwound" + w);
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp; const float dt = 1f / 30f;
+    try {
+      MacroState.Current.CurrentZoneId = LabLocks.Depths2; ZoneTravel.EnterZone(LabLocks.Depths2); var f = EelBoss.Current;
+      Check(f != null && f.Lures.Count == 2 && f.Platforms.Count == 3 && f.WantFeint, $"Eel lamps: Level 2's eel knows its 2 false-alarm spots ({f?.Lures.Count}) and its 3 strike platforms");
+      var lure = f.Lures.OrderBy(q => q.y).First(); SumpPlace(p, lure.x, lure.y + 1f); int wraps0 = f.Wraps; bool feint = false, flick = false, dark = false; float next0 = 0f; float tellX = 0f;
+      for (int i = 0; i < 3000 && !(feint && f.Stage == "lurk"); i++) {
+        UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; p.Hp = p.MaxHp;
+        if (f.Stage == "feint") { feint = true; if (EelLamps.Tell.HasValue) { if (EelLamps.Tell.Value.mode == 1) flick = true; if (EelLamps.Tell.Value.mode == 2) dark = true; tellX = EelLamps.Tell.Value.x; } if (i % 5 == 0 && Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel.TellMode == 0) flick = false; }
+      }
+      Check(feint && flick && !dark && f.Wraps == wraps0 && f.Stage == "lurk" && !EelLamps.Tell.HasValue && !f.WantFeint && Math.Abs(tellX - lure.x) < 0.1f, $"Eel lamps: a false alarm at a lure - the lamps flicker (never dark), nothing strikes, they steady ({feint}, flicker {flick}, dark {dark}, wraps {f.Wraps})");
+      var plat = f.Platforms.OrderBy(q => (q.x - 38.5f) * (q.x - 38.5f) + (q.y - 5.5f) * (q.y - 5.5f)).First(); SumpPlace(p, plat.x, plat.y); f.Next = UnityEngine.Time.time; var order = new List<string>(); int tellSnap = 0;
+      for (int i = 0; i < 3000 && f.Stage != "wrap"; i++) {
+        UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; p.Hp = p.MaxHp;
+        if (f.Stage == "wind" && EelLamps.Tell.HasValue) { string m = EelLamps.Tell.Value.mode == 1 ? "flicker" : "dark"; if (order.Count == 0 || order[order.Count - 1] != m) order.Add(m); if (i % 6 == 0 && Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel.TellMode > 0) tellSnap++; }
+      }
+      Check(f.Stage == "wrap" && string.Join(",", order) == "flicker,dark", $"Eel lamps: a real strike flickers, then the silence (lamps dark), then the burst ({string.Join(",", order)})");
+      Check(tellSnap > 0, "Eel lamps: the tell goes over the wire to the clients");
+      EelLamps.Tell = (10f, 10f, 10f, 2, 1f); Check(EelLamps.Factor(12f, 10f, 1f) == 0f && EelLamps.Factor(30f, 10f, 1f) == 1f, "Eel lamps: in the silence the lamps in range are dark and the ones far away are not");
+      EelLamps.Tell = (10f, 10f, 10f, 1, 1f); int dim = 0; for (int i = 0; i < 100; i++) if (EelLamps.Factor(12f, 10f, i * 0.07f) < 0.5f) dim++; Check(dim > 20 && dim < 95, $"Eel lamps: flickering is on and off, not steady ({dim} of 100 samples dim)");
+    } finally { EelLamps.Tell = null; EelBoss.Reset(); Rt.On = false; }
+  }
+
+
+  // Co-op: the rest of the world reaches a friend - enemies, shots and other effects, damage numbers, log lines, bullet time (NetWorld.cs)
+  static void NetWorldChecks() {
+    var link = new FakeLink(); Net.Link = link; var log = new ConsoleLog();
+    try {
+      GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); Net.Host(); var q = Net.OnJoin(7); GameLog.Target = log;
+      var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Veteran", 2);
+      var raider = new HumanEnemy("Raider", px + 6, py + 1, "Raiders", "Veteran", rw, ra) { IsAggroed = true }; var sleeper = new HumanEnemy("Guard", px + 9, py - 2, "Garrison", "Rookie", rw, ra);
+      var mk = MutantDatabase.Tiers["tier1"].Keys.First(); var mut = new Mutant(mk, px - 5, py + 3, MutantDatabase.Get("tier1", mk));
+      EncounterState.Enemies.Clear(); foreach (var e in new Mutant[] { raider, sleeper, mut }) { EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0.25f, -0.4f); }
+      raider.Hp = 37; UnityEngine.Time.time = 9000f; UnityEngine.Time.unscaledTime = 9000f; sleeper.Alert = 0.6f; raider.SpottedAt = 8999f; EncounterState.Caller = raider; EncounterState.CallAt = 8998f;
+      var shot = CombatFx.Push("shot", raider, p, p.EquippedWeapon); shot.Hit = true; shot.Now = true; shot.EndX = p.X + 0.5f; shot.EndY = p.Y + 0.4f;
+      var pxe = new FxEvent { Kind = "px", Px = "splash", FromX = px + 2, FromY = py + 2, Now = true }; CombatFx.Add(pxe);
+      GameLog.Write("The Raider shouts something about the road."); NetWorld.TapNumber(raider, "40 head", 1); Rt.SetSlow(true);
+      var snap = Net.EncodeSnapshot(); var d = Net.DecodeSnapshot(snap);
+      Check(snap.Length < NetWorld.Packet, $"Co-op world: a snapshot with three enemies, a shot, a strip, a number and a line fits one packet ({snap.Length} bytes)");
+      Check(d.World != null && d.World.Enemies.Count == 3 && d.World.Slow && d.World.Logs.Count >= 1 && d.World.Nums.Count == 1 && d.World.Fx.Count == 2, $"Co-op world: the snapshot carries the enemies ({d.World?.Enemies.Count}), the clock {d.World?.Slow}, lines {d.World?.Logs.Count}, numbers {d.World?.Nums.Count}, effects {d.World?.Fx.Count})");
+      Net.Reset(); Net.Link = link; link.Id = 7; Rt.SetSlow(false); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient(); EncounterState.Enemies.Clear(); CombatFx.Pending.Clear(); TestingGround.Numbers.Clear(); GameLog.Target = log; int lines0 = log.Lines;
+      Net.OnSnapshot(snap);
+      var mine = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => e.Faction == "Raiders"); var mm = EncounterState.Enemies.FirstOrDefault(e => !(e is HumanEnemy));
+      Check(EncounterState.Enemies.Count == 3 && mine != null && mine.Rank == "Veteran" && mine.X == px + 6 && mine.Y == py + 1 && mine.Hp == 37 && mine.IsAggroed && mine.EquippedWeapon?.Db == rw && mine.EquippedArmor == ra, "Co-op world: a client has a mirror of the raider - same rank, place, hit points, weapon and suit");
+      Check(mm != null && mm.Db == MutantDatabase.Get("tier1", mk) && mm.X == px - 5 && Math.Abs(Rt.Offset(mm).Item1 - 0.25f) < 0.01f, "Co-op world: and of the mutant (same kind, place and offset)");
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().Any(e => e.Faction == "Garrison" && !e.IsAggroed && Math.Abs(e.Alert - 0.6f) < 0.02f) && UnityEngine.Time.time - mine.SpottedAt < 2.5f && EncounterState.Caller == mine && EncounterState.CallAt >= 0f, "Co-op world: a sleeper stays asleep with its \"!\" filling (60%), the raider that just spotted you shows red and the one calling for backup shows its radio icon");
+      var gotShot = CombatFx.Pending.FirstOrDefault(e => e.Kind == "shot");
+      Check(gotShot != null && gotShot.Hit && gotShot.Actor == mine && gotShot.Target != null && Math.Abs(gotShot.EndX - (px + 0.5f)) < 0.01f && CombatFx.Pending.Any(e => e.Kind == "px" && e.Px == "splash"), "Co-op world: the raider's shot (tracer, who, whom, where it came down) and the splash strip play on the client");
+      Check(TestingGround.Numbers.Count == 1 && TestingGround.Numbers[0].Who == mine && TestingGround.Numbers[0].Text == "40 head" && log.Lines > lines0 && Rt.SlowMo, "Co-op world: the damage number rises off the mirrored raider, the host's log line arrives and bullet time is on");
+      int fx0 = CombatFx.Pending.Count, nm0 = TestingGround.Numbers.Count; Net.OnSnapshot(snap);
+      Check(CombatFx.Pending.Count == fx0 && TestingGround.Numbers.Count == nm0, "Co-op world: a resent snapshot does not play anything twice");
+      NetWorldCrowd(link, rw, ra, mk);
+    } finally { GameLog.Target = null; Net.Reset(); Net.Link = null; Rt.On = false; Rt.SetSlow(false); }
+  }
+
+
+  static void NetWorldCrowd(FakeLink link, WeaponDef rw, ArmorDef ra, string mk) {
+    Net.Reset(); Net.Link = link; Net.Host(); Net.OnJoin(7); EncounterState.Enemies.Clear(); Rt.SetSlow(false); var p = Player.Current; int px = p.X, py = p.Y;
+    var raider = new HumanEnemy("Raider", px + 6, py, "Raiders", "Veteran", rw, ra) { IsAggroed = true }; EncounterState.Enemies.Add(raider);
+    for (int i = 0; i < 90; i++) EncounterState.Enemies.Add(new Mutant(mk, px + (i % 15) - 7, py + (i / 15) - 3, MutantDatabase.Get("tier1", mk)));
+    for (int i = 0; i < 30; i++) { var se = CombatFx.Push("shot", raider, p, null); se.Hit = true; se.Now = true; GameLog.Write("A very long line of log text that goes on and on to fill the packet as much as a real fight would: number " + i); NetWorld.TapNumber(raider, "123456789012345678901234", 0); }
+    var big = Net.EncodeSnapshot(); var bd = Net.DecodeSnapshot(big);
+    Check(big.Length <= NetWorld.Packet && bd.World.Enemies.Count >= 15 && bd.World.Enemies.Count < 91, $"Co-op world: a crowded fight (91 enemies, 30 shots, long lines) still fits one packet ({big.Length} bytes, {bd.World.Enemies.Count} enemies sent, nearest first)");
+  }
+
+
+  // Yan, 2026-11-08: dying alone wakes you at the camp, like the squad wipe; only the Testing Ground keeps the death screen
+  static bool _sessionShake;
+  static void SoloDeathChecks() {
+    bool session0 = TestingGround.Session;
+    try {
+      GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true; Rt.Reset(); TestingGround.Session = false;
+      var p = Player.Current; int px = p.X, py = p.Y; var m = MacroState.Current; m.CampZone = m.CurrentZoneId; m.CampX = px; m.CampY = py - 2; EncounterState.Enemies.Clear();
+      p.Exp = 60; for (int k = 0; k < 4; k++) p.AddItem(new InventoryItem { Id = "junk" + k, Name = "Junk", Qty = 1, Type = "junk" }); int pack0 = p.Inventory.Items.Count;
+      p.X = px; p.Y = py + 5; Rt.SetOffset(p, 0f, 0f); Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
+      Check(p.IsAlive() && p.Hp > 0 && GameState.Current.CurrentTurn == Turn.Player && Math.Abs(p.Y - (py - 2)) <= 3 && p.Exp == 0 && p.Inventory.Items.Count < pack0, $"solo death: you wake at the camp with the wipe's penalties, not at a death screen (hp {p.Hp}, turn {GameState.Current.CurrentTurn}, XP {p.Exp}, pack {pack0} -> {p.Inventory.Items.Count})");
+      TestingGround.Session = true; Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
+      Check(GameState.Current.CurrentTurn == Turn.CombatOver, "solo death in the Testing Ground still ends at the death screen");
+    } finally { TestingGround.Session = session0; Rt.On = false; GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
+
+  // Yan, 2026-11-08: a fire-mode key (X) for the modern assault rifles and SMGs: auto / 3-round burst / semi; the old designs keep their one mode
+  static void FireModeChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f; UnityEngine.Time.unscaledTime = 7000f; var log = new ConsoleLog(); GameLog.Target = log;
+    try {
+      for (int y = py - 4; y <= py + 4; y++) for (int x = px - 2; x <= px + 14; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      p.HealPermanent(100000); const float dt = 1f / 60f; var dummy = new HumanEnemy("Target", px + 10, py, "Raiders", "Rookie", null, null) { IsAggroed = false }; dummy.Hp = dummy.MaxHp = 1000000;
+      int Shots(string cat, string key, int mode, Func<int, float, Rt.Input> inputAt, float seconds, bool pressMode = false) {
+        EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); Rt.Reset(); Rt.On = true; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+        p.EquipWeapon(cat, key); TestingGround.RefillAmmo(p); var w = p.EquippedWeapon; var st = Rt.Of(p); st.FireMode = mode; int m0 = w.CurrentMagazine;
+        for (int k = 0; k * dt < seconds; k++) { var inp = inputAt(k, k * dt); inp.Mouse = (px + 10.5f, py + 0.5f); UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; Rt.PlayerTick(p, inp); UnityEngine.Time.time += dt; dummy.Hp = dummy.MaxHp; CombatFx.Pending.Clear(); }
+        return m0 - w.CurrentMagazine; }
+      string vk = WeaponDatabase.Categories["assault"].First(kv => kv.Value.Name == "VK-103").Key, old = WeaponDatabase.Categories["assault"].First(kv => kv.Value.Name == "VKS-74U").Key;
+      int auto = Shots("assault", vk, 0, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1f);
+      int semiHeld = Shots("assault", vk, 2, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1f);
+      int semiTaps = Shots("assault", vk, 2, (k, t) => new Rt.Input { Fire = true, FireDown = k % 18 == 0 }, 1f);
+      int burstOne = Shots("assault", vk, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1.5f);
+      int burstMashed = Shots("assault", vk, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k < 8 }, 0.5f);
+      int burstTwo = Shots("assault", vk, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 || k == 60 }, 1.5f);
+      int oldGun = Shots("assault", old, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1f);        // an old design ignores the mode it was left on
+      Check(auto >= 8 && semiHeld == 1 && semiTaps >= 3 && semiTaps <= 4 && burstOne == Gunplay.BurstRounds && burstMashed == Gunplay.BurstRounds && burstTwo == 2 * Gunplay.BurstRounds && oldGun >= 8,
+        $"fire modes: auto sprays ({auto}), semi fires once a pull ({semiHeld} held, {semiTaps} taps), a burst is {Gunplay.BurstRounds} rounds however you mash ({burstOne}, {burstMashed}) and two pulls make two ({burstTwo}), an old gun ignores it ({oldGun})");
+      p.EquipWeapon("assault", vk); var s2 = Rt.Of(p); s2.FireMode = 0; int lines0 = log.Lines;
+      for (int k = 0; k < 3; k++) { Rt.PlayerTick(p, new Rt.Input { Mode = true, Mouse = (px + 10.5f, py + 0.5f) }); }
+      Check(s2.FireMode == 0 && log.Lines >= lines0 + 3, $"fire modes: X cycles auto, burst, semi, auto ({s2.FireMode})");
+      p.EquipWeapon("assault", old); Rt.Of(p).FireMode = 0; Rt.PlayerTick(p, new Rt.Input { Mode = true, Mouse = (px + 10.5f, py + 0.5f) }); string oldLabel = Gunplay.ModeLabel(p.EquippedWeapon, 1);
+      p.EquipWeapon("assault", vk); string bl = Gunplay.ModeLabel(p.EquippedWeapon, 1), sl = Gunplay.ModeLabel(p.EquippedWeapon, 2);
+      Check(Rt.Of(p).FireMode == 0 && oldLabel == "AUTO" && bl == "BURST" && sl == "SEMI", $"fire modes: an old gun says it only has one and stays AUTO ({oldLabel}); the modern gun's label follows ({bl}, {sl})");
+      Check(Net.DecodeInput(Net.EncodeInput(new Rt.Input { Mode = true, X = 1f })).Mode && !Net.DecodeInput(Net.EncodeInput(new Rt.Input { X = 1f })).Mode, "fire modes: the key goes over the wire for a joined friend");
+    } finally { GameLog.Target = null; Rt.On = false; }
+  }
+
+
+  // Co-op: the brain boss reaches a friend - its vat's state and every effect the view draws (NetWorld.WriteBrain / ApplyBrain)
+  static void NetBrainChecks() {
+    var link = new FakeLink(); Net.Link = link;
+    try {
+      GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+      var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); Story.Reset(); Net.Host(); Net.OnJoin(7); UnityEngine.Time.time = 8000f; UnityEngine.Time.unscaledTime = 8000f;
+      MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped); MacroState.Current.CurrentZoneId = BrainBoss.Lab; ZoneTravel.EnterZone(BrainBoss.Lab); var f = BrainBoss.Current;
+      Check(f != null && f.Unit != null, "Co-op brain: the host's lab has the vat");
+      f.Started = true; f.Phase = 2; f.Unit.Hp = BrainBoss.MaxHp / 2 - 5; f.Moves.Add(new BrainBoss.Move { Kind = "ring", WindUntil = UnityEngine.Time.time + 0.8f });
+      BrainBoss.Orbs.Add(new BrainBoss.Orb { X = 30.5f, Y = 12f, Dx = 0.6f, Dy = -0.8f, Kind = "void", Age = 0.3f }); BrainBoss.Orbs.Add(new BrainBoss.Orb { X = 31.5f, Y = 12f, Dx = 1f, Dy = 0f, Kind = "bolt", Age = 0.1f });
+      BrainBoss.Beams.Add(new BrainBoss.Beam { Angle = 135f, Length = 9f, Until = UnityEngine.Time.time + 1f }); BrainBoss.Pulse = new BrainBoss.Wave { R = 6f };
+      BrainBoss.Throws.Add(new BrainBoss.Thrown { Look = "crate", X = 33f, Y = 14f, Flying = true, Born = UnityEngine.Time.time - 0.4f });
+      var snap = Net.EncodeSnapshot(); var d = Net.DecodeSnapshot(snap);
+      Check(snap.Length <= NetWorld.Packet && d.World.Brain != null && d.World.Brain.Has && d.World.Brain.Phase == 2 && d.World.Brain.Orbs.Count == 2 && d.World.Brain.Beams.Count == 1 && d.World.Brain.Throws.Count == 1, $"Co-op brain: a snapshot carries the vat, its orbs, beam, pulse and thrown cover in one packet ({snap.Length} bytes)");
+      Net.Reset(); Net.Link = link; link.Id = 7; BrainBoss.Reset(); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient(); Net.OnSnapshot(snap); var cf = BrainBoss.Current;
+      Check(cf != null && EncounterState.Enemies.Contains(cf.Unit) && cf.Started && cf.Phase == 2 && cf.Unit.Hp == BrainBoss.MaxHp / 2 - 5 && BrainBoss.Winding(cf) && BrainBoss.ArtRow == 4 + 2, $"Co-op brain: a client's vat is in the fight, at phase 2, winding up with its eyes shut (row {BrainBoss.ArtRow})");
+      Check(BrainBoss.Orbs.Count == 2 && BrainBoss.Orbs.Any(o => o.Kind == "void" && Math.Abs(o.X - 30.5f) < 0.01f && Math.Abs(o.Dx - 0.6f) < 0.02f) && BrainBoss.Orbs.Any(o => o.Kind == "bolt") && BrainBoss.Beams.Count == 1 && Math.Abs(BrainBoss.Beams[0].Angle - 135f) < 0.01f
+        && BrainBoss.Pulse != null && Math.Abs(BrainBoss.Pulse.R - 6f) < 0.01f && BrainBoss.Throws.Count == 1 && BrainBoss.Throws[0].Look == "crate" && BrainBoss.Throws[0].Flying, "Co-op brain: the client draws the same orbs, the beam, the wave and the flying cover");
+    } finally { Net.Reset(); Net.Link = null; Rt.On = false; BrainBoss.Reset(); }
+  }
+
+  // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it
+  static void NetEelChecks() {
+    var link = new FakeLink(); Net.Link = link;
+    try {
+      GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+      var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); MacroState.Current.StoryFlags.Remove("f:" + EelBoss.Fled);
+      UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f; p.HealPermanent(100000); p.Hp = p.MaxHp;
+      Net.Host(); var q = Net.OnJoin(7); TestingGround.EelFight(p); var f = EelBoss.Current; const float dt = 1f / 30f;
+      SumpPlace(p, 30.5f, 11f); SumpPlace(q, f.BodyX + 0.5f, f.BodyY + 1.5f);
+      var hidden = Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel;
+      Check(hidden != null && hidden.Has && hidden.Stage == "hidden" && !hidden.HasSpine, "Co-op eel: a hidden eel goes over the wire without a spine");
+      Check(EelBoss.CanExamine(q, out _, out _) && EelBoss.TryExamine(q) && f.Stage == "intro", "Co-op eel: a joined friend next to the body can start the introduction");
+      byte[] mid = null, end = null; float hx10 = 0f; int evSeen = 0;
+      for (int i = 0; i < 1500 && f.Stage == "intro"; i++) {
+        UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt;
+        if (mid == null && f.Swallowed && f.Sump.Z[0] > 1f) { mid = Net.EncodeSnapshot(); hx10 = f.Sump.X[10]; }
+      }
+      end = Net.EncodeSnapshot();
+      // the fight: a flood running, hurt, a jaw-hold on the friend, the friend in the air
+      f.Next = UnityEngine.Time.time; f.Sump.Queue.Add("flood"); SumpPlace(p, 22.5f, 12f); SumpPlace(q, 42.5f, 12f);
+      for (int i = 0; i < 900 && f.Sump.FloodR < 8f; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
+      int hostFlip = f.Sump.Flip.Count; float hostR = f.Sump.FloodR; f.Unit.Hp = 12345; f.Sump.Tail.Hp = 777; f.Phase = 2; f.Enraged = true; f.Label = "BITE: test label";
+      f.Sump.Bite = "grapple"; f.Sump.Victim = q; f.Sump.Grip = 0.4f; f.Sump.BiteSpot = (41.5f, 20f); f.Sump.VictimPos = (42f, 20f); f.Sump.Air[q] = new EelSump.Fling { Z = 3f, Rot = 90f };
+      var fight = Net.EncodeSnapshot(); Check(fight.Length < 1300, $"Co-op eel: a snapshot in the fight, with the flood, a jaw-hold and a thrown friend, fits one packet ({fight.Length} bytes)");
+      Check(mid != null && mid.Length < 1300, $"Co-op eel: a snapshot in the middle of the cutscene fits one packet ({mid?.Length} bytes)");
+      var m = Net.DecodeSnapshot(mid).Eel;
+      Check(m.Has && m.Stage == "intro" && m.Swallowed && m.Letterbox && m.Freeze && m.HasCam && m.HasSpine && m.Spine.Length == EelSump.N / 2 * 3, "Co-op eel: the snapshot carries the stage, the freeze, the camera and the spine");
+      Net.Reset(); Net.Link = link; link.Id = 7; Story.Reset(); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient();
+      Net.OnSnapshot(mid); var cf = EelBoss.Current;
+      Check(cf != null && cf.Sump != null && cf.Stage == "intro" && cf.Swallowed && !EncounterState.Enemies.Contains(cf.Body) && EncounterState.Enemies.Contains(cf.Unit), "Co-op eel: a client's eel is where the host's is in the cutscene, the body swallowed, the eel back in the fight's roster");
+      Check(Math.Abs(cf.Sump.X[10] - hx10) < 0.02f && cf.Sump.HeadOut == (cf.Sump.Z[0] > 0.3f), $"Co-op eel: the client's spine matches the host's (sample 10 {cf.Sump.X[10]:0.00} vs {hx10:0.00})");
+      Check(Story.InCutscene && Story.Letterbox && Story.CamLock.HasValue, "Co-op eel: a client stands still, with the bars and the host's camera");
+      int nev = cf.Sump.Out.Count; Net.OnSnapshot(mid); Check(cf.Sump.Out.Count == nev, "Co-op eel: the same events resent in the next snapshot are not played twice");
+      Net.OnSnapshot(end);
+      Check(cf.Stage == "idle" && !Story.CamLock.HasValue && !Story.Letterbox && !Story.InCutscene, $"Co-op eel: when the host's cutscene ends the client's camera and freeze end ({cf.Stage})");
+      Net.OnSnapshot(fight); var sf = cf.Sump;
+      Check(sf.Flip.Count == hostFlip && hostFlip > 100 && Math.Abs(sf.FloodR - hostR) < 0.01f, $"Co-op eel: the client rebuilds the host's flood ({sf.Flip.Count} of {hostFlip} tiles)");
+      Check(cf.Unit.Hp == 12345 && sf.Tail.Hp == 777 && cf.Phase == 2 && cf.Enraged && cf.Label == "BITE: test label", "Co-op eel: HP, tail HP, phase and label reach the client (the bars and the state line)");
+      Check(EelSump.Gripping(Player.Current) && EelSump.GrappleSpot(out var gx, out _) && Math.Abs(gx - 41.5f) < 0.01f && Math.Abs(EelSump.GripOf(cf) - 0.4f) < 0.01f && EelSump.GrabFace(cf) == 1, "Co-op eel: the client knows who is held in the jaws, where, and how far the mash has got");
+      Check(Math.Abs(EelSump.LiftOf(Player.Current) - 3f) < 0.01f, "Co-op eel: a thrown friend is drawn in the air on the client");
+    } finally { Net.Reset(); Net.Link = null; Rt.On = false; Story.Reset(); }
+  }
+
+  // RT 7x: save slots - a character file + a world file per New Game (saved at creation), load by slot, delete, the old single
+  // save moved into a slot, the Testing Ground never saved
+  static void SaveSlotChecks() {
+    var dir = Path.Combine(Path.GetTempPath(), "av_saves_" + Guid.NewGuid().ToString("N"));
+    SaveSystem.Root = Path.Combine(dir, "saves");
+    try {
+      GameBootstrap.StartNewGame(new CharacterSpec { Name = "  Vasya  " });
+      var vasya = SaveSystem.CharacterId;
+      Check(vasya != null && SaveSystem.Slots().Count == 1 && SaveSystem.Slots()[0].Name == "Vasya", "RT 7x: New Game saves a named slot at once");
+      Player.Current.Ru = 4321; Check(SaveSystem.Save(), "RT 7x: saving the slot in play");
+      GameBootstrap.StartNewGame(new CharacterSpec { Name = "" });
+      var kolya = SaveSystem.CharacterId;
+      Check(SaveSystem.Slots().Count == 2 && Player.Current.CharacterName == "Scavenger" && kolya != vasya, "RT 7x: a second character gets its own slot (no name -> Scavenger)");
+      Check(SaveSystem.Load(vasya) && Player.Current.Ru == 4321 && Player.Current.CharacterName == "Vasya" && SaveSystem.CharacterId == vasya, "RT 7x: loading a slot brings that character back");
+      var kolyaWorld = SaveSystem.Slots().First(x => x.CharacterId == kolya).WorldId;
+      Check(SaveSystem.Delete(kolya) && SaveSystem.Slots().Count == 1 && !File.Exists(Path.Combine(SaveSystem.Root, "worlds", kolyaWorld + ".json")), "RT 7x: deleting a character takes its world along");
+      GameBootstrap.StartNewGame(new CharacterSpec(), TestingGround.Zone);
+      Check(!SaveSystem.Save() && SaveSystem.Slots().Count == 1, "RT 7x: the Testing Ground isn't saved");
+      var old = new SaveData { SavedAtUtc = "2020-01-01T00:00:00Z", Player = new PlayerSaveData { Rank = "Experienced", Ru = 77 }, Macro = new MacroSaveData { CurrentZoneId = "perimeter", Day = 3 } };
+      File.WriteAllText(Path.Combine(dir, "savegame.json"), UnityEngine.JsonUtility.ToJson(old, true));
+      var all = SaveSystem.Slots();
+      Check(all.Count == 2 && all.Any(x => x.Rank == "Experienced" && x.Day == 3) && File.Exists(Path.Combine(dir, "savegame.json.migrated")), "RT 7x: the old single save becomes a slot");
+    } finally { SaveSystem.Root = null; SaveSystem.CharacterId = SaveSystem.WorldId = null; try { Directory.Delete(dir, true); } catch { } }
+  }
+
+  static void TestingGroundChecks() {
+    // the Testing Ground: from the menu you land on the range alone, gear and enemies on demand
+    { TestingGround.Start(); var tp = Player.Current;
+      int Live() => EncounterState.Enemies.Count(e => !TestingGround.IsDummy(e));
+      Check(TerrainMap.ZoneId == TestingGround.Zone && Live() == 0 && TestingGround.Dummies.Count == 3 && EncounterState.Anomalies.Count == 0
+        && new[] { TestingGround.Armory, TestingGround.Spawner, TestingGround.Pad }.All(n => TerrainMap.Landmarks.Any(l => l.Name == n)),
+        $"testing ground: you arrive alone ({Live()} enemies, {TestingGround.Dummies.Count} dummies, {EncounterState.Anomalies.Count} anomalies) with the crate, terminal and pad");
+      { int sx = tp.X, sy = tp.Y; tp.X += 3; tp.Hp = 0; GameState.Current.CurrentTurn = Turn.CombatOver;
+        TestingGround.Respawn(tp);
+        Check(TestingGround.Session && tp.IsAlive() && tp.X == sx && tp.Y == sy && GameState.Current.CurrentTurn == Turn.Player && TestingGround.Dummies.Count == 3,
+          "testing ground: Respawn puts you back on your feet at the start, the dummies kept"); }
+      var pad = TerrainMap.Landmarks.First(l => l.Name == TestingGround.Pad);
+      Check(Pathfinding.FindPath(tp.X, tp.Y, pad.X, pad.Y, tp) != null, "testing ground: the pad can be walked to");
+      var gun = ShopDatabase.Items.First(d => d.Type == "weapon" && d.Key == "VKS74U");
+      TestingGround.Take(tp, gun, true); TestingGround.RefillAmmo(tp);
+      Check(tp.EquippedWeapon?.Db?.Name == gun.Name && Ammo.Get(tp.Inventory, Ammo.Key(tp.EquippedWeapon.Db, "ArmorPiercing")) == 300, $"testing ground: the crate hands over a gun ({tp.EquippedWeapon?.Name}) and ammo");
+      var men = TestingGround.SpawnHumans(tp, "Garrison", "Veteran", 3, false, true);
+      var dogs = TestingGround.SpawnMutants(tp, TestingGround.AllMutants().First(), 2, true, false);
+      Check(men.Count == 3 && men.All(m => System.Math.Abs(m.X - pad.X) <= 4 && m.IsAggroed && !EnemyAI.FriendlyToPlayer(m)) && dogs.All(d => !d.IsAggroed && System.Math.Abs(d.X - tp.X) <= 11)
+        && Live() == 5 && EncounterState.InCombat, "testing ground: 3 hostile Veterans on the pad, 2 unaware mutants near you");
+      TestingGround.Clear();
+      Check(Live() == 0 && TestingGround.Dummies.Count == 3, "testing ground: cleared (the dummies stay)");
+      // the target dummy: hits show numbers (head ones marked), it never wakes up, heals 3 s after the last hit, stands up again
+      EncounterState.InCombat = false; TestingGround.Now = 100f;
+      var dm = TestingGround.Dummies[0].H; int full = dm.Hp; var blade = W("melee", "HuntingKnife");
+      Melee.Strike(tp, blade, dm, "Head", 1f); TestingGround.Tick();
+      var num = TestingGround.Numbers.LastOrDefault();
+      Check(dm.Hp < full && num != null && num.Who == dm && num.Kind == 1 && num.Text.StartsWith((full - dm.Hp) + " head") && !dm.IsAggroed && !EncounterState.InCombat,
+        $"dummy: a head hit shows \"{num?.Text}\" over it ({full} -> {dm.Hp}), and it stays still");
+      TestingGround.Now = 103.5f; TestingGround.Tick();
+      Check(dm.Hp == full && TestingGround.Dummies[0].Hits == 0 && TestingGround.Numbers.Count == 0, $"dummy: whole again 3 s later ({dm.Hp}), the numbers gone");
+      dm.Hp = 1; TestingGround.Tick(); var plain = TestingGround.Numbers.LastOrDefault();
+      Check(plain != null && plain.Text == (full - 1).ToString(), $"dummy: damage from anything else still shows (\"{plain?.Text}\")");
+      Melee.Strike(tp, blade, dm, "Torso", 1f); TestingGround.Tick();
+      Check(!dm.IsAlive() && TestingGround.Numbers.Last().Kind == 2, "dummy: the killing hit is marked");
+      TestingGround.Now = 107f; TestingGround.Tick();
+      var again = TestingGround.Dummies.FirstOrDefault(d => d.X == 13 && d.Y == 19);
+      Check(again != null && again.H != dm && again.H.IsAlive() && again.H.Hp == full && TestingGround.Numbers.Count == 0 && TestingGround.Dummies.Count == 3,
+        "dummy: a dropped dummy stands up again in its place, and that isn't a hit");
+      TestingGround.Now = -1f;
+      Check(TestingGround.AllMutants().Count() > 5 && ShopDatabase.Items.Count(d => d.Type == "weapon") > 20, "testing ground: every mutant and weapon is on offer");
+    }
+  }
+
+  static void RtChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    // Yan's first real-time playtest: sprinting made enemies zoom - each tile you crossed also ticked the world
+    { float h0 = MacroState.Current.Hour; EncounterState.InCombat = true;
+      for (int i = 0; i < 6; i++) { p.Mp = 99; PlayerController.StepFree(p, i < 3 ? 1 : -1, 0); }
+      Check(MacroState.Current.Hour == h0 && p.X == px, $"real time: walking doesn't tick the world (hour {h0} -> {MacroState.Current.Hour})");
+      EncounterState.InCombat = false; }
+    // "i can walk right through cover like the sandbags": low cover stops you; Space at it vaults you over
+    { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      TerrainMap.SetTileType(px + 1, py, TileType.HardCover);
+      for (int i = 0; i < 40; i++) Rt.MoveBy(p, 0.05f, 0f);
+      bool stopped = p.X == px;
+      bool hop = Rt.TryVault(p, 1f, 0f, null); float lift = 0f;
+      for (int i = 0; i < 30 && Rt.Of(p).Vaulting; i++) { UnityEngine.Time.time += 0.02f; lift = Math.Max(lift, Rt.Of(p).VaultLift); Rt.TickVault(p, 0.02f); }
+      Check(stopped && hop && p.X == px + 2 && !Rt.Of(p).Vaulting && lift > 0.2f, $"real time: sandbags stop you ({stopped}), Space vaults you over them (to x+{p.X - px}, up {lift:0.00})");
+      TerrainMap.SetTileType(px + 1, py, TileType.Empty); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); }
+    // co-op groundwork (Yan: "start steps 1-3 now"): two players in one fight - own state, own input packets, enemies pick the
+    // nearest, rounds hit whoever they hit
+    { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(5000);
+      var q = Player.Join(); q.EquipWeapon("sidearm", "PSh18Pchela"); q.X = px; q.Y = py + 4; Rt.SetOffset(q, 0f, 0f); q.HealPermanent(5000);
+      UnityEngine.Time.deltaTime = 0.02f; UnityEngine.Time.time = 5000f;
+      float pSt = Rt.Of(p).Stamina;
+      for (int i = 0; i < 25; i++) { Rt.PlayerTick(q, new Rt.Input { X = 1f, Sprint = true }); Rt.PlayerTick(p, default); UnityEngine.Time.time += 0.02f; }
+      Check(Player.All.Count == 2 && Player.Current == p && q.X > px && p.X == px && Rt.Of(q).Stamina < Rt.Of(p).Stamina && Rt.Of(p).Stamina == pSt,
+        $"co-op: a joined player moves and sprints on its own packets (x+{q.X - px}, stamina {Rt.Of(q).Stamina:0} vs yours {Rt.Of(p).Stamina:0})");
+      var raider = new HumanEnemy("Raider", q.X + 5, q.Y, "Raiders", "Experienced", null, null) { IsAggroed = true };
+      raider.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]); EncounterState.Enemies.Add(raider);
+      Check(Rt.TargetOf(raider, p) == q && Gunplay.Bodies().Contains(q), "co-op: an enemy fights the player nearest it, and rounds can hit either player");
+      Rt.SetOffset(raider, 0f, 0f); Rt.SetOffset(q, 0f, 0f);   // tile centres: the check is who it shoots, not how a random stand spot lines up
+      EncounterState.InCombat = true; Contact.Spot(q); int qh = q.Hp, ph = p.Hp;
+      for (int f = 0; f < 1500 && q.Hp == qh; f++) { Rt.WorldTick(p); UnityEngine.Time.time += 0.02f; }
+      Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
+      Rt.Of(q).Stamina = 50f; float pst = Rt.Of(p).Stamina; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
+      Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Stamina < 50f && Rt.Of(p).Stamina == pst, "co-op: a dive spends that player's stamina and only they dive");
+      for (int f = 0; f < 60 && Rt.Of(q).Diving; f++) { Rt.PlayerTick(q, default); UnityEngine.Time.time += 0.02f; }
+      Rt.Of(q).Focus = 50f; Rt.PlayerTick(q, new Rt.Input { BulletTime = true });
+      Check(Rt.SlowMo && Rt.Of(q).Slow && !Rt.Of(p).Slow, "co-op: a friend's bullet time slows the fight when the players are together");
+      Rt.PlayerTick(q, new Rt.Input { BulletTime = true });
+      q.X = px + 45; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).ProneUntil = -1f; Rt.PlayerTick(q, new Rt.Input { BulletTime = true });
+      Check(Rt.Of(q).Slow && !Rt.SlowMo, $"co-op: a friend 45 tiles off uses bullet time without slowing your fight");
+      { float u0 = UnityEngine.Time.unscaledDeltaTime; UnityEngine.Time.unscaledDeltaTime = 0.1f; int nd = 0;
+        for (; nd < 100 && Rt.Of(q).Slow; nd++) Rt.PlayerTick(q, default);
+        UnityEngine.Time.unscaledDeltaTime = u0;
+        Check(!Rt.Of(q).Slow && Rt.Of(q).Focus == 0f && nd >= 18 && nd <= 22, $"RT 9: bullet time drains {Rt.SlowDrain} Focus a real second and stops when dry ({nd} x 0.1 s from 50)"); }
+      // Yan: "downed players can be revived by holding E over them for a few seconds, 'game over' only if everyone dies"
+      q.X = px + 1; q.Y = py; Rt.SetOffset(q, 0f, 0f); Rt.Of(q).ProneUntil = -1f; Body.GoDown(q);
+      Rt.On = false; int ph0 = p.Hp; p.Hp = 0; bool over = TurnLoop.AllDead; Rt.On = true; p.HealPermanent(5000);   // (in real time 0 HP is "down", not dead)
+      for (int f = 0; f < 140; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
+      bool up1 = Body.Down(q);
+      for (int f = 0; f < 30; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
+      Check(!over && up1 && !Body.Down(q) && q.IsAlive(), "co-op: you dead with a friend alive isn't game over; holding E 3 s over a downed friend gets them up");
+      // Yan's three death states: dead (penalty once, revivable only out of combat), and the wipe (back at the camp, armor worn, half the pack gone)
+      q.Exp = 120; q.EquipArmor("tier1", "LeatherJacket"); string qa = q.EquippedArmorCondition, qw = q.EquippedWeapon.Condition;
+      Rt.On = false; q.Hp = 0; Rt.On = true; EncounterState.InCombat = true; Death.Tick(); Death.Tick();
+      bool penalised = q.Exp == 120 - Death.DeadXp && (q.EquippedArmorCondition != qa || q.EquippedWeapon.Condition != qw);
+      bool noReviveInFight = Rt.DownedNear(p) == null;
+      EncounterState.InCombat = false;
+      for (int f = 0; f < 170; f++) { Rt.PlayerTick(p, new Rt.Input { Use = true }); UnityEngine.Time.time += 0.02f; }
+      Check(penalised && noReviveInFight && q.IsAlive() && q.Hp < q.MaxHp, $"co-op: a dead friend loses XP and wear once, can't be revived mid-fight, can after (HP {q.Hp})");
+      for (int k = 0; k < 6; k++) q.AddItem(new InventoryItem { Id = "junk" + k, Name = "Junk", Qty = 1, Type = "junk" });
+      int packBefore = q.Inventory.Items.Count; MacroState.Current.CampZone = MacroState.Current.CurrentZoneId; MacroState.Current.CampX = px; MacroState.Current.CampY = py - 3;
+      string armorBefore = q.EquippedArmorCondition; string qRank = q.Rank; q.Exp = 30; int qx = q.X, qy = q.Y; int ground0 = TerrainMap.GroundItems.Count;
+      Rt.On = false; p.Hp = 0; q.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
+      bool dropped = TerrainMap.GroundItems.Count(g => g.X == qx && g.Y == qy) >= packBefore / 2 && Death.Packs.Count > 0;
+      Check(q.Exp == 0 && q.Rank == qRank && dropped, $"co-op: a wipe takes XP down to 0, never a rank ({q.Exp}, {q.Rank}), and the lost half of the pack lies where they fell");
+      // "if enemies are nearby they can loot it, so the player needs to kill them to get them back"
+      EncounterState.Enemies.Clear();
+      var scav = new HumanEnemy("Scav", qx + 4, qy, "Raiders", "Rookie", null, null); EncounterState.Enemies.Add(scav);
+      for (int k = 0; k < 12 && Death.Packs.Count > 0; k++) { Death.TickPacks(); if (scav.PatrolTarget.HasValue) { scav.Mp = 9; scav.MoveToward(scav.PatrolTarget.Value.x, scav.PatrolTarget.Value.y); } }
+      Check(Death.Packs.Count == 0 && scav.Inventory.Items.Count >= packBefore / 2 && !TerrainMap.GroundItems.Any(g => g.X == qx && g.Y == qy && g.Item.Id.StartsWith("junk")),
+        $"co-op: a Raider nearby walks over and pockets the dropped gear ({scav.Inventory.Items.Count} items on him)");
+      EncounterState.Enemies.Clear();
+      Check(p.IsAlive() && q.IsAlive() && q.Inventory.Items.Count == packBefore - packBefore / 2 && q.EquippedArmorCondition != armorBefore
+        && Math.Abs(p.Y - (py - 3)) <= 3 && GameState.Current.CurrentTurn == Turn.Player,
+        $"co-op: a squad wipe wakes everyone at the camp, armor worn ({armorBefore} -> {q.EquippedArmorCondition}), half the pack gone ({packBefore} -> {q.Inventory.Items.Count})");
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); MacroState.Current.CampZone = null; MacroState.Current.CampX = MacroState.Current.CampY = -1;
+      // Yan: "turn friendly fire off for now for players, make it so bullets go through allied players"
+      EncounterState.Enemies.Clear(); q.X = px + 3; q.Y = py; Rt.SetOffset(q, 0f, 0f); raider.X = px + 6; raider.Y = py; raider.Hp = 100000; EncounterState.Enemies.Add(raider);
+      var line = Ballistics.Trace(p, px + 0.5f, py + 0.5f, 1f, 0f, 20f, 0.45f, Gunplay.Targets(p));
+      Check(line.Unit == raider, $"co-op: your round passes through your friend and hits the Raider behind ({line.Unit?.Name})");
+      // "they need to at least try to not shoot each other in the back": a Raider with a friend in his line of fire holds it
+      var mate = new HumanEnemy("Mate", px + 3, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      var back = new HumanEnemy("Back", px + 6, py, "Raiders", "Experienced", null, null) { IsAggroed = true };
+      back.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
+      Player.All.Remove(q); EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(mate); EncounterState.Enemies.Add(back);
+      int mh = mate.Hp, mag = back.EquippedWeapon.CurrentMagazine; Contact.Spot(p); EncounterState.InCombat = true;
+      for (int f = 0; f < 150; f++) { RtAi.Tick(back, p); UnityEngine.Time.time += 0.02f; }
+      Check(back.Y != py && !Gunplay.AllyInLine(back, p) && mate.Hp == mh,
+        $"enemies: a Raider won't fire through his mate ({mate.Hp}/{mh}) and steps aside for a clear shot (now at y{back.Y - py:+0;-0})");
+      Rt.SetSlow(false); Player.All.Remove(q); Rt.Remote.Clear(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; CombatFx.Pending.Clear(); }
+    // Yan: "radio the specific closest squad for help instead of it being a full AOE call"
+    { EncounterState.Enemies.Clear(); var keepSq = MacroState.Current.OfflineSquads.ToList(); MacroState.Current.OfflineSquads.Clear();
+      OfflineSquad Gang(int dx) { var sq = new OfflineSquad { ZoneId = TerrainMap.ZoneId, Faction = "Raiders" };
+        for (int i = 0; i < 3; i++) { var m = new HumanEnemy("R", px + dx, py + i, "Raiders", "Rookie", null, null); sq.Members.Add(m); EncounterState.Enemies.Add(m); }
+        MacroState.Current.OfflineSquads.Add(sq); return sq; }
+      var near = Gang(12); var far = Gang(30);
+      int answered = SquadManager.CallReinforcements("Raiders", TerrainMap.ZoneId, px, py);
+      Check(answered == 1 && near.Members.All(m => m.PatrolTarget != null) && far.Members.All(m => m.PatrolTarget == null), "radio: only the closest free squad answers the call");
+      MacroState.Current.OfflineSquads.Clear(); MacroState.Current.OfflineSquads.AddRange(keepSq); EncounterState.Enemies.Clear(); }
+    // Yan: "make it so mutants only come over if someone dies (they smell the blood) and only if they think they can win the fight"
+    { EncounterState.Enemies.Clear(); p.HealPermanent(5000);
+      var maw = new Mutant("Maw", px + 15, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(maw);
+      Noise.Make(px, py, Noise.Shot, p);
+      bool deaf = maw.PatrolTarget == null;
+      Noise.Smell(px + 1, py); bool wary = maw.PatrolTarget == null;
+      int hp = p.Hp; p.Hp = 5; Noise.Smell(px + 1, py); bool comes = maw.PatrolTarget != null; p.HealPermanent(5000);
+      Check(deaf && wary && comes, $"mutants: deaf to gunfire ({deaf}), a lone Maw ({maw.Hp} HP) won't take on you at full health ({wary}), but comes for blood when you're weak ({comes})");
+      EncounterState.Enemies.Clear(); }
+    // "my shots seem to pass straight through them": a step is a slide, so the body you see is where the rounds hit
+    { EncounterState.Enemies.Clear(); var dog = new Mutant("Dog", px + 5, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(dog);
+      Rt.Glide(0f); var a0 = Ballistics.Pos(dog); dog.X += 1; Rt.Glide(0f); var a1 = Ballistics.Pos(dog);
+      Rt.Glide(0.2f); var a2 = Ballistics.Pos(dog); Rt.Glide(1f); var a3 = Ballistics.Pos(dog);
+      Check(Math.Abs(a1.x - a0.x) < 0.01f && a2.x > a1.x + 0.2f && a2.x < a3.x && Math.Abs(a3.x - a0.x - 1f) < 0.01f,
+        $"real time: a step slides the body over (x {a0.x:0.00} -> {a1.x:0.00} -> {a2.x:0.00} -> {a3.x:0.00})");
+      EncounterState.Enemies.Clear(); }
+    // "make the entire screen seeable as long as im looking at it": the look cone reaches far where you point, not behind you
+    { Vision.Reset(); Vision.Update(p, 4242, 8f, 0f, 0f, 24f);
+      Check(Vision.Light(px + 20, py) > 0.35f && Vision.Light(px - 20, py) < 0.35f && Vision.Light(px - 6, py) > 0.35f && Vision.LookReach == 24f,
+        $"real time: you see 20 tiles where you look ({Vision.Light(px + 20, py):0.00}), not behind ({Vision.Light(px - 20, py):0.00}), 6 all round");
+      Vision.Reset(); }
+    // ... and "damage rolls are still happening": in real time a mutant's strike and an NPC's blade land on reach, no 2d10
+    { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var md = TestingGround.AllMutants().First(m => !m.PsiBlast && !m.NeuralOverload);
+      var mu = EncounterGeneration.CreateMutantFromDb(md, px + 1, py); EncounterState.Enemies.Add(mu);
+      int bites = 0; for (int i = 0; i < 10; i++) { p.HealPermanent(5000); int h = p.Hp; mu.Ap = 2; mu.Attack(p); if (p.Hp < h) bites++; }
+      Check(bites == 10, $"real time: a mutant in reach always lands its strike ({bites}/10)");
+      var knifer = new HumanEnemy("Knifer", px + 1, py, "Raiders", "Rookie", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
+      EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(knifer); p.HealPermanent(5000); int k0 = p.Hp;
+      // Melee 2c: his swing winds up and lands at the end of the strike (Melee.NpcSwing), like yours
+      Melee.Reset(); Melee.Now = 0f; knifer.EquippedWeapon.Fire(p); Melee.Tick(0.01f); bool early = p.Hp < k0;
+      Melee.Now = Melee.HitDelay + 0.01f; Melee.Tick(0.01f); bool cut = p.Hp < k0;
+      knifer.X = px + 3; p.HealPermanent(5000); int k1 = p.Hp; Melee.Now = 1f; knifer.EquippedWeapon.Fire(p); Melee.Now = 2f; Melee.Tick(0.01f);
+      Check(!early && cut && p.Hp == k1 && k0 > 0, $"real time: a Raider's knife cuts you in reach at the strike, not from 3 tiles");
+      Melee.Now = -1f; Melee.Reset();
+      EncounterState.Enemies.Clear(); CombatFx.Pending.Clear(); p.HealPermanent(5000); }
+    var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
+    var r = new HumanEnemy("Raider", px + 6, py, "Raiders", "Rookie", rw, ra) { IsAggroed = true };
+    if (r.EquippedWeapon == null || CombatRules.IsMelee(r.EquippedWeapon)) r.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);   // a gun every time (the random loadout can be a knife)
+    EncounterState.Enemies.Add(r);
+    string PartAt(ICombatant from, ICombatant to, float h) {
+      var (x0, y0) = Ballistics.Pos(from); var (x1, y1) = Ballistics.Pos(to); float dx = x1 - x0, dy = y1 - y0, l = (float)Math.Sqrt(dx * dx + dy * dy);
+      var hit = Ballistics.Trace(from, x0, y0, dx / l, dy / l, 40f, h, Gunplay.Bodies()); return hit.Unit == to ? hit.Part : hit.Cover ? "cover" : hit.Wall && hit.Dist < l ? "wall" : "miss"; }
+    foreach (var (ox, oy, side) in new[] { (6, 0, "side"), (0, -6, "above"), (0, 6, "below"), (4, -4, "diagonal") }) {
+      r.X = px + ox; r.Y = py + oy;
+      Check(PartAt(p, r, 0.8f) == "Head" && PartAt(p, r, 0.45f) == "Torso" && PartAt(p, r, 0.1f) == "Legs" && PartAt(p, r, 1.05f) == "miss",
+        $"you shooting a raider {side}: head {PartAt(p, r, 0.8f)}, chest {PartAt(p, r, 0.45f)}, legs {PartAt(p, r, 0.1f)}, over {PartAt(p, r, 1.05f)}");
+      Check(PartAt(r, p, 0.8f) == "Head" && PartAt(r, p, 0.1f) == "Legs", $"the raider {side} shooting you: head {PartAt(r, p, 0.8f)}, legs {PartAt(r, p, 0.1f)}");
+    }
+    r.X = px + 6; r.Y = py;
+    TerrainMap.SetTileType(px + 5, py, TileType.HardCover);
+    Check(PartAt(p, r, 0.45f) == "cover" && PartAt(p, r, 0.8f) == "Head", $"low concrete in front of him: chest stopped ({PartAt(p, r, 0.45f)}), head over it ({PartAt(p, r, 0.8f)})");
+    Check(PartAt(r, p, 0.45f) == "Torso", $"he fires over his own cover ({PartAt(r, p, 0.45f)})");
+    TerrainMap.SetTileType(px + 5, py, TileType.ScatterCover);
+    var through = Ballistics.Trace(p, px + 0.5f, py + 0.5f, 1f, 0f, 40f, 0.3f, Gunplay.Bodies());
+    Check(through.Unit == r && through.Through < 1f, $"wood lets a round through at half damage ({through.Unit?.Name}, x{through.Through})");
+    TerrainMap.SetTileType(px + 5, py, TileType.Solid);
+    Check(PartAt(p, r, 0.8f) == "wall", "a wall stops it");
+    TerrainMap.SetTileType(px + 5, py, TileType.Empty);
+    p.Sneaking = true; Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.6f) == "Head", "crouching: a head-height round goes over you"); p.Sneaking = false;
+    // the old turn AI's gunfire becomes real rounds
+    int hits = 0, n = 120;
+    for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; Body.Forget(p); p.Sneaking = false; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); Gunplay.LandAll(); if (p.Hp < p.MaxHp) hits++; }
+    Check(hits > 8 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");   // (120 shots: 40 tripped on chance)
+    // RT batch 2: limb health, Yan's wound rule, down and bleed-out, timed items
+    Rt.Reset(); Body.Now = 0f;
+    Check(Body.WoundChance(0.7f, "Standard") == 0f && Math.Abs(Body.WoundChance(0.5f, "Standard") - 0.125f) < 0.01f && Math.Abs(Body.WoundChance(0.4f, "Standard") - 0.25f) < 0.01f
+      && Math.Abs(Body.WoundChance(0.2f, "Standard") - 0.5f) < 0.01f && Body.WoundChance(0.4f, "HollowPoint") > Body.WoundChance(0.4f, "ArmorPiercing"),
+      $"wound chance: 70% {Body.WoundChance(0.7f, null)}, 50% {Body.WoundChance(0.5f, null)}, 40% {Body.WoundChance(0.4f, null)}, 20% {Body.WoundChance(0.2f, null)}");
+    r.Hp = r.MaxHp; r.StatusEffects.Wound = null;
+    for (int i = 0; i < 6; i++) Body.Hit(r, "Legs", 0.1f, 150, "Standard");
+    Check(Body.Of(r).Broken.Contains("LegR") && r.StatusEffects.Wound == "Leg" && Body.Of(r).Hp["Torso"] < Body.PartMax(r, "Torso"), $"six hits to his right leg break it (it limps) and the rest spills into the torso ({Body.Summary(r)})");
+    r.Hp = r.MaxHp; Body.Reset(); Body.Hit(r, "Torso", 0f, (int)Body.PartMax(r, "Torso") + 1, "Standard");
+    Check(!r.IsAlive(), "a human enemy's torso at 0: dead");
+    r.Hp = r.MaxHp; Body.Reset();
+    p.Hp = 5; p.Hp = 0;
+    Check(p.IsAlive() && Body.Down(p), $"lethal damage in real time: you go down, not out (HP {p.Hp})");
+    var ammoBefore = r.EquippedWeapon.CurrentMagazine; int hpDown = p.Hp; Gunplay.NpcShoot(r, r.EquippedWeapon, p, 3); Gunplay.LandAll();
+    Check(p.Hp == hpDown, "nobody shoots someone who's down");
+    float still = Body.Of(p).BleedOut; Body.TickDown(p, false, 1f); float a = Body.Of(p).BleedOut; Body.TickDown(p, true, 1f); float b = Body.Of(p).BleedOut;
+    Check(still - a < a - b, $"crawling bleeds you out faster (still {still - a:0.0}/s, crawling {a - b:0.0}/s)");
+    Rt.Applying = true;
+    if (!p.Inventory.Items.Any(it => it.Id == "basicStim")) p.AddItem(new InventoryItem { Id = "basicStim", Name = "Basic Stim", Type = "consumable", Qty = 1 });
+    p.UseConsumable("bandage");
+    Check(Body.Down(p), "down: a bandage doesn't get you up");
+    p.UseConsumable("basicStim");
+    Check(!Body.Down(p) && p.IsAlive(), "a stim gets you back up");
+    bool bledOut = false; Body.GoDown(p); for (int i = 0; i < 100 && !bledOut; i++) bledOut = Body.TickDown(p, false, 1f);
+    Check(bledOut, "lying still you bleed out in ~40 s");
+    Body.Reset(); p.HealPermanent(100);
+    for (int i = 0; i < 6; i++) Body.Hit(p, "Legs", -0.1f, 120, "Standard");
+    Check(Body.LegHurt(p), "your left leg breaks");
+    if (!p.Inventory.Items.Any(it => it.Id == "splint")) p.AddItem(new InventoryItem { Id = "splint", Name = "Splint", Type = "consumable", Qty = 1 });
+    p.UseConsumable("splint");
+    Check(!Body.LegHurt(p), "a splint sets it");
+    Rt.Applying = false; Body.Now = -1f;
+    // RT batch 3: the dive - needs 40 Focus, flies ~2.5 tiles in bullet time, lands you prone for 0.6 s, a low target meanwhile
+    {
+      Body.Reset(); p.HealPermanent(100); EncounterState.Enemies.Clear(); r.X = px + 6; r.Y = py; r.Hp = r.MaxHp; EncounterState.Enemies.Add(r);
+      var kb = new UnityEngine.InputSystem.Keyboard();
+      foreach (var f in typeof(UnityEngine.InputSystem.Keyboard).GetFields()) if (f.FieldType == typeof(UnityEngine.InputSystem.KeyControl)) f.SetValue(kb, new UnityEngine.InputSystem.KeyControl());
+      UnityEngine.Time.deltaTime = 0.02f; UnityEngine.Time.unscaledDeltaTime = 0.02f; UnityEngine.Time.time = 1000f;
+      void Frame() { Rt.PlayerTick(p, Rt.Read(kb, null)); UnityEngine.Time.time += UnityEngine.Time.deltaTime; kb.spaceKey.wasPressedThisFrame = false; }
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); Rt.Of(p).Stamina = 10f; Rt.Of(p).StaminaRest = 5f;
+      kb.spaceKey.wasPressedThisFrame = true; Frame();
+      Check(!Rt.Of(p).Diving, "too winded (no stamina), no dive");
+      // RT 9 (Yan: "unbinding bullet time from the dodge ... having it be invulnerable"): Space dives on stamina, no slow-mo, untouchable
+      Rt.Of(p).Stamina = 50f; Rt.Of(p).Focus = 0f; kb.dKey.isPressed = true; kb.spaceKey.wasPressedThisFrame = true;
+      var (sx, _) = Ballistics.Pos(p); Frame();
+      Check(Rt.Of(p).Diving && !Rt.SlowMo && UnityEngine.Time.timeScale == 1f && Math.Abs(Rt.Of(p).Stamina - 20f) < 0.5f, $"Space dives: {Rt.DiveStamina} stamina spent ({Rt.Of(p).Stamina:0.0}), no bullet time");
+      Check(PartAt(r, p, 0.2f) == "miss" && PartAt(r, p, 0.5f) == "miss" && Rt.Untouchable(p), "RT 9: mid-dive every round passes (i-frames)");
+      for (int i = 0; i < 40 && Rt.Of(p).Diving; i++) Frame();
+      var (lx, _) = Ballistics.Pos(p);
+      Check(!Rt.Of(p).Diving && Rt.Low(p) && !Rt.Untouchable(p) && lx - sx > 2f && lx - sx < 3f, $"lands {lx - sx:0.0} tiles on, prone, no longer untouchable");
+      Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.2f) != "miss", "sprawled on the ground: a head-height round goes over, a low one hits");
+      for (int i = 0; i < 10; i++) Frame();
+      var (px2, _) = Ballistics.Pos(p);
+      Check(Math.Abs(px2 - lx) < 0.001f, "prone: you can't move");
+      for (int i = 0; i < 30; i++) Frame();
+      var (px3, _) = Ballistics.Pos(p);
+      Check(px3 > px2 + 0.5f && !Rt.Low(p), "back up and walking after the landing");
+      kb.dKey.isPressed = false;
+      Check(Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 0.9f, p.X + 0.5f + 5f, p.Y + 0.9f, p) && !Gunplay.NearMiss(p.X + 0.5f - 5f, p.Y + 2.5f, p.X + 0.5f + 5f, p.Y + 2.5f, p), "a round passing close is a near miss, one far off isn't");
+      UnityEngine.Time.deltaTime = 0f; UnityEngine.Time.time = 0f; UnityEngine.Time.timeScale = 1f;
+    }
+    // RT 6f: clearing a jam - the support hand leaves the gun to slap the magazine and rack the action, then comes back
+    { var g = WeaponArt.GripOf("assault", "VK74"); var rest = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
+      var tap = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.25f, "jam", 1); var rack = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.65f, "jam", 1);
+      var done = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.9f, "jam", 1); rest = HeldPoseMath.Frame("assault", g, done.GunDeg, 0f, 0f, 0f, 99f, 1f, "none", 1);   // same tilt, no hand work
+      Check(tap.SupY > rack.SupY && rack.SupX < tap.SupX && tap.GunDeg > 0f && Math.Abs(done.SupX - rest.SupX) <= 1f && Math.Abs(done.SupY - rest.SupY) <= 1f,
+        $"RT 6f: jam clear - slap under the gun ({tap.SupX},{tap.SupY}), rack over the action ({rack.SupX},{rack.SupY}), back on the handguard ({done.SupX},{done.SupY} vs {rest.SupX},{rest.SupY})"); }
+    // RT 6h: shotguns, levers and revolvers load a round at a time; firing stops a shotgun's reload, a revolver closes first
+    { var sg = W("shotgun", "BayouPump"); sg.CurrentMagazine = 2; var keep = p.EquippedWeapon; p.EquippedWeapon = sg;
+      string k = Ammo.Key(sg.Db, "Standard"); p.Inventory.AmmoReserve[k] = 40; var aim = new Gunplay.Aim();
+      float per = Gunplay.PerRound(sg), t = 0f;
+      Rt.StartReload(p, sg, aim, t);
+      for (t = 0f; t < per * 3.5f; t += 0.02f) Rt.TickReload(p, sg, aim, t);
+      int afterThree = sg.CurrentMagazine;
+      Rt.StopLoading(p, sg, aim);
+      for (; t < per * 8f; t += 0.02f) Rt.TickReload(p, sg, aim, t);
+      Check(afterThree == 5 && sg.CurrentMagazine == 5 && aim.ReloadUntil < 0f && aim.Loading == 0,
+        $"RT 6h: a pump loads a shell every {per:0.00} s (2 -> {afterThree} after 3.5 shells' time) and the trigger stops it ({sg.CurrentMagazine})");
+      var rv = W("sidearm", "HaldenServiceRevolver"); rv.CurrentMagazine = 0; p.EquippedWeapon = rv; aim = new Gunplay.Aim();
+      p.Inventory.AmmoReserve[Ammo.Key(rv.Db, "Standard")] = 40;
+      Rt.StartReload(p, rv, aim, 0f); Rt.StopLoading(p, rv, aim);
+      for (t = 0f; t < 6f; t += 0.02f) Rt.TickReload(p, rv, aim, t);
+      Check(rv.CurrentMagazine == 1 && aim.Loading == 0, $"RT 6h: a revolver told to stop finishes the round in hand and closes ({rv.CurrentMagazine})");
+      var ob = W("shotgun", "Obrez66"); ob.CurrentMagazine = 1; float one = Gunplay.ReloadSeconds(ob); ob.CurrentMagazine = 0; float two = Gunplay.ReloadSeconds(ob);
+      Check(one < two && Math.Abs(two - Gunplay.For(ob).ReloadTime) < 0.01f, $"RT 6k: a break-action reloads faster after one shell than two ({one:0.00} / {two:0.00} s)");
+      p.EquippedWeapon = keep; CombatFx.Pending.Clear(); }
+    // RT 7a: the Tactical Hatchet - swings hit what's in front within reach (not behind), blades bleed; a throw flies, sticks in
+    // a body, the Raider wrenches it out (busy 2.5 s) and drops it; picked up with empty hands it's back in them
+    { var keepW = p.EquippedWeapon; var keepE = EncounterState.Enemies.ToList(); EncounterState.Enemies.Clear(); Melee.Reset(); Melee.Now = 0f;
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      p.EquipWeapon("melee", "TacticalHatchet"); var hw = p.EquippedWeapon;
+      var front = new HumanEnemy("Front", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      var back = new HumanEnemy("Back", px - 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      EncounterState.Enemies.Add(front); EncounterState.Enemies.Add(back);
+      int f0 = front.Hp, b0 = back.Hp;
+      var got = Melee.Swing(p, hw, 1f, 0f, 0.45f);
+      Check(got == front && front.Hp < f0 && back.Hp == b0 && front.StatusEffects.Bleeding, $"RT 7a: a swing hits the one in front ({f0} -> {front.Hp}), not the one behind, and he bleeds");
+      EncounterState.Enemies.Clear();
+      var far = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(far);
+      int h0 = far.Hp;
+      Melee.Throw(p, hw, 1f, 0f, 0.45f);
+      Check(p.EquippedWeapon == null && Melee.Air.Count == 1, "RT 7a: a thrown hatchet leaves your hands");
+      float t = 0f; for (; t < 1f && Melee.Air.Count > 0; t += 0.02f) { Melee.Now = t; Melee.Tick(0.02f); }
+      Check(far.Hp < h0 && Melee.InBodies.Count == 1 && t < 0.6f, $"RT 7a: it flies (~{5f / Melee.For(hw).ThrowSpeed:0.00} s for 5 tiles, took {t:0.00}), hits and sticks ({h0} -> {far.Hp})");
+      Melee.Now = t + Melee.PullAfter + 0.1f; Melee.Tick(0.02f);
+      bool busy = Melee.Busy(far);
+      Melee.Now = t + Melee.PullAfter + Melee.PullTime + 0.1f; Melee.Tick(0.02f);
+      var lying = TerrainMap.GroundItems.FirstOrDefault(g => g.Item.Key == "TacticalHatchet");
+      Check(busy && !Melee.Busy(far) && lying != null && Math.Abs(lying.X - far.X) <= 1, $"RT 7a: he wrenches it out (busy {busy}) and drops it at his feet ({lying?.X},{lying?.Y})");
+      if (lying != null) { p.AddItem(lying.Item); TerrainMap.GroundItems.Remove(lying); Melee.EquipIfEmptyHanded(p, lying.Item); }
+      Check(p.EquippedWeapon?.Db?.Name == "Tactical Hatchet", "RT 7a: picked up with empty hands, it's back in them");
+      Check(!EncounterGeneration.Unique.Contains("Tactical Hatchet") == false && WeaponArt.HasGrip("TacticalHatchet"), "RT 7a: one of a kind, with its own grip points");
+      // RT 7v (Yan): bigger swings and flies slower but hits harder; no blade = concussion, no bleeding, never sticks
+      { Melee.Reset(); EncounterState.Enemies.Clear();
+        Weapon W(string k) { p.EquipWeapon("melee", k); return p.EquippedWeapon; }
+        var knife = Melee.For(W("HuntingKnife")); var sledge = W("Sledgehammer"); var ss = Melee.For(sledge);
+        Check(ss.Swing > knife.Swing && ss.ThrowSpeed < knife.ThrowSpeed && sledge.BaseDamage > W("HuntingKnife").BaseDamage && ss.TwoHanded && !knife.TwoHanded,
+          $"RT 7v: the sledge swings slower ({ss.Swing:0.00} s vs {knife.Swing:0.00}), flies slower, hits harder and takes both hands");
+        var bat = W("WoodenBaseballBat"); Melee.Now = 0f;
+        var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; foe.Hp = 100000; EncounterState.Enemies.Add(foe);
+        Melee.Strike(p, bat, foe, "Torso", 1f);
+        Check(!foe.StatusEffects.Bleeding && Body.Of(foe).ConcussedUntil > 0f, "RT 7v: a bat concusses, no bleeding");
+        EncounterState.Enemies.Clear();
+        var far2 = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; far2.Hp = 100000; EncounterState.Enemies.Add(far2);
+        Melee.Throw(p, bat, 1f, 0f, 0.45f);
+        for (float t2 = 0f; t2 < 1.5f && Melee.Air.Count > 0; t2 += 0.02f) { Melee.Now = t2; Melee.Tick(0.02f); }
+        Check(Melee.InBodies.Count == 0 && TerrainMap.GroundItems.Any(g => g.Item.Key == "WoodenBaseballBat"), "RT 7v: a thrown bat hits and drops, it never sticks");
+        TerrainMap.GroundItems.RemoveAll(g => g.Item.Key == "WoodenBaseballBat"); EncounterState.Enemies.Clear(); Melee.Reset(); Melee.Now = 0f;
+        var barbed = Melee.For(W("BarbedWireBat"));
+        Check(!barbed.Blade && barbed.Bleeds && Melee.For(W("Hatchet")).Blade && Melee.For(W("FireAxe")).TwoHanded, "RT 7v: the barbed bat is blunt but cuts; the axes are blades");
+        // the real mouse path: how soon a second swing can start after a tap
+        float Gap(string k) { Melee.Reset(); var w = W(k); var at = (Ballistics.Pos(p).x + 1f, Ballistics.Pos(p).y);
+          Melee.Now = 0f; Melee.PlayerInput(p, w, true, false, at); Melee.Now = 0.3f; Melee.PlayerInput(p, w, false, false, at);
+          for (float t3 = 0.3f; t3 < 3f; t3 += 0.01f) { Melee.Now = t3; Melee.PlayerInput(p, w, true, false, at); if (Melee.ChargeOf(p).SwingFrom >= 0f) return t3; }
+          return 99f; }
+        float gk = Gap("HuntingKnife"), gs = Gap("Sledgehammer"); Melee.Reset(); Melee.Now = -1f;
+        Check(gs > gk + 0.5f, $"RT 7w: the sledge swings again later than the knife ({gs:0.00} s vs {gk:0.00} s)");
+        foreach (var k in new[] { "Hatchet", "FireAxe", "WoodenBaseballBat", "Hammer", "Sledgehammer", "BarbedWireBat" })
+          Check(WeaponArt.HasGrip(k) && WeaponDatabase.Categories["melee"].ContainsKey(k), $"RT 7v: {k} has stats and grip points"); }
+      // RT 7e: left held then let go swings (held past the wind-up: more damage); right held lifts and charges the throw
+      int Swung(float hold) {
+        Melee.Reset(); EncounterState.Enemies.Clear(); p.EquipWeapon("melee", "TacticalHatchet"); var w2 = p.EquippedWeapon;
+        var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(foe);
+        foe.Hp = 100000; int hp = foe.Hp; var at = (Ballistics.Pos(foe).x, Ballistics.Pos(foe).y);
+        Melee.Now = 0f; Melee.PlayerInput(p, w2, true, false, at); Melee.Now = hold; Melee.PlayerInput(p, w2, false, false, at);
+        for (float s = hold; s < hold + 1f; s += 0.02f) { Melee.Now = s; Melee.Tick(0.02f); }
+        return hp - foe.Hp; }
+      int tap = Swung(0.05f), full = Swung(5f);
+      Check(tap > 0 && full > tap * 1.5f, $"RT 7e: a tap swings ({tap}), a held swing hits harder ({full})");
+      float Thrown(float hold) {
+        Melee.Reset(); EncounterState.Enemies.Clear(); p.EquipWeapon("melee", "TacticalHatchet"); var w2 = p.EquippedWeapon;
+        var at = (Ballistics.Pos(p).x + 5f, Ballistics.Pos(p).y);
+        Melee.Now = 0f; Melee.PlayerInput(p, w2, false, true, at); Melee.Now = hold; Melee.PlayerInput(p, w2, false, false, at);
+        Melee.Now = hold + 0.1f; Melee.Tick(0.02f);
+        return Melee.Air.FirstOrDefault()?.Left ?? -1f; }
+      float quick = Thrown(0.1f), half = Thrown(0.3f), strong = Thrown(1f);
+      Check(quick < 0f && half > 0f && strong > half, $"RT 7e: a flick of the right button lowers it (no throw), a longer hold throws farther ({half:0.0} < {strong:0.0} tiles)");
+      Melee.Reset(); Melee.Now = -1f; EncounterState.Enemies.Clear(); foreach (var e in keepE) EncounterState.Enemies.Add(e); p.EquippedWeapon = keepW; CombatFx.Pending.Clear(); }
+    // RT batch 4: a human enemy fights in real time - shots spread over time in bursts, reloads, walks at a pace, gets pinned
+    {
+      Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var (gw, ga) = EncounterGeneration.PickFactionLoadout("Raiders", "Experienced", 1);
+      var g = new HumanEnemy("Gunman", px + 8, py, "Raiders", "Experienced", gw, ga) { IsAggroed = true };
+      g.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);   // a gun every time (the random loadout can be a knife)
+      EncounterState.Enemies.Add(g); EncounterState.InCombat = true; Contact.Spot(p);
+      UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 2000f;
+      float animSecs = 0f; int shotsAt1 = -1, reloads = 0, maxStep = 0, lastMag = g.EquippedWeapon.CurrentMagazine, fired = 0; var (gx0, gy0) = (g.X, g.Y); int lx = g.X, ly = g.Y;
+      for (int f = 0; f < 400; f++) {
+        Rt.WorldTick(p); UnityEngine.Time.time += 0.05f;
+        p.HealPermanent(100); Body.Reset();
+        int mag = g.EquippedWeapon.CurrentMagazine;
+        if (mag < lastMag) fired += lastMag - mag; else if (mag > lastMag) reloads++;
+        lastMag = mag;
+        maxStep = Math.Max(maxStep, Math.Max(Math.Abs(g.X - lx), Math.Abs(g.Y - ly))); lx = g.X; ly = g.Y;
+        if (f == 20) shotsAt1 = fired;
+        animSecs = Math.Max(animSecs, CombatFx.Pending.Where(e => e.Kind == "reload" && !e.Jammed).Select(e => e.Seconds).DefaultIfEmpty(0f).Max()); CombatFx.Pending.Clear();
+      }
+      Check(reloads == 0 || Math.Abs(animSecs - Gunplay.For(g.EquippedWeapon).ReloadTime * 1.2f) < 0.01f, $"RT 6d: the reload animation lasts as long as the reload ({animSecs:0.00} s)");
+      Check(fired >= 6 && shotsAt1 < fired / 2, $"rounds go out over the fight, not in one go (first second {shotsAt1}, 20 s {fired})");
+      Check(reloads >= 1 || g.EquippedWeapon.MagCapacity > fired, $"it reloads when the magazine runs dry ({reloads}, fired {fired} of {g.EquippedWeapon.MagCapacity})");
+      Check(maxStep <= 1, $"it walks a tile at a time ({maxStep})");
+      var (x0, y0) = Ballistics.Pos(p); var (gx, gy) = Ballistics.Pos(g);
+      Gunplay.Shoot(p, p.EquippedWeapon, (gx - x0) / Math.Abs(gx - x0), 0f, 1.05f, 0f, false); Gunplay.LandAll();   // over his head: a near miss
+      Check(RtAi.Pinned(g) && g.StatusEffects.Suppressed, "a round just over his head pins him");
+      EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
+    }
+    // RT batch 5: mutants run at you at their own speed and strike on their own clock (a hound outruns the Brute)
+    {
+      Rt.Reset(); Body.Reset(); EncounterState.Enemies.Clear(); p.HealPermanent(100); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      var maw = new Mutant("Blind Maw", px + 10, py - 2, MutantDatabase.Get("tier1", "BlindMaw")) { IsAggroed = true };
+      var brute = new Mutant("Blight Brute", px + 10, py + 2, MutantDatabase.Get("tier4", "BlightBrute")) { IsAggroed = true };
+      EncounterState.Enemies.Add(maw); EncounterState.Enemies.Add(brute); EncounterState.InCombat = true; Contact.Spot(p);
+      UnityEngine.Time.deltaTime = 0.05f; UnityEngine.Time.time = 3000f;
+      int reachedAt = -1, strikes = 0, hp = p.Hp;
+      for (int f = 0; f < 200; f++) {   // RT 7a: long enough that a later arrival (random timing) still leaves time to bite
+        Rt.WorldTick(p); UnityEngine.Time.time += 0.05f;
+        if (reachedAt < 0 && CombatantUtil.IsAdjacent(maw, p)) reachedAt = f;
+        if (p.Hp < hp) strikes++;
+        p.HealPermanent(100); Body.Reset(); hp = p.Hp;
+      }
+      Check(reachedAt > 0 && reachedAt <= 100, $"the Blind Maw runs 10 tiles to you in {reachedAt * 0.05f:0.0} s");
+      Check(strikes >= 1 && strikes <= 18, $"then bites on its own clock ({strikes} landed in 10 s, the Maw and the Brute together)");   // no dice since the first playtest: every strike in reach lands
+      Check(CombatantUtil.Distance(brute, p) > CombatantUtil.Distance(maw, p) || CombatantUtil.IsAdjacent(brute, p), $"the Brute is slower (brute {CombatantUtil.Distance(brute, p)}, maw {CombatantUtil.Distance(maw, p)})");
+      EncounterState.Enemies.Clear(); EncounterState.InCombat = false; UnityEngine.Time.time = 0f; UnityEngine.Time.deltaTime = 0f;
+    }
+    Rt.On = false;   // turn-based again: lethal damage kills
+    EncounterState.Enemies.Clear(); Rt.Reset(); p.HealPermanent(100);
+  }
+
+  // RT batch 6: hits to drop someone in the middle armor of the gun's own tier (AP rounds from tier 4, Yan: "basically
+  // required"), head and chest, through the game's own damage code (Gunplay.RoundDamage, CombatRules.PhysicalDamage, HeadGear).
+  // `test ttk` prints the whole table. Yan's targets are checked per class (median over the class).
+  // RT batch 6d: chance one round lands on a band `half` tiles either side (and `tall` up/down) at `dist`, spread in degrees (Gunplay.Shoot's model).
+  // Chest aims count the whole body (rounds high or low land on the head or legs), head aims only the head.
+  static float HitChance(float spreadDeg, float dist, float half, double tall = 0.156) {
+    double Erf(double x) { double tt = 1 / (1 + 0.3275911 * Math.Abs(x)); double y = 1 - (((((1.061405429 * tt - 1.453152027) * tt) + 1.421413741) * tt - 0.284496736) * tt + 0.254829592) * tt * Math.Exp(-x * x); return x >= 0 ? y : -y; }
+    double sd = Math.Max(1e-4, dist * Math.Tan(spreadDeg * Math.PI / 180));
+    return (float)(Erf(half / (sd * Math.Sqrt(2))) * Erf(tall / (sd * Math.Sqrt(2)))); }
+  static void TtkProbe(bool print) {
+    var med = new System.Collections.Generic.Dictionary<int, ArmorDef>();
+    foreach (var kv in ArmorDatabase.Tiers) { int t = int.Parse(kv.Key.Replace("tier", "")); var l = kv.Value.Values.OrderBy(a => a.PhysDR).ToList(); med[t] = l[l.Count / 2]; }
+    int Hits(Weapon w, ArmorDef a, string part, float dist, bool ap) {
+      w.CurrentAmmoType = ap ? "ArmorPiercing" : "Standard";
+      int pel = Gunplay.For(w).Pellets;
+      float dr = part == "Head" ? HeadGear.Of(a).dr : a.PhysDR;
+      int per = CombatRules.PhysicalDamage(Gunplay.RoundDamage(w, part, dist, pel), w.CurrentAmmoType, dr) * pel;
+      return (int)Math.Ceiling((part == "Head" ? 500f : 800f) / per); }
+    var byClass = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<(int h, int c)>>();
+    if (print) Console.WriteLine("class    weapon                      tier armor                       head chest  drop(s, chest, all hit)");
+    foreach (var cat in WeaponDatabase.Categories) {
+      if (cat.Key == "melee") continue;
+      foreach (var d in cat.Value.Values) {
+        int t = Math.Max(1, Math.Min(5, d.Tier)); var a = med[t]; bool ap = t >= 4;
+        var w = W(cat.Key, cat.Value.First(x => x.Value == d).Key);
+        int h = Hits(w, a, "Head", 6f, ap), c = Hits(w, a, "Torso", 6f, ap);
+        if (!byClass.ContainsKey(cat.Key)) byClass[cat.Key] = new System.Collections.Generic.List<(int, int)>();
+        byClass[cat.Key].Add((h, c));
+        if (print) Console.WriteLine($"{cat.Key,-8} {d.Name,-27} T{t}  {a.Name,-26}{(ap ? " AP" : "   ")}  {h,3} {c,4}   {(c - 1) * 60f / Gunplay.For(w).Rpm,5:0.0}");
+      }
+    }
+    var noFeel = WeaponDatabase.Categories.Where(kv => kv.Key != "melee").SelectMany(kv => kv.Value.Values).Where(d => !Gunplay.Guns.ContainsKey(d.Name)).Select(d => d.Name).ToList();
+    Check(noFeel.Count == 0, "RT 6d: every gun has its own fire rate, reload, accuracy, handling and kick: missing " + string.Join(", ", noFeel));
+    var noHead = ArmorDatabase.Tiers.SelectMany(kv => kv.Value.Values).Where(a => HeadGear.HeadOf(a) == null).Select(a => a.Name).ToList();
+    Check(noHead.Count == 0, "every armor has a drawn head type for head protection: missing " + string.Join(", ", noHead));
+    { var exo = ArmorDatabase.Tiers["tier5"].Values.First(a => a.Name == "Liberator Exoskeleton"); var gunner = new HumanEnemy("Exo", 1, 1, "Liberators", "Expert", null, null) { EquippedArmor = exo };
+      var rifle = W("assault", WeaponDatabase.Categories["assault"].Keys.First()); var sledge = W("sniper", WeaponDatabase.Categories["sniper"].First(kv => kv.Value.Name == "Halden AM-50 Sledge").Key);
+      float std = HeadGear.DeflectChance(gunner, rifle); rifle.CurrentAmmoType = "ArmorPiercing"; float ap = HeadGear.DeflectChance(gunner, rifle);
+      Check(std == 0.25f && Math.Abs(ap - 0.125f) < 0.001f && HeadGear.DeflectChance(gunner, sledge) == 0f && HeadGear.Of(ArmorDatabase.Tiers["tier1"]["LeatherJacket"]).dr == 0f,
+        $"exo helmet: 25% deflect, AP halves it ({ap}), anti-materiel never deflects, a balaclava protects nothing"); }
+    // RT batch 6b: every gun against the lightest, middle and heaviest body armor of its tier, and the tier's best helmet,
+    // in expected hits (deflects count as misses): the outlier hunt. `test ttk` prints it.
+    if (print) {
+      Console.WriteLine();
+      Console.WriteLine("VARIANTS  weapon                      T  chest: light  mid  heavy | head: none  best-helmet (expected, deflects as misses)");
+      foreach (var cat in WeaponDatabase.Categories) {
+        if (cat.Key == "melee") continue;
+        foreach (var d in cat.Value.Values) {
+          int t = Math.Max(1, Math.Min(5, d.Tier)); bool ap = t >= 4;
+          var tierArmors = ArmorDatabase.Tiers["tier" + t].Values.OrderBy(a => a.PhysDR).ToList();
+          var w = W(cat.Key, cat.Value.First(x => x.Value == d).Key);
+          var light = tierArmors.First(); var heavy = tierArmors.Last(); var mid = tierArmors[tierArmors.Count / 2];
+          var soft = tierArmors.FirstOrDefault(a => HeadGear.Of(a).dr == 0f) ?? light;
+          var helm = tierArmors.OrderByDescending(a => HeadGear.Of(a).dr).First();
+          w.CurrentAmmoType = ap ? "ArmorPiercing" : "Standard";
+          var dummy = new HumanEnemy("x", 1, 1, "Raiders", "Rookie", null, null) { EquippedArmor = helm };
+          float defl = HeadGear.DeflectChance(dummy, w);
+          float helmExp = Hits(w, helm, "Head", 6f, ap) / (1f - defl);
+          Console.WriteLine($"{cat.Key,-8}  {d.Name,-27} {t}  {Hits(w, light, "Torso", 6f, ap),10} {Hits(w, mid, "Torso", 6f, ap),4} {Hits(w, heavy, "Torso", 6f, ap),5}   | {Hits(w, soft, "Head", 6f, ap),9} {helmExp,8:0.0} ({helm.Name}{(defl > 0 ? $", {defl:P0} deflect" : "")})");
+        }
+      }
+    }
+    // RT batch 6d: seconds to drop a mid-armor target of the gun's tier, aiming steadied and holding the trigger at the fire
+    // rate (kick piles up and recovers between shots), reloads counted. Expected hits per shot from the spread at that range.
+    if (print) {
+      Console.WriteLine();
+      Console.WriteLine("SECONDS (aimed, standing)  weapon                      T  rpm  mode reload mag | chest@5  chest@12  head@12 | walking from the hip: chest@5 chest@12   hits chest@5/@12/head@12");
+      foreach (var cat in WeaponDatabase.Categories) {
+        if (cat.Key == "melee") continue;
+        foreach (var d in cat.Value.Values) {
+          int t = Math.Max(1, Math.Min(5, d.Tier)); bool ap = t >= 4; var a = med[t];
+          var w = W(cat.Key, cat.Value.First(x => x.Value == d).Key); var hd = Gunplay.For(w);
+          var dummy = new HumanEnemy("x", 1, 1, "Raiders", "Rookie", null, null) { EquippedArmor = a };
+          int mag = d.MagCapacity ?? d.CylinderCapacity ?? 1;
+          // the shooter waits for the kick to settle under a limit before each shot; the best of a few limits (tap .. hold)
+          float Secs(string part, float dist, float baseSpread) {
+            float need = Hits(w, a, part, dist, ap) / (part == "Head" ? 1f - HeadGear.DeflectChance(dummy, w) : 1f), best = 999f;
+            foreach (float lim in new[] { 0f, 0.5f, 1f, 2f, 4f, 999f }) {
+              float got = 0f, time = 0f, bloom = 0f, gap = 60f / hd.Rpm; int left = mag;
+              for (int n = 0; n < 400 && got < need; n++) {
+                if (left == 0) { time += hd.ReloadTime; left = mag; bloom = 0f; }
+                if (bloom > lim) { time += (bloom - lim) / hd.Recover; bloom = lim; }
+                got += HitChance((float)Math.Sqrt((baseSpread + bloom) * (baseSpread + bloom) + hd.Choke * hd.Choke), dist, part == "Head" ? Ballistics.HeadHalf : Ballistics.TorsoHalf, part == "Head" ? 0.156 : 0.33);
+                left--; bloom = Math.Max(0f, Math.Min(Gunplay.MaxBloom, bloom + hd.Kick) - hd.Recover * gap);
+                if (got < need) time += gap;
+              }
+              if (got >= need) best = Math.Min(best, time);
+            }
+            return best; }
+          // walking, hip fire (not steadied: Gunplay.Tick holds a quarter of the way)
+          float hip = hd.Hip + (hd.Steady - hd.Hip) * 0.25f + 1.2f * hd.Move;
+          Console.WriteLine($"{cat.Key,-8} {d.Name,-27} {t}  {hd.Rpm,4:0} {(hd.Auto ? "auto" : "semi")} {hd.ReloadTime,5:0.0} {mag,4} | {Secs("Torso", 5f, hd.Steady),7:0.00}  {Secs("Torso", 12f, hd.Steady),7:0.00}  {Secs("Head", 12f, hd.Steady),7:0.00} | {Secs("Torso", 5f, hip),7:0.00}  {Secs("Torso", 12f, hip),7:0.00}   hits {Hits(w, a, "Torso", 5f, ap)}/{Hits(w, a, "Torso", 12f, ap)}/{Hits(w, a, "Head", 12f, ap)}");
+        }
+      }
+    }
+    int Med(string k, bool head) { var l = byClass[k].Select(x => head ? x.h : x.c).OrderBy(x => x).ToList(); return l[l.Count / 2]; }
+    Check(Med("assault", true) >= 2 && Med("assault", true) <= 4, $"rifles: 2-4 head hits ({Med("assault", true)})");
+    Check(Med("heavy", true) >= 2 && Med("heavy", true) <= 4, $"machine guns like rifles ({Med("heavy", true)})");
+    Check(Med("sidearm", true) >= 2 && Med("sidearm", true) <= 4, $"pistols: 2-4 head hits ({Med("sidearm", true)})");
+    Check(Med("smg", true) >= 4 && Med("smg", true) <= 6, $"SMGs: 4-6 head hits ({Med("smg", true)})");
+    Check(Med("sniper", true) == 1 && Med("sniper", false) <= 2, $"snipers: 1 head, 2 chest ({Med("sniper", true)}/{Med("sniper", false)})");
+    var sg = W("shotgun", WeaponDatabase.Categories["shotgun"].Keys.First());
+    Check(Hits(sg, med[1], "Head", 2f, false) == 1 && Hits(sg, med[1], "Head", 12f, false) > 1, $"shotgun: 1 head close ({Hits(sg, med[1], "Head", 2f, false)}), more far ({Hits(sg, med[1], "Head", 12f, false)})");
   }
 
   // Batch 87: the Garrison raid - fighting in the Siege Ward brings 2 more waves (the last led by a boss), then the armory opens
@@ -815,8 +3281,9 @@ static class Program {
       GameState.Current.CurrentTurn = Turn.Player;
 
       // the shakedown: a Tier 1 Raider gang asks once; paying buys a day's truce
+      _sessionShake = TestingGround.Session; TestingGround.Session = true;      // (the gang's first volley may hurt: dying alone now wakes you at the camp and stands them down, which is not what this loop is about)
       foreach (int pick in new[] { Shakedown.Pay, Shakedown.HandGun, Shakedown.Refuse, Shakedown.ShootFirst }) {
-        p = Arena(out px, out py);
+        p = Arena(out px, out py); TestingGround.Session = true; Shakedown.Reset();      // (each pick starts from no truce and no gang on record; Arena starts a new game, which clears the session flag)
         MacroState.Current.OfflineSquads.Clear();
         var gang = new System.Collections.Generic.List<Mutant>();
         for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", i == 0 ? "Experienced" : "Rookie", 1); gang.Add(new HumanEnemy("Raider " + i, px + 6, py - 2 + i, "Raiders", i == 0 ? "Experienced" : "Rookie", w, a)); }
@@ -829,7 +3296,7 @@ static class Program {
         Check(!Shakedown.TryStart(gang[1], p), "only once per gang");
         if (pick == Shakedown.Pay) Check(p.Ru == ru - 4 * Shakedown.TollPerMember && Shakedown.InTruce(gang[2]) && EnemyAI.FriendlyToPlayer((Mutant)gang[2]) && !gang.Any(g => g.IsAggroed), "paid: Ru gone, a day's truce");
         if (pick == Shakedown.HandGun) Check(p.EquippedWeapon == null && ((HumanEnemy)gang[0]).EquippedWeapon == gun && Shakedown.InTruce(gang[0]), "handed over: the boss carries your gun");
-        if (pick == Shakedown.Refuse) Check(gang.All(g => g.IsAggroed || !g.IsAlive()) && !Shakedown.InTruce(gang[0]), "refused: they fight");
+        if (pick == Shakedown.Refuse) Check(gang.All(g => g.IsAggroed || !g.IsAlive()) && !Shakedown.InTruce(gang[0]), $"refused: they fight (aggro {string.Join(",", gang.Select(g => g.IsAggroed ? 1 : 0))}, truce {Shakedown.InTruce(gang[0])}, alive {gang.Count(g => g.IsAlive())}, player hp {p.Hp}, turn {GameState.Current.CurrentTurn}, inCombat {EncounterState.InCombat}, fled {gang.Count(g => g.IsFleeing())}, in list {gang.Count(g => EncounterState.Enemies.Contains(g))})");
         if (pick == Shakedown.ShootFirst) Check(gang.All(g => g.IsAggroed) && EncounterState.Surprised && GameState.Current.CurrentTurn == Turn.Player, "shot first: surprise round, your turn");
       }
       Shakedown.TestPick = -1;
@@ -1073,7 +3540,7 @@ static class Program {
       Check(!CombatActions.Press("hunker", p), "no hunkering in the open");
       Check(CombatActions.FireTarget(p) != null && CombatActions.Press("fire", p), "the fire button shoots the enemy in sight");
     } catch (Exception e) { Check(false, "Batch 72 checks threw: " + e); }
-    Shakedown.TestPick = -1;
+    TestingGround.Session = _sessionShake; Shakedown.TestPick = -1;
     GameLog.Target = null;
   }
 
@@ -1092,7 +3559,7 @@ static class Program {
     var ak = new InventoryItem { Type = "weapon", Category = "assault", Key = "VK74", Name = "VK-74" };
     Check(Economy.ValueOf(ak) == 1150, "VK-74 value " + Economy.ValueOf(ak));
     Check(Economy.RepairCost(new InventoryItem { Type = "weapon", Category = "assault", Key = "VK74", Condition = "Damaged" }) == 230, "repair cost");
-    Check(ShopDatabase.Items.Count(i => i.Baseline) == 15, "baseline count " + ShopDatabase.Items.Count(i => i.Baseline));
+    Check(ShopDatabase.Items.Count(i => i.Baseline) == 16, "baseline count (15 + the splint, RT batch 2) " + ShopDatabase.Items.Count(i => i.Baseline));
     foreach (var b in ShopDatabase.Items.Where(i => i.Baseline && i.Type == "consumable")) Check(ConsumableDatabase.All.ContainsKey(b.Id), "baseline consumable missing def " + b.Id);
   }
 
@@ -1129,7 +3596,7 @@ static class Program {
       if (l == "Freelance Trader") Check(p.CarryCapacityBonus == 10, "trader sack");
       Check(p.GetRepLevel("Raiders") == "Hostile" && p.GetRepLevel("Wanderers") == "Neutral", "raiders start hostile, others neutral");
       float h0 = p.Hunger; p.UseConsumable("basicMedkit");
-      Check(Math.Abs(h0 - p.Hunger - 20 / 10f * GameConstants.SurvivalCostPer10Hp) < 0.001f && p.Tiredness < 10, "medkit makes you hungry and sleepy");
+      Check(Math.Abs(h0 - p.Hunger - 200 / 100f * GameConstants.SurvivalCostPer10Hp) < 0.001f && p.Tiredness < 10, "medkit makes you hungry and sleepy");
     }
     // rank-ups follow the milestones, one perk pick at Professional
     GameBootstrap.StartNewGame();
@@ -1141,16 +3608,27 @@ static class Program {
     pl.NoteQuestDone(q);
     Check(pl.Rank == "Experienced", "experienced after tier 2 + quest, got " + pl.Rank);
     pl.NoteQuestDone(q); pl.NoteQuestDone(q);
-    Check(pl.Rank == "Experienced", "professional needs a kill");
+    Check(pl.Rank == "Professional" && pl.Exp == 0 && pl.PendingPerkPicks == 1 && pl.MaxAp == 5,   // rank XP (Yan): quests + the "3 quests" milestone fill the bar
+      $"professional from XP: {pl.Rank} xp {pl.Exp} picks {pl.PendingPerkPicks} ap {pl.MaxAp}");
     var m2 = MutantDatabase.Tiers["tier2"].First();
     pl.NoteKill(new Mutant(m2.Key, 0, 0, m2.Value));
-    Check(pl.Rank == "Professional" && pl.PendingPerkPicks == 1 && pl.MaxAp == 5, $"professional: {pl.Rank} picks {pl.PendingPerkPicks} ap {pl.MaxAp}");
+    Check(pl.Rank == "Professional" && pl.Exp == Player.KillXp(new Mutant(m2.Key, 0, 0, m2.Value)), $"a kill pays a little XP ({pl.Exp})");
+    pl.LoseXp(999); Check(pl.Rank == "Professional" && pl.Exp == 0, "dying's XP loss stops at 0 and never takes a rank");
     pl.HiddenNodeCleared = true; pl.NoteZoneTier(5);
     Check(pl.Rank == "Veteran", "veteran after tier 3 + hidden node, got " + pl.Rank);
     pl.ArcsFinished = 1; pl.NoteKill(new Mutant("x", 0, 0, MutantDatabase.Tiers["tier4"].First().Value));
     Check(pl.Rank == "Expert" && pl.PendingPerkPicks == 2, "expert, got " + pl.Rank);
     pl.NoteKill(new Mutant("x", 0, 0, MutantDatabase.Tiers["tier5"].First().Value));
-    Check(pl.Rank == "Expert", "master is gated on the main story");
+    Check(pl.Rank == "Expert", "master is a long way off");
+    // Yan: Master and Legend without the main story, but "pretty hard to achieve" - dungeons, storylines, named kills, big bars
+    int xpBefore = pl.Exp;
+    for (int k = 0; k < 6; k++) pl.DungeonsCleared.Add("d" + k);
+    pl.ArcsFinished = 3; pl.CheckRankUp();
+    int paid = pl.Exp - xpBefore;
+    pl.DungeonsCleared.Add("d6"); pl.CheckRankUp();
+    Check(pl.Rank == "Master" || paid > 0 && pl.Exp - xpBefore == paid, $"a milestone pays once even as its count passes the target (+{paid})");
+    Check(Player.XpToNext("Master") >= 2000 && Player.XpToNext("Legend") >= 5000 && !pl.MilestonesFor("Legend").Any(m => m.text.Contains("Main Story")) && !pl.MilestonesFor("Master").Any(m => m.text.Contains("Main Story")),
+      "Master and Legend: big bars, no main story needed");
     // a few perk effects
     pl.ApplyTemporaryHP(10); Check(pl.TempHPDuration == 4, "temp hp 4 turns");
     pl.TakePerk("IronWill"); pl.ApplyTemporaryHP(10); Check(pl.TempHPDuration == 8, "iron will");
@@ -1160,7 +3638,7 @@ static class Program {
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
     pl.ApplyCarryEffects(); int capped = pl.MaxMp; pl.TakePerk("WalkingTank"); pl.ApplyCarryEffects();
     Check(pl.MaxMp >= capped, $"walking tank {capped}->{pl.MaxMp}");
-    Check(PerkDatabase.All.Count == 35, "perk count " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 37, "perk count (35 + Tumbler, Cold Blood) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80
@@ -1321,6 +3799,8 @@ static class Program {
       Check(StoryAt("secret_lab_beta", "Archive Room") && StorySystem.Has("beta_drive"), "beta drive");
       Check(!ShopSystem.SellItem("story_drive_beta"), "key items can't be sold");
       Check(StoryAt("dried_lake", "Sub-Station House") && StorySystem.Act == 3, "osei decodes");
+      Check(StoryAt("secret_lab_gamma", "Sealed Vault") && !StorySystem.Has("gamma"), "the vault is locked without the Depths crew's key");
+      p.AddItem(new InventoryItem { Id = EelBoss.VaultKeyId, Name = "Sealed Vault key (Depths crew)", Type = "key", Qty = 1 });
       Check(StoryAt("secret_lab_gamma", "Sealed Vault"), "vault reachable");
       if (!StorySystem.Has("gamma")) { foreach (var e in EncounterState.Enemies) e.Hp = 0; StoryAt("secret_lab_gamma", "Sealed Vault"); }
       Check(StorySystem.Act == 4 && p.Inventory.Items.Any(i => i.Id == "theLodestone") && p.MainStoryAct3Done, "gamma + compass");
@@ -1337,7 +3817,7 @@ static class Program {
       StoryAt("reactor_core", "The Last Gate");
       Check(StorySystem.Act == 6 && p.MainStoryFinaleDone && p.Inventory.Items.Any(i => i.Id == "theBlackStar"), "ending reached");
       if (sponsor == "Garrison") Check(MacroMapDatabase.Zones.Max(z => z.Tier) == 5 && WorldEvents.ArtifactSearchBonus("perimeter") == -2, "destroy ending shrinks the zone");
-      if (sponsor == "Alone") { p.ApplyArtifactStatBonuses(); Check(p.MaxHp == 110, "take it: +10 max hp, got " + p.MaxHp); }
+      if (sponsor == "Alone") { p.ApplyArtifactStatBonuses(); Check(p.MaxHp == 1100, "take it: +100 max hp, got " + p.MaxHp); }
       Console.WriteLine($"story ({sponsor}): ending '{MacroState.Current.Ending}', rank {p.Rank}");
     }
     GameBootstrap.StartNewGame();
@@ -1471,9 +3951,9 @@ static class Program {
     Check(Math.Abs(p.AnomDR - Math.Max(0, anom0 - 0.20f)) < 0.001f, $"both penalties apply: {anom0} -> {p.AnomDR}");
     p.ArtifactSlots[0] = "lucifer"; p.ArtifactSlots[1] = "theLodestone"; p.ApplyArtifactStatBonuses();
     Check(p.ArtifactAutoPassAnomalies && p.ArtifactApBonus == 1, "two legendaries both work");
-    Check(p.MaxHp == 75, "lucifer max hp " + p.MaxHp);
+    Check(p.MaxHp == 750, "lucifer max hp " + p.MaxHp);
     p.ArtifactSlots[0] = null; p.ArtifactSlots[1] = null; p.ApplyArtifactStatBonuses();
-    Check(p.MaxHp == 100 && Math.Abs(p.AnomDR - anom0) < 0.001f, "everything restored after taking them off");
+    Check(p.MaxHp == 1000 && Math.Abs(p.AnomDR - anom0) < 0.001f, "everything restored after taking them off");
     GameLog.Target = null;
   }
 
@@ -1533,10 +4013,12 @@ static class Program {
     }
     m.OfflineSquads.Remove(guests);
     // Batch 59: a fight that drags on gets the leader on the radio; a same-faction squad next door sets out to help
+    bool session59 = TestingGround.Session; TestingGround.Session = true;      // (this walk is about the radio, not about what happens to a dead solo player: that is the Testing Ground's death screen, not the camp)
     {
       var nb = OffMap(here);
       m.OfflineSquads.RemoveAll(s => s.Faction == "Garrison");
       var foes = SquadManager.CreateOfflineSquad(nb, "Garrison", 3); foes.ZoneId = here.Id; SquadManager.ArriveLive(foes, nb);
+      EncounterState.Enemies.RemoveAll(e => !foes.Members.Contains(e));      // only these three are in the fight (whoever else the map has by now would change the count the radio waits for)
       foreach (var x in foes.Members) { x.IsAggroed = true; }
       var help = SquadManager.CreateOfflineSquad(nb, "Garrison", 2);
       EncounterState.InCombat = true; EncounterState.ResetFight();
@@ -1550,6 +4032,7 @@ static class Program {
       m.OfflineSquads.Remove(foes); m.OfflineSquads.Remove(help); EncounterState.Enemies.RemoveAll(e => foes.Members.Contains(e));
       EncounterState.InCombat = false; EncounterState.ResetFight(); GameLog.Target = log;
     }
+    TestingGround.Session = session59;
     // Batch 38: a real off-screen fight next door becomes news, comes over the radio, and turns up as a rumor
     var heard = new ListLog(); GameLog.Target = heard;
     var nextDoor = OffMap(here);
@@ -1972,8 +4455,8 @@ static class Program {
     p.EquipArmorFromInventory(one.Id);
     Check(p.ArmorMods.SlotB == null && p.Inventory.Items.Any(i => i.Id == mods[1]), "extra mod returned");
     // Lucifer costs real HP; legendaries keep their value off the belt
-    p.HealPermanent(100); p.ArtifactSlots[0] = "lucifer"; p.ApplyArtifactStatBonuses();
-    Check(p.Hp == 75 && p.PermHP == 75, "lucifer clamps hp " + p.Hp);
+    p.HealPermanent(1000); p.ArtifactSlots[0] = "lucifer"; p.ApplyArtifactStatBonuses();
+    Check(p.Hp == 750 && p.PermHP == 750, "lucifer clamps hp " + p.Hp);
     p.UnequipArtifact(0);
     Check(p.Inventory.Items.First(i => i.Id == "lucifer").Price >= 20000, "legendary keeps its value");
     // two copies with different condition get their own ids

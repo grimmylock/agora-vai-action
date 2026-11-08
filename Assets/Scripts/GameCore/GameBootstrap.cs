@@ -72,6 +72,8 @@ namespace GameCore
                 gameObject.AddComponent<CorpseLootUI>();
             // New (Batch 6): the quest journal - QuestSystem existed but nothing ever showed
             // available/active quests or let the player accept one. Same self-building convention.
+            if (GetComponent<TestingGroundUI>() == null)
+                gameObject.AddComponent<TestingGroundUI>();
             if (GetComponent<QuestUI>() == null)
                 gameObject.AddComponent<QuestUI>();
             if (GetComponent<WorldUI>() == null)
@@ -90,6 +92,8 @@ namespace GameCore
             // New (Batch 11): New Game / Load Game / Options (controls) / Quit - see MainMenuUI.
             if (GetComponent<MainMenuUI>() == null)
                 gameObject.AddComponent<MainMenuUI>();
+            if (GetComponent<CoopUI>() == null)   // RT 7y: host / join (the networking test)
+                gameObject.AddComponent<CoopUI>();
 
             // New (Batch 11): show the main menu instead of auto-starting/auto-loading a game.
             // GameState.Mode defaults to GameMode.MainMenu (see GameState.cs), which already keeps
@@ -111,9 +115,12 @@ namespace GameCore
         /// death restart can call the exact same path instead of duplicating it. Doesn't touch
         /// GameServices or the MonoBehaviour components (TacticalGridView etc.) - those don't need
         /// recreating, they already read everything fresh from the statics reset here.</summary>
-        public static void StartNewGame(CharacterSpec spec = null)
+        public static void StartNewGame(CharacterSpec spec = null, string startZone = null, bool save = true)
         {
+            Survival.Stop();                                                       // a new game is never a survival run (Survival.Begin turns it on)
+            TestingGround.Session = false;                                         // TestingGround.Start sets it again after this
             spec = spec ?? new CharacterSpec();
+            SaveSystem.CharacterId = SaveSystem.WorldId = null;   // RT 7x: a new slot is made at the end (none for the Testing Ground)
             GameState.Current = new GameState();
             MacroState.Current = new MacroState();
             FactionDeck.Reset(); GarrisonRaid.Reset();
@@ -154,11 +161,21 @@ namespace GameCore
                     player.Ru += 200;
                     break;
             }
+            Give(player, "bandage", 1); Give(player, "splint", 1); Give(player, "basicStim", 1);   // real-time fork: a way back up when you go down
             if (!string.IsNullOrEmpty(spec.Perk)) player.TakePerk(spec.Perk);
             player.ApplyCarryEffects();
+            Pack.Refit(player);                     // Pack 1: the starting kit packed into whatever bag you started with
 
+            if (startZone != null)   // the Testing Ground: its own map, never seeded with squads or anomalies
+            {
+                MacroState.Current.CurrentZoneId = startZone;
+                MacroState.Current.PopulatedZones.Add(startZone);
+                MacroState.Current.PersistedZoneAnomalies[startZone] = new System.Collections.Generic.List<Anomaly>();
+            }
             ZoneTravel.EnterZone(MacroState.Current.CurrentZoneId);
             SquadManager.SeedWorld();               // Batch 41: the rest of the Zone is populated from the start (after a map is loaded)
+            player.CharacterName = SaveSystem.CleanName(spec.Name);
+            if (startZone == null && save) SaveSystem.Create(spec.Name);   // RT 7x: the save at creation (Yan) - a new character in a new world
             GameLog.Write($"You step into the Perimeter: a Rookie {spec.Loadout.ToLowerInvariant()} with {player.Ru} Ru. P shows your character, W the state of the Zone.");
         }
 

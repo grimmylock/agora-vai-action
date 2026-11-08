@@ -36,6 +36,8 @@ namespace GameCore
         public static Player Current;
 
         public string Name => "Player";
+        /// <summary>RT 7x: the name the player gave the character at creation (saved in its character file).</summary>
+        public string CharacterName = "Scavenger";
         public string Faction => "Player";
 
         public int X { get; set; } = 2;
@@ -45,8 +47,8 @@ namespace GameCore
         public int WorldX { get; set; } = 8;
         public int WorldY { get; set; } = 8;
 
-        public int MaxHp = 100;
-        public int PermHP = 100;
+        public int MaxHp = 1000;   // real-time fork: HP x10 (Yan: finer damage numbers)
+        public int PermHP = 1000;
         public int TempHP = 0;
         public int TempHPDuration = 0;
         public StatusEffects StatusEffects { get; } = new StatusEffects();
@@ -179,10 +181,17 @@ namespace GameCore
         public bool ArtifactKillRefundAp;
         public int PendingApDrain { get; set; }
 
-        public Player()
+        public Player() : this(true) { }
+
+        /// <summary>Co-op groundwork: every player in the game - the local one (Current) first. A new local player (New Game,
+        /// a load) starts the list over; Join adds another player beside you (the host's view of a friend, or the harness).</summary>
+        public static readonly System.Collections.Generic.List<Player> All = new System.Collections.Generic.List<Player>();
+        Player(bool local)
         {
-            Current = this;
+            if (local) { Current = this; All.Clear(); }
+            All.Add(this);
         }
+        public static Player Join() => new Player(false);
 
         /// <summary>Ported from calculateCarryWeight().</summary>
         public float CalculateCarryWeight()
@@ -282,7 +291,7 @@ namespace GameCore
             bool killRefundApAdd = false;
             ArtifactAutoPassAnomalies = false;
             bool hasArtifactHandlerPerk = CombatantUtil.HasPerk(this, "ArtifactHandler");
-            MaxHp = 100 + BonusMaxHp;   // was never reset: taking Lucifer off left you at -25 Max HP for good
+            MaxHp = 1000 + BonusMaxHp;   // was never reset: taking Lucifer off left you at -25 Max HP for good
 
             // File 03: in each family only the strongest worn artifact gives its bonus; extras
             // still cost their Anom-DR penalty. Each legendary is its own family. (The old
@@ -309,7 +318,7 @@ namespace GameCore
                 // effect ImmuneBleed already has below; false (the other two) has no numeric
                 // reduction in the source data to wire, so it stays flavor-only.
                 if (art.ImmuneBleed || art.BleedNegate == true) StatusEffects.Bleeding = false;
-                if (art.MaxHpPenalty.HasValue) MaxHp = System.Math.Max(50, MaxHp - art.MaxHpPenalty.Value);
+                if (art.MaxHpPenalty.HasValue) MaxHp = System.Math.Max(500, MaxHp - art.MaxHpPenalty.Value);
                 if (art.PhysDRBonus.HasValue) physDRBonusAdd += art.PhysDRBonus.Value;
                 if (art.AnomDRBonus.HasValue) anomDRBonusAdd += art.AnomDRBonus.Value;
                 if (art.BypassPhysDR.HasValue) bypassPhysDRAdd += art.BypassPhysDR.Value;
@@ -359,6 +368,7 @@ namespace GameCore
                     copy.Id = $"{item.Id}~{n}";
                 }
                 Inventory.Items.Add(copy);
+                if (!Pack.Place(this, copy)) GameLog.Write($"No room in your pack for the {copy.Name} - make room or drop something (I).");   // Pack 1
             }
             ApplyCarryEffects();
         }
@@ -425,6 +435,7 @@ namespace GameCore
             }
             amount -= TempHP;
             TempHP = 0;
+            if (Rt.On && !Body.Down(this) && PermHP - amount <= 0) { PermHP = 1; Body.GoDown(this); return; }   // RT batch 2: down, not dead
             PermHP = System.Math.Max(0, PermHP - amount);
         }
 
@@ -438,6 +449,7 @@ namespace GameCore
         {
             if (amount <= 0) return;
             PermHP = System.Math.Min(MaxHp, PermHP + amount);
+            Body.Heal(this, amount);   // RT batch 2: the parts heal too
         }
 
         /// <summary>Ported from applyTemporaryHP(amount).</summary>

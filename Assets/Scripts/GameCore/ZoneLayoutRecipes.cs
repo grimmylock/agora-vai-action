@@ -84,13 +84,17 @@ namespace GameCore
 
                 ["secret_cave"] = TierDungeons.SecretCave(),
                 ["secret_lab_alpha"] = TierDungeons.Lab("secret_lab_alpha", "concrete", LabTile, "Reception Airlock", "Sample Storage", "industrial_basin"),   // Batch 92: a floor plan
-                ["sub_station_depths"] = TierDungeons.Lab("sub_station_depths", "concrete", Concrete, "Flooded Corridor", "Transformer Vault", "dried_lake"),   // Batch 92: a floor plan
+                ["sub_station_depths"] = TierDungeons.Lab("sub_station_depths", "concrete", Concrete, "Flooded Corridor", "Transformer Vault", "dried_lake", "sub_station_depths_1", "sub_station_depths_3"),
+                ["sub_station_depths_1"] = TierDungeons.DepthsLevel("sub_station_depths_1", Grate, "sub_station_depths", "sub_station_depths_2"),   // the eel's levels
+                ["sub_station_depths_2"] = TierDungeons.DepthsLevel("sub_station_depths_2", Grate, "sub_station_depths_1", "sub_station_depths_3"),
+                ["sub_station_depths_3"] = TierDungeons.DepthsLevel("sub_station_depths_3", Concrete, "sub_station_depths_2", null, "The Bottom", "sub_station_depths"),   // Batch 92: a floor plan
                 ["maintenance_tunnels"] = TierDungeons.Lab("maintenance_tunnels", "concrete", Concrete, "Tunnel Junction", "Collapsed Section", "rail_yards"),   // Batch 92: a floor plan
                 ["secret_lab_beta"] = TierDungeons.Lab("secret_lab_beta", "plaster", LabTile, "Archive Room", "Isolation Ward", "ghost_town"),   // Batch 92: a floor plan
                 ["deep_caverns"] = TierDungeons.Lab("deep_caverns", "cliff", CaveFloor, "Root Hall", "Crystal Pool", "crimson_woods"),   // Batch 100: a plan
                 ["underground_labyrinth"] = TierDungeons.Lab("underground_labyrinth", "cliff", CaveFloor, "The Fork", "Cave-In Chamber", "quarry_basin"),   // Batch 100: a plan
                 ["secret_lab_gamma"] = TierDungeons.Lab("secret_lab_gamma", "concrete", LabTile, "Signal Room", "Sealed Vault", "antenna_grid"),   // Batch 92: a floor plan
                 ["lattice_foundry"] = TierDungeons.LatticeUpper(),         // Batch 91: floor plans (TierDungeons.Plans.cs)
+                [TestingGround.Zone] = TestingGround.Map(),   // the menu's testing ground
                 ["farmhouse_upper"] = TierDungeons.Upstairs("farmhouse_upper", "wall", "perimeter"),   // Batch 120: upper floors
                 ["school_upper"] = TierDungeons.Upstairs("school_upper", "wall", "ghost_town"),
                 ["flats_2"] = TierDungeons.Upstairs("flats_2", "plaster", "ghost_town", "flats_3"),

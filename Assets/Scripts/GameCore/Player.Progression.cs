@@ -19,6 +19,8 @@ namespace GameCore
         public bool MainStoryAct3Done, MainStoryFinaleDone;   // set by the story once file 09 is in
         public int PendingPerkPicks;
         public int BonusMaxHp;   // permanent (the "Take it" ending)
+        public List<string> DungeonsCleared = new List<string>();   // dungeons emptied of hostiles (Master/Legend milestones)
+        public int NamedKilled;                                     // Named mutants and bosses killed
 
         // per-turn / per-fight perk trackers
         public bool MovedThisTurn, HitAndRunUsed, RunAndGunUsed, OverwatchHeld, ParryHeld, AdrenalineUsed;
@@ -37,8 +39,13 @@ namespace GameCore
                 case "Professional": return new List<(string, bool)> { ("Complete 3 quests", QuestsCompleted >= 3), ("Kill a Tier 2 mutant or a Professional+ NPC", MaxMutantTierKilled >= 2 || MaxNpcRankKilled >= prof) };
                 case "Veteran": return new List<(string, bool)> { ("Reach a Tier 3 zone", MaxTierReached >= 3), ("Clear a hidden sub-zone or finish an NPC storyline", HiddenNodeCleared || ArcsFinished >= 1) };
                 case "Expert": return new List<(string, bool)> { ("Reach a Tier 4 zone", MaxTierReached >= 4), ("Kill a Tier 4 mutant", MaxMutantTierKilled >= 4), ("Finish an NPC storyline", ArcsFinished >= 1) };
-                case "Master": return new List<(string, bool)> { ("Reach a Tier 5 zone", MaxTierReached >= 5), ("Main Story Act 3 (not in the game yet)", MainStoryAct3Done), ("Kill a Tier 5 mutant or a Legend NPC", MaxMutantTierKilled >= 5 || MaxNpcRankKilled >= legend) };
-                case "Legend": return new List<(string, bool)> { ("Main Story finale (not in the game yet)", MainStoryFinaleDone) };
+                // Yan: "master and legend should not required the main story but they should be pretty hard to achieve, i'd like the
+                // game to have a lot of playtime available": long goals across the big maps and their dungeons
+                case "Master": return new List<(string, bool)> { ("Reach a Tier 5 zone", MaxTierReached >= 5), ("Kill a Tier 5 mutant or a Legend NPC", MaxMutantTierKilled >= 5 || MaxNpcRankKilled >= legend),
+                    ($"Clear 6 dungeons ({DungeonsCleared.Count}/6)", DungeonsCleared.Count >= 6), ($"Finish 3 NPC storylines ({ArcsFinished}/3)", ArcsFinished >= 3) };
+                case "Legend": return new List<(string, bool)> { ("Reach a Tier 6 zone", MaxTierReached >= 6), ($"Kill 3 Named mutants or bosses ({NamedKilled}/3)", NamedKilled >= 3),
+                    ($"Clear 12 dungeons ({DungeonsCleared.Count}/12)", DungeonsCleared.Count >= 12), ($"Finish 6 NPC storylines ({ArcsFinished}/6)", ArcsFinished >= 6),
+                    ($"Complete 40 quests ({QuestsCompleted}/40)", QuestsCompleted >= 40) };
                 default: return new List<(string, bool)>();
             }
         }
@@ -52,16 +59,54 @@ namespace GameCore
             }
         }
 
-        /// <summary>Ranks up as far as the milestones allow. Call after anything that can meet one.</summary>
+        // Rank XP (Yan, 2026-10-20: "build an xp system for the ranks, make it so the milestones award rank xp instead of the rank
+        // itself, also dying can't knock you down ranks, just removes XP and it goes down to 0 if it removes more than the player
+        // has"). Exp is the progress toward the next rank; it carries over on a rank-up. Every milestone, of any rank, pays its
+        // rank's share once (a rank's milestones together fill that rank's bar); quests and kills pay a little more, so XP lost
+        // to deaths can be earned back.
+        public static int XpToNext(string next) => next switch
+        {
+            "Experienced" => 200, "Professional" => 300, "Veteran" => 400, "Expert" => 600, "Master" => 2500, "Legend" => 6000, _ => 0,   // the top two: a long way
+        };
+        public const int QuestXp = 50;
+        public static int KillXp(ICombatant t) => t is HumanEnemy h ? 5 + 5 * CombatRules.RankIndex(h.Rank) : t is Mutant m && m.Db != null ? 5 * m.Db.Tier : 0;
+        public List<string> MilestonesDone = new List<string>();   // "Rank:text", each paid once
+
+        public void GainXp(int xp, string why = null)
+        {
+            if (xp <= 0) return;
+            Exp += xp;
+            if (why != null) GameLog.Write($"+{xp} XP: {why}.");
+            CheckRankUp();
+        }
+
+        /// <summary>Death costs XP toward the next rank - never a rank, never below 0.</summary>
+        public void LoseXp(int xp)
+        {
+            int lost = System.Math.Min(Exp, System.Math.Max(0, xp));
+            Exp -= lost;
+            if (lost > 0) GameLog.Write($"-{lost} XP.");
+        }
+
+        /// <summary>Pays any milestone newly met, then ranks up as far as the XP goes. Call after anything that can meet one.</summary>
         public void CheckRankUp()
         {
             while (NextRank != null)
             {
                 var next = NextRank;
-                var ms = MilestonesFor(next);
-                if (ms.Count == 0 || ms.Any(m => !m.met)) return;
+                var ms = MilestonesFor(next);                             // only the next rank's milestones pay (in order, as the sheet shows);
+                foreach (var (text, met) in ms)                           // ones met early pay once their rank is next
+                    if (met && !MilestonesDone.Contains(next + ":" + text.Split(" (")[0]))   // keyed without the "(3/6)" count
+                    {
+                        MilestonesDone.Add(next + ":" + text.Split(" (")[0]);
+                        int xp = XpToNext(next) / System.Math.Max(1, ms.Count);
+                        Exp += xp;
+                        GameLog.Write($"[MILESTONE] {text}: +{xp} XP.");
+                    }
+                if (Exp < XpToNext(next)) return;
+                Exp -= XpToNext(next);
                 Rank = next;
-                GameLog.Write($"[RANK UP] You are now {next}. ({string.Join("; ", ms.Select(m => m.text))})");
+                GameLog.Write($"[RANK UP] You are now {next}.");
                 GameLog.Write($"  AP {MaxAp}, attack/AC modifier {CombatRules.RankMod(Rank):+0;-0;0}.");
                 if (PerkRanks.Contains(next))
                 {
@@ -90,7 +135,15 @@ namespace GameCore
                 HiddenNodeCleared = true;
                 GameLog.Write($"You've cleared {zone.Name}.");
             }
-            CheckRankUp();
+            if (target is Mutant nm && nm.Named) NamedKilled++;
+            var map = MacroMapDatabase.Find(TerrainMap.ZoneId);
+            if (map != null && map.IsDungeon && !map.Upstairs && !DungeonsCleared.Contains(map.Id)
+                && !EncounterState.Enemies.Any(e => e.IsAlive() && !Companion.Is(e) && !EnemyAI.FriendlyToPlayer(e)))
+            {
+                DungeonsCleared.Add(map.Id);
+                GameLog.Write($"[DUNGEON CLEARED] {map.Name} ({DungeonsCleared.Count} so far).");
+            }
+            GainXp(KillXp(target));
         }
 
         public void NoteQuestDone(QuestDef q)
@@ -101,7 +154,7 @@ namespace GameCore
                 ArcsFinished++;
                 GameLog.Write("That was the end of their story.");
             }
-            CheckRankUp();
+            GainXp(QuestXp, "job done");
         }
 
         /// <summary>Run and Gun (H): once per turn, 1 AP for +2 MP.</summary>

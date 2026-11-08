@@ -43,6 +43,7 @@ namespace GameCore
         TextMeshProUGUI _tgtHint;
         TextMeshProUGUI _zone, _zoneSub, _turn, _targetName, _targetState, _hpNum, _ac, _wName, _wMag, _wCap, _wAmmo, _hint;
         readonly List<Image> _hpSeg = new List<Image>(), _tgtSeg = new List<Image>(), _ap = new List<Image>(), _mp = new List<Image>();
+        TextMeshProUGUI _apL, _mpL;   // hidden in real time
         readonly List<(GameObject go, TextMeshProUGUI t, Image edge)> _chips = new List<(GameObject, TextMeshProUGUI, Image)>();
         readonly List<(TextMeshProUGUI t, Image edge)> _wChips = new List<(TextMeshProUGUI, Image)>();
         readonly List<TextMeshProUGUI> _belt = new List<TextMeshProUGUI>(), _arts = new List<TextMeshProUGUI>();
@@ -163,9 +164,9 @@ namespace GameCore
             _hpNum = Txt(pc, "HPN", new Vector2(452, -10), new Vector2(60, 24), "", true, 16, Cream);
             _ac = Txt(pc, "AC", new Vector2(128, -46), new Vector2(120, 22), "", true, 14, Cream);
             for (int i = 0; i < 3; i++) { var ch = Chip(pc, new Vector2(232 + i * 96, -44), 92); _chips.Add(ch); ch.Item1.SetActive(false); }
-            Txt(pc, "APL", new Vector2(128, -82), new Vector2(40, 20), "AP", true, 14, Dim);
+            _apL = Txt(pc, "APL", new Vector2(128, -82), new Vector2(40, 20), "AP", true, 14, Dim);
             _ap.AddRange(Segments(pc, new Vector2(168, -84), 6, 16, 16, 8));
-            Txt(pc, "MPL", new Vector2(320, -82), new Vector2(40, 20), "MP", true, 14, Dim);
+            _mpL = Txt(pc, "MPL", new Vector2(320, -82), new Vector2(40, 20), "MP", true, 14, Dim);
             _mp.AddRange(Segments(pc, new Vector2(360, -84), 6, 16, 16, 8));
             _food = Meter(pc, new Vector2(12, -132), "FOOD", Yellow);
             _water = Meter(pc, new Vector2(184, -132), "WATER", Cyan);
@@ -235,7 +236,16 @@ namespace GameCore
             }
         }
 
-        readonly Dictionary<string, GameObject> _old = new Dictionary<string, GameObject>();   // the hidden debug panels
+        static readonly Dictionary<string, GameObject> _old = new Dictionary<string, GameObject>();   // the hidden debug panels (one HUD)
+        /// <summary>Yan: "after opening and closing the inventory my character froze" - ESC paused the game under the open inventory.
+        /// Now ESC closes the inventory (and the other old panels) first; true if it closed one.</summary>
+        public static bool CloseOldPanels()
+        {
+            bool any = false;
+            foreach (var go in _old.Values) if (go != null && go.activeSelf) { go.SetActive(false); any = true; }
+            return any;
+        }
+        TextMeshProUGUI _paused;
         void Toggle(string name)
         {
             if (_old.TryGetValue(name, out var go) && go != null) go.SetActive(!go.activeSelf);
@@ -251,9 +261,11 @@ namespace GameCore
             if (!show) return;
 
             var k = Keyboard.current;
+            UpdatePack();                                                             // Pack 1: I - the pack screen
+            UpdateHurt();                                                             // getting hit: the red edge and flash
             if (k != null && !GameState.Current.ModalOpen)
             {
-                if (k.iKey.wasPressedThisFrame) { Toggle("EquipmentPanel"); Toggle("InventoryPanel"); }
+                // (I opens the pack screen now - HudView.Pack.cs; the old text panels stay hidden)
                 if (k.f1Key.wasPressedThisFrame) Toggle("ControlsPanel");
                 var digits = new[] { k.digit1Key, k.digit2Key, k.digit3Key, k.digit4Key };
                 for (int i = 0; i < 4; i++)
@@ -268,21 +280,44 @@ namespace GameCore
             bool exploring = PlayerController.Exploring();
             string turn = GameState.Current.CurrentTurn == Turn.Player ? (exploring ? "<color=#62b25a>EXPLORING</color>" : "YOUR TURN") : "<color=#c8443a>ENEMY TURN</color>";
             if (m.SurgeRounds > 0) turn += $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>";
+            if (Rt.On)   // real-time fork: no turns - fighting or not, and your stamina
+                turn = Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : (EncounterState.InCombat ? "<color=#c8443a>FIGHT</color>" : "<color=#62b25a>EXPLORING</color>")
+                    + $"   STAMINA {Mathf.RoundToInt(Rt.Me.Stamina)}   FOCUS {Mathf.FloorToInt(Rt.Me.Focus)}" + (Rt.SlowMo ? "   <color=#62c0e0>BULLET TIME</color>" : "") + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "");
+            if (Survival.On) turn = $"<color=#e0c050>{Survival.Status()}</color>   " + turn;   // Survival: the wave line
             _turn.text = turn;
-            _endTurn.SetActive(!exploring && GameState.Current.CurrentTurn == Turn.Player);
+            // a paused game says so in the middle of the screen, not only in the top line
+            if (_paused == null)
+            {
+                _paused = Txt(_root.transform, "Paused", Vector2.zero, new Vector2(900f, 120f), "PAUSED\n<size=50%>ESC to resume</size>", true, 56, Cream, TextAlignmentOptions.Center);
+                Pin(_paused.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f));
+                _paused.outlineWidth = 0.25f; _paused.outlineColor = new Color32(0, 0, 0, 255);
+            }
+            _paused.gameObject.SetActive(Rt.On && Rt.Paused && !GameState.Current.ModalOpen);
+            _endTurn.SetActive(!Rt.On && !exploring && GameState.Current.CurrentTurn == Turn.Player);
 
             UpdateTarget(p);
             UpdateActionBar(p);   // Batch 72
             UpdatePrompts(p);     // Batch 123
             UpdateBarks();        // Batch 129
+            UpdateNumbers();      // the testing ground's damage numbers
+            UpdateBoss();         // Boss 1: the name card, his health bar
             UpdateTargeting(p);   // Batch 77
 
             // player card
             _portrait.sprite = UnitSprites.For(p);
             FillSegs(_hpSeg, p.Hp / (float)Mathf.Max(1, p.MaxHp), Red);
             _hpNum.text = p.Hp.ToString();
-            _ac.text = $"AC {p.Ac}";
+            _ac.text = Rt.On ? Body.Summary(p) : $"AC {p.Ac}";   // RT batch 2: each part's health
             var st = new List<(string, Color)>();
+            if (Rt.On)
+            {
+                var bs = Body.Of(p);
+                if (bs.Down) st.Add(($"DOWN {Mathf.CeilToInt(bs.BleedOut)}s", Red));
+                foreach (var f in bs.Fractured) st.Add(((Body.Name(f) + (bs.Broken.Contains(f) ? " broken" : " fractured")).ToUpperInvariant(), Red));
+                if (Body.Concussed(p)) st.Add(("CONCUSSED", Yellow));
+                if (Rt.Me.UsingId != null) st.Add(($"USING {Mathf.Max(0f, Rt.Me.UseDone - Time.time):0.0}s", Cyan));
+                if (Rt.Me.Reviving > 0f) st.Add(($"REVIVING {Rt.ReviveSeconds - Rt.Me.Reviving:0.0}s", Cyan));
+            }
             if (p.StatusEffects.Bleeding) st.Add(("BLEEDING", Red));
             if (p.StatusEffects.ToxicBleed) st.Add(("TOXIC", Green));
             if (p.StatusEffects.Irradiated) st.Add(("RAD", Green));
@@ -301,6 +336,10 @@ namespace GameCore
             }
             Pips(_ap, p.Ap, p.MaxAp, Yellow);
             Pips(_mp, (int)p.Mp, p.MaxMp, Cyan);
+            // real time has no turns: AP and MP mean nothing (Yan: "it also keeps updating the MP values but we got rid of that")
+            _apL.gameObject.SetActive(!Rt.On); _mpL.gameObject.SetActive(!Rt.On);
+            foreach (var seg in _ap) seg.gameObject.SetActive(!Rt.On);
+            foreach (var seg in _mp) seg.gameObject.SetActive(!Rt.On);
             Meter(_food, p.Hunger / 10f); Meter(_water, p.Thirst / 10f); Meter(_rest, p.Tiredness / 10f);
 
             // weapon card
@@ -318,7 +357,7 @@ namespace GameCore
             bool melee = w != null && CombatRules.IsMelee(w);
             var cond = w == null ? "" : w.IsJammed ? "JAMMED" : (w.Condition ?? ItemCondition.Working).ToUpperInvariant();
             SetChip(_wChips[0], cond, w == null ? Dim : w.IsJammed || cond == "BROKEN" ? Red : cond == "WORKING" ? Dim : Yellow);
-            SetChip(_wChips[1], w == null || melee ? "" : (CombatRules.CanBurst(w) ? p.FireMode.ToUpperInvariant() : "SINGLE") + (p.AimedPart != null && p.FireMode != "Burst" ? " " + p.AimedPart.ToUpperInvariant() : ""), p.AimedPart != null ? Yellow : Dim);   // Batch 57: the aimed part
+            SetChip(_wChips[1], w == null || melee ? "" : Rt.On ? Gunplay.ModeLabel(w, Rt.Of(p).FireMode) : (CombatRules.CanBurst(w) ? p.FireMode.ToUpperInvariant() : "SINGLE") + (p.AimedPart != null && p.FireMode != "Burst" ? " " + p.AimedPart.ToUpperInvariant() : ""), p.AimedPart != null ? Yellow : Dim);   // Batch 57: the aimed part
             _wMag.text = w == null || melee ? "-" : w.CurrentMagazine.ToString();
             _wCap.text = w == null || melee ? "" : $"/ {w.MagCapacity}";
             string ammo = w?.CurrentAmmoType ?? "Standard";

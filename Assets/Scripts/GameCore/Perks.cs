@@ -33,9 +33,9 @@ namespace GameCore
         /// and +2 AP on your next turn.</summary>
         public static void TryAdrenaline(Player p)
         {
-            if (p.AdrenalineUsed || !p.IsAlive() || p.Hp >= 30 || !CombatantUtil.HasPerk(p, "AdrenalineSurge")) return;
+            if (p.AdrenalineUsed || !p.IsAlive() || p.Hp >= 300 || !CombatantUtil.HasPerk(p, "AdrenalineSurge")) return;
             p.AdrenalineUsed = true;
-            p.TempHP += 20;
+            p.TempHP += 200;
             p.TempHPDuration = System.Math.Max(p.TempHPDuration, 4);
             p.AdrenalineApNextTurn = 2;
             GameLog.Write("ADRENALINE SURGE! +20 temporary HP, +2 AP next turn.");

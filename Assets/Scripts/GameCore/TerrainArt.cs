@@ -93,10 +93,13 @@ namespace GameCore
                         return "fence_v";
                     return t.Look ?? Pick(theme.Cover, x, y, coarse: false);
                 case TileType.HardCover: return t.Look ?? Pick(theme.Hard, x, y, coarse: false);
-                case TileType.Door: return t.Look == "metal" ? "metaldoor" : "door";
+                case TileType.Door:
+                    if (t.Look == "door_badge" || t.Look == "door_badge_on" || t.Look == "door_power" || t.Look == "door_power_on") return t.Look;   // Boss 2: LabLocks' doors keep their own faces
+                    return t.Look == "metal" ? "metaldoor" : "door";
                 case TileType.DoorOpen: return t.Look == "broken" ? "door_broken" : "door_open";
                 case TileType.Barrel: return "barrel";
                 case TileType.Difficult:
+                    if (t.Look == "deepwater") return null;   // LabLocks' deep water: drawn darker by WorldArt, no sprite
                     if (t.Look != null) return t.Look;
                     return t.Ground == GroundType.Water || t.Ground == GroundType.Mud ? null : "rubble";
                 default: return t.Look;

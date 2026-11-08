@@ -53,6 +53,8 @@ namespace GameData
             ["IronWill"] = P("Survival", "Iron Will", "Temporary HP lasts 8 turns."),
             ["ArtifactHandler"] = P("Survival", "Artifact Handler", "Artifact Anom-DR penalties are halved."),
             ["Haggler"] = P("Survival", "Haggler", "Buy 15% cheaper, sell 15% higher."),
+            ["Tumbler"] = P("Survival", "Tumbler", "After a dive you're back on your feet faster (0.35 s prone instead of 0.6)."),   // real-time fork
+            ["ColdBlood"] = P("Survival", "Cold Blood", "Rounds that just miss you fill twice the Focus."),   // real-time fork
         };
     }
 }

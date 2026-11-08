@@ -114,9 +114,29 @@ def lab(seed):
     for _ in range(40): px(im, r.randrange(S), r.randrange(S), r.choice((pal[3], pal[1])))
     return im
 
+def grate(seed):
+    """A steel catwalk deck (the Depths' flooded levels, Yan 2026-11-04: "walk in platforms ... all rusted up and maybe with some moss
+    from being wet all the time"; no guard rails). Bar grating: bearing bars every 3 px with the black water showing between them, a
+    cross rod every 8, a heavier frame seam every 16 (one panel a tile). Rust eats it in patches, moss grows where it stays wet."""
+    st = P["steel"]
+    gap = hx("#0e1412")                                                                   # the water, far below, through the grating
+    im = Image.new("RGBA", (S, S), gap); a = np.array(im)
+    # rust and moss are laid on by WorldArt (Rusty) with its own noise, so they don't repeat every 4 tiles like a tiling texture would
+    for y in range(S):
+        for x in range(S):
+            seam = x % 16 == 0 or y % 16 == 0
+            slot = x % 3 == 0 and y % 5 != 2 and not seam                                 # 1 px slots between the bearing bars
+            if slot: continue
+            c = st[2] if x % 3 == 1 else st[1]                                            # each bar lit on its left, shaded on its right
+            if y % 5 == 2 and x % 3 == 0: c = st[1]                                       # the cross rods
+            if seam: c = st[3] if (y % 16 == 1 or x % 16 == 1) else st[2]
+            if seam and (x % 16 == 0) and (y % 16 == 0): c = st[1]
+            a[y, x] = c
+    return Image.fromarray(a, "RGBA")
+
 GROUNDS = {
     "grass": grass, "darkgrass": darkgrass, "dirt": dirt, "mud": mud, "asphalt": asphalt, "concrete": concrete,
-    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave,
+    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate,
 }
 
 # ---------------- decals (walkable decoration, baked into the ground layer)

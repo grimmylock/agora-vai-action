@@ -248,7 +248,8 @@ namespace GameCore
                 foreach (var extra in s.Members.Where(m => m != lead).Skip(1).ToList()) s.Members.Remove(extra);
                 return;
             }
-            int want = (s.Faction == "Raiders" || dest.Tier >= 3) ? 4 : 0;
+            int want = s.Faction == "Raiders" && dest.Tier <= 1 ? 0             // Batch 73 (Yan): a Tier 1 gang is at most 3 - never padded back to 4
+                : (s.Faction == "Raiders" || dest.Tier >= 3) ? 4 : 0;
             for (int tries = 0; s.Members.Count(m => m.IsAlive()) < want && tries < 12; tries++)
             {
                 bool north = dest.Tier >= 4;   // Batch 83: the deck of where it's going, members within 2 tiers under the leader
@@ -526,13 +527,14 @@ namespace GameCore
         {
             int answered = 0;
             var spot = TerrainMap.FindNearestEnterable(x, y);
-            foreach (var s in MacroState.Current.OfflineSquads.Where(s => s.Faction == faction && OnMap(s.ZoneId, TerrainMap.ZoneId) && s.Job == null && s.QuestId == null && s.LeavingFor == null))
-            {
-                var coming = s.Members.Where(m => m.IsAlive() && !m.IsAggroed && EncounterState.Enemies.Contains(m)
-                    && System.Math.Max(System.Math.Abs(m.X - x), System.Math.Abs(m.Y - y)) <= RadioRange).ToList();   // the map overhaul: a radio carries about 60 tiles, not across a whole tier map
-                foreach (var m in coming) m.PatrolTarget = spot;
-                if (coming.Count > 0) answered++;
-            }
+            int D(Mutant m) => System.Math.Max(System.Math.Abs(m.X - x), System.Math.Abs(m.Y - y));
+            // Yan (first real-time playtest, swarmed by ~8 Raiders): "radio the specific closest squad for help instead of it being a
+            // full AOE call" - the nearest free squad on this map within radio range (~60 tiles) comes, not every one of them
+            var nearest = MacroState.Current.OfflineSquads
+                .Where(s => s.Faction == faction && OnMap(s.ZoneId, TerrainMap.ZoneId) && s.Job == null && s.QuestId == null && s.LeavingFor == null)
+                .Select(s => s.Members.Where(m => m.IsAlive() && !m.IsAggroed && EncounterState.Enemies.Contains(m) && D(m) <= RadioRange).ToList())
+                .Where(c => c.Count > 0).OrderBy(c => c.Min(D)).FirstOrDefault();
+            if (nearest != null) { foreach (var m in nearest) m.PatrolTarget = spot; return 1; }
             if (faction == "Raiders") return answered;
             var zone = MacroMapDatabase.Find(zoneId);
             var neighbours = zone == null ? new List<string>() : MacroMapDatabase.RegionsOf(zone.Id).SelectMany(r => r.ConnectedZones).Where(z => !OnMap(z, TerrainMap.ZoneId)).ToList();
@@ -644,6 +646,7 @@ namespace GameCore
         /// the enemies on the map), so nothing moves into, out of or fights inside it here.</summary>
         public static void TickHour()
         {
+            if (Survival.On) return;                                             // Survival: nobody walks in
             // the map overhaul: everything on the loaded map is live (all of a tier map's regions); `here` is that map's id
             var here = MacroMapDatabase.SameMap(MacroState.Current.CurrentZoneId, TerrainMap.ZoneId) && !(MacroMapDatabase.RegionsOf(TerrainMap.ZoneId).All(r => r.IsSafeZone)) ? TerrainMap.ZoneId : null;
             GameLog.Quiet = true;     // ponytail: hourly news goes to the Console until it reaches the player as radio chatter and rumors
@@ -1043,7 +1046,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             float tierMult = CombatRules.HitMultiplier(roll.ChosenRoll, roll.ChosenRoll + modifier, target.Ac);   // Batch 56
             float baseDamage = attacker is HumanEnemy human && human.EquippedWeapon != null
                 ? combat.CalculateDamage(human.EquippedWeapon.Db.BaseDamage, human.EquippedWeapon.CurrentAmmoType, target.PhysDR, target.AnomDR)
-                : combat.CalculateDamage(attacker is Mutant m ? m.AttackDamage : 4, "Standard", target.PhysDR, target.AnomDR);
+                : combat.CalculateDamage(attacker is Mutant m ? m.AttackDamage : 40, "Standard", target.PhysDR, target.AnomDR);
 
             // Scale effective offscreen strikes by AP to approximate multi-action lethality without running full AI.
             int attackCount = System.Math.Max(1, attacker.Ap / 2); // ~2 attacks for 4 AP, 3 for 6 AP, etc.

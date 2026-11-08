@@ -11,7 +11,7 @@ namespace GameCore
     public static class Sfx
     {
         public static float Volume = 0.8f, AmbientVolume = 0.5f;
-        const int Voices = 20;
+        const int Voices = 48;   // Yan: "the sounds cut off before the echoes are done" - real gunshots ring for 1-3 s, a burst needs room
         static GameObject _go;
         static AudioSource[] _pool;
         static AudioSource _amb;

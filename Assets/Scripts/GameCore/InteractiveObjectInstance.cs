@@ -16,6 +16,7 @@ namespace GameCore
         public bool Opened; // set by attemptInteract() on a successful "openPath" reward (combat/interaction step)
         public string Lock, Code, Opens;   // Batch 126: "key" / "code" locks, a code note and the stash it opens (Stashes)
         public bool Rolled;                // Batch 126: put down by Stashes.Roll (moves every 7 days), not a hand-placed find
+        public string Requires; // Boss 2: a key (MacroState.Keys) you must hold first, else Description says what is missing (LabLocks)
         public string GrantsKey; // the map overhaul: a stash that also holds a key (TerrainMap.StashKeys -> MacroState.Keys)
     }
 }

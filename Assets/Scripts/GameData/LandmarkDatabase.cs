@@ -302,6 +302,12 @@ namespace GameData
                 L("Cave Mouth", "The entrance chamber, still lit by daylight from outside."),
             },
             // the map overhaul: Tier 1 dungeons (TierDungeons.cs)
+            ["testing_ground"] = new List<LandmarkDef>   // the menu's dev range (TestingGround.cs; the names are its constants)
+            {
+                L("Armory Crate", "Every weapon, suit and supply in the Zone, free for the taking. E to open."),
+                L("Spawner Terminal", "Puts any faction at any rank, or any mutant, on the range. E to use."),
+                L("Spawn Pad", "Where the terminal sends what you ask for."),
+            },
             ["chapel_crypt"] = new List<LandmarkDef>
             {
                 L("Crypt Stair", "Stone steps down from the chapel. The air smells of wet earth and something worse."),
@@ -379,6 +385,10 @@ namespace GameData
             {
                 L("Flooded Corridor", "Ankle-to-knee-deep water throughout - difficult terrain."),
                 L("Transformer Vault", "The lowest chamber - heart of the old power system."),
+            },
+            ["sub_station_depths_3"] = new List<LandmarkDef>   // the eel's lair, the Sump (2026-11-04)
+            {
+                L("The Bottom", "The station's lowest sump, under the last of the water. Whatever the eel was guarding is down here."),
             },
             ["maintenance_tunnels"] = new List<LandmarkDef>
             {

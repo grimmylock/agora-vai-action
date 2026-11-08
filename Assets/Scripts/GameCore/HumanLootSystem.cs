@@ -123,6 +123,7 @@ namespace GameCore
 
         private static string RollCondition() // 1d20: 1-7 Damaged, 8-14 Dirty, 15-20 Working
         {
+            if (Survival.On) return "Working";                                   // Survival: everything they carry is pristine
             int r = UnityEngine.Random.Range(1, 21);
             if (r <= 7) return "Damaged";
             if (r <= 14) return "Dirty";
@@ -176,7 +177,7 @@ namespace GameCore
             });
             // file 08: it holds 1d4+1 rounds of its standard ammo
             if (!string.IsNullOrEmpty(wdb.AmmoType))
-                AddToStash(npc.Inventory, new InventoryItem { Id = "ammo_loose_" + Ammo.Key(wdb, "Standard"), Name = Ammo.Label(Ammo.Key(wdb, "Standard")), Type = "ammo", Key = Ammo.Key(wdb, "Standard"), Qty = UnityEngine.Random.Range(1, 5) + 1, WeightKg = 0f });
+                AddToStash(npc.Inventory, new InventoryItem { Id = "ammo_loose_" + Ammo.Key(wdb, "Standard"), Name = Ammo.Label(Ammo.Key(wdb, "Standard")), Type = "ammo", Key = Ammo.Key(wdb, "Standard"), Qty = Survival.On ? System.Math.Max(10, (wdb.MagCapacity ?? wdb.CylinderCapacity ?? 10) * 3) : UnityEngine.Random.Range(1, 5) + 1, WeightKg = 0f });   // Survival: three magazines
         }
 
         /// <summary>New (Batch 10): the death-path twin of the old GrantArmorDrop - rolls

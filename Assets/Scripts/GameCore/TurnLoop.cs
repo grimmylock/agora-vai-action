@@ -193,7 +193,9 @@ namespace GameCore
                 var pt = enemy.PatrolTarget.Value;
                 if (!SquadManager.MayWalkInto(squad?.Faction, pt.x, pt.y)) { enemy.PatrolTarget = null; enemy.RestUntil = minute + 30; return; }
             }
-            if (!follower && exitTo == null && (minute + enemy.GetHashCode()) % 2 != 0) return;   // the leader walks at half your pace
+            // the leader walks at half your pace; real time: the followers too - the clock ticks 4.2 times a second there, so a tile
+            // every tick was 4.2 tiles/s, faster than you walk (2.6) and twice their leader (Yan: "running REEEEALLY fast")
+            if ((!follower || Rt.On) && exitTo == null && (minute + CombatantUtil.StableId(enemy)) % 2 != 0) return;
 
             // Ambient wander gets its own small top-up rather than relying on the combat Mp pool,
             // which only ever gets refreshed for enemies that reach the aggroed combat branch.
@@ -217,15 +219,17 @@ namespace GameCore
             var grid = GameServices.Grid;
             if (player == null || grid == null) return;
             Stashes.Tick();   // Batch 126
+            Tier1Story.Tick();   // Story 4: jobs that finish on their own, the distress loop
             Banter.Tick(player);   // Batch 129: squads you can see talk, friends say hi: stashes move every 7 days; a locked chest's key finds a carrier
 
             foreach (var enemy in EncounterState.Enemies.ToList())
             {
                 if (Companion.Is(enemy)) Companion.Act(player, grid, false);   // Batch 69: follows you, holds fire while you sneak
-                else if (enemy.IsAlive()) CheckVisionAndWander(enemy, player, grid);
+                else if (enemy.IsAlive() && !TestingGround.IsDummy(enemy)) CheckVisionAndWander(enemy, Rt.TargetOf(enemy, player), grid);   // co-op: the nearest player
             }
 
             Shakedown.Tick(player);                         // Batch 73
+            Death.TickPacks();                              // co-op: passers-by loot a dropped pack
             AnomalyEngine.DetectorSweep(player);
             ZoneTravel.SenseHiddenWays();                   // Batch 50
             QuestSystem.SenseClues();                       // Batch 50
@@ -267,6 +271,7 @@ namespace GameCore
             if (side == null) return;
             var lead = EnemyAI.Leader(side.First());
             EncounterState.Caller = lead != null && lead.Morale == "Steady" ? lead : side.First();
+            EncounterState.CallAt = UnityEngine.Time.time;
             GameLog.Write($"[ALERT] {EncounterState.Caller.Name} is yelling into the radio for backup!");
         }
 
@@ -277,13 +282,17 @@ namespace GameCore
         /// end-of-turn, and from PlayerController right after the player's attack so a win is
         /// recognized immediately instead of requiring an extra End Turn press.
         /// </summary>
+        /// <summary>Every player is dead (solo: you are).</summary>
+        public static bool AllDead => Player.All.Count == 0 ? Player.Current == null || Player.Current.Hp <= 0 : Player.All.All(pl => pl.Hp <= 0);
+
         public static void CheckCombatEnd()
         {
             if (GameState.Current.Mode != GameMode.Tactical) return;
             if (GameState.Current.CurrentTurn == Turn.CombatOver) return;
 
             var player = Player.Current;
-            if (player != null && player.Hp <= 0)
+            if (player != null && AllDead && (Death.Coop || !TestingGround.Session)) { Death.Wipe(); return; }   // DEAD DEAD - everyone back at the camp; solo too (Yan, 2026-11-08: "yes" to the camp respawn when you die alone). The Testing Ground keeps its own death screen.
+            if (player != null && AllDead)                           // co-op (Yan): "game over only if everyone dies"
             {
                 GameLog.Write("Player has fallen. Combat ends.");
                 GameState.Current.CurrentTurn = Turn.CombatOver;

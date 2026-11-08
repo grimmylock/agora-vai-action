@@ -3079,3 +3079,2336 @@ add it to the list for we to come back to later / For now try the brute".
   - Attack (9): club back, overhead, the body twists the shoulder forward and chops it down in front, swipe arc and dust.
   - Throw (12): crouch, the club punches into the ground at its side, rips a boulder out, hauls it back and over, hurls it forward.
   Strips `mutant_blight_brute_{walk,attack,throw}_strip.png` (100x94 frames); preview `maps/renders/brute_frames_pilot.gif`.
+
+---------------------------------------------------------------------------------------------------------------------------
+# REAL-TIME FORK (repo `grimmylock/agora-vai-action`, from Batch 131f; plan: `ACTION_DESIGN.md`)
+
+## RT batch 1 - move, aim, shoot, enemies fire back (2026-10-19)
+
+Yan: "i'd like to keep some of the tactical feel and stalker like slow crawl though, not hotline miami level of crazy,
+somewhere in between it and max payne, stalker and zero sievert". "a headshot is a headshot if the bullet connects to the
+sprites HEAD. No dice rolls only aim and weapon accuracy affect it". The fallback is frozen in agora-vai123 (`turn-based-fallback`).
+- **Turns are gone in the game** (`Rt.On`, set by `PlayerController.Awake`; the harness keeps it off so its turn-based
+  probes still run). The world clock always runs (a game minute every 1/4.2 s, fighting or not).
+- **Moving (`Rt.cs`):** WASD moves you freely inside and across tiles (2.6 tiles/s), walls collide (a 0.22-tile body);
+  Shift sprints (4.4, stamina 100, -18/s, back at 14/s after 0.8 s); Ctrl crouches (1.3, the old sneak); aiming slows you
+  to 65%; a leg wound to 60%. Crossing into a tile is a real step for the rules (doors, anomalies, exits, regions).
+- **Shooting (`Ballistics.cs`, `Gunplay.cs`):** left mouse fires (held for automatics), right mouse aims: the spread closes
+  over the gun's handling time and the camera looks further (more with a sniper rifle). A round is a line over the ground;
+  the crosshair's height on a body picks head / torso / arm / legs, from any side (Yan's "enemy above you" worry: tested from
+  the side, above, below, diagonal). Spread scatters sideways and up/down; walking widens it, sprinting a lot, crouching
+  narrows it, each shot kicks and the kick settles. Low cover stops rounds below its height (a head above it is still a
+  target; cover right next to the shooter is fired over), wood/tin/brush/cloth let them through at half damage, walls stop
+  them. Aiming at a barrel or cover with no body under the crosshair shoots the object. Part damage until limb health:
+  head x1.6, torso x1, arm x0.6, legs x0.7; armor as before; an unaware target takes x1.3. Shotguns fire 6 pellets.
+  Per class (ponytail: per-class table, per-gun tuning later): steadied/hip spread, seconds to steady, kick, recovery, rate,
+  automatic (rifles/SMGs that could burst), reach, reload time; High Recoil kicks harder, a damaged gun spreads more.
+- **R reloads over the gun's reload time** (Quick Hands 60%); R on a jam clears it in 0.8 s. Jams roll per round as before.
+- **Enemies (bridge until RT batch 4):** each one in a fight takes an old-style turn every ~3 s (first after a 0.5-1.3 s
+  reaction); its gunfire becomes real rounds (`Weapon.Fire` -> `Gunplay.NpcShoot`): rank decides steadiness and how often it
+  goes for your head. Melee and mutant strikes still roll. Every 6 s of fighting is a round for upkeep (bleeding, radio
+  calls, fight end).
+- **Look:** the player sprite is drawn where you are (walk frames by distance); a 4-tick crosshair shows the spread at the
+  mouse (red when reloading/empty/jammed, centre dot red over a body); no move range or path dots; the action bar and End
+  Turn are hidden; the HUD shows FIGHT/EXPLORING and stamina. ESC pauses. E also loots a body next to you or picks up what's
+  at your feet. Controls panel (F1) rewritten.
+- Harness: `RtChecks` (parts by height from four sides both ways, low cover by height, firing over your own cover, wood
+  through, walls, crouching, a Rookie at 6 tiles hits 30-60%). ALL CHECKS PASSED.
+- **For Yan to check in Unity:** walking/sprinting/crouching feel and speeds; the crosshair; hitting heads vs bodies; enemy
+  fire (too accurate? too slow at one turn per ~3 s?); reload timing; ESC pause; looting with E; crossing a map exit.
+
+## RT batch 2 - limb health, wounds, downed, timed healing (2026-10-19)
+
+Yan: "maybe modular limb health system like tarkov and stalker anomaly?", "the wounds could work in the limb system as IF bodypart
+is below 60% it has a chance of getting a wound, goes higher the lower HP that part has", "Death downs the player, he can either
+stay still and bleed out slowly or crawl behind cover at the cost of expending his bleed out faster".
+- **`Body.cs`:** you and human enemies have six parts (head 35% of max HP, torso 80%, arms 45% each, legs 50% each). A round's
+  damage comes off the part it hit and the HP pool (which everything else still reads). Arm/leg hits pick the side the round
+  passed (`Ballistics.Hit.Side`). Head or torso at 0 = down (you) / dead (enemies). A limb at 0 breaks; more damage to it
+  spills into the torso (x0.7).
+- **Wounds (Yan's rule):** nothing above 60% part health; below, `(60 - part%) / 60 * 0.75` per hit (50% ~13%, 40% 25%, 20% 50%),
+  x1.4 with hollow points, x0.6 with AP rounds. Head: concussion (20 s: +2 deg spread). Torso: bleeding. Arm/leg: fracture or
+  bleeding (half each). Effects only from wounds/broken parts: a fractured/broken leg limps (60% speed, no sprint); each bad arm
+  +2.5 deg spread and 1.5x reload time. Enemies: their fractures set the old `StatusEffects.Wound` (MP and aim penalties).
+- **Down (you):** lethal damage in real time drops you instead (`Player.TakeDamage`), HP 1. You bleed out in 40 s lying still,
+  2.5x faster while crawling (0.6 tiles/s). You can't shoot; you're a low target (30% height). Enemies stop shooting someone down.
+  Only a stim (belt keys) gets you up (head and torso back to 25%). Any hit while down kills.
+- **Items take time:** bandage 3 s (stops bleeding), splint 4 s (new item: sets the worst fracture, legs first; 60 RU, every
+  trader), medkit 4 s, stim 1.5 s, others 2.5 s; you move at half pace meanwhile and firing cancels. Grenades and repair kits
+  stay instant. Healing (medkits, rest) restores the parts too. Every start kit gets a bandage, a splint and a basic stim.
+- **HUD:** the AC slot shows each part's health (H T A/A L/L, red X = fractured); chips for DOWN with the seconds left,
+  broken/fractured parts, CONCUSSED, USING with time left. Down, you're drawn lying on your side with no gun in hand.
+- ponytail: part health isn't saved (a load starts every part full; the HP pool is saved as before); NPCs die instead of going
+  down; melee and blasts hit the HP pool only.
+- Harness: wound odds, breaking a leg and the spill, an enemy's torso, going down, nobody shooting you down, crawl drain,
+  bandage refused / stim accepted while down, bleeding out, splint. ALL CHECKS PASSED.
+- **For Yan to check:** how fast fights end now that heads and torsos can drop someone; going down and crawling; stim/splint/bandage
+  timing (belt keys 1-4); the part readout on the HUD.
+
+## RT batch 3 - the dive, bullet time, Focus (2026-10-19)
+
+Yan: "the max payne part could be a double edged thing, where you jump and get the slowmo but when it ends you're prone for a tiny
+moment, immobilizing you and making it risky". Also: "concussion seems too long, 20 seconds is a lot during gameplay, set it to 10" (done).
+- **Space dives** the way you're moving (standing still: toward the mouse), 4.5 tiles/s for 0.55 s of game time (~2.5 tiles),
+  sliding along walls and landing early if one stops you. Time runs at 30% while you're airborne; you can aim and fire, and your
+  aim steadies at real-time speed (the rest of the world is slowed: enemy timers, everyone's fire rate, your own gun's rate too).
+- **Landing:** prone 0.6 s (perk Tumbler: 0.35) - no moving, you can still shoot. Airborne or sprawled you're a low target
+  (40% height): head-height rounds go over you. Time goes back to full speed on landing.
+- **Focus** (0-100, HUD): costs 40 a dive, so no chaining. Fills from your kills (+25), hits (+4) and enemy rounds that pass within
+  0.6 tiles of you without hitting (+6; perk Cold Blood: +12).
+- **In bullet time** the part under the crosshair lights up (head / torso / legs band of the sprite) and your hits wound 1.5x as often.
+- New perks: Tumbler, Cold Blood (Survival group). ESC during bullet time pauses and resumes it. Controls panel: Space.
+- ponytail: team bullet time waits for co-op; the dive has no art of its own (the body tilts into it and lies flat after).
+- Harness: no Focus no dive, bullet time on and 40 spent, ~2.5 tiles and prone on landing, head-height rounds over you while
+  sprawled, no moving while prone, up and walking after, near-miss geometry. ALL CHECKS PASSED.
+- **For Yan to check:** the dive's distance and slow-mo length; whether 0.6 s prone feels risky but fair; how fast Focus fills.
+
+## RT batch 4 - human enemies fight in real time (2026-10-19)
+
+- **Thinking stays, acting is continuous.** The old turn AI already had the tactics (roles Leader/Anchor/Flanker, morale and
+  rallying, cover and flanking tiles from `PickTile`, frags at a player who camps, flashbangs, smoke, props, searching where you
+  were last seen). With `Rt.On`, `EnemyAI.HumanTurn` still runs every ~3 s but only decides: a goal tile (`RtAi.SetGoal`) or to
+  flee (`RtAi.Flee`); it no longer walks and shoots inside that one frame.
+- **`RtAi.Tick` every frame:** walks one tile at a time toward the goal at 2.2 tiles/s (leg wound: slower); fires while it sees
+  you and you're within the gun's reach - bursts of 3-5 from automatics, single shots otherwise, then a 0.7-1.6 s pause (shorter
+  with rank); walking or being pinned widens its aim; reloads take the gun's reload time; a jam takes a clear; out of rounds it
+  closes in to swing ("I'm out!"). Someone down isn't shot at.
+- **Suppression both ways:** your rounds that pass within 0.6 tiles of an enemy pin it for 2.5 s (it holds still, shoots half as
+  often, wider); theirs pin you for 1.5 s (+2 deg spread).
+- **Call-outs** over heads (Banter): "Reloading!", "Jammed!", "Grenade!" (before a frag), "Flanking!", "Pinned!", "I'm out!".
+- Real-time fights burn more rounds: human enemies now carry 3 magazines of reserve (was 1) when the game runs in real time.
+- Mutants keep the bridge (their whole move and strike every ~3 s). ponytail: real-time mutants (circling hounds, the Brute's
+  charge) next if Yan wants them before testing.
+- Harness: a 20 s fight with one gunman - rounds spread over the fight in bursts, a reload, one tile per step, pinned by a
+  round over his head. ALL CHECKS PASSED.
+- **For Yan to check:** whether squads feel alive (moving between cover, flanking, pausing between bursts) or too static/too
+  aggressive; how often you get pinned; the call-outs.
+
+## RT batch 5 - mutants in real time; how long the Tier 1 map takes to cross (2026-10-19)
+
+Yan asked how fast a character crosses Tier 1 (can't open Unity right now). Computed from `Rt.cs` (walk 2.6 tiles/s, sprint 4.4,
+stamina 100 at -18/s, back at 14/s after a 0.8 s pause): 200 tiles edge to edge - walking 77 s, sprinting each full bar then
+walking until it's full again 58 s (tapping sprint whenever a bit came back: 73 s, the pause eats it); corner to corner 283
+tiles - 109 s / 84 s. Real routes round buildings and walls: +20-40%. About 4-5 game hours a crossing. (Turn-based explored
+at 4.2 tiles/s: 48 s edge to edge.)
+- **Mutants** (the last bridge): `EnemyAI.MutantTurn` still decides every ~2 s (circle, chase, leap, ground slam, boulder after
+  three chases, re-cloak, flee, staggers), but with `Rt.On` its moves only set a destination (`WalkTo` -> `RtAi.GoTo`,
+  `Approach` -> `RtAi.Chase`, fleeing -> `RtAi.Flee`) and it no longer strikes in that frame. `RtAi.TickMutant` walks it at its
+  own speed - 0.6 x its MP in tiles/s, 1.8 to 5: Pallid Prowler 2.4, Blind Maw 3.0, Rot Swarm / Dread Prowler 3.6, Brute 1.8 -
+  re-aiming at you every step while chasing, and strikes whenever you're in its reach (bite/claw/psi as before: the old roll)
+  every ~1 s, the big ones every ~1.6 s. The leap is still an instant jump next to you.
+- Harness: a Blind Maw 10 tiles off reaches you in ~4 s (reaction + first decision included) and bites on its own clock; the
+  Brute lags behind. ALL CHECKS PASSED.
+- **For Yan to check:** hound pace vs yours (they're a bit faster than your walk, slower than your sprint), bite rate, the Brute.
+
+## RT batch 6 - weapon and armor balance for real time; head protection (2026-10-19)
+
+Yan's targets (weapon vs armor of its own tier): "assault rifles, 2 to 4 headshots; Snipers, 1 headshot, 2 chest; pistols ... 2 to 4
+as well; Smgs, 4 to 6 (faster fire-rate); Shotguns, another wildcard, 1 to X, depending on range, AP ammo makes them lethal at close
+range with 1 headshot kills; Machine guns, same as assault rifles but have higher recoil". "tier 4 to 5 ap ammo is basically
+required". "we can have armor that have more deflect chance or weapons that can't be deflected".
+- **Head 50 HP (was 35), head hits x1.3 (was x1.6)** (`Body.cs`, `Ballistics.PartMult`): a head hit is strong, not automatic.
+- **Damage per class for real time** (`Gunplay.ClassDamage`): sniper x1.8, SMG x0.8, the rest x1 - the old per-round damage was
+  tuned for one shot per turn. **Shotguns fade with range**: full to 4 tiles, down to 30% at 12 (`Gunplay.RoundDamage`, shared by
+  the game and the probe).
+- **Head protection** (`HeadGear.cs`), from the head each armor's sprite already wears (no new art): hoods/bare/balaclava 0;
+  gas-mask and hazmat hoods 10%; steel helmets 25-40% by tier with 8-15% deflect; visor helmets 45%/15%; full-face 55%/20%;
+  exoskeleton helmets 55-60%/20-25%. A head hit uses it instead of the body armor; a deflect does no damage and concusses 2 s.
+  AP rounds cut it to 40% and halve the deflect. Hooks for Yan's idea: `DeflectBonus` per armor (Obelisk Heavy +3%, Sentinel
+  Proto-Armor +5%) and `NoDeflect` per weapon (VK-127 Grom, AM-50 Sledge, G-7 Rail). The head type of all 180 armors is generated
+  from the art scripts (make_armor_avatars.py + make_faction_armors.py); the harness checks none is missing.
+- **Probe** (`TtkProbe`, `test ttk` prints it; table in `Tools/probes/ttk_rt6.txt`): every gun vs the middle armor of its tier
+  (AP from tier 4), head and chest hits to drop, seconds to drop by chest if all hit. Medians: rifles 2 head / 4-5 chest, machine
+  guns 2 / 4-6, pistols 3 / 4-8, SMGs 4-5 / 9-10, snipers 1 / 2, shotguns 1-2 head close (more far). All of Yan's targets pass
+  as checks.
+- (RT 6d replaced this: a handling row per gun.) handling (spread, rate, recoil, reload) stays per class with the data-driven tweaks; a per-gun table when Yan has
+  felt the classes in game. Ammo prices not rescaled yet (rounds per kill went up for automatics).
+
+## RT batch 6b - armor variants per tier, heavy handguns can't be deflected (2026-10-19)
+
+Yan: "calculate how each weapon performs against a few variants of armor of the same tier and see if there's any outliers",
+"add the can't be deflected to the rk-12 and the high recoil handguns" (done: RK-12 Kuvalda, Black Harrier, Steppe Eagle join
+`HeadGear.NoDeflect`). The probe now also prints every gun vs the lightest / middle / heaviest body armor of its tier and that
+tier's best helmet (expected hits, deflects counted as misses) - `test ttk`, saved in `Tools/probes/ttk_rt6.txt`. Findings in the
+reply to Yan (SR-21 Gadyuka weak, Halden Service Revolver strong, SMGs collapse vs heavy tier 2-3 armor, AP flattens tier 4-5 armor).
+
+## RT batch 6c - HP and damage x10 (2026-10-19)
+
+Yan: "would it be easier to balance if we made base HP 1000 instead of 100? that way we can fiddle a bit more with weapon damage
+without being restricted to a low amount of number variations ... we do that, increase every weapon damage x10 as well and continue
+from there" ("base human enemy hp i meant, but mutants as well" - the player is human too and takes the same rounds, so x10 too).
+- x10: player and human enemies 1000 HP (Lucifer floor 500, the "Take it" ending +100); every mutant's HP and attack; every weapon's
+  damage (Reinforced +30); medkits, stims, rations, energy drink; artifact regeneration and Lucifer's penalty; anomalies; frags,
+  cooked-off grenades and barrels (400); the surge (600); the Brute's boulder (250) and ground slam (300); bleeding and toxic bleed
+  (50 a round); starvation; rolling barrels; off-screen squad fights; Adrenaline Surge (under 300 HP, +200 temp HP); the old wound
+  threshold (200); gib overkill (150); the gun-feel "typical damage" per class; descriptions that quote numbers.
+- Unchanged on purpose: everything that's a share (armor, part shares, wound chances, morale by % HP). The hunger/sleep cost of
+  healing stays per 10 *old* HP (now per 100).
+- The finer scale removed a hidden bonus: armor rounding went up to the next whole point, which mattered at 10-30 damage (a
+  shotgun pellet of 8.04 counted as 9). Some guns need a hit more now (SMGs ~+1 chest hit, a couple of shotguns 2 heads at 6 tiles).
+- Outlier fixes on the new scale: SR-21 Gadyuka 150 -> 180, Corvan LMG 220 -> 240. All of Yan's class targets still pass.
+- Harness tests updated to the new numbers (and the real-time gunman test now always gets a gun - its random loadout could be a knife).
+
+## RT batch 6d - AP halves armor, a handling row per gun, SMGs a little stronger (2026-10-19)
+
+Yan: "apply AP but 50% instead, so it cuts armor in half, for the smg's, rebalance their base damage, im worried if we buff too
+much without hand's on testing it will break stuff, we haven't considered accuracy, handling, fire-rate, reload time during these
+balancing tests, we need to have a varied roster of weapons otherwise every assault rifle is just firing at the same fire-rate,
+same reload speed, same accuracy..."
+- AP rounds: armor x0.5 (was x0.4), body and helmet (`CombatRules.PhysicalDamage`).
+- `Gunplay.Guns`: every firearm has its own fire rate, auto/semi, reload, steadied spread, seconds to steady and kick, from its
+  build (calibre, weight, action, magazine). The class row keeps hip spread, recovery, reach and a new moving factor (SMGs 0.5,
+  pistols 0.6, shotguns 0.8, rifles 1, machine guns 1.5, snipers 1.6 x the spread walking/sprinting adds). Hip spread: SMGs 3,
+  pistols 3.5, shotguns 4, rifles 5, machine guns 7, snipers 8. A harness check fails if a gun has no row.
+- Bug found by it: no rifle or SMG had BurstCapable, so in real time they all fired semi-auto at 240 rpm. Auto is per gun now.
+- Bug: kick piled up without limit while the trigger was held; capped at 10 degrees (`Gunplay.MaxBloom`).
+- Shotguns: the pellets leave as one pattern (the aim spread moves the whole pattern, `Choke` spreads it: 1.5, Obrez 2.4,
+  Sever-34 O/U 1.1, Halden Lever 1.8). Before, every pellet scattered by the whole gun spread and most missed even at 5 tiles.
+- SMG base damage, small steps: Vosa vz. 62 110 -> 120, PPZ Zubr 120 -> 130, Corvan Wasp-9 140 -> 150, Gnat PDW 130 -> 140
+  (Hornet .45 stays 160). Head hits stay 3-5.
+- The probe (`test ttk`, `Tools/probes/ttk_rt6.txt`) now prints seconds to drop a mid-armor target of the gun's tier: aimed and
+  standing at 5 and 12 tiles (chest) and 12 (head), and walking from the hip at 5 and 12 - the shooter lets the kick settle as
+  much as is fastest, reloads counted. Rifles aimed 0.4-1.2 s at 5 tiles; SMGs 0.7-1.4 aimed but 1.5-3.3 s walking from the hip
+  (rifles 2.7-8 s): their place is on the move up close. Shotguns 2.2-4 s at 5 tiles (Obrez 9 s), snipers 0.7-2.2 s aimed and
+  hopeless from the hip, machine guns 1.2-1.8 aimed at 5 tiles and slow walking.
+
+## RT batch 6e - the reload animation follows the real reload (2026-10-19)
+
+Yan: "make the reload animation follow the new reload times". In real time the animation used to play only when the magazine
+was refilled, at the END of the reload timer, with its own length. Now it starts with the timer (R for you, `RtAi` for NPCs)
+and lasts exactly as long: `CombatFx.Reload` sends the timer's seconds (`FxEvent.Seconds`), `HeldWeapon.StartReload` stretches
+the pose to it, and the dropped magazine/shells fall at 20% of it. Quick Hands and a hurt arm change it too, since they change
+the timer. `Weapon.Reload` no longer sends its own animation in real time (the turn-based game keeps it). Jam clearing still
+has no animation. Harness: the gunman's reload animation lasts his reload (1.68 s).
+
+## RT batch 6f - an animation for clearing jams; the held-gun pose is testable and renderable (2026-10-19)
+
+Yan: "add an animation for clearing jams too. Then give me an example of both animations".
+- Clearing a jam (R on a jammed gun, 0.8 s; NPCs on their own timer): the gun cants 25 degrees muzzle-up to look into it, the
+  support hand slaps the magazine (under the grip on a pistol, between the hands on a long gun) and bumps the gun up a pixel,
+  then racks the action (pulls back over the receiver / the slide, holds, lets go) and the gun jolts forward as it slams home.
+  `HeldPoseMath.Jam`, `HeldWeaponView.StartClear`, `CombatFx.Reload(..., jam: true)`. Sounds: a light knock on the slap, the
+  magazine click on the rack (ponytail: no rack sound of its own yet).
+- `HeldWeaponView.Show`'s pose maths moved into `HeldPoseMath.Frame` (pure, returns a `HeldFrame`), so the harness checks it
+  and renders it. `dotnet /tmp/test.dll heldframes <json>` dumps frames of the reload and jam animations (pistol, rifle, pump
+  shotgun); `python3 Tools/render/held_anim.py <json> maps/renders/held_anim` puts the real sprites on them (GIF each + a sheet).
+- Fix (Yan: "why he holding the pistol by the front and not the grip"): the renders, not the game. Offline there are no
+  textures, so `WeaponArt.For` fell back to the category's grip points (the sidearm stand-in's handle sits mid-sprite) while the
+  render drew the real PSh-18 sprite. The harness now takes each gun's own points (`WeaponArt.GripOf`), like the game does.
+
+## RT batch 6g - magazines come out (2026-10-20)
+
+Yan: "when are we gonna be able to rig them up to the actual weapons, like at least changing the magazine and clip, or individual
+bullet reloading for revolvers and lever actions/ shotguns" -> plan agreed ("yes to all"): 1) magazines, 2) round by round with
+firing mid-reload for tube shotguns and levers, 3) break-actions. Hidden magazines (Yan asked how): the pistol's magazine is the
+grip's inner shape in magazine steel, drawn behind the gun, so it only shows once it slides out of the bottom of the grip.
+- `ArtSource/weapons/mags.py`: a box per gun cuts the magazine out of its in-hand sprite -> `weapon_<Key>_body.png` +
+  `weapon_<Key>_mag.png` (same size and pivot as the gun, .meta copied from the gun's with a new guid); 29 guns cut, 7 pistols
+  hidden; review sheet `ArtSource/_out/mags_sheet.png`. Not cut yet: revolvers, tube/break shotguns, levers, bolt guns loaded
+  round by round (step 2), SKN Karabin (stripper clip), the G-7, the two PL-74P Polovets.
+- `WeaponArt.Mag` loads them; `HeldWeaponView` draws the gun without its magazine plus the magazine one sorting step under
+  it (gun and hands moved up a step). `HeldFrame.MagOff`: in a "mag" or "belt" reload the old magazine slides out and drops
+  (12-30%), is gone while the hand is at the pouch, rides back in with the hand and seats as it reaches the gun. The grey fleck
+  that stood in for a dropped magazine is skipped for guns with a real one.
+- Renders: `maps/renders/held_anim/` now also has the Corvan Hornet .45 and the PL-62 Kobza drum.
+
+## RT batch 6h - round-by-round reloads (2026-10-20)
+
+Yan ("yes to all" to: shooting mid-reload stops a tube/lever reload with what's in; revolvers finish or cancel, no firing between).
+- Tube shotguns, the Frontier Lever Rifle and Nightwalker .45-70, the M91 and SKN Karabin (ponytail: stripper clips later) and the
+  revolvers (Halden Service Revolver, Rinaldi R6, RK-12, Tambour-12's drum) load a round at a time: `Gunplay.ByRound`, `PerRound`
+  = the gun's full reload time over its capacity (0.25-0.6 s a round), revolvers first swing the cylinder out for 0.4 s
+  (`CylinderOpen`). `Rt.StartReload` / `TickReload` (one round per timer, a shell sound each) / `StopLoading`: the trigger stops a
+  tube, lever or bolt reload and fires what's in; a revolver finishes the round in hand and closes, then fires. Quick Hands and a
+  hurt arm scale each round. `Weapon.Reload(max)` loads one round (quiet log).
+- NPCs: the same time per missing round (x1.2 as before), loaded at the end.
+- Animation: the hand makes one trip to the pouch per round (`StartReload(..., rounds)`), cut short with the reload
+  (`FxEvent.Seconds < 0` -> `HeldWeaponView.StopReload`).
+- Harness: a pump loads a shell every 0.38 s and stops on the trigger; a revolver told to stop finishes its round.
+  Renders: the revolver and the lever rifle added to `maps/renders/held_anim/`.
+
+## RT batch 6i - break-actions open on the hinge (2026-10-20)
+
+- `mags.py BREAK`: the Obrez-66 (hinge x 9) and Sever-34 O/U (x 16) split into `weapon_<Key>_body.png` (stock and action) and
+  `weapon_<Key>_barrels.png`. `WeaponArt.Break` loads them (barrels pivot on `WeaponArt.Hinges`); `HeldFrame.BreakDeg` swings
+  the barrels 35 degrees open during a "break" reload (5-17%), holds, snaps shut (85-92%); the red shells still fly at 20%.
+- Renders: the Obrez added to `maps/renders/held_anim/`.
+- Still to do: a shell in the glove on each trip, a rack at the end of an empty magazine reload, stripper clips (M91, SKN),
+  the cylinder swinging out on revolvers, the Polovets and G-7 magazines.
+
+## RT batch 6j - magazines as real objects (2026-10-20)
+
+Yan: "magazine weapons reload make no sense, the magazine falls to the ground without being an actual object and comes up from the
+ground as well and magically glues itself onto the weapon. is it possible to separate weapons into frame + magazine and treat
+magazines as actual physical objects?" and "the magazine needs to be reworked, some of them take a part of the weapon with it when
+gone and the pistol magazine looks like a square and not an actual clip".
+- Art (`mags.py`): the cut is now the magazine's own colour columns from its first row down, nothing else (trigger guards and
+  receivers stay); the magazine keeps its hand-drawn pixels, gets a closed outline and a round at the lips; the gun's well is
+  closed and stray outline pixels cleaned. Pistols get a drawn magazine (steel lit on the left, a round at the lips, a polymer
+  base plate) flush with the bottom of the grip. `WeaponMags.cs` (generated): each magazine's well point and middle.
+- Reload (`HeldPoseMath.Frame`, "mag"/"belt"): at 12% the old magazine leaves the gun as a loose object; the support hand goes to
+  the belt pouch (12-38%), takes a new one (38-50%), carries it - drawn in the hand - up under the well (50-75%), pushes it home
+  (75-85%) and goes back to the gun. `HeldFrame.MagDX/MagDY/MagShown/MagDropped`.
+- Loose magazines (`CombatFxView.DropMag`, `HeldPoseMath.Fall`): thrown forward from where they sat, spinning, fall to the owner's
+  feet, bounce once or twice and lie on their side on the floor, kept with the blood decals (oldest go first).
+- Renders: the harness dumps the dropped magazine's fall through the same `Fall` (`heldframes`), `held_anim.py` draws it.
+- Not yet: picking magazines up or keeping a partly used one (a magazine inventory) - asked Yan.
+
+## RT batch 6k - brass and shells land and stay; spent ones dumped on reload (2026-10-20)
+
+Yan: "no magazine system, this is purely visual" (magazines stay visual - no magazine inventory). "Is there a casings system when
+firing and for revolver reloading? Like opening a revolver drops all spent casings (based on how many shots were fired, also reload
+needs to be based on how many shots) Or when opening a break action shotgun it needs to drop/remove the shells".
+- Before: a fired casing was a 1-px fleck that faded in mid-air after 0.35 s; opening a revolver or break-action threw as many
+  flecks as the gun holds (max 6).
+- Now every ejected casing (brass) or shell (red) is a loose object (`CombatFxView.DropBrass`): it flies out, falls through
+  `HeldPoseMath.Fall` to the shooter's feet, bounces, lies flat and stays (its own queue of 160, oldest first, so automatics
+  don't wipe the blood decals). Revolvers and break-actions still eject nothing when they fire.
+- Opening a revolver's cylinder (at 0.3 s) or a break-action (as the barrels drop) dumps exactly the spent ones: the rounds
+  fired since it was last full (`FxEvent.Rounds`). Revolvers already reloaded only the empty chambers (RT 6h); break-actions
+  now take 0.6 s plus their per-shell share for each shell fired (`Gunplay.ReloadSeconds`, harness check), for you and NPCs.
+- Render: `heldframes` also dumps the brass through the same `Fall`; the revolver GIF shows it landing.
+
+## RT batch 6l - revolver cylinders swing out (2026-10-20)
+
+Yan: "make the revolver cylinder swing out when reloading" (worried there's no cylinder-out sprite and it'd need doing for every
+revolver). No new art needed: `mags.py CYL` cuts each revolver's cylinder out of its existing sprite (Halden Service Revolver,
+Rinaldi R6, RK-12 Kuvalda) -> `weapon_<Key>_cyl.png`, and the frame keeps an outlined empty window (`weapon_<Key>_body.png`).
+`WeaponArt.Cylinder` loads them; `HeldFrame.CylDX/CylDY` slides the cylinder 2.5 px out along the gun's underside in the
+first 12% of a "cylinder" reload (with the gun tipped muzzle-up that reads as swinging out sideways), holds it there while
+the spent brass falls and the rounds go in, and snaps it back in the last 4% (also when a reload is cut short). Drawn on the
+magazine's layer, under the frame. Not done: the Tambour-12's drum (it loads through a gate).
+- Reverted (Yan: "revert the changes, well leave them as they were before, i like it more").
+
+## RT batch 7a - melee in real time, test run with the Tactical Hatchet (2026-10-20)
+
+Yan's melee decisions are in ACTION_DESIGN.md "Melee" (throwable melee, sticking blades, bleed/concussion, two-handed wind-up,
+Flying Steel, 12 weapons, the Barbed Wire Bat's outcast Raider - lore 1). Yan: "first a test run, model the tactical hatchet based
+on the picture and make the throwing and melee for it before doing everything else"; "mutants do not remove it, it just falls off
+from movement so they do not stop for it".
+- `Melee.cs`: click swings (nearest enemy inside the weapon's reach and arc in front; the crosshair's height picks the part);
+  aim (right mouse) + click throws (flies with travel time and spin, hits through `Ballistics.Trace`). Blades bleed, blunt
+  weapons concuss (`Body.Concuss`). A thrown blade sticks in wood/tin/brush/cloth cover (E next to it pulls it out) or in a body:
+  a human wrenches it out after 2.5 s, busy 2.5 s (`RtAi.Tick` skips him), and drops it; on a mutant it falls off after 3 s of
+  running; on a corpse it goes into the loot (mutants: the floor). Stone, concrete and steel bounce it onto the floor. On the
+  floor it's an ordinary ground item; picked up with empty hands it's equipped at once. Per-weapon stats (`Melee.Table`), the
+  rest derived from weight (smaller = faster). Two-handed wind-up is in the code (no two-handed weapon yet).
+- Tactical Hatchet: `WeaponDatabase` melee (tier 5, 420, 0.9 kg, ignores 15% armor), one of a kind (`EncounterGeneration.Unique`),
+  grip points; first sprite by `ArtSource/weapons/hand/tactical_hatchet.py` (Yan: "does not look great" - he drew his own,
+  to copy once the file arrives).
+- Views: `CombatFxView.TickMelee` draws it spinning in the air, stuck in cover or a body (wobbling while pulled), on the floor.
+- Harness: swing hits in front not behind and bleeds; throw flies 5 tiles in ~0.4 s, sticks, the Raider pulls it out and drops it,
+  picked up back into empty hands. The RT batch 5 mutant check ran 6 s and failed when the Maw arrived 0.35 s later (random
+  timing shifted by the new test): now 10 s.
+- Not yet: placing it in the lab's secret room, parry, takedowns, Bull Rush, Flying Steel, the other weapons, NPCs throwing.
+
+## RT batch 7b - Yan's hatchet sprite, blood on thrown hits, the melee scenes (2026-10-20)
+
+- Sprite: Yan drew his own ("i created that one so you can just copy it"). His drawing recovered from his screenshot (pixel grid
+  5.76 x 5.375 screen px, his 12 colours) -> `ArtSource/refs/tactical_hatchet/yan_hatchet.png`; `tactical_hatchet.py` turns it so
+  the handle lies along the aim (blade up, spike down), folds his six near-black handle shades into two, and reduces it to the
+  in-hand (32x16) and menu (64x32) sprites, re-outlined. Grip points moved to the new handle.
+- Blood: a thrown weapon that lands now plays the same hit as a round (blood puff, splatter on the ground, the red flash and
+  knock-back) through a new "impact" effect; melee kills set Killed/Overkill, so the fall and gibs play like gunfire kills.
+- A dropped weapon now lies flat (0/180 degrees, a little askew), not on its end.
+- Renders: `dotnet /tmp/test.dll meleeframes <json>` runs two scenes through the real code (two swings - body, then head, which
+  kills a Rookie-tier Raider: the hatchet is tier 5, 546 on the head vs 500 head health; a throw at 5 tiles that sticks, is
+  wrenched out and dropped); `Tools/render/melee_scene.py` draws them -> `maps/renders/melee/`.
+
+## RT batch 7c - melee held and swung like a melee weapon (2026-10-20)
+
+Yan: "the hatchet is currently upside down and i didn't see the sprites hands on it, also it's held way to far form the body, its
+too big and the swings have no weight behind them because there's no indication of the character making an effort to swing it like
+maybe inclining it back a little before the swing, make the character hold it with his actual hand and in a position that makes
+sense for it to be in his hand".
+- Sprite: blade down, spike up, ~10 character px long (was ~14); grip points with a little handle below the fist.
+- Hold (`HeldPoseMath.MeleeFrame`): upright at your side, edge toward where you aim, head leaning forward 25 degrees, the fist low
+  beside the body (3 px out, waist high); only the side follows the aim. The fist is the big glove so it reads round the handle.
+- Swing (`HeldPoseMath.Chop`, 0.62 s): wind-up 0.22 s (the head goes back over the shoulder, the fist rises, the unit leans back 6
+  degrees), chop 0.08 s (forward to the head out in front at chest height, leaning 8 degrees into it), follow-through 0.15 s,
+  recovery 0.17 s. The hit lands at the chop (`Melee.Pending`, 0.30 s after the click), not on the click; the unit's lean is
+  `HeldWeaponView.Lean`, applied to the player's tilt (`TacticalGridView`).
+- Renders: `maps/renders/melee/` (scenes + `melee_swing_closeup.png`).
+
+## RT batch 7d - a thrown blade sits IN the body (2026-10-20)
+
+Yan: "when thrown the weapon sprite kind just glues itself to the enemy instead of being actually IN the enemy". `tactical_hatchet.py`
+also writes `weapon_TacticalHatchet_stuck.png`: the blade from row 9 down is buried (cut off) and a line of blood marks where it goes
+in; `Melee.StuckPose` puts that cut line on the chest, the edge in and the handle out up and back toward the thrower (140 degrees,
+mirrored for a throw from the right); pulling it out wrenches it back and forth. `Melee.Stats.StuckX/Y` = the cut line's point.
+
+
+### RT 7e - melee controls: charged swings, throws lifted over the head (2026-10-20)
+
+Yan: "the throwing animation needs a better wind-up ... like lifting it over the players head before throwing" and "left click
+swings it, holding left click charges the swing for higher damage and can be held indefinetly, right click ''aims'' the throw and
+starts charging it, letting go throws it."
+- `Melee.PlayerInput` reads both mouse buttons every frame (`Rt.PlayerFire` sends a melee weapon there). LMB press winds up, release
+  swings; held past the wind-up it charges for 1 s more to x1.75 damage and can be held forever (the pose trembles). RMB press lifts it
+  over the head (`HeldPoseMath.Lift`: fist above the head, the head hanging back behind it, the body leaning back), release whips it
+  forward (`Whip`, 0.12 s; it leaves the hand halfway) and throws. Power = held / 0.6 s: a half-charged throw flies at 60-100% of the
+  speed and range. Shorter than 0.2 s (or a two-handed wind-up) lowers it without throwing. `Melee.Charge` per unit drives the pose
+  (`HeldWeaponView.MeleeCharge`).
+- Bugs fixed on the way: melee aimed at the crosshair point instead of the body under it, so a throw at a chest flew along the wrong
+  line (now `Melee.Aim` aims at the footprint like guns do); a thrown blade could pass through a body that sat exactly on a frame
+  boundary (`Ballistics.Trace` skips bodies under 0.05 from the start - the flight now traces from a step back).
+- Checks: a tap vs a held swing (damage x1.5+), a flick of RMB throws nothing, a longer hold throws farther. Renders:
+  `maps/renders/melee/` (`melee_swing.gif` tap then charged, `melee_throw.gif`, `melee_throw_closeup.png`).
+
+### RT 7f - Testing Ground on the main menu (2026-10-20)
+
+Yan: "can you configure an option at the menu for a ''testing ground'' with enemy spawners and chests with all the loot for testing
+and stuff". A dev range, outside the living world (no exits, no factions, never seeded with squads or anomalies):
+- Main menu "Testing Ground" -> `TestingGround.Start`: a fresh Scavenger on a 64x40 walled range (`TestingGround.Map`), 999,999 Ru,
+  +500 kg carry, every faction hostile so what you spawn fights you. `GameBootstrap.StartNewGame` takes a start zone for it.
+- West yard: the **Armory Crate** (E): every weapon, armor and supply in `ShopDatabase`, free - Take or Equip (equipping a gun
+  fills its ammo). The **Spawner Terminal** (E): any faction at any rank (1/3/5/8 of them), or any mutant; aware of you or not;
+  on the **Spawn Pad** 50 tiles east, or 8 tiles in front of you. Every page: Refill ammo (300 of each kind for every gun you
+  carry, full mags), Heal (gets you up, stops bleeding), Clear range. Panel: `TestingGroundUI` (pages, no scroll).
+- Between them, three lanes: sandbags and concrete blocks; crates, desks to tip, rust barrels and one explosive barrel; a fence
+  with a gap, brush, and a hut with a door and windows. Render: `maps/renders/testing_ground/testing_ground.png`.
+- Check (`TestingGroundChecks`): you arrive alone, the pad is walkable, the crate gives a gun and ammo, spawns land where asked
+  with the right awareness, clear empties it.
+
+### RT 7g - target dummies with damage numbers (2026-10-20)
+
+Yan: "add a target dummy that shows damage numbers".
+- `TestingGround.SpawnDummy`: a person kitted as a faction at a rank (armor and helmet from `PickFactionLoadout`) or bare, unarmed,
+  in faction "Target Dummy": never moves, shoots, wanders or notices you (skipped in `TurnLoop.TickAwareness`, never aggroed by
+  hits - `Gunplay`/`Melee` - so a fight never starts). Three stand on the range from the start: bare at 7 tiles, a Raider Rookie
+  at 20, a Garrison Veteran at 34. The terminal's Humans page has a "Dummy" button per faction (at the chosen rank) and a bare one.
+- 3 s after its last hit a dummy heals whole (`Body.Forget` clears its wounds); one you drop stands up again in its place 3 s
+  later. The log says how many hits and how much damage it took to drop it.
+- Damage numbers on the testing ground for every target: `Gunplay.Resolve`/`Melee.Strike` call `TestingGround.Note` (damage and
+  the body part); any other HP loss (blasts, bleeding) shows as a plain number. `HudView.Numbers.cs` floats them up and fades
+  them over 1.1 s: cream body, yellow head, red KILL.
+- Checks: a head hit's number, the dummy stays still and out of combat, heals after 3 s, other damage shows, the kill is
+  marked, it stands up again. Not yet seen in Unity (the HUD numbers can't be rendered offline).
+- ponytail: the dummy uses the faction's person sprite, not a straw dummy of its own.
+
+### RT 7h - first real-time playtest fixes (2026-10-20)
+
+Yan: "some of them running REEEEALLY fast for some reason, like zooming around, might have something to do with me pressing
+shift"; "damage rolls are still happening, when im walking it also keeps updating the MP values but we got rid of that".
+- Zooming, two causes. (1) Every tile you crossed in a fight also ran the old turn-based world tick (`TurnLoop.TickAwareness`)
+  on top of the clock's 4.2 ticks a second, so the faster you moved the faster the world ran: unaware squad members stepped, the
+  clock advanced (and with it the hourly A-Life). Real time now ticks only on the clock (`PlayerController.Step`). (2) On that
+  clock an unaware follower took a tile every tick, 4.2 tiles/s, faster than your walk; followers now keep their leader's half
+  pace in real time (~2.1/s; humans in a fight move at 2.2).
+- No dice in real time: a mutant's strike lands if you're in its reach when it comes (a dive under it misses; no hit tiers); an
+  NPC's knife or club is a real swing (`Melee.Swing`: reach and arc), not a 2d10. Enemies' "fires in Single mode" log lines are
+  gone (one per shot was spam).
+- The HUD's AP and MP pips are hidden in real time.
+- Checks: walking doesn't tick the world; strikes land in reach without rolls, a knife misses from 3 tiles. Two old checks
+  pinned (a Rookie's random loadout can be a knife; bites-per-10-s bound raised since no strike misses now).
+- Not changed (rule 6): the squad size and the radio backup. Watch: mutant bites no longer miss on a roll - keep distance or dive.
+
+### RT 7i - the double-resolution mutants in the game (2026-10-20)
+
+Yan: "the mutant sprites we did a while back did not get pushed to live, you can do it, even without the animations / at least the
+ones we have".
+- The five approved Batch 130c sprites (Pallid Prowler, Blind Maw, Veil Prowler 48x32; Dread Prowler 64x48; Blight Brute 64x64),
+  exported by `ArtSource/make_mutants_hd.py <sheet> Assets/Resources/Sprites/Mutants` (renamed `mutant_hd_<key>.png`).
+- `UnitSprites.HD`: loaded at 32 px a tile (like the in-hand guns), feet on the tile's ground line (pivot 16 px above the bottom
+  row, where a 16 px human's feet are). `UnitSprites.For` prefers them; Rot Swarm, Alpha Prowler, Mind Weaver and Void Weaver keep
+  their old atlas cells (no new art yet).
+- `TacticalGridView.ApplyUnitArt`: drawn facing right, mirrored to face you in a fight or where they walk otherwise; a cloaked Veil
+  Prowler shows at 30% (there's no cloaked cell at this size). Static frames only: the walk/bite/club strips (131-131f) aren't hooked
+  up yet; the hound run cycle is still on the later list.
+- Not seen in Unity yet: check the size next to people, the feet on the ground, mirroring, corpses (they keep the right-facing
+  sprite).
+
+### RT 7j - second playtest: hitboxes, vision, fair shots (2026-10-20)
+
+Yan: "i can't see past a certain range but enemies keep shooting me, make the entire screen seeable as long as im looking at it (so
+where the cursor is poiting) / Enemies also see me throw walls / Also some of my shoots seem to pass straight through them".
+- Hitboxes: an NPC's tile changed in one jump and its sprite walked over afterwards (`UnitMotionView.Place`, 3 tiles/s), so the
+  body on screen trailed its hitbox (`Ballistics.Pos`) by up to a tile while it moved. Now `Rt.Glide` turns each jump into a
+  slide inside `Rt.Offset` that runs out at the unit's own speed, and every unit is drawn where it really is (`Rt.Free`): the
+  sprite, the hitbox, melee reach and the crosshair's target are one position.
+- Vision: a look cone toward the mouse (`Vision.LookHalfAngle` ~50 degrees a side) that sees 1.5x the day's all-round sight -
+  30 tiles in daylight (the far zoom's corners; `MaxRadius` 20 -> 30), less in rain, fog and dusk, nothing extra at night (the
+  flashlight does that). All round you the old radius stays. Leaning round corners still counts, within 12 tiles.
+- Fair shots: an enemy fires only from as far as you could see him if you looked (`Vision.LookReach`), and line of sight must hold
+  both ways (`Contact.Mutual`): a tile line traced from him to you could slip past a corner that yours to him didn't - that was
+  the "seeing through walls". Spotting uses the same two-way check.
+- Checks: a step slides the body over, the look cone reaches 20 tiles ahead and not behind.
+- Open, asked Yan: walking through low cover (no vault yet), the slow and tactical pace, the birch trees' look.
+
+### RT 7k - low cover blocks you; Space vaults it (2026-10-20)
+
+Yan: "i can walk right through cover like the sandbags and stuff (might be my character vaulting it but there's no animation)";
+"go ahead" with: low cover blocks walking, Space at it vaults.
+- `Rt.Clear`: in real time sandbags, blocks, crates, desks and other low cover (HardCover/ScatterCover, `Rt.Ledge`) stop your body;
+  the tile you're already in never does (so nobody gets stuck).
+- `Rt.TryVault`: Space with low cover just ahead (the keys' way, else toward the mouse) and open floor past it hops you over in
+  0.45 s (0.3 s with the Vault perk) - no Focus, no landing prone; elsewhere Space still dives. The view lifts you up to 0.35
+  tiles at the top of the hop (`Rt.VaultLift` in `TacticalGridView.StandOffset`).
+- Enemies: their paths already cost cover double (`TacticalGridSystem.BaseCost`), so they go round when that's shorter; a step
+  onto cover now takes them twice as long (a climb). No hop drawn for them yet.
+- Check: sandbags stop you, Space carries you two tiles over them with a hop.
+
+### RT 7l - birch redraw, for review (2026-10-20)
+
+Yan: "some trees look very weird" (the big birches of Batch 117: ~30 separate round leaf clusters, each outlined on its own, read as
+bubbles, and the white trunk ran up through them). `zone_style.big_birch`: the same four birches (tall, forked twin, slender young,
+broad old), the crown now 2-3 rows of leaf masses (`_mass`: clumps packed tight inside a ragged ellipse, lit top-left, the
+underside and lower masses darker), the trunk hidden in it with branches only at its lower edge, the old birch's strands hanging
+from the crown. The old one is kept as `big_birch_old`. Review: `maps/renders/start_area/birch_sheet.png` (sprites 3x) and
+`birch_before_after.png` (in the map). Not in the game's atlas until Yan approves (then `pack.py` -> world_atlas.bytes).
+Also rendered for Yan: `maps/renders/start_area/bonfire_village_now.png`, the starting village as it is (he'll direct the redo).
+
+### RT 7m - radio calls one squad, with a charging icon; mutants come to blood, not gunfire (2026-10-20)
+
+Yan: "every free Raider squad within 60 tiles ... that's a little too broad"; "add a radio icon in the same style as the ! above the
+head of the one who is calling for reinforcements, and make it slowly fill from yellow/white to red representing the 'charging up'
+of the call"; "make it so mutants only come over if someone dies (they smell the blood) and only if they think they can win the
+fight"; "Make it so they radio the specific closest squad for help instead of it being a full AOE call"; "we're moving foward with
+the action version as the main combat version of the game, the turn based will be abandoned for now".
+- `SquadManager.CallReinforcements`: the nearest free squad of the caller's faction on this map within radio range (60 tiles)
+  answers - one squad, not all of them. (Other factions still also get one squad from a neighbouring region, as before.)
+- `TacticalGridView.Radio`: a walkie-talkie in the "!"'s outline over the caller (`EncounterState.CallAt`), its face filling red
+  from the bottom over the 6 s round the call takes; kill or panic him before it's full and the call is cut off (unchanged).
+  Frames: `maps/renders/radio_icon.png`.
+- `Noise.Make`: gunfire only draws people now. `Noise.Smell` (from `Weapon.OnTargetKilled`): a death draws each unaware mutant
+  pack within 25 tiles whose members' HP adds up to more than everyone still standing within 10 tiles of the body (you
+  included). ponytail: HP against HP, no guns or armor counted.
+- Checks: only the closest squad answers; a Maw ignores a gunshot, won't come for a body while you're at full health, comes when
+  you're nearly dead. Stub: Color -> Color32.
+- `CLAUDE.md`: real time is the game; turn-based abandoned for now. The Tier 1 map is 200x200 tiles (all six tier maps are).
+
+### RT 7n - co-op groundwork, steps 1-3 (2026-10-20)
+
+Yan: "wait, but if we decided to build for it from the start why are we building NOT for it?"; "yes, start steps 1-3 now". The
+design said combat would be written host-authoritative from day one; RT 1-7m didn't do it (one `Player.Current`, the player's
+state in globals, the keyboard read inside the rules). Fixed before more features pile on:
+- Step 1, state per player: `Rt.State` (stamina, Focus, aim, moving, look-ahead, dive, prone, pinned, vault, item use, look reach);
+  `Rt.Of(p)`, `Rt.Me` for the local view and HUD. Focus goes to whoever earned it (`Rt.AddFocus(p, f)`); a near miss pins the
+  player it missed.
+- Step 2, input packets: `Rt.Input` (move, sneak, sprint, aim, fire held/pressed, jump, reload, crosshair). `Rt.Read` turns the
+  local keyboard and mouse into one; `Rt.PlayerTick(p, input)` is the only way a player acts; joined players are ticked each
+  frame on their last packet (`Rt.Remote`). The non-combat keys (E, belt, flashlight, menus) are still read for the local
+  player only.
+- Step 3, the players: `Player.All` (the local player first; New Game/Load start it over) and `Player.Join`; `Gunplay.Bodies`
+  has every player; each enemy fights the nearest player it can see, else the nearest (`Rt.TargetOf`, in `Rt.WorldTick` and
+  `TurnLoop.TickAwareness`); every player gets the 6 s round upkeep; fair shots read the target's own look reach; a joined player
+  on an exit doesn't move the game.
+- Check: two players in one fight - the joined one moves and sprints on its own packets, a Raider picks it (the nearer) and
+  shoots it, not you; its dive spends its own Focus.
+- Still one-player, listed in ACTION_DESIGN "Co-op" (bullet time, spotting memory, morale/radio, reputation, HUD/camera, exit
+  vote, game over, friendly fire).
+
+### RT 7o - no friendly fire between players; enemies mind their own (2026-10-20)
+
+Yan: "turn friendly fire off for now for players, make it so bullets go through allied players, also i noticed enemies make no
+effort to not shoot their friends, i saw a few of them die to friendly fire, they need to at least try to not shoot each other in
+the back while fighting players".
+- `Gunplay.Targets(shooter)`: a player's rounds (`Gunplay.Shoot`), swings (`Melee.Swing`) and thrown blades (`Melee.Tick`) pass
+  through other players. (Grenades still hurt everyone in the blast; a hired companion can still be hit.)
+- `Gunplay.AllyInLine`: a living ally (same faction, or one at peace) within ~half a tile of the line of fire, before the target.
+  `RtAi.Tick` then holds fire and steps two tiles to the open side (`RtAi.SideStep`) for a clear shot; the old turn path
+  (`Gunplay.NpcShoot`, also NPC-vs-NPC fights) just holds. Spread can still clip a friend - they try, they're not perfect.
+- Checks: your round passes through your friend into the Raider behind; a Raider with his mate in the way doesn't fire through
+  him and steps aside until the line is clear.
+
+### RT 7p - Yan's co-op rules; bullet time per fight; panels don't pause; revive; game over when all are dead (2026-10-20)
+
+Yan's co-op rules (now in ACTION_DESIGN "Co-op"): shared quests with individual rewards (items too); the host saves the world and
+players own their characters (Terraria/Borderlands), several save slots; talking doesn't pause the world; downed players are
+revived by a friend holding E; game over only when everyone is dead (then the host's last save loads); loot first come, first
+served. Character creator (faction starts, loadouts, storylines) on the later list.
+- Co-op step 4, bullet time (`Rt.TryDive`/`Land`): Unity has one clock, so a dive slows time only when every living player is
+  within 40 tiles (`Rt.SlowReach`); a friend off in another fight keeps full speed. It ends when nobody is mid-dive.
+- Panels (talk, trade, loot, sheet) no longer stop the game in real time (`PlayerController.Update` -> `RealTime` with no input):
+  you stand still, the world, the clock and your friends carry on.
+- Revive (`Rt.DownedNear`, `Rt.State.Reviving`, `Rt.Input.Use` = E held): kneel 3 s over a downed friend and they're up
+  (`Body.GetUp`); prompt "HOLD E Revive", HUD "REVIVING". E doesn't loot or interact while a downed friend is next to you.
+- Game over only when every player is dead (`TurnLoop.AllDead` in `CheckCombatEnd`); the world keeps running while a friend
+  lives (`PlayerController.Update`, `Rt.WorldTick`).
+- Checks: bullet time together but not 45 tiles apart; you dead with a friend alive isn't game over; 3 s of E gets them up.
+- Open: what happens to a player who bleeds out while friends live (waits until the group wipes or a save loads, for now).
+
+### RT 7q - three death states in co-op; camps (2026-10-20)
+
+Yan: "Make it so players have 3 death states in online, one is the downed state where they can crawl around and be revived, the
+other is fully 'dead', they lose some rank/reputation EXP and one of their equipped items loses a durability rating, primary or
+secondary weapon or armor but can be revived out of combat, and the third is DEAD DEAD when the squad whipes, this requires
+either a save-point or spawns everyone in the last safe-zone or maybe closest bonfire, but that would required a 'camp' mechanic
+around bonfires to 'save' the place, when spawning after DEAD DEAD, the players armor loses one durability rating and they lose
+half the items in their pack, together with the rank/reputation penalty".
+- `Death.cs`, in co-op only (`Death.Coop`: more than one player; solo still ends at the death screen):
+  - Downed: as before (crawl, a friend holds E).
+  - Dead (`Death.Tick`, once per death): rank XP lost (`Death.DeadXp`, see RT 7r); one of primary / secondary / armor (at
+    random) wears one step. A friend
+    can bring you back with E (3 s, `Rt.DownedNear` now includes the dead) only out of combat, on a quarter of your HP.
+  - DEAD DEAD (`Death.Wipe`, from `TurnLoop.CheckCombatEnd` when every player is dead): everyone wakes round the last camp (or
+    Bonfire Village's arrival spot), healed; each player's armor wears one step, half the pack (random items) is dropped where
+    they fell (RT 7r), and rank XP is lost (`Death.WipeXp`). The world goes on (no load); the enemies there forget the fight.
+  - Camps: E at a bonfire (`Death.TryCamp`, the same "by the fire" test as resting, `WorldDays.Rest`) makes it the squad's camp;
+    saved with the world (`MacroState.CampZone/CampX/CampY`). Prompt "E Make camp" in co-op.
+- Check: a dead friend loses XP and wear once, can't be revived mid-fight, can after; a wipe wakes everyone at the camp with
+  armor worn and half the pack gone.
+
+### RT 7r - rank XP; deaths cost XP, not reputation; the dropped half of the pack can be looted (2026-10-20)
+
+Yan: "the players items that are gone from their inventory on death are actually dropped in the place they died, and if enemies
+are nearby they can loot it, so the player needs to kill them to get them back. the faction reputation penalty wasn't the intended
+idea, remove that and build an xp system for the ranks, make it so the milestones award rank xp instead of the rank itself, also
+dying can't knock you down ranks, just removes XP and it goes down to 0 if it removes more than the player has".
+- Rank XP (`Player.Progression`): `Exp` is the progress toward the next rank (carried over on a rank-up). Bars: Experienced 200,
+  Professional 300, Veteran 400, Expert 600, Master 800, Legend 1000 (`Player.XpToNext`). Each milestone of the next rank pays
+  that rank's bar divided by its number of milestones, once (`MilestonesDone`, saved), so meeting them all fills it exactly;
+  milestones met early pay once their rank comes up (ranks stay in order, as the sheet shows them). A job done pays 50
+  (`QuestXp`), a kill 5-35 by rank or 5 per mutant tier (`KillXp`) - so XP lost to deaths can be earned back. The sheet shows
+  "XP x / y" and what each milestone pays. Master and Legend are no longer hard-gated on the (unwritten) main story: XP gets you
+  there.
+- Deaths (`Death`): dead -50 XP, wipe -100 XP (`Player.LoseXp`: never below 0, never a rank). No reputation change.
+- The lost half of the pack lies where the player fell (`Death.DropPack`, ground items; pick it up as usual). Each game minute
+  (`Death.TickPacks`) the nearest hostile person within 10 tiles who isn't fighting walks over and pockets what's left - it's in
+  his inventory, on his body when he's dead. Mutants don't loot.
+- Checks: XP from quests and milestones makes Professional; a kill pays; losing more XP than you have stops at 0 with the rank
+  kept; a wipe drops the half pack where they fell and a Raider nearby walks over and takes it. The "Rookie at 6 tiles" check
+  now shoots at a standing you each time (a shotgun hit knocked you down mid-test and the rest flew over).
+
+### RT 7s - Master and Legend: no main story, a long road (2026-10-20)
+
+Yan: "master and legend should not required the main story but they should be pretty hard to achieve, i'd like the game to have a
+lot of playtime available, that's why we're focusing so much on having big maps and plenty of explorable dungeons and stuff".
+- Bars: Master 2500 XP, Legend 6000 (Expert is 600).
+- Master: reach a Tier 5 zone; kill a Tier 5 mutant or a Legend NPC; clear 6 dungeons; finish 3 NPC storylines.
+- Legend: reach a Tier 6 zone; kill 3 Named mutants or bosses; clear 12 dungeons; finish 6 NPC storylines; complete 40 quests.
+- New trackers (saved): `Player.DungeonsCleared` (a dungeon map - not an upper floor - with no hostile left alive after one of
+  your kills; log "[DUNGEON CLEARED]"), `Player.NamedKilled`. Milestones are now remembered without their running count, so
+  "Clear 6 dungeons (7/6)" doesn't pay twice.
+- Checks: a milestone pays once as its count passes the target; the top bars are big and need no main story.
+
+### RT 7t - CLAUDE.md rewritten (2026-10-20)
+
+Yan: "rewrite claude.md". The handoff file still described the turn-based game (Batch 121 state, 2d10 combat, the old next
+steps). Now: what the game is (real time, co-op from the start), the hard rules (plus rule 9: co-op from the start), a table
+of where each real-time system lives, the turn-based leftovers, the shared world systems, the workflow (harness, renders,
+art, logging), the current state (nothing since RT 7 checked in Unity), what waits on Yan, and the agreed next steps.
+Also sent Yan the melee weapon list for references (6 new: Hatchet, Fire Axe, Wooden Baseball Bat, Hammer, Sledgehammer,
+Barbed Wire Bat; the 5 old knives/blades have pre-hatchet sprites).
+
+## RT 7u - melee weapons redrawn from Yan's references (2026-10-20)
+
+- Yan sent references for 10 melee weapons ("try taking the existing design and making it better quality like these"; no
+  reference for the Obelisk Ritual Blade).
+- First try, `ArtSource/weapons/hand/melee_set.py`: shrink each reference to sprite size. Mushy (one-pixel details can't
+  survive the shrink); kept for the record.
+- Used instead: `ArtSource/weapons/hand/melee_drawn.py`. Each weapon is drawn from a few shapes (handle, guard, blade, head),
+  with colours taken from the references. Each is painted twice: 32x16 in the hand and 64x32 for the menu (scaled to fill
+  the canvas). Pixel-art edge shading, outline #141617.
+- The Ritual Blade is redrawn from the old sprite's design: wooden grip, red binding, dark fin with a red eye, chipped spine.
+- References: `ArtSource/refs/melee/`. Review sheet: `maps/renders/melee/melee_drawn_sheet.png`.
+- **Not installed yet:** waiting on Yan's approval; then run `melee_drawn.py --install`. The 6 new weapons (Hatchet, Fire Axe,
+  Bat, Hammer, Sledgehammer, Barbed Wire Bat) still need database entries, `Melee.Stats`, grips and a two-handed hold.
+
+## RT 7v - melee pixelled by hand: bat and hammer first (2026-10-20)
+
+- Yan on RT 7u: "all of them are weird looking". Problems he listed: wrong proportions (hammer head too big), lost shapes
+  (machete curve, kris waves), jagged and gappy edges, and menu and in-hand sprites that don't match.
+- Why: the RT 7u shapes were guessed, not measured. His references are pixel art 140-240 px long; the menu sprite has ~60 px
+  and the in-hand one 15-30, so a person has to choose which details survive.
+- New way, `ArtSource/weapons/hand/melee_px.py`: each sprite is a grid of letters typed by hand, one per pixel. The outline
+  is traced from the reference at game size; colours are picked from it. The menu sprite is drawn first, then the in-hand
+  one from it. Yan chose to start with the baseball bat and the hammer.
+- Review: `maps/renders/melee/melee_px_bat_hammer.png` (reference | menu | in hand | size check next to the Tactical Hatchet
+  and a character; the size check is laid side by side, not a game render). Not installed.
+- Yan on the bat and hammer: "they look waaaaaaaaay better now". One fix: the bat was lopsided because its taper grew on top
+  first, so it now grows on both sides at once. Then: "you can do the rest using the same logic as these".
+- The other nine are drawn the same way. Each was traced from its reference into a grid, then shaded and detailed by hand:
+  - Hunting knife: finger grooves, rivets, a serrated spine, a clip point.
+  - Switchblade: steel cap, red-rimmed black handle with its button, quillons, a slim blade.
+  - Machete: rivets, lanyard hole, finger flare, the step in the spine, a belly sweeping up to the tip, two glints.
+  - Trench knife: a cord-wrapped grip, the quillon, four see-through knuckle rings (`_` in a grid = a hole with no outline).
+  - Hatchet: curved butt, bearded blade.
+  - Fire axe: rubber grip, pick, flared blade with a steel edge.
+  - Sledgehammer: the head is a bit smaller than the reference's (Yan found the old one too big), with rimmed faces, a nut and
+    the collar.
+  - Barbed wire bat: the bat's shape in worn wood, a rag wrap with a loose end, wire strands with barbs.
+  - Obelisk Ritual Blade: its old design, with the kris waves back.
+- The scratch scripts that made the drafts aren't kept; the grids in `melee_px.py` are the source now. Removed: `melee_drawn.py`,
+  `melee_set.py` and their sheets (they're in git history).
+- Review sheet: `maps/renders/melee/melee_px_all.png`. Not installed yet: once Yan approves, run `melee_px.py --install`. The 6
+  new weapons still need stats and a two-handed hold.
+- Yan's notes on the full set: the fire axe, hammer, sledgehammer and both bats are "great". Fixes to the in-hand sprites:
+  - Switchblade: the handle is now red like the menu one.
+  - Machete: the blade is 3 px longer, so its belly runs straight longer before it sweeps up.
+  - Trench knife: the blade is longer, with a clip point and an edge that curves up to the tip.
+  - Hatchet: removed the bump on the handle next to the head.
+- Yan: the two bats' handles were "too long, makes them look like that other bat from that other sport". The thin handle is now
+  about a third shorter and the barrel longer, on both bats and in both sizes, with the total length unchanged. The barbed bat
+  now has 6 wire coils.
+- Yan: "they all look great, push to live". Installed with `melee_px.py --install`: the 5 existing blades' sprites replaced, the
+  6 new weapons' sprites added. `WeaponArt.Grips` (`HeldWeapon.cs`) was redone for the 5 old blades, whose sprites are now
+  centred on 32x16 canvases instead of cropped, and added for the 6 new weapons. Grips are computed from the grids: the fist on
+  the handle; the "muzzle" at the blade tip or the head's striking corner. Harness: ALL CHECKS PASSED.
+- **Not checked:** the new sprites in Unity (how they sit in the hand, and the thrown/spinning look). The 6 new weapons still
+  can't drop or be bought: no database entries or stats yet.
+
+## RT 7w - the 6 new melee weapons in the game (2026-10-20)
+
+Yan: "use simple logic for them, bigger = swings/throws slower but does more damage, no blade = concussive and doesn't stick to
+targets/walls".
+- `WeaponDatabase` melee entries (damage / kg / tier):
+  - Hatchet 300 / 0.9 / T2
+  - Wooden Baseball Bat 310 / 1.0 / T2
+  - Hammer 330 / 0.7 / T3
+  - Fire Axe 450 / 2.0 / T3 (ignores 10% armor)
+  - Sledgehammer 650 / 4.0 / T4 (ignores 20%)
+  - Barbed Wire Bat 480 / 1.3 / T5
+- Loot and trader pools (`Economy.Pools`) at those tiers. T5 weapons come only from loot, as before.
+- `Melee.For`: the weight already set the speed: swing 0.3 + 0.3 x kg seconds; throws slower and shorter. New:
+  - `Melee.Blunt` (the bats, the hammer, the sledge): no bleeding and no sticking. A thrown one hits and drops; this was already
+    how `Stats.Blade == false` worked.
+  - A blunt hit concusses a human for 3 + 1.25 x kg seconds (4.3 s for a bat, 8 s for the sledge).
+  - The Barbed Wire Bat is blunt but also makes the target bleed (`Stats.Bleeds`).
+  - From 1 kg (the bats, fire axe, sledge) a weapon counts as two-handed: a throw winds up for a second (`Stats.WindUp`, which
+    was already wired in).
+- Harness: new RT 7v checks (the sledge is slower and harder-hitting than the knife and takes both hands; a bat concusses
+  without bleeding; a thrown bat drops instead of sticking; the barbed bat bleeds; all 6 have stats and grips). ALL CHECKS PASSED.
+- **Not built:** the second hand on two-handed handles (they're still held in one fist). Not tuned against fights; not checked
+  in Unity.
+- Fix found while comparing the numbers for Yan: the player's real swing path (`Melee.Release`, the mouse) used a fixed ~0.62 s
+  cadence and ignored the weapon's `Swing` time; only the old `PlayerAttack` and NPC swings used it. A sledge swung as fast as a
+  knife. Now the next swing waits for the longer of the two. Light weapons (under ~1 kg) are unchanged at ~0.62 s; the fire axe
+  takes 0.9 s, the barbed bat 0.69 s, the sledge 1.5 s. New harness check on the real mouse path.
+- For Yan, per hit and per second against the torso, before armor, uncharged:
+  - Melee: 200-650 a hit, ~320-730 a second (knife 323, sledge 433, Ritual Blade 726).
+  - Pistols: 120-340 a hit, 600-1000 a second.
+  - Rifles and machine guns: ~2000-4100 a second.
+  - Sniper rifles: 540-1440 a hit.
+  - Melee hits hard once but has the lowest damage per second; it pays in no ammo, bleeding or concussion, and throws.
+- Yan's idea for the inventory UI: a dedicated melee slot so everyone always has a knife for parrying; more melee weapons can go
+  in the weapon slots for a throwing build. Written into ACTION_DESIGN.md (Melee). Not built: no inventory UI yet, and the
+  parry isn't built either.
+- Taken out again: the Barbed Wire Bat from the Tier 5 loot pool. ACTION_DESIGN has it as a secret weapon carried by a boss,
+  "not regular Raider kit". It's only in the Testing Ground crate until that boss exists.
+- Still open from the design table: the hammer's shorter reach and the sledgehammer breaking cover.
+- Saved the method for the gun redraw: `ArtSource/weapons/hand/PIXEL_GUIDE.md` (the steps, Yan's catches, what guns need on
+  top) and the tools that were in a temporary folder (`pixel_tools/`: `tmat.py` material trace, `grid.py` gridded reference,
+  `bench.py` drafting helpers, two example drafts). Linked from ACTION_DESIGN's later list and CLAUDE.md.
+
+## RT 7x - save slots, character names, the save at creation (2026-10-21)
+
+Yan: "do 2 and 3" (2 = save slots + naming + the save at creation; 3 = the networking test groundwork). Built on his co-op rules
+(ACTION_DESIGN): "The host saves the world, the players own their characters and can join other world or play their own ...
+Add multiple save-slots".
+- `SaveSystem`: a **character file** per character (`saves/characters/<id>.json`: name, the PlayerSaveData, which world it was
+  last in) and a **world file** per world (`saves/worlds/<id>.json`: the MacroSaveData, who hosts it).
+  - A slot is a character. Loading one opens the world it was last in.
+  - `Slots()` lists them, the last saved first. `Delete` removes a character, and its world when no other character is in it.
+  - Writes go to a `.tmp` file first, so a crash mid-save never destroys the last good save.
+- **New Game** has a name box on the creation screen (20 characters; empty = "Scavenger"). `StartNewGame` calls
+  `SaveSystem.Create(name)`: a new character in a new world, saved at once.
+- **Main menu:**
+  - Continue loads the last played character.
+  - Load Game lists the characters (name, rank, day, place, when saved) with Load and Delete; Delete asks "Sure?" first.
+  - F5/F9 and the death screen's Load use the slot in play.
+- **The old single save** (`savegame.json`) becomes a slot named "Scavenger" the first time the slots are listed. The old file
+  is kept as `savegame.json.migrated`.
+- **The Testing Ground** is never saved ("The Testing Ground isn't saved.").
+- The character sheet (P) shows the name. `Player.CharacterName` is saved in the character file.
+- **Co-op (rule 9):** Save() writes the world and the **local** character. A joined player's character lives on their own
+  machine; the network layer will ask them to save when the host saves (RT 7y). Local joiners in the harness aren't saved.
+- **Harness:**
+  - The `JsonUtility` stub is now real (System.Text.Json, public fields like Unity), so the save checks read and write real
+    files.
+  - New `SaveSlotChecks`: a named slot at New Game, save/load by slot, a second character, delete with its world, the
+    Testing Ground not saved, the old file moved over. ALL CHECKS PASSED.
+- **Not checked in Unity:** typing in the name box (a TMP_InputField built in code), the slot list's layout, Continue.
+
+## RT 7y - the networking test, first stage (2026-10-21)
+
+The agreed next step (ACTION_DESIGN "Co-op": "Host runs the world ... other players send inputs. Unity Netcode for GameObjects
++ Relay"; test with Multiplayer Play Mode).
+- **Packages** (`Packages/manifest.json`, versions picked for Unity 6000.5 and released 2+ weeks ago):
+  `com.unity.netcode.gameobjects` 2.13.3 (3.x needs Unity 6000.7), `com.unity.services.multiplayer` 2.3.3 (sessions with join
+  codes over the relay), `com.unity.multiplayer.playmode` 2.0.2 (several players in one editor). Unity installs them the next
+  time the project opens.
+- **`Net.cs`** (game side, checked by the harness):
+  - Roles Off / Host / Client.
+  - **Host:** a friend who connects gets a body beside the host with a starting pistol. Their Input packets go into
+    `Rt.Remote`, and PlayerController ticks them like the local player. A press (fire, jump, reload) is kept until one tick
+    uses it, so presses aren't lost between frames. Every client gets a snapshot 20 times a second.
+  - **Client:** sends its Input every frame and runs no world of its own (no clock, AI or squads; enemies cleared). Every
+    player, itself included, stands where the host's snapshot says. A client never saves.
+- **`Assets/Scripts/Net/NgoLink.cs`** (Unity side):
+  - Anonymous sign-in, with a separate profile per editor window so two windows count as two players.
+  - `MultiplayerService.CreateSessionAsync(... WithRelayNetwork())` to host, `JoinSessionByCodeAsync` to join.
+  - Two Netcode named messages: inputs (reliable) and snapshots (unreliable, to the clients only).
+  - It installs itself as `Net.Link` at startup.
+  - The harness skips the `Net/` folder (`runtest.sh`), so I checked every API call in it by hand against the source of the
+    exact package versions (NGO 2.13.3, Multiplayer 2.3.3, Authentication 3.7.0, Core 1.18.0).
+- **`CoopUI.cs`:** main menu > Co-op. Host loads your last character and gives a code; Join takes a code and starts a client.
+  A corner line while connected: HOST with the code, or CLIENT, plus the player count.
+- **Harness:** `NetChecks` with a fake link: the packet survives the wire; hosting gives a code; a friend joins armed next to
+  the host; a press is used once; their packets walk their body; snapshots go at their own rate and carry every player and
+  the map; a client stands where the snapshot says, sees the host and never saves; a client sends every frame.
+  ALL CHECKS PASSED.
+- **Not checked:** nothing here has run in Unity; the Unity side is untested. Yan's test:
+  1. Open the project; Unity installs the 3 packages. Red errors in the Console mean a package or API mismatch: send them over.
+  2. Link the project to Unity Cloud: Edit > Project Settings > Services, sign in, create or link a project. The session and
+     relay need it; the free tier covers testing.
+  3. Window > Multiplayer > Multiplayer Play Mode: turn on Player 2.
+  4. If there's no character yet: Play > New Game once (it saves at creation), then stop. There's no "back to menu" in game
+     yet. Press Play; in the main window go to Co-op > Host. It loads your last character, and the code shows in the corner
+     and the log.
+  5. In the Player 2 window: Co-op, type the code, Join.
+  6. Each should see the other walk. The client's own moves come back from the host, so they lag by the round trip.
+- **Known limits of this stage (players only):**
+  - Enemies, shots, effects, items, quests and the HUD aren't synced.
+  - The client gets a fresh character; characters don't travel yet.
+  - The friend's held gun doesn't turn to their aim on the client yet.
+  - ESC still pauses a host's world.
+  - No client-side prediction (the client's movement lags).
+  - No leaving or rejoining from the UI (quit Play to stop).
+
+## RT 7z - gun feel: the player's spread, the shakedown's "shoot first" (2026-10-23)
+
+Yan: "enemies instantly shoot and kill me, also they're a lot more accurate than the player for some reason, also also weapon
+dispersion seems very high even for the starter pistol, characters past a few 'me's' bullets already fly high or low and miss
+them, like 5 players of distance, i think our range calculations do not work all that well now that the game is real time."
+And: "enemies instantly shoot and kill me, when exiting chat about the extorsion".
+- **Measured first:** new `dotnet /tmp/test.dll accuracy`, real `Gunplay.Shoot`, 600 shots per cell, chest-high aim at a
+  standing man in the open. Results in `Tools/probes/accuracy_rt7z.txt`.
+  - Before, per shot, the player was **not** less accurate than enemies; everyone missed a lot past ~5 tiles. Your hip-fired
+    pistol hit 49% at 5 tiles and 24% at 8. A Rookie Raider's pistol hit 30% at 5 tiles, a Veteran's rifle 47%.
+  - The spread is in degrees, scattered sideways and up/down alike (`Gunplay.Shoot`). At these ranges a 3 deg spread is
+    wider than a body (0.42 tiles wide, 0.82 tall); that's the shots flying high and low. The degrees date from one shot a
+    turn.
+  - Why enemies feel deadlier:
+    - they aim at your exact centre (`Gunplay.NpcAim`), while you aim with the mouse;
+    - several fire at once;
+    - every enemy fires the moment a fight starts. `RtAi.Tick`'s first shot has no wait, so the whole squad fires on the same
+      frame.
+- **Fix 1, the player's spread halved** (`Gunplay.PlayerSpread = 0.5`, inside `Gunplay.Spread`, which only the player's shots
+  and the crosshair use).
+  - Hip pistol: 90% at 5 tiles, 58% at 8.
+  - Aimed (RMB): 94% at 8 tiles, 77% at 12.
+  - Aimed VKS-74U: 91% at 12 tiles.
+  - Enemies unchanged (rule 6: never nerf enemies; the player gets the tools).
+- **Fix 2, the shakedown:** "Shoot first (they lose their first turn)" did nothing in real time. `EncounterState.Surprised` is
+  only read by the turn loop, so the gang fired at once anyway. Now they hold fire for 1.5 s (`RtAi.Hold`,
+  `Shakedown.SurpriseSeconds`), and the option reads "they're slow to react". "Refuse" still means they open fire straight away.
+- **Asked Yan, not done:** a reaction time for enemies when a fight starts or when they first see you (e.g. 0.3-0.8 s,
+  quicker with rank, each man his own). It would stop the "whole squad, same frame" volley. It changes how hard enemies
+  are, so it's Yan's call.
+- Harness: `GunfeelChecks` (the hip pistol hits 80%+ at 5 tiles; enemy spread untouched). ALL CHECKS PASSED. Not checked in
+  Unity.
+
+## RT 7z-b - the dive animation; other players are drawn (2026-10-23)
+
+Yan: "i'd like to have an animation for the dive + slow motion now, maybe the character lowers himself to build momentum before
+jumping, today he kinda just likes turns sideways and there's no sense of momentum or height during it".
+- `Rt.PoseOf(p)` (`Rt.cs`): how a player's body is drawn at this moment. The same 0.55 s dive, now in beats:
+  - **Crouch, 0.1 s:** squashed to ~0.72 tall and 1.14 wide, leaning 20 deg into the dive, barely moving.
+  - **Launch and arc:** stretched at take-off, rising to 0.45 tiles and back down, turning flat by mid-air.
+  - **Belly landing, 0.08 s:** squashed flat, skidding, with a thud (`hit_dirt`).
+  - **Sprawled for the prone time**, then a 0.2 s **get-up**. Before, you snapped upright.
+- The speed follows the beats (`Rt.DiveSpeedAt`): 0.3x in the crouch, 1.28x in the air, 0.6x in the skid. The distance is
+  unchanged (2.5 tiles), and so are the bullet time and the low target.
+- `TacticalGridView.PoseBody`: turn, squash and lift (through `StandOffset`; a crouch keeps the feet on the ground). While in
+  the air, the shadow stays on the ground under you and shrinks with height.
+- **Found and fixed:** other players were never drawn; `TacticalGridView` drew only you and the enemies. The co-op test would
+  have shown nobody. `DrawFriends` now gives every other player a body, their dive poses and their gun pointed at their own
+  crosshair:
+  - `Rt.State.AimAt`, from their Input packets on the host;
+  - the snapshot now also carries the aim and the dive's moment (`Net.PlayerEntry`).
+- **Harness:**
+  - `DiveChecks`: crouch, rise, flat landing, get-up; same distance; the snapshot carries a friend's dive and aim.
+  - A dice-dependent co-op check (a Raider at 5 tiles hitting the near player within 6 s, ~12% to fail by chance) now gets
+    30 s.
+  - ALL CHECKS PASSED.
+- **Preview:** `Tools/render/dive_anim.py` (from `dotnet /tmp/test.dll diveframes`) -> `maps/renders/dive/`, before/after GIF
+  and a strip. It's the real numbers drawn like the view, on the map render, in real time with bullet time. Not drawn: the
+  held gun and hands.
+- **Not checked in Unity:**
+  - how the held gun follows the turned body;
+  - the ground shadow's sorting;
+  - friends' markers.
+
+## RT 7z-c - Gunslinger in real time (dual pistols), and the Max Payne scene (2026-10-23)
+
+Yan: "make a scene where he is dual wielding pistols and shooting back at enemies while jumping, like max payne". Dual pistols
+only existed as the turn-based perk, so I offered to build it first; Yan: "do 1, build gunslinger for real then render it".
+- **Rules** (ACTION_DESIGN "Perks": "Gunslinger - Dual pistols, one per mouse button"):
+  - You need the perk (after Point-Blank Execution) and a sidearm in each hand (the inventory's "Off-hand" button, as before).
+  - The left button fires the right-hand gun; the right button fires the left-hand gun (`Rt.Input.Fire2Down`).
+  - Each gun has its own rate of fire, kick, magazine and jams (`Gunplay.OffAimOf`, `Rt.TickOffhand`).
+  - The right button no longer steadies your aim, but a dive still steadies both guns.
+  - Each gun spreads a quarter wider than alone (`Rt.GunslingerSpread` 1.25).
+  - R reloads the right-hand gun, then the left.
+- **Drawing:**
+  - The left-hand pistol sits in the other glove, 3 px "under" and 1 px behind the first, both aimed at the crosshair
+    (`HeldPoseMath.Offhand`, `HeldWeaponView._gun2`).
+  - Each gun has its own recoil and muzzle flash; effects pick the gun that fired (`HeldWeaponView.Use(weapon)`).
+  - Reloading the left gun has no animation yet (ponytail).
+- **Fixed on the way:** the hands and guns are children of the body, so a turned body (the dive, lying down) turned the guns
+  with it, and they pointed the wrong way. The aim is now taken in the body's turned frame (`HeldWeaponView.Show`, `bodyTurn`).
+- **Testing Ground:** a "2 pistols" button gives both perks and a PSh-18 in each hand (`TestingGround.GunslingerKit`).
+- **Co-op:** the second trigger travels in the Input packet (bit 512), and the host keeps a press until a tick uses it. Friends'
+  left-hand guns are drawn too, but the snapshot doesn't carry a friend's gear yet; characters don't travel yet (RT 7y).
+- **Harness:**
+  - `GunslingerChecks`: the kit; each button fires its own gun; the right button doesn't aim; both fire mid-dive; R reloads
+    both; the left gun's pose sits beside the right one at 5 aim angles.
+  - New stubs `Transform.localEulerAngles` and `Mathf.DeltaAngle`. ALL CHECKS PASSED.
+  - Seen once and not reproduced: "a keypad safe opens only with the code from its note" failed in one run and passed on the
+    next with the same code. A flaky check, to look at.
+- **The scene:**
+  - `dotnet /tmp/test.dll gunslingframes gs.json` runs a real fight frame by frame (the kit, two Rookie Raiders in Raider
+    Jackets with a VKS-74U and a PSh-18 fighting back on RtAi, a dive up the screen, both guns firing in turns).
+  - `python3 Tools/render/gunsling_scene.py` draws it the way the view builds it (body, gloves and guns as one group, squashed
+    and turned and lifted; ground shadows; tracers, muzzle flashes, blood) -> `maps/renders/gunslinger/`.
+  - Real outcome: 16 rounds, 4 hits, the first Raider down to 584 of 1000 HP; you got hit too. Raiders have 1000 HP, so a
+    PSh-18 needs ~8 body hits.
+- **Not checked in Unity:** the second gun's sorting under the body when seen from behind; the muzzle flash on the left gun.
+
+## RT 7z-d - dives up and down, two pistols that read as two, the dodge duel; the harness is deterministic again (2026-10-23)
+
+Yan: "we need an animation for diving upward and downward as well, right now the character dives and always turns right or
+left, also both pistols are held in the exact same place so it looks like one, make the character hold one slightly back and
+above/below the other one so that it reads visually that he has 2". And: "make an example of the character dodging a shot
+with the jump and killing the enemy ... (no need to teleport, just the dodge and killing the enemy while jumping is fine)".
+- **The dive faces its direction** (`Rt.PoseOf`):
+  - Lying flat, the head points where the dive goes: right -90 deg, up 0, down 180, diagonals between.
+  - The up/down share is also foreshortened (`Rt.Foreshorten` 0.45: a body flat on its belly, head-on from above, is short).
+  - A dive toward the bottom of the screen turns in the air, not in the crouch.
+  - The snapshot sends the dive direction (`DiveX/DiveY`) instead of a left/right flag.
+  - Sheet: `maps/renders/dive/dive_directions.png` (`Tools/render/dive_dirs.py`, from `diveframes <json> dx dy`).
+- **Two pistols that read as two:** the left-hand gun sits 3 px "under" and now 3 px behind the right one, staggered
+  (`HeldPoseMath.OffSide/OffBack`; it was 1 px behind).
+- **Fixed, the player's spread extras:** pinned, hurt arms and concussion added whole degrees on top of the halved spread from
+  RT 7z, so a pin alone tripled a steady pistol's spread. They're halved too now (`Rt.PlayerFire`).
+- **Fixed, the harness wasn't deterministic** (two dice checks failed at random; the scene dumps differed run to run):
+  - Since RT 7x the JSON stub writes real data, so SquadManager's `offline_squads.json` carried the last run's squads into
+    the next. Every harness run now deletes it first. Found by tracing every random call (`RNG_TRACE=file` in the stub)
+    and diffing two runs.
+  - Hash codes that change every run: NPC stand spots (`Rt.Offset`), the follower pace (`TurnLoop`), a Named title
+    (`StorySystem`) and a quest wording (`QuestSystem`). They now use `CombatantUtil.StableId` / `ZoneExitPlacer.StableHash`.
+  - Banter seeds its own random numbers from the game's.
+  - In the game this also means NPCs no longer stand in different spots from one session to the next.
+- **Found, not fixed:** `offline_squads.json` (the off-screen squads) sits in the game's save folder, shared by every save
+  slot. It should live in each world's file (RT 7x). Next save task.
+- **The duel** (`gunslingframes <json> duel`; `Tools/render/gunsling_scene.py ... gunslinger_duel`, with HP bars and a
+  "DODGE" tag on rounds that fly over you):
+  - Setup: one Rookie Raider (VKS-74U, Raider Jacket) at 5 tiles. Staged: he holds his first shot 0.25 s (`RtAi.Hold`).
+  - You dive up across his line and fire both guns as fast as they cycle.
+  - Real outcome: 2 of his 7 rounds hit you (both early, before you're low). 3 of your 4 dive rounds hit; from the ground
+    most miss (hip-fired pair, pinned, 5-6 tiles). He ends at 266 of 1000 HP with both magazines empty.
+  - The kill Yan asked for doesn't happen with the current numbers: a Raider needs ~10 PSh-18 hits, and a dive gives ~4
+    rounds. Levers offered to Yan (player tools, rule 6), not built.
+- Harness: an up dive lies head-up and foreshortened, a down dive head-down turning in the air. ALL CHECKS PASSED, 3 runs
+  in a row.
+
+## RT 7z-e - dives up/down grow toward the camera instead of squashing (2026-10-23)
+
+Yan: "the side dodges look great but dodging up doesn't, because the character squishes himself and un-squishes after, what if
+you try playing a trick on the camera by making the character a little bigger during the dodge so it seems he's closer to the
+camera, the sideways dodge looks okay no need to change that".
+- `Rt.PoseOf`: the foreshortening is gone. The body grows with its height in the arc, up to +30% at the top (`Rt.DiveGrow`),
+  weighted by the dive's up/down share. A pure side dive is exactly as before; the harness checks its size stays 1.
+- Head-first turning (up 0 deg, down 180) and the crouch and landing squash (same as side dives) are unchanged.
+- Sheet and GIF: `maps/renders/dive/dive_directions.png` / `.gif` (`dive_dirs.py` now writes both).
+- After an up dive he lies head-up, which reads much like standing during the 0.6 s sprawl. Not changed; to see in Unity.
+- ALL CHECKS PASSED. Not checked in Unity.
+
+## RT 7z-f - the dodge + kill scene with stronger pistols (2026-10-23)
+
+Yan: "dodging down is still weird, he rotates mid air then gets up and the image is inverted again, we'll need to think about
+that" (parked; one option is to drop the 180-degree turn and keep only the grow) and "try recreating the dodge + kill scene but
+give the character a stronger pistols to make the kill happen on screen".
+- `gunslingframes <json> duel <pistol>` runs the same duel with any pair of sidearms. Each gun fires as fast as it cycles,
+  the two in turns. Results (one Rookie Raider, VKS-74U, Raider Jacket, 5 tiles):
+  - **Black Harrier pair:** 4 of 4 rounds hit mid-dive (1000 -> 208 HP), and the killing shot lands at 0.87 s as you hit the
+    ground. He hits you twice as you leave the ground.
+  - **Steppe Eagle pair:** a kill at 0.87 s too; you take three hits.
+  - **RK-12 Kuvalda pair:** he's left on 11 HP. They hit hardest but cycle too slowly.
+- Render: `maps/renders/gunslinger/gunslinger_duel_kill.gif` (+ strip). The dead Raider lies on his side in the growing
+  `fx_blood_pool` (5 frames, as CombatFxView), a still pose; the game ragdolls instead. The only staged thing is the Raider
+  holding his first shot 0.25 s.
+- Fixed in the dump: a dead Raider drops his gun, so the scene keeps his weapon from the start.
+- ALL CHECKS PASSED.
+
+## RT 7z-g (2026-10-23): bullet time no longer slows the player's trigger; RK-12 sideways dive scene
+
+Yan: "the dive nerfs our attack speed as well ... make it so dive does not nerf attack speed" - "not nerf attack speed for the
+players*, to the enemies it does".
+- `Rt.PlayerFire`: the gap to the next shot is scaled by `SlowScale` in bullet time, so a player's guns (both hands) keep
+  their real-time rate while everything else, enemy guns included, runs at x0.3. Check in `GunslingerChecks`. Reloads still
+  run on game time (slowed): not asked.
+- Slow visible bullets: rounds are hitscan (`Ballistics.cs:9`), so there is nothing in flight to slow. Asked Yan: real
+  projectiles for everyone, or tracers only.
+- Scene: `gunslingframes <json> side RK12Kuvalda` dives sideways with one Rookie Raider 6 tiles up the screen;
+  `gunsling_scene.py` takes `VIEW=x0,y0,w,h`. Renders `maps/renders/gunslinger/gunslinger_side_rk12.gif` / `_strip.png`.
+  Result: 3 of the first 3 rounds hit (1000 -> 186), then the RK-12's kick bloom plus being pinned by his near misses
+  scatter the rest; 10 rounds gone by 0.95 s (5-round cylinders), he lives on 136. All three of his shots missed (the dive).
+
+## RT 8 (2026-10-23): real bullets for everyone, no pinning mid-dive, slower revolvers
+
+Yan, on the RK-12 scene: "10 rounds fired in 1 second from the strongest sidearm in the game and a rookie raider didn't die? D:
+is that right?" - it was what the code said: 150 rpm per RK-12, two guns taking turns = 5 rounds a second, ~2 real s for both
+cylinders. A Rookie Raider has 1000 HP (x10 in real time, `HumanEnemy.cs:86`); an RK-12 torso hit does ~313, so 4 hits kill.
+3 hit, then the kick (7.5 deg a shot) plus being pinned by his near misses scattered the rest.
+Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too" / "No pinning mid dive but those numbers might
+need adjusting, the revolvers are almost full auto if they work like that".
+- **Rounds fly** (`Gunplay.Round`, `Gunplay.Flying`, `Gunplay.Fly` from `Rt.WorldTick`): `Shoot` launches them; each frame a round
+  traces its frame's stretch (`Ballistics.Trace`) and lands on the first body/wall/cover; damage, wounds and near-miss pins happen
+  on landing (`Land`). Height drifts with the up/down scatter. Bullet time slows them with everything else (game time).
+- **Velocity stat** (`Handling.Speed`, tiles/s): a class column (pistol 40, SMG 45, rifle 80, sniper 100, shotgun 40, MG 85) and
+  per-gun overrides (`Gunplay.Velocity`: magnums ~50, subsonic Tishina/Shepot 32, AM-50 110, rail 250). Real muzzle speeds scaled
+  ~1:5 so rounds are visible and dodgeable.
+- **Enemies lead** (`Gunplay.Lead`: position + smoothed velocity x flight time), fully, so real bullets don't make them worse
+  shots (rule 6); turning or diving after they fire makes them miss.
+- **No pinning mid-dive:** a near miss while diving still gives Focus but doesn't pin, and an old pin adds no spread mid-dive.
+- **Revolvers slower** (rpm): Halden Service Revolver 220 -> 120, Rinaldi R6 240 -> 130, RK-12 150 -> 75. The Steppe Eagle
+  (semi magnum, 200) is unchanged - not a revolver.
+- View: the trigger pull is a "shot" FxEvent with `Flying` (flash, sound, kick, no tracer); each round in the air is a streak
+  (`CombatFxView.TickRounds`); landing is a `Landed` event (blood / chips only).
+- Checks: `RoundChecks` (in the air, speed, lands, rifle faster than pistol, stepping aside dodges, enemies lead, no pin mid-dive).
+  Probes that read a hit straight after `Shoot` now call `Gunplay.LandAll()`.
+- Scene: `maps/renders/gunslinger/gunslinger_side_rk12.gif` / `_strip.png` redone: 3 RK-12 rounds visibly fly up to him, he
+  dies at 0.58 s (game time), his 3 rounds miss the dive.
+- Not done / not checked: co-op clients don't see rounds yet (the snapshot still carries players only); the old dive/duel scenes
+  weren't re-rendered; nothing checked in Unity (the streak sorting and height in particular).
+
+## Story 1 (2026-10-28): the Tier 1 story, written with Yan (no code)
+
+`STORY.md` started from Yan's two campaign files. Tier 1: tutorial, the cut fence (scapegoat mutant, optional close look),
+the Grey Robes (not hostile; shot at -> smoke and leave, hits stagger; can't die in Tier 1), the Engineer from the Flooded
+Bunker (stays in Bonfire Village), the Culvert (Blight Brute, "RUN" on the radio, chase), the Husks, the village defence.
+Yan's words: husks are "zombified stalkers, they appear in all tiers and have strength relative to that tier based on their
+armor and weapons, just like npcs, but they have worse accuracy, are slower and can't call reinforcements"; the defence can be
+lost only by dying or losing the Engineer, but "player should win most of the time unless he plays sooooo badly".
+Names still placeholders (suggestions in STORY.md).
+
+## Story 2 (2026-10-29): Tiers 2-3 decisions, the old campaign logs, the end-to-end skeleton, mission dialogue (no code)
+
+`STORY.md`: Tier 2 ("Taken", the walkthrough, the Loading Dock after the Garrison, the Scrap King's radio job), Tier 3 (Lev
+Marchuk was one of "those"; Pavel stays with Osei), notes from Yan's four old campaign logs, the T3-T7 skeleton ("looks good"),
+companions never required, no contract sniper, Contractors side-only, the Garrison as unwitting pawns, Rask the traitor with
+Hale as the red herring, Tolik's tackle boss fight, the Preacher's dodgeable waves. New `STORY_DIALOGUE.md`: draft lines for
+every mission from the first morning to the descent (new names marked * for Yan).
+
+## Story 3 (2026-10-29): the story systems
+
+Yan: "i did the unity check, everything seems alright, you can start by building the story systems".
+- New `Story.cs`: `Talk` (a conversation in the dialogue panel, line by line, answers on the last), `Radio` (a log line while
+  you play), `Journal` (entries, no doubles), `Step`/`SetStep`/`Finish` (each mission's progress), `SetObjective` (text and a
+  landmark - the landmark gets the map's objective marker through `StorySystem.IsObjective`), `Spot` (a landmark picked once
+  per world, never a reserved one or another spot's), `Cutscene` (the camera frames a point, you stand still, the world runs).
+- All kept in `MacroState.StoryFlags` (prefixes m:/o:/j:/spot:), so saves carry it with no format change.
+- Shown: objectives in the World panel and a STORY block (objectives + last 4 journal entries) at the top of the J panel.
+- Check: `StorySystemsChecks`.
+- Not done: no missions yet (Tier 1 is next); no radio crackle sound (the click for now); the old acts in `StorySystem.cs`
+  still run until each is replaced. Co-op: story is the host's; conversations, radio and cutscenes show on the host only until
+  the snapshot carries story events (with enemies and shots). Not checked in Unity.
+
+## Story 4 (2026-10-29): Tier 1 missions, part 1
+
+Yan: "start building the tier 1 missions". New `Tier1Story.cs` on the Story.cs pieces, lines from STORY_DIALOGUE.md:
+- **The first morning:** a new game's objective is "Talk to Yefim by the fire"; E by The Bonfire Camp starts his talk and his
+  first job.
+- **The Courier's Pack (Yefim):** the courier's body is a per-world spot; 3 Blind Maws hold it (a real quest squad placed there);
+  E at the spot takes the pack; back to Yefim: 400 Ru.
+- **The Raider camp (Stas):** 3 Rookie Raiders at a second per-world spot; when they're all dead, Stas pays 500 Ru.
+  ponytail: Stas stands at the Bunkhouse until the village's bar exists.
+- **The Cut Fence (Yefim):** a Pallid Prowler at Watchtower 3; E at the fence (before handing in) finds the bolt-cutter cut and
+  the grey cloth (journal); Yefim pays 300, or 600 with the closer look.
+- **The Burst:** once the fence and the camp are done, at night (21:00-05:00) Yefim's radio picks up the loop; Yefim points to a
+  third per-world spot; E there: the note from "P." (journal), then the Headman.
+- **The Key (Headman Petro):** favour (2 Prowlers at the Fisherman's Shack), pay 1500 Ru, or take it (Wanderers reputation
+  down, the village remembers). Then: "Find P. in the Flooded Bunker" - the next batch starts there.
+- Per-world spots never use the village, checkpoints or any place another Tier 1 mission uses. Rewards go to every player.
+- Hooks: `InteractionEngine` (before the bonfire's camp, so E by the fire talks first), `TurnLoop.TickAwareness` (jobs that
+  finish on their own, the night radio).
+- Check: `Tier1StoryChecks` plays the whole chain with the harness's default answers. It caught one bug: the fence could only
+  be inspected before the Prowler died (now any time before you hand in).
+- Not done: Pavel, "those", the Culvert, the Husks, the defence (next). The people aren't units on the map yet (no portraits).
+  Not checked in Unity.
+
+## Boss 1 (2026-10-29): the parry, the boss framework, the Visor's hatchet duel
+
+Yan: "before we continue with part 2 i'd like to build the secret lab hatchet Hunk-reference bossfight we talked about, to be used
+as baseline for the bossfights in this game, im a sucker for HYPE MOMENTS AND AURA stuff like metal gear rising revengeance,
+dragon ball, sekiro". His calls: parry on a "dedicated key, customizable in options but default can be F"; no posture ("posture +
+deathblows only work for bossfights since nowhere else in the game we could have you brawling it out in melee with a normal npc while
+others shoot you"); "perfect parries stagger him for a second, normal parries just block the damage, when hp bar gets to 0 we can press
+a key to finish him off (after he's down and looted, a few seconds later a smoke grenade goes off and he's gone)". Guns: no
+preference - he deflects bullets unless staggered. The place: the plan in ACTION_DESIGN (a secret room of a Tier 4-5 lab) - Lab Beta.
+- `Parry.cs`: F (Keybinds), perfect 0.12 s / blocked 0.35 s / cooldown 0.45 s, any human melee hit (`Melee.Strike`), the trench
+  knife's longer window. Co-op: the Input packet's bit 1024.
+- `Boss.cs`: moves with white/red glints, combos, lunges, stagger, bullet deflection, phase 2, breaking at 0, the finisher (E),
+  the smoke-out after looting, a hit-stop. Bosses run their own moves (`Rt.WorldTick`), not RtAi.
+- The Visor: Legend, Proto-Exoskeleton, Serrated Trench Knife, 2400 HP; Slash, Flurry (3), Lunge (red); phase 2 adds a 5-hit
+  feint flurry and the Execution (a long red rush).
+- Lab Beta: `lab_plans.py visor_wing` - a cracked wall ('Z', E breaks it), a long unlit corridor, the end room ('V'). The body lies
+  there until the fight's won (`Story.Has("visor_done")`); E on it pulls the hatchet out and he gets up. Other labs unchanged.
+- Testing Ground: Humans tab, BOSS row - the hatchet in your hand, him 5 tiles away.
+- HUD: `HudView.Boss.cs` (name card, health bar with a draining chunk, STAGGERED / FINISH HIM / DEFEATED). Effects: `CombatFxView`
+  (glints, sparks, the aura's embers, the finisher's blood, the smoke, deflects). Sounds: `sfx.py` boss section (parry x2,
+  parry_perfect, glint, glint_danger, boss_sting, finisher, smoke) - the old sounds are byte-identical.
+- Keybinds: `Keybinds.cs` (PlayerPrefs), Options has PARRY / SEARCH buttons (click, press a key). Search moved from F to G.
+- Checks: `BossChecks` - the parry rules, a duel driven frame by frame (a timed parry staggers him), deflect vs open, phase 2,
+  the break, the finisher, the smoke, the hit-stop, the lab's marks. It caught a real bug: a perfect parry mid-combo crashed the boss.
+- Not done / not checked: no render of the duel yet; not checked in Unity (feel, timings, the HUD, the sounds); no sprite for him
+  (the Proto-Exoskeleton's look; a black suit with a red visor needs Yan's art call); mutants can't be parried; co-op clients don't
+  see the boss (the snapshot carries players only).
+
+## Boss 1b (2026-10-29): the Visor's look, parry draws your knife, EXECUTE, the perfect parry's moment, the duel render
+
+Yan: "draw him a black suit with a red visor and a gas mask, the parry works even without a melee in hand, it insta-draws it,
+picking up the hatchet equips it, change FINISH HIM to EXECUTE, executing gives slow-mo energy. Also we need an indication for the
+perfect parry, maybe time slows down for the second as well? a slow-down effect on the screen, maybe a little zoom-in and something on
+the edges? After that's done try rendering the fight". Mutant parries and co-op for bosses: "later".
+- **Black Visor Suit** (`ArtSource/make_unique_armor.py`): a new head "visormask" (black helmet, red visor band with a hot glint, gas
+  mask with a chin filter) on the heavy body in black; front, back and walk frames in `armor_unique_black_visor_suit.png`;
+  `UnitSprites.Unique` adds it beside the atlas, `UnitSprites.UniqueGloves` gives it black gloves. His alone (`Boss.BlackVisorSuit`),
+  not in any loot table. Preview: `maps/renders/boss/visor_suit.png`.
+- **Parry draws the melee weapon:** with a gun in hand, F pulls the best melee weapon from the pack into your hand and parries in
+  the same instant (`Parry.MeleeInPack`). No melee weapon at all: no parry. ponytail: it stays in your hand (no melee slot yet).
+- The hatchet from his body goes straight into your hand (already so in Boss 1).
+- **EXECUTE** replaces FINISH HIM; the execution fills your Focus.
+- **The perfect parry's moment** (`Boss.ParryMoment`): the hit-stop (0.14 s), then 1 s of slow motion (x0.25), the camera leaning
+  in 9%, and a cold blue edge round the screen (`HudView.Boss.cs`), all eased by `Boss.Punch`.
+- **Bugs the render found** (the harness's duel had been passing): (1) he stood a tile away but you stand anywhere inside a tile, so
+  he swung at air from 1.4 tiles (the knife reaches 1.3) - he now steps in before each hit (`Boss.StepIn`); (2) bleeding (and any
+  other damage road) killed him instead of breaking him - `Mutant.Unkillable` holds a boss at 1 HP until the execution.
+- **The render:** `dotnet /tmp/test.dll bossframes duel.json` (a bot plays the duel through the real code at 30 frames a real second)
+  -> `python3 Tools/render/boss_duel.py duel.json maps/renders/boss` -> `boss_duel.mp4` + `boss_duel_sheet.png`. The bot parries most
+  white glints on the beat (one late = blocked), hacks while he's open, sprints off after some punishes (he lunges: a red glint, it
+  dives through with bullet time), executes him, opens the body: smoke. It starts with full Focus (a dive costs 40). Drawn on the
+  Bonfire Village ground, not the lab. 29 s from wake-up to smoke; 5 perfect parries were enough.
+- Not checked in Unity. Open for Yan: the dive needs 40 Focus, so without Focus his red moves can't be dodged by diving; the fight
+  is short for a parrying player (2400 HP, ~10 hatchet hits plus bleeding).
+
+## Poses prototype (2026-10-29)
+- Yan: "besides the front and back sprites we added some 'poses' ... sitting down, crouching, leaning foward, leaning to the side
+  to use the cover mechanics, and add a few in between frames"; then "just this for now": two suits, a preview sheet to approve or
+  redline. `ArtSource/make_poses.py` cuts any finished 16x16 suit into bands (upper body to the belt, legs) and re-composes 16 poses
+  (stand, crouch, kneel, sit, lean left/right, lunge, stagger, each with a 1/2 in-between, and lying), front and back, re-outlined.
+  Sheet: `maps/renders/poses/poses_preview.png` (Leather Jacket and Black Visor Suit, x6, plus true size and x5).
+- Nothing in the game. Hands aren't posed yet (they float as now); that comes once Yan picks the poses.
+
+## Melee 2: stances and swing strings (2026-10-29)
+- Yan (with a screenshot of Leon vs Krauser, RE4): "melee should feel like the leon vs krauser fight from re4, the posing could too,
+  knifes can have stabs and slashes from up or down, hatchets can have horizontal and vertical sweeps, 2 handed melees can have
+  some different swings as well"; "they need a STANCE".
+- `HeldPoseMath` (HeldWeapon.cs): three styles (`StyleOf`: the four knives / 1 kg and up = two-handed / the rest), each with a
+  fighting stance instead of hanging the weapon at your side (knife out at chest height, hunched; hatchet raised; two-handed up
+  across the body) and a string of moves: knife stab / slash down / slash up, hatchet vertical chop / horizontal sweep (it turns
+  the other way, under the hands, and stays level), two-handed overhead slam / wide sweep / rising swing. `Chop(t, style, move)`
+  goes stance -> wound up -> strike -> follow-through -> stance. The other hand shows now: on the handle of a two-handed weapon, up
+  in a guard in front of the chest otherwise.
+- `Melee.Charge.Move` + `Next`: clicking again within 0.4 s of a swing ending gives the next move; a pause starts over. NPCs vary
+  theirs by swing time. Timing and damage unchanged (the hit still lands at the end of the strike).
+- Render: `dotnet /tmp/test.dll meleemoves m.json` + `Tools/render/melee_moves.py` -> `maps/renders/melee2/` (GIF and sheet).
+  Checks: `MeleeMoveChecks`. Not checked in Unity. Per-move damage/speed (a quick stab, a slow slam) not done: Yan's call.
+- Melee 2b (Yan: "they have a pause between each attack and that makes it not look like a combo"; "the machete-type animation
+  might need some work on the second swing"; "the hand and angle stay the same ... they need to rotate as well with the swing"):
+  - Combos flow: a swing in a combo winds up from wherever the last one was (`Chop(.., from)`, `Charge.From`) instead of going
+    back to the stance; the next click is allowed after the follow-through (the recovery is cut, `Melee.cs` NextSwing), and a
+    click made too early is kept (`Charge.Queued`) and starts the next swing the moment it can. Heavy weapons keep their longer
+    recovery (RT 7w), so the axe still has a short beat between swings.
+  - Wind-ups never swing the weapon down through your feet: they go over the top (`Through`). The sweeps stay at chest height and
+    the weapon foreshortens as it comes round at the camera (`HeldFrame.Length` -> the weapon's x scale).
+  - The fist rides an arc round the shoulder with the swing (`ArmArc` 3 px) and turns with it (`HandDeg`, 0.6 of the weapon's
+    turn); it can drop to the hip now.
+  - Render shows the real clicking: a click every 0.25 s (mashing), machete instead of the hatchet. Checks: the combo starts where
+    the last swing was, an early click is queued and becomes the next move.
+- Yan: "bosses get their own moveset, at least the special red visor one" - to do (the Visor still uses his single swing pose).
+- Melee 2c (Yan chose "option 1": each swing its own hit shape, each weapon its own reach; "simulate a melee fight between one
+  player and one normal npc, try to include at least 2 parries"):
+  - `Melee.Shapes` / `Melee.Shape`: reach by kind (knife 1.3, one-handed 1.45, two-handed 1.75 tiles; the Tactical Hatchet keeps
+    1.35) times the move's: stab x1.2 at 40 deg, the slashes 100 deg; chop 70 deg x1.15 damage, sweep 150 deg x0.85 hits everyone
+    in it; slam 60 deg x1.25, wide sweep 160 deg x0.85 everyone, rising 90 deg. `Melee.Swing` uses the swinger's current move.
+    `Stats.Arc` is gone.
+  - Found while building the sim: a human enemy's blade never went through Melee at all in real time - RtAi called
+    `MeleeAttack` (the mutant strike). Now RtAi swings the blade (`Weapon.Fire` -> `Melee.NpcSwing`): it winds up like yours,
+    lands at the end of the strike (so it can be read, stepped away from and parried), steps into reach from the next tile
+    (`Boss.StepIn`, now public), and walks his weapon's string of moves. Enemies' poses are driven by their own `Melee.Charge`
+    (TacticalGridView). The Visor poses at his strike (move 1) until he gets his own moveset.
+  - Melee 2d (Yan: "the perfect parries need a visual indication, the enemy hand could go UP simulating their guard was broken"):
+    `Charge.BrokenAt` set by a perfect parry -> his weapon arm is knocked up over his head, body rocked back, shuddering, for 1 s.
+    Also `Charge.GuardAt`: your parry raises the weapon across in front of you for the window (before, in the game, the parry key
+    showed nothing on the player - the view read only SwungAt).
+  - Sim: `dotnet /tmp/test.dll meleeduel d.json` + `Tools/render/melee_duel.py` -> `maps/renders/melee2/melee_duel.mp4/.gif/_sheet`.
+    Machete vs a Veteran Raider with a knife: 3 perfect parries (each punished with one chop), 1 late block, 1 cut taken, 1 step
+    out of reach, he backs off hurt and is pressed; down in ~13 s.
+  - Seen in the render, not fixed: units have no body collision below a tile - you can stand at the edge of your tile 0.57 from
+    an enemy, and the bodies overlap.
+- Melee 2e (Yan: "add the minimum distance between bodies so that they don't overlap, but dead bodies can be walked over";
+  "the video still shows characters teleporting around"):
+  - `Rt.BodyGap` 0.8 tiles between the middles of the living (downed and dead don't count): `Rt.MoveBy` won't take you closer
+    (`Crowds`), and `Separate` pushes you back out (4 tiles/s) when an enemy steps in on you. Co-op: other players count too.
+  - The teleporting was half the render: `Rt.Glide` (tile hops -> slides) only runs in TacticalGridView, and the sim didn't call it.
+    The other half was real: a step into reach (`Boss.StepIn`) moved him inside his tile in one jump, and Glide only smoothed whole
+    tiles. Glide now slides every jump of where an enemy stands; the duel sim runs it every frame like the view. Largest move per
+    frame in the new render: 0.085 tiles; closest the bodies get: 0.73 (the push-out takes a moment).
+  - Not checked in Unity.
+
+## Visor 2 and Melee 3 (2026-10-29)
+- Visor 2 (Yan: "now build the visor's own moveset, he can have some different animation combos"): his own pose set
+  (`HeldPoseMath.Style.Visor`, picked by `Melee.Charge.PoseKey = HeldPoseMath.VisorPoses`, not by his knife): a reverse-grip
+  stance (blade down along the forearm, low, crouched) and six swings - backhand, rising, ice-pick, thrust, spin (a full turn),
+  execution - each with its own hit shape (`Melee.Shapes` row 4: the spin hits all round him, the thrust reaches further; damage
+  stays his moves' Mult). `Boss.Move.Poses` strings them: Slash = backhand; Ice pick (new, x1.15) ; Flurry = backhand, rising,
+  ice-pick; Lunge (red) = thrust; Feint flurry (phase 2) = backhand, rising, spin, backhand, ice-pick; Whirlwind (new, phase 2) =
+  two spins; Execution (red) = execution. His wind-up is held through the glint (`WindPose`, the Tick clears it a strike-length
+  before the hit), and a combo's next hit winds up from where the last left the knife.
+- Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings, maybe that could add a little ding and pep"):
+  `ArtSource/make_poses.py atlas` makes the swing poses for every suit, laid out like the armor atlases: armor_pose_<key>.png and
+  armor_back_pose_<key>.png (crouch_h, lunge_h, lunge, stagger_h, stagger; the leaning ones as _r and _l, the _l from the mirrored
+  suit so the armband stays on its side), and armor_unique_<suit>_poses.png. `UnitSprites.Pose`. `HeldFrame.Body`
+  (`HeldPoseMath.BodyPose`): half crouch on the wind-up, a charge, a throw's lift and the parry guard; half then full lunge on the
+  strike and follow-through, half on the way back; stagger when the guard is broken. TacticalGridView swaps it in after the walk
+  frame. The poses are the generated prototype frames Yan saw on 2026-10-29 (not hand-touched yet).
+- Renders: `dotnet /tmp/test.dll visormoves v.json` + `melee_moves.py` -> `maps/renders/boss/visor_moves/` (every move through the
+  real Boss.Begin/Tick); melee_moves, melee_duel and boss_duel re-rendered with the body frames. The duel renderer no longer
+  mirrors the Raider's body (the game never does).
+- Not checked in Unity: the new PNGs import through the Sprites folder's importer like armor_back_atlas.png (no .meta committed).
+- Visor 3 (Yan: "visor got absolutely crushed lol, he needs more hp, at least double"; "make it so he needs 3 parries to get
+  stunned, if he got stunned by every single one he'd be tooooo easy"; "i could not even see his combo"):
+  - HP 2400 -> 4800. `Boss.Def.ParriesToStagger` = 3: `Boss.Stagger` counts perfect parries (they fade after `GuardRecovers` 8 s
+    without one) and only the 3rd opens him; the first two are clean deflections (a short hit-stop, Focus, no slow-mo) that don't
+    break his combo, so the combos play out. The guard-break pose and the slow-mo moment come with the stun. HUD: "GUARD 1/3",
+    "GUARD 2/3" under his bar. Plain enemies still stagger on one perfect parry.
+  - Sim (the same bot: perfect on 4 of every 6 hits, one late, one missed, dives his red moves): before, the bot got downed by
+    limb damage and the boss stopped hitting a downed player; the bot now stims back up when downed, as a player would. Result:
+    executed in 51 s real, 6 stuns (18 perfect parries), phase 2 at 33 s. `maps/renders/boss/boss_duel.mp4` re-rendered with
+    the guard counter.
+  - Seen, not changed: the boss doesn't swing at a downed player (Melee.Swing skips downed targets) - he just stands over you.
+- Melee 4 (Yan: "they went out of the screen during the duel"; "his combos still kind of blend into one another"; "they are still
+  teleporting around a little in the videos, in game that won't happen right?"; "he also seem to be moving at normal speed during
+  the dive?"):
+  - Render camera: boss_duel.py now follows the fight (eased to the middle of the two), ground cropped per frame, effects stay put.
+  - Smear: every melee strike (yours, NPCs', the boss's) leaves ghosts of the blade 0.025/0.05/0.075/0.1 s back along its path
+    (`HeldPoseMath.Striking`/`SmearStep`/`SmearCount`, four SpriteRenderers in HeldWeaponView, read from the pose math so it's
+    frame-rate independent); red for a boss's red move (`Melee.Charge.Red`). ponytail: tinted ghosts, not a white silhouette.
+  - The teleporting in the boss video was the sim: it never ran Rt.Glide (the view does, on game time). Checked the data: during
+    the dive the clock was at 0.3 and he still jumped 1.9 tiles in one frame - in the game that step slides, slowed by bullet time.
+    The sim runs Glide now. A real issue found with it: a long lunge would slide at walking pace and arrive after its hit, so
+    Glide rushes jumps over 1.2 tiles (`Rt.RushTime` 0.12 s of game time, slowed by bullet time too). Largest move in a frame now:
+    0.39 tiles (a lunge at full speed).
+  - Not checked in Unity.
+- Melee 5 (Yan: "make guard breaks create a slowdown effect like the dive, so that the players sees the enemy getting their hands
+  up slower"): a guard break already had Boss.ParryMoment (0.14 s freeze, then 0.25x for a real second, the lean-in and the cold
+  edge - for plain enemies too), but the arm flew up in 0.06 s of game time, done in a quarter of a real second. Now it rises over
+  `HeldPoseMath.BrokenRise` 0.24 s of game time, eased, which fills the slow motion: in the duel render the knife goes up over 28
+  frames (~0.9 s real). Not checked in Unity.
+- Melee 5b (Yan: "the enemy animation for getting parried is too slow, his hand goes up almost at the end of the slowdown"): the
+  rise is eased out (knocked up at once, slowing into the top) over 0.12 s of game time instead of eased in over 0.24 - in the duel
+  render it's most of the way up 0.4 s (real) after the parry and held at the top through the rest of the slow motion.
+
+## Visor 4 - Yan's first Unity test of the melee work (2026-10-29)
+- Yan: "the top of the characters heads get cut off, same with the visor boss" (screenshot: the hood's top outline row missing).
+  Cause: since Melee 2 every melee stance had a resting tilt (knife -3, Visor -5 degrees), and a 16 px body turned a few degrees
+  under point sampling drops pixel rows. Stances now have no tilt (`MeleeMoveChecks`: "no tilt at rest"); bodies lean only mid-swing.
+  Not confirmed in Unity - if heads still clip at rest, it's something else.
+- Yan: "the visor boss is basically impossible like he is now, parries are probably too hard and his animations are not expressive
+  enough to be read". Player tools and readability, no nerf (his damage, HP, moves and timings to the hit are unchanged):
+  - Parry windows wider: perfect 0.2 s before the hit (was 0.12), block 0.45 (was 0.35); cooldown 0.7 (stays above the window, so
+    mashing can't hold a guard up) - but a parry that lands frees the key at once. Before, his combo hits (0.24-0.45 s apart) could
+    never be parried twice in a row because of the 0.45 s cooldown.
+  - His glint now comes at a fixed beat, `Boss.GlintLead` 0.4 s, before every hit (it came at each move's start, 0.4-0.9 s early,
+    different every move): glint, beat, parry.
+  - His swings play at half pace (`Boss.Def.Pace` 0.5 -> `Melee.Charge.Pace`/`Since`): the strike starts 0.16 s before the hit
+    instead of 0.08, the follow-through is heavier.
+  - Sim (bot now parries 0.1 s before the hit, a beat after the glint): executed in 46.5 s real. Renders re-made
+    (`maps/renders/boss/boss_duel.mp4`, `visor_moves/`).
+- Visor 5 (Yan: "add a few in between pauses between his attacks and combos, window of oportunity"): after every move he opens up
+  (`Boss.Move.Open`, x0.8 in phase 2): Slash 1 s, Ice pick 1.2, Flurry 1.5, Whirlwind 1.5, Feint flurry 1.8, Lunge 2, Execution
+  2.2 (the red ones overcommit). While open he stands still, his weapon sinks and his shoulders heave (`Melee.Charge.OpenK` ->
+  the `open` blend in `HeldPoseMath.MeleeFrame`), bullets land (`Boss.Deflects` is false), the bar reads OPEN; his next move comes
+  0.24-0.39 s after it closes. A stun cancels it. Checks: open after a move, still, bullets land, then it closes.
+- Sim (perfect bot, now going in and hitting whenever he's open): executed in 27 s real (was 46.5), 3 openings of 1.3-1.5 s
+  seen, the first worth ~410 damage. A perfect bot isn't a person - but if he now falls too fast, the opening lengths are the knob.
+
+## Freeze, item use, crouch (2026-10-29, after Yan's Unity test)
+- Yan: "after opening and closing the inventory my character froze". Not reproduced (no Unity here); the likely cause: ESC is
+  the pause key and the I panels don't close on ESC, so ESC paused the game under the inventory - and the only sign of a pause
+  was "PAUSED - ESC" in the top line. Now ESC closes open panels first (`HudView.CloseOldPanels`), and a pause shows a big
+  PAUSED / "ESC to resume" in the middle of the screen. If it still freezes without ESC, it's something else - ask Yan for steps.
+- Yan: "healing doesn't have an animation right now". While you use an item (Rt.BeginUse .. UseDone, `Rt.State.UseFrom` added),
+  your weapon dips and the free glove works with the item (`HeldPoseMath.UseKindOf/UsePose/ApplyUse/UseGrip`, HeldWeaponView's
+  UseItem sprite; TacticalGridView sets each player's `UseKind/UseT`): bandage/splint wound round the arm, a medkit pressed to the
+  chest, a stim jabbed into the thigh, a pill/MRE/energy drink raised to the mask. New sprites `Sprites/Items/use_<kind>.png`
+  (medkit, bandage, syringe, ration; `ArtSource/make_use_items.py`, weapon-B scale, held at a grip point so they show past the
+  glove). Render: `dotnet /tmp/test.dll useframes u.json` + `Tools/render/use_anim.py` -> `maps/renders/use/`.
+- Yan: "crouching also doesn't play the crouch animation": a full `crouch` frame for every suit (make_poses.py atlas,
+  armor_pose_crouch / armor_back_pose_crouch, unique strips regenerated), shown while sneaking (walking or still).
+- Yan's RE4-style case inventory: not built - proposal sent, waiting on his answers.
+- Not checked in Unity.
+- Empty hands (Yan: "when the character has nothing in his hand his HANDs stay on his side looking like chicken wings ... should
+  stay either invisible or still detached from the body but make movements as if they're swinging a little with each step"):
+  the gloves float a pixel clear of the torso at the hips and swing opposite ways (one up, one down, a touch in/out) once per step,
+  easing back to still when you stop (`HeldPoseMath.FreeHands`; HeldWeaponView reads the walk from how far the body moved, a full
+  swing per 1.2 tiles). Preview: `maps/renders/hands/empty_hands_walk.gif` (drawn with the same numbers; not a harness render).
+  Not checked in Unity.
+- Empty hands b (Yan: "they're pointing to the sides and swinging up and down instead of pointing down and swinging a little to
+  the sides, seems like they're dancing"): the gloves hang turned fingers-down (grip -90, support +90; the support glove's turn is
+  reset when a weapon is out) at a fixed height and sway a pixel to one side, then the other, together with the steps.
+
+## Pack 1 - the backpack inventory (2026-10-30)
+- Yan: "the inventory is just text for now, we can add a real one like the case from re4 using our detailed sprites for items";
+  his answers: items take grid shapes ("could be"), they rotate ("yeah"), pack space and weight both limit ("both"), armor icons
+  by "turning off the eyes in the suits and putting the gloves in a resting position above them", and it's "inside of a bag, also
+  reflected by the color and size of the backpack". Gloves: "option 1" (A - unchanged).
+- `Pack.cs`: the bag from the equipped backpack (`BackpackDef.Cols/Rows/Colour`: pockets 5x4, Small Canvas Sack 8x5 in khaki
+  canvas, Tourist Frame 11x7 in blue-grey nylon); footprints (`Pack.Size`: pistol 2x2, SMG 3x2, rifle/shotgun 5x2, sniper 6x2,
+  heavy 6x3, knives 2x1 / one-handed 3x1 / two-handed 4x1-4x2, suit 3x3, medkit/splint/MRE 2x1, repair kit 2x2, the rest 1x1);
+  `InventoryItem.GridX/GridY/Rot` (saved); first-fit placement flat then turned (`Place`), dragging (`Move`), repack on a new bag
+  (`Refit`, from HandleBackpackChange), old saves settle on load. Pickups (Player.AddItem) take the first free spot; what doesn't
+  fit stays out of the grid - never lost - until you make room or drop it. Ammo stays in the ammo stash. Weight still limits.
+- `HudView.Pack.cs` (I): the bag in its cloth, cells sewn in, items as icons over their footprints; drag to move, R turns the held
+  item, right-click equips / uses / wears / belts / fits it (the old panel's buttons), X drops it; the "doesn't fit" strip under
+  the bag; equipped weapon / second / armor / backpack and the hovered item's name, weight and size on the right. The world keeps
+  running (hands stop, like the other panels); I or ESC closes (that ESC doesn't also pause). The old I text panels stay hidden.
+- Icons (`ArtSource/make_item_icons.py`, 16 px a cell, locked style): all 15 consumables, loot/junk/mutant part/key/cash/detector/
+  armor mod, artifacts by type, both backpacks in their colours; `armor_icon_atlas.png` - every suit with its eyes put out and its
+  gloves laid above it (48x48, armor atlas order). Weapons use their 64x32 _hd sprites.
+- Renders: `dotnet /tmp/test.dll packdump p.json` + `Tools/render/pack_screen.py` -> `maps/renders/pack/` (the real packing,
+  drawn outside Unity in the panel's layout - fonts/frame approximate). Checks: `PackChecks`.
+- Not checked in Unity. Not done: backpacks visible on the character (Yan: "probably wont be visible on the character"), more
+  backpack kinds, shop/loot/stash screens still list items as text.
+- Pack 1b (Yan's Unity test: "when i close the inventory it stays a grey screen, also there's no equip/unequip ui, no drag and
+  drop"): two layout bugs of mine - the panel was placed half its size up and left of centre (HudView.Rect's pivot is its anchor),
+  so the pack screen showed as an empty grey block in the corner, and closing destroyed only the box's inner fill, leaving the grey
+  frame. Now centred and the whole box goes. Equip/unequip: drag an item onto WEAPON / SECOND / ARMOR / BACKPACK to equip it there;
+  drag a weapon out of its slot into the bag (or right-click the slot) to unequip it (`Player.UnequipWeapon`: rounds to the stash,
+  the second weapon comes up). A suit or a pack comes off by putting another on. Check: unequip -> in the pack, equip -> out.
+  Not checked in Unity.
+
+## Survival mode (2026-10-30)
+- Yan: "add a survival mode, starts at a randomly chosen poi, enemy waves come starting with 5 then 3 more each wave, every 5 waves
+  one boss, or high tier mutant spawns, every boss or high tier mutant ups the 'tier' of the waves ... all human enemies are lootable
+  and have ammo and pristine weapons and armor on death, 15 second delay between waves, maximum time of 1 minute between waves
+  besides the boss one, i'll use this to stress test the combat, player starts with basic pistol and some meds".
+- `Survival.cs`, main menu "Survival": a Scavenger (PSh-18, 30 rounds, the hunting knife, Leather Jacket, 2 medkits, 2 bandages,
+  splint, stim) at a random landmark of a random tier map (1-6). A dev mode like the Testing Ground: no squads (all offline squads
+  cleared, `SquadManager.TickHour` off), no anomalies, every faction hostile, never saved (`SaveSystem.Save` refuses; New Game and
+  Load end the run).
+- Waves: 5 + 3 per wave, aware and coming from 16-24 tiles out; odd waves one human faction at the tier's ranks (tier t: ranks t-1/t
+  of Rookie..Legend, the first one the higher rank), even waves the tier's mutants. Every 5th wave one boss: a human faction boss
+  (`SquadManager.MakeBoss`, AP rounds) and "The Apex" (the toughest mutant two tiers up, named) taking turns; killing it raises the
+  tier (max 6). Next wave 15 s after a clear, or 60 s after the wave began; the boss wave waits for the boss (+15 s).
+- Humans' gear drops pristine (`HumanLootSystem.RollCondition` -> Working) with three magazines of ammo.
+- HUD top line: WAVE / TIER / LEFT / KILLS / next-wave timer. Checks: `SurvivalChecks` (sizes, breather, the minute cap, boss
+  wave waits, tier up, pristine loot). Not checked in Unity; no render (it's a live fight on a full map).
+- Poses b (Yan, on the pose sheet: "lunge has 3 legs, sit 1/2 and sit makes it look they're doing a split, make the sitting have
+  their legs strechted out to the side"): the lunge moved the whole leg row and cut it in half, dragging a slice of the other leg
+  along - now each leg moves on its own (`make_poses.step_legs`). The sit: both legs together stretched out sideways along the
+  ground (boots at the end), the in-between bent at the knee on the way out; facing right on the sheet (the game would mirror it).
+  The swing poses in the game (lunge) were regenerated with the fix (`make_poses.py atlas`).
+- Poses c (Yan: "keep all of them, wire them into the game"): every suit now also has kneel, sit (facing left/right), the two
+  cover leans and lying, each with its in-between (`make_poses.py atlas`; `UnitSprites.PoseKeys`, 21 frames). When they show
+  (`TacticalGridView.StancePose`, used whenever no swing asks for a frame):
+  - downed: lying (the frame, instead of turning the body 90 degrees);
+  - sneaking: crouched while moving, kneeling once still;
+  - aiming (you) / in a fight (an aware NPC) with cover - low, hard or a wall - on the tile beside you toward the aim: leaning out
+    to the side you aim at;
+  - out of a fight, still for 8 s (you; not mid-item-use) or 10 s (a calm, unaware human NPC): sitting, legs out to the side
+    you face - camps sit around.
+  The in-between frame plays for 0.12 s on the way into crouch / kneel / sit / lean (`Entering`). Crouched, kneeling, seated and
+  staggered bodies sit a pixel lower, and the hands and weapon go down with them (`HeldWeaponView.BodyDrop`). Not checked in Unity.
+- Hurt feedback (Yan: "there's no feedback to getting hit, maybe a little red flash on the corners of the screen / character
+  flashes a little red similar to the visor boss"): there was a hit flash (`CombatFxView.ApplyTo`, 0.15 s of a pale pink) but only
+  on combat-effect events and too faint to notice. Now read off the local player's health dropping (any blow, bullet, bite, bleed;
+  `HudView.UpdateHurt`): a red vignette closes in round the screen edges (`EdgeImage`, shared with the parry's cold edge), stronger
+  for a bigger hit (a sixth of your health or more = full), fading over 0.5 s; and your body flashes red for 0.3 s
+  (`HudView.PlayerHurt` -> TacticalGridView). Not checked in Unity.
+
+## Sound: real recordings, part 1 (2026-11-03)
+- Yan: "we'll need better sound effects, is there a free repository somewhere?" ... "start with what you can do by yourself, i'll
+  do the others [the Sonniss bundles] and tell you when im done".
+- From here only OpenGameArt was reachable (kenney.nl and freesound.org answer 403). 22 packs there, each checked CC0 on its own
+  page; 44 of the game's sounds now come from them (`ArtSource/audio/import_cc0.py`, sources in `ArtSource/audio/cc0/`, credits in
+  `CREDITS_AUDIO.md`): all footsteps (stone, sand, grass, wood, water), the bullet/blade impacts by material (wood, tin, concrete,
+  hard metal, flesh), door opening and breaking, the melee swish, the UI click, picking up, the dry-fire click, the smoke hiss, and
+  the rain, storm, cave and marsh ambiences. Same file names (Sfx.cs unchanged), the game's format (16-bit mono 44.1 kHz WAV),
+  leading silence trimmed, one-shots capped, each one's loudness matched to the sound it replaced (within ~1-3 dB), ambience
+  seams crossfaded.
+- Picked by file name and checked by length and level - I can't listen here, so Yan's ears decide. Kept generated: gunshots,
+  reloads, explosions, thunder, wind (the only CC0 wind was a 5 s gust), the Zone hum, creatures, psi, hurt, and the boss/parry set
+  - waiting on Sonniss.
+- Sound part 2 (Yan: "what if i get some from youtube" - advised against: the recordings are someone's copyright whatever the
+  title says, and YouTube's terms forbid ripping; "yes, search opengameart for gunshots"): CC0 only. "The Free Firearm Sound
+  Library" (Ben Jaszczak et al., 22 real guns at 96 kHz) gives every gunshot: `ArtSource/audio/import_guns.py` cuts one shot out of
+  a take (a shot starts where the loudness jumps to half the take's peak out of quiet, at least 0.3 s after the last - 0.05 s for
+  the full-auto SMG - and keeps its tail; the SMG and one AK take use the burst's last shot, which has a tail). Pistols: Walther PPQ
+  / 1911; SMG: PPSh; rifle: AK-47; shotgun: Mossberg / Nova; sniper: Mosin / Tikka; heavy: Marlin 336 / .300 Blackout. The game's
+  files keep their own names. Also from CC0 packs: the magazine, shell and single-round reloads, two explosions, and sword clashes
+  for the parry (`CREDITS_AUDIO.md`).
+- Levelling changed in both importers: a sound is raised toward the old sound's average loudness only as far as its peak allows
+  (no limiter). Matching averages had pushed the real shots up to +11.6 dB into the limiter and squashed their crack; real shots
+  are now a little quieter on average than the generated ones but keep their attack. Both imports were rebuilt from the original
+  generated sounds. Previews: `maps/renders/sound/guns_preview.mp3`, `new_sounds_preview.mp3`. Still generated: the rail gun,
+  thunder, wind, the Zone hum, creatures, psi, hurt, glint, sting, finisher.
+- Sound part 2b (Yan: "the sounds cut off before the echoes are done"): two causes. My cuts were short (0.45-0.9 s) - now each shot
+  is the one in its take with the most room after it, kept until its echo stays 60 dB under the shot's peak (these are fairly dry
+  outdoor recordings: -50 dB comes after ~0.5 s, the faint echo runs on another second), capped per type (pistol 1.8 s, SMG 1.2,
+  rifle 2, shotgun 2.4, heavy 2.6, sniper 3) and faded out; the shots now run 1.2-3 s. And the game had 20 voices
+  (`Sfx.Voices`), stealing the oldest when busy - a burst with real tails would have cut its own echoes: now 48.
+- Sound part 2c (Yan: "add a bit of reverb to the gunshots, also the explosion one sounds straight out of a game like the old
+  CONTRA games"): the explosions came from two CC0 game packs (TinyWorlds' "Explosion", rubberduck's cannon), both thin (energy
+  ~2.5 kHz, ~10% under 200 Hz). Now built from real recordings in layers (`import_guns.EXPLOSIONS`): a heavy rifle shot slowed to
+  40-45% (the boom), a cannon / bang (the crack), the CC0 "Muffled Distant Explosion" (the rumble) and falling rock from 0.25 s
+  (debris) - 3.5 s, 40-51% under 200 Hz. Reverb (`add_reverb`): an outdoor impulse made in code - six early reflections (23-187 ms)
+  and a dark noise tail decaying over ~1 s - mixed under the dry sound (35% on shots, 25% on explosions).
+
+## RT sound 3 - CC-BY sounds, Credits screen, gun reference review (2026-11-03)
+
+- Yan: "i don't mind" a credits screen naming CC-BY authors. Added from CC-BY 3.0 packs (OpenGameArt, licences read on the pages and
+  in the archives' readmes): Jack Menhorn's FPS Placeholder Sounds -> `hurt_0-2` (the player's pain grunts, were synthetic) and
+  `hit_flesh_3` (body thud); Mike Koenig's Shotgun Shoot/Reload (SoundBible) -> `dryfire` (a real dry-fire click). Sources in
+  `ArtSource/audio/ccby/`, wired through `import_cc0.py` (a new variant levels like its `_0`). Skipped Michel Baradari's shots:
+  designed game shots; the real firearm recordings we have are better. Avoided CC-BY-SA/GPL packs.
+- Main menu: a **Credits** button (row 7, Quit moved to 8, rows a little tighter) opening `MainMenuUI.CreditsText` - the CC-BY
+  authors with the licence, the CC0 authors thanked, the fonts (OFL). `CREDITS_AUDIO.md` updated; keep the two in step.
+- Gun references (Yan: "take a look at all the free pixel ones that could be used as references"): reviewed the 28 2D entries of
+  OpenGameArt's "gun" tag. Sheet: `maps/renders/gun_refs/oga_gun_tag_sheet.png`. Verdict in chat: useful as drawing references
+  only, mostly for proportions; the one worth keeping is "Weapon Inventory Graphics" (CC0, `best_weapon_inventory_graphics.png`).
+- Not checked: how the new sounds sound (preview `maps/renders/sound/ccby_sounds_preview.mp3`), the Credits panel in Unity.
+- Follow-up: the pain grunts are out (Yan: "LOL 'ouch' 'oww' 'you're hurting me' ... Scrap those please, they are way too
+  monotonous and funny sounding ... we might not even add voices tbh, i don't think it fits with the artstyle having them speak").
+  `hurt_0-1` back to the generated sounds, `hurt_2` and the sources removed. Yan: "speak vocally i mean" - no recorded voices;
+  the on-screen banter text (`Banter.cs`) stays.
+
+## RT fx 0 - pixelfx test renders (2026-11-03)
+
+- Yan showed reels of pixelfx (patch-gg/pixelfx, MIT: 244 code-drawn pixel effects plus a Claude Code skill for making new ones)
+  and okayed running its render tool. On colours, Yan: the glowing ones could fit "some of the mutants maybe, psychic mutants,
+  anomalies". Rendered 23 effects (guns/explosions/blood recoloured to Zone ramps, anomaly/psi ones as they are), pasted at 1:1
+  on a real Tier 1 render with a 16 px unit: `maps/renders/fx/pixelfx_muted.png`, `pixelfx_anomaly.png`.
+- Verdict: muzzle flashes, hit spark, ricochet, bullet impact, smoke bomb and the electric ones fit; ground effects are side-view
+  (flat lines on our top-down map) and most anomaly effects are 2-5x too big. Nothing in the game yet; waiting on Yan.
+
+## RT fx 1 - pixelfx in the repo, the void pull (2026-11-03)
+
+- Yan: "Isn't this skill supposed to help you create effects?" - yes: the library is ready-made effects, the skill is the method
+  for making new ones (drafts, render, look, refine, `check.mjs`). Yan: "some of the ready made ones can be used or at least as a
+  reference, mostly the ones that are not 'ground' effects, that black hole thing looks cool, a smaller version could be used for
+  a mutant attack".
+- pixelfx copied into `ArtSource/fx/pixelfx/` (MIT, LICENSE and NOTICE kept; the 12 MB of demo GIFs dropped; `records/` ignored),
+  the skill into `.claude/skills/pixelfx/` so later sessions have it. Needs Node 18+: `cd ArtSource/fx/pixelfx && node tools/render.mjs <id> --sheet`.
+  Our own effects go in `src/fx/zone/`. Credits screen: "Effects - pixelfx by Patch and Hugo Duprez (MIT)".
+- `zone/void-pull`: the black hole redrawn at 0.36 of its size (one factor `SC` on every length, two bands instead of four,
+  fewer particles) - 72x56, about 3 tiles wide, purple ramp kept for a psychic mutant. Three rounds: v1 speckled and too white,
+  v2 calmer streaks and a bigger dark core, v3 the bright side toned down; `check.mjs` passes clean. At this size it reads like
+  a floating eye, which suits a psychic mutant. On a map: `maps/renders/fx/void_pull_on_map.gif`.
+- Not done: which mutant uses it and how (a pull? damage over time?), the Unity side (a strip like the anomaly strips).
+
+## RT fx 2 - gun and electric effects, side by side at two sizes (2026-11-03)
+
+- Yan: "go ahead with the gun effects and electric ones". Rendered from the library (guns in the muted fire ramp, light 0.4,
+  stone #6b6a60; electric ones as they are): muzzle-pistol/smg/shotgun, hit-spark, ricochet, bullet-impact, electrified,
+  spark-arc, zap-hit, charge-up. pixelfx has no size knob and draws for a 24x38 character (ours: 16), so two takes on a real map:
+  `maps/renders/fx/gun_electric_half.mp4` (effect pixels half a world pixel, like the HD mutants) and `gun_electric_full.mp4`.
+- spark-arc draws its own two poles (fits an anomaly built around pylons, not a free spark). Not in Unity yet: waiting on the size.
+- Yan on bosses: "some of them a bullet-hell style bossfight ... more akin to Binding of Isaac where it's kinda bullet hell but
+  not really? you have to dodge stuff". Discussed in chat, nothing built. Note: the dive (`Rt.cs:469`, 0.55 s) has no i-frames.
+
+## RT 9 - invulnerable dive, bullet time on its own key (2026-11-03)
+
+- Yan: "I was thinking about unbinding bullet time from the dodge, having it be a separate key to activate and use the dodge for
+  mechanics like those [boss patterns], having it be invunerable".
+- Space: the dive costs 30 stamina (`Rt.DiveStamina`), not Focus, and no longer slows time. While airborne the player is
+  `Rt.Untouchable`: rounds pass (`Ballistics.HalfWidth`), blades miss (`Melee.Land`), blasts skip you (`Explosions.Blast`). The
+  landing stays prone for 0.6 s and can be hit (Yan's earlier "risky" landing kept).
+- V (rebindable in Options, `Keybinds.Slow`): bullet time on/off. Needs 10 Focus to start, drains 25 Focus a real second, stops at
+  0. Co-op: per player (`Rt.State.Slow`), sent as an input bit (2048); slows the shared clock only when every living player is
+  within 40 tiles of the one using it (same rule as before). HUD shows BULLET TIME as before; controls text and ACTION_DESIGN updated.
+- Checks: no stamina no dive; a dive spends stamina and doesn't slow time; mid-dive every round passes; landing prone and
+  hittable; a friend's bullet time slows a shared fight, not one 45 tiles off; it drains and stops when dry.
+- Not checked in Unity.
+
+## RT fx 3 - pixelfx gun and electric effects in the game (2026-11-03)
+
+- Yan: "full size for electric, half for guns". `ArtSource/fx/export_strips.py` renders the effects (guns in the muted fire ramp)
+  and writes `Assets/Resources/Sprites/Fx/px_<name>.png`: one strip of square frames at 15 fps, the game's anchor in the middle of
+  every frame (pixelfx draws from the ground under a 24x38 character, so muzzles and impacts are lifted by their `height` option),
+  with a .meta allowing 16384 px wide, uncompressed. `CombatFxView.Strip(path, 0, ...)` counts square frames by itself.
+- `CombatFxView.PxFx` plays one, rotated to the shot's direction (flipped when it points left), 32 ppu for guns (half-pixels),
+  16 for electric. Hooks: the muzzle by gun class (`Muzzle`: shotgun / sidearm / everything else = SMG flash), a round hitting a
+  door/barrel/wall = hit-spark, cover: metal = ricochet, other materials = bullet-impact (the material chips stay). Each falls
+  back to the old sprite when its strip is missing.
+- Livewire anomaly: the drifting ball lightning (`px_anomaly_livewire`, looped at 15 fps) instead of the old 6-frame strip; a
+  discharge into someone pushes a "zap" event -> zap-hit at full size. `electrified` was dropped: it wraps pixelfx's own
+  character, whose outline would show. spark-arc (its own poles) and charge-up not used yet.
+- Not checked in Unity: rotation of pixel art at odd angles, the 16k-wide strip import, how busy automatic fire gets (an SMG
+  flash lives 1 s with its smoke).
+
+## Boss 2 art, round 1 - the brain in the vat (2026-11-03)
+
+- Yan: Secret Lab Alpha "sure"; crack the vat, drain in phases, the brain bare at the end "sounds good"; art first "ok". And the
+  brain comes back: "when it drains completely it sits still for a few moments, then its eyes open again and it uses a
+  portal/black hole thingy to teleport away, then we fight it again with enhanced mechanics in another place" (ACTION_DESIGN).
+- `ArtSource/bosses/make_brain_vat.py`: 64x96 at double resolution (like the HD mutants: 2x3 tiles), six states - full, crack1-3
+  (the liquid drops, the brain rides half under the surface), drained (slumped, eyes shut as slits), awake (eyes open, psi specks).
+  Five eyes with the psi purple iris (Mind Weaver palette), murky green liquid, steel lid with hoses, riveted base with pipes.
+  Two rounds: v1 folds read as speckle, shut eyes as mush, the brain floated above the liquid, a crack sat on it, the hoses looked
+  like "$"; fixed in v2.
+- Real render: `maps/renders/boss_brain/brain_vat_in_lab.png` (the vat in Secret Lab Alpha's big room at in-game size, a person
+  for scale, the void pull over the awake state), states sheet `brain_vat_states.png`. Not in the game yet.
+- Round 2 (Yan: "go bigger"): redrawn at 96x144 (3x4.5 tiles at double resolution) from the same layout scaled by `K` - not an
+  upscale. The brain's folds redone as wavy loops round the middle with a lumpy edge (the first pass at this size read as bricks),
+  a sixth eye, riveted lid, thicker hoses and pipes. The escape shot uses the full-size black hole. Renders replaced.
+- Yan also: Secret Lab Alpha "looks very even in space, it doesn't have a linear progression" - on the to-do list in
+  ACTION_DESIGN ("Dungeons you figure out").
+
+## Boss 2 - the brain in the vat, the fight (2026-11-03)
+
+- Yan: "go bigger, then start the fight code". `BrainBoss.cs` ("The Specimen", Secret Lab Alpha, spawned at (37,9) when you
+  enter, unless the story flag `brain_escaped` is set):
+  - the vat is a Mutant unit (6000 HP, 4.5 tiles tall for bullets: `Ballistics.MutantSize`); `BrainBoss.Tick` runs it every frame
+    on the host (`Rt.WorldTick`; the normal mutant AI skips it). It wakes when a player is within 4 tiles, or 9 and in sight.
+  - moves from a shuffled bag (each once before repeats, the bag grows with each crack): ring (10 orbs +2 a crack), aimed (3-orb
+    volleys, more when angry), spiral (two arms), props (telekinesis via `Props.Push`: some hurled at you - barrels bowl you over -
+    the rest dragged sideways into lanes), and from crack 2 the void pull (3 s, drags everyone within 14 tiles at 1.3 tiles/s while
+    rings keep coming; touching the glass = 220 damage and thrown back). Each move has a 0.6 s wind-up with a purple glint.
+  - orbs: slow (3.2 tiles/s +0.3 a crack), stopped by walls, hard cover and doors, 110 damage (minus anomaly protection), pass
+    through a diving player. Drawn by `CombatFxView.DrawOrbs` (`Sprites/Fx/boss_brain_orb.png`).
+  - one HP pool, a crack at 75/50/25% (hit-stop, the art frame changes, 1.5 s breather); at 0 it holds at 1 HP, slumps (3.5 s),
+    its eyes open (1.6 s), then the full-size void takes it: gone, `brain_escaped` set, Focus refilled. (`Boss.OnDamaged` calls
+    `BrainBoss.OnDamaged`; explosions now call `Boss.OnDamaged` too.)
+  - art: the vat strip in `Sprites/Mutants/boss_brain_vat_strip.png` (`UnitSprites.HD` picks the frame by phase), the void pull
+    and escape as pixelfx strips (`px_void_pull`, `px_void_escape`).
+- Checks (`BrainChecks`): spawn, wake, a ring's 10 orbs, an orb hurts, not mid-dive, walls stop orbs, cracks at the quarters,
+  telekinesis moves props, no death at 0, eyes open, escape + flag, the lab stays empty after. Two older checks made sturdier
+  after the random sequence shifted: the co-op Raider check puts both units at tile centres (it's about who it shoots, a random
+  stand spot 0.13 tiles off the line made every round miss), the mid-dive gunslinger check counts a jam as a pulled trigger.
+- Preview: `dotnet /tmp/test.dll brainframes <json>` (the fight vs a dodging bot, the vat losing HP at a steady rate) ->
+  `Tools/render/brain_fight.py` -> `maps/renders/boss_brain/brain_fight.mp4`. 38 s, every phase, 7 props moved, 3 orb hits.
+- Yan's next art ask, not done yet: "the brain starts the fight with 2 eyes and sprouts more, they grow as he gets angrier, before he
+  teleports away ... he floats into the air and a giant eye (roughly the same size as the brain itself ...) connected to a kind of
+  umbilical cord comes from 'behind' him and looks at the player, THEN he teleports away".
+- Not checked in Unity: all of it (the sprite pivot, orb height, the HUD splash, saving mid-fight - the vat respawns full on re-entry).
+
+## Boss 2, v2 - wind-ups, cover that breaks, rip, laser, a real lab, the animated vat (2026-11-03)
+
+- Yan on v1: "way too simple. Standing behind something completely nullifies the boss ... the visual effects also are very simple
+  looking, there's no buildup or animation for each attack, the orbs just spawn in and look exactly the same for every attack";
+  asked for the brain floating up and down, bubbles, electronics on the vat, a real lab, eyes that close and twitch before an
+  attack. His calls on my proposals: "telekinesis rips the cover off the nearest player and throws it at them"; bursting orbs
+  "unbalanced and unavoidable, no"; ground attacks "not now"; the dive-only wave "will be the pulse that destroys cover"; the
+  spiral "could be a straight laser that circles the room"; and his cover rule: "cover in the room are boxes, metal tables and
+  file cabinets, at 75% he emits a pulse that destroys the boxes, at 50% the tables and at 25% the file cabinets so there's no
+  more cover (items could be coded as having 3, 6 and 9 cover 'health' and each pulse does 3 damage?)". Earlier: "the brain starts
+  the fight with 2 eyes and sprouts more ... before he teleports away ... he floats into the air and a giant eye ... connected
+  to a kind of umbilical cord comes from 'behind' him and looks at the player, THEN he teleports away".
+- Art (`ArtSource/bosses/make_brain_vat.py`, `Sprites/Mutants/boss_brain_vat.png`): 128x160 at double resolution (4x5 tiles), an
+  8-frame sheet x 11 rows - phases 0-3 eyes open (2/3/4/6 eyes, bigger each crack; the brain bobs, bubbles rise, the monitor's
+  trace runs, lights blink), the same with eyes shut and twitching (wind-ups), drained, rising, the giant eye on its cord sliding
+  out and turning to look down-left at you. Machines: a pump with a gauge, a rack with a monitor and lights, a cable bundle out of
+  the lid, electrode wires to the brain, a lit panel and hazard stripes on the base. Attack sprites: pale ring orbs, dark void
+  orbs, an elongated bolt, the pulse's ring (`Sprites/Fx/boss_brain_orbs|bolt|ring.png`).
+- The lab: 7 new world props (`props.py`): file cabinet, metal table, lab bench (microscope, tubes), control console (two
+  monitors), specimen jar shelf, a smashed small vat, floor cables; atlas repacked (11 new sprites, nothing else changed). Plan
+  letters f a g o j u q (`TierDungeons.Plans.cs`); `lab_plans.py vat_room` lays out the vat room: jars, consoles and broken vats
+  against the walls, benches, cables to the vat, cover = 11 crates, 8 tables/benches, 6 cabinets in rings round it.
+  Render `maps/renders/boss_brain/vat_room_lab.png`. Materials: tin (console steel).
+- Fight (`BrainBoss.cs`):
+  - every move winds up 0.65-1 s with the eyes shut (the sheet's shut rows) and a glow gathering, then a flash as they open
+  - cover HP (`CoverHp`: crate 3, labtable/labbench/desk 6, cabinet 9, worn in `TerrainTile.Damage`); every orb stops on cover
+  - a crack: eyes shut 1.1 s, then the pulse - a ring at 8 tiles/s to 16 tiles, 3 cover damage to everything it passes (boxes
+    break at the first, tables at the second, cabinets at the third), 150 to a player it passes and a shove, nothing mid-dive
+  - rip: the cover beside the nearest player (the vat side first; else the nearest within 7) tears loose, hangs 0.7 s, flies at
+    them (9 tiles/s, 180); one more piece from crack 2; it lands as cover again (dented) or breaks
+  - laser (from crack 1): a beam from the brain to the first wall, turning 105 deg/s for 3.4 s; cover doesn't stop it, the dive
+    does; two beams at crack 3; a hairline shows where it will start while it winds up
+  - ring orbs (pale), aimed bolts (fat, with a trail), dark void orbs during the pull
+  - the end: still 3 s, rising 1.4 s, the eye 2.4 s, then the void
+  - all drawn by `CombatFxView.DrawOrbs` from BrainBoss's state each frame. Co-op: host-side state, clients don't draw it yet.
+- Checks rewritten (`BrainChecks`, 25). Preview `brain_fight.mp4` (`Tools/render/brain_fight.py`): ~60 s, the bot (kept alive
+  for the preview) took 9 hits. Not checked in Unity.
+
+## Testing Ground: go to the brain, respawn (2026-11-03)
+
+- Yan: "add a 'go to brain boss' button in the testing ground, if you just spawn him there the fight wont work". Spawner >
+  Humans tab, under the Visor: "The Specimen - brain in the vat (goes to its lab)" > Go (`TestingGround.BrainFight`): Secret Lab
+  Alpha with your range kit, the escaped flag cleared so the vat is there fresh, the lab's other occupants removed, you on the
+  vat room's south side. Back to the range: main menu > Testing Ground.
+- Yan: "when i die in the testing ground i have to leave to the menu, add a respawn button in the death screen only for there".
+  `TestingGround.Session` (set by `TestingGround.Start`, cleared by a new game or a load) shows a Respawn button on the death
+  screen; `TestingGround.Respawn` heals you (wounds, bleeding, stamina, bullet time off) and puts you at the range's start with
+  the range cleared and the dummies kept - or, if you died in the brain's lab, straight into a fresh brain fight.
+- Checks: Go lands you in the vat room with the vat fresh and alone; Respawn on the range and after dying to the brain.
+  Not checked in Unity.
+
+## Boss 2 fixes after Yan's first Unity try (2026-11-03)
+
+- Yan (screenshot: the vat gone, "The Specimen opens a door", the beam coming out of a wall): "the boss dissapeared, started
+  walking around, lol". Something outside `BrainBoss.Tick` still walked it (the mutant wandering goes through
+  `TacticalGridSystem.AttemptMove`). Now `AttemptMove` refuses the vat outright, and `BrainBoss.Tick` puts it back on its home
+  tile if anything else shifts it.
+- Yan: "he is not tanky enough" -> "triple his hp": 6000 -> 18000 (cracks still at the quarters).
+- Yan: "make it so he can use 2 attacks at the same time after 50%": a fight now runs a list of moves (`Fight.Moves`); from the
+  second crack each volley draws two different moves from the bag at once (each winds up and fires on its own clock), never the
+  laser together with the pull. A new volley waits for the last one, the beams and the pull to end.
+- Checks: two moves past 50% (never laser + pull), the vat refuses to move, a shoved vat is back at once; the pulse checks hold
+  the volleys off so random moves can't carry their props away.
+- Preview video re-rendered (the bot's damage there is time-based, so the triple HP doesn't show in it). Not checked in Unity.
+
+## Real lighting, first prototype (2026-11-04)
+
+- Yan: "Eventually i'd like real lighting in the game with shadows reacting to light sources, similar to how octopath traveler
+  looks, instead of flat lighting we have today" - then "we can move onto the lighting stuff". Read first: today's night is one
+  dark overlay texture (2 texels a tile, `AtmosphereView.DrawLight`) with lamp pools tinted into it from `LightMap`; nothing
+  casts a shadow from a lamp. Unity's 2D renderer is already set up with lit sprites (`Renderer2D.asset`, default material Lit),
+  and nothing in the project uses Light2D, Tilemap or 2D physics.
+- `WorldArt.Lights.cs` (WorldArt is now `partial`): the sun's shadow method, generalised to point lights. Every standing sprite
+  pixel is a point (x, foot row, height above ground); a light at height H throws it to `pixel + (pixel - light) * h / (H - h)`,
+  so trees, walls, crates and cabinets cast shadows shaped like themselves. Ground is lit by distance and angle (bright core,
+  long soft skirt), wall faces by whether the light is on their side, props by a soft front/top term; lights have colour,
+  height and reach (lamp 56 px up and warm, campfire low, orange and flickering, ceiling light cool white, emergency light red);
+  a soft shoulder keeps overlapping pools from clipping; lamp heads burn white. `PlacedLights` reads the same looks `LightMap` does.
+- Preview only: `LIGHTS=x0,y0,x1,y1 Tools/render/render.sh <map>` (tiles; `RENDER_HOUR=23.5`, `FIND=lamp,campfire` lists where
+  looks are), then `Tools/render/light_finish.py in out` for the Octopath finish (bloom, tilt-shift depth of field, a little
+  grade and vignette). Renders: `maps/renders/lighting/night_street_flat_vs_lit.jpg` (Tier 1 road with five lamps and a
+  campfire: today vs lit vs lit + finish), `vat_room_flat_vs_lit.jpg` (the brain's lab). 3 tuning rounds on the street.
+- What it does not do yet: units cast no light shadows (the dynamic ones), no normal maps (walls are shaded by a facing rule),
+  no window glow, the finish is a Python pass - and nothing of it is in the game. In game the sprites are separate renderers, so
+  this would be baked to a light texture over the view and re-baked when lights or occluders change (like the sun's shadows),
+  or done with Unity's Light2D + shadow casters + normal-mapped sprites. Open call for Yan.
+
+## Secret Lab Alpha redesigned: a lock-and-key progression (2026-11-04)
+
+- Yan (2026-11-03): "right now it looks very even in space, it doesn't have a linear progression ... most rooms are locked, the few
+  that are open have either a key, a hole in the wall going into the other room, maybe something else? ... [Scavland's bunkers] are
+  basically just a loooot of corridors with rooms branching off of them ... 20 rooms that look the same and corridors, i'd like to
+  avoid this here and have them be engaging to explore and figure out". Then "do both" (this and the lighting), "then show me".
+- Method (the new `level-design` skill, `references/genre-dungeon-metroidvania.md`): the mission graph first, folded into space second.
+  `graph_check.py` on the graph: goal reachable, 100% of nodes, no softlocks, 3 loops; the three shortcuts (hole, shortcut door, the
+  Labs-vat door) were each removed in turn and it still passes (they're loops, not requirements).
+- The lab (`ArtSource/plans/lab_plans.py alpha_plan`, hand-planned, no longer generated): the Reception Airlock (start; the story's
+  dead guard and keycard) -> the Atrium (hub: three locked doors in sight, windows onto the vat room) with Security (the staff badge,
+  in a locker), the Canteen -> a dark maintenance corridor -> the Generator hall (the switch), Sample Storage (the story terminal, open
+  from the start), the Labs wing (badge door; the fuse in a crate at the far corner), the Archive (badge door, or the hole in the wall
+  from Security), and the vat room (power doors from the Atrium and from the Labs: the boss, last). A door from the airlock straight
+  south to the generator hall is the loop you see before you can use it (the generator needs a fuse). Nothing is spent, so nothing strands you.
+- Mechanics (`LabLocks.cs`): keys in `MacroState.Keys` (`alpha_staff`, `alpha_fuse`, `alpha_power`); plan letters 1 (badge door), 2 (power door),
+  3/4/5 (the locker, crate and switch, as interactive objects with `GrantsKey`, the switch also `Requires` the fuse - `Stashes.Blocked`
+  honours it). A locked door is a wall to everyone (`TerrainMap.CanEnterTile`) until the player holds the key; bumping it says what it
+  wants; picking the key up relights every door of that kind green. One lock type, one look: blue card-reader doors and hazard-striped
+  dead blast doors (`walls.py` badgedoor/powerdoor and `_on`, concrete only, +189 atlas sprites), a generator switch prop; `TerrainArt`
+  now lets the lock looks through (it collapsed every door to "door"/"metaldoor").
+- Checks: `AlphaChecks` floods the real built map with each key set (start: Sample Storage, the locker, the generator room, the Archive
+  through the hole; no Labs, no vat room; badge: the Labs; fuse: the switch throws; power: the vat room), and `alpha_check` in the plan
+  generator does the same on the text grid. One older dice check (the pistol from the hip, 300 shots at exactly 80%) flipped with the
+  random order: 1500 shots now, same bar.
+- Render: `maps/renders/dungeon/secret_lab_alpha_before_after.jpg` (old vs new, annotated). Not checked in Unity. Not done: enemies in the
+  new rooms (the squad system fills them as before), a save-room before the boss door, the Archive's far-end stash.
+
+## Real lighting in the game, v2 (2026-11-04)
+
+- Yan: "lets follow with it for now" (the Octopath-style prototype), and "do both [the dungeon and the in-game lighting], then show me". The
+  depth of field he wanted "just a render for me to see how it looks" - it stays out of the game.
+- `WorldArt.Lights.cs` split into the part that costs (`BakeLight`: a light's shadows and what every nearby sprite pixel is) and the part
+  that's cheap (`AddLight`: the light's contribution into a buffer, one sample every `step` px); `ApplyLights` (the offline true multiply) is
+  just both - its render is pixel-identical to before the split.
+- `Lighting.cs` (runtime): the map's placed lights (lamps, campfires, ceiling and emergency lights) are baked at most one a frame, dropped
+  when a prop moves or a wall breaks near them (`WorldArt.Refresh` -> `Lighting.Invalidate`), and summed over the view at 8 samples a tile.
+- `AtmosphereView.DrawLightFine`: the night overlay at 8 texels a tile when it's night or a lamp is in view (the cheap 2-texel overlay
+  by day): line of sight and your own light still at 2 texels (`Vision.Light(x, y, lamps: false)` - the placed lamps are the field's
+  now, with shadows; the stealth rules still use the old pools), the lamp field merged in at 8, and the dark tinted warm (red for emergency
+  lights) round a flame. The texel formula is `AtmosphereView.FineTexel`, shared with the offline render. An alpha overlay can only
+  darken and tint, not multiply: the pools lose some of the preview's warm punch, the shadows and pools are the same.
+- F7 (editor) toggles it to compare with the old overlay (saved in PlayerPrefs "lighting_v2"); anything that throws turns it off for the
+  session and logs why. The main-menu backdrop (Bonfire Village at night) uses it too.
+- Preview: `GAME=1 LIGHTS=x0,y0,x1,y1 RENDER_HOUR=23.5 Tools/render/render.sh <map>` draws what the game's overlay would (omit GAME for the ideal multiply).
+  Renders: `maps/renders/lighting/night_street_today_vs_ingame_vs_ideal.jpg`, `secret_lab_alpha_lit_ingame.jpg`.
+- Not checked in Unity: all of it - the 8-texel texture and its cost per frame (the bake is one light a frame; the field is a few ms at most
+  by my count, not measured), the overlay's look on a real screen, F7. Not done: units' light shadows (they don't cast any), glow from
+  windows and gun flashes, normal maps, the Octopath finish (bloom, depth of field) as a switchable screen effect.
+
+## Brain floating clip (2026-11-04)
+Yan asked for a render of the brain floating round his enclosure with blinking eyes: `maps/renders/boss_brain/brain_floating.mp4/.gif` (vat sheet rows 0-3 open / 4-7 shut, composited in the vat room render, phases 1-4 in turn). To-dos added to ACTION_DESIGN Later list (other dungeons, Unity lighting check). Nothing checked in Unity.
+
+## Sub-Station Depths redone with locks; the deep-water lock (2026-11-04)
+
+- Yan: "Take #1: redo one dungeon with lock-and-key (pick the one that fits best and tell me why) ... then wait for my go before the
+  rest", then "Draw the mission graph first and run it through graph_check.py. Then change the plan to match the graph, not the other
+  way round." Picked Sub-Station Depths: Tier 3, the next lab after Alpha (Tier 2); concrete walls, so Alpha's door art fits; and it
+  was already flooded, which is where the "a flooded room you drain" lock belongs.
+- The skill: `level-design` (https://github.com/Scouten2/LevelDesignSkill), read (SKILL.md and all 8 scripts: stdlib only, no network,
+  read-only) and installed at account level (`~/.claude/skills`), not in the repo.
+- Mission graph first: `ArtSource/plans/sub_station_depths.mmd`. `graph_check.py`: goal reachable, 11/11 nodes, no softlocks, 2 loops;
+  key order fuse -> badge -> power -> drain; dropping either shortcut (the corridor's badge door, the hole) still passes, dropping the
+  fuse or the badge fails (both are needed). Rooms, one job each: Flooded Corridor (the ladder in), Switchyard Hall (the hub), Workers'
+  Quarters (the fuse), Control Room (the staff badge), Cable Gallery (badge doors, dark), Battery Room (the breaker, needs the fuse),
+  Pump Room (power door; the dead pump panel is seen early through a hole from the quarters), the Basin (black deep water, the vault
+  door across it, seen from the hall's windows), the Transformer Vault (the goal; no boss here).
+- The plan (`lab_plans.py depths_plan`, Alpha's model): `depths_check` walks it key by key, and `plan_edges` reads every passage and
+  lock off the grid and asserts it equals the graph's edges (`graph_edges` parses the .mmd). Broken on purpose four ways (a badge door
+  made plain, the power door made plain, an extra door, the hole filled): each caught.
+- Mechanics (`LabLocks.cs`, its own commit so it can be reverted alone): per-dungeon keys (`alpha_*`, `depths_*`); one table of key
+  objects per dungeon (`StashesOf` feeds the plan); the deep-water lock (`W`: Difficult + look "deepwater", a wall to everyone until the
+  "drain" key, then plain knee-deep water; drawn as darker water by `WorldArt`, no sprite). `runtest.sh` finds whichever .NET 8 is installed.
+- Checks: `DepthsChecks` floods the real built map with each key set (start: the locker, the crate, the dead pump panel, no breaker, no
+  vault; Alpha's keys open nothing here; badge+fuse+power: the gallery and pump room, not the vault; drain: the vault; a rebuilt map
+  remembers). The every-zone landmark walk now hands a locked dungeon its own keys (`LabLocks.KeysOf`) instead of failing on the vault.
+  ALL CHECKS PASSED.
+- Render: `maps/renders/dungeon/sub_station_depths_before_after.jpg` (annotated), `sub_station_depths_after.png`.
+- Not checked in Unity: all of it - walking the locks, the bump messages, the pump panel draining the basin mid-visit (tile redraw of
+  ~250 tiles at once), the darker water's look on screen, how the squads fill the new rooms, lighting in the new rooms. Not done: a story
+  terminal or note in the vault for OSEI-2, enemies placed for the rooms, the other dungeons (waiting on Yan).
+
+
+## The eel of Sub-Station Depths: design and mission graph (2026-11-04, no code)
+
+- Yan's concept, worked out over a few messages (his words in ACTION_DESIGN "Dodge bosses" -> "Second one"): a very big electric eel
+  under the Depths' basin; the flooded levels are separate maps down stairs; Level 1 one jump-scare strike (coils burst round your
+  platform, shoot it off, touching it electrocutes), Level 2 several strikes and false alarms while you search for the pump, Level 3
+  it rises half out of the low water and blocks the last pump (the fight). Damage carries over, capped at 20% of its max HP. Reward:
+  eel parts that sell well, a tier-3 loot chest, one tier-4 armor or weapon. Tell for every strike: lamps flicker and dim.
+- Mission graph: `ArtSource/plans/sub_station_depths_eel.mmd` (the built level's graph stays in `sub_station_depths.mmd`).
+  `graph_check.py` caught a hole in the first draft: the hole from the quarters led into the stairwell, so the power (and the badge
+  and fuse) could be skipped ("without power: goal reachable"). Fixed by making the stairs down need the power; the hole only shows the
+  dead stairwell. It also flagged the vault as a dead end with no reward: it now holds the researcher's notes (OSEI-2).
+  Now: goal reachable, 17/17, no softlocks, 3 loops; each of the 7 keys required, each of the 3 shortcuts optional.
+- Not built: anything. Next: art (the eel lurking, wrapped, half out; the three water levels) as real renders for Yan.
+
+## The eel, art round 2 (2026-11-04, renders only)
+
+- Yan on round 1: "the water version looks fine, but it's waaay to short for our purposes of i wrapping around, the drawn version is
+  terrible quality compared to the brain and mutants we have today"; then "Redraw the eel in the locked style ... use the brain as the
+  model: dark outline, flat 3-tone shading, one accent colour, and the moray's features from the photo (heavy jaw, long dorsal ridge,
+  mottled pattern). Build the body from segments along a curve. Show it at 1:1 in the real basin render next to a player".
+- `ArtSource/bosses/make_eel.py` rewritten: HD (32 px a tile, as the brain); segments along a curve drawn back to front by screen
+  height (so it coils over and under itself and a platform); a moray mottle (irregular blotches, a broken dark net) in body space so
+  it runs on across the joints; a dorsal fin ridge along the spine; one accent (a sick yellow: a few spots, the electricity); a heavy-jawed
+  head in profile (flipped, never rotated), needle fangs, milky blind eyes. 54 tiles long, 1.25 thick (round 1 was ~17).
+- The skill Yan sent (zip) is identical to the account copy; not put in the repo.
+- Renders (1:1 in the real Depths basin render at game scale, a player for scale): `maps/renders/boss_eel/eel_basin_surfaced.png`,
+  `_lurking`, `_strike` (wrapped 1.5 times round a stand-in 3x3 slab: the flooded levels aren't drawn), `_rear` (the last level isn't
+  drawn: shown in this basin), `eel_closeup_4x.png`. The eel is pasted onto the map render, not drawn by the game. No fight code.
+
+## The eel's flooded levels: three maps under Sub-Station Depths (2026-11-04)
+
+- Yan: "We need the Maps before the fight, otherwise well have to rework it later". Built from the checked graph
+  (`ArtSource/plans/sub_station_depths.mmd`, the eel graph now replaces the station-only one: 17/17 nodes, no softlocks, 3 loops).
+- New maps: `sub_station_depths_1` Cistern (islands over deep water from the stairs to the pump; the stairs down in sight on a landing
+  cut off by water; a strike island with clear water all round; a 1-wide catwalk), `_2` Lower Cistern (a search: three dead ends, long
+  narrow catwalks for the strikes, the pump on the farthest platform), `_3` Sump (the arena: knee-deep water, dry patches, pillars, the
+  eel's round deep pool in the middle, the last pump in an alcove past it, the bottom and the service lift behind a deep band).
+  `TierDungeons.DepthsLevel`, zones in `MacroMapDatabase`, `ZoneThemes`, a landmark "The Bottom".
+- The station: the pump panel is gone; the pump room is the stairwell (a walled corner behind its own power door, so the hole can't skip
+  the power); the basin's deep water drains with the last level's pump; a service lift at its bottom (`Lab(..., down, lift)`).
+- Locks (`LabLocks`): one key set for all four maps ("depths_*"), but each map's deep water answers to its own drain (`Water`: the
+  station and the Sump drain3, the Cistern drain1, the Lower Cistern drain2). Pumps need the key above them. `KeysOf` also gives the power
+  and the map's drain, so the every-zone walk can cross levels.
+- Gotcha: an exit within 3 tiles of the map edge gets a 3x3 gate carved (`ZoneExits.CarveGate`); it ate the first stairwell's door.
+- Art: a raised platform's south face over deep water (`WorldArt`, 6 px of concrete); no lily pads on deep water.
+- Checks: `lab_plans.py` (`key_walk`, generalised from the station's check; the station still matched against the graph room by room),
+  `DepthsChecks` rewritten for four maps (each pump in reach, the way on only after it, the lift, a rebuilt map stays drained). ALL CHECKS PASSED.
+- Not done: the eel gate on the last pump (it just works until the fight exists), the reward chest and tier-4 item, stair/lift art on
+  the exits (nothing shows on the tile yet), enemies. Not checked in Unity: any of it.
+
+## The flooded levels' platforms are steel catwalks (2026-11-04)
+
+- Yan (two reference photos of industrial steel platforms): "i was thinking some walk in platforms, not raised ground ... all rusted up
+  and maybe with some moss from being wet all the time", then "maybe without the guard-rails for better scare factor".
+- New ground `GroundType.Grate` (plan letter `=`): a 64x64 bar-grating texture (`ArtSource/world/ground.py grate`: 1 px slots with the
+  water showing through, cross rods, a panel seam a tile). Rust and moss are laid on by `WorldArt.Rusty` from the renderer's own noise,
+  so they don't repeat every 4 tiles like a baked texture did. Under a deck's south edge over water: the frame beam, legs every two
+  tiles going down into the water, rusted at the waterline, X-bracing, the deck's shadow (`WorldArt.UnderDeck`); the deck's side edges
+  get a dark frame line (`DeckEdge`). No floor scatter on a grate. No guard rails.
+- Levels 1-2 are catwalks now (and their markers stand on grate: `DepthsLevel` takes the map's floor); the Sump stays concrete sump floor.
+- Not done: the game atlas (`Assets/Resources/Sprites/world_atlas.bytes`) doesn't have `g_grate` yet - only after Yan approves the look;
+  until then Unity draws the decks a flat grey. Stairs between deck and water level, a metal footstep sound (it uses the hard one).
+- Renders: `maps/renders/dungeon/sub_station_depths_levels.jpg`, `sub_station_depths_catwalks_closeup.png`. ALL CHECKS PASSED.
+
+## Thinner catwalks, pumps on spurs (2026-11-04)
+
+- Yan (a sketch over the Level 1 render: the eel's coils across several catwalks and round the pump): "they're a little too wide, also
+  the pumps should be at the end of a thin catwalk not in a whole platform, otherwise the eel can't block it by wraping around, unless
+  it reveals even more of it's body and wraps around like the image".
+- Levels 1-2 redrawn: every island 3x3 (the landings 4x4/5x4), every catwalk 1 wide, each pump at the end of a 9-tile spur off the last
+  island (`pump_spur`), so a coil round the spur cuts you off from it. The sketch's other idea (the eel showing more of its body and
+  wrapping several catwalks at once) is kept for the fight: the catwalks are spaced so it can loop across them.
+- New plan check: before the drain, no dry tile may stand cut off in the water except round the way on (it caught a blood mark and a
+  lamp left in open water by the redraw). ALL CHECKS PASSED. Render: `maps/renders/dungeon/sub_station_depths_levels.jpg`.
+
+## RT fx 4 - which ready-made pixelfx effects fit (2026-11-04, review only)
+
+- Yan: "take a look at the redy made ones and see if any fit in our game". Already in: muzzle flashes, hit spark, ricochet, bullet impact,
+  zap hit, the livewire ball, our void pull. Rendered 40 more against what the game has but draws no effect for.
+- Fit (recoloured to Zone ramps, played at game scale on the real Depths renders with a character, effect pixels at half size like the
+  gun effects): small explosion (frag), smoke bomb in grey (smoke grenade, the Visor's vanishing smoke), parry (the perfect parry),
+  blunt hit in dust (blunt melee, concussion), acid splash (the acid anomaly, a mutant's spit), campfire (camps, bonfires), and for the
+  eel and the flooded levels: splash (its strike), ripples (it lurking, wading), whirlpool (a pump draining a level), thunderclap
+  (electrified water). `maps/renders/fx/pixelfx_candidates.gif` / `_still.png` (script kept in the session scratchpad, not the repo).
+- Don't fit: the status effects and hit-flash (drawn round pixelfx's own character), side-view ones (bubbles, drip, fog, poison
+  cloud), fantasy/cartoon ones (torch, brazier, key glint, loot beam, chest open, bat, fish, frog, poof, stunned stars), too big for
+  now (fire ring, flame pillar - maybe a Pyre anomaly flare-up), EMP (too sci-fi), heavy cleave (side view, fantasy).
+- Nothing in the game yet: waiting on Yan's picks.
+
+## The catwalk levels become mazes, built round where the eel appears and attacks (2026-11-05)
+
+- Yan: "rework the raised platform maps to be harder to navigate, players need to find their way around to the drain pump and lower
+  level, right now it's just a straight shot to it", then "take into consideration where the boss will appear and attack".
+- Graph first: `ArtSource/plans/sub_station_depths_1.mmd` and `_2.mmd` (ids are grid cells, labels carry roles), checked with
+  `graph_check.py`: reachable, no softlocks, every path edge required, every loop optional. It caught three dead ends that paid nothing
+  ("a dead end must pay"): each now holds a stash (plan letters J K L M, `TierDungeons.DepthsCaches`, a plain loot container).
+- The plan is built FROM the graph (`lab_plans.py level_plan`: an island on each named cell with a +-1 jitter, catwalks with a bend half way
+  so nothing lines up, the pump at the end of a 9-tile spur) and then checked on the grid (`level_checks`): its passages equal the graph's
+  edges; it's a maze (Level 1: the walk is 146 tiles for 76 as the crow flies, 1.9x, 6 forks on the way, 3 paying dead ends, 2 loops;
+  Level 2, now 72x48: 226 tiles, 2.6x, 4 forks, 4 dead ends); and the eel has room.
+- Where the eel appears and attacks (marked in the plan, read by the fight code later from `TierDungeons.LabPlans[zone]`): digit 7 = a strike
+  spot (it bursts out and wraps the island), 8 = a false alarm (the lamps flicker, nothing comes). Level 1: one strike, on the last island,
+  with the pump out on its spur in sight; Level 2: three strikes (the corner where the way turns and a dead-end branch starts, by the stairs
+  in sight, the last island before the pump) and two false alarms. Each strike island has a lamp for the tell. Checked: 3 tiles of water all
+  round every strike and false-alarm island and the pump's spur (a coil needs room to wrap), i.e. water to rise in and to circle. The
+  eel can't be seen on the map; its pool in the Sump is unchanged.
+- Mutation tests: an island on the pump's spur, a shortcut across the maze, rows squeezed together - each caught.
+- Harness: `DepthsChecks` now also asserts the dead-end stashes are in reach at the start and the strike/false-alarm digits are in the plan
+  (1+0 and 3+2). Render: `maps/renders/dungeon/sub_station_depths_levels.jpg` (the route dotted), `..._catwalks_closeup.png`.
+- Not done: the fight, the flicker (lighting is unchecked in Unity), the deck art in the game atlas (waits for Yan's approval of the look).
+
+## The eel: Yan's own art, recovered and bent (2026-11-05, renders only)
+
+- Yan: "this is a higher quality image of the eel boss, just like the ones we used for the mutants", then the file (`eel.7z`: one
+  2752x1536 JPEG, named like a Gemini export). Rule 2 of CLAUDE.md says never AI image generation but copy his supplied art faithfully; Batch
+  130c reduced his references the same way and flagged the same question, and he accepted ("the 5 you did look great"). So: his art is the
+  source, reduced, not redrawn. The reference is in `ArtSource/refs/eel/`. (The earlier procedural eel, round 2, is superseded.)
+- `eel_native.py`: his grid is 5.73 source px per art pixel both ways (found from the edge periodicity: the same scale as his hatchet), so
+  the drawing is 480x268 art pixels. Each cell takes the median of its centre 3x3, colours are snapped to a palette that keeps rare colours
+  (cream teeth, white eye, red mouth, gold flecks: a median cut flattened them all to green), the silhouette is the flood-filled background's
+  complement. One art pixel = one game pixel (32 px a tile): no resampling blur. 27 colours.
+- `eel_poses.py`: traces his spine (1,087 px: 34 tiles) from the neck to the tail tip, with the back always up the screen as in his drawing;
+  a pose pixel takes the source pixel at the same place along the spine and across it. Head cut out whole (only flipped, never rotated, a
+  straight 26 px neck behind it); trunk A, then the lower trunk back and forth (mirror seams keep the texture running), then his tail; a
+  dithered cross-fade where his green upper trunk meets the browner lower one; never samples beyond the body's own measured thickness (it
+  picked up his neighbouring coil otherwise) or past the ends of the spine (it smeared the end column).
+- Renders (1:1 in the real Depths basin, a player for scale): `maps/renders/boss_eel/eel_ref_basin.png` (his drawing as drawn),
+  `eel_strike_ref.png` (wrapped 1.5 times round a stand-in 3x3 platform), `eel_rear_ref.png` (half out of the water), `eel_lurk_ref.png` (the
+  shadow). The earlier procedural renders are removed.
+- Not done: animation (swimming, strike, rear-up), the game side (the sprite path and a body that follows a path at runtime), the Sump arena.
+  Not checked in Unity. The body is about 1.7 tiles thick, a little fatter than the 1.25 I'd assumed: the 3x3 islands and 3-tile clearances
+  were already built with room for it.
+
+## RT fx 5 - the ready-made pixelfx effects that fit, in the game (2026-11-05)
+
+- Yan: "if they fit add them, we can change later". Strips exported by `ArtSource/fx/export_strips.py` (Zone ramps, half-pixels, 15 fps):
+  `px_small_explosion`, `px_smoke_bomb`, `px_parry`, `px_blunt_hit`, `px_acid_splash`, `px_splash`, `px_ripples`, `px_whirlpool`, `px_thunderclap`.
+  One generic event, kind "px" (`CombatFx.PxAt(name, x, y)`, played by `CombatFxView.PxFx`), so a trigger is one line.
+- Wired: the frag, a barrel and a cooked-off grenade (`Explosions.Blast`: it had a sound and no picture at all); the smoke grenade
+  (`Explosions.Throw`) and the Visor's vanishing (`BossFx`, the old puffs stay as the fallback); the perfect parry (`parry`: the gold star
+  replaces the old spark puff, the bursts, sound and shake stay); blunt melee hits (bat, hammer, sledge: `Melee.Blunt`); the Acid Bloom
+  anomaly's discharge (`AnomalyEngine`); wading in water (ripples every 0.6 s at most, `TacticalGridView`); a pump starting
+  (`LabLocks.Whirlpools`: up to three whirlpools in the deep water round it, nearest first, 3+ tiles apart).
+- Not wired, on purpose: the campfire (the game already has an animated bonfire from Batch 68 in the Pyre's flame: swapping would change a
+  look Yan approved), `splash` (the eel bursting out) and `thunderclap` (electrified water): their strips are in, the triggers come with the eel
+  fight (`CombatFx.PxAt("splash", x, y)`).
+- Two long ones lost frames to fit the 16384 px texture limit, and the game plays every strip at a fixed 15 fps, so the explosion plays about
+  2x and the smoke bomb 1.5x faster than the library's own timing (2.7 s and 3.4 s): a snappier grenade. A per-strip fps is the fix if
+  that's wrong. `thunderclap` is at half-pixels (full size would be 18 tiles across).
+- Harness: whirlpools asserted on all three flooded levels. ALL CHECKS PASSED. Not checked in Unity: how any of it looks and sounds next to the
+  existing effects, how busy automatic explosions get, the ripples' cost when wading far.
+
+## The eel's coils: bugs where it bent tight or passed over itself, fixed (2026-11-05)
+
+- Yan: "eel bugs a lot when coilling up or when it's sprite passes over itself, can it be fixed?" (three screenshots: blocky bands and a patch
+  with straight edges). Four separate faults in `eel_poses.py`, found by zooming into my own renders at the same places:
+  1. **Torn texture on bends**: each pixel took the nearest spine point, so where the body bent tighter than it is thick (or two coils were
+     close) neighbouring pixels picked different spine points. Now the body is painted ALONG the spine: every 0.35 px step lays its own
+     cross-section line of his pixels; on the inside of a tight bend the body is thinned to the bend's radius so lines can't fold over.
+  2. **A hard line across the neck**: "back always up the screen" has to jump to the other side of the body the moment it heads straight
+     down. Now the fin stays on the left of the way the body goes, all the way round (the outside of a clockwise coil).
+  3. **Patches where it crosses itself**: order by height put some of a coil in front of another and some behind, and my strike pose's second
+     loop was only 7 px outside the first (the loops almost coincided, so any order flipped). Now the part nearer the head is always in
+     front, and the loops are 25 px apart. A dark outline is drawn on the body behind along the front one's edge.
+  4. **Streaks at a tight neck turn** (his thin fin spikes fanned out): a gentler neck curve.
+- Checked on: the strike (round a platform), the rear-up, the lurk, plus two stress poses now in the script: a figure-eight (crosses itself)
+  and a tight hairpin (`eel_stress_eight.png`, `eel_stress_hairpin.png`). Not checked in Unity (it isn't in the game yet).
+
+## The Sump, the eel's arena (2026-11-05)
+
+- Yan: "Yes, go ahead with the animation frames and the Sump arena". The Sump was a first guess (a room with a pool in the middle); redone round
+  the fight. Graph first (`ArtSource/plans/sub_station_depths_3.mmd`, `graph_check.py`: reachable, no softlocks, each key required; two breaks tested).
+- The design (in ACTION_DESIGN "Dodge bosses"): the pool sits at the south end so its coil physically blocks the only way to the last pump, the narrow
+  channel just south of it, along a shore its neck reaches. Player tools: pillars (cover), dry ground in its reach, safe dry ground outside it (a stash
+  each). `lab_plans.py sump_checks` asserts all of it on the plan: pool size, the channel mouth within reach and 4 tiles of the pool, the pump within
+  16 tiles, 4+ pillars 4-12 tiles out and none inside the coil room, 12+ dry tiles in reach and 30+ out of it, a shore 2+ tiles wide.
+- Found by the existing checks: my "where it rises" marker (digit 7) replaced a pool tile with walkable floor, leaving a dry spot in the pool; the
+  marker is now digit 0, which is deep water itself (`StampPlan`: case '0'). Decals meant for the shore had done the same and were moved.
+- Harness: the plan's digits (0 and 9 once each), two far stashes in reach at the start and a third at the bottom. ALL CHECKS PASSED.
+  Not done: the fight, the flicker, enemies; not checked in Unity.
+
+## The eel's animation frames (2026-11-05, no fight code)
+
+- `ArtSource/bosses/eel_anim.py` moves the paths eel_poses.py bends his pixels along: 9 strips, 118 frames, all facing left as he drew it, 15 fps,
+  32 px a tile, on one fixed canvas each with an anchor (the pivot) in `boss_eel_anims.json`: `rear_idle` 12 (loop), `lunge` 14, `slam` 10, `hurt` 8
+  (a white flash), `die` 18, `wrap_back` + `wrap_front` 22 each (burst 8, hold 6 looping with electricity along the coils, release 8; split at the
+  platform's centre row so the game draws the platform between them), `swim` 16 and `swim_shadow` 16 (a wave from head to tail, one wavelength a
+  cycle, so it loops). Strips under Unity's 16384 px, imported with the same settings as the pixelfx strips (`.meta` from `fx_hit_spark`).
+- Checked frame by frame on filmstrips (`maps/renders/boss_eel/sheet_*.png`) and the lunge and the wrap as GIFs over the real arena / a stand-in
+  platform (`anim_lunge.gif`, `anim_wrap.gif`): no tearing or patches in any frame (the painter fixes of the same day hold on motion).
+- Limits, on purpose: a lunge is left (right = flipped); toward up or down the fight code lines the eel up or uses the slam; the head is never rotated
+  (a profile only); the die ends in a slumped heap, not a sinking. The strike's splash (px_splash) and the thunderclap are the game's, not baked in.
+- Not done: the game side (an `EelBoss` that plays these: the sprite follows the pool's centre, the platform's centre, the head), the fight itself,
+  sound. Not checked in Unity. The harness wasn't re-run for this commit: only art, scripts and data files changed since the last green run.
+
+## Eel: damage marks, swallow/vomit/retreat, Hydra attacks, Sump without stashes (2026-11-05)
+Yan: "i'd like for it to have damage marks, similar to how the brain has it's phases ... remove all the stashes, make it so the boss reveal is it coming
+out of the deep pool, swallowing a body that was there (the dead sprite of a random human npc, but with tier 4 armor) ... for its death, it will vomit up
+the body and then run away going back down the pool, we'll fight it again later in another place. the body it throws up ... has tier 4 armor, some random
+loot similar to a stash, and a key for something related to the storylines or a quest" and "attacks similar to the hydra in god of war 1: snapping at the
+player, smashing around when enraged, circular sweeps".
+- Art (`eel_poses.py`, `eel_anim.py`): 27 wound sites along his spine + head damage, 4 stages; `bulge` (the lump swallowed/spat up) and `mouth_at`. New
+  strips `snap`, `reveal` (26), `vomit` (24), `retreat` (14), `sweep` (18, faces right, 780x540); `die` removed. Every strip has `_d1.._d3` overlays; the json
+  has `damage`, per-frame `mouth` points, `swallow_frame` 13, `eject_frame` 13. Review sheets in `maps/renders/boss_eel/` (snap, reveal, vomit, retreat, sweep).
+- Map: Sump stashes J/K/L removed, a slab north of the pool with plan digit `8` for the body, graph gets the body node `{item:eel_key}`; harness updated
+  (no stashes; digits 0, 9, 8 once each). Levels 1-2 dead-end stashes kept. Harness: ALL CHECKS PASSED.
+- Looked at the game: corpses = `HumanEnemy` stash (`HumanLootSystem`, `CorpseLootUI`); keys are `MacroState.Keys` (`LabLocks`) and story flags (`StorySystem`,
+  act 3 = Gamma's Sealed Vault, unlocked today). The key's target is a proposal, not wired.
+- Not done: any game code (no EelBoss, no body spawn, no key, no fight, no sounds), smash = chained slams is design only, the eel parts reward is undecided.
+  The swallow lump is subtle at thumbnail size and not checked at 1:1 in the game. Nothing checked in Unity.
+
+## Eel fight code (first pass) and the two preview clips (2026-11-05)
+Yan: eel parts still drop; keep the levels 1-2 stashes; the body's key is a to-do. Asked for two clips like the brain's: an art clip and a fight clip through the real boss code.
+- `Assets/Scripts/GameCore/EelBoss.cs` (new, host-side like BrainBoss; hooked in `Rt.WorldTick`, `Boss.OnDamaged`, `TacticalGridSystem.AttemptMove`, `Ballistics.MutantSize`):
+  Level 1-2 form = lurk (shadow) -> wind-up -> WRAP (coils round a '7' platform) -> SHOCK when the ring is touched -> release -> STRIKE; its HP can't drop below 80 % there (the 20 % carry-over).
+  Sump form = reveal (swallows the body on the '8' slab) -> rear-up fight: snap, lunge, slam, sweep, and smash (3 slams) from the 50 % wound stage; wounds at 75/50/25 %;
+  at 0 HP it vomits the body up (tier-4 armour, random human, `RollSpawnStash`) and retreats (`eel_fled`). Every move has a wind-up (zone shown) and a real hitbox; a dive passes through.
+- Harness: `dotnet /tmp/test.dll eelframes frames.json` (a bot: Level 1 platform, then the Sump) and `EelChecks()` (2 wraps, a shock, 20 % carry cap, body + flag, all five moves). ALL CHECKS PASSED.
+- Renderers: `Tools/render/eel_common.py`, `eel_art.py` (-> `maps/renders/boss_eel/eel_art.mp4`), `eel_fight.py` (-> `eel_fight.mp4`).
+- Not done / placeholder: no view in the game yet (nothing draws the eel in Unity, no spawn on entering the maps, no HUD bar, no co-op sync); the platform STRIKE reuses the rear-up snap strip;
+  the body is drawn as an armour sprite lying down; the body's key is a to-do; no sounds; the name "The Drowner" is a placeholder; the bot is simple (it stands in the first hit of each kind on purpose).
+  Numbers (damage, timings, ranges) are first guesses. Nothing checked in Unity.
+
+## Eel: procedural body (EelRig) and eased attacks (2026-11-05)
+Yan: the animations look stiff (one static sprite translated and swapped); wants a segmented body (a Head and a chain of segments, each following the one ahead at a fixed
+distance, a slither sine wave across the movement vector, no Rigidbody2D joints), the Lunge/Slam with a 0.6 s anticipation and a rapid strike with easing (ease-in-back wind-up,
+ease-out-expo strike), the Sweep on a quadratic Bezier over the pool, and the Wrap as the head circling the 3x3 platform and pulling the body into a coil, then the discharge and a 4 s hold.
+- `Assets/Scripts/GameCore/EelRig.cs` (new): `Ease` (InBack, OutExpo, InOutSine, OutCubic, quadratic Bezier) and `EelRig` (56 segments, 0.62 tiles apart, kinematic follow in
+  sub-steps so a fast head drags a clean trail, `SlitherAmount`/`SlitherSpeed` sine wave perpendicular to each segment's heading with its envelope, slots that pull the coil/neck back to a pose).
+- `EelBoss.cs`: `DriveBody` sets the head every tick as a pure function of stage and age (no clips): strikes = 0.6 s pull-back with ease-in-back (0.3 s between smashes), then ease-out-expo to
+  the landing point, arriving exactly when the hit lands, hold, ease back; sweep = pull back to the arc start, then a quadratic Bezier over the pool (the head IS the hitbox), recover;
+  wrap = the head spirals out in half a turn and circles 2.5 times on a ring that widens 0.28 a turn (inside the 1.9-3.1 touch ring) while the coil's slots pull the trailing body in,
+  discharge when the burst ends (shock only from then on), held 4 s, then released outward. The platform strike now has the same 0.6 s anticipation (hit at 0.75 s, was 0.55).
+- Deviations from the brief, on purpose: plain float maths and time-driven curves, NOT Transforms and Coroutines (the harness stubs have no working Transform/coroutines, the boss is
+  host-side like BrainBoss, and co-op needs it deterministic); a view copies the drawn points RX/RY onto Transforms one to one. A pure leader-follower chain cuts every corner inward (a coil
+  spirals to the centre), so the wrap uses the rig's slot pull to lay the body on the ring - that is the "pulling the segments into a coil".
+- Harness: the eelframes dump now carries the chain per frame; `EelChecks` also asserts the segment spacing (< 0.02 tiles) and that the discharged coil lies inside the touch ring. ALL CHECKS PASSED.
+- Preview: `Tools/render/eel_rig_clip.py` bends Yan's drawing (the real painter) along the dumped chain: `maps/renders/boss_eel/eel_rig.mp4` (wrap on Level 1, then the Sump attacks and a smash).
+- Not done: reveal, vomit and retreat still play the baked strips (they need the swallowed lump); the damage stages are painted in the clip (stage per HP) but no Unity view draws the chain
+  yet (so nothing of this is visible in the game); the segment art is NOT cut into sprites: the clip uses the Python painter, and a runtime bend of his pixels in Unity (a mesh strip along the
+  chain, or baked frames from the chain) is the open decision; `eel_fight.mp4` and `eel_art.mp4` still show the old strip-based motion; the new timings (strike 0.75 s) are first guesses.
+  Nothing checked in Unity.
+
+## Eel: mass, springs and constriction (2026-11-05, after "it looks like a train following a track")
+Yan: dynamic spacing (bunch up during the 0.6 s anticipation of lunge/slam, stretch on the strike), inertia and damping so the sweep has weight (the lower body lags, then snaps
+into alignment sequentially when the head stops), and an organic constriction for the wrap (over the first 1.5 s of the hold the coil tightens toward the player before the discharge).
+- `EelRig.cs` rewritten: the chain is now a Verlet rope. Water drag per segment (more toward the tail), a mass gradient (tail 3x heavier), a weighted iterative distance solver
+  (10 passes, both directions, the head pinned), and a rest spacing on an under-damped spring (`SpacingTarget` -> `SpacingNow`) that travels down the body as a delayed wave (`Sc[]`),
+  so the squeeze/stretch is not everywhere at once. Squeeze applies to the neck (the coil stays put) or, for the wrap, to the whole body (`CompressAll`). The old hard follow is gone.
+- `EelBoss.DriveBody`: strikes (lunge/slam/snap/smash, and the platform strike) set `SpacingTarget` 0.45 during the pull-back, 1.22 on the strike, 1.0 after. The wrap:
+  burst, then over `ConstrictFor` = 1.5 s the head keeps circling (0.6 more turn) while the ring radius goes to 0.73x and the spacing to 0.78, the coil's slots shrink with it
+  (`SetCoilSlots` every tick), then the DISCHARGE (it used to fire at the end of the burst), held until the 4 s are up. Before the charge the coil is a wall: it holds you at its
+  inner edge with no damage ("the coil won't let you through"); after it, touching shocks as before.
+- Deviations (same reasons as the rig): time-driven spring curves, not Coroutines; plain maths, not Vector3.SmoothDamp (neither runs in the harness, the boss is host-side).
+- Harness: the fixed-spacing check is replaced by a sanity band (neighbour spacing 0.12-2.3 x rest) and `EelRigChecks` tests a bare rig: at rest 1.0x, bunches under 0.7x in 0.6 s
+  (measured 0.62x), stretches past 1.05x on release (1.41x), settles back, and after the head stops dead the tail's speed peaks later than the neck's (0.07 s later) and it keeps moving.
+  ALL CHECKS PASSED.
+- Preview: `maps/renders/boss_eel/eel_rig.mp4` re-rendered (same renderer, new chain).
+- Not checked: how it feels (all constants are first guesses: spring 150/9, wave 110/s, drag 1.3-4.5/s, mass 3x, 0.45/1.22, 0.73/0.78); the bunch-up reads as the neck shortening and
+  curling, not a visible zig-zag (the painter draws the body along the chain, so a shorter chain is a shorter neck); the tail keeps drifting for over a second after a hard stop (low drag at
+  the tail end: raise `DragTail` if it looks too floaty); the wall-before-charge is new gameplay (Yan to confirm); nothing in Unity (no view draws the chain yet); reveal/vomit/retreat still strips.
+
+## Eel: inward-spiral coil, stacking, anchored constriction, dive that clears the coil (2026-11-05)
+Yan: the wrap was a flat circle that scaled down and crushed into itself like a donut; the constriction should not keep orbiting (anchor the head, look at the player, tighten through the
+springs alone); the retreat after the platform strike bunched up (release the tension, high-velocity escape pointing outward, never back through its own coil).
+- Path: the coil is a slight INWARD spiral (`GuideR`: outer start 3.2 tiles, 0.4 a turn, 2.5 turns: the head ends on the innermost loop, the tail on the outside). The touch ring is now 1.9-3.4.
+- Layering: `EelRig.SortOrder(i)` / `HeadOrder()` (the head above everything, each segment above the one behind it) for a view's Y-sort or Z offset - the painter in the preview clip already used the same rule.
+  Plus real stacking: in a coil each segment has a height (`SlotZ`, 0.7 tiles from tail to head) drawn as a lift up the screen, so the loops lie on top of each other like a real coil in the 3/4 view
+  instead of crushing in the same plane.
+- Constriction: after the burst the head is ANCHORED (no more orbiting) and looks at the nearest player (`LookActive`: it turns its profile toward them; the painter never rotates the head, so only the
+  flip is visible). It runs entirely through the springs: the target rest spacing falls 1.0 -> 0.5 over 1.5 s (`ConstrictSpacing`), the coil's guide slots are recomputed from the live spacing each tick, so
+  the tail is drawn in along the spiral toward the pinned head. Discharge after it; the 4 s hold is unchanged. Before the charge the coil is a wall (no damage); a discharge ends at the release.
+- Retreat (the platform's `recover`): the spring target goes to 1.15 at once (then 1.0), the head gets a 14 tiles/s dive that eases to a swim (`PickEscape`: outward from the platform, turned up to 80 degrees
+  toward whichever way crosses its own body least), and the mass/drag pull the body after it. HONEST LIMIT: at that moment the coil is still a loose ring round the head (the release only unwinds ~6 tiles) and every
+  outward ray crosses it (best clear ray 0.27 tiles). So the head also RISES over its body: `HeadLift` 0.8 tiles from the end of the hold, through release, dart and dive (the neck is lifted behind it), sorted on top, and
+  it goes under the water 0.35 s into the dive. It does not path through the coil, it goes over it. A cleaner fix needs a longer release that unwinds the whole coil first (not done).
+- Harness: new `EelChecks` assertions: head drift in the constriction < 0.05 (0.00), the tail's mean radius falls (-0.25), the tail lies outside the head's loop (0.36), the head end is above the tail end
+  (0.61), sort order, and the head is >= 0.5 tiles up whenever it is on top of its own body (0.79). ALL CHECKS PASSED. `maps/renders/boss_eel/eel_rig.mp4` re-rendered.
+- Not checked: how it feels in motion (all new numbers are first guesses: spacing 0.5, pitch 0.4, lift 0.7/0.8, dive 14 t/s); with the spacing at 0.5 the drawn body is half as long during the squeeze (the
+  painter draws along the chain); the head's look-at is a profile flip, not a rotation; the tail-radius change (-0.25) only just clears its check; nothing in Unity (no view draws the chain).
+
+## Eel: new fight style - storyboard (2026-11-05)
+Yan: the eel "is way too wiggly ... maybe if it was more scripted and slower"; "all attack animations do is a little pounce"; wants the Hydra of God of War 1 (slamming its body around, tail or
+head swinging in circles); the entire body out of the water like that doesn't work in the fight; "change the map to have several deep pools where it can come up from to attack players in
+different parts of the arena, maybe its head attacks one while its tail comes out of the other pool". Decided with him: YES to the redesign, **4 pools**, **the tail can be targeted and goes back
+down after a set amount of damage**, **an attack where it comes fully out of a pool and goes down into another in a snake-like motion, damaging whoever is in the way**, and **IMPACT: heavy and strong**.
+- `Tools/render/eel_storyboard.py` -> `maps/renders/boss_eel/eel_storyboard.mp4` (15.7 s, 30 fps): the current Sump render with three pools painted in (west, east, north, plus the original big one).
+  Scripted, no physics wiggle: the body is a 35-tile spine laid out in 3D by hand-made curves, only the part above the water is painted (his drawing, the real painter, pieces sliced from the same texture
+  order so it does not crawl), the rest is under the surface. Attacks: 1 head strike (west pool) + tail sweep (north pool) at the same time, the tail has a damage bar and goes down; 2 arch slam (east pool,
+  over the arena, crash into the big pool, the whole body pours in after the head); 3 snake dash (out of the west pool, an S across the arena, down into the east pool).
+  Weight: a 1.5 s slow emerge, a rear and creep, then a strike that ACCELERATES into the hit (full speed at impact), 3-5 frames of hit-stop, screen shake and a zoom punch, shockwave rings, the game's own
+  splash/ripple/thunderclap strips, debris and droplets, dust, cracks and scorch that stay, afterimages on the fast parts, ground shadows under the arch, red telegraphs (circle, band, ring), bodies flung, damage numbers.
+- NOT game code and not the real map: nothing in `EelBoss.cs`, `EelRig.cs` or the plan changed. If Yan likes it the real work is: the Sump plan with four deep pools (graph, harness, render), an
+  authored-spine attack system in EelBoss (curves + timeline, the tail with its own HP), a view that clips the body at each pool's surface, the pools' foam/ripples, and sound.
+- Placeholders: timings, damage numbers, the thunderclap strip (blue, electric) used for ground impacts, players are bots with scripted dodges and hits, the pools are painted over the render (the north one covers a pillar).
+  Not checked in Unity. The old rig clips (`eel_rig.mp4`) and strip clips are the previous style.
+
+Storyboard v2 (2026-11-05): Yan - the phase 1 attacks look good but "maybe a bit too fast, slow them down by 20%". The script clock now runs at 0.8x (`SPEED` in eel_storyboard.py): every wind-up, strike,
+recovery and effect is 25% longer, the clip is about 19 s; hit-stop stays in frames. Phase 2 moves proposed in chat (tail grab and drag, flood surge): not built.
+
+## Eel: phase 2 storyboard (2026-11-05)
+Yan: Tail Snare changed - "the tail doesn't erupt from under a player, it is the tail coming out of one of the pools, this is a grab attack, it catches the player, drags him down to the pool with it, then
+throws him out of another free pool (not the one the head is in), he flies a little up in the sky and crashes down"; Flood Surge: "sounds cool".
+- `Tools/render/eel_storyboard2.py` -> `maps/renders/boss_eel/eel_storyboard2.mp4` (23 s, same style and the 0.8x speed as the first storyboard, which it imports for the world, painter and effects):
+  A the tail comes out of the north pool along the floor, lunges at the red ring, coils round the player (the tip winds into a helix), drags him back to the pool (dust, a damage bar on the tail, a teammate shooting it),
+  pulls him under, then the west pool throws him: the tail comes straight up, stops dead, he flies on and crashes (shockwave, cracks, damage number) while the head strikes at a second player from the east pool.
+  B the four pools swell and the dry patches light up, the floor floods with the pool's water (foam edge, ripples, islands stay dry), one player wades, the eel glides through as a shadow and bursts out under him; it drains.
+- Same limits as the first storyboard: no game code, no sound, placeholder timings and numbers, pools painted over the render, bot players. The grab's coil, the throw column and the flood spread are the new
+  things to judge. Not checked in Unity.
+
+## Eel: the real build of the new Sump fight (2026-11-05)
+Yan: "go ahead and do the real build" (after the storyboards), plus: two variants of the grab ("one that launches the player up and other that throws him at another player"), a lightning effect on the
+thrown player's crash that is "probably an error", and "make sure they always come up from the middle, and go down the middle too, during the attacks that move it around".
+- Map: `ArtSource/plans/lab_plans.py` `depths_level3` now has four pools (`SUMP_POOLS`: west `y`, east `z`, north `N`, plus the big `0`), checks in `sump_checks`, `StampPlan` takes `y z N` as deep water, harness checks the markers
+  and the deep water. (Commit 6b94a54.)
+- `Assets/Scripts/GameCore/EelSump.cs` (new, ~480 lines): the Sump fight. Spine of 140 samples (4 a tile), head first, x/y/height; every move is a curve + a timeline (script times /0.8: Yan slowed phase 1 by 20%).
+  COMBO (head strike from one pool + tail sweep round another), ARCH (out of a pool, over the arena, down the big pool's centre, shockwave), DASH (out of one pool, an S, into another: flings whoever is on the path),
+  SNARE (the tail out of a pool along the floor, coils the target, drags him to the pool, throws him out of a different one: LAUNCH = up and crash for 420, HURL = at the other player: 260 + 210), FLOOD (the shallow floor
+  tiles really turn to deep water and back; it glides as a shadow and bursts out under a player standing in the water, 380). Reveal (it swallows the body on the slab) and death (vomits it up, goes down the big pool's centre).
+  Head = the boss Unit, tail = a second Unit with its own HP (`EelSump.TailDef`, 2600); under the water both shed damage; the tail at 0 lets go and stays down 9 s. Phase 2 = half HP (adds snare and flood).
+  `EelBoss.cs`: the old Sump code (the rope, the strip timings, the old moves) is gone; the platform form (wrap, shock, strike) and `EelRig.cs` stay for Levels 1-2. `Zone` got a `Path`.
+- THE CENTRE RULE: every curve starts and ends vertical over a pool centre; the harness (`EelSumpChecks`) asserts every crossing of the water's surface is within 0.5 tiles of a pool centre (worst now 0.39). It found real bugs
+  on the way: a hidden-tail placeholder ordered upward (its straight extension shot out of the water), the dash's dive into its end pool, the snare's dive, and the coil round the snared player still wound out when the tip dived.
+- Harness: `dotnet /tmp/test.dll eelsump frames.json` runs the whole fight (reveal, the five moves with the players placed for each, the death) and dumps the spine, players, zones, events, flood and tail HP; `EelSumpChecks` =
+  one scenario per move (who is hit and who is not, the pools, the throw from another pool, the hurl, the tail shot off, the flood tiles back to normal, the reveal/death, targeting while under water, phase gating).
+  ALL CHECKS PASSED.
+- `Tools/render/eel_real_clip.py` draws that dump (Yan's drawing bent along the real spine, real Sump render, impact treatment) -> `maps/renders/boss_eel/eel_real.mp4` (64 s). Ground impacts no longer use the blue thunderclap strip
+  (that was the "lightning" he saw: a placeholder strip I had flagged): a blunt-hit flash and a dust cloud instead.
+- Not done: any Unity view (nothing draws the eel in the game: a runtime bend of his pixels along the spine, clipped at each pool's surface, is the open job), sounds, the body's story key (to-do), the eel parts drop, wiring the
+  spawn into the map's entry, tuning (every damage number, timing and radius is a guess), co-op sync (host-side only; players are picked from `Player.All`), the old strips/rig clips are the previous style. Nothing checked in Unity.
+
+## Eel: the Testing Ground entry and a first-pass Unity view (2026-11-05)
+Yan: "make the bossfight work in the testing ground similar to the brain boss, where you get teleported to the arena and fight it".
+- Entry: main menu > Testing Ground > "BOSS The Drowner - the eel in the Sump (goes to its arena)" -> `TestingGround.EelFight(p)` (clears the `eel_fled` flag, `ZoneTravel.EnterZone(sub_station_depths_3)`,
+  you on the steps above the room). `StorySystem.OnEnterZone` -> `EelBoss.OnEnterZone` spawns the fight in the Sump (hidden in its pools); `EelSump` starts the reveal 1.5 s after you step into the room
+  (or when it is shot). Dying in the arena and respawning gives a fresh fight (`TestingGround.Respawn`). Harness: `EelFightChecks`.
+- View (`CombatFxView.Eel.cs`, CombatFxView is now partial; nothing in Unity has run it): the body is Yan's drawing baked STRAIGHT (`ArtSource/bosses/eel_bake_unity.py` -> `Assets/Resources/Sprites/Fx/boss_eel_body_s0..3.png`
+  1120x80 and `boss_eel_head_s0..3.png`, one per wound stage); each of the 140 spine samples gets a 12 px slice of it, turned along the spine (flipped, not upside down, when going left); the head profile on the end;
+  samples under the surface are not drawn (that is the coming up and going down); height = a lift up the screen; shadows under the raised parts; the telegraphs (rings, the sweep circle, the arch/dash bands)
+  in red, white once live; impacts play the game's splash / blunt-hit strips with a shake and a short hit-stop. `TacticalGridView` lifts a carried/thrown player and hides one pulled under (`EelSump.LiftOf/UnderWater`).
+  `HudView.Boss.cs`: the eel uses the boss bar (head HP, its label as the state line, placeholder name) and a second small bar for the tail while it is out of the water.
+- Known limits of this first pass: slices leave small seams on tight bends (the Python painter in the clips is smoother); the tail is not thickened like in the clips; a player under the water only goes transparent
+  (a held weapon may still show); the eel is always drawn over players; no damage numbers (the game log has the hits); no sound; the body that is swallowed/vomited is not drawn yet (it spawns as the game's corpse at the vomit);
+  the platform form (Levels 1-2) has no view and no spawn. Nothing run in Unity: first things to look at are the Console for red, then whether the pools show and the eel comes up out of them.
+
+## Eel: first Unity run fixes (2026-11-06)
+Yan ran the Testing Ground fight in Unity: "the eel kinda works but its hitboxes are not really clear, I can't damage it since all shots miss because of the elevation system, and it damages the player with its sprite too, not only the attacks; in some poses the head and body disconnect leaving a flat line above it instead of a curved body."
+- Shots missed because the eel's Units sit at the head's/tail's GROUND spot while the sprite is drawn lifted up the screen by its height, so `Rt.UnitUnder` never found it under the crosshair (the shot then flew at the mouse's ground point). New `EelSump.LiftOfUnit` (the part's height + half its sprite, 0 when under water); `Rt.UnitUnder` shifts the part's box up by it, `Ballistics.HalfWidth` makes the part that much taller for the height test. The round still flies at the footprint on the ground.
+- Console risk found in review: `CombatFxView.Eel.cs` created pooled sprites with `order = SortTop - 3000`, which `NewSprite` turned into 61000 (a sorting order is 16 bit: -32768..32767); the real order is set every frame anyway, so they now start at 2.
+- View: body slices are stretched along the body so they still touch where the body climbs steeply on screen (samples drift apart there); the head is tilted (max 55 degrees) about its anchor toward where the neck goes instead of staying a straight profile. This is my best guess at the "flat line / disconnect"; I could not see Unity.
+- Contact damage: NOT fixed. In the code only the moves hurt (sweep: anything within 1.15 tiles of the arm while it is below 2.6 tiles; dash: within 1.15 of a low body sample; head/tail slams within 2.0), there is no idle touch damage. Tightening the sweep to 1.3 tiles broke the harness's combo check, so it was reverted. Needs: which move hurt him and what he saw.
+- Harness: ALL CHECKS PASSED (Windows port run, .NET 8 SDK installed via winget). Not run in Unity.
+
+## Eel: the dive's water surge, no body damage, telegraphs off (2026-11-06, after Yan's Unity run)
+Yan: "the move where it jumps from one pool to the other, it looks high in the air but its body damages players ... it makes no sense that it jumping from one pool to the other would damage the player, so ... when it does that the mass of water it displaces pushes the players back based on where they are and which pool it jumped into; if players fall into the pool it does the second part of the grab attack, where it launches them up in the air with its tail." And: "remove the red telegraphs for now, they look pretty bad".
+- `EelSump.Surge` (called when the ARCH slams into the big pool and when the DASH lands in its end pool): everyone within 9 tiles of the landing pool's edge is shoved straight away from its centre, 7 tiles at the edge down to 1.5 at the reach (`SurgePush`), prone 0.8 s, NO damage. A shove that carries a player into another pool (a deep tile owned by a different pool, or stopping at its rim facing it) pulls him under and throws him out with the snare's LAUNCH (up, spin, crash for 420 where he stood). Dive i-frames and players already in the air are skipped.
+- The ARCH's 190 shockwave damage and the DASH's 310 body-fling are gone (Yan's call; the dash's contact loop is deleted). Tail sweep and the head/tail slams still hurt as before.
+- Found by the harness while doing this, and probably what Yan saw as "head and body disconnect": in the COMBO the hidden tail overwrote the lower samples of the head's rising column, cutting the neck off in mid-air (1.5 tiles above the water). `FillTail(..., keepHead: true)` keeps the head's samples that are still above the water.
+- Telegraphs: `CombatFxView.Eel.cs` `EelTelegraphs = false` (zones are still computed, only not drawn). With them off the attacks have no readable warning except the wind-up animation; bring them back (or redo them) before tuning.
+- Harness: arch and dash checks rewritten (no damage, near player shoved back, far one untouched, a player between the big and north pools is pulled under and crashes for 420); the surface-crossing check ignores the jump to the hidden part of the body. ALL CHECKS PASSED. Not run in Unity. Not done: the launching tail is not drawn (the spine is busy with the dive; the player just rises out of the pool with a splash), no sound, the numbers (7/1.5 tiles, 9 reach) are guesses.
+
+## Eel: the tail throws pulled-under players out after the dive (2026-11-06)
+Yan: "the player falls in the pool, takes some damage, then a second after the eel finishes its dive the tail throws the player out".
+- `EelSump.Surge`: a player the water shoves into another pool now takes `FallDamage` (120), goes under (hidden, untouchable) and waits in `State.Pulled`. The arch and the dash no longer end at 4.6 s while someone is pulled: `Rescue` runs a second after the dive, brings the TAIL out of that pool (the snare's curve, drawn: `FillTail`), carries the player up, throws him (LAUNCH: up, spin, crash for 420 where he stood) and ends 2 s later.
+- Harness: the fall check now expects the 120, the 420 crash and the landing spot. ALL CHECKS PASSED. Not seen in Unity; the numbers (120, the 1 s wait) are guesses. More than one pulled player: the tail is drawn for the first, the others are thrown at the same moment without it.
+
+## Eel view: the body no longer ends in a flat cut where it goes under the water (2026-11-06)
+Yan sent a Unity screenshot: a straight body column with the head beside it and the top of the column cut off flat ("it needs a sprite for the curve it does").
+- Reproduced from the harness dump (`frames.json`, t = 3.5 s of the arch): the visible body ends at the pool's centre, where its height crosses the water's surface, and the view just stopped drawing there: a flat cut in mid-air. Also checked with a Python replica of the slicing (scratchpad, not in the repo).
+- `CombatFxView.Eel.cs`: (1) the body is cut into half-size slices (two per spine sample, `EelSub`) so a bend is a smoother polygon; (2) a bend tighter than the body is thick has its INSIDE thinned to the radius (as the Python painter does) with the outside kept in place; (3) NEW: within 0.9 tiles of the surface the slices narrow to a rounded end (`EelDipH`) and a foam ring (`_eelFoam`, the procedural ring, squashed) sits where the body crosses the surface, so it reads as going under or coming up instead of being cut.
+- NOT done: a baked bent-neck sprite (the painter's `eel_layer` can bend his pixels along any path; the plan was a 90 degree elbow per wound stage) - held back because (3) may be enough. Not seen in Unity: the numbers (0.9, 1.1, the ring's size and alpha) are guesses; the replica only approximates the real view.
+
+## Eel: the three-phase plan (Yan, 2026-11-06) and step 1 built
+Yan's design, in his words where it matters:
+- **100-75% HP:** combo, arch, dash. **At 75%:** the snare and the flood surge join, and the FLOOD SURGE is the phase transition (the next move after crossing 75%, queued once).
+- **Below 50% ("the third phase"):** a modified flood = the phase transition to 50%, and from then one of the moves. First it floods the arena, then it comes up from one of the pools and charges up for about 4 s with sparks all round it, then it "explodes", electrifying all the water in the map: players NOT on the raised platforms (the real dry patches, the slab, the catwalk platforms) are damaged. THEN it charges a grab: it opens its mouth slowly and springs at the targeted player to bite. The player can PARRY it (F, anyone, no melee weapon needed), and that starts the new mechanic, like Raiden and the giant robot in MGRR's "rules of nature": the player holds the upper and lower jaw, MASHES THE PARRY BUTTON to close its mouth and then slams its head on the ground, all with a dramatic close-up on the player. Success: the eel is STUNNED 4 s (slumps on the ground, wakes, shakes its head, the fight goes on). Failure: the bite lands - it grabs the player and throws him like the tail grab. During the scene time is slow for everyone and the other players can keep shooting it. All the earlier moves keep running below 50% between the new ones. OK'd: cutting the jaws apart from his own drawing for the open-mouth frames.
+- Step 1 (this commit): the snare and the flood join from 75% HP (`EelSump.StartMove` bag, `f.Phase >= 1`; was 50%), and crossing 75% queues a flood surge first, once (`EelBoss.OnDamaged`, `State.Stage2`). Harness: the phases check now reads 75%, plus a transition check. The wound stages (75/50/25 sprites) are unchanged. NOT built yet: the 50% electric flood with charge and burst, the bite, the parry hook, the mash scene and its camera/art, the 4 s stun. Assumed for now: the electric flood is followed straight away by the bite (chained), and below 50% the electric flood and the bite can come up again like the other moves - to confirm.
+
+## Eel: step 2 - the STORM (electric flood), the 50% transition, Testing Ground phase starts (2026-11-06)
+Yan: the electric flood is chained with the bite ("don't forget the wind-ups"); below 50% the storm and the bite can come up again among the other moves; the transition into phase 3 is the storm.
+- `EelSump.cs` new move **storm** (`StartStorm`/`StormRun`, wind-ups all the way): 0-1.5 s the pools swell and the dry patches light up, to 3.1 s the floor floods (`FloodTiles`), 3.1-4.3 s it rears up out of a random pool (centre rule kept), 4.3-8.3 s it CHARGES with sparks all round (an `Ev` "spark" every 0.2 s, thicker as it fills; the head is up, so it can be shot), at 8.3 s the burst (`Ev` "storm"): everyone standing on a water tile is shocked for 450 (`State.Wet` = the knee-deep tiles of the room, scanned with the flood's tiles by the new `ScanShallow`); dry patches, the slab and platforms are safe; dive i-frames and people in the air are skipped like every attack. It sinks at 9.5 s and the water drains by 10.7 s. Not yet chained: the bite (step 3) - the storm ends after the sink for now.
+- It joins the bag from phase 3 (`f.Phase >= 2`) and `EelBoss.OnDamaged` queues one at the first drop under 50% (`Stage3`); under 75% it still queues the flood.
+- View (`CombatFxView.Eel.cs`): "spark" = thunderclap strips round the head (more as it charges) with a faint shake; "storm" = three rings of thunderclaps over the water, shake 0.5, hit-stop 0.12. First pass; the red telegraphs stay hidden.
+- Testing Ground: The Drowner's menu entry now has three buttons, Go, From 75% and From 50% (`TestingGround.EelFight(p, hpFraction)`): its HP, its wounds, the phase and the queued transitions (flood, storm) so each phase can be tested without chewing through 24,000 HP.
+- Harness: a storm scenario (flood peak, sparks, the dry-patch player spared and the one in the water shocked, water restored) and the Testing Ground start check. ALL CHECKS PASSED. Not seen in Unity; numbers (450, 4 s charge, the spark rate) are guesses.
+
+## Eel: step 3 - the bite, the bare-handed parry, the jaw-hold mash logic, the stun (2026-11-06)
+Yan: the bite is chained after the storm's burst; parry it with the parry key (anyone, bare-handed), then mash the parry button to shut its jaws and slam its head (MGRR "rules of nature" close-up); success stuns it 4 s (slumps, wakes, shakes its head, goes on); failure = it grabs the player and throws him like the tail grab; others in slow motion can keep shooting.
+- `EelSump.StormRun` now continues after the burst: **open** (the mouth opens slowly, 2.8 s; the aim locks 0.8 s before it springs), **lunge** (0.4 s along a curve from the top of the rise to the locked spot), contact: whoever is within 1.8 tiles of the spot (and not diving) is the victim - nobody = it misses and slams the ground. Pressed the parry key in the 0.6 s before contact (`Rt.State.GrabAt`, set by `Parry.Press` for everyone, melee weapon or not) = PARRIED: **grapple**; else the jaws close (200) and **ThrowBitten** throws him with the snare's LAUNCH (crash 420).
+- **Grapple**: the victim is pinned at the spot, the eel's clock stands still, `Boss.Hold` = hit-stop then slow motion with the camera leaned in (`Boss.Punch`) for the whole scene (`Boss.Release` ends it), and every parry-key press is a mash (`EelSump.GrappleInput`, called first thing in `Parry.Press`; 16 presses, 4.5 s real time). Made it: the head slams (Ev "slam", 1800 damage, wounds update), **slump** for 4 s (the head lies on the ground, shootable), **wake** (0.9 s: it shakes its head), then it sinks and the water drains. Time ran out: the bite lands and he is thrown.
+- View: "parry" / "slam" events play the parry spark and the blunt hit with a shake. `EelSump.MouthOpen` (0..1) is ready for the open-mouth head frames. NOT built: the close-up proper (the camera pushes in only by the small `Boss.Punch`), the open-mouth head art (jaws cut from his drawing, OK'd), the player's hands-on-jaws pose, the mash prompt UI, sound. While held, the player simply lies prone at the spot.
+- Harness: four bite scenarios (parry + mash: no damage to him, the slam costs 1800 HP, the stun lasts 4.0 s; no parry: 200 + 420; parry but no mash: the scene times out and the bite lands; stepping away: missed) plus the storm checks. ALL CHECKS PASSED. Not seen in Unity; numbers (200, 1800, 16 presses, 4.5 s, 0.6 s window, 2.8 s opening) are guesses.
+
+## Eel: step 4 - the struggle, the jaw frames, the close-up (2026-11-06)
+Yan: "the struggle needs to feel real, the player closing the eel's mouth equates to the button presses, so every press it twitches and closes a little to simulate the struggle".
+- The struggle (`EelSump`): the jaw-hold has a grip 0..1. Every parry-key press adds `GripPerPress` (0.085) and a twitch; the eel pushes the jaws back open at `GripDecay` (0.2/s) between presses, so about 6 presses a second win within the 4.5 s and 2 a second never do. The mouth IS the grip (`Mouth` = 1.4 wide .. 0 shut, linear), win = a press that fills it (`Won`), then the slam, 4 s stun, as before. Harness: 8 presses/s wins and the mouth closes with them (1.4 -> under 1.0 after 8), 2/s loses and the bite lands.
+- Art: `ArtSource/bosses/eel_bake_jaw.py` cuts the lower jaw of HIS head drawing along the line of the mouth and swings it about the corner of the mouth (the pixels are his, only moved; the jaw bends gradually near the hinge, holes filled from neighbours): 7 frames per wound stage, openness 0 / .2 / .4 / .6 / .8 / 1.0 (as drawn) / 1.4 (forced wide), `Assets/Resources/Sprites/Fx/boss_eel_jaw_s0..3.png` (+ .meta). Known flaw: the forced-wide frame has a few loose teeth pixels near the lower jaw's tip. Needs his eye.
+- View (`CombatFxView.Eel.cs`): the head uses the jaw frames while the bite controls the mouth (`EelSump.MouthOpen` >= 0; otherwise the head as he drew it); every press jolts the head (`TwitchOf`: a few pixels of shake and a tilt). Close-up (`TacticalGridView`): the camera leans in 45% on whoever holds the jaws (on top of the held slow motion), HUD (`HudView.Boss.cs`): the tail's bar slot becomes the struggle bar with "MASH THE PARRY KEY!". Not built: the player's hands-on-jaws pose (he lies prone at the spot), the slam's own animation, sound.
+- Found by the harness on the way (a random fight sequence changed): the tail's root could start in mid-air, 1.3 tiles from its pool, a flat cut - the snare's tail only covered half the spine. `FillTail` now also fills 10 samples further back (only where the head half is hidden anyway) so the root runs on down into its pool.
+- ALL CHECKS PASSED. Not seen in Unity; every number is a guess.
+
+Yan (camera): "the camera can get pretty close to the action, at least for the player who parried, for the other it can highlight the parry". `TacticalGridView.FollowCamera`: while someone holds the jaws (`EelSump.GrappleSpot`), the one who parried leans in 55% and is framed on the eel's head; everyone else eases 70% of the way to the spot and zooms 30% (`_hl`), so they watch it happen (and can keep shooting). Not seen in Unity.
+
+## Eel: sounds (2026-11-06)
+The eel had no sound. `ArtSource/audio/sfx_eel.py` (same synthesis helpers as `sfx.py`; `python3 ArtSource/audio/sfx_eel.py Assets/Resources/Audio`) makes: `eel_charge` (the storm's 4 s hum climbing with crackle), `eel_burst` (the water going electric), `eel_mouth` (the slow opening groan, 2.8 s), `eel_bite` (the snap), `eel_strain_0..2` (one per press of the struggle: a wet creak and grunt), `eel_slam` (jaws shut, head hits the ground), `eel_wake` (it shakes its head awake). Played from `EelSump` (`Snd`, host-side like the boss sting; co-op clients get none yet). NOT heard: I can't listen from here; the files are valid (no clipping or NaN) but the character of each is a first guess. Still silent: the older moves (combo, arch, dash, snare, flood).
+
+## Eel: sounds for the older moves, and the storm video (2026-11-06)
+- `sfx_eel.py` also makes `eel_splash` (a water impact), `eel_flood` (the flood rising, played when the floor starts to turn, flood and storm) and `eel_rush` (a big body rushing past: the arch's launch, the dash's start). Every ground or water impact the view draws now plays `eel_slam` / `eel_splash` scaled by its power. Not heard by me.
+- `eelsump <out.json> storm` dumps the new scenes (the 75% flood, then three storms: parried and won, never parried, parried but too slow) and `Tools/render/eel_real_clip.py` draws them: the open-mouth head frames (cut from his drawing), the sparks and lightning, the electric water, the parry ring, the close-up on the jaw-hold with the struggle bar. `maps/renders/boss_eel/eel_real_storm.mp4` (silent, offline preview, bots).
+
+To-do added (Yan, 2026-11-06, with a Unity screenshot of the reveal): rework the swallow-the-body animation of the Sump's reveal, "it looks bad" (the eel rears up straight over the slab; the body is not drawn and nothing travels down the neck). Also covers the vomit at its death. Noted in CLAUDE.md (Next) and ACTION_DESIGN.md (Later list).
+
+## Eel: feedback round on the storm and the bite (2026-11-06, Yan's Unity screenshots + a King Kong jaw-hold reference)
+Yan: the lightning should be several smaller arcs across its body; make it rear its head up and twitch as if charging, then release with a scream; the bite had no indicator (it just stood there moving its mouth): make it rear back like a snake about to strike; the player was completely hidden during the jaw-hold; the zoom can be bigger, really up close (reference: Kong's jaws held open).
+- Lightning: `CombatFxView.Eel.cs` `BodySparks` spawns many small thunderclap strips (half size) at random points along the part of the body that is out of the water, every 0.1 s while charging (more as it fills) and 30 at the burst, plus a ring of eight over the water.
+- Charge: `EelSump.State.Rear` throws the head back (8 to 36 degrees as it fills; the view tilts the head by it, `RearOf`) and `Twitch` pulses at random, harder as it fills. The burst is now a SCREAM stage (0.9 s: head thrown back 46 degrees, jaws forced wide, shaking, `eel_scream`) before the bite.
+- The bite's tell: "open" (2.8 s) now draws the head and neck back, away from the target and up (an S-curve over the first 32 spine samples, 1.8 tiles back, 1.1 up) with the head tilting back; then "cock" (0.45 s): fully reared and trembling, and at 0.3 s a white GLINT (`Ev` "glint": the parry spark on the head, the glint sound): parry on it (the window is 0.7 s before contact, so pressing at the glint works); it springs forward out of the pose in 0.12 s.
+- The held player: drawn AT the eel's mouth (`CombatFxView.EelMouth`) and sorted over the eel (order 31990), so he is no longer hidden. Camera: the parrying player's zoom is now 80% in (was 55%) and centred on the mouth; the others are shown the moment as before.
+- Preview clip updated the same way (small arcs, the glint, the player in the jaws, a tighter zoom on the mouth) and re-rendered: `maps/renders/boss_eel/eel_real_storm.mp4`. The painter never rotates the head, so the head tilt of the rearing is only in the Unity view; the preview shows the rear-back through the spine. ALL CHECKS PASSED. Not seen in Unity.
+
+## Eel: second feedback round - the jaw alignment, the slam animation, the bite's tell, the lightning (2026-11-06)
+Yan: the animation is not lined up to the jaw; there's no animation for the slam; the rear-back warning is barely visible; the lightning looks like effects on top of the eel, disconnected.
+- Jaw alignment: the held player is now exactly at the mouth (`CombatFxView.EelMouth` = the head plus the mouth's measured offset, no extra lift) and lies in the jaws (80 degrees, between the teeth) instead of standing up over the head; sorted over the eel. Measured mouth offsets per jaw frame (px from the anchor): x -55..-57, y +3 (shut) .. +8 (forced wide).
+- The slam is now an animation: after the mash is won the jaws are shut, the head is HEAVED up and back (`lift`, 0.7 s real time, 3.6 tiles up, the camera stays in on the player, slow motion held), then DRIVEN into the ground (`smash`, 0.16 s, accelerating); the impact (1800 damage, shake, a 0.22 s hit-stop, the sound, the player knocked clear) happens when it lands, then the 4 s stun as before. Timed in real time (`Time.unscaledTime`) so the slow motion does not stretch it.
+- The bite's tell is big now: the head and neck are drawn 4.2 tiles back and 2.6 up (an S in the neck, concentrated in the first ~10 tiles so the root stays at the pool's centre), the head tilts back up to 58 degrees, it holds fully reared for 0.8 s trembling, a big white glint flashes on the head at 0.5 s, and the HUD shouts a flashing "PARRY!" from the glint until the bite lands (the parry window is 0.7 s).
+- Lightning: no more overlays. `CombatFxView.Eel.cs` `DrawBolts` lays jagged glow-and-core segments (pooled white sprites) that crawl ALONG the body's own outline, re-rolled 18 times a second, plus bolts that jump from the body to the water directly under it; the body slices flicker cold where it passes. Driven by `EelSump.Charge` (the charge, the scream, fading over the first 0.8 s of the rear-back) and a 0.8 s burst. Preview clip updated the same way.
+- ALL CHECKS PASSED. Not seen in Unity: the lying pose of the held player relies on the marker's rotation not being reset by the unit view each frame (set every frame in DrawUnit after the art is applied); first thing to check.
+
+## Eel: the jaw-hold as Yan sketched it - standing in front, the game's own gloves on the jaw tips (2026-11-06)
+Yan sent a sketch (red): the eel's head in profile, mouth open, two dots (the front of the upper jaw, the front of the lower jaw) and a small upright character standing in front of the mouth with its hands on the dots. He also reminded me the characters have FLOATING HANDS: I had not read how the game draws them. Read now: 16x16 armless bodies, two separate glove sprites (`HeldWeaponView`, built from the armor's cuff and glove colours), driven in body-pixel space, free to go anywhere (empty hands swing at the hips; the item-use pose sends the free glove to the mouth, the arm, the chest).
+- `HeldWeaponView.GripHands(armor, upperWorld, lowerWorld, faceX)`: hides the gun, mag, item and smears and puts the two big gloves on two world points, fingers toward the head (mirrored when it is on his left). `TacticalGridView.EelGrip` calls it after `Show` while he holds the jaws, so his weapon is out of sight and both hands are free (Yan: yes).
+- `CombatFxView.Eel.cs`: the jaw tips for each jaw frame (`JawUpX/Y`, `JawLoX/Y`, measured by the new `ArtSource/bosses/eel_jaw_tips.py` from the jaw frames: the front of the snout and the chin, ignoring the barbels) are turned with the head's tilt into `EelHandUp/EelHandLo`; `EelStand` = in front of its face, on the ground where he was bitten, `EelFace` = which way he looks. He stands upright (no more lying in the mouth), faces the head (`AimPoint`), is drawn over the eel. As he mashes the lower glove rises with the chin and the two hands come together; the camera zooms on him (80% in).
+- 30 presses (Yan: "from 16 to 30"): `GripPerPress` = 1/30, the eel pushes back 6% a second (about 3 presses a second to make headway, about 8 to win), `MashSeconds` 6. The harness checks 8 a second wins (and the mouth closes with the presses), 2 a second loses.
+- The sequence is now exactly: parry > mash (the mouth closes) > mouth closed > he lifts its head a bit (0.9 tiles back, 1.7 up, 0.8 s, his hands on the closed snout) > SLAMS it into the ground (0.16 s) > STUNNED on the ground (4 s) > it wakes (shakes its head) > it returns to its pool. No knock-back on him (he does the slamming).
+- The stun is clear: the head and body are dimmed blue-grey and four pixel stars circle its head (`EelSump.Stunned`, `EelStarSprite`); the preview clip draws the stars too.
+- Preview clip: he stands in front, a glove (dark with a red cuff) on each jaw tip, as in the sketch. ALL CHECKS PASSED. Not seen in Unity: (1) that the gloves land on the jaw tips in the real view (the tips were measured on the sprite, the head's flip and tilt are applied), (2) the glove orientation, (3) that `Show` does not fight the override.
+
+## Eel: third feedback round - water, the sky scream, the parry that stops the eel, the struggle (2026-11-06)
+Yan (on the video): the flood's outlines and black holes do not look like water; the eel does not throw its head up to the sky when it powers up; the character is displaced during the parry/mash instead of stopping the eel in its tracks; the hands are not our hand sprites; the struggle does not look like a struggle (he stands still, only the jaw moves; both should struggle a lot, the characters have plenty of sprites, the eel's body can vibrate). Also (for later) a front-facing eel reference.
+- Flood = water. Preview: the white island outlines and the foam outline are gone; the flooded floor is the pool's own water made teal and bright with moving light and many more ripples, the pools a deeper blue. Unity (`CombatFxView.Eel.cs` `DrawFlood`): a teal shimmering surface over the flooded tiles (a sprite per run of tiles) with ripple strips breaking on it every 0.09 s; no outlines. The old flat 'deepwater' look (dark, 0.55x) stays underneath because `LabLocks` uses that Look for its locks.
+- The sky scream: the head is now thrown back up to 65 degrees while charging and 84 at the scream (it was 36/46) and the head and neck are drawn up and back (`SkyK`: 1.8 tiles back, 1.6 up, over the first 10 tiles), easing out over the first 0.5 s of the rear-back. The preview painter now rotates the head too (it only flipped it before), so the video shows it.
+- The parry stops it: he is NOT moved (no more Place at the lock spot, no more prone: setting `ProneUntil` would lay him flat in the real view). `GrabShift`: the head recoils to a point level with him on its pool's side so that its jaw tips (3.2 tiles from the anchor) are 0.7 tiles from his hands; the neck keeps its shape for its first 5 tiles; the head faces HIM whatever the neck does (`GrabFace`). Found in the probe: the head had been drawn facing away from him.
+- Hands: the preview's gloves are now the game's big glove (`GloveBig`, 5x4 character pixels, cuff and glove colours) at the body's pixel scale; in Unity they always were (`GripHands` uses `HandSprite`).
+- The struggle, both sides: HIM - the game's own body poses (`lunge` / `lunge_h` / `crouch_h`, swapped in through `bodyPose` like the melee swings) pressing in with each press, shaking, shoved back by the eel the less he has won (`TacticalGridView`); THE EEL - the whole body shakes (`strainShake`), the head jolts, and it strains the whole time, not only on a press (`Twitch` baseline 0.4 +- 0.2). The preview approximates it with leaning (rotating) the body, jitter and a vibrating spine (it has one body sprite).
+- Reference for later: the front-facing eel (CLAUDE.md Next, ACTION_DESIGN.md Later list); the file still needs saving into `ArtSource/refs/eel/`.
+- ALL CHECKS PASSED. Not seen in Unity.
+
+## Eel: the seven fixes from Yan's frame-by-frame notes on the transition video (2026-11-06)
+Yan's notes (the water changing colour; the sprite breaking in the scream and the slam; the eel overshooting then teleporting; the hands coming off; teleporting to the wrong place after the slam; the glove colours). Which were the game and which the video:
+1. Water colour - both. The flood was drawn teal (video: a brightened, tinted copy of the pool water; Unity: an opaque teal overlay). Now the room's OWN water, a little deeper: video = the base render's pixels x(0.9, 0.92, 0.92) under the flood; Unity = a translucent deep-blue tint (alpha ~0.22) over the existing water + ripples; the pools only a bit darker; the charge's cyan flicker softened (it was the other source of the shift).
+2. and 4. The sprite breaking in the scream and the slam - both. I turned the head by an extra angle on top of lining it up with its neck, which breaks the joint. Unity: the extra `Rear` angle is gone, the head only follows its neck (clamp now +-88); the pose comes from the spine offsets (a nose-up head = a steeply descending neck). Video: the head turns by the neck's angle and the painter's neck lead follows it (`eel_storyboard.HEAD_ROT`).
+3. Overshoot then teleport - game. The lunge ended ON his tile (the head's anchor lands on him, the snout passes through) and the parry then snapped it back 3.9 tiles in 0.18 s. The lunge now ends beside him (`StopFront` 3.4 tiles on its pool's side, level with him, the snout at him) and the parry only nudges it the rest of the way to `StopHold` (3.9): about half a tile.
+5. Hands off the eel - video only (Unity moves the tips with the head). The video turns the jaw-tip points with the head now.
+6. Teleport to the wrong place after the slam - game. The stop-short offset ended when the stun began, so the head jumped back to the unshifted curve end. `Parried` keeps the offset through the slam, the stun and the wake, and fades it during the sink while the head retreats.
+7. Glove colours - video only (the game's gloves come from the armor already). The video's glove now reads the suit's cuff and glove colours from `SpriteAtlasIndex` for the armor its player wears (the first in the atlas: #262425 / #3d4148).
+- Harness: three new checks that would have caught 3 and 6: the head never moves more than 0.9 tiles between two frames outside the lunge and the slam; the lunge ends beside him (so the parry only nudges it, under 0.8 tiles); after the slam the head stays where it landed. ALL CHECKS PASSED.
+- Also: the demo names its storm's pool (`storm:big`) so the scream happens in the middle of the room, not at the edge of the frame. Not seen in Unity.
+## Eel: the flood froze the game for a few seconds (2026-11-06)
+Yan: "the flood attack freezes the game for a few seconds".
+- Cause (read from the code, not profiled in Unity): the flood flips hundreds of tiles to deep water (`EelSump.FloodTiles`, a new radius every frame), and for EACH flipped tile `TacticalGridView` refreshed a 3x3 block, repainted a 5x5 block of the per-pixel procedural ground (`WorldArt.PaintGround`, which has a fixed set-up cost per call) and re-placed 3x3 standing sprites; with a solid area of dirty tiles every cell was done about 25 times, every frame, plus a whole-texture upload.
+- Fix 1 (`TacticalGridView.cs`, the dirty-tile pass): every cell is refreshed, painted and placed ONCE per frame; the paint goes in horizontal runs. Same result, far fewer calls. This also helps every other mass tile change (explosions, the brain's lab).
+- Fix 2 (`EelSump.FloodTiles`): while the flood grows or drains it flips in steps of 0.4 tiles of radius instead of every frame; the ends (0 and 17) stay exact so the harness's checks hold.
+- Harness (new `Tools/compile_check/runtest.ps1`, the Windows version): ALL CHECKS PASSED. NOT run in Unity: I can't see the frame time from here, so whether the freeze is gone is unconfirmed. If it still stutters, the next suspects are the per-frame full-texture upload (`_mapTex.SetPixels32` + `Apply` of the whole map) and `Lighting.Invalidate` re-baking lights under the flood; tell me and I'll cut those too.
+
+Flood freeze, round 2 (2026-11-06): Yan: "still freezes". Round 1 only cut the repaint; I still can't profile Unity, so this is a second hypothesis from the code: while the flood grows or drains the view bumped `_worldStamp` every frame, which makes `Vision.Update` redo its whole line-of-sight pass (about 4000 rays: radius plus four lean spots) every frame, and each refreshed tile called `Lighting.Invalidate`, throwing away baked lights near it. Water blocks neither sight nor light.
+- `TacticalGridView` dirty pass: if every dirty tile is a water tile (Difficult with no look or "deepwater"), `_worldStamp` is not bumped (no new line-of-sight pass) and `WorldArt.Refresh(x, y, relight: false)` skips the light invalidation (new optional parameter, default true: nothing else changes).
+- Harness ALL CHECKS PASSED. NOT confirmed in Unity. If it still freezes I need real numbers: Unity's Profiler (Window > Analysis > Profiler, CPU, play the flood, click the tall spike and send me what is at the top of the Hierarchy), or the Console. Left to try after that: the whole-map texture upload every frame (`_mapTex.SetPixels32` + `Apply`) and PaintGround's fixed cost per call.
+
+## Eel view: the body went thin where it travels low (2026-11-06)
+Yan: "whenever the eel does the attacks that take its entire body out of the pools, the sprite bugs and gets extremely thin in the joints".
+- Cause, reproduced from the harness dump (`runtest.ps1 -HarnessArgs eelsump,frames.json`, then the view's rules replayed on every dash/arch frame): the rule that narrows the body to a rounded end where it goes under the water (`CombatFxView.Eel.cs`, `EelDipH` 0.9) judged by HEIGHT, not by distance to the waterline. The dash travels along the floor at z 0.45-0.65 with a ripple, so the whole body was pinched to about 58-78% and pulsed with the ripple (the dash: 525 of 1866 slices under 80%, 484 of them more than 1.5 tiles from any water; the snare 827 of 10226). The arch's pouring tail lost a few too.
+- Fix: each sample now knows its distance along the body to the nearest part under the water (`dh`), and the narrowing uses that. The same replay with the new rule: no slice thinner than 80% away from a waterline, mean thickness 1.0 in the dash, arch, combo and snare. Near a waterline it narrows exactly as before.
+- Not seen in Unity. The other thinning rule (a bend tighter than the body is thick thins its inside, never below 61%) is untouched; if something is still too thin it is probably that, tell me when and which move. Also `runtest.ps1`: `-HarnessArgs a,b` now works with `powershell -File` (the list arrived as one string).
+
+## Eel: the flood as an overlay, the eel glows, the bite has a cue (2026-11-06, after Yan's next Unity run)
+Yan (screenshots + words): "the flood attack still freezes the game a bit, especially when the water recedes, also if caught in the water the player can't move"; "now its body is invisible sometimes"; "the parry and button mash animation and stuff also doesn't work".
+- **Flood** (`EelSump.FloodTiles`, `CombatFxView.Eel.cs` `DrawFlood`): found by reading the code that it flipped hundreds of tiles to LabLocks' "deepwater" look, every frame. That made the view repaint ground, standing sprites and lights for each one (the freeze, worse on the recede, when the reeds come back) AND made them LOCKED tiles (`LabLocks.Locked` -> `CanEnterTile` false), so a player standing in the flood had no tile to step to: stuck. Now the tiles are never touched (they stay knee-deep: slow, passable); the flood is `State.Flip` (who is in the water for the moves) and `State.FloodVer`, and the view draws it as ONE one-pixel-a-tile texture (bilinear, dark water, under everything that stands). Harness: all 300+ flooded tiles stay enterable, none locked. The earlier round-1/2 changes (batched dirty pass, no LOS/light work for water-only changes) stay: they help every other tile change.
+- **Body invisible in the dark**: from the screenshots, not proven: the Sump is dark, the eel's sprites sit under the darkness overlay, and only what your light or the lamps reach shows (the head next to you, not the body over the pool). `Vision.Glows` (new, refilled by the view every frame): the eel lights itself, a soft light along the part that is out of the water (3.2 tiles, 0.55; the head 4.2, 0.75), at where it is DRAWN. Glows count in `Vision.Light`, so they also count for `Sees`. NOT proven it was my thickness fix that did it: that change cannot make a slice invisible (the thinnest factor is 0.15 and only near the waterline).
+- **Parry / mash**: the harness proves the scene works when the key press lands in the window, but the real game gave NO sign of when: the red telegraphs are off and the window was 0.6 s before contact (the lunge itself is 0.4 s). Now the moment the aim locks (1 s before the spring) the mouth FLASHES (event "cue": the parry spark + a small shake, label "BITE: PARRY IT - press the parry key!") and any press from then until the contact counts (`BiteWindow` 0.6 -> 1.6 s real: cue 1.0 s + lunge 0.5 s). Harness: a press at the cue parries and the mash wins; a press as the mouth starts opening (long before) does not. Still NOT checked in Unity: whether the guard/knife draw looks right on that press, the struggle bar, the jaw frames, the camera close-up. If after the cue it still does nothing, tell me what you pressed and what the label said.
+- Harness ALL CHECKS PASSED (new: flooded floor stays passable; a press at the cue parries; an early press does not). `-HarnessArgs eelsump,frames.json` now also dumps a storm (a bite) frame set.
+
+Glow, round 2 (2026-11-06): Yan, with a screenshot: "body literally invisible". The first glow only lit cells in the player's line of sight (the overlay sets `lit` to 0 for unseen cells), and the water under the eel's body often is not in it, so the glow did nothing there. Now `Vision.GlowAt` is added to `lit` for every cell, seen or not (`AtmosphereView` both the coarse and the Lighting v2 overlay), the glow's centre is shifted half a tile to the overlay's cell coordinates, and it is a little stronger (head 0.85, body 0.7). Evidence it is the darkness: in his first screenshot the head INSIDE the storm's electric dome is not visible either, only what the player's light or a lamp reaches. Still NOT seen in Unity; if the body is still missing where it is lit, the slices are not being drawn at all and I need the Console (red errors) and which move it was.
+
+## Merge of two sessions' eel work (2026-11-07)
+`origin/realtime-proto` already had `6f61d52` (another session, from Yan's real Unity runs: the flood as one overlay texture instead of flipping tiles to the locked deepwater look - fixes the freeze and the player stuck in the water; the eel glows in the dark; the body thinning rule by waterline distance; a cue and a longer window for the bite; `runtest.ps1`). Merged with my storm/bite/jaw-hold/slam work (the last commit before this one, `c71a20b`). Decisions in the conflicts:
+- Flood: THEIR overlay texture stays (it fixes real freezes); my sprite-run flood is removed. Its tint is now a translucent deepening of the room's own water (alpha 70/255, was 215 = a different colour: Yan's "why did the water change colour") and ripples break on it again (`PxAt("ripples")`, one every 0.09 s).
+- The bite's cue: my rear-back, the trembling hold and the white glint (with the HUD's "PARRY!") replace their flash-at-the-aim-lock. `BiteWindow` is 1.2 s of wall time: the glint comes about 0.875 s before the bite lands (the stage times are script time, 0.8x), so pressing at the glint parries (it was 0.7 s, which would have been too short - found while merging). Their tests (a press at the cue parries; a press as the mouth starts opening does not; the flood stays passable) are kept, the first one now presses at the glint.
+- Mash 6 s (30 presses), the lunge ending beside him, the stop-short offset and the head-follows-neck stay as in my commit. The default `eelsump` dump now also ends with a parried storm. ALL CHECKS PASSED after the merge. Not seen in Unity.
+
+## Eel storm VFX, preview pass 1: small lightning all over the body (2026-11-07)
+Yan: the storm's charge-up / burst / electrified water looked like ready-made effects pasted on; wanted them "smaller and all over the body, like going super saiyan 2 but without the yellow, only the lightning". Preview only (`Tools/render/eel_real_clip.py`, new `aura()`): many short thin arcs, drawn at half resolution and scaled up (chunky pixels), hugging the body's outline along the visible neck, flickering every frame; during the charge the count grows over ~4.7 s (5 -> 75 arcs), at the scream 80. The old long crawl/drop bolts are gone; the arcs on the water are thinner. `PROBE_FULL=1` saves each `--probe` moment as a full-size PNG. NOT in Unity (`CombatFxView.Eel.cs` unchanged); the water and burst still to do (flash, ring, electrified tint). Not seen in Unity.
+
+Storm VFX, preview pass 2 (2026-11-07): Yan (with a photo of a hand with thin lightning winding round the wrist): "more AROUND the eel and coiling around it, not ON the sprite, and way too big". `aura()` in `Tools/render/eel_real_clip.py` rewritten: 1 px strands wind round the body like a helix, floating ~28% wider than the skin; the centre line and width come from the painted body's silhouette per row (`BODYMASK`), the back of each turn is hidden behind the body, tiny forks on the outer loops. Charge: 1 -> 6 strands over 4.7 s; scream: 9. Preview only; only works for the upright rear pose (the storm), not for coiled poses. Not in Unity.
+
+Storm VFX, preview pass 3 (2026-11-07): the burst and the water ("do next" after Yan approved the coils). `Tools/render/eel_real_clip.py`: (1) charge: tiny sparks creep over the flooded water from the eel's pool, count and reach growing over 4.7 s; (2) the scream: a 3-frame hit-stop, a white flash at the eel's base, a thin shock ring (three fading circles) racing over the flood in ~0.3 s, then up to ~420 short 1 px arcs a frame crackling over the whole flood with a few bright sparks and a faint flickering electric tint, fading out over ~1 s; all clipped to the flood mask so dry platforms stay dark and calm. Preview only: the Unity view (`CombatFxView.Eel.cs`) has none of this yet; the platform edges can catch the odd arc (the mask is per tile). Not seen in Unity.
+
+Storm VFX ported to the Unity view (2026-11-07, Yan: "port it to the Unity view"). `CombatFxView.Eel.cs`: `DrawBolts` rewritten (the old crawl/drop bolts are gone): 1-9 thin strands winding round the visible neck like a helix, 28% wider than the skin, back of each turn hidden (only the outer loops show), tiny forks, re-rolled 18x/s; widths 0.03 tile core + 0.07 faint glow (new `Line()`). New `DrawStormWater`: sparks creeping over the flood while it charges (count and reach grow with `Charge`), at the scream a flash at the base, a 3-circle shock ring racing out (only over flooded tiles), up to ~90 short arcs a tick on the flood and a flickering electric tint (`EelShock`, a white copy of the flood texture), fading over ~1 s. The 8 ready-made "thunderclap" effects at the burst are removed; hit-stop and shake stay. Harness ALL CHECKS PASSED (it compiles this file against the stubs; the visuals are NOT run). NOT seen in Unity: sprite counts (~160 for the coils, a few hundred at the burst peak), whether the coil radius (0.8 tile half-width x 1.28, guessed from the preview) fits the real body, sort order of the water arcs (7, above the flood at 6), the tint strength. If it is heavy or misplaced tell me what you see.
+
+## Eel: the introduction is a cutscene (2026-11-07)
+Yan: "rework the swallow-the-body animation: the player has to walk up to the body, an 'examine' prompt where you press the interact button, then suddenly the eel comes out of the left-most pool, slithers around and swallows the body on its way to the right-most pool, after that it comes out of the middle pool and the fight starts, add camera work and make it a cutscene".
+- **Trigger** (`EelBoss.CanExamine/TryExamine`, hooks in `InteractionEngine.AttemptInteract`, `PlayerController` (E before looting a corpse) and `InteractionPrompts`): within 2 tiles of the crewman on the slab, with the eel `hidden`, a chip "E  Examine the body" shows (and the loot chip is hidden); E starts the stage `intro`. Stepping into the room no longer starts anything. Shooting the eel while hidden also plays the intro. Testing Ground text updated.
+- **The scene** (`EelSump.Intro`, `BuildIntro`, real seconds): 0-2.2 pools go still and ripple, more and more (event `ripple`); 2.2 it erupts from the WEST pool and arcs over (head thrown back, roaring); 3.6-5.2 it slithers (a sine weave along the floor) toward the slab; 6.0 rears over the slab, jaws wide; 6.3 snaps down, the body is gone (`Swallowed`), and a LUMP travels down its neck (`State.Lump`, a bulge in the body slices in `CombatFxView.Eel.cs`); 7.3-8.1 lifts its head; slithers east; 9.9-13.2 dives into the EAST pool at its centre, the long body sliding in after; 13.2-14.4 a quiet breath, the middle pool ripples; 15.2 rises out of the BIG pool, 16.8 roars (name card via `Boss.NameCard`, jaws wide, shake), sinks at 17.8; 18.9 `idle` and the fight's first move follows. ESC skips (`EelBoss.SkipIntro`, swallows the body at once).
+- **Camera** (`Story.CamLock/CamHalf/CamRate/CamCut/Letterbox`, `TacticalGridView.FollowCamera`, `HudView.Boss.cs`): a cinematic camera that glides to a locked point and zoom and eases back to the player at the end (`_cineBlend`), black bars top and bottom; players stand still (`Story.CutsceneUntil` kept ahead each tick, the existing "panel" freeze). Shots: slow push-in on the body; a whip pan west; riding the head; a close-up on the swallow; following it east; wide on the east pool; a long hold on the middle pool; riding it up for the roar. The boss bar is hidden during the scene.
+- **Co-op**: host only for now (the cutscene freeze and camera are the host's local state, like the story cutscenes); clients are not frozen or given the camera. To do with the co-op sync of the boss.
+- **Harness**: new checks (no start on stepping in, the prompt and no loot chip, E starts it, camera/bars/pools, swallow time 5.5-7 s with a lump, the head in the west/east/middle pools, the player stands still, the fight begins, ESC skips); the old reveal checks lengthened. `eelsump out.json intro` dumps just the scene (now with `cam`, `bars`, `lump`); `Tools/render/eel_real_clip.py` draws it with the camera and bars: `maps/renders/boss_eel/eel_intro.mp4` (silent preview; the lump bulge and the sounds are not in it). ALL CHECKS PASSED.
+- NOT seen in Unity: the whole scene. Things to look at: shot timing, whether the camera glide feels right (rates are guesses), the bars' height, the lump on the real body, the swallow close-up framing, whether the player standing next to the slab gets overlapped awkwardly by the passing body, ESC to skip. The old reveal (`Reveal(false)`) is still in the file but no longer reached.
+
+## Eel: the cutscene in co-op (2026-11-07)
+Yan: "port the cutscene's co-op sync next". Rule 9 (co-op from the start): the host runs the fight and the cutscene; a client runs no world, so the snapshot now tells it what to draw and how to feel.
+- **Snapshot** (`Net.cs` -> `EelSump.WriteNet/ReadNet`, after the players): the eel's stage and flags (started, swallowed), the head's pose (mouth, rear, twitch, charge, sky, the swallowed lump), the SPINE (every second sample as 1/256-tile shorts, the odd ones interpolated on the client: 420 bytes; 603 bytes in all with two players, one packet - snapshots are UnreliableSequenced), the events the view plays (ripples, impacts: the last 0.3 s resent each time with ids, the client plays each id once, so a lost packet costs nothing), and the cutscene: Freeze, the camera (point, zoom, rate, cut) and the bars.
+- **Client** (`EelSump.ApplyNet`, `EelBoss.NetRestore`): the client's own dormant eel (spawned when it enters the map) is moved to match; the enemy roster that `Net.OnSnapshot` clears on a map change gets the eel and the body back; the body is removed when the host says it was swallowed; the cutscene (`Story.CutsceneUntil/CamLock/Letterbox`) is run from the snapshot, so the client stands still, gets the bars and the host's camera, and gets them back when the host's cutscene ends. ESC to skip is the host's (`!Net.Client`).
+- **Host** (`PlayerController`): a joined friend's E press (the `Use` bit, on its rising edge) next to the body starts the introduction (`EelBoss.TryExamine`); during a cutscene joined players' inputs are ignored (they stand still, like the host). The "Examine the body" chip shows on the client too (their position is synced).
+- **Harness** (`NetEelChecks`): a hidden eel goes over without a spine; a joined friend can start the scene; the middle-of-cutscene snapshot is under 1300 bytes and carries stage/freeze/camera/spine; a client's eel matches the host's (spine sample within 0.02 tiles), the body is gone, the eel is in the roster; the client stands still with bars and camera; a resent snapshot doesn't replay events; the client's camera and freeze end with the host's. ALL CHECKS PASSED.
+- **Not synced yet (the fight, not the cutscene)**: the flood overlay, players thrown or pulled under, the jaw-hold, the boss bar's HP (a client's bar shows full HP) and the tail's targeting; clients can't shoot the eel (no enemy sync at all yet); a client who joins mid-fight sees the spine but no flood. NOT run over a real network or in Unity (the harness uses a fake link); the NGO side is unchanged (bytes only).
+
+## Eel: the fight in co-op (2026-11-07)
+Yan: "do the fight's co-op sync next". The host still runs every move; a client now sees and feels the fight (`EelSump.WriteNet/ReadNet/ApplyNet`, in every snapshot after the players):
+- **Bars and label**: head HP, tail HP, phase, enraged, the state line (`f.Label`) - the client's boss bar and tail bar show the real numbers.
+- **Flood**: only its radius goes over (`FloodR`); the client rebuilds the same tiles with `FloodTiles` from its own map scan, so the flood texture, the storm's water arcs and the shock tint work there.
+- **Jaw-hold and bite**: `Bite` (cock/lunge/grapple/lift/smash/slump), `Grip` (the mash bar), the victim (as the connection id, `Net.PlayerOf` maps it back, so on the held player's own client the camera closes in and the gloves/poses show), the bite spot and victim position, the glint (the HUD's PARRY!). Presses already worked: a friend's parry key goes through the Input packet and `Rt.PlayerTick` -> `Parry.Press` -> `GrappleInput` on the host.
+- **In the air / under the water**: each player in `State.Air` goes over as (who, height, spin); the client makes a stand-in `Fling` so `LiftOf`/`UnderWater` draw them lifted or hidden. Their positions were already in the player entries.
+- **Sounds**: the eel's `Snd()` calls are now also events (kind `snd`); a client plays them itself. **Death**: Gone and Ejected go over (the client's eel leaves; the body is put back on the slab).
+- **Size**: at most 12 events per snapshot (the last 0.3 s, ids, no damage-text events); a snapshot in the middle of a fight with a flood, a jaw-hold and a friend in the air is under 1300 bytes (checked).
+- **Harness** (`NetEelChecks`): the flood tiles match (hundreds), HP/tail HP/phase/label arrive, `Gripping`/`GrappleSpot`/`GripOf`/`GrabFace` work for the held player on the client, a thrown friend is lifted, the fight snapshot fits one packet. ALL CHECKS PASSED.
+- **Still host-only / not done**: damage numbers and the game log lines (events of kind `hit` are not sent), the red telegraphs (hidden anyway), `Wet` (who the storm hits - host logic, fine), the client's own shots' tracers (shots resolve on the host; the eel's HP comes back in the next snapshot), bullet-time and hit-stop for clients, a client that joins mid-cutscene sees the spine at once but not the beats it missed. NOT run over a real network or in Unity (fake link).
+
+## Eel: the story key and the parts drop (2026-11-07)
+Yan: "do the story key and eel-parts drop next" (the proposal in ACTION_DESIGN: the Sealed Vault key of Secret Lab Gamma). `EelBoss.GiveSpoils` (called when it vomits the body up, `EelSump.Reveal`): the crewman's pack gets the key item `story_gamma_vault_key` ("Sealed Vault key (Depths crew)", Type key, can't be sold), the eel's parts as `mutantPart` items - Drowner's Shock Gland 2400 RU, Spine Plate x3 at 900, Blind Eye x2 at 1300 (7,700 RU in all, a tier-3 mutant part is 400-600) - a tier-3 loot roll (`HumanLootSystem.RollSpawnStash(body, 3)` plus two non-junk `Economy.Roll(3)`) and he still wears his tier-4 suit. All of it is taken through the normal body loot panel. **Gamma's Sealed Vault now needs the key** (`StorySystem.TryInteract`): without it the log says the lock plate is stamped SUB-STATION DEPTHS and the crew never came back; the act-3 objective text mentions it. This puts the story behind the eel: the player must reach 0 HP on it (it retreats and vomits) to get the key - say if that's too hard a gate and I'll let a second route in. Harness: the vault is locked without the key, opens with it; the body carries key + 3 kinds of parts worth >= 6000 + the suit. NOT seen in Unity (the loot panel with these items).
+
+## Shot VFX shortened (2026-11-07)
+Yan: "when shooting, weapons leave a lingering effect of the vfx, we need to shorten the shot vfx". Cause (counted from the strips): the ready-made muzzle and impact strips are a flash in the first 2-4 frames and then a long smoke / dust tail, played whole at 15 fps: pistol 28 frames = 1.9 s, SMG 1.0 s, shotgun 49 frames = 3.3 s (the flash is over by frame 3), bullet impact 1.5 s, ricochet 1.1 s. `CombatFxView.PxFx` now plays only the first frames of these (`PxShort`: pistol 7, SMG 4, shotgun 9, bullet impact 8, ricochet 7 at 30 fps; hit spark 8 at 24 fps), fading out over the second half (`Particle.FadeFrom`): about 0.13-0.3 s each. Other ready-made effects (parry, splash, storm, ...) are unchanged. NOT seen in Unity: if the flash now looks too clipped, raise a `keep` in `PxShort`; if something else lingers (casings, the Puff smoke, tracers), tell me which gun.
+
+## Eel: the platform form for Levels 1-2 (2026-11-07)
+Yan: "do the platform form for levels 1-2 next". The fight code (`EelBoss.Platform`: lurk, wind-up, wrap, shock, strike; `EelRig`) existed and was harness-tested, but nothing spawned it, drew it or tied it to the pumps. Now:
+- **Spawn** (`EelBoss.OnEnterZone`, `SpawnPlatformLevel`): entering Depths level 1 or 2 while that level's water is still deep puts the eel in the deep water 12 tiles from the first strike platform (6 s before its first strike). When the level's pump runs (`LabLocks.Drained`) it is gone ("the pump drags the black water down; far below, something huge thrashes in the dark"); a drained level has no eel.
+- **View and co-op** (`EelSump.PlatformProxy/FillFromRig`): the rope (56 segments) is resampled every tick into the Sump's 140-sample spine on a proxy `State`, so the existing view draws it with no new art code and the co-op snapshot carries it unchanged (`WriteNet` no longer needs the Sump). Under the water (lurking, winding up, diving) it is the shadow the view draws (first 10 tiles); wrapped or striking, the body lies on the floor and the part away from the platform goes down with a rounded end. Events: ripples at the wind-up, impacts at the wrap and the strike. Discharge = `Charge` 1: the body flickers cold and short arcs crackle over it (`DrawBolts`, the coiled-body branch; the helix coils are for the upright neck only).
+- **Wounds carry down** (Yan: at most 20%): `Despawn` stores `eelwoundNN` (5-point steps) and the Sump's eel starts with that much less HP (`SpawnSump`); `OnDamaged` already capped it at 80%.
+- **The last pump's gate** (`Stashes.Blocked`): the Main Sump Pump won't run until the eel has fled (Story eel_fled), with a line saying something huge sits in its pool.
+- **Testing Ground**: BOSS The Drowner, platform form: Level 1 / Level 2.
+- **Harness** (`EelPlatformFormChecks`): spawn on entry (not in the tail's enemy list), lurk = shadow, wrap = solid spine + charge, the snapshot carries it, drain removes it and remembers the wounds, a drained level has none, the Sump's eel starts wounded, the last pump is blocked and then opens. ALL CHECKS PASSED.
+- **Not done / not seen in Unity**: the whole form in the view (the lurking shadow, the wrap, whether a coil on the floor reads, the sort order against the catwalk), the lamp flicker tell and the level-2 false alarms (never built), a platform-form preview video, the wounds as visible scorching. Lamps and false alarms are the next job for this form if you want them.
+
+## Eel platform form: the lamp tell and the false alarms (2026-11-07)
+Yan: "do the lamp flicker and false alarms next" (ACTION_DESIGN "Fair scare rule": never a real strike without its tell; on Level 2 some flickers are false alarms; the plan's digit 8 marks the spots).
+- **The tell** (`EelBoss.UpdateTell`, `EelLamps`, hooked into `WorldArt.AddLight`): the placed lamps (ceiling lights, emergency lights, lamps) within 10 tiles of the platform being wrapped flicker irregularly, dimmer and more often off as it fills, with a buzz (`eel_charge`, louder as it fills). A REAL strike (the wind-up, 1.3 s): flicker for 1.0 s, then the lamps go completely dark for 0.3 s - the silence, the buzz cut - and it bursts. A FALSE ALARM: the same flicker for 1.3 s and the lamps simply come back, nothing strikes (log: "The lamps steady again. Nothing came."). The difference is the silence, so a player can learn to tell them apart, but not early enough to relax.
+- **False alarms** (`EelBoss.Fight.Lures`, stage `feint`): Level 2 reads its two digit-8 spots; while one is within 9 tiles of you and it `WantFeint`s, the eel swims to it, flickers the lamps and goes back to lurking (5 s before it hunts again). It wants a false alarm at first and after each real strike with 60% chance; at most one before each real one. Level 1 has none.
+- **Co-op**: the tell (mode, spot, strength) is in the snapshot, so clients' lamps flicker too; the buzz goes over as a sound event.
+- **Harness** (`EelLampChecks`): Level 2 knows its 2 lures and 3 platforms; a false alarm flickers but is never dark, no wrap, steadies; a real strike goes flicker -> dark -> wrap; the tell is in the snapshot; the factor is 0 in range in the silence and 1 far away; flicker is on/off, not steady. ALL CHECKS PASSED.
+- **Not seen in Unity**: whether the lamps visibly flicker (it needs Lighting v2 and a lamp in view; the old overlay path and `LightMap.At` (stealth) are not touched), the buzz's volume, whether 1 s of flicker is enough warning to react to (tune the 1.0 / 0.3 s in `UpdateTell`), whether Level 1/2 have enough lamps near their strike platforms (Level 1: 3 ceiling + 3 emergency lights on the whole map).
+
+## Shot effects lingered (2026-11-06)
+Yan: "when shooting the shot visual effects linger for a while" (screenshot: a long-lived cluster of orange sparks and blood bits after a shot).
+- Cause (measured from the strip files, not from Unity): the pixelfx strips for guns are whole acted-out effects at 15 fps: `px_muzzle_shotgun` 49 frames = 3.3 s, `px_muzzle_pistol` 1.9 s, `px_bullet_impact` 1.5 s, `px_ricochet` 1.1 s, `px_muzzle_smg` 1.0 s. `CombatFxView.PxFx` played every one at 15 fps.
+- Fix: `PxSpeed` in `CombatFxView.cs`: muzzle shotgun x6 (0.55 s), pistol x5 (0.37 s), smg x3 (0.33 s), bullet impact x3.5 (0.42 s), ricochet x3 (0.38 s), hit spark / blunt hit / zap hit x1.5. Everything else (void pull, splash, thunderclap, smoke, parry) plays as made. The numbers are my guess at "snappy": one line each to tune. Not seen in Unity; if some effect still lingers, name it (the blood bits and sparks in his screenshot may be a different effect).
+
+## Eel: the serpentine body, no barriers, the whole body is the hitbox, you in the mouth (2026-11-06, after Yan's Unity run)
+Yan: "the body still has some weird effects during the serpentine attack" (screenshot: a black ribbed block near the head and gaps in the body), "a few barriers in the map ... block bullets and bug the eel out, remove them" (+ a crop of one: the grey concrete blocks), "the dummy character from the testing grounds appears as the eel's hitbox, and its hitbox is still only in the base of the sprite where it connects to water, all of it should be a hitbox, only the head takes extra damage", and (asked which part of the parry fails) "can't see myself".
+- **Dash body artifacts**: reproduced from the harness dump (350 slices in 41 dash frames): `CombatFxView.Eel.cs` drew any body piece lower than `EelSolidZ` 0.3 as the flood swim's dark SHADOW (a black ribbed block near the head) and skipped it entirely further back (the gaps). The dash ripples between z 0.25 and 0.65, so it kept dipping under. `EelSolidZ` is now 0.08 (the flood's swim is z 0.05).
+- **Barriers**: the Sump plan had nine concrete blocks (plan char `h`, "pillars as cover from its lunges"). Removed from `lab_plans.py` (the check now asserts there are none) and from the generated `TierDungeons.LabPlans.cs` rows by hand (python is not installed on this PC, so I could not rerun the generator: 9 `h` -> `w`, the floor they stood on); `ACTION_DESIGN.md` updated. The brain's lab and the other labs keep theirs.
+- **The dummy**: the eel's two units (head and tail) are drawn by the unit view like any enemy, and with no art they got the fallback person sprite. `TacticalGridView` now hides the markers of the eel's units (`EelBoss.Is`).
+- **Hitbox = the body** (`EelSump.TraceBody` / `BodyUnder`, `Ballistics.Trace`, `Rt.PlayerFire` / `UnitUnder`, `Gunplay`): every spine sample out of the water is a round column on the ground (0.95 tiles, the head zone 1.5): low parts (z <= 2.5) are hit by any round that passes them, airborne ones only by a round aimed at the eel (`Gunplay.AimAtEel`, `Round.AtEel`), so an arch does not wall the whole arena. The crosshair finds whichever part it is over (the sprite is lifted by its height) and the shot is aimed at that part's spot on the ground. Head zone (first 9 samples): part "Head", `HeadBonus` x1.5 on top of the normal head multiplier (1.3); the rest "Body" at normal damage into the same HP pool; the last 24 samples are the tail unit (its own HP, as before). The two base units no longer have a footprint (`Ballistics.HalfWidth`). Nothing lands while no part of the body is above the water (`BodyOut`; it was "the head is up"). Melee still uses `UnitUnder` (so it finds the part under the cursor) but its own hit test is unchanged: NOT checked.
+- **You in the mouth** (the missing "hands on jaws"): while you hold the jaws you are drawn in the open mouth, in front of the head (`EelSump.MouthWorld`, `TacticalGridView.DrawUnit`): before, you stood under the head's sprite and vanished. Still just your normal standing sprite: no hands-on-jaws pose (needs the body-pose and floating-hand work from `HeldWeapon`); the mash bar is under the boss name and its text overlaps the name (not fixed).
+- Harness ALL CHECKS PASSED (new: a round at a low part of the body lands on the eel, the head is a "Head" hit, the crosshair finds the part). Not seen in Unity.
+
+## Eel to-do pass 1: melee on the whole body, the jaw-hold pose and prompt, sounds for every move, eel parts, the last pump's gate (2026-11-06)
+Yan: "check and build everything that's listed on the to-do for the eel boss ... keep working on everything on the to-do list until you hit the usage cap". Also set up this PC: Python 3.12 (+ numpy, pillow, scipy), Node.js LTS and the seven skills Yan listed (`level-design`, `handoff`, `unity-2d-lighting`, `gamedev-2d-art-lighting-art`, `unity-netcode`, `game-feel`, `unity-npc-behavior`, in `~/.claude/skills`; level-design's scripts read: no network or exec, only local checkers); `pixelfx` is in the repo; `agora-vai-pixel-art` is Yan's own and still has to be copied in by him.
+- **Melee vs the new hitbox** (`EelSump.MeleeBody`, `Melee.Swing/Land/Strike`): a swing now cuts the nearest low part of the body its arc and reach touch (the column is BodyHalf/HeadHalf wide, the arc widened by what the column covers from where you stand); the head zone is "Head" and takes `HeadBonus` x1.5 in melee too. The eel's two base units are skipped by the old distance test (they sit in the pool centres). Impact fx still plays at the base unit's spot (not moved to the part).
+- **Mash prompt** (`HudView.Boss.cs`): its own text ("MASH PARRY TO SHUT ITS JAWS!") and bar low on the screen (centre, 150/196 px below the middle), shown for whoever holds the jaws; no longer the boss-name slots. The tail's bar is hidden during the hold.
+- **Hands-on-jaws pose** (`HeldWeaponView.JawHold/JawGrip/JawTwitch`, set in `TacticalGridView.UseOf` for every player): both gloves up over the head, fingers up, straining (a fast shake), together as the grip fills, thrust up and out on each press; the weapon is hidden. Only the gloves: the body sprite is still the standing one. Not seen in Unity.
+- **Sounds for the older moves** (`ArtSource/audio/sfx_eel.py`, `EelSump.Impact/StartMove`): `eel_roar_0/1` at the start of combo/arch/dash/snare, `eel_flood` at the flood, `eel_splash_0/1` (water thrown out) and `eel_splash_big` (the arch's slam), `eel_thud_0/1` (the head or tail hitting the ground). The earlier eel sounds regenerate byte-identical. Not heard.
+- **Eel parts** (`EelBoss.AddParts`): the body it coughs up carries a Drowner Gland (1400-1900 RU) and a Spine Plate (900-1300 RU), next to its tier-4 gear (tier 3 mutant part is 400-600).
+- **The last pump's gate** (`EelBoss.BlocksPump`, `Stashes.Blocked`): the Main Sump Pump in Depths 3 won't run until the eel has fled (story flag eel_fled).
+- Harness: new checks (melee cuts the body, the parts, ordinary pumps stay free); `stubs.cs` gets `Mathf.Asin/Acos`. ALL CHECKS PASSED. Not seen in Unity.
+
+## Brain boss: every sprite rebuilt from Yan's reworked picture (2026-11-06)
+Yan: "there's a reworked and improved brain boss sprite, redo the other sprites of the boss using that one as a base" (the picture is saved as `ArtSource/refs/brain/yan_brain_vat_ref.png`, a screenshot of 366x363).
+- `ArtSource/bosses/brain_ref_layers.py` splits the picture into layers: the vat shell (lid, glass reflections, base, pump, rack, cables), the liquid with the brain, its wires and bubbles painted out, the brain with its cord, and the wires.
+- `ArtSource/bosses/make_brain_vat_v4.py` rebuilds the SAME 8x11 sheet of 128x160 (so no game code changes; `BrainBoss.ArtRow/ArtCol`, `UnitSprites.VatFrames`) from those layers, scaled by 0.468 and snapped to one 71-colour palette: phases 0-3 eyes open (the water level drops per phase, the brain bobs, bubbles rise, his monitor screen cleared and an animated trace drawn), the same with eyes shut (his own brain texture copied over the eyes, a dark lid line, a twitch on odd frames), drained (slumped, flatter, no cord), awake (floats up), the eye (a giant eye on a cord slides out and looks). Eyes: his two eyes cut out of the picture and pasted again, bigger with each phase, extra ones for the 3rd-6th (copies of his), the iris repainted in his colours (the downscale loses it). Cracks per phase, electrode cables, psi glow are mine (the same recipes as before).
+- Written into `Assets/Resources/Sprites/Mutants/boss_brain_vat.png` (git has the old sheet). Review: `maps/renders/boss_brain/brain_vat_v4_states.png` and `brain_vat_v4_idle.gif`. The vat is a little smaller in its frame than the old one (the glass is 54 px wide instead of 65: his picture has the machines further out, so the whole drawing is fitted into the same 4x5 tiles).
+- NOT redone: the attack sprites (`boss_brain_orbs/bolt/ring`, they are plain violet effects with no counterpart in the picture). NOT checked in Unity: the footprint and where the brain's hitbox sits against the new art (the unit's position/size code is unchanged), the animation speed.
+
+## Eel to-do pass 2: Levels 1-2 spawn and view, the jaw frames' stray pixels (2026-11-06)
+- **Levels 1-2** (`EelBoss.OnEnterZone`, `SpawnPlatform`, `FillView`; `EelSump.SpineOf`; `CombatFxView.Eel.cs` `DrawEel`): the platform form existed only in the harness. Now the eel is spawned when you enter Depths 1 or 2 (not once that level's pump key is held), at the strike platform (plan digit 7) farthest from you; `FillView` lays the Sump's 140-sample spine along the rig every tick (the head, then 56 segments; under the water = Z -1, which the view draws as the swimming shadow and the hit tests skip). The view, the bullet hitbox (`TraceBody`), the crosshair (`BodyUnder`), melee (`MeleeBody`) and `LiftOfUnit` all read `SpineOf(f)` = the Sump's spine or this one, so the platform form is drawn with Yan's baked body strips and can be shot (damage carries over at most 20%, as before). The boss bar is still the Sump's only. Harness: nothing above the water while it lurks, a coil above it while it wraps and the crosshair finds it, it is there on entry and gone after the pump. NOT done: the lamp flicker tell and false alarms (plan digit 8); the strike's own strip; not seen in Unity.
+- **Jaw frames** (`eel_bake_jaw.py`): bits under 10 px that touch nothing (then bits under 40 px after the outline) are removed from the open-mouth frames. Same frame size and anchor. A couple of dark specks by the lower jaw's tip in the forced-wide frame remain (they touch the jaw's outline).
+- ACTION_DESIGN (eel parts, pump gate, Levels 1-2, melee) and CLAUDE.md (this PC's tools and skills) brought up to date.
+
+Eel Levels 1-2, the tell (2026-11-06): the fair-scare rule's sound and the false alarms (`EelBoss.Platform`, `ArtSource/audio/sfx_eel.py` `eel_buzz`): before a real wrap the lamps buzz (a 100 Hz hum with crackle swelling for a second, then silence; `Sfx.Play` at the platform), and on Level 2 the marked false-alarm spots (plan digit 8) play the same buzz when you pass within 6.5 tiles, once each, then "Nothing comes. This time." Real strikes and false alarms sound alike on purpose. No actual lamp dimming (the lighting has no per-lamp control to flicker): the sound, the log line and the label carry the tell. Not heard or seen.
+
+## Eel in co-op: the host's spine reaches a joined friend (2026-11-06)
+`Net.EncodeSnapshot/DecodeSnapshot` carry an optional eel block (phase, HP, mouth, twitch, and the 140-sample spine as shorts: x, y in 1/32 tile, z in 1/64; about 0.9 KB a snapshot at 20 Hz) after the players (a snapshot without it still decodes). A client (`Net.OnSnapshot` -> `EelBoss.ClientApply`) keeps a view-only fight (Level "client": no units in the world, never ticked, hits change nothing, `OnEnterZone` spawns nothing for a client) that the same view draws, so a friend now SEES the eel. Still not sent: impacts and their sounds and shakes, players thrown or held in the jaws (`Air`), the bite and its mash, the flood and the storm's water, the tail's HP bar, what the client's own shots do (the host decides; the client's inputs already reach it). Harness: the snapshot round trip and the client's fight; not tested over a real connection.
+
+## RT eel 12 - lamp brownout (2026-11-07)
+The Levels 1-2 tell now really dims the lights: WorldArt.Lights.cs Brownout/LampScale (a harsh flicker, near-dark in the last third of 1.4 s, then back; not fires or red emergency lights), called from EelBoss.cs on the wind-up and on each false alarm. Harness check added, ALL CHECKS PASSED. Not seen in Unity (timing and how dark it reads are guesses). Co-op: brownout is local to whoever triggers it; clients do not see it yet.
+
+
+## Merge of the PC session's eel work into the cloud branch (2026-11-08)
+Yan's PC had 7 unpushed commits (published as `pc-work`) that overlapped with the cloud commits (both sides had built Levels 1-2 spawn/view, the tell, co-op for the eel, the pump gate, the parts, shorter shot effects). One merge, one version of each; what was kept:
+- **Kept from the PC session (new, not in the cloud)**: the whole-body hitbox and melee (`EelSump.TraceBody/BodyUnder/MeleeBody`, `Rt`, `Gunplay`, `Melee`), the removed barriers in the Sump plan, the dash-body fix (`EelSolidZ` 0.08), the eel's unit markers hidden, the mash prompt in `HudView.Boss.cs`, sounds for every move (`eel_roar_*`, `eel_splash_*`/`_big`, `eel_thud_*`, `eel_buzz`; `Impact()` now plays them), jaw-frame clean-up, `BlocksPump` for the last pump's gate, the rebuilt brain vat sprites, the `Mathf.Asin/Acos` stub, a faster `blunt_hit`/`zap_hit`.
+- **Kept from the cloud (replacing the PC duplicates)**: the platform form's PROXY spine on `f.Sump` (`FillFromRig`; the PC's `f.View`/`FillView`/`Level "client"` are gone, `SpineOf` returns `f.Sump`), the co-op snapshot block (`EelSump.WriteNet/ApplyNet`: the cutscene, flood, bite, thrown players, sounds, the tell; the PC's smaller eel block and `ClientApply` are gone), the lamp tell (`EelLamps` + false alarms + the silence; the PC's `WorldArt.Brownout` and its Level-2 buzz-and-nothing are gone, but its `eel_buzz` sound is what the tell now plays), the spoils (`GiveSpoils`: key, 3 kinds of parts, tier-3 loot; the PC's `AddParts` is gone), the jaw-hold with the gloves on the jaw tips (the PC's `JawHold` hands-up pose is no longer used; its code is left in `HeldWeapon.cs`), the shorter shot effects as `PxShort` (flash only, fade out) - the PC's `PxSpeed` is only kept for blunt/zap hits.
+- **Reconciled**: `HitZ` (0.09): a part lower than this is a shadow in the water, drawn but never hit or counted as `BodyOut` (the platform form lurks at 0.05, the Sump's flood swim too); the eel's sounds come from the fight code (`Impact`/`Snd`, also sent to clients) instead of the view, except the jaws' slam; `sfx_eel.py` merged (all earlier wavs regenerate byte-identical; only `eel_buzz.wav` differs; the PC's 6 s `eel_flood` is not used, the cloud's stays).
+- The PC's harness checks for the removed code were removed; the rest stay. ALL CHECKS PASSED. Not seen in Unity.
+
+## Task #36: why the Ex-Military start loses to humans - a real-time probe (2026-11-08)
+No data on what exactly Yan lost to, so I measured: `dotnet /tmp/test.dll rtprobe [runs]` (`Program.cs` `RtLoadoutProbe`) plays the three starting loadouts against Raiders in real time through the real `Rt.PlayerTick` / `Rt.WorldTick` / `RtAi` (a bot that closes to 70% of its range, aims, fires on the gun's cycle, reloads; no dodging, cover or medkit). `BURST=3 PAUSE=0.35` makes it fire in bursts. 15 runs each, wins out of 15:
+- Holding the trigger: vs 3 Rookies Scavenger (pistol) 5, Ex-Military (rifle) 7, Trader (pistol) 5; vs 2 Veterans 4 / 5 / 2; vs 1 Veteran + 3 Rookies 0 / 1 / 0. **Hit rate of the player's rounds: pistol 50%, starting rifle 17%** (the enemies' 11-18%).
+- Firing 3-round bursts with a pause: the rifle hits 40% and wins 14/15 vs 3 Rookies, 7-9 vs 2 Veterans, 6-8 vs the mixed squad; the pistol stays at ~50% and wins 2-5.
+- Cause (`Gunplay.cs` Table / `Rt.PlayerFire`): a 600 rpm assault rifle kicks 1.9 degrees a shot = 19 a second and recovers 11 a second, so holding LMB sits at the 10-degree kick cap; the rifle is worse than the starting pistol when held and much better in bursts. So the start is not weak, but the natural way to play it (hold the button) wastes it.
+- Done (a tool for the player, not an enemy nerf, rule 6): `Gunplay.PlayerMaxBloom` 6 degrees (the enemies keep 10): held-trigger hit rate 17% -> 20%, vs 3 Rookies 7 -> 10 wins of 15. A small step.
+- PROPOSED, needs Yan's go (a control/gameplay change): a fire-mode key (auto / 3-round burst / semi) for automatic guns, or a built-in burst limiter on the first press; the bursts alone would turn the start into 14/15 vs three Rookies. Also useful: what Yan actually fought and how (the probe's bot never takes cover, dodges or heals).
+
+## Brain boss: the attack effects redrawn, animated, in four variations; the cracks redrawn (2026-11-08)
+Yan: "re-do them [the orbs, bolt and ring from your new picture] ... make the brain effects be on par with the model's quality, and it will need the variations, the one I sent is only the full open eyes version".
+- `ArtSource/bosses/make_brain_fx.py` (new, PIL + numpy, hand-built shapes, no generated images) writes `Assets/Resources/Sprites/Fx/boss_brain_{orbs,bolt,ring,beam,beamcap,glow}_p0..p3.png`: every effect in FOUR VARIATIONS, one per wound phase (the vat's phases 0-3), each ANIMATED (4 frames): phase 0 violet (the iris colour), 1 violet with flesh-pink, 2 magenta with the brain's vein red, 3 blood-hot with a white-yellow core. Orbs 16x16 (ring orbs: a lit sphere with a turning swirl, motes, the vein colour in the shadow; void orbs: a near-black core with a bright rim and an accretion ring), the aimed bolt 28x10 (hot head, a waving tail of wisps that changes every frame, sparks), the pulse's ring 64x64 (a ragged bright rim, a dithered trailing skirt, motes), the laser as a tiling 32x12 tile (white core, jagged hot edge, glow) plus a flare cap at the brain, and the gathering glow 32x32 (a breathing dithered halo with motes drawn in). The old plain `boss_brain_orbs/bolt/ring.png` stay in the folder unused.
+- The vat's CRACKS (`make_brain_vat_v4.py` `glass_crack`) were straight white lines; now jagged, branching glass cracks with a bright core, a dark edge, glints and an impact point (deterministic, no shimmer). `boss_brain_vat.png` regenerated.
+- View (`CombatFxView.DrawOrbs`): picks the phase variant from `BrainBoss.Current.Phase`, animates orbs/bolt/ring/glow, and draws each beam as a row of animated beam tiles with the flare at the brain (a faint wide bloom underneath); the old plain line is the fallback if the strips are missing.
+- Preview: `Tools/render/brain_fight.py` uses the new sprites (`maps/renders/boss_brain/brain_fx_new.mp4`, the real harness fight; `brain_fx_review.png` = every effect, phase and frame at 4x; `brain_cracks_new.png`). Harness ALL CHECKS PASSED. NOT seen in Unity (sizes of the orbs and glow against the old ones, sorting, Unity creating the .meta files for the new pngs on first import).
+- Still not drawn: the shut-eye (concentrating) effects other than the glow, the thrown cover's tint, the void pull/escape (these are the ready-made pixelfx ones).
+
+## Co-op: the rest of the world reaches a friend - enemies, shots, numbers, lines, bullet time (2026-11-08)
+Yan: "10, 11, 12, 13: these you can do without me, do them". New `Assets/Scripts/GameCore/NetWorld.cs`; the snapshot (`Net.EncodeSnapshot/DecodeSnapshot/OnSnapshot`) carries, after the players and the eel, in this order and each within what is left of a 1280-byte packet (`NetWorld.Packet`; an unreliable message must stay small):
+- **The clock** (12): bullet time on/off (`Rt.SlowMo`, the client calls `Rt.SetSlow`) and the hit-stop left (`Boss.StopLeft` -> `Boss.HitStop`).
+- **Log lines** and **damage numbers** (11): `GameLog.Write` and `TestingGround.Show` tap into `NetWorld.TapLog/TapNumber`; the last 1.5 s are resent with sequence numbers (a client plays each number once), at most 3 lines (90 chars) and 4 numbers, fewer when the packet is tight; the numbers rise off the mirrored enemy.
+- **Effects** (12): shots (muzzle flash, tracer, impact: who fired, at whom, where the round came down, hit or miss, the gun), melee, strikes, reloads and the ready-made strips (`CombatFx.Push/Add` tap the event object itself; its fields are read when the snapshot is made, because callers fill them in after pushing). The cover's reaction (`CoverHit`, `Through`) is left out. Resent for 0.3 s, at most 8.
+- **Enemies** (10): the nearest first, 16 bytes each (id, awake, alive, indices into the databases - mutant = tier+key, human = faction, rank, weapon, suit - place and offset, hit points), as many as fit (up to 60); the client builds a real `Mutant` / `HumanEnemy` mirror of each (`NetWorld.Apply`), moves it every snapshot, removes it when the host stops listing it, and never ticks it. Not carried: what an enemy is doing (aim, reload, its "!" and radio), the eel's units and the body (they have their own block), the brain boss, loot, anything past an enemy's first weapon and suit.
+- **Real connection** (13): NOT done and cannot be from here: `NgoLink.cs` needs Unity, the Netcode packages and a relay. What the harness covers: the whole wire format round trip over the fake link (`NetWorldChecks`, `NetEelChecks`), sizes under load (91 enemies, 30 shots, long lines: 1270 bytes, 19 enemies sent), resent packets playing nothing twice. What a real session must still show: that `UnreliableSequenced` accepts 1280 bytes (NGO's limit is near 1300), the feel of 20 Hz enemy movement without smoothing, and the clock (a client's `Time.timeScale` follows the host's).
+- Harness: mirror of a raider (rank, place, HP, weapon, suit) and a mutant (kind, place, offset), a sleeper stays asleep, the shot's who/whom/end and the splash strip play, the number rises off the mirror, the line arrives, bullet time follows, a resent snapshot plays nothing twice, and a crowded fight fits one packet. ALL CHECKS PASSED. Not seen in Unity.
+
+## Brain boss: seating the vat in the world (2026-11-08)
+Yan: "the brain looks good but really out of place, anything we can do to fix that?" Reading the real render: the vat was the one loud, floating thing in the room - saturated teal glass against muted concrete, no outline (the props have one), no contact with the floor.
+- `make_brain_vat_v4.py` `harmonize` (applied to every frame of the sheet): the greens lose ~22% of their saturation and 5% of their light (the eyes and the brain are untouched); a 1 px near-black outline round the silhouette; a steel floor pad under the base (lit top, dark front edge, bolts, drain slots) and a soft contact shadow; the picture is scaled to 93.5% to make room for the pad. Same 8x11 sheet of 128x160, so no game code changed for it.
+- Lighting v2 (`WorldArt.PlacedLights`): the vat is now a green point light (7 tiles, a slight flicker) while the brain boss is on the map, so in the dark lab it throws green light on the floor and the props round it.
+- Render: `maps/renders/boss_brain/brain_before_after_seated.png` (before left, after right, from the real harness fight; this preview has no lighting, so the green spill is not in it), `brain_seated.mp4`. Harness ALL CHECKS PASSED. Not seen in Unity.
+- Not done: the vat is drawn from the front while the room is seen from above at 3/4; a real fix would redraw the lid and the top of the glass as seen slightly from above (his art, so I did not change the drawing); the lamps' bloom on the glass; a cable run from the base into the floor (a floor decal in the lab plan).
+
+## Brain boss: the lid and the top of the glass from above (2026-11-08)
+Yan: "redo the lid and top of the glass from above" (the vat is drawn from the front; the room is seen from above at 3/4). `make_brain_vat_v4.py`: `lid_top` draws the lid's TOP face above his front band - a steel plate a little narrower at the far edge (perspective), lit from the top left with a bevel highlight, a dark outline, rivets along the far edge, a gland where each of the six cables goes in and a service hatch - behind the shell so the cables run over it; `glass_top` puts the glass's inside under the lid's overhang in shadow (a dark band that fades down the glass), a thin pale line on the glass's front rim and a dark line for its thickness. His lid band, glass, base, machines and cables are untouched. Sheet regenerated (same 8x11 of 128x160). Render: `maps/renders/boss_brain/brain_before_after_lid.png`, `brain_lid.mp4` (the real harness fight). Harness ALL CHECKS PASSED. Not seen in Unity. Not done: the base's top ring seen from above (where the glass meets the pedestal), the lid's own shadow on the floor behind the vat.
+
+## Dying alone wakes you at the camp (2026-11-08)
+Yan: "should solo death use the camp respawn too? yes". `TurnLoop.CheckCombatEnd`: when everyone is dead, `Death.Wipe()` runs in solo too (armor one step worn, half the pack dropped where you fell, rank XP lost, back at the last camp or Bonfire Village), except in a Testing Ground session, which keeps its death screen and Respawn button. Two old turn-based harness checks (the radio call, the shakedown) assumed a dead solo player ends the fight; they now run with the Testing Ground flag set (Arena/StartNewGame clears it, so the shakedown loop sets it after Arena). New `SoloDeathChecks`. ALL CHECKS PASSED. Not seen in Unity.
+
+## Fire modes for the modern assault rifles and SMGs (2026-11-08)
+Yan: "should I add a fire-mode key? yes, for more modern assault rifles and SMGs" (the rtprobe numbers: held down the starting rifle hit 17% at 12 tiles, 3-round bursts 40%). **X** cycles AUTO -> 3-round BURST -> SEMI on the guns with a selector (`Gunplay.Modern`: TS-9 Tishina, TR-30, Halden HR36K, VK-103, BR-86 Bulldog, VK-74 Obelisk, NA-94 Yenisei, Corvan Bullpup, Corvan Battle Rifle, Corvan Wasp-9, Corvan Hornet .45, Corvan Gnat PDW). The old designs (VKS-74U, Smerch-3, VK-74, VKM, Vosa vz. 62, PPZ Zubr) keep their one mode and say so when X is pressed. A burst (`Gunplay.BurstRounds` 3, then `BurstGap` 0.18 s) runs to its end once pulled, at the gun's own rate, however you mash the button; a reload or an empty magazine cancels it; semi fires one round a pull. Per player (`Rt.State.FireMode/BurstLeft`), the key is in the Input packet (bit 4096, `Rt.Input.Mode`) so a joined friend has it, and the HUD chip under the weapon name shows AUTO/BURST/SEMI (`Gunplay.ModeLabel`). Harness (`FireModeChecks`): auto sprays, semi once a pull, burst = 3 rounds mashed or not and two pulls = 6, an old gun ignores a left-over mode, X cycles, the key crosses the wire. ALL CHECKS PASSED. Not seen in Unity: the feel of the pause, whether X conflicts with anything in the real-time keys (the pack's X drops an item only while the pack is open). The list of modern guns is my guess at "modern": change `Gunplay.Modern` to taste.
+
+## Co-op: the brain boss and what enemies are doing, for friends (2026-11-08)
+Yan: "do this while I playtest" (brain boss co-op sync; enemy actions for clients).
+- **Brain boss** (`NetWorld.WriteBrain/ApplyBrain`, `BrainBoss.NetRestore`): the snapshot now carries the vat (started, drained, gone, phase, end stage and its age, hit points, what it is doing and how long its wind-up has left, whether a pulse is gathering) and everything the view draws: up to 4 beams, the pulse's radius, up to 24 orbs and 6 thrown pieces of cover (as many as fit the packet). The client's own dormant vat (spawned when it entered the map, put back in the enemy list after the map change clears it) is moved to match, so `BrainBoss.ArtRow/ArtCol/Winding` and the view's orbs, beams, wave, glow and cover work unchanged there; if the host has no brain (it escaped) the client's copy goes. Harness: `NetBrainChecks`.
+- **Enemy actions**: each enemy mirror now carries how far it has noticed you (the yellow "!" filling), whether it just spotted you (the red "!") and the radio call (the caller's icon filling red); a mirrored enemy aims at the NEAREST living player (`TacticalGridView.AimPoint`; before, at the local player's body, which on a friend's screen is the wrong one); reloads and shots already reach clients as effect events (the earlier NetWorld batch). Still not carried: footsteps/walk animation phase, melee swings of enemies as poses, grenades in flight. Harness: the sleeper's "!" at 60%, the red "!" and the radio caller on the mirrors.
+- ALL CHECKS PASSED. Not seen in Unity, not tried over a real connection.
+
+## Shotgun and SMG kill times, a look (2026-11-08)
+`dotnet /tmp/test.dll ttkprobe` (`Program.cs TtkProbe`): one gun of every kind against a standing 200 HP target in each tier's heaviest armor (and none), chest aim, steady shooter, through the real `Gunplay.Shoot`, at 5 and 12 tiles: rounds to kill and seconds. Findings (no change made):
+- **Shotguns**: 1-2 rounds (0.3-1.6 s) at 5 tiles, whatever the armor; at 12 tiles 5-14 rounds (Hound 13 pump: 4-11 s vs tier 1-4 heaviest; Sever-34 O/U 1.2-3.2 s; Tambour-12 1.7-4.3 s) - the pattern spreads, so they are close-range guns, as intended. The old note ("3 full patterns to drop a mid-armor target at 5 tiles") does not hold any more: 1-2 now.
+- **SMGs**: vs the heaviest tier 3-4 armor Vosa vz. 62 needs 10-12 rounds at 12 tiles (0.7-0.8 s), the Corvan Wasp-9 5-7, the Hornet 6-8; the old "14-15 chest hits" is gone too. They kill 2-3 times slower than rifles on heavy armor (rifles 1-4 rounds, 0.1-0.3 s), the intended niche (mobile, cheap, weak vs armor).
+- Rifles and the LMG kill 200 HP in 1-4 rounds on every armor; the lever-action sniper 1-2. If bosses and big squads should hurt more to chew through, that is the player-side damage numbers, not the enemies (rule 6).
+- Hounds' run cycle: NOT done, deliberately: the hound animation strips (walk, bite) are not loaded in the game at all yet (mutants slide as single sprites); a run cycle only makes sense after the walk is in. Needs Yan's OK on loading `make_mutant_frames.py` strips (the approved knee-rig walk) first.
+- The vat's base ring: covered by the floor pad added in "seating the vat".

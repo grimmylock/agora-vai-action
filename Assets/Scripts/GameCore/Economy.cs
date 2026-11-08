@@ -54,7 +54,7 @@ namespace GameCore
             },
             [2] = new Dictionary<string, Pool>
             {
-                ["melee"] = P(100, 180, "Spetsnaz Switchblade"),
+                ["melee"] = P(100, 180, "Spetsnaz Switchblade", "Hatchet", "Wooden Baseball Bat"),
                 ["sidearm"] = P(400, 700, "Walden P9", "Halden .45 Service"),
                 ["smg"] = P(500, 800, "PPZ Zubr"),
                 ["shotgun"] = P(500, 900, "Halden Lever Shotgun", "Hound 13", "Ranger P8"),
@@ -68,7 +68,7 @@ namespace GameCore
             },
             [3] = new Dictionary<string, Pool>
             {
-                ["melee"] = P(220, 350, "Steppe Machete"),
+                ["melee"] = P(220, 350, "Steppe Machete", "Hammer", "Fire Axe"),
                 ["sidearm"] = P(1800, 2800, "SR-21 Gadyuka", "Black Harrier"),
                 ["smg"] = P(2000, 3200, "Corvan Wasp-9", "Corvan Hornet .45"),
                 ["shotgun"] = P(2200, 3500, "Bayou Pump", "Sever-34 O/U"),
@@ -82,7 +82,7 @@ namespace GameCore
             },
             [4] = new Dictionary<string, Pool>
             {
-                ["melee"] = P(400, 650, "Serrated Trench Knife"),
+                ["melee"] = P(400, 650, "Serrated Trench Knife", "Sledgehammer"),
                 ["sidearm"] = P(4500, 7000, "Corvan 5.7", "Rinaldi R6", "Steppe Eagle"),
                 ["smg"] = P(5000, 7500, "Corvan Gnat PDW"),
                 ["shotgun"] = P(5000, 8000, "Tambour-12", "SP-14 Warden", "Sayan-12", "Kaban-12"),
@@ -129,7 +129,7 @@ namespace GameCore
         /// <summary>Layer 1 baseline prices (file 05) for consumables, by consumable id.</summary>
         public static readonly Dictionary<string, int> BaselinePrice = new Dictionary<string, int>
         {
-            ["basicMedkit"] = 100, ["basicStim"] = 120, ["bandage"] = 40, ["radBlockPill"] = 60, ["mre"] = 50, ["energyDrink"] = 40,
+            ["basicMedkit"] = 100, ["basicStim"] = 120, ["bandage"] = 40, ["splint"] = 60, ["radBlockPill"] = 60, ["mre"] = 50, ["energyDrink"] = 40,
             ["fragGrenade"] = 250, ["smokeGrenade"] = 150, ["flashbang"] = 200, ["fieldRepairKit"] = 300,
         };
 

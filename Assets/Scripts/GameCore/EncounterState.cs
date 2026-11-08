@@ -20,9 +20,10 @@ namespace GameCore
         // Batch 59: how long this fight has run, how many it started with, and the radio call for help
         public static int FightRounds, FightStartCount, NextCall;
         public static HumanEnemy Caller;
+        public static float CallAt = -1f;            // Time.time the caller started his radio call (the view fills its icon)
         public static bool HelpCalled;
 
-        public static void ResetFight() { Surprised = false; FightRounds = 0; NextCall = 0; FightStartCount = 0; Caller = null; HelpCalled = false; }
+        public static void ResetFight() { Surprised = false; FightRounds = 0; NextCall = 0; FightStartCount = 0; Caller = null; CallAt = -1f; HelpCalled = false; }
 
         /// <summary>Enemies still in the fight: alive, not running, not surrendered.</summary>
         public static bool IsActive(Mutant e) =>

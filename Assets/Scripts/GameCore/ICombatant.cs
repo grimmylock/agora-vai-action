@@ -49,6 +49,17 @@ namespace GameCore
 
     public static class CombatantUtil
     {
+        /// <summary>RT 7z-d: a number per object that stays the same from run to run (handed out in creation order). GetHashCode()
+        /// on an object changes every run, which made NPC stand spots - and so hits - and the harness's dice checks drift.</summary>
+        public static int StableId(object o)
+        {
+            if (o == null) return 0;
+            return Ids.GetValue(o, _ => new StrongBox(++_nextId)).Value;
+        }
+        sealed class StrongBox { public readonly int Value; public StrongBox(int v) => Value = v; }
+        static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, StrongBox> Ids = new System.Runtime.CompilerServices.ConditionalWeakTable<object, StrongBox>();
+        static int _nextId;
+
         /// <summary>Ported from hasPerk(unit, perk) in script.js.</summary>
         public static bool HasPerk(ICombatant unit, string perk)
         {

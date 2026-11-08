@@ -52,6 +52,7 @@ namespace GameData
             {
                 new ShopItemDef { Id = "basicMedkit", Name = "Basic Medkit", Price = 100, WeightKg = 1.0f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "basicStim", Name = "Basic Stim", Price = 120, WeightKg = 0.5f, Type = "consumable", Baseline = true },
+                new ShopItemDef { Id = "splint", Name = "Splint", Price = 60, WeightKg = 0.3f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "bandage", Name = "Bandage", Price = 40, WeightKg = 0.2f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "radBlockPill", Name = "Rad-Block Pill", Price = 60, WeightKg = 0.2f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "mre", Name = "MRE", Price = 50, WeightKg = 0.5f, Type = "consumable", Baseline = true },

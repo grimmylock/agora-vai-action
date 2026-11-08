@@ -45,12 +45,13 @@ namespace GameCore
         /// <summary>Ported from attemptMove(unit, newX, newY).</summary>
         public bool AttemptMove(ICombatant unit, int newX, int newY)
         {
+            if (BrainBoss.Is(unit) || EelBoss.Is(unit)) return false;               // Boss 2: a vat doesn't walk (Yan: "the boss dissapeared, started walking around")
             bool isPlayer = unit is Player;
             string unitLabel = isPlayer ? "Player" : unit.Name;
 
             if (!CanEnterTile(newX, newY))
             {
-                GameLog.Write($"{unitLabel} cannot move: blocked by solid obstacle.");
+                if (!(unit is Player && LabLocks.Nag(newX, newY))) GameLog.Write($"{unitLabel} cannot move: blocked by solid obstacle.");   // Boss 2: or a locked door
                 return false;
             }
 

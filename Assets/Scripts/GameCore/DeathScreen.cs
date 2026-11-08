@@ -16,7 +16,7 @@ namespace GameCore
     public class DeathScreen : MonoBehaviour
     {
         private GameObject _panel;
-        private Button _loadButton;
+        private Button _loadButton, _respawnButton;
         private bool _shown;
 
         private void Update()
@@ -36,6 +36,7 @@ namespace GameCore
                 _panel.SetActive(true);
                 _panel.transform.SetAsLastSibling();
                 if (_loadButton != null) _loadButton.interactable = SaveSystem.HasSave();
+                if (_respawnButton != null) _respawnButton.gameObject.SetActive(TestingGround.Session);
                 return;
             }
 
@@ -61,6 +62,11 @@ namespace GameCore
             _loadButton = UIBuildUtil.CreateButton(_panel.transform, "LoadLastSaveButton", new Vector2(0.4f, 0.25f), new Vector2(0.6f, 0.35f),
                 "Load Last Save", LoadLastSave);
             _loadButton.interactable = SaveSystem.HasSave();
+
+            // Testing Ground only (Yan: "add a respawn button in the death screen only for there")
+            _respawnButton = UIBuildUtil.CreateButton(_panel.transform, "RespawnButton", new Vector2(0.4f, 0.45f), new Vector2(0.6f, 0.55f),
+                "Respawn", () => { Hide(); TestingGround.Respawn(Player.Current); });
+            _respawnButton.gameObject.SetActive(TestingGround.Session);
         }
 
         private void Hide()

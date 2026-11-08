@@ -39,7 +39,8 @@ namespace GameCore
                 ActiveDetectorKey = ActiveDetectorKey,
                 Backpack = Inventory.Backpack,
                 Companion = GameCore.Companion.Capture(),
-                Rank = Rank, Exp = Exp, Sneaking = Sneaking, FlashlightOff = !FlashlightOn,
+                Rank = Rank, Exp = Exp, MilestonesDone = new System.Collections.Generic.List<string>(MilestonesDone),
+                DungeonsCleared = new System.Collections.Generic.List<string>(DungeonsCleared), NamedKilled = NamedKilled, Sneaking = Sneaking, FlashlightOff = !FlashlightOn,
                 MaxTierReached = MaxTierReached, QuestsCompleted = QuestsCompleted, MaxMutantTierKilled = MaxMutantTierKilled,
                 MaxNpcRankKilled = MaxNpcRankKilled, ArcsFinished = ArcsFinished, PendingPerkPicks = PendingPerkPicks,
                 HiddenNodeCleared = HiddenNodeCleared, MainStoryAct3Done = MainStoryAct3Done, MainStoryFinaleDone = MainStoryFinaleDone,
@@ -56,6 +57,7 @@ namespace GameCore
                 {
                     Id = item.Id, Name = item.Name, WeightKg = item.WeightKg, Qty = item.Qty, Type = item.Type,
                     Price = item.Price ?? 0, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades,
+                    GridX = item.GridX, GridY = item.GridY, Rot = item.Rot,
                 });
 
             foreach (var kvp in Inventory.AmmoReserve)
@@ -137,12 +139,14 @@ namespace GameCore
                 {
                     Id = item.Id, Name = item.Name, WeightKg = item.WeightKg, Qty = item.Qty, Type = item.Type,
                     Price = item.Price, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades,
+                    GridX = item.GridX, GridY = item.GridY, Rot = item.Rot,
                 });
 
             Inventory.AmmoReserve.Clear();
             foreach (var kv in d.AmmoReserve) Inventory.AmmoReserve[kv.Key] = kv.Value;
             Ammo.Migrate(this);   // Batch 80
             Inventory.Backpack = d.Backpack;
+            Pack.Settle(this);                                                     // Pack 1: an old save's items find their places
             GameCore.Companion.Restore(d.Companion, this);   // EnterZone places them beside you
 
             Rank = string.IsNullOrEmpty(d.Rank) ? "Rookie" : d.Rank;
@@ -152,6 +156,8 @@ namespace GameCore
             ArcsFinished = d.ArcsFinished; PendingPerkPicks = d.PendingPerkPicks; HiddenNodeCleared = d.HiddenNodeCleared;
             MainStoryAct3Done = d.MainStoryAct3Done; MainStoryFinaleDone = d.MainStoryFinaleDone; BonusMaxHp = d.BonusMaxHp;
             Exp = d.Exp;
+            MilestonesDone = d.MilestonesDone ?? new System.Collections.Generic.List<string>();
+            DungeonsCleared = d.DungeonsCleared ?? new System.Collections.Generic.List<string>(); NamedKilled = d.NamedKilled;
             ActivePerks.Clear();
             if (d.ActivePerks != null) ActivePerks.AddRange(d.ActivePerks);
 

@@ -173,10 +173,18 @@ namespace GameCore
                 GameLog.Write($"{Name} does not have enough rounds for {modeName} fire ({roundsToUse} required).");
                 return new WeaponFireResult { Hit = false, NoAmmo = true };
             }
+            // Yan's first real-time playtest ("damage rolls are still happening"): an NPC's blade or club is a real swing too -
+            // it lands if you're in its reach and arc when it comes (Melee.Swing), no 2d10
+            if (Rt.On && isMelee && Owner != null && !(Owner is Player))
+            {
+                var swing = CombatFx.Push("melee", Owner, target, this); swing.Now = true;
+                Melee.NpcSwing(Owner, this, target);                         // Melee 2c: it winds up and lands at the strike
+                return new WeaponFireResult { Hit = false };
+            }
             if (!isMelee)
             {
                 CurrentMagazine -= roundsToUse;
-                GameLog.Write($"{Name} fires in {modeName} mode, consuming {roundsToUse} round{(roundsToUse > 1 ? "s" : "")}.");
+                if (!Rt.On || shooterUnit is Player) GameLog.Write($"{Name} fires in {modeName} mode, consuming {roundsToUse} round{(roundsToUse > 1 ? "s" : "")}.");
             }
             var fx = CombatFx.Push(isMelee ? "melee" : "shot", Owner ?? (ICombatant)Player.Current, target, this);
             fx.Rounds = roundsToUse;
@@ -192,6 +200,9 @@ namespace GameCore
                 fx.NoLos = true;
                 return new WeaponFireResult { Hit = false, NoLineOfSight = true };
             }
+
+            // Real-time fork: an NPC's gunfire is real rounds now (Gunplay), not a roll (the player fires through Rt directly)
+            if (Rt.On && !isMelee && !(attacker is Player)) { Gunplay.NpcShoot(attacker, this, target, roundsToUse); return new WeaponFireResult(); }
 
             var combat = GameServices.RequireCombat();
             int distance = attacker != null ? CombatantUtil.Distance(attacker, target) : 1;
@@ -273,7 +284,7 @@ namespace GameCore
             if (through < 1f) tierMult = CombatRules.HitMultiplier(0, -1, 0);   // through cover: always a graze, never aimed or ambush-boosted
             GameLog.Write(crit ? "Double 10 - headshot! Damage x1.5." : $"{CombatRules.HitName(tierMult)}: damage x{tierMult:0.0#}.");
 
-            float raw = (BaseDamage + (Upgrades.Contains("Reinforced") ? 3 : 0)) * tierMult * (burst ? CombatRules.BurstMultiplier(this) : 1f) * through;
+            float raw = (BaseDamage + (Upgrades.Contains("Reinforced") ? 30 : 0)) * tierMult * (burst ? CombatRules.BurstMultiplier(this) : 1f) * through;
             if (ItemCondition.IsDamaged(Condition)) raw *= 0.75f;
             if (attacker is Player) raw *= CombatRules.PlayerDamage;   // Batch 127: probe knob
             raw *= CombatRules.Lethality;   // Batch 74: one knob for how deadly every gun is (player and NPCs alike); 1 = as before
@@ -347,6 +358,7 @@ namespace GameCore
         public static void OnTargetKilled(ICombatant attacker, ICombatant target)
         {
             GameLog.Write($"{target.Name} has been defeated.");
+            Noise.Smell(target.X, target.Y);   // blood: mutant packs nearby may come for it
             Companion.OnKilled(target);   // Batch 69
             if (attacker is HumanEnemy veteran && veteran.IsAlive()) veteran.GainXp(HumanEnemy.Worth(target));   // Batch 53: NPCs learn from their kills
 
@@ -461,7 +473,7 @@ namespace GameCore
         }
 
         /// <summary>Ported from reload(). Consumes from the player's global ammo reserve first, then local reserve.</summary>
-        public bool Reload()
+        public bool Reload(int max = int.MaxValue)   // RT 6h: max = 1 loads a single round
         {
             if (CurrentMagazine >= MagCapacity)
             {
@@ -489,7 +501,7 @@ namespace GameCore
             }
 
             int needed = MagCapacity - CurrentMagazine;
-            int toLoad = System.Math.Min(needed, totalReserve);
+            int toLoad = System.Math.Min(System.Math.Min(needed, totalReserve), max);
 
             int consumedFromGlobal = 0;
             if (globalReserve > 0)
@@ -504,8 +516,8 @@ namespace GameCore
             }
 
             CurrentMagazine += toLoad;
-            CombatFx.Push("reload", Owner ?? (ICombatant)Player.Current, null, this);
-            GameLog.Write($"{Name} reloaded {toLoad} rounds ({consumedFromGlobal} from stash). Magazine is now {CurrentMagazine}/{MagCapacity}.");
+            if (!Rt.On) CombatFx.Push("reload", Owner ?? (ICombatant)Player.Current, null, this);   // real time: the animation started with the timer (CombatFx.Reload)
+            if (max == int.MaxValue) GameLog.Write($"{Name} reloaded {toLoad} rounds ({consumedFromGlobal} from stash). Magazine is now {CurrentMagazine}/{MagCapacity}.");
             return true;
         }
 

@@ -39,6 +39,7 @@ namespace GameCore
         Gravel,
         Water,
         CaveFloor,
+        Grate,      // a steel catwalk deck (the Depths' flooded levels)
     }
 
     public class TerrainTile

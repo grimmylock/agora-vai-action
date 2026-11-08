@@ -51,7 +51,7 @@ namespace GameCore
             public bool Init;
             public Vector3 Vis;
             public int LastX, LastY;
-            public float Stride;
+            public float Stride, MovedAt = -1f;
             public readonly Queue<Vector3> Path = new Queue<Vector3>();
             public Ragdoll Rag;
             public readonly List<(int x, int y, int v)> Blood = new List<(int, int, int)>();   // stains on the body (sprite px)
@@ -96,6 +96,13 @@ namespace GameCore
                 s.Init = true; s.Vis = logical; s.LastX = u.X; s.LastY = u.Y; s.Path.Clear();
                 return logical;
             }
+            if (Rt.Free(u))                                                 // real-time fork: drawn where it is, feet keep time with the distance
+            {
+                float moved = Dist(s.Vis, logical);
+                if (moved > 0.001f) { s.Stride += moved; s.MovedAt = Time.time; }
+                s.Vis = logical; s.Path.Clear(); s.LastX = u.X; s.LastY = u.Y;
+                return new Vector3(Mathf.Round(s.Vis.x * 16f) / 16f, Mathf.Round(s.Vis.y * 16f) / 16f, 0f);
+            }
             if (u.X != s.LastX || u.Y != s.LastY)                          // moved without AttemptMove
             {
                 s.LastX = u.X; s.LastY = u.Y; s.Path.Clear();
@@ -124,12 +131,12 @@ namespace GameCore
 
         public bool Known(ICombatant u) => u != null && _s.TryGetValue(u, out var s) && s.Init;
 
-        public bool IsMoving(ICombatant u) => u != null && _s.TryGetValue(u, out var s) && s.Path.Count > 0;
+        public bool IsMoving(ICombatant u) => u != null && _s.TryGetValue(u, out var s) && (s.Path.Count > 0 || Time.time - s.MovedAt < 0.12f);
 
         /// <summary>-1 standing, 0 = left foot up, 1 = right foot up. Stand, left, stand, right per tile.</summary>
         public int WalkFrame(ICombatant u)
         {
-            if (!_s.TryGetValue(u, out var s) || s.Path.Count == 0) return -1;
+            if (!_s.TryGetValue(u, out var s) || s.Path.Count == 0 && Time.time - s.MovedAt > 0.12f) return -1;
             return HeldPoseMath.WalkFrame(s.Stride);
         }
 

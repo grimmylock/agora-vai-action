@@ -18,7 +18,23 @@ namespace GameCore
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; }
+        private static void ResetCaches() { _hd = null; _vat = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; _poses.Clear(); }
+
+        // Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings"): the swing poses of every suit
+        // (ArtSource/make_poses.py atlas): armor_pose_<key> / armor_back_pose_<key>, laid out like the armor atlases, plus a unique
+        // suit's armor_unique_<name>_poses strip (front row, back row). Keys: crouch (sneaking), crouch_h, lunge_h_r/l, lunge_r/l, stagger_h_r/l, stagger_r/l.
+        public static readonly string[] PoseKeys = { "crouch", "crouch_h", "kneel", "kneel_h", "lean_h_l", "lean_h_r", "lean_l", "lean_r", "lunge_h_l", "lunge_h_r",
+            "lunge_l", "lunge_r", "lying", "sit_h_l", "sit_h_r", "sit_l", "sit_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r" };   // sorted, as make_poses.py writes them
+        private static readonly Dictionary<string, Dictionary<string, Sprite>> _poses = new Dictionary<string, Dictionary<string, Sprite>>();
+        public static Sprite Pose(ICombatant unit, string key, bool away)
+        {
+            if (key == null) return null;
+            Load();
+            var armor = unit is Player p ? p.EquippedArmor : unit is HumanEnemy h ? h.EquippedArmor : null;
+            string set = (away ? "armor_back_pose_" : "armor_pose_") + key;
+            if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
+            return armor != null && d.TryGetValue(armor.Name, out var s) ? s : null;
+        }
 
         /// <summary>Batch 128 (Yan: "add the back as well so the player can know which way the npc's are looking"): a unit
         /// whose aim (or gaze) from `from` to `to` goes up the screen shows its back - more than ~17 degrees above level.</summary>
@@ -37,6 +53,22 @@ namespace GameCore
         }
 
 
+        static Sprite[] _vat;
+        /// <summary>Boss 2: the vat sheet (ArtSource/bosses/make_brain_vat.py): 8 columns x 11 rows of 128x160 at double resolution,
+        /// row-major from the top (BrainBoss.ArtRow/ArtCol), the base on the tile.</summary>
+        static Sprite[] VatFrames()
+        {
+            if (_vat != null) return _vat.Length > 0 ? _vat : null;
+            var tex = Resources.Load<Texture2D>("Sprites/Mutants/boss_brain_vat");
+            if (tex == null) { _vat = new Sprite[0]; return null; }
+            tex.filterMode = FilterMode.Point;
+            int cols = tex.width / 128, rows = tex.height / 160; _vat = new Sprite[cols * rows];
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                    _vat[r * cols + c] = Sprite.Create(tex, new Rect(c * 128, tex.height - (r + 1) * 160, 128, 160), new Vector2(0.5f, 10f / 160f), 2 * Cell);
+            return _vat;
+        }
+
         public static Sprite For(ICombatant unit)
         {
             Load();
@@ -46,10 +78,32 @@ namespace GameCore
                 case HumanEnemy h: return ForArmor(h.EquippedArmor);
                 case Mutant m:
                     string name = m.Db?.Name ?? m.Name;
+                    var hd = HD(name);
+                    if (hd != null) return hd;                                       // the approved double-resolution art (Batch 130c)
                     if (m.IsCloaked && _mutants.TryGetValue(name + " (cloaked)", out var cloaked)) return cloaked;
                     return _mutants.TryGetValue(name, out var s) ? s : null;
                 default: return null;
             }
+        }
+
+        // Batch 130c's mutants at double resolution (ArtSource/make_mutants_hd.py -> Sprites/Mutants/mutant_hd_<key>.png): 32 px a
+        // tile like the in-hand guns, so a 48x32 hound covers the ground a 24x16 one would; the feet sit on the tile's ground
+        // line (16 px under the middle of a tile, where a 16 px human's feet are). They face right; TacticalGridView mirrors them.
+        // Mutants without one keep their old atlas cell (Rot Swarm, Alpha Prowler, Mind Weaver, Void Weaver).
+        private static Dictionary<string, Sprite> _hd;
+        public static Sprite HD(string name)
+        {
+            if (name == BrainBoss.Name) { var v = VatFrames(); return v == null ? null : v[BrainBoss.ArtRow * 8 + BrainBoss.ArtCol]; }   // Boss 2: the vat, by phase and moment
+            if (_hd == null)
+            {
+                _hd = new Dictionary<string, Sprite>();
+                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute" })
+                {
+                    var tex = Resources.Load<Texture2D>("Sprites/Mutants/mutant_hd_" + n.ToLowerInvariant().Replace(' ', '_'));
+                    if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell);
+                }
+            }
+            return name != null && _hd.TryGetValue(name, out var s) ? s : null;
         }
 
         public static Sprite ForArmor(ArmorDef armor)
@@ -78,6 +132,30 @@ namespace GameCore
             _backWalkA = Slice("Sprites/armor_back_walk_a", SpriteAtlasIndex.Armor);
             _backWalkB = Slice("Sprites/armor_back_walk_b", SpriteAtlasIndex.Armor);
             _mutants = Slice("Sprites/mutant_atlas", SpriteAtlasIndex.Mutants);
+            foreach (var name in UniqueSuits) Unique(name);
+        }
+
+        /// <summary>Boss 1: one-of-a-kind suits outside the faction atlases (ArtSource/make_unique_armor.py): a 96x16 strip -
+        /// front, walk a, walk b, back, back walk a, back walk b - added under the suit's name like an atlas cell.</summary>
+        public static readonly string[] UniqueSuits = { "Black Visor Suit" };
+        public static readonly Dictionary<string, (string cuff, string glove)> UniqueGloves = new Dictionary<string, (string, string)>
+            { ["Black Visor Suit"] = ("#1f2226", "#2a2c30") };
+
+        static void Unique(string name)
+        {
+            var tex = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_'));
+            if (tex == null) return;
+            var sets = new[] { _armor, _walkA, _walkB, _back, _backWalkA, _backWalkB };
+            for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * Cell, 0, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
+            var poses = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_') + "_poses");
+            if (poses == null) return;
+            for (int r = 0; r < 2; r++)                                            // texture row 0 is the bottom: the back row
+                for (int i = 0; i < PoseKeys.Length; i++)
+                {
+                    string set = (r == 0 ? "armor_back_pose_" : "armor_pose_") + PoseKeys[i];
+                    if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
+                    d[name] = Sprite.Create(poses, new Rect(i * Cell, r * Cell, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
+                }
         }
 
         private static Dictionary<string, Sprite> Slice(string path, string[] order)

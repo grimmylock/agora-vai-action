@@ -144,12 +144,14 @@ namespace GameCore
             {
                 unit.PendingApDrain += 2;
                 GameLog.Write($"{label} will lose 2 AP on next turn due to Livewire failure.");
+                CombatFx.Push("zap", unit, unit).Now = true;                                  // RT fx 3: the discharge (pixelfx zap)
             }
 
             if (anomaly.AnomalyType == "Acid Bloom")
             {
                 unit.StatusEffects.ToxicBleed = true;
-                GameLog.Write("Toxic Bleed has been inflicted and will deal 5 HP per turn until treated.");
+                CombatFx.PxAt("acid_splash", unit.X, unit.Y);                                  // RT fx 4: the bloom splashes
+                GameLog.Write("Toxic Bleed has been inflicted and will deal 50 HP per turn until treated.");
             }
 
             if (anomaly.AnomalyType == "Spindle")
@@ -240,7 +242,7 @@ namespace GameCore
             // used to only ever tick for the player.
             if (!isPlayer && unit.IsAlive() && (unit.StatusEffects.Bleeding || unit.StatusEffects.ToxicBleed))
             {
-                int bleed = (unit.StatusEffects.Bleeding ? 5 : 0) + (unit.StatusEffects.ToxicBleed ? 5 : 0);
+                int bleed = (unit.StatusEffects.Bleeding ? 50 : 0) + (unit.StatusEffects.ToxicBleed ? 50 : 0);
                 unit.Hp = System.Math.Max(0, unit.Hp - bleed);
                 GameLog.Write($"{label} bleeds for {bleed} HP.");
                 if (!unit.IsAlive()) Weapon.OnTargetKilled(Player.Current, unit);
@@ -254,13 +256,13 @@ namespace GameCore
                 if (player.StatusEffects.Bleeding && player.BleedImmune) { player.StatusEffects.Bleeding = false; GameLog.Write("The bleeding stops on its own."); }   // Batch 90: Rosary / Heart of the Wound
                 if (player.StatusEffects.Bleeding)
                 {
-                    player.TakeDamage(5);
-                    GameLog.Write("Bleeding deals 5 HP damage.");
+                    player.TakeDamage(50);
+                    GameLog.Write("Bleeding deals 50 HP damage.");
                 }
                 if (player.StatusEffects.ToxicBleed)
                 {
-                    player.TakeDamage(5);
-                    GameLog.Write("Toxic Bleed deals 5 HP damage.");
+                    player.TakeDamage(50);
+                    GameLog.Write("Toxic Bleed deals 50 HP damage.");
                 }
                 if (player.TempHPDuration > 0)
                 {
@@ -293,7 +295,7 @@ namespace GameCore
                     // tax (worse the more stats are empty at once) rather than a death sentence -
                     // ponytail: flat rate, not scaled by how deep into the negative a stat is
                     // (they're clamped at 0 anyway, see Player.Move/TravelToSector).
-                    player.TakeDamage(depletedStats.Count);
+                    player.TakeDamage(depletedStats.Count * 10);
                     GameLog.Write($"Survival depletion deals {depletedStats.Count} HP damage.");
                 }
             }

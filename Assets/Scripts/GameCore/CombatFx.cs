@@ -15,7 +15,7 @@ namespace GameCore
 {
     public class FxEvent
     {
-        public string Kind;            // "shot" | "melee" | "strike" (mutant claw/bite/psi) | "reload"
+        public string Kind;            // "shot" | "melee" | "strike" (mutant claw/bite/psi) | "reload" | "impact" (a thrown weapon lands, RT 7a)
         public ICombatant Actor, Target;
         public Weapon Weapon;
         public int Rounds = 1;
@@ -26,6 +26,13 @@ namespace GameCore
         public bool Killed;            // this hit killed the target (Batch 24: the view starts the ragdoll then)
         public int Overkill;           // damage past the target's remaining HP; big overkill = gibs
         public int FromX, FromY, ToX, ToY;
+        // Real-time fork: a round resolved now (Gunplay) plays at once, not queued a beat apart behind the turn's other events;
+        // it ends exactly where the round stopped (tile space, y down). Pellet = a shotgun's extra pellet: tracer only.
+        public bool Now, Pellet;
+        public bool Flying, Landed;    // RT 8: the trigger pull (flash, kick, no tracer) / where a flying round came down (impact only)
+        public float Delay, EndX = -1f, EndY = -1f;
+        public string Px;              // RT fx 4: kind "px" plays this pixelfx strip (Sprites/Fx/px_<Px>) at (FromX, FromY) - see CombatFx.PxAt
+        public float Seconds;          // (RT 6h: < 0 = the reload stopped; Rounds = the hand's trips, one per round)          // RT 6d: a reload's real length (0 = the gun's own animation length)
     }
 
     public static class CombatFx
@@ -43,13 +50,26 @@ namespace GameCore
         // ponytail: nothing drains the queue without a view (tests, headless); cap it instead.
         private const int Cap = 64;
 
+        /// <summary>Real-time fork: queue an event built by the caller (Gunplay).</summary>
+        public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); NetWorld.TapFx(e); }
+
+        /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer. jam (RT 6f): clearing a jam.</summary>
+        public static void Reload(ICombatant u, Weapon w, float seconds, bool jam = false, int rounds = 0) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; e.Jammed = jam; e.Rounds = rounds; }
+
+        /// <summary>RT fx 4: a ready-made pixelfx strip (ArtSource/fx/export_strips.py) played once at a tile, at half-pixels like the gun effects:
+        /// "small_explosion", "smoke_bomb", "parry", "blunt_hit", "acid_splash", "splash", "ripples", "whirlpool", "thunderclap".</summary>
+        public static void PxAt(string name, int x, int y)
+        {
+            var e = Push("px", null, null); e.Px = name; e.FromX = x; e.FromY = y; e.Now = true;
+        }
+
         public static FxEvent Push(string kind, ICombatant actor, ICombatant target, Weapon weapon = null)
         {
             var e = new FxEvent { Kind = kind, Actor = actor, Target = target, Weapon = weapon };
             if (actor != null) { e.FromX = actor.X; e.FromY = actor.Y; }
             if (target != null) { e.ToX = target.X; e.ToY = target.Y; }
             if (Pending.Count >= Cap) Pending.RemoveAt(0);
-            Pending.Add(e);
+            Pending.Add(e); NetWorld.TapFx(e);                                         // co-op: the friends see it too (NetWorld)
             return e;
         }
     }
@@ -70,12 +90,12 @@ namespace GameCore
         // category: kick, climb, recover, flash, shake, typical damage
         private static readonly Dictionary<string, float[]> Base = new Dictionary<string, float[]>
         {
-            ["sidearm"] = new[] { 1f, 10f, 0.14f, 1f, 0f, 15f },
-            ["smg"]     = new[] { 0.5f, 3f, 0.08f, 1f, 0f, 13f },
-            ["shotgun"] = new[] { 2f, 12f, 0.25f, 3f, 0.06f, 31f },
-            ["assault"] = new[] { 1f, 5f, 0.12f, 2f, 0.02f, 24f },
-            ["sniper"]  = new[] { 2f, 14f, 0.35f, 2f, 0.05f, 38f },
-            ["heavy"]   = new[] { 1f, 4f, 0.10f, 2f, 0.03f, 25f },
+            ["sidearm"] = new[] { 1f, 10f, 0.14f, 1f, 0f, 150f },
+            ["smg"]     = new[] { 0.5f, 3f, 0.08f, 1f, 0f, 130f },
+            ["shotgun"] = new[] { 2f, 12f, 0.25f, 3f, 0.06f, 310f },
+            ["assault"] = new[] { 1f, 5f, 0.12f, 2f, 0.02f, 240f },
+            ["sniper"]  = new[] { 2f, 14f, 0.35f, 2f, 0.05f, 380f },
+            ["heavy"]   = new[] { 1f, 4f, 0.10f, 2f, 0.03f, 250f },
         };
 
         // Odd ones out, by WeaponDatabase key. Runs after the derived values.
@@ -83,6 +103,9 @@ namespace GameCore
         {
             ["G7RailPrototype"] = f => { f.Rail = true; f.Flash = 0; f.Casing = null; f.Kick *= 0.5f; f.Climb *= 0.5f; f.Shake = 0.1f; },
             ["FrontierLeverRifle"] = f => { f.Reload = "tube"; f.ReloadTime = 1.6f; },   // loads through the side gate, round by round
+            ["Nightwalker4570"] = f => { f.Reload = "tube"; },                              // RT 6h: a lever too
+            ["M91Trekhlineyka"] = f => { f.Reload = "tube"; },                              // RT 6h: bolt open, round by round (ponytail: stripper clips later)
+            ["SKNKarabin"] = f => { f.Reload = "tube"; },
             ["HaldenAM50Sledge"] = f => { f.Flash = 4; f.Shake = 0.15f; },
             ["RK12Kuvalda"] = f => { f.Shake = 0.08f; },
         };

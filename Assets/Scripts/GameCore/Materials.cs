@@ -16,9 +16,9 @@ namespace GameCore
         {
             Add(Material.Wood, "crate", "desk", "desk_n", "desk_s", "desk_e", "desk_w", "logs", "logs_v", "logs_c", "fence", "fence_torn",
                 "fence_v", "watchtower", "pole", "tree", "pine", "deadtree", "redtree", "plank");
-            Add(Material.Tin, "lockers", "rustbarrel", "scrap", "pipes", "dumpster");
+            Add(Material.Tin, "lockers", "rustbarrel", "scrap", "pipes", "dumpster", "cabinet", "labtable", "labbench", "jars", "vatsmall");
             Add(Material.Steel, "machine", "engine", "wreck", "sunktruck", "bus", "tank", "flatcar", "container", "pipe", "pipepost",
-                "hatch", "barrel", "metal", "hull");
+                "hatch", "barrel", "metal", "hull", "console");
             Add(Material.Concrete, "block", "block_v", "block_c", "jersey", "jersey_v", "jersey_c", "debris", "pillar", "culvert",
                 "fountain", "window", "concrete", "wall", "plaster");
             Add(Material.Stone, "rock", "stones", "rubble", "campfire");

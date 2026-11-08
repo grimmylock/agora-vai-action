@@ -4,11 +4,12 @@
 // spaced a beat apart so a whole enemy turn reads as a sequence instead of one frame of noise.
 // Art: Sprites/Fx/fx_*.png (ArtSource/make_fx.py); missing art falls back to flat coloured quads.
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace GameCore
 {
-    public class CombatFxView
+    public partial class CombatFxView
     {
         private class Particle
         {
@@ -16,7 +17,7 @@ namespace GameCore
             public float Born, Life, Gravity, Alpha = 1f;
             public Vector3 Vel;
             public Sprite[] Frames;
-            public bool Fade;
+            public bool Fade; public float FadeFrom;                  // Fade: alpha falls to 0 over the life, starting at FadeFrom (0..1) of it
             public float Friction;   // top-down slide that slows down (gibs)
             public bool Stick;       // stays on the ground as a decal when its life ends (blood, gibs)
         }
@@ -43,6 +44,31 @@ namespace GameCore
         private readonly System.Func<SpriteRenderer, HeldWeaponView> _heldOf;
         private readonly List<(float at, System.Action act)> _timers = new List<(float, System.Action)>();
         private readonly List<Particle> _live = new List<Particle>();
+
+        // RT 6j: loose magazines - they fall out of the gun, bounce, and lie on the floor with the blood (MaxDecals)
+        // RT 6k: spent brass and shells too - they land at the shooter's feet and stay (their own queue, so automatics don't wipe the blood)
+        private class LooseMag { public SpriteRenderer Sr; public float X, Y, Vx, Vy, Deg, Spin, Floor; public bool Brass; }
+        private const int MaxBrass = 160;
+        private readonly Queue<SpriteRenderer> _brass = new Queue<SpriteRenderer>();
+        /// <summary>One spent casing (brass) or shotgun shell (red) thrown from `at` with velocity (vx, vy), landing on `floor`.</summary>
+        private void DropBrass(Vector3 at, bool shell, float vx, float vy, float floor, int order)
+        {
+            var sr = NewSprite(shell ? "Shell" : "Casing", White(), shell ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f), _root, order);
+            sr.transform.localScale = new Vector3((shell ? 2f : 1.5f) / WeaponArt.PixelsPerUnit, 1f / WeaponArt.PixelsPerUnit, 1f);
+            _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = vx, Vy = vy, Deg = Random.Range(0f, 360f), Spin = Random.Range(-720f, 720f), Floor = floor, Brass = true });
+        }
+        /// <summary>The floor under a held gun's owner (its feet), for things it drops.</summary>
+        private static float FloorOf(HeldWeaponView held) => held.Gun.parent != null ? held.Gun.parent.position.y - 0.42f : held.Gun.position.y - 0.4f;
+        private readonly List<LooseMag> _mags = new List<LooseMag>();
+        private void DropMag(Sprite s, Vector3 at, float deg, bool flip, float floor, int order)
+        {
+            if (s == null) return;
+            var sr = NewSprite("Magazine", s, Color.white, _root, order);
+            sr.flipY = flip;
+            float side = flip ? -1f : 1f;
+            _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = side * Random.Range(0.2f, 0.6f), Vy = Random.Range(0.3f, 0.8f),
+                Deg = deg, Spin = -side * Random.Range(150f, 400f), Floor = floor });
+        }
         private readonly Dictionary<ICombatant, (float at, float dx, float dy, bool psi)> _hurt = new Dictionary<ICombatant, (float, float, float, bool)>();
         private readonly Dictionary<ICombatant, (float at, float dx, float dy)> _lunge = new Dictionary<ICombatant, (float, float, float)>();
         private float _nextFree, _shakeAt = -99f, _shakeAmp;
@@ -60,17 +86,100 @@ namespace GameCore
         public CombatFxView(Transform root, System.Func<ICombatant, SpriteRenderer> markerOf, System.Func<SpriteRenderer, HeldWeaponView> heldOf)
         {
             _root = root; _markerOf = markerOf; _heldOf = heldOf;
+            HeldWeaponView.MagDropped = DropMag;
             CombatFx.Pending.Clear();   // whatever happened before this view existed (previous zone, load) is stale
         }
 
         public Vector3 ShakeOffset { get; private set; }
 
+        // RT 7a: melee weapons out of your hands - spinning in the air, stuck in cover or a body, lying on the floor
+        private readonly Dictionary<object, SpriteRenderer> _melee = new Dictionary<object, SpriteRenderer>();
+        private readonly Dictionary<string, Sprite> _meleeSprites = new Dictionary<string, Sprite>();
+        private Sprite MeleeSprite(InventoryItem item)
+        {
+            if (item?.Key == null) return null;
+            if (_meleeSprites.TryGetValue(item.Key, out var hit)) return hit;
+            var s = WeaponArt.For(item.Category ?? "melee", item.Key).sprite;            // turned round its middle, not its grip
+            return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit);
+        }
+        private readonly Dictionary<string, Sprite> _stuckSprites = new Dictionary<string, Sprite>();
+        private Sprite MeleeStuckSprite(InventoryItem item)
+        {
+            if (item?.Key == null) return null;
+            if (_stuckSprites.TryGetValue(item.Key, out var hit)) return hit;
+            var stats = Melee.Table.TryGetValue(item.Name ?? "", out var s) ? s : null;
+            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + item.Key + "_stuck");
+            if (tex == null || stats == null || float.IsNaN(stats.StuckX)) return _stuckSprites[item.Key] = null;
+            tex.filterMode = FilterMode.Point;
+            return _stuckSprites[item.Key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(stats.StuckX / tex.width, 1f - stats.StuckY / tex.height), WeaponArt.PixelsPerUnit);
+        }
+
+        private void TickMelee()
+        {
+            var live = new HashSet<object>();
+            void Show(object k, InventoryItem item, float x, float worldY, float deg, int order)
+            {
+                live.Add(k);
+                if (!_melee.TryGetValue(k, out var sr) || sr == null)
+                {
+                    var spr = MeleeSprite(item);
+                    if (spr == null) return;
+                    _melee[k] = sr = NewSprite("MeleeItem", spr, Color.white, _root, order);
+                }
+                sr.sortingOrder = order;
+                sr.transform.position = new Vector3(x, worldY, 0f);
+                sr.transform.localRotation = Quaternion.Euler(0f, 0f, deg);
+            }
+            foreach (var f in Melee.Air) Show(f, f.Item, f.X, -f.Y + f.H * Ballistics.BodyTiles - 0.4f, f.Deg, TacticalGridView.SortAt(-f.Y) + 20);   // at the height it flies
+            foreach (var l in Melee.InCover) Show(l, l.Item, l.Wx, -l.Wy + 0.1f, l.Deg, TacticalGridView.SortAt(-l.Wy) + 6);
+            foreach (var b in Melee.InBodies)
+            {
+                var m = _markerOf(b.In);
+                if (m == null) continue;
+                var p = m.transform.position;
+                // RT 7d: in the body - the buried half cut off (weapon_<Key>_stuck), the cut line on the chest, handle up toward the thrower
+                var (deg, flipX, ox, oy) = Melee.StuckPose(b.Side);
+                var st = MeleeStuckSprite(b.Item);
+                Show(b, b.Item, p.x + ox / 16f, p.y - oy / 16f, deg + (b.Pulling ? 12f * Mathf.Sin(Time.time * 18f) : 0f), m.sortingOrder + 5);   // pulling: it wrenches back and forth
+                if (_melee.TryGetValue(b, out var sr) && sr != null && st != null) { sr.sprite = st; sr.flipX = flipX; }
+            }
+            foreach (var g in Melee.OnFloor) Show(g, g.G.Item, g.Wx, -g.Wy - 0.3f, g.Deg, 2);
+            foreach (var k in _melee.Keys.Where(k => !live.Contains(k)).ToList()) { if (_melee[k] != null) Object.Destroy(_melee[k].gameObject); _melee.Remove(k); }
+        }
+
+        // RT 8: every round in the air is a short streak along its path, at the height it flies
+        private readonly Dictionary<Gunplay.Round, SpriteRenderer> _rounds = new Dictionary<Gunplay.Round, SpriteRenderer>();
+        private void TickRounds()
+        {
+            foreach (var r in Gunplay.Flying)
+            {
+                if (r.Wait > 0f) continue;
+                var feel = WeaponFeel.For(r.W?.Db);
+                if (!_rounds.TryGetValue(r, out var sr) || sr == null)
+                {
+                    var col = feel.Rail ? RailColor : TracerColor; col.a = Mathf.Max(0.6f, feel.Tracer);
+                    _rounds[r] = sr = NewSprite("Round", White(), col, _root, 8);
+                }
+                float len = Mathf.Clamp(r.Speed * 0.012f, 0.25f, 1.2f), back = Mathf.Min(len, r.Gone);   // never behind the muzzle
+                float y = -(r.Y + 0.44f) + (r.H + r.Up * r.Gone / Ballistics.BodyTiles) * Ballistics.BodyTiles;
+                sr.transform.position = new Vector3(r.X - r.Dx * back * 0.5f, y + r.Dy * back * 0.5f, 0f);
+                sr.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-r.Dy, r.Dx) * Mathf.Rad2Deg);
+                sr.transform.localScale = new Vector3(back, (feel.Rail ? 2f : 1f) / WeaponArt.PixelsPerUnit, 1f);
+                sr.sortingOrder = TacticalGridView.SortAt(-r.Y) + 20;
+            }
+            foreach (var k in _rounds.Keys.Where(k => !Gunplay.Flying.Contains(k)).ToList()) { if (_rounds[k] != null) Object.Destroy(_rounds[k].gameObject); _rounds.Remove(k); }
+        }
+
         public void Tick()
         {
+            TickMelee();
+            TickAura();
+            TickRounds();
             float now = Time.time;
             foreach (var e in CombatFx.Pending)
             {
                 if (e.Killed && e.Target != null) _dying.Add(e.Target);
+                if (e.Now) { var rt = e; At(now + e.Delay, () => Play(rt)); continue; }   // real-time fork: no queue, no waiting for walkers
                 float start = Mathf.Max(now, _nextFree);
                 float gap = e.Kind == "shot" ? 0.14f + 0.07f * (e.Rounds - 1) : e.Kind == "reload" ? 0.15f : 0.22f;
                 if (_nextFree - now > 1.2f) gap *= 0.4f;            // a big enemy turn: catch up instead of lagging
@@ -89,6 +198,19 @@ namespace GameCore
             }
 
             float dt = Time.deltaTime;
+            for (int i = 0; i < _mags.Count; i++)
+            {
+                var m = _mags[i];
+                if (m.Sr == null) { _mags.RemoveAt(i--); continue; }
+                bool rest = HeldPoseMath.Fall(ref m.X, ref m.Y, ref m.Vx, ref m.Vy, ref m.Deg, ref m.Spin, m.Floor, dt, m.Brass ? 0f : 90f);
+                m.Sr.transform.position = new Vector3(m.X, m.Y, 0f);
+                m.Sr.transform.localRotation = Quaternion.Euler(0f, 0f, m.Deg);
+                if (!rest) continue;
+                m.Sr.sortingOrder = 2;                                                 // on the floor, under everyone
+                if (m.Brass) { _brass.Enqueue(m.Sr); while (_brass.Count > MaxBrass) { var old = _brass.Dequeue(); if (old != null) Object.Destroy(old.gameObject); } }
+                else Decal(m.Sr);
+                _mags.RemoveAt(i--);
+            }
             for (int i = 0; i < _live.Count; i++)
             {
                 var p = _live[i];
@@ -104,8 +226,11 @@ namespace GameCore
                 p.Vel.y -= p.Gravity * dt;
                 if (p.Friction > 0f) p.Vel *= Mathf.Exp(-p.Friction * dt);
                 p.Sr.transform.position += p.Vel * dt;
-                if (p.Fade) { var c = p.Sr.color; c.a = p.Alpha * (1f - t / p.Life); p.Sr.color = c; }
+                if (p.Fade) { var c = p.Sr.color; c.a = p.Alpha * (1f - Mathf.Clamp01((t / p.Life - p.FadeFrom) / Mathf.Max(0.01f, 1f - p.FadeFrom))); p.Sr.color = c; }
             }
+
+            DrawOrbs();
+            DrawEel();
 
             float st = now - _shakeAt;
             float amp = st < ShakeTime ? _shakeAmp * (1f - st / ShakeTime) : 0f;
@@ -150,17 +275,32 @@ namespace GameCore
         {
             float now = Time.time;
             var marker = e.Actor != null ? _markerOf(e.Actor) : null;
-            var held = marker != null && e.Kind != "strike" ? _heldOf(marker) : null;
+            var held = marker != null && e.Kind != "strike" ? _heldOf(marker)?.Use(e.Weapon) : null;   // RT 7z-c: which of two guns
             if (held != null && !held.Visible) held = null;
             Vector3 from = marker != null ? marker.transform.position : TacticalGridView.GridToWorld(e.FromX, e.FromY);
             var targetMarker = e.Target != null ? _markerOf(e.Target) : null;
             Vector3 to = targetMarker != null ? targetMarker.transform.position : TacticalGridView.GridToWorld(e.ToX, e.ToY);
+            if (e.EndX >= 0f) to = new Vector3(e.EndX, -e.EndY, 0f);   // real-time fork: where the round really stopped
             var (dx, dy) = Dir(from, to);
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
+            if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge")
+            {
+                if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
+                BossFx(e, from, to);
+                return;
+            }
             switch (e.Kind)
             {
                 case "shot":
+                    if (e.Landed)                                // RT 8: a flying round came down - the impact only
+                    {
+                        float lx = to.x - from.x, ly = to.y - from.y, ll = Mathf.Max(0.01f, Mathf.Sqrt(lx * lx + ly * ly));
+                        if (e.CoverHit || e.Through) CoverImpact(e, lx / ll, ly / ll);
+                        if (e.Hit && e.Target != null) Wound(e, to, lx / ll, ly / ll, false);
+                        break;
+                    }
                     held?.AimAt(to, now + 0.35f + 0.07f * e.Rounds);
                     if (e.Jammed) { At(now + 0.03f, () => held?.Twitch()); Sfx.Play("dryfire", from); return; }
                     for (int i = 0; i < e.Rounds; i++)
@@ -170,10 +310,15 @@ namespace GameCore
                     }
                     break;
                 case "melee":
-                    held?.AimAt(to, now + 0.3f);
+                    held?.AimAt(to, now + HeldPoseMath.SwingLength);
                     held?.Swing();
                     Sfx.Play("swing", from);
                     if (e.Hit) At(now + 0.1f, () => Wound(e, to, dx, dy, false));
+                    if (e.Hit && e.Weapon?.Db != null && Melee.Blunt.Contains(e.Weapon.Db.Name))           // RT fx 4: the bat, the hammer, the sledge land with a dust-coloured thump
+                        At(now + 0.1f, () => PxFx("blunt_hit", to + new Vector3(0f, 0.35f, 0f), 0f, 0f, PxHalf));
+                    break;
+                case "impact":                                  // RT 7a: a thrown weapon lands in a body
+                    if (e.Hit) Wound(e, to, dx, dy, false);
                     break;
                 case "strike":
                     if (e.Actor != null) _lunge[e.Actor] = (now, dx, dy);
@@ -185,19 +330,57 @@ namespace GameCore
                     var (bx, by) = Dir(TacticalGridView.GridToWorld(e.FromX, e.FromY), to);
                     Wound(e, to, bx, by, false);
                     break;
+                case "charge":                                  // Boss 2: its eyes shut, it gathers itself
+                    Sfx.Play("psi", from, 0.5f, 0.05f, 0.7f);
+                    break;
+                case "release":                                 // Boss 2: the eyes snap open - a flash at the brain
+                    Puff("fx_hit_spark", from + new Vector3(0f, 1.3f, 0f), 0.22f, 0f, new Color(0.85f, 0.6f, 1f), 3.5f);
+                    Sfx.Play("psi", from, 0.8f, 0.05f, 1.2f);
+                    break;
+                case "pulse":                                   // Boss 2: the wave of force at a crack
+                    Puff("fx_hit_spark", from + new Vector3(0f, 1.3f, 0f), 0.4f, 0f, new Color(0.85f, 0.6f, 1f), 6f);
+                    Sfx.Play("psi", from, 1f, 0.02f, 0.35f); Shake(0.35f);
+                    break;
+                case "psihit":                                  // Boss 2: one of its attacks lands on someone
+                    if (e.Target != null) Wound(e, to, 0f, 0f, true);
+                    break;
+                case "void":                                    // Boss 2: the void pull opens over the vat
+                    PxFx("void_pull", from + new Vector3(0f, 0.6f, 0f), 0f, 0f, PxFull);
+                    Sfx.Play("psi", from, 1f, 0.05f, 0.6f);
+                    break;
+                case "escape":                                  // Boss 2: the full-size void swallows it
+                    PxFx("void_escape", from + new Vector3(0f, 0.6f, 0f), 0f, 0f, PxFull);
+                    Sfx.Play("psi", from, 1f, 0.05f, 0.4f); Shake(0.3f);
+                    break;
+                case "zap":                                     // RT fx 3: a Livewire anomaly discharges into someone
+                    PxFx("zap_hit", to + new Vector3(0f, 0.4f, 0f), 0f, 0f, PxFull);
+                    break;
                 case "reload":
                     if (held == null) break;
-                    held.StartReload(feel, e.Weapon.MagCapacity);
+                    if (e.Jammed)                               // RT 6f: clearing a jam - slap the magazine, rack the action
+                    {
+                        float jl = e.Seconds > 0f ? e.Seconds : 0.8f;
+                        held.StartClear(jl);
+                        At(now + 0.2f * jl, () => Sfx.Play("hit_hard", from, 0.35f));
+                        At(now + 0.6f * jl, () => Sfx.Play("reload_mag", from, 0.6f));   // ponytail: no rack sound of its own yet
+                        break;
+                    }
+                    if (e.Seconds < 0f) { held.StopReload(); break; }   // RT 6h: cut short
+                    float len = e.Seconds > 0f ? e.Seconds : feel.ReloadTime;
+                    held.StartReload(feel, e.Weapon.MagCapacity, len, e.Rounds > 1 ? e.Rounds : 0);
                     Sfx.Play(Sfx.Reload(feel), from, 0.8f);
-                    At(now + 0.2f * feel.ReloadTime, () =>
+                    At(now + (feel.Reload == "cylinder" ? Mathf.Min(0.3f, 0.2f * len) : feel.Reload == "break" ? 0.17f * len : 0.2f * len), () =>   // RT 6k: when it's open
                     {
                         if (held == null || !held.Visible) return;
                         var at = held.Gun.position;
-                        if (feel.Reload == "mag") Bit(at, new Color(0.2f, 0.22f, 0.23f), 2, 3, new Vector3(0f, -0.2f, 0f), 4f, 0.45f, 4);
+                        if (feel.Reload == "mag" && WeaponArt.Mag(WeaponArt.Identify(e.Weapon.Db).cat, WeaponArt.Identify(e.Weapon.Db).key).mag == null) Bit(at, new Color(0.2f, 0.22f, 0.23f), 2, 3, new Vector3(0f, -0.2f, 0f), 4f, 0.45f, 4);
                         else if (feel.Reload == "cylinder" || feel.Reload == "break")
-                            for (int i = 0; i < Mathf.Min(e.Weapon.MagCapacity, 6); i++)
-                                Bit(at, feel.Reload == "break" ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f), 1, 1,
-                                    new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0.2f, 0.8f), 0f), 5f, 0.4f, 4);
+                        {
+                            // RT 6k (Yan): opening the cylinder or the breech dumps the spent ones - as many as were fired
+                            int spent = e.Seconds > 0f ? e.Rounds : Mathf.Min(e.Weapon.MagCapacity, 6);
+                            for (int i = 0; i < spent; i++)
+                                DropBrass(at, feel.Reload == "break", Random.Range(-0.4f, 0.4f), Random.Range(0.1f, 0.6f), FloorOf(held), 7);
+                        }
                     });
                     break;
             }
@@ -205,15 +388,35 @@ namespace GameCore
 
         private void SubShot(FxEvent e, WeaponFeel feel, HeldWeaponView held, Vector3 from, Vector3 to, int i)
         {
+            held = held?.Use(e.Weapon);                                         // RT 7z-c: the pistols alternate between these delayed calls
             if (held != null && !held.Visible) held = null;
-            held?.Recoil(feel, i == 0 ? 1f : 0.7f);
             Vector3 muzzle = held != null ? held.Muzzle() : from;
             bool last = i == e.Rounds - 1;
+            if (e.Now)
+            {
+                // real-time fork: one real round. Flash, sound and casing once a trigger pull; the tracer to where it stopped.
+                if (!e.Pellet)
+                {
+                    held?.Recoil(feel, 1f);
+                    Sfx.Play(Sfx.Shot(e.Weapon?.Db, feel), muzzle, feel.Flash == 0 ? 0.35f : 1f, 0.07f, feel.Flash == 0 ? 1.35f : 1f);
+                    if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);
+                    else if (feel.Flash == 0) Puff("fx_muzzle_puff", muzzle, 0.3f, 0.3f);
+                    else Muzzle(e, feel, held, muzzle, to);
+                    if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
+                }
+                if (e.Flying) return;                                          // RT 8: the round itself is drawn while it flies (TickRounds)
+                Tracer(muzzle, to, feel);
+                float rx = to.x - muzzle.x, ry = to.y - muzzle.y, rl = Mathf.Max(0.01f, Mathf.Sqrt(rx * rx + ry * ry));
+                if (e.CoverHit || e.Through) CoverImpact(e, rx / rl, ry / rl);
+                if (e.Hit && e.Target != null) Wound(e, to, rx / rl, ry / rl, false);
+                return;
+            }
+            held?.Recoil(feel, i == 0 ? 1f : 0.7f);
 
             Sfx.Play(Sfx.Shot(e.Weapon?.Db, feel), muzzle, feel.Flash == 0 ? 0.35f : 1f, 0.07f, feel.Flash == 0 ? 1.35f : 1f);   // suppressed: quieter, thinner
             if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);
             else if (feel.Flash == 0) Puff("fx_muzzle_puff", muzzle, 0.3f, 0.3f);
-            else Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
+            else Muzzle(e, feel, held, muzzle, to);
 
             var end = to;
             float mx = to.x - muzzle.x, my = to.y - muzzle.y, len = Mathf.Max(0.01f, Mathf.Sqrt(mx * mx + my * my));
@@ -227,15 +430,14 @@ namespace GameCore
             if (feel.Casing != null && held != null)
             {
                 float side = held.AimLeft ? -1f : 1f;
-                Bit(held.Gun.position, feel.Casing == "shell" ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f),
-                    feel.Casing == "shell" ? 2 : 1, 1, new Vector3(-side * Random.Range(0.4f, 0.9f), Random.Range(1.2f, 1.8f), 0f), 6f, 0.35f, 7);
+                DropBrass(held.Gun.position, feel.Casing == "shell", -side * Random.Range(0.4f, 0.9f), Random.Range(1.2f, 1.8f), FloorOf(held), 7);   // RT 6k: it lands
             }
             if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
 
             if (!last) return;
             if (e.CoverHit || e.Through) CoverImpact(e, nx, ny);
             if (e.Hit && e.Target != null) Wound(e, to, nx, ny, false);
-            else if ((e.Hit || e.NoLos) && !e.CoverHit) { Puff("fx_hit_spark", end, 0.18f); Sfx.Play("hit_hard", end, 0.6f, 0.15f); }     // a door, a barrel, a wall
+            else if ((e.Hit || e.NoLos) && !e.CoverHit) { if (!PxFx("hit_spark", end, -nx, -ny, PxHalf)) Puff("fx_hit_spark", end, 0.18f); Sfx.Play("hit_hard", end, 0.6f, 0.15f); }     // a door, a barrel, a wall
         }
 
         /// <summary>A blow lands on a unit: flash, knockback, blood puff, a splatter on the ground behind
@@ -248,7 +450,7 @@ namespace GameCore
             if (!psi && GameConstants.Gore) { Splat(at, dx, dy); if (e.Target != null) OnWound?.Invoke(e.Target); }
             if (e.Killed && e.Target != null && _dying.Remove(e.Target)) OnKill?.Invoke(e.Target, dx, dy, e.Overkill >= GibOverkill * 3 ? 2 : e.Overkill >= GibOverkill ? 1 : 0);
         }
-        public const int GibOverkill = 15;
+        public const int GibOverkill = 150;
 
         /// <summary>Batch 105: a round hits a piece of cover. What flies off and the sound follow its material: splinters off
         /// wood, dust and chips off concrete, sparks off metal, earth off sandbags, leaves off brush.</summary>
@@ -258,7 +460,8 @@ namespace GameCore
             at.y += 0.25f;
             var m = e.CoverMat;
             var (r, g, b) = Materials.Chip(m);
-            if (Materials.Sparks(m)) Puff("fx_hit_spark", at, 0.18f);
+            if (Materials.Sparks(m)) { if (!PxFx("ricochet", at, -dx, -dy, PxHalf)) Puff("fx_hit_spark", at, 0.18f); }   // RT fx 3: metal rings off
+            else if (!e.Through) PxFx("bullet_impact", at, dx, dy, PxHalf);                                                // concrete, wood, earth: a puff of grit
             for (int k = 0; k < (e.Through ? 6 : 4); k++)   // chips fly back toward the shooter, or out the far side when it goes through
             {
                 float side = e.Through ? 1f : -1f, sp = Random.Range(0.6f, 1.6f);
@@ -295,13 +498,248 @@ namespace GameCore
             _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames });
         }
 
-        private void Puff(string strip, Vector3 at, float life, float rise = 0f)
+        // ---- Boss 2: the brain's attacks, drawn from BrainBoss's state every frame (pooled sprites) ----
+        //      orbs by kind (pale ring orbs, dark void orbs, aimed bolts with a trail), the sweeping beams, the pulse's wave front,
+        //      ripped cover hanging and flying, the glow gathering while its eyes are shut
+        readonly List<SpriteRenderer> _orbs = new List<SpriteRenderer>(), _beams = new List<SpriteRenderer>(), _throws = new List<SpriteRenderer>();
+        SpriteRenderer _wave, _glow;
+        SpriteRenderer Pooled(List<SpriteRenderer> pool, int i, string name, int order)
+        {
+            while (pool.Count <= i) pool.Add(NewSprite(name, null, Color.white, _root, order));
+            var sr = pool[i];
+            if (sr != null && !sr.gameObject.activeSelf) sr.gameObject.SetActive(true);
+            return sr;
+        }
+        static void HideFrom(List<SpriteRenderer> pool, int n) { for (int i = n; i < pool.Count; i++) if (pool[i] != null && pool[i].gameObject.activeSelf) pool[i].gameObject.SetActive(false); }
+        static Vector3 W(float x, float y, float up = 0f) => new Vector3(x, -y + up, 0f);   // tile space (y down) -> world
+
+        void DrawOrbs()
+        {
+            var f = BrainBoss.Current;
+            // Yan, 2026-11-08: the attack effects are hand-drawn, animated and come in four variations, one per wound phase (ArtSource/bosses/make_brain_fx.py): violet, violet and flesh-pink, magenta and vein red, blood-hot
+            int ph = Mathf.Clamp(f?.Phase ?? 0, 0, 3); string pn = "_p" + ph;
+            var orbF = Strip("Sprites/Fx/boss_brain_orbs" + pn, 8, 20f, new Vector2(0.5f, 0.5f));
+            var boltF = Strip("Sprites/Fx/boss_brain_bolt" + pn, 4, PxFull, new Vector2(0.75f, 0.5f));
+            int n = 0, anim = (int)(Time.time * 12f) % 4;
+            foreach (var o in BrainBoss.Orbs)
+            {
+                if (o.Kind == "bolt")
+                {
+                    float deg = Mathf.Atan2(-o.Dy, o.Dx) * Mathf.Rad2Deg;
+                    for (int k = 0; k < 3; k++)                  // the bolt and two fading copies behind it: a trail
+                    {
+                        var b = Pooled(_orbs, n++, "Bolt", 9); if (b == null) continue;
+                        b.sprite = boltF?[(anim + k) % 4]; b.color = new Color(1f, 1f, 1f, 1f - 0.35f * k);
+                        b.transform.position = W(o.X - o.Dx * 0.35f * k, o.Y - o.Dy * 0.35f * k, 0.35f);
+                        b.transform.rotation = Quaternion.Euler(0f, 0f, deg); b.transform.localScale = Vector3.one * (1f - 0.15f * k);
+                    }
+                    continue;
+                }
+                var sr = Pooled(_orbs, n++, "Orb", 9); if (sr == null) continue;
+                sr.sprite = orbF?[(o.Kind == "void" ? 4 : 0) + (anim + n) % 4]; sr.color = Color.white;
+                sr.transform.position = W(o.X, o.Y, 0.35f); sr.transform.rotation = Quaternion.identity;
+                sr.transform.localScale = Vector3.one * Mathf.Min(1f, 0.4f + o.Age * 3f);   // they swell out of the brain
+            }
+            HideFrom(_orbs, n);
+            if (f == null || f.Gone) { HideFrom(_beams, 0); HideFrom(_throws, 0); if (_wave != null) _wave.gameObject.SetActive(false); if (_glow != null) _glow.gameObject.SetActive(false); return; }
+            var (cx, cy) = BrainBoss.Center(f);
+            // the beams: a wide faint glow and a thin white core from the brain to the wall; while it winds up, a hairline where it will start
+            int nb = 0;
+            void Line(float deg, float len, float width, Color col)
+            {
+                var sr = Pooled(_beams, nb++, "Beam", 9); if (sr == null) return;
+                sr.sprite = White(); sr.color = col;
+                float r = deg * Mathf.Deg2Rad;
+                sr.transform.position = W(cx + Mathf.Cos(r) * len / 2f, cy + Mathf.Sin(r) * len / 2f, 0.35f);
+                sr.transform.rotation = Quaternion.Euler(0f, 0f, -deg);
+                sr.transform.localScale = new Vector3(len, width, 1f);   // White() is one world unit (= one tile) square
+            }
+            var beamF = Strip("Sprites/Fx/boss_brain_beam" + pn, 4, 32f, new Vector2(0.5f, 0.5f)); var capF = Strip("Sprites/Fx/boss_brain_beamcap" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
+            foreach (var b in BrainBoss.Beams)
+            {
+                float flick = 0.85f + 0.15f * Mathf.Sin(Time.time * 60f);
+                Line(b.Angle, b.Length, 0.5f, new Color(0.75f, 0.42f, 1f, 0.18f * flick));                                      // a faint wide bloom under the drawn beam
+                if (beamF != null)
+                {
+                    float r = b.Angle * Mathf.Deg2Rad; int segs = Mathf.CeilToInt(b.Length);
+                    for (int k = 0; k < segs; k++)                                                                              // the beam is drawn a tile at a time, each tile on its own frame, so it crackles along its length
+                    {
+                        var sg = Pooled(_beams, nb++, "Beam", 9); if (sg == null) continue; float mid = k + 0.5f, wlen = Mathf.Min(1f, b.Length - k);
+                        sg.sprite = beamF[(k + (int)(Time.time * 14f)) % 4]; sg.color = new Color(1f, 1f, 1f, flick);
+                        sg.transform.position = W(cx + Mathf.Cos(r) * mid, cy + Mathf.Sin(r) * mid, 0.35f); sg.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); sg.transform.localScale = new Vector3(wlen, 1.15f, 1f);
+                    }
+                    var cp = Pooled(_beams, nb++, "BeamCap", 10); if (cp != null && capF != null) { cp.sprite = capF[(int)(Time.time * 14f) % 4]; cp.color = Color.white; cp.transform.position = W(cx, cy, 0.35f); cp.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); cp.transform.localScale = Vector3.one * 1.6f; }
+                }
+                else Line(b.Angle, b.Length, 0.12f, new Color(1f, 0.95f, 1f, flick));                                           // (the old plain beam if the strips are missing)
+            }
+            if (f.Doing == "laser" && BrainBoss.Winding(f) && Player.Current != null)
+            {
+                var (px, py) = Ballistics.Pos(Player.Current);
+                Line(Mathf.Atan2(py - cy, px - cx) * Mathf.Rad2Deg + 90f, 14f, 0.04f, new Color(0.9f, 0.6f, 1f, 0.5f + 0.5f * Mathf.Sin(Time.time * 20f)));
+            }
+            HideFrom(_beams, nb);
+            // the pulse's wave front, fading as it spreads
+            if (BrainBoss.Pulse != null)
+            {
+                var ringF = Strip("Sprites/Fx/boss_brain_ring" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
+                if (_wave == null) _wave = NewSprite("Wave", ringF?[0], Color.white, _root, 8);
+                _wave.gameObject.SetActive(true); if (ringF != null) _wave.sprite = ringF[(int)(Time.time * 10f) % 4];
+                _wave.transform.position = W(cx, cy, 0f);
+                _wave.transform.localScale = new Vector3(1f, 0.75f, 1f) * BrainBoss.Pulse.R;   // 64 px at 32 ppu = 2 tiles across: scale = radius
+                _wave.color = new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - BrainBoss.Pulse.R / BrainBoss.PulseReach));      // (the colour is drawn into the strip now)
+            }
+            else if (_wave != null) _wave.gameObject.SetActive(false);
+            // ripped cover: it hangs and turns, then flies
+            int nt = 0;
+            foreach (var t in BrainBoss.Throws)
+            {
+                var sr = Pooled(_throws, nt++, "Thrown", 9); if (sr == null) continue;
+                var spr = WorldArt.Get("p_" + t.Look + "_0") ?? WorldArt.Get("p_" + t.Look);
+                sr.sprite = WorldArt.SpriteOf(spr); sr.color = new Color(0.92f, 0.85f, 1f);
+                float age = Time.time - t.Born, up = Mathf.Min(1f, age / 0.25f) * (0.6f + 0.08f * Mathf.Sin(age * 14f));
+                sr.transform.position = W(t.X, t.Y, up);
+                sr.transform.rotation = Quaternion.Euler(0f, 0f, t.Flying ? age * 540f : Mathf.Sin(age * 18f) * 8f);
+            }
+            HideFrom(_throws, nt);
+            // the glow gathering at the brain while it concentrates
+            bool wind = BrainBoss.Winding(f);
+            if (wind)
+            {
+                var glowF = Strip("Sprites/Fx/boss_brain_glow" + pn, 4, 20f, new Vector2(0.5f, 0.5f));
+                if (_glow == null) _glow = NewSprite("Glow", glowF?[0] ?? orbF?[0], Color.white, _root, 9);
+                _glow.gameObject.SetActive(true); if (glowF != null) _glow.sprite = glowF[(int)(Time.time * 10f) % 4];
+                float k = Mathf.Abs(Time.time * 3f % 2f - 1f);
+                _glow.transform.position = W(cx, cy, 0.4f);
+                _glow.transform.localScale = Vector3.one * (1.5f + 1.5f * k + (f.PulseAt >= 0f ? 1.5f : 0f)) * 0.5f;      // (the strip is 1.6 tiles across, the old orb was 0.75)
+                _glow.color = new Color(1f, 1f, 1f, 0.35f + 0.3f * k);
+            }
+            else if (_glow != null) _glow.gameObject.SetActive(false);
+        }
+
+        // ---- RT fx 3: pixelfx strips (ArtSource/fx/export_strips.py): square frames centred on the effect's origin, facing right,
+        //      15 fps, played once. Yan, 2026-11-03: "full size for electric, half for guns" - guns at half-pixels (ppu 32, like the
+        //      HD mutants), electric at the map's own pixels (ppu 16). False when the strip is missing (the old sprite plays instead).
+        public const float PxFps = 15f, PxHalf = 32f, PxFull = 16f;
+        // Yan, 2026-11-07: "when shooting, weapons leave a lingering effect of the vfx, we need to shorten the shot vfx". The ready-made muzzle and impact strips are a flash (the first 2-4 frames) and then a
+        // long smoke / dust tail (the pistol's lasted 1.9 s, the shotgun's 3.3 s, a bullet impact 1.5 s, a ricochet 1.1 s at 15 fps). Shots now play only the first `keep` frames, faster, fading out over the second half.
+        static readonly Dictionary<string, (int keep, float fps)> PxShort = new Dictionary<string, (int, float)>
+        { ["muzzle_pistol"] = (7, 30f), ["muzzle_smg"] = (4, 30f), ["muzzle_shotgun"] = (9, 30f), ["bullet_impact"] = (8, 30f), ["ricochet"] = (7, 30f), ["hit_spark"] = (8, 24f) };
+        static readonly Dictionary<string, Sprite[]> _pxCut = new Dictionary<string, Sprite[]>();
+        static readonly Dictionary<string, float> PxSpeed = new Dictionary<string, float> { ["blunt_hit"] = 1.5f, ["zap_hit"] = 1.5f };      // two more hit effects that play a little faster (the other, longer ones play as made)
+        bool PxFx(string name, Vector3 at, float dx, float dy, float ppu)
+        {
+            var frames = Strip("Sprites/Fx/px_" + name, 0, ppu, new Vector2(0.5f, 0.5f));
+            if (frames == null) return false;
+            float fps = PxFps * (PxSpeed.TryGetValue(name, out var spd) ? spd : 1f); bool shorten = PxShort.TryGetValue(name, out var cut);
+            if (shorten && frames.Length > cut.keep) { string key = name + ppu; if (!_pxCut.TryGetValue(key, out var kept)) _pxCut[key] = kept = frames.Take(cut.keep).ToArray(); frames = kept; }
+            if (shorten) fps = cut.fps;
+            var sr = NewSprite("px_" + name, frames[0], Color.white, _root, 9);
+            sr.transform.position = new Vector3(at.x, at.y, 0f);
+            if (dx != 0f || dy != 0f) { sr.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dy, dx) * Mathf.Rad2Deg); sr.flipY = dx < 0f; }
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = frames.Length / fps, Frames = frames, Fade = shorten, FadeFrom = 0.5f, Alpha = 1f });
+            return true;
+        }
+
+        /// <summary>The muzzle: pixelfx flash and smoke by gun class; the old flash sprite if the strip isn't there.</summary>
+        void Muzzle(FxEvent e, WeaponFeel feel, HeldWeaponView held, Vector3 muzzle, Vector3 to)
+        {
+            string cat = CombatRules.Category(e.Weapon?.Db);
+            string px = cat == "shotgun" ? "muzzle_shotgun" : cat == "sidearm" ? "muzzle_pistol" : "muzzle_smg";
+            if (!PxFx(px, muzzle, to.x - muzzle.x, to.y - muzzle.y, PxHalf)) Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
+        }
+
+        private void Puff(string strip, Vector3 at, float life, float rise = 0f, Color? tint = null, float scale = 1f)
         {
             var frames = Strip("Sprites/Fx/" + strip, 3, strip == "fx_muzzle_puff" ? WeaponArt.PixelsPerUnit : 16, new Vector2(0.5f, 0.5f));
-            var sr = NewSprite(strip, frames?[0], strip.Contains("blood") ? new Color(0.7f, 0.13f, 0.16f) : strip.Contains("psi") ? new Color(0.75f, 0.42f, 1f) : new Color(1f, 0.8f, 0.3f), _root, 9);
+            var sr = NewSprite(strip, frames?[0], tint ?? (strip.Contains("blood") ? new Color(0.7f, 0.13f, 0.16f) : strip.Contains("psi") ? new Color(0.75f, 0.42f, 1f) : new Color(1f, 0.8f, 0.3f)), _root, 9);
             sr.transform.position = new Vector3(at.x + Random.Range(-0.06f, 0.06f), at.y + Random.Range(-0.06f, 0.06f), 0f);
-            if (frames == null) sr.transform.localScale = Vector3.one * 0.2f;
-            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames, Vel = new Vector3(0f, rise, 0f), Fade = rise > 0f });
+            sr.transform.localScale = Vector3.one * (frames == null ? 0.2f : scale);
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Frames = frames, Vel = new Vector3(0f, rise, 0f), Fade = rise > 0f, Alpha = (tint ?? Color.white).a });
+        }
+
+        // ---- Boss 1: the hype (glints, parries, staggers, the aura, the finisher, the smoke) ----
+
+        static readonly Color GlintWhite = new Color(1f, 1f, 0.92f), GlintRed = new Color(1f, 0.18f, 0.14f), Steel = new Color(1f, 0.93f, 0.7f);
+
+        /// <summary>Sparks or chips flying out of a point in every direction.</summary>
+        void Burst(Vector3 at, Color col, int n, float speed, float life, int size = 1)
+        {
+            for (int k = 0; k < n; k++)
+            {
+                float a = Random.value * Mathf.PI * 2f, sp = speed * Random.Range(0.5f, 1.2f);
+                Bit(at, col, size, size, new Vector3(Mathf.Cos(a) * sp, Mathf.Sin(a) * sp + 0.6f, 0f), 6f, life * Random.Range(0.7f, 1.2f), 10);
+            }
+        }
+
+        void Shake(float amp) { if (amp >= _shakeAmp || Time.time - _shakeAt > ShakeTime) { _shakeAt = Time.time; _shakeAmp = amp; } }
+
+        void BossFx(FxEvent e, Vector3 from, Vector3 to)
+        {
+            var head = from + new Vector3(0f, 0.75f, 0f);
+            switch (e.Kind)
+            {
+                case "glint":      // the tell: white = parry it, red = get out of the way
+                    Puff("fx_hit_spark", head, 0.32f, 0f, e.Psi ? GlintRed : GlintWhite, 2.2f);
+                    Burst(head, e.Psi ? GlintRed : GlintWhite, 6, 1.2f, 0.25f);
+                    Sfx.Play(e.Psi ? "glint_danger" : "glint", from, e.Psi ? 0.9f : 0.7f, 0.02f);
+                    break;
+                case "parry":      // blade on blade between the two of you
+                    var mid = Vector3.Lerp(from, to, 0.45f) + new Vector3(0f, 0.45f, 0f);
+                    if (!(e.Hit && PxFx("parry", mid, 0f, 0f, PxHalf)))                                 // RT fx 4: the perfect parry's gold star and sparks
+                        Puff("fx_hit_spark", mid, e.Hit ? 0.3f : 0.15f, 0f, Steel, e.Hit ? 3f : 1.6f);
+                    Burst(mid, Steel, e.Hit ? 22 : 8, e.Hit ? 3.2f : 1.8f, e.Hit ? 0.5f : 0.3f);
+                    if (e.Hit) Burst(mid, Color.white, 10, 4.5f, 0.35f, 2);
+                    Sfx.Play(e.Hit ? "parry_perfect" : "parry", mid, 1f, e.Hit ? 0f : 0.08f);
+                    Shake(e.Hit ? 0.22f : 0.07f);
+                    break;
+                case "stagger":    // reeling: a ring of sparks, a dull clank
+                    Burst(head, Steel, 12, 2.2f, 0.4f);
+                    Sfx.Play("hit_hard", from, 0.9f);
+                    Shake(0.1f);
+                    break;
+                case "aura":       // phase 2: the aura bursts out of him
+                    for (int k = 0; k < 10; k++) Puff("fx_hit_psi", from + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0f, 0.9f), 0f), 0.6f, 1.4f, GlintRed, 1.6f);
+                    Burst(from + new Vector3(0f, 0.4f, 0f), GlintRed, 26, 4f, 0.6f, 2);
+                    Shake(0.3f);
+                    break;
+                case "finisher":   // the deathblow
+                    for (int k = 0; k < 5; k++) Puff("fx_hit_blood", to + new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(0.1f, 0.7f), 0f), 0.45f, 0.4f, null, 1.8f);
+                    Burst(to + new Vector3(0f, 0.5f, 0f), new Color(0.6f, 0.06f, 0.08f), 30, 3.5f, 0.7f, 2);
+                    Sfx.Play("finisher", to, 1f, 0f);
+                    Shake(0.35f);
+                    var (fx, fy) = Dir(from, to);
+                    if (e.Target != null) Wound(e, to, fx, fy, false);
+                    break;
+                case "smoke":      // the smoke grenade: he's gone
+                    if (PxFx("smoke_bomb", from + new Vector3(0f, 0.2f, 0f), 0f, 0f, PxHalf)) { Sfx.Play("smoke", from, 0.9f); break; }   // RT fx 4
+                    for (int k = 0; k < 14; k++)
+                        Puff("fx_muzzle_puff", from + new Vector3(Random.Range(-0.8f, 0.8f), Random.Range(-0.2f, 0.8f), 0f), Random.Range(1.4f, 2.4f), Random.Range(0.2f, 0.6f), new Color(0.72f, 0.74f, 0.72f, 0.9f), Random.Range(3f, 5f));
+                    Sfx.Play("smoke", from, 0.9f);
+                    break;
+                case "deflect":    // a round swatted away
+                    Puff("fx_hit_spark", to + new Vector3(0f, 0.5f, 0f), 0.12f, 0f, Steel, 1.3f);
+                    Burst(to + new Vector3(0f, 0.5f, 0f), Steel, 5, 2.5f, 0.2f);
+                    Sfx.Play("hit_tin", to, 0.7f, 0.15f);
+                    break;
+                case "dodge":
+                    Puff("fx_muzzle_puff", from, 0.4f, 0.3f, new Color(0.6f, 0.55f, 0.45f, 0.7f), 2f);
+                    break;
+            }
+        }
+
+        float _auraAt;
+        /// <summary>Phase 2: embers keep rising off him.</summary>
+        void TickAura()
+        {
+            if (Time.time - _auraAt < 0.09f) return;
+            _auraAt = Time.time;
+            foreach (var f in Boss.Fights)
+            {
+                if (f.Phase < 2 || f.Broken || f.Finished || f.Gone) continue;
+                var m = _markerOf(f.Unit);
+                if (m == null) continue;
+                Puff("fx_hit_psi", m.transform.position + new Vector3(Random.Range(-0.35f, 0.35f), Random.Range(-0.1f, 0.6f), 0f), 0.55f, 1.1f, new Color(1f, 0.2f, 0.12f, 0.75f), 1.1f);
+            }
         }
 
         private void Tracer(Vector3 a, Vector3 b, WeaponFeel feel)
@@ -395,6 +833,7 @@ namespace GameCore
             if (tex != null)
             {
                 tex.filterMode = FilterMode.Point;
+                if (count <= 0) count = Mathf.Max(1, tex.width / tex.height);   // RT fx 3: square frames, as many as fit
                 int w = tex.width / count;
                 frames = new Sprite[count];
                 for (int i = 0; i < count; i++) frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), pivot, ppu);
