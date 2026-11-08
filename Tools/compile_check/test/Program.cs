@@ -50,6 +50,7 @@ static class Program {
     NetChecks();
     NetEelChecks();
     NetWorldChecks();
+    SoloDeathChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2477,6 +2478,22 @@ static class Program {
     Check(big.Length <= NetWorld.Packet && bd.World.Enemies.Count >= 15 && bd.World.Enemies.Count < 91, $"Co-op world: a crowded fight (91 enemies, 30 shots, long lines) still fits one packet ({big.Length} bytes, {bd.World.Enemies.Count} enemies sent, nearest first)");
   }
 
+
+  // Yan, 2026-11-08: dying alone wakes you at the camp, like the squad wipe; only the Testing Ground keeps the death screen
+  static bool _sessionShake;
+  static void SoloDeathChecks() {
+    bool session0 = TestingGround.Session;
+    try {
+      GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true; Rt.Reset(); TestingGround.Session = false;
+      var p = Player.Current; int px = p.X, py = p.Y; var m = MacroState.Current; m.CampZone = m.CurrentZoneId; m.CampX = px; m.CampY = py - 2; EncounterState.Enemies.Clear();
+      p.Exp = 60; for (int k = 0; k < 4; k++) p.AddItem(new InventoryItem { Id = "junk" + k, Name = "Junk", Qty = 1, Type = "junk" }); int pack0 = p.Inventory.Items.Count;
+      p.X = px; p.Y = py + 5; Rt.SetOffset(p, 0f, 0f); Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
+      Check(p.IsAlive() && p.Hp > 0 && GameState.Current.CurrentTurn == Turn.Player && Math.Abs(p.Y - (py - 2)) <= 3 && p.Exp == 0 && p.Inventory.Items.Count < pack0, $"solo death: you wake at the camp with the wipe's penalties, not at a death screen (hp {p.Hp}, turn {GameState.Current.CurrentTurn}, XP {p.Exp}, pack {pack0} -> {p.Inventory.Items.Count})");
+      TestingGround.Session = true; Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
+      Check(GameState.Current.CurrentTurn == Turn.CombatOver, "solo death in the Testing Ground still ends at the death screen");
+    } finally { TestingGround.Session = session0; Rt.On = false; GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
   // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it
   static void NetEelChecks() {
     var link = new FakeLink(); Net.Link = link;
@@ -3175,8 +3192,9 @@ static class Program {
       GameState.Current.CurrentTurn = Turn.Player;
 
       // the shakedown: a Tier 1 Raider gang asks once; paying buys a day's truce
+      _sessionShake = TestingGround.Session; TestingGround.Session = true;      // (the gang's first volley may hurt: dying alone now wakes you at the camp and stands them down, which is not what this loop is about)
       foreach (int pick in new[] { Shakedown.Pay, Shakedown.HandGun, Shakedown.Refuse, Shakedown.ShootFirst }) {
-        p = Arena(out px, out py);
+        p = Arena(out px, out py); TestingGround.Session = true; Shakedown.Reset();      // (each pick starts from no truce and no gang on record; Arena starts a new game, which clears the session flag)
         MacroState.Current.OfflineSquads.Clear();
         var gang = new System.Collections.Generic.List<Mutant>();
         for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", i == 0 ? "Experienced" : "Rookie", 1); gang.Add(new HumanEnemy("Raider " + i, px + 6, py - 2 + i, "Raiders", i == 0 ? "Experienced" : "Rookie", w, a)); }
@@ -3189,7 +3207,7 @@ static class Program {
         Check(!Shakedown.TryStart(gang[1], p), "only once per gang");
         if (pick == Shakedown.Pay) Check(p.Ru == ru - 4 * Shakedown.TollPerMember && Shakedown.InTruce(gang[2]) && EnemyAI.FriendlyToPlayer((Mutant)gang[2]) && !gang.Any(g => g.IsAggroed), "paid: Ru gone, a day's truce");
         if (pick == Shakedown.HandGun) Check(p.EquippedWeapon == null && ((HumanEnemy)gang[0]).EquippedWeapon == gun && Shakedown.InTruce(gang[0]), "handed over: the boss carries your gun");
-        if (pick == Shakedown.Refuse) Check(gang.All(g => g.IsAggroed || !g.IsAlive()) && !Shakedown.InTruce(gang[0]), "refused: they fight");
+        if (pick == Shakedown.Refuse) Check(gang.All(g => g.IsAggroed || !g.IsAlive()) && !Shakedown.InTruce(gang[0]), $"refused: they fight (aggro {string.Join(",", gang.Select(g => g.IsAggroed ? 1 : 0))}, truce {Shakedown.InTruce(gang[0])}, alive {gang.Count(g => g.IsAlive())}, player hp {p.Hp}, turn {GameState.Current.CurrentTurn}, inCombat {EncounterState.InCombat}, fled {gang.Count(g => g.IsFleeing())}, in list {gang.Count(g => EncounterState.Enemies.Contains(g))})");
         if (pick == Shakedown.ShootFirst) Check(gang.All(g => g.IsAggroed) && EncounterState.Surprised && GameState.Current.CurrentTurn == Turn.Player, "shot first: surprise round, your turn");
       }
       Shakedown.TestPick = -1;
@@ -3433,7 +3451,7 @@ static class Program {
       Check(!CombatActions.Press("hunker", p), "no hunkering in the open");
       Check(CombatActions.FireTarget(p) != null && CombatActions.Press("fire", p), "the fire button shoots the enemy in sight");
     } catch (Exception e) { Check(false, "Batch 72 checks threw: " + e); }
-    Shakedown.TestPick = -1;
+    TestingGround.Session = _sessionShake; Shakedown.TestPick = -1;
     GameLog.Target = null;
   }
 
@@ -3906,10 +3924,12 @@ static class Program {
     }
     m.OfflineSquads.Remove(guests);
     // Batch 59: a fight that drags on gets the leader on the radio; a same-faction squad next door sets out to help
+    bool session59 = TestingGround.Session; TestingGround.Session = true;      // (this walk is about the radio, not about what happens to a dead solo player: that is the Testing Ground's death screen, not the camp)
     {
       var nb = OffMap(here);
       m.OfflineSquads.RemoveAll(s => s.Faction == "Garrison");
       var foes = SquadManager.CreateOfflineSquad(nb, "Garrison", 3); foes.ZoneId = here.Id; SquadManager.ArriveLive(foes, nb);
+      EncounterState.Enemies.RemoveAll(e => !foes.Members.Contains(e));      // only these three are in the fight (whoever else the map has by now would change the count the radio waits for)
       foreach (var x in foes.Members) { x.IsAggroed = true; }
       var help = SquadManager.CreateOfflineSquad(nb, "Garrison", 2);
       EncounterState.InCombat = true; EncounterState.ResetFight();
@@ -3923,6 +3943,7 @@ static class Program {
       m.OfflineSquads.Remove(foes); m.OfflineSquads.Remove(help); EncounterState.Enemies.RemoveAll(e => foes.Members.Contains(e));
       EncounterState.InCombat = false; EncounterState.ResetFight(); GameLog.Target = log;
     }
+    TestingGround.Session = session59;
     // Batch 38: a real off-screen fight next door becomes news, comes over the radio, and turns up as a rumor
     var heard = new ListLog(); GameLog.Target = heard;
     var nextDoor = OffMap(here);

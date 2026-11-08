@@ -4,7 +4,7 @@
 //     (primary, secondary or armor) wears one step; a friend can bring you back with E, but only out of combat.
 //  3. DEAD DEAD: the whole squad is dead. Everyone comes back at the last camp - a bonfire you made camp at (E at the fire), or
 //     Bonfire Village by default - each with their armor one step more worn, half the pack gone, and the reputation penalty.
-// Solo play still ends at the death screen, as before (a one-man squad wipes the moment you die). Yan: deaths cost rank XP
+// Solo play wipes the moment you die and wakes at the camp too (Yan, 2026-11-08); only the Testing Ground keeps the death screen (TestingGround.Session). Yan: deaths cost rank XP
 // (Player.LoseXp: never a rank, never below 0) - no reputation; what leaves your pack lies where you fell (DropPack).
 using System.Linq;
 using GameData;
