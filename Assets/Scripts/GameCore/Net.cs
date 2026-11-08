@@ -39,7 +39,7 @@ namespace GameCore
 
         public static bool Client => Mode == Role.Client;
 
-        public static void Reset() { Mode = Role.Off; Code = ""; Status = ""; ByOwner.Clear(); _nextSnapshot = 0f; }
+        public static void Reset() { Mode = Role.Off; Code = ""; Status = ""; ByOwner.Clear(); _nextSnapshot = 0f; NetWorld.ResetHost(); NetWorld.ResetClient(); }
 
         // ---------------- starting and stopping ----------------
 
@@ -142,7 +142,7 @@ namespace GameCore
         {
             if (Mode != Role.Client || Player.Current == null) return;
             var s = DecodeSnapshot(data);
-            if (!string.IsNullOrEmpty(s.Map) && s.Map != TerrainMap.ZoneId) { ZoneTravel.EnterZone(s.Map); EncounterState.Enemies.Clear(); EelBoss.NetRestore(); }
+            if (!string.IsNullOrEmpty(s.Map) && s.Map != TerrainMap.ZoneId) { ZoneTravel.EnterZone(s.Map); EncounterState.Enemies.Clear(); NetWorld.ResetClient(); EelBoss.NetRestore(); }
             MacroState.Current.Hour = s.Hour;
             var seen = new HashSet<ulong>();
             ulong me = Link?.LocalId ?? ulong.MaxValue;
@@ -162,6 +162,7 @@ namespace GameCore
             }
             foreach (var gone in ByOwner.Keys.Where(k => !seen.Contains(k)).ToList()) { Player.All.Remove(ByOwner[gone]); ByOwner.Remove(gone); }
             EelSump.ApplyNet(s.Eel);                                                       // the Sump's eel and its cutscene
+            NetWorld.Apply(s.World);                                                       // the clock, lines, numbers, effects and the other enemies
         }
 
         // ---------------- the wire format ----------------
@@ -190,7 +191,7 @@ namespace GameCore
 
         public class PlayerEntry { public ulong Owner; public int X, Y, Hp; public float Ox, Oy; public bool Aiming;
             public bool HasAim; public float AimX, AimY, DiveT = -1f, ProneLeft, DiveX, DiveY; }   // RT 7z: where they aim, the dive's moment
-        public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); public EelSump.NetState Eel; }     // Eel: the Sump's boss and its cutscene (EelSump.WriteNet)
+        public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); public EelSump.NetState Eel; public NetWorld.WorldIn World; }     // Eel: the Sump's boss and its cutscene (EelSump.WriteNet)
 
         public static byte[] EncodeSnapshot()
         {
@@ -205,7 +206,8 @@ namespace GameCore
                 w.Write(st.AimAt.HasValue); w.Write(st.AimAt?.x ?? 0f); w.Write(st.AimAt?.y ?? 0f);
                 w.Write(st.Diving ? Rt.DiveTime - (st.DiveUntil - now) : -1f); w.Write(Mathf.Max(0f, st.ProneUntil - now)); w.Write(st.DiveX); w.Write(st.DiveY);
             }
-            EelSump.WriteNet(w);
+            EelSump.WriteNet(w); w.Flush();
+            NetWorld.Write(w, (int)ms.Length);                                                        // the clock, log lines, numbers, effects and enemies, in what is left of the packet
             return ms.ToArray();
         }
 
@@ -217,7 +219,7 @@ namespace GameCore
             for (int k = 0; k < n; k++)
                 s.Players.Add(new PlayerEntry { Owner = r.ReadUInt64(), X = r.ReadInt32(), Y = r.ReadInt32(), Ox = r.ReadSingle(), Oy = r.ReadSingle(), Hp = r.ReadInt32(), Aiming = r.ReadBoolean(),
                     HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveX = r.ReadSingle(), DiveY = r.ReadSingle() });
-            s.Eel = EelSump.ReadNet(r);
+            s.Eel = EelSump.ReadNet(r); s.World = NetWorld.Read(r);
             return s;
         }
     }

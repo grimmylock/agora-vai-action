@@ -295,8 +295,8 @@ namespace GameCore
 
         static void Show(ICombatant u, int dmg, string part)
         {
-            bool dead = !u.IsAlive();
-            Numbers.Add(new Number { Who = u, Text = $"{dmg}{(part != null ? " " + part.ToLowerInvariant() : "")}{(dead ? " KILL" : "")}", Kind = dead ? 2 : part == "Head" ? 1 : 0, At = T });
+            bool dead = !u.IsAlive(); string numText = $"{dmg}{(part != null ? " " + part.ToLowerInvariant() : "")}{(dead ? " KILL" : "")}"; int numKind = dead ? 2 : part == "Head" ? 1 : 0;
+            Numbers.Add(new Number { Who = u, Text = numText, Kind = numKind, At = T }); NetWorld.TapNumber(u, numText, numKind);      // co-op: the friends' numbers
             var d = Dummies.FirstOrDefault(q => q.H == u);
             if (d == null) return;
             d.Hits++; d.Total += dmg; d.LastHit = T;

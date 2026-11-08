@@ -370,6 +370,7 @@ namespace GameCore
         public const float MomentStop = 0.14f, MomentSlow = 1.0f, MomentScale = 0.25f;
 
         /// <summary>A moment of near-frozen time (real seconds): the weight on a parry, a phase change, the finisher.</summary>
+        public static float StopLeft => _stopUntil < 0f ? 0f : Mathf.Max(0f, _stopUntil - Time.unscaledTime);      // co-op: what is left of the hit-stop, for the friends
         public static void HitStop(float seconds)
         {
             if (Rt.Paused) return;

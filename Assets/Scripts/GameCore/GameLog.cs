@@ -21,6 +21,7 @@ namespace GameCore
         /// <summary>Direct port of log(message) in script.js.</summary>
         public static void Write(string message)
         {
+            NetWorld.TapLog(message);                                        // co-op: the host's lines reach the friends
             if (Target != null && !Quiet)
                 Target.AppendLine(message);
             else

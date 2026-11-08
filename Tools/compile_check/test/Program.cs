@@ -49,6 +49,7 @@ static class Program {
     SaveSlotChecks();
     NetChecks();
     NetEelChecks();
+    NetWorldChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2431,6 +2432,49 @@ static class Program {
       EelLamps.Tell = (10f, 10f, 10f, 2, 1f); Check(EelLamps.Factor(12f, 10f, 1f) == 0f && EelLamps.Factor(30f, 10f, 1f) == 1f, "Eel lamps: in the silence the lamps in range are dark and the ones far away are not");
       EelLamps.Tell = (10f, 10f, 10f, 1, 1f); int dim = 0; for (int i = 0; i < 100; i++) if (EelLamps.Factor(12f, 10f, i * 0.07f) < 0.5f) dim++; Check(dim > 20 && dim < 95, $"Eel lamps: flickering is on and off, not steady ({dim} of 100 samples dim)");
     } finally { EelLamps.Tell = null; EelBoss.Reset(); Rt.On = false; }
+  }
+
+
+  // Co-op: the rest of the world reaches a friend - enemies, shots and other effects, damage numbers, log lines, bullet time (NetWorld.cs)
+  static void NetWorldChecks() {
+    var link = new FakeLink(); Net.Link = link; var log = new ConsoleLog();
+    try {
+      GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); EelBoss.Reset(); Story.Reset(); Net.Host(); var q = Net.OnJoin(7); GameLog.Target = log;
+      var (rw, ra) = EncounterGeneration.PickFactionLoadout("Raiders", "Veteran", 2);
+      var raider = new HumanEnemy("Raider", px + 6, py + 1, "Raiders", "Veteran", rw, ra) { IsAggroed = true }; var sleeper = new HumanEnemy("Guard", px + 9, py - 2, "Garrison", "Rookie", rw, ra);
+      var mk = MutantDatabase.Tiers["tier1"].Keys.First(); var mut = new Mutant(mk, px - 5, py + 3, MutantDatabase.Get("tier1", mk));
+      EncounterState.Enemies.Clear(); foreach (var e in new Mutant[] { raider, sleeper, mut }) { EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0.25f, -0.4f); }
+      raider.Hp = 37; UnityEngine.Time.time = 9000f; UnityEngine.Time.unscaledTime = 9000f;
+      var shot = CombatFx.Push("shot", raider, p, p.EquippedWeapon); shot.Hit = true; shot.Now = true; shot.EndX = p.X + 0.5f; shot.EndY = p.Y + 0.4f;
+      var pxe = new FxEvent { Kind = "px", Px = "splash", FromX = px + 2, FromY = py + 2, Now = true }; CombatFx.Add(pxe);
+      GameLog.Write("The Raider shouts something about the road."); NetWorld.TapNumber(raider, "40 head", 1); Rt.SetSlow(true);
+      var snap = Net.EncodeSnapshot(); var d = Net.DecodeSnapshot(snap);
+      Check(snap.Length < NetWorld.Packet, $"Co-op world: a snapshot with three enemies, a shot, a strip, a number and a line fits one packet ({snap.Length} bytes)");
+      Check(d.World != null && d.World.Enemies.Count == 3 && d.World.Slow && d.World.Logs.Count >= 1 && d.World.Nums.Count == 1 && d.World.Fx.Count == 2, $"Co-op world: the snapshot carries the enemies ({d.World?.Enemies.Count}), the clock {d.World?.Slow}, lines {d.World?.Logs.Count}, numbers {d.World?.Nums.Count}, effects {d.World?.Fx.Count})");
+      Net.Reset(); Net.Link = link; link.Id = 7; Rt.SetSlow(false); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient(); EncounterState.Enemies.Clear(); CombatFx.Pending.Clear(); TestingGround.Numbers.Clear(); GameLog.Target = log; int lines0 = log.Lines;
+      Net.OnSnapshot(snap);
+      var mine = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => e.Faction == "Raiders"); var mm = EncounterState.Enemies.FirstOrDefault(e => !(e is HumanEnemy));
+      Check(EncounterState.Enemies.Count == 3 && mine != null && mine.Rank == "Veteran" && mine.X == px + 6 && mine.Y == py + 1 && mine.Hp == 37 && mine.IsAggroed && mine.EquippedWeapon?.Db == rw && mine.EquippedArmor == ra, "Co-op world: a client has a mirror of the raider - same rank, place, hit points, weapon and suit");
+      Check(mm != null && mm.Db == MutantDatabase.Get("tier1", mk) && mm.X == px - 5 && Math.Abs(Rt.Offset(mm).Item1 - 0.25f) < 0.01f, "Co-op world: and of the mutant (same kind, place and offset)");
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().Any(e => e.Faction == "Garrison" && !e.IsAggroed), "Co-op world: a sleeper stays asleep");
+      var gotShot = CombatFx.Pending.FirstOrDefault(e => e.Kind == "shot");
+      Check(gotShot != null && gotShot.Hit && gotShot.Actor == mine && gotShot.Target != null && Math.Abs(gotShot.EndX - (px + 0.5f)) < 0.01f && CombatFx.Pending.Any(e => e.Kind == "px" && e.Px == "splash"), "Co-op world: the raider's shot (tracer, who, whom, where it came down) and the splash strip play on the client");
+      Check(TestingGround.Numbers.Count == 1 && TestingGround.Numbers[0].Who == mine && TestingGround.Numbers[0].Text == "40 head" && log.Lines > lines0 && Rt.SlowMo, "Co-op world: the damage number rises off the mirrored raider, the host's log line arrives and bullet time is on");
+      int fx0 = CombatFx.Pending.Count, nm0 = TestingGround.Numbers.Count; Net.OnSnapshot(snap);
+      Check(CombatFx.Pending.Count == fx0 && TestingGround.Numbers.Count == nm0, "Co-op world: a resent snapshot does not play anything twice");
+      NetWorldCrowd(link, rw, ra, mk);
+    } finally { GameLog.Target = null; Net.Reset(); Net.Link = null; Rt.On = false; Rt.SetSlow(false); }
+  }
+
+
+  static void NetWorldCrowd(FakeLink link, WeaponDef rw, ArmorDef ra, string mk) {
+    Net.Reset(); Net.Link = link; Net.Host(); Net.OnJoin(7); EncounterState.Enemies.Clear(); Rt.SetSlow(false); var p = Player.Current; int px = p.X, py = p.Y;
+    var raider = new HumanEnemy("Raider", px + 6, py, "Raiders", "Veteran", rw, ra) { IsAggroed = true }; EncounterState.Enemies.Add(raider);
+    for (int i = 0; i < 90; i++) EncounterState.Enemies.Add(new Mutant(mk, px + (i % 15) - 7, py + (i / 15) - 3, MutantDatabase.Get("tier1", mk)));
+    for (int i = 0; i < 30; i++) { var se = CombatFx.Push("shot", raider, p, null); se.Hit = true; se.Now = true; GameLog.Write("A very long line of log text that goes on and on to fill the packet as much as a real fight would: number " + i); NetWorld.TapNumber(raider, "123456789012345678901234", 0); }
+    var big = Net.EncodeSnapshot(); var bd = Net.DecodeSnapshot(big);
+    Check(big.Length <= NetWorld.Packet && bd.World.Enemies.Count >= 15 && bd.World.Enemies.Count < 91, $"Co-op world: a crowded fight (91 enemies, 30 shots, long lines) still fits one packet ({big.Length} bytes, {bd.World.Enemies.Count} enemies sent, nearest first)");
   }
 
   // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it

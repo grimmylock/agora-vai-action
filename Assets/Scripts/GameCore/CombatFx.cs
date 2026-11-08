@@ -51,7 +51,7 @@ namespace GameCore
         private const int Cap = 64;
 
         /// <summary>Real-time fork: queue an event built by the caller (Gunplay).</summary>
-        public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); }
+        public static void Add(FxEvent e) { if (Pending.Count >= Cap) Pending.RemoveAt(0); Pending.Add(e); NetWorld.TapFx(e); }
 
         /// <summary>RT 6d: a real-time reload starts - the animation runs as long as the reload timer. jam (RT 6f): clearing a jam.</summary>
         public static void Reload(ICombatant u, Weapon w, float seconds, bool jam = false, int rounds = 0) { var e = Push("reload", u, null, w); e.Now = true; e.Seconds = seconds; e.Jammed = jam; e.Rounds = rounds; }
@@ -69,7 +69,7 @@ namespace GameCore
             if (actor != null) { e.FromX = actor.X; e.FromY = actor.Y; }
             if (target != null) { e.ToX = target.X; e.ToY = target.Y; }
             if (Pending.Count >= Cap) Pending.RemoveAt(0);
-            Pending.Add(e);
+            Pending.Add(e); NetWorld.TapFx(e);                                         // co-op: the friends see it too (NetWorld)
             return e;
         }
     }
