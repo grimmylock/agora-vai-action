@@ -658,8 +658,15 @@ namespace GameCore
                 return sm != null ? sm.transform.position : MouseWorld();
             }
             if (u is HumanEnemy h)
-                return h.IsAggroed && h.Morale != "Surrendered" && _playerMarker != null ? _playerMarker.transform.position
-                    : m.transform.position + new Vector3(h.Facing.x, -h.Facing.y, 0f);
+            {
+                if (h.IsAggroed && h.Morale != "Surrendered")
+                {
+                    Player best = null; int bd = int.MaxValue;                            // it aims at the NEAREST player (co-op: not always the one on this screen)
+                    foreach (var q in Player.All) { if (!q.IsAlive()) continue; int d = (q.X - h.X) * (q.X - h.X) + (q.Y - h.Y) * (q.Y - h.Y); if (d < bd) { bd = d; best = q; } }
+                    var tm = best != null ? (best == Player.Current ? _playerMarker : MarkerOf(best)) : _playerMarker; if (tm != null) return tm.transform.position;
+                }
+                return m.transform.position + new Vector3(h.Facing.x, -h.Facing.y, 0f);
+            }
             return null;
         }
         private readonly Dictionary<SpriteRenderer, bool> _away = new Dictionary<SpriteRenderer, bool>();

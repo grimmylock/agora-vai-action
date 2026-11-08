@@ -2448,7 +2448,7 @@ static class Program {
       var raider = new HumanEnemy("Raider", px + 6, py + 1, "Raiders", "Veteran", rw, ra) { IsAggroed = true }; var sleeper = new HumanEnemy("Guard", px + 9, py - 2, "Garrison", "Rookie", rw, ra);
       var mk = MutantDatabase.Tiers["tier1"].Keys.First(); var mut = new Mutant(mk, px - 5, py + 3, MutantDatabase.Get("tier1", mk));
       EncounterState.Enemies.Clear(); foreach (var e in new Mutant[] { raider, sleeper, mut }) { EncounterState.Enemies.Add(e); Rt.SetOffset(e, 0.25f, -0.4f); }
-      raider.Hp = 37; UnityEngine.Time.time = 9000f; UnityEngine.Time.unscaledTime = 9000f;
+      raider.Hp = 37; UnityEngine.Time.time = 9000f; UnityEngine.Time.unscaledTime = 9000f; sleeper.Alert = 0.6f; raider.SpottedAt = 8999f; EncounterState.Caller = raider; EncounterState.CallAt = 8998f;
       var shot = CombatFx.Push("shot", raider, p, p.EquippedWeapon); shot.Hit = true; shot.Now = true; shot.EndX = p.X + 0.5f; shot.EndY = p.Y + 0.4f;
       var pxe = new FxEvent { Kind = "px", Px = "splash", FromX = px + 2, FromY = py + 2, Now = true }; CombatFx.Add(pxe);
       GameLog.Write("The Raider shouts something about the road."); NetWorld.TapNumber(raider, "40 head", 1); Rt.SetSlow(true);
@@ -2460,7 +2460,7 @@ static class Program {
       var mine = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => e.Faction == "Raiders"); var mm = EncounterState.Enemies.FirstOrDefault(e => !(e is HumanEnemy));
       Check(EncounterState.Enemies.Count == 3 && mine != null && mine.Rank == "Veteran" && mine.X == px + 6 && mine.Y == py + 1 && mine.Hp == 37 && mine.IsAggroed && mine.EquippedWeapon?.Db == rw && mine.EquippedArmor == ra, "Co-op world: a client has a mirror of the raider - same rank, place, hit points, weapon and suit");
       Check(mm != null && mm.Db == MutantDatabase.Get("tier1", mk) && mm.X == px - 5 && Math.Abs(Rt.Offset(mm).Item1 - 0.25f) < 0.01f, "Co-op world: and of the mutant (same kind, place and offset)");
-      Check(EncounterState.Enemies.OfType<HumanEnemy>().Any(e => e.Faction == "Garrison" && !e.IsAggroed), "Co-op world: a sleeper stays asleep");
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().Any(e => e.Faction == "Garrison" && !e.IsAggroed && Math.Abs(e.Alert - 0.6f) < 0.02f) && UnityEngine.Time.time - mine.SpottedAt < 2.5f && EncounterState.Caller == mine && EncounterState.CallAt >= 0f, "Co-op world: a sleeper stays asleep with its \"!\" filling (60%), the raider that just spotted you shows red and the one calling for backup shows its radio icon");
       var gotShot = CombatFx.Pending.FirstOrDefault(e => e.Kind == "shot");
       Check(gotShot != null && gotShot.Hit && gotShot.Actor == mine && gotShot.Target != null && Math.Abs(gotShot.EndX - (px + 0.5f)) < 0.01f && CombatFx.Pending.Any(e => e.Kind == "px" && e.Px == "splash"), "Co-op world: the raider's shot (tracer, who, whom, where it came down) and the splash strip play on the client");
       Check(TestingGround.Numbers.Count == 1 && TestingGround.Numbers[0].Who == mine && TestingGround.Numbers[0].Text == "40 head" && log.Lines > lines0 && Rt.SlowMo, "Co-op world: the damage number rises off the mirrored raider, the host's log line arrives and bullet time is on");

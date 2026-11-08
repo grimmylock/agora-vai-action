@@ -5,7 +5,7 @@
 //   - damage numbers (the Testing Ground's), numbered the same way
 //   - effects: shots (muzzle flash, tracer, impact, the cover's reaction is left out), melee, strikes, reloads and the ready-made strips (CombatFx.PxAt), numbered, resent for 0.3 s
 //   - enemies: the nearest ones first, 16 bytes each: an id, what it is as INDICES into the databases (the same build has the same databases: mutant = tier+key, human = faction, rank, weapon, armor), where, hit points and whether it is awake.
-// The client keeps a mirror of each: a real Mutant / HumanEnemy built from those indices, moved every snapshot, never ticked (a client runs no world). Not carried: what an enemy is doing (aiming, reloading, its "!" and its radio),
+// The client keeps a mirror of each: a real Mutant / HumanEnemy built from those indices, moved every snapshot, never ticked (a client runs no world). Carried too: the "!" (how far it has noticed you, whether it just spotted you) and the radio call; the aim is the view's (it turns toward the nearest player). Not carried: whether it is mid-reload (the reload effect is, as an event),
 // the boss's own units (the eel has its own block, the brain boss none yet), loot on the dead, anything an enemy carries besides its first weapon and its suit.
 using System.Collections.Generic;
 using System.IO;
@@ -92,14 +92,15 @@ namespace GameCore
                 if (e.Kind == "px") w.Write(e.Px ?? "");
             }
             // the enemies, nearest first, as many as fit
-            w.Flush(); int budget = Packet - (int)w.BaseStream.Length - 4; int cap = System.Math.Max(0, System.Math.Min(60, budget / 16)); var send = near.Take(cap).ToList(); w.Write((byte)send.Count);
+            w.Flush(); int budget = Packet - (int)w.BaseStream.Length - 4; int cap = System.Math.Max(0, System.Math.Min(60, budget / 17)); var send = near.Take(cap).ToList(); w.Write((byte)send.Count);
             foreach (var e in send)
             {
                 bool human = e is HumanEnemy; var h = e as HumanEnemy; int a = human ? Idx(_wepIdx, h.EquippedWeapon?.Db) : Idx(_mutIdx, e.Db), b = human ? Idx(_armIdx, h.EquippedArmor) : 0xFFFF;
                 int fr = human ? ((System.Math.Max(0, _fac.IndexOf(h.FactionName)) << 3) | System.Math.Max(0, CombatRules.RankIndex(h.Rank))) : 0;
                 var (ox, oy) = Rt.Offset(e); bool alive = e.IsAlive() && e.Hp > 0;
-                w.Write((ushort)IdOf(e)); w.Write((byte)((human ? 1 : 0) | (alive ? 2 : 0) | (e.IsAggroed ? 4 : 0))); w.Write((ushort)a); w.Write((ushort)b); w.Write((byte)fr);
-                w.Write((short)e.X); w.Write((short)e.Y); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(ox * 127f), -127, 127)); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(oy * 127f), -127, 127)); w.Write((ushort)Mathf.Clamp(e.Hp, 0, 65535));
+                bool spotted = now - e.SpottedAt < 2.5f, calling = EncounterState.Caller == e && EncounterState.CallAt >= 0f;      // the "!" over its head (yellow while it notices you, red when it spots you) and the radio icon
+                w.Write((ushort)IdOf(e)); w.Write((byte)((human ? 1 : 0) | (alive ? 2 : 0) | (e.IsAggroed ? 4 : 0) | (spotted ? 8 : 0) | (calling ? 16 : 0))); w.Write((ushort)a); w.Write((ushort)b); w.Write((byte)fr);
+                w.Write((short)e.X); w.Write((short)e.Y); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(ox * 127f), -127, 127)); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(oy * 127f), -127, 127)); w.Write((ushort)Mathf.Clamp(e.Hp, 0, 65535)); w.Write((byte)Mathf.Clamp(Mathf.RoundToInt(e.Alert * 100f), 0, 100));
             }
             WriteBrain(w);
             // forget the ids of enemies that are gone
@@ -151,7 +152,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ the client
-        public class Entry { public int Id, A, B, Fr, X, Y, Hp; public bool Human, Alive, Aggro; public float Ox, Oy; }
+        public class Entry { public int Id, A, B, Fr, X, Y, Hp, Alert; public bool Human, Alive, Aggro, Spotted, Calling; public float Ox, Oy; }
         public class FxIn { public int Seq, Kind, Weapon, Rounds, FromX, FromY, ToX, ToY, Overkill; public byte ActorT, TargetT; public ulong Actor, Target; public int Flags; public float EndX, EndY, Seconds; public string Px; }
         public class WorldIn { public BrainIn Brain; public bool Slow; public float Stop; public List<(int seq, string text)> Logs = new List<(int, string)>(); public List<(int seq, byte t, ulong who, int kind, string text)> Nums = new List<(int, byte, ulong, int, string)>(); public List<FxIn> Fx = new List<FxIn>(); public List<Entry> Enemies = new List<Entry>(); }
         public static WorldIn Read(BinaryReader r)
@@ -169,8 +170,8 @@ namespace GameCore
             n = r.ReadByte();
             for (int i = 0; i < n; i++)
             {
-                var e = new Entry { Id = r.ReadUInt16() }; int fl = r.ReadByte(); e.Human = (fl & 1) != 0; e.Alive = (fl & 2) != 0; e.Aggro = (fl & 4) != 0; e.A = r.ReadUInt16(); e.B = r.ReadUInt16(); e.Fr = r.ReadByte();
-                e.X = r.ReadInt16(); e.Y = r.ReadInt16(); e.Ox = r.ReadSByte() / 127f; e.Oy = r.ReadSByte() / 127f; e.Hp = r.ReadUInt16(); o.Enemies.Add(e);
+                var e = new Entry { Id = r.ReadUInt16() }; int fl = r.ReadByte(); e.Human = (fl & 1) != 0; e.Alive = (fl & 2) != 0; e.Aggro = (fl & 4) != 0; e.Spotted = (fl & 8) != 0; e.Calling = (fl & 16) != 0; e.A = r.ReadUInt16(); e.B = r.ReadUInt16(); e.Fr = r.ReadByte();
+                e.X = r.ReadInt16(); e.Y = r.ReadInt16(); e.Ox = r.ReadSByte() / 127f; e.Oy = r.ReadSByte() / 127f; e.Hp = r.ReadUInt16(); e.Alert = r.ReadByte(); o.Enemies.Add(e);
             }
             o.Brain = ReadBrain(r);
             return o;
@@ -202,7 +203,8 @@ namespace GameCore
                     else { if (e.A >= _mut.Count) continue; var (tier, key) = _mut[e.A]; m = new Mutant(key, e.X, e.Y, MutantDatabase.Get(tier, key)); }
                     Mirror[e.Id] = m; EncounterState.Enemies.Add(m);
                 }
-                m.X = e.X; m.Y = e.Y; Rt.SetOffset(m, e.Ox, e.Oy); m.Hp = e.Alive ? System.Math.Max(1, e.Hp) : 0; m.IsAggroed = e.Aggro;
+                m.X = e.X; m.Y = e.Y; Rt.SetOffset(m, e.Ox, e.Oy); m.Hp = e.Alive ? System.Math.Max(1, e.Hp) : 0; m.IsAggroed = e.Aggro; m.Alert = e.Alert / 100f; m.SpottedAt = e.Spotted ? Time.time - 0.2f : -99f;
+                if (e.Calling && m is HumanEnemy hcall) { EncounterState.Caller = hcall; if (EncounterState.CallAt < 0f) EncounterState.CallAt = Time.time; } else if (EncounterState.Caller == m) { EncounterState.Caller = null; EncounterState.CallAt = -1f; }
             }
             foreach (var id in Mirror.Keys.Where(k => !seen.Contains(k)).ToList()) { EncounterState.Enemies.Remove(Mirror[id]); Mirror.Remove(id); }
             ApplyBrain(o.Brain);
