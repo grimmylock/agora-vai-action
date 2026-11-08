@@ -14,7 +14,7 @@ namespace GameCore
         readonly List<SpriteRenderer> _eelBolt = new List<SpriteRenderer>(); float _stormUntil;
         readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>(), _eelFoam = new List<SpriteRenderer>();
         SpriteRenderer _eelHead;
-        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.3f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
+        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.08f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
         static readonly Color EelShade = new Color(0.02f, 0.08f, 0.09f, 0.55f);                      // the body's half thickness in tiles, for thinning the inside of a tight bend
         const bool EelTelegraphs = false;                    // Yan, 2026-11-06: "remove the red telegraphs for now, they look pretty bad" - the zones are still computed (EelBoss.Fight.Zones), just not drawn
         static readonly List<EelBoss.Zone> NoZones = new List<EelBoss.Zone>();
@@ -236,12 +236,12 @@ namespace GameCore
         void DrawEel()
         {
             var f = EelBoss.Current;
-            if (f == null || f.Gone || f.Sump == null)
+            if (f == null || f.Gone || EelSump.SpineOf(f) == null)
             {
                 Vision.Glows.Clear(); if (_eelFlood != null && _eelFlood.gameObject.activeSelf) _eelFlood.gameObject.SetActive(false);
                 HideFrom(_eelBody, 0); HideFrom(_eelBolt, 0); HideFrom(_eelWater, 0); if (_eelShock != null && _eelShock.gameObject.activeSelf) _eelShock.gameObject.SetActive(false); EelStand = EelHandUp = EelHandLo = null; HideFrom(_eelStars, 0); HideFrom(_eelFoam, 0); HideFrom(_eelShadow, 0); HideFrom(_eelZones, 0); if (_eelHead != null && _eelHead.gameObject.activeSelf) _eelHead.gameObject.SetActive(false); return;
             }
-            var s = f.Sump; int stage = Mathf.Clamp(f.Phase, 0, 3);
+            var s = EelSump.SpineOf(f); int stage = Mathf.Clamp(f.Phase, 0, 3);          // the Sump's spine, or (Levels 1-2) the one laid along the platform form's rig
             DrawFlood(s);
             Vision.Glows.Clear();                                                                           // it glows a little (Yan: its body was lost in the dark): a soft light along the part that is out of the water, where it is DRAWN (lifted by its height)
             for (int gi = 0; gi < EelSump.N; gi += 5) if (s.Z[gi] > EelSump.Surface) Vision.Glows.Add((s.X[gi] - 0.5f, s.Y[gi] - s.Z[gi] - 0.5f, gi == 0 ? 4.2f : 3.2f, gi == 0 ? 0.85f : 0.7f));   // (-0.5: the overlay's cell coordinates have tile centres on whole numbers)
@@ -251,7 +251,7 @@ namespace GameCore
                 {
                     CombatFx.PxAt(e.Water ? "splash" : "blunt_hit", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y));
                     Shake(Mathf.Min(0.35f, 0.14f * e.Power)); Boss.HitStop(0.05f * Mathf.Min(2f, e.Power));
-                    Sfx.Play(e.Water ? "eel_splash" : "eel_slam", new Vector3(e.X, -e.Y, 0f), Mathf.Clamp(0.35f + 0.4f * e.Power, 0.3f, 1.2f), 0.05f, e.Power >= 1.5f ? 0.85f : 1.1f);
+                    if (!e.Water && e.Power >= 2f) Sfx.Play("eel_slam", new Vector3(e.X, -e.Y, 0f), Mathf.Clamp(0.35f + 0.4f * e.Power, 0.3f, 1.2f), 0.05f, 0.85f);      // the heavy slams; the rest have their sounds from the fight code (EelSump.Impact/Snd: the PC session's splashes and thuds, sent to clients as events)
                 }
                 else if (e.Kind == "ripple") { CombatFx.PxAt("ripples", Mathf.FloorToInt(e.X), Mathf.FloorToInt(e.Y)); if (e.Power > 0.6f) Shake(0.04f * e.Power); }      // the introduction: the pools swell
                 else if (e.Kind == "spark")                                                              // the storm's charge: many small crackles across the body, thicker as it fills

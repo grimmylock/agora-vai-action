@@ -35,6 +35,7 @@ namespace GameCore
             public string Label = "";                            // what it is doing, for the screen
             public HumanEnemy Body; public int BodyX, BodyY; public string BodyArmor;
             public EelSump.State Sump;                          // the Sump fight (four pools, authored moves, a targetable tail): EelSump.cs
+            public string Zone;   // the map
             public readonly EelRig Rig = new EelRig();          // the procedural body: the state machine moves the head, the segments trail
             public float WindFor = Wind, FromX, FromY, PullX, PullY, S0X, S0Y, S1X, S1Y, S2X, S2Y; public bool Discharged;   // the current move: where the head started, its pull-back point, the sweep's Bezier
             public float TgtX, TgtY, EscX, EscY;                   // the player it is watching; the way it dives after a strike
@@ -77,7 +78,7 @@ namespace GameCore
         public static Fight SpawnPlatform(string zone, float sx, float sy)
         {
             var m = new Mutant(Name, (int)sx, (int)sy, Def) { Hp = MaxHp }; EncounterState.Enemies.Add(m); Bag.Clear();
-            var f = new Fight { Unit = m, Level = "platform", SX = sx, SY = sy, StageAt = Time.time, Next = Time.time + 1f }; f.Sump = EelSump.PlatformProxy(m);       // for the view and the co-op snapshot
+            var f = new Fight { Unit = m, Level = "platform", SX = sx, SY = sy, StageAt = Time.time, Next = Time.time + 1f, Zone = zone }; f.Sump = EelSump.PlatformProxy(m);       // for the view and the co-op snapshot
             foreach (var (x, y) in Marks(zone, '7')) f.Platforms.Add((x + 0.5f, y + 0.5f));
             foreach (var (x, y) in Marks(zone, '8')) f.Lures.Add((x + 0.5f, y + 0.5f)); f.WantFeint = f.Lures.Count > 0;
             f.Rig.Place(sx, sy, 1f, 0f); f.Rig.Under = true;
@@ -100,6 +101,15 @@ namespace GameCore
             return Current = f;
         }
 
+        /// <summary>The last pump (Main Sump Pump, Depths 3) cannot be run while the eel lies in its pool (ACTION_DESIGN: "it blocks the last pump ... put it down, run the pump"): true = blocked, and says so.
+        /// It is "put down" when it has fled (Story flag eel_fled), which also holds for a save that beat it before this gate existed.</summary>
+        public static bool BlocksPump(string grantsKey)
+        {
+            if (grantsKey == null || grantsKey != LabLocks.Key("drain3") || TerrainMap.ZoneId != LabLocks.Depths3 || Story.Has(Fled)) return false;
+            GameLog.Write("The pump's panel sits at the edge of the pool, and something huge is circling right beside it. Nobody is touching that panel until it is put down.");
+            return true;
+        }
+
         public static void GoStage(Fight f, string stage) => Go(f, stage);
         // ---- the tell (ACTION_DESIGN "Fair scare rule": never a real strike without it): the lamps near the platform flicker, buzz and dim as it draws power. A REAL strike (stage wind, 1.3 s) flickers for 1 s and then
         // the lamps go completely dark for 0.3 s - the silence - and it bursts. A FALSE ALARM (stage feint, Level 2) flickers for 1.3 s and the lamps simply come back.
@@ -112,7 +122,7 @@ namespace GameCore
             else if (f.Stage == "feint") { mode = 1; k = Mathf.Clamp01(0.2f + age / 1.3f * 0.8f); }
             if (mode == 0) { EelLamps.Tell = null; return; }
             EelLamps.Tell = (f.PX, f.PY, TellRadius, mode, k);
-            if (mode == 1 && now >= _buzzAt) { _buzzAt = now + 0.22f; EelSump.PlatformSound(f, "eel_charge", f.PX, f.PY, 0.12f + 0.3f * k); }          // the buzz: louder as it fills, cut off in the silence
+            if (mode == 1 && now >= _buzzAt) { _buzzAt = now + 2f; EelSump.PlatformSound(f, "eel_buzz", f.PX, f.PY, 0.9f); }          // the buzz (a hum with crackle that swells for a second, then silence: the PC session's eel_buzz, made for exactly this)
         }
         static void Despawn(Fight f)
         {

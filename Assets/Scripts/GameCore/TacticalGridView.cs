@@ -263,6 +263,7 @@ namespace GameCore
             for (int i = 0; i < EncounterState.Enemies.Count; i++)
             {
                 var enemy = EncounterState.Enemies[i];
+                if (EelBoss.Is(enemy)) { _enemyMarkers[i].gameObject.SetActive(false); _alertMarks[i].gameObject.SetActive(false); continue; }   // the eel draws itself (CombatFxView.Eel): its two units are hitboxes, not a person (Yan: the testing-ground dummy showed up as its hitbox)
                 // Fix: dead enemies used to just be hidden (SetActive(false)) - that made a
                 // HumanEnemy corpse invisible right when CorpseLootUI made it worth clicking on.
                 // Keep the marker up so a body stays a visible thing in the world (Batch 24: as a

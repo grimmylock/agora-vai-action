@@ -609,11 +609,12 @@ namespace GameCore
         static readonly Dictionary<string, (int keep, float fps)> PxShort = new Dictionary<string, (int, float)>
         { ["muzzle_pistol"] = (7, 30f), ["muzzle_smg"] = (4, 30f), ["muzzle_shotgun"] = (9, 30f), ["bullet_impact"] = (8, 30f), ["ricochet"] = (7, 30f), ["hit_spark"] = (8, 24f) };
         static readonly Dictionary<string, Sprite[]> _pxCut = new Dictionary<string, Sprite[]>();
+        static readonly Dictionary<string, float> PxSpeed = new Dictionary<string, float> { ["blunt_hit"] = 1.5f, ["zap_hit"] = 1.5f };      // two more hit effects that play a little faster (the other, longer ones play as made)
         bool PxFx(string name, Vector3 at, float dx, float dy, float ppu)
         {
             var frames = Strip("Sprites/Fx/px_" + name, 0, ppu, new Vector2(0.5f, 0.5f));
             if (frames == null) return false;
-            float fps = PxFps; bool shorten = PxShort.TryGetValue(name, out var cut);
+            float fps = PxFps * (PxSpeed.TryGetValue(name, out var spd) ? spd : 1f); bool shorten = PxShort.TryGetValue(name, out var cut);
             if (shorten && frames.Length > cut.keep) { string key = name + ppu; if (!_pxCut.TryGetValue(key, out var kept)) _pxCut[key] = kept = frames.Take(cut.keep).ToArray(); frames = kept; }
             if (shorten) fps = cut.fps;
             var sr = NewSprite("px_" + name, frames[0], Color.white, _root, 9);

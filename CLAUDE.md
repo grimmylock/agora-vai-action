@@ -125,6 +125,8 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
 
 Paths in older Python files point to `C:/Users/yan-s/Desktop/agora vai/agora vai/...`; search and replace if they break.
 
+**This Windows PC (set up 2026-11-06):** Python 3.12 (`%LOCALAPPDATA%\Programs\Python\Python312\python.exe`, with numpy, pillow, scipy; `python` on PATH is only the Store stub until a new shell), Node.js LTS (winget, `npx`), the .NET 8 SDK, git only through GitHub Desktop's copy (`%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd`; put it on PATH for `npx skills add`). Account-level skills installed: `level-design`, `handoff`, `unity-2d-lighting`, `gamedev-2d-art-lighting-art`, `unity-netcode`, `game-feel`, `unity-npc-behavior`; `agora-vai-pixel-art` is Yan's own zip and still has to be copied to `~/.claude/skills/agora-vai-pixel-art/SKILL.md`.
+
 ## State (2026-11-06)
 
 **Checked in Unity by Yan:** the first real-time playtest (RT 7), the melee/Visor work (Visor 4: heads clipping, parry too hard ->

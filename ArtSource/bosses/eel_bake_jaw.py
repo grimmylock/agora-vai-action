@@ -44,6 +44,17 @@ def jaw_frame(head, o):
     canvas[hole, :3] = (acc[hole] // cnt[hole][:, None]).astype(np.uint8); canvas[hole, 3] = 255
     up = np.zeros_like(canvas); up[PAD:PAD + H, PAD:PAD + W] = upper
     m = up[:, :, 3] > 0; canvas[m] = up[m]                      # the upper head in front of the lower jaw
+    if o != 1.0: canvas = despeckle(canvas)                     # the forced-wide frame left a few loose tooth pixels by the jaw's tip (Yan's eye needed): bits under 10 px that touch nothing go
+    return canvas
+
+
+def despeckle(canvas, min_px=10):
+    from scipy import ndimage as ndi
+    lab, n = ndi.label(canvas[:, :, 3] > 0, structure=np.ones((3, 3)))
+    if n < 2: return canvas
+    sizes = ndi.sum(canvas[:, :, 3] > 0, lab, range(1, n + 1))
+    for i, s in enumerate(sizes, 1):
+        if s < min_px: canvas[lab == i] = 0
     return canvas
 
 
@@ -57,7 +68,7 @@ def bake():
             box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
     ax, ay = E.HEAD_ANCHOR[0] + PAD - box[0], E.HEAD_ANCHOR[1] + PAD - box[1]
     for st in range(4):
-        outs = [E.outline_layer(f)[box[1]:box[3], box[0]:box[2]] for f in frames_by_stage[st]]
+        outs = [despeckle(E.outline_layer(f), 40)[box[1]:box[3], box[0]:box[2]] for f in frames_by_stage[st]]      # (a loose tooth with its outline is 15-30 px and survives the first pass: bits under 40 px that touch nothing go too)
         strip = np.concatenate(outs, axis=1); A.write_strip(f"jaw_s{st}", [strip], {})
     info = dict(frames=len(OPEN), frame_w=int(box[2] - box[0]), frame_h=int(box[3] - box[1]), anchor_x=float(ax), anchor_y=float(ay), open=OPEN)
     print(json.dumps(info)); return info

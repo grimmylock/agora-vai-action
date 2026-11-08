@@ -47,6 +47,7 @@ namespace GameCore
             return list;
         }
 
+
         /// <summary>Up to 1 the light is what it is; past it, lights add up more and more gently (to about 2), so overlapping pools and a
         /// lamp's head glow without clipping the picture to flat orange.</summary>
         static float Shoulder(float v) => v <= 1f ? v : 1f + (v - 1f) / (1f + (v - 1f));

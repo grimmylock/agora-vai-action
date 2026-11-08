@@ -14,6 +14,7 @@ namespace GameCore
         RectTransform _bossBar; Image _bossFill, _bossGhost; TextMeshProUGUI _bossName, _bossState, _splash, _splashSub;
         float _ghost = 1f;
         Image _tailEdge, _tailFill;                                  // Boss 3: the eel's tail is a target of its own
+        Image _mashEdge, _mashFill; TextMeshProUGUI _mashText;       // Boss 3: the jaw-hold's struggle prompt (whoever holds the jaws)
         const float BossW = 560f;
 
         Image CineBar(string name, bool top)                          // a black bar across the whole width, top or bottom
@@ -85,9 +86,23 @@ namespace GameCore
                 _tailFill = Img(_tailEdge.transform, "Fill", new Vector2(0f, 1f), new Vector2(2f, -2f), new Vector2(BossW * 0.5f - 4f, 6f), C("d0642a"));
             }
             bool grip = eel && EelSump.Gripping(Player.Current), tailOn = eel && ef.Sump.TailOut && !GameState.Current.ModalOpen;           // the tail's bar slot doubles as the jaw-hold's struggle bar
-            _tailEdge.gameObject.SetActive(tailOn || grip);
-            if (grip) { _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(EelSump.GripOf(ef)), 6f); _tailFill.color = Color.Lerp(Yellow, Color.white, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 24f)); _bossState.text = "MASH THE PARRY KEY!"; }
-            else if (tailOn) { _tailFill.color = C("d0642a"); _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(ef.Sump.Tail.Hp / (float)EelSump.TailMax), 6f); }
+            _tailEdge.gameObject.SetActive(tailOn && !grip);
+            // the jaw-hold's struggle: its own prompt and bar low on the screen (it used to share the boss name's slots and its text overlapped the name)
+            if (_mashText == null)
+            {
+                _mashText = Txt(_root.transform, "MashText", Vector2.zero, new Vector2(900f, 56f), "", true, 40, Cream, TextAlignmentOptions.Center);
+                Pin(_mashText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -150f)); _mashText.outlineWidth = 0.25f; _mashText.outlineColor = new Color32(0, 0, 0, 255);
+                _mashEdge = Img(_root.transform, "MashBar", new Vector2(0.5f, 0.5f), new Vector2(0f, -196f), new Vector2(380f, 18f), Edge);
+                _mashFill = Img(_mashEdge.transform, "Fill", new Vector2(0f, 1f), new Vector2(2f, -2f), new Vector2(376f, 14f), Yellow);
+            }
+            _mashText.gameObject.SetActive(grip); _mashEdge.gameObject.SetActive(grip);
+            if (grip)
+            {
+                float g = Mathf.Clamp01(EelSump.GripOf(ef)), pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 24f);
+                _mashFill.rectTransform.sizeDelta = new Vector2(376f * g, 14f); _mashFill.color = Color.Lerp(Yellow, Color.white, pulse);
+                _mashText.text = "MASH  PARRY  TO  SHUT  ITS  JAWS!"; _mashText.color = Color.Lerp(Cream, Yellow, pulse); _mashText.rectTransform.localScale = Vector3.one * (1f + 0.04f * pulse);
+            }
+            if (tailOn && !grip) { _tailFill.color = C("d0642a"); _tailFill.rectTransform.sizeDelta = new Vector2((BossW * 0.5f - 4f) * Mathf.Clamp01(ef.Sump.Tail.Hp / (float)EelSump.TailMax), 6f); }
 
             float age = Time.unscaledTime - Boss.SplashAt;
             bool splash = age >= 0f && age < Boss.SplashSeconds && !GameState.Current.ModalOpen;

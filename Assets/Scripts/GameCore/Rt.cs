@@ -447,11 +447,14 @@ namespace GameCore
             float dx = at.x - px, dy = at.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
             if (len < 0.05f) return;
             var over = UnitUnder(at.x, at.y);
-            float h = Ballistics.AimHeight(over, at.y);
+            bool atEel = EelSump.BodyUnder(at.x, at.y, out var eelU, out float eelX, out float eelY);   // Boss 3: the crosshair is over some part of the eel's body: aim at that part's spot on the ground
+            if (atEel) over = eelU;
+            float h = atEel ? 0.45f : Ballistics.AimHeight(over, at.y);
             int mx = Mathf.FloorToInt(at.x), my = Mathf.FloorToInt(at.y);
             if (over == null && TerrainMap.CoverAcAt(mx, my) > 0 && !TerrainMap.BlocksSight(mx, my)) h = 0.3f;   // a barrel, sandbags, a desk: shoot the thing itself
             // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
-            if (over != null) { var (ux, uy) = Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
+            if (over != null) { var (ux, uy) = atEel ? (eelX, eelY) : Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
+            if (len < 0.05f) return;
             bool ambush = over is Mutant u && !u.IsAggroed;
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
             float spread = Gunplay.Spread(hd, aim, Of(p).Moving, p.Sneaking);
@@ -460,7 +463,7 @@ namespace GameCore
             spread += (2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f)) * Gunplay.PlayerSpread;
             if (!Of(p).Diving && (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil)) spread += 2f * Gunplay.PlayerSpread;   // RT 8 (Yan): no pinning mid-dive
             if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
-            Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush);
+            Gunplay.AimAtEel = atEel; try { Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush); } finally { Gunplay.AimAtEel = false; }
             aim.Bloom = System.Math.Min(Gunplay.MaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();
@@ -629,15 +632,15 @@ namespace GameCore
             ICombatant best = null; float bd = 9f;
             foreach (var u in Gunplay.Bodies())
             {
-                if (u is Player || !u.IsAlive() || !Vision.Shows(u)) continue;
+                if (u is Player || !u.IsAlive() || EelBoss.Is(u) || !Vision.Shows(u)) continue;     // (the eel: below, by its whole body)
                 var (ux, uy) = Ballistics.Pos(u);
-                uy -= EelSump.LiftOfUnit(u);                       // Boss 3: a raised eel is drawn higher up the screen than its ground spot; the crosshair is over the sprite
                 float tall = u is Mutant mm && !(u is HumanEnemy) ? Ballistics.MutantSize(mm) : 1f;
                 // the sprite covers half a tile each side and from its feet up to its crown
                 if (System.Math.Abs(x - ux) > 0.45f * tall || y > uy + 0.5f || y < uy + 0.44f - Ballistics.BodyTiles * tall - 0.1f) continue;
                 float d = System.Math.Abs(x - ux) + System.Math.Abs(y - uy);
                 if (d < bd) { bd = d; best = u; }
             }
+            if (best == null && EelSump.BodyUnder(x, y, out var eel, out _, out _)) best = eel;       // Boss 3: any part of the eel's body (the sprite is lifted by its height)
             return best;
         }
 

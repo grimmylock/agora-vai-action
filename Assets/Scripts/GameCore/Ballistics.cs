@@ -44,6 +44,7 @@ namespace GameCore
         /// <summary>Half-width of a unit's footprint for a round at height h (share of a standing human). Mutants: one band.</summary>
         static float HalfWidth(ICombatant u, float h, out string part)
         {
+            if (EelBoss.Is(u)) { part = null; return -1f; }   // Boss 3: the eel is hit along its whole body (EelSump.TraceBody), not at its two base units
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
             {
                 float size = MutantSize(m), top = size + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
@@ -65,7 +66,7 @@ namespace GameCore
 
         /// <summary>Trace one round from (x0, y0) along the unit direction (dx, dy) for up to `range` tiles at height h.
         /// The first body, wall or blocking cover on the way ends it.</summary>
-        public static Hit Trace(ICombatant shooter, float x0, float y0, float dx, float dy, float range, float h, IEnumerable<ICombatant> bodies)
+        public static Hit Trace(ICombatant shooter, float x0, float y0, float dx, float dy, float range, float h, IEnumerable<ICombatant> bodies, bool atEel = false)
         {
             var hit = new Hit();
             // the nearest body the line passes close enough to, at this height
@@ -83,6 +84,7 @@ namespace GameCore
                 if (part == "Torso" && System.Math.Abs(side) > ArmFrom) part = "Arm";
                 best = u; bestT = t; bestPart = part; bestSide = side;
             }
+            if ((shooter == null || shooter is Player) && EelSump.TraceBody(x0, y0, dx, dy, range, bestT, atEel, out float eT, out var eU, out string ePart, out float eSide)) { best = eU; bestT = eT; bestPart = ePart; bestSide = eSide; }   // Boss 3: the eel's whole body
             float stop = best != null ? bestT : range;
             // walk the tiles the line crosses up to the body (or the end of its reach)
             int lastX = (int)System.Math.Floor(x0), lastY = (int)System.Math.Floor(y0);

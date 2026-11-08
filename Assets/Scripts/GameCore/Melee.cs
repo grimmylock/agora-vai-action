@@ -210,22 +210,26 @@ namespace GameCore
             foreach (var u in Gunplay.Targets(by))
             {
                 if (u == null || u == by || !u.IsAlive() || Body.Down(u)) continue;
+                if (EelBoss.Is(u)) continue;                                                  // the eel is its whole body, below
                 var (ux, uy) = Ballistics.Pos(u);
                 float ex = ux - px, ey = uy - py, d = Mathf.Sqrt(ex * ex + ey * ey);
                 if (d > sh.reach || d < 0.01f) continue;
                 if ((ex * dx + ey * dy) / d < Mathf.Cos(sh.arc * 0.5f * Mathf.Deg2Rad)) continue;   // outside the arc
                 inside.Add((u, d));
             }
+            ICombatant eelU = null; string eelPart = null;                                     // Eel: any part of the body that is out of the water can be cut (not only the base unit in the pool's centre)
+            if (!(by is HumanEnemy) && EelSump.MeleeBody(px, py, dx, dy, sh.reach, sh.arc, out eelU, out eelPart, out float eelD)) inside.Add((eelU, eelD));
             if (inside.Count == 0) return null;
             inside.Sort((a, b) => a.d.CompareTo(b.d));
-            for (int i = 1; sh.all && i < inside.Count; i++) Land(by, w, inside[i].u, px, py, h, sh.reach, mult * sh.dmg);   // a sweep takes everyone in it
-            Land(by, w, inside[0].u, px, py, h, sh.reach, mult * sh.dmg);
+            for (int i = 1; sh.all && i < inside.Count; i++) Land(by, w, inside[i].u, px, py, h, sh.reach, mult * sh.dmg, ReferenceEquals(inside[i].u, eelU) ? eelPart : null);   // a sweep takes everyone in it
+            Land(by, w, inside[0].u, px, py, h, sh.reach, mult * sh.dmg, ReferenceEquals(inside[0].u, eelU) ? eelPart : null);
             return inside[0].u;
         }
 
-        static void Land(ICombatant by, Weapon w, ICombatant best, float px, float py, float h, float reach, float mult)
+        static void Land(ICombatant by, Weapon w, ICombatant best, float px, float py, float h, float reach, float mult, string forcePart = null)
         {
             var fx = CombatFx.Push("impact", by, best, w); fx.Now = true;                       // blood, the flash, the knock-back
+            if (forcePart != null) { fx.Hit = true; Strike(by, w, best, forcePart, 0f, fx, mult); return; }   // the eel's body: the part the swing reached
             // the body part: a line straight at them at the crosshair's height
             var (bx, by2) = Ballistics.Pos(best);
             float ox = bx - px, oy = by2 - py, ol = Mathf.Max(0.01f, Mathf.Sqrt(ox * ox + oy * oy));
@@ -258,6 +262,7 @@ namespace GameCore
             var st = For(w);
             float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * Ballistics.PartMult(part ?? "Torso") * mult;
             if (target is Mutant tm0 && !tm0.IsAggroed) raw *= 1.3f;                      // they never saw it coming
+            if (EelSump.IsEelHead(target, part)) raw *= EelSump.HeadBonus;                // the eel's head takes extra, as for guns
             if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
             if (by is Player) raw *= CombatRules.PlayerDamage;
             raw *= CombatRules.Lethality;
