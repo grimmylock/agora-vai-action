@@ -374,6 +374,7 @@ namespace GameCore
             for (int i = smoked; i < _smokePool.Count; i++) _smokePool[i].gameObject.SetActive(false);
 
             _fx.Tick();
+            _motion.PruneGone(u => u is Player || EncounterState.Enemies.Contains(u as Mutant));
             _motion.TickRagdolls();
             _fx.ApplyTo(player, _playerMarker);
             if (HudView.PlayerHurt > 0.01f)                                         // you were hit: the body flashes red (HudView.UpdateHurt)
@@ -811,7 +812,8 @@ namespace GameCore
                 marker.transform.position += new Vector3(-CombatFxView.EelFace * 0.2f * (1f - gp0) + Random.Range(-1f, 1f) * 0.07f * tw0, Random.Range(-1f, 1f) * 0.04f * tw0, 0f);
             }   // Boss 3: carried by the tail, thrown, hurled
             var group = marker.GetComponent<UnityEngine.Rendering.SortingGroup>();
-            if (group != null) group.sortingOrder = held ? 31990 : SortAt(marker.transform.position.y);
+            bool carried = EelBoss.Current != null && ReferenceEquals(EelBoss.Current.Body, u) && EelSump.SpineOf(EelBoss.Current) is EelSump.State cs && cs.CarryBody;   // the crewman hanging from the eel's jaws: over the head
+            if (group != null) group.sortingOrder = held || carried ? 31990 : SortAt(marker.transform.position.y);
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
             if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);

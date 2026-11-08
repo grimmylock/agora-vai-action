@@ -1173,7 +1173,7 @@ static class Program {
     }
     Check(f.Stage == "idle" && f.Swallowed && !EncounterState.Enemies.Contains(f.Body), $"EelFight: the introduction ends in the fight's idle, the body swallowed ({f.Stage}, swallowed {f.Swallowed})");
     Check(locked && bars && camWest && camBig && !Story.CamLock.HasValue && !Story.Letterbox, $"EelFight: the camera is taken over (cutscene {locked}, bars {bars}, west pool {camWest}, middle pool {camBig}) and given back at the end");
-    Check(hidden0 && headWest && headEast && headBig && lastSwallowAt > 5.5f && lastSwallowAt < 7f && lumped, $"EelFight: out of the west pool (hidden before {hidden0}, west {headWest}), swallows the body at {lastSwallowAt:0.0} s with a lump down its neck ({lumped}), dives into the east pool ({headEast}), then rises in the middle pool ({headBig})");
+    Check(hidden0 && headWest && headEast && headBig && lastSwallowAt > 5.5f && lastSwallowAt < 7.5f && lumped, $"EelFight: out of the west pool (hidden before {hidden0}, west {headWest}), swallows the body at {lastSwallowAt:0.0} s with a lump down its neck ({lumped}), dives into the east pool ({headEast}), then rises in the middle pool ({headBig})");
     Check(ripples >= 6 && impacts >= 4 && still, $"EelFight: the pools ripple ({ripples}), the beats hit ({impacts}) and the player stands still ({still})");
     for (int i = 0; i < 120; i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; }
     Check(f.Stage == "idle" || f.Stage == "move", $"EelFight: the fight begins after the introduction ({f.Stage})");

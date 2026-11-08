@@ -5412,3 +5412,11 @@ Yan: "do this while I playtest" (brain boss co-op sync; enemy actions for client
 - Rifles and the LMG kill 200 HP in 1-4 rounds on every armor; the lever-action sniper 1-2. If bosses and big squads should hurt more to chew through, that is the player-side damage numbers, not the enemies (rule 6).
 - Hounds' run cycle: NOT done, deliberately: the hound animation strips (walk, bite) are not loaded in the game at all yet (mutants slide as single sprites); a run cycle only makes sense after the walk is in. Needs Yan's OK on loading `make_mutant_frames.py` strips (the approved knee-rig walk) first.
 - The vat's base ring: covered by the floor pad added in "seating the vat".
+
+## Eel cutscene: smoother slither, the body is carried and swallowed (2026-11-08)
+Yan after playing it: "the eel zig zags too much, it can be a more continous slide like a snake, also the body doesn't dissapear, and it does not look like it is eating it, just that it slammed it's mouth/nose into it" and "also the corners look really weird".
+- `EelSump.BuildIntro`: both weave legs are now one gentle S (amplitude ~1.8 tiles, 0.85 period) instead of 1.5 periods at 2.6; the tightest visible bend radius over the intro measured 1.58 tiles (was ~0.35, which is what produced the spiky corners, since the view thins a bend whose radius is under the body's half-thickness).
+- The body is no longer removed at the snap (6.3 s). It hangs from the jaws (`State.CarryBody`, mouth half open, drawn over the head in `TacticalGridView.DrawUnit`), at 7.1 s the jaws close, it is removed and the lump starts down the neck.
+- Why the body never vanished: dead crewmen are drawn as ragdoll objects that outlive the enemy list. `UnitMotionView.PruneGone` now destroys the ragdoll of any unit no longer present.
+- Harness: swallow-time bound in EelFight now 7.5 s. All checks pass.
+- NOT checked in Unity. Other moves with tight bends (arch, dash, snare) still use the view's old bend thinning; if the corners still look odd there, the view needs the fix.

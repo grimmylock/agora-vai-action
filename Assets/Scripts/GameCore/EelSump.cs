@@ -39,7 +39,7 @@ namespace GameCore
             public bool Stage2;   // the 75% transition (a forced flood surge) has been queued
             public readonly List<string> Queue = new List<string>(), Bag = new List<string>();   // Queue: forced moves for the harness ("combo", "snare:hurl" ...)
             public bool NoStrike; public string Variant, RevealKey; public float FloodR; public int Flooded;
-            public Curve IntroCur; public Dictionary<string, float> IntroMarks; public Strike IntroBig; public float Lump = -1f, IntroRip; public int IntroEv; public bool IntroSwallowed, IntroSkip;     // the introduction cutscene (Intro)
+            public Curve IntroCur; public Dictionary<string, float> IntroMarks; public Strike IntroBig; public float Lump = -1f, IntroRip; public int IntroEv; public bool IntroSwallowed, IntroSkip, CarryBody;     // the introduction cutscene (Intro)
             // the move in progress
             public Strike Hs; public Curve Cur, Cur2; public Pool P1, P2, P3; public Player Tg, Tg2, Snared; public (float x, float y) GP, LP; public float TH0, EndAt = -1f, BreakTs = -1f, BreakQ;
             public bool Hit1, Hit2, Missed, Grabbed, Released, Crossed, Threw; public readonly HashSet<Player> Hurt = new HashSet<Player>(); public float PrevHZ = 9f;
@@ -828,11 +828,11 @@ namespace GameCore
             var arc = Bez((west.X, west.Y, -3.5f), (west.X, west.Y, 4.6f), (west.X + 2.6f, west.Y + 0.2f, 4.9f), (west.X + 4.6f, west.Y + 0.6f, 0.55f), 24);
             for (int i = 0; i < arc.Count; i++) { Add(arc[i].x, arc[i].y, arc[i].z); if (i == 14) m["crest"] = d; }
             m["crest2"] = m["crest"] + 0.5f; float x0 = west.X + 4.6f, y0 = west.Y + 0.6f, x1 = s.SlabX - 2.4f, y1 = s.SlabY;
-            for (int i = 1; i <= 40; i++) { float u = i / 40f; Add(Lerp(x0, x1, u), Lerp(y0, y1, u) + 2.6f * Mathf.Sin(u * 6.283f * 1.5f) * (1f - 0.25f * u), 0.5f + 0.05f * Mathf.Sin(u * 40f)); }
+            for (int i = 1; i <= 40; i++) { float u = i / 40f; Add(Lerp(x0, x1, u), Lerp(y0, y1, u) + 1.25f * Mathf.Sin(u * 6.283f * 0.85f) * Mathf.Sin(u * 3.1416f) * 1.4f, 0.5f); }     // one long lazy S, not a zig-zag: the bend radius stays well over the body's thickness
             m["weaveEnd"] = d; Add(s.SlabX - 1.4f, s.SlabY, 1.5f); Add(s.SlabX - 0.5f, s.SlabY - 0.15f, 3.3f); m["rise"] = d; Add(s.SlabX + 0.0f, s.SlabY - 0.1f, 3.0f); Add(s.SlabX + 0.35f, s.SlabY, 0.55f); m["hit"] = d;
             Add(s.SlabX + 0.5f, s.SlabY, 0.5f); m["hold"] = d; Add(s.SlabX + 1.6f, s.SlabY - 0.1f, 2.7f); Add(s.SlabX + 2.7f, s.SlabY, 1.7f); m["lift"] = d;
             float x2 = s.SlabX + 2.7f, y2 = s.SlabY, x3 = east.X - 4.6f, y3 = east.Y + 0.6f;
-            for (int i = 1; i <= 40; i++) { float u = i / 40f; Add(Lerp(x2, x3, u), Lerp(y2, y3, u) - 2.6f * Mathf.Sin(u * 6.283f * 1.5f) * (1f - 0.25f * u), 0.5f + 0.05f * Mathf.Sin(u * 40f)); }
+            for (int i = 1; i <= 40; i++) { float u = i / 40f; Add(Lerp(x2, x3, u), Lerp(y2, y3, u) - 1.25f * Mathf.Sin(u * 6.283f * 0.85f) * Mathf.Sin(u * 3.1416f) * 1.4f, 0.5f); }
             m["eastEnd"] = d; foreach (var q in Bez((x3, y3, 0.5f), (east.X - 2.6f, east.Y + 0.4f, 0.6f), (east.X - 1.6f, east.Y, 0.55f), (east.X - 0.6f, east.Y, 0.45f), 12).Skip(1)) Add(q.x, q.y, q.z);
             Add(east.X, east.Y, 0.3f); Add(east.X, east.Y, -1.5f); Add(east.X, east.Y, -4.5f);      // into the pool's centre
             m["end"] = d + N / PerTile + 1f; s.IntroCur = new Curve(pts); s.IntroMarks = m;
@@ -875,13 +875,18 @@ namespace GameCore
                 if (s.IntroEv < 2) { s.IntroEv = 2; Snd("eel_splash", west.X, west.Y, 1.1f); s.Events.Add(new Ev { Kind = "impact", X = west.X, Y = west.Y, Power = 2.2f, Water = true }); }
                 FillHead(s, s.IntroCur, IntroSigma(s, age));
                 s.Rear = age < 3.9f ? 38f * Smr(Mathf.Clamp01((age - 2.2f) / 0.8f)) * (1f - Smr(Mathf.Clamp01((age - 3.2f) / 0.7f))) : 0f;                     // the head thrown back as it breaks the surface
-                s.Mouth = age < 3.7f ? (age > 2.4f ? 1.0f : -1f) : age >= 6.0f && age < 6.3f ? 1.4f : age >= 5.7f && age < 6.0f ? 1.0f : age >= 6.3f && age < 7.4f ? 0f : -1f;      // roars on the way up, jaws wide for the swallow
-                if (age >= 6.3f && !s.IntroSwallowed)                                                               // the jaws shut on the body
+                s.Mouth = age < 3.7f ? (age > 2.4f ? 1.0f : -1f) : age >= 6.0f && age < 6.3f ? 1.4f : age >= 5.7f && age < 6.0f ? 1.0f : age >= 6.3f && age < 7.1f ? 0.5f : age >= 7.1f && age < 7.5f ? 0f : -1f;      // roars on the way up, jaws wide for the swallow
+                if (age >= 6.3f && !s.IntroSwallowed)                                                               // the jaws close on the body: it is carried in them, lifted, until it goes down the throat
                 {
-                    s.IntroSwallowed = true; f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); Snd("eel_slam", s.SlabX, s.SlabY, 1.0f); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 1.8f, Water = false });
+                    s.IntroSwallowed = true; s.CarryBody = true; Snd("eel_slam", s.SlabX, s.SlabY, 1.0f); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 1.8f, Water = false });
                     GameLog.Write("The eel snaps the body up in one gulp.");
                 }
-                s.Lump = s.IntroSwallowed ? Mathf.Max(0f, (age - 6.3f) * 11f) : -1f; if (s.Lump > 50f) s.Lump = -1f;                       // down the neck
+                if (s.CarryBody)                                                                                    // in the mouth: it hangs from the jaws, lifted with the head
+                {
+                    float cx = s.X[0] + (s.X[0] < s.X[Mathf.Min(8, N - 1)] ? -0.5f : 0.5f), cy = s.Y[0] - Mathf.Max(0f, s.Z[0]) * 0.8f; int tx = (int)Mathf.Floor(cx), ty = (int)Mathf.Floor(cy); f.Body.X = tx; f.Body.Y = ty; Rt.SetOffset(f.Body, cx - tx - 0.5f, cy - ty - 0.5f);
+                    if (age >= 7.1f) { s.CarryBody = false; f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); GameLog.Write("It gulps, and the body is gone."); }
+                }
+                s.Lump = f.Swallowed ? Mathf.Max(0f, (age - 7.1f) * 11f) : -1f; if (s.Lump > 50f) s.Lump = -1f;                       // down the neck
                 if (age >= 9.9f && s.IntroEv < 3) { s.IntroEv = 3; Snd("eel_rush", east.X, east.Y, 0.9f); }
                 if (age >= 10.9f && s.IntroEv < 4) { s.IntroEv = 4; Snd("eel_splash", east.X, east.Y, 1.0f); s.Events.Add(new Ev { Kind = "impact", X = east.X, Y = east.Y, Power = 1.6f, Water = true }); }
             }

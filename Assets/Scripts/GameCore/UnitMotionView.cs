@@ -361,6 +361,20 @@ namespace GameCore
             return torn;
         }
 
+        /// <summary>A unit that has left the world (the eel swallowed the body on its slab, a corpse was cleared) takes its ragdoll and its state with it: the pieces are separate objects and would stay on the floor.</summary>
+        public void PruneGone(System.Func<ICombatant, bool> present)
+        {
+            List<ICombatant> gone = null;
+            foreach (var kv in _s) if (kv.Value.Rag != null && !present(kv.Key)) (gone ?? (gone = new List<ICombatant>())).Add(kv.Key);
+            if (gone == null) return;
+            foreach (var u in gone)
+            {
+                var r = _s[u].Rag; void Kill1(Part p) { if (p?.Sr != null) Object.Destroy(p.Sr.gameObject); }
+                Kill1(r.Torso); Kill1(r.Head); Kill1(r.Gun); foreach (var p in r.Pieces) Kill1(p);
+                _s.Remove(u);
+            }
+        }
+
         public void TickRagdolls()
         {
             float now = Time.time, dt = Mathf.Min(Time.deltaTime, 0.05f);
