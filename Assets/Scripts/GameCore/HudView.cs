@@ -357,7 +357,7 @@ namespace GameCore
             bool melee = w != null && CombatRules.IsMelee(w);
             var cond = w == null ? "" : w.IsJammed ? "JAMMED" : (w.Condition ?? ItemCondition.Working).ToUpperInvariant();
             SetChip(_wChips[0], cond, w == null ? Dim : w.IsJammed || cond == "BROKEN" ? Red : cond == "WORKING" ? Dim : Yellow);
-            SetChip(_wChips[1], w == null || melee ? "" : (CombatRules.CanBurst(w) ? p.FireMode.ToUpperInvariant() : "SINGLE") + (p.AimedPart != null && p.FireMode != "Burst" ? " " + p.AimedPart.ToUpperInvariant() : ""), p.AimedPart != null ? Yellow : Dim);   // Batch 57: the aimed part
+            SetChip(_wChips[1], w == null || melee ? "" : Rt.On ? Gunplay.ModeLabel(w, Rt.Of(p).FireMode) : (CombatRules.CanBurst(w) ? p.FireMode.ToUpperInvariant() : "SINGLE") + (p.AimedPart != null && p.FireMode != "Burst" ? " " + p.AimedPart.ToUpperInvariant() : ""), p.AimedPart != null ? Yellow : Dim);   // Batch 57: the aimed part
             _wMag.text = w == null || melee ? "-" : w.CurrentMagazine.ToString();
             _wCap.text = w == null || melee ? "" : $"/ {w.MagCapacity}";
             string ammo = w?.CurrentAmmoType ?? "Standard";

@@ -51,6 +51,7 @@ static class Program {
     NetEelChecks();
     NetWorldChecks();
     SoloDeathChecks();
+    FireModeChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2492,6 +2493,39 @@ static class Program {
       TestingGround.Session = true; Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
       Check(GameState.Current.CurrentTurn == Turn.CombatOver, "solo death in the Testing Ground still ends at the death screen");
     } finally { TestingGround.Session = session0; Rt.On = false; GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
+
+  // Yan, 2026-11-08: a fire-mode key (X) for the modern assault rifles and SMGs: auto / 3-round burst / semi; the old designs keep their one mode
+  static void FireModeChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f; UnityEngine.Time.unscaledTime = 7000f; var log = new ConsoleLog(); GameLog.Target = log;
+    try {
+      for (int y = py - 4; y <= py + 4; y++) for (int x = px - 2; x <= px + 14; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      p.HealPermanent(100000); const float dt = 1f / 60f; var dummy = new HumanEnemy("Target", px + 10, py, "Raiders", "Rookie", null, null) { IsAggroed = false }; dummy.Hp = dummy.MaxHp = 1000000;
+      int Shots(string cat, string key, int mode, Func<int, float, Rt.Input> inputAt, float seconds, bool pressMode = false) {
+        EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(dummy); Rt.Reset(); Rt.On = true; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+        p.EquipWeapon(cat, key); TestingGround.RefillAmmo(p); var w = p.EquippedWeapon; var st = Rt.Of(p); st.FireMode = mode; int m0 = w.CurrentMagazine;
+        for (int k = 0; k * dt < seconds; k++) { var inp = inputAt(k, k * dt); inp.Mouse = (px + 10.5f, py + 0.5f); UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; Rt.PlayerTick(p, inp); UnityEngine.Time.time += dt; dummy.Hp = dummy.MaxHp; CombatFx.Pending.Clear(); }
+        return m0 - w.CurrentMagazine; }
+      string vk = WeaponDatabase.Categories["assault"].First(kv => kv.Value.Name == "VK-103").Key, old = WeaponDatabase.Categories["assault"].First(kv => kv.Value.Name == "VKS-74U").Key;
+      int auto = Shots("assault", vk, 0, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1f);
+      int semiHeld = Shots("assault", vk, 2, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1f);
+      int semiTaps = Shots("assault", vk, 2, (k, t) => new Rt.Input { Fire = true, FireDown = k % 18 == 0 }, 1f);
+      int burstOne = Shots("assault", vk, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1.5f);
+      int burstMashed = Shots("assault", vk, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k < 8 }, 0.5f);
+      int burstTwo = Shots("assault", vk, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 || k == 60 }, 1.5f);
+      int oldGun = Shots("assault", old, 1, (k, t) => new Rt.Input { Fire = true, FireDown = k == 0 }, 1f);        // an old design ignores the mode it was left on
+      Check(auto >= 8 && semiHeld == 1 && semiTaps >= 3 && semiTaps <= 4 && burstOne == Gunplay.BurstRounds && burstMashed == Gunplay.BurstRounds && burstTwo == 2 * Gunplay.BurstRounds && oldGun >= 8,
+        $"fire modes: auto sprays ({auto}), semi fires once a pull ({semiHeld} held, {semiTaps} taps), a burst is {Gunplay.BurstRounds} rounds however you mash ({burstOne}, {burstMashed}) and two pulls make two ({burstTwo}), an old gun ignores it ({oldGun})");
+      p.EquipWeapon("assault", vk); var s2 = Rt.Of(p); s2.FireMode = 0; int lines0 = log.Lines;
+      for (int k = 0; k < 3; k++) { Rt.PlayerTick(p, new Rt.Input { Mode = true, Mouse = (px + 10.5f, py + 0.5f) }); }
+      Check(s2.FireMode == 0 && log.Lines >= lines0 + 3, $"fire modes: X cycles auto, burst, semi, auto ({s2.FireMode})");
+      p.EquipWeapon("assault", old); Rt.Of(p).FireMode = 0; Rt.PlayerTick(p, new Rt.Input { Mode = true, Mouse = (px + 10.5f, py + 0.5f) }); string oldLabel = Gunplay.ModeLabel(p.EquippedWeapon, 1);
+      p.EquipWeapon("assault", vk); string bl = Gunplay.ModeLabel(p.EquippedWeapon, 1), sl = Gunplay.ModeLabel(p.EquippedWeapon, 2);
+      Check(Rt.Of(p).FireMode == 0 && oldLabel == "AUTO" && bl == "BURST" && sl == "SEMI", $"fire modes: an old gun says it only has one and stays AUTO ({oldLabel}); the modern gun's label follows ({bl}, {sl})");
+      Check(Net.DecodeInput(Net.EncodeInput(new Rt.Input { Mode = true, X = 1f })).Mode && !Net.DecodeInput(Net.EncodeInput(new Rt.Input { X = 1f })).Mode, "fire modes: the key goes over the wire for a joined friend");
+    } finally { GameLog.Target = null; Rt.On = false; }
   }
 
   // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it

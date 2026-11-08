@@ -73,6 +73,7 @@ namespace GameCore
             public float Stamina = StaminaMax, StaminaRest, Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f, DiveX, DiveY;
             public float VaultFrom = -1f, VaultLen, VaultX, VaultY, VaultDist, UseDone, UseFrom;
             public float LookReach = Vision.MaxRadius;                // how far this player sees where they look (Vision, for fair shots)
+            public int FireMode, BurstLeft;                           // 0 auto, 1 3-round burst, 2 semi (Gunplay.HasModes guns only); the rounds of the burst still to fire
             public bool Aiming;
             public int Moving;                                        // 0 still, 1 walking, 2 sprinting
             public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
@@ -98,6 +99,7 @@ namespace GameCore
         public struct Input
         {
             public float X, Y;                                        // move, -1..1 each (y down)
+            public bool Mode;                                         // the fire-mode key pressed (X): auto / burst / semi on the modern guns
             public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload, Use;   // held / held / held / held / pressed / pressed / pressed / held (E)
             public bool Fire2Down;                                    // RT 7z-c: right mouse pressed - a Gunslinger's left-hand gun
             public bool Parry;                                        // Boss 1: the parry key pressed (F by default, Keybinds)
@@ -113,6 +115,7 @@ namespace GameCore
             Fire2Down = m != null && m.rightButton.wasPressedThisFrame,
             Parry = Keybinds.Pressed(k, Keybinds.Parry),
             BulletTime = Keybinds.Pressed(k, Keybinds.Slow),
+            Mode = k.xKey.wasPressedThisFrame,
             Mouse = MouseTile(m),
         };
         static float _round;
@@ -348,10 +351,17 @@ namespace GameCore
                 if (s.UsingId == null) Melee.PlayerInput(p, w, i.Fire, i.Aim, mw);
                 goto camera;
             }
-            bool trigger = hd.Auto ? i.Fire : i.FireDown;
+            if (i.Mode) CycleFireMode(p, w, s);
+            int fmode = Gunplay.HasModes(w) ? s.FireMode : 0; bool trigger;
+            if (fmode == 1) { if (w.CurrentMagazine <= 0 || aim.ReloadUntil >= 0f) s.BurstLeft = 0; else if (i.FireDown && s.BurstLeft <= 0) s.BurstLeft = Gunplay.BurstRounds; trigger = s.BurstLeft > 0; }   // a burst runs to its end once pulled
+            else { s.BurstLeft = 0; trigger = fmode == 2 ? i.FireDown : hd.Auto ? i.Fire : i.FireDown; }
             if (trigger && aim.Loading > 0) StopLoading(p, w, aim);   // RT 6h: a tube or lever fires what's in; a revolver closes first
             if (trigger && s.UsingId != null) { s.UsingId = null; GameLog.Write("You stop to shoot."); }
-            if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot) PlayerFire(p, w, hd, aim, mw.Value);
+            if (trigger && w != null && mw.HasValue && aim.ReloadUntil < 0f && Time.time >= aim.NextShot)
+            {
+                PlayerFire(p, w, hd, aim, mw.Value);
+                if (fmode == 1 && s.BurstLeft > 0 && --s.BurstLeft == 0) aim.NextShot += Gunplay.BurstGap * (SlowMo ? SlowScale : 1f);   // the pause between bursts
+            }
             if (p.Gunslinging) TickOffhand(p, i, s, mw, dt, aim);
 
             camera:
@@ -362,6 +372,15 @@ namespace GameCore
                 float reach = s.Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
                 s.Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
             }
+        }
+
+        /// <summary>X: the next fire mode (auto, burst, semi) on a gun with a selector; the old designs say they only have the one.</summary>
+        static void CycleFireMode(Player p, Weapon w, State s)
+        {
+            if (w == null || CombatRules.IsMelee(w)) return;
+            if (!Gunplay.HasModes(w)) { GameLog.Write($"{w.Name} only fires {(Gunplay.For(w).Auto ? "full auto" : "single shots")}."); return; }
+            s.FireMode = (s.FireMode + 1) % 3; s.BurstLeft = 0; Sfx.Play("ui_click");
+            GameLog.Write($"{w.Name}: {(s.FireMode == 0 ? "full auto" : s.FireMode == 1 ? $"{Gunplay.BurstRounds}-round burst" : "single shots")}.");
         }
 
         // ---- RT 7z-c: Gunslinger (ACTION_DESIGN "Perks": "Dual pistols, one per mouse button"; Yan: "do 1, build gunslinger for real").

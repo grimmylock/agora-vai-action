@@ -133,6 +133,14 @@ namespace GameCore
         public static float PerRound(Weapon w) =>
             System.Math.Max(0.25f, System.Math.Min(0.6f, (For(w).ReloadTime - (Revolver(w) ? CylinderOpen : 0f)) / System.Math.Max(1, w.MagCapacity)));
 
+        // Fire modes (Yan, 2026-11-08: "yes [a fire-mode key], for more modern assault rifles and SMGs"): the modern guns - the ones with a selector - can be switched with X between full AUTO (hold to spray), a 3-round BURST
+        // (one pull, three rounds at the gun's own rate, a short pause) and SEMI (one round a pull). The old designs (VKS-74U, Smerch-3, VK-74, VKM, Vosa vz. 62, PPZ Zubr) keep their one mode. The probe (Program.cs
+        // RtLoadoutProbe) showed why it matters: held down the starting rifle hit 17% at 12 tiles, in bursts 40%.
+        public static readonly HashSet<string> Modern = new HashSet<string> { "TS-9 Tishina", "TR-30", "Halden HR36K", "VK-103", "BR-86 Bulldog", "VK-74 Obelisk", "NA-94 Yenisei", "Corvan Bullpup", "Corvan Battle Rifle", "Corvan Wasp-9", "Corvan Hornet .45", "Corvan Gnat PDW" };
+        public const int BurstRounds = 3; public const float BurstGap = 0.18f;
+        public static bool HasModes(Weapon w) => w?.Db != null && Modern.Contains(w.Db.Name);
+        public static string ModeLabel(Weapon w, int mode) => !HasModes(w) ? (w != null && For(w).Auto ? "AUTO" : "SINGLE") : mode == 1 ? "BURST" : mode == 2 ? "SEMI" : "AUTO";
+
         public const float MaxBloom = 10f;                   // degrees of kick at most, however long the trigger is held
         /// <summary>Task #36 ("why Yan loses to humans as Ex-Military", measured with Program.cs RtLoadoutProbe): a bot holding the trigger with the starting rifle hit 17% of its rounds at 12 tiles (the starting pistol 50%) because a 600 rpm gun
         /// kicks 19 degrees a second and recovers 11, so the kick sat at the 10 degree cap. YOUR kick tops out lower (the enemies' keep MaxBloom, Yan's rule 6: no enemy nerfs, tools for the player): holding the trigger is still worse than
