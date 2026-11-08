@@ -57,6 +57,8 @@ namespace GameCore
         static readonly Dictionary<Player, float> LaserHitAt = new Dictionary<Player, float>();
         public static void Reset() { Current = null; Orbs.Clear(); Throws.Clear(); Beams.Clear(); Pulse = null; LaserHitAt.Clear(); }
         public static bool Is(ICombatant u) => Current != null && !Current.Gone && Current.Unit == u;
+        /// <summary>A client that has just entered the map (Net.OnSnapshot clears the enemy list): the dormant vat goes back in, so the host's snapshots have something to move.</summary>
+        public static void NetRestore() { var f = Current; if (f != null && !f.Gone && !EncounterState.Enemies.Contains(f.Unit)) EncounterState.Enemies.Add(f.Unit); }
 
         /// <summary>Cover the room is built of, and how much the pulses must wear off it (each pulse does PulseCover).</summary>
         public static int CoverHp(string look) => look == "crate" ? 3 : look == "labtable" || look == "labbench" || look == "desk" ? 6 : look == "cabinet" ? 9 : 0;

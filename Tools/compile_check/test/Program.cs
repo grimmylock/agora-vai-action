@@ -52,6 +52,7 @@ static class Program {
     NetWorldChecks();
     SoloDeathChecks();
     FireModeChecks();
+    NetBrainChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2526,6 +2527,28 @@ static class Program {
       Check(Rt.Of(p).FireMode == 0 && oldLabel == "AUTO" && bl == "BURST" && sl == "SEMI", $"fire modes: an old gun says it only has one and stays AUTO ({oldLabel}); the modern gun's label follows ({bl}, {sl})");
       Check(Net.DecodeInput(Net.EncodeInput(new Rt.Input { Mode = true, X = 1f })).Mode && !Net.DecodeInput(Net.EncodeInput(new Rt.Input { X = 1f })).Mode, "fire modes: the key goes over the wire for a joined friend");
     } finally { GameLog.Target = null; Rt.On = false; }
+  }
+
+
+  // Co-op: the brain boss reaches a friend - its vat's state and every effect the view draws (NetWorld.WriteBrain / ApplyBrain)
+  static void NetBrainChecks() {
+    var link = new FakeLink(); Net.Link = link;
+    try {
+      GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+      var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); Story.Reset(); Net.Host(); Net.OnJoin(7); UnityEngine.Time.time = 8000f; UnityEngine.Time.unscaledTime = 8000f;
+      MacroState.Current.StoryFlags.Remove("f:" + BrainBoss.Escaped); MacroState.Current.CurrentZoneId = BrainBoss.Lab; ZoneTravel.EnterZone(BrainBoss.Lab); var f = BrainBoss.Current;
+      Check(f != null && f.Unit != null, "Co-op brain: the host's lab has the vat");
+      f.Started = true; f.Phase = 2; f.Unit.Hp = BrainBoss.MaxHp / 2 - 5; f.Moves.Add(new BrainBoss.Move { Kind = "ring", WindUntil = UnityEngine.Time.time + 0.8f });
+      BrainBoss.Orbs.Add(new BrainBoss.Orb { X = 30.5f, Y = 12f, Dx = 0.6f, Dy = -0.8f, Kind = "void", Age = 0.3f }); BrainBoss.Orbs.Add(new BrainBoss.Orb { X = 31.5f, Y = 12f, Dx = 1f, Dy = 0f, Kind = "bolt", Age = 0.1f });
+      BrainBoss.Beams.Add(new BrainBoss.Beam { Angle = 135f, Length = 9f, Until = UnityEngine.Time.time + 1f }); BrainBoss.Pulse = new BrainBoss.Wave { R = 6f };
+      BrainBoss.Throws.Add(new BrainBoss.Thrown { Look = "crate", X = 33f, Y = 14f, Flying = true, Born = UnityEngine.Time.time - 0.4f });
+      var snap = Net.EncodeSnapshot(); var d = Net.DecodeSnapshot(snap);
+      Check(snap.Length <= NetWorld.Packet && d.World.Brain != null && d.World.Brain.Has && d.World.Brain.Phase == 2 && d.World.Brain.Orbs.Count == 2 && d.World.Brain.Beams.Count == 1 && d.World.Brain.Throws.Count == 1, $"Co-op brain: a snapshot carries the vat, its orbs, beam, pulse and thrown cover in one packet ({snap.Length} bytes)");
+      Net.Reset(); Net.Link = link; link.Id = 7; BrainBoss.Reset(); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient(); Net.OnSnapshot(snap); var cf = BrainBoss.Current;
+      Check(cf != null && EncounterState.Enemies.Contains(cf.Unit) && cf.Started && cf.Phase == 2 && cf.Unit.Hp == BrainBoss.MaxHp / 2 - 5 && BrainBoss.Winding(cf) && BrainBoss.ArtRow == 4 + 2, $"Co-op brain: a client's vat is in the fight, at phase 2, winding up with its eyes shut (row {BrainBoss.ArtRow})");
+      Check(BrainBoss.Orbs.Count == 2 && BrainBoss.Orbs.Any(o => o.Kind == "void" && Math.Abs(o.X - 30.5f) < 0.01f && Math.Abs(o.Dx - 0.6f) < 0.02f) && BrainBoss.Orbs.Any(o => o.Kind == "bolt") && BrainBoss.Beams.Count == 1 && Math.Abs(BrainBoss.Beams[0].Angle - 135f) < 0.01f
+        && BrainBoss.Pulse != null && Math.Abs(BrainBoss.Pulse.R - 6f) < 0.01f && BrainBoss.Throws.Count == 1 && BrainBoss.Throws[0].Look == "crate" && BrainBoss.Throws[0].Flying, "Co-op brain: the client draws the same orbs, the beam, the wave and the flying cover");
+    } finally { Net.Reset(); Net.Link = null; Rt.On = false; BrainBoss.Reset(); }
   }
 
   // Co-op for the eel's introduction (the cutscene): the snapshot carries the eel and the cutscene, a client shows it and stands still, a joined friend can start it

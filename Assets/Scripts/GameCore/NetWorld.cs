@@ -101,8 +101,47 @@ namespace GameCore
                 w.Write((ushort)IdOf(e)); w.Write((byte)((human ? 1 : 0) | (alive ? 2 : 0) | (e.IsAggroed ? 4 : 0))); w.Write((ushort)a); w.Write((ushort)b); w.Write((byte)fr);
                 w.Write((short)e.X); w.Write((short)e.Y); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(ox * 127f), -127, 127)); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(oy * 127f), -127, 127)); w.Write((ushort)Mathf.Clamp(e.Hp, 0, 65535));
             }
+            WriteBrain(w);
             // forget the ids of enemies that are gone
             foreach (var gone in Ids.Keys.Where(k => !(k is Player) && !EncounterState.Enemies.Contains(k as Mutant)).ToList()) Ids.Remove(gone);
+        }
+        // ------------------------------------------------------------------ the brain boss (Boss 2): its vat's state and every effect the view draws
+        static void WriteBrain(BinaryWriter w)
+        {
+            var f = BrainBoss.Current; w.Flush(); bool has = f != null; w.Write(has); if (!has) return;
+            float now = Time.time; float wind = f.Moves.Count == 0 ? 0f : Mathf.Max(0f, f.Moves.Max(m => m.WindUntil) - now);
+            w.Write((byte)((f.Started ? 1 : 0) | (f.Drained ? 2 : 0) | (f.Gone ? 4 : 0) | (BrainBoss.Pulse != null ? 8 : 0) | (f.PulseAt >= 0f ? 16 : 0))); w.Write((byte)f.Phase); w.Write(f.Stage ?? ""); w.Write(now - f.StageAt); w.Write(f.Unit.Hp);
+            w.Write(f.Doing ?? ""); w.Write(wind); w.Write(BrainBoss.Pulse?.R ?? 0f);
+            var beams = BrainBoss.Beams.Take(4).ToList(); w.Write((byte)beams.Count); foreach (var b in beams) { w.Write(b.Angle); w.Write(b.Length); }
+            int room = Packet - (int)w.BaseStream.Length - 4; int nOrb = System.Math.Max(0, System.Math.Min(24, room / 14)); var orbs = BrainBoss.Orbs.Take(nOrb).ToList(); w.Write((byte)orbs.Count);
+            foreach (var o in orbs) { w.Write(o.X); w.Write(o.Y); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(o.Dx * 100f), -100, 100)); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(o.Dy * 100f), -100, 100)); w.Write((byte)(o.Kind == "bolt" ? 1 : o.Kind == "void" ? 2 : 0)); w.Write((byte)Mathf.Clamp(Mathf.RoundToInt(o.Age * 50f), 0, 255)); }
+            w.Flush(); room = Packet - (int)w.BaseStream.Length - 2; var throws = BrainBoss.Throws.Take(System.Math.Max(0, System.Math.Min(6, room / 24))).ToList(); w.Write((byte)throws.Count);
+            foreach (var t in throws) { w.Write(t.Look ?? ""); w.Write(t.X); w.Write(t.Y); w.Write(t.Flying); w.Write(now - t.Born); }
+        }
+        public class BrainIn { public bool Has, Started, Drained, Gone, Pulse, PulseAt; public int Phase, Hp; public string Stage, Doing; public float StageAge, Wind, PulseR; public List<(float a, float l)> Beams = new List<(float, float)>(); public List<(float x, float y, float dx, float dy, int kind, float age)> Orbs = new List<(float, float, float, float, int, float)>(); public List<(string look, float x, float y, bool flying, float age)> Throws = new List<(string, float, float, bool, float)>(); }
+        public static BrainIn ReadBrain(BinaryReader r)
+        {
+            var b = new BrainIn { Has = r.ReadBoolean() }; if (!b.Has) return b;
+            int fl = r.ReadByte(); b.Started = (fl & 1) != 0; b.Drained = (fl & 2) != 0; b.Gone = (fl & 4) != 0; b.Pulse = (fl & 8) != 0; b.PulseAt = (fl & 16) != 0; b.Phase = r.ReadByte(); b.Stage = r.ReadString(); b.StageAge = r.ReadSingle(); b.Hp = r.ReadInt32();
+            b.Doing = r.ReadString(); b.Wind = r.ReadSingle(); b.PulseR = r.ReadSingle();
+            int n = r.ReadByte(); for (int i = 0; i < n; i++) b.Beams.Add((r.ReadSingle(), r.ReadSingle()));
+            n = r.ReadByte(); for (int i = 0; i < n; i++) { float x = r.ReadSingle(), y = r.ReadSingle(); float dx = r.ReadSByte() / 100f, dy = r.ReadSByte() / 100f; int kind = r.ReadByte(); b.Orbs.Add((x, y, dx, dy, kind, r.ReadByte() / 50f)); }
+            n = r.ReadByte(); for (int i = 0; i < n; i++) b.Throws.Add((r.ReadString(), r.ReadSingle(), r.ReadSingle(), r.ReadBoolean(), r.ReadSingle()));
+            return b;
+        }
+        /// <summary>On a client: the dormant brain fight (spawned when the client entered the map) is made to look like the host's; the view reads these same statics.</summary>
+        public static void ApplyBrain(BrainIn b)
+        {
+            var f = BrainBoss.Current; if (b != null && !b.Has && f != null && !f.Gone) { f.Gone = true; EncounterState.Enemies.Remove(f.Unit); return; }       // the host has none (it escaped, or it is not here): the client's dormant copy goes
+            if (b == null || !b.Has || f == null) return; float now = Time.time;
+            f.Started = b.Started; f.Drained = b.Drained; f.Phase = b.Phase; f.Stage = string.IsNullOrEmpty(b.Stage) ? null : b.Stage; f.StageAt = now - b.StageAge; f.Unit.Hp = b.Hp; f.Unit.IsAggroed = b.Started;
+            if (b.Gone && !f.Gone) { f.Gone = true; EncounterState.Enemies.Remove(f.Unit); }
+            f.Moves.Clear(); if (!string.IsNullOrEmpty(b.Doing)) f.Moves.Add(new BrainBoss.Move { Kind = b.Doing, WindUntil = now + b.Wind });
+            f.PulseAt = b.PulseAt ? now : -1f;
+            BrainBoss.Pulse = b.Pulse ? (BrainBoss.Pulse ?? new BrainBoss.Wave()) : null; if (BrainBoss.Pulse != null) BrainBoss.Pulse.R = b.PulseR;
+            BrainBoss.Beams.Clear(); foreach (var (a, l) in b.Beams) BrainBoss.Beams.Add(new BrainBoss.Beam { Angle = a, Length = l, Until = now + 1f });
+            BrainBoss.Orbs.Clear(); foreach (var o in b.Orbs) BrainBoss.Orbs.Add(new BrainBoss.Orb { X = o.x, Y = o.y, Dx = o.dx, Dy = o.dy, Kind = o.kind == 1 ? "bolt" : o.kind == 2 ? "void" : "ring", Age = o.age });
+            BrainBoss.Throws.Clear(); foreach (var t in b.Throws) BrainBoss.Throws.Add(new BrainBoss.Thrown { Look = t.look, X = t.x, Y = t.y, Flying = t.flying, Born = now - t.age });
         }
         static IEnumerable<Mutant> Enemies()
         {
@@ -114,7 +153,7 @@ namespace GameCore
         // ------------------------------------------------------------------ the client
         public class Entry { public int Id, A, B, Fr, X, Y, Hp; public bool Human, Alive, Aggro; public float Ox, Oy; }
         public class FxIn { public int Seq, Kind, Weapon, Rounds, FromX, FromY, ToX, ToY, Overkill; public byte ActorT, TargetT; public ulong Actor, Target; public int Flags; public float EndX, EndY, Seconds; public string Px; }
-        public class WorldIn { public bool Slow; public float Stop; public List<(int seq, string text)> Logs = new List<(int, string)>(); public List<(int seq, byte t, ulong who, int kind, string text)> Nums = new List<(int, byte, ulong, int, string)>(); public List<FxIn> Fx = new List<FxIn>(); public List<Entry> Enemies = new List<Entry>(); }
+        public class WorldIn { public BrainIn Brain; public bool Slow; public float Stop; public List<(int seq, string text)> Logs = new List<(int, string)>(); public List<(int seq, byte t, ulong who, int kind, string text)> Nums = new List<(int, byte, ulong, int, string)>(); public List<FxIn> Fx = new List<FxIn>(); public List<Entry> Enemies = new List<Entry>(); }
         public static WorldIn Read(BinaryReader r)
         {
             var o = new WorldIn { Slow = r.ReadBoolean(), Stop = r.ReadSingle() };
@@ -133,6 +172,7 @@ namespace GameCore
                 var e = new Entry { Id = r.ReadUInt16() }; int fl = r.ReadByte(); e.Human = (fl & 1) != 0; e.Alive = (fl & 2) != 0; e.Aggro = (fl & 4) != 0; e.A = r.ReadUInt16(); e.B = r.ReadUInt16(); e.Fr = r.ReadByte();
                 e.X = r.ReadInt16(); e.Y = r.ReadInt16(); e.Ox = r.ReadSByte() / 127f; e.Oy = r.ReadSByte() / 127f; e.Hp = r.ReadUInt16(); o.Enemies.Add(e);
             }
+            o.Brain = ReadBrain(r);
             return o;
         }
 
@@ -165,6 +205,7 @@ namespace GameCore
                 m.X = e.X; m.Y = e.Y; Rt.SetOffset(m, e.Ox, e.Oy); m.Hp = e.Alive ? System.Math.Max(1, e.Hp) : 0; m.IsAggroed = e.Aggro;
             }
             foreach (var id in Mirror.Keys.Where(k => !seen.Contains(k)).ToList()) { EncounterState.Enemies.Remove(Mirror[id]); Mirror.Remove(id); }
+            ApplyBrain(o.Brain);
             foreach (var (seq, text) in o.Logs) if (seq > _seenLog) { _seenLog = seq; GameLog.Write(text); }
             foreach (var n in o.Nums)
                 if (n.seq > _seenNum) { _seenNum = n.seq; var who = Resolve(n.t, n.who); if (who != null) TestingGround.Numbers.Add(new TestingGround.Number { Who = who, Text = n.text, Kind = n.kind, At = Time.time }); }

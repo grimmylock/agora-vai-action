@@ -142,7 +142,7 @@ namespace GameCore
         {
             if (Mode != Role.Client || Player.Current == null) return;
             var s = DecodeSnapshot(data);
-            if (!string.IsNullOrEmpty(s.Map) && s.Map != TerrainMap.ZoneId) { ZoneTravel.EnterZone(s.Map); EncounterState.Enemies.Clear(); NetWorld.ResetClient(); EelBoss.NetRestore(); }
+            if (!string.IsNullOrEmpty(s.Map) && s.Map != TerrainMap.ZoneId) { ZoneTravel.EnterZone(s.Map); EncounterState.Enemies.Clear(); NetWorld.ResetClient(); EelBoss.NetRestore(); BrainBoss.NetRestore(); }
             MacroState.Current.Hour = s.Hour;
             var seen = new HashSet<ulong>();
             ulong me = Link?.LocalId ?? ulong.MaxValue;
