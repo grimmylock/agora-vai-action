@@ -516,9 +516,11 @@ namespace GameCore
         void DrawOrbs()
         {
             var f = BrainBoss.Current;
-            var orbF = Strip("Sprites/Fx/boss_brain_orbs", 4, PxFull, new Vector2(0.5f, 0.5f));
-            var boltF = Strip("Sprites/Fx/boss_brain_bolt", 2, PxFull, new Vector2(0.72f, 0.5f));
-            int n = 0, anim = (int)(Time.time * 8f) % 2;
+            // Yan, 2026-11-08: the attack effects are hand-drawn, animated and come in four variations, one per wound phase (ArtSource/bosses/make_brain_fx.py): violet, violet and flesh-pink, magenta and vein red, blood-hot
+            int ph = Mathf.Clamp(f?.Phase ?? 0, 0, 3); string pn = "_p" + ph;
+            var orbF = Strip("Sprites/Fx/boss_brain_orbs" + pn, 8, 20f, new Vector2(0.5f, 0.5f));
+            var boltF = Strip("Sprites/Fx/boss_brain_bolt" + pn, 4, PxFull, new Vector2(0.75f, 0.5f));
+            int n = 0, anim = (int)(Time.time * 12f) % 4;
             foreach (var o in BrainBoss.Orbs)
             {
                 if (o.Kind == "bolt")
@@ -527,14 +529,14 @@ namespace GameCore
                     for (int k = 0; k < 3; k++)                  // the bolt and two fading copies behind it: a trail
                     {
                         var b = Pooled(_orbs, n++, "Bolt", 9); if (b == null) continue;
-                        b.sprite = boltF?[anim]; b.color = new Color(1f, 1f, 1f, 1f - 0.35f * k);
+                        b.sprite = boltF?[(anim + k) % 4]; b.color = new Color(1f, 1f, 1f, 1f - 0.35f * k);
                         b.transform.position = W(o.X - o.Dx * 0.35f * k, o.Y - o.Dy * 0.35f * k, 0.35f);
                         b.transform.rotation = Quaternion.Euler(0f, 0f, deg); b.transform.localScale = Vector3.one * (1f - 0.15f * k);
                     }
                     continue;
                 }
                 var sr = Pooled(_orbs, n++, "Orb", 9); if (sr == null) continue;
-                sr.sprite = orbF?[(o.Kind == "void" ? 2 : 0) + (anim + n) % 2]; sr.color = Color.white;
+                sr.sprite = orbF?[(o.Kind == "void" ? 4 : 0) + (anim + n) % 4]; sr.color = Color.white;
                 sr.transform.position = W(o.X, o.Y, 0.35f); sr.transform.rotation = Quaternion.identity;
                 sr.transform.localScale = Vector3.one * Mathf.Min(1f, 0.4f + o.Age * 3f);   // they swell out of the brain
             }
@@ -552,11 +554,23 @@ namespace GameCore
                 sr.transform.rotation = Quaternion.Euler(0f, 0f, -deg);
                 sr.transform.localScale = new Vector3(len, width, 1f);   // White() is one world unit (= one tile) square
             }
+            var beamF = Strip("Sprites/Fx/boss_brain_beam" + pn, 4, 32f, new Vector2(0.5f, 0.5f)); var capF = Strip("Sprites/Fx/boss_brain_beamcap" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
             foreach (var b in BrainBoss.Beams)
             {
                 float flick = 0.85f + 0.15f * Mathf.Sin(Time.time * 60f);
-                Line(b.Angle, b.Length, 0.42f, new Color(0.75f, 0.42f, 1f, 0.35f * flick));
-                Line(b.Angle, b.Length, 0.12f, new Color(1f, 0.95f, 1f, flick));
+                Line(b.Angle, b.Length, 0.5f, new Color(0.75f, 0.42f, 1f, 0.18f * flick));                                      // a faint wide bloom under the drawn beam
+                if (beamF != null)
+                {
+                    float r = b.Angle * Mathf.Deg2Rad; int segs = Mathf.CeilToInt(b.Length);
+                    for (int k = 0; k < segs; k++)                                                                              // the beam is drawn a tile at a time, each tile on its own frame, so it crackles along its length
+                    {
+                        var sg = Pooled(_beams, nb++, "Beam", 9); if (sg == null) continue; float mid = k + 0.5f, wlen = Mathf.Min(1f, b.Length - k);
+                        sg.sprite = beamF[(k + (int)(Time.time * 14f)) % 4]; sg.color = new Color(1f, 1f, 1f, flick);
+                        sg.transform.position = W(cx + Mathf.Cos(r) * mid, cy + Mathf.Sin(r) * mid, 0.35f); sg.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); sg.transform.localScale = new Vector3(wlen, 1.15f, 1f);
+                    }
+                    var cp = Pooled(_beams, nb++, "BeamCap", 10); if (cp != null && capF != null) { cp.sprite = capF[(int)(Time.time * 14f) % 4]; cp.color = Color.white; cp.transform.position = W(cx, cy, 0.35f); cp.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); cp.transform.localScale = Vector3.one * 1.6f; }
+                }
+                else Line(b.Angle, b.Length, 0.12f, new Color(1f, 0.95f, 1f, flick));                                           // (the old plain beam if the strips are missing)
             }
             if (f.Doing == "laser" && BrainBoss.Winding(f) && Player.Current != null)
             {
@@ -567,11 +581,12 @@ namespace GameCore
             // the pulse's wave front, fading as it spreads
             if (BrainBoss.Pulse != null)
             {
-                if (_wave == null) _wave = NewSprite("Wave", Strip("Sprites/Fx/boss_brain_ring", 1, 32f, new Vector2(0.5f, 0.5f))?[0], new Color(0.75f, 0.42f, 1f), _root, 8);
-                _wave.gameObject.SetActive(true);
+                var ringF = Strip("Sprites/Fx/boss_brain_ring" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
+                if (_wave == null) _wave = NewSprite("Wave", ringF?[0], Color.white, _root, 8);
+                _wave.gameObject.SetActive(true); if (ringF != null) _wave.sprite = ringF[(int)(Time.time * 10f) % 4];
                 _wave.transform.position = W(cx, cy, 0f);
                 _wave.transform.localScale = new Vector3(1f, 0.75f, 1f) * BrainBoss.Pulse.R;   // 64 px at 32 ppu = 2 tiles across: scale = radius
-                _wave.color = new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - BrainBoss.Pulse.R / BrainBoss.PulseReach));
+                _wave.color = new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - BrainBoss.Pulse.R / BrainBoss.PulseReach));      // (the colour is drawn into the strip now)
             }
             else if (_wave != null) _wave.gameObject.SetActive(false);
             // ripped cover: it hangs and turns, then flies
@@ -590,11 +605,12 @@ namespace GameCore
             bool wind = BrainBoss.Winding(f);
             if (wind)
             {
-                if (_glow == null) _glow = NewSprite("Glow", orbF?[0], Color.white, _root, 9);
-                _glow.gameObject.SetActive(true);
+                var glowF = Strip("Sprites/Fx/boss_brain_glow" + pn, 4, 20f, new Vector2(0.5f, 0.5f));
+                if (_glow == null) _glow = NewSprite("Glow", glowF?[0] ?? orbF?[0], Color.white, _root, 9);
+                _glow.gameObject.SetActive(true); if (glowF != null) _glow.sprite = glowF[(int)(Time.time * 10f) % 4];
                 float k = Mathf.Abs(Time.time * 3f % 2f - 1f);
                 _glow.transform.position = W(cx, cy, 0.4f);
-                _glow.transform.localScale = Vector3.one * (1.5f + 1.5f * k + (f.PulseAt >= 0f ? 1.5f : 0f));
+                _glow.transform.localScale = Vector3.one * (1.5f + 1.5f * k + (f.PulseAt >= 0f ? 1.5f : 0f)) * 0.5f;      // (the strip is 1.6 tiles across, the old orb was 0.75)
                 _glow.color = new Color(1f, 1f, 1f, 0.35f + 0.3f * k);
             }
             else if (_glow != null) _glow.gameObject.SetActive(false);

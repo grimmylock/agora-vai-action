@@ -197,6 +197,24 @@ def monitor(im, t, phase):
         px(im, x, max(y0, min(y1, yy)), TRACE)
 
 
+
+def glass_crack(im, x0, y0, x1, y1, seed):
+    """A crack in the vat glass (replaces the straight white lines): a jagged path from the impact outward, a bright core, a dark edge on one side, a pale glint every few pixels and small branches off it.
+    Deterministic per crack, so it does not shimmer between frames."""
+    r = random.Random(seed); n = max(4, int(math.hypot(x1 - x0, y1 - y0) / 2.2)); pts = [(x0, y0)]
+    dx, dy = (x1 - x0) / n, (y1 - y0) / n; nx, ny = -dy, dx; nl = math.hypot(nx, ny) or 1.0; nx, ny = nx / nl, ny / nl
+    for i in range(1, n + 1):
+        j = r.uniform(-1.6, 1.6) if i < n else 0.0; pts.append((x0 + dx * i + nx * j, y0 + dy * i + ny * j))
+    for a, b in zip(pts, pts[1:]):
+        line(im, int(a[0]) + 1, int(a[1]) + 1, int(b[0]) + 1, int(b[1]) + 1, CRACK_D)                    # the dark edge, down and right
+    for k, (a, b) in enumerate(zip(pts, pts[1:])):
+        line(im, int(a[0]), int(a[1]), int(b[0]), int(b[1]), CRACK)
+        if k % 3 == 1: px(im, int(a[0]) - 1, int(a[1]), hexc('#ffffff', 200))                            # a glint on the glass beside it
+        if k % 4 == 2 and k < n - 1:                                                                      # a short branch
+            bl = r.uniform(2.5, 5.0); ba = math.atan2(dy, dx) + r.choice((-1, 1)) * r.uniform(0.7, 1.2)
+            line(im, int(a[0]), int(a[1]), int(a[0] + math.cos(ba) * bl), int(a[1] + math.sin(ba) * bl), CRACK)
+    px(im, int(x0), int(y0), hexc('#ffffff')); px(im, int(x0) + 1, int(y0), hexc('#cfe8e0', 220)); px(im, int(x0), int(y0) + 1, hexc('#cfe8e0', 220))      # the impact point
+
 def frame(state, t):
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     phase = state[1] if isinstance(state, tuple) else 3
@@ -242,9 +260,8 @@ def frame(state, t):
     im.alpha_composite(Image.fromarray(ca, 'RGBA'))
     im.alpha_composite(A.shell)                                               # the vat over everything in it: lid, glass reflections, base, machines, cables
     cracks = [(fx(150), fy(150), [(-3, -12), (7, -18), (4, 11), (10, 17), (-5, 18)]), (fx(228), fy(122), [(-9, -10), (-6, 12), (4, 14), (-14, 4)]), (fx(222), fy(235), [(-6, -14), (6, -8), (-10, 6), (2, 12), (-4, 16)])]
-    for (sx, sy, legs) in cracks[:3 if not isinstance(state, tuple) else phase]:
-        for (lx, ly) in legs:
-            line(im, int(sx), int(sy), int(sx + lx), int(sy + ly), CRACK); line(im, int(sx) + 1, int(sy) + 1, int(sx + lx) + 1, int(sy + ly) + 1, CRACK_D)
+    for ci, (sx, sy, legs) in enumerate(cracks[:3 if not isinstance(state, tuple) else phase]):
+        for li, (lx, ly) in enumerate(legs): glass_crack(im, sx, sy, sx + lx, sy + ly, 1000 + ci * 17 + li * 3)
     monitor(im, t, phase)
     for i in range(6):                                                        # the base panel's lights blink
         on = (i + t) % 4 != 0

@@ -17,8 +17,11 @@ lab0 = lab0.resize((lab0.width * S, lab0.height * S), Image.NEAREST)
 sheet = Image.open(R('Assets/Resources/Sprites/Mutants/boss_brain_vat.png')).convert('RGBA')
 def cell(r, c): return sheet.crop((c * 128, r * 160, c * 128 + 128, r * 160 + 160))
 fx = lambda n: Image.open(R('Assets/Resources/Sprites/Fx', n + '.png')).convert('RGBA')
-orbs = fx('boss_brain_orbs'); orbs = [orbs.crop((i * 12, 0, i * 12 + 12, 12)).resize((24, 24), Image.NEAREST) for i in range(4)]
-bolt = fx('boss_brain_bolt'); bolts = [bolt.crop((i * 18, 0, i * 18 + 18, 8)).resize((36, 16), Image.NEAREST) for i in range(2)]
+def fxs(name, n, w, h, size):                   # the hand-drawn attack effects (ArtSource/bosses/make_brain_fx.py): four phases, each animated
+    im = fx(name); return [im.crop((i * w, 0, i * w + w, h)).resize(size, Image.NEAREST) for i in range(n)]
+ORB = [fxs(f'boss_brain_orbs_p{p}', 8, 16, 16, (26, 26)) for p in range(4)]; BOLT = [fxs(f'boss_brain_bolt_p{p}', 4, 28, 10, (56, 20)) for p in range(4)]
+RING = [fxs(f'boss_brain_ring_p{p}', 4, 64, 64, (64, 64)) for p in range(4)]; BEAM = [fxs(f'boss_brain_beam_p{p}', 4, 32, 12, (32, 12)) for p in range(4)]
+CAP = [fxs(f'boss_brain_beamcap_p{p}', 4, 16, 12, (26, 20)) for p in range(4)]; GLOW = [fxs(f'boss_brain_glow_p{p}', 4, 32, 32, (32, 32)) for p in range(4)]
 atlas = Image.open(R('Tools/render/_render/world_atlas.png')).convert('RGBA')
 meta = {l.split()[0]: list(map(int, l.split()[1:7])) for l in open(R('Tools/render/_render/world_atlas.txt')) if l.strip()}
 def prop(look):
@@ -37,10 +40,9 @@ NAMES = {0: 'full', 1: 'crack 1', 2: 'crack 2', 3: 'crack 3 - the brain half bar
 def save(c):
     global n
     c.crop((X0 * T, Y0 * T, X1 * T, Y1 * T)).convert('RGB').save(os.path.join(tmp, f'{n:05d}.png')); n += 1
-def glow(c, x, y, r, a):
-    g = Image.new('RGBA', c.size, (0, 0, 0, 0)); dg = ImageDraw.Draw(g)
-    for k in range(4, 0, -1): dg.ellipse((x - r * k / 4, y - r * k / 4, x + r * k / 4, y + r * k / 4), fill=(192, 107, 255, int(a * (5 - k) / 4)))
-    c.alpha_composite(g)
+def glow(c, x, y, r, a, ph=0):
+    im = GLOW[ph][n % 4].resize((int(r * 2), int(r * 2)), Image.NEAREST); im.putalpha(im.getchannel('A').point(lambda v: min(255, int(v * a / 120))))
+    c.alpha_composite(im, (int(x - im.width / 2), int(y - im.height / 2)))
 for f in d['frames']:
     lab = lab0.copy()
     for gx, gy in f['gone']:                    # cover broken or torn loose
@@ -49,38 +51,35 @@ for f in d['frames']:
         im, pvx, pvy = prop(look); lab.alpha_composite(im, (int(lx * T + T / 2 - pvx), int((ly + 1) * T - 2 - pvy)))
     c = lab
     cx, cy = f['c']; bx, by = cx * T, cy * T
-    row, col = f['row'], f['col']
+    row, col = f['row'], f['col']; ph = (row % 4) if row < 8 else 3
     c.alpha_composite(cell(row, col), (int(vbx - 64), int(vby - 150)))
-    if f['wind']: glow(c, bx, by - 0.4 * T, 22 + 10 * math.sin(n * 0.9) + (14 if f['doing'] == 'pulse' else 0), 120)
+    if f['wind']: glow(c, bx, by - 0.4 * T, 22 + 10 * math.sin(n * 0.9) + (14 if f['doing'] == 'pulse' else 0), 120, ph)
     if prev_wind and not f['wind'] and row < 8: flash = 3
     prev_wind = f['wind']
-    if flash: glow(c, bx, by - 0.4 * T, 40, 200); flash -= 1
+    if flash: glow(c, bx, by - 0.4 * T, 40, 200, ph); flash -= 1
     if f['pull']:
         fr = pull[pull_t % len(pull)]; pull_t += 1; c.alpha_composite(fr, (int(bx - fr.width / 2), int(by - fr.height / 2 - 10)))
-    if f['pulse'] >= 0.4:                       # the wave front
-        r = f['pulse'] * T; a = max(0, min(255, int(255 * (1.2 - f['pulse'] / 16))))
-        g = Image.new('RGBA', c.size, (0, 0, 0, 0)); dg = ImageDraw.Draw(g)
-        dg.ellipse((bx - r, by - r * 0.75, bx + r, by + r * 0.75), outline=(240, 224, 255, a), width=4)
-        dg.ellipse((bx - r + 5, by - r * 0.75 + 4, bx + r - 5, by + r * 0.75 - 4), outline=(192, 107, 255, a // 2), width=6)
-        c.alpha_composite(g)
+    if f['pulse'] >= 0.4:                       # the wave front (the strip's own colours, scaled to its radius, fading)
+        r = f['pulse'] * T; a = max(0, min(255, int(255 * (1.2 - f['pulse'] / 16)))); im = RING[ph][n % 4].resize((max(4, int(2 * r)), max(3, int(1.5 * r))), Image.NEAREST)
+        im.putalpha(im.getchannel('A').point(lambda v: int(v * a / 255))); c.alpha_composite(im, (int(bx - im.width / 2), int(by - im.height / 2)))
     if f['beams']:
-        g = Image.new('RGBA', c.size, (0, 0, 0, 0)); dg = ImageDraw.Draw(g)
         for ang, ln in f['beams']:
-            r = math.radians(ang); ex, ey = bx + math.cos(r) * ln * T, by - 0.35 * T + math.sin(r) * ln * T
-            dg.line((bx, by - 0.35 * T, ex, ey), fill=(192, 107, 255, 110), width=13)
-            dg.line((bx, by - 0.35 * T, ex, ey), fill=(255, 240, 255, 255), width=4)
-        c.alpha_composite(g)
+            r = math.radians(ang); oy0 = by - 0.35 * T
+            for k in range(int(math.ceil(ln))):         # a tile at a time, each on its own frame, like the game
+                seg = BEAM[ph][(k + n) % 4]; seg = seg.crop((0, 0, int(32 * min(1, ln - k)), 12)).resize((int(32 * min(1, ln - k)), 14), Image.NEAREST).rotate(-ang, expand=True, resample=Image.NEAREST)
+                mx, my = bx + math.cos(r) * (k + 0.5) * T, oy0 + math.sin(r) * (k + 0.5) * T; c.alpha_composite(seg, (int(mx - seg.width / 2), int(my - seg.height / 2)))
+            cp = CAP[ph][n % 4].rotate(-ang, expand=True, resample=Image.NEAREST); c.alpha_composite(cp, (int(bx - cp.width / 2), int(oy0 - cp.height / 2)))
     for ox, oy, dx, dy, kind, age in f['orbs']:
         sx, sy = ox * T, oy * T - 0.35 * T
         if kind == 'bolt':
             deg = math.degrees(math.atan2(-dy, dx))
             for k in (2, 1, 0):
-                im = bolts[n % 2].rotate(deg, expand=True, resample=Image.NEAREST)
+                im = BOLT[ph][(n + k) % 4].rotate(deg, expand=True, resample=Image.NEAREST)
                 if k: im.putalpha(im.getchannel('A').point(lambda a, k=k: int(a * (1 - 0.35 * k))))
                 c.alpha_composite(im, (int(sx - dx * 0.35 * k * T - im.width / 2), int(sy - dy * 0.35 * k * T - im.height / 2)))
         else:
-            im = orbs[(2 if kind == 'void' else 0) + n % 2]
-            s = min(1, 0.4 + age * 3); im = im.resize((max(2, int(24 * s)), max(2, int(24 * s))), Image.NEAREST)
+            im = ORB[ph][(4 if kind == 'void' else 0) + (n + len(f['orbs'])) % 4]
+            s = min(1, 0.4 + age * 3); im = im.resize((max(2, int(26 * s)), max(2, int(26 * s))), Image.NEAREST)
             c.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height / 2)))
     for tx, ty, look, flying, age in f['throws']:
         im, pvx, pvy = prop(look)
