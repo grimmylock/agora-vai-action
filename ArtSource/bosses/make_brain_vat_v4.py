@@ -16,8 +16,8 @@ import brain_ref_layers as L
 
 W, H, COLS = 128, 160, 8
 BX0, BY0, BX1, BY1 = L.BOX
-S = min(H / (BY1 - BY0), W / (BX1 - BX0)) * 0.998           # picture -> frame scale (0.468)
-OFFX, OFFY = (W - (BX1 - BX0) * S) / 2.0, -2.0               # centred, the base's foot two pixels above the frame's bottom
+S = min(H / (BY1 - BY0), W / (BX1 - BX0)) * 0.998 * 0.935   # picture -> frame scale (0.468 x 0.935: a little room under the base for the floor pad that seats it, 2026-11-08)
+OFFX, OFFY = (W - (BX1 - BX0) * S) / 2.0, 0.0                # centred, the picture's top at the frame's top; the base's foot ~11 pixels above the bottom (the pad goes there)
 EYE_REF = [((173.5, 175.0), 9.0), ((209.0, 166.0), 7.0)]     # his two eyes in the picture: centre, radius (measured)
 
 
@@ -215,6 +215,46 @@ def glass_crack(im, x0, y0, x1, y1, seed):
             line(im, int(a[0]), int(a[1]), int(a[0] + math.cos(ba) * bl), int(a[1] + math.sin(ba) * bl), CRACK)
     px(im, int(x0), int(y0), hexc('#ffffff')); px(im, int(x0) + 1, int(y0), hexc('#cfe8e0', 220)); px(im, int(x0), int(y0) + 1, hexc('#cfe8e0', 220))      # the impact point
 
+
+import colorsys
+def harmonize(im):
+    """Seats the vat in the world (Yan, 2026-11-08: "the brain looks good but really out of place"): (1) the greens (glass, liquid, lamps) lose a fifth of their saturation and a little light - the world is muted olive and wet concrete, the
+    picture's glass was the one loud thing in the room; (2) a thin dark outline round the whole silhouette, like the props have; (3) under it a steel floor pad (a dark plate with bolts and drain slots) and a soft contact shadow, so it
+    stands ON the floor instead of floating over it. The eyes (violet) and the brain (pinks) are left alone."""
+    a = np.array(im).astype(np.float32); rgb = a[:, :, :3] / 255.0; al = a[:, :, 3] > 0
+    mx, mn = rgb.max(2), rgb.min(2); d = mx - mn + 1e-6; r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    hue = np.where(mx == g, 60 * ((b - r) / d) + 120, np.where(mx == b, 60 * ((r - g) / d) + 240, 60 * (((g - b) / d) % 6)))
+    greenish = (hue > 85) & (hue < 190) & (d > 0.08) & al
+    sat = d / (mx + 1e-6); sat2 = np.where(greenish, sat * 0.78, sat); v2 = np.where(greenish, mx * 0.95, mx)
+    c = v2 * sat2; m = v2 - c; hp = (hue % 360) / 60.0; xx = c * (1 - np.abs(hp % 2 - 1)); z = np.zeros_like(c)
+    sel = [(c, xx, z), (xx, c, z), (z, c, xx), (z, xx, c), (xx, z, c), (c, z, xx)]; idx = np.clip(hp.astype(int), 0, 5); out = np.zeros_like(rgb)
+    for k, (rr, gg, bb) in enumerate(sel):
+        mk = idx == k; out[..., 0] = np.where(mk, rr + m, out[..., 0]); out[..., 1] = np.where(mk, gg + m, out[..., 1]); out[..., 2] = np.where(mk, bb + m, out[..., 2])
+    a[:, :, :3] = np.where(greenish[..., None], out * 255.0, a[:, :, :3]); a = a.astype(np.uint8); vat = Image.fromarray(a, 'RGBA')
+    ys, xs = np.nonzero(a[:, :, 3] > 40); x0, x1 = xs.min(), xs.max(); yb = min(H - 12, int(fy(BY1)) - 1)       # the base's foot (not the drained spill's row)
+    base = [x for x in range(W) if a[yb - 3, x, 3] > 40]; bx0, bx1 = (min(base), max(base)) if base else (x0, x1)
+    # the outline: one pixel of near-black round every opaque pixel's empty neighbours
+    sil = a[:, :, 3] > 40; ring = np.zeros_like(sil)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)): ring |= np.roll(np.roll(sil, dx, 1), dy, 0)
+    ring &= ~sil; ring[:, 0] = ring[:, -1] = False; ring[0, :] = False
+    ol = np.zeros_like(a); ol[ring] = (20, 22, 23, 190); outlined = Image.fromarray(ol, 'RGBA'); outlined.alpha_composite(vat)
+    pad = Image.new('RGBA', (W, H), (0, 0, 0, 0)); cx = (bx0 + bx1) / 2.0; rx = (bx1 - bx0) / 2.0 + 9; cy = yb - 1.0; ry = 6.0
+    for y in range(max(0, int(cy - ry - 1)), H):
+        for x in range(W):
+            e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+            if e < 1.0:                                                                  # the steel pad: lit on top, darker toward its front edge, a bolt at each end, drain slots
+                t = (y - (cy - ry)) / (2 * ry); col = (74, 79, 84) if t < 0.35 else (58, 62, 67) if t < 0.7 else (40, 43, 47)
+                if e > 0.78: col = (30, 32, 35)
+                pad.putpixel((x, y), col + (255,))
+            elif e < 1.55 and y >= cy - 1: pad.putpixel((x, y), (10, 11, 12, int(120 * (1.55 - e) / 0.55)))      # the contact shadow, soft, a little wider than the pad
+    pp = np.array(pad)
+    for bx in (cx - rx + 4, cx + rx - 4):
+        for dx, dy in ((0, 0), (1, 0)): pad.putpixel((int(bx) + dx, int(cy + 1) + dy), (122, 128, 134, 255))
+    for k in range(-3, 4, 1):
+        xk = int(cx + k * 9)
+        for dy in (3, 4): pad.putpixel((xk, int(cy) + dy), (22, 24, 26, 255)); pad.putpixel((xk + 1, int(cy) + dy), (22, 24, 26, 255))
+    pad.alpha_composite(outlined); return pad
+
 def frame(state, t):
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     phase = state[1] if isinstance(state, tuple) else 3
@@ -284,7 +324,7 @@ if __name__ == '__main__':
     os.makedirs(out, exist_ok=True)
     sheet = Image.new('RGBA', (W * COLS, H * len(ROWS)))
     for r, st in enumerate(ROWS):
-        for t in range(COLS): sheet.alpha_composite(frame(st, t), (t * W, r * H))
+        for t in range(COLS): sheet.alpha_composite(harmonize(frame(st, t)), (t * W, r * H))
     sheet.save(os.path.join(out, 'boss_brain_vat.png'))
     strip = Image.new('RGBA', (W * 4 * 3 + 30, H * 3 * 3 + 20), (22, 24, 26, 255))      # a review sheet: one frame of every state at 3x, in the sheet's order
     for i in range(11):

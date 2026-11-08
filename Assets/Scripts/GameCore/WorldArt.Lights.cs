@@ -44,6 +44,9 @@ namespace GameCore
                     if (StandingAt(x, y, out var st)) { l.X = st.X; l.Y = st.Y; } else { l.X = x * Px + 8; l.Y = y * Px + 13; }
                     list.Add(l);
                 }
+            var vat = BrainBoss.Current;                                                                    // the brain's vat glows: green light spilling over the lab floor (Yan: "the brain looks good but really out of place")
+            if (vat != null && !vat.Gone && vat.Unit != null && vat.Unit.X >= tx0 && vat.Unit.X <= tx1 && vat.Unit.Y >= ty0 && vat.Unit.Y <= ty1)
+                list.Add(new PointLight { X = vat.Unit.X * Px + 8, Y = vat.Unit.Y * Px + 13, H = 34f, R = 7f * Px, Cr = 0.42f, Cg = 0.95f, Cb = 0.55f, Power = 1.05f, Flicker = 0.07f });
             return list;
         }
 
