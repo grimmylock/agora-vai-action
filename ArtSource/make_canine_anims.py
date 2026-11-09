@@ -48,11 +48,25 @@ POUNCE = [
     (dict(fu=8), 80, 1.0),
 ]
 
+def rigid(q):
+    """Yan, 2026-11-09: the run squeezed the Veil, Dread and Maw bodies (the hindquarters and forequarters were pushed in opposite directions, so the pieces overlapped). Those three now
+    move the whole body as ONE piece (both halves by the same offset); a lunge that pulled the head ahead is carried by the head's own offset instead."""
+    q = dict(q); fx, hx_, fy, hy_ = q.get("fdx", 0), q.get("hdx", 0), q.get("fdy", 0), q.get("hdy", 0)
+    ax, ay = int(round((fx + hx_) / 2)), int(round((fy + hy_) / 2))
+    q["nx"] = q.get("nx", 0) + fx - ax; q["ny"] = q.get("ny", 0) + fy - ay
+    q["fdx"] = q["hdx"] = ax; q["fdy"] = q["hdy"] = ay
+    return q
+
 def build(key):
     rig = C.Rig(key, C.SPECS[key]); res = {}
-    p, ms = run_poses(); res["run"] = ([rig.frame(q) for q in p], ms, [0] * len(p))
+    if key != "pallid_prowler":
+        global BITE, POUNCE
+        _b, _p = BITE, POUNCE
+        BITE = [(rigid(q), m_, t_) for q, m_, t_ in BITE]; POUNCE = [(rigid(q), m_, t_) for q, m_, t_ in POUNCE]
+    p, ms = run_poses(); p = p if key == "pallid_prowler" else [rigid(q) for q in p]; res["run"] = ([rig.frame(q) for q in p], ms, [0] * len(p))
     res["bite"] = ([rig.frame(q) for q, _, _ in BITE], [t for _, t, _ in BITE], [0] * len(BITE))
     res["pounce"] = ([rig.frame(q) for q, _, _ in POUNCE], [t for _, t, _ in POUNCE], [tr for _, _, tr in POUNCE])
+    if key != "pallid_prowler": BITE, POUNCE = _b, _p
     return rig, res
 
 def human():
