@@ -76,7 +76,7 @@ def frame_at(wi, ri):
     im.alpha_composite(Image.new("RGBA", (w * sc, h * sc), (52, 48, 40, 255)), (10, 10)); im.alpha_composite(Image.new("RGBA", (w * sc, h * sc), (52, 48, 40, 255)), (20 + w * sc, 10))
     im.alpha_composite(walk[wi].resize((w * sc, h * sc), Image.NEAREST), (10, 10)); im.alpha_composite(fr[ri].resize((w * sc, h * sc), Image.NEAREST), (20 + w * sc, 10))
     return im.convert("P", palette=Image.ADAPTIVE)
-WALK_MS, RUN_MS = 110, 85                  # the run is 30% faster than the walk's 110 ms a frame (Yan, 2026-11-09)
+WALK_MS, RUN_MS = 110, 42                  # the run is 30% faster than the walk's 110 ms a frame (Yan, 2026-11-09)
 prev = None
 for tm in range(0, 8 * 110 * 17, 5):       # a common timeline, so each side keeps its own speed
     key = ((tm // WALK_MS) % len(walk), (tm // RUN_MS) % len(fr))

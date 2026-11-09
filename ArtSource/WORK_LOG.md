@@ -5435,3 +5435,4 @@ Yan: "the combo has a frame trap, if you dodge the bite the tail gets you, we ne
 - NOT checked in Unity.
 - Hound run example v3 (Yan: "clean up some of the frames, they have some leftover pixels"): `despeckle` drops any clump under 10 px before the outline (the drool drops the body bend cut loose, paw fragments), and the frame is 50 px tall so the gathered frames' paws are no longer clipped. Preview only, not in the game.
 - Hound run example: 30% faster (Yan): 85 ms a frame against the walk's 110 ms (the preview GIF now runs each side on its own clock). The frames did not change. When the strip goes in the game, play the run at ~11.8 frames/s.
+- Hound run example: "still looks slow, double the speed" (Yan): 42 ms a frame (about 24 frames/s, 2.6x the walk's rate). Play the run strip at ~24 fps in the game.
