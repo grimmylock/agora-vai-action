@@ -45,19 +45,21 @@ BASE = {
 PRICE_BAND = {1: (200, 500), 2: (650, 1500), 3: (1800, 4000), 4: (4500, 9500), 5: (11000, 25000)}  # file 07
 
 # faction: (armband color, lens, phys bias, anom bias, belt bias, kg bias)
+# 2026-11-09 (Yan): each faction has its own lens ("eye") colour so they stop all looking the same: Raiders red, Outcasts orange, Wanderers green, Prospectors teal, Garrison white, Sentinels blue,
+# Liberators violet, Contractors the old pale ice blue (None = default), Obelisk amber, Cartel pink, Surveyors lime, IZC salmon. Only lens pixels use it (not hazmat windows or visors).
 FACTION = {
-    "Raiders":     ("#b02a2a", None,      0, -5,  0,  0),
-    "Outcasts":    ("#8a6a48", None,     -3, -3,  0,  1),
-    "Wanderers":   ("#a0b04a", None,      0,  5,  0,  0),
-    "Prospectors": ("#d4a62a", None,     -5, 12,  1,  0),
-    "Garrison":    ("#9a8a5a", None,      5, -5,  0,  1),
-    "Sentinels":   ("#3a6ab0", None,      8, -5, -1,  1),
-    "Liberators":  ("#6fb03a", None,      0,  5,  0, -1),
+    "Raiders":     ("#b02a2a", "#ff3a3a",      0, -5,  0,  0),
+    "Outcasts":    ("#8a6a48", "#e0802a",     -3, -3,  0,  1),
+    "Wanderers":   ("#a0b04a", "#6ee07a",      0,  5,  0,  0),
+    "Prospectors": ("#d4a62a", "#38e0d0",     -5, 12,  1,  0),
+    "Garrison":    ("#9a8a5a", "#f2f4f0",      5, -5,  0,  1),
+    "Sentinels":   ("#3a6ab0", "#4a78ff",      8, -5, -1,  1),
+    "Liberators":  ("#6fb03a", "#b060ff",      0,  5,  0, -1),
     "Contractors": ("#c8d0d8", None,      5,  0,  0,  0),
     "Obelisk":     ("#e6e6e6", "#ffd060", 5, 12, -1,  1),
-    "Cartel":      ("#e0c030", None,      0,  5,  1,  0),
-    "Surveyors":   ("#b8c43a", None,    -10, 20,  1,  0),
-    "IZC":         ("#6fb0e0", None,      3,  3,  0,  0),
+    "Cartel":      ("#e0c030", "#ff5aa8",      0,  5,  1,  0),
+    "Surveyors":   ("#b8c43a", "#c8f030",    -10, 20,  1,  0),
+    "IZC":         ("#6fb0e0", "#ff9070",      3,  3,  0,  0),
 }
 
 # ---- catalog: faction -> tier -> 3 entries. An existing armor is just its name (look + stats from
@@ -265,6 +267,7 @@ for fac, tiers in CATALOG.items():
         for e in entries:
             if isinstance(e, str):
                 st = FILE02[e]; look = dict(av.LOOK[e]); arch = None; existing = True; name = e
+                if lens and "E" not in look: look["E"] = lens
             else:
                 name, arch, head, body, S, H, extra = e
                 look = dict(head=head, body=body, S=S, H=H, **extra)
