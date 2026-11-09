@@ -24,7 +24,7 @@ HEADS = {
     "balaclava":["......KK", ".....KNn", "....KNnN", "....KNNN", "....KFeF", "....KNNN", ".....KNN"],  # full knit ski mask (N), one wide eye slit of skin with dark eyes
     "kokonmask": ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KMEH", "....KHHM", ".....KHM"],  # Kokon: gas mask built into the hood
     "visorhelm":["......KK", "....KHhh", "...KHhhh", "...KHVVV", "....KVVV", "....KMmM", ".....KMm"],  # military helmet, dark visor down
-    "sphere":   [".....KKK", "....KHHH", "...KHHHH", "...KHVVV", "...KHVVV", "....KHHH", ".....KHH"],  # glossy full-face helmet; Batch 128: a dark visor so front and back differ
+    "sphere":   ["......KK", "....KHHH", "....KHHH", "....KHVV", "....KHVV", "....KHHH", "....KHHH"],   # 2026-11-09 (Yan): head one px narrower each side (8 wide); row 6 is replaced by a shoulder row in build() so the neck is shorter  # glossy full-face helmet; Batch 128: a dark visor so front and back differ
     "helmet":   ["......KK", "....KHhh", "...KHhhh", "...KHHHH", "....KMEm", "....KMmM", ".....KMm"],  # steel helmet + gas mask
     "sealed":   ["......KK", ".....KHh", "....KHhh", "....KHWW", "....KHWW", "....KHWW", "....KHHH"],  # hazmat hood, glass window
     "exo":      [".....KKK", "....KHhh", "...KHhhh", "...KHHMM", "...KHMEm", "...KHMmM", "....KKMm"],  # heavy exo helmet + gas mask
@@ -39,7 +39,7 @@ HEADS_BACK = {
     "balaclava":["......KK", ".....KNn", "....KNnN", "....KNNN", "....KNNN", "....KNNN", ".....KNN"],
     "kokonmask":["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KHHH", ".....KHH"],
     "visorhelm":["......KK", "....KHhh", "...KHhhh", "...KHHHH", "....KHHH", "....KMMM", ".....KMm"],
-    "sphere":   [".....KKK", "....KHHH", "...KHHHH", "...KHHHH", "...KHHHH", "....KHHH", ".....KHH"],
+    "sphere":   ["......KK", "....KHHH", "....KHHH", "....KHHH", "....KHHH", "....KHHH", "....KHHH"],
     "helmet":   ["......KK", "....KHhh", "...KHhhh", "...KHHHH", "....KHHH", "....KMMM", ".....KMm"],
     "sealed":   ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KHHH", "....KHHH"],
     "exo":      [".....KKK", "....KHhh", "...KHhhh", "...KHHHH", "...KHHJJ", "...KHHHH", "....KKMm"],   # vents on the back of the helmet
@@ -171,6 +171,8 @@ def build(name, anom, belt, L=None, back=False):
         "n": shade(L.get("N", H), 1.9),   # knit highlight on the balaclava
     }
     rows = mirror((HEADS_BACK if back else HEADS)[L["head"]] + BODIES[L["body"]])
+    if L["head"] == "sphere":                     # the round helmet has no neck: its last row is the shoulder line (the torso's second row, full width)
+        rows[6] = mirror([BODIES[L["body"]][1]])[0]
     grid = [list(r) for r in rows]
     if L["head"] in ("bare", "bandit", "hoodface", "balaclava"):          # eyes are dark, not lens-colored
         pal["e"] = "#2a2018"
