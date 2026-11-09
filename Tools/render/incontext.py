@@ -8,7 +8,7 @@ are half the size). Nothing is lit, shadowed or tinted here: it is a size/densit
     bash Tools/render/render.sh bonfire_village                       # once (about 15 s)
     python3 Tools/render/incontext.py cand1.png [cand2.png ...] --out ctx.png
     python3 Tools/render/incontext.py --demo --out ctx.png            # finished mutants + the first-pass humanoids
-Options: --map NAME (default bonfire_village), --at X,Y (pixel in the render, default a dirt road), --tiles W,H (default 22,10), --view N (final zoom, default 2).
+Options: --bosses (add the eel, a rear-up frame, and the brain vat), --map NAME (default bonfire_village), --at X,Y (pixel in the render, default a dirt road), --tiles W,H (default 22,10), --view N (final zoom, default 2).
 A sprite file is a PNG at the size it would have in the game (a 48x32 hound is 1.5 x 1 tiles); sprite names ending in `_x2` are shown at 2x (art drawn at 16 px density)."""
 import argparse, os, sys
 from PIL import Image, ImageDraw
@@ -25,7 +25,7 @@ def human(col, row):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("sprites", nargs="*"); ap.add_argument("--map", default="bonfire_village"); ap.add_argument("--at", default="1700,1580")
-    ap.add_argument("--tiles", default="22,10"); ap.add_argument("--view", type=int, default=2); ap.add_argument("--out", default="incontext.png"); ap.add_argument("--demo", action="store_true")
+    ap.add_argument("--tiles", default="22,10"); ap.add_argument("--view", type=int, default=2); ap.add_argument("--out", default="incontext.png"); ap.add_argument("--demo", action="store_true"); ap.add_argument("--bosses", action="store_true", help="add the eel (a rear-up frame) and the brain vat, drawn at their real density")
     a = ap.parse_args()
     mp = os.path.join(HERE, "_render", a.map + ".png")
     if not os.path.exists(mp): sys.exit(f"render the map first: bash Tools/render/render.sh {a.map}")
@@ -34,6 +34,11 @@ def main():
     cast = [("man", human(0, 0)), ("man", human(5, 1)), ("man", human(9, 2))]
     for n in ("pallid_prowler", "dread_prowler", "blight_brute"):
         cast.append((n, Image.open(os.path.join(MUT, f"mutant_hd_{n}.png")).convert("RGBA")))
+    if a.bosses:
+        fx = os.path.join(ROOT, "Assets", "Resources", "Sprites", "Fx")
+        eel = Image.open(os.path.join(fx, "boss_eel_rear_idle.png")).convert("RGBA").crop((0, 0, 620, 340)); eel = eel.crop(eel.getbbox())
+        vat = Image.open(os.path.join(MUT, "boss_brain_vat.png")).convert("RGBA").crop((0, 0, 128, 160)); vat = vat.crop(vat.getbbox())
+        cast += [("eel", eel), ("brain vat", vat)]
     cands = list(a.sprites)
     if a.demo:
         d = os.path.join(ROOT, "ArtSource", "mutants_anim", "humanoid")
