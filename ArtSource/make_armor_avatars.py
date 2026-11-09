@@ -178,8 +178,7 @@ def build(name, anom, belt, L=None, back=False):
     if L["head"] in ("bare", "bandit", "hoodface", "balaclava"):          # eyes are dark, not lens-colored
         pal["e"] = "#2a2018"
     if back: return _back(grid, pal, L, name, belt)
-    if L["head"] == "helmet":                     # glint only on the left side of the visor
-        grid[4][10] = "E"
+    # (the helmet used to get a third lens pixel at (10, 4) as a "glint"; it read as a double eye on one side, 2026-11-09 Yan: "the ones with the double eye look weird". Removed.)
     express(grid, L["head"], L.get("expr") or expr_for(name))
     # data-driven details
     belt_row = 10 if L["body"] in ("heavy", "exo") else 11
