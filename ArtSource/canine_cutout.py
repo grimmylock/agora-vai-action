@@ -94,45 +94,19 @@ class Rig:
             a = math.radians(nrot); dx, dy = x - piv[0], y - piv[1]
             return (piv[0] + dx * math.cos(a) + dy * math.sin(a), piv[1] - dx * math.sin(a) + dy * math.cos(a))
         hx2, hy2 = tr(hx, hy); tx2, ty2 = tr(tx, ty)
-        if deg < 6:
-            jaw = self.parts["jaw"]
-            if nrot: jaw = jaw.rotate(nrot, resample=Image.NEAREST, center=piv)
-            f.alpha_composite(jaw, (ox, oy))
-        else:
-            light, mid, dark, deep = self.head_palette(); th = c.get("jaw_th", 4)
-            ang0 = math.atan2(ty2 - hy2, tx2 - hx2); lip = math.hypot(tx2 - hx2, ty2 - hy2); Lj = lip + 1.5
-            ang = ang0 + math.radians(deg); ax, ay = math.cos(ang), math.sin(ang); nx, ny = -ay, ax
-            H = (ox + hx2 + 0.5, oy + hy2 + 0.5); Tp = (ox + tx2 + 1.0, oy + ty2 + 0.5)
+        # Yan, 2026-11-09: the redrawn open mouth "adds too much, it doesn't look like its mouth, just weird polygons ... use the existing jaw and work with it". So: the sprite's OWN lower jaw
+        # (everything under the lip line) hinges by a modest angle, the gap behind it is only a sliver of the sprite's darkest colour (what its own mouth line is made of), nothing else is drawn.
+        eff = min(30.0, deg * 0.34) if deg >= 4 else 0.0
+        jaw = self.parts["jaw"]
+        if nrot: jaw = jaw.rotate(nrot, resample=Image.NEAREST, center=piv)
+        if eff > 1.5:
+            light, mid, dark, deep = self.head_palette()
+            a0 = math.atan2(ty2 - hy2, tx2 - hx2); Lj = math.hypot(tx2 - hx2, ty2 - hy2) + 1; a1 = a0 + math.radians(eff)
             lay = Image.new("RGBA", f.size, (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
-            d.polygon([H, Tp, (H[0] + ax * Lj, H[1] + ay * Lj)], fill=c["inside"]); f.alpha_composite(lay)
-            jaw = Image.new("RGBA", f.size, (0, 0, 0, 0)); jp = jaw.load()
-            for yy in range(int(H[1] - Lj - 4), int(H[1] + Lj + th + 6)):
-                for xx in range(int(H[0] - 3), int(H[0] + Lj + 5)):
-                    if not (0 <= xx < f.width and 0 <= yy < f.height): continue
-                    rx, ry = xx + 0.5 - H[0], yy + 0.5 - H[1]; tt = rx * ax + ry * ay; dn = rx * nx + ry * ny
-                    if tt < -0.5 or tt > Lj: continue
-                    thick = th * (1.0 - 0.5 * max(0.0, tt) / Lj)
-                    if 0 <= dn <= thick: jp[xx, yy] = light if dn < 0.9 else (mid if dn < thick - 1.0 else dark)
-            f.alpha_composite(jaw)
-            fp = f.load(); n_t = c.get("teeth", 3)
-            def plot(x, y, col):
-                x, y = int(x), int(y)
-                if 0 <= x < f.width and 0 <= y < f.height: fp[x, y] = col
-            for k in range(n_t):                                          # upper fangs: hang from the lip, 2 px (3 when it gapes wide)
-                tt = 0.5 + 0.45 * k / max(1, n_t - 1)
-                x = ox + hx2 + (tx2 - hx2) * tt; y = oy + hy2 + (ty2 - hy2) * tt + 1
-                plot(x, y, TEETH); plot(x, y + 1, TEETH)
-                if deg > 34 and k % 2 == 0: plot(x, y + 2, TEETH_D)
-            for k in range(n_t - 1):                                      # lower fangs: stand up from the jaw's top edge
-                tt = 0.55 + 0.4 * k / max(1, n_t - 2)
-                x = H[0] + ax * Lj * tt - nx * 0.8; y = H[1] + ay * Lj * tt - ny * 0.8
-                plot(x, y, TEETH); plot(x - nx * 1.0, y - ny * 1.0, TEETH_D if deg < 30 else TEETH)
-            if deg > 28:                                                  # a tongue lying along the jaw
-                for tt in (0.2, 0.32, 0.44, 0.56):
-                    plot(H[0] + ax * Lj * tt + nx * 0.5, H[1] + ay * Lj * tt + ny * 0.5, c.get("tongue", (190, 84, 90, 255)))
-            if c.get("drool"):                                            # drool hangs from the jaw's tip
-                gx, gy = H[0] + ax * Lj * 0.88 + nx * th, H[1] + ay * Lj * 0.88 + ny * th
-                for k in range(3): plot(gx, gy + k, c["drool"])
+            d.polygon([(ox + hx2 + 0.5, oy + hy2 + 0.5), (ox + tx2 + 1.0, oy + ty2 + 0.5), (ox + hx2 + 0.5 + Lj * math.cos(a1), oy + hy2 + 0.5 + Lj * math.sin(a1))], fill=deep)
+            f.alpha_composite(lay)
+            jaw = jaw.rotate(-eff, resample=Image.NEAREST, center=(hx2 + 0.5, hy2 + 0.5))
+        f.alpha_composite(jaw, (ox, oy))
         if flash:
             sx, sy = int(ox + tx2 - 2), int(oy + ty2 + 2)
             for dx, dy2 in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (2, 0), (-2, 0), (0, 2), (0, -2)):
