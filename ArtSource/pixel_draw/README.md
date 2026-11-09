@@ -41,3 +41,6 @@ stencil and one tiny rust scuff; 1 px outline; one pixel of empty margin.
 - Past 48 px, walk cycles, and painterly work are outside what the tool is good at (its own doc: `docs/pixel-draw.md`). Our 64x32 guns
   are past that edge; the weapon method Yan approved stays `ArtSource/weapons/hand/PIXEL_GUIDE.md`.
 - No GPT or Grok login is needed for pixel-draw. `gen` and the video features do need one.
+
+## Verdict (Yan, 2026-11-09)
+Item icons (ammo box, then the Drowner's eye, shock gland, spine plate and the Sealed Vault key, with a palette widened from the real icons) and a 32 px Alpha Prowler head (closed/open) were tried: "it doesn't work, it looks very bad". Not used. Decision: **mutant and creature art comes from Yan's own references made in the Gemini app** (prompts and a style pack in `ArtSource/refs/mutants/`), converted with the existing reference pipeline; nothing from pixel-draw is shipped. Lessons if it is ever revisited: palette-locked icons must use the creature's own colours (the olive/steel palette made every part a green blob), and a model-drawn head is flat side-on at 32 px, far bigger than the game's 14 px heads.
