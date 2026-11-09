@@ -265,14 +265,14 @@ def _polish(img, L, back=False):
         for x in range(6, 10):
             if px[x, 8][3] and px[x, 8][:3] != k: px[x, 8] = dk(px[x, 8], 1.2)
     if style in ("heavy", "exo"):                         # taller: head+torso up 1px, top leg row repeated
-        # 2026-11-09 (Yan: "the top of the sprites is cut off when testing in unity"): this used to drop the top OUTLINE row (rows 1..11 moved up to 0) and then
-        # clear what was left of it, so the head's top row sat flush on the cell edge with no outline: 51 front and 51 back suits (every heavy/exo one) looked
-        # chopped. Now the outline row stays and the head loses its first content row instead (the extra leg row is still added).
+        # 2026-11-09 (Yan: "the top of the sprites is cut off when testing in unity", then "some of them have extremely flat top helmets/hats"): the extra leg row makes 17 rows in a
+        # 16 px cell. First the head's top outline was dropped (chopped heads); then the head's first content row was dropped (flat-topped helmets). Now the HEAD is kept whole, with its
+        # outline row, and the row that goes is the torso's middle row (original row 9): the torso is a row shorter, the legs are still a row longer.
         t = Image.new("RGBA", (16, 16))
         t.alpha_composite(img.crop((0, 12, 16, 16)), (0, 12))
         t.alpha_composite(img.crop((0, 12, 16, 13)), (0, 11))
-        t.alpha_composite(img.crop((0, 2, 16, 12)), (0, 1))
-        top = img.crop((0, 0, 16, 1)); t.alpha_composite(top, (0, 0))
+        t.alpha_composite(img.crop((0, 10, 16, 12)), (0, 9))
+        t.alpha_composite(img.crop((0, 0, 16, 9)), (0, 0))
         img = _outline(t)
     return img
 

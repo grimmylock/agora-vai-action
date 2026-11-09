@@ -5510,3 +5510,6 @@ Yan, after the redesign prototype: "keep the current sprites but doubled, the ne
 - `HeldWeaponView.HandSprite`: the floating gloves are built at 2x (same size and place) so they match the doubled body.
 - Hand/gun positions are in 16 px body units and are unchanged (the picture is the same, so they land the same).
 - Harness: ALL CHECKS PASSED (it does not load textures). NOT run in Unity: check the ragdoll on a death, the gloves and a held gun, and a heavy suit's head. The wound layers at 32 px density are the next step (not done).
+
+## Flat-topped heavy/exo helmets fixed properly (2026-11-09)
+Yan: "now some of them have extremely flat top helmets/hats and it looks off". My first fix for the clipped heads (dropping the head's first content row) flattened every heavy and exo helmet. `make_armor_avatars._polish` now keeps the whole head with its outline row and drops the TORSO's middle row instead (original row 9): torso one row shorter, legs still one row longer (the 17th row has to go somewhere in a 16 px cell). Regenerated through `make_back_atlas.py`, `make_walk_atlas.py`, `make_poses.py atlas` (51 fronts, 51 backs, walk frames, pose atlases: 48 files) and re-doubled with `double_armor.py`. Before/after of twelve of them: the helmets have their domes back. NOT looked at in Unity.
