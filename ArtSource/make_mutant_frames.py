@@ -421,7 +421,16 @@ def brute_anims():
          dict(club=-245, dx=3, dy=0, fR=1, reach=(14, 0), fly=(BW - 30, BT - 4), arc=(sx + 17, sy, 31, 120, 40)),
          dict(club=-290, dx=3, dy=1, fR=1, reach=(14, 0), fly=(BW - 16, BT - 8)), dict(club=-330, dx=1, dy=0, reach=(6, 0)), dict(club=0)]
     throw = [brute_pose(R, **k) for k in T]
-    return {"walk": walk, "attack": swipe, "throw": throw}
+    # charge (2026-11-09, Yan: "do the brute too"): the run - body thrown forward, the club hauled up behind him, heavy alternate strides with a stamp of dust each time a foot lands
+    charge = []
+    for i in range(8):
+        ph = 2 * math.pi * i / 8; lift = lambda q: max(0, int(round(6 * math.sin(q))))
+        tx, ty = tip(-60, 3)
+        stamp = i in (1, 5)
+        charge.append(brute_pose(R, club=-62 + 10 * math.sin(ph), claw=-26 + 18 * math.sin(ph + 1.5), dx=3, dy=(2, 0, 2, 4, 2, 0, 2, 4)[i],
+                                 lL=lift(ph), fL=int(round(3 + 4 * math.sin(ph))), lR=lift(ph + math.pi), fR=int(round(3 + 4 * math.sin(ph + math.pi))),
+                                 reach=(2, 0), puffs=puff(BL + 28 + (2 if i == 1 else 8), g, 5, 10, 70 + i) if stamp else ()))
+    return {"walk": walk, "charge": charge, "attack": swipe, "throw": throw}
 
 def save(out):
     os.makedirs(out, exist_ok=True)
@@ -436,7 +445,7 @@ def save(out):
             sc = 6 if w < 80 else 4
             big = [Image.alpha_composite(Image.new("RGBA", f.size, (42, 38, 32, 255)), f).resize((w * sc, h * sc), Image.NEAREST).convert("P", palette=Image.ADAPTIVE) for f in frames]
             ms = 110 if name == "walk" else 130
-            if key == "blight_brute": ms = 150 if name == "walk" else 120   # a heavy plod
+            if key == "blight_brute": ms = 150 if name == "walk" else 90 if name == "charge" else 120   # a heavy plod
             big[0].save(os.path.join(out, f"{key}_{name}.gif"), save_all=True, append_images=big[1:], duration=ms, loop=0)
     return sets
 
@@ -446,7 +455,7 @@ def brute_preview(path, anims=None):
     for fr in anims.values(): n = max(n, len(fr))
     frames = []
     for t in range(n * 2):
-        im = Image.new("RGBA", (BW * 3 * 3 + 40, BH * 3 + 20), (42, 38, 32, 255))
+        im = Image.new("RGBA", (BW * 3 * len(anims) + 10 * len(anims) + 10, BH * 3 + 20), (42, 38, 32, 255))
         for i, fr in enumerate(anims.values()):
             f = fr[t % len(fr)]; im.alpha_composite(f.resize((BW * 3, BH * 3), Image.NEAREST), (10 + i * (BW * 3 + 10), 10))
         frames.append(im.convert("P", palette=Image.ADAPTIVE))
