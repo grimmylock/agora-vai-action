@@ -5481,3 +5481,9 @@ Yan on the attack animations: "the open mouth adds too much, it doesnt look like
 
 ## sprite-gen trial closed (2026-11-09)
 Pinned sprite-gen installed under `~/.claude/skills` (subscription login, $0 per call), item icons and an Alpha Prowler head tried; Yan: "it doesn't work, it looks very bad ... We'll continue generating them with my references that I get from Gemini". Nothing added to the game or `make_item_icons.py`. Notes in `ArtSource/pixel_draw/README.md`. Waiting for his neutral reference images (`ArtSource/refs/mutants/<key>/neutral.png`, Alpha Prowler and Rot Crawler first).
+
+## In-context check tool (2026-11-09)
+Yan: "im just worried that half the game is gonna be 'high quality' generated art and the rest will be pixelated stuff, like the eel and brain look weirdly HD compared to the rest (world textures, human npc's...)". Facts checked: the world, humans and items are 16 px a tile (`UnitSprites.cs:16`), mutants, the eel (`CombatFxView.Eel.cs:25`, 32 px per unit) and the brain are double density.
+- `Tools/render/incontext.py`: puts candidate sprites on a REAL map render (`Tools/render/render.sh <map>`, 16 px a tile) beside three human NPCs and the finished mutants at their true relative density; `--demo` adds the first-pass humanoids. Usage in `ArtSource/refs/mutants/PROMPTS.md`. Not a lit/Unity screenshot (a plain contact shadow only).
+- The Gemini prompts no longer use the eel and brain as the detail bar (see PROMPTS.md).
+- Demo finding: the finished 2x mutants sit in the scene fine; the first-pass Mind Weaver's violet is brighter and more saturated than anything else in the world. Colour saturation, not only pixel density, is what to watch.

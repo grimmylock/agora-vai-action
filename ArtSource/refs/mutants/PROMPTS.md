@@ -42,5 +42,8 @@ NEUTRAL: A tall hooded figure of torn near-black violet robes, the hood a deep c
 POSES: `drift_a` / `drift_b` (idle sway, hem motes rising), `overload_charge` (arms rising and opening wide, the face-hole widening, the cracks blazing nearly white), `overload_release` (arms thrust forward to the right, a pulse ring from the face and a stream of violet motes flying right).
 CLOAKED variant (optional): `cloaked.png`: same figure, lighter and ghost-like, semi-transparent.
 
+## In-context check (every new creature, before anything goes in the game)
+`bash Tools/render/render.sh bonfire_village` once, then `python3 Tools/render/incontext.py <sprite.png> --out ctx.png` puts the sprite on a real map render beside human NPCs and the finished mutants at their true relative pixel density (the world and men at 16 px a tile, creatures at double density). Judge: is it the same finish, not brighter or more saturated than the world, not finer than the Pallid/Dread? `--demo` shows the finished mutants and the first-pass humanoids as an example. It is a size/finish comparison, not a lit Unity screenshot.
+
 ## Afterwards
 Tell me when a creature's files are in the repo (or say which folder). I will check the neutral against the concept, convert it with the existing pipeline into a game-sized sprite, then build the animation frames from the pose images (cutting and re-posing from them, never stretching).
