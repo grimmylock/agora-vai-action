@@ -2,6 +2,12 @@
 
 Why references: the pipeline that turned your earlier references into the game's mutant sprites (`mutant_from_ref.py`, `make_mutants_hd.py`) reads one clean picture per sprite. These four need a 3/4 view WITH DEPTH (the first attempts were flat side-ons), so each gets one neutral reference first, then a few key poses made from that first image.
 
+## Attach these reference images (in `style_pack/`)
+- Every NEUTRAL message: attach `style_1_finished_mutants.png` (the five finished mutants: this is the look and finish to match), `style_2_scale_with_a_man.png` (how big mutants are next to a man) and `style_4_quality_eel.png` (your own eel drawing: the level of texture and detail wanted).
+- Optional, for palette and lighting: `style_5_world_palette.png` (the world the creature stands in) and `style_3_quality_brain.png` (the brain boss states).
+- Add this line before the style block: "The attached images show the art style, finish and size to match. Do NOT copy any of the creatures in them; draw a NEW creature as described, in the same style: the pixel clusters, selective dark outline, muted palette and shading of the first sheet, and the richness of texture of the eel drawing."
+- POSE messages: attach only that creature's `neutral.png` (the style images are not needed again).
+
 ## How to use
 1. Paste the STYLE BLOCK, then the creature's NEUTRAL prompt. Generate until the design is right (4-6 tries are normal). Save it as `ArtSource/refs/mutants/<key>/neutral.png`.
 2. For each POSE, start a new message in the SAME chat, attach `neutral.png` and write: "Same creature, exactly the same design, colours and proportions. Change only the pose: ..." then the pose line. Save as `<key>/<pose>.png`.
@@ -9,7 +15,7 @@ Why references: the pipeline that turned your earlier references into the game's
 4. If a result is smooth/painterly, add "crisp hand-placed pixels, limited palette, no anti-aliasing, no gradients, no blur". Pixel counts do not matter (the pipeline shrinks it); clean shapes and a strong silhouette do.
 
 ## STYLE BLOCK (paste first, every time)
-Pixel art game sprite for a gritty 2D top-down survival shooter set in an anomalous post-industrial wasteland (Roadside Picnic mood, Zero Sievert look). Muted, desaturated palette with one accent colour. Hand-placed pixels, limited palette (about 16 colours), dark selective outline (never pure black), light from the top-left, volumetric shading with a lit top-left edge and a darker bottom-right edge. Three-quarter view from the front-right, camera slightly above, so the body shows real depth: chest, shoulders and head have thickness, the far limbs sit partly behind the near ones. The creature faces right. Plain flat mid-grey (#808080) background, full body visible, one creature, no text, no ground shadow.
+Pixel art game sprite for a gritty 2D top-down survival shooter set in an anomalous post-industrial wasteland (Roadside Picnic mood, Zero Sievert look). Muted, desaturated palette with one accent colour. Hand-placed pixels, limited palette (about 16 colours), dark selective outline (never pure black), light from the top-left, volumetric shading with a lit top-left edge and a darker bottom-right edge. Three-quarter view from the front-right, camera slightly above, so the body shows real depth: chest, shoulders and head have thickness, the far limbs sit partly behind the near ones. The creature faces right. Rich pixel texture and detail like a hand-finished game boss, not a simple icon. Plain flat mid-grey (#808080) background, full body visible, one creature, no text, no ground shadow.
 
 ## ALPHA PROWLER (key `alpha_prowler`; tier 3 ambush hunter, bleeds you, can cloak)
 NEUTRAL: A lean, hunched, long-armed predator, about twice a man's height when it stands: a narrow ribcage with the ribs and spine showing through grey-violet skin, a long hunched shoulder hump with a row of small bone spurs down the back, very long arms that reach nearly to the ground and end in three long bone claws, digitigrade legs (backward knees) with clawed feet, a long skull with a narrow muzzle full of small sharp teeth and ONE glowing red eye in a dark socket. Colours: charcoal and grey-violet skin, pale bone, one red accent (the eye). Standing hunched, weight forward, knuckles near the ground.
