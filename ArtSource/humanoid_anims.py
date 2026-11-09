@@ -5,6 +5,7 @@ import math, os, sys, json
 import numpy as np
 from PIL import Image, ImageDraw
 from pxart import *
+import anim_fx as FX
 import make_mutants_humanoid as H
 
 def rot(p, piv, deg):
@@ -475,6 +476,13 @@ def review_gif(path, res, snap, names, dist=70, sc=4):
                     tint = Image.new("RGBA", hf.size, (200, 40, 40, 255)); hf = Image.composite(tint, hf, hf.split()[3].point(lambda v: 110 if v else 0))
                 im.alpha_composite(hf, (hx, gy - 30))
             fr = fl[idx]; bb = fr.getbbox(); foot = (bb[3] if bb else h) ; im.alpha_composite(fr, (x, gy - h + 8))
+            if k != "run" and s is not None:
+                t0 = tm % (sum(ms) + 400); st = lambda i: sum(ms[:i]); kk = lambda i, step: int((t0 - st(i)) // step) if t0 >= st(i) else -1
+                if k == "pounce":
+                    FX.dust_puff(im, 24, gy + 1, kk(2, 55), seed=3)
+                    if 3 <= idx <= 5: FX.speed_lines(im, x + 30, gy - h // 2, 20, kk(3, 40))
+                    FX.dust_puff(im, hx - 4, gy + 1, kk(6, 60), seed=5)
+                if n in ("bite", "pounce"): FX.bite_hit(im, hx + 6, gy - 20, kk(s, 55))
             row.alpha_composite(im.resize((PW * sc, PH * sc), Image.NEAREST), (pi * (PW * sc + 8), 0))
         frames.append(row.convert("P", palette=Image.ADAPTIVE)); durs.append(10)
     frames[0].save(path, save_all=True, append_images=frames[1:], duration=durs, loop=0)

@@ -6,6 +6,7 @@ import math, os, sys, json
 from PIL import Image, ImageDraw
 import mutant_from_ref as m
 import canine_cutout as C
+import anim_fx as FX
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -86,6 +87,13 @@ def panel(res_item, kind, sc, hum, W, H, tm):
         im.alpha_composite(hf, (hx, gy - 30))
     sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(sh).ellipse([x + 8, gy - 3, x + fw - 12, gy + 4], fill=(20, 18, 14, 130)); im.alpha_composite(sh)
     im.alpha_composite(fr, (x, gy - fh + 12))
+    if kind != "run":                                                       # effects: dust where it leaps off and lands, streaks in the air, the hit on the man
+        snap = 7 if kind == "pounce" else 5; t0 = tm % (sum(ms) + 400); start = lambda i: sum(ms[:i]); k = lambda i, step: int((t0 - start(i)) // step) if t0 >= start(i) else -1
+        if kind == "pounce":
+            FX.dust_puff(im, 4 + 16, gy + 1, k(2, 55), seed=3)
+            if 3 <= idx <= 5: FX.speed_lines(im, x + 8, gy - fh // 2 - 4, 20, k(3, 40))
+            FX.dust_puff(im, hx - 4, gy + 1, k(6, 60), seed=5)
+        FX.bite_hit(im, hx + 6, gy - 20, k(snap, 55))
     return im.resize((W * sc, H * sc), Image.NEAREST)
 
 
