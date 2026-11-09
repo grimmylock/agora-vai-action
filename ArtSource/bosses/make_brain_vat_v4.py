@@ -6,6 +6,7 @@ What is his: the vat, lid, base, pump, rack, cables, the liquid, the brain, its 
 What is added to make the states: the liquid level dropping per phase, cracks, more and bigger eyes (his two eyes, cut out of the picture, scaled and pasted again), shut eyes (the brain's own
 texture copied over them, a dark lid line), the slumped drained brain, the animated monitor trace and bubbles, the electrode wires, the giant eye, the psi glow.
     python ArtSource/bosses/make_brain_vat_v4.py [out_dir] [game]     - 'game' also writes Assets/Resources/Sprites/Mutants/boss_brain_vat.png
+    After writing the game sheet run: python ArtSource/apply_grit.py   (the 24% grit pass Yan approved 2026-11-09; the sheet in Assets is gritted)
 """
 import sys, os, math, random
 import numpy as np

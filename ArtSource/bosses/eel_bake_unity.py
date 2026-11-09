@@ -1,6 +1,7 @@
 """Bakes the eel for Unity (Assets/Resources/Sprites/Fx/boss_eel_body_s0..3.png and boss_eel_head_s0..3.png): the body as a STRAIGHT strip (the real painter run along a horizontal line: column i = spine
 sample i of 1120, one pixel each, the head end on the left, the back on top; 80 px tall, the body centred) that the game cuts into thin slices and lays along the spine, and the head as a profile sprite
 (facing left) with its anchor. One per wound stage (0 clean ... 3 open wounds). python3 ArtSource/bosses/eel_bake_unity.py"""
+# After this writes Assets/Resources/Sprites/Fx/boss_eel_*.png run: python ArtSource/apply_grit.py  (the 24% grit pass Yan approved 2026-11-09; the eel sprites in Assets are gritted)
 import sys, os, json
 import numpy as np
 from PIL import Image
