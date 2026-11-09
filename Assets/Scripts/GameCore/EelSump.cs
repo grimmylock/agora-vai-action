@@ -248,14 +248,21 @@ namespace GameCore
             }
         }
 
-        static void Knock(Player p, float fx, float fy, float dist, float prone, float now)
+        static void Knock(State s, Player p, float fx, float fy, float dist, float prone, float now)
         {
-            var q = Pos(p); float dx = q.x - fx, dy = q.y - fy, l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f; Rt.MoveBy(p, dx / l * dist, dy / l * dist); Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + prone);
+            // Yan, 2026-11-09: "whenever im hit by the eel im just kinda teleported around": the shove was an instant jump of 3 tiles. It is now a short knock-up, the same arc a throw has (Fly, Land "knock"),
+            // from where he stood to where the old jump would have put him (found with the same wall-and-friend-checked move, then undone), prone on landing
+            var q = Pos(p); float dx = q.x - fx, dy = q.y - fy, l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f;
+            Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + prone);
+            if (dist < 0.4f) return;
+            Rt.MoveBy(p, dx / l * dist, dy / l * dist); var q1 = Pos(p); Place(p, q.x, q.y);
+            if (Dist(q.x, q.y, q1.x, q1.y) < 0.3f) return;                                                    // a wall right behind him: no room to fly
+            s.Air[p] = new Fling { X0 = q.x, Y0 = q.y, Z0 = 0.2f, X1 = q1.x, Y1 = q1.y, T0 = -2f, Dur = 0.55f, Apex = 1.6f, Land = "knock", Spin = 0f };
         }
         static bool Damage(State s, Player p, int dmg, string what, float fx, float fy, float knock, float prone, float now)
         {
             if (Rt.Untouchable(p) || s.Air.ContainsKey(p)) return false;
-            EelBoss.HurtPublic(p, dmg, what, "Blunt"); Knock(p, fx, fy, knock, prone, now); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = dmg, Text = what, X = Pos(p).x, Y = Pos(p).y }); return true;
+            EelBoss.HurtPublic(p, dmg, what, "Blunt"); Knock(s, p, fx, fy, knock, prone, now); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = dmg, Text = what, X = Pos(p).x, Y = Pos(p).y }); return true;
         }
         static void Snd(string name, float x, float y, float vol = 1f)                                      // played here, and sent to the clients as an event (ApplyNet plays it there)
         {
@@ -281,23 +288,24 @@ namespace GameCore
             if (s.TailBroken && s.BreakTs < 0f) { s.BreakTs = ts; s.BreakQ = u; }
             if (s.BreakTs >= 0f) { u = Mathf.Max(0f, s.BreakQ - (ts - s.BreakTs) / 0.7f); k = 1f; }
             var arm = Arm(s.P2, u, k, th, tz, om, 8.4f); FillTail(s, new Curve(Enumerable.Reverse(arm).ToList()), 0f, true);   // the head was filled this frame: keep its column down to the water
-            if (ts > 0.6f && ts < 3.4f && s.BreakTs < 0f) Ring(f, s.P2.X, s.P2.Y, 8.4f, ts >= 2.3f, "sweep");
+            if (ts > 0.6f && ts < 3.4f + TailDelay && s.BreakTs < 0f) Ring(f, s.P2.X, s.P2.Y, 8.4f, ts >= 2.3f + TailDelay, "sweep");
             if (!s.Hit1 && ts >= 2.3f && hs.Full != null) { s.Hit1 = true; f.Label = "COMBO: HEAD STRIKE"; Impact(s, hs.T.x, hs.T.y, 1.0f, false); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, hs.T.x, hs.T.y) <= 2.0f) Damage(s, p, 260, "The head slams down", hs.T.x, hs.T.y, 3f, 1.0f, now); }
-            if (ts >= 2.3f && ts < 3.4f && u > 0.5f && s.BreakTs < 0f) { f.Label = "COMBO: TAIL SWEEP"; foreach (var p in players) { if (s.Hurt.Contains(p)) continue; var q = Pos(p); if (ArmNear(arm, q.x, q.y, 1.15f)) { if (Damage(s, p, 200, "The tail sweeps you", s.P2.X, s.P2.Y, 3.5f, 1.0f, now)) s.Hurt.Add(p); } } }
-            if (!s.Hit2 && ts >= 3.4f && u > 0.5f && s.BreakTs < 0f) { s.Hit2 = true; var tipP = arm[arm.Count - 1]; Impact(s, tipP.x, tipP.y, 0.75f, false); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, tipP.x, tipP.y) <= 2.0f) Damage(s, p, 240, "The tail slams down", tipP.x, tipP.y, 3f, 1.0f, now); }
-            if (ts >= 4.4f) End(f, s, now);
+            if (ts >= 2.3f + TailDelay && ts < 3.4f + TailDelay && u > 0.5f && s.BreakTs < 0f) { f.Label = "COMBO: TAIL SWEEP"; foreach (var p in players) { if (s.Hurt.Contains(p)) continue; var q = Pos(p); if (ArmNear(arm, q.x, q.y, 1.15f)) { if (Damage(s, p, 200, "The tail sweeps you", s.P2.X, s.P2.Y, 3.5f, 1.0f, now)) s.Hurt.Add(p); } } }
+            if (!s.Hit2 && ts >= 3.4f + TailDelay && u > 0.5f && s.BreakTs < 0f) { s.Hit2 = true; var tipP = arm[arm.Count - 1]; Impact(s, tipP.x, tipP.y, 0.75f, false); foreach (var p in players) if (Dist(Pos(p).x, Pos(p).y, tipP.x, tipP.y) <= 2.0f) Damage(s, p, 240, "The tail slams down", tipP.x, tipP.y, 3f, 1.0f, now); }
+            if (ts >= 4.4f + TailDelay) End(f, s, now);
         }
-        static float TailTh(State s, float ts) { float tau = Mathf.Clamp01((ts - 2.3f) / 1.1f); return s.TH0 + 2f * Mathf.PI * 1.15f * Mathf.Pow(tau, 1.7f); }
+        const float TailDelay = 0.5f;      // Yan, 2026-11-09: dodging the bite put you straight in the tail's path ("a frame trap"): the tail's whole strike (hold, swing, slam) starts half a second after the head's
+        static float TailTh(State s, float ts) { float tau = Mathf.Clamp01((ts - 2.3f - TailDelay) / 1.1f); return s.TH0 + 2f * Mathf.PI * 1.15f * Mathf.Pow(tau, 1.7f); }
         static void TailPar(State s, float ts, out float u, out float k, out float th, out float tz)
         {
             th = s.TH0; tz = 0.4f; k = 0f; u = 0f;
             if (ts < 0.4f) return;
             if (ts < 1.6f) { u = Smr((ts - 0.4f) / 1.2f); return; }
-            u = 1f; if (ts < 2.0f) return;
-            if (ts < 2.3f) { k = Ein((ts - 2.0f) / 0.3f, 2.2f); return; }
+            u = 1f; if (ts < 2.0f + TailDelay) return;
+            if (ts < 2.3f + TailDelay) { k = Ein((ts - 2.0f - TailDelay) / 0.3f, 2.2f); return; }
             k = 1f;
-            if (ts < 3.4f) { float tau = (ts - 2.3f) / 1.1f; th = TailTh(s, ts); tz = Lerp(0.5f, 0.12f, Mathf.Clamp01((tau - 0.8f) / 0.2f)); return; }
-            th = TailTh(s, 3.4f); tz = 0.12f; if (ts < 4.3f) u = 1f - Smr((ts - 3.4f) / 0.9f); else u = 0f;
+            if (ts < 3.4f + TailDelay) { float tau = (ts - 2.3f - TailDelay) / 1.1f; th = TailTh(s, ts); tz = Lerp(0.5f, 0.12f, Mathf.Clamp01((tau - 0.8f) / 0.2f)); return; }
+            th = TailTh(s, 3.4f + TailDelay); tz = 0.12f; if (ts < 4.3f + TailDelay) u = 1f - Smr((ts - 3.4f - TailDelay) / 0.9f); else u = 0f;
         }
         /// <summary>The tail as an arm from the pool: it comes straight up the centre (a stub), then rises as a column or topples over into a low arm that swings round (the lag makes it whip).</summary>
         static List<(float x, float y, float z)> Arm(Pool p, float u, float k, float th, float tz, float om, float R)
@@ -497,7 +505,7 @@ namespace GameCore
                 Place(p, x, y); Rt.Of(p).ProneUntil = now + 0.25f; a.Z = z; a.Rot = a.Spin * u;
                 if (u >= 1f)
                 {
-                    s.Air.Remove(p); Rt.Of(p).ProneUntil = now + (a.Land == "launch" ? 2.0f : 1.2f);
+                    s.Air.Remove(p); Rt.Of(p).ProneUntil = now + (a.Land == "launch" ? 2.0f : a.Land == "knock" ? 0.9f : 1.2f);
                     if (a.Land == "launch") { Impact(s, a.X1, a.Y1, 1.3f, false); EelBoss.HurtPublic(p, 420, "You crash down, half drowned", "Blunt"); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = 420, Text = "drowned", X = a.X1, Y = a.Y1 }); }
                     else if (a.Land == "hurl") { Impact(s, a.X1, a.Y1, 1.0f, false); EelBoss.HurtPublic(p, 260, "You crash into your friend", "Blunt"); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = 260, Text = "hurled", X = a.X1, Y = a.Y1 }); if (a.Hurled != null && Dist(Pos(a.Hurled).x, Pos(a.Hurled).y, a.X1, a.Y1) <= 1.9f) Damage(s, a.Hurled, 210, "A flying friend flattens you", a.X0, a.Y0, 4f, 1.2f, now); }
                     else if (a.Land == "drop") { EelBoss.HurtPublic(p, 40, "The tail drops you", "Blunt"); }
