@@ -22,17 +22,29 @@ class Rig:
         def lip(x): return hy + (ty - hy) * (x - hx) / max(1, tx - hx)
         self.lip = lip
         def is_jaw(x, y): return x >= hx and y > lip(x) + 0.5 and y <= c["jaw_y1"]
+        limbs = c.get("limbs")
+        def seg_dist(px_, py_, a, b):
+            vx, vy = b[0] - a[0], b[1] - a[1]; u = max(0.0, min(1.0, ((px_ - a[0]) * vx + (py_ - a[1]) * vy) / max(1e-6, vx * vx + vy * vy)))
+            return math.hypot(px_ - a[0] - u * vx, py_ - a[1] - u * vy)
         def leg_of(x, y):
             if y < c["belly"]: return None
+            if limbs:
+                best = None
+                for name, (pts, r) in limbs.items():
+                    for si in range(len(pts) - 1):
+                        d = seg_dist(x, y, pts[si], pts[si + 1])
+                        if d <= r and (best is None or d < best[0]): best = (d, name, si)
+                return (best[1], best[2]) if best else None
             for (xa, xb), name in c["legs"]:
-                if xa <= x <= xb: return name
+                if xa <= x <= xb: return (name, None)
             return None
-        parts = {n: Image.new("RGBA", self.base.size, (0, 0, 0, 0)) for n in ("hind", "fore", "head", "jaw")}
+        parts = {n: Image.new("RGBA", self.base.size, (0, 0, 0, 0)) for n in ("hind", "fore", "head", "jaw", "ground")}
         legu = {}; legl = {}
         for (xa, xb), name in c["legs"]:
             legu[name] = Image.new("RGBA", self.base.size, (0, 0, 0, 0)); legl[name] = Image.new("RGBA", self.base.size, (0, 0, 0, 0))
         ov = c["overlap"]; knees = {}
         for (xa, xb), name in c["legs"]:
+            if limbs: knees[name] = tuple(limbs[name][0][1]); continue
             ys = [y for x in range(xa, min(xb, self.W0 - 1) + 1) for y in range(c["belly"], self.H0) if px[x, y][3] and not (c.get("keep") and self.kept(x, y))]
             bot = max(ys) if ys else c["belly"] + 6
             knees[name] = c.get("knees", {}).get(name) or (int(round((xa + xb) / 2)), int(round(c["belly"] + (bot - c["belly"]) * c.get("knee", 0.45))))
@@ -41,14 +53,17 @@ class Rig:
                 p = px[x, y]
                 if not p[3]: continue
                 if is_jaw(x, y): parts["jaw"].putpixel((x, y), p); continue
+                if c.get("ground_y") and y >= c["ground_y"]: parts["ground"].putpixel((x, y), p); continue
                 ln = leg_of(x, y)
                 if ln and not self.kept(x, y):
-                    (legu if y <= knees[ln][1] else legl)[ln].putpixel((x, y), p); continue
+                    name, si = ln
+                    upper = (si == 0) if si is not None else (y <= knees[name][1])
+                    (legu if upper else legl)[name].putpixel((x, y), p); continue
                 if x >= c["head_x"]: parts["head"].putpixel((x, y), p)
                 if c["split"] - ov <= x < c["head_x"] + ov: parts["fore"].putpixel((x, y), p)
                 if x <= c["split"] + ov: parts["hind"].putpixel((x, y), p)
         self.parts = parts
-        self.legs = {name: (legu[name], legl[name], c.get("hips", {}).get(name) or (knees[name][0], c["belly"]), knees[name], "far" in name) for (_, name) in [(r, n) for r, n in c["legs"]]}
+        self.legs = {name: (legu[name], legl[name], tuple(limbs[name][0][0]) if limbs else (c.get("hips", {}).get(name) or (knees[name][0], c["belly"])), knees[name], "far" in name) for (_, name) in [(r, n) for r, n in c["legs"]]}
 
     def kept(self, x, y):
         r = self.c.get("keep"); return bool(r) and r[0] <= x <= r[2] and r[1] <= y <= r[3]
@@ -70,6 +85,7 @@ class Rig:
             if far: u = u * 0.92 + (5 if hind else -5) * p.get("lag", 0)
             ox, oy = (hdx, hdy) if hind else (fdx, fdy)
             MF.pose_leg(f, (up, lo, hip, knee, far), u * amp, l * amp, L + ox, T + oy + rise, 0)
+        f.alpha_composite(self.parts["ground"], (L, T))
         for n in c["order_far"]: leg(n)
         self.put(f, self.parts["hind"], L + hdx, T + hdy + rise)
         self.put(f, self.parts["fore"], L + fdx, T + fdy + rise)
@@ -128,11 +144,12 @@ SPECS = {
     "pallid_prowler": dict(belly=22, split=24, head_x=37, overlap=4, hinge=(40, 20), tip=(47, 20), jaw_y1=26, inside=(66, 20, 26, 255), teeth=3, head_box=(34, 12, 48, 21), jaw_th=3, drool=(137, 226, 56, 255),
                            hips={"near_hind": (11, 22), "far_hind": (17, 22), "near_fore": (26, 22), "far_fore": (33, 22)}, knees={"near_hind": (6, 25), "far_hind": (15, 26), "near_fore": (27, 26), "far_fore": (35, 26)},
                            legs=[((0, 13), "near_hind"), ((14, 21), "far_hind"), ((22, 31), "near_fore"), ((32, 43), "far_fore")]),
-    "veil_prowler": dict(belly=20, split=24, head_x=36, overlap=4, hinge=(38, 17), tip=(47, 16), jaw_y1=21, inside=(40, 8, 14, 255), teeth=3, head_box=(34, 8, 47, 18), jaw_th=4,
+    "veil_prowler": dict(belly=19, split=24, head_x=36, overlap=4, hinge=(38, 17), tip=(47, 16), jaw_y1=21, inside=(40, 8, 14, 255), teeth=3, head_box=(34, 8, 47, 18), jaw_th=4,
+                         limbs={"near_hind": (((10, 19), (7, 24), (6, 30)), 3.2), "far_hind": (((15, 19), (15, 25), (18, 29)), 3.0), "near_fore": (((25, 19), (26, 25), (29, 31)), 3.0), "far_fore": (((31, 19), (34, 24), (40, 29)), 3.0)},
                          legs=[((0, 10), "near_hind"), ((11, 20), "far_hind"), ((21, 31), "near_fore"), ((32, 46), "far_fore")]),
-    "dread_prowler": dict(belly=35, split=34, head_x=48, overlap=5, hinge=(50, 28), tip=(63, 27), jaw_y1=34, inside=(44, 10, 12, 255), teeth=4, amp=0.5, head_box=(48, 20, 64, 29), jaw_th=6,
+    "dread_prowler": dict(limbs={"near_hind": (((11, 36), (7, 41), (4, 46)), 3.6), "far_hind": (((16, 37), (13, 42), (11, 47)), 3.4), "near_fore": (((44, 35), (47, 39), (50, 44)), 3.6), "far_fore": (((50, 35), (55, 38), (60, 43)), 3.6)}, belly=35, split=34, head_x=48, overlap=5, hinge=(50, 28), tip=(63, 27), jaw_y1=34, inside=(44, 10, 12, 255), teeth=4, amp=0.85, head_box=(48, 20, 64, 29), jaw_th=6,
                           legs=[((0, 12), "near_hind"), ((12, 24), "far_hind"), ((34, 50), "near_fore"), ((50, 63), "far_fore")]),
-    "blind_maw": dict(belly=26, split=26, head_x=32, overlap=4, hinge=(34, 15), tip=(47, 14), jaw_y1=25, inside=(36, 6, 10, 255), teeth=4, amp=0.55, head_box=(32, 6, 48, 15), jaw_th=7,
+    "blind_maw": dict(ground_y=30, limbs={"near_hind": (((7, 22), (5, 26), (5, 29)), 3.2), "far_hind": (((15, 22), (15, 26), (16, 28)), 3.0), "near_fore": (((22, 22), (22, 26), (23, 28)), 3.2), "far_fore": (((32, 22), (32, 25), (33, 28)), 3.2)}, belly=22, split=26, head_x=32, overlap=4, hinge=(34, 15), tip=(47, 14), jaw_y1=25, inside=(36, 6, 10, 255), teeth=4, amp=0.8, head_box=(32, 6, 48, 15), jaw_th=7,
                       legs=[((2, 10), "near_hind"), ((11, 22), "far_hind"), ((23, 31), "near_fore"), ((32, 46), "far_fore")]),
 }
 for _c in SPECS.values(): _c.setdefault("order_far", ["far_hind", "far_fore"]); _c.setdefault("order_near", ["near_hind", "near_fore"])
