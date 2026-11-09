@@ -5444,3 +5444,9 @@ Yan: "now it looks like it's running! next: we'll need an actual attack animatio
 - Same legs/bend method as the approved knee-rig walk; legs are cut per animal by column ranges (`SPECS`), so some legs look rough on the Dread Prowler (it is drawn mid-leap) and the Veil's far legs; stray paw bits remain in a few Dread frames.
 - Not in the game: mutants still draw as single sprites, so the strips have to be wired in with the walk.
 - The Husks (STORY.md) exist only as a design: no unit, no sprite, no database entry.
+
+## Humanoid concepts for the four mutants without a good sprite (2026-11-09)
+Yan: "check the other mutants that do not have 'good' updated sprites and do them, these too will need a new enemy concept, humanoid kinda thing" and "check if the husk enemy we created has a sprite too".
+- Only five mutants have double-resolution sprites (Pallid, Veil, Dread, Blind Maw, Blight Brute). The four on the old 16 px atlas: Rot Swarm, Alpha Prowler (+cloaked), Mind Weaver, Void Weaver (+cloaked).
+- `ArtSource/make_mutants_humanoid.py` draws first-pass sprites for all of them (hand-built shapes with light/dark shading, then the outline pass), concepts in `ArtSource/MUTANT_CONCEPTS.md`, files in `ArtSource/mutants_anim/humanoid/`. Not in the game; waiting on Yan's review and picks. Alpha Prowler (hunched long-armed hunter), Rot Crawler (fungus-eaten man on all fours), Mind Weaver (floating seer weaving thread), Void Weaver (hooded figure with a hole for a face).
+- **Husks: no sprite, no unit, no database entry.** They exist only in STORY.md (zombified stalkers, every tier, slower, poor shots, no radio) and the Tier 1 story notes. They would reuse the human armour sprites (pale, bloodied) rather than a mutant sprite.
