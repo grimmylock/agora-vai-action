@@ -176,7 +176,7 @@ def build(name, anom, belt, L=None, back=False):
         pal["e"] = "#2a2018"
     if back: return _back(grid, pal, L, name, belt)
     # (the helmet used to get a third lens pixel at (10, 4) as a "glint"; it read as a double eye on one side, 2026-11-09 Yan: "the ones with the double eye look weird". Removed.)
-    express(grid, L["head"], L.get("expr") or expr_for(name))
+    if L.get("expr"): express(grid, L["head"], L["expr"])        # OFF: Yan dropped the expressions (2026-11-09, "they do not look good", too few pixels); only an explicit L["expr"] uses it
     # data-driven details
     belt_row = 10 if L["body"] in ("heavy", "exo") else 11
     for c in POUCH_COLS[:belt]:
