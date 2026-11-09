@@ -156,7 +156,7 @@ SPECS = {
                            legs=[((0, 13), "near_hind"), ((14, 21), "far_hind"), ((22, 31), "near_fore"), ((32, 43), "far_fore")]),
     "veil_prowler": dict(belly=20, split=24, head_x=36, overlap=4, hinge=(38, 17), tip=(47, 16), jaw_y1=21, inside=(40, 8, 14, 255), teeth=3, head_box=(34, 8, 47, 18), jaw_th=4,
                          legs=[((0, 10), "near_hind"), ((11, 20), "far_hind"), ((21, 31), "near_fore"), ((32, 46), "far_fore")]),
-    "dread_prowler": dict(belly=35, split=34, head_x=48, overlap=5, hinge=(50, 28), tip=(63, 27), jaw_y1=34, inside=(44, 10, 12, 255), teeth=4, amp=0.9, head_box=(48, 20, 64, 29), jaw_th=6,
+    "dread_prowler": dict(belly=35, split=34, head_x=48, overlap=5, hinge=(50, 28), tip=(63, 27), jaw_y1=34, inside=(44, 10, 12, 255), teeth=4, amp=0.5, head_box=(48, 20, 64, 29), jaw_th=6,
                           legs=[((0, 12), "near_hind"), ((12, 24), "far_hind"), ((34, 50), "near_fore"), ((50, 63), "far_fore")]),
     "blind_maw": dict(belly=26, split=26, head_x=32, overlap=4, hinge=(34, 15), tip=(47, 14), jaw_y1=25, inside=(36, 6, 10, 255), teeth=4, amp=0.55, head_box=(32, 6, 48, 15), jaw_th=7,
                       legs=[((2, 10), "near_hind"), ((11, 22), "far_hind"), ((23, 31), "near_fore"), ((32, 46), "far_fore")]),
