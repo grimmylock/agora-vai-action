@@ -153,9 +153,9 @@ def express(grid, head, kind):
             if r[c] not in ".K": r[c] = ch
     put(r3, (6, 7, 8, 9), base)                                              # every kind starts from a bare brow
     if kind == "stern": put(r3, (6, 7, 8, 9), bc)
-    elif kind == "tired": put(r3, (6, 9), bc); put(r4, (6, 9), "u" if head not in ("hoodface", "bandit", "bare", "balaclava") else r4[6])
+    elif kind == "tired": put(r3, (6, 9), bc)          # brow only: a dimmed lens read as a broken eye (Yan)
     elif kind == "worried": put(r3, (5, 10), bc); put(r2, (7, 8), bc)
-    elif kind == "wry": put(r3, (6, 7), bc); put(r4, (6,), "u" if head not in ("hoodface", "bandit", "bare", "balaclava") else r4[6])
+    elif kind == "wry": put(r3, (6, 7), bc)
     elif kind == "blank":
         for c in (6, 9):
             if head in ("hoodface", "bandit", "bare", "balaclava"): r5[c] = r4[c]
