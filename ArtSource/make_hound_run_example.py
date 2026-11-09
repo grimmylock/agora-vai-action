@@ -1,4 +1,4 @@
-# Hound RUN cycle, example v2 (2026-11-09). Preview only, not in the game: python3 make_hound_run_example.py <out_dir> -> hound_run_vs_walk.gif, hound_run_sheet.png, hound_run_strip.png
+# (Yan 2026-11-09: run 30% faster: 85 ms a frame, the walk beside it stays 110 ms in the GIF) Hound RUN cycle, example v2 (2026-11-09). Preview only, not in the game: python3 make_hound_run_example.py <out_dir> -> hound_run_vs_walk.gif, hound_run_sheet.png, hound_run_strip.png
 import sys, math
 import os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image
@@ -70,14 +70,19 @@ def strip(frames, name):
     for i, f in enumerate(frames): s.alpha_composite(f, (i * w, 0))
     return s
 # review GIF: walk vs run side by side, with a ground line
-gifs = []
-for t in range(32):
+gifs = []; durs = []
+def frame_at(wi, ri):
     im = Image.new("RGBA", (w * sc * 2 + 30, h * sc + 20), (42, 38, 32, 255))
-    wf = walk[t % len(walk)]; rf = fr[t % len(fr)]
     im.alpha_composite(Image.new("RGBA", (w * sc, h * sc), (52, 48, 40, 255)), (10, 10)); im.alpha_composite(Image.new("RGBA", (w * sc, h * sc), (52, 48, 40, 255)), (20 + w * sc, 10))
-    im.alpha_composite(wf.resize((w * sc, h * sc), Image.NEAREST), (10, 10)); im.alpha_composite(rf.resize((w * sc, h * sc), Image.NEAREST), (20 + w * sc, 10))
-    gifs.append(im.convert("P", palette=Image.ADAPTIVE))
-gifs[0].save(sys.argv[1] + "/hound_run_vs_walk.gif", save_all=True, append_images=gifs[1:], duration=[110]*32, loop=0)
+    im.alpha_composite(walk[wi].resize((w * sc, h * sc), Image.NEAREST), (10, 10)); im.alpha_composite(fr[ri].resize((w * sc, h * sc), Image.NEAREST), (20 + w * sc, 10))
+    return im.convert("P", palette=Image.ADAPTIVE)
+WALK_MS, RUN_MS = 110, 85                  # the run is 30% faster than the walk's 110 ms a frame (Yan, 2026-11-09)
+prev = None
+for tm in range(0, 8 * 110 * 17, 5):       # a common timeline, so each side keeps its own speed
+    key = ((tm // WALK_MS) % len(walk), (tm // RUN_MS) % len(fr))
+    if key != prev: gifs.append(frame_at(*key)); durs.append(5); prev = key
+    else: durs[-1] += 5
+gifs[0].save(sys.argv[1] + "/hound_run_vs_walk.gif", save_all=True, append_images=gifs[1:], duration=durs, loop=0)
 sheet = Image.new("RGBA", (w * 4 * N // 2, (h * 4 + 10) * 2), (42, 38, 32, 255))
 for i, f in enumerate(fr):
     sheet.alpha_composite(f.resize((w * 4, h * 4), Image.NEAREST), ((i % (N // 2)) * w * 4, (i // (N // 2)) * (h * 4 + 10)))
