@@ -10,3 +10,6 @@ Drawn in Python/PIL by `make_mutants_humanoid.py`; sprites in `ArtSource/mutants
 | **Void Weaver** (T5, ranged, cloak, neural overload) | A tall hooded figure whose face is a hole with one pale point; the robe is cracked with violet light and comes apart into motes at the hem; hands with long fingers. The cloaked version is lighter, ghost-like. | The darkest, tallest shape in the game; the cracks and motes are its anomaly | the face-hole widens (overload), the motes stream toward the target |
 
 Open questions for Yan: keep "Rot Swarm" as a name for the crawlers? (the swarm is the pack, the unit is the crawler). Is the Alpha Prowler's new body too far from a "prowler" (it was a dog in the name)? Each needs run/attack frames after the concepts are approved; the canine rig (`make_canine_anims.py`) does not apply.
+
+
+**Update 2026-11-09 (second pass):** sprites redrawn with volume shading (`pxart.py`) and animated from their joints (`humanoid_anims.py`): run/crawl/float, bite or cast, pounce for the melee ones (Alpha Prowler, Rot Crawler), psi blast (Mind Weaver) and neural overload (Void Weaver). GIFs in `ArtSource/mutants_anim/humanoid/`. The Husks (STORY.md) still have no sprite or unit.
