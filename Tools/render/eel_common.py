@@ -36,7 +36,8 @@ def tile_mask(rows, size, pred):
             if pred(c): d.rectangle((x * T, y * T, x * T + T - 1, y * T + T - 1), fill=255)
     return m
 def player():
-    return Image.open(R('Assets/Resources/Sprites/armor_atlas.png')).convert('RGBA').crop((0, 0, 16, 16)).resize((32, 32), Image.NEAREST)
+    i = int(os.environ.get('PLAYER_ARMOR', 0))          # armour atlas index (SpriteAtlasIndex.Armor order); default 0 = the first suit
+    return Image.open(R('Assets/Resources/Sprites/armor_atlas.png')).convert('RGBA').crop((i % 16 * 16, i // 16 * 16, i % 16 * 16 + 16, i // 16 * 16 + 16)).resize((32, 32), Image.NEAREST)
 def font(sz): return ImageFont.load_default(size=sz)
 def dead_body(armor_idx):
     """the swallowed body: a human in that armour, lying down and darkened (the game's corpse is a ragdoll; this is the stand-in)"""
