@@ -54,7 +54,7 @@ FACTION = {
     "Sentinels":   ("#3a6ab0", None,      8, -5, -1,  1),
     "Liberators":  ("#6fb03a", None,      0,  5,  0, -1),
     "Contractors": ("#c8d0d8", None,      5,  0,  0,  0),
-    "Obelisk":     ("#e6e6e6", "#c46a5a", 5, 12, -1,  1),
+    "Obelisk":     ("#e6e6e6", "#ffd060", 5, 12, -1,  1),
     "Cartel":      ("#e0c030", None,      0,  5,  1,  0),
     "Surveyors":   ("#b8c43a", None,    -10, 20,  1,  0),
     "IZC":         ("#6fb0e0", None,      3,  3,  0,  0),

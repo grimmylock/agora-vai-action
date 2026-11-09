@@ -95,7 +95,7 @@ LOOK = {   # v3: every armor gets its own color identity (suit + head two-tone),
     "Raider Stitched Coat":  dict(head="bandit", body="coat", H="#b02a2a", S="#5e2424", A="#3b2a1e"),              # maroon + red bandana
     "Sentinel Service Suit":       dict(head="hood", body="vest", H="#1f2023", S="#2e2f33", P="#7a2222", arm="#b02a2a"),  # black + red plates
     "NBC Suit":              dict(head="hood", body="suit", H="#7a7a2e", S="#7a7a2e", anom_canister=True),        # olive-yellow rubber
-    "Obelisk Patrol":        dict(head="hood", body="jacket", H="#aaa290", S="#7a7468", E="#c46a5a", camo=True),   # light gray
+    "Obelisk Patrol":        dict(head="hood", body="jacket", H="#aaa290", S="#7a7468", E="#ffd060", camo=True),   # light gray
     # Tier 3
     "HZ-99 Survey Suit":     dict(head="sealed", body="suit", H="#a6b42e", S="#a6b42e", rebreather=True, belt="#1c1c1c"),  # lime hazmat, black visor
     "IZC Scout":             dict(head="helmet", body="jacket", H="#4f86b8", S="#c8d0d8", D="#8a96a2"),            # white + UN blue helmet
@@ -115,13 +115,13 @@ LOOK = {   # v3: every armor gets its own color identity (suit + head two-tone),
     "Cartel Rad-Suit":       dict(head="sealed", body="suit", H="#c9a23a", S="#232323", arm="#c9a23a"),            # black + hazard yellow
     "Granit-9 Assault Suit":        dict(head="sphere", body="suit", H="#3a3f48", S="#34426a", quilted=True),  # navy padded + glossy helmet
     "Proto-Exoskeleton":    dict(head="exo", body="exo", H="#2a2a2a", S="#8a4e2c", D="#3a3a30"),  # rusty plates, black helmet
-    "Obelisk Heavy":         dict(head="helmet", body="heavy", H="#d0d4d8", S="#3c4046", P="#d0d4d8", E="#c46a5a"),  # gray + white plates
+    "Obelisk Heavy":         dict(head="helmet", body="heavy", H="#d0d4d8", S="#3c4046", P="#d0d4d8", E="#ffd060"),  # gray + white plates
     "Raider Boss Coat":      dict(head="bare", body="coat", S="#8a1e1e", A="#2a2420", arm="#d4a62a"),              # crimson coat
     # Tier 5
     "Radiant Kokon":         dict(head="kokonmask", body="suit", H="#ddd2a4", S="#ddd2a4", quilted=True, belt="#6a4a2a"),  # pale cream Kokon
     "Liberator Exoskeleton": dict(head="exo", body="exo", H="#5f8a34", S="#4f7a35", camo=True),                    # Freedom green
     "Wanderer Exoskeleton": dict(head="exo", body="exo", H="#7e766c", S="#8a8078", D="#5a6040", camo=True),  # SoC exo: gray metal, olive legs
-    "Obelisk Exoskeleton":   dict(head="exo", body="exo", H="#ece4d0", S="#c8bfa8", E="#c46a5a"),                  # white
+    "Obelisk Exoskeleton":   dict(head="exo", body="exo", H="#ece4d0", S="#c8bfa8", E="#ffd060"),                  # white
     "Sentinel Proto-Armor":      dict(head="exo", body="exo", H="#3a5a8a", S="#1e2128", arm="#b02a2a"),                # black + blue helmet
 }
 
@@ -156,10 +156,7 @@ def express(grid, head, kind):
     elif kind == "tired": put(r3, (6, 9), bc)          # brow only: a dimmed lens read as a broken eye (Yan)
     elif kind == "worried": put(r3, (5, 10), bc); put(r2, (7, 8), bc)
     elif kind == "wry": put(r3, (6, 7), bc)
-    elif kind == "blank":
-        for c in (6, 9):
-            if head in ("hoodface", "bandit", "bare", "balaclava"): r5[c] = r4[c]
-            else: r5[c] = "E"
+    # "blank" = a bare brow and the plain one-pixel lenses (a two-pixel-tall lens in the Obelisk coral read as red smears on a white helmet, Yan 2026-11-09)
 
 def build(name, anom, belt, L=None, back=False):
     L = L or LOOK[name]
