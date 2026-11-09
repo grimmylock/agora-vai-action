@@ -54,8 +54,10 @@ BODIES = {   # rows 7..15, ARMLESS (hands are separate floating sprites). Light 
     # 2026-11-09 (Yan: "the legs/boots are not readable as legs/boots, the little stubs on the side are weird, the helmet/hat looks bad ... all of these look bad"): heavy and exo are
     # drawn at their final height now (no more +1 row hack in _polish): shoulder pads 3 rows tall and 3 wide (not one-pixel stubs), the belt on row 10, THREE rows of leg with the
     # gap between, and boots wider than the legs in their own lighter colour (& boot, % toe cap) so they read as boots, not as the outline.
-    "heavy":  ["..KppSSS", ".KpPPsPP", ".KPPPSPP", "..KKbbbB", "...KDDDK", "...KDDDK", "...KDpDK", "..K%&&&K", "..KKKKKK"],
-    "exo":    ["..KJJSSS", ".KJpSsSS", ".KJpSSSS", "..KKbbbB", "...KDDDK", "...KDDDK", "...KJpDK", "..K%&&&K", "..KKKKKK"],
+    # 2026-11-09 (Yan: "the heavy armor sprites look kinda squished in game, the proportions are off"): they were 14 px wide in a 16 px cell (0.88 of the height; the light suits are 8 wide, 0.5), so squat. Now 10 wide
+    # (0.63): shoulders and torso one pad narrower, two-pixel legs like the light suits, boots 3 px each, a fourth torso row.
+    "heavy":  ["...KppSS", "...KpPsP", "...KPPSP", "...KbbbB", "....KDDK", "....KDDK", "....KDpK", "...K%&&K", "...KKKKK"],
+    "exo":    ["...KJJSS", "...KJpSS", "...KJpSS", "...KbbbB", "....KDDK", "....KDDK", "....KJpK", "...K%&&K", "...KKKKK"],
 }
 POUCH_COLS = [5, 10, 6, 9, 7]
 
@@ -123,6 +125,42 @@ LOOK = {   # v3: every armor gets its own color identity (suit + head two-tone),
     "Sentinel Proto-Armor":      dict(head="exo", body="exo", H="#3a5a8a", S="#1e2128", arm="#b02a2a"),                # black + blue helmet
 }
 
+# 2026-11-09 (Yan: the Exoskeleton's scowl "adds some character"; "little expressions" on the others): a fixed expression per suit, edited into the FRONT head after mirroring, so it can
+# be asymmetric. Only heads with eyes or lenses have one (visor/sphere/sealed/visorhelm are blank by design). Brow = row 3, cols 6-9; eyes = row 4, cols 6 and 9 (lens E/e or a dark eye);
+# mask heads draw the brow as the dark strip M, face heads as hair/dark A over skin F. Kinds: stern (the dark bar, as the Exo always had), calm (no bar), tired (lids on the
+# outer corners + dim lenses), worried (outer brows down, inner brow mark up), wry (left brow down, left lens squinting), blank (no brow, lenses two pixels tall: a stare).
+FACE = {"hood": ("H", "M"), "helmet": ("H", "M"), "exo": ("H", "M"), "kokonmask": ("H", "M"), "hoodface": ("F", "A"), "bandit": ("F", "A"), "bare": ("F", "A"), "balaclava": ("N", "M")}
+EXPR = {   # a personality per suit (heads without a face keep nothing to edit)
+    "Leather Jacket": "worried", "Raider Jacket": "wry", "Heavy Trenchcoat": "tired", "Rookie Field Suit": "worried", "Scrap-Plated Vest": "stern",
+    "Liberator Windbreaker": "calm", "Marsh Recon Suit": "calm", "Contractor Light": "tired", "Daybreak Suit": "calm", "Raider Stitched Coat": "stern",
+    "Sentinel Service Suit": "stern", "NBC Suit": "worried", "Obelisk Patrol": "blank",
+    "IZC Scout": "calm", "Kokon Suit": "tired", "Liberator Guard Suit": "wry", "Contractor ACE Base": "calm", "Obelisk Scientific": "blank",
+    "Sentinel Armored Suit": "stern", "Raider Veteran Coat": "tired",
+    "Marsh Pathfinder Suit": "calm", "Sentinel Vanguard": "stern", "IZC Operative": "calm", "Proto-Exoskeleton": "stern", "Obelisk Heavy": "blank", "Raider Boss Coat": "wry",
+    "Radiant Kokon": "blank", "Liberator Exoskeleton": "wry", "Wanderer Exoskeleton": "stern", "Obelisk Exoskeleton": "blank", "Sentinel Proto-Armor": "stern",
+}
+def expr_for(name):
+    """the listed suits have their own; the faction variants get a mood from their faction's temper, picked by name (stable across reruns)"""
+    if name in EXPR: return EXPR[name]
+    moods = (["stern", "stern", "wry", "tired"] if any(k in name for k in ("Raider", "Cartel", "Outcast")) else ["stern", "stern", "calm"] if any(k in name for k in ("Sentinel", "Garrison", "Granit"))
+             else ["blank"] if "Obelisk" in name else ["worried", "calm", "calm"] if any(k in name for k in ("Prospector", "Marsh", "Survey", "HZ")) else ["calm", "tired", "wry", "worried"])
+    return random.Random("expr" + name).choice(moods)
+def express(grid, head, kind):
+    if head not in FACE: return
+    base, bc = FACE[head]; r2, r3, r4, r5 = grid[2], grid[3], grid[4], grid[5]
+    def put(r, cols, ch):
+        for c in cols:
+            if r[c] not in ".K": r[c] = ch
+    put(r3, (6, 7, 8, 9), base)                                              # every kind starts from a bare brow
+    if kind == "stern": put(r3, (6, 7, 8, 9), bc)
+    elif kind == "tired": put(r3, (6, 9), bc); put(r4, (6, 9), "u" if head not in ("hoodface", "bandit", "bare", "balaclava") else r4[6])
+    elif kind == "worried": put(r3, (5, 10), bc); put(r2, (7, 8), bc)
+    elif kind == "wry": put(r3, (6, 7), bc); put(r4, (6,), "u" if head not in ("hoodface", "bandit", "bare", "balaclava") else r4[6])
+    elif kind == "blank":
+        for c in (6, 9):
+            if head in ("hoodface", "bandit", "bare", "balaclava"): r5[c] = r4[c]
+            else: r5[c] = "E"
+
 def build(name, anom, belt, L=None, back=False):
     L = L or LOOK[name]
     S, H = L["S"], L.get("H", L["S"])
@@ -131,7 +169,7 @@ def build(name, anom, belt, L=None, back=False):
         "K": "#141617", "M": "#2b2f33", "m": "#5c636b", "b": L.get("belt", "#3d3226"), "B": "#2a2218", "g": "#2b2d30", "&": "#463c30", "%": "#6a5c48",
         "H": H, "h": shade(H, 1.35), "S": S, "s": shade(S, 1.35), "D": L.get("D", shade(S, 0.7)),
         "P": L.get("P", shade(S, 1.2)), "p": shade(L.get("P", shade(S, 1.2)), 1.4),
-        "E": E, "e": shade(E, 1.25), "v": shade(E, 1.3), "V": "#1c1f22", "J": "#7a7f84", "W": "#2a3a40", "w": "#9fb8c0",
+        "E": E, "e": shade(E, 1.25), "v": shade(E, 1.3), "u": shade(E, 0.55), "V": "#1c1f22", "J": "#7a7f84", "W": "#2a3a40", "w": "#9fb8c0",
         "A": L.get("A", "#3b2a1e"), "F": "#c8916a", "f": "#9e6e4f", "N": L.get("N", H),
         "n": shade(L.get("N", H), 1.9),   # knit highlight on the balaclava
     }
@@ -142,6 +180,7 @@ def build(name, anom, belt, L=None, back=False):
     if back: return _back(grid, pal, L, name, belt)
     if L["head"] == "helmet":                     # glint only on the left side of the visor
         grid[4][10] = "E"
+    express(grid, L["head"], L.get("expr") or expr_for(name))
     # data-driven details
     belt_row = 10 if L["body"] in ("heavy", "exo") else 11
     for c in POUCH_COLS[:belt]:
