@@ -5453,3 +5453,10 @@ Yan: "check the other mutants that do not have 'good' updated sprites and do the
 
 ## Blight Brute: charge (run) added (2026-11-09)
 Yan: "after that you can do the brute too". The Brute already had walk, club swipe and rock throw (Batch 131f). Added `charge` (`make_mutant_frames.brute_anims`, 8 frames, 90 ms): body thrown forward, club hauled up behind, heavy alternate strides, a dust stamp each time a foot lands. Review GIF with all four animations: `ArtSource/mutants_anim/brute_review.gif`; strips `mutant_blight_brute_{walk,charge,attack,throw}_strip.png`. Not in the game (mutants still draw as single sprites).
+
+## Canine animations redone on a cut-out rig (2026-11-09, second try)
+Yan: "all of them distort the original and look terrible, sorry ... the attacks also look bad. Reevaluate the system and redo everything".
+- What was wrong: the first try (`make_canine_anims.py` v1) resampled the sprite (stretch up to 1.2, a column-by-column bend, a head shove) and rebuilt the jaw as a wedge; every frame was a distorted copy, and the leg column ranges guessed for the other animals tore their legs.
+- New system, `ArtSource/canine_cutout.py`: NO resampling. The sprite is cut into rigid, overlapping pieces (hindquarters, forequarters, head, lower jaw, four legs split at the knee); a frame only slides pieces by whole pixels and turns legs and jaw (nearest-neighbour). **The neutral pose is checked to be the original sprite pixel for pixel** (`check_neutral`, 0 differing pixels for all four). The Pallid uses the approved walk's hip/knee points.
+- The mouth: closed = the sprite's own jaw, untouched. Open = the jaw is redrawn in the head's own colours, hinged at the back of the mouth, with a dark inside, upper and lower fangs, a tongue (and the Pallid's acid drool). Reads shut / gaping / snapping at game size.
+- `make_canine_anims.py` now only holds the poses (RUN 8 frames at 42 ms, BITE 10, POUNCE 12 with `travel`) and the review GIFs; files in `ArtSource/mutants_anim/` (strips, `*_attacks_sheet.png`, `*_run_bite_pounce.gif`, `canine_anims.json`). Not in the game.
