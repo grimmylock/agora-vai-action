@@ -21,9 +21,25 @@ def bend(img, stretch, dyf, dyb):
                 yy = y + dy
                 if 0 <= yy < Hd: op[x, yy] = sp[sx, y]
     return out
+def despeckle(img, min_px=10):
+    """drop leftover bits: any connected clump of fewer than `min_px` pixels (a drool drop the bend cut loose, a paw fragment, a lone shading pixel)"""
+    p = img.load(); Wd, Hd = img.size; seen = set()
+    for y0 in range(Hd):
+        for x0 in range(Wd):
+            if (x0, y0) in seen or not p[x0, y0][3]: continue
+            comp = [(x0, y0)]; seen.add((x0, y0)); k = 0
+            while k < len(comp):
+                x, y = comp[k]; k += 1
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        q = (x + dx, y + dy)
+                        if 0 <= q[0] < Wd and 0 <= q[1] < Hd and q not in seen and p[q][3]: seen.add(q); comp.append(q)
+            if len(comp) < min_px:
+                for q in comp: p[q] = (0, 0, 0, 0)
+    return img
 def gallop(n=N):
     out = []
-    W, H, L, T = 66, 44, 8, 10
+    W, H, L, T = 66, 50, 8, 10
     for i in range(n):
         ph = 2 * math.pi * i / n
         c = math.cos(ph); ch = math.cos(ph - 0.9); cf2 = math.cos(ph - 0.35); ch2 = math.cos(ph - 1.35)
@@ -43,7 +59,7 @@ def gallop(n=N):
         for name, cc, fn in (("near_hind", ch, hind), ("near_fore", c, fore)):
             u, l = fn(cc); hindleg = "hind" in name
             M.pose_leg(f, legs[name], u, l, L + (dxb if hindleg else dxf), T + rise + (dyb if hindleg else dyf), 0)
-        out.append(m.outline(f))
+        out.append(m.outline(despeckle(f)))
     return out
 fr = gallop()
 w, h = fr[0].size
