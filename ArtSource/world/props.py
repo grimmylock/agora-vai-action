@@ -1161,5 +1161,5 @@ VARIANTS = {"tree": 10, "pine": 8, "deadtree": 6, "redtree": 6, "bush": 4, "redb
 
 # 2026-11-09 (Yan, quality pass, props second pass): five props redrawn in props_v2.py replace the old builders in the atlas. The old ones stay above (OLD_PROPS) for before/after sheets.
 OLD_PROPS = dict(PROPS)
-import props_v2 as _v2
-PROPS.update(_v2.NEW)
+import props_v2 as _v2          # (circular: if props_v2 was imported first it applies itself at its own end)
+if hasattr(_v2, "NEW"): PROPS.update(_v2.NEW); VARIANTS.update(_v2.V2_VARIANTS)
