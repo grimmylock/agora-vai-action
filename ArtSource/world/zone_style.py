@@ -49,12 +49,13 @@ def _mass(im, r, S, pal, cx, cy, rx, ry, dark=0):
         x0, y0 = cx + math.cos(a) * rx * t, cy + math.sin(a) * ry * t
         rad = r.uniform(2.2, 3.8)
         deep = (x0 - cx) / rx + (y0 - cy) / ry                                # lower right of the mass = in its shade
-        for yy in range(int(y0 - rad), int(y0 + rad) + 1):
-            for xx in range(int(x0 - rad), int(x0 + rad) + 1):
+        la = math.radians(225 + r.uniform(-38, 38)); lx, ly = math.cos(la), math.sin(la)   # 2026-11-09: each leaf clump gets its OWN light angle (about top-left) and a rounded cap of
+        for yy in range(int(y0 - rad), int(y0 + rad) + 1):                   # light, not the same straight diagonal cut on every clump - those cuts lined up across the crown
+            for xx in range(int(x0 - rad), int(x0 + rad) + 1):               # into long diagonal streaks (Yan: "the trees being kinda bugged")
                 d = ((xx - x0) / rad) ** 2 + ((yy - y0) / (rad * 0.85)) ** 2
                 if d > 1 or d > 0.8 and r.random() < 0.3: continue
-                lit = (xx - x0) + (yy - y0) < -0.8
-                i = (3 if d < 0.45 else 2) if lit else (1 if d < 0.75 else 0)
+                v = ((xx - x0) * -lx + (yy - y0) * -ly) / rad + r.uniform(-0.18, 0.18)       # >0 toward the light
+                i = 3 if v > 0.45 else 2 if v > -0.05 else 1 if v > -0.55 else 0
                 if deep > 0.5: i = max(0, i - 1)
                 i = max(0, i - dark)
                 if r.random() < 0.04: i = 4
@@ -131,7 +132,7 @@ def big_birch_old(seed, S=A):
 
 def big_spruce(seed):
     S = A; r = random.Random(seed * 17 + 3); kind = seed % 3
-    h = [118, 96, 84][kind] + r.randint(-8, 8); w = int(h * 0.44); im = concept.blank(w, h); cx = w / 2
+    h = [118, 96, 84][kind] + r.randint(-8, 8); w = int(h * 0.44); im = concept.blank(w, h); cx = w // 2     # 2026-11-09: cx was w / 2 (a half pixel for odd widths) and _px rounds half to even, so every other column landed on another row: the vertical pinstripes
     for y in range(h - 8, h): _px(im, cx - 1, y, S["dead"][1]); _px(im, cx, y, S["dead"][0])
     top = 3 if kind != 2 else int(h * 0.22)                                   # kind 2: the top snapped off
     if kind == 2:
