@@ -143,31 +143,41 @@ namespace GameCore
 
         static void Unique(string name)
         {
-            var tex = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_'));
+            var tex = LoadX2("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_'));
             if (tex == null) return;
             var sets = new[] { _armor, _walkA, _walkB, _back, _backWalkA, _backWalkB };
-            for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * Cell, 0, Cell, Cell), new Vector2(0.5f, 0.5f), Cell, 0, SpriteMeshType.FullRect);
-            var poses = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_') + "_poses");
+            int uc = tex.height;                                                   // 2026-11-09: the cell is read from the texture (16 px drawn, 32 px doubled)
+            for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * uc, 0, uc, uc), new Vector2(0.5f, 0.5f), uc, 0, SpriteMeshType.FullRect);
+            var poses = LoadX2("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_') + "_poses");
             if (poses == null) return;
+            int pc = poses.height / 2;
             for (int r = 0; r < 2; r++)                                            // texture row 0 is the bottom: the back row
                 for (int i = 0; i < PoseKeys.Length; i++)
                 {
                     string set = (r == 0 ? "armor_back_pose_" : "armor_pose_") + PoseKeys[i];
                     if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
-                    d[name] = Sprite.Create(poses, new Rect(i * Cell, r * Cell, Cell, Cell), new Vector2(0.5f, 0.5f), Cell, 0, SpriteMeshType.FullRect);
+                    d[name] = Sprite.Create(poses, new Rect(i * pc, r * pc, pc, pc), new Vector2(0.5f, 0.5f), pc, 0, SpriteMeshType.FullRect);
                 }
+        }
+
+        /// <summary>2026-11-09: the doubled copy (`<name>_x2`, ArtSource/double_armor.py: 32 px cells) when it exists, else the 16 px file as drawn.</summary>
+        private static Texture2D LoadX2(string path)
+        {
+            var big = Resources.Load<Texture2D>(path + "_x2");
+            return big != null ? big : Resources.Load<Texture2D>(path);
         }
 
         private static Dictionary<string, Sprite> Slice(string path, string[] order)
         {
             var sprites = new Dictionary<string, Sprite>();
-            var tex = Resources.Load<Texture2D>(path);
+            var tex = LoadX2(path);
             if (tex == null) return sprites;
+            int cell = tex.width / SpriteAtlasIndex.Columns;                       // 2026-11-09: 16 px cells as drawn, 32 px when doubled (ArtSource/double_armor.py): same size on screen
             for (int i = 0; i < order.Length; i++)
             {
                 int col = i % SpriteAtlasIndex.Columns, row = i / SpriteAtlasIndex.Columns;
-                var rect = new Rect(col * Cell, tex.height - (row + 1) * Cell, Cell, Cell); // atlas row 0 is the top
-                sprites[order[i]] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f), Cell, 0, SpriteMeshType.FullRect);
+                var rect = new Rect(col * cell, tex.height - (row + 1) * cell, cell, cell); // atlas row 0 is the top
+                sprites[order[i]] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f), cell, 0, SpriteMeshType.FullRect);
             }
             return sprites;
         }

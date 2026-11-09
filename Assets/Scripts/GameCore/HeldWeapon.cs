@@ -1018,15 +1018,17 @@ namespace GameCore
             Color k = Hex("#141617"), lit = Scale(glove, 1.45f), dark = Scale(glove, 0.65f), none = new Color(0, 0, 0, 0);
             string[] rows = small ? GloveSmall : GloveBig;
             int w = rows[0].Length, h = rows.Length;
-            var tex = new Texture2D(w, h) { filterMode = FilterMode.Point };
+            const int D = 2;                                                       // 2026-11-09: the body is doubled (32 px cells), so the glove is drawn at 2x too: same size and place, same look
+            var tex = new Texture2D(w * D, h * D) { filterMode = FilterMode.Point };
             for (int y = 0; y < h; y++)
                 for (int x = 0; x < w; x++)
                 {
                     char ch = rows[y][x];
-                    tex.SetPixel(x, h - 1 - y, ch == 'K' ? k : ch == 'c' ? cuff : ch == 'l' ? lit : ch == 'g' ? glove : ch == 'd' ? dark : none);
+                    var c = ch == 'K' ? k : ch == 'c' ? cuff : ch == 'l' ? lit : ch == 'g' ? glove : ch == 'd' ? dark : none;
+                    for (int dy = 0; dy < D; dy++) for (int dx = 0; dx < D; dx++) tex.SetPixel(x * D + dx, (h - 1 - y) * D + dy, c);
                 }
             tex.Apply();
-            return HandCache[id] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 16f, 0, SpriteMeshType.FullRect);
+            return HandCache[id] = Sprite.Create(tex, new Rect(0, 0, w * D, h * D), new Vector2(0.5f, 0.5f), 16f * D, 0, SpriteMeshType.FullRect);
         }
         public static readonly string[] GloveBig = { ".KKK.", "KcllK", "KcgdK", ".KKK." };
         public static readonly string[] GloveSmall = { ".KK.", "KcgK", ".KK." };

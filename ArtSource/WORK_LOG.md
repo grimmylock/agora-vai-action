@@ -5502,3 +5502,11 @@ Yan: "i ran into the problem where the top of the sprites is cut off when testin
 
 ## 32x32 armor prototype (2026-11-09)
 Yan: "do the prototype, while doing it improve on the original designs ... some of them do not look readable". `ArtSource/armor32_proto.py` (pxart volume shading, locked look from the pixel-art skill: front, blocky, armless, near-black outline, gas mask with bright lens pixels, belt, boots, faction armband): three Wanderer suits (light jacket, heavy with chest plate and shoulder pads and a helmet brow, exo with knee pads) at 32x32, plus per-part wound overlays (head, torso, leg) as separate layers. Renders in `maps/renders/armor32_proto/` (`proto_sheet.png`: the new ones, then three current suits doubled; `ctx.png`: on the real Bonfire Village render beside men at true scale). Not in the game; nothing about hands, poses, walk frames or the atlas pipeline is done.
+
+## Armor/NPC sprites doubled to 32x32 (2026-11-09)
+Yan, after the redesign prototype: "keep the current sprites but doubled, the new ones look terrible". The designs are untouched; every armor texture (front, back, walk, back walk, the 43 pose atlases, the unique suit strips: 51 files) now has a 2x2 nearest-neighbour copy `armor_*_x2.png` (`ArtSource/double_armor.py`, checked: shrinking each back to 16 px gives the original byte for byte). The 16 px files stay (all generators and Python renderers read them).
+- `UnitSprites.LoadX2` loads the `_x2` texture when it exists; `Slice`, the unique suits and their poses read the cell size from the texture (`UnitSprites.cs`), so a sprite is 32 px at 32 pixels per unit: the same one world unit on screen.
+- `UnitMotionView.Kill` (the ragdoll) accepts 16 or 32 px bodies and cuts its pieces at the right scale (the pieces and stains are still described in 16 px units, so the gore logic is unchanged); before this it would have refused a 32 px body, i.e. no ragdoll.
+- `HeldWeaponView.HandSprite`: the floating gloves are built at 2x (same size and place) so they match the doubled body.
+- Hand/gun positions are in 16 px body units and are unchanged (the picture is the same, so they land the same).
+- Harness: ALL CHECKS PASSED (it does not load textures). NOT run in Unity: check the ragdoll on a death, the gloves and a held gun, and a heavy suit's head. The wound layers at 32 px density are the next step (not done).

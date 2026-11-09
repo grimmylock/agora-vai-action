@@ -240,7 +240,8 @@ namespace GameCore
         public void Kill(ICombatant u, Sprite body, HeldWeaponView held, Vector3 at, float dx, float dy, int gib, bool settled)
         {
             var s = Get(u);
-            if (s.Rag != null || body == null || body.rect.width != 16f || body.rect.height != 16f) return;
+            if (s.Rag != null || body == null || body.rect.width != body.rect.height || (body.rect.width != 16f && body.rect.width != 32f)) return;
+            int k = Mathf.RoundToInt(body.rect.width / 16f);                    // 2026-11-09: 1 = the 16 px sprite as drawn, 2 = doubled; the pieces are still described in 16 px units
             float l = Mathf.Sqrt(dx * dx + dy * dy);
             float ang = l < 0.01f ? Random.Range(0f, 6.283f) : Mathf.Atan2(dy, dx) + Random.Range(-0.45f, 0.45f);
             dx = Mathf.Cos(ang); dy = Mathf.Sin(ang);
@@ -256,7 +257,7 @@ namespace GameCore
             var tex = body.texture; var rc = body.rect;
             Part Cut(string n, int col, int row, int w, int h, float jx, float jy)
             {
-                var p = NewPart(u.Name + n, Sprite.Create(tex, new Rect(rc.x + col, rc.y + 16 - row - h, w, h), new Vector2(0.5f, 0.5f), 16, 0, SpriteMeshType.FullRect), jx, jy, false);
+                var p = NewPart(u.Name + n, Sprite.Create(tex, new Rect(rc.x + col * k, rc.y + (16 - row - h) * k, w * k, h * k), new Vector2(0.5f, 0.5f), 16 * k, 0, SpriteMeshType.FullRect), jx, jy, false);
                 p.Col0 = col; p.Row0 = row; p.H = h; p.Wd = w;
                 return p;
             }
