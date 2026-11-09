@@ -23,7 +23,7 @@ This file was rewritten on 2026-10-20 (after RT 7s).
      characters, floating hands, 64x32 and 32x16 weapons).
    - World: "Zone realism" (concept A, see Batches 30-34). Muted olive and straw, wet concrete,
      selective darker-shade outlines (not black), 3/4 walls, per-pixel procedural ground.
-   - Pixel art is drawn in Python and PIL. Never use AI image generation. Yan sometimes supplies his own pixel art or
+   - Yan sometimes supplies his own pixel art or
      references; copy his art faithfully (`ArtSource/weapons/hand/tactical_hatchet.py` shows how).
 3. **Faction colours on suits must stay readable.** Lighting may tint and darken units, never recolour them.
 4. **Show real renders, not mockups.** When Yan reviews art, show actual game output: harness
