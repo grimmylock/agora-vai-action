@@ -225,7 +225,7 @@ namespace GameCore
             int i = 0;
             foreach (var (ox, oy) in shape) tex.SetPixel(ox, h - 1 - oy, cols[(i++ + v) % cols.Length]);
             tex.Apply();
-            return StainCache[v] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 16f);
+            return StainCache[v] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 16f, 0, SpriteMeshType.FullRect);
         }
 
         // ---------------- dying ----------------
@@ -256,7 +256,7 @@ namespace GameCore
             var tex = body.texture; var rc = body.rect;
             Part Cut(string n, int col, int row, int w, int h, float jx, float jy)
             {
-                var p = NewPart(u.Name + n, Sprite.Create(tex, new Rect(rc.x + col, rc.y + 16 - row - h, w, h), new Vector2(0.5f, 0.5f), 16), jx, jy, false);
+                var p = NewPart(u.Name + n, Sprite.Create(tex, new Rect(rc.x + col, rc.y + 16 - row - h, w, h), new Vector2(0.5f, 0.5f), 16, 0, SpriteMeshType.FullRect), jx, jy, false);
                 p.Col0 = col; p.Row0 = row; p.H = h; p.Wd = w;
                 return p;
             }

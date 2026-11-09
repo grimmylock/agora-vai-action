@@ -100,7 +100,7 @@ namespace GameCore
             if (item?.Key == null) return null;
             if (_meleeSprites.TryGetValue(item.Key, out var hit)) return hit;
             var s = WeaponArt.For(item.Category ?? "melee", item.Key).sprite;            // turned round its middle, not its grip
-            return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit);
+            return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
         }
         private readonly Dictionary<string, Sprite> _stuckSprites = new Dictionary<string, Sprite>();
         private Sprite MeleeStuckSprite(InventoryItem item)
@@ -111,7 +111,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + item.Key + "_stuck");
             if (tex == null || stats == null || float.IsNaN(stats.StuckX)) return _stuckSprites[item.Key] = null;
             tex.filterMode = FilterMode.Point;
-            return _stuckSprites[item.Key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(stats.StuckX / tex.width, 1f - stats.StuckY / tex.height), WeaponArt.PixelsPerUnit);
+            return _stuckSprites[item.Key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(stats.StuckX / tex.width, 1f - stats.StuckY / tex.height), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
         }
 
         private void TickMelee()
@@ -836,7 +836,7 @@ namespace GameCore
                 if (count <= 0) count = Mathf.Max(1, tex.width / tex.height);   // RT fx 3: square frames, as many as fit
                 int w = tex.width / count;
                 frames = new Sprite[count];
-                for (int i = 0; i < count; i++) frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), pivot, ppu);
+                for (int i = 0; i < count; i++) frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), pivot, ppu, 0, SpriteMeshType.FullRect);
             }
             return Strips[path] = frames;
         }
@@ -847,7 +847,7 @@ namespace GameCore
             var tex = new Texture2D(1, 1) { filterMode = FilterMode.Point };
             tex.SetPixel(0, 0, Color.white);
             tex.Apply();
-            return _white = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+            return _white = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f, 0, SpriteMeshType.FullRect);
         }
     }
 }

@@ -157,7 +157,7 @@ namespace GameCore
             if (_eelStar != null) return _eelStar;
             string[] rows = { "...Y...", "...Y...", "..YYY..", "YYYWYYY", "..YYY..", "...Y...", "...Y..." }; var tex = new Texture2D(7, 7) { filterMode = FilterMode.Point };
             for (int y = 0; y < 7; y++) for (int x = 0; x < 7; x++) { char ch = rows[y][x]; tex.SetPixel(x, 6 - y, ch == 'W' ? new Color(1f, 1f, 0.9f, 1f) : ch == 'Y' ? new Color(1f, 0.85f, 0.25f, 1f) : new Color(0f, 0f, 0f, 0f)); }
-            tex.Apply(); return _eelStar = Sprite.Create(tex, new Rect(0, 0, 7, 7), new Vector2(0.5f, 0.5f), 32f);
+            tex.Apply(); return _eelStar = Sprite.Create(tex, new Rect(0, 0, 7, 7), new Vector2(0.5f, 0.5f), 32f, 0, SpriteMeshType.FullRect);
         }                                                                  // where the jaws are, for the player held in them (TacticalGridView)
 
         static Sprite[] EelBodySlices(int stage)                       // EelSub thin slices per spine sample (each sample is 8 columns of the strip): thinner slices make a bend a smoother polygon
@@ -166,7 +166,7 @@ namespace GameCore
             int cnt = EelSump.N * EelSub;
             var tex = Resources.Load<Texture2D>("Sprites/Fx/boss_eel_body_s" + stage); if (tex == null) return EelSlices[stage] = new Sprite[cnt];
             tex.filterMode = FilterMode.Point; var l = new Sprite[cnt];
-            for (int q = 0; q < cnt; q++) l[q] = Sprite.Create(tex, new Rect(Mathf.Clamp(q * (8 / EelSub) - 1, 0, EelBodyW - EelSliceW), 0, EelSliceW, EelBodyH), new Vector2(0.5f, 0.5f), EelPpu);
+            for (int q = 0; q < cnt; q++) l[q] = Sprite.Create(tex, new Rect(Mathf.Clamp(q * (8 / EelSub) - 1, 0, EelBodyW - EelSliceW), 0, EelSliceW, EelBodyH), new Vector2(0.5f, 0.5f), EelPpu, 0, SpriteMeshType.FullRect);
             return EelSlices[stage] = l;
         }
         static readonly Sprite[][] EelJaws = new Sprite[4][];
@@ -176,7 +176,7 @@ namespace GameCore
             if (EelJaws[stage] == null)
             {
                 var tex = Resources.Load<Texture2D>("Sprites/Fx/boss_eel_jaw_s" + stage); var l = new Sprite[JawFrames];
-                if (tex != null) { tex.filterMode = FilterMode.Point; for (int i = 0; i < JawFrames; i++) l[i] = Sprite.Create(tex, new Rect(i * JawW, 0, JawW, JawH), new Vector2(JawAnchorX / JawW, 1f - JawAnchorY / JawH), EelPpu); }
+                if (tex != null) { tex.filterMode = FilterMode.Point; for (int i = 0; i < JawFrames; i++) l[i] = Sprite.Create(tex, new Rect(i * JawW, 0, JawW, JawH), new Vector2(JawAnchorX / JawW, 1f - JawAnchorY / JawH), EelPpu, 0, SpriteMeshType.FullRect); }
                 EelJaws[stage] = l;
             }
             int k = open > 1.2f ? JawFrames - 1 : Mathf.Clamp(Mathf.RoundToInt(Mathf.Clamp01(open) * 5f), 0, 5); return EelJaws[stage][k];
@@ -185,14 +185,14 @@ namespace GameCore
         {
             if (EelHeads[stage] != null) return EelHeads[stage];
             var tex = Resources.Load<Texture2D>("Sprites/Fx/boss_eel_head_s" + stage); if (tex == null) return null;
-            tex.filterMode = FilterMode.Point; return EelHeads[stage] = Sprite.Create(tex, new Rect(0, 0, EelHeadW, EelHeadH), new Vector2(116f / EelHeadW, 1f - 52f / EelHeadH), EelPpu);   // the anchor: where the body grows from
+            tex.filterMode = FilterMode.Point; return EelHeads[stage] = Sprite.Create(tex, new Rect(0, 0, EelHeadW, EelHeadH), new Vector2(116f / EelHeadW, 1f - 52f / EelHeadH), EelPpu, 0, SpriteMeshType.FullRect);   // the anchor: where the body grows from
         }
         static Sprite EelCircle(bool fill)
         {
             if (fill ? _eelRingFill != null : _eelRing != null) return fill ? _eelRingFill : _eelRing;
             const int N = 128; var tex = new Texture2D(N, N) { filterMode = FilterMode.Point };
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) { float r = Mathf.Sqrt((x - N / 2f + 0.5f) * (x - N / 2f + 0.5f) + (y - N / 2f + 0.5f) * (y - N / 2f + 0.5f)); tex.SetPixel(x, y, new Color(1f, 1f, 1f, r > N / 2f - 3f && r <= N / 2f ? 1f : fill && r < N / 2f - 3f ? 0.22f : 0f)); }
-            tex.Apply(); var sp = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), N / 2f);   // two world units across: scale = the radius in tiles
+            tex.Apply(); var sp = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), N / 2f, 0, SpriteMeshType.FullRect);   // two world units across: scale = the radius in tiles
             if (fill) _eelRingFill = sp; else _eelRing = sp; return sp;
         }
 
@@ -207,14 +207,14 @@ namespace GameCore
             {
                 _eelFloodTex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
                 _eelFloodPx = new Color32[w * h]; _eelFloodVer = -1;
-                _eelFlood.sprite = Sprite.Create(_eelFloodTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f);       // pixel (x, y from the top) = tile (x, y); the sprite hangs from world (0, 0), tile y runs down
+                _eelFlood.sprite = Sprite.Create(_eelFloodTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f, 0, SpriteMeshType.FullRect);       // pixel (x, y from the top) = tile (x, y); the sprite hangs from world (0, 0), tile y runs down
                 _eelFlood.transform.position = Vector3.zero;
                 _eelShockTex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp }; _eelShockPx = new Color32[w * h];      // the same shape in white: the storm's electric tint is this, faded in and out
                 if (_eelShock == null) _eelShock = NewSprite("EelShock", null, Color.white, _root, 7);
-                _eelShock.sprite = Sprite.Create(_eelShockTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f); _eelShock.transform.position = Vector3.zero; _eelShock.gameObject.SetActive(false);
+                _eelShock.sprite = Sprite.Create(_eelShockTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f, 0, SpriteMeshType.FullRect); _eelShock.transform.position = Vector3.zero; _eelShock.gameObject.SetActive(false);
                 _eelShockTex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp }; _eelShockPx = new Color32[w * h];
                 if (_eelShock == null) _eelShock = NewSprite("EelShock", null, Color.white, _root, 7);
-                _eelShock.sprite = Sprite.Create(_eelShockTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f); _eelShock.transform.position = Vector3.zero; _eelShock.gameObject.SetActive(false);
+                _eelShock.sprite = Sprite.Create(_eelShockTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), 1f, 0, SpriteMeshType.FullRect); _eelShock.transform.position = Vector3.zero; _eelShock.gameObject.SetActive(false);
             }
             bool any = s.Flip.Count > 0;
             if (_eelFlood.gameObject.activeSelf != any) _eelFlood.gameObject.SetActive(any);

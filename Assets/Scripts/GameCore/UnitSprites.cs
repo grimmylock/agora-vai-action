@@ -65,7 +65,7 @@ namespace GameCore
             int cols = tex.width / 128, rows = tex.height / 160; _vat = new Sprite[cols * rows];
             for (int r = 0; r < rows; r++)
                 for (int c = 0; c < cols; c++)
-                    _vat[r * cols + c] = Sprite.Create(tex, new Rect(c * 128, tex.height - (r + 1) * 160, 128, 160), new Vector2(0.5f, 10f / 160f), 2 * Cell);
+                    _vat[r * cols + c] = Sprite.Create(tex, new Rect(c * 128, tex.height - (r + 1) * 160, 128, 160), new Vector2(0.5f, 10f / 160f), 2 * Cell, 0, SpriteMeshType.FullRect);
             return _vat;
         }
 
@@ -100,7 +100,7 @@ namespace GameCore
                 foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute" })
                 {
                     var tex = Resources.Load<Texture2D>("Sprites/Mutants/mutant_hd_" + n.ToLowerInvariant().Replace(' ', '_'));
-                    if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell);
+                    if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);
                 }
             }
             return name != null && _hd.TryGetValue(name, out var s) ? s : null;
@@ -146,7 +146,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_'));
             if (tex == null) return;
             var sets = new[] { _armor, _walkA, _walkB, _back, _backWalkA, _backWalkB };
-            for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * Cell, 0, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
+            for (int i = 0; i < 6; i++) sets[i][name] = Sprite.Create(tex, new Rect(i * Cell, 0, Cell, Cell), new Vector2(0.5f, 0.5f), Cell, 0, SpriteMeshType.FullRect);
             var poses = Resources.Load<Texture2D>("Sprites/armor_unique_" + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_') + "_poses");
             if (poses == null) return;
             for (int r = 0; r < 2; r++)                                            // texture row 0 is the bottom: the back row
@@ -154,7 +154,7 @@ namespace GameCore
                 {
                     string set = (r == 0 ? "armor_back_pose_" : "armor_pose_") + PoseKeys[i];
                     if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
-                    d[name] = Sprite.Create(poses, new Rect(i * Cell, r * Cell, Cell, Cell), new Vector2(0.5f, 0.5f), Cell);
+                    d[name] = Sprite.Create(poses, new Rect(i * Cell, r * Cell, Cell, Cell), new Vector2(0.5f, 0.5f), Cell, 0, SpriteMeshType.FullRect);
                 }
         }
 
@@ -167,7 +167,7 @@ namespace GameCore
             {
                 int col = i % SpriteAtlasIndex.Columns, row = i / SpriteAtlasIndex.Columns;
                 var rect = new Rect(col * Cell, tex.height - (row + 1) * Cell, Cell, Cell); // atlas row 0 is the top
-                sprites[order[i]] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f), Cell);
+                sprites[order[i]] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f), Cell, 0, SpriteMeshType.FullRect);
             }
             return sprites;
         }

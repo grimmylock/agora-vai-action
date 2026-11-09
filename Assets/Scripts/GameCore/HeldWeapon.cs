@@ -617,7 +617,7 @@ namespace GameCore
                 var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
                 if (tex == null) return null;
                 tex.filterMode = FilterMode.Point;
-                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit);
+                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
             }
             return MagCache[key] = (Load("body"), Load("mag"));
         }
@@ -638,7 +638,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
             if (tex == null) return null;
             tex.filterMode = FilterMode.Point;
-            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit);
+            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
         }
 
         /// <summary>RT 6j: the magazine as a loose object - its sprite turned round its own middle (WeaponMags.Points).</summary>
@@ -649,7 +649,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_mag");
             if (tex == null) return LooseCache[key] = null;
             tex.filterMode = FilterMode.Point;
-            return LooseCache[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(mp[2] / tex.width, 1f - mp[3] / tex.height), PixelsPerUnit);
+            return LooseCache[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(mp[2] / tex.width, 1f - mp[3] / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
         }
         private static readonly Dictionary<string, Sprite> LooseCache = new Dictionary<string, Sprite>();
 
@@ -665,7 +665,7 @@ namespace GameCore
                 var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
                 if (tex == null) return null;
                 tex.filterMode = FilterMode.Point;
-                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(px / tex.width, 1f - py / tex.height), PixelsPerUnit);
+                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(px / tex.width, 1f - py / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
             }
             return BreakCache[key] = (Load("body", g[0], g[1]), Load("barrels", h.x, h.y), h.x, h.y);
         }
@@ -684,7 +684,7 @@ namespace GameCore
             if (tex != null)
             {
                 tex.filterMode = FilterMode.Point;
-                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit);
+                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
             }
             return Cache[id] = (s, g);
         }
@@ -772,7 +772,7 @@ namespace GameCore
             if (ItemSprites.TryGetValue(kind, out var s) && s != null) return s;
             var tex = Resources.Load<Texture2D>("Sprites/Items/use_" + kind);
             var gp = HeldPoseMath.UseGrip(kind);
-            return ItemSprites[kind] = tex == null ? null : Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(gp.x / tex.width, 1f - gp.y / tex.height), WeaponArt.PixelsPerUnit);
+            return ItemSprites[kind] = tex == null ? null : Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(gp.x / tex.width, 1f - gp.y / tex.height), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
         }
         /// <summary>RT 6f: clearing a jam (tap the magazine, rack the action) over `seconds`.</summary>
         public void StartClear(float seconds) { if (_sel2) return; _reloadAt = Time.time; _reloadTime = seconds; _reloadStyle = "jam"; _reloadTrips = 1; }
@@ -1026,7 +1026,7 @@ namespace GameCore
                     tex.SetPixel(x, h - 1 - y, ch == 'K' ? k : ch == 'c' ? cuff : ch == 'l' ? lit : ch == 'g' ? glove : ch == 'd' ? dark : none);
                 }
             tex.Apply();
-            return HandCache[id] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 16f);
+            return HandCache[id] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 16f, 0, SpriteMeshType.FullRect);
         }
         public static readonly string[] GloveBig = { ".KKK.", "KcllK", "KcgdK", ".KKK." };
         public static readonly string[] GloveSmall = { ".KK.", "KcgK", ".KK." };
