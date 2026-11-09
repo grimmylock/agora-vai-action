@@ -23,9 +23,9 @@ HEADS = {
     "hoodface": ["......KK", ".....KHh", "....KHhh", "....KHFF", "....KFeF", "....KNNN", ".....KNN"],  # hood up + balaclava/scarf N over the mouth
     "balaclava":["......KK", ".....KNn", "....KNnN", "....KNNN", "....KFeF", "....KNNN", ".....KNN"],  # full knit ski mask (N), one wide eye slit of skin with dark eyes
     "kokonmask": ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KMEH", "....KHHM", ".....KHM"],  # Kokon: gas mask built into the hood
-    "visorhelm":["......KK", "....KKhh", "...KHhhh", "...KHVVV", "....KVVV", "....KMmM", ".....KMm"],  # military helmet, dark visor down
+    "visorhelm":["......KK", "....KHhh", "...KHhhh", "...KHVVV", "....KVVV", "....KMmM", ".....KMm"],  # military helmet, dark visor down
     "sphere":   [".....KKK", "....KHHH", "...KHHHH", "...KHVVV", "...KHVVV", "....KHHH", ".....KHH"],  # glossy full-face helmet; Batch 128: a dark visor so front and back differ
-    "helmet":   ["......KK", "....KKhh", "...KHhhh", "...KKHHH", "....KMEm", "....KMmM", ".....KMm"],  # steel helmet + gas mask
+    "helmet":   ["......KK", "....KHhh", "...KHhhh", "...KHHHH", "....KMEm", "....KMmM", ".....KMm"],  # steel helmet + gas mask
     "sealed":   ["......KK", ".....KHh", "....KHhh", "....KHWW", "....KHWW", "....KHWW", "....KHHH"],  # hazmat hood, glass window
     "exo":      [".....KKK", "....KHhh", "...KHhhh", "...KHHMM", "...KHMEm", "...KHMmM", "....KKMm"],  # heavy exo helmet + gas mask
 }
@@ -38,9 +38,9 @@ HEADS_BACK = {
     "hoodface": ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KNNN", ".....KHH"],
     "balaclava":["......KK", ".....KNn", "....KNnN", "....KNNN", "....KNNN", "....KNNN", ".....KNN"],
     "kokonmask":["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KHHH", ".....KHH"],
-    "visorhelm":["......KK", "....KKhh", "...KHhhh", "...KHHHH", "....KHHH", "....KMMM", ".....KMm"],
+    "visorhelm":["......KK", "....KHhh", "...KHhhh", "...KHHHH", "....KHHH", "....KMMM", ".....KMm"],
     "sphere":   [".....KKK", "....KHHH", "...KHHHH", "...KHHHH", "...KHHHH", "....KHHH", ".....KHH"],
-    "helmet":   ["......KK", "....KKhh", "...KHhhh", "...KHHHH", "....KHHH", "....KMMM", ".....KMm"],
+    "helmet":   ["......KK", "....KHhh", "...KHhhh", "...KHHHH", "....KHHH", "....KMMM", ".....KMm"],
     "sealed":   ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KHHH", "....KHHH"],
     "exo":      [".....KKK", "....KHhh", "...KHhhh", "...KHHHH", "...KHHJJ", "...KHHHH", "....KKMm"],   # vents on the back of the helmet
 }
@@ -51,8 +51,11 @@ BODIES = {   # rows 7..15, ARMLESS (hands are separate floating sprites). Light 
     "coat":   [".....KSS", "....KsSS", "....KsSS", "....KSSS", "....KbbB", "...KSSSS", "...KSSSK", "....KBBK", "....KKKK"],
     "suit":   [".....KSS", "....KsSS", "....KsSS", "....KSSS", "....KbbB", "....KSSK", "....KSSK", "....KBBK", "....KKKK"],
     "vest":   [".....KSS", "....KsPP", "....KsPP", "....KSSS", "....KbbB", "....KDDK", "....KDpK", "....KBBK", "....KKKK"],
-    "heavy":  ["....KSSS", "...KpSPP", "...KpsPP", "....KSPP", "....KbbB", "...KDDDK", "...KDpDK", "...KBBBK", "...KKKKK"],
-    "exo":    ["....KSSS", "...KpSSS", "...KpsSS", "....KSSS", "....KbbB", "...KDDDK", "...KJpDK", "...KBBBK", "...KKKKK"],
+    # 2026-11-09 (Yan: "the legs/boots are not readable as legs/boots, the little stubs on the side are weird, the helmet/hat looks bad ... all of these look bad"): heavy and exo are
+    # drawn at their final height now (no more +1 row hack in _polish): shoulder pads 3 rows tall and 3 wide (not one-pixel stubs), the belt on row 10, THREE rows of leg with the
+    # gap between, and boots wider than the legs in their own lighter colour (& boot, % toe cap) so they read as boots, not as the outline.
+    "heavy":  ["..KppSSS", ".KpPPsPP", ".KPPPSPP", "..KKbbbB", "...KDDDK", "...KDDDK", "...KDpDK", "..K%&&&K", "..KKKKKK"],
+    "exo":    ["..KJJSSS", ".KJpSsSS", ".KJpSSSS", "..KKbbbB", "...KDDDK", "...KDDDK", "...KJpDK", "..K%&&&K", "..KKKKKK"],
 }
 POUCH_COLS = [5, 10, 6, 9, 7]
 
@@ -125,7 +128,7 @@ def build(name, anom, belt, L=None, back=False):
     S, H = L["S"], L.get("H", L["S"])
     E = L.get("E", "#9fd8e8")
     pal = {
-        "K": "#141617", "M": "#2b2f33", "m": "#5c636b", "b": L.get("belt", "#3d3226"), "B": "#2a2218", "g": "#2b2d30",
+        "K": "#141617", "M": "#2b2f33", "m": "#5c636b", "b": L.get("belt", "#3d3226"), "B": "#2a2218", "g": "#2b2d30", "&": "#463c30", "%": "#6a5c48",
         "H": H, "h": shade(H, 1.35), "S": S, "s": shade(S, 1.35), "D": L.get("D", shade(S, 0.7)),
         "P": L.get("P", shade(S, 1.2)), "p": shade(L.get("P", shade(S, 1.2)), 1.4),
         "E": E, "e": shade(E, 1.25), "v": shade(E, 1.3), "V": "#1c1f22", "J": "#7a7f84", "W": "#2a3a40", "w": "#9fb8c0",
@@ -140,9 +143,10 @@ def build(name, anom, belt, L=None, back=False):
     if L["head"] == "helmet":                     # glint only on the left side of the visor
         grid[4][10] = "E"
     # data-driven details
+    belt_row = 10 if L["body"] in ("heavy", "exo") else 11
     for c in POUCH_COLS[:belt]:
-        if grid[11][c] in "bB":
-            grid[11][c] = "O"
+        if grid[belt_row][c] in "bB":
+            grid[belt_row][c] = "O"
     if (anom >= 0.6 or L.get("anom_canister")) and not L.get("rebreather"):     # GP-5 style filter canister on the chest
         grid[8][7], grid[8][8] = "Q", "q"
     if L["head"] == "sealed":                     # one glint on the window, top-left
@@ -158,7 +162,7 @@ def build(name, anom, belt, L=None, back=False):
     if L["body"] == "exo":                        # ribbed chest plates + red indicator on the belt
         for x in range(4, 12):
             if grid[8][x] == "S": grid[8][x] = "s"
-        grid[11][10] = "X"
+        grid[10][10] = "X"
     if L.get("rebreather"):                       # Surveyor breathing unit on the chest
         grid[8][7] = grid[8][8] = "Y"; grid[9][7] = grid[9][8] = "y"
     if L.get("stripes"):                          # tracksuit stripes (bandits)
@@ -193,8 +197,9 @@ def _back(grid, pal, L, name, belt):
     """Batch 128: the back view. Same suit, belt pouches, camo, quilting, stripes and scuffs as the front; no zip, collar,
     chest canister or glints. A small pack between the shoulders (a rebreather tank on Survey suits, a spine plate on exos),
     and the faction patch on the shoulder that's on the left from behind (x 10/11, the mirror of the front's)."""
+    belt_row = 10 if L["body"] in ("heavy", "exo") else 11
     for c in POUCH_COLS[:belt]:
-        if grid[11][c] in "bB": grid[11][c] = "O"
+        if grid[belt_row][c] in "bB": grid[belt_row][c] = "O"
     if L.get("quilted"):
         for y in (8, 10):
             for x in range(4, 12):
@@ -264,16 +269,7 @@ def _polish(img, L, back=False):
     if style in ("vest", "heavy"):                        # plate top edge catches the light
         for x in range(6, 10):
             if px[x, 8][3] and px[x, 8][:3] != k: px[x, 8] = dk(px[x, 8], 1.2)
-    if style in ("heavy", "exo"):                         # taller: head+torso up 1px, top leg row repeated
-        # 2026-11-09 (Yan: "the top of the sprites is cut off when testing in unity", then "some of them have extremely flat top helmets/hats"): the extra leg row makes 17 rows in a
-        # 16 px cell. First the head's top outline was dropped (chopped heads); then the head's first content row was dropped (flat-topped helmets). Now the HEAD is kept whole, with its
-        # outline row, and the row that goes is the torso's middle row (original row 9): the torso is a row shorter, the legs are still a row longer.
-        t = Image.new("RGBA", (16, 16))
-        t.alpha_composite(img.crop((0, 12, 16, 16)), (0, 12))
-        t.alpha_composite(img.crop((0, 12, 16, 13)), (0, 11))
-        t.alpha_composite(img.crop((0, 10, 16, 12)), (0, 9))
-        t.alpha_composite(img.crop((0, 0, 16, 9)), (0, 0))
-        img = _outline(t)
+    # (heavy/exo used to be shifted up a row here to be one leg row taller; that cost the head its outline and then its dome. Their bodies are drawn at final height now: see BODIES.)
     return img
 
 def key(name): return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
