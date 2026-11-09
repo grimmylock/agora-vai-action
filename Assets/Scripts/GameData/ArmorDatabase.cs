@@ -42,7 +42,7 @@ namespace GameData
                 ["DaybreakSuit"] = new ArmorDef { Name = "Daybreak Suit", PhysDR = 0.25f, AnomDR = 0.25f, BeltSlots = 2, ModSlots = 2, Mp = 4 },
                 ["RaiderStitchedCoat"] = new ArmorDef { Name = "Raider Stitched Coat", PhysDR = 0.25f, AnomDR = 0.15f, BeltSlots = 1, ModSlots = 2, Mp = 4 },
                 ["SentinelServiceSuit"] = new ArmorDef { Name = "Sentinel Service Suit", PhysDR = 0.3f, AnomDR = 0.1f, BeltSlots = 1, ModSlots = 2, Mp = 4 },
-                ["NBCSuit"] = new ArmorDef { Name = "NBC Suit", PhysDR = 0.25f, AnomDR = 0.5f, BeltSlots = 1, ModSlots = 1, Mp = 3, Note = "Gas Hood" },
+                ["HazardRubberSuit"] = new ArmorDef { Name = "Hazard Rubber Suit", PhysDR = 0.25f, AnomDR = 0.5f, BeltSlots = 1, ModSlots = 1, Mp = 3, Note = "Gas Hood" },
                 ["ObeliskPatrol"] = new ArmorDef { Name = "Obelisk Patrol", PhysDR = 0.35f, AnomDR = 0.4f, BeltSlots = 1, ModSlots = 1, Mp = 3 },
             },
             ["tier3"] = new Dictionary<string, ArmorDef>

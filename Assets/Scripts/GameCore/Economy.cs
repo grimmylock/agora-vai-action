@@ -109,7 +109,7 @@ namespace GameCore
         {
             ["Leather Jacket"] = (200, 280), ["Raider Jacket"] = (280, 350), ["Scrap-Plated Vest"] = (220, 320), ["Rookie Field Suit"] = (320, 420), ["Heavy Trenchcoat"] = (400, 500),
             ["Contractor Light"] = (650, 800), ["Liberator Windbreaker"] = (700, 850), ["Raider Stitched Coat"] = (700, 850), ["Sentinel Service Suit"] = (850, 1000), ["Marsh Recon Suit"] = (900, 1100),
-            ["Daybreak Suit"] = (950, 1150), ["NBC Suit"] = (1100, 1300), ["Obelisk Patrol"] = (1300, 1500),
+            ["Daybreak Suit"] = (950, 1150), ["Hazard Rubber Suit"] = (1100, 1300), ["Obelisk Patrol"] = (1300, 1500),
             ["Raider Veteran Coat"] = (1800, 2200), ["Sentinel Armored Suit"] = (1800, 2200), ["IZC Scout"] = (2000, 2400), ["Basalt-5"] = (2200, 2600), ["Contractor ACE Base"] = (2400, 2900),
             ["Liberator Guard Suit"] = (2500, 3000), ["HZ-99 Survey Suit"] = (2800, 3300), ["Obelisk Scientific"] = (2900, 3400), ["Kokon Suit"] = (3400, 4000),
             ["HZ-99M Survey Suit"] = (4500, 5500), ["Raider Boss Coat"] = (4800, 5800), ["Marsh Pathfinder Suit"] = (5200, 6200), ["IZC Operative"] = (5800, 6800), ["Cartel Rad-Suit"] = (6000, 7000),

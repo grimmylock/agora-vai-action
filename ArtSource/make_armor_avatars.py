@@ -67,7 +67,7 @@ ARMORS = [
     ("Rookie Field Suit", 1, .12, .20, 2), ("Scrap-Plated Vest", 1, .20, .05, 0),
     ("Liberator Windbreaker", 2, .15, .25, 3), ("Marsh Recon Suit", 2, .20, .30, 3), ("Contractor Light", 2, .20, .15, 2),
     ("Daybreak Suit", 2, .25, .25, 2), ("Raider Stitched Coat", 2, .25, .15, 1), ("Sentinel Service Suit", 2, .30, .10, 1),
-    ("NBC Suit", 2, .25, .50, 1), ("Obelisk Patrol", 2, .35, .40, 1),
+    ("Hazard Rubber Suit", 2, .25, .50, 1), ("Obelisk Patrol", 2, .35, .40, 1),
     ("HZ-99 Survey Suit", 3, .10, .70, 4), ("IZC Scout", 3, .25, .30, 3), ("Kokon Suit", 3, .30, .80, 3),
     ("Liberator Guard Suit", 3, .35, .35, 3), ("Contractor ACE Base", 3, .35, .30, 3), ("Obelisk Scientific", 3, .35, .60, 2),
     ("Sentinel Armored Suit", 3, .45, .15, 1), ("Basalt-5", 3, .50, .15, 1), ("Raider Veteran Coat", 3, .35, .20, 2),
@@ -94,7 +94,7 @@ LOOK = {   # v3: every armor gets its own color identity (suit + head two-tone),
     "Daybreak Suit":          dict(head="hood", body="jacket", H="#5a6e3a", S="#7a6040"),                           # classic olive hood + tan
     "Raider Stitched Coat":  dict(head="bandit", body="coat", H="#b02a2a", S="#5e2424", A="#3b2a1e"),              # maroon + red bandana
     "Sentinel Service Suit":       dict(head="hood", body="vest", H="#1f2023", S="#2e2f33", P="#7a2222", arm="#b02a2a"),  # black + red plates
-    "NBC Suit":              dict(head="hood", body="suit", H="#7a7a2e", S="#7a7a2e", anom_canister=True),        # olive-yellow rubber
+    "Hazard Rubber Suit":              dict(head="hood", body="suit", H="#7a7a2e", S="#7a7a2e", anom_canister=True),        # olive-yellow rubber
     "Obelisk Patrol":        dict(head="hood", body="jacket", H="#aaa290", S="#7a7468", E="#ffd060", camo=True),   # light gray
     # Tier 3
     "HZ-99 Survey Suit":     dict(head="sealed", body="suit", H="#a6b42e", S="#a6b42e", rebreather=True, belt="#1c1c1c"),  # lime hazmat, black visor
@@ -133,7 +133,7 @@ FACE = {"hood": ("H", "M"), "helmet": ("H", "M"), "exo": ("H", "M"), "kokonmask"
 EXPR = {   # a personality per suit (heads without a face keep nothing to edit)
     "Leather Jacket": "worried", "Raider Jacket": "wry", "Heavy Trenchcoat": "tired", "Rookie Field Suit": "worried", "Scrap-Plated Vest": "stern",
     "Liberator Windbreaker": "calm", "Marsh Recon Suit": "calm", "Contractor Light": "tired", "Daybreak Suit": "calm", "Raider Stitched Coat": "stern",
-    "Sentinel Service Suit": "stern", "NBC Suit": "worried", "Obelisk Patrol": "blank",
+    "Sentinel Service Suit": "stern", "Hazard Rubber Suit": "worried", "Obelisk Patrol": "blank",
     "IZC Scout": "calm", "Kokon Suit": "tired", "Liberator Guard Suit": "wry", "Contractor ACE Base": "calm", "Obelisk Scientific": "blank",
     "Sentinel Armored Suit": "stern", "Raider Veteran Coat": "tired",
     "Marsh Pathfinder Suit": "calm", "Sentinel Vanguard": "stern", "IZC Operative": "calm", "Proto-Exoskeleton": "stern", "Obelisk Heavy": "blank", "Raider Boss Coat": "wry",

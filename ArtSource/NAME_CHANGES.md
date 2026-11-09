@@ -136,3 +136,19 @@ Old name on the left, current name on the right. Use the left column to match re
 | Ecologist Hazard Guard | Surveyor Hazard Guard |
 
 Prefix rules also applied to the faction-armor line: SEVA -> Kokon, Merc -> Contractor.
+
+## Armor renames (2026-11-09, Yan: "do the renames as listed", rule 1: real gear designations)
+| Old | New |
+|-|-|
+| Garrison 6B2 Flak Vest | Garrison Flak Vest Mk2 |
+| Garrison 6B5 Armor | Garrison Plate Armor |
+| Garrison 6B23 Assault | Garrison Assault Plates |
+| Garrison Gorka Coat | Garrison Mountain Coat |
+| Garrison Spetsnaz Gorka | Garrison Special Mountain Coat |
+| Wanderer Gorka-M | Wanderer Mountain-M |
+| Garrison Ratnik-Z | Garrison Vanguard-Z |
+| Garrison Altyn Assault | Garrison Faceplate Assault |
+| Garrison OZK Chem Suit | Garrison Chem Suit |
+| Garrison Strelets Exo | Garrison Marksman Exo |
+| NBC Suit | Hazard Rubber Suit |
+Database keys are the names without spaces/dashes (e.g. `GarrisonFlakVestMk2`). Old saves: `NameMigration.cs` maps both names and keys. The HZ-90..100 Surveyor suits were left alone (invented, not real gear).

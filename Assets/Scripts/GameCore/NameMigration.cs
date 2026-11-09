@@ -12,6 +12,18 @@ namespace GameCore
     {
         private static readonly (string Old, string New)[] Renames =
         {
+            // 2026-11-09 (Yan): real gear designations renamed (rule 1). Names and database keys, since a save can hold either.
+            ("Garrison 6B2 Flak Vest", "Garrison Flak Vest Mk2"), ("Garrison6B2FlakVest", "GarrisonFlakVestMk2"),
+            ("Garrison 6B5 Armor", "Garrison Plate Armor"), ("Garrison6B5Armor", "GarrisonPlateArmor"),
+            ("Garrison 6B23 Assault", "Garrison Assault Plates"), ("Garrison6B23Assault", "GarrisonAssaultPlates"),
+            ("Garrison Gorka Coat", "Garrison Mountain Coat"), ("GarrisonGorkaCoat", "GarrisonMountainCoat"),
+            ("Garrison Spetsnaz Gorka", "Garrison Special Mountain Coat"), ("GarrisonSpetsnazGorka", "GarrisonSpecialMountainCoat"),
+            ("Wanderer Gorka-M", "Wanderer Mountain-M"), ("WandererGorkaM", "WandererMountainM"),
+            ("Garrison Ratnik-Z", "Garrison Vanguard-Z"), ("GarrisonRatnikZ", "GarrisonVanguardZ"),
+            ("Garrison Altyn Assault", "Garrison Faceplate Assault"), ("GarrisonAltynAssault", "GarrisonFaceplateAssault"),
+            ("Garrison OZK Chem Suit", "Garrison Chem Suit"), ("GarrisonOZKChemSuit", "GarrisonChemSuit"),
+            ("Garrison Strelets Exo", "Garrison Marksman Exo"), ("GarrisonStreletsExo", "GarrisonMarksmanExo"),
+            ("NBC Suit", "Hazard Rubber Suit"), ("NBCSuit", "HazardRubberSuit"),
             ("Ecologist Containment Armor", "Surveyor Containment Armor"),
             ("Ecologist Field Lab Exo", "Surveyor Field Lab Exo"),
             ("Guardian of Liberty II", "Liberator Guard Suit II"),

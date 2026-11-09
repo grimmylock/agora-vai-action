@@ -88,7 +88,7 @@ at 75% in play. Prices follow file 07's tier bands; sell-back per file 08.
 |3|Light|Wanderer Ghillie Coat|25%|35%|3|2|5|6kg|2200-2400|-|
 |3|Standard|Kokon Suit *|30%|80%|3|3|4|10kg|3800-4000|Thermal vision|
 |3|Heavy|Wanderer Field Armor|50%|20%|1|2|3|10kg|2500-2800|-|
-|4|Light|Wanderer Gorka-M|30%|45%|4|3|4|8kg|4900-5400|-|
+|4|Light|Wanderer Mountain-M|30%|45%|4|3|4|8kg|4900-5400|-|
 |4|Standard|Wanderer Trailblazer|45%|40%|3|3|4|10kg|5500-6100|-|
 |4|Heavy|Wanderer Hardened Kokon|60%|40%|2|2|3|16kg|6450-7100|-|
 |5|Light|Wanderer Veteran Kokon|45%|70%|4|3|4|12kg|14250-15750|-|
@@ -120,20 +120,20 @@ at 75% in play. Prices follow file 07's tier bands; sell-back per file 08.
 |Tier|Type|Armor|Phys-DR|Anom-DR|Belt|Mods|MP|Weight|Price (Ru)|Notes|
 |-|-|-|-|-|-|-|-|-|-|-|
 |1|Light|Garrison Conscript Uniform|15%|5%|2|1|4|4kg|300|-|
-|1|Standard|Garrison Gorka Coat|20%|5%|1|1|4|6kg|350|-|
-|1|Heavy|Garrison 6B2 Flak Vest|25%|5%|0|1|3|10kg|400|-|
+|1|Standard|Garrison Mountain Coat|20%|5%|1|1|4|6kg|350|-|
+|1|Heavy|Garrison Flak Vest Mk2|25%|5%|0|1|3|10kg|400|-|
 |2|Light|Garrison Field Uniform|20%|15%|3|2|4|5kg|800-850|-|
-|2|Standard|Garrison OZK Chem Suit|30%|30%|2|2|4|7kg|1200-1300|-|
-|2|Heavy|Garrison 6B5 Armor|35%|5%|1|2|3|9kg|850-950|-|
-|3|Light|Garrison Spetsnaz Gorka|30%|25%|3|2|5|7kg|2050-2250|-|
+|2|Standard|Garrison Chem Suit|30%|30%|2|2|4|7kg|1200-1300|-|
+|2|Heavy|Garrison Plate Armor|35%|5%|1|2|3|9kg|850-950|-|
+|3|Light|Garrison Special Mountain Coat|30%|25%|3|2|5|7kg|2050-2250|-|
 |3|Standard|Basalt-5 *|50%|15%|1|2|3|9kg|2350-2600|-|
-|3|Heavy|Garrison 6B23 Assault|55%|10%|1|2|3|11kg|2350-2600|-|
-|4|Light|Garrison Altyn Assault|35%|35%|4|3|4|9kg|4600-5050|-|
+|3|Heavy|Garrison Assault Plates|55%|10%|1|2|3|11kg|2350-2600|-|
+|4|Light|Garrison Faceplate Assault|35%|35%|4|3|4|9kg|4600-5050|-|
 |4|Standard|Granit-9 Assault Suit *|55%|40%|2|3|3|14kg|6150-6750|Immune to critical hits|
 |4|Heavy|Garrison Sapper Suit|65%|20%|2|2|3|17kg|5500-6100|-|
-|5|Light|Garrison Ratnik-Z|50%|50%|4|3|4|13kg|11400-12600|-|
+|5|Light|Garrison Vanguard-Z|50%|50%|4|3|4|13kg|11400-12600|-|
 |5|Standard|Garrison Rad-Assault Suit|70%|45%|2|3|3|19kg|14250-15750|-|
-|5|Heavy|Garrison Strelets Exo|85%|25%|1|2|2|31kg|13300-14700|Immune to Prone|
+|5|Heavy|Garrison Marksman Exo|85%|25%|1|2|2|31kg|13300-14700|Immune to Prone|
 
 ### Sentinels
 
@@ -243,7 +243,7 @@ at 75% in play. Prices follow file 07's tier bands; sell-back per file 08.
 |1|Standard|Field Technician Overalls|5%|30%|2|1|4|5kg|450|-|
 |1|Heavy|Surveyor Guard Vest|10%|25%|1|1|3|9kg|450|-|
 |2|Light|HZ-90 Trainee Suit|5%|50%|4|2|4|4kg|1100-1200|-|
-|2|Standard|NBC Suit *|25%|50%|1|1|3|8kg|1400-1500|Sealed gas hood (flavor)|
+|2|Standard|Hazard Rubber Suit *|25%|50%|1|1|3|8kg|1400-1500|Sealed gas hood (flavor)|
 |2|Heavy|Surveyor Escort Armor|20%|30%|2|2|3|8kg|1000-1150|-|
 |3|Light|HZ-95 Sampler|15%|60%|4|2|5|6kg|2650-2950|-|
 |3|Standard|HZ-99 Survey Suit *|10%|70%|4|1|4|7kg|2850-3150|Immune to Toxic Bleed|
