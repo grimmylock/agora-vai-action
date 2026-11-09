@@ -1,0 +1,14 @@
+; agora vai item-icon palette (9 colours) for sprite-gen pixel-draw --palette
+; Derived from the locked item style in ArtSource/make_item_icons.py: 1 px #141617 outline, flat 2-3 tones, lit top/left, shade bottom/right.
+; Olive and steel are base +25% (lit) / x0.72 (shade) like make_item_icons.py's box(). Not sampled from the finished sprites: check against them.
+; Order: outline, olive lit, olive base, olive shade, steel lit, steel base, steel shade, pale yellow (stencil), rust.
+; (pixel-draw only accepts whole-line comments here, not trailing ones.)
+#141617
+#728448
+#5b6a3a
+#414c2a
+#a0a5ab
+#808488
+#5c5f62
+#d2c36a
+#7a4a28

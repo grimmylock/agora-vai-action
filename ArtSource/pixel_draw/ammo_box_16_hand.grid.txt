@@ -1,0 +1,29 @@
+PALETTE
+. transparent
+o #141617
+L #728448
+M #5B6A3A
+D #414C2A
+s #A0A5AB
+g #808488
+k #5C5F62
+y #D2C36A
+r #7A4A28
+FRAME icon
+................
+................
+..oooooooooooo..
+.oLLLLLLLLLLLLo.
+.oLLssssssssLLo.
+.oLLkggggggkLLo.
+.oLLLMMMMMMLLLo.
+.oMMMMMssMMMMDo.
+.oDDDDDggDDDDDo.
+.oMMMMMggMMMMDo.
+.oMyyMMkkMMrMDo.
+.oDDDDDDDDDDDDo.
+..oooooooooooo..
+................
+................
+................
+END
