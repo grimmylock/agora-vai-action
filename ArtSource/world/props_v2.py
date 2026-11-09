@@ -14,7 +14,7 @@ def line(im, x0, y0, x1, y1, c):
 
 def tires2(seed):
     """dumped tyres: a lopsided stack of three (lit tops, zig-zag tread, dark undersides, the top one open with its hole) and one stood on edge with the steel wheel showing"""
-    r = rng(seed); T = ramp("#262a2e", "#3c4248", "#5a626a", "#8a949c"); im = blank(24, 17)
+    r = rng(seed); T = ramp("#242627", "#383a3c", "#4f5254", "#787c7e"); im = blank(24, 17)
     def band(cx, ytop, rx, h):
         for y in range(ytop, ytop + h):
             for x in range(int(cx - rx), int(cx + rx) + 1):
@@ -146,7 +146,7 @@ def sheet(out, scale=6):
         for tx in range(0, W, 64): bg.paste(dt, (tx, ty))
     for k, n in enumerate(names):
         for row in range(2):
-            for j, fn in enumerate((props.PROPS[n], NEW[n])):
+            for j, fn in enumerate((props.OLD_PROPS[n], NEW[n])):
                 place(bg, fn(1000), 36 + (k * 2 + j) * cw // 1 - 6, 34 + row * RH)
     bg.alpha_composite(man, (4, 20)); bg.alpha_composite(man, (4, 20 + RH))
     bg.resize((bg.width * scale, bg.height * scale), Image.NEAREST).convert("RGB").save(out); print(out, bg.size)

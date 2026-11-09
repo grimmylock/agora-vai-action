@@ -1158,3 +1158,8 @@ for _k, _f in STASHES.items():   # Batch 124
     PROPS["stash_" + _k + "_open"] = (lambda f: lambda s: f(s, True))(_f)
 VARIANTS = {"tree": 10, "pine": 8, "deadtree": 6, "redtree": 6, "bush": 4, "redbush": 2, "reeds": 6, "sunktruck": 2, "lamp": 2, "bus": 2, "tank": 3, "pipe": 2, "dumpster": 3, "trash": 3, "armchair": 3, "brush": 2, "rock": 14, "debris": 3,
             "scrap": 3, "wreck": 4, "stash_duffel": 2, "stash_duffel_open": 2, "container": 3, "crate": 2, "rustbarrel": 2, "machine": 2, "lockers": 2, "pipes": 2, "rubble": 3, "stones": 2, "labtable": 2, "labbench": 2, "jars": 2, "cables": 2}
+
+# 2026-11-09 (Yan, quality pass, props second pass): five props redrawn in props_v2.py replace the old builders in the atlas. The old ones stay above (OLD_PROPS) for before/after sheets.
+OLD_PROPS = dict(PROPS)
+import props_v2 as _v2
+PROPS.update(_v2.NEW)
