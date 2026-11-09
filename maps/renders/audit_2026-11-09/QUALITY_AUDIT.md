@@ -7,7 +7,7 @@ Yan: "a quality check on the npc/armor sprites ... i feel like they fell behind 
 3. Minor: spruces and birches overlap in odd blue/green mixes (the old spruce's colours differ from `big_spruce`).
 
 ## NPC / armor sprites (180 fronts, 180 backs, walk frames, 16 pose sets)
-1. **One body for everyone.** Every suit is the same 16x16 template (same head, shoulders, legs); tiers differ by colour, a hat or mask and a few pixels. A juggernaut or an exoskeleton has the same silhouette as a windbreaker, so you cannot read how dangerous someone is from the shape.
+1. **Two body widths only (corrected after reading Yan's skill and measuring all 180).** The style is locked as blocky, armless, front view, 16x16 (`agora-vai-pixel-art`): light bodies (jacket, coat, suit, vest) are 6 wide, heavy and exo bodies 8 wide with shoulder pads and one more leg row ("option C"). Measured on `armor_atlas.png`: every sprite is 16 px tall; 83 are 8 px wide (with the outline) and 97 are 10 px wide. So the heavy step exists but is only +2 px, and it is spread unevenly through each faction's 15 tiers (e.g. the Raiders' tier 4 is already wide, while some of their tier 12 are not). Tiers otherwise differ by colour, headgear and a few pixels, so danger is hard to read from the shape.
 2. **Fifteen near-twins per faction.** Within a row (e.g. the Liberators in green, the Sentinels in blue) most of the 15 look the same at a glance; the tier ladder is hard to read. Faction colours themselves are readable (rule 3 holds).
 3. **No faces, hair or builds.** The visor eyes are identical across hundreds of sprites; heads are a hat colour on a skin dot.
 4. Back views are consistent with the fronts and fine in the same sense; the pose sets are built from the same body.
