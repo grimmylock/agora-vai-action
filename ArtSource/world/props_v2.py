@@ -165,19 +165,32 @@ def _tires1(seed):                                   # a low heap: two flat tyre
     for cx in (7, 18): _ttop(im, T, cx, 8.5, 6.5, 2.6, 0.18)
     _tband(im, T, 12.5, 6, 6, 4); _ttop(im, T, 12.5, 5.5, 6, 2.6, 0.2)
     return finish(im, (13, 14), shadow=(24, 5, 1, -1))
-def _tires2(seed):                                   # one tyre stood on edge, face-on, with lug nuts on the steel wheel
-    T = _T(); im = blank(16, 18)
-    _tedge(im, T, 8, 9, 6.5, 8, lugs=True)
-    return finish(im, (8, 17), shadow=(14, 4, 1, -1))
+def _tires2(seed):                                   # two flat tyres, the top one slid off to the side, mud on the lower one
+    T = _T(); im = blank(24, 15)
+    _tband(im, T, 9, 9, 7, 4); _ttop(im, T, 9, 8.5, 7, 2.8, 0.2)
+    _tband(im, T, 15, 6, 6, 4); _ttop(im, T, 15, 5.5, 6, 2.6, 0.2)
+    for x in range(3, 14, 3): px(im, x, 12, hx("#3a3226"))
+    return finish(im, (12, 14), shadow=(22, 5, 1, -1))
 def _tires3(seed):                                   # a tall, tidy stack of five, the top one open
     T = _T(); im = blank(16, 24)
     for k in range(4): _tband(im, T, 8 + (k % 2) * 0.5, 20 - k * 3, 6.5, 3)
     _tband(im, T, 8, 8, 6.5, 3); _ttop(im, T, 8, 7, 6.5, 2.8, 0.2)
     return finish(im, (8, 23), shadow=(14, 4, 1, -1))
-def _tires4(seed):                                   # three stood on edge in a row, leaning, one a size smaller
-    T = _T(); im = blank(30, 17)
-    _tedge(im, T, 7, 9, 5.2, 7); _tedge(im, T, 14.5, 9.5, 5.4, 7.2, lugs=True); _tedge(im, T, 22, 10, 5, 6.4)
-    return finish(im, (15, 16), shadow=(26, 5, 1, -1))
+def _tring_rot(im, T, cx, cy, rx, ry, ang, hole=0.22):
+    ca, sa = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+    for y in range(int(cy - rx - ry) - 1, int(cy + rx + ry) + 2):
+        for x in range(int(cx - rx - ry) - 1, int(cx + rx + ry) + 2):
+            u = ((x - cx) * ca + (y - cy) * sa) / rx; w = (-(x - cx) * sa + (y - cy) * ca) / ry
+            e = u * u + w * w
+            if e <= 1:
+                if e < hole: px(im, x, y, hx("#0e1012"))
+                elif e < hole * 1.9: px(im, x, y, T[1])
+                else: px(im, x, y, T[3] if (u < -0.15 and w < 0.1) else T[2] if e < 0.7 else T[1])
+def _tires4(seed):                                   # two flat tyres with a third leaning against them, tilted
+    T = _T(); im = blank(28, 19)
+    _tband(im, T, 8, 12, 7, 4); _tband(im, T, 8, 9, 7, 3); _ttop(im, T, 8, 8.5, 7, 2.8, 0.2)
+    _tring_rot(im, T, 19.5, 9, 5, 7.5, -14)
+    return finish(im, (14, 18), shadow=(24, 5, 1, -1))
 TIRES = [_tires0, _tires1, _tires2, _tires3, _tires4]
 
 def _bag(im, B, cx, cy, rx, ry):
