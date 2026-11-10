@@ -201,24 +201,17 @@ namespace GameCore
             return WallMask(x, y) == 15;   // walled on all four sides: no face shows, only the top (not a tar roof underground)
         }
 
-        const int SlabReach = 2;
-        private static bool NearOpen(int x, int y, int r)
-        {
-            for (int dy = -r; dy <= r; dy++) for (int dx = -r; dx <= r; dx++) if (!Wallish(x + dx, y + dy)) return true;
-            return false;
-        }
-
         private static bool Buried(int x, int y)
         {
             if (!_interior) return false;
             for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) if (!Wallish(x + dx, y + dy)) return false;
             // Batch 98: a thick wall between two rooms (open within 6 tiles on both sides) is a partition, drawn as wall top;
             // only rock beyond the building stays dark (the Foundry's walls between rooms were black voids)
-            // 2026-11-10 (Yan: "some of the created dungeons have weird out of place blocks, like the generation got confused"): that rule (open within 6 tiles on BOTH
-            // opposite sides) flipped cell by cell where a row's and a column's reach differed, so a thick wall mass showed as grey chunks with stair-step edges and black
-            // squares inside. Now a built wall is a grey slab simply when open floor is within SlabReach tiles of it (any direction): a band that follows the rooms' shape;
-            // deeper in it stays dark rock.
-            if (SlabWall.Contains(_look[y * _w + x] ?? "") && NearOpen(x, y, SlabReach)) return false;   // built walls only: rock stays rock
+            // 2026-11-10 (Yan: "some of the created dungeons have weird out of place blocks, like the generation got confused"; then "the right still has problems"):
+            // the old rule (open floor within 2-6 tiles on BOTH opposite sides) flipped cell by cell, so thick wall masses showed as grey chunks with stair-step edges and
+            // black squares inside; a band of fixed reach (tried 4, then 2) still left diagonal stair-steps where it ends. Built walls (concrete, metal, hull, plaster) are
+            // now ALWAYS a plain slab top, however thick, never dark: no edge to be ragged. Brick-lined tunnels and rock stay dark rock.
+            if (SlabWall.Contains(_look[y * _w + x] ?? "")) return false;
             var t = TerrainMap.Tiles[y, x];
             return t != null && t.Type == TileType.Solid;
         }
