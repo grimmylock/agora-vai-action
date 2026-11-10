@@ -92,41 +92,14 @@ namespace GameCore
 
         // The Flooded Bunker: behind the locked blast door, a decontamination lock, barracks, the armory, and the
         // command level half under water. The best loot in Tier 1.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py flooded_bunker, graph dungeons/flooded_bunker.mmd): 'E' the blast door, '3' the duty locker (badge), '1' the
+        /// armory's badge door, '4' the fuse crate, '5' the generator switch (power), '2' the dead doors (the command level and the hatch ladder), 'L' the Command Safe (goal), 'K' the armory's loot, 'J' the mess.</summary>
         public static MapLayout FloodedBunker()
         {
-            var c = new TerrainCanvas(42, 42, TerrainCanvas.Seed("flooded_bunker"));
-            for (int y = 0; y < 42; y++) for (int x = 0; x < 42; x++) c.Put(x, y, Solid, "concrete");
-            // the blast door and the decontamination lock
-            Room(c, 18, 2, 6, 4, Concrete);
-            c.Landmark("Blast Door", 20, 3).Exit("marshes", 20, 3);
-            Room(c, 18, 7, 6, 4, LabTile);
-            c.Put(20, 6, Door, "metal").Put(20, 11, Door, "metal");
-            c.Put(18, 8, HardCover, "lockers").Put(23, 8, HardCover, "lockers");
-            // the main corridor
-            Room(c, 6, 12, 30, 3, Concrete);
-            // barracks west
-            Room(c, 4, 16, 12, 9, Floor);
-            c.Put(9, 15, Door);
-            for (int y = 17; y < 24; y += 2) { c.Put(5, y, ScatterCover, "crate"); c.Put(14, y, HardCover, "lockers"); }
-            c.Landmark("Barracks", 10, 20);
-            // the armory east, behind a second door
-            Room(c, 27, 16, 10, 7, Floor);
-            c.Put(31, 15, Door, "metal");
-            c.Put(28, 17, HardCover, "lockers").Put(30, 17, HardCover, "lockers").Put(35, 21, ScatterCover, "crate").Put(28, 21, ScatterCover, "crate");
-            c.Landmark("Armory", 32, 19).Stash("Armory", 35, 17);
-            // the stairs down to the command level
-            Room(c, 18, 15, 6, 10, Concrete);
-            // the command level, flooded
-            Room(c, 6, 27, 30, 11, Concrete);
-            Passage(c, 20, 25, 20, 27, 3, Concrete);
-            c.Put(10, 30, ScatterCover, "desk").Put(14, 30, ScatterCover, "desk").Put(26, 30, HardCover, "machine").Put(30, 30, HardCover, "lockers");
-            c.Put(20, 34, HardCover, "pillar").Put(12, 34, HardCover, "pillar").Put(28, 34, HardCover, "pillar");
-            Flood(c, 6, 31, 30, 7);
-            c.Landmark("Command Room", 20, 30).Stash("Command Safe", 33, 29);
-            // a generator closet off the corridor
-            Room(c, 37, 10, 3, 6, Concrete);
-            c.Put(38, 11, HardCover, "machine");
-            return Finish(c, "concrete");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Blast Door", "marshes"), ['B'] = ("Barracks", null), ['A'] = ("Armory", null), ['C'] = ("Command Room", null),
+                ['N'] = ("Generator Room", null), ['H'] = ("Hatch Ladder", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("flooded_bunker")) { ['K'] = "Armory", ['L'] = "Command Safe", ['J'] = "Mess Cache" };
+            return FloorPlan("flooded_bunker", LabPlans["flooded_bunker"], "concrete", Concrete, marks, stashes);
         }
 
         // The Smugglers' Tunnel: a dug tunnel from the depot's loading office, shored with planks, with side caches,

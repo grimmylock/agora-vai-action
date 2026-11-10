@@ -332,6 +332,8 @@ namespace GameData
                 L("Barracks", "Rows of rusted bunks and lockers. Whoever lived here left in a hurry."),
                 L("Armory", "The bunker's armory. Most racks are empty - most."),
                 L("Command Room", "Maps on the walls, a radio set, water to the knees."),
+                L("Generator Room", "A diesel generator the size of a van, a switch on the wall with one empty fuse slot."),
+                L("Hatch Ladder", "A steel ladder up a shaft to the corridor, its hatch dead without power."),
             },
             ["smugglers_tunnel"] = new List<LandmarkDef>
             {

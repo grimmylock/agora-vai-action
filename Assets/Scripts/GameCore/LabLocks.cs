@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -108,6 +108,18 @@ namespace GameCore
                 ['5'] = new Thing { Name = "Ram Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The rams' breaker panel. One fuse holder is empty and scorched.",
                                     Says = "[PIT] The breaker slams home. Far off, the rams shudder once, and the blast door's lamp turns amber." },
+            },
+            // Flooded Bunker (Tier 1, behind the marsh blast door; dungeons/flooded_bunker.mmd): the Alpha locks. The duty locker in the barracks holds the staff badge (the armory's blue door), the armory the
+            // fuse, the generator room's switch needs it; power wakes the dead door onto the flooded command level (and the hatch ladder's). The way INTO the bunker is the zone key "flooded_bunker" (Tier1Story).
+            ["flooded_bunker"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Duty Locker", Look = "stash_footlocker", Kind = "staff", Ru = 50, Desc = "A dented steel locker at the head of a bunk, DUTY OFFICER stencilled on it.",
+                                    Says = "[BUNKER] A staff badge on a faded lanyard, a face scratched out of the photo. The card readers still know it." },
+                ['4'] = new Thing { Name = "Armory Spares Crate", Look = "stash_toolbox", Kind = "fuse", Desc = "A crate of electrical spares in the armory's back corner.",
+                                    Says = "[BUNKER] A heavy fuse in a greased sleeve, GEN 1 on the tag. It would fit the generator's switch." },
+                ['5'] = new Thing { Name = "Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The generator's main switch. The fuse slot is empty and scorched.",
+                                    Says = "[BUNKER] The generator coughs, catches. Somewhere above the flooded level a lot of locks let go at once." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

@@ -334,6 +334,63 @@ def pit_check(p):
     for (x, y), ch in saved.items(): g[y][x] = ch
     return out
 
+def flooded_bunker():
+    """Flooded Bunker (T1, behind the marsh blast door; the story bunker, its way in is the zone key 'flooded_bunker' from the Headman's Strongbox: Tier1Story). Graph dungeons/flooded_bunker.mmd: the blast
+    door room -> the decontamination lock -> the main corridor (the hub: the badge door east and the dead power door south are in sight) -> the barracks (the duty locker '3' = badge; a dead-end mess south of
+    it) ; the badge door ('1' x2) -> the armory (the fuse crate '4') -> the generator room (the switch '5' needs the fuse = power) ; the power door ('2' x2) -> the flooded command level (the Command Safe,
+    goal). The hatch ladder from the command level up to the corridor is the loop; it has its own power door, so from the hub it opens only after the power is on."""
+    p = Plan(48, 48, 9801); r = p.r
+    p.room(20, 2, 8, 5, ',')                                       # Bd: the blast door room
+    p.vline(23, 7, 8, 2); p.room(20, 9, 8, 6)                      # Dl: the decontamination lock (a door each side)
+    for x in (23, 24): p.g[7][x] = 'D'; p.g[15][x] = 'D'
+    p.vline(23, 15, 17, 2); p.hline(4, 44, 18, 3)                  # the main corridor (the hub), east-west
+    p.room(4, 22, 10, 10); p.vline(8, 21, 21, 2)                   # Ba: the barracks, west
+    p.room(4, 35, 10, 8); p.vline(8, 32, 34, 2)                    # Ms: the mess (a dead end)
+    p.room(35, 22, 11, 10); p.vline(40, 21, 21, 2)                 # Ar: the armory, east, behind the badge door
+    for x in (40, 41): p.g[21][x] = '1'
+    p.room(37, 35, 9, 8); p.vline(41, 32, 34, 2)                   # Gn: the generator room, south of the armory
+    p.room(17, 29, 17, 16); p.vline(23, 21, 28, 2)                 # Cm: the command level, flooded, behind the power door
+    for x in (23, 24): p.g[28][x] = '2'
+    p.vline(18, 21, 28, 1); p.g[21][18] = '2'                      # the hatch ladder up to the corridor: its own power door at the top (the loop)
+    for y in range(38, 45):
+        for x in range(17, 34):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'                  # the command level's lower half is under water
+    for (x, y, ch) in ((5, 23, 'c'), (5, 25, 'c'), (12, 23, 'l'), (12, 27, 'l'), (9, 28, 'c'), (5, 36, 'c'), (12, 36, 'b'), (7, 40, 'd'), (11, 40, 'c'),
+                       (36, 23, 'l'), (38, 23, 'l'), (44, 28, 'c'), (36, 29, 'c'), (39, 37, 'm'), (44, 40, 'm'), (38, 41, 'c'), (4, 4, 'c'), (21, 11, 'l'), (26, 11, 'l'),
+                       (19, 31, 'd'), (21, 31, 'd'), (31, 31, 'l'), (28, 33, 'm'), (24, 35, 'x'), (19, 41, 'x')):
+        if p.g[y][x] == '.': p.g[y][x] = ch
+    for (x, y) in ((18, 35), (23, 36), (30, 36)): p.g[y][x] = 'k'   # pillars of fallen concrete in the water
+    p.g[24][6] = '3'                                               # the duty locker in the barracks
+    p.g[24][43] = '4'                                              # the fuse crate in the armory
+    p.g[39][44] = '5'                                              # the generator switch
+    p.g[41][7] = 'J'; p.g[30][31] = 'L'; p.g[27][44] = 'K'         # stashes: the mess, the command safe (the goal), the armory's loot
+    p.g[4][24] = 'E'; p.g[26][8] = 'B'; p.g[26][40] = 'A'; p.g[34][24] = 'C'; p.g[38][41] = 'N'; p.g[24][18] = 'H'
+    for _ in range(20):
+        x, y = r.randrange(2, 46), r.randrange(2, 46)
+        if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
+    return p
+
+BUNKER_GIVES = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse')}
+BUNKER_LOCKS = {'1': 'badge', '2': 'power'}
+def bunker_check(p):
+    st = flood_stages(p, BUNKER_GIVES, BUNKER_LOCKS); g = p.g; out = []
+    L3, C4, S5, GOAL = pos(g, '3'), pos(g, '4'), pos(g, '5'), pos(g, 'L')
+    s0 = st[0][1]; last = st[-1][1]
+    ok(out, L3 in s0 and C4 not in s0 and S5 not in s0 and GOAL not in s0, "at the start: the duty locker (badge) is reachable; the armory, the generator switch and the command safe are not")
+    ok(out, GOAL in last, f"with every key found the command safe is reachable ({len(st)} stages, keys {sorted(st[-1][0])})")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('armory', C4), ('switch', S5), ('safe', GOAL)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('armory') == ['badge'] and firsts.get('switch') == ['badge'] and firsts.get('safe') == ['badge', 'fuse', 'power'], f"order: the armory and the generator room need {firsts.get('armory')}; the command safe needs {firsts.get('safe')}")
+    hl = {(18, y): g[y][18] for y in range(21, 29)}
+    for (x, y) in hl: g[y][x] = '#'
+    ok(out, GOAL in flood_stages(p, BUNKER_GIVES, BUNKER_LOCKS)[-1][1], "closing the hatch ladder: the command safe is still reachable (it is only a loop)")
+    for (x, y), ch in hl.items(): g[y][x] = ch
+    # the hatch ladder must not be a way round the power door: with no power the command level stays shut even with the ladder open
+    ok(out, pos(g, 'C') not in {c for k, seen in st if 'power' not in k for c in seen}, "before the power is on, the command level is unreachable even by the hatch ladder")
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -382,8 +439,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

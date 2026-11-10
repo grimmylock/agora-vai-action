@@ -60,7 +60,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); BunkerChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1964,6 +1964,34 @@ static class Program {
     keys.Add("crusher_fuse"); LabLocks.Granted("crusher_fuse"); Check(!Stashes.Blocked(breaker), "Pit: with the fuse the breaker throws");
     keys.Add("crusher_power"); LabLocks.Granted("crusher_power");
     Check(Count(TileType.Door, "door_power") == 0 && Flood(start.X, start.Y).Contains((vault.X, vault.Y)), "Pit: power on - the blast door unlocks and the pay vault is reachable");
+    keys.Clear(); Rt.On = false;
+  }
+
+  // Flooded Bunker, redone with the Alpha locks (2026-11-10, dungeons/flooded_bunker.mmd): on the real built map.
+  static void BunkerChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "flooded_bunker";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Blast Door"); var cmd = TerrainMap.Landmarks.First(l => l.Name == "Command Room");
+    var locker = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "bunker_staff"); var crate = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "bunker_fuse"); var sw = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "bunker_power");
+    Check(Count(TileType.Door, "door_badge") == 2 && Count(TileType.Door, "door_power") == 3 && locker != null && crate != null && sw != null && sw.Requires == "bunker_fuse" && TerrainMap.Exits.Count(e => e.TargetZoneId == "marshes") == 1,
+      $"Bunker: the armory's badge door (2 tiles), the dead doors (2 + the hatch ladder's 1), the duty locker, the fuse crate and the generator switch (needs the fuse) ({Count(TileType.Door, "door_badge")}, {Count(TileType.Door, "door_power")})");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, locker.X, locker.Y) && !In(s0, crate.X, crate.Y) && !In(s0, sw.X, sw.Y) && !s0.Contains((cmd.X, cmd.Y)), "Bunker: at the start the duty locker; not the armory, the generator switch or the command level");
+    keys.Add("bunker_staff"); LabLocks.Granted("bunker_staff");
+    var s1 = Flood(start.X, start.Y);
+    Check(In(s1, crate.X, crate.Y) && In(s1, sw.X, sw.Y) && !s1.Contains((cmd.X, cmd.Y)) && Stashes.Blocked(sw), "Bunker: the badge opens the armory and the generator room; the switch waits for its fuse, the command level for the power");
+    keys.Add("bunker_fuse"); LabLocks.Granted("bunker_fuse"); keys.Add("bunker_power"); LabLocks.Granted("bunker_power");
+    Check(Count(TileType.Door, "door_power") == 0 && Flood(start.X, start.Y).Contains((cmd.X, cmd.Y)), "Bunker: power on - the dead doors unlock and the flooded command level is reachable");
     keys.Clear(); Rt.On = false;
   }
 
