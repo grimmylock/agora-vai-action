@@ -1,0 +1,12 @@
+%% Lattice Foundry, Synthesis Level (T5). Theme: foundry with steam. Locks: BADGE, COOLANT (steam-filled hazard doors until the coolant valve wheel is turned), POWER for the crucible. Loop: the crane gantry synthesis hall<->casting floor.
+%% start: E
+%% goal: Cr
+flowchart TD
+  E["Service Lift {start}"] --> Sh["Synthesis Hall: the hub; steam doors and a card door in sight"]
+  Sh --> Of["Foreman's Office {item:badge}"]
+  Sh -->|req:badge| Pu["Pump Room {item:coolant}: the valve wheel"]
+  Sh -->|req:coolant| Cf["Casting Floor {item:fuse}"]
+  Cf --> Gn["Generator Alcove"]
+  Gn -->|req:fuse| Sw["Generator switch {item:power}"]
+  Sh -->|req:power| Cr["Crucible {goal}"]
+  Gn -->|shortcut| Sh

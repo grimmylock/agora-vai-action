@@ -1,0 +1,11 @@
+%% Deep Caverns. Theme: a natural cave system. Locks: ROCKFALL (pry bar), DAM (a lever that drains the lower lake: the DRAIN lock). Loops: a crawl back to the surface, a chimney between the two halves.
+%% start: E
+%% goal: Lk
+flowchart TD
+  E["Surface Shaft {start}"] --> Cv["Crystal Cavern: the hub"]
+  Cv --> Cp["Climbers' Camp {item:pry}"]
+  Cv -->|req:pry| Rf["Rockfall"]
+  Rf --> Dm["Old Dam {item:drain1}: the lever"]
+  Cv -->|req:drain1| Lk["Lower Lake bed {goal}"]
+  Dm -->|shortcut| E
+  Cp -->|hole| Rf

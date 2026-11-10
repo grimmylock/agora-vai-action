@@ -1,0 +1,13 @@
+%% Valley Mine (T2, off Black Valley's rim). Theme: a mine. Locks: COLLAPSE (timbers levered aside with a pry bar from the tool shed). The flooded drift is optional (the strongbox). Loops: a crawl over the drift, the ventilation shaft back to the adit.
+%% start: Ad
+%% goal: Mr
+flowchart TD
+  Ad["Adit {start}"] --> Mg["Main Gallery: ore rails; the collapse is in sight"]
+  Mg --> Ts["Tool Shed {item:pry}"]
+  Mg --> Fd["Flooded Drift {item:cache1}: the strongbox on the far ledge"]
+  Mg -->|req:pry| Cl["Collapse: timbers to lever aside"]
+  Cl --> Dp["Deep Drift"]
+  Dp --> Mr["Miners' Rest {goal}"]
+  Fd -->|shortcut| Dp
+  Dp --> Vs["Ventilation Shaft: up to the adit"]
+  Vs -->|shortcut| Ad

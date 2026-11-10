@@ -1,0 +1,11 @@
+%% Chapel Crypt (T1, under the chapel). Theme: a family crypt with an iron gate and a sealed slab. Locks: GATE (iron key from the priest's cell), SEAL (the slab opens with the code scratched in the ossuary). Loop: the collapsed side crypt = a hole ossuary<->bone gallery.
+%% start: St
+%% goal: V
+flowchart TD
+  St["Crypt Stair {start}"] --> Pa["Burial Passage: the hub, a gate and a sealed slab in sight"]
+  Pa --> Os["Ossuary {item:code}: the numbers scratched in the skull wall"]
+  Os --> Pc["Priest's Cell {item:gate_key}"]
+  Pa -->|req:gate_key| Bg["Bone Gallery"]
+  Bg -->|req:code| V["Family Vault {goal}: the slab pushed aside"]
+  Os -->|hole| Bg
+  Bg --> Cs["Collapsed side crypt {item:cache1}"]

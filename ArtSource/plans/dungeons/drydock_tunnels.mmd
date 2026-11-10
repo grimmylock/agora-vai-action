@@ -1,0 +1,11 @@
+%% Dry Dock Tunnels (T5, under the dock's pump house). Theme: drained dock culverts. Locks: POWER-like FUSE for the pump panel, DRAIN (main culvert black water), SLUICE (the gate to the store needs the wheel handle). Loop: the service ladder sluice chamber<->pump gallery.
+%% start: Ps
+%% goal: Fs
+flowchart TD
+  Ps["Pump House Stair {start}"] --> Pg["Pump Gallery: the hub; the flooded culvert in sight"]
+  Ps --> Wk["Workmen's niche {item:fuse}"]
+  Pg -->|req:fuse| Pp["Pump Panel {item:drain1}"]
+  Pg -->|req:drain1| Mc["Main Culvert: flooded to the roof until the pump runs"]
+  Mc --> Sc["Sluice Chamber {item:sluice}: the wheel handle"]
+  Mc -->|req:sluice| Fs["Fitters' Store {goal}"]
+  Sc -->|shortcut| Pg

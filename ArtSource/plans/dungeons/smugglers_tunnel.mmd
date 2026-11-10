@@ -1,0 +1,11 @@
+%% Smugglers' Tunnel (T1, from the depot's loading office). Theme: a dug tunnel with a gate. Lock: GATE (a key off the guard post). Loops: the crews' bypass hole guard post<->den. Dead ends pay: side caches.
+%% start: Hl
+%% goal: Cr
+flowchart TD
+  Hl["Hatch Ladder {start}"] --> Tn["Main Tunnel: planked, candles; the gate is in sight"]
+  Tn --> Sc["Side Cache {item:cache1}"]
+  Tn --> Gd["Guard Post {item:gate_key}"]
+  Tn -->|req:gate_key| Dn["Smugglers' Den"]
+  Dn --> Cr["Cache Room {goal}"]
+  Gd -->|hole| Dn
+  Dn --> Dd["Dug-out nook {item:cache2}"]

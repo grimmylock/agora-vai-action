@@ -1,0 +1,14 @@
+%% Flooded Bunker (T1, behind the marsh blast door; the story bunker). Theme: abandoned shelter. Locks: BADGE (duty locker), POWER (generator, fuse from the armory). The command level is half under water. Loop: the hatch ladder up from the command level back to the decon lock.
+%% start: Bd
+%% goal: Cs
+flowchart TD
+  Bd["Blast Door {start}"] --> Dl["Decontamination Lock: the hub; a badge door and the dead armory door in sight"]
+  Dl --> Ba["Barracks {item:badge}: the duty locker"]
+  Ba --> Ms["Mess"]
+  Dl -->|req:badge| Ar["Armory {item:fuse}"]
+  Ar --> Gn["Generator Room"]
+  Gn -->|req:fuse| Sw["Generator switch {item:power}"]
+  Ba -->|req:power| Cm["Command Level: half under water"]
+  Cm --> Cs["Command Safe {goal}"]
+  Cm --> Hl["Hatch Ladder: up to the surface"]
+  Hl -->|shortcut| Dl

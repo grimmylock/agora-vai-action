@@ -1,0 +1,13 @@
+%% Underground Labyrinth. Theme: a maze of gates opened by levers (Theseus). Locks: LEVER 1-3 each lifts one gate; the maze loops so the player can't strand. Loops: many.
+%% start: E
+%% goal: Mn
+flowchart TD
+  E["Entrance {start}"] --> A["Cell A: lever 1 {item:lever1}"]
+  E --> B["Cell B"]
+  B -->|req:lever1| C["Cell C: lever 2 {item:lever2}"]
+  A --> D["Cell D"]
+  D -->|req:lever2| F["Cell F: lever 3 {item:lever3}"]
+  C --> D
+  B --> D
+  F -->|req:lever3| Mn["Minotaur's Hall {goal}"]
+  C -->|shortcut| E

@@ -1,0 +1,12 @@
+%% Pumping Station Basement (T1, under the marshes). Theme: flooded pump hall. Locks: POWER (dead pumps), DRAIN (the culvert's black water until the pump runs). Chain: valve gallery spares -> fuse -> control-room breaker -> power -> pump panel -> culvert drains -> blast door exit.
+%% start: St
+%% goal: Bd
+flowchart TD
+  St["Basement Stair {start}"] --> Ph["Pump Hall: the dead pumps, black water along the east wall"]
+  St --> Vg["Valve Gallery {item:fuse}: a spares cabinet"]
+  Vg --> Cr["Control Room: above the waterline"]
+  Cr -->|req:fuse| Br["Breaker {item:power}"]
+  Ph -->|req:power| Pp["Pump Panel {item:drain1}"]
+  Ph -->|req:drain1| Cu["Drainage Culvert: black water until the pump runs"]
+  Cu --> Bd["Blast Door {goal}: out to the marshes"]
+  Vg -->|hole| Ph

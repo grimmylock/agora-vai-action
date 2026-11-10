@@ -1,0 +1,12 @@
+%% Camp Shelter (T4, under the summer camp). Theme: a Cold War shelter. Locks: BADGE (warden's key in the dormitory), POWER (generator; fuse in the filter room). Loop: the vent crawl dormitory<->mess.
+%% start: St
+%% goal: Cp
+flowchart TD
+  St["Shelter Stair {start}"] --> Dc["Decon Lock: the hub; a card door and the dead command door in sight"]
+  Dc --> Dm["Dormitory {item:badge}"]
+  Dc --> Ms["Mess"]
+  Ms -->|req:badge| Fr["Filter Room {item:fuse}"]
+  Fr --> Gr["Generator Room"]
+  Gr -->|req:fuse| Sw["Generator switch {item:power}"]
+  Dc -->|req:power| Cp["Shelter Command {goal}"]
+  Dm -->|hole| Ms

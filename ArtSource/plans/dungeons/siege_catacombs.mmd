@@ -1,0 +1,12 @@
+%% Siege Catacombs. Theme: war crypt. Locks: GATE x2 (two iron keys, one per chamber), ROCKFALL (pry bar from the sappers' camp). Loops: the sappers' tunnel camp<->ossuary hall, the tomb stair back.
+%% start: St
+%% goal: T
+flowchart TD
+  St["Catacomb Stair {start}"] --> Hl["Ossuary Hall: the hub; two gates and a rockfall in sight"]
+  Hl --> Sc["Sappers' Camp {item:pry}"]
+  Hl --> Ch1["West Chamber {item:gate_key1}"]
+  Hl -->|req:gate_key1| Ch2["North Chamber {item:gate_key2}"]
+  Hl -->|req:pry| Rf["Rockfall"]
+  Rf -->|req:gate_key2| T["Tomb of the Commander {goal}"]
+  Sc -->|hole| Ch2
+  T -->|shortcut| St

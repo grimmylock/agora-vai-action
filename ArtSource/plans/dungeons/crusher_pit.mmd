@@ -1,0 +1,12 @@
+%% Crusher Pit (T2, under Crusher Row). Theme: hydraulic rams. Locks: BADGE (foreman's locker in the oil sump), POWER (ram breaker; fuse in the cage). Two exits: the ladder up and the adit to Black Valley (goal, behind the dead blast door). Loop: a hole sump<->ram hall.
+%% start: Pl
+%% goal: Ad
+flowchart TD
+  Pl["Pit Ladder {start}"] --> Rh["Ram Hall: rams stopped; a dead blast door east"]
+  Rh --> Sv["Service Tunnel"]
+  Sv --> Os["Oil Sump {item:badge}: mutants nest; the foreman's locker"]
+  Sv -->|req:badge| Fc["Foreman's Cage {item:fuse}"]
+  Fc --> Cb["Control Booth"]
+  Cb -->|req:fuse| Sw["Ram breaker {item:power}"]
+  Rh -->|req:power| Ad["Adit {goal}: out to Black Valley"]
+  Os -->|hole| Rh

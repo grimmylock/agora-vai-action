@@ -1,0 +1,13 @@
+%% Maintenance Tunnels. Theme: utility tunnels. Locks: BADGE, POWER (substation; fuse in the tool crib), DRAIN (flooded section). Loop: a ladder shaft pump house<->crib.
+%% start: St
+%% goal: Sd
+flowchart TD
+  St["Access Hatch {start}"] --> Jn["Junction Gallery: the hub; a card door, a flooded gallery and a dead door in sight"]
+  Jn --> Lk["Foreman's Locker {item:badge}"]
+  Jn -->|req:badge| Tc["Tool Crib {item:fuse}"]
+  Tc --> Ss["Substation"]
+  Ss -->|req:fuse| Sw["Substation breaker {item:power}"]
+  Jn -->|req:power| Ph["Pump House {item:drain1}"]
+  Jn -->|req:drain1| Fl["Flooded Gallery"]
+  Fl --> Sd["Surface Depot {goal}"]
+  Ph -->|shortcut| Tc

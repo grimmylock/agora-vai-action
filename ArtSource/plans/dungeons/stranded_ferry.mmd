@@ -1,0 +1,11 @@
+%% Stranded Ferry (T3, dried lake). Theme: a beached ship with bulkheads. Locks: BADGE (purser's cabin: bulkhead card readers), POWER (the engine room generator; fuse in the spares locker) for the bridge. Loop: a rusted-through hull plate car deck<->engine room.
+%% start: Cd
+%% goal: Br
+flowchart TD
+  Cd["Car Deck {start}: wrecks"] --> Pl["Passenger Lounge: the hub; a bulkhead reader and the dead bridge door in sight"]
+  Pl --> Cb["Cabin Row {item:badge}: the purser's cabin"]
+  Pl -->|req:badge| Er["Engine Room: water in the bilge"]
+  Er --> Sg["Spares Locker {item:fuse}"]
+  Er -->|req:fuse| Gs["Generator {item:power}"]
+  Pl -->|req:power| Br["Captain's Bridge {goal}"]
+  Cd -->|hole| Er
