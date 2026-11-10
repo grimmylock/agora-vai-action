@@ -990,8 +990,10 @@ def _facing_prop(base, view):
         p = FACING_BASE[base](seed, "n" if view == "n" else "e")
         return _mirror(p) if view == "w" else p
     return f
-FACINGS = {f"{b}_f{v}": _facing_prop(b, v) for b in FACING_BASE for v in ("n", "e", "w")}
-FACING_VARIANTS = {f"{b}_f{v}": (2 if b in ("lockers", "machine") else 1) for b in FACING_BASE for v in ("n", "e", "w")}
+SIDE_BASES = ("lockers", "desk", "cabinet")      # Yan (2026-11-10): the console's and the lathe's side views "do not read as the object" and do not look like their front: they only get a back view (`_fn`) now
+FACING_VIEWS = {b: (("n", "e", "w") if b in SIDE_BASES else ("n",)) for b in FACING_BASE}
+FACINGS = {f"{b}_f{v}": _facing_prop(b, v) for b in FACING_BASE for v in FACING_VIEWS[b]}
+FACING_VARIANTS = {f"{b}_f{v}": (2 if b in ("lockers", "machine") else 1) for b in FACING_BASE for v in FACING_VIEWS[b]}
 V2_VARIANTS.update(FACING_VARIANTS)
 
 NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2, "sealslab": sealslab2, "sealslab_on": sealslab_on2, **FACINGS}

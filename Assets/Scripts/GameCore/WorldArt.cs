@@ -156,14 +156,16 @@ namespace GameCore
         /// FACINGS). Its back goes against the wall beside it: a wall to the north = the drawn front faces the camera (the default sprite, null); a wall to the south = it faces north ("n": we see its back);
         /// a wall to the west = it faces east ("e": its side); a wall to the east = "w". Free-standing pieces (no wall beside them) get a stable pick by position.</summary>
         static readonly HashSet<string> FacingProps = new HashSet<string> { "lockers", "desk", "cabinet", "console", "machine" };
-        private static string Facing(int x, int y)
+        static readonly HashSet<string> SideFacing = new HashSet<string> { "lockers", "desk", "cabinet" };   // pieces with side views; the console and the lathe only have a back view (their sides did not read)
+        private static string Facing(int x, int y, string look)
         {
             if (Wallish(x, y - 1)) return null;
             if (Wallish(x, y + 1)) return "n";
-            if (Wallish(x - 1, y)) return "e";
-            if (Wallish(x + 1, y)) return "w";
+            bool side = SideFacing.Contains(look);
+            if (Wallish(x - 1, y)) return side ? "e" : (H01(x, y, 62) < 0.5f ? null : "n");   // a piece with no side view turns its front or its back to the room
+            if (Wallish(x + 1, y)) return side ? "w" : (H01(x, y, 62) < 0.5f ? null : "n");
             float r = H01(x, y, 61);
-            return r < 0.5f ? null : r < 0.75f ? "n" : r < 0.88f ? "e" : "w";   // mostly front or back: a slim side view in open floor reads oddly
+            return r < 0.5f ? null : (!side || r < 0.75f) ? "n" : r < 0.88f ? "e" : "w";   // mostly front or back: a slim side view in open floor reads oddly
         }
 
         private static bool Wallish(int x, int y)
@@ -404,7 +406,7 @@ namespace GameCore
             {
                 string rl = RunLook(x, y, l);
                 s = Pick("p_" + rl, H01(x, y, 3)) ?? Pick("p_" + l, H01(x, y, 3));
-                if (s != null && FacingProps.Contains(l)) { var fc = Facing(x, y); if (fc != null) s = Pick("p_" + l + "_f" + fc, H01(x, y, 3)) ?? s; }   // 2026-11-10: furniture turns with the wall it stands against
+                if (s != null && FacingProps.Contains(l)) { var fc = Facing(x, y, l); if (fc != null) s = Pick("p_" + l + "_f" + fc, H01(x, y, 3)) ?? s; }   // 2026-11-10: furniture turns with the wall it stands against
                 if (s != null && Natural.Contains(l) && !InRun(x, y, l))         // pieces of a run stay in line
                 {
                     bool patch = t.Type == TileType.Difficult;          // reeds/brush/rubble fields: break the rows up
