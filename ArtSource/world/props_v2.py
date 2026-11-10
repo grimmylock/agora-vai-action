@@ -186,11 +186,15 @@ def _tring_rot(im, T, cx, cy, rx, ry, ang, hole=0.22):
                 if e < hole: px(im, x, y, hx("#0e1012"))
                 elif e < hole * 1.9: px(im, x, y, T[1])
                 else: px(im, x, y, T[3] if (u < -0.15 and w < 0.1) else T[2] if e < 0.7 else T[1])
-def _tires4(seed):                                   # two flat tyres with a third leaning against them, tilted
-    T = _T(); im = blank(28, 19)
-    _tband(im, T, 8, 12, 7, 4); _tband(im, T, 8, 9, 7, 3); _ttop(im, T, 8, 8.5, 7, 2.8, 0.2)
-    _tring_rot(im, T, 19.5, 9, 5, 7.5, -14)
-    return finish(im, (14, 18), shadow=(24, 5, 1, -1))
+def _tires4(seed):                                   # one big old tyre lying flat, weeds and a dead stalk growing up through its hole, dirt splashed on the tread
+    r = rng(seed); T = _T(); im = blank(22, 13)
+    _tband(im, T, 11, 6, 9, 5); _ttop(im, T, 11, 5.5, 9, 4.2, 0.26)
+    for x, y in ((9, 5), (10, 4), (11, 5), (12, 4), (13, 5), (10, 6), (12, 6)): px(im, x, y, P["grass"][r.randint(2, 4)])
+    for y in range(1, 5): px(im, 11, y, P["drygrass"][2])
+    px(im, 11, 0, hx("#7a5a3a"))
+    for _ in range(9): px(im, r.randrange(3, 19), r.randrange(7, 11), hx("#3a3226"))
+    for x in range(6, 17, 3): px(im, x, 10, T[0])
+    return finish(im, (11, 12), shadow=(20, 4, 1, -1))
 TIRES = [_tires0, _tires1, _tires2, _tires3, _tires4]
 
 def _bag(im, B, cx, cy, rx, ry):
