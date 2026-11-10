@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -56,6 +56,19 @@ namespace GameCore
                 ['5'] = new Thing { Name = "Battery Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The battery bank's breaker. One fuse holder is empty and scorched.",
                                     Says = "[DEPTHS] The breaker slams home. The batteries hum, and down the halls the blast doors' lights wake up." },
+            },
+            // Pumping Station Basement (Tier 1, under the marshes; the lock-and-key redo of 2026-11-10, dungeons/pumping_basement.mmd): spares crate in the valve
+            // gallery -> the breaker in the control room -> power opens the pump panel's door -> the pump -> the culvert's black water drains -> the outfall.
+            ["pumping_basement"] = new Dictionary<char, Thing>
+            {
+                ['4'] = new Thing { Name = "Valve Spares Cabinet", Look = "stash_toolbox", Kind = "fuse", Desc = "A steel cabinet of spare valves and fittings, one drawer hanging open.",
+                                    Says = "[PUMPS] A cartridge fuse in a rag, PUMP STN 2 on the tag. It would fit the control room's breaker." },
+                ['5'] = new Thing { Name = "Pump Station Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The station's breaker panel. One fuse holder is empty and scorched.",
+                                    Says = "[PUMPS] The breaker slams home. Somewhere below the floor a relay clicks and the blast door's light turns amber." },
+                ['6'] = new Thing { Name = "Culvert Pump Panel", Look = "labswitch", Kind = "drain", Needs = "power",
+                                    Desc = "The pump panel for the drainage culvert, its lamps dark: no power reaches it.",
+                                    Says = "[PUMPS] The pump shudders, then thumps. Down the culvert the black water starts to slide away." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

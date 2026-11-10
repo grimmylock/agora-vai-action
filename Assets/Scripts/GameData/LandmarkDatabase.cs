@@ -319,6 +319,8 @@ namespace GameData
                 L("Basement Stair", "Concrete stairs down from the pump room, the bottom steps under black water."),
                 L("Pump Hall", "The great pumps stand in a flooded hall. Pipes groan when the marsh water rises."),
                 L("Control Room", "The station's control room, desks and lockers above the waterline."),
+                L("Valve Gallery", "A long gallery of valve wheels and dead gauges, a cabinet of spares at the far end."),
+                L("Outfall", "The drainage outfall at the end of the culvert, daylight in the grating."),
             },
             ["flooded_bunker"] = new List<LandmarkDef>
             {

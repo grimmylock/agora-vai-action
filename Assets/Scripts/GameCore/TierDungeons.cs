@@ -3,6 +3,7 @@
 // rooms and passages cut into it; nothing is dressed over them. Their way out is the "exit:<region>" anchor at
 // the entrance, so you come back up where you went down.
 using System;
+using System.Collections.Generic;
 using GameData;
 using static GameCore.TileType;
 using static GameCore.GroundType;
@@ -136,36 +137,14 @@ namespace GameCore
 
         // Pumping Station Basement: the stair down from the pump room, a flooded pump hall with the dead pumps,
         // a valve gallery, the control room above the waterline and a drainage culvert running off east.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py pumping_basement, graph dungeons/pumping_basement.mmd): 'E' the stair in,
+        /// 'G' the outfall (the goal room, daylight through a grating), '4' the fuse cabinet, '5' the breaker, '6' the culvert pump, 'W' the culvert's deep water, '2' the pump panel's power door.</summary>
         public static MapLayout PumpingBasement()
         {
-            var c = new TerrainCanvas(42, 38, TerrainCanvas.Seed("pumping_basement"));
-            for (int y = 0; y < 38; y++) for (int x = 0; x < 42; x++) c.Put(x, y, Solid, "concrete");
-            Room(c, 3, 3, 6, 5, Concrete);
-            c.Landmark("Basement Stair", 5, 4).Exit("marshes", 5, 4);
-            // the pump hall
-            Room(c, 4, 11, 22, 14, Concrete);
-            Passage(c, 6, 8, 6, 11, 3, Concrete);
-            for (int x = 7; x < 24; x += 5) { c.Rect(x, 15, 2, 2, Solid, 0, "part"); c.Put(x, 16, Solid, "machine"); }
-            for (int x = 5; x < 25; x++) if (x % 4 != 0) c.Deco(x, 12, x % 4 == 1 ? "pipepost" : "pipe");
-            Flood(c, 4, 18, 22, 7);
-            c.Landmark("Pump Hall", 14, 13);
-            // the valve gallery north-east
-            Room(c, 29, 3, 10, 6, Concrete);
-            Passage(c, 26, 13, 33, 9, 2, Concrete);
-            for (int x = 30; x < 38; x += 2) c.Put(x, 4, HardCover, "machine");
-            // the control room
-            Room(c, 30, 14, 9, 8, Floor);
-            Passage(c, 26, 17, 30, 17, 2, Concrete);
-            c.Put(36, 14, Door).Put(31, 15, ScatterCover, "desk").Put(33, 15, ScatterCover, "desk").Put(37, 20, HardCover, "lockers").Put(31, 20, ScatterCover, "crate");
-            c.Landmark("Control Room", 34, 18).Stash("Control Room", 37, 19);
-            // the drainage culvert and the sump
-            Room(c, 8, 28, 30, 4, Concrete);
-            Passage(c, 12, 25, 12, 28, 2, Concrete);
-            Passage(c, 34, 22, 34, 28, 2, Concrete);
-            Flood(c, 8, 29, 30, 2);
-            Room(c, 3, 27, 4, 8, Concrete);
-            c.Put(4, 33, ScatterCover, "rustbarrel").Put(5, 33, ScatterCover, "crate");
-            return Finish(c, "concrete");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Basement Stair", "marshes"), ['G'] = ("Outfall", null),
+                ['H'] = ("Pump Hall", null), ['C'] = ("Control Room", null), ['V'] = ("Valve Gallery", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("pumping_basement")) { ['J'] = "Maintenance Box", ['K'] = "Control Room", ['L'] = "Outfall Cache" };
+            return FloorPlan("pumping_basement", LabPlans["pumping_basement"], "concrete", Concrete, marks, stashes);
         }
 
         // The Flooded Bunker: behind the locked blast door, a decontamination lock, barracks, the armory, and the

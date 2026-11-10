@@ -60,7 +60,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1789,6 +1789,39 @@ static class Program {
     MacroState.Current.Keys.Add(LabLocks.Power); LabLocks.Granted(LabLocks.Power);
     Check(Doors("door_power") == 0 && Flood().Contains((BrainBoss.VatX, BrainBoss.VatY + 3)), "Alpha: power on - the blast doors unlock and the vat room is reachable");
     MacroState.Current.Keys.Clear(); BrainBoss.Reset(); Rt.On = false;
+  }
+
+  // Pumping Station Basement, redone with locks (2026-11-10, dungeons/pumping_basement.mmd): flooded from the stair with each key set, on the real built map.
+  static void PumpingChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "pumping_basement";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    InteractiveObjectInstance Obj(string key) => TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == key);
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Basement Stair"); var outfall = TerrainMap.Landmarks.First(l => l.Name == "Outfall");
+    Check(Count(TileType.Door, "door_power") == 2 && Count(TileType.Door, "door_badge") == 0 && Count(TileType.Difficult, "deepwater") > 60 && TerrainMap.Exits.Count(e => e.TargetZoneId == "marshes") == 1,
+      $"Pumping: the pump panel power door (2 tiles), the culvert deep water and the stair out (power doors {Count(TileType.Door, "door_power")}, badge {Count(TileType.Door, "door_badge")}, deep {Count(TileType.Difficult, "deepwater")}, exits {TerrainMap.Exits.Count(e => e.TargetZoneId == "marshes")} of {TerrainMap.Exits.Count})");
+    var cab = Obj("pump_fuse"); var breaker = Obj("pump_power"); var pump = Obj("pump_drain");
+    Check(cab != null && breaker != null && pump != null && breaker.Requires == "pump_fuse" && pump.Requires == "pump_power", "Pumping: the spares cabinet, the breaker (needs the fuse) and the culvert pump (needs power)");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, cab.X, cab.Y) && In(s0, breaker.X, breaker.Y) && !In(s0, pump.X, pump.Y) && !s0.Contains((outfall.X, outfall.Y)), "Pumping: at the start the cabinet and the breaker; not the pump panel, not the outfall");
+    Check(Stashes.Blocked(breaker) && Stashes.Blocked(pump), "Pumping: the breaker needs its fuse and the pump needs the power");
+    keys.Add("pump_fuse"); LabLocks.Granted("pump_fuse");
+    Check(!Stashes.Blocked(breaker) && Stashes.Blocked(pump), "Pumping: with the fuse the breaker throws; the pump still waits");
+    keys.Add("pump_power"); LabLocks.Granted("pump_power");
+    var s1 = Flood(start.X, start.Y);
+    Check(Count(TileType.Door, "door_power") == 0 && In(s1, pump.X, pump.Y) && !s1.Contains((outfall.X, outfall.Y)) && !Stashes.Blocked(pump), "Pumping: power on - the panel's door unlocks, the pump is reachable, the outfall is not (deep water)");
+    keys.Add("pump_drain"); LabLocks.Granted("pump_drain");
+    Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(start.X, start.Y).Contains((outfall.X, outfall.Y)), "Pumping: the pump runs - the culvert drains and the outfall is reachable");
+    keys.Clear(); Rt.On = false;
   }
 
   // Sub-Station Depths, redone with locks (2026-11-04), then the eel's three flooded levels under it (sub_station_depths.mmd): each map
