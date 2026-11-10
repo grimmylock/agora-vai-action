@@ -378,37 +378,43 @@ V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "je
 
 
 def _jv(seed, kind):
-    """a north-south road barrier to match the east-west one: the lit top down the middle (painted like the variant), sloped sides, joint lines, the end face at the south"""
-    c = P["concrete"]; r = rng(seed); W, T, Hf = 7, 16, 8; im = blank(W, T + Hf)
-    for y in range(T):
-        for x in range(W): px(im, x, y, c[4] if x in (2, 3) else c[3] if x < 2 else c[2])
-        if y % 16 == 15: [px(im, x, y, c[1]) for x in range(W)]
-    for y in range(T, T + Hf):
+    """a north-south road barrier, 3/4 from the south: nine px wide so it reads as a barrier and not a post. Top face 3 px (lit), a sloped shoulder either side, a flared foot, a dark base line; a joint across the
+    tile (a gap you can see into) and lifting slots in the shoulders; the end face at the south is the barrier's profile (narrow top, step, wide foot) with its own paint stripe."""
+    c = P["concrete"]; r = rng(seed); W, T, Hf = 9, 16, 8; im = blank(W, T + Hf)
+    for y in range(T):                                                                                  # foot strips either side, a dark seam, then the raised top block (lit left, shaded right)
         for x in range(W):
-            inset = 2 if y < T + 3 else 1 if y < T + 5 else 0
-            if inset <= x < W - inset: px(im, x, y, c[2] if y < T + Hf - 1 else c[0])
-    for _ in range(3): px(im, r.randrange(W), r.randrange(T), c[1])
-    if kind == 0:                                                         # yellow ticks on the top face and the end face
-        for y in (3, 7, 11): px(im, 2, y, hx("#c9a63e")); px(im, 3, y, hx("#a58a3a"))
-        px(im, 2, T + 3, hx("#c9a63e")); px(im, 3, T + 3, hx("#a58a3a"))
-    elif kind == 1:                                                       # yellow-black chevrons all along the top
-        for y in range(1, T - 1):
-            for x in (2, 3): px(im, x, y, hx("#c9a63e") if (y + x) % 6 < 3 else hx("#2a2a28"))
-        for x in range(2, 5): px(im, x, T + 3, hx("#c9a63e") if x % 2 else hx("#2a2a28"))
+            v = c[3] if x == 0 else c[2] if x == 8 else c[0] if x in (1, 7) else c[4] if x in (2, 3) else c[3] if x in (4, 5) else c[2]
+            px(im, x, y, v)
+    for x in range(W): px(im, x, 15, c[0]); px(im, x, 0, c[4] if 2 <= x <= 5 else c[3] if x == 0 else c[2] if x == 8 else c[0])   # the joint between tiles, lit lip after it
+    for x in range(2, 7): px(im, x, 14, c[1])
+    for y in (7, 8): px(im, 0, y, c[0]); px(im, 8, y, c[0])                                               # lifting slots in the feet
+    for y in range(T, T + Hf):                                                                         # the end face: the barrier's profile
+        inset = 3 if y < T + 2 else 2 if y < T + 3 else 1 if y < T + 5 else 0
+        for x in range(inset, W - inset):
+            lit = x == inset
+            px(im, x, y, c[0] if y == T + Hf - 1 else c[4] if (y < T + 2 and lit) else c[3] if y < T + 2 else c[3] if lit else c[2] if x < W - inset - 1 else c[1])
+    for _ in range(3): px(im, r.randrange(W), r.randrange(1, T - 2), c[1])
+    if kind == 0:                                                         # yellow ticks
+        for y in (4, 11): px(im, 2, y, hx("#c9a63e")); px(im, 3, y, hx("#a58a3a")); px(im, 5, y, hx("#c9a63e"))
+        for x in range(3, 6): px(im, x, T + 3, hx("#c9a63e") if x % 2 else hx("#a58a3a"))
+    elif kind == 1:                                                       # yellow-black chevrons on the top and shoulders
+        for y in list(range(2, 6)) + list(range(10, 13)):
+            for x in range(2, 7): px(im, x, y, hx("#c9a63e") if (y + x) % 4 < 2 else hx("#2a2a28"))
+        for x in range(2, 7): px(im, x, T + 3, hx("#c9a63e") if x % 2 else hx("#2a2a28"))
     elif kind == 2:                                                       # red and white
-        for y in range(1, T - 1):
-            for x in (2, 3): px(im, x, y, hx("#b8402e") if ((y + x) // 3) % 2 == 0 else hx("#d8d4c4"))
-        for x in range(2, 5): px(im, x, T + 3, hx("#b8402e") if x % 2 else hx("#d8d4c4"))
-    elif kind == 3:                                                       # broken through, rebar and rubble in the gap
+        for y in list(range(2, 6)) + list(range(10, 13)):
+            for x in range(2, 7): px(im, x, y, hx("#b8402e") if ((y + x) // 2) % 2 == 0 else hx("#d8d4c4"))
+        for x in range(2, 7): px(im, x, T + 3, hx("#b8402e") if x % 2 else hx("#d8d4c4"))
+    elif kind == 3:                                                       # broken through: a gap across the tile, rebar and rubble in it
         for y in range(6, 11):
             for x in range(W): px(im, x, y, (0, 0, 0, 0))
-        for k in range(4): px(im, 2 + k % 3, 5 - k // 2, P["rust"][1 + k % 3]); px(im, 3 + k % 2, 11 + k // 3, P["rust"][1 + k % 3])
-        for _ in range(7): px(im, r.randrange(W), r.randrange(7, 10), r.choice((c[1], c[2], c[3])))
+        for k in range(5): px(im, 2 + k % 4, 5 - k // 3, P["rust"][1 + k % 3]); px(im, 3 + k % 3, 11 + k // 4, P["rust"][1 + k % 3])
+        for _ in range(9): px(im, r.randrange(1, W - 1), r.randrange(7, 10), r.choice((c[1], c[2], c[3])))
     else:                                                                 # moss, rust streaks and an orange tag
-        for _ in range(16): px(im, r.randrange(W), r.randrange(T), P["moss"][r.randint(0, 1)])
-        for y in (4, 5, 9, 10): px(im, 5, y, P["rust"][1])
-        px(im, 2, 13, hx("#d86a1e")); px(im, 3, 12, hx("#d86a1e")); px(im, 3, 14, hx("#d86a1e"))
-    return finish(im, (W // 2, T + Hf - 1), shadow=(8, 4, 1, -1))
+        for _ in range(22): px(im, r.randrange(W), r.randrange(1, 14), P["moss"][r.randint(0, 1)])
+        for y in (3, 4, 10, 11): px(im, 6, y, P["rust"][1])
+        px(im, 3, 12, hx("#d86a1e")); px(im, 4, 11, hx("#d86a1e")); px(im, 5, 12, hx("#d86a1e")); px(im, 4, 13, hx("#d86a1e"))
+    return finish(im, (W // 2, T + Hf - 1), shadow=(13, 30, 3, -10))
 def jersey_v2(seed): return _jv(seed, _v(seed) % 5)
 def jersey_c2(seed): return props.corner(jersey2, jersey_v2, seed)
 
