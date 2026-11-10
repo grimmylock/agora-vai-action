@@ -60,7 +60,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1185,6 +1185,7 @@ static class Program {
     EelBoss.Reset(); Rt.On = false;
   }
   static void EelChecks() {
+    UnityEngine.Random.InitState(int.TryParse(Environment.GetEnvironmentVariable("HARNESS_SEED"), out var hs) ? hs : 7);   // 2026-11-10: this run is random (bots, coils); re-seeded so earlier checks cannot shift it
     EelRigChecks(); EelSumpChecks(); EelFightChecks(); EelPlatformFormChecks(); EelLampChecks();
     EelFrames(System.IO.Path.GetTempFileName()); var r = EelRun; Rt.On = false; EelBoss.Reset();
     Check(r.wraps == 2 && r.shocks >= 1, $"Eel: it wraps the platform twice and the coils shock a bot that touches them ({r.wraps} wraps, {r.shocks} shocks)");
@@ -1857,6 +1858,32 @@ static class Program {
     DungeonLairs.OnEnterZone(zone);
     Check(EncounterState.Enemies.OfType<Mutant>().Count() == 4, "Cave: entering again places nobody twice (a story flag per lair)");
     MacroState.Current.StoryFlags.Clear(); EncounterState.Enemies.Clear();
+    keys.Clear(); Rt.On = false;
+  }
+
+  // Smugglers' Tunnel, redone with an iron gate (2026-11-10, dungeons/smugglers_tunnel.mmd): flooded from the hatch with and without the gate key, on the real built map.
+  static void SmugglersChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "smugglers_tunnel";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); var den = TerrainMap.Landmarks.First(l => l.Name == "Smugglers' Den"); var cache = TerrainMap.Landmarks.First(l => l.Name == "Cache Room");
+    var foot = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "smug_gate");
+    Check(Count(TileType.Difficult, "irongate") == 2 && foot != null && TerrainMap.Exits.Count(e => e.TargetZoneId == "smugglers_run") == 1, $"Tunnel: two iron-gate tiles across the tunnel, the guard post's footlocker with the key, the hatch ({Count(TileType.Difficult, "irongate")})");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, foot.X, foot.Y) && !TerrainMap.CanEnterTile(26, 17) && !TerrainMap.CanEnterTile(26, 18) && LabLocks.Locked(TerrainMap.GetTile(26, 17)) && LabLocks.Nag(26, 17),
+      "Tunnel: the footlocker is reachable; the gate is a wall to everyone and bumping it says what it wants");
+    Check(s0.Contains((den.X, den.Y)) && s0.Contains((cache.X, cache.Y)), "Tunnel: the den and the cache room are reachable with no key (through the crews' bypass: the loop round the gate)");
+    keys.Add("smug_gate"); LabLocks.Granted("smug_gate");
+    Check(Count(TileType.Difficult, "irongate") == 0 && Count(TileType.Difficult, "irongate_on") == 2 && TerrainMap.CanEnterTile(26, 17) && TerrainMap.CanEnterTile(26, 18), "Tunnel: the key opens the gate (its look turns to the open gate) and the tunnel is clear");
     keys.Clear(); Rt.On = false;
   }
 
@@ -2600,6 +2627,7 @@ static class Program {
 
   // Yan, 2026-11-08: a fire-mode key (X) for the modern assault rifles and SMGs: auto / 3-round burst / semi; the old designs keep their one mode
   static void FireModeChecks() {
+    UnityEngine.Random.InitState(7);   // 2026-11-10: jams are random; re-seeded so earlier checks cannot shift them
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 7000f; UnityEngine.Time.unscaledTime = 7000f; var log = new ConsoleLog(); GameLog.Target = log;
     try {

@@ -29,7 +29,8 @@ namespace UnityEngine
     public struct Rect { public Rect(float x, float y, float w, float h) { this.x = x; this.y = y; width = w; height = h; } public float x, y, width, height; }
     public static class Random
     {
-        static readonly System.Random R = new System.Random(7);
+        static System.Random R = new System.Random(7);
+        public static void InitState(int seed) { R = new System.Random(seed); }   // 2026-11-10: random-sensitive checks re-seed themselves so a new check upstream cannot shift them (as in Unity: UnityEngine.Random.InitState)
         // RNG_TRACE=file: every call and who made it, to diff two runs that should match (a nondeterminism hunt)
         static readonly System.IO.StreamWriter Trace = System.Environment.GetEnvironmentVariable("RNG_TRACE") is string f && f.Length > 0 ? new System.IO.StreamWriter(f) { AutoFlush = true } : null;
         static double N() { double v = R.NextDouble(); if (Trace != null) { var st = new System.Diagnostics.StackTrace(2, false); Trace.WriteLine(string.Join(" < ", System.Linq.Enumerable.Take(System.Linq.Enumerable.Select(st.GetFrames(), fr => fr.GetMethod()?.DeclaringType?.Name + "." + fr.GetMethod()?.Name), 4))); } return v; }

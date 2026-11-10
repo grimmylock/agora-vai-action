@@ -36,7 +36,7 @@ Existing in code: **badge** (blue card-reader door, plan '1'), **power** (dead h
 | deep_caverns | - | natural caves | rockfall (pry) + dam lever (drain) | crawl, chimney |
 Not dungeons, so no locks planned: farmhouse_upper, school_upper, flats_2, flats_3 (a building's upper floors; optional locked rooms could come later).
 
-## Status: pumping_basement and secret_cave BUILT (2026-11-10; the rockfall lock kind exists). Next: smugglers_tunnel (needs the `gate` lock kind).
+## Status: pumping_basement, secret_cave and smugglers_tunnel BUILT (2026-11-10; lock kinds rockfall and gate exist). Next: chapel_crypt (gate + the new `seal` kind). Scare corners (DungeonLairs.cs) for the later dungeons: Yan will say where, after the base layouts.
 
 ## Order proposed (small and self-contained first, boss labs last)
 pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit, flooded_bunker (story: check Tier1Story), stranded_ferry, camp_shelter, drydock_tunnels, hospital_morgue, then the plan-based ones (maintenance_tunnels, underground_bunker, underground_labyrinth, deep_caverns, siege_catacombs, lattice_foundry_lower), the story labs last (Beta with Boss 1, Gamma with the Sealed Vault).
@@ -44,3 +44,6 @@ Caveat on the graphs: a "hole" or "shortcut" edge that touches a room behind a l
 
 ## Plan-drawing rule
 New plans use plain rectangular rooms (`Plan.room`), never `Plan.jag`: bitten corners and alcoves make one-tile staircase walls the wall atlas draws as odd dark blocks (found on the Pumping Basement, 2026-11-10). Walls between rooms may be any thickness: built walls (concrete, metal, hull, plaster) always draw as a plain slab top.
+
+## Plan characters
+New lock tiles use SYMBOLS (`@` rockfall, `$` iron gate), never letters: StampPlan reads a letter as a landmark mark in older plans (the foundry uses R and F).

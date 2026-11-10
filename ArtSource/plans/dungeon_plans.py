@@ -1,6 +1,6 @@
 # Lock-and-key redo of the small dungeons (Yan 2026-11-10: "apply the Alpha method to all dungeons"): hand-planned floors drawn from the mission graphs in dungeons/<id>.mmd
 # (graph_check.py of the level-design skill), then flooded here with each key set (the text-grid check), then on the real built map by Tools/compile_check/test (PumpingChecks).
-# Plan letters (LabLocks.cs): 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
+# Plan characters (LabLocks.cs): '@' a rockfall tile and '$' an iron-gate tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
 # Rooms are plain rectangles: the first version used Plan.jag (bitten corners, alcoves), whose one-tile staircase walls the wall atlas draws as odd dark blocks (Yan: "weird textures"); the mess comes from furniture, debris and grit instead.
 # Marks: E the way in, G the goal room (the outfall: daylight through a grating, NOT a second exit: a zone has one exit anchor per target), H/C/V landmarks, J/K/L stashes.
 import os, sys, collections
@@ -53,7 +53,7 @@ def pumping_basement():
 
 def secret_cave():
     """Secret Cave (T1, under the perimeter fields). Graph dungeons/secret_cave.mmd: M (the culvert pipe, concrete) -> P (the pool chamber: the hub, the rockfall in sight) / the Squeeze -> C (the smugglers'
-    camp: the pry bar in a crate) ; P -> R (rockfall: a slab dropped on purpose; 'R' tiles need the pry bar) -> D (deep gallery) -> N (the stash nook, the goal). Loops: a dug tunnel C -> M, a crawl
+    camp: the pry bar in a crate) ; P -> R (rockfall: a slab dropped on purpose; '@' tiles need the pry bar) -> D (deep gallery) -> N (the stash nook, the goal). Loops: a dug tunnel C -> M, a crawl
     C -> D. W = a wet dead end that pays. Natural chambers (discs) and wandering tunnels, walls of cliff rock (not a built slab)."""
     p = Plan(48, 42, 9301); r = p.r
     p.room(3, 3, 14, 4, ',')                                       # M: the culvert pipe's concrete run
@@ -80,7 +80,7 @@ def secret_cave():
             for x in range(2, p.w - 2):
                 if p.g[y][x] == '#' and sum(p.g[y + dy][x + dx] != '#' for dy in (-1, 0, 1) for dx in (-1, 0, 1)) >= 4 and r.random() < 0.45: g[y][x] = '.'
         p.g = g
-    for y in range(11, 16): p.g[y][30] = 'R' if 12 <= y <= 14 else '#'                       # the rockfall, three tiles across the tunnel (in sight from the pool)
+    for y in range(11, 16): p.g[y][30] = '@' if 12 <= y <= 14 else '#'                       # the rockfall, three tiles across the tunnel (in sight from the pool)
     for y in range(9, 18):
         for x in range(19, 28):
             if p.g[y][x] == '.' and (x - 23) ** 2 + (y - 13) ** 2 < 14: p.g[y][x] = 'w'   # knee-deep water in the pool
@@ -101,10 +101,10 @@ def secret_cave():
     return p
 
 CAVE_GIVES = {'4': ('pry', None)}
-CAVE_LOCKS = {'R': 'pry'}
+CAVE_LOCKS = {'@': 'pry'}
 def cave_check(p):
     st = flood_stages(p, CAVE_GIVES, CAVE_LOCKS); g = p.g; out = []
-    G, C4, R0 = pos(g, 'G'), pos(g, '4'), pos(g, 'R')
+    G, C4, R0 = pos(g, 'G'), pos(g, '4'), pos(g, '@')
     s0 = st[0][1]; last = st[-1][1]
     ok(out, C4 in s0 and R0 not in s0, "at the start: the camp (the pry bar) is reachable; the rockfall tile is not")
     ok(out, G in s0, "the stash nook is reachable with NO key (the crawl from the camp is the loop round the rockfall)")
@@ -124,6 +124,49 @@ def cave_check(p):
     s0 = flood_stages(p, CAVE_GIVES, CAVE_LOCKS)[0][1]
     ok(out, all(pos(g, c) in s0 for c in 'NST'), "the three scare niches (N, S, T) are reachable with no key")
     ok(out, pos(g, 'Q') in s0, "the den (Q) is reachable with no key (it is optional: the nook never needs it)")
+    return out
+
+def smugglers_tunnel():
+    """Smugglers' Tunnel (T1, from the depot's loading office). Graph dungeons/smugglers_tunnel.mmd: the hatch room -> the main tunnel (the hub: a side cache, the guard post, the iron gate in sight)
+    -> the guard post holds the gate key ('4') -> the gate ('F' x2, across the 2-wide tunnel) -> the den -> the cache room (goal) / a dug-out nook. A bypass the crews dug from the guard post
+    round the gate is the loop. Rooms are plain rectangles; the tunnel is a dug run."""
+    p = Plan(48, 38, 9401); r = p.r
+    p.room(3, 3, 7, 6, ',')                                        # the hatch room (concrete)
+    p.vline(6, 9, 18, 2); p.hline(6, 44, 17, 2)                    # the main tunnel: down from the hatch, then east
+    p.room(14, 8, 9, 7)                                            # Gd: the guard post, north of the tunnel
+    p.vline(18, 15, 16, 2)
+    p.room(9, 21, 6, 6); p.vline(11, 19, 20, 1)                    # Sc: a side cache south of the tunnel
+    p.hline(23, 33, 11, 1); p.vline(33, 11, 16, 1)                 # the crews' bypass: guard post -> the tunnel beyond the gate (the loop)
+    p.room(30, 21, 11, 7); p.vline(35, 19, 20, 2)                  # Dn: the smugglers' den, south of the tunnel beyond the gate
+    p.room(37, 8, 9, 7); p.vline(41, 15, 16, 2)                    # Cr: the cache room (goal), north of the tunnel's east end
+    p.room(43, 22, 3, 4); p.hline(41, 42, 24, 1)                   # Dd: a dug-out nook off the den
+    for y in (17, 18): p.g[y][26] = '$'                            # the iron gate, across the tunnel
+    for (x, y, ch) in ((15, 9, 'c'), (16, 9, 'c'), (21, 9, 'b'), (15, 13, 'd'), (21, 13, 'c'), (10, 22, 'c'), (13, 22, 'c'), (10, 25, 'b'),
+                       (31, 22, 'c'), (32, 22, 'c'), (39, 26, 'l'), (36, 24, 'd'), (38, 9, 'c'), (40, 9, 'c'), (42, 9, 'c'), (44, 13, 'l'), (4, 4, 'c'), (8, 7, 'b')):
+        if p.g[y][x] == '.': p.g[y][x] = ch
+    p.g[10][21] = '4'                                              # the guard post's footlocker: the gate key
+    p.g[24][12] = 'J'; p.g[12][44] = 'K'; p.g[24][44] = 'L'        # stashes: the side cache, the cache room, the dug-out nook
+    p.g[4][5] = 'E'; p.g[11][41] = 'G'; p.g[25][35] = 'M'          # the way in, the cache room's landmark, the den's
+    for _ in range(18):
+        x, y = r.randrange(2, 46), r.randrange(2, 36)
+        if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
+    return p
+
+SMUG_GIVES = {'4': ('gate', None)}
+SMUG_LOCKS = {'$': 'gate'}
+def smugglers_check(p):
+    st = flood_stages(p, SMUG_GIVES, SMUG_LOCKS); g = p.g; out = []
+    G, K, M, F0 = pos(g, 'G'), pos(g, '4'), pos(g, 'M'), pos(g, '$')
+    s0 = st[0][1]
+    ok(out, K in s0 and F0 not in s0, "at the start: the guard post (the gate key) is reachable; the gate itself is a wall")
+    ok(out, G in s0 and M in s0, "the den and the cache room are reachable with NO key (through the crews' bypass, which is the loop round the gate)")
+    saved = {}
+    for y in range(12, 17): saved[(33, y)] = g[y][33]; g[y][33] = '#'
+    for x in range(23, 34): saved[(x, 11)] = g[11][x]; g[11][x] = '#'
+    nob = flood_stages(p, SMUG_GIVES, SMUG_LOCKS); first = next((sorted(k) for k, seen in nob if G in seen), None)
+    ok(out, first == ['gate'] and G not in nob[0][1], f"with the bypass blocked the cache room needs {first}: the gate is the real gate on the direct way")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    ok(out, all(pos(g, c) in s0 for c in 'JL'), "the side cache and the dug-out nook are reachable with no key")
     return out
 
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
@@ -174,8 +217,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

@@ -374,7 +374,7 @@ def trash2(seed): return TRASH[_v(seed) % 5](seed)
 def jersey2(seed): return JERSEY[_v(seed) % 5](seed)
 def brush2(seed): return BRUSH[_v(seed) % 5](seed)
 def debris2(seed): return DEBRIS[_v(seed) % 5](seed)
-V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5, "rockfall": 3, "rockfall_on": 3}
+V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5, "rockfall": 3, "rockfall_on": 3, "irongate": 2, "irongate_on": 2}
 
 
 def _jv(seed, kind):
@@ -822,7 +822,30 @@ def _rockfall(seed, cleared):
 def rockfall2(seed): return _rockfall(seed, False)
 def rockfall_on2(seed): return _rockfall(seed, True)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2}
+
+# ---------------------------------------------------------------- the iron gate lock (dungeons/smugglers_tunnel.mmd): one tile of a gate across a 2-wide tunnel; "_on" = the same tile once the key is held (swung open)
+def _irongate(seed, opened):
+    r = rng(seed); S = P["steel"]; R = P["rust"]; im = blank(18, 20)
+    for y in range(2, 18):                                         # the two posts
+        for x in (0, 1, 16, 17): px(im, x, y, S[3] if x in (0, 16) else S[1])
+    if not opened:
+        for x in range(2, 16): px(im, x, 3, S[3]); px(im, x, 4, S[1])                      # the top rail
+        for x in range(2, 16): px(im, x, 15, S[2]); px(im, x, 16, S[1])                    # the bottom rail
+        for x in range(3, 16, 3):
+            for y in range(5, 15): px(im, x, y, S[4] if y < 9 else S[3]); px(im, x + 1, y, S[1])    # the bars
+        for k in range(3): px(im, 8 + k % 2, 8 + k, hx("#c9a63e") if k < 2 else hx("#a58a3a"))   # a padlock on a chain
+        px(im, 8, 7, S[2]); px(im, 9, 7, S[2])
+        for _ in range(8): px(im, r.randrange(2, 16), r.randrange(5, 15), R[1 + r.randrange(3)])
+    else:                                                          # swung open against the right post: two bars showing, the lock hanging
+        for y in range(3, 16): px(im, 14, y, S[3]); px(im, 15, y, S[1])
+        for x in range(10, 14): px(im, x, 3, S[3]); px(im, x, 15, S[1])
+        for y in range(6, 12): px(im, 3, y, S[2])
+        px(im, 3, 12, hx("#c9a63e")); px(im, 3, 13, hx("#a58a3a"))
+    return finish(im, (9, 19), shadow=(16, 4, 1, -1), tall=not opened)
+def irongate2(seed): return _irongate(seed, False)
+def irongate_on2(seed): return _irongate(seed, True)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 

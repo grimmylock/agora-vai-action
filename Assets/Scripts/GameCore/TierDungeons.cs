@@ -162,44 +162,15 @@ namespace GameCore
 
         // The Smugglers' Tunnel: a dug tunnel from the depot's loading office, shored with planks, with side caches,
         // the crews' den and the cache room at the far end.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py smugglers_tunnel, graph dungeons/smugglers_tunnel.mmd): 'E' the hatch, '4' the guard post's
+        /// footlocker with the gate key, 'F' the iron gate (two tiles across the tunnel), 'M' the den, 'G' the cache room, 'K' 'J' 'L' stashes.</summary>
         public static MapLayout SmugglersTunnel()
         {
-            var c = new TerrainCanvas(44, 36, TerrainCanvas.Seed("smugglers_tunnel"));
-            for (int y = 0; y < 36; y++) for (int x = 0; x < 44; x++) c.Put(x, y, Solid, "cliff");
-            Room(c, 3, 3, 5, 5, Concrete);
-            c.Landmark("Hatch Ladder", 5, 4).Exit("smugglers_run", 5, 4);
-            // the tunnel: a winding dug run, planked here and there
-            Passage(c, 6, 7, 6, 14, 2, CaveFloor);
-            Passage(c, 6, 14, 18, 14, 2, CaveFloor);
-            Passage(c, 18, 14, 18, 22, 2, CaveFloor);
-            Passage(c, 18, 22, 32, 22, 2, CaveFloor);
-            Passage(c, 32, 22, 32, 10, 2, CaveFloor);
-            for (int x = 8; x < 18; x += 3) c.Paint(x, 14, 1, 2, Floor);
-            for (int y = 16; y < 22; y += 3) c.Paint(18, y, 2, 1, Floor);
-            // a side cache and a collapse
-            Room(c, 10, 17, 5, 4, CaveFloor);
-            Passage(c, 12, 15, 12, 17, 1, CaveFloor);
-            c.Put(11, 19, ScatterCover, "crate").Put(13, 19, ScatterCover, "crate");
-            c.Blob(25, 23, 2, Difficult, 0, 0.5f, "rubble");
-            // the smugglers' den
-            Room(c, 24, 26, 12, 7, Floor);
-            Passage(c, 28, 23, 28, 26, 2, CaveFloor);
-            c.Put(25, 27, ScatterCover, "crate").Put(26, 27, ScatterCover, "crate").Put(34, 31, ScatterCover, "armchair").Deco(30, 29, "stones");
-            c.Put(32, 27, HardCover, "lockers");
-            c.Landmark("Smugglers' Den", 30, 30);
-            // the cache room
-            Room(c, 28, 3, 12, 7, Floor);
-            for (int x = 29; x < 39; x += 2) c.Put(x, 4, ScatterCover, "crate");
-            c.Put(38, 8, HardCover, "lockers");
-            c.Landmark("Cache Room", 34, 6).Stash("Smugglers' Cache", 36, 8);
-            // an old drain south-west (a second way round)
-            Passage(c, 8, 30, 24, 30, 1, CaveFloor);
-            Passage(c, 8, 22, 8, 30, 1, CaveFloor);
-            Passage(c, 6, 22, 8, 22, 1, CaveFloor);
-            Passage(c, 6, 16, 6, 22, 1, CaveFloor);
-            return Finish(c, "cliff");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Hatch Ladder", "smugglers_run"), ['G'] = ("Cache Room", null), ['M'] = ("Smugglers' Den", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("smugglers_tunnel")) { ['K'] = "Smugglers' Cache", ['J'] = "Side Cache", ['L'] = "Dug-out Cache" };
+            return FloorPlan("smugglers_tunnel", LabPlans["smugglers_tunnel"], "cliff", CaveFloor, marks, stashes);
         }
-    
+
         // ------------------------------------------------------------------ Tier 2
 
         // The Crusher Pit: under Crusher Row, the hydraulic rams' pit and the service tunnels round it - oil, scrap
