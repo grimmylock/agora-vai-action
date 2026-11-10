@@ -178,45 +178,15 @@ namespace GameCore
 
         // The Valley Mine: the adit off Black Valley's north rim, timbered galleries with the ore rails, a flooded
         // drift, a collapse, and the miners' rest room at the far end.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py valley_mine, graph dungeons/valley_mine.mmd): 'E' the adit, '4' the tool shed's rack (the pry bar),
+        /// '@' the collapse across the gallery (and one fall in the ventilation crawl), '|' the rails, '+' timber props, 'G' the miners' rest, 'N' the main gallery, 'L' the flooded drift.</summary>
         public static MapLayout ValleyMine()
         {
-            var c = new TerrainCanvas(44, 44, TerrainCanvas.Seed("valley_mine"));
-            for (int y = 0; y < 44; y++) for (int x = 0; x < 44; x++) c.Put(x, y, Solid, "cliff");
-            Room(c, 19, 38, 6, 4, CaveFloor);
-            c.Landmark("Adit", 21, 39).Exit("black_valley", 21, 40);
-            // the main gallery north, rails down the middle, timber props
-            Room(c, 19, 8, 6, 30, CaveFloor);
-            for (int y = 8; y < 42; y++) c.Deco(21, y, "rail_v");
-            for (int y = 10; y < 36; y += 5) { c.Put(19, y, Solid, "pillar"); c.Put(24, y, Solid, "pillar"); }
-            c.Rect(22, 14, 1, 2, Solid, 0, "container");
-            c.Landmark("Main Gallery", 22, 22);
-            // side drifts
-            Room(c, 4, 12, 15, 4, CaveFloor);
-            Cavern(c, 7, 20, 4);
-            Passage(c, 7, 16, 7, 18, 2, CaveFloor);
-            c.Put(6, 21, ScatterCover, "debris").Deco(9, 19, "bones");
-            Room(c, 25, 26, 14, 4, CaveFloor);
-            Cavern(c, 36, 34, 4);
-            Passage(c, 36, 30, 36, 32, 2, CaveFloor);
-            Flood(c, 33, 31, 7, 7);
-            c.Landmark("Flooded Drift", 36, 34);
-            // the ore chamber and a collapse
-            Cavern(c, 33, 12, 6);
-            Passage(c, 25, 12, 28, 12, 3, CaveFloor);
-            c.Blob(36, 10, 2, Difficult, 0, 0.5f, "rubble");
-            c.Put(30, 15, ScatterCover, "crate").Put(37, 15, Solid, "rock");
-            // the miners' rest room
-            Room(c, 14, 2, 16, 5, Floor);
-            Passage(c, 21, 7, 21, 8, 3, CaveFloor);
-            c.Put(15, 3, ScatterCover, "armchair").Put(17, 3, ScatterCover, "desk").Put(27, 3, HardCover, "lockers").Put(28, 5, ScatterCover, "crate");
-            c.Stash("Miners' Strongbox", 28, 3);
-            c.Landmark("Miners' Rest", 21, 4);
-            // an old ventilation crawl (a second way back)
-            Passage(c, 4, 13, 4, 36, 1, CaveFloor);
-            Passage(c, 4, 36, 19, 39, 1, CaveFloor);
-            return Finish(c, "cliff");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Adit", "black_valley"), ['G'] = ("Miners' Rest", null), ['N'] = ("Main Gallery", null), ['L'] = ("Flooded Drift", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("valley_mine")) { ['K'] = "Miners' Strongbox", ['J'] = "Drowned Cache" };
+            return FloorPlan("valley_mine", LabPlans["valley_mine"], "cliff", CaveFloor, marks, stashes);
         }
-    
+
         // ------------------------------------------------------------------ Tier 3
 
         // The Stranded Ferry: the lake ferry beached when the water went - the car deck with its wrecks, the passenger

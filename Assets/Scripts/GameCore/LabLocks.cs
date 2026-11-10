@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -90,6 +90,12 @@ namespace GameCore
                                     Says = "[CRYPT] The last page is a column of dates, three of them ringed in the priest's hand. Dial them on the vault's slab and it would turn." },
                 ['4'] = new Thing { Name = "Priest's Strongbox", Look = "stash_footlocker", Kind = "gate", Desc = "A small iron strongbox under the priest's cot, its hasp snapped.",
                                     Says = "[CRYPT] An iron key as long as a hand, the bow worn smooth by thumbs. It would fit the gate across the passage." },
+            },
+            // Valley Mine (Tier 2, off Black Valley's rim; dungeons/valley_mine.mmd): timbers fell across the main gallery; a pry bar from the tool shed levers them aside.
+            ["valley_mine"] = new Dictionary<char, Thing>
+            {
+                ['4'] = new Thing { Name = "Tool Shed Rack", Look = "stash_toolbox", Kind = "pry", Desc = "A rack of mining tools on the shed wall, most of them rusted solid.",
+                                    Says = "[MINE] A long steel pry bar, the end worn to a chisel edge. It would shift fallen timbers." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

@@ -221,6 +221,60 @@ def crypt_check(p):
     ok(out, pos(g, 'J') in flood_stages(p, CRYPT_GIVES, CRYPT_LOCKS)[-1][1], "the collapsed side crypt is reachable once the gallery is")
     return out
 
+def valley_mine():
+    """Valley Mine (T2, off Black Valley's rim). Graph dungeons/valley_mine.mmd: the adit (bottom) -> the main gallery (north-south, ore rails down the middle; the collapse '@' x5 across it is in sight)
+    -> the tool shed (the pry bar '4') / the flooded drift (a cache on the far ledge) ; collapse -> the deep drift (the gallery's north half) -> the miners' rest (goal, the strongbox). Loops: a crawl
+    from the flooded drift into the north half, and a long ventilation crawl from the miners' rest back down to the adit. The collapse crosses a north-south gallery (seen from the front)."""
+    p = Plan(44, 46, 9601); r = p.r
+    p.room(18, 40, 8, 5, ',')                                      # Ad: the adit
+    p.vline(20, 12, 39, 5)                                         # Mg: the main gallery (and, north of the collapse, the deep drift)
+    p.room(8, 30, 8, 8); p.hline(16, 19, 33, 2)                    # Ts: the tool shed, west
+    p.room(28, 28, 13, 11); p.hline(25, 27, 33, 2)                 # Fd: the flooded drift, east
+    p.vline(38, 18, 27, 1); p.hline(25, 38, 17, 1)                 # the crawl from the drift into the gallery's north half (loop)
+    p.room(14, 3, 17, 7); p.vline(20, 10, 11, 5)                   # Mr: the miners' rest (goal), at the head of the gallery
+    p.hline(5, 13, 5, 1); p.vline(5, 5, 42, 1); p.hline(5, 17, 42, 1)   # the ventilation crawl: miners' rest -> back down to the adit (loop)
+    for x in range(20, 25): p.g[22][x] = '@'                       # the collapse, across the whole gallery
+    p.g[40][5] = '@'                                               # a second fall in the ventilation crawl, near the adit: the long way back is only open to someone with the pry bar (else it would walk you round the collapse from the adit)
+    for y in range(13, 40): p.g[y][22] = '|' if p.g[y][22] == '.' else p.g[y][22]   # the ore rails down the middle
+    for y in (15, 19, 27, 31, 35):
+        for x in (20, 24):
+            if p.g[y][x] == '.': p.g[y][x] = '+'                   # timber props
+    for y in range(31, 39):                                        # the flooded drift: knee-deep, with a dry ledge along the north
+        for x in range(28, 41):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'
+    for (x, y, ch) in ((9, 31, 'c'), (10, 31, 'c'), (14, 31, 'b'), (9, 36, 'l'), (14, 36, 'x'), (11, 34, 'd'),
+                       (21, 41, 'c'), (23, 43, 'b'), (16, 5, 'd'), (18, 5, 'd'), (28, 4, 'l'), (29, 7, 'c'), (15, 8, 'c'), (22, 14, 'x'), (21, 30, 'k'), (23, 36, 'x')):
+        if p.g[y][x] == '.': p.g[y][x] = ch
+    p.g[34][10] = '4'                                              # the pry bar on the tool shed's rack
+    p.g[29][39] = 'J'; p.g[5][28] = 'K'                            # stashes: the drift's far ledge, the miners' strongbox
+    p.g[42][21] = 'E'; p.g[6][21] = 'G'; p.g[20][21] = 'N'; p.g[34][34] = 'L'   # the way in, the miners' rest, the main gallery, the flooded drift
+    for (x, y) in ((24, 18), (20, 26), (22, 33), (23, 11), (13, 33)): p.g[y][x] = '&'
+    for _ in range(16):
+        x, y = r.randrange(2, 42), r.randrange(2, 44)
+        if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xk")
+    return p
+
+MINE_GIVES = {'4': ('pry', None)}
+MINE_LOCKS = {'@': 'pry'}
+def mine_check(p):
+    st = flood_stages(p, MINE_GIVES, MINE_LOCKS); g = p.g; out = []
+    G, T, C0, J, N = pos(g, 'G'), pos(g, '4'), pos(g, '@'), pos(g, 'J'), pos(g, 'N')
+    s0 = st[0][1]; last = st[-1][1]
+    ok(out, T in s0 and J in s0 and C0 not in s0, "at the start: the tool shed (the pry bar) and the flooded drift's ledge are reachable; the collapse is a wall")
+    ok(out, G in s0, "the miners' rest is reachable with NO key (the crawl from the flooded drift is the loop round the collapse)")
+    ok(out, C0 in last, "with the pry bar the collapse can be passed")
+    saved = {(38, y): g[y][38] for y in range(18, 28)}
+    for x in range(25, 38): saved[(x, 17)] = g[17][x]
+    for (x, y) in saved: g[y][x] = '#'
+    nocrawl = flood_stages(p, MINE_GIVES, MINE_LOCKS); first = next((sorted(k) for k, seen in nocrawl if G in seen), None)
+    ok(out, first == ['pry'] and G not in nocrawl[0][1], f"without the drift crawl the miners' rest needs {first}: the collapse is the real gate on the main way")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    vs = {(5, y): g[y][5] for y in range(6, 42)}
+    for (x, y) in vs: g[y][x] = '#'
+    ok(out, G in flood_stages(p, MINE_GIVES, MINE_LOCKS)[-1][1], "closing the ventilation crawl changes nothing (it is a loop, not a requirement)")
+    for (x, y), ch in vs.items(): g[y][x] = ch
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -269,8 +323,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

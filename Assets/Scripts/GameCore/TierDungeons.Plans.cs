@@ -59,6 +59,8 @@ namespace GameCore
                         case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
                         case '@': c.Put(x, y, Difficult, "rockfall"); c.Paint(x, y, 1, 1, floor); continue;   // 2026-11-10: a rockfall across a tunnel (LabLocks: a pry bar lifts it)
                         case '$': c.Put(x, y, Difficult, "irongate"); c.Paint(x, y, 1, 1, floor); continue;   // an iron gate across a tunnel (LabLocks: its key opens it); not a letter: letters are landmark marks (the foundry plans use F and R)
+                        case '|': c.Put(x, y, Empty); c.Deco(x, y, "rail_v"); break;                  // ore rails running north-south (the mines)
+                        case '+': c.Put(x, y, Solid, "pillar"); break;                                  // a timber prop
                         case '^': c.Put(x, y, Difficult, "sealslab"); c.Paint(x, y, 1, 1, floor); continue;   // a sealed slab across a passage (LabLocks: the code opens it)
                         case 'Z': c.Put(x, y, Solid, wallLook); break;            // Boss 1: a cracked wall (E breaks it; a landmark marks it)
                         case 'h': c.Put(x, y, HardCover, "block"); break;
