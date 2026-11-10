@@ -99,7 +99,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
 ## Workflow
 
 1. Edit scripts in `Assets/Scripts`. Unity recompiles when its window gets focus.
-2. **Before handing anything to Yan, run the harness** (needs the .NET 8 SDK; in a cloud container
+2. **Run the full harness only before pushing to live (`main`)** (Yan, 2026-11-10: "you don't need to run full harness every time, that's wasting too much time and tokens"). For commits to `realtime-proto` run only what the change needs (a plan's Python check, a render, the one affected check you can reason about) and say plainly that the harness was not run. Before any push to `main`: **run the harness** (needs the .NET 8 SDK; in a cloud container
    `apt-get install -y dotnet-sdk-8.0`):
    ```
    cd Tools/compile_check

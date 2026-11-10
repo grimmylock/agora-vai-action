@@ -127,28 +127,29 @@ def cave_check(p):
     return out
 
 def smugglers_tunnel():
-    """Smugglers' Tunnel (T1, from the depot's loading office). Graph dungeons/smugglers_tunnel.mmd: the hatch room -> the main tunnel (the hub: a side cache, the guard post, the iron gate in sight)
-    -> the guard post holds the gate key ('4') -> the gate ('F' x2, across the 2-wide tunnel) -> the den -> the cache room (goal) / a dug-out nook. A bypass the crews dug from the guard post
-    round the gate is the loop. Rooms are plain rectangles; the tunnel is a dug run."""
-    p = Plan(48, 38, 9401); r = p.r
-    p.room(3, 3, 7, 6, ',')                                        # the hatch room (concrete)
-    p.vline(6, 9, 18, 2); p.hline(6, 44, 17, 2)                    # the main tunnel: down from the hatch, then east
-    p.room(14, 8, 9, 7)                                            # Gd: the guard post, north of the tunnel
-    p.vline(18, 15, 16, 2)
-    p.room(9, 21, 6, 6); p.vline(11, 19, 20, 1)                    # Sc: a side cache south of the tunnel
-    p.hline(23, 33, 11, 1); p.vline(33, 11, 16, 1)                 # the crews' bypass: guard post -> the tunnel beyond the gate (the loop)
-    p.room(30, 21, 11, 7); p.vline(35, 19, 20, 2)                  # Dn: the smugglers' den, south of the tunnel beyond the gate
-    p.room(37, 8, 9, 7); p.vline(41, 15, 16, 2)                    # Cr: the cache room (goal), north of the tunnel's east end
-    p.room(43, 22, 3, 4); p.hline(41, 42, 24, 1)                   # Dd: a dug-out nook off the den
-    for y in (17, 18): p.g[y][26] = '$'                            # the iron gate, across the tunnel
-    for (x, y, ch) in ((15, 9, 'c'), (16, 9, 'c'), (21, 9, 'b'), (15, 13, 'd'), (21, 13, 'c'), (10, 22, 'c'), (13, 22, 'c'), (10, 25, 'b'),
-                       (31, 22, 'c'), (32, 22, 'c'), (39, 26, 'l'), (36, 24, 'd'), (38, 9, 'c'), (40, 9, 'c'), (42, 9, 'c'), (44, 13, 'l'), (4, 4, 'c'), (8, 7, 'b')):
+    """Smugglers' Tunnel (T1, from the depot's loading office). Graph dungeons/smugglers_tunnel.mmd. Yan (2026-11-10): dungeons run TOP TO BOTTOM, not left to right: the hatch room is at the top, the main
+    tunnel runs south, the iron gate ('$' x2) crosses the 2-wide NORTH-SOUTH leg (so it is seen from the front, as the 3/4 view draws it), the den and then the cache room (goal) are at the bottom. The
+    guard post (west, off the tunnel) holds the gate key ('4'); a side cache east; a bypass the crews dug from the guard post round the gate to the cross tunnel is the loop; a dug-out nook off the den."""
+    p = Plan(40, 44, 9401); r = p.r
+    p.room(16, 2, 9, 6, ',')                                       # the hatch room (concrete), top centre
+    p.vline(20, 8, 18, 2)                                          # the main tunnel runs south
+    p.room(6, 10, 9, 7); p.hline(14, 19, 13, 2)                    # Gd: the guard post, west of the tunnel
+    p.room(27, 10, 7, 6); p.hline(22, 26, 12, 1)                   # Sc: a side cache, east of the tunnel
+    p.vline(20, 19, 24, 2)                                         # the leg the gate crosses
+    p.hline(8, 34, 25, 2)                                          # beyond the gate: the cross tunnel
+    p.vline(10, 17, 24, 1)                                         # the crews' bypass: guard post -> the cross tunnel (the loop)
+    p.room(14, 28, 13, 6); p.vline(20, 27, 27, 2)                  # Dn: the smugglers' den
+    p.vline(20, 34, 36, 2); p.room(14, 37, 13, 5)                  # Cr: the cache room (goal), at the bottom
+    p.room(30, 29, 5, 4); p.hline(27, 29, 30, 1)                   # Dd: a dug-out nook off the den
+    for x in (20, 21): p.g[21][x] = '$'                            # the iron gate, across the 2-wide leg
+    for (x, y, ch) in ((7, 11, 'c'), (8, 11, 'c'), (12, 11, 'b'), (7, 15, 'd'), (12, 15, 'c'), (28, 11, 'c'), (31, 14, 'c'), (31, 11, 'b'),
+                       (15, 29, 'c'), (16, 29, 'c'), (25, 32, 'l'), (22, 31, 'd'), (15, 38, 'c'), (17, 38, 'c'), (25, 40, 'l'), (18, 3, 'c'), (23, 6, 'b')):
         if p.g[y][x] == '.': p.g[y][x] = ch
-    p.g[10][21] = '4'                                              # the guard post's footlocker: the gate key
-    p.g[24][12] = 'J'; p.g[12][44] = 'K'; p.g[24][44] = 'L'        # stashes: the side cache, the cache room, the dug-out nook
-    p.g[4][5] = 'E'; p.g[11][41] = 'G'; p.g[25][35] = 'M'          # the way in, the cache room's landmark, the den's
+    p.g[12][10] = '4'                                              # the guard post's footlocker: the gate key
+    p.g[12][30] = 'J'; p.g[40][24] = 'K'; p.g[31][32] = 'L'        # stashes: the side cache, the cache room, the dug-out nook
+    p.g[4][20] = 'E'; p.g[40][20] = 'G'; p.g[31][20] = 'M'         # the way in, the cache room's landmark, the den's
     for _ in range(18):
-        x, y = r.randrange(2, 46), r.randrange(2, 36)
+        x, y = r.randrange(2, 38), r.randrange(2, 42)
         if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
     return p
 
@@ -161,8 +162,7 @@ def smugglers_check(p):
     ok(out, K in s0 and F0 not in s0, "at the start: the guard post (the gate key) is reachable; the gate itself is a wall")
     ok(out, G in s0 and M in s0, "the den and the cache room are reachable with NO key (through the crews' bypass, which is the loop round the gate)")
     saved = {}
-    for y in range(12, 17): saved[(33, y)] = g[y][33]; g[y][33] = '#'
-    for x in range(23, 34): saved[(x, 11)] = g[11][x]; g[11][x] = '#'
+    for y in range(17, 25): saved[(10, y)] = g[y][10]; g[y][10] = '#'
     nob = flood_stages(p, SMUG_GIVES, SMUG_LOCKS); first = next((sorted(k) for k, seen in nob if G in seen), None)
     ok(out, first == ['gate'] and G not in nob[0][1], f"with the bypass blocked the cache room needs {first}: the gate is the real gate on the direct way")
     for (x, y), ch in saved.items(): g[y][x] = ch

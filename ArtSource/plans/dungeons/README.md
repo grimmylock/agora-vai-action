@@ -47,3 +47,6 @@ New plans use plain rectangular rooms (`Plan.room`), never `Plan.jag`: bitten co
 
 ## Plan characters
 New lock tiles use SYMBOLS (`@` rockfall, `$` iron gate), never letters: StampPlan reads a letter as a landmark mark in older plans (the foundry uses R and F).
+
+## Direction: top to bottom (Yan, 2026-11-10)
+"Maybe we change the dungeons' inclination to be instead of left to right, we go from top to bottom." Adopted for every base layout still to build: the way in is at the TOP, the goal at the BOTTOM, the main tunnels run north-south, and locks (gates, doors, rockfalls) cross a north-south leg so they are drawn from the FRONT, the way the 3/4 view draws doors and walls (a gate across an east-west tunnel was seen edge-on and looked wrong). Done for the Smugglers' Tunnel; the Pumping Basement (stair top-left, outfall bottom-right) and the Secret Cave (mouth top-left, nook bottom-right) run diagonally and could be re-oriented if Yan wants.

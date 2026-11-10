@@ -1879,11 +1879,11 @@ static class Program {
     var foot = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "smug_gate");
     Check(Count(TileType.Difficult, "irongate") == 2 && foot != null && TerrainMap.Exits.Count(e => e.TargetZoneId == "smugglers_run") == 1, $"Tunnel: two iron-gate tiles across the tunnel, the guard post's footlocker with the key, the hatch ({Count(TileType.Difficult, "irongate")})");
     var s0 = Flood(start.X, start.Y);
-    Check(In(s0, foot.X, foot.Y) && !TerrainMap.CanEnterTile(26, 17) && !TerrainMap.CanEnterTile(26, 18) && LabLocks.Locked(TerrainMap.GetTile(26, 17)) && LabLocks.Nag(26, 17),
+    Check(In(s0, foot.X, foot.Y) && !TerrainMap.CanEnterTile(20, 21) && !TerrainMap.CanEnterTile(21, 21) && LabLocks.Locked(TerrainMap.GetTile(20, 21)) && LabLocks.Nag(20, 21),
       "Tunnel: the footlocker is reachable; the gate is a wall to everyone and bumping it says what it wants");
     Check(s0.Contains((den.X, den.Y)) && s0.Contains((cache.X, cache.Y)), "Tunnel: the den and the cache room are reachable with no key (through the crews' bypass: the loop round the gate)");
     keys.Add("smug_gate"); LabLocks.Granted("smug_gate");
-    Check(Count(TileType.Difficult, "irongate") == 0 && Count(TileType.Difficult, "irongate_on") == 2 && TerrainMap.CanEnterTile(26, 17) && TerrainMap.CanEnterTile(26, 18), "Tunnel: the key opens the gate (its look turns to the open gate) and the tunnel is clear");
+    Check(Count(TileType.Difficult, "irongate") == 0 && Count(TileType.Difficult, "irongate_on") == 2 && TerrainMap.CanEnterTile(20, 21) && TerrainMap.CanEnterTile(21, 21), "Tunnel: the key opens the gate (its look turns to the open gate) and the tunnel is clear");
     keys.Clear(); Rt.On = false;
   }
 
