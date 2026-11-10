@@ -374,7 +374,7 @@ def trash2(seed): return TRASH[_v(seed) % 5](seed)
 def jersey2(seed): return JERSEY[_v(seed) % 5](seed)
 def brush2(seed): return BRUSH[_v(seed) % 5](seed)
 def debris2(seed): return DEBRIS[_v(seed) % 5](seed)
-V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5}
+V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5}
 
 
 def _jv(seed, kind):
@@ -418,7 +418,148 @@ def _jv(seed, kind):
 def jersey_v2(seed): return _jv(seed, _v(seed) % 5)
 def jersey_c2(seed): return props.corner(jersey2, jersey_v2, seed)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2}
+
+# ---------------------------------------------------------------- blocks: precast foundation blocks (props.block): a boxy slab with a lit top, formwork lines on the face, steel lifting loops
+def _loop(im, x, y):
+    S = P["steel"]; px(im, x, y, S[3]); px(im, x + 1, y, S[3]); px(im, x - 1, y + 1, S[2]); px(im, x + 2, y + 1, S[1]); px(im, x, y + 1, S[0]); px(im, x + 1, y + 1, S[0])
+def _slab2(im, c, x0, y0, w, th=3, fh=7, chamfer=True, seams=True):
+    for y in range(th):
+        for x in range(w):
+            if chamfer and y == 0 and x in (0, w - 1): continue
+            px(im, x0 + x, y0 + y, c[4] if y == 0 else c[3] if y < th - 1 else c[2])
+    for y in range(th, th + fh):
+        for x in range(w):
+            v = c[3] if x == 0 else c[0] if y == th + fh - 1 else c[1] if x == w - 1 else c[2]
+            if seams and (y - th) % 3 == 2 and 0 < x < w - 1 and y < th + fh - 1: v = c[1]
+            px(im, x0 + x, y0 + y, v)
+def _blk0(seed):
+    r = rng(seed); c = P["concrete"]; im = blank(24, 15)
+    _slab2(im, c, 0, 6, 23); _slab2(im, c, 3 + seed % 2, 0, 20)
+    for lx in (7 + seed % 2, 18 + seed % 2): _loop(im, lx, 0)
+    for _ in range(4): px(im, r.randrange(1, 22), r.randrange(4, 14), c[1])
+    return finish(im, (12, 14), shadow=(23, 5, 1, -1))
+def _blk1(seed):                                     # one big block, stencilled with a white number
+    r = rng(seed); c = P["concrete"]; im = blank(24, 12)
+    _slab2(im, c, 0, 1, 24, 3, 7)
+    for lx in (4, 18): _loop(im, lx, 0)
+    for x0 in (8, 10, 14, 16):                       # a painted stock mark: two pairs of strokes
+        for y in range(6, 9): px(im, x0, y, hx("#d8d4c4"))
+    px(im, 12, 7, hx("#d8d4c4"))
+    return finish(im, (12, 11), shadow=(23, 5, 1, -1))
+def _blk2(seed):                                     # two blocks side by side, one a little lower and set back
+    r = rng(seed); c = P["concrete"]; im = blank(28, 13)
+    _slab2(im, c, 0, 2, 13, 3, 7); _slab2(im, c, 14, 0, 14, 3, 9)
+    _loop(im, 4, 2); _loop(im, 20, 0)
+    for _ in range(5): px(im, r.randrange(1, 27), r.randrange(5, 12), c[1])
+    return finish(im, (14, 12), shadow=(26, 5, 1, -1))
+def _blk3(seed):                                     # cracked, one corner broken off with the rebar mesh showing, rubble beside it
+    r = rng(seed); c = P["concrete"]; R = P["rust"]; im = blank(24, 13)
+    _slab2(im, c, 0, 1, 22, 3, 8)
+    for k in range(9): px(im, 13 + k // 2 - k % 2, 3 + k, c[0])                                # a crack
+    for y in range(1, 6):
+        for x in range(16, 22): px(im, x, y, (0, 0, 0, 0))                                   # the broken corner
+    for x in range(16, 22, 2):
+        for y in range(1, 4): px(im, x, y, R[1 + y % 3])
+    for _ in range(8): px(im, r.randrange(15, 24), r.randrange(8, 13), r.choice((c[1], c[2], c[3])))
+    _loop(im, 3, 1)
+    return finish(im, (11, 12), shadow=(22, 5, 1, -1))
+def _blk4(seed):                                     # mossy and rusted, weeds at the foot, one loop bent flat
+    r = rng(seed); c = P["concrete"]; im = blank(24, 14)
+    _slab2(im, c, 0, 2, 23, 3, 8)
+    for _ in range(26): px(im, r.randrange(1, 22), r.randrange(2, 13), P["moss"][r.randint(0, 1)])
+    for x in (5, 12, 18):
+        for y in range(6, r.randint(9, 12)): px(im, x, y, P["rust"][1])
+    _loop(im, 6, 1); px(im, 17, 2, P["steel"][2]); px(im, 18, 2, P["steel"][1]); px(im, 19, 2, P["steel"][2])
+    for x in range(1, 22, 3): px(im, x, 12, P["grass"][r.randint(2, 4)]); px(im, x, 11, P["grass"][3])
+    return finish(im, (11, 13), shadow=(23, 5, 1, -1))
+BLOCK = [_blk0, _blk1, _blk2, _blk3, _blk4]
+def block2(seed): return BLOCK[_v(seed) % 5](seed)
+
+def _bv(seed, kind):
+    """foundation blocks laid north-south, to match block2: the lit top with steel lifting loops, a joint with a visible gap between blocks, formwork lines, the end face (a boxy slab face) at the south"""
+    c = P["concrete"]; r = rng(seed); W, T, Hf = 9, 16, 8; im = blank(W, T + Hf)
+    for y in range(T):
+        for x in range(W): px(im, x, y, c[3] if x == 0 else c[4] if x in (1, 2, 3, 4, 5) else c[3] if x == 6 else c[2] if x == 7 else c[1])
+    for x in range(W): px(im, x, 15, c[0]); px(im, x, 0, c[4] if 0 < x < 7 else c[3])
+    for y in (3, 11): px(im, 3, y, P["steel"][3]); px(im, 4, y, P["steel"][3]); px(im, 3, y + 1, P["steel"][0]); px(im, 4, y + 1, P["steel"][0])
+    for y in range(T, T + Hf):
+        for x in range(W): px(im, x, y, c[0] if y == T + Hf - 1 else c[3] if x == 0 else c[1] if x == W - 1 else c[1] if (y - T) % 3 == 2 else c[2])
+    for _ in range(3): px(im, r.randrange(W), r.randrange(1, T - 2), c[2])
+    if kind == 1:
+        for x0 in (2, 4, 6): [px(im, x0, T + 2 + dy, hx("#d8d4c4")) for dy in range(3)]
+    elif kind == 2:
+        for y in range(5, 11):
+            for x in range(W): px(im, x, y, (0, 0, 0, 0)) if (y + x) % 5 == 0 else None
+        for x in range(1, 7): px(im, x, 15, c[0])
+        for x in range(0, W, 2): px(im, x, 5 + (x % 3), c[1])
+    elif kind == 3:
+        for y in range(6, 10):
+            for x in range(W): px(im, x, y, (0, 0, 0, 0))
+        for k in range(5): px(im, 1 + k, 5 - k % 2, P["rust"][1 + k % 3]); px(im, 2 + k, 10, P["rust"][1 + k % 3])
+        for _ in range(8): px(im, r.randrange(W), r.randrange(6, 10), r.choice((c[1], c[2], c[3])))
+    elif kind == 4:
+        for _ in range(24): px(im, r.randrange(W), r.randrange(1, 14), P["moss"][r.randint(0, 1)])
+        for y in (4, 5, 11): px(im, 6, y, P["rust"][1])
+    return finish(im, (W // 2, T + Hf - 1), shadow=(13, 30, 3, -10))
+def block_v2(seed): return _bv(seed, _v(seed) % 5)
+def block_c2(seed): return props.corner(block2, block_v2, seed)
+
+
+# ---------------------------------------------------------------- scrap: five heaps that read as different things
+def _scrap0(seed): return props.OLD_PROPS["scrap"](seed)
+def _scrap1(seed):                                   # corrugated tin sheets stacked and leaning, rust at the edges
+    r = rng(seed); T = P["tin"]; R = P["rust"]; im = blank(26, 15)
+    for k, (x0, w, lean) in enumerate(((1, 11, 3), (6, 12, 2), (11, 12, 1), (15, 10, 0))):
+        for i in range(w):
+            for j in range(10):
+                x = x0 + i + (lean * (9 - j)) // 5; y = 2 + j + k // 2
+                v = 3 if j == 0 else (1 if (x // 2) % 2 else 2) if j < 9 else 0
+                if r.random() < 0.05 and j < 6: v = None
+                if v is not None: px(im, x, y, (R[1 + (i + j) % 3] if (i < 2 or j > 7) and r.random() < 0.5 else T[v]))
+    for _ in range(6): px(im, r.randrange(2, 24), r.randrange(3, 12), P["steel"][4])
+    return finish(im, (13, 14), shadow=(24, 5, 1, -1))
+def _scrap2(seed):                                   # car parts: a wheel with its hub, a door panel with a window hole, a bumper bar
+    r = rng(seed); S = P["steel"]; R = P["rust"]; T = _T(); im = blank(28, 16)
+    for y in range(3, 12):                                                # the door
+        for x in range(1, 15): px(im, x, y, R[3] if y == 3 else R[2] if (x + y) % 7 else R[1])
+    for y in range(5, 8):
+        for x in range(4, 11): px(im, x, y, hx("#1a1d20") if y > 5 else S[2])
+    for x in range(1, 15): px(im, x, 11, R[0])
+    _tring_rot(im, T, 21, 9, 5.5, 5.5, 0, 0.12)                           # the wheel
+    for y in range(3, 16):
+        for x in range(15, 28):
+            if ((x - 21) ** 2 + (y - 9) ** 2) ** 0.5 < 2.6: px(im, x, y, S[3] if ((x - 21) ** 2 + (y - 9) ** 2) ** 0.5 > 1.0 else S[1])
+    line(im, 2, 14, 17, 12, S[3]); line(im, 2, 15, 17, 13, S[1])         # a bumper bar
+    for _ in range(5): px(im, r.randrange(2, 26), r.randrange(4, 15), S[4])
+    return finish(im, (14, 15), shadow=(26, 5, 1, -1))
+def _scrap3(seed):                                   # a stack of steel pipes of different lengths, the round ends showing
+    r = rng(seed); S = P["steel"]; R = P["rust"]; im = blank(26, 14)
+    for k, (y0, x0, ln) in enumerate(((8, 1, 22), (5, 3, 20), (8, 2, 18), (2, 4, 17))):
+        for y in range(3):
+            for x in range(ln): px(im, x0 + x, y0 + y, S[4] if y == 0 else S[3] if y == 1 else S[1])
+        ex = x0 + ln
+        for dy in range(-1, 4):
+            for dx in range(0, 3):
+                if (dy, dx) in ((-1, 2), (3, 2)): continue
+                px(im, ex + dx - 1, y0 + dy, S[3] if dy == 0 else hx("#0e1012") if (dy, dx) in ((1, 1),) else S[2])
+        for _ in range(3): px(im, x0 + r.randrange(ln), y0 + r.randrange(3), R[1 + r.randrange(3)])
+    return finish(im, (13, 13), shadow=(24, 5, 1, -1))
+def _scrap4(seed):                                   # crushed oil drums, one on its side, a coil of chain and a length of angle iron
+    r = rng(seed); R = P["rust"]; S = P["steel"]; B = ramp("#1c2a3a", "#2a3e54", "#3e5a78", "#5a7a98"); im = blank(26, 15)
+    for (cx, cy, pal) in ((7, 8, R), (17, 9, B)):
+        for y in range(cy - 6, cy + 5):
+            for x in range(cx - 4, cx + 5):
+                e = ((x - cx) / 4.2) ** 2 + ((y - cy + 1) / 5.4) ** 2 + ((x * 7 + y * 3) % 5 - 2) * 0.02
+                if e <= 1: px(im, x, y, pal[3] if (y < cy - 3) else pal[2] if x < cx else pal[1] if y < cy + 3 else pal[0])
+        for y in (cy - 1, cy + 2): [px(im, x, y, S[2]) for x in range(cx - 4, cx + 5) if ((x - cx) / 4.2) ** 2 < 0.95]      # the bands
+        px(im, cx - 1, cy - 4, S[4]); px(im, cx, cy - 4, S[3])
+    for k in range(7): px(im, 11 + k % 4, 12 + (k % 2), S[3]); px(im, 12 + k % 3, 13, S[1])
+    line(im, 1, 13, 10, 14, S[3]); line(im, 1, 14, 10, 14, S[1])
+    return finish(im, (13, 14), shadow=(24, 5, 1, -1))
+SCRAP = [_scrap0, _scrap1, _scrap2, _scrap3, _scrap4]
+def scrap2(seed): return SCRAP[_v(seed) % 5](seed)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 
