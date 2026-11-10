@@ -890,12 +890,15 @@ def _lockers_f(seed, view):
             for x, y in ((x0 + 2, y0 + 3), (x0 + 12, y0 + 3), (x0 + 2, y0 + 14), (x0 + 12, y0 + 14)): px(im, x, y, s[3])      # rivets
             px(im, x0 + 7, y0 + 8, hx("#c8c0a8")); px(im, x0 + 8, y0 + 8, hx("#c8c0a8"))                                      # a paper tag
         return finish(props.box(15, 4, 18, top, back), (7, 21), shadow=(15, 5, 2, -1), tall=True)
-    def side(im, x0, y0, w, h):
+    def ltop(im, x0, y0, w, h):                                       # the lid seen from above: three door tops side by side along the (now north-south) length, the lit door edge on the east (front) side
+        props.flat(s[3], edge=s[4])(im, x0, y0, w, h)
+        for y in (y0 + 4, y0 + 8): [px(im, x, y, s[1]) for x in range(x0, x0 + w)]
+        for y in range(h): px(im, x0 + w - 1, y0 + y, s[4]) if y > 0 else None
+    def side(im, x0, y0, w, h):                                       # the south END of the bank: a plain end panel, a lit rear edge, vent slits
         props.flat(s[2], bottom=s[0], left=s[3])(im, x0, y0, w, h)
-        for y in (y0 + 2, y0 + 3): px(im, x0 + 1, y, s[0])                                        # vent slits
-        for y in range(h): px(im, x0 + w - 1, y0 + y, s[4] if y < 12 else s[3])                    # the lit door edge at the front
-        px(im, x0 + w - 2, y0 + 9, s[4])                                                          # a handle
-    return finish(props.box(4, 11, 18, top, side), (2, 28), shadow=(6, 7, 1, -2), tall=True)
+        for y in (y0 + 2, y0 + 3): px(im, x0 + 1, y, s[0]); px(im, x0 + 2, y, s[0])
+        px(im, x0 + w - 1, y0 + 6, s[1]); px(im, x0 + w - 1, y0 + 12, s[1])
+    return finish(props.box(4, 11, 18, ltop, side), (2, 28), shadow=(6, 7, 1, -2), tall=True)
 def _desk_f(seed, view):
     c = P["wood"]; top = props.flat(c[3], edge=c[4])
     if view == "n":
@@ -905,10 +908,17 @@ def _desk_f(seed, view):
             for y in range(y0 + 4, y0 + h): px(im, x0 + w - 2, y, c[0])
         im = props.box(16, 6, 7, top, back); px(im, 4, 1, hx("#c8c0a8")); px(im, 5, 1, hx("#c8c0a8"))
         return finish(im, (8, 12), shadow=(16, 4, 2, -1))
-    def side(im, x0, y0, w, h):
+    def dtop(im, x0, y0, w, h):                                       # the desk top seen from above, long way up the screen: the drawer pedestal on the north half (darker rim), the kneehole south of it, a blotter, papers
+        props.flat(c[3], edge=c[4])(im, x0, y0, w, h)
+        for y in range(y0 + 1, y0 + 6): px(im, x0 + 1, y, c[2]); px(im, x0 + w - 2, y, c[2])
+        for x in range(x0 + 1, x0 + w - 1): px(im, x, y0 + 6, c[2])
+        for x in range(x0 + 2, x0 + 5):
+            for y in range(y0 + 7, y0 + 10): px(im, x, y, c[2])         # the blotter
+        px(im, x0 + 3, y0 + 8, hx("#c8c0a8")); px(im, x0 + 4, y0 + 8, hx("#c8c0a8")); px(im, x0 + 1, y0 + 2, hx("#c8c0a8"))
+    def side(im, x0, y0, w, h):                                       # the south end: a panelled end
         props.flat(c[1], bottom=c[0], left=c[2])(im, x0, y0, w, h)
-        for y in range(y0, y0 + 3): px(im, x0 + w - 1, y, c[2])                                   # the drawer front peeking at the front edge
-    im = props.box(6, 11, 7, top, side); px(im, 2, 3, hx("#c8c0a8")); px(im, 3, 3, hx("#c8c0a8")); px(im, 2, 7, hx("#c8c0a8"))
+        ImageDraw.Draw(im).rectangle([x0 + 1, y0 + 1, x0 + w - 2, y0 + h - 2], outline=c[2])
+    im = props.box(6, 11, 7, dtop, side)
     return finish(im, (3, 17), shadow=(7, 7, 1, -2))
 def _cabinet_f(seed, view):
     s = P["steel"]; top = props.flat(s[3], edge=s[4])
@@ -918,11 +928,14 @@ def _cabinet_f(seed, view):
             for y in (y0 + 5, y0 + 11): [px(im, x, y, s[0]) for x in range(x0 + 1, x0 + w - 1)]
             px(im, x0 + 2, y0 + 2, s[3]); px(im, x0 + w - 3, y0 + 2, s[3])
         return finish(props.box(12, 4, 17, top, back), (6, 20), shadow=(12, 4, 2, -1), tall=True)
-    def side(im, x0, y0, w, h):
+    def ctop(im, x0, y0, w, h):                                       # the lid from above with a paper stack and a pen tray
+        props.flat(s[3], edge=s[4])(im, x0, y0, w, h)
+        px(im, x0 + 1, y0 + 3, hx("#d8d0b8")); px(im, x0 + 2, y0 + 3, hx("#d8d0b8")); px(im, x0 + 1, y0 + 4, hx("#c8c0a8")); px(im, x0 + 2, y0 + 7, s[1]); px(im, x0 + 1, y0 + 7, s[1])
+        for y in range(1, h): px(im, x0 + w - 1, y0 + y, s[4])
+    def side(im, x0, y0, w, h):                                       # the south end: a plain panel with rivets
         props.flat(s[2], bottom=s[0], left=s[3])(im, x0, y0, w, h)
-        for y in range(h): px(im, x0 + w - 1, y0 + y, s[3])
-        px(im, x0 + 1, y0 + 4, s[0]); px(im, x0 + 1, y0 + 12, s[0])
-    return finish(props.box(4, 10, 17, top, side), (2, 26), shadow=(6, 6, 1, -2), tall=True)
+        for y in (y0 + 2, y0 + h - 4): px(im, x0 + 1, y, s[1]); px(im, x0 + w - 2, y, s[1])
+    return finish(props.box(4, 10, 17, ctop, side), (2, 26), shadow=(6, 6, 1, -2), tall=True)
 def _console_f(seed, view):
     s = P["steel"]; im = blank(20, 18) if view == "n" else blank(11, 18); d = ImageDraw.Draw(im)
     if view == "n":                                                  # from behind: the monitors' dark backs with vents, cables, the desk's plain back panel
@@ -935,11 +948,16 @@ def _console_f(seed, view):
             px(im, mx + 4, 8, s[0]); px(im, mx + 4, 7, s[0])
         for x in (4, 8, 14): px(im, x, 10, s[0]); px(im, x, 11, s[0])
         return finish(im, (10, 17), shadow=(20, 4, 2, -1))
-    d.rectangle([0, 9, 10, 12], fill=s[2]); d.line([(0, 9), (10, 9)], fill=s[3])                      # the desk from the side
-    d.rectangle([0, 13, 10, 17], fill=s[1]); d.line([(0, 17), (10, 17)], fill=s[0]); d.line([(0, 13), (0, 17)], fill=s[3])
-    d.rectangle([3, 1, 7, 7], fill=s[1]); d.line([(3, 1), (3, 7)], fill=s[3]); d.rectangle([2, 8, 8, 8], fill=s[0])   # a monitor, edge-on
-    px(im, 9, 15, props.LED[seed % 3])
-    return finish(im, (5, 17), shadow=(11, 4, 1, -1))
+    # the console from the east, 3/4: the long way runs up the screen. Desk top in plan with the two monitors' tops (dark blocks, a lit rim, each with its small south face) and the keyboard between them
+    im = blank(11, 30); d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, 10, 21], fill=s[2]); d.line([(0, 0), (10, 0)], fill=s[3]); d.line([(0, 1), (0, 21)], fill=s[3])        # desk top
+    d.rectangle([0, 22, 10, 29], fill=s[1]); d.line([(0, 29), (10, 29)], fill=s[0]); d.line([(0, 22), (0, 29)], fill=s[3])    # the south end panel
+    for my in (2, 13):                                                # a monitor's top (west side of the desk) with its front face below it
+        d.rectangle([1, my, 5, my + 5], fill=s[1]); d.line([(1, my), (5, my)], fill=s[3]); d.rectangle([1, my + 6, 5, my + 7], fill=s[0])
+        px(im, 3, my + 7, props.SCREEN); px(im, 2, my + 7, props.TRACE) if seed % 2 else None
+    d.rectangle([7, 9, 9, 12], fill=s[0]); [px(im, 8, y, s[1]) for y in (10, 12)]                                          # the keyboard between them
+    px(im, 9, 26, props.LED[seed % 3]); px(im, 7, 26, props.LED[(seed + 1) % 3])
+    return finish(im, (5, 29), shadow=(11, 6, 1, -2))
 def _machine_f(seed, view):
     g = P["olive"] if seed % 2 else ramp("#2f3a3c", "#3f4e50", "#536567", "#6b7f80", "#8a9c9c"); S = P["steel"]; R = P["rust"]; r = rng(seed)
     if view == "n":                                                  # the lathe from behind: the motor housing, belt guard, the bed's back
@@ -953,13 +971,18 @@ def _machine_f(seed, view):
         for x in range(8, 22, 2): px(im, x, 8, S[1])                  # the way cover's slots
         for _ in range(4): px(im, r.randrange(2, 22), r.randrange(2, 9), R[2])
         return finish(im, (12, 14), shadow=(23, 5, 1, -1), tall=True)
-    im = blank(10, 16); d = ImageDraw.Draw(im)                        # the tailstock end, seen from the side: a narrow column
-    d.rectangle([1, 8, 8, 15], fill=g[1]); d.line([(1, 15), (8, 15)], fill=g[0]); d.line([(1, 8), (1, 15)], fill=g[2])
-    d.rectangle([0, 3, 9, 8], fill=g[2]); d.line([(0, 3), (9, 3)], fill=g[3]); d.line([(0, 4), (0, 8)], fill=g[3])
-    disc(im, 5, 6, 1.5, S[3]); px(im, 4, 5, S[4])                    # the handwheel
-    px(im, 8, 11, hx("#c84a32")); px(im, 3, 11, S[4])
-    for _ in range(3): px(im, r.randrange(1, 9), r.randrange(9, 15), R[2])
-    return finish(im, (5, 15), shadow=(10, 4, 1, -1), tall=True)
+    # the lathe from the east, 3/4: the long way up the screen, in plan: the headstock block at the north end with the chuck's disc, the bed with the bright ways, the carriage and the tailstock; the south end panel below
+    im = blank(11, 32); d = ImageDraw.Draw(im)
+    d.rectangle([1, 0, 9, 7], fill=g[2]); d.line([(1, 0), (9, 0)], fill=g[3]); d.line([(1, 1), (1, 7)], fill=g[3])        # headstock
+    disc(im, 5, 4, 2.2, S[3]); disc(im, 5, 4, 1, S[1]); px(im, 4, 3, S[4])                                                  # the chuck, seen from above
+    d.rectangle([2, 8, 8, 23], fill=g[1]); d.line([(2, 8), (8, 8)], fill=g[2])                                              # the bed
+    d.line([(5, 9), (5, 22)], fill=S[3]); d.line([(4, 9), (4, 22)], fill=S[1])                                              # the ways, bare metal
+    d.rectangle([2, 12, 8, 15], fill=g[2]); d.line([(2, 12), (8, 12)], fill=g[3]); px(im, 5, 13, S[4])                      # the carriage and tool post
+    d.rectangle([2, 19, 8, 22], fill=g[2]); d.line([(2, 19), (8, 19)], fill=g[3]); disc(im, 5, 21, 1, S[3])               # the tailstock and its handwheel
+    d.rectangle([1, 24, 9, 31], fill=g[1]); d.line([(1, 31), (9, 31)], fill=g[0]); d.line([(1, 24), (1, 31)], fill=g[2])      # the south end panel (the stand)
+    px(im, 8, 27, hx("#c84a32")); px(im, 3, 27, S[4])
+    for _ in range(4): px(im, r.randrange(2, 9), r.randrange(1, 30), R[2])
+    return finish(im, (5, 31), shadow=(10, 6, 1, -2), tall=True)
 
 FACING_BASE = {"lockers": _lockers_f, "desk": _desk_f, "cabinet": _cabinet_f, "console": _console_f, "machine": _machine_f}
 def _facing_prop(base, view):
