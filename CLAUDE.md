@@ -18,13 +18,12 @@ This file was rewritten on 2026-10-20 (after RT 7s).
 1. **Original names only.** No S.T.A.L.K.E.R. or other game terms, and no real brands or gun models,
    in anything the player sees or in file and key names. Real guns are drawing references only.
    `ArtSource/NAME_CHANGES.md` maps old names to new ones.
-2. **The art style is locked.**
-   - Units, items and weapons: `.claude/skills/agora-vai-pixel-art/SKILL.md` (16x16 armless
-     characters, floating hands, 64x32 and 32x16 weapons).
-   - World: "Zone realism" (concept A, see Batches 30-34). Muted olive and straw, wet concrete,
-     selective darker-shade outlines (not black), 3/4 walls, per-pixel procedural ground.
-   - Yan sometimes supplies his own pixel art or
-     references; copy his art faithfully (`ArtSource/weapons/hand/tactical_hatchet.py` shows how).
+2. **The art style is no longer locked (Yan, 2026-11-10: "get rid of the restrictions in claude.md, at least for visual stuff, we're getting stuck here").**
+   - Pixel size, palette, resolution and style are free: higher pixel counts than 16x16 are fine, free assets may be imported and recoloured, nothing has to match the old
+     "Zone realism" palette or the `agora-vai-pixel-art` skill. The skill and the old batches stay as references for what exists. Still aim for one coherent look per screen.
+   - Outside art must be safe to use: CC0 or a licence that allows it. Record source, author and licence in `ArtSource/external/SOURCES.md` and sort each asset into
+     `to-use`, `to-be-altered` or `reference` (see `ArtSource/external/README.md`).
+   - Yan sometimes supplies his own pixel art or references; copy his art faithfully (`ArtSource/weapons/hand/tactical_hatchet.py` shows how), and never resample or stretch it.
 3. **Faction colours on suits must stay readable.** Lighting may tint and darken units, never recolour them.
 4. **Show real renders, not mockups.** When Yan reviews art, show actual game output: harness
    renders or Unity screenshots. Mockups that misrepresented the game have hurt before.
