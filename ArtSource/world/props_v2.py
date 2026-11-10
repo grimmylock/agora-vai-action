@@ -374,7 +374,7 @@ def trash2(seed): return TRASH[_v(seed) % 5](seed)
 def jersey2(seed): return JERSEY[_v(seed) % 5](seed)
 def brush2(seed): return BRUSH[_v(seed) % 5](seed)
 def debris2(seed): return DEBRIS[_v(seed) % 5](seed)
-V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5}
+V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5}
 
 
 def _jv(seed, kind):
@@ -559,7 +559,250 @@ def _scrap4(seed):                                   # crushed oil drums, one on
 SCRAP = [_scrap0, _scrap1, _scrap2, _scrap3, _scrap4]
 def scrap2(seed): return SCRAP[_v(seed) % 5](seed)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2}
+
+# ---------------------------------------------------------------- the rest of the "reads as nothing" list: fountain, hatch, pillar, culvert, pipe and pipepost (five variants each)
+def _ell(im, cx, cy, rx, ry, f):
+    for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+        for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+            if e <= 1:
+                v = f(x, y, e)
+                if v is not None: px(im, x, y, v)
+def _fountain(seed, kind):
+    """a dry town-square fountain, 3 m across: a round rim, the basin, and (new) a centre pedestal with a bowl so it stops reading as an eye"""
+    c = P["concrete"]; r = rng(seed); W, H = 34, 23; im = blank(W, H); cx, cy, rx, ry = 16.5, 11, 16, 8.5
+    wat = ramp("#243230", "#2f423e", "#3f5a52", "#6a8a80") if kind == 1 else ramp("#27301f", "#34412a", "#465636", "#5f7048")
+    _ell(im, cx, cy, rx, ry, lambda x, y, e: c[4] if y < cy - 1 else c[3] if e > 0.86 else c[3])                       # the rim's top, lit at the back
+    _ell(im, cx, cy, rx - 2.2, ry - 1.8, lambda x, y, e: (wat[1] if y < cy else wat[2]) if kind == 1 else (c[1] if y < cy else c[2]))   # basin: water or dry floor
+    for x in range(W):                                                                                                    # the rim's front face
+        for y in range(H):
+            if im.getpixel((x, y))[3] and y > cy and (y + 1 >= H or not im.getpixel((x, y + 1))[3]):
+                for k in range(1, 4):
+                    if y + k < H: px(im, x, y + k, c[2] if k < 3 else c[0])
+    if kind == 3:                                                                                                         # filled with rubble and rubbish
+        for _ in range(70): 
+            x, y = int(cx + r.uniform(-12, 12)), int(cy + r.uniform(-5, 5))
+            if ((x - cx) / 13.5) ** 2 + ((y - cy) / 6.4) ** 2 < 1: px(im, x, y, r.choice((c[1], c[3], c[4], P["rust"][2], hx("#d8d2b8"), P["wood"][2])))
+    elif kind == 4:                                                                                                       # overgrown: grass in the basin and a sapling
+        for _ in range(90):
+            x, y = int(cx + r.uniform(-12, 12)), int(cy + r.uniform(-5, 5))
+            if ((x - cx) / 13.5) ** 2 + ((y - cy) / 6.4) ** 2 < 1: px(im, x, y, P["grass"][r.randint(1, 4)])
+        for y in range(2, 11): px(im, 17, y, P["bark"][2]); px(im, 18 if y < 5 else 17, y, P["bark"][1])
+        _ell(im, 17, 4, 4.2, 3.2, lambda x, y, e: P["foliage"][3] if e < 0.5 else P["foliage"][2])
+    else:
+        top = 2 if kind == 2 else -4
+        for y in range(int(cy) - 6 if kind != 2 else int(cy) - 2, int(cy) + 1):                                            # the pedestal
+            for x in range(int(cx) - 1, int(cx) + 2): px(im, x, y, c[4] if x == int(cx) - 1 else c[3] if x == int(cx) else c[2])
+        if kind != 2: _ell(im, cx, cy - 6, 4.8, 1.9, lambda x, y, e: c[4] if y < cy - 6 else c[3])                         # the bowl on top
+        else:
+            for _ in range(12): px(im, int(cx + r.uniform(-6, 7)), int(cy + r.uniform(0, 4)), r.choice((c[3], c[4], c[2])))
+            for y in range(int(cy - 3), int(cy)): px(im, int(cx) + 3, y, c[0])                                              # a crack and the missing piece of rim
+            for y in range(int(cy) + 3, int(cy) + 7):
+                for x in range(26, 31): px(im, x, y, (0, 0, 0, 0))
+        if kind == 1:
+            for _ in range(14): px(im, int(cx + r.uniform(-11, 11)), int(cy + r.uniform(-4, 5)), wat[3])
+            for x, y in ((8, 12), (24, 13), (11, 15)): px(im, x, y, P["grass"][3]); px(im, x, y - 1, P["grass"][2])
+        else:
+            for _ in range(10): px(im, int(cx + r.uniform(-11, 11)), int(cy + r.uniform(-4, 6)), P["drygrass"][1])        # dead leaves
+    return finish(im, (W // 2, H - 3), shadow=(32, 6, 1, -1))
+def fountain2(seed): return _fountain(seed, _v(seed) % 5)
+
+def _hatch0(seed): return props.OLD_PROPS["hatch"](seed)
+def _hatch1(seed):                                   # a round steel manhole cover on a concrete pad, shoved half aside
+    c = P["concrete"]; S = P["steel"]; im = blank(20, 17)
+    for y in range(5, 15):
+        for x in range(1, 19): px(im, x, y, c[4] if y == 5 else c[3] if y < 7 else c[2] if y < 13 else c[0])
+    _ell(im, 10, 8, 7, 3.2, lambda x, y, e: hx("#0b0c0d") if e < 0.85 else S[1])
+    _ell(im, 12.5, 7, 7, 3.2, lambda x, y, e: S[4] if (y < 7 and e > 0.2) else S[3] if e > 0.75 else S[2])
+    for k in range(-5, 6, 2): px(im, 12 + k, 7 + (k % 3 == 0), S[1])
+    return finish(im, (10, 14), shadow=(18, 4, 1, -1))
+def _hatch2(seed):                                   # a rusted hatch box chained shut with a yellow padlock
+    c = P["concrete"]; S = P["steel"]; R = P["rust"]; im = blank(20, 17); r = rng(seed)
+    for y in range(9, 15):
+        for x in range(1, 19): px(im, x, y, c[4] if y == 9 else c[3] if y < 11 else c[1] if y < 14 else c[0])
+    for y in range(3, 11):
+        for x in range(3, 17): px(im, x, y, R[3] if y == 3 else R[2] if y < 7 else R[1] if y < 9 else R[0])
+    for _ in range(8): px(im, r.randrange(3, 17), r.randrange(4, 10), S[2])
+    for x in range(3, 17): px(im, x, 7, S[1])
+    for k in range(4): px(im, 9 + k % 2, 7 + k, S[3]); px(im, 11 + k % 2, 7 + k, S[2])         # a chain hanging down
+    px(im, 10, 11, hx("#c9a63e")); px(im, 11, 11, hx("#c9a63e")); px(im, 10, 12, hx("#a58a3a")); px(im, 11, 12, hx("#a58a3a"))
+    return finish(im, (10, 15), shadow=(18, 4, 1, -1))
+def _hatch3(seed):                                   # a wooden trapdoor in the ground: planks, an iron ring, a rim of dirt
+    r = rng(seed); W_ = P["wood"]; D = P["dirt"]; im = blank(20, 15)
+    for y in range(1, 13):
+        for x in range(1, 19): px(im, x, y, D[2] if (y < 3 or y > 10 or x < 3 or x > 16) else W_[3] if (x - 3) % 4 == 0 else W_[2] if y < 4 else W_[1])
+    for x in range(3, 17): px(im, x, 3, W_[4]); px(im, x, 10, W_[0])
+    for x in (4, 9, 14): [px(im, x, y, W_[0]) for y in range(4, 10)]
+    for x, y in ((9, 7), (10, 7), (9, 8), (10, 8)): px(im, x, y, P["steel"][3] if (x + y) % 2 else P["steel"][1])
+    px(im, 9, 7, hx("#0e1012")); px(im, 10, 8, hx("#0e1012"))
+    for _ in range(10): px(im, r.randrange(1, 19), r.randrange(0, 14), D[3])
+    return finish(im, (10, 13), shadow=(18, 3, 1, -1))
+def _hatch4(seed):                                   # an open bunker hatch: the lid flipped up, a ladder going down into the dark
+    c = P["concrete"]; S = P["steel"]; g = (hx("#2f4436"), hx("#3f5848"), hx("#4f6b5a"), hx("#6a8a74")); im = blank(20, 19)
+    for y in range(8, 17):
+        for x in range(1, 19): px(im, x, y, c[4] if y == 8 else c[3] if y < 10 else c[1] if y < 15 else c[0])
+    for y in range(9, 14):
+        for x in range(5, 15): px(im, x, y, hx("#0b0c0d"))
+    for y in (10, 12): [px(im, x, y, S[3]) for x in range(7, 13)]
+    px(im, 7, 11, S[2]); px(im, 12, 11, S[2])
+    for y in range(1, 8):                                                              # the lid standing open on its hinges
+        for x in range(4, 16): px(im, x, y, g[3] if y == 1 else g[2] if y < 4 else g[1] if y < 6 else g[0])
+    px(im, 9, 4, S[4]); px(im, 10, 4, S[3])
+    return finish(im, (10, 16), shadow=(18, 4, 1, -1))
+HATCH = [_hatch0, _hatch1, _hatch2, _hatch3, _hatch4]
+def hatch2(seed): return HATCH[_v(seed) % 5](seed)
+
+def _pillar0(seed): return props.OLD_PROPS["pillar"](seed)
+def _pillar1(seed):                                  # two columns, a snapped beam lying across their tops
+    c = P["concrete"]; R = P["rust"]; r = rng(seed); im = blank(28, 30)
+    for x0 in (3, 18):
+        for x in range(x0, x0 + 6):
+            for y in range(7, 27): px(im, x, y, c[4] if x == x0 else c[3] if x < x0 + 3 else c[2] if x < x0 + 5 else c[1])
+            px(im, x, 7, c[4])
+    for y in range(3, 8):
+        for x in range(1, 27):
+            if y == 7 and 11 < x < 16: continue
+            px(im, x, y, c[4] if y == 3 else c[3] if y < 6 else c[1])
+    for k in range(4): px(im, 12 + k % 3, 8 + k // 2, R[1 + k % 3]); px(im, 14 - k % 2, 5 + k, c[0])
+    for x in (2, 9, 10, 20, 24, 25): px(im, x, 27, c[2]); px(im, x, 28, c[1])
+    return finish(im, (14, 28), shadow=(26, 5, 1, -1), tall=True)
+def _pillar2(seed):                                  # an intact column with a square capital and base, cracked
+    c = P["concrete"]; r = rng(seed); im = blank(16, 30)
+    for y in range(2, 5):
+        for x in range(1, 13): px(im, x, y, c[4] if y == 2 else c[3] if y == 3 else c[1])           # capital
+    for y in range(5, 25):
+        for x in range(3, 11): px(im, x, y, c[4] if x == 3 else c[3] if x < 6 else c[2] if x < 10 else c[1])
+    for y in range(25, 28):
+        for x in range(1, 13): px(im, x, y, c[3] if y == 25 else c[2] if y == 26 else c[0])         # base
+    for k in range(9): px(im, 6 + (k % 3) - (k // 3), 8 + k, c[0])                                   # a crack
+    for _ in range(4): px(im, r.randrange(3, 11), r.randrange(6, 24), c[1])
+    return finish(im, (7, 28), shadow=(13, 5, 1, -1), tall=True)
+def _pillar3(seed):                                  # a short broken stump in a heap of its own rubble, rebar out of the top
+    c = P["concrete"]; R = P["rust"]; r = rng(seed); im = blank(20, 20)
+    for x in range(5, 13):
+        top = (10, 9, 11, 10, 8, 10, 11, 12)[x - 5]
+        for y in range(top, 17): px(im, x, y, c[4] if x == 5 else c[3] if x < 8 else c[2] if x < 12 else c[1])
+        px(im, x, top, c[4])
+    for x, ln in ((6, 4), (10, 3), (8, 2)): [px(im, x + (k > 1), 10 - k, R[1 + k % 3]) for k in range(ln)]
+    for _ in range(30): px(im, r.randrange(1, 19), r.randrange(13, 19), r.choice((c[1], c[2], c[3], c[4])))
+    return finish(im, (10, 18), shadow=(18, 5, 1, -1), tall=True)
+def _pillar4(seed):                                  # a mossy column with a snapped top, vines and rust streaks, leaning a little
+    c = P["concrete"]; R = P["rust"]; r = rng(seed); im = blank(16, 30)
+    for y in range(5, 27):
+        sh = (27 - y) // 9
+        for x in range(3 + sh, 10 + sh): px(im, x, y, c[3] if x < 6 + sh else c[2] if x < 9 + sh else c[1])
+    for x in range(4, 9): px(im, x + 1, 5 + x % 3, c[4])
+    for x, ln in ((5, 4), (8, 3)): [px(im, x + 1, 5 - k, R[1 + k % 3]) for k in range(ln)]
+    for _ in range(40): px(im, r.randrange(3, 14), r.randrange(6, 26), P["moss"][r.randint(0, 1)])
+    for y in range(8, 24, 2): px(im, 6 + (y % 4 == 0), y, P["foliage"][3])
+    for y in (9, 10, 17, 18): px(im, 9, y, R[1])
+    return finish(im, (7, 28), shadow=(13, 5, 1, -1), tall=True)
+PILLAR = [_pillar0, _pillar1, _pillar2, _pillar3, _pillar4]
+def pillar2(seed): return PILLAR[_v(seed) % 5](seed)
+
+def _culvert0(seed): return props.OLD_PROPS["culvert"](seed)
+def _bank(im, w, rows=4):
+    for y in range(0, rows):
+        for x in range(1, w - 1): px(im, x, y, P["grass"][2] if (x + y) % 4 else P["grass"][1])
+def _culvert1(seed):                                 # a concrete box culvert with iron bars across the mouth
+    c = P["concrete"]; S = P["steel"]; im = blank(24, 18); _bank(im, 24)
+    for y in range(4, 15):
+        for x in range(2, 22): px(im, x, y, c[4] if y == 4 else c[2] if x > 2 else c[3])
+    for y in range(6, 14):
+        for x in range(6, 18): px(im, x, y, hx("#0b0c0d"))
+    for x in range(7, 17, 2): [px(im, x, y, S[3]) for y in range(6, 14)]
+    for y in range(13, 18):
+        for x in range(7, 17):
+            if abs(x - 12) <= (y - 12) + 1: px(im, x, y, P["water"][1] if abs(x - 12) < 2 else P["mud"][1])
+    return finish(im, (12, 16), shadow=(22, 3, 1, -1))
+def _culvert2(seed):                                 # a rusty corrugated-steel pipe poking out of the bank, water trickling
+    R = P["rust"]; S = P["steel"]; im = blank(24, 18); _bank(im, 24, 5)
+    for y in range(4, 15):
+        for x in range(3, 21): px(im, x, y, R[2] if (x // 2) % 2 else R[1])
+    _ell(im, 12, 10, 6.4, 5.4, lambda x, y, e: hx("#0b0c0d") if e < 0.62 else R[3] if (y < 10 and x < 12) else (S[2] if e < 0.8 else R[1]))
+    for y in range(13, 18):
+        for x in range(8, 17):
+            if abs(x - 12) <= (y - 12): px(im, x, y, P["water"][2] if abs(x - 12) < 2 else P["mud"][1])
+    return finish(im, (12, 16), shadow=(22, 3, 1, -1))
+def _culvert3(seed):                                 # an old stone arch drain, mossy, with a dark mouth
+    c = P["rock"]; M = P["moss"]; im = blank(24, 18); r = rng(seed); _bank(im, 24)
+    for y in range(4, 15):
+        for x in range(2, 22):
+            px(im, x, y, c[3] if y == 4 else c[2] if (x + y // 2) % 4 else c[1])
+    for _ in range(26): px(im, r.randrange(2, 22), r.randrange(4, 15), M[r.randint(0, 1)])
+    _ell(im, 12, 11, 5.6, 6.2, lambda x, y, e: hx("#0b0c0d") if (y <= 14 and e < 0.78) else c[4] if e < 1 and y < 11 else None)
+    for k in range(7): px(im, 7 + k * 2 // 1 % 11, 4 + (k % 2), c[0])
+    for y in range(13, 18):
+        for x in range(9, 15):
+            if abs(x - 12) <= (y - 12): px(im, x, y, P["water"][1] if abs(x - 12) < 2 else P["mud"][1])
+    return finish(im, (12, 16), shadow=(22, 3, 1, -1))
+def _culvert4(seed):                                 # a blocked culvert: branches, a tyre and reeds jammed in the mouth, a dark puddle spreading
+    c = P["concrete"]; im = blank(24, 18); r = rng(seed); _bank(im, 24)
+    for y in range(4, 15):
+        for x in range(2, 22): px(im, x, y, c[4] if y == 4 else c[2] if x > 2 else c[3])
+    disc(im, 12, 10, 5, c[3]); disc(im, 12, 10, 4, hx("#0b0c0d"))
+    for _ in range(14): line(im, r.randrange(7, 17), r.randrange(7, 13), r.randrange(7, 17), r.randrange(7, 13), P["wood"][r.randint(1, 3)])
+    for x in (8, 10, 14, 16): [px(im, x, y, P["drygrass"][2]) for y in range(8, 13)]
+    for y in range(14, 18):
+        for x in range(4, 20):
+            if ((x - 12) / 8) ** 2 + ((y - 15.5) / 2.3) ** 2 < 1: px(im, x, y, P["water"][0] if (x + y) % 5 else P["water"][1])
+    return finish(im, (12, 16), shadow=(22, 3, 1, -1))
+CULVERT = [_culvert0, _culvert1, _culvert2, _culvert3, _culvert4]
+def culvert2(seed): return CULVERT[_v(seed) % 5](seed)
+
+PIPE_FOIL = {0: ("#5f6264", "#7d8082", "#9a9d9e", "#b9bbbb"), 1: ("#3a2418", "#58341f", "#77482e", "#93603b"), 2: ("#3a4a50", "#52666e", "#6a8590", "#8aa6b0"),
+             3: ("#6a561c", "#8a7226", "#b09434", "#d0b248"), 4: ("#2c3a2a", "#3c503a", "#4f6a4c", "#668a60")}
+def _heat(seed, post, kind):
+    """one tile of the overhead heating line. A run is ONE pipe, so every variant keeps the foil look (a first version changed material tile by tile and the line turned into a patchwork); the five variants differ in
+    the details a long pipe really has: plain, foil torn back to rusty steel, a mended patch, a small red valve wheel on top, moss and dirt on top. Supports: plain T, braced, rust-stained and cracked, with a cable clamp, mossy. A shadow on the ground says it is overhead."""
+    r = rng(seed); h = 13; im = blank(16, h + 9); col = ramp(*PIPE_FOIL[0]); R = P["rust"]; S = P["steel"]; v = _v(seed) % 5
+    for k, y0 in enumerate((1, 6)):
+        for x in range(16):
+            for j in range(4):
+                vv = (3 if j == 0 else 2 if j == 1 else 1 if j == 2 else 0) - k
+                c = col[max(0, vv)]
+                if (x + 3 * k) % 8 == 0 and j < 3: c = col[max(0, vv - 1)]
+                px(im, x, y0 + j, c)
+        n = 2 if v == 1 else 0 if v in (0, 2) else 1
+        for _ in range(n):
+            x = r.randrange(1, 13)
+            for dx in range(r.randint(2, 4)):
+                if x + dx < 16: px(im, x + dx, y0 + 1, R[2]); px(im, x + dx, y0 + 2, R[1])
+    if v == 2:                                           # a mended patch: a darker wrapped band across both pipes
+        for k, y0 in enumerate((1, 6)):
+            for x in range(5, 9):
+                for j in range(4): px(im, x, y0 + j, hx("#4a4d50") if j > 0 and (x + j) % 2 else hx("#5a5d60"))
+    if v == 3:                                           # a small red valve wheel on the upper pipe
+        for x in range(6, 10): px(im, x, 0, hx("#a52c22") if x in (6, 9) else hx("#c84a32"))
+        px(im, 7, 1, S[2]); px(im, 8, 1, S[2])
+    if v == 4:
+        for _ in range(8): px(im, r.randrange(16), 1 + (0 if r.random() < .6 else 5), P["moss"][r.randint(0, 1)])
+    if post:
+        cn = P["concrete"]
+        for x in range(3, 13): px(im, x, 9, cn[3]); px(im, x, 10, cn[1])
+        for y in range(11, h + 9):
+            for k in range(3): px(im, 6 + k, y, cn[3 - k])
+        if v == 1:
+            for k in range(5): px(im, 5 - k // 2, 12 + k, cn[2]); px(im, 10 + k // 2, 12 + k, cn[1])
+        elif v == 2:
+            for y in range(12, 20): px(im, 7, y, cn[0]) if y % 3 else px(im, 8, y, cn[0])
+            for y in (12, 13, 17): px(im, 6, y, R[1])
+        elif v == 3:
+            for x in range(5, 11): px(im, x, 12, S[2])
+            px(im, 7, 13, S[1]); px(im, 8, 13, S[1])
+        elif v == 4:
+            for _ in range(10): px(im, r.randrange(6, 9), r.randrange(12, h + 8), P["moss"][r.randint(0, 1)])
+    import numpy as np
+    a = np.array(im)
+    for x in range(16):
+        for y in range(16):
+            if a[y, x, 3] == 0 and ((y + 1 < a.shape[0] and a[y + 1, x, 3]) or (y > 0 and a[y - 1, x, 3])):
+                a[y, x] = (24, 25, 26, 255) if y < 10 else a[y, x]
+    return Prop(Image.fromarray(a, "RGBA"), (8, h + 8), (18, 3, 0, 0), False)
+def pipe2(seed): return _heat(seed, False, _v(seed) % 5)
+def pipepost2(seed): return _heat(seed, True, _v(seed) % 5)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 
