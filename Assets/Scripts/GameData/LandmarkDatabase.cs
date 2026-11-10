@@ -299,6 +299,10 @@ namespace GameData
             ["secret_cave"] = new List<LandmarkDef>
             {
                 L("Stash Nook", "A dry alcove with old crates - the usual loot payoff for finding this node."),
+                L("Dark Niche West", "A black niche off the dug tunnel, the floor scuffed by something that waits there."),
+                L("Dark Niche South", "A dark hollow under the crawl, too small to stand up in and too quiet."),
+                L("Dark Niche East", "A narrow pocket off the gallery tunnel. It smells wrong."),
+                L("Mutant Den", "A trampled chamber north of the gallery, bones in the dust. Something big sleeps light here."),
                 L("Cave Mouth", "The entrance chamber, still lit by daylight from outside."),
             },
             // the map overhaul: Tier 1 dungeons (TierDungeons.cs)

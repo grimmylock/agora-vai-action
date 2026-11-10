@@ -69,6 +69,11 @@ def secret_cave():
     p.hline(17, 38, 31, 1)                                         # the crawl from the camp to the gallery (loop)
     p.disc(30, 22, 2)                                              # W: a wet dead end off the pool
     p.hline(26, 29, 17, 1); p.vline(29, 17, 20, 1)
+    # scare corners (Yan 2026-11-10): three small niches off the long tunnels, a bigger den north of the deep gallery; a mutant waits in each (TierDungeons / DungeonLairs.cs)
+    p.disc(7, 16, 1); p.hline(7, 9, 16, 1)                         # N: a niche off the dug tunnel (west side)
+    p.disc(24, 35, 1); p.vline(24, 32, 34, 1)                      # S: a niche under the crawl
+    p.disc(43, 24, 1); p.hline(41, 43, 24, 1)                      # T: a niche off the gallery's south tunnel (east side)
+    p.disc(40, 6, 3); p.vline(40, 8, 12, 2)                        # Q: the den, north of the deep gallery
     for _ in range(2):                                             # roughen: walls with open space round them crumble (cave_plans.erode also closes cells, which cut the tunnels: only opening here)
         g = [row[:] for row in p.g]
         for y in range(2, p.h - 2):
@@ -88,6 +93,8 @@ def secret_cave():
     p.g[30][14] = '&'; p.g[27][11] = 'x'; p.g[28][15] = 'b'        # bones, debris, a barrel in the camp
     p.g[36][37] = 'K'; p.g[22][30] = 'J'                           # stashes: the nook, the wet dead end
     p.g[36][39] = 'c'; p.g[37][38] = 'c'
+    p.g[16][7] = 'N'; p.g[35][24] = 'S'; p.g[24][43] = 'T'; p.g[6][40] = 'Q'   # landmarks of the scare corners and the den
+    for (x, y) in ((39, 5), (41, 7), (40, 4), (38, 7)): p.g[y][x] = '&'   # bones in the den
     for _ in range(14):
         x, y = r.randrange(2, 46), r.randrange(2, 40)
         if p.g[y][x] == '.': p.g[y][x] = r.choice("kkv&")          # boulders, roots, bones
@@ -114,6 +121,9 @@ def cave_check(p):
     for (x, y) in [(10, y) for y in range(8, 25)]: saved[(x, y)] = g[y][x]; g[y][x] = '#'
     ok(out, G in flood_stages(p, CAVE_GIVES, CAVE_LOCKS)[-1][1], "closing the dug tunnel: the nook is still reachable")
     for (x, y), ch in saved.items(): g[y][x] = ch
+    s0 = flood_stages(p, CAVE_GIVES, CAVE_LOCKS)[0][1]
+    ok(out, all(pos(g, c) in s0 for c in 'NST'), "the three scare niches (N, S, T) are reachable with no key")
+    ok(out, pos(g, 'Q') in s0, "the den (Q) is reachable with no key (it is optional: the nook never needs it)")
     return out
 
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):

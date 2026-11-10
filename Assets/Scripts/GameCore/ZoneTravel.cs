@@ -108,6 +108,7 @@ namespace GameCore
             GameLog.Write(zone.IsSafeZone ? $"[SAFE ZONE] You walk into {zone.Name}. Weapons hold." : $"You're in {zone.Name} now.");
             StorySystem.OnEnterZone(zone);
             G7Lab.OnEnterZone(zone);   // Batch 88
+            DungeonLairs.OnEnterZone(zone);   // 2026-11-10: authored mutant lairs in dungeons
             QuestSystem.OnEnterZone(here);
             if (zone.IsSafeZone) WorldEvents.TellRumors();
         }
@@ -180,6 +181,7 @@ namespace GameCore
             Companion.OnEnterZone(player);   // Batch 69
             StorySystem.OnEnterZone(zone);
             G7Lab.OnEnterZone(zone);   // Batch 88
+            DungeonLairs.OnEnterZone(zone);   // 2026-11-10: authored mutant lairs in dungeons
             QuestSystem.OnEnterZone(zoneId);
 
             GameState.Current.Mode = GameMode.Tactical;

@@ -61,7 +61,8 @@ namespace GameCore
         /// '4' the smugglers' crate with the pry bar, 'R' the rockfall (three tiles across the east tunnel), 'K' / 'J' stashes.</summary>
         public static MapLayout SecretCave()
         {
-            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Cave Mouth", "perimeter"), ['G'] = ("Stash Nook", null) };
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Cave Mouth", "perimeter"), ['G'] = ("Stash Nook", null),
+                ['N'] = ("Dark Niche West", null), ['S'] = ("Dark Niche South", null), ['T'] = ("Dark Niche East", null), ['Q'] = ("Mutant Den", null) };   // the lairs (DungeonLairs.cs)
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("secret_cave")) { ['K'] = "Stash Nook", ['J'] = "Wet Cache" };
             return FloorPlan("secret_cave", LabPlans["secret_cave"], "cliff", CaveFloor, marks, stashes);
         }
