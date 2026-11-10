@@ -5613,3 +5613,6 @@ Not checked: Unity (x2 sprites in a SpriteRenderer at 32 pixels per unit, sortin
 
 ## Wonki Son trees removed (2026-11-10)
 Yan: "the trees do not fit at all, remove them, everything from wonki son". Removed: the 13 tree variants (`props_ext.py` is now only the hook for `furn_x2`), the pack's sheets in `ArtSource/external`, its SOURCES rows, the forest preview. Atlas repacked and installed (no `p_tree_10..` etc.; 6 x2 sprites left, the furniture sides). The x2 engine support stays. Yan also said the furniture "still looks wrong" (no detail given yet).
+
+## External art pruned (2026-11-10)
+Yan: "remove 2, keep the rest as references, 5 is very useful". Removed Big Trees (64 px), the sandbag sprite and the military extras (barrels, sandbags, jeeps). Everything left in `ArtSource/external` is now `reference/` (forest crop and tileset, rough props, 8 px wasteland, the CC-BY furniture views); `to-use/` and `to-be-altered/` are empty. SOURCES.md updated.
