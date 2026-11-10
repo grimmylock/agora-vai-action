@@ -60,7 +60,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1884,6 +1884,33 @@ static class Program {
     Check(s0.Contains((den.X, den.Y)) && s0.Contains((cache.X, cache.Y)), "Tunnel: the den and the cache room are reachable with no key (through the crews' bypass: the loop round the gate)");
     keys.Add("smug_gate"); LabLocks.Granted("smug_gate");
     Check(Count(TileType.Difficult, "irongate") == 0 && Count(TileType.Difficult, "irongate_on") == 2 && TerrainMap.CanEnterTile(20, 21) && TerrainMap.CanEnterTile(21, 21), "Tunnel: the key opens the gate (its look turns to the open gate) and the tunnel is clear");
+    keys.Clear(); Rt.On = false;
+  }
+
+  // Chapel Crypt, redone with a gate and a sealed slab (2026-11-10, dungeons/chapel_crypt.mmd): on the real built map.
+  static void CryptChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "chapel_crypt";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Crypt Stair"); var vault = TerrainMap.Landmarks.First(l => l.Name == "Sealed Vault");
+    var ledger = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "crypt_code"); var box = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "crypt_gate");
+    Check(Count(TileType.Difficult, "irongate") == 2 && Count(TileType.Difficult, "sealslab") == 2 && ledger != null && box != null && TerrainMap.Exits.Count(e => e.TargetZoneId == "perimeter") == 1,
+      $"Crypt: the iron gate and the sealed slab (2 tiles each), the ledger with the code, the strongbox with the gate key, the stair ({Count(TileType.Difficult, "irongate")}, {Count(TileType.Difficult, "sealslab")})");
+    var s0 = Flood(start.X, start.Y);
+    Check(!s0.Contains((vault.X, vault.Y)) && LabLocks.Locked(TerrainMap.GetTile(19, 24)) && LabLocks.Nag(19, 24), "Crypt: with no key the vault is out of reach and the gate says what it wants");
+    keys.Add("crypt_gate"); LabLocks.Granted("crypt_gate");
+    var s1 = Flood(start.X, start.Y);
+    Check(TerrainMap.CanEnterTile(19, 24) && !s1.Contains((vault.X, vault.Y)) && LabLocks.Locked(TerrainMap.GetTile(19, 32)), "Crypt: the gate key opens the passage to the bone gallery, but the slab still seals the vault");
+    keys.Add("crypt_code"); LabLocks.Granted("crypt_code");
+    Check(Count(TileType.Difficult, "sealslab") == 0 && Count(TileType.Difficult, "sealslab_on") == 2 && Flood(start.X, start.Y).Contains((vault.X, vault.Y)), "Crypt: the code turns the slab aside and the vault is reachable");
     keys.Clear(); Rt.On = false;
   }
 

@@ -1,6 +1,6 @@
 # Lock-and-key redo of the small dungeons (Yan 2026-11-10: "apply the Alpha method to all dungeons"): hand-planned floors drawn from the mission graphs in dungeons/<id>.mmd
 # (graph_check.py of the level-design skill), then flooded here with each key set (the text-grid check), then on the real built map by Tools/compile_check/test (PumpingChecks).
-# Plan characters (LabLocks.cs): '@' a rockfall tile and '$' an iron-gate tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
+# Plan characters (LabLocks.cs): '@' a rockfall tile, '$' an iron-gate tile and '^' a sealed-slab tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
 # Rooms are plain rectangles: the first version used Plan.jag (bitten corners, alcoves), whose one-tile staircase walls the wall atlas draws as odd dark blocks (Yan: "weird textures"); the mess comes from furniture, debris and grit instead.
 # Marks: E the way in, G the goal room (the outfall: daylight through a grating, NOT a second exit: a zone has one exit anchor per target), H/C/V landmarks, J/K/L stashes.
 import os, sys, collections
@@ -169,6 +169,58 @@ def smugglers_check(p):
     ok(out, all(pos(g, c) in s0 for c in 'JL'), "the side cache and the dug-out nook are reachable with no key")
     return out
 
+def chapel_crypt():
+    """Chapel Crypt (T1, under the chapel). Graph dungeons/chapel_crypt.mmd: the stair -> the burial passage (the hub: the iron gate and, beyond it, the sealed slab are in sight down the passage)
+    -> the ossuary (the ledger '3': the vault code) -> the priest's cell (the strongbox '4': the gate key) ; the gate ('$' x2) across the passage -> the bone gallery -> the slab ('^' x2, needs the code)
+    -> the family vault (goal). A hole from the ossuary into the gallery is the loop; the collapsed side crypt off the gallery is a dead end that pays. Both locks cross NORTH-SOUTH legs (seen from the front)."""
+    p = Plan(40, 44, 9501); r = p.r
+    p.room(16, 2, 8, 6, ',')                                       # St: the stair landing
+    p.vline(19, 8, 25, 2, ',')                                     # Pa: the burial passage, south from the landing (to the gallery: the gate is across it)
+    for y in (9, 12, 15, 18, 21):                                  # burial niches either side
+        p.room(15, y, 3, 2, ','); p.room(22, y, 3, 2, ',')
+    p.room(4, 10, 10, 10, ','); p.hline(14, 18, 14, 2, ',')        # Os: the ossuary, west
+    p.room(4, 3, 6, 5, ','); p.vline(7, 8, 9, 1, ',')              # Pc: the priest's cell, north of the ossuary
+    p.room(6, 26, 28, 4, ',')                                      # Bg: the bone gallery, a long cross passage beyond the gate
+    p.vline(10, 20, 25, 1, ','); p.g[24][10] = 'r'; p.g[25][10] = 'r'   # the hole from the ossuary into the gallery (rubble)
+    p.room(28, 32, 7, 6, ','); p.vline(31, 30, 31, 2, ',')         # Cs: the collapsed side crypt (a dead end)
+    p.room(13, 35, 14, 7, ','); p.vline(19, 30, 34, 2, ',')        # V: the family vault (goal), at the bottom
+    for x in (19, 20): p.g[24][x] = '$'                            # the iron gate across the passage
+    for x in (19, 20): p.g[32][x] = '^'                            # the sealed slab across the way to the vault
+    for x in (6, 8, 10, 12): p.g[11][x] = 'k' if x == 12 else 'x'  # fallen bones and stone in the ossuary
+    for (x, y, ch) in ((5, 16, 'h'), (7, 16, 'h'), (11, 13, 'h'), (5, 4, 'c'), (9, 4, 'b'), (8, 27, 'h'), (14, 28, 'h'), (24, 27, 'h'), (30, 28, 'h'),
+                       (29, 34, 'k'), (33, 36, 'x'), (14, 37, 'h'), (25, 37, 'h'), (14, 40, 'c')):
+        if p.g[y][x] == ',': p.g[y][x] = ch
+    p.g[12][6] = '3'                                               # the burial ledger in the ossuary: the vault code
+    p.g[5][6] = '4'                                                # the priest's strongbox: the gate key
+    p.g[34][33] = 'J'; p.g[40][24] = 'K'                           # stashes: the collapsed crypt, the vault
+    p.g[4][19] = 'E'; p.g[39][19] = 'G'; p.g[15][8] = 'O'          # the way in, the vault's landmark, the ossuary's
+    for (x, y) in ((17, 10), (23, 13), (16, 19), (24, 22), (11, 28), (29, 29)): p.g[y][x] = '&'    # bones
+    for _ in range(14):
+        x, y = r.randrange(2, 38), r.randrange(2, 42)
+        if p.g[y][x] == ',': p.g[y][x] = r.choice("*~%\";'xxt")
+    return p
+
+CRYPT_GIVES = {'3': ('code', None), '4': ('gate', None)}
+CRYPT_LOCKS = {'$': 'gate', '^': 'code'}
+def crypt_check(p):
+    st = flood_stages(p, CRYPT_GIVES, CRYPT_LOCKS); g = p.g; out = []
+    G, L3, L4, GATE, SEAL = pos(g, 'G'), pos(g, '3'), pos(g, '4'), pos(g, '$'), pos(g, '^')
+    s0 = st[0][1]; last = st[-1][1]
+    ok(out, L3 in s0 and L4 in s0 and GATE not in s0 and SEAL not in s0, "at the start: the ledger (code) and the strongbox (gate key) are reachable; the gate and the slab are walls")
+    ok(out, G in last, f"with every key found the vault is reachable ({len(st)} stages, keys {sorted(st[-1][0])})")
+    ok(out, G not in s0, "the vault is NOT reachable with no key (the slab holds even when the hole lets you into the gallery)")
+    first = next((sorted(k) for k, seen in st if G in seen), None)
+    ok(out, first == ['code', 'gate'], f"the vault needs {first} (the code, and the gate key or the hole)")
+    # the hole is a loop for the GATE only: block it and the gallery needs the gate key
+    saved = {(10, y): g[y][10] for y in range(20, 26)}
+    for (x, y) in saved: g[y][x] = '#'
+    nohole = flood_stages(p, CRYPT_GIVES, CRYPT_LOCKS); gal = pos(g, '&') if False else (14, 28)
+    first_g = next((sorted(k) for k, seen in nohole if gal in seen), None)
+    ok(out, gal not in nohole[0][1] and first_g is not None and 'gate' in first_g, f"without the hole the bone gallery is closed at the start and opens once the gate key is held (keys then: {first_g}): the gate is the real gate on the direct way")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    ok(out, pos(g, 'J') in flood_stages(p, CRYPT_GIVES, CRYPT_LOCKS)[-1][1], "the collapsed side crypt is reachable once the gallery is")
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -217,8 +269,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

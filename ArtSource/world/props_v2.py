@@ -374,7 +374,7 @@ def trash2(seed): return TRASH[_v(seed) % 5](seed)
 def jersey2(seed): return JERSEY[_v(seed) % 5](seed)
 def brush2(seed): return BRUSH[_v(seed) % 5](seed)
 def debris2(seed): return DEBRIS[_v(seed) % 5](seed)
-V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5, "rockfall": 3, "rockfall_on": 3, "irongate": 2, "irongate_on": 2}
+V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5, "rockfall": 3, "rockfall_on": 3, "irongate": 2, "irongate_on": 2, "sealslab": 2, "sealslab_on": 2}
 
 
 def _jv(seed, kind):
@@ -845,7 +845,34 @@ def _irongate(seed, opened):
 def irongate2(seed): return _irongate(seed, False)
 def irongate_on2(seed): return _irongate(seed, True)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2}
+
+# ---------------------------------------------------------------- the sealed-slab lock (dungeons/chapel_crypt.mmd): one tile of a stone slab sealing a passage, with a carved combination dial; "_on" = pushed aside once the code is known
+def _sealslab(seed, opened):
+    r = rng(seed); K = P["rock"]; im = blank(18, 20)
+    if not opened:
+        for y in range(2, 18):
+            for x in range(0, 18):
+                px(im, x, y, K[4] if y == 2 else K[3] if x == 0 else K[1] if (x == 17 or y == 17) else K[2])
+        for _ in range(14): px(im, r.randrange(1, 17), r.randrange(3, 17), K[1])
+        for (cx, cy, rr) in ((9, 9, 5), (9, 9, 3)):                              # the carved dial: two rings and ticks
+            for a in range(0, 360, 20):
+                import math
+                px(im, int(round(cx + math.cos(math.radians(a)) * rr)), int(round(cy + math.sin(math.radians(a)) * rr)), K[0] if rr == 5 else K[4])
+        for k in range(8): px(im, 9 + (k - 4) * 0, 5 + k // 4, K[0]) if False else None
+        px(im, 9, 9, K[4]); px(im, 9, 4, hx("#c9a63e")); px(im, 9, 3, hx("#a58a3a"))     # the marker at the top of the dial
+        for x in range(1, 17): px(im, x, 17, K[0])
+    else:                                                      # pushed aside: the slab leaning against the left wall, the dark doorway open
+        for y in range(3, 18):
+            for x in range(6, 17): px(im, x, y, hx("#0b0c0d"))
+        for y in range(2, 18):
+            for x in range(0, 6): px(im, x, y, K[4] if y == 2 else K[3] if x == 0 else K[2])
+        for x in range(6, 17): px(im, x, 17, K[1]); px(im, x, 2, K[3])
+        for _ in range(6): px(im, r.randrange(6, 16), r.randrange(14, 17), K[2])
+    return finish(im, (9, 19), shadow=(16, 4, 1, -1), tall=not opened)
+def sealslab2(seed): return _sealslab(seed, False)
+def sealslab_on2(seed): return _sealslab(seed, True)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2, "sealslab": sealslab2, "sealslab_on": sealslab_on2}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 

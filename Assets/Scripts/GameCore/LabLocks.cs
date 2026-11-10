@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -82,6 +82,15 @@ namespace GameCore
                 ['4'] = new Thing { Name = "Guard Post Footlocker", Look = "stash_footlocker", Kind = "gate", Desc = "A dented footlocker under the guard's bunk, the lid wired shut with a loop that has long since rusted through.",
                                     Says = "[TUNNEL] A heavy iron key on a loop of wire, a smeared GATE scratched in the bow. It would fit the padlock down the tunnel." },
             },
+            // Chapel Crypt (Tier 1, under the chapel; dungeons/chapel_crypt.mmd): an iron gate across the burial passage (the key is in the priest's cell) and, beyond it, a sealed slab over the family
+            // vault whose combination the ossuary's ledger gives.
+            ["chapel_crypt"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Burial Ledger", Look = "stash_pda", Kind = "code", Desc = "A water-stained ledger chained to the ossuary wall, open to its last page.",
+                                    Says = "[CRYPT] The last page is a column of dates, three of them ringed in the priest's hand. Dial them on the vault's slab and it would turn." },
+                ['4'] = new Thing { Name = "Priest's Strongbox", Look = "stash_footlocker", Kind = "gate", Desc = "A small iron strongbox under the priest's cot, its hasp snapped.",
+                                    Says = "[CRYPT] An iron key as long as a hand, the bow worn smooth by thumbs. It would fit the gate across the passage." },
+            },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)
             [Depths1] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Cistern Pump", Look = "labswitch", Kind = "drain1", Needs = "power",
@@ -106,7 +115,7 @@ namespace GameCore
         public static bool Is(string key) => key != null && Prefix.Values.Any(p => key.StartsWith(p + "_"));
 
         /// <summary>The key a lock's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
-        public static string KeyOf(string look) => look == "rockfall" ? Key("pry") : look == "irongate" ? Key("gate") : look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key(WaterKind(Zone)) : null;
+        public static string KeyOf(string look) => look == "rockfall" ? Key("pry") : look == "irongate" ? Key("gate") : look == "sealslab" ? Key("code") : look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key(WaterKind(Zone)) : null;
 
         /// <summary>A lock nobody can pass yet: it has a lock and the player doesn't hold the key.</summary>
         public static bool Locked(TerrainTile t)
@@ -125,7 +134,8 @@ namespace GameCore
             if (Time.time - _nagAt > 2f)
             {
                 _nagAt = Time.time;
-                GameLog.Write(t.Look == "irongate" ? "An iron gate across the tunnel, padlocked. Whoever kept the guard post will have had the key."
+                GameLog.Write(t.Look == "sealslab" ? "A great stone slab seals the way, a carved dial in its face. Somewhere in the crypt the numbers must be written down."
+                            : t.Look == "irongate" ? "An iron gate across the tunnel, padlocked. Whoever kept the guard post will have had the key."
                             : t.Look == "rockfall" ? "A slab of fallen rock fills the tunnel, too heavy to shift by hand. Something to lever it with, maybe."
                             : t.Look == "door_badge" ? "The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED."
                             : t.Look == "door_power" ? "The blast door is dead. A hazard light: NO POWER ON THIS LEVEL."
@@ -141,6 +151,7 @@ namespace GameCore
             if (thing.v != null) GameLog.Write(thing.v.Says);
             if (key == Key("pry")) { Sfx.Play("explosion", null, 0.4f, 0.05f, 0.25f); Relight("rockfall"); }
             if (key == Key("gate")) { Sfx.Play("explosion", null, 0.25f, 0.05f, 0.15f); Relight("irongate"); }
+            if (key == Key("code")) { Sfx.Play("explosion", null, 0.45f, 0.05f, 0.3f); Relight("sealslab"); }
             if (key == Key("staff")) Relight("door_badge");
             if (key == Key("power")) { Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); }
             if (key == Key(WaterKind(Zone))) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Whirlpools(key); Drain(); }
@@ -153,7 +164,7 @@ namespace GameCore
                 for (int x = 0; x < TerrainMap.Width; x++)
                 {
                     var t = TerrainMap.GetTile(x, y);
-                    if ((t.Type == TileType.Door || (t.Type == TileType.Difficult && (look == "rockfall" || look == "irongate"))) && t.Look == look) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
+                    if ((t.Type == TileType.Door || (t.Type == TileType.Difficult && (look == "rockfall" || look == "irongate" || look == "sealslab"))) && t.Look == look) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
                 }
         }
 
@@ -193,6 +204,7 @@ namespace GameCore
         {
             if (Has(Key("pry"))) Relight("rockfall");
             if (Has(Key("gate"))) Relight("irongate");
+            if (Has(Key("code"))) Relight("sealslab");
             if (Has(Key("staff"))) Relight("door_badge");
             if (Has(Key("power"))) Relight("door_power");
             if (Has(Key(WaterKind(Zone)))) Drain();

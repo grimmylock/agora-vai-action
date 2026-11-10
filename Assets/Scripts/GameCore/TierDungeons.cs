@@ -69,44 +69,13 @@ namespace GameCore
 
         // Chapel Crypt: steps down from the chapel into burial passages, an ossuary, a collapsed side crypt,
         // and the family vault at the end with its slab pushed aside.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py chapel_crypt, graph dungeons/chapel_crypt.mmd): 'E' the stair, '3' the burial ledger (the code),
+        /// '4' the priest's strongbox (the gate key), '$' the iron gate, '^' the sealed slab, 'G' the vault, 'O' the ossuary, 'J' 'K' stashes.</summary>
         public static MapLayout ChapelCrypt()
         {
-            var c = new TerrainCanvas(40, 40, TerrainCanvas.Seed("chapel_crypt"));
-            for (int y = 0; y < 40; y++) for (int x = 0; x < 40; x++) c.Put(x, y, Solid, "wall");
-            // the stair landing
-            Room(c, 17, 2, 6, 5, Concrete);
-            c.Landmark("Crypt Stair", 19, 3).Exit("perimeter", 19, 3);
-            // the main passage south, burial niches either side
-            Room(c, 18, 7, 4, 22, Concrete);
-            for (int y = 8; y < 28; y += 3)
-            {
-                Room(c, 15, y, 3, 2, Concrete); Room(c, 22, y, 3, 2, Concrete);
-                c.Deco(15, y, "bones"); c.Put(23, y + 1, ScatterCover, "stones");
-            }
-            // the ossuary west
-            Room(c, 4, 10, 10, 9, Concrete);
-            Passage(c, 14, 14, 18, 14, 2, Concrete);
-            for (int x = 5; x < 13; x += 2) { c.Put(x, 11, ScatterCover, "stones"); c.Deco(x, 17, "bones"); }
-            c.Put(8, 14, HardCover, "block").Put(10, 14, HardCover, "block");
-            c.Landmark("Ossuary", 8, 15);
-            // the collapsed side crypt east
-            Room(c, 27, 12, 9, 8, Concrete);
-            Passage(c, 22, 15, 27, 15, 2, Concrete);
-            c.Blob(32, 16, 3, Difficult, 0, 0.5f, "rubble");
-            c.Put(29, 13, HardCover, "block").Put(34, 13, HardCover, "block");
-            // a cross passage and the lower crypt
-            Room(c, 6, 29, 28, 3, Concrete);
-            Room(c, 4, 22, 5, 7, Concrete);
-            Passage(c, 6, 19, 6, 22, 2, Concrete);
-            // the sealed vault
-            Room(c, 14, 32, 12, 6, Concrete);
-            for (int x = 16; x < 25; x += 3) c.Put(x, 34, HardCover, "block");
-            c.Put(17, 36, Difficult, "rubble").Deco(22, 36, "bones");
-            c.Landmark("Sealed Vault", 20, 35).Stash("Sealed Vault", 24, 36);
-            Room(c, 30, 24, 5, 5, Concrete);
-            Passage(c, 32, 20, 32, 24, 2, Concrete);
-            c.Put(31, 25, ScatterCover, "crate");
-            return Finish(c, "wall");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Crypt Stair", "perimeter"), ['G'] = ("Sealed Vault", null), ['O'] = ("Ossuary", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("chapel_crypt")) { ['K'] = "Sealed Vault", ['J'] = "Collapsed Crypt" };
+            return FloorPlan("chapel_crypt", LabPlans["chapel_crypt"], "wall", Concrete, marks, stashes);
         }
 
         // Pumping Station Basement: the stair down from the pump room, a flooded pump hall with the dead pumps,
