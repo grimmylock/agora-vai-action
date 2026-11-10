@@ -41,3 +41,6 @@ Not dungeons, so no locks planned: farmhouse_upper, school_upper, flats_2, flats
 ## Order proposed (small and self-contained first, boss labs last)
 pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit, flooded_bunker (story: check Tier1Story), stranded_ferry, camp_shelter, drydock_tunnels, hospital_morgue, then the plan-based ones (maintenance_tunnels, underground_bunker, underground_labyrinth, deep_caverns, siege_catacombs, lattice_foundry_lower), the story labs last (Beta with Boss 1, Gamma with the Sealed Vault).
 Caveat on the graphs: a "hole" or "shortcut" edge that touches a room behind a lock makes that lock avoidable on that route by design (as Alpha's hole is); the graph checker only proves it is never *required*.
+
+## Plan-drawing rule
+New plans use plain rectangular rooms (`Plan.room`), never `Plan.jag`: bitten corners and alcoves make one-tile staircase walls the wall atlas draws as odd dark blocks (found on the Pumping Basement, 2026-11-10). Walls between rooms may be any thickness: built walls (concrete, metal, hull, plaster) always draw as a plain slab top.

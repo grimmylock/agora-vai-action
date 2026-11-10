@@ -1,6 +1,7 @@
 # Lock-and-key redo of the small dungeons (Yan 2026-11-10: "apply the Alpha method to all dungeons"): hand-planned floors drawn from the mission graphs in dungeons/<id>.mmd
 # (graph_check.py of the level-design skill), then flooded here with each key set (the text-grid check), then on the real built map by Tools/compile_check/test (PumpingChecks).
 # Plan letters (LabLocks.cs): 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
+# Rooms are plain rectangles: the first version used Plan.jag (bitten corners, alcoves), whose one-tile staircase walls the wall atlas draws as odd dark blocks (Yan: "weird textures"); the mess comes from furniture, debris and grit instead.
 # Marks: E the way in, G the goal room (the outfall: daylight through a grating, NOT a second exit: a zone has one exit anchor per target), H/C/V landmarks, J/K/L stashes.
 import os, sys, collections
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -10,20 +11,20 @@ def pumping_basement():
     """Pumping Station Basement (T1, under the marshes' pump room). Graph: St -> Ph (the hub, the dead pumps behind windows from the control room) / St -> Vg (the fuse) -> Cr (the breaker needs it)
     -> power -> the pump panel's power door -> the pump -> the culvert's black water drains -> the outfall (goal). A hole in the wall Vg <-> Ph is the loop. Sump = a dry dead end that pays."""
     p = Plan(56, 40, 9101); r = p.r
-    p.jag(3, 3, 8, 7, bite=0.5)                                   # St: the stair down
+    p.room(3, 3, 8, 7)                                   # St: the stair down
     p.hline(11, 25, 5, 2)                                         # the long gallery east to the valves
-    p.jag(26, 3, 21, 7, bite=0.3)                                 # Vg: the valve gallery
+    p.room(26, 3, 21, 7)                                 # Vg: the valve gallery
     p.vline(6, 10, 11, 2); p.put(6, 10, 'D'); p.put(7, 10, 'D')   # St -> Ph
-    p.jag(4, 12, 31, 16, bite=0.4)                                # Ph: the pump hall
+    p.room(4, 12, 31, 16)                                # Ph: the pump hall
     p.vline(41, 10, 12, 2)                                        # Vg -> Cr
-    p.jag(36, 13, 13, 10, bite=0.4)                               # Cr: the control room, above the waterline
-    p.jag(4, 30, 8, 7, bite=0.4)                                  # Pp: the pump panel room
+    p.room(36, 13, 13, 10)                               # Cr: the control room, above the waterline
+    p.room(4, 30, 8, 7)                                  # Pp: the pump panel room
     p.vline(7, 28, 29, 2); p.put(7, 28, '2'); p.put(8, 28, '2')   # its power door
-    p.jag(14, 30, 7, 6, bite=0.4)                                 # Sump: a dry dead end
+    p.room(14, 30, 7, 6)                                 # Sump: a dry dead end
     p.vline(17, 28, 29, 2); p.put(17, 28, 'D')
     p.vline(28, 28, 29, 2); p.put(28, 28, 'D'); p.put(29, 28, 'D')   # the culvert's door
     p.vline(27, 29, 34, 3, 'W'); p.hline(27, 50, 33, 3, 'W')       # the culvert: black water over your head
-    p.jag(51, 30, 4, 8, bite=0.3)                                 # Of: the outfall
+    p.room(51, 30, 4, 8)                                 # Of: the outfall
     for x in range(35, 36):                                       # windows from the control room onto the pump hall
         for y in range(15, 19): p.g[y][x] = 'n'
     for (x, y) in ((30, 10), (31, 10), (30, 11), (31, 11)): p.g[y][x] = 'r'   # the hole knocked through, valve gallery <-> pump hall
