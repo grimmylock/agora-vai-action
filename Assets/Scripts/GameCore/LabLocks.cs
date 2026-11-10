@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -70,6 +70,12 @@ namespace GameCore
                                     Desc = "The pump panel for the drainage culvert, its lamps dark: no power reaches it.",
                                     Says = "[PUMPS] The pump shudders, then thumps. Down the culvert the black water starts to slide away." },
             },
+            // Secret Cave (Tier 1, under the perimeter fields; dungeons/secret_cave.mmd): the smugglers dropped a slab across the tunnel behind them; a pry bar from their camp lifts it.
+            ["secret_cave"] = new Dictionary<char, Thing>
+            {
+                ['4'] = new Thing { Name = "Smugglers' Crate", Look = "stash_toolbox", Kind = "pry", Desc = "A split wooden crate in the corner of the old camp, a bent tool sticking out of the straw.",
+                                    Says = "[CAVE] A steel pry bar, bent and rust-red, still sharp at one end. It would lever a fallen slab." },
+            },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)
             [Depths1] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Cistern Pump", Look = "labswitch", Kind = "drain1", Needs = "power",
@@ -94,7 +100,7 @@ namespace GameCore
         public static bool Is(string key) => key != null && Prefix.Values.Any(p => key.StartsWith(p + "_"));
 
         /// <summary>The key a lock's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
-        public static string KeyOf(string look) => look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key(WaterKind(Zone)) : null;
+        public static string KeyOf(string look) => look == "rockfall" ? Key("pry") : look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key(WaterKind(Zone)) : null;
 
         /// <summary>A lock nobody can pass yet: it has a lock and the player doesn't hold the key.</summary>
         public static bool Locked(TerrainTile t)
@@ -113,7 +119,8 @@ namespace GameCore
             if (Time.time - _nagAt > 2f)
             {
                 _nagAt = Time.time;
-                GameLog.Write(t.Look == "door_badge" ? "The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED."
+                GameLog.Write(t.Look == "rockfall" ? "A slab of fallen rock fills the tunnel, too heavy to shift by hand. Something to lever it with, maybe."
+                            : t.Look == "door_badge" ? "The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED."
                             : t.Look == "door_power" ? "The blast door is dead. A hazard light: NO POWER ON THIS LEVEL."
                             : "The water is black and over your head. Somewhere a pump would have to run to clear it.");
             }
@@ -125,6 +132,7 @@ namespace GameCore
         {
             var thing = Things.SelectMany(z => z.Value.Values.Select(v => (z.Key, v))).FirstOrDefault(p => KeyIn(p.Key, p.v.Kind) == key);
             if (thing.v != null) GameLog.Write(thing.v.Says);
+            if (key == Key("pry")) { Sfx.Play("explosion", null, 0.4f, 0.05f, 0.25f); Relight("rockfall"); }
             if (key == Key("staff")) Relight("door_badge");
             if (key == Key("power")) { Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); }
             if (key == Key(WaterKind(Zone))) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Whirlpools(key); Drain(); }
@@ -137,7 +145,7 @@ namespace GameCore
                 for (int x = 0; x < TerrainMap.Width; x++)
                 {
                     var t = TerrainMap.GetTile(x, y);
-                    if (t.Type == TileType.Door && t.Look == look) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
+                    if ((t.Type == TileType.Door || (t.Type == TileType.Difficult && look == "rockfall")) && t.Look == look) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
                 }
         }
 
@@ -175,6 +183,7 @@ namespace GameCore
         /// <summary>Called when a map is built: locks whose key the player already holds start open (a save, a second visit).</summary>
         public static void Refresh()
         {
+            if (Has(Key("pry"))) Relight("rockfall");
             if (Has(Key("staff"))) Relight("door_badge");
             if (Has(Key("power"))) Relight("door_power");
             if (Has(Key(WaterKind(Zone)))) Drain();

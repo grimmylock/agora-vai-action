@@ -60,7 +60,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1821,6 +1821,31 @@ static class Program {
     Check(Count(TileType.Door, "door_power") == 0 && In(s1, pump.X, pump.Y) && !s1.Contains((outfall.X, outfall.Y)) && !Stashes.Blocked(pump), "Pumping: power on - the panel's door unlocks, the pump is reachable, the outfall is not (deep water)");
     keys.Add("pump_drain"); LabLocks.Granted("pump_drain");
     Check(Count(TileType.Difficult, "deepwater") == 0 && Flood(start.X, start.Y).Contains((outfall.X, outfall.Y)), "Pumping: the pump runs - the culvert drains and the outfall is reachable");
+    keys.Clear(); Rt.On = false;
+  }
+
+  // Secret Cave, redone with a rockfall lock (2026-11-10, dungeons/secret_cave.mmd): flooded from the culvert pipe with and without the pry bar, on the real built map.
+  static void CaveChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "secret_cave";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Cave Mouth"); var nook = TerrainMap.Landmarks.First(l => l.Name == "Stash Nook");
+    var crate = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "cave_pry");
+    Check(Count(TileType.Difficult, "rockfall") == 3 && crate != null && TerrainMap.Exits.Count(e => e.TargetZoneId == "perimeter") == 1, $"Cave: three rockfall tiles, the smugglers' crate with the pry bar, the way out ({Count(TileType.Difficult, "rockfall")})");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, crate.X, crate.Y) && s0.Contains((nook.X, nook.Y)) && !TerrainMap.CanEnterTile(30, 13), "Cave: with no key the camp and (by the crawl) the nook are reachable, but the rockfall itself is a wall");
+    Check(LabLocks.Locked(TerrainMap.GetTile(30, 13)) && LabLocks.Nag(30, 13), "Cave: the rockfall is a lock, and bumping it says what it wants");
+    keys.Add("cave_pry"); LabLocks.Granted("cave_pry");
+    Check(Count(TileType.Difficult, "rockfall") == 0 && Count(TileType.Difficult, "rockfall_on") == 3 && TerrainMap.CanEnterTile(30, 13) && In(Flood(start.X, start.Y), 30, 13), "Cave: the pry bar lifts the rockfall (its look turns to cleared rubble) and the tunnel is open");
     keys.Clear(); Rt.On = false;
   }
 

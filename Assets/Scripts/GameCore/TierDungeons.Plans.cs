@@ -57,6 +57,7 @@ namespace GameCore
                         case 'D': c.Put(x, y, Door); c.Paint(x, y, 1, 1, floor); continue;
                         case '1': c.Put(x, y, Door, "door_badge"); c.Paint(x, y, 1, 1, floor); continue;   // Boss 2: a lock you need the staff badge for (LabLocks)
                         case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
+                        case 'R': c.Put(x, y, Difficult, "rockfall"); c.Paint(x, y, 1, 1, floor); continue;   // 2026-11-10: a rockfall across a tunnel (LabLocks: a pry bar lifts it)
                         case 'Z': c.Put(x, y, Solid, wallLook); break;            // Boss 1: a cracked wall (E breaks it; a landmark marks it)
                         case 'h': c.Put(x, y, HardCover, "block"); break;
                         case 'm': c.Put(x, y, HardCover, "machine"); break;

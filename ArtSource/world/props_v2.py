@@ -374,7 +374,7 @@ def trash2(seed): return TRASH[_v(seed) % 5](seed)
 def jersey2(seed): return JERSEY[_v(seed) % 5](seed)
 def brush2(seed): return BRUSH[_v(seed) % 5](seed)
 def debris2(seed): return DEBRIS[_v(seed) % 5](seed)
-V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5}
+V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5, "block": 5, "block_v": 5, "block_c": 5, "scrap": 5, "fountain": 5, "hatch": 5, "pillar": 5, "culvert": 5, "pipe": 5, "pipepost": 5, "rockfall": 3, "rockfall_on": 3}
 
 
 def _jv(seed, kind):
@@ -802,7 +802,27 @@ def _heat(seed, post, kind):
 def pipe2(seed): return _heat(seed, False, _v(seed) % 5)
 def pipepost2(seed): return _heat(seed, True, _v(seed) % 5)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2}
+
+# ---------------------------------------------------------------- the rockfall lock (dungeons/secret_cave.mmd): three tiles across a tunnel, each a heap of fallen rock and timber; "_on" = the same tile after the pry bar has lifted it
+def _rockfall(seed, cleared):
+    r = rng(seed); R = P["rock"]; W_ = P["wood"]; im = blank(18, 18)
+    if not cleared:
+        for k in range(7):                                     # big stones, back to front
+            cx, cy, rr = r.randint(4, 14), r.randint(5, 13), r.randint(3, 5)
+            _ell(im, cx, cy, rr, rr * 0.8, lambda x, y, e, cy=cy, cx=cx: R[4] if (y < cy - 1 and x < cx + 1) else R[3] if e < 0.7 else R[2] if y < cy + 2 else R[1])
+        for _ in range(26): px(im, r.randrange(1, 17), r.randrange(8, 17), r.choice((R[0], R[1], R[2], R[3])))
+        for x in range(2, 16): px(im, x, 16, R[0])
+        line(im, 3, 6, 14, 10, W_[2]); line(im, 3, 7, 14, 11, W_[1])     # a snapped timber jammed in
+        for _ in range(5): px(im, r.randrange(2, 16), r.randrange(10, 16), hx("#0e1012"))   # black gaps between the stones
+    else:
+        for _ in range(7): _ell(im, r.randint(3, 14), r.randint(11, 15), r.randint(1, 2), 1.1, lambda x, y, e: R[3] if e < 0.5 else R[1])
+        for _ in range(18): px(im, r.randrange(1, 17), r.randrange(10, 17), r.choice((R[1], R[2], R[3])))
+        line(im, 2, 14, 9, 15, W_[1])
+    return finish(im, (9, 16), shadow=(15, 4, 1, -1), tall=not cleared)
+def rockfall2(seed): return _rockfall(seed, False)
+def rockfall_on2(seed): return _rockfall(seed, True)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 

@@ -57,40 +57,13 @@ namespace GameCore
 
         // Rust Culvert cave (Secret Cave Area): the road's drainage pipe opens into a natural cave system that
         // runs under the fields - a pool, a squeeze, and the smugglers' old stash nook at the far end.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py secret_cave, graph dungeons/secret_cave.mmd): 'E' the culvert pipe in, 'G' the stash nook,
+        /// '4' the smugglers' crate with the pry bar, 'R' the rockfall (three tiles across the east tunnel), 'K' / 'J' stashes.</summary>
         public static MapLayout SecretCave()
         {
-            var c = new TerrainCanvas(44, 40, TerrainCanvas.Seed("secret_cave"));
-            c.FillAll(Solid, 0);
-            for (int y = 0; y < 40; y++) for (int x = 0; x < 44; x++) c.Put(x, y, Solid, "cliff");
-            // the culvert pipe: a straight concrete run with a trickle of water
-            Room(c, 3, 3, 14, 4, Concrete);
-            for (int x = 4; x < 16; x += 3) c.Deco(x, 5, "puddle");
-            c.Landmark("Cave Mouth", 5, 4).Exit("perimeter", 4, 4);
-            // where the pipe broke into the cave
-            Cavern(c, 20, 6, 4);
-            Passage(c, 16, 5, 20, 6, 2, CaveFloor);
-            Cavern(c, 30, 9, 5);
-            Passage(c, 22, 7, 30, 9, 3, CaveFloor);
-            // the pool chamber
-            Cavern(c, 31, 21, 6);
-            Passage(c, 30, 12, 31, 18, 2, CaveFloor);
-            Flood(c, 28, 19, 7, 5);
-            c.Put(26, 18, Solid, "rock").Put(35, 24, Solid, "rock");
-            // the squeeze west, past the bones of someone who didn't make it
-            Passage(c, 26, 23, 14, 26, 1, CaveFloor);
-            Cavern(c, 12, 27, 5);
-            c.Deco(13, 28, "bones").Put(10, 25, ScatterCover, "debris");
-            // the stash nook
-            Cavern(c, 9, 35, 3);
-            Passage(c, 12, 30, 9, 33, 2, CaveFloor);
-            c.Put(8, 36, ScatterCover, "crate").Put(10, 36, ScatterCover, "crate").Put(7, 34, ScatterCover, "crate");
-            c.Landmark("Stash Nook", 9, 35).Stash("Stash Nook", 9, 36);
-            // a side gallery back north (a loop, so you're never cornered)
-            Cavern(c, 40, 32, 3);
-            Passage(c, 36, 24, 40, 30, 2, CaveFloor);
-            Passage(c, 40, 30, 40, 14, 1, CaveFloor);
-            Passage(c, 34, 10, 40, 14, 1, CaveFloor);
-            return Finish(c, "cliff");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Cave Mouth", "perimeter"), ['G'] = ("Stash Nook", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("secret_cave")) { ['K'] = "Stash Nook", ['J'] = "Wet Cache" };
+            return FloorPlan("secret_cave", LabPlans["secret_cave"], "cliff", CaveFloor, marks, stashes);
         }
 
         // Chapel Crypt: steps down from the chapel into burial passages, an ossuary, a collapsed side crypt,

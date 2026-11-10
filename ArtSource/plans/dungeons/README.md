@@ -36,7 +36,7 @@ Existing in code: **badge** (blue card-reader door, plan '1'), **power** (dead h
 | deep_caverns | - | natural caves | rockfall (pry) + dam lever (drain) | crawl, chimney |
 Not dungeons, so no locks planned: farmhouse_upper, school_upper, flats_2, flats_3 (a building's upper floors; optional locked rooms could come later).
 
-## Status: pumping_basement BUILT (2026-11-10). Next: secret_cave (needs the new `rockfall` lock kind).
+## Status: pumping_basement and secret_cave BUILT (2026-11-10; the rockfall lock kind exists). Next: smugglers_tunnel (needs the `gate` lock kind).
 
 ## Order proposed (small and self-contained first, boss labs last)
 pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit, flooded_bunker (story: check Tier1Story), stranded_ferry, camp_shelter, drydock_tunnels, hospital_morgue, then the plan-based ones (maintenance_tunnels, underground_bunker, underground_labyrinth, deep_caverns, siege_catacombs, lattice_foundry_lower), the story labs last (Beta with Boss 1, Gamma with the Sealed Vault).

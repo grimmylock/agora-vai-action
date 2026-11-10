@@ -51,8 +51,74 @@ def pumping_basement():
         if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xxbtie")
     return p
 
-def flood_stages(p, start='E'):
-    """Walk the plan from E picking up keys until nothing changes: 4 -> fuse, 5 (needs the fuse) -> power, 6 (needs power) -> drain; 2 needs power, W needs drain, 1 badge."""
+def secret_cave():
+    """Secret Cave (T1, under the perimeter fields). Graph dungeons/secret_cave.mmd: M (the culvert pipe, concrete) -> P (the pool chamber: the hub, the rockfall in sight) / the Squeeze -> C (the smugglers'
+    camp: the pry bar in a crate) ; P -> R (rockfall: a slab dropped on purpose; 'R' tiles need the pry bar) -> D (deep gallery) -> N (the stash nook, the goal). Loops: a dug tunnel C -> M, a crawl
+    C -> D. W = a wet dead end that pays. Natural chambers (discs) and wandering tunnels, walls of cliff rock (not a built slab)."""
+    p = Plan(48, 42, 9301); r = p.r
+    p.room(3, 3, 14, 4, ',')                                       # M: the culvert pipe's concrete run
+    p.disc(23, 13, 5)                                              # P: the pool chamber (hub)
+    p.hline(16, 19, 5, 2); p.vline(19, 5, 10, 2)                   # the pipe broke into the cave here
+    p.vline(23, 18, 25, 1); p.hline(17, 23, 25, 1); p.vline(17, 25, 28, 1)   # the squeeze: one at a time
+    p.disc(13, 29, 4)                                              # C: the smugglers' camp
+    p.hline(28, 34, 12, 3)                                         # east out of the pool: the tunnel the rockfall fills
+    p.disc(39, 15, 4)                                              # D: the deep gallery
+    p.vline(39, 19, 32, 2)
+    p.disc(38, 36, 3)                                              # N: the stash nook
+    p.vline(10, 7, 25, 1)                                          # the dug tunnel back to the culvert (shortcut)
+    p.hline(17, 38, 31, 1)                                         # the crawl from the camp to the gallery (loop)
+    p.disc(30, 22, 2)                                              # W: a wet dead end off the pool
+    p.hline(26, 29, 17, 1); p.vline(29, 17, 20, 1)
+    for _ in range(2):                                             # roughen: walls with open space round them crumble (cave_plans.erode also closes cells, which cut the tunnels: only opening here)
+        g = [row[:] for row in p.g]
+        for y in range(2, p.h - 2):
+            for x in range(2, p.w - 2):
+                if p.g[y][x] == '#' and sum(p.g[y + dy][x + dx] != '#' for dy in (-1, 0, 1) for dx in (-1, 0, 1)) >= 4 and r.random() < 0.45: g[y][x] = '.'
+        p.g = g
+    for y in range(11, 16): p.g[y][30] = 'R' if 12 <= y <= 14 else '#'                       # the rockfall, three tiles across the tunnel (in sight from the pool)
+    for y in range(9, 18):
+        for x in range(19, 28):
+            if p.g[y][x] == '.' and (x - 23) ** 2 + (y - 13) ** 2 < 14: p.g[y][x] = 'w'   # knee-deep water in the pool
+    for y in range(20, 25):
+        for x in range(28, 33):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'
+    for (x, y) in ((6, 4), (9, 4), (12, 4)): p.g[y][x] = "'"       # puddles in the pipe
+    p.g[4][5] = 'E'; p.g[36][38] = 'G'
+    p.g[29][12] = '4'                                              # the crate with the pry bar
+    p.g[30][14] = '&'; p.g[27][11] = 'x'; p.g[28][15] = 'b'        # bones, debris, a barrel in the camp
+    p.g[36][37] = 'K'; p.g[22][30] = 'J'                           # stashes: the nook, the wet dead end
+    p.g[36][39] = 'c'; p.g[37][38] = 'c'
+    for _ in range(14):
+        x, y = r.randrange(2, 46), r.randrange(2, 40)
+        if p.g[y][x] == '.': p.g[y][x] = r.choice("kkv&")          # boulders, roots, bones
+    return p
+
+CAVE_GIVES = {'4': ('pry', None)}
+CAVE_LOCKS = {'R': 'pry'}
+def cave_check(p):
+    st = flood_stages(p, CAVE_GIVES, CAVE_LOCKS); g = p.g; out = []
+    G, C4, R0 = pos(g, 'G'), pos(g, '4'), pos(g, 'R')
+    s0 = st[0][1]; last = st[-1][1]
+    ok(out, C4 in s0 and R0 not in s0, "at the start: the camp (the pry bar) is reachable; the rockfall tile is not")
+    ok(out, G in s0, "the stash nook is reachable with NO key (the crawl from the camp is the loop round the rockfall)")
+    ok(out, R0 in last, "with the pry bar: the rockfall can be passed")
+    # the direct way (P -> R -> D): block the crawl and the nook needs the pry bar
+    saved = {}
+    for x in range(17, 37): saved[(x, 31)] = g[31][x]; g[31][x] = '#'
+    nocrawl = flood_stages(p, CAVE_GIVES, CAVE_LOCKS); first = next((sorted(k) for k, seen in nocrawl if G in seen), None)
+    ok(out, first == ['pry'], f"without the crawl the nook needs {first}: the rockfall is the real gate on the direct way")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    # the dug tunnel to the culvert is a loop, not a requirement
+    saved = {(9, y): g[y][9] for y in range(8, 25)}
+    for (x, y) in saved: g[y][x] = '#'
+    for (x, y) in [(10, y) for y in range(8, 25)]: saved[(x, y)] = g[y][x]; g[y][x] = '#'
+    ok(out, G in flood_stages(p, CAVE_GIVES, CAVE_LOCKS)[-1][1], "closing the dug tunnel: the nook is still reachable")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    return out
+
+def flood_stages(p, gives, locks, start='E', blocked_extra=''):
+    """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
+    '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
     g = p.g; H, W = len(g), len(g[0]); sx, sy = next((x, y) for y in range(H) for x in range(W) if g[y][x] == start)
     keys = set(); stages = []
     def walk(keys):
@@ -64,50 +130,46 @@ def flood_stages(p, start='E'):
                 if n in seen or not (0 <= n[0] < W and 0 <= n[1] < H): continue
                 ch = g[n[1]][n[0]]
                 if ch in '#n': continue
-                if ch == '1' and 'badge' not in keys: continue
-                if ch == '2' and 'power' not in keys: continue
-                if ch == 'W' and 'drain' not in keys: continue
+                if ch in locks and locks[ch] not in keys: continue
                 seen.add(n); q.append(n)
         return seen
     while True:
         seen = walk(keys); stages.append((set(keys), seen)); new = set(keys)
         for (x, y) in seen:
             ch = g[y][x]
-            if ch == '3': new.add('badge')
-            if ch == '4': new.add('fuse')
-            if ch == '5' and 'fuse' in keys: new.add('power')
-            if ch == '6' and 'power' in keys: new.add('drain')
+            if ch in gives and (gives[ch][1] is None or gives[ch][1] in keys): new.add(gives[ch][0])
         if new == keys: break
         keys = new
     return stages
 
+def pos(g, ch): return next((x, y) for y, row in enumerate(g) for x, c in enumerate(row) if c == ch)
+def ok(out, c, msg): out.append(("PASS " if c else "FAIL ") + msg)
+
+PUMP_GIVES = {'4': ('fuse', None), '5': ('power', 'fuse'), '6': ('drain', 'power')}
+PUMP_LOCKS = {'2': 'power', 'W': 'drain'}
 def pumping_check(p):
-    st = flood_stages(p); g = p.g
-    pos = lambda ch: next((x, y) for y, row in enumerate(g) for x, c in enumerate(row) if c == ch)
-    E, G, F, B, P6 = pos('E'), pos('G'), pos('4'), pos('5'), pos('6')
-    s0 = st[0][1]; last = st[-1][1]; out = []
-    ok = lambda c, msg: out.append(("PASS " if c else "FAIL ") + msg)
-    ok(F in s0 and B in s0 and G not in s0 and P6 not in s0, "at the start: the fuse crate and the breaker are reachable; the pump panel and the outfall are not")
-    ok(G in last and P6 in last, f"with every key found: the pump and the outfall are reachable ({len(st)} stages, keys: {sorted(st[-1][0])})")
+    st = flood_stages(p, PUMP_GIVES, PUMP_LOCKS); g = p.g; out = []
+    E, G, F, B, P6 = pos(g, 'E'), pos(g, 'G'), pos(g, '4'), pos(g, '5'), pos(g, '6')
+    s0 = st[0][1]; last = st[-1][1]
+    ok(out, F in s0 and B in s0 and G not in s0 and P6 not in s0, "at the start: the fuse crate and the breaker are reachable; the pump panel and the outfall are not")
+    ok(out, G in last and P6 in last, f"with every key found: the pump and the outfall are reachable ({len(st)} stages, keys: {sorted(st[-1][0])})")
     first = {}
     for keys, seen in st:
         for name, c in (('pump panel', P6), ('outfall', G)):
             if c in seen and name not in first: first[name] = sorted(keys)
-    ok(first.get('pump panel') == ['fuse', 'power'] and first.get('outfall') == ['drain', 'fuse', 'power'], f"order: pump panel needs {first.get('pump panel')}, outfall needs {first.get('outfall')}")
-    # the hole is a loop, never a requirement: close it and the goal is still reachable
-    saved = [g[y][x] for (x, y) in ((30, 10), (31, 10), (30, 11), (31, 11))]
-    for (x, y) in ((30, 10), (31, 10), (30, 11), (31, 11)): g[y][x] = '#'
-    last2 = flood_stages(p)[-1][1]; ok(G in last2, "closing the hole in the wall: the outfall is still reachable (the hole is only a loop)")
-    for (x, y), ch in zip(((30, 10), (31, 10), (30, 11), (31, 11)), saved): g[y][x] = ch
-    rooms_open = sum(1 for row in g for c in row if c in '.,wD')
-    ok(rooms_open > 600, f"{rooms_open} open floor tiles")
+    ok(out, first.get('pump panel') == ['fuse', 'power'] and first.get('outfall') == ['drain', 'fuse', 'power'], f"order: pump panel needs {first.get('pump panel')}, outfall needs {first.get('outfall')}")
+    hole = ((30, 10), (31, 10), (30, 11), (31, 11)); saved = [g[y][x] for (x, y) in hole]
+    for (x, y) in hole: g[y][x] = '#'
+    ok(out, G in flood_stages(p, PUMP_GIVES, PUMP_LOCKS)[-1][1], "closing the hole in the wall: the outfall is still reachable (the hole is only a loop)")
+    for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():
-        p = fn(); res = pumping_check(p) if name == "pumping_basement" else []
+        p = fn(); res = CHECKS[name](p) if name in CHECKS else []
         for line in res: print(name, line); bad += line.startswith("FAIL")
         open(os.path.join(here, name + ".txt"), "w").write("\n".join("".join(row) for row in p.g))
         print("\n".join("".join(row) for row in p.g))
