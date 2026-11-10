@@ -872,7 +872,106 @@ def _sealslab(seed, opened):
 def sealslab2(seed): return _sealslab(seed, False)
 def sealslab_on2(seed): return _sealslab(seed, True)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2, "sealslab": sealslab2, "sealslab_on": sealslab_on2}
+
+# ---------------------------------------------------------------- furniture facings (Yan, 2026-11-10: "every object is placed facing the camera, it doesn't look natural")
+# Every prop below has one drawn orientation: its front faces the camera (south). New families `<look>_fn` (faces north: we see its BACK), `<look>_fe` (faces east: we see its SIDE, the long axis now runs
+# north-south so the sprite is a slim column) and `<look>_fw` (faces west: the mirror of fe). WorldArt.StandingAt picks the family from the wall the object stands against (Facing): back to the
+# north wall = the default sprite, back to the south wall = fn, against the west wall = fe, against the east wall = fw; free-standing pieces get a stable pick by position.
+def _mirror(p):
+    from PIL import ImageOps
+    im = ImageOps.mirror(p.im); return Prop(im, (im.width - 1 - p.pivot[0], p.pivot[1]), p.shadow, p.tall)
+def _lockers_f(seed, view):
+    s = P["olive"] if seed % 2 else P["steel"]
+    top = props.flat(s[3], edge=s[4])
+    if view == "n":
+        def back(im, x0, y0, w, h):
+            props.flat(s[1], bottom=s[0], left=s[2])(im, x0, y0, w, h)
+            for x in (x0 + 5, x0 + 10): [px(im, x, y0 + y, s[2]) for y in range(h)]
+            for x, y in ((x0 + 2, y0 + 3), (x0 + 12, y0 + 3), (x0 + 2, y0 + 14), (x0 + 12, y0 + 14)): px(im, x, y, s[3])      # rivets
+            px(im, x0 + 7, y0 + 8, hx("#c8c0a8")); px(im, x0 + 8, y0 + 8, hx("#c8c0a8"))                                      # a paper tag
+        return finish(props.box(15, 4, 18, top, back), (7, 21), shadow=(15, 5, 2, -1), tall=True)
+    def side(im, x0, y0, w, h):
+        props.flat(s[2], bottom=s[0], left=s[3])(im, x0, y0, w, h)
+        for y in (y0 + 2, y0 + 3): px(im, x0 + 1, y, s[0])                                        # vent slits
+        for y in range(h): px(im, x0 + w - 1, y0 + y, s[4] if y < 12 else s[3])                    # the lit door edge at the front
+        px(im, x0 + w - 2, y0 + 9, s[4])                                                          # a handle
+    return finish(props.box(4, 11, 18, top, side), (2, 28), shadow=(6, 7, 1, -2), tall=True)
+def _desk_f(seed, view):
+    c = P["wood"]; top = props.flat(c[3], edge=c[4])
+    if view == "n":
+        def back(im, x0, y0, w, h):
+            props.flat(c[1], bottom=c[0])(im, x0, y0, w, h)
+            ImageDraw.Draw(im).rectangle([x0 + 2, y0 + 1, x0 + w - 3, y0 + h - 2], outline=c[2])        # the modesty panel
+            for y in range(y0 + 4, y0 + h): px(im, x0 + w - 2, y, c[0])
+        im = props.box(16, 6, 7, top, back); px(im, 4, 1, hx("#c8c0a8")); px(im, 5, 1, hx("#c8c0a8"))
+        return finish(im, (8, 12), shadow=(16, 4, 2, -1))
+    def side(im, x0, y0, w, h):
+        props.flat(c[1], bottom=c[0], left=c[2])(im, x0, y0, w, h)
+        for y in range(y0, y0 + 3): px(im, x0 + w - 1, y, c[2])                                   # the drawer front peeking at the front edge
+    im = props.box(6, 11, 7, top, side); px(im, 2, 3, hx("#c8c0a8")); px(im, 3, 3, hx("#c8c0a8")); px(im, 2, 7, hx("#c8c0a8"))
+    return finish(im, (3, 17), shadow=(7, 7, 1, -2))
+def _cabinet_f(seed, view):
+    s = P["steel"]; top = props.flat(s[3], edge=s[4])
+    if view == "n":
+        def back(im, x0, y0, w, h):
+            props.flat(s[1], bottom=s[0], left=s[2])(im, x0, y0, w, h)
+            for y in (y0 + 5, y0 + 11): [px(im, x, y, s[0]) for x in range(x0 + 1, x0 + w - 1)]
+            px(im, x0 + 2, y0 + 2, s[3]); px(im, x0 + w - 3, y0 + 2, s[3])
+        return finish(props.box(12, 4, 17, top, back), (6, 20), shadow=(12, 4, 2, -1), tall=True)
+    def side(im, x0, y0, w, h):
+        props.flat(s[2], bottom=s[0], left=s[3])(im, x0, y0, w, h)
+        for y in range(h): px(im, x0 + w - 1, y0 + y, s[3])
+        px(im, x0 + 1, y0 + 4, s[0]); px(im, x0 + 1, y0 + 12, s[0])
+    return finish(props.box(4, 10, 17, top, side), (2, 26), shadow=(6, 6, 1, -2), tall=True)
+def _console_f(seed, view):
+    s = P["steel"]; im = blank(20, 18) if view == "n" else blank(11, 18); d = ImageDraw.Draw(im)
+    if view == "n":                                                  # from behind: the monitors' dark backs with vents, cables, the desk's plain back panel
+        d.rectangle([0, 9, 19, 12], fill=s[2]); d.line([(0, 9), (19, 9)], fill=s[3])
+        d.rectangle([0, 13, 19, 17], fill=s[1]); d.line([(0, 17), (19, 17)], fill=s[0])
+        for x in range(2, 19, 4): px(im, x, 15, s[0])
+        for mx in (1, 10):
+            d.rectangle([mx, 0, mx + 8, 7], fill=s[0]); d.rectangle([mx + 1, 1, mx + 7, 6], fill=s[1])
+            for x in range(mx + 2, mx + 7, 2): px(im, x, 2, s[0]); px(im, x, 4, s[0])
+            px(im, mx + 4, 8, s[0]); px(im, mx + 4, 7, s[0])
+        for x in (4, 8, 14): px(im, x, 10, s[0]); px(im, x, 11, s[0])
+        return finish(im, (10, 17), shadow=(20, 4, 2, -1))
+    d.rectangle([0, 9, 10, 12], fill=s[2]); d.line([(0, 9), (10, 9)], fill=s[3])                      # the desk from the side
+    d.rectangle([0, 13, 10, 17], fill=s[1]); d.line([(0, 17), (10, 17)], fill=s[0]); d.line([(0, 13), (0, 17)], fill=s[3])
+    d.rectangle([3, 1, 7, 7], fill=s[1]); d.line([(3, 1), (3, 7)], fill=s[3]); d.rectangle([2, 8, 8, 8], fill=s[0])   # a monitor, edge-on
+    px(im, 9, 15, props.LED[seed % 3])
+    return finish(im, (5, 17), shadow=(11, 4, 1, -1))
+def _machine_f(seed, view):
+    g = P["olive"] if seed % 2 else ramp("#2f3a3c", "#3f4e50", "#536567", "#6b7f80", "#8a9c9c"); S = P["steel"]; R = P["rust"]; r = rng(seed)
+    if view == "n":                                                  # the lathe from behind: the motor housing, belt guard, the bed's back
+        im = blank(25, 15); d = ImageDraw.Draw(im)
+        d.rectangle([3, 10, 8, 14], fill=g[1]); d.rectangle([17, 10, 22, 14], fill=g[1]); d.line([(3, 14), (8, 14)], fill=g[0]); d.line([(17, 14), (22, 14)], fill=g[0])
+        d.rectangle([2, 6, 23, 9], fill=g[1]); d.line([(2, 6), (23, 6)], fill=g[2])
+        d.rectangle([1, 1, 7, 9], fill=g[2]); d.line([(1, 1), (7, 1)], fill=g[3]); d.line([(1, 2), (1, 9)], fill=g[3])
+        d.rectangle([3, 3, 6, 8], fill=g[1])                          # the motor housing
+        for y in range(4, 8, 2): px(im, 4, y, g[0]); px(im, 5, y, g[0])
+        d.rectangle([12, 3, 15, 6], fill=g[2]); d.rectangle([19, 3, 22, 6], fill=g[2])
+        for x in range(8, 22, 2): px(im, x, 8, S[1])                  # the way cover's slots
+        for _ in range(4): px(im, r.randrange(2, 22), r.randrange(2, 9), R[2])
+        return finish(im, (12, 14), shadow=(23, 5, 1, -1), tall=True)
+    im = blank(10, 16); d = ImageDraw.Draw(im)                        # the tailstock end, seen from the side: a narrow column
+    d.rectangle([1, 8, 8, 15], fill=g[1]); d.line([(1, 15), (8, 15)], fill=g[0]); d.line([(1, 8), (1, 15)], fill=g[2])
+    d.rectangle([0, 3, 9, 8], fill=g[2]); d.line([(0, 3), (9, 3)], fill=g[3]); d.line([(0, 4), (0, 8)], fill=g[3])
+    disc(im, 5, 6, 1.5, S[3]); px(im, 4, 5, S[4])                    # the handwheel
+    px(im, 8, 11, hx("#c84a32")); px(im, 3, 11, S[4])
+    for _ in range(3): px(im, r.randrange(1, 9), r.randrange(9, 15), R[2])
+    return finish(im, (5, 15), shadow=(10, 4, 1, -1), tall=True)
+
+FACING_BASE = {"lockers": _lockers_f, "desk": _desk_f, "cabinet": _cabinet_f, "console": _console_f, "machine": _machine_f}
+def _facing_prop(base, view):
+    def f(seed):
+        p = FACING_BASE[base](seed, "n" if view == "n" else "e")
+        return _mirror(p) if view == "w" else p
+    return f
+FACINGS = {f"{b}_f{v}": _facing_prop(b, v) for b in FACING_BASE for v in ("n", "e", "w")}
+FACING_VARIANTS = {f"{b}_f{v}": (2 if b in ("lockers", "machine") else 1) for b in FACING_BASE for v in ("n", "e", "w")}
+V2_VARIANTS.update(FACING_VARIANTS)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2, "sealslab": sealslab2, "sealslab_on": sealslab_on2, **FACINGS}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 

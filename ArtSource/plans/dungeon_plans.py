@@ -1,6 +1,6 @@
 # Lock-and-key redo of the small dungeons (Yan 2026-11-10: "apply the Alpha method to all dungeons"): hand-planned floors drawn from the mission graphs in dungeons/<id>.mmd
 # (graph_check.py of the level-design skill), then flooded here with each key set (the text-grid check), then on the real built map by Tools/compile_check/test (PumpingChecks).
-# Plan characters (LabLocks.cs): '!' a steel blast door ('D' is a wooden one), '@' a rockfall tile, '$' an iron-gate tile and '^' a sealed-slab tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
+# Plan characters (LabLocks.cs): '(' a heavy blast door, '!' a steel door ('D' is a wooden one), '@' a rockfall tile, '$' an iron-gate tile and '^' a sealed-slab tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
 # Rooms are plain rectangles: the first version used Plan.jag (bitten corners, alcoves), whose one-tile staircase walls the wall atlas draws as odd dark blocks (Yan: "weird textures"); the mess comes from furniture, debris and grit instead.
 # Marks: E the way in, G the goal room (the outfall: daylight through a grating, NOT a second exit: a zone has one exit anchor per target), H/C/V landmarks, J/K/L stashes.
 import os, sys, collections
@@ -342,7 +342,7 @@ def flooded_bunker():
     p = Plan(48, 48, 9801); r = p.r
     p.room(20, 2, 8, 5, ',')                                       # Bd: the blast door room
     p.vline(23, 7, 8, 2); p.room(20, 9, 8, 6)                      # Dl: the decontamination lock (a door each side)
-    for x in (23, 24): p.g[7][x] = '!'; p.g[15][x] = '!'   # blast doors (steel), not wooden ones
+    for x in (23, 24): p.g[7][x] = '('; p.g[15][x] = '!'   # the heavy blast door off the marsh, then a steel door out of the decon lock
     p.vline(23, 15, 17, 2); p.hline(4, 44, 18, 3)                  # the main corridor (the hub), east-west
     p.room(4, 22, 10, 10); p.vline(8, 21, 21, 2)                   # Ba: the barracks, west
     p.room(4, 35, 10, 8); p.vline(8, 32, 34, 2)                    # Ms: the mess (a dead end)

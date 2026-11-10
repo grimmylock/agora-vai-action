@@ -152,6 +152,20 @@ namespace GameCore
         private static TerrainTile TileAt(int x, int y) => TerrainMap.Tiles[y, x] ?? new TerrainTile();
 
         /// <summary>A wall/mass cell, or a closed door (they join walls). Open doors break the wall line.</summary>
+        /// <summary>2026-11-10 (Yan: "every object is placed facing the camera, it doesn't look natural"): furniture whose look has back and side sprites (`p_<look>_fn / _fe / _fw`, ArtSource/world/props_v2.py
+        /// FACINGS). Its back goes against the wall beside it: a wall to the north = the drawn front faces the camera (the default sprite, null); a wall to the south = it faces north ("n": we see its back);
+        /// a wall to the west = it faces east ("e": its side); a wall to the east = "w". Free-standing pieces (no wall beside them) get a stable pick by position.</summary>
+        static readonly HashSet<string> FacingProps = new HashSet<string> { "lockers", "desk", "cabinet", "console", "machine" };
+        private static string Facing(int x, int y)
+        {
+            if (Wallish(x, y - 1)) return null;
+            if (Wallish(x, y + 1)) return "n";
+            if (Wallish(x - 1, y)) return "e";
+            if (Wallish(x + 1, y)) return "w";
+            float r = H01(x, y, 61);
+            return r < 0.5f ? null : r < 0.75f ? "n" : r < 0.88f ? "e" : "w";   // mostly front or back: a slim side view in open floor reads oddly
+        }
+
         private static bool Wallish(int x, int y)
         {
             if (x < 0 || y < 0 || x >= _w || y >= _h) return true;
@@ -347,7 +361,7 @@ namespace GameCore
 
         /// <summary>Which face a door wears: an ordinary one, a blast door, or Boss 2's lab locks (blue badge readers, hazard-striped power doors,
         /// each lit green once unlocked - LabLocks).</summary>
-        static string DoorFace(string look) => look == "metaldoor" ? "metaldoor" : look == "door_badge" ? "badgedoor" : look == "door_badge_on" ? "badgedoor_on"
+        static string DoorFace(string look) => look == "blast" ? "blastdoor" : look == "metaldoor" ? "metaldoor" : look == "door_badge" ? "badgedoor" : look == "door_badge_on" ? "badgedoor_on"
             : look == "door_power" ? "powerdoor" : look == "door_power_on" ? "powerdoor_on" : "door";
 
         /// <summary>What stands on a cell (0 or 1 sprite).</summary>
@@ -390,6 +404,7 @@ namespace GameCore
             {
                 string rl = RunLook(x, y, l);
                 s = Pick("p_" + rl, H01(x, y, 3)) ?? Pick("p_" + l, H01(x, y, 3));
+                if (s != null && FacingProps.Contains(l)) { var fc = Facing(x, y); if (fc != null) s = Pick("p_" + l + "_f" + fc, H01(x, y, 3)) ?? s; }   // 2026-11-10: furniture turns with the wall it stands against
                 if (s != null && Natural.Contains(l) && !InRun(x, y, l))         // pieces of a run stay in line
                 {
                     bool patch = t.Type == TileType.Difficult;          // reeds/brush/rubble fields: break the rows up
