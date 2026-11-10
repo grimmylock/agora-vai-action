@@ -55,6 +55,7 @@ namespace GameCore
                         case ',': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Concrete); continue;
                         case '=': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Grate); continue;     // a steel catwalk deck
                         case 'D': c.Put(x, y, Door); c.Paint(x, y, 1, 1, floor); continue;
+                        case '!': c.Put(x, y, Door, "metal"); c.Paint(x, y, 1, 1, floor); continue;   // 2026-11-10 (Yan: "all doors are wooden doors, even a blast door"): a steel blast door; 'D' stays a wooden door
                         case '1': c.Put(x, y, Door, "door_badge"); c.Paint(x, y, 1, 1, floor); continue;   // Boss 2: a lock you need the staff badge for (LabLocks)
                         case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
                         case '@': c.Put(x, y, Difficult, "rockfall"); c.Paint(x, y, 1, 1, floor); continue;   // 2026-11-10: a rockfall across a tunnel (LabLocks: a pry bar lifts it)

@@ -1,6 +1,6 @@
 # Lock-and-key redo of the small dungeons (Yan 2026-11-10: "apply the Alpha method to all dungeons"): hand-planned floors drawn from the mission graphs in dungeons/<id>.mmd
 # (graph_check.py of the level-design skill), then flooded here with each key set (the text-grid check), then on the real built map by Tools/compile_check/test (PumpingChecks).
-# Plan characters (LabLocks.cs): '@' a rockfall tile, '$' an iron-gate tile and '^' a sealed-slab tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
+# Plan characters (LabLocks.cs): '!' a steel blast door ('D' is a wooden one), '@' a rockfall tile, '$' an iron-gate tile and '^' a sealed-slab tile (symbols, NOT letters: the foundry plans use R and F as landmark marks); 1 badge door, 2 power door, 4 fuse crate, 5 breaker (needs the fuse), 6 pump (needs power), W deep water (until the pump runs).
 # Rooms are plain rectangles: the first version used Plan.jag (bitten corners, alcoves), whose one-tile staircase walls the wall atlas draws as odd dark blocks (Yan: "weird textures"); the mess comes from furniture, debris and grit instead.
 # Marks: E the way in, G the goal room (the outfall: daylight through a grating, NOT a second exit: a zone has one exit anchor per target), H/C/V landmarks, J/K/L stashes.
 import os, sys, collections
@@ -14,15 +14,15 @@ def pumping_basement():
     p.room(3, 3, 8, 7)                                   # St: the stair down
     p.hline(11, 25, 5, 2)                                         # the long gallery east to the valves
     p.room(26, 3, 21, 7)                                 # Vg: the valve gallery
-    p.vline(6, 10, 11, 2); p.put(6, 10, 'D'); p.put(7, 10, 'D')   # St -> Ph
+    p.vline(6, 10, 11, 2); p.put(6, 10, '!'); p.put(7, 10, '!')   # St -> Ph (steel doors)
     p.room(4, 12, 31, 16)                                # Ph: the pump hall
     p.vline(41, 10, 12, 2)                                        # Vg -> Cr
     p.room(36, 13, 13, 10)                               # Cr: the control room, above the waterline
     p.room(4, 30, 8, 7)                                  # Pp: the pump panel room
     p.vline(7, 28, 29, 2); p.put(7, 28, '2'); p.put(8, 28, '2')   # its power door
     p.room(14, 30, 7, 6)                                 # Sump: a dry dead end
-    p.vline(17, 28, 29, 2); p.put(17, 28, 'D')
-    p.vline(28, 28, 29, 2); p.put(28, 28, 'D'); p.put(29, 28, 'D')   # the culvert's door
+    p.vline(17, 28, 29, 2); p.put(17, 28, '!')
+    p.vline(28, 28, 29, 2); p.put(28, 28, '!'); p.put(29, 28, '!')   # the culvert's door (steel)
     p.vline(27, 29, 34, 3, 'W'); p.hline(27, 50, 33, 3, 'W')       # the culvert: black water over your head
     p.room(51, 30, 4, 8)                                 # Of: the outfall
     for x in range(35, 36):                                       # windows from the control room onto the pump hall
@@ -342,7 +342,7 @@ def flooded_bunker():
     p = Plan(48, 48, 9801); r = p.r
     p.room(20, 2, 8, 5, ',')                                       # Bd: the blast door room
     p.vline(23, 7, 8, 2); p.room(20, 9, 8, 6)                      # Dl: the decontamination lock (a door each side)
-    for x in (23, 24): p.g[7][x] = 'D'; p.g[15][x] = 'D'
+    for x in (23, 24): p.g[7][x] = '!'; p.g[15][x] = '!'   # blast doors (steel), not wooden ones
     p.vline(23, 15, 17, 2); p.hline(4, 44, 18, 3)                  # the main corridor (the hub), east-west
     p.room(4, 22, 10, 10); p.vline(8, 21, 21, 2)                   # Ba: the barracks, west
     p.room(4, 35, 10, 8); p.vline(8, 32, 34, 2)                    # Ms: the mess (a dead end)
