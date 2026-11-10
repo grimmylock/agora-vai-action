@@ -345,6 +345,7 @@ namespace GameData
                 L("Ram Hall", "The long pit where the crushers' hydraulic rams stand, half in black water."),
                 L("Oil Sump", "The pit's sump: oil, water and whatever fell in."),
                 L("Foreman's Cage", "A mesh cage where the foreman kept the logbooks and his locker."),
+                L("Pay Vault", "The strongroom where the crews' wages were kept, behind a blast door that lost its power years ago."),
             },
             ["valley_mine"] = new List<LandmarkDef>
             {

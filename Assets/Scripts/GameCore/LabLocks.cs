@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -96,6 +96,18 @@ namespace GameCore
             {
                 ['4'] = new Thing { Name = "Tool Shed Rack", Look = "stash_toolbox", Kind = "pry", Desc = "A rack of mining tools on the shed wall, most of them rusted solid.",
                                     Says = "[MINE] A long steel pry bar, the end worn to a chisel edge. It would shift fallen timbers." },
+            },
+            // Crusher Pit (Tier 2, under Crusher Row; dungeons/crusher_pit.mmd): the Alpha locks. The foreman's locker in the oil sump holds the staff badge (the service tunnel's blue door), the spares crate in the cage the
+            // fuse, the ram breaker in the control booth needs it; power wakes the dead blast door onto the pay vault.
+            ["crusher_pit"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Foreman's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 70, Desc = "A dented steel locker at the sump's far end, FOREMAN stencilled on the door in oil.",
+                                    Says = "[PIT] A staff badge on a greasy lanyard, the photo gone to black. The card readers down here would still know it." },
+                ['4'] = new Thing { Name = "Ram Spares Crate", Look = "stash_toolbox", Kind = "fuse", Desc = "A crate of hydraulic spares under the foreman's desk.",
+                                    Says = "[PIT] A heavy cartridge fuse in a greased sleeve, RAM FEED 3 on the tag." },
+                ['5'] = new Thing { Name = "Ram Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The rams' breaker panel. One fuse holder is empty and scorched.",
+                                    Says = "[PIT] The breaker slams home. Far off, the rams shudder once, and the blast door's lamp turns amber." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

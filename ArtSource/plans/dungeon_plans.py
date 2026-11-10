@@ -275,6 +275,65 @@ def mine_check(p):
     for (x, y), ch in vs.items(): g[y][x] = ch
     return out
 
+def crusher_pit():
+    """Crusher Pit (T2, under Crusher Row). Graph dungeons/crusher_pit.mmd (the goal is the PAY VAULT behind the dead blast door, not an adit: the zone has no second exit): the pit ladder -> the ram hall (the hub: the
+    stopped rams, the dead power door in sight) -> the service tunnel -> the oil sump (a nest; the foreman's locker '3' = the badge) ; the tunnel's badge door ('1' x2) -> the foreman's cage (the spares crate '4' =
+    the fuse) -> the control booth (the ram breaker '5', needs the fuse = power) ; the power door ('2' x2) in the ram hall's east wall -> the pay vault (goal). A hole from the sump up into the ram hall is the loop.
+    The Alpha locks: badge and power."""
+    p = Plan(56, 44, 9701); r = p.r
+    p.room(3, 3, 7, 6, ',')                                        # Pl: the pit ladder
+    p.hline(10, 11, 5, 2)
+    p.room(12, 4, 29, 16)                                          # Rh: the ram hall
+    p.vline(26, 20, 25, 2)                                         # Sv: the service tunnel, south from the hall
+    p.hline(26, 41, 26, 2)                                         # and east, to the cage
+    p.room(12, 28, 19, 13)                                         # Os: the oil sump
+    p.room(42, 21, 11, 11)                                         # Fc: the foreman's cage
+    p.room(42, 34, 11, 8); p.vline(47, 32, 33, 2)                  # Cb: the control booth, south of the cage
+    p.hline(41, 45, 11, 2); p.room(46, 6, 8, 11)                   # Pv: the pay vault, behind the power door in the hall's east wall
+    p.vline(16, 20, 27, 2); p.g[20][16] = p.g[20][17] = 'r'; p.g[27][16] = p.g[27][17] = 'r'   # the hole from the sump up into the ram hall (the loop)
+    for y in (26, 27): p.g[y][34] = '1'                            # the badge door in the service tunnel
+    for y in (11, 12): p.g[y][41] = '2'                            # the dead blast door: power
+    for x0 in (16, 22, 30, 36):                                    # the rams: 2 x 3 machine blocks standing in the hall
+        for dx in (0, 1):
+            for dy in (0, 1, 2): p.g[7 + dy][x0 + dx] = 'm'; p.g[13 + dy][x0 + dx] = 'm'
+    for y in range(17, 20):
+        for x in range(13, 40):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'                  # black water along the pit's south edge
+    for y in range(32, 40):
+        for x in range(14, 30):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'                  # the sump: oil and water
+    for (x, y, ch) in ((13, 29, 'b'), (14, 29, 'b'), (29, 30, 'b'), (14, 5, 'c'), (13, 18, 'x'), (38, 5, 'c'), (39, 18, 'x'), (44, 22, 'd'), (51, 22, 'l'), (51, 30, 'c'), (44, 36, 'd'), (51, 40, 'l'),
+                       (48, 8, 'c'), (50, 8, 'c'), (52, 14, 'l'), (4, 4, 'c'), (8, 7, 'b')):
+        if p.g[y][x] == '.': p.g[y][x] = ch
+    p.g[38][13] = '3'                                              # the foreman's locker, at the sump's far west end
+    p.g[24][44] = '4'                                              # the spares crate in the cage
+    p.g[38][50] = '5'                                              # the ram breaker in the control booth
+    p.g[30][28] = 'J'; p.g[38][44] = 'L'; p.g[8][51] = 'K'         # stashes: the sump, the booth, the pay vault
+    p.g[5][6] = 'E'; p.g[11][50] = 'G'; p.g[10][26] = 'H'; p.g[34][21] = 'O'; p.g[26][47] = 'C'
+    for _ in range(18):
+        x, y = r.randrange(2, 54), r.randrange(2, 42)
+        if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
+    return p
+
+PIT_GIVES = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse')}
+PIT_LOCKS = {'1': 'badge', '2': 'power'}
+def pit_check(p):
+    st = flood_stages(p, PIT_GIVES, PIT_LOCKS); g = p.g; out = []
+    G, L3, C4, B5 = pos(g, 'G'), pos(g, '3'), pos(g, '4'), pos(g, '5')
+    s0 = st[0][1]; last = st[-1][1]
+    ok(out, L3 in s0 and C4 not in s0 and B5 not in s0 and G not in s0, "at the start: the foreman's locker (the badge) is reachable; the cage, the breaker and the pay vault are not")
+    ok(out, G in last, f"with every key found the pay vault is reachable ({len(st)} stages, keys {sorted(st[-1][0])})")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('cage', C4), ('breaker', B5), ('pay vault', G)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('cage') == ['badge'] and firsts.get('breaker') == ['badge'] and firsts.get('pay vault') == ['badge', 'fuse', 'power'], f"order: the cage and the breaker's room need {firsts.get('cage')}; the pay vault needs {firsts.get('pay vault')} (the breaker only throws with the fuse)")
+    hole = [(x, y) for y in range(20, 28) for x in (16, 17)]; saved = {(x, y): g[y][x] for (x, y) in hole}
+    for (x, y) in hole: g[y][x] = '#'
+    ok(out, L3 in flood_stages(p, PIT_GIVES, PIT_LOCKS)[0][1] and G in flood_stages(p, PIT_GIVES, PIT_LOCKS)[-1][1], "closing the hole in the wall: the locker and the pay vault are still reachable (the hole is only a loop)")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -323,8 +382,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

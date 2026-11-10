@@ -60,7 +60,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1935,6 +1935,35 @@ static class Program {
       "Mine: the collapse is a wall that says what it wants, yet the miners' rest is reachable with no key (the crawl from the flooded drift)");
     keys.Add("mine_pry"); LabLocks.Granted("mine_pry");
     Check(Count(TileType.Difficult, "rockfall") == 0 && Count(TileType.Difficult, "rockfall_on") == 6 && TerrainMap.CanEnterTile(22, 22), "Mine: the pry bar lifts every fall (their look turns to cleared rubble) and the gallery is open");
+    keys.Clear(); Rt.On = false;
+  }
+
+  // Crusher Pit, redone with the Alpha locks (2026-11-10, dungeons/crusher_pit.mmd): on the real built map.
+  static void PitChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "crusher_pit";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Pit Ladder"); var vault = TerrainMap.Landmarks.First(l => l.Name == "Pay Vault");
+    var locker = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "crusher_staff"); var crate = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "crusher_fuse"); var breaker = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "crusher_power");
+    Check(Count(TileType.Door, "door_badge") == 2 && Count(TileType.Door, "door_power") == 2 && locker != null && crate != null && breaker != null && breaker.Requires == "crusher_fuse" && TerrainMap.Exits.Count(e => e.TargetZoneId == "scrapyard") == 1,
+      $"Pit: the badge door and the dead blast door (2 tiles each), the foreman's locker, the spares crate and the breaker (needs the fuse) ({Count(TileType.Door, "door_badge")}, {Count(TileType.Door, "door_power")})");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, locker.X, locker.Y) && !In(s0, crate.X, crate.Y) && !In(s0, breaker.X, breaker.Y) && !s0.Contains((vault.X, vault.Y)), "Pit: at the start the foreman's locker; not the cage, the breaker or the pay vault");
+    keys.Add("crusher_staff"); LabLocks.Granted("crusher_staff");
+    var s1 = Flood(start.X, start.Y);
+    Check(In(s1, crate.X, crate.Y) && In(s1, breaker.X, breaker.Y) && !s1.Contains((vault.X, vault.Y)) && Stashes.Blocked(breaker), "Pit: the badge opens the cage and the booth; the breaker waits for its fuse and the vault for the power");
+    keys.Add("crusher_fuse"); LabLocks.Granted("crusher_fuse"); Check(!Stashes.Blocked(breaker), "Pit: with the fuse the breaker throws");
+    keys.Add("crusher_power"); LabLocks.Granted("crusher_power");
+    Check(Count(TileType.Door, "door_power") == 0 && Flood(start.X, start.Y).Contains((vault.X, vault.Y)), "Pit: power on - the blast door unlocks and the pay vault is reachable");
     keys.Clear(); Rt.On = false;
   }
 

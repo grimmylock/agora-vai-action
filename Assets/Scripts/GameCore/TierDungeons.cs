@@ -144,36 +144,13 @@ namespace GameCore
 
         // The Crusher Pit: under Crusher Row, the hydraulic rams' pit and the service tunnels round it - oil, scrap
         // and black water. Mutants nest in the sump.
+        /// <summary>2026-11-10: the lock-and-key redo (ArtSource/plans/dungeon_plans.py crusher_pit, graph dungeons/crusher_pit.mmd): 'E' the ladder, '3' the foreman's locker (badge),
+        /// '1' the service tunnel's badge door, '4' the spares crate (fuse), '5' the ram breaker (power), '2' the dead blast door, 'G' the pay vault, 'H' 'O' 'C' landmarks, 'J' 'L' 'K' stashes.</summary>
         public static MapLayout CrusherPit()
         {
-            var c = new TerrainCanvas(40, 40, TerrainCanvas.Seed("crusher_pit"));
-            for (int y = 0; y < 40; y++) for (int x = 0; x < 40; x++) c.Put(x, y, Solid, "concrete");
-            Room(c, 17, 2, 6, 4, Concrete);
-            c.Landmark("Pit Ladder", 19, 3).Exit("scrapyard", 19, 3);
-            // the ram hall: a long pit with the rams standing in it
-            Room(c, 4, 8, 32, 10, Concrete);
-            Passage(c, 19, 6, 19, 8, 3, Concrete);
-            for (int x = 7; x < 34; x += 6) { c.Rect(x, 11, 2, 3, Solid, 0, "part"); c.Put(x, 13, Solid, "machine"); }
-            Flood(c, 4, 15, 32, 3);
-            c.Landmark("Ram Hall", 19, 10);
-            // service tunnels round the sides, junk choking parts of them
-            Room(c, 2, 19, 3, 18, Concrete); Room(c, 35, 19, 3, 18, Concrete);
-            Passage(c, 3, 17, 3, 19, 3, Concrete); Passage(c, 36, 17, 36, 19, 3, Concrete);
-            c.Blob(3, 27, 1, Solid, 0, 0.3f, "junk"); c.Put(2, 27, Empty).Paint(2, 27, 1, 1, Concrete);
-            c.Put(36, 24, ScatterCover, "scrap").Put(37, 30, ScatterCover, "tires");
-            // the oil sump at the bottom
-            Room(c, 6, 30, 28, 8, Concrete);
-            Passage(c, 5, 34, 6, 34, 2, Concrete); Passage(c, 34, 34, 35, 34, 2, Concrete);
-            Flood(c, 12, 32, 16, 5);
-            c.Put(8, 31, ScatterCover, "rustbarrel").Put(9, 31, ScatterCover, "rustbarrel").Put(31, 36, ScatterCover, "rustbarrel");
-            c.Landmark("Oil Sump", 20, 34);
-            // the foreman's cage
-            Room(c, 14, 21, 12, 6, Floor);
-            Passage(c, 19, 18, 19, 21, 2, Concrete); Passage(c, 19, 27, 19, 30, 2, Concrete);
-            c.Put(15, 22, ScatterCover, "desk").Put(24, 22, HardCover, "lockers").Put(15, 25, ScatterCover, "crate");
-            c.Stash("Foreman's Locker", 24, 25);
-            c.Landmark("Foreman's Cage", 20, 24);
-            return Finish(c, "concrete");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Pit Ladder", "scrapyard"), ['G'] = ("Pay Vault", null), ['H'] = ("Ram Hall", null), ['O'] = ("Oil Sump", null), ['C'] = ("Foreman's Cage", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("crusher_pit")) { ['J'] = "Sump Cache", ['L'] = "Booth Strongbox", ['K'] = "Pay Vault" };
+            return FloorPlan("crusher_pit", LabPlans["crusher_pit"], "concrete", Concrete, marks, stashes);
         }
 
         // The Valley Mine: the adit off Black Valley's north rim, timbered galleries with the ore rails, a flooded
