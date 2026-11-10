@@ -14,6 +14,7 @@ class Prop:
     pivot: tuple
     shadow: tuple = None       # (w, h, dx, dy)
     tall: bool = False         # occludes units standing behind it (fades)
+    scale: int = 1             # 2 = double-density art: each pixel is half a map pixel (pivot in sprite px, shadow in map px); pack.py writes it, WorldArt.Spr.S reads it
 
 def finish(im, pivot, shadow=None, tall=False, diag=False):
     im = pad(im, 1); p = (pivot[0] + 1, pivot[1] + 1)

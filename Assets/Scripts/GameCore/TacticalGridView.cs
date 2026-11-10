@@ -952,7 +952,7 @@ namespace GameCore
                     {
                         if (x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height) continue;
                         if (!_standing.TryGetValue(y * TerrainMap.Width + x, out var e) || !e.st.Fades || e.st.Sort <= WorldArt.SortBase + foot) continue;
-                        if (e.st.Left < ux + 6 && e.st.Left + e.st.Spr.W > ux - 6 && e.st.Top < foot && e.st.Top + e.st.Spr.H > foot - 14)
+                        if (e.st.Left < ux + 6 && e.st.Left + e.st.Spr.MW > ux - 6 && e.st.Top < foot && e.st.Top + e.st.Spr.MH > foot - 14)
                             _fadeNow.Add(e.sr);
                     }
             }

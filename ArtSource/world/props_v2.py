@@ -997,7 +997,7 @@ def _facing_prop(base, view):
         return _mirror(p) if view == "w" else p
     return f
 SIDE_BASES = ("lockers", "desk", "cabinet")      # Yan (2026-11-10): the console's and the lathe's side views "do not read as the object" and do not look like their front: they only get a back view (`_fn`) now
-FACING_VIEWS = {b: (("n", "e", "w") if b in SIDE_BASES else ("n",)) for b in FACING_BASE}
+FACING_VIEWS = {b: ("n",) for b in FACING_BASE}      # the x2 side views (_fe/_fw) of SIDE_BASES come from furn_x2.py, installed by props_ext.py
 FACINGS = {f"{b}_f{v}": _facing_prop(b, v) for b in FACING_BASE for v in FACING_VIEWS[b]}
 FACING_VARIANTS = {f"{b}_f{v}": (2 if b in ("lockers", "machine") else 1) for b in FACING_BASE for v in FACING_VIEWS[b]}
 V2_VARIANTS.update(FACING_VARIANTS)
@@ -1029,3 +1029,8 @@ def sheet(out, scale=6):
     bg.resize((bg.width * scale, bg.height * scale), Image.NEAREST).convert("RGB").save(out); print(out, bg.size)
 
 if __name__ == "__main__": sheet(sys.argv[1] if len(sys.argv) > 1 else "/tmp/props_v2.png")
+
+try:
+    import props_ext          # double-density props from imported CC0 art (x2 sprites, extra variants of tree/redtree/pine/deadtree)
+except ImportError:
+    pass

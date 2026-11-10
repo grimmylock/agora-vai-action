@@ -20,15 +20,17 @@ namespace GameCore
         public const int SortBase = 100;      // ground stuff below this; standing things = SortBase + foot pixel row
         public const int SortTop = 32000;     // smoke, tracers, muzzle flashes: over everything
 
-        public sealed class Spr { public string Name; public int X, Y, W, H, PvX, PvY, ShW, ShH, ShDx, ShDy; public bool Tall; }
+        public sealed class Spr { public string Name; public int X, Y, W, H, PvX, PvY, ShW, ShH, ShDx, ShDy; public bool Tall;
+            /// <summary>Double-density art: S = 2 means each sprite pixel is half a map pixel (W, H, PvX, PvY are in sprite pixels; ShW.. stay in map pixels). MW/MH = size in map pixels.</summary>
+            public int S = 1; public int MW => W / S; public int MH => H / S; }
 
         /// <summary>One standing sprite: its pivot (ground contact) in map pixels, y down.</summary>
         public struct Standing
         {
             public Spr Spr; public int X, Y; public int CellX, CellY; public bool Fades;
             public int Sort => SortBase + Y;
-            public int Left => X - Spr.PvX;
-            public int Top => Y - Spr.PvY;
+            public int Left => X - Spr.PvX / Spr.S;
+            public int Top => Y - Spr.PvY / Spr.S;
         }
 
         private static bool _loaded;
@@ -60,7 +62,7 @@ namespace GameCore
                 var f = raw.Trim().Split(' ');
                 if (f.Length < 12) continue;
                 int I(int k) => int.Parse(f[k]);
-                var s = new Spr { Name = f[0], X = I(1), Y = I(2), W = I(3), H = I(4), PvX = I(5), PvY = I(6), ShW = I(7), ShH = I(8), ShDx = I(9), ShDy = I(10), Tall = f[11] == "1" };
+                var s = new Spr { Name = f[0], X = I(1), Y = I(2), W = I(3), H = I(4), PvX = I(5), PvY = I(6), ShW = I(7), ShH = I(8), ShDx = I(9), ShDy = I(10), Tall = f[11] == "1", S = f.Length > 12 && int.TryParse(f[12], out int sc) && sc > 1 ? sc : 1 };
                 _spr[s.Name] = s;
                 int us = s.Name.LastIndexOf('_');
                 if (us > 0 && int.TryParse(s.Name.Substring(us + 1), out int v))
@@ -83,6 +85,8 @@ namespace GameCore
 
         // sprite px, y counted from the sprite's top
         private static Color32 At(Spr s, int x, int y) => _atlas[(_ah - 1 - (s.Y + y)) * _aw + s.X + x];
+        /// <summary>The sprite as seen on the 16 px map grid (masks, lights, harness blits): a double-density sprite is sampled one pixel in S.</summary>
+        private static Color32 AtM(Spr s, int x, int y) => s.S == 1 ? At(s, x, y) : At(s, x * s.S + s.S / 2, y * s.S + s.S / 2);
 
         private static readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
         /// <summary>Unity sprite for an atlas entry, pivot at its ground contact point (cached).</summary>
@@ -91,7 +95,7 @@ namespace GameCore
             if (s == null || AtlasTexture == null) return null;
             if (_sprites.TryGetValue(s.Name, out var sp) && sp != null) return sp;
             var rect = new Rect(s.X, _ah - s.Y - s.H, s.W, s.H);
-            sp = Sprite.Create(AtlasTexture, rect, new Vector2((s.PvX + 0.5f) / s.W, (s.H - s.PvY - 1f) / s.H), Px, 0, SpriteMeshType.FullRect);
+            sp = Sprite.Create(AtlasTexture, rect, new Vector2((s.PvX + 0.5f) / s.W, (s.H - s.PvY - 1f) / s.H), Px * s.S, 0, SpriteMeshType.FullRect);
             _sprites[s.Name] = sp;
             return sp;
         }
@@ -793,13 +797,13 @@ namespace GameCore
                     var s = st.Spr; int left = st.Left, top = st.Top;
                     // a 3/4 wall sprite is a face (H - 16 px tall) plus its top surface: the top's rows are depth, not height
                     int hw = s.Name.StartsWith("w_") ? s.H - Px : int.MaxValue;
-                    for (int sy = 0; sy < s.H; sy++)
+                    for (int sy = 0; sy < s.MH; sy++)
                     {
                         int up = st.Y - (top + sy);
                         if (up < 0) continue;
-                        for (int sx = 0; sx < s.W; sx++)
+                        for (int sx = 0; sx < s.MW; sx++)
                         {
-                            if (At(s, sx, sy).a < 128) continue;
+                            if (AtM(s, sx, sy).a < 128) continue;
                             if (up <= hw) Mark(left + sx, st.Y, up);
                             else for (int u = 0; u <= hw; u++) Mark(left + sx, st.Y - (up - hw), u);   // the wall's whole height stands on this spot
                         }
@@ -897,13 +901,13 @@ namespace GameCore
         private static void Blit(Color32[] px, Spr s, int left, int top, int gx0, int gy0, int gx1, int gy1)
         {
             int W = _w * Px, H = _h * Px;
-            for (int y = 0; y < s.H; y++)
+            for (int y = 0; y < s.MH; y++)
             {
                 int gy = top + y; if (gy < gy0 || gy >= gy1) continue;
-                for (int x = 0; x < s.W; x++)
+                for (int x = 0; x < s.MW; x++)
                 {
                     int gx = left + x; if (gx < gx0 || gx >= gx1) continue;
-                    var c = At(s, x, y); if (c.a == 0) continue;
+                    var c = AtM(s, x, y); if (c.a == 0) continue;
                     int i = (H - 1 - gy) * W + gx;
                     px[i] = Over(px[i], c);
                 }
@@ -960,6 +964,34 @@ namespace GameCore
 
         /// <summary>Harness / debugging: ground + every standing sprite painted in sort order.</summary>
         public static bool NoRoofs;   // Batch 92: render harness (NOROOF=1) shows every building's insides
+
+        /// <summary>Harness: ComposePreview at 2x (nearest), then every double-density sprite painted again at its own resolution, so x2 art can be judged in a real map. Sort order of the x2 sprites among themselves only.</summary>
+        public static Color32[] ComposePreviewX2(string zoneId)
+        {
+            var px = ComposePreview(zoneId);
+            if (px == null) return null;
+            int W = _w * Px, H = _h * Px, W2 = W * 2, H2 = H * 2;
+            var o = new Color32[W2 * H2];
+            for (int y = 0; y < H2; y++) { int sr = (y / 2) * W; for (int x = 0; x < W2; x++) o[y * W2 + x] = px[sr + x / 2]; }
+            var all = new List<Standing>();
+            for (int y = 0; y < _h; y++) for (int x = 0; x < _w; x++) if (StandingAt(x, y, out var st) && st.Spr.S == 2) all.Add(st);
+            all.Sort((a, b) => a.Sort != b.Sort ? a.Sort.CompareTo(b.Sort) : a.X.CompareTo(b.X));
+            foreach (var st in all)
+            {
+                var sp = st.Spr; int left = st.X * 2 - sp.PvX, top = st.Y * 2 - sp.PvY;
+                for (int y = 0; y < sp.H; y++)
+                {
+                    int gy = top + y; if (gy < 0 || gy >= H2) continue;
+                    for (int x = 0; x < sp.W; x++)
+                    {
+                        int gx = left + x; if (gx < 0 || gx >= W2) continue;
+                        var c = At(sp, x, y); if (c.a == 0) continue;
+                        int i = (H2 - 1 - gy) * W2 + gx; o[i] = Over(o[i], c);
+                    }
+                }
+            }
+            return o;
+        }
 
         public static Color32[] ComposePreview(string zoneId)
         {

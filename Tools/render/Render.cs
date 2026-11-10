@@ -42,11 +42,12 @@ static class RenderMain {
       if (Environment.GetEnvironmentVariable("STASHES") == "1")   // Batch 124: where the stashes are
         foreach (var o in TerrainMap.InteractiveObjects) Console.WriteLine($"stash {o.X},{o.Y} {TerrainMap.GetTile(o.X, o.Y).Look} {o.Name}");
       Vision.Reset();
-      var px = WorldArt.Ready ? WorldArt.ComposePreview(id) : TerrainArt.Compose(id);
+      int xs = Environment.GetEnvironmentVariable("RENDER_X2") == "1" && WorldArt.Ready ? 2 : 1;   // RENDER_X2=1: 32 px per tile, double-density sprites at full resolution
+      var px = WorldArt.Ready ? (xs == 2 ? WorldArt.ComposePreviewX2(id) : WorldArt.ComposePreview(id)) : TerrainArt.Compose(id);
       if (Environment.GetEnvironmentVariable("TIME_BAKE") == "1") {   // Batch 94: what a sun re-bake costs
         var tw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < 3; i++) WorldArt.ComposeGround();
         Console.WriteLine($"{id}: ComposeGround {tw.ElapsedMilliseconds / 3} ms per bake"); }
-      int w = TerrainMap.Width * 16, h = TerrainMap.Height * 16;
+      int w = TerrainMap.Width * 16 * xs, h = TerrainMap.Height * 16 * xs;
       if (Environment.GetEnvironmentVariable("GRADE") == "1") {   // Batch 94: the in-game colour of the hour (AtmosphereView wash at half + ColorGrade: saturation, filter, haze); no vignette
         var g = Atmosphere.Look(); float wa = g.WashA * 0.5f;
         for (int i = 0; i < px.Length; i++) {

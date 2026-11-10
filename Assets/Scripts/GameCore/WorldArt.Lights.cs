@@ -79,13 +79,13 @@ namespace GameCore
             {
                 var s = st.Spr; int left = st.Left, top = st.Top; bool wall = s.Name.StartsWith("w_"); int hw = wall ? s.H - Px : int.MaxValue;
                 bool near = System.Math.Abs(st.X - lamp.X) <= lamp.R + 40f && System.Math.Abs(st.Y - lamp.Y) <= lamp.R + 40f;
-                for (int sy = 0; sy < s.H; sy++)
+                for (int sy = 0; sy < s.MH; sy++)
                 {
                     int gy = top + sy, u = st.Y - gy; if (u < 0) continue;
                     float h = u <= hw ? u : hw, gyp = u <= hw ? st.Y : st.Y - (u - hw);
-                    for (int sx = 0; sx < s.W; sx++)
+                    for (int sx = 0; sx < s.MW; sx++)
                     {
-                        if (At(s, sx, sy).a < 128) continue;
+                        if (AtM(s, sx, sy).a < 128) continue;
                         int gx = left + sx, lx = gx - ox, ly = gy - oy;
                         if (lx >= 0 && ly >= 0 && lx < mw && ly < mw)            // what this pixel of the picture is
                         {

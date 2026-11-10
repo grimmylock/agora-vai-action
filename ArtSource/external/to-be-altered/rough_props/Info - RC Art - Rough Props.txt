@@ -1,0 +1,18 @@
+Reactorcore Art (RC Art)
+==
+PACK: Rough Props
+
+--
+
+Pixel-art sprites pack depicting various interactive combat objects/hazards that the player could use to their advantage or be endangered by. Includes a glass shattering animation for use in particle systems.
+
+--
+
+By default in image import settings, all sprites/textures have been set to 32 pixels per unit and using a point filter so they appear crisp.
+
+--
+
+Contact:
+mailto:reactorcoregames@gmail.com
+
+Enjoy!
