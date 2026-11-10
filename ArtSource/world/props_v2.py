@@ -374,9 +374,45 @@ def trash2(seed): return TRASH[_v(seed) % 5](seed)
 def jersey2(seed): return JERSEY[_v(seed) % 5](seed)
 def brush2(seed): return BRUSH[_v(seed) % 5](seed)
 def debris2(seed): return DEBRIS[_v(seed) % 5](seed)
-V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5}
+V2_VARIANTS = {"tires": 5, "trash": 5, "jersey": 5, "brush": 5, "debris": 5, "jersey_v": 5, "jersey_c": 5}
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2}
+
+def _jv(seed, kind):
+    """a north-south road barrier to match the east-west one: the lit top down the middle (painted like the variant), sloped sides, joint lines, the end face at the south"""
+    c = P["concrete"]; r = rng(seed); W, T, Hf = 7, 16, 8; im = blank(W, T + Hf)
+    for y in range(T):
+        for x in range(W): px(im, x, y, c[4] if x in (2, 3) else c[3] if x < 2 else c[2])
+        if y % 16 == 15: [px(im, x, y, c[1]) for x in range(W)]
+    for y in range(T, T + Hf):
+        for x in range(W):
+            inset = 2 if y < T + 3 else 1 if y < T + 5 else 0
+            if inset <= x < W - inset: px(im, x, y, c[2] if y < T + Hf - 1 else c[0])
+    for _ in range(3): px(im, r.randrange(W), r.randrange(T), c[1])
+    if kind == 0:                                                         # yellow ticks on the top face and the end face
+        for y in (3, 7, 11): px(im, 2, y, hx("#c9a63e")); px(im, 3, y, hx("#a58a3a"))
+        px(im, 2, T + 3, hx("#c9a63e")); px(im, 3, T + 3, hx("#a58a3a"))
+    elif kind == 1:                                                       # yellow-black chevrons all along the top
+        for y in range(1, T - 1):
+            for x in (2, 3): px(im, x, y, hx("#c9a63e") if (y + x) % 6 < 3 else hx("#2a2a28"))
+        for x in range(2, 5): px(im, x, T + 3, hx("#c9a63e") if x % 2 else hx("#2a2a28"))
+    elif kind == 2:                                                       # red and white
+        for y in range(1, T - 1):
+            for x in (2, 3): px(im, x, y, hx("#b8402e") if ((y + x) // 3) % 2 == 0 else hx("#d8d4c4"))
+        for x in range(2, 5): px(im, x, T + 3, hx("#b8402e") if x % 2 else hx("#d8d4c4"))
+    elif kind == 3:                                                       # broken through, rebar and rubble in the gap
+        for y in range(6, 11):
+            for x in range(W): px(im, x, y, (0, 0, 0, 0))
+        for k in range(4): px(im, 2 + k % 3, 5 - k // 2, P["rust"][1 + k % 3]); px(im, 3 + k % 2, 11 + k // 3, P["rust"][1 + k % 3])
+        for _ in range(7): px(im, r.randrange(W), r.randrange(7, 10), r.choice((c[1], c[2], c[3])))
+    else:                                                                 # moss, rust streaks and an orange tag
+        for _ in range(16): px(im, r.randrange(W), r.randrange(T), P["moss"][r.randint(0, 1)])
+        for y in (4, 5, 9, 10): px(im, 5, y, P["rust"][1])
+        px(im, 2, 13, hx("#d86a1e")); px(im, 3, 12, hx("#d86a1e")); px(im, 3, 14, hx("#d86a1e"))
+    return finish(im, (W // 2, T + Hf - 1), shadow=(8, 4, 1, -1))
+def jersey_v2(seed): return _jv(seed, _v(seed) % 5)
+def jersey_c2(seed): return props.corner(jersey2, jersey_v2, seed)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 
