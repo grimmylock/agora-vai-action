@@ -19,7 +19,7 @@ N = 8
 rig = C.Rig("dread_prowler", C.SPECS["dread_prowler"])
 W, H = rig.W0 + 2 * ox, rig.H0 + 2 * oy
 GROUND = oy + 47                        # the original's feet end on its row 47
-LEGS = {"far_hind": ((17, 36), 0.50, True, False), "near_hind": ((11, 36), 0.00, False, False), "far_fore": ((50, 35), 0.00, True, True), "near_fore": ((44, 35), 0.50, False, True)}
+LEGS = {"far_hind": ((23, 38), 0.50, True, False), "near_hind": ((17, 38), 0.00, False, False), "far_fore": ((47, 36), 0.00, True, True), "near_fore": ((41, 36), 0.50, False, True)}   # joints moved into the haunch and the shoulder (Yan marked the spots)
 L1, L2 = 6.2, 6.0
 STRIDE, LIFT = 6.5, 4.0
 BODY = Image.new("RGBA", rig.base.size, (0, 0, 0, 0))
@@ -47,11 +47,11 @@ def leg_img(name, i, bob, stand=False):
     fo, fl = (0.0, 0.0) if stand else foot(ph)
     if stand: fo = {"far_hind": -2.0, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl)
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1) + (-3 if hind and False else 0), GROUND - fl)
     if hind:
-        hock = (ft[0] - 1.0, ft[1] - 3.2); st = solve(hip, hock, False, 5.6, 5.4); pts = [hip, st, hock, ft]; rad = [1.9, 1.4, 1.0, 0.9]
+        hock = (ft[0] - 1.0, ft[1] - 3.2); st = solve(hip, hock, False, 5.6, 5.4); pts = [hip, st, hock, ft]; rad = [2.6, 1.8, 1.25, 1.1]
     else:
-        wr = (ft[0] - 0.3, ft[1] - 2.4); el = solve(hip, wr, True, 6.4, 5.2); pts = [hip, el, wr, ft]; rad = [1.7, 1.2, 0.95, 0.9]
+        wr = (ft[0] - 0.3, ft[1] - 2.4); el = solve(hip, wr, True, 6.4, 5.2); pts = [hip, el, wr, ft]; rad = [2.3, 1.6, 1.2, 1.1]
     segs = [(pts[j], pts[j + 1], rad[j], rad[j + 1]) for j in range(3)]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
     out = np.zeros((H, W, 4), np.uint8); k = 0.78 if far else 1.0
