@@ -24,7 +24,10 @@ CUT = 25                                # everything below this row is leg (redr
 LEGS = {"far_hind": ((12, 28), 0.50, True, False), "near_hind": ((5, 28), 0.00, False, False), "far_fore": ((47, 21), 0.00, True, True), "near_fore": ((37, 22), 0.50, False, True)}
 L1, L2 = 6.0, 5.6
 STRIDE, LIFT = 4.4, 3.2
-BODY = Image.new("RGBA", NEW.size, (0, 0, 0, 0)); _a = np.array(NEW); _a[29:, :24] = 0; _a[CUT:, 24:] = 0; BODY = Image.fromarray(_a)      # the hind THIGHS stay as Yan drew them (down to row 28); only the shins and the fore legs are redrawn
+BODY = Image.new("RGBA", NEW.size, (0, 0, 0, 0)); _a = np.array(NEW)
+NEAR_SHIN = np.zeros_like(_a); NEAR_SHIN[29:, :8] = _a[29:, :8]            # Yan's own near hind shin (x 0..7, rows 29..36), a rigid piece
+FAR_SHIN = np.zeros_like(_a); FAR_SHIN[31:, 8:18] = _a[31:, 8:18]          # Yan's own far hind shin (x 8..17, rows 31..36; row 30 is the black belly mass and stays)
+_a[29:, :8] = 0; _a[31:, 8:18] = 0; _a[CUT:, 24:] = 0; BODY = Image.fromarray(_a)      # the hind thighs and the black belly stay; the hind shins move as pieces, only the fore legs are redrawn
 HEAD = Image.new("RGBA", NEW.size, (0, 0, 0, 0))     # head rides the body (no separate sway for this sprite)
 # the leg colours: the sprite's own browns (the body is mostly the tan (99,81,68) with dark brown hollows (66,51,44) and pale streaks (142,128,108))
 C_MAIN, C_HOLLOW, C_PALE, C_DARK = (99, 81, 71), (63, 48, 43), (135, 122, 105), (37, 27, 26)
@@ -36,21 +39,34 @@ def foot(ph, hind=False):
     u = (ph - 0.55) / 0.45
     return (-S_ + 2 * S_ * (0.5 - 0.5 * math.cos(math.pi * u)), L_ * math.sin(math.pi * u))
 
-THIGH_SWING = 2.0                       # px the knee moves with the step (the foot offset of the hind leg, scaled)
-def knee_shift(name, i, stand=False):
-    if stand: return 0
-    ph = (i / N + LEGS[name][1]) % 1.0
-    return int(round(THIGH_SWING * foot(ph, True)[0] / 2.7))
+HIND_REACH = 2.0                        # px the hind shins swing either way of where Yan drew them (his stand pose is the middle)
+def hind_move(name, i, stand=False):
+    """(dx, lift rows) of a hind shin at frame i: the foot slides back while planted (stance 0..0.55), then lifts and swings forward."""
+    if stand: return 0, 0
+    ph = (i / N + LEGS[name][1]) % 1.0; fo = foot(ph, True)[0]
+    lift = 0 if ph < 0.55 else int(round(2.0 * math.sin(math.pi * (ph - 0.55) / 0.45)))
+    return int(round(HIND_REACH * fo / 2.7)), lift
+
+def place_shin(piece, top, dx, lift, canvas):
+    """Paste a rigid shin piece (rows `top`..36) moved sideways by dx; to lift the foot, delete `lift` pixel rows from the middle of the shin (so the foot stays as drawn and the leg gets shorter)."""
+    rows = list(range(top, 37)); cut = set(rows[len(rows) // 2 - 1: len(rows) // 2 - 1 + lift]) if lift else set()
+    keep = [y for y in rows if y not in cut]; y_out = top        # top-anchored: the shin stays joined to the thigh, the foot rises
+    for y in keep:
+        for x in range(piece.shape[1]):
+            if piece[y, x, 3]:
+                nx = x + dx
+                if 0 <= nx < canvas.shape[1]: canvas[y_out, nx] = piece[y, x]
+        y_out += 1
+    return canvas
 
 def swung_body(i, stand=False):
-    """BODY with the near hind thigh swung: each pixel row of the thigh (rows 21..28, columns 0..12) moves sideways as a whole by a shift that grows from 0 at the hip row to the knee shift at row 28
-    (whole pixels only, no resampling). The seam column 13 stays: a gap that opens at the seam is filled with that column's own pixel."""
-    a = np.array(BODY).copy(); sk = knee_shift("near_hind", i, stand)
+    """BODY (rgba array as an Image) with the near hind thigh sheared so its bottom row follows the near shin: each thigh pixel row (21..28, columns 0..12) moves sideways by a shift growing from 0 at row 20 to the shin's dx at row 28
+    (whole rows, no resampling); the seam column 13 stays and a gap there is filled with its own pixel."""
+    a = np.array(BODY).copy(); sk = hind_move("near_hind", i, stand)[0]
     if sk == 0: return Image.fromarray(a)
     src = a.copy()
     for y in range(21, 29):
-        sh = int(round(sk * (y - 20) / 8.0)); row = src[y, :13].copy()
-        a[y, :13] = 0
+        sh = int(round(sk * (y - 20) / 8.0)); row = src[y, :13].copy(); a[y, :13] = 0
         for x in range(13):
             nx = x + sh
             if 0 <= nx < 13 and row[x, 3]: a[y, nx] = row[x]
@@ -59,6 +75,11 @@ def swung_body(i, stand=False):
             for x in range(13 + sh, 13):
                 if not a[y, x, 3] and src[y, 13, 3]: a[y, x] = src[y, 13]
     return Image.fromarray(a)
+
+def hind_layer(name, i, stand=False):
+    piece, top = (NEAR_SHIN, 29) if name == "near_hind" else (FAR_SHIN, 31)
+    dx, lift = hind_move(name, i, stand); canvas = np.zeros((NEW.size[1], NEW.size[0], 4), np.uint8)
+    return Image.fromarray(place_shin(piece, top, dx, lift, canvas))
 
 def solve(hip, ft, fwd, l1=None, l2=None):
     l1 = l1 or L1; l2 = l2 or L2
@@ -107,7 +128,7 @@ def leg_img(name, i, bob, stand=False):
     fo, fl = (0.0, 0.0) if stand else foot(ph, name.endswith('hind'))
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox + (knee_shift(name, i, stand) if name.endswith('hind') else 0), hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
     if hind:
         hock = (ft[0] - 1.0, ft[1] - 3.4); st = ((hip[0] + hock[0]) / 2, (hip[1] + hock[1]) / 2); pts = [hip, st, hock, ft]; rad = [2.3, 2.2, 2.0, 1.9]      # the shin from the knee Yan drew
     else:
@@ -132,16 +153,20 @@ def leg_img(name, i, bob, stand=False):
 
 def frame(i, only=None, stand=False):
     bob = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * (i / N * 2) + 0.6))); sway = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
+    def leg(n):
+        if n.endswith("hind"):
+            im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); im.alpha_composite(hind_layer(n, i, stand), (ox, oy + bob)); return im
+        return m.outline(leg_img(n, i, bob, stand))        # the generated fore legs get the black contour; his own pixels (body, hind pieces) already have theirs
+    if only: return leg(only)
     far = [n for n in LEGS if LEGS[n][2]]; near = [n for n in LEGS if not LEGS[n][2]]
-    if only: return leg_img(only, i, bob, stand)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    for n in far: im.alpha_composite(leg_img(n, i, bob, stand))
+    for n in far: im.alpha_composite(leg(n))
     im.alpha_composite(swung_body(i, stand), (ox, oy + bob)); im.alpha_composite(HEAD, (ox, oy + bob + sway))
-    for n in near: im.alpha_composite(leg_img(n, i, bob, stand))
-    a = np.array(im); l, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))      # a far knee peeking out past the head as a loose speck: dropped
+    for n in near: im.alpha_composite(leg(n))
+    a = np.array(im); l, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))
     for j in range(1, k + 1):
         if (l == j).sum() < 6: a[l == j] = 0
-    return m.outline(Image.fromarray(a))
+    return Image.fromarray(a)
 
 def leg_check():
     res = {}
