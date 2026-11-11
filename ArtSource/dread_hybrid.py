@@ -128,7 +128,7 @@ def leg_img(name, i, bob, stand=False):
     fo, fl = (0.0, 0.0) if stand else foot(ph, name.endswith('hind'))
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 3 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
     if hind:
         hock = (ft[0] - 1.0, ft[1] - 3.4); st = ((hip[0] + hock[0]) / 2, (hip[1] + hock[1]) / 2); pts = [hip, st, hock, ft]; rad = [2.3, 2.2, 2.0, 1.9]      # the shin from the knee Yan drew
     else:
@@ -152,10 +152,10 @@ def leg_img(name, i, bob, stand=False):
     return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
-    bob = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * (i / N * 2) + 0.6))); sway = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
+    bob = 0 if stand else (1 if math.sin(2 * math.pi * (i / N * 2) + 0.6) > 0.35 else 0); sway = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
     def leg(n):
         if n.endswith("hind"):
-            im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); im.alpha_composite(hind_layer(n, i, stand), (ox, oy + bob)); return im
+            im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); im.alpha_composite(hind_layer(n, i, stand), (ox, oy)); return im      # the hind feet stay on the ground when the body dips
         return m.outline(leg_img(n, i, bob, stand))        # the generated fore legs get the black contour; his own pixels (body, hind pieces) already have theirs
     if only: return leg(only)
     far = [n for n in LEGS if LEGS[n][2]]; near = [n for n in LEGS if not LEGS[n][2]]
