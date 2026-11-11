@@ -520,9 +520,11 @@ namespace GameCore
         static void Silo(TerrainCanvas c, int x, int y, bool climbable, int h = 4)
         {
             if (!climbable) { c.Blob(x, y, 3, Difficult, 0, 0.45f, "rubble"); c.PaintBlob(x, y, 3, Concrete); return; }
-            c.Rect(x - 1, y - 1, 3, 3, Solid, h, "metal");   // 2026-11-11: a square ribbed-steel bin (it was a plus-shaped concrete blob that read as a tower); a round silo would need its own sprite
-            c.Put(x, y, Empty, "platform");
-            c.Ramp(x, y + 3, 0, -1, 3, 0, h, 1, "platform");
+            // 2026-11-11 (Yan: "do the round silo"): one tall prop over a 3x2 footprint, built like the watchtower: hard cover round the foot, the ladder's tile (front middle, half way up, the prop is
+            // drawn from here) and the landing under the eaves (back middle, h up). It was a steel box with a plank ramp cut into it.
+            for (int dy = 0; dy < 2; dy++) for (int dx = -1; dx <= 1; dx++) c.Put(x + dx, y + dy, HardCover, "part");
+            c.Rect(x, y + 1, 1, 1, Empty, (h + 1) / 2, "silo");
+            c.Rect(x, y, 1, 1, Empty, h, "part");
         }
 
         /// <summary>A heap of scrap (junk mass), with an optional walkable top `h` high reached from the south.</summary>

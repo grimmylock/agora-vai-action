@@ -35,6 +35,7 @@ def pack(items, W=1024):
 def main(out):
     os.makedirs(out, exist_ok=True)
     items = collect(); atlas, pos = pack(items)
+    if atlas.height > 4096: atlas, pos = pack(items, W=2048)      # 2026-11-11: the atlas outgrew 1024x4096 (the lock door faces, the x2 props, the silo): go wider, not taller, so neither side passes 4096
     atlas.save(f"{out}/world_atlas.png")
     lines = []
     for i, (name, im, pv, sh, tall, *sc) in enumerate(items):

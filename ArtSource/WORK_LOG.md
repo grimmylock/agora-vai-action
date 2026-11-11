@@ -5703,3 +5703,9 @@ Yan: "install them, then do all four".
 - Render of 1-3: `maps/renders/world_audit/four_fixes.png`; sprites `apc_van.png`.
 - Checks: compiles; the full harness was started on this build (maps and cover changed) - result in the next entry. Not checked: Unity.
 - **Full harness on that build (commit 336832f): ALL CHECKS PASSED**, exit 0, no FAIL lines. `main` not updated (Yan has not asked).
+
+## Pushed to main; the round silo (2026-11-11)
+Yan: "push it to main, then do the round silo". `main` = a8f0970 (the full harness had passed on that code).
+- **Silo:** new x2 prop `silo` (`props_x2.py`): a bolted-steel drum on a concrete ring, conical roof with a vent cap, a caged ladder up the front to a railed landing under the eaves. `TierMaps.Silo` builds the two climbable ones like the watchtower now (3x2 footprint of hard cover, the ladder's tile half way up, the landing `h` up): the plank ramp is gone, you climb from the south-middle tile. The two collapsed ones are still rubble. Render `maps/renders/world_audit/silo_in_map.png`.
+- **Atlas is 2048x4096 now** (it was 1024x4096): the silo did not fit; `pack.py` goes wider instead of taller once 4096 rows are passed. Twice the texture memory (about 32 MB uncompressed); to look at in Unity.
+- Checks: compiles, `dungeons` PASSED; full harness not run on this change (a map footprint changed in Silo Row; `main` does not have it). Not checked: Unity.

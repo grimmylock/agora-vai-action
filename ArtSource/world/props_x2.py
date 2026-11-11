@@ -526,9 +526,58 @@ def van(seed):
         if im.getpixel((x, y))[:3] in (C[2][:3], C[4][:3], C[1][:3]): d.point((x, y), fill=R[r.randrange(1, 4)])
     return X2(im, (40, 48), (36, 7, 2, -1), True)
 
+# ---------------------------------------------------------------- the grain silo of Silo Row: one tall prop over a 3x2 footprint, like the watchtower (Yan, 2026-11-11: "do the round silo")
+def silo(seed):
+    """A round bolted-steel silo: a ribbed drum four storeys high on a concrete ring, a conical roof with a vent cap, a caged ladder up the front to a railed landing under the eaves (the deck you climb to)."""
+    T = P["tin"]; S = P["steel"]; R = P["rust"]; C = P["concrete"]; r = rng(seed); im = blank(104, 198); d = ImageDraw.Draw(im)
+    Z = [sh(T[0], .85), T[0], T[1], T[2], T[3], sh(T[3], 1.12)]
+    x0, x1, yt, yb = 6, 97, 46, 184
+    def col(x):                                                                                     # a cylinder's shading: a lit band left of centre, dark at both edges
+        k = (x - x0) / (x1 - x0); return Z[1] if k < .06 else Z[3] if k < .16 else Z[5] if k < .30 else Z[4] if k < .52 else Z[3] if k < .72 else Z[2] if k < .90 else Z[0]
+    for x in range(x0, x1 + 1):
+        dy = int(round(6 * (1 - ((x - 51.5) / 46.0) ** 2) ** 0.5))                                  # the drum's foot curves toward the camera
+        d.line([(x, yt - 4), (x, yb + dy)], fill=col(x))
+    for k, y in enumerate(range(yt + 10, yb, 17)):                                                  # the rings of bolted sheets
+        for x in range(x0, x1 + 1):
+            dy = int(round(4 * (1 - ((x - 51.5) / 46.0) ** 2) ** 0.5)); d.point((x, y + dy), fill=sh(col(x), .62)); d.point((x, y + dy + 1), fill=sh(col(x), 1.14))
+        for x in range(x0 + 6 + (k % 2) * 9, x1 - 2, 18): d.line([(x, y - 15), (x, y + 2)], fill=sh(col(x), .8))   # the sheets' upright seams, staggered ring to ring
+    for x in range(x0 - 2, x1 + 3):                                                                 # the concrete ring it stands on
+        dy = int(round(6 * (1 - ((x - 51.5) / 49.0) ** 2) ** 0.5)); d.line([(x, yb + dy - 1), (x, yb + dy + 6)], fill=C[3] if x < 40 else C[2] if x < 80 else C[1]); d.point((x, yb + dy + 6), fill=C[0])
+    # the roof: a low cone seen from a little above, its eave an ellipse
+    d.ellipse([x0 - 4, yt - 16, x1 + 4, yt + 8], fill=Z[1])
+    d.polygon([(x0 - 4, yt - 4), (51, 6), (x1 + 4, yt - 4), (51, yt + 6)], fill=Z[3])
+    d.polygon([(x0 - 4, yt - 4), (51, 6), (38, yt + 4)], fill=Z[5]); d.polygon([(51, 6), (38, yt + 4), (60, yt + 6)], fill=Z[4]); d.polygon([(51, 6), (x1 + 4, yt - 4), (74, yt + 3)], fill=Z[2])
+    for (ex, ey) in ((14, yt + 1), (26, yt + 4), (60, yt + 6), (74, yt + 3), (88, yt)): d.line([(51, 6), (ex, ey)], fill=sh(Z[2], .8))    # the roof sheets' ribs
+    d.arc([x0 - 4, yt - 16, x1 + 4, yt + 8], 0, 180, fill=Z[0]); d.arc([x0 - 4, yt - 15, x1 + 4, yt + 9], 20, 160, fill=sh(Z[0], .7))    # the eave and its shadow on the drum
+    d.rectangle([47, 0, 55, 6], fill=S[2]); d.line([(47, 0), (55, 0)], fill=S[4]); d.rectangle([45, 6, 57, 8], fill=S[1])                # the vent cap
+    # the landing under the eaves and its rail
+    d.rectangle([34, yt + 14, 70, yt + 17], fill=S[1]); d.line([(34, yt + 14), (70, yt + 14)], fill=S[4]); d.line([(34, yt + 18), (70, yt + 18)], fill=S[0])
+    for x in range(35, 70, 3): d.point((x, yt + 16), fill=S[3])
+    for x in (34, 46, 58, 70): d.line([(x, yt + 4), (x, yt + 14)], fill=S[3])
+    d.line([(34, yt + 4), (70, yt + 4)], fill=S[4]); d.line([(34, yt + 9), (70, yt + 9)], fill=S[2])
+    d.line([(36, yt + 18), (30, yt + 28)], fill=S[1]); d.line([(68, yt + 18), (74, yt + 28)], fill=S[1])                                # its brackets
+    # the caged ladder
+    lx = 47
+    d.line([(lx, yt + 18), (lx, yb + 6)], fill=S[4]); d.line([(lx + 9, yt + 18), (lx + 9, yb + 6)], fill=S[1])
+    for y in range(yt + 22, yb + 6, 4): d.line([(lx + 1, y), (lx + 8, y)], fill=S[3])
+    for y in range(yt + 24, yb - 24, 14): d.arc([lx - 5, y - 4, lx + 14, y + 6], 0, 180, fill=S[2]); d.point((lx - 5, y + 1), fill=S[4])   # the cage's hoops
+    d.line([(lx - 5, yt + 24), (lx - 5, yb - 30)], fill=S[2]); d.line([(lx + 14, yt + 24), (lx + 14, yb - 30)], fill=S[0])
+    # a manhole door low on the left, a discharge chute on the right, a faded number
+    d.rounded_rectangle([18, yb - 30, 32, yb - 8], radius=4, fill=Z[2], outline=Z[0]); d.rectangle([29, yb - 21, 30, yb - 17], fill=S[4])
+    d.polygon([(76, yb - 14), (88, yb - 14), (92, yb + 2), (80, yb + 2)], fill=S[1]); d.line([(76, yb - 14), (88, yb - 14)], fill=S[3])
+    for (x, y) in ((70, yt + 44), (71, yt + 44), (72, yt + 44), (72, yt + 45), (72, yt + 46), (71, yt + 47), (70, yt + 48), (70, yt + 49), (71, yt + 49), (72, yt + 49)): d.point((x, y), fill=hx("#d8d2c0"))
+    for _ in range(26):                                                                             # rust: streaks down from the seams, spots
+        x = r.randrange(x0 + 2, x1 - 1); y = r.choice(range(yt + 12, yb - 10, 17)) + 3; ln = r.randrange(4, 16)
+        for k in range(ln):
+            if im.getpixel((x, y + k))[3]: d.point((x, y + k), fill=R[1 if k < ln // 2 else 2])
+    for _ in range(60):
+        x, y = r.randrange(x0 + 1, x1), r.randrange(yt, yb)
+        if im.getpixel((x, y))[:3] in [z[:3] for z in Z]: d.point((x, y), fill=R[r.randrange(1, 4)])
+    return X2(im, (52, 194), (50, 10, 2, -2), True)
+
 REST = {"wreck": wreck, "sunktruck": sunktruck, "engine": engine, "machine": machine, "machine_fn": machine_back, "hatch": hatch, "cables": cables,
-        "stash_cache": lambda s: cache(s, False), "stash_cache_open": lambda s: cache(s, True), "scrap": scrap, "vatsmall": vatsmall, "block_v": block_v, "jersey_v": jersey_v, "apc": apc, "van": van}
-REST_VARIANTS = {"wreck": 4, "sunktruck": 2, "engine": 2, "machine": 2, "machine_fn": 2, "hatch": 5, "cables": 2, "stash_cache": 1, "stash_cache_open": 1, "scrap": 5, "vatsmall": 2, "block_v": 5, "jersey_v": 5, "apc": 1, "van": 1}
+        "stash_cache": lambda s: cache(s, False), "stash_cache_open": lambda s: cache(s, True), "scrap": scrap, "vatsmall": vatsmall, "block_v": block_v, "jersey_v": jersey_v, "apc": apc, "van": van, "silo": silo}
+REST_VARIANTS = {"wreck": 4, "sunktruck": 2, "engine": 2, "machine": 2, "machine_fn": 2, "hatch": 5, "cables": 2, "stash_cache": 1, "stash_cache_open": 1, "scrap": 5, "vatsmall": 2, "block_v": 5, "jersey_v": 5, "apc": 1, "van": 1, "silo": 1}
 
 # ================================================================ the neighbours, brought to the same density (2026-11-11, Yan: "yes")
 def drum(d, x0, y0, w, h, c, ribs=(0.33, 0.66), open_top=None):
