@@ -20,13 +20,13 @@ rig = C.Rig("dread_prowler", C.SPECS["dread_prowler"])
 W, H = rig.W0 + 2 * ox, rig.H0 + 2 * oy
 GROUND = oy + 47                        # the original's feet end on its row 47
 LEGS = {"far_hind": ((17, 36), 0.50, True, False), "near_hind": ((11, 36), 0.00, False, False), "far_fore": ((50, 35), 0.00, True, True), "near_fore": ((44, 35), 0.50, False, True)}
-L1, L2 = 5.8, 6.2
+L1, L2 = 6.2, 6.0
 STRIDE, LIFT = 6.5, 4.0
 BODY = Image.new("RGBA", rig.base.size, (0, 0, 0, 0))
 for n in ("hind", "fore"): BODY.alpha_composite(rig.parts[n])
 HEAD = Image.new("RGBA", rig.base.size, (0, 0, 0, 0)); HEAD.alpha_composite(rig.parts["head"]); HEAD.alpha_composite(rig.parts["jaw"])
 # the leg colours: the sprite's own browns (the body is mostly the tan (99,81,68) with dark brown hollows (66,51,44) and pale streaks (142,128,108))
-C_MAIN, C_HOLLOW, C_PALE = (99, 81, 68), (66, 51, 44), (142, 128, 108)
+C_MAIN, C_HOLLOW, C_PALE, C_DARK = (99, 81, 68), (66, 51, 44), (142, 128, 108), (37, 29, 27)
 OUT = (4, 1, 2, 255)
 
 def foot(ph):
@@ -43,35 +43,42 @@ def seg(d, p, q, w, col):
     d.line([p, q], fill=col, width=w)
 
 def leg_img(name, i, bob, stand=False):
-    """One leg, thicker than the Veil's (the Dread is a heavy hyena): thigh 3 px, shin 2 px, clawed foot. Colour by position along the bone, the sprite's own browns."""
+    """One leg, tapered like a hyena's: a heavy thigh that narrows to the hock/knee, a thinner shin, a broad paw. Shaded in the body's own dark browns (lit edge on the left, shadow on the right)."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0
     fo, fl = (0.0, 0.0) if stand else foot(ph)
     if stand: fo = {"far_hind": -2.0, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name]
-    hip = (hx + ox, hy + oy + bob); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
-    im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im); W1 = (255, 255, 255, 255)
-    d.line([hip, kn], fill=W1, width=3); d.line([kn, ft], fill=W1, width=2)
-    fx, fy = int(round(ft[0])), int(round(ft[1]))
-    d.rectangle([fx - 2, fy, fx + 3, fy], fill=W1)
-    a = np.array(im); a[..., 3] = np.where(a[..., 3] > 120, 255, 0)
-    k = 0.8 if far else 1.0
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
+    hind = name.endswith("hind")
+    R = [(3.0 if hind else 2.6, 1.9), (1.5, 1.1)]                  # radius at the start and end of the thigh, then of the shin
+    a = np.zeros((H, W, 4), np.uint8)
     segs = [(hip, kn), (kn, ft)]
+    fx, fy = int(round(ft[0])), int(round(ft[1]))
+    for y in range(H):
+        for x in range(W):
+            best = None
+            for si, (p, q) in enumerate(segs):
+                vx, vy = q[0] - p[0], q[1] - p[1]; L2_ = vx * vx + vy * vy + 1e-9
+                u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / L2_)); cx, cy = p[0] + u * vx, p[1] + u * vy
+                dist = math.hypot(x - cx, y - cy); r = R[si][0] + (R[si][1] - R[si][0]) * u
+                if dist <= r and (best is None or dist / r < best[0]): best = (dist / r, si, u, (x - cx) * (-vy) + (y - cy) * vx)
+            if best: a[y, x] = (*C_MAIN, 255); a[y, x, 3] = 255; a[y, x, :3] = 0; a[y, x, 0] = 1; a[y, x, 1] = best[1]; a[y, x, 2] = int(best[2] * 100)   # scratch: seg, u
+    # the paw: a broad flat foot with a claw
+    paw = [(fx + dx, fy + dy) for dx in range(-2, 4) for dy in (0,)] + [(fx - 1 + dx, fy - 1) for dx in range(0, 4)]
+    for (x, y) in paw:
+        if 0 <= x < W and 0 <= y < H: a[y, x] = (1, 1, 100, 255)
+    out = np.zeros((H, W, 4), np.uint8); k = 0.78 if far else 1.0
     ys, xs = np.where(a[..., 3] > 0)
     for y, x in zip(ys, xs):
-        best = None
-        for si, (p, q) in enumerate(segs):
-            vx, vy = q[0] - p[0], q[1] - p[1]; L2_ = vx * vx + vy * vy + 1e-9
-            u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / L2_)); cx, cy = p[0] + u * vx, p[1] + u * vy
-            dist = math.hypot(x - cx, y - cy); side = (x - cx) * (-vy) + (y - cy) * vx
-            if best is None or dist < best[0]: best = (dist, si, u, side)
-        dist, si, u, side = best; t = (si + u) / 2.0
-        if y >= fy and x >= fx - 2: col = C_HOLLOW
-        elif side < -0.3: col = C_PALE if t < 0.6 else C_MAIN
-        elif (int(t * 10) % 4) == 0 and dist < 0.8: col = C_PALE
-        elif t < 0.55: col = C_MAIN if (int(t * 12) + (1 if side > 0 else 0)) % 3 != 0 else C_HOLLOW
-        else: col = C_HOLLOW if (int(t * 12)) % 3 == 0 else C_MAIN
-        if x == fx + 3 and y == fy: col = (210, 197, 162)      # the claw: bone
-        a[y, x, :3] = tuple(int(v * k) for v in col)
-    return Image.fromarray(a.astype(np.uint8))
+        si, u = int(a[y, x, 1]), a[y, x, 2] / 100.0; t = (si + u) / 2.0
+        left = x < (hip[0] + (kn[0] - hip[0]) * min(1, t * 2)) if si == 0 else x < kn[0] + (ft[0] - kn[0]) * u
+        if y >= fy - 1 and x >= fx - 2: col = C_DARK                         # the paw: dark
+        elif si == 0 and u < 0.35: col = C_MAIN if left else C_HOLLOW         # the thigh's muscle: lit left, shadow right
+        elif si == 0: col = C_MAIN if left and (x + y) % 2 == 0 else C_HOLLOW
+        else: col = C_HOLLOW if (x + y) % 3 else C_DARK                       # the shin: dark with a little variation
+        if si == 0 and u < 0.15 and left and (x + y) % 3 == 0: col = C_PALE      # a few pale hairs where the thigh catches the light
+        if (x, y) == (fx + 3, fy): col = (210, 197, 162)                        # the claw: bone
+        out[y, x, :3] = tuple(int(v * k) for v in col); out[y, x, 3] = 255
+    return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
     bob = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * (i / N * 2) + 0.6))); sway = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
