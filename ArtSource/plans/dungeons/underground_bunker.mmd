@@ -1,12 +1,13 @@
-%% Underground Bunker. Theme: command bunker. Locks: BADGE, POWER, BLAST (the final door opens when two reactors' worth of power is on: power from the generator, reached through the air handling). Loop: a duct air handling<->armory.
+%% Underground Bunker. Theme: command bunker. Locks: BADGE, POWER, BLAST (the final door opens when two reactors' worth of power is on: power from the generator, reached through the air handling). Loop: a duct barracks<->ration stores (2026-11-11: it was air handling<->armory, which walked round the power door).
 %% start: E
 %% goal: Cc
 flowchart TD
   E["Bunker Door {start}"] --> Hl["Corridor Junction: the hub"]
   Hl --> Bk["Barracks {item:badge}"]
+  Hl --> Rs["Ration Stores"]
   Hl -->|req:badge| Ah["Air Handling {item:fuse}"]
   Ah --> Gn["Generator Hall"]
   Gn -->|req:fuse| Sw["Generator switch {item:power}"]
   Hl -->|req:power| Ar["Armory"]
   Ar --> Cc["Command Centre {goal}"]
-  Ah -->|hole| Ar
+  Bk -->|hole| Rs

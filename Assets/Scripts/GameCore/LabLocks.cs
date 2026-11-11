@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -165,6 +165,31 @@ namespace GameCore
                 ['5'] = new Thing { Name = "Boiler Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The boiler house switchboard. One fuse carrier is empty.",
                                     Says = "[MORGUE] The board hums. Overhead the corridor lamps flicker on, and by the stair a dead door wakes." },
+            },
+            // Maintenance Tunnels (hidden, Tier 3; dungeons/maintenance_tunnels.mmd): badge -> fuse -> power -> the pump (drain).
+            ["maintenance_tunnels"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Track Foreman's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 100, Desc = "A locker with a rail company crest, the padlock long since cut.",
+                                    Says = "[TUNNELS] A maintenance pass on a chain. The tool crib's reader will take it." },
+                ['4'] = new Thing { Name = "Tool Crib Bin", Look = "stash_toolbox", Kind = "fuse", Desc = "A parts bin in the crib, every drawer labelled in a neat hand.",
+                                    Says = "[TUNNELS] A traction fuse, long as a forearm, SUB 2 on the label." },
+                ['5'] = new Thing { Name = "Substation Breaker", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The substation's main breaker. One fuse clip gapes empty.",
+                                    Says = "[TUNNELS] The breaker bangs shut and the transformers start to sing. Two dead doors come alive." },
+                ['6'] = new Thing { Name = "Gallery Pump Starter", Look = "labswitch", Kind = "drain", Needs = "power",
+                                    Desc = "The starter for the gallery's drainage pump, dark without power.",
+                                    Says = "[TUNNELS] The pump takes hold. Along the gallery the black water starts to fall." },
+            },
+            // Underground Bunker (hidden, Tier 6; dungeons/underground_bunker.mmd): the Alpha locks.
+            ["underground_bunker"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Watch Officer's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 200, Desc = "A locker at the end of the bunks, WATCH OFFICER on a card in the slot.",
+                                    Says = "[BUNKER] A watch officer's pass. The reader on the air handling door will know it." },
+                ['4'] = new Thing { Name = "Air Handling Spares", Look = "stash_toolbox", Kind = "fuse", Desc = "A spares box bolted under the fan housings.",
+                                    Says = "[BUNKER] A sealed fuse, GENERATOR HALL - BUS B printed on the tube." },
+                ['5'] = new Thing { Name = "Generator Hall Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The generator hall's bus switch, one fuse short.",
+                                    Says = "[BUNKER] The generators run up. Down the corridor the armory's dead door unlocks with a bang." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

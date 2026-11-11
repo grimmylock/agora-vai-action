@@ -46,7 +46,8 @@ namespace GameCore
                 for (int px = 0; px < rows[py].Length; px++)
                 {
                     char ch = rows[py][px]; int x = x0 + px, y = y0 + py;
-                    switch (ch)
+                    // 2026-11-11: 'N' is the eel Sump's north pool (deep water) UNLESS this plan names it as a landmark mark (the Secret Cave's west niche and the Valley Mine's main gallery were silently deep water with no landmark)
+                    switch (ch == 'N' && marks != null && marks.ContainsKey('N') ? '.' : ch)
                     {
                         case '#': c.Put(x, y, Solid, wallLook); continue;
                         case '_': c.Put(x, y, Empty); c.Paint(x, y, 1, 1, Dirt); continue;    // Batch 120: outside a non-rectangular footprint

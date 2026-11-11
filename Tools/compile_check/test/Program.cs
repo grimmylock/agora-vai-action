@@ -2030,6 +2030,8 @@ static class Program {
     BadgePowerChecks("camp_shelter", "shelter", "Shelter Stair", "Shelter Command", "crimson_woods", 2, 2);
     BadgePowerChecks("hospital_morgue", "morgue", "Morgue Landing", "Records Room", "hospital", 2, 2);
     DrydockChecks();
+    BadgePowerChecks("underground_bunker", "ubunk", "Blast Door Foyer", "Command Centre", "abandoned_city", 2, 2);
+    ChainChecks("maintenance_tunnels", "Access Hatch", "Surface Depot", "rail_yards", "mtun_staff", "mtun_fuse", "mtun_power", "mtun_drain");
   }
   // Dry Dock Tunnels (2026-11-11, dungeons/drydock_tunnels.mmd): fuse -> pump (drain) -> the sluice handle (gate), on the real built map.
   static void DrydockChecks() {
@@ -2056,6 +2058,32 @@ static class Program {
     Check(Count(TileType.Difficult, "deepwater") == 0 && In(s1, handle.X, handle.Y) && !s1.Contains((store.X, store.Y)), "Drydock: the pump drains the culvert - the sluice chamber opens, the store's gate does not");
     keys.Add("dock_gate"); LabLocks.Granted("dock_gate");
     Check(Count(TileType.Difficult, "irongate") == 0 && Flood(start.X, start.Y).Contains((store.X, store.Y)), "Drydock: the handle winds the sluice gate (and the ladder hatch) open - the fitters' store is reachable");
+    keys.Clear(); Rt.On = false;
+  }
+  // Any lock-and-key dungeon on the real built map (2026-11-11): every key object exists, the goal is unreachable with no keys and with all but the LAST key, reachable with all of them, one way out.
+  static void ChainChecks(string Z, string startLm, string goalLm, string exitTo, params string[] keyOrder) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == startLm); var goal = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == goalLm);
+    var objs = keyOrder.Select(k => TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == k)).ToList();
+    Check(start != null && goal != null && objs.All(o => o != null) && TerrainMap.Exits.Count(e => e.TargetZoneId == exitTo) == 1,
+      $"{Z}: the start, the goal, a key object for each of [{string.Join(", ", keyOrder)}] (missing: {string.Join(", ", keyOrder.Where((k, i) => objs[i] == null))}), one way out to {exitTo}");
+    if (start == null || goal == null || objs.Any(o => o == null)) { keys.Clear(); Rt.On = false; return; }
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, objs[0].X, objs[0].Y) && !In(s0, goal.X, goal.Y), $"{Z}: with no keys the first key object is reachable and the goal is not");
+    for (int i = 0; i < keyOrder.Length - 1; i++) { keys.Add(keyOrder[i]); LabLocks.Granted(keyOrder[i]); }
+    var s1 = Flood(start.X, start.Y);
+    Check(!In(s1, goal.X, goal.Y) && In(s1, objs[objs.Count - 1].X, objs[objs.Count - 1].Y), $"{Z}: with every key but the last ({keyOrder[keyOrder.Length - 1]}) its object is reachable and the goal still is not");
+    keys.Add(keyOrder[keyOrder.Length - 1]); LabLocks.Granted(keyOrder[keyOrder.Length - 1]);
+    Check(In(Flood(start.X, start.Y), goal.X, goal.Y), $"{Z}: with every key the goal is reachable");
     keys.Clear(); Rt.On = false;
   }
   static string WorldArtMissing(string zone) { if (!WorldArt.Ready) return ""; WorldArt.Begin(zone); return string.Join(", ", WorldArt.MissingArt()); }

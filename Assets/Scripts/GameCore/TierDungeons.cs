@@ -191,5 +191,27 @@ namespace GameCore
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("hospital_morgue")) { ['K'] = "Records Safe", ['L'] = "Linen Store" };
             return FloorPlan("hospital_morgue", LabPlans["hospital_morgue"], "plaster", LabTile, marks, stashes);
         }
+
+        // ------------------------------------------------------------------ the hidden dungeons, redone by hand (2026-11-11; they were generated lab plans)
+
+        /// <summary>Maintenance Tunnels (dungeon_plans.py maintenance_tunnels, graph dungeons/maintenance_tunnels.mmd): 'E' the hatch, 'T' the junction (hub), '3' foreman's locker (badge), '1' the crib's door,
+        /// '4' fuse, '5' the substation breaker (power), '2' the pump house door and the shortcut's, '6' the pump (drain), 'W' the flooded gallery, 'C' the collapsed section, 'G' the surface depot (goal).</summary>
+        public static MapLayout MaintenanceTunnels()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Access Hatch", "rail_yards"), ['T'] = ("Tunnel Junction", null), ['P'] = ("Pump House", null), ['B'] = ("Substation", null),
+                ['C'] = ("Collapsed Section", null), ['G'] = ("Surface Depot", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("maintenance_tunnels")) { ['K'] = "Depot Strongbox", ['J'] = "Buried Kit" };
+            return FloorPlan("maintenance_tunnels", LabPlans["maintenance_tunnels"], "concrete", Concrete, marks, stashes);
+        }
+
+        /// <summary>Underground Bunker (dungeon_plans.py underground_bunker, graph dungeons/underground_bunker.mmd): 'E' the foyer, '(' the blast door, '3' the barracks locker (badge), '1' air handling's door,
+        /// '4' fuse, '5' the generator switch (power), '2' the armory's dead door, 'G' the command centre (goal), 'R' the ration stores, 'B' 'A' 'Q' 'M' landmarks, 'J' 'K' 'L' stashes.</summary>
+        public static MapLayout UndergroundBunker()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Blast Door Foyer", "abandoned_city"), ['B'] = ("Bunker Barracks", null), ['R'] = ("Ration Stores", null), ['A'] = ("Air Handling", null),
+                ['Q'] = ("Generator Hall", null), ['M'] = ("Bunker Armory", null), ['G'] = ("Command Centre", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("underground_bunker")) { ['K'] = "Command Safe", ['J'] = "Ration Crate", ['L'] = "Armory Rack" };
+            return FloorPlan("underground_bunker", LabPlans["underground_bunker"], "concrete", Concrete, marks, stashes);
+        }
     }
 }

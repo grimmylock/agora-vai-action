@@ -88,7 +88,7 @@ namespace GameCore
                 ["sub_station_depths_1"] = TierDungeons.DepthsLevel("sub_station_depths_1", Grate, "sub_station_depths", "sub_station_depths_2"),   // the eel's levels
                 ["sub_station_depths_2"] = TierDungeons.DepthsLevel("sub_station_depths_2", Grate, "sub_station_depths_1", "sub_station_depths_3"),
                 ["sub_station_depths_3"] = TierDungeons.DepthsLevel("sub_station_depths_3", Concrete, "sub_station_depths_2", null, "The Bottom", "sub_station_depths"),   // Batch 92: a floor plan
-                ["maintenance_tunnels"] = TierDungeons.Lab("maintenance_tunnels", "concrete", Concrete, "Tunnel Junction", "Collapsed Section", "rail_yards"),   // Batch 92: a floor plan
+                ["maintenance_tunnels"] = TierDungeons.MaintenanceTunnels(),   // 2026-11-11: the lock-and-key redo
                 ["secret_lab_beta"] = TierDungeons.Lab("secret_lab_beta", "plaster", LabTile, "Archive Room", "Isolation Ward", "ghost_town"),   // Batch 92: a floor plan
                 ["deep_caverns"] = TierDungeons.Lab("deep_caverns", "cliff", CaveFloor, "Root Hall", "Crystal Pool", "crimson_woods"),   // Batch 100: a plan
                 ["underground_labyrinth"] = TierDungeons.Lab("underground_labyrinth", "cliff", CaveFloor, "The Fork", "Cave-In Chamber", "quarry_basin"),   // Batch 100: a plan
@@ -100,7 +100,7 @@ namespace GameCore
                 ["flats_2"] = TierDungeons.Upstairs("flats_2", "plaster", "ghost_town", "flats_3"),
                 ["flats_3"] = TierDungeons.Upstairs("flats_3", "plaster", "flats_2"),
                 ["lattice_foundry_lower"] = TierDungeons.LatticeLower(),
-                ["underground_bunker"] = TierDungeons.Lab("underground_bunker", "concrete", Concrete, "Blast Door Foyer", "Ration Stores", "abandoned_city"),   // Batch 92: a floor plan
+                ["underground_bunker"] = TierDungeons.UndergroundBunker(),   // 2026-11-11: the lock-and-key redo
                 ["siege_catacombs"] = TierDungeons.Lab("siege_catacombs", "wall", CaveFloor, "Ossuary", "Sealed Crypt", "hospital"),   // Batch 100: a plan
             };
         }

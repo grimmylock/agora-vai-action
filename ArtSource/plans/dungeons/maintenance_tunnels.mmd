@@ -1,4 +1,4 @@
-%% Maintenance Tunnels. Theme: utility tunnels. Locks: BADGE, POWER (substation; fuse in the tool crib), DRAIN (flooded section). Loop: a ladder shaft pump house<->crib.
+%% Maintenance Tunnels. Theme: utility tunnels. Locks: BADGE, POWER (substation; fuse in the tool crib), DRAIN (flooded section). Loop: a dead door substation<->junction that wakes with the power (2026-11-11; it was a ladder shaft pump house<->crib).
 %% start: St
 %% goal: Sd
 flowchart TD
@@ -10,4 +10,4 @@ flowchart TD
   Jn -->|req:power| Ph["Pump House {item:drain1}"]
   Jn -->|req:drain1| Fl["Flooded Gallery"]
   Fl --> Sd["Surface Depot {goal}"]
-  Ph -->|shortcut| Tc
+  Ss -->|req:power| Jn

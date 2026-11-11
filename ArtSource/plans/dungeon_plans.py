@@ -580,6 +580,84 @@ def drydock_check(p):
     ok(out, all(H not in seen for keys, seen in st if 'drain' not in keys), "before the pump runs the sluice chamber is unreachable (the ladder's hatch needs the handle from inside it)")
     return out
 
+def maintenance_tunnels():
+    """Maintenance Tunnels (T3, under the rail yards). Graph dungeons/maintenance_tunnels.mmd: the access hatch -> the tunnel junction (the hub: a card door south, a dead door north, the flooded gallery east)
+    -> the foreman's locker room north-west ('3' = badge) ; the badge door ('1' x2) -> the tool crib ('4' = fuse) -> the substation (the breaker '5' needs the fuse = power) ; the power door ('2' x2) -> the
+    pump house (the pump '6' needs power = drain) ; the flooded gallery ('W') -> the collapsed section -> the surface depot (goal). The shortcut: a dead door ('2' x2) between the substation and the junction."""
+    p = Plan(72, 44, 9851)
+    p.room(3, 19, 6, 5, ','); p.hline(9, 13, 21, 2)               # St: the access hatch
+    p.room(14, 16, 14, 11)                                         # Jn: the tunnel junction
+    p.room(14, 6, 7, 6); p.vline(17, 12, 15, 2)                    # Lk: the foreman's locker room
+    p.vline(20, 27, 30, 2); p.room(14, 31, 14, 9)                  # Tc: the tool crib, behind the badge door
+    for x in (20, 21): p.g[28][x] = '1'
+    p.room(32, 32, 12, 8); p.hline(28, 31, 35, 2)                  # Ss: the substation
+    p.vline(25, 10, 15, 2); p.room(24, 4, 14, 6)                   # Ph: the pump house, behind the power door
+    for x in (25, 26): p.g[13][x] = '2'
+    p.vline(36, 22, 31, 2); p.hline(28, 37, 22, 2)                 # the shortcut: substation -> junction, a dead door on it
+    for x in (36, 37): p.g[27][x] = '2'
+    p.hline(28, 33, 18, 2); p.room(34, 12, 26, 8, 'W')             # Fl: the flooded gallery
+    p.hline(60, 61, 15, 2); p.room(62, 8, 7, 14)                   # the collapsed section
+    p.vline(65, 22, 27, 2); p.room(56, 28, 13, 10)                 # Sd: the surface depot
+    p.collapse(65, 13, 2)
+    props(p, ((4, 20, 'c'), (15, 17, 'p'), (16, 17, 'p'), (17, 17, 'p'), (26, 25, 'b'), (15, 25, 'x'), (23, 17, 'c'),
+              (15, 7, 'l'), (17, 7, 'l'), (19, 10, 'c'), (15, 32, 'l'), (17, 32, 'l'), (19, 32, 'l'), (26, 38, 'c'), (24, 38, 'c'), (15, 38, 'd'), (22, 35, 'x'),
+              (33, 33, 'm'), (36, 33, 'm'), (39, 33, 'm'), (42, 38, 'b'), (33, 38, 'q'), (34, 38, 'q'),
+              (26, 5, 'm'), (30, 5, 'm'), (34, 5, 'm'), (36, 8, 'b'), (27, 8, 'p'), (28, 8, 'p'), (29, 8, 'p'),
+              (57, 29, 'c'), (59, 29, 'c'), (61, 29, 'c'), (67, 32, 'l'), (57, 36, 'b'), (62, 34, 'x'), (60, 36, 'c')))
+    p.g[8][19] = '3'; p.g[33][26] = '4'; p.g[37][39] = '5'; p.g[7][36] = '6'
+    p.g[36][67] = 'K'; p.g[9][63] = 'J'
+    p.g[21][5] = 'E'; p.g[21][20] = 'T'; p.g[6][29] = 'P'; p.g[36][37] = 'B'; p.g[17][65] = 'C'; p.g[32][62] = 'G'
+    scatter(p, 24)
+    return p
+MT_GIVES = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse'), '6': ('drain', 'power')}
+MT_LOCKS = {'1': 'badge', '2': 'power', 'W': 'drain'}
+def tunnels_check(p):
+    st = flood_stages(p, MT_GIVES, MT_LOCKS); g = p.g; out = []
+    c = {k: pos(g, k) for k in '3456G'}; s0 = st[0][1]
+    ok(out, c['3'] in s0 and all(c[k] not in s0 for k in '456G'), "at the start: the foreman's locker; not the crib, the breaker, the pump or the depot")
+    ok(out, c['G'] in st[-1][1], f"with every key found the surface depot is reachable ({len(st)} stages, keys {sorted(st[-1][0])})")
+    firsts = {}
+    for keys, seen in st:
+        for k in '456G':
+            if c[k] in seen and k not in firsts: firsts[k] = sorted(keys)
+    ok(out, firsts['4'] == ['badge'] and firsts['5'] == ['badge'] and firsts['6'] == ['badge', 'fuse', 'power'] and firsts['G'] == ['badge', 'drain', 'fuse', 'power'], f"order: crib {firsts['4']}, pump {firsts['6']}, depot {firsts['G']}")
+    sc = [(x, y) for x in (36, 37) for y in range(22, 32)]; saved = {(x, y): g[y][x] for (x, y) in sc}
+    for (x, y) in sc: g[y][x] = '#'
+    ok(out, c['G'] in flood_stages(p, MT_GIVES, MT_LOCKS)[-1][1], "closing the substation shortcut: the depot is still reachable")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    return out
+
+def underground_bunker():
+    """Underground Bunker (T6, under the Abandoned City). Graph dungeons/underground_bunker.mmd: the blast door foyer -> the long corridor (the hub: a card door north, a dead door south-east) -> the barracks
+    ('3' = badge) and the ration stores (open; a duct joins the two) ; the badge door ('1' x2) -> air handling ('4' = fuse) -> the generator hall (the switch '5' needs the fuse = power) ; the power door
+    ('2' x2) -> the armory -> the command centre (goal). The duct was air handling <-> armory in the first graph, which walked round the power door; it is barracks <-> ration stores now."""
+    p = Plan(60, 48, 9861)
+    p.room(4, 3, 8, 6, ','); p.vline(7, 9, 12, 2)                  # E: the blast door foyer
+    for x in (7, 8): p.g[10][x] = '('
+    p.hline(4, 51, 13, 3)                                          # Hl: the long corridor
+    p.vline(9, 16, 19, 2); p.room(4, 20, 12, 10)                   # Bk: the barracks
+    p.vline(24, 16, 19, 2); p.room(20, 20, 10, 8)                  # the ration stores
+    p.hline(16, 19, 24, 1, 'r')                                    # the duct barracks <-> stores (the loop)
+    p.vline(24, 9, 12, 2); p.room(18, 2, 14, 7)                    # Ah: air handling, behind the badge door
+    for x in (24, 25): p.g[10][x] = '1'
+    p.room(36, 2, 14, 8); p.hline(32, 35, 5, 2)                    # Gn: the generator hall
+    p.vline(42, 16, 21, 2); p.room(36, 22, 14, 9)                  # Ar: the armory, behind the power door
+    for x in (42, 43): p.g[18][x] = '2'
+    p.vline(42, 31, 34, 2); p.room(32, 35, 22, 10)                 # Cc: the command centre
+    for x in (42, 43): p.g[32][x] = '!'
+    props(p, ((5, 4, 'c'), (10, 7, 'x'), (5, 21, 'l'), (7, 21, 'l'), (12, 21, 'l'), (14, 21, 'l'), (5, 25, 'c'), (14, 28, 'c'), (5, 28, 'l'), (11, 27, 'x'),
+              (21, 21, 'c'), (23, 21, 'c'), (27, 21, 'c'), (21, 26, 'b'), (26, 23, 'c'), (27, 23, 'c'),
+              (19, 3, ']'), (22, 3, ']'), (28, 3, ']'), (19, 7, 'p'), (20, 7, 'p'), (21, 7, 'p'), (30, 7, 'c'),
+              (38, 3, 'm'), (39, 3, 'm'), (43, 3, 'm'), (44, 3, 'm'), (38, 8, 'b'), (47, 8, 'x'),
+              (37, 23, 'l'), (39, 23, 'l'), (45, 23, 'l'), (37, 29, 'c'), (39, 29, 'c'), (48, 29, 'c'), (44, 27, 'x'),
+              (34, 36, 'o'), (37, 36, 'o'), (40, 36, 'o'), (48, 36, 'f'), (51, 36, 'f'), (36, 40, 'd'), (39, 40, 'd'), (47, 40, 'd'), (50, 40, 'd'), (33, 43, 'l'), (44, 43, '>')))
+    p.g[28][8] = '3'; p.g[4][30] = '4'; p.g[6][48] = '5'
+    p.g[43][52] = 'K'; p.g[26][28] = 'J'; p.g[23][48] = 'L'
+    p.g[5][7] = 'E'; p.g[25][10] = 'B'; p.g[24][25] = 'R'; p.g[5][25] = 'A'; p.g[6][43] = 'Q'; p.g[26][43] = 'M'; p.g[40][43] = 'G'
+    scatter(p, 22)
+    return p
+def ubunker_check(p): return badge_power_check(p, loop=[(x, 24) for x in range(16, 20)], loop_name="the duct")
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -628,8 +706,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

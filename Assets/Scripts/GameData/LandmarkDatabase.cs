@@ -404,8 +404,12 @@ namespace GameData
             },
             ["maintenance_tunnels"] = new List<LandmarkDef>
             {
-                L("Tunnel Junction", "A four-way branch point - easy to get turned around."),
-                L("Collapsed Section", "A partial cave-in forcing a crawl-through chokepoint."),
+                L("Access Hatch", "The hatch down from the rail culvert, rungs slick with rust."),
+                L("Tunnel Junction", "A four-way branch point: a card door south, a dead door north, black water to the east."),
+                L("Pump House", "The drainage pumps for the east gallery, dark and silent."),
+                L("Substation", "Transformers behind mesh, a breaker panel with one fuse clip empty."),
+                L("Collapsed Section", "A partial cave-in beyond the flooded gallery, rubble to the knees."),
+                L("Surface Depot", "The track gangs' depot under the yard: crates, lockers and a strongbox."),
             },
             ["secret_lab_beta"] = new List<LandmarkDef>
             {
@@ -448,7 +452,12 @@ namespace GameData
             ["underground_bunker"] = new List<LandmarkDef>
             {
                 L("Blast Door Foyer", "The entry chamber - heavy sealed door already forced."),
-                L("Ration Stores", "Old emergency supplies, mostly spoiled, some salvageable."),
+                L("Ration Stores", "Old emergency supplies, mostly spoiled, some salvageable. A duct cover hangs open in the west wall."),
+                L("Bunker Barracks", "Bunks and lockers for the watch. The beds are still made."),
+                L("Air Handling", "Fan housings and filter drums, the air stale and still."),
+                L("Generator Hall", "Two generator sets side by side, a bus switch one fuse short."),
+                L("Bunker Armory", "Racks behind a door that needs power. Not everything was taken."),
+                L("Command Centre", "Consoles, a wall map of the city, a safe under the duty officer's desk."),
             },
             ["siege_catacombs"] = new List<LandmarkDef>
             {
