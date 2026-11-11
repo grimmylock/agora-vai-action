@@ -5702,3 +5702,4 @@ Yan: "install them, then do all four".
 - **4. Ground edges:** `WorldArt.ComposeGround` frays the border between two kinds of loose ground (grass, dirt, mud, sand, gravel, cave floor) into a ragged fringe of half-and-half pixels a few pixels wide (`Soft`); paved and indoor floors keep their straight edges. Every outdoor map's ground changes a little; one more ground lookup per border pixel when a map's ground is baked (cost not measured). Before/after `maps/renders/world_audit/ground_fringe_before_after.png`.
 - Render of 1-3: `maps/renders/world_audit/four_fixes.png`; sprites `apc_van.png`.
 - Checks: compiles; the full harness was started on this build (maps and cover changed) - result in the next entry. Not checked: Unity.
+- **Full harness on that build (commit 336832f): ALL CHECKS PASSED**, exit 0, no FAIL lines. `main` not updated (Yan has not asked).
