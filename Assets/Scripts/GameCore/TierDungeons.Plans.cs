@@ -62,9 +62,9 @@ namespace GameCore
                         case '2': c.Put(x, y, Door, "door_power"); c.Paint(x, y, 1, 1, floor); continue;   // dead until the generator's on
                         case '{': c.Put(x, y, Door, "door_keypad"); c.Paint(x, y, 1, 1, floor); continue;   // 2026-11-11: a keypad door (LabLocks: the code opens it)
                         case '}': c.Put(x, y, Door, "door_steam"); c.Paint(x, y, 1, 1, floor); continue;    // a pressure door leaking steam (LabLocks: the coolant valve clears it)
-                        case '7': c.Put(x, y, Difficult, "portcullis_a"); c.Paint(x, y, 1, 1, floor); continue;   // lever gates: a portcullis its own lever lifts (a red, b amber, c blue)
-                        case '8': c.Put(x, y, Difficult, "portcullis_b"); c.Paint(x, y, 1, 1, floor); continue;
-                        case '9': c.Put(x, y, Difficult, "portcullis_c"); c.Paint(x, y, 1, 1, floor); continue;
+                        case '<': c.Put(x, y, Difficult, "portcullis_a"); c.Paint(x, y, 1, 1, floor); continue;   // lever gates: a portcullis its own lever lifts (a red, b amber, c blue). NOT digits: the Depths' plans use 7 and 8 as the eel's platform and slab marks (EelBoss.Marks)
+                        case '-': c.Put(x, y, Difficult, "portcullis_b"); c.Paint(x, y, 1, 1, floor); continue;
+                        case '/': c.Put(x, y, Difficult, "portcullis_c"); c.Paint(x, y, 1, 1, floor); continue;
                         case '@': c.Put(x, y, Difficult, "rockfall"); c.Paint(x, y, 1, 1, floor); continue;   // 2026-11-10: a rockfall across a tunnel (LabLocks: a pry bar lifts it)
                         case '$': c.Put(x, y, Difficult, "irongate"); c.Paint(x, y, 1, 1, floor); continue;   // an iron gate across a tunnel (LabLocks: its key opens it); not a letter: letters are landmark marks (the foundry plans use F and R)
                         case '|': c.Put(x, y, Empty); c.Deco(x, y, "rail_v"); break;                  // ore rails running north-south (the mines)

@@ -745,7 +745,7 @@ def underground_labyrinth():
     p.hline(30, 37, 35, 2)                                         # F - Y (a dead end)
     p.vline(15, 23, 29, 1); p.hline(46, 50, 36, 1)                 # more blind passages
     roughen(p, passes=1, chance=0.3)
-    lock_row(p, 14, [57, 58], '7'); lock_row(p, 28, [25, 26], '8'); lock_row(p, 42, [25, 26], '9')   # the three lever gates (red, amber, blue)
+    lock_row(p, 14, [57, 58], '<'); lock_row(p, 28, [25, 26], '-'); lock_row(p, 42, [25, 26], '/')   # the three lever gates (red, amber, blue)
     p.collapse(26, 22, 2)
     props(p, ((7, 6, 'c'), (12, 9, 'k'), (39, 6, 'x'), (44, 9, 'k'), (55, 20, 'c'), (60, 23, 'b'), (23, 34, 'k'), (28, 37, '&'), (55, 34, 'c'), (60, 37, '&'), (39, 34, 'x'), (44, 37, 'b'),
               (16, 47, 'h'), (22, 47, 'h'), (30, 47, 'h'), (37, 47, 'h'), (16, 53, 'h'), (22, 53, 'h'), (30, 53, 'h'), (37, 53, 'h'), (26, 51, '&'), (28, 50, '&'), (25, 49, '&')))
@@ -755,7 +755,7 @@ def underground_labyrinth():
     cave_litter(p, 20)
     return p
 LAB_GIVES = {'4': ('gate', None), '3': ('pry', None), '6': ('code', None)}   # names kept from the first build: gate = the red lever, pry = the amber, code = the blue
-LAB_LOCKS = {'7': 'gate', '8': 'pry', '9': 'code'}
+LAB_LOCKS = {'<': 'gate', '-': 'pry', '/': 'code'}
 def labyrinth_check(p):
     st = flood_stages(p, LAB_GIVES, LAB_LOCKS); g = p.g; out = []
     K1, K2, K3, G = pos(g, '4'), pos(g, '3'), pos(g, '6'), pos(g, 'G'); s0 = st[0][1]
