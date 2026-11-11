@@ -5669,3 +5669,6 @@ Yan: "build the missing art, search for references before". References found and
 
 ## Pushed to main (2026-11-11)
 Yan: "after that you can push". Full harness on the build of commit 25f7645: **ALL CHECKS PASSED**, exit 0, no FAIL lines (the first run before this failed on the eel checks: the lever gates' digit characters, fixed above). `realtime-proto` fast-forwarded onto `main`. Not checked: Unity, anything since the last Unity session.
+
+## Prop audit: does each item read as what it is? (2026-11-11)
+Yan: "check all items, see if they read as the thing they're supposed to be". All 116 prop families cut from the installed atlas onto labelled sheets (`maps/renders/props_audit/`), judged by eye, no art changed. **Do not read:** armchair (a green pack), wreck (a brown box, one tile: not a car), engine (a pot), machine/lathe front and back (a dumbbell), the four tipped desks `desk_n/s/e/w`, the x2 side views of lockers and cabinet (blank grey boxes: nothing of the doors/drawers carries over), hatch, cables, stash_cache. **Weak:** desk front and back (a chest), block_v and jersey_v (a pillar / bollard), sunktruck, scrap, vatsmall. The rest read. Yan also said the labyrinth's density and the scare corners are "fine, if needed we change later", and that he will do the Unity session later.
