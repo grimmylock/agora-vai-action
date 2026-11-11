@@ -1,0 +1,33 @@
+{
+ "pallid_prowler": {
+  "walk": {
+   "frame": [
+    47,
+    24
+   ],
+   "ms": [
+    125,
+    125,
+    125,
+    125,
+    125,
+    125,
+    125,
+    125
+   ],
+   "loop": true,
+   "travel": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "ground_row_from_bottom": 1,
+   "note": "8 pictures, one full cycle; frame 7 leads back into frame 0. Head on the right edge, lowest foot on the bottom row. Source: online sprite animator (Yan), recovered from a screen recording; artefacts fixed by hand in frames 0 and 7."
+  }
+ }
+}
