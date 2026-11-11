@@ -40,11 +40,12 @@ def solve(hip, ft, fwd):
 def seg(d, p, q, w, col):
     d.line([p, q], fill=col, width=w)
 
-def leg_img(name, i, bob):
+def leg_img(name, i, bob, stand=False):
     """Same geometry as before (the leg's shape and place are untouched); only the colours are decided differently: by where a pixel sits ON the leg (along the bone and which side of it), so the
     colouring is attached to the leg and does not shimmer as it moves. The body's own palette is mostly pale violet-grey (55,54,64) with darker violet (34,32,45) in its hollows and a few bright
     streaks (87,88,103) at its joints; the legs now use that mix instead of one flat dark violet."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0; fo, fl = foot(ph)
+    if stand: fo, fl = {"far_hind": -1.5, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name], 0.0
     hip = (hx + ox, hy + oy + bob); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
     d.line([hip, kn], fill=(255, 255, 255, 255), width=2); d.line([kn, ft], fill=(255, 255, 255, 255), width=1)
@@ -58,33 +59,36 @@ def leg_img(name, i, bob):
     def sh(c): return tuple(int(v * k) for v in c)
     segs = [(hip, kn), (kn, ft)]
     ys, xs = np.where(a[..., 3] > 0)
+    # Colours rebuilt from what Yan's own legs do (2026-11-11, "the original sprite has better looking legs with the darker parts"): measured on the original's leg rows,
+    # about half is the near-black (20,22,23), a quarter pure outline black, then dark violet (34,32,45)/(26,24,36), the pale violet (55,54,64) only about 5 % and the bright (87,88,103) 1.4 %.
+    # So: a dark body, a thin lit edge on the left with a pale pixel now and then, a darker shadow side, a dark foot. The silhouette (the alpha) is untouched.
+    BASE, SHADE, DEEP, VIO, PALE, BRIGHT = (20, 22, 23), (26, 24, 36), (13, 12, 18), (34, 32, 45), (55, 54, 64), (87, 88, 103)
     for y, x in zip(ys, xs):
         best = None
         for si, (p, q) in enumerate(segs):
             vx, vy = q[0] - p[0], q[1] - p[1]; L2 = vx * vx + vy * vy + 1e-9
             u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / L2)); cx, cy = p[0] + u * vx, p[1] + u * vy
-            dist = math.hypot(x - cx, y - cy); side = (x - cx) * (-vy) + (y - cy) * vx          # sign of which side of the bone (negative = the left, lit one)
+            dist = math.hypot(x - cx, y - cy); side = (x - cx) * (-vy) + (y - cy) * vx
             if best is None or dist < best[0]: best = (dist, si, u, side)
-        dist, si, u, side = best; t = (si + u) / 2.0                                          # 0 at the hip .. 1 at the foot
-        lit_side = side > 0.15 if (hip[1] - kn[1]) > 0 or True else side < 0
-        if y >= fy and x >= fx - 1: col = (55, 54, 64) if t < 2 else (34, 32, 45)                  # the foot: the pale violet, its toe a bright speck below
-        elif side < -0.2: col = (55, 54, 64)                                                   # the lit left edge: pale violet-grey, like the body's lit planes
-        elif (int(t * 9) % 4) == 0 and dist < 0.8: col = (87, 88, 103)                           # a bright streak across the leg at intervals (the body has them at its joints)
-        elif t < 0.55: col = (55, 54, 64) if (int(t * 12) + (1 if side > 0 else 0)) % 3 != 0 else (34, 32, 45)    # the thigh: mostly pale, a hollow of dark violet
-        else: col = (34, 32, 45) if (int(t * 12)) % 3 == 0 else (55, 54, 64)                   # the shin: dark and pale in turn
-        if x == fx + 3 and y == fy: col = (87, 88, 103)
-        if (x, y) == KNEE: col = (87, 88, 103)
+        dist, si, u, side = best; t = (si + u) / 2.0
+        if y >= fy and x >= fx - 1: col = SHADE if (x + y) % 2 else BASE                      # the foot: dark
+        elif side < -0.2: col = PALE if (int(t * 14) % 3 == 0) else VIO                          # the thin lit edge on the left: violet, a pale pixel every third step
+        elif side > 0.5: col = DEEP if t > 0.35 else SHADE                                       # the shadow side
+        else: col = SHADE if (int(t * 10) % 4 == 0) else BASE                                    # the middle: near-black with a darker/violet pixel now and then
+        if t < 0.18 and side < 0 and (x + y) % 2 == 0: col = VIO                                 # the thigh where it leaves the body picks up the body's violet
+        if x == fx + 3 and y == fy: col = VIO
+        if (x, y) == KNEE: col = BRIGHT
         a[y, x, :3] = sh(col)
     return Image.fromarray(a.astype(np.uint8))
 
-def frame(i, only=None):
-    bob = int(round(0.9 * math.sin(2 * math.pi * (i / N * 2) + 0.6))); sway = int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
+def frame(i, only=None, stand=False):
+    bob = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * (i / N * 2) + 0.6))); sway = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
     far = [n for n in LEGS if LEGS[n][2]]; near = [n for n in LEGS if not LEGS[n][2]]
-    if only: return leg_img(only, i, bob)
+    if only: return leg_img(only, i, bob, stand)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    for n in far: im.alpha_composite(leg_img(n, i, bob))
+    for n in far: im.alpha_composite(leg_img(n, i, bob, stand))
     im.alpha_composite(BODY, (ox, oy + bob)); im.alpha_composite(HEAD, (ox, oy + bob + sway))
-    for n in near: im.alpha_composite(leg_img(n, i, bob))
+    for n in near: im.alpha_composite(leg_img(n, i, bob, stand))
     return m.outline(im)
 
 def leg_check():
@@ -116,5 +120,6 @@ def gif(path, fr, ms, px=2.27, n=48, sc=10):
 
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "_out/veil_walk"; fr = save(out); gif(os.path.join(out, "loop_125ms.gif"), fr, 125); gif(os.path.join(out, "loop_220ms.gif"), fr, 220)
+    frame(0, stand=True).save(os.path.join(out, 'stand.png'))
     chk = leg_check()
     for k, v in chk.items(): print(k, v)
