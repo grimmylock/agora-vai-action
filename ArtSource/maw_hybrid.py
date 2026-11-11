@@ -73,10 +73,11 @@ def leg_img(name, i, bob, stand=False):
             else: col = C_HOLLOW if t < 0.6 else C_DARK                    # the shadow side
             if si == 0 and u < 0.3 and side < 0 and (x + y) % 3 == 0: col = C_PALE
             out[y, x, :3] = mx(col); out[y, x, 3] = 255
-    for dx in range(-1, 3):                                              # the paw: a flat foot, toes forward
+    for dx in range(-1, 2):                                              # the paw: a flat foot, toes forward
         x = fx + dx
         if 0 <= x < W: out[fy, x, :3] = mx(C_DARK); out[fy, x, 3] = 255
-    out[fy, min(W - 1, fx + 2), :3] = (212, 194, 178)                      # the claw: bone
+    for cx in (fx + 2, fx + 3):                                            # the claw: two bone pixels (Yan: try 2 px, see if they read as claws)
+        out[fy, min(W - 1, cx), :3] = (212, 194, 178); out[fy, min(W - 1, cx), 3] = 255
     return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
