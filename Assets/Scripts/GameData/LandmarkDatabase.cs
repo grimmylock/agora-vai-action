@@ -413,6 +413,8 @@ namespace GameData
             },
             ["secret_lab_beta"] = new List<LandmarkDef>
             {
+                L("Entry Lift", "The lift down from the town hall's basement, its cage wedged open."),
+                L("Reception", "A front desk under dead lamps: a card door one side, a door with no power the other."),
                 L("Archive Room", "Intact filing and old terminals - good Intelligence-check flavor."),
                 L("Isolation Ward", "A row of sealed cells - deeply unsettling, worth investigating carefully."),
             },
@@ -450,6 +452,8 @@ namespace GameData
             },
             ["secret_lab_gamma"] = new List<LandmarkDef>
             {
+                L("Entry Lift", "The lift down from the broadcast van's hatch."),
+                L("Atrium", "A square hall under a cracked skylight well: the security office west, a card door and a dead door south."),
                 L("Signal Room", "Banks of dead equipment still faintly humming."),
                 L("Sealed Vault", "A reinforced door - the node's main loot payoff."),
             },

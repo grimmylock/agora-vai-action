@@ -836,6 +836,79 @@ def foundry_check(p):
     ok(out, firsts.get('fuse') == ['badge'] and firsts.get('synth') == ['badge', 'fuse', 'power'], f"order: the fuse needs {firsts.get('fuse')}, the synthesizer {firsts.get('synth')}")
     return out
 
+def secret_lab_gamma():
+    """Secret Lab Gamma (T5, under the Antenna Grid; the story's Sealed Vault). Graph dungeons/secret_lab_gamma.mmd: the lift -> the atrium (the hub: a card door and a dead door in sight) -> the security
+    office ('3' = badge) and a storage room (a dead end) ; the badge door ('1' x2) -> the labs ('4' = fuse) -> the generator hall (the switch '5' needs the fuse = power) ; the power door ('2' x2) -> the
+    Signal Room -> the Sealed Vault's antechamber (goal: the vault itself opens with the STORY key the Depths' eel carries, StorySystem). The loop: a cable duct labs <-> generator hall."""
+    p = Plan(64, 48, 9901)
+    p.room(28, 2, 8, 5); p.vline(31, 7, 9, 2)                      # E: the lift
+    p.room(22, 10, 20, 10)                                         # the atrium
+    p.hline(17, 21, 14, 2); p.room(6, 9, 11, 10)                   # the security office
+    p.hline(42, 46, 14, 2); p.room(47, 9, 10, 10)                  # storage (a dead end)
+    p.vline(26, 20, 24, 2); p.room(8, 25, 24, 9)                   # the labs, behind the badge door
+    for x in (26, 27): p.g[22][x] = '1'
+    p.vline(14, 34, 37, 2); p.room(6, 38, 18, 7)                   # the generator hall
+    p.vline(22, 34, 37, 1, 'r')                                    # the cable duct (the loop)
+    p.vline(37, 20, 24, 2); p.room(36, 25, 20, 9)                  # the Signal Room, behind the power door
+    for x in (37, 38): p.g[22][x] = '2'
+    p.vline(45, 34, 37, 2); p.room(38, 38, 16, 7)                  # the Sealed Vault
+    for x in (45, 46): p.g[36][x] = '!'
+    props(p, ((23, 11, 'd'), (25, 11, 'd'), (40, 11, '>'), (40, 18, '>'), (23, 18, 'x'), (33, 15, 'h'), (29, 15, 'h'),
+              (7, 10, 'l'), (9, 10, 'l'), (15, 10, 'f'), (8, 14, 'd'), (11, 14, 'd'), (15, 17, 'o'),
+              (48, 10, 'c'), (50, 10, 'c'), (55, 10, 'l'), (48, 17, 'b'), (53, 14, 'c'), (54, 14, 'c'),
+              (10, 27, 'a'), (14, 27, 'a'), (18, 27, 'g'), (22, 27, 'g'), (10, 31, 'j'), (13, 31, 'j'), (18, 31, 'u'), (29, 31, 'f'), (30, 26, 'f'),
+              (8, 39, 'm'), (9, 39, 'm'), (14, 39, 'm'), (15, 39, 'm'), (20, 43, 'b'), (8, 43, 'q'), (9, 43, 'q'),
+              (38, 26, 'o'), (41, 26, 'o'), (44, 26, 'o'), (50, 26, 'o'), (53, 26, 'o'), (40, 31, 'd'), (48, 31, 'd'), (54, 32, 'f'),
+              (40, 39, 'h'), (51, 39, 'h'), (40, 43, 'h'), (51, 43, 'h')))
+    p.g[12][12] = '3'; p.g[26][9] = '4'; p.g[41][21] = '5'
+    p.g[17][55] = 'J'; p.g[43][46] = 'K'
+    p.g[4][31] = 'E'; p.g[15][31] = 'A'; p.g[29][46] = 'T'; p.g[41][46] = 'G'
+    scatter(p, 22)
+    return p
+def gamma_check(p): return badge_power_check(p, loop=[(22, y) for y in range(34, 38)], loop_name="the cable duct")
+
+def secret_lab_beta():
+    """Secret Lab Beta (T4, under the Ghost Town's town hall; the story's Archive Room, and Boss 1's hidden wing). The lift -> the reception (the hub) -> the guard room ('3' = badge) ; the badge door
+    ('1' x2) -> the lab wing -> the Archive Room ('4' = fuse; the story's drive) ; the generator room south of the labs (the switch '5' needs the fuse = power; a vent hole joins it to the archive) ;
+    the power door ('2' x2) -> the Isolation Ward (goal). In the ward's east wall a cracked stretch ('Z', Boss.TryBreakWall) hides the long corridor to the room where the body in black armour lies ('V').
+    The graph's gate and keypad locks are built as the badge/power pair: there is no keypad-door art."""
+    p = Plan(74, 48, 9911)
+    p.room(32, 2, 8, 5); p.vline(35, 7, 9, 2)                      # E: the lift
+    p.room(26, 10, 20, 9)                                          # the reception
+    p.hline(21, 25, 13, 2); p.room(10, 9, 11, 9)                   # the guard room
+    p.vline(29, 19, 23, 2); p.room(14, 24, 20, 8)                  # the lab wing, behind the badge door
+    for x in (29, 30): p.g[21][x] = '1'
+    p.hline(10, 13, 27, 2); p.room(3, 22, 7, 20)                   # the Archive Room
+    p.vline(23, 32, 35, 2); p.room(14, 36, 20, 8)                  # the generator room
+    p.hline(10, 13, 40, 1, 'r')                                    # the vent hole archive <-> generator (the loop)
+    p.vline(41, 19, 23, 2); p.room(38, 24, 16, 10)                 # the Isolation Ward, behind the power door
+    for x in (41, 42): p.g[21][x] = '2'
+    p.g[29][54] = 'Z'                                              # the cracked wall
+    p.hline(55, 62, 29, 1); p.room(63, 27, 7, 5)                   # the corridor nobody was meant to find, and the room at its end
+    p.g[29][59] = 'e'; p.g[29][61] = '*'
+    props(p, ((27, 11, 'd'), (29, 11, 'd'), (44, 11, '>'), (44, 17, '>'), (36, 14, 'h'), (27, 17, 'x'),
+              (11, 10, 'l'), (13, 10, 'l'), (19, 10, 'f'), (12, 14, 'd'), (15, 14, 'o'), (19, 16, 'c'),
+              (16, 26, 'a'), (20, 26, 'a'), (24, 26, 'g'), (16, 30, 'j'), (19, 30, 'j'), (26, 30, 'u'), (32, 25, 'f'),
+              (4, 23, 'f'), (6, 23, 'f'), (8, 23, 'f'), (4, 30, 'f'), (8, 30, 'f'), (4, 34, 'd'), (8, 37, 'f'), (4, 39, 'x'),
+              (16, 37, 'm'), (17, 37, 'm'), (22, 37, 'm'), (23, 37, 'm'), (31, 42, 'b'), (16, 42, 'q'),
+              (39, 25, 'l'), (42, 25, 'l'), (45, 25, 'l'), (48, 25, 'l'), (51, 25, 'l'), (40, 32, 'a'), (46, 32, 'a'), (52, 32, 'j'), (39, 29, 'x'),
+              (63, 27, 'x'), (69, 31, 'x'), (69, 27, 'e')))
+    p.g[29][67] = 'V'; p.g[29][66] = '*'; p.g[30][67] = '*'
+    p.g[11][17] = '3'; p.g[26][5] = '4'; p.g[42][20] = '5'
+    p.g[17][44] = 'J'; p.g[30][50] = 'K'
+    p.g[4][35] = 'E'; p.g[14][31] = 'R'; p.g[32][6] = 'A'; p.g[28][46] = 'G'
+    scatter(p, 20)
+    return p
+BETA_LOCKS = {'1': 'badge', '2': 'power', 'Z': 'a wall'}
+def beta_check(p):
+    out = badge_power_check(p, loop=[(x, 40) for x in range(10, 14)], loop_name="the vent hole", locks=BETA_LOCKS)
+    st = flood_stages(p, BP_GIVES, BETA_LOCKS); g = p.g
+    ok(out, pos(g, 'V') not in st[-1][1] and pos(g, 'A') in st[1][1], "the body's room is sealed behind the cracked wall with every key; the Archive Room opens with the badge")
+    g2 = pos(g, 'Z'); g[g2[1]][g2[0]] = '.'
+    ok(out, pos(g, 'V') in flood_stages(p, BP_GIVES, BETA_LOCKS)[-1][1], "with the wall broken the body's room is reachable from the ward")
+    g[g2[1]][g2[0]] = 'Z'
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -884,8 +957,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker, "deep_caverns": deep_caverns, "underground_labyrinth": underground_labyrinth, "siege_catacombs": siege_catacombs, "lattice_foundry_lower": lattice_foundry_lower}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check, "deep_caverns": caverns_check, "underground_labyrinth": labyrinth_check, "siege_catacombs": catacombs_check, "lattice_foundry_lower": foundry_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker, "deep_caverns": deep_caverns, "underground_labyrinth": underground_labyrinth, "siege_catacombs": siege_catacombs, "lattice_foundry_lower": lattice_foundry_lower, "secret_lab_gamma": secret_lab_gamma, "secret_lab_beta": secret_lab_beta}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check, "deep_caverns": caverns_check, "underground_labyrinth": labyrinth_check, "siege_catacombs": catacombs_check, "lattice_foundry_lower": foundry_check, "secret_lab_gamma": gamma_check, "secret_lab_beta": beta_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

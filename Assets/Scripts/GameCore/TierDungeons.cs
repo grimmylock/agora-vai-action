@@ -240,5 +240,24 @@ namespace GameCore
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("siege_catacombs")) { ['K'] = "Crypt Reliquary", ['J'] = "North Chamber Urn" };
             return FloorPlan("siege_catacombs", LabPlans["siege_catacombs"], "wall", Concrete, marks, stashes);
         }
+
+        /// <summary>Secret Lab Gamma (dungeon_plans.py secret_lab_gamma, graph dungeons/secret_lab_gamma.mmd): 'E' the lift, 'A' the atrium, '3' the security locker (badge), '1' the labs' door, '4' fuse,
+        /// '5' the generator switch (power), '2' the Signal Room's dead door, 'T' the Signal Room, 'G' the Sealed Vault (the story opens it with the eel's key, StorySystem), 'J' 'K' stashes.</summary>
+        public static MapLayout SecretLabGamma()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Entry Lift", "antenna_grid"), ['A'] = ("Atrium", null), ['T'] = ("Signal Room", null), ['G'] = ("Sealed Vault", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("secret_lab_gamma")) { ['K'] = "Vault Shelf", ['J'] = "Storage Locker" };
+            return FloorPlan("secret_lab_gamma", LabPlans["secret_lab_gamma"], "concrete", LabTile, marks, stashes);
+        }
+
+        /// <summary>Secret Lab Beta (dungeon_plans.py secret_lab_beta, graph dungeons/secret_lab_beta.mmd): 'E' the lift, 'R' reception, '3' the guard's locker (badge), '1' the lab wing's door, 'A' the
+        /// Archive Room (the story's drive; '4' the fuse), '5' the generator switch (power), '2' the ward's dead door, 'G' the Isolation Ward (goal), 'Z' the cracked wall and 'V' the body in black armour (Boss 1).</summary>
+        public static MapLayout SecretLabBeta()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Entry Lift", "ghost_town"), ['R'] = ("Reception", null), ['A'] = ("Archive Room", null), ['G'] = ("Isolation Ward", null),
+                ['Z'] = (Boss.CrackedWall, null), ['V'] = (Boss.VisorMark, null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("secret_lab_beta")) { ['K'] = "Sample Cooler", ['J'] = "Reception Desk" };
+            return FloorPlan("secret_lab_beta", LabPlans["secret_lab_beta"], "plaster", LabTile, marks, stashes);
+        }
     }
 }

@@ -2035,6 +2035,8 @@ static class Program {
     ChainChecks("underground_labyrinth", "The Fork", "Minotaur's Hall", "quarry_basin", "maze_gate", "maze_pry", "maze_code");
     ChainChecks("siege_catacombs", "Catacomb Stair", "Sealed Crypt", "hospital", "siege_gate", "siege_pry", "siege_code");
     ChainChecks("lattice_foundry_lower", "Service Stair", "Cell Synthesizer", "lattice_foundry", "foundry_staff", "foundry_fuse", "foundry_power");
+    BadgePowerChecks("secret_lab_gamma", "gamma", "Entry Lift", "Sealed Vault", "antenna_grid", 2, 2);
+    BadgePowerChecks("secret_lab_beta", "beta", "Entry Lift", "Isolation Ward", "ghost_town", 2, 2);
     ChainChecks("maintenance_tunnels", "Access Hatch", "Surface Depot", "rail_yards", "mtun_staff", "mtun_fuse", "mtun_power", "mtun_drain");
   }
   // Dry Dock Tunnels (2026-11-11, dungeons/drydock_tunnels.mmd): fuse -> pump (drain) -> the sluice handle (gate), on the real built map.

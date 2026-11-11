@@ -89,10 +89,10 @@ namespace GameCore
                 ["sub_station_depths_2"] = TierDungeons.DepthsLevel("sub_station_depths_2", Grate, "sub_station_depths_1", "sub_station_depths_3"),
                 ["sub_station_depths_3"] = TierDungeons.DepthsLevel("sub_station_depths_3", Concrete, "sub_station_depths_2", null, "The Bottom", "sub_station_depths"),   // Batch 92: a floor plan
                 ["maintenance_tunnels"] = TierDungeons.MaintenanceTunnels(),   // 2026-11-11: the lock-and-key redo
-                ["secret_lab_beta"] = TierDungeons.Lab("secret_lab_beta", "plaster", LabTile, "Archive Room", "Isolation Ward", "ghost_town"),   // Batch 92: a floor plan
+                ["secret_lab_beta"] = TierDungeons.SecretLabBeta(),   // 2026-11-11: the lock-and-key redo
                 ["deep_caverns"] = TierDungeons.DeepCaverns(),   // 2026-11-11: the lock-and-key redo
                 ["underground_labyrinth"] = TierDungeons.UndergroundLabyrinth(),   // 2026-11-11: the lock-and-key redo
-                ["secret_lab_gamma"] = TierDungeons.Lab("secret_lab_gamma", "concrete", LabTile, "Signal Room", "Sealed Vault", "antenna_grid"),   // Batch 92: a floor plan
+                ["secret_lab_gamma"] = TierDungeons.SecretLabGamma(),   // 2026-11-11: the lock-and-key redo
                 ["lattice_foundry"] = TierDungeons.LatticeUpper(),         // Batch 91: floor plans (TierDungeons.Plans.cs)
                 [TestingGround.Zone] = TestingGround.Map(),   // the menu's testing ground
                 ["farmhouse_upper"] = TierDungeons.Upstairs("farmhouse_upper", "wall", "perimeter"),   // Batch 120: upper floors

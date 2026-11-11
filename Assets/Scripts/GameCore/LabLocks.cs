@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege", ["lattice_foundry_lower"] = "foundry" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege", ["lattice_foundry_lower"] = "foundry", ["secret_lab_gamma"] = "gamma", ["secret_lab_beta"] = "beta" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -230,6 +230,28 @@ namespace GameCore
                 ['5'] = new Thing { Name = "Coil Hall Bus Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The bus switch for the Coil Hall, at the end of the cable tunnel. A fuse is missing.",
                                     Says = "[FOUNDRY] The cables in the tunnel start to hum, and round the ring three dead doors come alive." },
+            },
+            // Secret Lab Gamma (hidden, Tier 5; dungeons/secret_lab_gamma.mmd): the Alpha locks; the Sealed Vault itself opens with the story key (StorySystem, EelBoss.VaultKeyId).
+            ["secret_lab_gamma"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Gamma Security Locker", Look = "stash_footlocker", Kind = "staff", Ru = 170, Desc = "A grey locker in the security office, a duty roster curling on the door.",
+                                    Says = "[GAMMA] A security badge, the stripe still bright. The labs' reader will take it." },
+                ['4'] = new Thing { Name = "Gamma Lab Spares", Look = "stash_toolbox", Kind = "fuse", Desc = "A spares case under a lab bench, marked with the station's antenna sign.",
+                                    Says = "[GAMMA] A long glass fuse, GEN HALL on the cap." },
+                ['5'] = new Thing { Name = "Gamma Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The generator hall's switch. A fuse holder stands empty.",
+                                    Says = "[GAMMA] The generators wind up. In the atrium a dead door wakes, and something in the Signal Room starts to hum." },
+            },
+            // Secret Lab Beta (hidden, Tier 4; dungeons/secret_lab_beta.mmd): the Alpha locks; Boss 1's wing stays behind its cracked wall (Boss.TryBreakWall).
+            ["secret_lab_beta"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Guard Room Locker", Look = "stash_footlocker", Kind = "staff", Ru = 130, Desc = "A guard's locker, a uniform jacket still on its hanger.",
+                                    Says = "[BETA] A guard's badge clipped to the jacket. The lab wing's reader will take it." },
+                ['4'] = new Thing { Name = "Archive Strongbox", Look = "stash_toolbox", Kind = "fuse", Desc = "A strongbox on the archive's bottom shelf, among boxes of punched tape.",
+                                    Says = "[BETA] Somebody locked a generator fuse away with the files. WARD CIRCUIT, the tag says." },
+                ['5'] = new Thing { Name = "Beta Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The generator's switch, tagged DO NOT ENERGISE - WARD. The fuse is gone.",
+                                    Says = "[BETA] The generator catches. Across the reception, the Isolation Ward's door unlocks itself." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)
