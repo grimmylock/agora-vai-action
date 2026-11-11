@@ -36,6 +36,30 @@ def foot(ph, hind=False):
     u = (ph - 0.55) / 0.45
     return (-S_ + 2 * S_ * (0.5 - 0.5 * math.cos(math.pi * u)), L_ * math.sin(math.pi * u))
 
+THIGH_SWING = 2.0                       # px the knee moves with the step (the foot offset of the hind leg, scaled)
+def knee_shift(name, i, stand=False):
+    if stand: return 0
+    ph = (i / N + LEGS[name][1]) % 1.0
+    return int(round(THIGH_SWING * foot(ph, True)[0] / 2.7))
+
+def swung_body(i, stand=False):
+    """BODY with the near hind thigh swung: each pixel row of the thigh (rows 21..28, columns 0..12) moves sideways as a whole by a shift that grows from 0 at the hip row to the knee shift at row 28
+    (whole pixels only, no resampling). The seam column 13 stays: a gap that opens at the seam is filled with that column's own pixel."""
+    a = np.array(BODY).copy(); sk = knee_shift("near_hind", i, stand)
+    if sk == 0: return Image.fromarray(a)
+    src = a.copy()
+    for y in range(21, 29):
+        sh = int(round(sk * (y - 20) / 8.0)); row = src[y, :13].copy()
+        a[y, :13] = 0
+        for x in range(13):
+            nx = x + sh
+            if 0 <= nx < 13 and row[x, 3]: a[y, nx] = row[x]
+            elif nx >= 13 and row[x, 3] and not a[y, nx, 3]: a[y, nx] = row[x]
+        if sh < 0:
+            for x in range(13 + sh, 13):
+                if not a[y, x, 3] and src[y, 13, 3]: a[y, x] = src[y, 13]
+    return Image.fromarray(a)
+
 def solve(hip, ft, fwd, l1=None, l2=None):
     l1 = l1 or L1; l2 = l2 or L2
     dx, dy = ft[0] - hip[0], ft[1] - hip[1]; d = min(math.hypot(dx, dy), l1 + l2 - 0.2); a = math.atan2(dy, dx)
@@ -83,7 +107,7 @@ def leg_img(name, i, bob, stand=False):
     fo, fl = (0.0, 0.0) if stand else foot(ph, name.endswith('hind'))
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
+    hip = (hx + ox + (knee_shift(name, i, stand) if name.endswith('hind') else 0), hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
     if hind:
         hock = (ft[0] - 1.0, ft[1] - 3.4); st = ((hip[0] + hock[0]) / 2, (hip[1] + hock[1]) / 2); pts = [hip, st, hock, ft]; rad = [2.3, 2.2, 2.0, 1.9]      # the shin from the knee Yan drew
     else:
@@ -112,7 +136,7 @@ def frame(i, only=None, stand=False):
     if only: return leg_img(only, i, bob, stand)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     for n in far: im.alpha_composite(leg_img(n, i, bob, stand))
-    im.alpha_composite(BODY, (ox, oy + bob)); im.alpha_composite(HEAD, (ox, oy + bob + sway))
+    im.alpha_composite(swung_body(i, stand), (ox, oy + bob)); im.alpha_composite(HEAD, (ox, oy + bob + sway))
     for n in near: im.alpha_composite(leg_img(n, i, bob, stand))
     a = np.array(im); l, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))      # a far knee peeking out past the head as a loose speck: dropped
     for j in range(1, k + 1):
