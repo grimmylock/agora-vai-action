@@ -745,7 +745,7 @@ def underground_labyrinth():
     p.hline(30, 37, 35, 2)                                         # F - Y (a dead end)
     p.vline(15, 23, 29, 1); p.hline(46, 50, 36, 1)                 # more blind passages
     roughen(p, passes=1, chance=0.3)
-    lock_row(p, 14, [57, 58], '$'); lock_row(p, 28, [25, 26], '@'); lock_row(p, 42, [25, 26], '^')
+    lock_row(p, 14, [57, 58], '7'); lock_row(p, 28, [25, 26], '8'); lock_row(p, 42, [25, 26], '9')   # the three lever gates (red, amber, blue)
     p.collapse(26, 22, 2)
     props(p, ((7, 6, 'c'), (12, 9, 'k'), (39, 6, 'x'), (44, 9, 'k'), (55, 20, 'c'), (60, 23, 'b'), (23, 34, 'k'), (28, 37, '&'), (55, 34, 'c'), (60, 37, '&'), (39, 34, 'x'), (44, 37, 'b'),
               (16, 47, 'h'), (22, 47, 'h'), (30, 47, 'h'), (37, 47, 'h'), (16, 53, 'h'), (22, 53, 'h'), (30, 53, 'h'), (37, 53, 'h'), (26, 51, '&'), (28, 50, '&'), (25, 49, '&')))
@@ -754,8 +754,8 @@ def underground_labyrinth():
     p.g[7][25] = 'E'; p.g[21][24] = 'C'; p.g[50][27] = 'G'
     cave_litter(p, 20)
     return p
-LAB_GIVES = {'4': ('gate', None), '3': ('pry', None), '6': ('code', None)}
-LAB_LOCKS = {'$': 'gate', '@': 'pry', '^': 'code'}
+LAB_GIVES = {'4': ('gate', None), '3': ('pry', None), '6': ('code', None)}   # names kept from the first build: gate = the red lever, pry = the amber, code = the blue
+LAB_LOCKS = {'7': 'gate', '8': 'pry', '9': 'code'}
 def labyrinth_check(p):
     st = flood_stages(p, LAB_GIVES, LAB_LOCKS); g = p.g; out = []
     K1, K2, K3, G = pos(g, '4'), pos(g, '3'), pos(g, '6'), pos(g, 'G'); s0 = st[0][1]
@@ -822,18 +822,20 @@ def lattice_foundry_lower():
     for (x, y) in ((45, 25), (44, 26)): assert g[y][x] == 'r', (x, y, g[y][x]); g[y][x] = '#'
     for (x, y) in ((19, 41), (52, 42)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '1'
     assert g[38][36] == '.'; g[38][36] = '1'
-    g[27][19] = '3'; g[40][22] = '4'; g[3][6] = '5'
+    for (x, y) in ((11, 9), (11, 15)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '}'     # the crew quarters' two doors: steam doors (the coolant valve in the plant room clears them)
+    g[27][19] = '3'; g[40][22] = '6'; g[8][17] = '4'; g[3][6] = '5'       # the badge, the coolant valve (plant room), the fuse (crew quarters), the bus switch
     return p
-LF_GIVES = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse')}
+LF_GIVES = {'3': ('badge', None), '6': ('coolant', None), '4': ('fuse', None), '5': ('power', 'fuse')}
+LF_LOCKS = {'1': 'badge', '}': 'coolant', '2': 'power'}
 def foundry_check(p):
-    st = flood_stages(p, LF_GIVES, BP_LOCKS, start='S'); g = p.g; out = []
-    L3, C4, S5, Y = pos(g, '3'), pos(g, '4'), pos(g, '5'), pos(g, 'Y'); s0 = st[0][1]
-    ok(out, L3 in s0 and S5 in s0 and C4 not in s0 and Y not in s0, "at the start: the Foreman's locker and the bus switch; not the plant room's fuse or the synthesizer")
+    st = flood_stages(p, LF_GIVES, LF_LOCKS, start='S'); g = p.g; out = []
+    L3, V6, C4, S5, Y = pos(g, '3'), pos(g, '6'), pos(g, '4'), pos(g, '5'), pos(g, 'Y'); s0 = st[0][1]
+    ok(out, L3 in s0 and S5 in s0 and V6 not in s0 and C4 not in s0 and Y not in s0, "at the start: the Foreman's locker and the bus switch; not the coolant valve, the fuse or the synthesizer")
     firsts = {}
     for keys, seen in st:
-        for name, c in (('fuse', C4), ('synth', Y)):
+        for name, c in (('valve', V6), ('fuse', C4), ('synth', Y)):
             if c in seen and name not in firsts: firsts[name] = sorted(keys)
-    ok(out, firsts.get('fuse') == ['badge'] and firsts.get('synth') == ['badge', 'fuse', 'power'], f"order: the fuse needs {firsts.get('fuse')}, the synthesizer {firsts.get('synth')}")
+    ok(out, firsts.get('valve') == ['badge'] and firsts.get('fuse') == ['badge', 'coolant'] and firsts.get('synth') == ['badge', 'coolant', 'fuse', 'power'], f"order: valve {firsts.get('valve')}, fuse {firsts.get('fuse')}, synthesizer {firsts.get('synth')}")
     return out
 
 def secret_lab_gamma():
@@ -880,7 +882,7 @@ def secret_lab_beta():
     for x in (29, 30): p.g[21][x] = '1'
     p.hline(10, 13, 27, 2); p.room(3, 22, 7, 20)                   # the Archive Room
     p.vline(23, 32, 35, 2); p.room(14, 36, 20, 8)                  # the generator room
-    p.hline(10, 13, 40, 1, 'r')                                    # the vent hole archive <-> generator (the loop)
+    for x in (23, 24): p.g[33][x] = '{'                            # the generator room's keypad door (the code is in the lab wing's notebook)
     p.vline(41, 19, 23, 2); p.room(38, 24, 16, 10)                 # the Isolation Ward, behind the power door
     for x in (41, 42): p.g[21][x] = '2'
     p.g[29][54] = 'Z'                                              # the cracked wall
@@ -894,19 +896,26 @@ def secret_lab_beta():
               (39, 25, 'l'), (42, 25, 'l'), (45, 25, 'l'), (48, 25, 'l'), (51, 25, 'l'), (40, 32, 'a'), (46, 32, 'a'), (52, 32, 'j'), (39, 29, 'x'),
               (63, 27, 'x'), (69, 31, 'x'), (69, 27, 'e')))
     p.g[29][67] = 'V'; p.g[29][66] = '*'; p.g[30][67] = '*'
-    p.g[11][17] = '3'; p.g[26][5] = '4'; p.g[42][20] = '5'
+    p.g[11][17] = '3'; p.g[26][5] = '4'; p.g[42][20] = '5'; p.g[28][31] = '6'
     p.g[17][44] = 'J'; p.g[30][50] = 'K'
     p.g[4][35] = 'E'; p.g[14][31] = 'R'; p.g[32][6] = 'A'; p.g[28][46] = 'G'
     scatter(p, 20)
     return p
-BETA_LOCKS = {'1': 'badge', '2': 'power', 'Z': 'a wall'}
+BETA_GIVES = {'3': ('badge', None), '4': ('fuse', None), '6': ('code', None), '5': ('power', 'fuse')}
+BETA_LOCKS = {'1': 'badge', '{': 'code', '2': 'power', 'Z': 'a wall'}
 def beta_check(p):
-    out = badge_power_check(p, loop=[(x, 40) for x in range(10, 14)], loop_name="the vent hole", locks=BETA_LOCKS)
-    st = flood_stages(p, BP_GIVES, BETA_LOCKS); g = p.g
-    ok(out, pos(g, 'V') not in st[-1][1] and pos(g, 'A') in st[1][1], "the body's room is sealed behind the cracked wall with every key; the Archive Room opens with the badge")
-    g2 = pos(g, 'Z'); g[g2[1]][g2[0]] = '.'
-    ok(out, pos(g, 'V') in flood_stages(p, BP_GIVES, BETA_LOCKS)[-1][1], "with the wall broken the body's room is reachable from the ward")
-    g[g2[1]][g2[0]] = 'Z'
+    st = flood_stages(p, BETA_GIVES, BETA_LOCKS); g = p.g; out = []
+    c = {k: pos(g, k) for k in '3465GVA'}; s0 = st[0][1]
+    ok(out, c['3'] in s0 and all(c[k] not in s0 for k in '465G'), "at the start: the guard's locker; not the notebook, the fuse, the switch or the ward")
+    firsts = {}
+    for keys, seen in st:
+        for k in '465G':
+            if c[k] in seen and k not in firsts: firsts[k] = sorted(keys)
+    ok(out, firsts['4'] == ['badge'] and firsts['6'] == ['badge'] and firsts['5'] == ['badge', 'code', 'fuse'] and firsts['G'] == ['badge', 'code', 'fuse', 'power'], f"order: fuse {firsts['4']}, notebook {firsts['6']}, switch {firsts['5']}, ward {firsts['G']}")
+    ok(out, c['V'] not in st[-1][1] and c['A'] in st[1][1], "the body's room is sealed behind the cracked wall with every key; the Archive Room opens with the badge")
+    z = pos(g, 'Z'); g[z[1]][z[0]] = '.'
+    ok(out, c['V'] in flood_stages(p, BETA_GIVES, BETA_LOCKS)[-1][1], "with the wall broken the body's room is reachable from the ward")
+    g[z[1]][z[0]] = 'Z'
     return out
 
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):

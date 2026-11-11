@@ -200,14 +200,14 @@ namespace GameCore
                                     Says = "[CAVERNS] The lever gives all at once. Below, the lake starts to pour away through the sluice." },
             },
             // Underground Labyrinth (hidden, Tier 5; dungeons/underground_labyrinth.mmd): gate key -> pry bar -> the slab's code.
-            ["underground_labyrinth"] = new Dictionary<char, Thing>
+["underground_labyrinth"] = new Dictionary<char, Thing>
             {
-                ['4'] = new Thing { Name = "Blaster's Tin", Look = "stash_toolbox", Kind = "gate", Ru = 150, Desc = "A shot-firer's tin wedged in a crack, the lid rusted on.",
-                                    Says = "[LABYRINTH] An iron key on a loop of det cord. Somewhere in here is a gate it fits." },
-                ['3'] = new Thing { Name = "Quarryman's Bundle", Look = "stash_duffel", Kind = "pry", Desc = "A bundle of quarry tools left against the wall.",
-                                    Says = "[LABYRINTH] A quarryman's pry bar, the tip polished by use." },
-                ['6'] = new Thing { Name = "Tally Wall", Look = "stash_pda", Kind = "code", Desc = "A wall scratched with tally marks, and under them four numbers cut deep and gone over many times.",
-                                    Says = "[LABYRINTH] Four numbers, cut by someone who was afraid of forgetting them. The slab's dial has four rings." },
+                ['4'] = new Thing { Name = "Red Lever", Look = "lever_a", Kind = "lever1", Ru = 150, Desc = "A heavy floor lever with a red knob, chained in the up position. The chain has rusted through.",
+                                    Says = "[LABYRINTH] The red lever goes over. Far off, iron grinds on stone: a gate with a red plate has lifted." },
+                ['3'] = new Thing { Name = "Amber Lever", Look = "lever_b", Kind = "lever2", Desc = "A floor lever with an amber knob, set in a steel box bolted to the rock.",
+                                    Says = "[LABYRINTH] The amber lever drops. Somewhere behind you a second portcullis rattles up." },
+                ['6'] = new Thing { Name = "Blue Lever", Look = "lever_c", Kind = "lever3", Desc = "A floor lever with a blue knob. Bones lie round its base.",
+                                    Says = "[LABYRINTH] The blue lever. The last gate rises, and a breath of cold air comes up the passage from the hall." },
             },
             // Siege Catacombs (hidden, Tier 6; dungeons/siege_catacombs.mmd): the sexton's key (iron gate), the sappers' pry bar (rockfalls), the burial roll (the Sealed Crypt's slab).
             ["siege_catacombs"] = new Dictionary<char, Thing>
@@ -225,8 +225,10 @@ namespace GameCore
             {
                 ['3'] = new Thing { Name = "Foreman's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 160, Desc = "A locker beside the Foreman's cot, schematics taped inside the door.",
                                     Says = "[FOUNDRY] A plant pass, the photo burned away at one corner. The plant room's readers will take it." },
-                ['4'] = new Thing { Name = "Plant Room Spares", Look = "stash_toolbox", Kind = "fuse", Desc = "A spares case chained to a pump housing.",
+                ['4'] = new Thing { Name = "Crew Quarters Spares", Look = "stash_toolbox", Kind = "fuse", Desc = "A spares case under a bunk in the crew quarters.",
                                     Says = "[FOUNDRY] A bus fuse in a ceramic sleeve, COIL HALL FEED on the band." },
+                ['6'] = new Thing { Name = "Coolant Valve Wheel", Look = "labswitch", Kind = "coolant", Desc = "The plant room's coolant main: a wheel valve as wide as your arms, wired shut with a tag.",
+                                    Says = "[FOUNDRY] The wheel turns, the pipes knock, and cold runs through the level. The steam at the crew quarters' doors thins and stops." },
                 ['5'] = new Thing { Name = "Coil Hall Bus Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The bus switch for the Coil Hall, at the end of the cable tunnel. A fuse is missing.",
                                     Says = "[FOUNDRY] The cables in the tunnel start to hum, and round the ring three dead doors come alive." },
@@ -249,6 +251,8 @@ namespace GameCore
                                     Says = "[BETA] A guard's badge clipped to the jacket. The lab wing's reader will take it." },
                 ['4'] = new Thing { Name = "Archive Strongbox", Look = "stash_toolbox", Kind = "fuse", Desc = "A strongbox on the archive's bottom shelf, among boxes of punched tape.",
                                     Says = "[BETA] Somebody locked a generator fuse away with the files. WARD CIRCUIT, the tag says." },
+                ['6'] = new Thing { Name = "Lab Notebook", Look = "stash_pda", Kind = "code", Desc = "A researcher's notebook left open on a bench, a door code written inside the cover and underlined twice.",
+                                    Says = "[BETA] Four digits, underlined: the generator room's keypad." },
                 ['5'] = new Thing { Name = "Beta Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The generator's switch, tagged DO NOT ENERGISE - WARD. The fuse is gone.",
                                     Says = "[BETA] The generator catches. Across the reception, the Isolation Ward's door unlocks itself." },
@@ -276,8 +280,17 @@ namespace GameCore
 
         public static bool Is(string key) => key != null && Prefix.Values.Any(p => key.StartsWith(p + "_"));
 
+/// <summary>Every lock look and the key kind it asks for. Doors (TileType.Door) and barriers (TileType.Difficult); an unlocked one's look gets "_on".
+        /// 2026-11-11: + the keypad door (the code), the steam door (the coolant valve), three lever gates (portcullis a/b/c: lever1/2/3).</summary>
+        static readonly Dictionary<string, string> LockKinds = new Dictionary<string, string>
+        {
+            ["rockfall"] = "pry", ["irongate"] = "gate", ["sealslab"] = "code", ["door_badge"] = "staff", ["door_power"] = "power",
+            ["door_keypad"] = "code", ["door_steam"] = "coolant", ["portcullis_a"] = "lever1", ["portcullis_b"] = "lever2", ["portcullis_c"] = "lever3",
+        };
+        static bool IsBarrier(string look) => look != null && !look.StartsWith("door_");
+
         /// <summary>The key a lock's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
-        public static string KeyOf(string look) => look == "rockfall" ? Key("pry") : look == "irongate" ? Key("gate") : look == "sealslab" ? Key("code") : look == "door_badge" ? Key("staff") : look == "door_power" ? Key("power") : look == "deepwater" ? Key(WaterKind(Zone)) : null;
+        public static string KeyOf(string look) => look == null ? null : look == "deepwater" ? Key(WaterKind(Zone)) : LockKinds.TryGetValue(look, out var kind) ? Key(kind) : null;
 
         /// <summary>A lock nobody can pass yet: it has a lock and the player doesn't hold the key.</summary>
         public static bool Locked(TerrainTile t)
@@ -290,10 +303,8 @@ namespace GameCore
 /// <summary>A dungeon's own line for a lock's look ("zone:look"), where the default line (an iron gate's guard post...) does not fit the place.</summary>
         static readonly Dictionary<string, string> Nags = new Dictionary<string, string>
         {
-            ["underground_labyrinth:irongate"] = "An iron gate across the passage, its lock packed with grit. It wants a key.",
             ["siege_catacombs:irongate"] = "An iron gate, older than the war. The sexton will have kept its key close to the bones he tended.",
             ["siege_catacombs:sealslab"] = "The crypt's slab, a dial of four rings sunk in it. The burial roll would have the numbers.",
-            ["underground_labyrinth:sealslab"] = "A slab across the passage with a four-ring dial. Someone down here must have written the numbers somewhere.",
             ["drydock_tunnels:irongate"] = "A sluice gate, wound shut. The wheel's handle is gone from its square; whoever worked the sluices will have hung it up in their chamber.",
         };
 
@@ -306,7 +317,11 @@ namespace GameCore
             if (Time.time - _nagAt > 2f)
             {
                 _nagAt = Time.time;
-                GameLog.Write(Nags.TryGetValue(Zone + ":" + t.Look, out var own) ? own : t.Look == "sealslab" ? "A great stone slab seals the way, a carved dial in its face. Somewhere in the crypt the numbers must be written down."
+                GameLog.Write(Nags.TryGetValue(Zone + ":" + t.Look, out var own) ? own
+                            : t.Look == "door_keypad" ? "The door is locked. A keypad beside it blinks red: ENTER CODE."
+                            : t.Look == "door_steam" ? "Steam hisses from the door's seams, too hot to go near. A coolant valve somewhere would have to be opened."
+                            : t.Look.StartsWith("portcullis_") ? "A portcullis is down across the passage, a coloured plate on its beam. Somewhere a lever with the same colour lifts it."
+                            : t.Look == "sealslab" ? "A great stone slab seals the way, a carved dial in its face. Somewhere in the crypt the numbers must be written down."
                             : t.Look == "irongate" ? "An iron gate across the tunnel, padlocked. Whoever kept the guard post will have had the key."
                             : t.Look == "rockfall" ? "A slab of fallen rock fills the tunnel, too heavy to shift by hand. Something to lever it with, maybe."
                             : t.Look == "door_badge" ? "The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED."
@@ -321,23 +336,34 @@ namespace GameCore
         {
             var thing = Things.SelectMany(z => z.Value.Values.Select(v => (z.Key, v))).FirstOrDefault(p => KeyIn(p.Key, p.v.Kind) == key);
             if (thing.v != null) GameLog.Write(thing.v.Says);
-            if (key == Key("pry")) { Sfx.Play("explosion", null, 0.4f, 0.05f, 0.25f); Relight("rockfall"); }
-            if (key == Key("gate")) { Sfx.Play("explosion", null, 0.25f, 0.05f, 0.15f); Relight("irongate"); }
-            if (key == Key("code")) { Sfx.Play("explosion", null, 0.45f, 0.05f, 0.3f); Relight("sealslab"); }
-            if (key == Key("staff")) Relight("door_badge");
-            if (key == Key("power")) { Sfx.Play("explosion", null, 0.5f, 0.05f, 0.3f); Relight("door_power"); }
+bool any = false;
+            foreach (var kv in LockKinds) if (key == Key(kv.Value)) { Relight(kv.Key); any = true; }
+            if (any && key != Key("staff")) Sfx.Play("explosion", null, 0.4f, 0.05f, 0.25f);
+            Thrown(key);
             if (key == Key(WaterKind(Zone))) { Sfx.Play("explosion", null, 0.35f, 0.05f, 0.2f); Whirlpools(key); Drain(); }
         }
 
         /// <summary>The doors of one kind stop looking locked (their look gets "_on": a green light) - they're ordinary doors now.</summary>
-        static void Relight(string look)
+static void Relight(string look)
         {
+            bool barrier = IsBarrier(look);
             for (int y = 0; y < TerrainMap.Height; y++)
                 for (int x = 0; x < TerrainMap.Width; x++)
                 {
                     var t = TerrainMap.GetTile(x, y);
-                    if ((t.Type == TileType.Door || (t.Type == TileType.Difficult && (look == "rockfall" || look == "irongate" || look == "sealslab"))) && t.Look == look) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
+                    if (t.Look == look && (t.Type == TileType.Door || (barrier && t.Type == TileType.Difficult))) { t.Look = look + "_on"; TerrainMap.DirtyTiles.Add((x, y)); }
                 }
+        }
+
+        /// <summary>A lever that gave this key shows as thrown (its look gets "_on").</summary>
+        static void Thrown(string key)
+        {
+            foreach (var o in TerrainMap.InteractiveObjects)
+            {
+                if (o.GrantsKey != key) continue;
+                var t = TerrainMap.GetTile(o.X, o.Y);
+                if (t.Look != null && t.Look.StartsWith("lever_") && !t.Look.EndsWith("_on")) { t.Look += "_on"; TerrainMap.DirtyTiles.Add((o.X, o.Y)); }
+            }
         }
 
         /// <summary>RT fx 4: as a pump starts, up to three whirlpools turn in the deep water round it (nearest first, 3+ tiles apart).</summary>
@@ -374,11 +400,7 @@ namespace GameCore
         /// <summary>Called when a map is built: locks whose key the player already holds start open (a save, a second visit).</summary>
         public static void Refresh()
         {
-            if (Has(Key("pry"))) Relight("rockfall");
-            if (Has(Key("gate"))) Relight("irongate");
-            if (Has(Key("code"))) Relight("sealslab");
-            if (Has(Key("staff"))) Relight("door_badge");
-            if (Has(Key("power"))) Relight("door_power");
+foreach (var kv in LockKinds) if (Has(Key(kv.Value))) { Relight(kv.Key); Thrown(Key(kv.Value)); }
             if (Has(Key(WaterKind(Zone)))) Drain();
         }
 
@@ -404,7 +426,7 @@ namespace GameCore
                 Description = th.Desc, GrantsKey = Key(th.Kind), Requires = th.Needs == null ? null : Key(th.Needs),
             });
             var t = TerrainMap.Tiles[y, x];
-            if (t.Look == null) { t.Look = th.Look; if (th.Look != "labswitch") t.Type = TileType.Difficult; }   // boxes are climbed over; a switch is a panel on the floor
+            if (t.Look == null) { t.Look = th.Look; if (th.Look != "labswitch" && !th.Look.StartsWith("lever_")) t.Type = TileType.Difficult; }   // boxes are climbed over; a switch is a panel on the floor
             return true;
         }
     }

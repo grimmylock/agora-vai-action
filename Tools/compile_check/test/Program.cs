@@ -2032,11 +2032,11 @@ static class Program {
     DrydockChecks();
     BadgePowerChecks("underground_bunker", "ubunk", "Blast Door Foyer", "Command Centre", "abandoned_city", 2, 2);
     ChainChecks("deep_caverns", "Surface Shaft", "Crystal Pool", "crimson_woods", "cavern_pry", "cavern_drain");
-    ChainChecks("underground_labyrinth", "The Fork", "Minotaur's Hall", "quarry_basin", "maze_gate", "maze_pry", "maze_code");
+    ChainChecks("underground_labyrinth", "The Fork", "Minotaur's Hall", "quarry_basin", "maze_lever1", "maze_lever2", "maze_lever3");
     ChainChecks("siege_catacombs", "Catacomb Stair", "Sealed Crypt", "hospital", "siege_gate", "siege_pry", "siege_code");
-    ChainChecks("lattice_foundry_lower", "Service Stair", "Cell Synthesizer", "lattice_foundry", "foundry_staff", "foundry_fuse", "foundry_power");
+    ChainChecks("lattice_foundry_lower", "Service Stair", "Cell Synthesizer", "lattice_foundry", "foundry_staff", "foundry_coolant", "foundry_fuse", "foundry_power");
     BadgePowerChecks("secret_lab_gamma", "gamma", "Entry Lift", "Sealed Vault", "antenna_grid", 2, 2);
-    BadgePowerChecks("secret_lab_beta", "beta", "Entry Lift", "Isolation Ward", "ghost_town", 2, 2);
+    ChainChecks("secret_lab_beta", "Entry Lift", "Isolation Ward", "ghost_town", "beta_staff", "beta_code", "beta_fuse", "beta_power");
     ChainChecks("maintenance_tunnels", "Access Hatch", "Surface Depot", "rail_yards", "mtun_staff", "mtun_fuse", "mtun_power", "mtun_drain");
   }
   // Dry Dock Tunnels (2026-11-11, dungeons/drydock_tunnels.mmd): fuse -> pump (drain) -> the sluice handle (gate), on the real built map.

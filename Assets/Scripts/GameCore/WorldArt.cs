@@ -368,7 +368,8 @@ namespace GameCore
         /// <summary>Which face a door wears: an ordinary one, a blast door, or Boss 2's lab locks (blue badge readers, hazard-striped power doors,
         /// each lit green once unlocked - LabLocks).</summary>
         static string DoorFace(string look) => look == "blast" ? "blastdoor" : look == "metaldoor" ? "metaldoor" : look == "door_badge" ? "badgedoor" : look == "door_badge_on" ? "badgedoor_on"
-            : look == "door_power" ? "powerdoor" : look == "door_power_on" ? "powerdoor_on" : "door";
+            : look == "door_power" ? "powerdoor" : look == "door_power_on" ? "powerdoor_on"
+            : look == "door_keypad" ? "keypaddoor" : look == "door_keypad_on" ? "keypaddoor_on" : look == "door_steam" ? "steamdoor" : look == "door_steam_on" ? "steamdoor_on" : "door";
 
         /// <summary>What stands on a cell (0 or 1 sprite).</summary>
         public static bool StandingAt(int x, int y, out Standing st)

@@ -295,7 +295,7 @@ def build(mat, mask, variant=0, extra=None, corners=0):
         if lip is not None: im[yb, x] = lip                         # sunlit top edge of the wall
     # openings on a horizontal stretch of built wall
     fx = [x for x in face_top]
-    LOCKS = ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on")   # Boss 2: the lab's lock faces (LabLocks): one lock type, one look
+    LOCKS = ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on", "keypaddoor", "keypaddoor_on", "steamdoor", "steamdoor_on")   # Boss 2: the lab's lock faces (LabLocks): one lock type, one look; 2026-11-11: + the keypad door (a code) and the steam door (a coolant valve)
     if extra in ("window", "uwin", "door", "metaldoor", "blastdoor") + LOCKS and fx and T < C and not ((mask & 5) == 5 and not (mask & 10)):
         ft = min(face_top[x] for x in fx)
         two = H >= 36                                                    # Batch 119: two storeys - the top half is the upper floor
@@ -336,7 +336,30 @@ def build(mat, mask, variant=0, extra=None, corners=0):
             if extra in LOCKS:
                 on = extra.endswith("_on"); badge = extra.startswith("badge")
                 lamp = hx("#5ee07a") if on else hx("#4aa8ff") if badge else hx("#e0503a")   # green once it's unlocked; blue badge reader; red dead power
-                if badge:                                                   # a blue strip over the door and a card reader beside it (dark box, lit LED, a white slot)
+                d0 = H - 19 if two else 1                                    # the door's own top row (on a two-storey wall the door is the bottom 19 rows)
+                if extra.startswith("keypad"):                              # an amber strip on the lintel and a keypad beside the door: a dark panel, a red/green LED, three rows of pale keys (ref: sci-fi wall panels, CC0 tech-lab tilesets)
+                    for x in range(4, 12): im[ft + max(0, d0 - 1), x] = hx("#d09a2a") if not on else hx("#3aa860")
+                    for k in range(d0 + 5, d0 + 14):
+                        for x in (13, 14): im[ft + k, x] = hx("#14181b")
+                    im[ft + d0 + 6, 13] = lamp; im[ft + d0 + 6, 14] = hx("#2a3338")
+                    for k in (d0 + 8, d0 + 10, d0 + 12):
+                        im[ft + k, 13] = hx("#cfd6d8"); im[ft + k, 14] = hx("#9aa4a8")
+                    for k in (d0 + 3, d0 + 4):                              # a small dark window in the door
+                        for x in (7, 8): im[ft + k, x] = hx("#10161a")
+                elif extra.startswith("steam"):                             # a pressure door: a rust pipe along the lintel with flanges, a gauge on the door, a cold-blue hazard band, and (locked) white steam leaking from the seams
+                    for x in range(3, 13): im[ft + max(0, d0 - 2), x] = P["rust"][2]; im[ft + max(1, d0 - 1), x] = P["rust"][1]
+                    im[ft + max(0, d0 - 2), 5] = P["rust"][3]; im[ft + max(0, d0 - 2), 10] = P["rust"][3]
+                    for x in (7, 8): im[ft + d0 + 3, x] = hx("#e8ecee"); im[ft + d0 + 4, x] = hx("#1a1e22")   # the gauge
+                    im[ft + d0 + 4, 7] = lamp
+                    for k in range(H - 8, H - 3):
+                        for x in range(4, 12): im[ft + k, x] = hx("#7fb6c8") if (x + k) % 4 < 2 else hx("#1c2428")
+                    if not on:                                              # steam: three soft puffs (a pale core, a greyer rim) at the door's lower corners and one from the top seam
+                        A, Bc = hx("#eef4f5"), hx("#b4c4c8")
+                        for (cx, cy) in ((3, H - 3), (12, H - 4), (10, d0 + 1)):
+                            for (dx, dy, c) in ((0, 0, A), (1, 0, A), (0, -1, A), (1, -1, Bc), (-1, 0, Bc), (0, 1, Bc), (2, -1, Bc), (1, -2, A), (0, -2, Bc), (-1, -3, Bc), (1, -4, Bc)):
+                                x2, y2 = cx + dx, ft + cy + dy
+                                if 0 <= x2 < 16 and 0 <= y2 < im.shape[0]: im[y2, x2] = c
+                elif badge:                                                   # a blue strip over the door and a card reader beside it (dark box, lit LED, a white slot)
                     for x in range(4, 12): im[ft + 3, x] = hx("#3a7fd0") if not on else hx("#3aa860")
                     for k in range(11, 17):
                         for x in (13, 14): im[ft + k, x] = hx("#1a1e22")
@@ -462,8 +485,8 @@ def all_tiles():
                 key = f"{mask}c{cs}" if cs else f"{mask}"
                 if cs: t[f"w_{mat}_{key}_0"] = build(mat, mask, 0, None, cs)
                 for ex in ("window", "door", "metaldoor", "blastdoor", "crack"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
-                if mat == "concrete":                                       # Boss 2: the lab's lock doors (only the lab's wall material needs them)
-                    for ex in ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
+                if mat in ("concrete", "plaster", "hull", "wall"):          # Boss 2: the lab's lock doors; 2026-11-11: every wall material a lock-and-key dungeon is built of (the ferry's hull, the morgue's and Beta's plaster, the crypts' brick fell back to a plain steel door)
+                    for ex in ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on", "keypaddoor", "keypaddoor_on", "steamdoor", "steamdoor_on"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
                 if H >= 36: t[f"w_{mat}_{key}_uwin"] = build(mat, mask, 0, "uwin", cs)   # Batch 119: an upper-floor window on a plain wall
                 if mat in ("wall", "plaster", "plank"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
                 if mat in ("wall", "plaster", "plank", "concrete"):   # Batch 98: worn, for intact walls

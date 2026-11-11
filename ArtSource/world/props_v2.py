@@ -1002,7 +1002,48 @@ FACINGS = {f"{b}_f{v}": _facing_prop(b, v) for b in FACING_BASE for v in FACING_
 FACING_VARIANTS = {f"{b}_f{v}": (2 if b in ("lockers", "machine") else 1) for b in FACING_BASE for v in FACING_VIEWS[b]}
 V2_VARIANTS.update(FACING_VARIANTS)
 
-NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2, "sealslab": sealslab2, "sealslab_on": sealslab_on2, **FACINGS}
+# ---------------------------------------------------------------- lever gates (2026-11-11, the Underground Labyrinth; Yan: "build the missing art, search for references before").
+# References: FunnyDude's CC0 "Lever and Button" (a wedge base, a slanted arm, a knob), Buch's CC0 dungeon sheet (portcullis grates in an arch). Drawn new in the game's steel/rust ramps.
+# A lever and the gate it lifts share a colour (a = red, b = amber, c = blue): the knob, and a plate on the gate's top rail.
+LEVER_COL = {"a": ("#e0503a", "#8a2a20"), "b": ("#e8b23a", "#8a6418"), "c": ("#4aa8ff", "#1f5a96")}
+def _portcullis(seed, opened, which):
+    r = rng(seed); S = P["steel"]; R = P["rust"]; im = blank(18, 22); hi, lo = (hx(c) for c in LEVER_COL[which])
+    for y in range(1, 20):                                          # the stone-set guide posts
+        for x in (0, 1, 16, 17): px(im, x, y, S[3] if x in (0, 16) else S[1])
+    for x in range(0, 18): px(im, x, 1, S[4]); px(im, x, 2, S[2]); px(im, x, 3, S[1])     # the lintel beam the grate rises into
+    for x in (7, 8, 9, 10): px(im, x, 2, hi); px(im, x, 3, lo)                              # the colour plate
+    if not opened:
+        for x in range(3, 16, 2):
+            for y in range(4, 19): px(im, x, y, S[4] if y < 9 else S[3] if y < 15 else S[2])   # the bars
+        for y in (7, 12, 16):
+            for x in range(2, 16): px(im, x, y, S[1] if x % 2 == 0 else S[3])                  # the cross straps
+        for x in range(3, 16, 2): px(im, x, 19, S[0])                                         # the spikes at the foot
+        for _ in range(9): px(im, r.randrange(2, 16), r.randrange(5, 18), R[1 + r.randrange(3)])
+    else:                                                           # raised: only the spikes hang out of the lintel
+        for x in range(3, 16, 2): px(im, x, 4, S[3]); px(im, x, 5, S[2]); px(im, x, 6, S[0])
+    return finish(im, (9, 20), shadow=(16, 4, 1, -1), tall=not opened)
+
+def _lever(seed, pulled, which):
+    """Double-density (x2): a steel floor box with a slot, the arm leaning left (set) or thrown right (pulled), a coloured knob."""
+    S = P["steel"]; im = blank(26, 30); d = ImageDraw.Draw(im); hi, lo = (hx(c) for c in LEVER_COL[which])
+    d.polygon([(3, 28), (22, 28), (19, 19), (6, 19)], fill=S[2]); d.line([(6, 19), (19, 19)], fill=S[4]); d.line([(3, 28), (22, 28)], fill=S[0])     # the wedge base
+    d.line([(6, 20), (3, 27)], fill=S[3]); d.line([(19, 20), (22, 27)], fill=S[1])
+    d.rectangle([10, 20, 15, 22], fill=S[0])                                                                                                       # the slot
+    for (x, y) in ((6, 25), (19, 25)): d.point((x, y), fill=S[4])                                                                                  # bolts
+    d.rectangle([8, 24, 17, 26], fill=lo); d.line([(8, 24), (17, 24)], fill=hi)                                                                    # the colour band on the box
+    tip = (20, 5) if pulled else (5, 5)
+    d.line([(12, 21), tip], fill=S[1], width=3); d.line([(12, 20), (tip[0], tip[1] - 1)], fill=S[4], width=1)                                      # the arm
+    d.ellipse([tip[0] - 3, tip[1] - 4, tip[0] + 3, tip[1] + 2], fill=hi); d.point((tip[0] - 1, tip[1] - 2), fill=hx("#ffffff")); d.arc([tip[0] - 3, tip[1] - 4, tip[0] + 3, tip[1] + 2], 20, 160, fill=lo)   # the knob
+    pr = finish(im, (13, 29), shadow=(11, 4, 1, -1)); pr.scale = 2; return pr
+
+LEVER_GATES = {}
+for _w in "abc":
+    LEVER_GATES[f"portcullis_{_w}"] = (lambda w: lambda seed: _portcullis(seed, False, w))(_w)
+    LEVER_GATES[f"portcullis_{_w}_on"] = (lambda w: lambda seed: _portcullis(seed, True, w))(_w)
+    LEVER_GATES[f"lever_{_w}"] = (lambda w: lambda seed: _lever(seed, False, w))(_w)
+    LEVER_GATES[f"lever_{_w}_on"] = (lambda w: lambda seed: _lever(seed, True, w))(_w)
+
+NEW = {"tires": tires2, "trash": trash2, "jersey": jersey2, "brush": brush2, "debris": debris2, "jersey_v": jersey_v2, "jersey_c": jersey_c2, "block": block2, "block_v": block_v2, "block_c": block_c2, "scrap": scrap2, "fountain": fountain2, "hatch": hatch2, "pillar": pillar2, "culvert": culvert2, "pipe": pipe2, "pipepost": pipepost2, "rockfall": rockfall2, "rockfall_on": rockfall_on2, "irongate": irongate2, "irongate_on": irongate_on2, "sealslab": sealslab2, "sealslab_on": sealslab_on2, **FACINGS, **LEVER_GATES}
 
 if props.PROPS.get("tires") is not NEW["tires"]: props.PROPS.update(NEW); props.VARIANTS.update(V2_VARIANTS)
 
