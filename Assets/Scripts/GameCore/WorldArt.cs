@@ -411,6 +411,18 @@ namespace GameCore
             {
                 string rl = RunLook(x, y, l);
                 s = Pick("p_" + rl, H01(x, y, 3)) ?? Pick("p_" + l, H01(x, y, 3));
+                if (l == "machine")                                                 // 2026-11-11: a lathe is nearly two tiles wide and maps place machines as blocks of adjacent tiles: a west-east run draws ONE lathe per pair of tiles, centred on the pair (the old way drew one per tile, overlapping)
+                {
+                    int k = 0; while (x - k - 1 >= 0 && _look[y * _w + x - k - 1] == "machine") k++;
+                    if (k % 2 == 1) return false;                                   // the second tile of a pair: the first one's lathe covers it
+                    bool pair = x + 1 < _w && _look[y * _w + x + 1] == "machine";
+                    s = Pick("p_machine", H01(x - k, y, 3)) ?? s;                   // one look along the whole run
+                    if (pair) ox = 8;
+                    int kv = 0; while (y - kv - 1 >= 0 && _look[(y - kv - 1) * _w + x - k] == "machine") kv++;      // and a block several tiles deep: one lathe per two rows, centred on them
+                    if (kv % 2 == 1) return false;
+                    if (y + 1 < _h && _look[(y + 1) * _w + x - k] == "machine") oy = 8;
+                }
+                else
                 if (s != null && FacingProps.Contains(l)) { var fc = Facing(x, y, l); if (fc != null) s = Pick("p_" + l + "_f" + fc, H01(x, y, 3)) ?? s; }   // 2026-11-10: furniture turns with the wall it stands against
                 if (s != null && Natural.Contains(l) && !InRun(x, y, l))         // pieces of a run stay in line
                 {

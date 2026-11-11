@@ -188,15 +188,22 @@ def desk_tipped(face):
             for (x, y) in ((3, 26), (32, 26), (32, 12)):                                                                          # legs coming toward the camera: short, their end grain lit
                 d.rectangle([x, y, x + 3, y + 7], fill=W[2]); d.rectangle([x, y + 5, x + 3, y + 8], fill=W[3]); d.line([(x, y + 8), (x + 3, y + 8)], fill=W[0])
             return X2(im, (19, 34), (18, 4, 1, -1))
-        im = blank(30, 44); d = ImageDraw.Draw(im)                                                    # e: the top faces east. The board is seen edge-on down the right side; legs and drawers lie to the west
-        d.rectangle([22, 2, 26, 4], fill=W[4]); d.rectangle([22, 5, 26, 40], fill=W[3]); d.line([(22, 5), (22, 40)], fill=W[4]); d.line([(26, 5), (26, 40)], fill=W[1]); d.line([(22, 40), (26, 40)], fill=W[0])
-        d.rectangle([27, 6, 27, 39], fill=W[1])
-        for (y, ln) in ((6, 16), (30, 16)):                                                           # two legs lying out to the west, one behind the other
-            d.rectangle([22 - ln, y, 21, y + 3], fill=U[3]); d.line([(22 - ln, y), (21, y)], fill=W[4]); d.rectangle([22 - ln, y + 4, 21, y + 6], fill=U[1]); d.line([(22 - ln, y + 6), (21, y + 6)], fill=U[0])
-        d.rectangle([9, 14, 21, 27], fill=W[2]); d.line([(9, 14), (21, 14)], fill=W[4]); d.rectangle([9, 28, 21, 36], fill=W[1]); d.line([(9, 36), (21, 36)], fill=W[0])   # the pedestal on its side
-        for x in (13, 17): d.line([(x, 29), (x, 35)], fill=U[0])
-        d.rectangle([11, 31, 11, 33], fill=hx("#c8b070")); d.rectangle([15, 31, 15, 33], fill=hx("#c8b070"))
-        p = X2(im, (16, 42), (12, 5, 0, -1))
+        # e: the top faces east (second pass, 2026-11-11). Seen from the south the board is edge-on: its upper edge runs away north as a thin strip, its near end stands as a thin tall face.
+        # All FOUR legs lie out to the west: two near (one on the ground, one in the air at the board's top), two far (the same, further up the screen). The drawer pedestal lies on its side between the near pair.
+        im = blank(34, 46); d = ImageDraw.Draw(im); bx = 26; D = 16; H = 22; base = 42
+        def leg(y, ln, far):
+            c = [U[1], U[2], U[3]] if far else [U[2], U[3], W[3]]
+            d.rectangle([bx - ln, y - 2, bx - 1, y - 1], fill=c[2]); d.rectangle([bx - ln, y, bx - 1, y + 1], fill=c[0]); d.point((bx - ln, y - 2), fill=W[4])
+        leg(base - D - H + 2, 17, True); leg(base - D, 17, True)                                         # the far pair: in the air, on the ground
+        d.rectangle([bx - 14, base - D - 9, bx - 1, base - D - 1], fill=U[2]); d.line([(bx - 14, base - D - 9), (bx - 1, base - D - 9)], fill=U[4])   # the far rail of the frame
+        d.rectangle([bx - 13, base - 15, bx - 1, base - 8], fill=W[3]); d.line([(bx - 13, base - 15), (bx - 1, base - 15)], fill=W[4])               # the pedestal on its side: its top...
+        d.rectangle([bx - 13, base - 7, bx - 1, base - 1], fill=W[1]); d.line([(bx - 13, base - 1), (bx - 1, base - 1)], fill=W[0])                  # ...and the drawers' fronts toward the camera
+        for x in (bx - 9, bx - 5): d.line([(x, base - 7), (x, base - 2)], fill=U[0]); d.rectangle([x - 2, base - 5, x - 2, base - 4], fill=hx("#c8b070"))
+        leg(base - H + 2, 17, False); leg(base, 17, False)                                                # the near pair
+        d.rectangle([bx, base - D - H, bx + 3, base - H - 1], fill=W[4]); d.line([(bx, base - D - H), (bx + 3, base - D - H)], fill=sh(W[4], 1.1))   # the board's upper edge, running north
+        d.rectangle([bx, base - H, bx + 3, base], fill=W[2]); d.line([(bx, base - H), (bx, base)], fill=W[3]); d.line([(bx + 3, base - H), (bx + 3, base)], fill=W[0]); d.line([(bx, base), (bx + 3, base)], fill=W[0])   # its near end
+        d.rectangle([bx + 4, base - D - H + 2, bx + 5, base - 3], fill=sh(hx("#3d5a4a"), .8))             # a sliver of the blotter, still stuck to the top
+        p = X2(im, (17, 43), (12, 5, 0, -1))
         return mirror(p) if face == "w" else p
     return f
 
@@ -247,26 +254,40 @@ def wreck(seed):
     return X2(im, (38, 39), (34, 7, 2, -1))
 
 def sunktruck(seed):
-    """A lorry gone down in the marsh to its axles: the cab (roof from above, a dark windscreen), the load bed full of water, reeds growing through, the waterline all round."""
+    """Second pass (2026-11-11): a canvas-top lorry going down nose-up in the marsh. What makes it a lorry: the cab with its windscreen pillar and door, the long bed with three bare canvas hoops and a rag of
+    tarpaulin, a big rear wheel half under. It lies TILTED (the tail deeper), and the water cuts it off along a level line."""
     C = ramp("#3a2a1e", "#553a26", "#70502e", "#8c6a3e", "#a6865a") if var(seed) % 2 == 0 else ramp("#262e32", "#364248", "#4a5860", "#60707a", "#7c8c94")
-    R = P["rust"]; r = rng(seed); im = blank(88, 46); d = ImageDraw.Draw(im); Wt = P["water"]
-    d.ellipse([0, 26, 87, 45], fill=Wt[0]); d.ellipse([3, 28, 84, 43], fill=Wt[1])                                                    # the pool it sits in
-    d.rectangle([6, 14, 56, 34], fill=C[1]); d.rectangle([6, 14, 56, 16], fill=C[3]); d.rectangle([8, 17, 54, 26], fill=Wt[1])         # the bed: rails, water standing in it
-    for x in range(10, 54, 9): d.line([(x, 27), (x, 34)], fill=C[0])
-    d.line([(6, 27), (56, 27)], fill=C[3]); d.line([(6, 34), (56, 34)], fill=C[0])
-    d.rectangle([58, 6, 82, 34], fill=C[2]); d.rectangle([58, 6, 82, 14], fill=C[4]); d.line([(58, 6), (82, 6)], fill=sh(C[4], 1.1))    # the cab: roof, then its side
-    d.rectangle([61, 17, 71, 24], fill=hx("#11161a")); d.line([(62, 23), (66, 18)], fill=hx("#8fb3bd"))                                # the door window
-    d.rectangle([74, 17, 80, 24], fill=hx("#11161a")); d.line([(72, 15), (72, 34)], fill=C[0])
-    d.rectangle([83, 20, 86, 34], fill=C[1]); d.rectangle([83, 20, 86, 22], fill=C[3])                                                 # the bonnet's stub
-    for x0 in range(4, 86, 3): d.point((x0 + r.randrange(2), 35), fill=Wt[3])                                                          # the waterline
-    d.rectangle([4, 36, 86, 45], fill=(0, 0, 0, 0)); d.ellipse([2, 30, 85, 45], outline=Wt[2])
-    d.rectangle([5, 35, 86, 37], fill=Wt[1])
-    for _ in range(40):
-        x, y = r.randrange(7, 84), r.randrange(8, 34)
-        if im.getpixel((x, y))[:3] in (C[1][:3], C[2][:3]): d.point((x, y), fill=R[r.randrange(1, 4)])
-    for x in (14, 30, 47, 52):                                                                                                        # reeds up through the bed
-        h = r.randrange(8, 14); d.line([(x, 24), (x + r.choice((-1, 0, 1)), 24 - h)], fill=P["drygrass"][2]); d.rectangle([x - 1, 22 - h, x, 25 - h], fill=hx("#4a3424"))
-    p = X2(im, (44, 38), None)
+    T = ramp("#2c3328", "#3a4334", "#4c5643", "#5f6a53", "#77826a"); R = P["rust"]; S = P["steel"]; r = rng(seed); Wt = P["water"]
+    t = blank(88, 50); d = ImageDraw.Draw(t)
+    d.rectangle([4, 24, 56, 38], fill=C[1]); d.rectangle([4, 22, 56, 24], fill=C[3]); d.line([(4, 22), (56, 22)], fill=C[4])                # the bed: its side boards
+    for x in range(12, 56, 9): d.line([(x, 25), (x, 38)], fill=C[0])
+    d.line([(4, 31), (56, 31)], fill=C[2])
+    for x in (8, 28, 48):                                                                                                                # the canvas hoops, bare
+        d.arc([x - 1, 6, x + 9, 30], 180, 360, fill=S[3]); d.line([(x - 1, 18), (x - 1, 23)], fill=S[3]); d.line([(x + 9, 18), (x + 9, 23)], fill=S[1])
+    d.polygon([(8, 9), (30, 7), (36, 12), (34, 22), (9, 22)], fill=T[2]); d.polygon([(8, 9), (30, 7), (34, 11), (10, 13)], fill=T[4]); d.line([(18, 13), (17, 22)], fill=T[1]); d.line([(27, 12), (28, 22)], fill=T[1])   # what is left of the tilt
+    d.polygon([(34, 22), (36, 12), (39, 16), (37, 22)], fill=T[1])
+    d.rectangle([58, 12, 80, 38], fill=C[2]); d.rectangle([58, 8, 80, 12], fill=C[4]); d.line([(58, 8), (80, 8)], fill=sh(C[4], 1.1))       # the cab: roof, side
+    d.rectangle([61, 15, 70, 23], fill=hx("#11161a")); d.line([(62, 22), (66, 16)], fill=hx("#8fb3bd")); d.rectangle([72, 15, 78, 23], fill=hx("#11161a"))   # door glass, the windscreen's side
+    d.line([(71, 13), (71, 38)], fill=C[0]); d.rectangle([64, 26, 67, 27], fill=C[0])
+    d.polygon([(80, 22), (87, 24), (87, 38), (80, 38)], fill=C[1]); d.line([(80, 22), (87, 24)], fill=C[3]); d.rectangle([85, 27, 87, 30], fill=hx("#d8d0a8"))   # the bonnet and a headlamp
+    for cx in (18, 70):                                                                                                                  # wheels
+        d.ellipse([cx - 8, 32, cx + 8, 48], fill=P["tire"][0]); d.ellipse([cx - 6, 34, cx + 6, 46], fill=P["tire"][1]); d.ellipse([cx - 3, 37, cx + 3, 43], fill=S[2])
+    for _ in range(60):
+        x, y = r.randrange(5, 86), r.randrange(10, 38)
+        if t.getpixel((x, y))[:3] in (C[1][:3], C[2][:3]): d.point((x, y), fill=R[r.randrange(1, 4)])
+    im = blank(88, 52)
+    for x in range(88):                                                                                                                  # tilt it: the tail (west) eleven pixels deeper than the nose
+        dy = int(round((87 - x) * 0.13)); col = t.crop((x, 0, x + 1, 50)); im.alpha_composite(col, (x, dy))
+    d = ImageDraw.Draw(im); wl = 40                                                                                                      # the waterline
+    d.rectangle([0, wl, 87, 51], fill=(0, 0, 0, 0))
+    und = blank(88, 52); ud = ImageDraw.Draw(und); ud.ellipse([0, wl - 9, 87, wl + 11], fill=Wt[0]); ud.ellipse([3, wl - 7, 84, wl + 9], fill=Wt[1])
+    und.alpha_composite(im); im = und; d = ImageDraw.Draw(im)
+    for x in range(3, 85):
+        if im.getpixel((x, wl - 1))[:3] not in (Wt[0][:3], Wt[1][:3]): d.point((x, wl), fill=Wt[3]); d.point((x, wl + 1), fill=Wt[2]) if x % 3 else None   # the lighter line where the water meets the steel
+    for (x, y, w) in ((10, wl + 5, 14), (40, wl + 7, 20), (66, wl + 4, 12)): d.line([(x, y), (x + w, y)], fill=Wt[2])                    # ripples
+    for x in (22, 43, 50):                                                                                                               # reeds up through the bed
+        h = r.randrange(9, 15); d.line([(x, wl - 2), (x + r.choice((-1, 0, 1)), wl - 2 - h)], fill=P["drygrass"][2]); d.rectangle([x - 1, wl - 4 - h, x, wl - 1 - h], fill=hx("#4a3424"))
+    p = X2(im, (44, wl + 3), None)
     return mirror(p) if var(seed) % 2 else p
 
 # ---------------------------------------------------------------- a dumped engine on a timber skid
@@ -467,13 +488,229 @@ REST = {"wreck": wreck, "sunktruck": sunktruck, "engine": engine, "machine": mac
         "stash_cache": lambda s: cache(s, False), "stash_cache_open": lambda s: cache(s, True), "scrap": scrap, "vatsmall": vatsmall, "block_v": block_v, "jersey_v": jersey_v}
 REST_VARIANTS = {"wreck": 4, "sunktruck": 2, "engine": 2, "machine": 2, "machine_fn": 2, "hatch": 5, "cables": 2, "stash_cache": 1, "stash_cache_open": 1, "scrap": 5, "vatsmall": 2, "block_v": 5, "jersey_v": 5}
 
-ALL = {**FURNITURE, **REST}; ALL_VARIANTS = {**FURN_VARIANTS, **REST_VARIANTS}
+# ================================================================ the neighbours, brought to the same density (2026-11-11, Yan: "yes")
+def drum(d, x0, y0, w, h, c, ribs=(0.33, 0.66), open_top=None):
+    """An upright drum: a lit elliptical top, a shaded body, pressed ribs. c = a 4-5 step ramp. open_top = a colour for what is inside if the lid is gone."""
+    th = max(4, w // 4)
+    for x in range(w):
+        k = x / (w - 1); col = c[1] if k < .12 else c[3] if k < .38 else c[2] if k < .75 else c[1] if k < .92 else c[0]
+        d.line([(x0 + x, y0 + th // 2), (x0 + x, y0 + h - 1 - (1 if x in (0, w - 1) else 0))], fill=col)
+    for rb in ribs:
+        y = y0 + th // 2 + int((h - th) * rb); d.line([(x0, y), (x0 + w - 1, y)], fill=c[0]); d.line([(x0 + 1, y - 1), (x0 + w - 2, y - 1)], fill=c[-1])
+    d.ellipse([x0, y0, x0 + w - 1, y0 + th], fill=c[-1] if open_top is None else c[1]); d.ellipse([x0 + 1, y0 + 1, x0 + w - 2, y0 + th - 1], fill=c[-2] if open_top is None else open_top)
+    d.line([(x0 + 1, y0 + h - 1), (x0 + w - 2, y0 + h - 1)], fill=c[0])
+def barrel(seed):
+    c = ramp("#5a1512", "#8a2018", "#b82c20", "#d84a34", "#ee7a5a"); im = blank(24, 34); d = ImageDraw.Draw(im)
+    drum(d, 1, 1, 22, 32, c); d.ellipse([15, 3, 18, 5], fill=c[0])                                                                        # the bung
+    d.rectangle([2, 15, 21, 19], fill=hx("#e8c23a")); d.polygon([(11, 15), (14, 17), (11, 19), (8, 17)], fill=hx("#1c1c1c")); d.point((11, 17), fill=hx("#e8c23a"))   # the hazard band and its flame diamond
+    d.line([(2, 15), (2, 19)], fill=hx("#a88a22")); d.line([(21, 15), (21, 19)], fill=hx("#a88a22"))
+    return X2(im, (12, 32), (10, 4, 1, -1))
+def rustbarrel(seed):
+    v = var(seed) % 2; c = P["rust"] + [hx("#d08a5a")] if v == 0 else ramp("#232c36", "#33404e", "#465668", "#5c6e80", "#78899a"); r = rng(seed); im = blank(24, 34); d = ImageDraw.Draw(im)
+    drum(d, 1, 1, 22, 32, c, open_top=hx("#1c2a26") if v else None)
+    if v: d.ellipse([5, 3, 17, 6], fill=hx("#2f4a40")); d.point((9, 4), fill=hx("#6f9a8a"))                                              # rainwater standing in the open one
+    else: d.ellipse([15, 3, 18, 5], fill=c[0])
+    d.polygon([(5, 20), (10, 18), (12, 23), (7, 26)], fill=c[1]); d.line([(5, 20), (10, 18)], fill=c[0])                                  # a dent
+    for _ in range(26):
+        x, y = r.randrange(2, 22), r.randrange(8, 32); d.point((x, y), fill=P["rust"][r.randrange(0, 4)])
+    for x in (6, 15): d.line([(x, 24), (x, 31)], fill=P["rust"][0])                                                                       # runs of rust
+    return X2(im, (12, 32), (10, 4, 1, -1))
+def crate(seed):
+    W = P["wood"]; v = var(seed) % 2; im = blank(32, 36); d = ImageDraw.Draw(im)
+    boxx(d, 0, 0, 32, 10, 24, W, [W[0], W[1], W[2], W[3], W[4]])
+    for x in (8, 16, 24): d.line([(x, 1), (x, 9)], fill=W[2])                                                                             # lid boards
+    d.rectangle([0, 11, 31, 14], fill=W[3]); d.rectangle([0, 30, 31, 33], fill=W[3]); d.rectangle([0, 11, 3, 33], fill=W[3]); d.rectangle([28, 11, 31, 33], fill=W[3])   # the frame
+    d.line([(0, 14), (31, 14)], fill=W[1]); d.line([(4, 30), (27, 30)], fill=W[1]); d.line([(3, 15), (3, 29)], fill=W[1]); d.line([(28, 15), (28, 29)], fill=W[4])
+    for x in (10, 16, 22): d.line([(x, 15), (x, 29)], fill=W[1])
+    d.line([(4, 29), (27, 15)], fill=W[3]); d.line([(4, 28), (26, 15)], fill=W[1])                                                        # the diagonal brace
+    for (x, y) in ((1, 12), (30, 12), (1, 32), (30, 32)): d.point((x, y), fill=P["steel"][4])                                             # nail heads
+    if v: d.rectangle([11, 19, 20, 24], fill=sh(W[1], .9)); d.line([(13, 21), (18, 21)], fill=hx("#d8d2c0")); d.line([(13, 23), (16, 23)], fill=hx("#d8d2c0"))   # a stencil
+    d.line([(0, 34), (31, 34)], fill=W[0])
+    return X2(im, (16, 34), (14, 5, 2, -1))
+
+def console(seed, back=False):
+    S = P["steel"]; im = blank(44, 40); d = ImageDraw.Draw(im); SCR = hx("#0d1f16"); TR = hx("#7fe08a")
+    for mx in (2, 23):                                                                                                                   # two monitors standing on the unit
+        d.rectangle([mx, 0, mx + 18, 15], fill=S[1]); d.line([(mx, 0), (mx + 18, 0)], fill=S[4]); d.line([(mx, 1), (mx, 15)], fill=S[3]); d.line([(mx + 18, 1), (mx + 18, 15)], fill=S[0])
+        if not back:
+            d.rectangle([mx + 2, 2, mx + 16, 12], fill=SCR); pts = [(mx + 3 + k, 7 + int(round(3 * math.sin((k + mx + var(seed)) * 0.9)))) for k in range(13)]; d.line(pts, fill=TR)
+            d.point((mx + 3, 3), fill=hx("#2f5a44")); d.point((mx + 15, 14), fill=hx("#e0503a") if mx == 2 else hx("#f0c040"))
+        else:
+            d.rectangle([mx + 3, 3, mx + 15, 12], fill=S[0])
+            for y in (5, 7, 9): d.line([(mx + 5, y), (mx + 13, y)], fill=S[2])                                                           # vents
+            d.line([(mx + 9, 13), (mx + 9, 19)], fill=DARK)                                                                              # its cable
+    d.polygon([(0, 16), (43, 16), (43, 22), (0, 22)], fill=S[3]); d.line([(0, 16), (43, 16)], fill=S[4])                                  # the desk surface (keyboard shelf)
+    if not back:
+        d.rectangle([6, 18, 24, 20], fill=S[0])
+        for x in range(7, 24, 2): d.point((x, 19), fill=S[4])                                                                             # keys
+        d.rectangle([29, 18, 36, 20], fill=S[1]); d.point((31, 19), fill=hx("#e0503a")); d.point((34, 19), fill=hx("#5ee07a"))
+    d.rectangle([0, 23, 43, 37], fill=S[2] if not back else S[1]); d.line([(0, 23), (43, 23)], fill=S[0]); d.line([(0, 24), (0, 37)], fill=S[3]); d.line([(43, 24), (43, 37)], fill=S[0]); d.line([(0, 37), (43, 37)], fill=S[0])
+    if not back:
+        d.rectangle([3, 26, 19, 34], outline=S[0]); d.rectangle([24, 26, 40, 34], outline=S[0])
+        for k, x in enumerate(range(5, 18, 3)): d.point((x, 28), fill=[hx("#f0c040"), hx("#5ee07a"), hx("#e0503a"), S[4], hx("#5ee07a")][k])
+        for y in (29, 31): d.line([(26, y), (38, y)], fill=S[1])
+        d.rectangle([5, 31, 9, 32], fill=S[4])
+    else:
+        d.rectangle([4, 26, 39, 34], outline=S[0])
+        for x in range(8, 38, 5): d.point((x, 30), fill=S[0])
+        d.line([(11, 19), (11, 26)], fill=DARK); d.line([(32, 19), (32, 26)], fill=DARK); d.line([(11, 35), (16, 38)], fill=DARK)
+    return X2(im, (22, 38), (20, 4, 2, -1))
+
+def _table(seed, bench):
+    S = P["steel"]; v = var(seed) % 2; im = blank(40, 32); d = ImageDraw.Draw(im); y0 = 8
+    d.rectangle([0, y0, 39, y0 + 10], fill=S[3]); d.line([(0, y0), (39, y0)], fill=S[4]); d.line([(0, y0), (0, y0 + 10)], fill=S[4]); d.rectangle([0, y0 + 11, 39, y0 + 13], fill=S[2]); d.line([(0, y0 + 13), (39, y0 + 13)], fill=S[0])
+    for x in (1, 36): d.rectangle([x, y0 + 14, x + 2, y0 + 22], fill=S[1]); d.line([(x, y0 + 14), (x, y0 + 22)], fill=S[3])                # legs
+    d.rectangle([3, y0 + 18, 36, y0 + 19], fill=S[1]); d.line([(3, y0 + 18), (36, y0 + 18)], fill=S[2])                                    # the lower rail
+    d.rectangle([4, y0 + 14, 35, y0 + 17], fill=hx("#14171a"))                                                                             # the dark under the top
+    if bench:
+        for k, (x, col) in enumerate(((6, "#9a5ad0"), (11, "#4aa8ff"), (16, "#5ee07a"))):                                                  # a rack of flasks
+            d.rectangle([x, y0 - 3, x + 2, y0 + 3], fill=hx(col)); d.rectangle([x, y0 - 6, x + 2, y0 - 4], fill=hx("#cfe6ea")); d.point((x, y0 - 5), fill=hx("#ffffff"))
+        d.rectangle([4, y0 + 4, 20, y0 + 5], fill=S[0])
+        d.rectangle([26, y0 - 2, 30, y0 + 2], fill=S[1]); d.line([(28, y0 - 2), (28, y0 - 7)], fill=S[2]); d.rectangle([26, y0 - 9, 31, y0 - 7], fill=S[0]); d.rectangle([25, y0 + 3, 32, y0 + 4], fill=S[0])   # a microscope
+        d.rectangle([34, y0 + 4, 37, y0 + 7], fill=PAPER)
+    else:
+        d.rectangle([5, y0 + 2, 17, y0 + 8], fill=S[2]); d.rectangle([5, y0 + 2, 17, y0 + 8], outline=S[1])                                # a steel tray
+        d.line([(8, y0 + 4), (14, y0 + 6)], fill=S[4]); d.line([(9, y0 + 6), (12, y0 + 4)], fill=S[4])                                     # instruments
+        if v: d.ellipse([24, y0 + 3, 33, y0 + 8], fill=hx("#5a1a16")); d.point((27, y0 + 5), fill=hx("#8a2a22"))                            # an old stain
+        else: d.rectangle([24, y0 + 2, 31, y0 + 7], fill=PAPER); d.line([(25, y0 + 4), (30, y0 + 4)], fill=INK)
+    return X2(im, (20, 30), (18, 4, 1, -1))
+def labtable(seed): return _table(seed, False)
+def labbench(seed): return _table(seed, True)
+
+def jars(seed):
+    S = P["steel"]; r = rng(seed); im = blank(36, 46); d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, 35, 3], fill=S[3]); d.line([(0, 0), (35, 0)], fill=S[4])                                                           # the rack's top
+    for x in (0, 33): d.rectangle([x, 4, x + 2, 44], fill=S[1]); d.line([(x, 4), (x, 44)], fill=S[3])
+    d.rectangle([3, 4, 32, 43], fill=hx("#101416"))
+    for sy in (21, 42): d.rectangle([0, sy, 35, sy + 2], fill=S[2]); d.line([(0, sy), (35, sy)], fill=S[4])
+    for row, y1 in enumerate((20, 41)):
+        for k, x in enumerate((4, 14, 24)):
+            if (var(seed) + row + k) % 5 == 0:                                                                                           # a broken one
+                d.polygon([(x, y1), (x, y1 - 5), (x + 3, y1 - 2), (x + 5, y1 - 6), (x + 7, y1 - 1), (x + 7, y1)], fill=hx("#4f8a94")); continue
+            fl = [hx("#5a8a3a"), hx("#7a9a3a"), hx("#3a7a6a")][(k + row + var(seed)) % 3]
+            d.rectangle([x, y1 - 13, x + 7, y1], fill=fl); d.rectangle([x, y1 - 13, x + 7, y1 - 11], fill=hx("#9fd0d8")); d.rectangle([x + 1, y1 - 15, x + 6, y1 - 14], fill=S[1])   # fluid, the air gap, the lid
+            d.line([(x + 1, y1 - 12), (x + 1, y1 - 2)], fill=hx("#dff2f4"))                                                              # the glass's highlight
+            d.ellipse([x + 3, y1 - 8, x + 6, y1 - 3], fill=sh(fl, .55)); d.point((x + 4, y1 - 6), fill=sh(fl, .35))                         # what floats in it
+    return X2(im, (18, 44), (16, 4, 2, -1), True)
+
+def labswitch(seed):
+    S = P["steel"]; im = blank(30, 44); d = ImageDraw.Draw(im)
+    boxx(d, 2, 0, 26, 6, 36, S, [S[0], S[1], S[2], S[3], S[4]])
+    d.rectangle([5, 9, 24, 18], fill=hx("#10241a")); d.rectangle([5, 9, 24, 18], outline=S[0])                                            # the gauge window
+    d.arc([8, 11, 21, 24], 200, 340, fill=hx("#7fe08a")); d.line([(14, 17), (18, 12)], fill=hx("#e8f0e8"))
+    d.rectangle([6, 22, 13, 27], fill=S[0]); d.rectangle([7, 23, 12, 26], fill=hx("#c8a02a")); d.point((9, 24), fill=hx("#1c1c1c"))         # the fuse holder, its cover open
+    d.rectangle([17, 21, 23, 34], fill=S[1]); d.rectangle([19, 22, 21, 33], fill=DARK)                                                    # the lever's slot
+    d.line([(20, 30), (26, 22)], fill=S[4], width=2); d.ellipse([24, 18, 29, 23], fill=hx("#c8443a")); d.point((25, 19), fill=hx("#f0a090"))   # the lever, down, a red grip
+    for k, x in enumerate((6, 10, 14)): d.rectangle([x, 31, x + 1, 32], fill=[hx("#e0503a"), hx("#f0c040"), S[0]][k])                     # lamps
+    d.rectangle([5, 36, 13, 39], fill=PAPER); d.line([(6, 37), (12, 37)], fill=INK)
+    d.rectangle([3, 42, 6, 43], fill=S[0]); d.rectangle([23, 42, 26, 43], fill=S[0])
+    return X2(im, (15, 42), (14, 4, 2, -1))
+
+# ---------------------------------------------------------------- stashes, shut and open
+def chest(seed, open_=False):
+    W = P["wood"]; S = P["steel"]; im = blank(32, 34); d = ImageDraw.Draw(im)
+    if not open_:
+        boxx(d, 1, 4, 30, 9, 18, W, [W[0], W[1], W[2], W[3], W[4]])
+        for x in (6, 24): d.rectangle([x, 4, x + 2, 30], fill=S[1]); d.line([(x, 4), (x, 30)], fill=S[3])                                  # iron straps
+        d.rectangle([14, 16, 18, 21], fill=hx("#c8b070")); d.point((16, 19), fill=DARK)                                                   # the lock plate
+        for x in range(4, 30, 5): d.line([(x, 14), (x, 29)], fill=W[1]) if x not in (6, 24) else None
+    else:
+        d.polygon([(1, 0), (30, 0), (30, 10), (1, 10)], fill=W[1]); d.rectangle([3, 2, 28, 8], outline=W[0]); d.line([(1, 0), (30, 0)], fill=W[3])   # the lid, thrown back: its inside
+        for x in (6, 24): d.rectangle([x, 0, x + 2, 10], fill=S[0])
+        d.rectangle([1, 11, 30, 17], fill=DARK); d.rectangle([5, 13, 10, 16], fill=hx("#6a775c")); d.rectangle([14, 12, 20, 16], fill=hx("#8a6a3a")); d.point((24, 14), fill=hx("#e8c23a")); d.point((25, 15), fill=hx("#c8b070"))
+        d.rectangle([1, 18, 30, 30], fill=W[2]); d.line([(1, 18), (30, 18)], fill=W[4]); d.line([(1, 30), (30, 30)], fill=W[0])
+        for x in (6, 24): d.rectangle([x, 18, x + 2, 30], fill=S[1])
+        d.rectangle([14, 19, 18, 22], fill=hx("#c8b070"))
+    return X2(im, (16, 31), (14, 4, 1, -1))
+def duffel(seed, open_=False):
+    c = ramp("#2c3328", "#3d4636", "#515b47", "#69725c", "#828a72") if var(seed) % 2 == 0 else ramp("#3a2e22", "#51402e", "#6a553c", "#85704f", "#9c8a68"); im = blank(34, 22); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([1, 4, 32, 19], radius=6, fill=c[2]); d.rounded_rectangle([2, 4, 31, 11], radius=5, fill=c[3]); d.line([(7, 4), (26, 4)], fill=c[4]); d.line([(6, 19), (27, 19)], fill=c[0])
+    for x in (9, 23): d.rectangle([x, 4, x + 2, 19], fill=c[1]); d.line([(x, 4), (x, 19)], fill=c[0])                                      # the carrying straps
+    d.arc([10, 0, 24, 10], 180, 360, fill=c[1])                                                                                           # the handle loop
+    d.ellipse([0, 8, 4, 15], fill=c[1]); d.ellipse([29, 8, 33, 15], fill=c[1])                                                            # the end caps
+    if not open_: d.line([(6, 8), (27, 8)], fill=c[0]); d.point((27, 8), fill=hx("#c8b070"))                                              # the zip, shut
+    else: d.polygon([(6, 8), (27, 7), (27, 11), (6, 12)], fill=DARK); d.rectangle([12, 8, 16, 10], fill=hx("#8a6a3a")); d.point((21, 9), fill=hx("#c8b070"))
+    return X2(im, (17, 20), (14, 4, 1, -1))
+def footlocker(seed, open_=False):
+    c = P["olive"]; S = P["steel"]; im = blank(30, 32); d = ImageDraw.Draw(im)
+    if not open_:
+        boxx(d, 0, 3, 30, 9, 17, c, [c[0], c[1], c[2], c[3], c[4]])
+        d.line([(0, 16), (29, 16)], fill=c[0])                                                                                           # the lid's seam
+        for x in (6, 22): d.rectangle([x, 14, x + 2, 18], fill=S[3]); d.point((x + 1, 18), fill=S[0])                                      # latches
+        d.rectangle([11, 20, 18, 24], fill=sh(c[1], .9)); d.line([(12, 21), (17, 21)], fill=hx("#d8d2c0")); d.line([(12, 23), (15, 23)], fill=hx("#d8d2c0"))   # a stencilled name
+        d.rectangle([0, 19, 1, 23], fill=S[1]); d.rectangle([28, 19, 29, 23], fill=S[1])                                                  # handles at the ends
+    else:
+        d.rectangle([0, 0, 29, 9], fill=c[1]); d.rectangle([2, 2, 27, 7], outline=c[0]); d.line([(0, 0), (29, 0)], fill=c[3]); d.rectangle([12, 3, 18, 6], fill=PAPER)   # the lid up, a photo stuck inside it
+        d.rectangle([0, 10, 29, 15], fill=DARK); d.rectangle([3, 11, 9, 14], fill=hx("#5a5e62")); d.rectangle([13, 12, 17, 14], fill=hx("#b8a878")); d.rectangle([21, 11, 26, 14], fill=hx("#3d5a4a"))
+        d.rectangle([0, 16, 29, 28], fill=c[2]); d.line([(0, 16), (29, 16)], fill=c[4]); d.line([(0, 28), (29, 28)], fill=c[0])
+        for x in (6, 22): d.rectangle([x, 16, x + 2, 19], fill=S[3])
+    return X2(im, (15, 29), (13, 4, 1, -1))
+def toolbox(seed, open_=False):
+    c = ramp("#5a1512", "#8a2018", "#b82c20", "#d84a34", "#ee7a5a"); S = P["steel"]; im = blank(28, 26); d = ImageDraw.Draw(im)
+    if not open_:
+        boxx(d, 1, 6, 26, 6, 12, c, [c[0], c[1], c[2], c[3], c[4]])
+        d.rectangle([9, 2, 18, 3], fill=S[3]); d.line([(9, 4), (9, 7)], fill=S[1]); d.line([(18, 4), (18, 7)], fill=S[1])                   # the handle
+        for x in (5, 20): d.rectangle([x, 11, x + 2, 15], fill=S[4]); d.point((x + 1, 15), fill=S[0])                                      # latches
+        d.line([(1, 15), (26, 15)], fill=c[0])
+    else:
+        for (x0, y0) in ((0, 2), (16, 2)):                                                                                               # the two cantilever trays, swung out
+            d.rectangle([x0, y0, x0 + 11, y0 + 5], fill=c[1]); d.rectangle([x0 + 1, y0 + 1, x0 + 10, y0 + 4], fill=DARK); d.line([(x0, y0), (x0 + 11, y0)], fill=c[3])
+        d.line([(2, 4), (8, 3)], fill=S[4]); d.rectangle([18, 3, 21, 4], fill=hx("#c8a02a")); d.line([(23, 3), (25, 5)], fill=S[4])          # a spanner, a tape, a driver
+        d.rectangle([3, 9, 24, 12], fill=DARK); d.rectangle([6, 10, 12, 11], fill=S[3]); d.point((18, 11), fill=hx("#c8b070"))
+        d.rectangle([1, 13, 26, 23], fill=c[2]); d.line([(1, 13), (26, 13)], fill=c[4]); d.line([(1, 23), (26, 23)], fill=c[0]); d.line([(1, 14), (1, 23)], fill=c[3])
+        d.line([(5, 8), (3, 12)], fill=S[1]); d.line([(22, 8), (24, 12)], fill=S[1])
+    return X2(im, (14, 24), (11, 3, 1, -1))
+def safe(seed, open_=False):
+    S = P["steel"]; im = blank(34, 36); d = ImageDraw.Draw(im)
+    boxx(d, 2, 0, 28, 7, 26, S, [S[0], S[1], S[2], S[3], S[4]])
+    if not open_:
+        d.rectangle([5, 10, 26, 30], outline=S[0]); d.line([(6, 11), (25, 11)], fill=S[3])                                                # the door
+        d.ellipse([10, 14, 20, 24], fill=S[1]); d.ellipse([11, 15, 19, 23], outline=S[4]); d.point((15, 19), fill=S[0])                    # the dial
+        for a in range(0, 360, 45): d.point((15 + int(round(4 * math.cos(math.radians(a)))), 19 + int(round(4 * math.sin(math.radians(a))))), fill=S[4])
+        d.point((15, 14), fill=hx("#e0503a"))
+        d.rectangle([22, 17, 24, 23], fill=S[4]); d.point((23, 24), fill=S[0])                                                            # the handle
+        for y in (13, 27): d.rectangle([5, y, 6, y + 2], fill=S[0])                                                                       # hinges
+    else:
+        d.rectangle([5, 9, 28, 31], fill=DARK); d.line([(6, 19), (27, 19)], fill=S[1])                                                    # the inside, one shelf
+        d.rectangle([8, 14, 14, 18], fill=PAPER); d.rectangle([17, 15, 22, 18], fill=hx("#6a775c")); d.rectangle([9, 25, 13, 30], fill=hx("#c8b070")); d.point((20, 28), fill=hx("#e8c23a"))
+        d.polygon([(2, 9), (4, 9), (4, 32), (0, 34), (0, 11)], fill=S[3]); d.line([(0, 11), (0, 34)], fill=S[4])                           # the door, swung wide
+    d.rectangle([3, 33, 6, 34], fill=S[0]); d.rectangle([25, 33, 28, 34], fill=S[0])
+    return X2(im, (17, 33), (13, 4, 1, -1))
+def pda(seed, open_=False):
+    S = P["steel"]; im = blank(20, 14); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([1, 2, 18, 12], radius=2, fill=S[0]); d.line([(3, 2), (16, 2)], fill=S[2]); d.rectangle([3, 4, 13, 10], fill=hx("#0e1a20") if open_ else hx("#4ab8d8"))
+    if not open_: d.line([(4, 5), (9, 5)], fill=hx("#c8f0ff")); d.line([(4, 7), (11, 7)], fill=hx("#8fd8f0")); d.line([(4, 9), (7, 9)], fill=hx("#8fd8f0"))
+    else: d.line([(5, 9), (11, 5)], fill=hx("#2a3a44"))
+    d.point((16, 5), fill=hx("#e0503a") if not open_ else S[1]); d.rectangle([15, 8, 16, 9], fill=S[2]); d.line([(17, 0), (17, 2)], fill=S[3])
+    return X2(im, (10, 12), (7, 2, 0, -1))
+def dumpster(seed):
+    c = [ramp("#232c36", "#33404e", "#465668", "#5c6e80", "#78899a"), ramp("#22302a", "#32463c", "#465c50", "#5c7466", "#789080"), ramp("#3a3226", "#514632", "#6a5c42", "#857556", "#9c8c6a")][var(seed) % 3]
+    R = P["rust"]; S = P["steel"]; r = rng(seed); im = blank(44, 36); d = ImageDraw.Draw(im)
+    d.polygon([(2, 2), (41, 2), (43, 10), (0, 10)], fill=c[3]); d.line([(2, 2), (41, 2)], fill=c[4]); d.line([(21, 2), (21, 10)], fill=c[1])     # the two lids
+    if var(seed) % 2 == 0: d.polygon([(22, 3), (40, 3), (42, 9), (22, 9)], fill=DARK); d.rectangle([26, 5, 30, 8], fill=hx("#2a2c2e")); d.rectangle([33, 6, 37, 8], fill=hx("#5a4a3a"))   # one lid gone: rubbish inside
+    d.polygon([(0, 11), (43, 11), (40, 31), (3, 31)], fill=c[2]); d.line([(0, 11), (43, 11)], fill=c[0]); d.line([(1, 12), (4, 31)], fill=c[3]); d.line([(42, 12), (39, 31)], fill=c[0]); d.line([(3, 31), (40, 31)], fill=c[0])
+    for x in (11, 21, 31): d.line([(x, 12), (x, 30)], fill=c[1]); d.line([(x + 1, 12), (x + 1, 30)], fill=c[3])                               # pressed ribs
+    d.rectangle([0, 14, 2, 19], fill=S[1]); d.rectangle([41, 14, 43, 19], fill=S[1])                                                       # the lifting pockets
+    d.rectangle([5, 32, 9, 34], fill=DARK); d.rectangle([34, 32, 38, 34], fill=DARK)                                                       # castors
+    for _ in range(30):
+        x, y = r.randrange(3, 41), r.randrange(13, 31); d.point((x, y), fill=R[r.randrange(1, 4)])
+    for x in (7, 16, 27, 36): d.line([(x, 24 + r.randrange(3)), (x, 30)], fill=R[1])
+    return X2(im, (22, 34), (19, 5, 1, -1))
+
+NEIGH = {"barrel": barrel, "rustbarrel": rustbarrel, "crate": crate, "console": console, "console_fn": lambda s: console(s, True), "labtable": labtable, "labbench": labbench, "jars": jars, "labswitch": labswitch, "dumpster": dumpster}
+for _n, _f in (("chest", chest), ("duffel", duffel), ("footlocker", footlocker), ("toolbox", toolbox), ("safe", safe), ("pda", pda)):
+    NEIGH["stash_" + _n] = (lambda f: lambda s: f(s, False))(_f); NEIGH["stash_" + _n + "_open"] = (lambda f: lambda s: f(s, True))(_f)
+NEIGH_VARIANTS = {"barrel": 1, "rustbarrel": 2, "crate": 2, "console": 2, "console_fn": 2, "labtable": 2, "labbench": 2, "jars": 2, "labswitch": 1, "dumpster": 3, "stash_duffel": 2, "stash_duffel_open": 2}
+INSTALL_NEIGH = False        # the sheet first (Yan sees it before it goes into the atlas)
+
+ALL = {**FURNITURE, **REST, **(NEIGH if INSTALL_NEIGH else {})}; ALL_VARIANTS = {**FURN_VARIANTS, **REST_VARIANTS, **(NEIGH_VARIANTS if INSTALL_NEIGH else {})}
+EVERY = {**FURNITURE, **REST, **NEIGH}
 
 def sheet(names, out, cols=6, cell=190, k=4):
     from PIL import ImageDraw as ID
     rows = (len(names) + cols - 1) // cols; S = Image.new("RGBA", (cols * cell, rows * (cell + 14)), (105, 115, 90, 255)); dd = ID.Draw(S)
     for i, n in enumerate(names):
         nm, v = n if isinstance(n, tuple) else (n, 0)
-        p = ALL[nm](1000 + v * 77); im = p.im.resize((p.im.width * k, p.im.height * k), Image.NEAREST)
+        p = EVERY[nm](1000 + v * 77); im = p.im.resize((p.im.width * k, p.im.height * k), Image.NEAREST)
         S.alpha_composite(im, ((i % cols) * cell + (cell - im.width) // 2, (i // cols) * (cell + 14) + cell - 4 - im.height)); dd.text(((i % cols) * cell + 3, (i // cols) * (cell + 14) + cell), nm + (f" v{v}" if v else ""), fill=(255, 255, 255, 255))
     S.convert("RGB").save(out); print(out, S.size)
