@@ -34,50 +34,46 @@ def foot(ph):
     u = (ph - 0.55) / 0.45
     return (-STRIDE + 2 * STRIDE * (0.5 - 0.5 * math.cos(math.pi * u)), LIFT * math.sin(math.pi * u))
 
-def solve(hip, ft, fwd):
-    dx, dy = ft[0] - hip[0], ft[1] - hip[1]; d = min(math.hypot(dx, dy), L1 + L2 - 0.2); a = math.atan2(dy, dx)
-    ang = math.acos(max(-1, min(1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)))); k = a + (ang if fwd else -ang)
-    return (hip[0] + L1 * math.cos(k), hip[1] + L1 * math.sin(k))
-
-def seg(d, p, q, w, col):
-    d.line([p, q], fill=col, width=w)
+def solve(hip, ft, fwd, l1=None, l2=None):
+    l1 = l1 or L1; l2 = l2 or L2
+    dx, dy = ft[0] - hip[0], ft[1] - hip[1]; d = min(math.hypot(dx, dy), l1 + l2 - 0.2); a = math.atan2(dy, dx)
+    ang = math.acos(max(-1, min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)))); k = a + (ang if fwd else -ang)
+    return (hip[0] + l1 * math.cos(k), hip[1] + l1 * math.sin(k))
 
 def leg_img(name, i, bob, stand=False):
-    """One leg, tapered like a hyena's: a heavy thigh that narrows to the hock/knee, a thinner shin, a broad paw. Shaded in the body's own dark browns (lit edge on the left, shadow on the right)."""
+    """One leg built on the Pallid Prowler's proportions (the walk Yan approved): slim, long, digitigrade. Hind: a thigh forward to the stifle, the shank back to the hock, a short straight foot bone down.
+    Fore: shoulder, elbow back, a long forearm, a short pastern. Widths are about 3 px at the top of the thigh narrowing to 1-2 px at the shin, scaled up a little for the Dread's bigger body."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0
     fo, fl = (0.0, 0.0) if stand else foot(ph)
     if stand: fo = {"far_hind": -2.0, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name]
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
     hind = name.endswith("hind")
-    R = [(3.0 if hind else 2.6, 1.9), (1.5, 1.1)]                  # radius at the start and end of the thigh, then of the shin
-    a = np.zeros((H, W, 4), np.uint8)
-    segs = [(hip, kn), (kn, ft)]
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl)
+    if hind:
+        hock = (ft[0] - 1.0, ft[1] - 3.2); st = solve(hip, hock, False, 5.6, 5.4); pts = [hip, st, hock, ft]; rad = [1.9, 1.4, 1.0, 0.9]
+    else:
+        wr = (ft[0] - 0.3, ft[1] - 2.4); el = solve(hip, wr, True, 6.4, 5.2); pts = [hip, el, wr, ft]; rad = [1.7, 1.2, 0.95, 0.9]
+    segs = [(pts[j], pts[j + 1], rad[j], rad[j + 1]) for j in range(3)]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
+    out = np.zeros((H, W, 4), np.uint8); k = 0.78 if far else 1.0
+    mx = lambda c: tuple(int(v * k) for v in c)
     for y in range(H):
         for x in range(W):
             best = None
-            for si, (p, q) in enumerate(segs):
+            for si, (p, q, r0, r1) in enumerate(segs):
                 vx, vy = q[0] - p[0], q[1] - p[1]; L2_ = vx * vx + vy * vy + 1e-9
                 u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / L2_)); cx, cy = p[0] + u * vx, p[1] + u * vy
-                dist = math.hypot(x - cx, y - cy); r = R[si][0] + (R[si][1] - R[si][0]) * u
+                dist = math.hypot(x - cx, y - cy); r = r0 + (r1 - r0) * u
                 if dist <= r and (best is None or dist / r < best[0]): best = (dist / r, si, u, (x - cx) * (-vy) + (y - cy) * vx)
-            if best: a[y, x] = (*C_MAIN, 255); a[y, x, 3] = 255; a[y, x, :3] = 0; a[y, x, 0] = 1; a[y, x, 1] = best[1]; a[y, x, 2] = int(best[2] * 100)   # scratch: seg, u
-    # the paw: a broad flat foot with a claw
-    paw = [(fx + dx, fy + dy) for dx in range(-2, 4) for dy in (0,)] + [(fx - 1 + dx, fy - 1) for dx in range(0, 4)]
-    for (x, y) in paw:
-        if 0 <= x < W and 0 <= y < H: a[y, x] = (1, 1, 100, 255)
-    out = np.zeros((H, W, 4), np.uint8); k = 0.78 if far else 1.0
-    ys, xs = np.where(a[..., 3] > 0)
-    for y, x in zip(ys, xs):
-        si, u = int(a[y, x, 1]), a[y, x, 2] / 100.0; t = (si + u) / 2.0
-        left = x < (hip[0] + (kn[0] - hip[0]) * min(1, t * 2)) if si == 0 else x < kn[0] + (ft[0] - kn[0]) * u
-        if y >= fy - 1 and x >= fx - 2: col = C_DARK                         # the paw: dark
-        elif si == 0 and u < 0.35: col = C_MAIN if left else C_HOLLOW         # the thigh's muscle: lit left, shadow right
-        elif si == 0: col = C_MAIN if left and (x + y) % 2 == 0 else C_HOLLOW
-        else: col = C_HOLLOW if (x + y) % 3 else C_DARK                       # the shin: dark with a little variation
-        if si == 0 and u < 0.15 and left and (x + y) % 3 == 0: col = C_PALE      # a few pale hairs where the thigh catches the light
-        if (x, y) == (fx + 3, fy): col = (210, 197, 162)                        # the claw: bone
-        out[y, x, :3] = tuple(int(v * k) for v in col); out[y, x, 3] = 255
+            if not best: continue
+            _, si, u, side = best; t = (si + u) / 3.0
+            if side < -0.25: col = C_MAIN if t < 0.5 else C_HOLLOW        # the lit edge (left)
+            else: col = C_HOLLOW if t < 0.6 else C_DARK                    # the shadow side
+            if si == 0 and u < 0.3 and side < 0 and (x + y) % 3 == 0: col = C_PALE
+            out[y, x, :3] = mx(col); out[y, x, 3] = 255
+    for dx in range(-2, 4):                                              # the paw: a flat foot, toes forward
+        x = fx + dx
+        if 0 <= x < W: out[fy, x, :3] = mx(C_DARK); out[fy, x, 3] = 255
+    out[fy, min(W - 1, fx + 3), :3] = (210, 197, 162)                      # the claw: bone
     return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
