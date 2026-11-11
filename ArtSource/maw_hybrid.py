@@ -76,8 +76,9 @@ def leg_img(name, i, bob, stand=False):
     for dx in range(-1, 3):                                              # the paw: a flat foot, toes forward
         x = fx + dx
         if 0 <= x < W: out[fy, x, :3] = mx(C_DARK); out[fy, x, 3] = 255
-    for cx in (fx + 1, fx + 3):                                            # two separate 1 px claws with a dark toe between (Yan: split toe; the 2 px bar looked bad)
-        out[fy, min(W - 1, cx), :3] = (212, 194, 178); out[fy, min(W - 1, cx), 3] = 255
+    for cx in (fx + 1, fx + 3):                                            # two hooked claws (Yan: angled, inside the pixel grid): a pale pixel on the paw, then one stepped down and forward
+        for (px_, py_) in ((cx, fy), (cx + 1, fy + 1)):
+            if 0 <= px_ < W and 0 <= py_ < H: out[py_, px_, :3] = (212, 194, 178); out[py_, px_, 3] = 255
     return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
