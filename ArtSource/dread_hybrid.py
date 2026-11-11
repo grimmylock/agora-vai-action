@@ -137,7 +137,7 @@ def leg_img(name, i, bob, stand=False):
     L = _arcs(pts); total = L[-1]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
     out = np.zeros((H, W, 4), np.uint8)
-    paw = set()                                                          # no paws: his legs end in blunt stubs (Yan)
+    paw = {(fx + dx, fy + dy) for dx in range(-1, 4) for dy in (0, 1)} if not hind else set()      # his fore feet: a flat foot with a toe pointing forward (his stand sprite has it; the hind ends are his own pixels)
     for y in range(H):
         for x in range(W):
             best = None
@@ -146,7 +146,9 @@ def leg_img(name, i, bob, stand=False):
                 u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / (ln * ln))); cx, cy = p[0] + u * vx, p[1] + u * vy
                 dist = math.hypot(x - cx, y - cy); r = r0 + (r1 - r0) * u
                 if dist <= r and (best is None or dist / r < best[0]): best = (dist / r, L[si] + u * ln, ((x - cx) * (-vy) + (y - cy) * vx) / ln)
-            if best is None and (x, y) in paw: best = (1.0, total, 0.0)
+            if best is None and (x, y) in paw:
+                px_, py_ = pts[3]; qx_, qy_ = pts[2]; vx_, vy_ = px_ - qx_, py_ - qy_; ln_ = math.hypot(vx_, vy_) + 1e-9
+                best = (1.0, total * (0.86 if y <= fy else 1.0), ((x - px_) * (-vy_) + (y - py_) * vx_) / ln_)      # the upper foot row takes his leg colours just above his outline row, the bottom row his outline
             if best is None: continue
             out[y, x, :3] = tex_col(name, best[1] / total, best[2], total); out[y, x, 3] = 255
     return Image.fromarray(out)
