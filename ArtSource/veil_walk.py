@@ -41,17 +41,41 @@ def seg(d, p, q, w, col):
     d.line([p, q], fill=col, width=w)
 
 def leg_img(name, i, bob):
+    """Same geometry as before (the leg's shape and place are untouched); only the colours are decided differently: by where a pixel sits ON the leg (along the bone and which side of it), so the
+    colouring is attached to the leg and does not shimmer as it moves. The body's own palette is mostly pale violet-grey (55,54,64) with darker violet (34,32,45) in its hollows and a few bright
+    streaks (87,88,103) at its joints; the legs now use that mix instead of one flat dark violet."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0; fo, fl = foot(ph)
     hip = (hx + ox, hy + oy + bob); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    k = 0.72 if far else 1.0
-    dark = tuple(int(c * k) for c in DARK) + (255,); mid = tuple(int(c * k) for c in MID) + (255,); lit = tuple(int(c * (0.7 if far else 1.0)) for c in LIT2) + (255,); hi = tuple(int(c * (0.7 if far else 1.0)) for c in LIT) + (255,)
-    d.line([hip, kn], fill=mid, width=2); d.line([kn, ft], fill=mid, width=1)                            # the body of the leg is thin: the black contour added round it (m.outline) makes it the 3-4 px of the original
-    d.line([(hip[0] - 0.7, hip[1]), (kn[0] - 0.7, kn[1])], fill=lit, width=1); d.line([(kn[0] - 0.5, kn[1]), (ft[0] - 0.5, ft[1])], fill=lit, width=1)   # the lit edge on the side the light comes from
+    d.line([hip, kn], fill=(255, 255, 255, 255), width=2); d.line([kn, ft], fill=(255, 255, 255, 255), width=1)
+    d.line([(hip[0] - 0.7, hip[1]), (kn[0] - 0.7, kn[1])], fill=(255, 255, 255, 255), width=1); d.line([(kn[0] - 0.5, kn[1]), (ft[0] - 0.5, ft[1])], fill=(255, 255, 255, 255), width=1)
     fx, fy = int(round(ft[0])), int(round(ft[1]))
-    d.rectangle([fx - 1, fy, fx + 3, fy], fill=mid); d.point((fx - 1, fy), fill=lit); d.point((fx + 3, fy), fill=hi)                      # the flat foot, the toes reaching forward
-    d.point((int(round(kn[0] - 1)), int(round(kn[1]))), fill=hi)                                          # a bright speck at the knee
-    a = np.array(im); a[..., 3] = np.where(a[..., 3] > 120, 255, 0); return Image.fromarray(a.astype(np.uint8))
+    d.rectangle([fx - 1, fy, fx + 3, fy], fill=(255, 255, 255, 255))
+    d.point((int(round(kn[0] - 1)), int(round(kn[1]))), fill=(255, 255, 255, 255))                       # the bright speck at the knee (kept: it is part of the silhouette Yan approved)
+    KNEE = (int(round(kn[0] - 1)), int(round(kn[1])))
+    a = np.array(im); a[..., 3] = np.where(a[..., 3] > 120, 255, 0)
+    k = 0.86 if far else 1.0
+    def sh(c): return tuple(int(v * k) for v in c)
+    segs = [(hip, kn), (kn, ft)]
+    ys, xs = np.where(a[..., 3] > 0)
+    for y, x in zip(ys, xs):
+        best = None
+        for si, (p, q) in enumerate(segs):
+            vx, vy = q[0] - p[0], q[1] - p[1]; L2 = vx * vx + vy * vy + 1e-9
+            u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / L2)); cx, cy = p[0] + u * vx, p[1] + u * vy
+            dist = math.hypot(x - cx, y - cy); side = (x - cx) * (-vy) + (y - cy) * vx          # sign of which side of the bone (negative = the left, lit one)
+            if best is None or dist < best[0]: best = (dist, si, u, side)
+        dist, si, u, side = best; t = (si + u) / 2.0                                          # 0 at the hip .. 1 at the foot
+        lit_side = side > 0.15 if (hip[1] - kn[1]) > 0 or True else side < 0
+        if y >= fy and x >= fx - 1: col = (55, 54, 64) if t < 2 else (34, 32, 45)                  # the foot: the pale violet, its toe a bright speck below
+        elif side < -0.2: col = (55, 54, 64)                                                   # the lit left edge: pale violet-grey, like the body's lit planes
+        elif (int(t * 9) % 4) == 0 and dist < 0.8: col = (87, 88, 103)                           # a bright streak across the leg at intervals (the body has them at its joints)
+        elif t < 0.55: col = (55, 54, 64) if (int(t * 12) + (1 if side > 0 else 0)) % 3 != 0 else (34, 32, 45)    # the thigh: mostly pale, a hollow of dark violet
+        else: col = (34, 32, 45) if (int(t * 12)) % 3 == 0 else (55, 54, 64)                   # the shin: dark and pale in turn
+        if x == fx + 3 and y == fy: col = (87, 88, 103)
+        if (x, y) == KNEE: col = (87, 88, 103)
+        a[y, x, :3] = sh(col)
+    return Image.fromarray(a.astype(np.uint8))
 
 def frame(i, only=None):
     bob = int(round(0.9 * math.sin(2 * math.pi * (i / N * 2) + 0.6))); sway = int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
