@@ -1169,7 +1169,9 @@ namespace GameCore
         private static void ApplyUnitArt(SpriteRenderer marker, ICombatant unit, bool alive, Color fallbackColor)
         {
             var art = UnitSprites.For(unit);
-            marker.sprite = art != null ? art : (_spriteBeing != null ? _spriteBeing : GetWhiteSprite());
+            Sprite walkArt = null;                                                   // 2026-11-11: a walking mutant with a walk strip plays it (MutantWalk), same size and pivot as its stand-still sprite
+            if (art != null && alive && unit is Mutant wm && !(unit is HumanEnemy) && !BrainBoss.Is(wm)) { string wn = wm.Db?.Name ?? wm.Name; if (art == UnitSprites.HD(wn)) walkArt = MutantWalk.Frame(wm, wn, Time.time); }
+            marker.sprite = walkArt != null ? walkArt : art != null ? art : (_spriteBeing != null ? _spriteBeing : GetWhiteSprite());
             marker.transform.localScale = Vector3.one * (art != null ? TileWorldSize : TileWorldSize * 0.7f);
             Color live = art != null ? Color.white : fallbackColor;
             if (unit is HumanEnemy h && h.Morale == "Surrendered") live = new Color(0.7f, 0.75f, 0.9f, 0.85f);   // hands up

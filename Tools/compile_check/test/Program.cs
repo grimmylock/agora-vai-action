@@ -22,7 +22,7 @@ static class Program {
     if (args.Length > 0 && args[0] == "rtprobe") { RtLoadoutProbe(args.Length > 1 ? int.Parse(args[1]) : 30); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
-    if (args.Contains("dungeons")) { DungeonRedoChecks(); Console.WriteLine(fails == 0 ? "DUNGEON CHECKS PASSED" : $"{fails} FAILURES"); return fails; }   // only the lock-and-key dungeons (quick: `dotnet /tmp/test.dll dungeons`)
+    if (args.Contains("dungeons")) { DungeonRedoChecks(); MutantWalkChecks(); Console.WriteLine(fails == 0 ? "DUNGEON CHECKS PASSED" : $"{fails} FAILURES"); return fails; }   // only the lock-and-key dungeons (quick: `dotnet /tmp/test.dll dungeons`)
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -61,7 +61,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -2065,6 +2065,17 @@ static class Program {
     keys.Add("dock_gate"); LabLocks.Granted("dock_gate");
     Check(Count(TileType.Difficult, "irongate") == 0 && Flood(start.X, start.Y).Contains((store.X, store.Y)), "Drydock: the handle winds the sluice gate (and the ladder hatch) open - the fitters' store is reachable");
     keys.Clear(); Rt.On = false;
+  }
+  // Mutant walk animation (2026-11-11): the picture follows the clock from the moment the walk began, loops after 8, and a walk only counts while the body is sliding (plus a short hold).
+  static void MutantWalkChecks() {
+    Check(MutantWalk.FrameAt(10f, 10f) == 0 && MutantWalk.FrameAt(10f + 0.124f, 10f) == 0 && MutantWalk.FrameAt(10f + 0.126f, 10f) == 1, "MutantWalk: picture 0 for the first 125 ms, then picture 1");
+    Check(MutantWalk.FrameAt(10f + 8 * MutantWalk.FrameSeconds + 0.01f, 10f) == 0 && MutantWalk.FrameAt(10f + 7.5f * MutantWalk.FrameSeconds, 10f) == 7, "MutantWalk: eight pictures, then round to the first");
+    Check(MutantWalk.FrameAt(9f, 10f) == 0, "MutantWalk: a clock before the start never gives a negative picture");
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    Rt.On = true; Rt.Reset();
+    var mut = new Mutant("Pallid Prowler", 5, 5);
+    Check(!Rt.Sliding(mut) && MutantWalk.Frame(mut, "Pallid Prowler", 1f) == null, "MutantWalk: a mutant that is not moving shows no walk picture (and no strip is loaded offline)");
+    Rt.On = false;
   }
   // Any lock-and-key dungeon on the real built map (2026-11-11): every key object exists, the goal is unreachable with no keys and with all but the LAST key, reachable with all of them, one way out.
   static void ChainChecks(string Z, string startLm, string goalLm, string exitTo, params string[] keyOrder) {

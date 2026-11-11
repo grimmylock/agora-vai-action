@@ -1,4 +1,4 @@
-# Putting the mutant animations into the game (plan, 2026-11-09 - nothing of this is done; needs Yan's go)
+# Putting the mutant animations into the game (plan, 2026-11-09; the WALK of the Pallid and Veil Prowler is IN since 2026-11-11, see the end; the attacks are not)
 
 What exists: strips + `*_anims.json` (frame size, ms per frame, `travel` 0..1 for pounces) for the four canines, the Brute, and the four new humanoid concepts (sprites only drawn after his review).
 
@@ -14,3 +14,11 @@ What it takes:
 4. **Pounce movement**: the strip's `travel` column says how far across the jump it is; `Rt.SetOffset`/`Slide` can carry the unit between tiles over the 0.6 s of the leap.
 5. **Co-op**: the state is host-side; `NetWorld` mirrors would need the current anim name + start time per enemy (a byte + a short), or clients can derive `run`/idle from movement and play attacks from the existing shot/FX events.
 6. **Check**: the harness can cover the state machine and the damage timing; the look needs Unity.
+
+
+## Done 2026-11-11: the walk of the Pallid Prowler and the Veil Prowler
+Yan: "the walking animation for those 2 are fine, put them in".
+- Strips: `Assets/Resources/Sprites/Mutants/anim/<key>_walk.bytes` (8 frames in a row, a PNG with the .bytes extension, built by `ArtSource/export_mutant_walk.py`; decoded in code so no import setting can blur it), `UnitSprites.HDWalk(name)` slices them (32 px a tile, feet on the bottom row, pivot 16 px above: the same as the stand-still HD sprite).
+- State: `MutantWalk.Frame` (new): a mutant walks while `Rt.Sliding` (Rt.Glide is sliding its body to catch up with a tile jump), held for 0.25 s so the gap between two tile steps does not flicker; the picture follows the clock from when the walk began, `FrameSeconds` = 0.125 (the animator's own speed). Standing, dead, or turn-based: the stand-still sprite. `TacticalGridView.ApplyUnitArt` picks the frame; flipping toward the target and the Veil's cloak shimmer are unchanged.
+- Co-op: nothing is networked; a client's mirror enemies jump tiles from the snapshot and Glide slides them the same way, so the walk plays there too (not tried over a connection).
+- Not done: bite, pounce (the strikes are still instant), Blind Maw, Dread Prowler, the Brute, the humanoids. The feet skate: a Pallid crosses the ground at about 2.4 tiles a second (`RtAi.Speed`), the strip was drawn for about a quarter of that.

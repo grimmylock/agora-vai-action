@@ -35,6 +35,8 @@ namespace GameCore
         static readonly Dictionary<ICombatant, (float x, float y)> Was = new Dictionary<ICombatant, (float, float)>();
         static readonly Dictionary<ICombatant, (float x, float y)> Slide = new Dictionary<ICombatant, (float, float)>();
         public static bool Free(ICombatant u) => On && u != null;     // drawn where it really is, no tile-to-tile walk
+        /// <summary>Is this body still sliding to catch up with a tile jump (Glide)? That is what 'walking' looks like on screen, for NPCs and for co-op mirrors alike.</summary>
+        public static bool Sliding(ICombatant u) => u != null && Slide.TryGetValue(u, out var sl) && (sl.x != 0f || sl.y != 0f);
 
         public static void Glide(float dt)
         {

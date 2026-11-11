@@ -106,6 +106,31 @@ namespace GameCore
             return name != null && _hd.TryGetValue(name, out var s) ? s : null;
         }
 
+        // 2026-11-11: walk strips (ArtSource/export_mutant_walk.py -> Sprites/Mutants/anim/<key>_walk.bytes): 8 frames in a row, decoded here like the world atlas so no import setting can blur them.
+        // Same density and pivot as the HD stand-still sprite (32 px a tile, the feet on the bottom row, the pivot 16 px above it, the head to the right). Pallid and Veil Prowler have one so far.
+        public const int WalkFrames = 8;
+        private static Dictionary<string, Sprite[]> _hdWalk;
+        public static Sprite[] HDWalk(string name)
+        {
+            if (name == null) return null;
+            if (_hdWalk == null) _hdWalk = new Dictionary<string, Sprite[]>();
+            if (_hdWalk.TryGetValue(name, out var cached)) return cached;
+            Sprite[] frames = null;
+            var asset = Resources.Load<TextAsset>("Sprites/Mutants/anim/" + name.ToLowerInvariant().Replace(' ', '_') + "_walk");
+            if (asset != null)
+            {
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                if (tex.LoadImage(asset.bytes) && tex.width % WalkFrames == 0)
+                {
+                    tex.filterMode = FilterMode.Point; tex.wrapMode = TextureWrapMode.Clamp;
+                    int w = tex.width / WalkFrames; frames = new Sprite[WalkFrames];
+                    for (int i = 0; i < WalkFrames; i++) frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);
+                }
+            }
+            _hdWalk[name] = frames;
+            return frames;
+        }
+
         public static Sprite ForArmor(ArmorDef armor)
         {
             Load();
