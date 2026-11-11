@@ -90,8 +90,8 @@ namespace GameCore
                 ["sub_station_depths_3"] = TierDungeons.DepthsLevel("sub_station_depths_3", Concrete, "sub_station_depths_2", null, "The Bottom", "sub_station_depths"),   // Batch 92: a floor plan
                 ["maintenance_tunnels"] = TierDungeons.MaintenanceTunnels(),   // 2026-11-11: the lock-and-key redo
                 ["secret_lab_beta"] = TierDungeons.Lab("secret_lab_beta", "plaster", LabTile, "Archive Room", "Isolation Ward", "ghost_town"),   // Batch 92: a floor plan
-                ["deep_caverns"] = TierDungeons.Lab("deep_caverns", "cliff", CaveFloor, "Root Hall", "Crystal Pool", "crimson_woods"),   // Batch 100: a plan
-                ["underground_labyrinth"] = TierDungeons.Lab("underground_labyrinth", "cliff", CaveFloor, "The Fork", "Cave-In Chamber", "quarry_basin"),   // Batch 100: a plan
+                ["deep_caverns"] = TierDungeons.DeepCaverns(),   // 2026-11-11: the lock-and-key redo
+                ["underground_labyrinth"] = TierDungeons.UndergroundLabyrinth(),   // 2026-11-11: the lock-and-key redo
                 ["secret_lab_gamma"] = TierDungeons.Lab("secret_lab_gamma", "concrete", LabTile, "Signal Room", "Sealed Vault", "antenna_grid"),   // Batch 92: a floor plan
                 ["lattice_foundry"] = TierDungeons.LatticeUpper(),         // Batch 91: floor plans (TierDungeons.Plans.cs)
                 [TestingGround.Zone] = TestingGround.Map(),   // the menu's testing ground
@@ -101,7 +101,7 @@ namespace GameCore
                 ["flats_3"] = TierDungeons.Upstairs("flats_3", "plaster", "flats_2"),
                 ["lattice_foundry_lower"] = TierDungeons.LatticeLower(),
                 ["underground_bunker"] = TierDungeons.UndergroundBunker(),   // 2026-11-11: the lock-and-key redo
-                ["siege_catacombs"] = TierDungeons.Lab("siege_catacombs", "wall", CaveFloor, "Ossuary", "Sealed Crypt", "hospital"),   // Batch 100: a plan
+                ["siege_catacombs"] = TierDungeons.SiegeCatacombs(),   // 2026-11-11: the lock-and-key redo
             };
         }
 

@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -191,6 +191,34 @@ namespace GameCore
                                     Desc = "The generator hall's bus switch, one fuse short.",
                                     Says = "[BUNKER] The generators run up. Down the corridor the armory's dead door unlocks with a bang." },
             },
+            // Deep Caverns (hidden, Tier 4; dungeons/deep_caverns.mmd): the pry bar (rockfalls), the dam's lever (drains the lower lake).
+            ["deep_caverns"] = new Dictionary<char, Thing>
+            {
+                ['4'] = new Thing { Name = "Climbers' Crate", Look = "stash_toolbox", Kind = "pry", Ru = 120, Desc = "A crate of climbing gear at a camp nobody came back to: rope, pitons, a long steel bar.",
+                                    Says = "[CAVERNS] A pry bar as long as your arm. It would shift a fallen slab." },
+                ['6'] = new Thing { Name = "Dam Sluice Lever", Look = "labswitch", Kind = "drain", Desc = "A rusted lever on the old dam's sluice, as tall as a man.",
+                                    Says = "[CAVERNS] The lever gives all at once. Below, the lake starts to pour away through the sluice." },
+            },
+            // Underground Labyrinth (hidden, Tier 5; dungeons/underground_labyrinth.mmd): gate key -> pry bar -> the slab's code.
+            ["underground_labyrinth"] = new Dictionary<char, Thing>
+            {
+                ['4'] = new Thing { Name = "Blaster's Tin", Look = "stash_toolbox", Kind = "gate", Ru = 150, Desc = "A shot-firer's tin wedged in a crack, the lid rusted on.",
+                                    Says = "[LABYRINTH] An iron key on a loop of det cord. Somewhere in here is a gate it fits." },
+                ['3'] = new Thing { Name = "Quarryman's Bundle", Look = "stash_duffel", Kind = "pry", Desc = "A bundle of quarry tools left against the wall.",
+                                    Says = "[LABYRINTH] A quarryman's pry bar, the tip polished by use." },
+                ['6'] = new Thing { Name = "Tally Wall", Look = "stash_pda", Kind = "code", Desc = "A wall scratched with tally marks, and under them four numbers cut deep and gone over many times.",
+                                    Says = "[LABYRINTH] Four numbers, cut by someone who was afraid of forgetting them. The slab's dial has four rings." },
+            },
+            // Siege Catacombs (hidden, Tier 6; dungeons/siege_catacombs.mmd): the sexton's key (iron gate), the sappers' pry bar (rockfalls), the burial roll (the Sealed Crypt's slab).
+            ["siege_catacombs"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Sexton's Box", Look = "stash_chest", Kind = "gate", Ru = 220, Desc = "A small iron-bound box on a ledge among the bones.",
+                                    Says = "[CATACOMBS] A long iron key, cold as the stone. The gate to the north chamber has a lock that size." },
+                ['4'] = new Thing { Name = "Sappers' Crate", Look = "stash_toolbox", Kind = "pry", Desc = "A crate stencilled with an engineers' badge: fuse wire, a lamp, digging bars.",
+                                    Says = "[CATACOMBS] A sapper's digging bar. Enough to lever a fallen block aside." },
+                ['6'] = new Thing { Name = "Burial Roll", Look = "stash_pda", Kind = "code", Desc = "A ledger of the dead, chained to a lectern. The last page lists the crypt and four numbers.",
+                                    Says = "[CATACOMBS] The crypt's entry: a name scratched out, and the four numbers of its seal." },
+            },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)
             [Depths1] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Cistern Pump", Look = "labswitch", Kind = "drain1", Needs = "power",
@@ -228,6 +256,10 @@ namespace GameCore
 /// <summary>A dungeon's own line for a lock's look ("zone:look"), where the default line (an iron gate's guard post...) does not fit the place.</summary>
         static readonly Dictionary<string, string> Nags = new Dictionary<string, string>
         {
+            ["underground_labyrinth:irongate"] = "An iron gate across the passage, its lock packed with grit. It wants a key.",
+            ["siege_catacombs:irongate"] = "An iron gate, older than the war. The sexton will have kept its key close to the bones he tended.",
+            ["siege_catacombs:sealslab"] = "The crypt's slab, a dial of four rings sunk in it. The burial roll would have the numbers.",
+            ["underground_labyrinth:sealslab"] = "A slab across the passage with a four-ring dial. Someone down here must have written the numbers somewhere.",
             ["drydock_tunnels:irongate"] = "A sluice gate, wound shut. The wheel's handle is gone from its square; whoever worked the sluices will have hung it up in their chamber.",
         };
 

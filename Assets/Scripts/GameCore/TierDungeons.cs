@@ -213,5 +213,32 @@ namespace GameCore
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("underground_bunker")) { ['K'] = "Command Safe", ['J'] = "Ration Crate", ['L'] = "Armory Rack" };
             return FloorPlan("underground_bunker", LabPlans["underground_bunker"], "concrete", Concrete, marks, stashes);
         }
+
+        /// <summary>Deep Caverns (dungeon_plans.py deep_caverns, graph dungeons/deep_caverns.mmd): 'E' the surface shaft, 'R' the Root Hall (hub), '4' the climbers' crate (pry bar), '@' the rockfall and the
+        /// chimney's fall, '6' the dam's lever (drain), 'W' the lower lake, 'G' the Crystal Pool on its island (goal), 'B' the camp, 'M' the dam, 'J' 'K' stashes.</summary>
+        public static MapLayout DeepCaverns()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Surface Shaft", "crimson_woods"), ['R'] = ("Root Hall", null), ['B'] = ("Climbers' Camp", null), ['M'] = ("Old Dam", null), ['G'] = ("Crystal Pool", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("deep_caverns")) { ['K'] = "Crystal Cache", ['J'] = "Grotto Cache" };
+            return FloorPlan("deep_caverns", LabPlans["deep_caverns"], "cliff", CaveFloor, marks, stashes);
+        }
+
+        /// <summary>Underground Labyrinth (dungeon_plans.py underground_labyrinth, graph dungeons/underground_labyrinth.mmd): 'E' The Fork, '4' the gate key, '$' the iron gate, '3' the pry bar, '@' the rockfall,
+        /// '6' the tally wall (the code), '^' the sealed slab, 'C' the Cave-In Chamber, 'G' the Minotaur's Hall (goal), 'J' 'K' 'L' stashes.</summary>
+        public static MapLayout UndergroundLabyrinth()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("The Fork", "quarry_basin"), ['C'] = ("Cave-In Chamber", null), ['G'] = ("Minotaur's Hall", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("underground_labyrinth")) { ['K'] = "Hall Hoard", ['J'] = "Dead-End Cache", ['L'] = "Lost Pack" };
+            return FloorPlan("underground_labyrinth", LabPlans["underground_labyrinth"], "cliff", CaveFloor, marks, stashes);
+        }
+
+        /// <summary>Siege Catacombs (dungeon_plans.py siege_catacombs, graph dungeons/siege_catacombs.mmd): 'E' the stair, 'O' the Ossuary (hub), '3' the sexton's box (gate key), '$' the iron gate,
+        /// '6' the burial roll (the code), '4' the sappers' crate (pry bar), '@' the rockfall and the tunnel's fall, '^' the sealed slab, 'G' the Sealed Crypt (goal; the story's guardian curls round it).</summary>
+        public static MapLayout SiegeCatacombs()
+        {
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Catacomb Stair", "hospital"), ['O'] = ("Ossuary", null), ['G'] = ("Sealed Crypt", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("siege_catacombs")) { ['K'] = "Crypt Reliquary", ['J'] = "North Chamber Urn" };
+            return FloorPlan("siege_catacombs", LabPlans["siege_catacombs"], "wall", Concrete, marks, stashes);
+        }
     }
 }

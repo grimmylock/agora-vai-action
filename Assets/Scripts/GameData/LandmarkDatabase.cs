@@ -418,13 +418,17 @@ namespace GameData
             },
             ["deep_caverns"] = new List<LandmarkDef>
             {
-                L("Root Hall", "A wide chamber choked with hanging roots - poor sightlines."),
-                L("Crystal Pool", "A still underground pool with a faint anomalous glow."),
+                L("Surface Shaft", "The sinkhole's shaft, daylight a coin overhead."),
+                L("Root Hall", "A wide chamber choked with hanging roots - poor sightlines. A fall blocks the east tunnel; black water lies to the south."),
+                L("Climbers' Camp", "A tent gone to rags, a cold stove, a crate of gear."),
+                L("Old Dam", "A wall of mortared stone across the cave stream, a lever on its sluice."),
+                L("Crystal Pool", "An island in the lake bed, a pool on it with a faint anomalous glow."),
             },
             ["underground_labyrinth"] = new List<LandmarkDef>
             {
                 L("The Fork", "The labyrinth's main branching point - three routes diverging."),
-                L("Cave-In Chamber", "A partially collapsed hall - unstable footing."),
+                L("Cave-In Chamber", "A partially collapsed hall - unstable footing. A rockfall fills the passage south."),
+                L("Minotaur's Hall", "The labyrinth's heart: a pillared hall, the floor thick with bones."),
             },
             ["lattice_foundry"] = new List<LandmarkDef>   // Batch 88; Batch 91: the test level
             {
@@ -461,7 +465,8 @@ namespace GameData
             },
             ["siege_catacombs"] = new List<LandmarkDef>
             {
-                L("Ossuary", "Shelves of old bones lining the walls - deeply atmospheric."),
+                L("Catacomb Stair", "The stair down from the bell tower's crypt."),
+                L("Ossuary", "Shelves of old bones lining the walls - deeply atmospheric. An iron gate north, a rockfall south."),
                 L("Sealed Crypt", "The deepest chamber, locked - worth a stat check to open."),
             },
         };

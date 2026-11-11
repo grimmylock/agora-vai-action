@@ -391,11 +391,18 @@ def bunker_check(p):
     ok(out, pos(g, 'C') not in {c for k, seen in st if 'power' not in k for c in seen}, "before the power is on, the command level is unreachable even by the hatch ladder")
     return out
 
-def scatter(p, n, lo=2):
+def roomy(p, x, y, floor='.,'):
+    """Open floor on all eight sides: a blocker here (debris, a barrel, a boulder) can never plug a one-tile passage."""
+    return all(p.g[y + dy][x + dx] in floor + "*~%\";'&:`" for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+
+def scatter(p, n, lo=2, floor='.', what="*~%\";'xtb"):
     r = p.r
     for _ in range(n):
         x, y = r.randrange(lo, p.w - lo), r.randrange(lo, p.h - lo)
-        if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
+        if p.g[y][x] == floor:
+            ch = r.choice(what)
+            if ch in "xtbk" and not roomy(p, x, y): ch = '%'
+            p.g[y][x] = ch
 
 def props(p, items):
     for (x, y, ch) in items:
@@ -658,6 +665,152 @@ def underground_bunker():
     return p
 def ubunker_check(p): return badge_power_check(p, loop=[(x, 24) for x in range(16, 20)], loop_name="the duct")
 
+def roughen(p, passes=2, chance=0.45):
+    """Cave walls crumble where open space surrounds them (only ever OPENS cells; keep 3+ wall tiles between spaces that must stay apart, and set lock tiles AFTER this)."""
+    r = p.r
+    for _ in range(passes):
+        g = [row[:] for row in p.g]
+        for y in range(2, p.h - 2):
+            for x in range(2, p.w - 2):
+                if p.g[y][x] == '#' and sum(p.g[y + dy][x + dx] != '#' for dy in (-1, 0, 1) for dx in (-1, 0, 1)) >= 4 and r.random() < chance: g[y][x] = '.'
+        p.g = g
+
+def lock_row(p, y, xs, ch, span=4):
+    """A lock across a north-south leg: the tiles `xs` of row y become `ch`, everything else within `span` of them on that row is wall (so roughened walls cannot leave a way round)."""
+    for x in range(min(xs) - span, max(xs) + span + 1):
+        if 0 < x < p.w - 1: p.g[y][x] = ch if x in xs else '#'
+
+def cave_litter(p, n): scatter(p, n, what="kkv&")
+
+def deep_caverns():
+    """Deep Caverns (T4, under the Crimson Woods' sinkhole). Graph dungeons/deep_caverns.mmd: the surface shaft -> the Root Hall (the hub: the rockfall east, the black lake south) -> the climbers' camp
+    (the pry bar '4') ; the rockfall ('@' x3) -> the old dam (the sluice lever '6' = drain) -> a grotto (a dead end that pays) ; the lower lake ('W', over your head until the dam is opened) -> the Crystal
+    Pool on its island (goal). The loop: a chimney from the dam back up to the surface shaft, choked by a second fall ('@') the same bar lifts."""
+    p = Plan(64, 46, 9871)
+    p.disc(8, 9, 3)                                                # E: the surface shaft
+    p.hline(11, 18, 9, 2); p.disc(25, 14, 7)                       # Cv: the Root Hall
+    p.vline(20, 19, 28, 1); p.hline(13, 20, 28, 1); p.disc(10, 30, 4)   # Cp: the climbers' camp
+    p.hline(32, 41, 13, 3); p.disc(47, 13, 5)                      # the tunnel the rockfall fills, then Dm: the old dam
+    p.vline(8, 2, 6, 1); p.hline(8, 47, 2, 1); p.vline(47, 2, 8, 1)     # the chimney: dam -> shaft
+    p.vline(47, 18, 31, 1); p.hline(47, 50, 31, 1); p.disc(53, 32, 3)   # a grotto south of the dam
+    p.vline(25, 21, 26, 2); p.disc(30, 34, 8)                      # the lower lake
+    roughen(p)
+    for y in range(25, 44):
+        for x in range(20, 41):
+            if p.g[y][x] == '.' and (x - 30) ** 2 + (y - 34) ** 2 <= 76 and y >= 27: p.g[y][x] = 'W'
+    for y in range(32, 37):
+        for x in range(28, 33):
+            if (x - 30) ** 2 + (y - 34) ** 2 <= 5: p.g[y][x] = '.'     # the island
+    for y in range(11, 18): p.g[y][37] = '@' if 13 <= y <= 15 else '#'   # the rockfall across the east tunnel
+    lock_row(p, 5, [47], '@', span=3)                              # the fall in the chimney
+    for (x, y) in ((22, 10), (27, 9), (29, 13), (21, 16), (28, 18), (24, 12), (19, 13), (30, 16)):
+        if p.g[y][x] == '.': p.g[y][x] = 'v'                       # the hanging roots
+    props(p, ((9, 28, 'c'), (12, 31, 'b'), (8, 31, '&'), (11, 28, 'x'), (45, 11, 'h'), (46, 11, 'h'), (47, 11, 'h'), (48, 11, 'h'), (49, 11, 'h'), (44, 15, 'k'), (52, 33, 'k'), (54, 30, '&')))
+    p.g[30][11] = '4'; p.g[14][50] = '6'
+    p.g[33][54] = 'J'; p.g[35][30] = 'K'
+    p.g[9][8] = 'E'; p.g[14][25] = 'R'; p.g[31][9] = 'B'; p.g[13][45] = 'M'; p.g[34][30] = 'G'
+    cave_litter(p, 16)
+    return p
+DC_GIVES = {'4': ('pry', None), '6': ('drain', None)}
+DC_LOCKS = {'@': 'pry', 'W': 'drain'}
+def caverns_check(p):
+    st = flood_stages(p, DC_GIVES, DC_LOCKS); g = p.g; out = []
+    P4, L6, G = pos(g, '4'), pos(g, '6'), pos(g, 'G'); s0 = st[0][1]
+    ok(out, P4 in s0 and L6 not in s0 and G not in s0, "at the start: the climbers' camp (the pry bar); not the dam or the crystal pool")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('dam', L6), ('pool', G)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('dam') == ['pry'] and firsts.get('pool') == ['drain', 'pry'], f"order: the dam needs {firsts.get('dam')}, the crystal pool {firsts.get('pool')}")
+    ch = [(x, 2) for x in range(9, 47)]; saved = {(x, y): g[y][x] for (x, y) in ch}
+    for (x, y) in ch: g[y][x] = '#'
+    ok(out, G in flood_stages(p, DC_GIVES, DC_LOCKS)[-1][1], "closing the chimney: the pool is still reachable (it is only a loop)")
+    for (x, y), c in saved.items(): g[y][x] = c
+    return out
+
+def underground_labyrinth():
+    """Underground Labyrinth (T5, under the quarry's blast shack). Graph dungeons/underground_labyrinth.mmd: a maze of cells and three locks, each key in a cell beyond the one before: The Fork (start) ->
+    cell A west (the gate key '4') and cell B east ; the iron gate ('$' x2) south of B's passage -> cell C (the pry bar '3') ; A and C both lead to the Cave-In Chamber (D) ; the rockfall ('@' x2) south
+    of D -> cell F (the wall of tally marks '6' = the code) ; the sealed slab ('^' x2) south of F -> the Minotaur's Hall (goal). Dead-end cells with something in them hang off C and F."""
+    p = Plan(72, 58, 9881)
+    cells = {'A': (6, 5), 'E': (22, 5), 'B': (38, 5), 'D': (22, 19), 'C': (54, 19), 'F': (22, 33), 'X': (54, 33), 'Y': (38, 33)}
+    for (x, y) in cells.values(): p.room(x, y, 8, 6)
+    p.hline(14, 21, 7, 2); p.hline(30, 37, 7, 2)                   # E - A, E - B
+    p.hline(46, 58, 7, 2); p.vline(57, 8, 18, 2)                   # B - C (the iron gate on the way down)
+    p.vline(9, 11, 22, 2); p.hline(9, 21, 21, 2)                   # A - D
+    p.hline(30, 40, 21, 2); p.hline(47, 53, 21, 2)                 # blind passages from D and from C that once met (a fall between them): C is ONLY reached through the gate
+    p.vline(25, 25, 32, 2)                                         # D - F (the rockfall)
+    p.vline(25, 39, 45, 2); p.room(14, 46, 26, 9)                  # F - the Minotaur's Hall (the slab)
+    p.vline(57, 25, 32, 2)                                         # C - X (a dead end)
+    p.hline(30, 37, 35, 2)                                         # F - Y (a dead end)
+    p.vline(15, 23, 29, 1); p.hline(46, 50, 36, 1)                 # more blind passages
+    roughen(p, passes=1, chance=0.3)
+    lock_row(p, 14, [57, 58], '$'); lock_row(p, 28, [25, 26], '@'); lock_row(p, 42, [25, 26], '^')
+    p.collapse(26, 22, 2)
+    props(p, ((7, 6, 'c'), (12, 9, 'k'), (39, 6, 'x'), (44, 9, 'k'), (55, 20, 'c'), (60, 23, 'b'), (23, 34, 'k'), (28, 37, '&'), (55, 34, 'c'), (60, 37, '&'), (39, 34, 'x'), (44, 37, 'b'),
+              (16, 47, 'h'), (22, 47, 'h'), (30, 47, 'h'), (37, 47, 'h'), (16, 53, 'h'), (22, 53, 'h'), (30, 53, 'h'), (37, 53, 'h'), (26, 51, '&'), (28, 50, '&'), (25, 49, '&')))
+    p.g[8][8] = '4'; p.g[22][59] = '3'; p.g[36][27] = '6'
+    p.g[36][58] = 'J'; p.g[36][42] = 'L'; p.g[52][38] = 'K'
+    p.g[7][25] = 'E'; p.g[21][24] = 'C'; p.g[50][27] = 'G'
+    cave_litter(p, 20)
+    return p
+LAB_GIVES = {'4': ('gate', None), '3': ('pry', None), '6': ('code', None)}
+LAB_LOCKS = {'$': 'gate', '@': 'pry', '^': 'code'}
+def labyrinth_check(p):
+    st = flood_stages(p, LAB_GIVES, LAB_LOCKS); g = p.g; out = []
+    K1, K2, K3, G = pos(g, '4'), pos(g, '3'), pos(g, '6'), pos(g, 'G'); s0 = st[0][1]
+    ok(out, K1 in s0 and K2 not in s0 and K3 not in s0 and G not in s0, "at the start: only the gate key's cell")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('pry', K2), ('code', K3), ('hall', G)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('pry') == ['gate'] and firsts.get('code') == ['gate', 'pry'] and firsts.get('hall') == ['code', 'gate', 'pry'], f"order: pry {firsts.get('pry')}, code {firsts.get('code')}, hall {firsts.get('hall')}")
+    return out
+
+def siege_catacombs():
+    """Siege Catacombs (T6, under the Siege Ward's bell tower; the story's Sealed Crypt). Graph dungeons/siege_catacombs.mmd: the stair -> the Ossuary (the hub: the iron gate north, the rockfall south)
+    -> the west chamber (the sexton's box '3' = the gate key) and the sappers' camp east (the pry bar '4') ; the iron gate ('$' x2) -> the north chamber (the burial roll '6' = the code) ; the rockfall
+    ('@' x2) -> the bone gallery -> the sealed slab ('^' x2) -> the Sealed Crypt (goal). The loop: the sappers' tunnel from their camp to the gallery, choked by a fall the same bar lifts."""
+    p = Plan(60, 50, 9891)
+    p.room(26, 2, 8, 5, ','); p.vline(29, 7, 10, 2, ',')           # St: the stair
+    p.room(18, 11, 24, 10, ',')                                    # Hl: the Ossuary
+    p.hline(42, 46, 15, 2, ','); p.room(47, 10, 9, 10, ',')        # Sc: the sappers' camp
+    p.hline(13, 17, 15, 2, ','); p.room(4, 10, 9, 10, ',')         # Ch1: the west chamber
+    p.vline(21, 6, 10, 2, ','); p.room(6, 2, 18, 4, ',')           # Ch2: the north chamber, behind the iron gate
+    for x in (21, 22): p.g[8][x] = '$'
+    p.vline(29, 21, 27, 2, ','); p.room(20, 28, 20, 5, ',')        # the bone gallery, behind the rockfall
+    for x in (29, 30): p.g[24][x] = '@'
+    p.vline(29, 33, 38, 2, ','); p.room(21, 39, 18, 8, ',')        # T: the Sealed Crypt, behind the slab
+    for x in (29, 30): p.g[36][x] = '^'
+    p.vline(51, 20, 30, 1, ','); p.hline(40, 51, 30, 1, ','); p.g[25][51] = '@'   # the sappers' tunnel (the loop)
+    for x in range(19, 41, 3):                                     # bone niches along the Ossuary's walls
+        if x not in (21, 22, 29, 30): p.g[11][x] = '&'; p.g[20][x] = '&'
+    props(p, ((20, 13, 'h'), (26, 13, 'h'), (33, 13, 'h'), (39, 13, 'h'), (20, 18, 'h'), (26, 18, 'h'), (33, 18, 'h'), (39, 18, 'h'),
+              (48, 11, 'c'), (50, 11, 'c'), (54, 14, 's'), (54, 15, 's'), (48, 18, 'b'), (53, 18, 'x'), (5, 11, 'h'), (11, 11, 'h'), (5, 18, 'h'), (11, 18, 'h'), (8, 14, '&'),
+              (7, 3, 'h'), (12, 3, 'h'), (17, 3, 'h'), (9, 5, '&'), (22, 29, '&'), (26, 31, 'h'), (34, 29, 'h'), (38, 31, '&'), (22, 40, 'h'), (37, 40, 'h'), (22, 45, 'h'), (37, 45, 'h'), (27, 42, 'k'), (33, 44, 'x')))
+    p.g[16][6] = '3'; p.g[17][54] = '4'; p.g[4][8] = '6'
+    p.g[45][36] = 'K'; p.g[3][21] = 'J'
+    p.g[4][29] = 'E'; p.g[16][30] = 'O'; p.g[43][30] = 'G'
+    scatter(p, 16, floor=',', what="*~%&&'xt")
+    return p
+SC_GIVES = {'3': ('gate', None), '4': ('pry', None), '6': ('code', None)}
+SC_LOCKS = {'$': 'gate', '@': 'pry', '^': 'code'}
+def catacombs_check(p):
+    st = flood_stages(p, SC_GIVES, SC_LOCKS); g = p.g; out = []
+    K1, K2, K3, G = pos(g, '3'), pos(g, '4'), pos(g, '6'), pos(g, 'G'); s0 = st[0][1]
+    ok(out, K1 in s0 and K2 in s0 and K3 not in s0 and G not in s0, "at the start: the gate key and the pry bar; not the burial roll or the crypt")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('roll', K3), ('crypt', G)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('roll') == ['gate', 'pry'] and firsts.get('crypt') == ['code', 'gate', 'pry'], f"order: the roll {firsts.get('roll')}, the crypt {firsts.get('crypt')}")
+    ok(out, all(G not in seen for keys, seen in st if 'code' not in keys), "without the code the crypt is unreachable by any route (the sappers' tunnel ends in the gallery, before the slab)")
+    tun = [(51, y) for y in range(20, 31)]; saved = {(x, y): g[y][x] for (x, y) in tun}
+    for (x, y) in tun: g[y][x] = '#'
+    ok(out, G in flood_stages(p, SC_GIVES, SC_LOCKS)[-1][1], "closing the sappers' tunnel: the crypt is still reachable")
+    for (x, y), c in saved.items(): g[y][x] = c
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -706,8 +859,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker, "deep_caverns": deep_caverns, "underground_labyrinth": underground_labyrinth, "siege_catacombs": siege_catacombs}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check, "deep_caverns": caverns_check, "underground_labyrinth": labyrinth_check, "siege_catacombs": catacombs_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

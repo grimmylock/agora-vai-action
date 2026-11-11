@@ -1,4 +1,4 @@
-%% Siege Catacombs. Theme: war crypt. Locks: GATE x2 (two iron keys, one per chamber), ROCKFALL (pry bar from the sappers' camp). Loops: the sappers' tunnel camp<->ossuary hall, the tomb stair back.
+%% Siege Catacombs. Theme: war crypt. Locks (2026-11-11): GATE (the sexton's key, west chamber) to the north chamber, where the burial roll gives the CODE of the crypt's sealed slab (gate_key2 below); ROCKFALL (pry bar from the sappers' camp). Loop: the sappers' tunnel camp<->bone gallery, behind a fall the same bar lifts.
 %% start: St
 %% goal: T
 flowchart TD
@@ -8,5 +8,4 @@ flowchart TD
   Hl -->|req:gate_key1| Ch2["North Chamber {item:gate_key2}"]
   Hl -->|req:pry| Rf["Rockfall"]
   Rf -->|req:gate_key2| T["Tomb of the Commander {goal}"]
-  Sc -->|hole| Ch2
-  T -->|shortcut| St
+  Sc -->|req:pry| Rf
