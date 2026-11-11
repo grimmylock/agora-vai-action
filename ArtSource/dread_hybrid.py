@@ -41,42 +41,68 @@ def solve(hip, ft, fwd, l1=None, l2=None):
     ang = math.acos(max(-1, min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)))); k = a + (ang if fwd else -ang)
     return (hip[0] + l1 * math.cos(k), hip[1] + l1 * math.sin(k))
 
+# --- the legs' look comes from Yan's own legs (2026-11-11: "the legs lost too much detail in the animation, make them closer to the original").
+# His four legs in the standing sprite are unwrapped along their bones: every pixel of his leg (rows below the belly cut) is stored as (position along the bone 0..1, side offset in px, colour).
+# A redrawn leg takes, for each of its pixels, the colour of the nearest stored pixel in that (along, side) space, so its shading, black shadows and pale highlights are his, moved with the bones.
+HIS_BONES = {"near_fore": [(34, 22), (34, 27), (36, 32), (37, 36)], "far_fore": [(43, 22), (44, 27), (47, 32), (50, 36)],
+             "near_hind": [(13, 24), (6, 27), (3, 32), (3, 36)], "far_hind": [(14, 25), (12, 29), (11, 32), (11, 36)]}
+
+def _arcs(pts):
+    L = [0.0]
+    for j in range(3): L.append(L[-1] + math.hypot(pts[j + 1][0] - pts[j][0], pts[j + 1][1] - pts[j][1]))
+    return L
+
+def _proj(pts, x, y):
+    """(arc length along the polyline, signed side in px, distance) of point x, y"""
+    L = _arcs(pts); best = None
+    for j in range(3):
+        p, q = pts[j], pts[j + 1]; vx, vy = q[0] - p[0], q[1] - p[1]; ln = math.hypot(vx, vy) + 1e-9
+        u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / (ln * ln))); cx, cy = p[0] + u * vx, p[1] + u * vy
+        d = math.hypot(x - cx, y - cy); side = ((x - cx) * (-vy) + (y - cy) * vx) / ln
+        if best is None or d < best[2]: best = (L[j] + u * ln, side, d)
+    return best
+
+TEX = {n: [] for n in HIS_BONES}
+_na = np.array(NEW)
+for _y in range(CUT, NEW.size[1]):
+    for _x in range(NEW.size[0]):
+        if not _na[_y, _x, 3]: continue
+        _c = [(_proj(HIS_BONES[n], _x, _y), n) for n in HIS_BONES]; (_arc, _side, _d), _n = min(_c, key=lambda t: t[0][2])
+        if _d <= 4.6: TEX[_n].append((_arc / _arcs(HIS_BONES[_n])[-1], _side, tuple(int(v) for v in _na[_y, _x, :3])))
+TEXA = {n: (np.array([[t[0], t[1]] for t in v]), [t[2] for t in v]) for n, v in TEX.items()}
+
+def tex_col(name, tn, side, total):
+    xy, cols = TEXA[name]; ref = _arcs(HIS_BONES[name])[-1]
+    d = ((xy[:, 0] - tn) * ref) ** 2 + (xy[:, 1] - side) ** 2
+    return cols[int(np.argmin(d))]
+
 def leg_img(name, i, bob, stand=False):
-    """One leg built on the Pallid Prowler's proportions (the walk Yan approved): slim, long, digitigrade. Hind: a thigh forward to the stifle, the shank back to the hock, a short straight foot bone down.
-    Fore: shoulder, elbow back, a long forearm, a short pastern. Widths are about 3 px at the top of the thigh narrowing to 1-2 px at the shin, scaled up a little for the Dread's bigger body."""
+    """One leg: the bone from the walk rig (hind: thigh to the stifle, shank back to the hock, foot bone; fore: shoulder, elbow back, forearm, pastern), the colours from Yan's own leg texture (TEX)."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0
     fo, fl = (0.0, 0.0) if stand else foot(ph)
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1) + (-3 if hind and False else 0), GROUND - fl)
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl)
     if hind:
-        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 6.2, 5.8); pts = [hip, st, hock, ft]; rad = [3.0, 2.2, 1.6, 1.5]
+        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 6.2, 5.8); pts = [hip, st, hock, ft]; rad = [3.2, 2.5, 2.1, 2.0]
     else:
-        wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.0, 6.0); pts = [hip, el, wr, ft]; rad = [2.8, 2.2, 1.7, 1.6]
+        wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.0, 6.0); pts = [hip, el, wr, ft]; rad = [3.0, 2.5, 2.1, 2.0]
     segs = [(pts[j], pts[j + 1], rad[j], rad[j + 1]) for j in range(3)]
+    L = _arcs(pts); total = L[-1]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
-    out = np.zeros((H, W, 4), np.uint8); k = 0.78 if far else 1.0
-    mx = lambda c: tuple(int(v * k) for v in c)
+    out = np.zeros((H, W, 4), np.uint8)
+    paw = {(fx + dx, fy + dy) for dx in range(-2, 4) for dy in (-1, 0)}
     for y in range(H):
         for x in range(W):
             best = None
             for si, (p, q, r0, r1) in enumerate(segs):
-                vx, vy = q[0] - p[0], q[1] - p[1]; L2_ = vx * vx + vy * vy + 1e-9
-                u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / L2_)); cx, cy = p[0] + u * vx, p[1] + u * vy
+                vx, vy = q[0] - p[0], q[1] - p[1]; ln = math.hypot(vx, vy) + 1e-9
+                u = max(0.0, min(1.0, ((x - p[0]) * vx + (y - p[1]) * vy) / (ln * ln))); cx, cy = p[0] + u * vx, p[1] + u * vy
                 dist = math.hypot(x - cx, y - cy); r = r0 + (r1 - r0) * u
-                if dist <= r and (best is None or dist / r < best[0]): best = (dist / r, si, u, (x - cx) * (-vy) + (y - cy) * vx)
-            if not best: continue
-            _, si, u, side = best; t = (si + u) / 3.0
-            if side < -0.25: col = C_MAIN if t < 0.5 else C_HOLLOW        # the lit edge (left)
-            else: col = C_HOLLOW if t < 0.6 else C_DARK                    # the shadow side
-            if si == 0 and u < 0.3 and side < 0 and (x + y) % 3 == 0: col = C_PALE
-            out[y, x, :3] = mx(col); out[y, x, 3] = 255
-    for dx in range(-1, 3):                                              # the paw: a flat foot, toes forward
-        x = fx + dx
-        if 0 <= x < W: out[fy, x, :3] = mx(C_DARK); out[fy, x, 3] = 255
-    for cx in (fx + 1, fx + 3):                                            # two hooked claws (Yan: angled, inside the pixel grid): a pale pixel on the paw, then one stepped down and forward
-        for (px_, py_) in ((cx, fy), (cx + 1, fy + 1)):
-            if 0 <= px_ < W and 0 <= py_ < H: out[py_, px_, :3] = (198, 183, 152); out[py_, px_, 3] = 255
+                if dist <= r and (best is None or dist / r < best[0]): best = (dist / r, L[si] + u * ln, ((x - cx) * (-vy) + (y - cy) * vx) / ln)
+            if best is None and (x, y) in paw: best = (1.0, total, 0.0)
+            if best is None: continue
+            out[y, x, :3] = tex_col(name, best[1] / total, best[2], total); out[y, x, 3] = 255
     return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
