@@ -5684,3 +5684,11 @@ Yan: "go ahead, six weak ones included". `ArtSource/world/props_x2.py` (new; `pr
 
 ## The x2 redraws installed (2026-11-11)
 Yan, on the sheets: "looks great". Atlas repacked and installed (`world_atlas.bytes` + `_meta.txt`, 4562 sprites, 73 of them double-density; same pack as the previews). Quick `dungeons` check PASSED; the full harness was not run (no C# changed since the run before `main`); `main` not updated. Not checked: Unity - this is the first time the game's atlas holds more than six x2 sprites, so the first Play should look at them (size, sorting, the see-through fade on the tall ones).
+
+## Neighbours at x2 (sheets), second passes, lathes as blocks, a look over the world (2026-11-11)
+Yan: "yes" (bring the neighbours to the same density), "ok" (second pass of the sunk truck and the sideways tipped desks), "ok" (the lathe overlap), "Go for it, do a quality check on the world overall".
+- **Lathes:** `WorldArt.StandingAt` draws ONE lathe per 2x2 block of "machine" tiles (centred on the block; a single tile or a 1-wide run still gets one each). The Crusher Pit's rams and the scrapyard's machines no longer pile up (`maps/renders/props_audit/lathes_paired.png`). Installed (code).
+- **Second passes (installed in the atlas):** the sunk lorry (canvas hoops, a rag of tilt, cab with door and windscreen, tilted nose-up, cut off at a level waterline), the sideways tipped desk (all four legs, the pedestal lying on its side, the board edge-on). `second_pass.png`.
+- **Neighbours at x2 - NOT installed** (`props_x2.INSTALL_NEIGH = False`): fuel barrel, two rust barrels, crate x2, console front/back, lab table x2, lab bench, jar rack x2, switch cabinet, three dumpsters, and the stashes shut and open (chest, footlocker, toolbox, safe, duffel x2, PDA). Sheets `neighbours_objects.png`, `neighbours_stashes.png`. Not redrawn yet: trash and tyre piles (five variants each), blocks/jersey/sandbags lying west-east, rubble, debris, stones.
+- **World look-over** (six tier maps, four landmark crops each, `maps/renders/world_audit/`; harness renders at 16 px a tile, judged by eye, nothing changed): see the list given to Yan in chat (landmarks whose prop is the wrong object, blocky ground patches, two unreadable structures).
+- Checks: compile, `dungeons` PASSED. Full harness not run. Not checked: Unity.
