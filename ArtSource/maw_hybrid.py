@@ -25,6 +25,9 @@ STRIDE, LIFT = 3.6, 2.6
 BODY = Image.new("RGBA", rig.base.size, (0, 0, 0, 0))
 for n in ("hind", "fore"): BODY.alpha_composite(rig.parts[n])
 HEAD = Image.new("RGBA", rig.base.size, (0, 0, 0, 0)); HEAD.alpha_composite(rig.parts["head"]); HEAD.alpha_composite(rig.parts["jaw"])
+# leftovers of the original's black ground shadow / old leg stumps sit below row 26 in the cut-out parts (one under the mouth, Yan spotted it): cleared
+for _im in (BODY, HEAD):
+    _a = np.array(_im); _a[26:] = 0; _im.paste(Image.fromarray(_a), (0, 0))
 # the leg colours: the sprite's own browns (the body is mostly the tan (99,81,68) with dark brown hollows (66,51,44) and pale streaks (142,128,108))
 C_MAIN, C_HOLLOW, C_PALE, C_DARK = (98, 44, 44), (63, 18, 27), (167, 80, 81), (24, 15, 18)
 OUT = (4, 1, 2, 255)
