@@ -23,7 +23,7 @@ GROUND = oy + 36                        # his feet end on row 36
 CUT = 25                                # everything below this row is leg (redrawn); the belly outline sits on row 24
 LEGS = {"far_hind": ((15, 22), 0.50, True, False), "near_hind": ((10, 23), 0.00, False, False), "far_fore": ((47, 21), 0.00, True, True), "near_fore": ((37, 22), 0.50, False, True)}
 L1, L2 = 6.0, 5.6
-STRIDE, LIFT = 6.0, 3.5
+STRIDE, LIFT = 4.4, 3.2
 BODY = Image.new("RGBA", NEW.size, (0, 0, 0, 0)); _a = np.array(NEW); _a[CUT:] = 0; BODY = Image.fromarray(_a)
 HEAD = Image.new("RGBA", NEW.size, (0, 0, 0, 0))     # head rides the body (no separate sway for this sprite)
 # the leg colours: the sprite's own browns (the body is mostly the tan (99,81,68) with dark brown hollows (66,51,44) and pale streaks (142,128,108))
@@ -84,9 +84,9 @@ def leg_img(name, i, bob, stand=False):
     hind = name.endswith("hind")
     hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl)
     if hind:
-        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 6.2, 5.8); pts = [hip, st, hock, ft]; rad = [3.2, 2.5, 2.1, 2.0]
+        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 7.0, 6.6); pts = [hip, st, hock, ft]; rad = [3.2, 2.5, 2.1, 2.0]
     else:
-        wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.0, 6.0); pts = [hip, el, wr, ft]; rad = [3.0, 2.5, 2.1, 2.0]
+        wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.8, 7.4); pts = [hip, el, wr, ft]; rad = [3.0, 2.5, 2.1, 2.0]
     segs = [(pts[j], pts[j + 1], rad[j], rad[j + 1]) for j in range(3)]
     L = _arcs(pts); total = L[-1]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
