@@ -484,9 +484,51 @@ def jersey_v(seed):
     for _ in range(14): d.point((r.randrange(2, 22), r.randrange(2, 49)), fill=C[r.choice((1, 3))]) if True else None
     return X2(im, (12, 50), (13, 30, 3, -10))
 
+# ---------------------------------------------------------------- two landmark vehicles that were drawn as the sedan wreck (the world look-over, 2026-11-11)
+def apc(seed):
+    """The Burnt-Out Carrier: an eight-wheeled armoured carrier, burnt black. A boat-shaped hull with sloped plates, a small turret with its gun drooping, hatches open, the tyres burnt down to the rims."""
+    K = ramp("#151412", "#22201c", "#322e28", "#454036", "#5a5446"); G = ramp("#2a3324", "#3a4532", "#4d5a42", "#637054"); R = P["rust"]; S = P["steel"]; r = rng(seed); im = blank(92, 46); d = ImageDraw.Draw(im)
+    d.polygon([(4, 22), (12, 14), (74, 14), (88, 22), (88, 31), (80, 36), (10, 36), (4, 31)], fill=K[2])                                   # the hull's side
+    d.polygon([(12, 14), (74, 14), (70, 6), (18, 6)], fill=K[4]); d.line([(18, 6), (70, 6)], fill=sh(K[4], 1.15))                           # the roof deck, from above
+    d.polygon([(74, 14), (88, 22), (80, 18), (70, 6)], fill=K[3])                                                                         # the sloped nose plate
+    d.line([(4, 22), (88, 22)], fill=K[1]); d.line([(10, 36), (80, 36)], fill=K[0]); d.line([(12, 14), (74, 14)], fill=K[1])
+    d.ellipse([34, 1, 52, 11], fill=K[3]); d.ellipse([36, 2, 50, 8], fill=K[4]); d.line([(50, 6), (66, 9)], fill=K[1], width=2); d.line([(50, 5), (66, 8)], fill=K[4])   # the turret, the gun drooping
+    d.rectangle([22, 8, 28, 11], fill=DARK); d.polygon([(21, 8), (29, 8), (27, 4), (23, 4)], fill=K[3])                                    # an open hatch, its lid up
+    d.rectangle([58, 9, 63, 12], fill=DARK)
+    for x in (16, 30, 58): d.rectangle([x, 17, x + 5, 19], fill=DARK); d.point((x + 1, 18), fill=K[4])                                     # vision slits and firing ports
+    d.rectangle([42, 24, 50, 33], outline=K[0]); d.point((49, 28), fill=K[4])                                                             # the side door
+    for cx in (16, 32, 56, 72):                                                                                                           # eight wheels (four a side), the rubber burnt off: bare rims, sagging
+        d.ellipse([cx - 7, 29, cx + 7, 43], fill=K[0]); d.ellipse([cx - 5, 31, cx + 5, 41], fill=S[1]); d.ellipse([cx - 2, 34, cx + 2, 38], fill=K[0])
+        for a in range(0, 360, 60): d.point((cx + int(round(4 * math.cos(math.radians(a)))), 36 + int(round(4 * math.sin(math.radians(a))))), fill=S[3])
+    for _ in range(70):                                                                                                                   # what the fire left: patches of the old green, rust, ash
+        x, y = r.randrange(6, 86), r.randrange(7, 35)
+        if im.getpixel((x, y))[:3] in (K[2][:3], K[3][:3], K[4][:3]): d.point((x, y), fill=r.choice((G[1], G[2], R[1], R[2], K[0], hx("#6a665c"))))
+    for x in (24, 46, 66): d.line([(x, 14), (x + r.choice((-1, 1)), 21)], fill=K[0])                                                       # soot runs
+    return X2(im, (46, 42), (40, 8, 2, -1), True)
+def van(seed):
+    """The Radio Van: a boxy forward-control van with a roof rack of aerials and a dish, a sliding door hanging open, flat tyres."""
+    C = ramp("#3d4038", "#56594e", "#737668", "#8f9282", "#aaad9c"); R = P["rust"]; S = P["steel"]; r = rng(seed); im = blank(80, 52); d = ImageDraw.Draw(im); G = hx("#11161a")
+    d.rectangle([4, 20, 72, 42], fill=C[2]); d.polygon([(72, 20), (77, 26), (77, 42), (72, 42)], fill=C[1])                                 # the body's side and the blunt nose
+    d.polygon([(6, 12), (70, 12), (72, 20), (4, 20)], fill=C[4]); d.line([(6, 12), (70, 12)], fill=sh(C[4], 1.1))                           # the roof, from above
+    d.rectangle([56, 23, 70, 31], fill=G); d.line([(58, 30), (63, 24)], fill=hx("#8fb3bd")); d.polygon([(72, 22), (76, 27), (76, 32), (72, 31)], fill=G)   # the cab's glass, the windscreen's edge
+    d.rectangle([24, 22, 44, 41], fill=DARK); d.rectangle([26, 26, 33, 31], fill=hx("#1f3a2a")); d.point((28, 28), fill=hx("#7fe08a")); d.rectangle([35, 27, 41, 33], fill=S[1]); d.line([(36, 29), (40, 29)], fill=S[4])   # the side door slid open: radio sets inside, a dial still lit
+    d.rectangle([8, 22, 23, 41], outline=C[0]); d.rectangle([10, 24, 21, 30], fill=G)                                                     # the slid-back door panel and its window
+    d.rectangle([4, 33, 72, 35], fill=hx("#8a3a2a")); d.line([(4, 36), (72, 36)], fill=C[1]); d.line([(4, 42), (77, 42)], fill=C[0])        # a paint stripe along the flank
+    d.rectangle([75, 34, 77, 37], fill=hx("#d8d0a8")); d.rectangle([4, 37, 5, 40], fill=hx("#7a2a22"))
+    d.rectangle([10, 9, 62, 10], fill=S[1]); d.line([(10, 8), (62, 8)], fill=S[3])                                                        # the roof rack
+    for x in (14, 58): d.line([(x, 8), (x, 12)], fill=S[1])
+    d.line([(20, 8), (18, 0)], fill=S[3]); d.line([(26, 8), (27, 2)], fill=S[3]); d.line([(18, 0), (27, 2)], fill=S[1])                      # whip aerials, a wire between them
+    d.pieslice([40, 0, 54, 12], 200, 340, fill=S[2]); d.arc([40, 0, 54, 12], 200, 340, fill=S[4]); d.line([(47, 6), (47, 9)], fill=S[1])    # the dish
+    for cx in (18, 60):
+        d.ellipse([cx - 7, 37, cx + 7, 49], fill=P["tire"][0]); d.ellipse([cx - 5, 39, cx + 5, 47], fill=P["tire"][1]); d.ellipse([cx - 2, 41, cx + 2, 45], fill=S[2]); d.arc([cx - 9, 33, cx + 9, 51], 180, 360, fill=C[0])
+    for _ in range(50):
+        x, y = r.randrange(5, 76), r.choice((21, 22, 37, 38, 39, 40, 41, 14, 16, 25, 32))
+        if im.getpixel((x, y))[:3] in (C[2][:3], C[4][:3], C[1][:3]): d.point((x, y), fill=R[r.randrange(1, 4)])
+    return X2(im, (40, 48), (36, 7, 2, -1), True)
+
 REST = {"wreck": wreck, "sunktruck": sunktruck, "engine": engine, "machine": machine, "machine_fn": machine_back, "hatch": hatch, "cables": cables,
-        "stash_cache": lambda s: cache(s, False), "stash_cache_open": lambda s: cache(s, True), "scrap": scrap, "vatsmall": vatsmall, "block_v": block_v, "jersey_v": jersey_v}
-REST_VARIANTS = {"wreck": 4, "sunktruck": 2, "engine": 2, "machine": 2, "machine_fn": 2, "hatch": 5, "cables": 2, "stash_cache": 1, "stash_cache_open": 1, "scrap": 5, "vatsmall": 2, "block_v": 5, "jersey_v": 5}
+        "stash_cache": lambda s: cache(s, False), "stash_cache_open": lambda s: cache(s, True), "scrap": scrap, "vatsmall": vatsmall, "block_v": block_v, "jersey_v": jersey_v, "apc": apc, "van": van}
+REST_VARIANTS = {"wreck": 4, "sunktruck": 2, "engine": 2, "machine": 2, "machine_fn": 2, "hatch": 5, "cables": 2, "stash_cache": 1, "stash_cache_open": 1, "scrap": 5, "vatsmall": 2, "block_v": 5, "jersey_v": 5, "apc": 1, "van": 1}
 
 # ================================================================ the neighbours, brought to the same density (2026-11-11, Yan: "yes")
 def drum(d, x0, y0, w, h, c, ribs=(0.33, 0.66), open_top=None):

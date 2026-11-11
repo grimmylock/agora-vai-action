@@ -360,7 +360,7 @@ namespace GameCore
             c.Stash("Sniper Nest", 87, 105);
             c.Landmark("Sniper Nest", 86, 108);
             // the burnt-out carrier on the depot road
-            c.Put(80, 108, HardCover, "wreck").Put(81, 108, HardCover, "part").Deco(82, 109, "bones");
+            c.Put(80, 108, HardCover, "apc").Put(81, 108, HardCover, "part").Put(82, 108, HardCover, "part").Deco(82, 109, "bones");   // 2026-11-11: its own sprite (it was the sedan wreck); three tiles long
             c.Landmark("Burnt-Out Carrier", 81, 110);
 
             // ================================================================ SMUGGLER'S RUN
@@ -520,7 +520,7 @@ namespace GameCore
         static void Silo(TerrainCanvas c, int x, int y, bool climbable, int h = 4)
         {
             if (!climbable) { c.Blob(x, y, 3, Difficult, 0, 0.45f, "rubble"); c.PaintBlob(x, y, 3, Concrete); return; }
-            c.Blob(x, y, 2, Solid, h, 0.1f, "concrete");
+            c.Rect(x - 1, y - 1, 3, 3, Solid, h, "metal");   // 2026-11-11: a square ribbed-steel bin (it was a plus-shaped concrete blob that read as a tower); a round silo would need its own sprite
             c.Put(x, y, Empty, "platform");
             c.Ramp(x, y + 3, 0, -1, 3, 0, h, 1, "platform");
         }
@@ -1272,7 +1272,7 @@ namespace GameCore
             c.Landmark("Mast Perch", 112, 54);
             c.Ring(120, 70, 3, 3, ScatterCover, 0, "stones"); c.Deco(120, 70, "bones");
             c.Landmark("Bone Circle", 120, 74);
-            c.Put(160, 96, HardCover, "wreck").Put(161, 96, Solid, "antenna");
+            c.Put(160, 96, HardCover, "van").Put(161, 96, HardCover, "part").Put(162, 96, Solid, "antenna");   // 2026-11-11: its own sprite (it was the sedan wreck)
             c.Landmark("Radio Van", 160, 98);
             c.Hut(186, 186 - 6, 6, 5, "concrete", 2);
             c.Stash("Generator Hut", 189, 181);

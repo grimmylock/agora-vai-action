@@ -444,6 +444,7 @@ namespace GameCore
         // ------------------------------------------------------------------ ground layer
         private static bool Crisp(GroundType g) => g == GroundType.Floor || g == GroundType.LabTile || g == GroundType.Grate;
         private static bool Paved(GroundType g) => g == GroundType.Concrete || g == GroundType.Asphalt;
+        private static bool Soft(GroundType g) => g == GroundType.Grass || g == GroundType.DarkGrass || g == GroundType.Dirt || g == GroundType.Mud || g == GroundType.Sand || g == GroundType.Gravel || g == GroundType.CaveFloor;   // loose ground: its borders fray into each other
         private const float Warp = 11f;
 
         // Value noise on a hashed lattice. The lattices are cached per zone (Begin clears them): composing a
@@ -634,6 +635,17 @@ namespace GameCore
                                 var s = tex[(int)g];
                                 c = style != null ? Procedural(style, (int)g, gx, gy)
                                   : s != null ? At(s, gx % s.W, gy % s.H) : new Color32(60, 60, 56, 255);
+                                if (!uni && Soft(g))                            // 2026-11-11 (the world look-over: dark mud on pale sand met in a hard stair-step line): where two kinds of loose ground meet, a ragged fringe a few pixels wide of half-and-half pixels
+                                {
+                                    int jx = (int)((H01(gx, gy, 71) - 0.5f) * 9f), jy = (int)((H01(gx, gy, 72) - 0.5f) * 9f);
+                                    var g2 = GroundPx(gx + jx, gy + jy);
+                                    if (g2 != g && Soft(g2))
+                                    {
+                                        var st2 = Styles[(int)g2]; var s2 = tex[(int)g2];
+                                        var c2 = st2 != null ? Procedural(st2, (int)g2, gx, gy) : s2 != null ? At(s2, gx % s2.W, gy % s2.H) : c;
+                                        c = Lerp(c, c2, H01(gx, gy, 73) < 0.5f ? 0.5f : 0.8f);
+                                    }
+                                }
                                 if (g == GroundType.Water && !uni)
                                 {
                                     if (gy > 0 && GroundPx(gx, gy - 1) != GroundType.Water) c = Lerp(c, new Color32(0x5A, 0x48, 0x38, 255), 0.85f);       // muddy lip

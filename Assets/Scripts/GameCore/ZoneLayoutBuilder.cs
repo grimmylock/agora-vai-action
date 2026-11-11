@@ -285,7 +285,10 @@ namespace GameCore
                             switch (ch)
                             {
                                 case '#': Set(x, y, TileType.Solid, baseHeight, wallLook); break;
-                                case 'C': Set(x, y, TileType.ScatterCover, baseHeight, coverLook); break;
+                                case 'C':                                                   // 2026-11-11: at scale 4+ a cover cell was a solid block of 16-25 crates (the Relay Station read as a wooden floor): stacks on every other tile, lanes between them
+                                    if (scale >= 4 && (sx % 2 == 1 || sy % 2 == 1)) Set(x, y, TileType.Empty, baseHeight, null);
+                                    else Set(x, y, TileType.ScatterCover, baseHeight, coverLook);
+                                    break;
                                 case '=': Set(x, y, TileType.HardCover, baseHeight, hardLook); break;
                                 case '~': Set(x, y, TileType.Difficult, baseHeight, null); break;
                                 case 'D': Set(x, y, TileType.Door, baseHeight, wallLook == "concrete" ? "metal" : null); break;
