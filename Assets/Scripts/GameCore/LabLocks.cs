@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege", ["lattice_foundry_lower"] = "foundry" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -218,6 +218,18 @@ namespace GameCore
                                     Says = "[CATACOMBS] A sapper's digging bar. Enough to lever a fallen block aside." },
                 ['6'] = new Thing { Name = "Burial Roll", Look = "stash_pda", Kind = "code", Desc = "A ledger of the dead, chained to a lectern. The last page lists the crypt and four numbers.",
                                     Says = "[CATACOMBS] The crypt's entry: a name scratched out, and the four numbers of its seal." },
+            },
+            // The Lattice Foundry's synthesis level (Tier 5; dungeons/lattice_foundry_lower.mmd, built without the coolant lock): the Foreman's locker = badge -> the plant room (fuse) -> the bus switch
+            // in the cable tunnel -> power wakes the Coil Hall's doors (the Cell Synthesizer).
+            ["lattice_foundry_lower"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Foreman's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 160, Desc = "A locker beside the Foreman's cot, schematics taped inside the door.",
+                                    Says = "[FOUNDRY] A plant pass, the photo burned away at one corner. The plant room's readers will take it." },
+                ['4'] = new Thing { Name = "Plant Room Spares", Look = "stash_toolbox", Kind = "fuse", Desc = "A spares case chained to a pump housing.",
+                                    Says = "[FOUNDRY] A bus fuse in a ceramic sleeve, COIL HALL FEED on the band." },
+                ['5'] = new Thing { Name = "Coil Hall Bus Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The bus switch for the Coil Hall, at the end of the cable tunnel. A fuse is missing.",
+                                    Says = "[FOUNDRY] The cables in the tunnel start to hum, and round the ring three dead doors come alive." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

@@ -188,12 +188,14 @@ namespace GameCore
         /// the Cell Synthesizer at its heart, ringed by machines), the long cable tunnel along the north wall, the crew
         /// corridor with its bunk rooms, the Foreman's office (a door to the ring and one to the crew corridor), and the plant
         /// room under the ring, joined to both the crew corridor and the stair.</summary>
-        public static MapLayout LatticeLower() => FloorPlan("lattice_foundry_lower", FoundryLowerPlan, "concrete", LabTile,
+        // 2026-11-11: the lock-and-key redo sets locks INTO this floor (dungeon_plans.py lattice_foundry_lower -> LabPlans): the Foreman's locker '3' (badge), the plant room behind badge doors '1' with the fuse '4',
+        // the bus switch '5' in the cable tunnel, the Coil Hall behind dead doors '2' (its east breach walled up). FoundryLowerPlan below is the floor without locks, kept for reference.
+        public static MapLayout LatticeLower() => FloorPlan("lattice_foundry_lower", LabPlans["lattice_foundry_lower"], "concrete", LabTile,
             new Dictionary<char, (string, string)>
             {
                 ['S'] = ("Service Stair", "lattice_foundry"), ['Y'] = ("Cell Synthesizer", null), ['H'] = ("Coil Hall", null),
                 ['Q'] = ("Crew Quarters", null), ['F'] = ("Foreman's Office", null), ['P'] = ("Plant Room", null),
-            });
+            }, LabLocks.StashesOf("lattice_foundry_lower"));
 
         static readonly string[] FoundryUpperPlan =
         {

@@ -811,6 +811,31 @@ def catacombs_check(p):
     for (x, y), c in saved.items(): g[y][x] = c
     return out
 
+def lattice_foundry_lower():
+    """The Lattice Foundry's synthesis level (T5). NOT re-planned: the Batch 91 floor (foundry_plans.lower: the ring corridor round the Coil Hall, the cable tunnel, the crew corridor, the Foreman's office, the
+    plant room) is kept as Yan approved it, and the locks are set INTO it: the Foreman's locker ('3', in his office) = the badge ; the plant room's three ways in become badge doors ('1') and the fuse ('4') is
+    in there ; the bus switch ('5', needs the fuse) is at the cable tunnel's west end ; the Coil Hall's north, west and south doors become dead power doors ('2') and the east breach is walled up, so the Cell
+    Synthesizer (goal, 'Y') needs the power. The graph's coolant lock (steam doors) is not built: there is no art for it yet."""
+    import foundry_plans
+    p = foundry_plans.lower(); g = p.g
+    for (x, y) in ((36, 15), (27, 24), (36, 33)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '2'
+    for (x, y) in ((45, 25), (44, 26)): assert g[y][x] == 'r', (x, y, g[y][x]); g[y][x] = '#'
+    for (x, y) in ((19, 41), (52, 42)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '1'
+    assert g[38][36] == '.'; g[38][36] = '1'
+    g[27][19] = '3'; g[40][22] = '4'; g[3][6] = '5'
+    return p
+LF_GIVES = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse')}
+def foundry_check(p):
+    st = flood_stages(p, LF_GIVES, BP_LOCKS, start='S'); g = p.g; out = []
+    L3, C4, S5, Y = pos(g, '3'), pos(g, '4'), pos(g, '5'), pos(g, 'Y'); s0 = st[0][1]
+    ok(out, L3 in s0 and S5 in s0 and C4 not in s0 and Y not in s0, "at the start: the Foreman's locker and the bus switch; not the plant room's fuse or the synthesizer")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('fuse', C4), ('synth', Y)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('fuse') == ['badge'] and firsts.get('synth') == ['badge', 'fuse', 'power'], f"order: the fuse needs {firsts.get('fuse')}, the synthesizer {firsts.get('synth')}")
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -859,8 +884,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker, "deep_caverns": deep_caverns, "underground_labyrinth": underground_labyrinth, "siege_catacombs": siege_catacombs}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check, "deep_caverns": caverns_check, "underground_labyrinth": labyrinth_check, "siege_catacombs": catacombs_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker, "deep_caverns": deep_caverns, "underground_labyrinth": underground_labyrinth, "siege_catacombs": siege_catacombs, "lattice_foundry_lower": lattice_foundry_lower}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check, "deep_caverns": caverns_check, "underground_labyrinth": labyrinth_check, "siege_catacombs": catacombs_check, "lattice_foundry_lower": foundry_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():
