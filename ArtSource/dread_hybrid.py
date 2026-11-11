@@ -128,7 +128,7 @@ def leg_img(name, i, bob, stand=False):
     fo, fl = (0.0, 0.0) if stand else foot(ph, name.endswith('hind'))
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 3 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the foot plus its outline reaches the same bottom row as his standing sprite
     if hind:
         hock = (ft[0] - 1.0, ft[1] - 3.4); st = ((hip[0] + hock[0]) / 2, (hip[1] + hock[1]) / 2); pts = [hip, st, hock, ft]; rad = [2.3, 2.2, 2.0, 1.9]      # the shin from the knee Yan drew
     else:
