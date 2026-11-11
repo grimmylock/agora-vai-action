@@ -82,16 +82,16 @@ def leg_img(name, i, bob, stand=False):
     fo, fl = (0.0, 0.0) if stand else foot(ph)
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl)
+    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
     if hind:
-        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 7.0, 6.6); pts = [hip, st, hock, ft]; rad = [3.2, 2.5, 2.1, 2.0]
+        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 7.0, 6.6); pts = [hip, st, hock, ft]; rad = [3.2, 2.5, 2.1, 1.9]
     else:
-        wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.8, 7.4); pts = [hip, el, wr, ft]; rad = [3.0, 2.5, 2.1, 2.0]
+        wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.8, 7.4); pts = [hip, el, wr, ft]; rad = [3.0, 2.5, 2.1, 1.9]
     segs = [(pts[j], pts[j + 1], rad[j], rad[j + 1]) for j in range(3)]
     L = _arcs(pts); total = L[-1]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
     out = np.zeros((H, W, 4), np.uint8)
-    paw = {(fx + dx, fy + dy) for dx in range(-2, 4) for dy in (-1, 0)}
+    paw = set()                                                          # no paws: his legs end in blunt stubs (Yan)
     for y in range(H):
         for x in range(W):
             best = None
