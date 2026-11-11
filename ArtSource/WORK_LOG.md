@@ -5681,3 +5681,6 @@ Yan: "go ahead, six weak ones included". `ArtSource/world/props_x2.py` (new; `pr
 - **Not installed:** `Assets/Resources/Sprites/world_atlas.bytes` is unchanged; I told Yan he would see a sheet first. To install: `pack.py`, copy png/txt.
 - Seen in the map renders and not fixed: maps place "machine" on blocks of adjacent tiles (2x2, 2x3), so the new lathes overlap each other there, as the old ones did; the x2 props are visibly finer than the 16 px props beside them (barrels, crates, consoles). A first try of mine put the x2 art in before `props_v2.NEW` was applied, which silently put eight old sprites back; `props.py` applies it last now and a check over all three import orders is clean.
 - Not run: the harness (no C# changed), Unity.
+
+## The x2 redraws installed (2026-11-11)
+Yan, on the sheets: "looks great". Atlas repacked and installed (`world_atlas.bytes` + `_meta.txt`, 4562 sprites, 73 of them double-density; same pack as the previews). Quick `dungeons` check PASSED; the full harness was not run (no C# changed since the run before `main`); `main` not updated. Not checked: Unity - this is the first time the game's atlas holds more than six x2 sprites, so the first Play should look at them (size, sorting, the see-through fade on the tall ones).
