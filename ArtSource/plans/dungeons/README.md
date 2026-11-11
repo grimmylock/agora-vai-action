@@ -36,7 +36,7 @@ Existing in code: **badge** (blue card-reader door, plan '1'), **power** (dead h
 | deep_caverns | - | natural caves | rockfall (pry) + dam lever (drain) | crawl, chimney |
 Not dungeons, so no locks planned: farmhouse_upper, school_upper, flats_2, flats_3 (a building's upper floors; optional locked rooms could come later).
 
-## Status: pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit and flooded_bunker BUILT (2026-11-10). Next: stranded_ferry (badge + power). Scare corners (DungeonLairs.cs) for the later dungeons: Yan will say where, after the base layouts.
+## Status: pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit flooded_bunker (2026-11-10) and stranded_ferry (2026-11-11) BUILT. Next: camp_shelter. Quick check of all of them on the real maps: `bash Tools/compile_check/compile_only.sh && (cd Tools/compile_check && dotnet /tmp/test.dll dungeons)`. Scare corners (DungeonLairs.cs) for the later dungeons: Yan will say where, after the base layouts.
 
 ## Order proposed (small and self-contained first, boss labs last)
 pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit, flooded_bunker (story: check Tier1Story), stranded_ferry, camp_shelter, drydock_tunnels, hospital_morgue, then the plan-based ones (maintenance_tunnels, underground_bunker, underground_labyrinth, deep_caverns, siege_catacombs, lattice_foundry_lower), the story labs last (Beta with Boss 1, Gamma with the Sealed Vault).
@@ -46,7 +46,7 @@ Caveat on the graphs: a "hole" or "shortcut" edge that touches a room behind a l
 New plans use plain rectangular rooms (`Plan.room`), never `Plan.jag`: bitten corners and alcoves make one-tile staircase walls the wall atlas draws as odd dark blocks (found on the Pumping Basement, 2026-11-10). Walls between rooms may be any thickness: built walls (concrete, metal, hull, plaster) always draw as a plain slab top.
 
 ## Plan characters
-New lock tiles use SYMBOLS (`@` rockfall, `$` iron gate), never letters: StampPlan reads a letter as a landmark mark in older plans (the foundry uses R and F).
+Capital letters are landmark marks ONLY if the dungeon's `marks` names them, and `N`, `W`, `Z`, `D` and `S`... are taken by StampPlan (`N` = deep water: the bunker's Generator Room mark was silently a deep-water tile until 2026-11-11). Every lowercase letter is a prop. New prop tiles: `?` wreck, `>` armchair, `[` engine block, `]` tank. New lock tiles use SYMBOLS (`@` rockfall, `$` iron gate), never letters: StampPlan reads a letter as a landmark mark in older plans (the foundry uses R and F).
 
 ## Direction: free (Yan, 2026-11-10)
 Yan first suggested top to bottom instead of left to right, then took it back: "not all need to be top to bottom, forget that". So there is NO rule on direction; each dungeon runs the way its theme wants. The one lesson kept: a lock (gate, slab, door) is drawn from the FRONT, so put it across a north-south leg of the tunnel (a gate across an east-west tunnel is seen edge-on and looks wrong). The Pumping Basement and the Secret Cave stay as built.

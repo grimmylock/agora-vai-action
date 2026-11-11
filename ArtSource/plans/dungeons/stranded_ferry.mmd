@@ -1,4 +1,4 @@
-%% Stranded Ferry (T3, dried lake). Theme: a beached ship with bulkheads. Locks: BADGE (purser's cabin: bulkhead card readers), POWER (the engine room generator; fuse in the spares locker) for the bridge. Loop: a rusted-through hull plate car deck<->engine room.
+%% Stranded Ferry (T3, dried lake). Theme: a beached ship with bulkheads. Locks: BADGE (purser's cabin: bulkhead card readers), POWER (the engine room generator; fuse in the spares locker) for the bridge. Loop: a rusted-through deck plate car deck<->cabin row (2026-11-11: it was car deck<->engine room, which walked round the badge door).
 %% start: Cd
 %% goal: Br
 flowchart TD
@@ -8,4 +8,4 @@ flowchart TD
   Er --> Sg["Spares Locker {item:fuse}"]
   Er -->|req:fuse| Gs["Generator {item:power}"]
   Pl -->|req:power| Br["Captain's Bridge {goal}"]
-  Cd -->|hole| Er
+  Cd -->|hole| Cb

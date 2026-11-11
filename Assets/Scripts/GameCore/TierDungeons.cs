@@ -97,7 +97,7 @@ namespace GameCore
         public static MapLayout FloodedBunker()
         {
             var marks = new Dictionary<char, (string, string)> { ['E'] = ("Blast Door", "marshes"), ['B'] = ("Barracks", null), ['A'] = ("Armory", null), ['C'] = ("Command Room", null),
-                ['N'] = ("Generator Room", null), ['H'] = ("Hatch Ladder", null) };
+                ['Q'] = ("Generator Room", null), ['H'] = ("Hatch Ladder", null) };   // not 'N': StampPlan reads N as deep water
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("flooded_bunker")) { ['K'] = "Armory", ['L'] = "Command Safe", ['J'] = "Mess Cache" };
             return FloorPlan("flooded_bunker", LabPlans["flooded_bunker"], "concrete", Concrete, marks, stashes);
         }
@@ -141,45 +141,15 @@ namespace GameCore
 
         // The Stranded Ferry: the lake ferry beached when the water went - the car deck with its wrecks, the passenger
         // lounge, a row of cabins, the engine room with water in the bilge, and the captain's bridge.
+/// <summary>2026-11-11: the lock-and-key redo (ArtSource/plans/dungeon_plans.py stranded_ferry, graph dungeons/stranded_ferry.mmd): 'E' the car deck's ramp, '3' the purser's locker (badge),
+        /// '1' the engine room's badge door, '4' the spares locker's fuse, '5' the generator switch (power), '2' the dead bridge door, 'G' the bridge (goal), 'P' the lounge, 'R' the engine room, 'J' 'K' 'L' stashes.</summary>
         public static MapLayout StrandedFerry()
         {
-            var c = new TerrainCanvas(46, 30, TerrainCanvas.Seed("stranded_ferry"));
-            for (int y = 0; y < 30; y++) for (int x = 0; x < 46; x++) c.Put(x, y, Solid, "hull");
-            // the car deck: the door from the lakebed opens onto it
-            Room(c, 4, 4, 36, 10, Concrete);
-            c.Landmark("Car Deck", 36, 8).Exit("dried_lake", 38, 8);
-            for (int x = 7; x < 34; x += 6) { c.Put(x, 6, HardCover, "wreck"); c.Put(x + 2, 11, HardCover, "wreck"); }
-            c.Put(20, 8, ScatterCover, "crate").Put(28, 9, ScatterCover, "tires");
-            // the cabins: a corridor with rooms off it
-            Room(c, 4, 16, 36, 2, Floor);
-            Passage(c, 6, 14, 6, 16, 2, Floor);
-            for (int x = 4; x < 38; x += 6)
-            {
-                Room(c, x, 19, 5, 4, Floor);
-                c.Put(x + 2, 18, Door);
-                if (x % 12 == 4) c.Put(x + 1, 21, ScatterCover, "crate"); else c.Put(x + 3, 20, ScatterCover, "lockers");
-            }
-            c.Stash("Cabin Locker", 35, 21);
-            // the passenger lounge aft
-            Room(c, 41, 4, 3, 22, Floor);
-            Passage(c, 39, 9, 41, 9, 2, Concrete); Passage(c, 39, 16, 41, 16, 2, Floor);
-            c.Put(42, 12, ScatterCover, "armchair").Put(42, 20, ScatterCover, "armchair").Put(42, 24, ScatterCover, "desk");
-            c.Landmark("Passenger Lounge", 42, 15);
-            // the engine room forward, flooded bilge
-            Room(c, 1, 24, 22, 4, Concrete);
-            Passage(c, 2, 18, 2, 24, 2, Floor);
-            c.Put(5, 25, HardCover, "machine").Put(9, 25, HardCover, "machine").Put(13, 25, HardCover, "machine");
-            Flood(c, 1, 27, 22, 1);
-            c.Landmark("Engine Room", 10, 26);
-            // the captain's bridge up front
-            Room(c, 25, 24, 15, 4, Floor);
-            Passage(c, 23, 25, 25, 25, 2, Floor);
-            c.Put(27, 25, ScatterCover, "desk").Put(31, 25, ScatterCover, "desk").Put(37, 26, HardCover, "lockers");
-            c.Stash("Captain's Safe", 38, 26);
-            c.Landmark("Captain's Bridge", 32, 26);
-            return Finish(c, "hull");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Car Deck", "dried_lake"), ['P'] = ("Passenger Lounge", null), ['R'] = ("Engine Room", null), ['G'] = ("Captain's Bridge", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("stranded_ferry")) { ['J'] = "Cabin Locker", ['K'] = "Captain's Safe", ['L'] = "Engine Room Cache" };
+            return FloorPlan("stranded_ferry", LabPlans["stranded_ferry"], "hull", Concrete, marks, stashes);
         }
-    
+
         // ------------------------------------------------------------------ Tier 4
 
         // The Camp Shelter: the summer camp's Cold War bomb shelter - the stair and blast door, decontamination, the

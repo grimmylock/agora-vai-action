@@ -364,7 +364,7 @@ def flooded_bunker():
     p.g[24][43] = '4'                                              # the fuse crate in the armory
     p.g[39][44] = '5'                                              # the generator switch
     p.g[41][7] = 'J'; p.g[30][31] = 'L'; p.g[27][44] = 'K'         # stashes: the mess, the command safe (the goal), the armory's loot
-    p.g[4][24] = 'E'; p.g[26][8] = 'B'; p.g[26][40] = 'A'; p.g[34][24] = 'C'; p.g[38][41] = 'N'; p.g[24][18] = 'H'
+    p.g[4][24] = 'E'; p.g[26][8] = 'B'; p.g[26][40] = 'A'; p.g[34][24] = 'C'; p.g[38][41] = 'Q'; p.g[24][18] = 'H'
     for _ in range(20):
         x, y = r.randrange(2, 46), r.randrange(2, 46)
         if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
@@ -390,6 +390,80 @@ def bunker_check(p):
     # the hatch ladder must not be a way round the power door: with no power the command level stays shut even with the ladder open
     ok(out, pos(g, 'C') not in {c for k, seen in st if 'power' not in k for c in seen}, "before the power is on, the command level is unreachable even by the hatch ladder")
     return out
+
+def scatter(p, n, lo=2):
+    r = p.r
+    for _ in range(n):
+        x, y = r.randrange(lo, p.w - lo), r.randrange(lo, p.h - lo)
+        if p.g[y][x] == '.': p.g[y][x] = r.choice("*~%\";'xtb")
+
+def props(p, items):
+    for (x, y, ch) in items:
+        if p.g[y][x] in '.,': p.g[y][x] = ch
+
+def stranded_ferry():
+    """The Stranded Ferry (T3, the dried lake). Graph dungeons/stranded_ferry.mmd: the car deck (wrecks) -> the passenger lounge (the hub: the engine room's card reader and the dead bridge door both lead off it)
+    -> the cabin row (the purser's cabin: his locker '3' = the badge) ; the badge door ('1' x2, on the stair down) -> the engine room (bilge water) -> the spares locker (the fuse '4') and the generator flat
+    (the switch '5' needs the fuse = power) ; the power door ('2' x2, on the companionway up) -> the captain's bridge (goal, the Captain's Safe). The loop: a rusted-through deck plate from the car deck's west
+    end down to the cabin corridor (both before any lock, so it is no way round one)."""
+    p = Plan(60, 40, 9811)
+    p.room(3, 3, 38, 10, ',')                                      # Cd: the car deck
+    p.room(45, 3, 11, 8)                                           # Br: the captain's bridge
+    p.room(24, 16, 16, 10); p.vline(30, 13, 15, 2)                 # Pl: the passenger lounge, down a stair from the car deck
+    p.hline(3, 23, 20, 2)                                          # Cb: the cabin corridor, west of the lounge
+    for x0 in (5, 10, 15):
+        p.room(x0, 15, 4, 4); p.g[19][x0 + 1] = 'D'                # cabins north of the corridor
+        p.room(x0, 23, 4, 4); p.g[22][x0 + 2] = 'D'                # and south
+    p.vline(3, 13, 19, 1); p.g[13][3] = 'r'; p.g[19][3] = 'r'      # the rusted-through deck plate: car deck <-> the corridor's west end (the loop)
+    p.room(14, 29, 30, 8); p.vline(30, 26, 28, 2)                  # Er: the engine room, down a stair from the lounge
+    for x in (30, 31): p.g[27][x] = '1'                            # the badge door on that stair
+    p.room(48, 29, 8, 7); p.hline(44, 47, 32, 2)                   # Sg: the spares locker, east of the engines
+    p.room(3, 30, 8, 6); p.hline(11, 13, 32, 2)                    # Gs: the generator flat, west of the engines
+    p.hline(40, 49, 20, 2); p.vline(48, 11, 19, 2)                 # the companionway from the lounge east and up to the bridge
+    for x in (48, 49): p.g[14][x] = '2'                            # the dead bridge door
+    for y in (35, 36):
+        for x in range(14, 44):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'                  # the bilge: black lake water along the engine room's low side
+    for x0 in (7, 13, 19, 25, 34): p.g[5][x0] = '?'; p.g[10][x0 + 2] = '?'      # the last cars, still chained down
+    for x0 in (18, 26, 36):                                        # the engines: 2 x 3 blocks
+        for dx in (0, 1):
+            for dy in (0, 1, 2): p.g[30 + dy][x0 + dx] = '['
+    props(p, ((10, 7, 'c'), (22, 8, 't'), (28, 6, 'b'), (16, 11, 'x'),
+              (26, 17, '>'), (28, 17, '>'), (34, 17, '>'), (36, 17, '>'), (26, 24, '>'), (28, 24, '>'), (36, 24, '>'), (37, 19, 'd'), (37, 20, 'd'), (25, 21, 'x'),
+              (8, 15, 'l'), (11, 16, 'c'), (18, 15, 'l'), (5, 26, 'l'), (13, 25, 'c'), (16, 26, 'l'), (8, 24, 'x'),
+              (46, 4, 'o'), (49, 4, 'o'), (52, 4, 'o'), (54, 8, 'd'), (46, 9, 'l'),
+              (15, 30, 'b'), (42, 30, 'b'), (23, 33, 'x'), (40, 33, 'c'), (49, 30, 'l'), (51, 30, 'l'), (54, 34, 'c'), (49, 34, 'c'), (4, 31, 'm'), (8, 31, 'm'), (9, 34, 'b')))
+    p.g[16][6] = '3'                                               # the purser's locker, in the cabin at the corridor's west end
+    p.g[31][53] = '4'                                              # the fuse, in the spares locker
+    p.g[33][5] = '5'                                               # the generator switch
+    p.g[25][11] = 'J'; p.g[7][54] = 'K'; p.g[34][33] = 'L'         # stashes: a cabin locker, the captain's safe (the goal), the engine room
+    p.g[8][38] = 'E'; p.g[21][32] = 'P'; p.g[33][30] = 'R'; p.g[6][50] = 'G'
+    scatter(p, 22)
+    return p
+
+BP_GIVES = {'3': ('badge', None), '4': ('fuse', None), '5': ('power', 'fuse')}
+BP_LOCKS = {'1': 'badge', '2': 'power'}
+def badge_power_check(p, loop=None, loop_name="the loop", goal='G', badge_rooms=('4', '5'), gives=BP_GIVES, locks=BP_LOCKS, first_need=('badge',)):
+    """The Alpha chain on a plan: the locker ('3') is reachable at the start, the fuse crate and the switch only with the badge (`first_need`), the goal only with the power; closing `loop` (tiles) keeps the goal reachable."""
+    st = flood_stages(p, gives, locks); g = p.g; out = []
+    L3, GOAL = pos(g, '3'), pos(g, goal); s0 = st[0][1]; last = st[-1][1]
+    ok(out, L3 in s0 and GOAL not in s0 and all(pos(g, c) not in s0 for c in badge_rooms), "at the start: the badge locker is reachable; the fuse, the switch and the goal are not")
+    ok(out, GOAL in last, f"with every key found the goal is reachable ({len(st)} stages, keys {sorted(st[-1][0])})")
+    firsts = {}
+    for keys, seen in st:
+        for c in list(badge_rooms) + [goal]:
+            if pos(g, c) in seen and c not in firsts: firsts[c] = sorted(keys)
+    ok(out, all(firsts.get(c) == list(first_need) for c in badge_rooms) and 'power' in (firsts.get(goal) or []), f"order: fuse and switch need {[firsts.get(c) for c in badge_rooms]}; the goal needs {firsts.get(goal)}")
+    if loop:
+        saved = {(x, y): g[y][x] for (x, y) in loop}
+        for (x, y) in loop: g[y][x] = '#'
+        st2 = flood_stages(p, gives, locks)
+        ok(out, L3 in st2[0][1] and GOAL in st2[-1][1], f"closing {loop_name}: the locker and the goal are still reachable (it is only a loop)")
+        for (x, y), ch in saved.items(): g[y][x] = ch
+    ok(out, all(GOAL not in seen for keys, seen in st if 'power' not in keys), "without the power the goal is unreachable by any route")
+    return out
+
+def ferry_check(p): return badge_power_check(p, loop=[(3, y) for y in range(13, 20)], loop_name="the rusted deck plate")
 
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
@@ -439,8 +513,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

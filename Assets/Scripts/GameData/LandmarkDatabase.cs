@@ -358,7 +358,7 @@ namespace GameData
             },
             ["stranded_ferry"] = new List<LandmarkDef>
             {
-                L("Car Deck", "The ferry's car deck, the last cars still chained down."),
+                L("Car Deck", "The ferry's car deck, the last cars still chained down. A deck plate at the west end has rusted through."),
                 L("Passenger Lounge", "Rows of seats and a bar, dust on everything."),
                 L("Engine Room", "The ferry's engines in a bilge of black lake water."),
                 L("Captain's Bridge", "The bridge, its windows looking out over a lake that isn't there."),

@@ -5616,3 +5616,11 @@ Yan: "the trees do not fit at all, remove them, everything from wonki son". Remo
 
 ## External art pruned (2026-11-10)
 Yan: "remove 2, keep the rest as references, 5 is very useful". Removed Big Trees (64 px), the sandbag sprite and the military extras (barrels, sandbags, jeeps). Everything left in `ArtSource/external` is now `reference/` (forest crop and tileset, rough props, 8 px wasteland, the CC-BY furniture views); `to-use/` and `to-be-altered/` are empty. SOURCES.md updated.
+
+## Dungeon redo: the Stranded Ferry (2026-11-11)
+Yan: "continue with the dungeon redo, do them until you hit the usage limit, when you're done with one go to the next in order, i'll review everything later".
+- **Stranded Ferry** (T3): plan `stranded_ferry()` in `dungeon_plans.py` (60x40, hull walls): car deck -> passenger lounge (hub) -> cabin row (the purser's locker = badge); badge door on the stair down -> engine room -> spares locker (fuse) and generator flat (switch = power); dead door on the companionway -> the captain's bridge (goal, Captain's Safe). **Graph changed:** the loop was "hull plate car deck <-> engine room", which walked round the badge door; it is now a rusted deck plate car deck <-> cabin corridor (both before any lock). `graph_check.py` PASS.
+- New plan characters (StampPlan): `?` wreck, `>` armchair, `[` engine block, `]` tank. Keys `ferry_staff/_fuse/_power` (LabLocks).
+- **Bug fixed in the Flooded Bunker:** its Generator Room mark was plan letter `N`, which StampPlan reads as deep water: the landmark was missing and one tile of the generator room was deep water. Now `Q`.
+- Harness: new quick mode `dotnet /tmp/test.dll dungeons` (only the lock-and-key dungeons on the real built maps) and `Tools/compile_check/compile_only.sh`; shared `BadgePowerChecks`. Ran it: DUNGEON CHECKS PASSED (this also ran, for the first time, the checks of the seven dungeons built on 2026-11-10). The FULL harness was not run.
+- Tools: `Tools/render/dungeon_ba.sh`, `before_after.py`. Render: `maps/renders/dungeon/stranded_ferry_before_after.png`. Not checked: Unity.

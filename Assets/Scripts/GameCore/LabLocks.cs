@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -120,6 +120,18 @@ namespace GameCore
                 ['5'] = new Thing { Name = "Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
                                     Desc = "The generator's main switch. The fuse slot is empty and scorched.",
                                     Says = "[BUNKER] The generator coughs, catches. Somewhere above the flooded level a lot of locks let go at once." },
+            },
+            // The Stranded Ferry (Tier 3, the dried lake; dungeons/stranded_ferry.mmd): the Alpha locks. The purser's locker in the cabin row holds the crew badge (the engine room's card reader), the spares
+            // locker the fuse, the generator switch needs it; power wakes the dead door onto the captain's bridge.
+            ["stranded_ferry"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Purser's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 110, Desc = "A grey steel locker in the purser's cabin, a ticket punch still hanging off the handle.",
+                                    Says = "[FERRY] A crew badge in a cracked plastic sleeve. The card reader on the engine room stair should still take it." },
+                ['4'] = new Thing { Name = "Spares Locker Crate", Look = "stash_toolbox", Kind = "fuse", Desc = "A crate of engine spares, packed in grease that has gone hard.",
+                                    Says = "[FERRY] A marine fuse the size of a fist, AUX GEN on the tag." },
+                ['5'] = new Thing { Name = "Auxiliary Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The auxiliary generator's switchboard. One fuse clip hangs open.",
+                                    Says = "[FERRY] The generator turns over, the deck plates hum. Up top, the bridge door's lamp comes on." },
             },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)

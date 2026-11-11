@@ -66,6 +66,10 @@ namespace GameCore
                         case '^': c.Put(x, y, Difficult, "sealslab"); c.Paint(x, y, 1, 1, floor); continue;   // a sealed slab across a passage (LabLocks: the code opens it)
                         case 'Z': c.Put(x, y, Solid, wallLook); break;            // Boss 1: a cracked wall (E breaks it; a landmark marks it)
                         case 'h': c.Put(x, y, HardCover, "block"); break;
+                        case '?': c.Put(x, y, HardCover, "wreck"); break;       // 2026-11-11 (the dungeon redo): a wrecked car; symbols, not letters (every lowercase letter is taken, capitals are landmark marks)
+                        case '>': c.Put(x, y, ScatterCover, "armchair"); break;
+                        case '[': c.Put(x, y, HardCover, "engine"); break;       // a block of a big engine
+                        case ']': c.Put(x, y, HardCover, "tank"); break;         // a standing tank
                         case 'm': c.Put(x, y, HardCover, "machine"); break;
                         case 'l': c.Put(x, y, HardCover, "lockers"); break;
                         case 'd': c.Put(x, y, ScatterCover, "desk"); break;

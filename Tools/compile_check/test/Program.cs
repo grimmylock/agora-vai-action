@@ -22,6 +22,7 @@ static class Program {
     if (args.Length > 0 && args[0] == "rtprobe") { RtLoadoutProbe(args.Length > 1 ? int.Parse(args[1]) : 30); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
+    if (args.Contains("dungeons")) { DungeonRedoChecks(); Console.WriteLine(fails == 0 ? "DUNGEON CHECKS PASSED" : $"{fails} FAILURES"); return fails; }   // only the lock-and-key dungeons (quick: `dotnet /tmp/test.dll dungeons`)
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -60,7 +61,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); BunkerChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -1994,6 +1995,40 @@ static class Program {
     Check(Count(TileType.Door, "door_power") == 0 && Flood(start.X, start.Y).Contains((cmd.X, cmd.Y)), "Bunker: power on - the dead doors unlock and the flooded command level is reachable");
     keys.Clear(); Rt.On = false;
   }
+
+  // The badge -> fuse -> power dungeons of the 2026-11-11 redo, on the real built map: the locker at the start, the fuse and the switch behind the badge door, the goal behind the dead door.
+  static void BadgePowerChecks(string Z, string prefix, string startLm, string goalLm, string exitTo, int badgeTiles, int powerTiles) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == startLm); var goal = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == goalLm);
+    var locker = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == prefix + "_staff"); var crate = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == prefix + "_fuse"); var sw = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == prefix + "_power");
+    Check(start != null && goal != null && Count(TileType.Door, "door_badge") == badgeTiles && Count(TileType.Door, "door_power") == powerTiles && locker != null && crate != null && sw != null && sw.Requires == prefix + "_fuse" && TerrainMap.Exits.Count(e => e.TargetZoneId == exitTo) == 1,
+      $"{Z}: the badge door ({Count(TileType.Door, "door_badge")}/{badgeTiles} tiles), the dead door ({Count(TileType.Door, "door_power")}/{powerTiles}), the locker, the fuse, the switch (needs the fuse), one way out to {exitTo}");
+    if (start == null || goal == null || locker == null || crate == null || sw == null) { keys.Clear(); Rt.On = false; return; }
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, locker.X, locker.Y) && !In(s0, crate.X, crate.Y) && !In(s0, sw.X, sw.Y) && !s0.Contains((goal.X, goal.Y)), $"{Z}: at the start the badge locker; not the fuse, the switch or the goal");
+    keys.Add(prefix + "_staff"); LabLocks.Granted(prefix + "_staff");
+    var s1 = Flood(start.X, start.Y);
+    Check(In(s1, crate.X, crate.Y) && In(s1, sw.X, sw.Y) && !s1.Contains((goal.X, goal.Y)) && Stashes.Blocked(sw), $"{Z}: the badge opens the way to the fuse and the switch; the switch waits for its fuse, the goal for the power");
+    keys.Add(prefix + "_fuse"); LabLocks.Granted(prefix + "_fuse"); keys.Add(prefix + "_power"); LabLocks.Granted(prefix + "_power");
+    Check(Count(TileType.Door, "door_power") == 0 && Flood(start.X, start.Y).Contains((goal.X, goal.Y)), $"{Z}: power on - the dead door unlocks and the goal is reachable");
+    Check(WorldArtMissing(Z) == "", $"{Z}: every look on the map has art ({WorldArtMissing(Z)})");
+    keys.Clear(); Rt.On = false;
+  }
+  static void DungeonRedoChecks() {
+    PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); BunkerChecks();
+    BadgePowerChecks("stranded_ferry", "ferry", "Car Deck", "Captain's Bridge", "dried_lake", 2, 2);
+  }
+  static string WorldArtMissing(string zone) { if (!WorldArt.Ready) return ""; WorldArt.Begin(zone); return string.Join(", ", WorldArt.MissingArt()); }
 
   // Sub-Station Depths, redone with locks (2026-11-04), then the eel's three flooded levels under it (sub_station_depths.mmd): each map
   // flooded from its way in with each key set, on the real built map.
