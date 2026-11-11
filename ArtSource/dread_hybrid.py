@@ -76,6 +76,33 @@ def swung_body(i, stand=False):
                 if not a[y, x, 3] and src[y, 13, 3]: a[y, x] = src[y, 13]
     return Image.fromarray(a)
 
+def head_sway(img, sway):
+    """Nod the head: every pixel column from x=44 (the neck) to the nose moves up or down as a whole, by a shift growing from 0 at the neck to `sway` at x>=52 (whole pixels, no resampling)."""
+    if sway == 0: return img
+    a = np.array(img); src = a.copy(); h, w = a.shape[:2]
+    for x in range(44, w):
+        sh = int(round(sway * min(1.0, (x - 44) / 8.0)))
+        if sh == 0: continue
+        a[:, x] = 0
+        for y in range(h):
+            ny = y + sh
+            if 0 <= ny < h and src[y, x, 3]: a[ny, x] = src[y, x]
+    return Image.fromarray(a)
+
+# His fore FEET, cut from his standing sprite (rows 33..36): a flat foot with the toe pointing forward and the lit brown on top. Pasted over the end of each redrawn fore leg, pixel for pixel.
+FOOT_BOX = {"near_fore": (34, 44, 37), "far_fore": (44, 56, 48)}        # x from, x to (exclusive), the x of the shin's centre in his sprite
+def fore_foot(name, i, bob, stand=False):
+    (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0; fo, fl = (0.0, 0.0) if stand else foot(ph)
+    if stand: fo = {"far_fore": 3.0, "near_fore": 0.0}[name]
+    fx = int(round(hx + ox + fo + 2)); fy = int(round(GROUND - 2 - fl)); x0, x1, ax = FOOT_BOX[name]
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); a = np.array(im); src = np.array(NEW)
+    for py in range(33, 37):
+        for px in range(x0, x1):
+            if src[py, px, 3]:
+                nx, ny = fx + (px - ax), fy + (py - 36) + 2
+                if 0 <= nx < W and 0 <= ny < H: a[ny, nx] = src[py, px]
+    return Image.fromarray(a)
+
 def hind_layer(name, i, stand=False):
     piece, top = (NEAR_SHIN, 29) if name == "near_hind" else (FAR_SHIN, 31)
     dx, lift = hind_move(name, i, stand); canvas = np.zeros((NEW.size[1], NEW.size[0], 4), np.uint8)
@@ -137,7 +164,7 @@ def leg_img(name, i, bob, stand=False):
     L = _arcs(pts); total = L[-1]
     fx, fy = int(round(ft[0])), int(round(ft[1]))
     out = np.zeros((H, W, 4), np.uint8)
-    paw = {(fx + dx, fy + dy) for dx in range(-1, 4) for dy in (0, 1)} if not hind else set()      # his fore feet: a flat foot with a toe pointing forward (his stand sprite has it; the hind ends are his own pixels)
+    paw = set()                                                          # the feet are his own pixels now (FORE_FOOT, pasted over the leg end in frame())
     for y in range(H):
         for x in range(W):
             best = None
@@ -154,16 +181,16 @@ def leg_img(name, i, bob, stand=False):
     return Image.fromarray(out)
 
 def frame(i, only=None, stand=False):
-    bob = 0 if stand else (1 if math.sin(2 * math.pi * (i / N * 2) + 0.6) > 0.35 else 0); sway = 0 if stand else int(round(0.9 * math.sin(2 * math.pi * i / N + 2.0)))
+    bob = 0 if stand else (1 if math.sin(2 * math.pi * (i / N * 2) + 0.6) > 0.35 else 0); sway = 0 if stand else int(round(1.2 * math.sin(2 * math.pi * i / N + 2.0)))
     def leg(n):
         if n.endswith("hind"):
             im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); im.alpha_composite(hind_layer(n, i, stand), (ox, oy)); return im      # the hind feet stay on the ground when the body dips
-        return m.outline(leg_img(n, i, bob, stand))        # the generated fore legs get the black contour; his own pixels (body, hind pieces) already have theirs
+        im = m.outline(leg_img(n, i, bob, stand)); im.alpha_composite(fore_foot(n, i, bob, stand)); return im      # the generated fore legs get the black contour, then his own foot goes over their end
     if only: return leg(only)
     far = [n for n in LEGS if LEGS[n][2]]; near = [n for n in LEGS if not LEGS[n][2]]
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     for n in far: im.alpha_composite(leg(n))
-    im.alpha_composite(swung_body(i, stand), (ox, oy + bob)); im.alpha_composite(HEAD, (ox, oy + bob + sway))
+    im.alpha_composite(head_sway(swung_body(i, stand), sway), (ox, oy + bob))
     for n in near: im.alpha_composite(leg(n))
     a = np.array(im); l, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))
     for j in range(1, k + 1):
