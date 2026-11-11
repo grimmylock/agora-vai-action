@@ -367,7 +367,9 @@ namespace GameData
             {
                 L("Shelter Stair", "The stairs down from the camp, to a blast door that didn't quite close."),
                 L("Dormitory", "Bunks for a hundred children, stacked three high."),
-                L("Generator Room", "The shelter's diesel generators and air filters."),
+                L("Generator Room", "The shelter's diesel generators, a switch panel with one fuse missing."),
+                L("Mess", "Long tables, tin plates still set out. A vent grille hangs loose in the north wall."),
+                L("Filter Room", "The air filters: three drums as tall as a man, a hand crank for when the power fails."),
                 L("Shelter Command", "The command post at the back of the shelter, maps of the camp still pinned up."),
             },
             ["drydock_tunnels"] = new List<LandmarkDef>
@@ -384,6 +386,7 @@ namespace GameData
                 L("Cold Room", "Steel drawers along both walls, some of them open."),
                 L("Autopsy Theatre", "Two steel tables under dead lamps."),
                 L("Boiler Room", "The hospital's boilers and the service corridor round them."),
+                L("Records Room", "Shelves of patient files behind a door that needs power, and a safe nobody emptied."),
             },
             ["secret_lab_alpha"] = new List<LandmarkDef>
             {

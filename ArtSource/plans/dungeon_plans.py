@@ -465,6 +465,121 @@ def badge_power_check(p, loop=None, loop_name="the loop", goal='G', badge_rooms=
 
 def ferry_check(p): return badge_power_check(p, loop=[(3, y) for y in range(13, 20)], loop_name="the rusted deck plate")
 
+def camp_shelter():
+    """Camp Shelter (T4, under the summer camp). Graph dungeons/camp_shelter.mmd: the stair and the blast door -> the decontamination lock -> the central hall (the hub: the dead command door is straight ahead)
+    -> the dormitory west (the warden's locker '3' = the badge), the stores east (a dead end), the mess down the west passage ; the mess's badge door ('1' x2) -> the filter room (the fuse '4') -> the generator
+    room (the switch '5' needs the fuse = power) ; the power door ('2' x2) south of the hall -> the shelter command (goal, the Shelter Safe). The loop: a vent crawl between the dormitory and the mess."""
+    p = Plan(48, 54, 9821)
+    p.room(21, 2, 6, 4, ','); p.vline(23, 6, 7, 2)                 # St: the stair
+    p.room(18, 8, 12, 6); p.vline(23, 14, 16, 2)                   # Dc: the decontamination lock
+    for x in (23, 24): p.g[6][x] = '('; p.g[15][x] = '!'
+    p.hline(4, 43, 17, 3)                                          # the central hall
+    p.vline(8, 20, 22, 2); p.room(4, 23, 10, 8)                    # Dm: the dormitory
+    p.vline(15, 20, 38, 2); p.hline(14, 14, 37, 2); p.room(4, 34, 10, 8)   # Ms: the mess, down the west passage
+    p.vline(6, 31, 33, 1, 'r')                                     # the vent crawl dormitory <-> mess (the loop)
+    p.vline(8, 42, 45, 2); p.room(4, 46, 12, 6)                    # Fr: the filter room, behind the badge door
+    for x in (8, 9): p.g[43][x] = '1'
+    p.room(20, 45, 13, 7); p.hline(16, 19, 48, 2)                  # Gr: the generator room
+    p.vline(23, 20, 27, 2); p.room(19, 28, 14, 12)                 # Cp: the shelter command, behind the power door
+    for x in (23, 24): p.g[23][x] = '2'
+    p.vline(39, 20, 22, 2); p.room(35, 23, 10, 9)                  # the stores (a dead end)
+    props(p, ((19, 9, 'l'), (28, 9, 'l'), (19, 12, 'c'),
+              (4, 23, 'l'), (6, 23, 'l'), (11, 23, 'l'), (13, 23, 'l'), (4, 26, 'c'), (13, 26, 'c'), (11, 29, 'c'), (13, 29, 'l'),
+              (6, 36, 'd'), (9, 36, 'd'), (12, 36, 'd'), (6, 39, 'd'), (9, 39, 'd'), (12, 40, 'b'), (4, 35, 't'),
+              (5, 47, ']'), (8, 47, ']'), (11, 47, ']'), (5, 50, 'p'), (6, 50, 'p'), (7, 50, 'p'), (14, 47, 'c'),
+              (22, 46, 'm'), (26, 46, 'm'), (22, 50, 'm'), (31, 50, 'b'), (28, 50, 'x'),
+              (20, 29, 'o'), (23, 29, 'o'), (28, 29, 'f'), (31, 29, 'f'), (22, 34, 'd'), (25, 34, 'd'), (28, 34, 'd'), (20, 38, 'l'), (25, 37, '>'),
+              (36, 24, 'c'), (38, 24, 'c'), (43, 24, 'l'), (36, 30, 'b'), (40, 27, 'c'), (41, 27, 'c'), (36, 27, 'x')))
+    p.g[29][5] = '3'                                               # the warden's locker in the dormitory
+    p.g[50][13] = '4'                                              # the fuse, with the filter spares
+    p.g[47][30] = '5'                                              # the generator switch
+    p.g[30][43] = 'J'; p.g[38][31] = 'K'; p.g[40][5] = 'L'         # stashes: the stores, the shelter safe (the goal), the mess
+    p.g[3][23] = 'E'; p.g[26][9] = 'B'; p.g[38][9] = 'M'; p.g[49][9] = 'F'; p.g[49][26] = 'Q'; p.g[33][26] = 'G'
+    scatter(p, 22)
+    return p
+def shelter_check(p): return badge_power_check(p, loop=[(6, y) for y in range(31, 34)], loop_name="the vent crawl")
+
+def hospital_morgue():
+    """Hospital Morgue (T6, under the Siege Ward hospital). Graph dungeons/hospital_morgue.mmd: the landing -> the long corridor (the dead records door is in sight beside the stair) -> the cold room and the
+    autopsy theatre (the drawer '3' = the badge) ; the theatre's badge door ('1' x2) -> the service corridor -> the boiler room (the boilerman's locker '4' = the fuse; the boiler switch '5' needs it = power) ;
+    the power door ('2' x2) -> the records room (goal, the Records Safe). The loop: a service hole between the cold room and the autopsy theatre."""
+    p = Plan(48, 46, 9831)
+    p.room(21, 2, 6, 5); p.vline(23, 7, 9, 2)                      # Ml: the morgue landing
+    p.hline(4, 43, 10, 3)                                          # the long corridor
+    p.room(34, 2, 10, 5); p.vline(38, 7, 9, 2)                     # Rs: the records room, behind the dead door
+    for x in (38, 39): p.g[8][x] = '2'
+    p.room(4, 16, 14, 12); p.vline(10, 13, 15, 2)                  # Cr: the cold room
+    p.room(22, 16, 14, 10); p.vline(28, 13, 15, 2)                 # At: the autopsy theatre
+    for x in (10, 11): p.g[14][x] = '!'
+    for x in (28, 29): p.g[14][x] = 'D'
+    p.hline(18, 21, 20, 1, 'r')                                    # the service hole cold room <-> theatre (the loop)
+    p.vline(28, 26, 29, 2); p.hline(6, 41, 30, 2)                  # the service corridor, behind the theatre's badge door
+    for x in (28, 29): p.g[27][x] = '1'
+    p.room(10, 35, 28, 8); p.vline(22, 32, 34, 2)                  # Bo: the boiler room
+    p.room(40, 16, 5, 8); p.vline(42, 13, 15, 1)                   # a linen store (a dead end)
+    for y in range(17, 27, 2): p.g[y][4] = 'l'; p.g[y][17] = 'l'   # the drawers along the cold room's walls
+    p.g[19][17] = '.'
+    props(p, ((8, 20, 'a'), (12, 23, 'a'), (9, 25, 'x'), (26, 20, 'a'), (31, 20, 'a'), (23, 17, 'f'), (25, 17, 'f'), (35, 24, 'c'), (23, 24, 'j'), (33, 17, 'j'),
+              (35, 3, 'f'), (37, 3, 'f'), (39, 3, 'f'), (36, 5, 'd'), (41, 5, 'd'), (22, 3, 'c'),
+              (14, 36, 'm'), (15, 36, 'm'), (20, 36, 'm'), (21, 36, 'm'), (28, 36, 'm'), (29, 36, 'm'), (26, 41, 'b'), (18, 41, 'x'), (32, 40, 'c'),
+              (11, 40, 'p'), (12, 40, 'p'), (13, 40, 'p'), (41, 17, 'c'), (44, 20, 'c'), (41, 22, 't'), (8, 30, 'c'), (36, 31, 't'), (16, 11, '>'), (33, 11, 't')))
+    p.g[17][34] = '3'                                              # the autopsy drawer with the pathologist's badge
+    p.g[41][36] = '4'                                              # the boilerman's locker: the fuse
+    p.g[36][11] = '5'                                              # the boiler switch
+    p.g[5][42] = 'K'; p.g[22][43] = 'L'                            # stashes: the records safe (the goal), the linen store
+    p.g[3][23] = 'E'; p.g[22][11] = 'C'; p.g[22][29] = 'A'; p.g[39][24] = 'B'; p.g[4][39] = 'G'
+    scatter(p, 20)
+    return p
+def morgue_check(p): return badge_power_check(p, loop=[(x, 20) for x in range(18, 22)], loop_name="the service hole")
+
+def drydock_tunnels():
+    """Dry Dock Tunnels (T5, under the dock's pump house). Graph dungeons/drydock_tunnels.mmd: the pump house stair -> the workmen's niche (the fuse '4') and the pump gallery (the hub: the pump panel '6',
+    which needs the fuse and gives the drain, and the flooded main culvert in sight) ; the culvert ('W', over your head until the pump runs) -> the sluice chamber (the wheel handle '3' = the sluice key) ;
+    the sluice gate ('$' x2) off the culvert's east side -> the fitters' store (goal). The shortcut: the service ladder from the sluice chamber back to the pump gallery, its hatch ('$') on the same handle."""
+    p = Plan(50, 46, 9841)
+    p.room(3, 3, 7, 5, ',')                                        # Ps: the pump house stair
+    p.room(14, 3, 6, 4); p.hline(10, 13, 5, 2)                     # Wk: the workmen's niche
+    p.vline(5, 8, 10, 2); p.room(3, 11, 20, 8)                     # Pg: the pump gallery
+    p.hline(23, 26, 14, 2)                                         # the way to the culvert's edge
+    p.room(27, 6, 5, 34, 'W')                                      # Mc: the main culvert, flooded to the roof
+    p.room(36, 3, 11, 10); p.hline(32, 35, 8, 2)                   # Sc: the sluice chamber
+    p.hline(32, 41, 22, 2); p.vline(40, 24, 27, 2); p.room(36, 28, 11, 10)   # Fs: the fitters' store, behind the sluice gate
+    for x in (40, 41): p.g[25][x] = '$'
+    p.hline(24, 35, 4, 1); p.vline(24, 4, 13, 1); p.g[9][24] = '$' # the service ladder: sluice chamber -> pump gallery (the shortcut; its hatch takes the same handle)
+    p.vline(7, 19, 23, 2); p.room(3, 24, 12, 8)                    # a side drain (a dead end)
+    for y in range(9, 13):
+        for x in range(37, 46):
+            if p.g[y][x] == '.': p.g[y][x] = 'w'                  # the sluice chamber's floor is awash
+    props(p, ((5, 13, 'm'), (9, 13, 'm'), (13, 13, 'm'), (17, 13, 'm'), (4, 17, 'p'), (5, 17, 'p'), (6, 17, 'p'), (10, 17, 'p'), (11, 17, 'p'), (21, 17, 'b'),
+              (15, 4, 'l'), (16, 6, 'c'), (4, 4, 'c'), (38, 4, 'm'), (44, 4, 'm'), (41, 10, 'k'),
+              (37, 29, 'l'), (39, 29, 'l'), (41, 29, 'l'), (45, 36, 'c'), (43, 36, 'c'), (37, 35, 'd'), (38, 33, 'x'), (44, 32, 'c'),
+              (5, 30, 'b'), (10, 26, 'c'), (12, 30, 'x'), (8, 28, '&')))
+    p.g[4][18] = '4'                                               # the fuse in the workmen's niche
+    p.g[12][20] = '6'                                              # the pump panel in the gallery
+    p.g[5][45] = '3'                                               # the wheel handle in the sluice chamber
+    p.g[29][45] = 'K'; p.g[30][4] = 'J'                            # stashes: the fitters' store (the goal), the side drain
+    p.g[4][6] = 'E'; p.g[15][12] = 'P'; p.g[14][26] = 'C'; p.g[7][41] = 'U'; p.g[32][41] = 'G'
+    scatter(p, 18)
+    return p
+DOCK_GIVES = {'4': ('fuse', None), '6': ('drain', 'fuse'), '3': ('gate', None)}
+DOCK_LOCKS = {'W': 'drain', '$': 'gate'}
+def drydock_check(p):
+    st = flood_stages(p, DOCK_GIVES, DOCK_LOCKS); g = p.g; out = []
+    F, P6, H, G = pos(g, '4'), pos(g, '6'), pos(g, '3'), pos(g, 'G'); s0 = st[0][1]
+    ok(out, F in s0 and P6 in s0 and H not in s0 and G not in s0, "at the start: the fuse and the pump panel are reachable; the wheel handle and the fitters' store are not")
+    ok(out, G in st[-1][1], f"with every key found the fitters' store is reachable ({len(st)} stages, keys {sorted(st[-1][0])})")
+    firsts = {}
+    for keys, seen in st:
+        for name, c in (('handle', H), ('store', G)):
+            if c in seen and name not in firsts: firsts[name] = sorted(keys)
+    ok(out, firsts.get('handle') == ['drain', 'fuse'] and firsts.get('store') == ['drain', 'fuse', 'gate'], f"order: the handle needs {firsts.get('handle')}, the store {firsts.get('store')}")
+    lad = [(24, y) for y in range(4, 14)]; saved = {(x, y): g[y][x] for (x, y) in lad}
+    for (x, y) in lad: g[y][x] = '#'
+    ok(out, G in flood_stages(p, DOCK_GIVES, DOCK_LOCKS)[-1][1], "closing the service ladder: the store is still reachable (it is only a shortcut)")
+    for (x, y), ch in saved.items(): g[y][x] = ch
+    ok(out, all(H not in seen for keys, seen in st if 'drain' not in keys), "before the pump runs the sluice chamber is unreachable (the ladder's hatch needs the handle from inside it)")
+    return out
+
 def flood_stages(p, gives, locks, start='E', blocked_extra=''):
     """Walk the plan from E picking up keys until nothing changes. gives: {plan char: (key, needs or None)}; locks: {plan char: key needed to pass that tile}.
     '#' and 'n' are walls. Returns [(keys held, tiles reachable), ...]."""
@@ -513,8 +628,8 @@ def pumping_check(p):
     for (x, y), ch in zip(hole, saved): g[y][x] = ch
     return out
 
-PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry}
-CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check}
+PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue}
+CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check}
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():

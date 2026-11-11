@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -133,6 +133,39 @@ namespace GameCore
                                     Desc = "The auxiliary generator's switchboard. One fuse clip hangs open.",
                                     Says = "[FERRY] The generator turns over, the deck plates hum. Up top, the bridge door's lamp comes on." },
             },
+            // Camp Shelter (Tier 4; dungeons/camp_shelter.mmd): the Alpha locks. Warden's locker (dormitory) = badge -> the filter room's door; the fuse there; the generator switch; power wakes the command door.
+            ["camp_shelter"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Warden's Locker", Look = "stash_footlocker", Kind = "staff", Ru = 140, Desc = "A tall locker at the end of the bunks, CAMP WARDEN on a brass plate.",
+                                    Says = "[SHELTER] A warden's pass card on a whistle cord. The reader by the filter room would know it." },
+                ['4'] = new Thing { Name = "Filter Spares Crate", Look = "stash_toolbox", Kind = "fuse", Desc = "A crate of filter spares: gaskets, a hand crank, something heavy wrapped in wax paper.",
+                                    Says = "[SHELTER] A big cartridge fuse, DIESEL SET A stamped on the cap." },
+                ['5'] = new Thing { Name = "Shelter Generator Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The generator's switch panel. A fuse is missing from the middle of the row.",
+                                    Says = "[SHELTER] The diesels catch one after the other. The lamps come up yellow, and the command door's lock drops." },
+            },
+            // Dry Dock Tunnels (Tier 5; dungeons/drydock_tunnels.mmd): fuse -> the pump panel (drains the main culvert) -> the sluice wheel's handle (the "gate" key: the sluice gate and the ladder hatch).
+            ["drydock_tunnels"] = new Dictionary<char, Thing>
+            {
+                ['4'] = new Thing { Name = "Workmen's Toolbox", Look = "stash_toolbox", Kind = "fuse", Ru = 90, Desc = "A dockers' toolbox left in the niche, a thermos still on top of it.",
+                                    Says = "[DOCK] A pump fuse in an oilcloth, CULVERT 1 chalked on it." },
+                ['6'] = new Thing { Name = "Culvert Pump Controls", Look = "labswitch", Kind = "drain", Needs = "fuse",
+                                    Desc = "The main culvert's pump controls. The fuse carrier is pulled out and empty.",
+                                    Says = "[DOCK] The pump groans and takes hold. In the culvert the black water starts to drop, a hand's width at a time." },
+                ['3'] = new Thing { Name = "Sluice Wheel Handle", Look = "stash_toolbox", Kind = "gate", Desc = "A cast-iron crank handle hung on a hook beside the sluice gears.",
+                                    Says = "[DOCK] The sluice wheel's handle, heavy as a sledge. It fits the gate by the fitters' store, and the ladder hatch." },
+            },
+            // Hospital Morgue (Tier 6; dungeons/hospital_morgue.mmd): the Alpha locks. The autopsy drawer = badge -> the theatre's back door; the boilerman's locker = fuse; the boiler switch; power wakes the records door.
+            ["hospital_morgue"] = new Dictionary<char, Thing>
+            {
+                ['3'] = new Thing { Name = "Autopsy Drawer", Look = "stash_footlocker", Kind = "staff", Ru = 180, Desc = "An instrument drawer under the theatre's wall cabinet, jammed half open.",
+                                    Says = "[MORGUE] A pathologist's badge among the scalpels. The service door's reader would still read it." },
+                ['4'] = new Thing { Name = "Boilerman's Locker", Look = "stash_footlocker", Kind = "fuse", Ru = 60, Desc = "A locker by the boilers, a calendar from a year nobody finished taped inside the door.",
+                                    Says = "[MORGUE] A ceramic fuse wrapped in a rag, BOILER FEED written on the rag." },
+                ['5'] = new Thing { Name = "Boiler Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
+                                    Desc = "The boiler house switchboard. One fuse carrier is empty.",
+                                    Says = "[MORGUE] The board hums. Overhead the corridor lamps flicker on, and by the stair a dead door wakes." },
+            },
             // the flooded levels under it (Yan, 2026-11-04): each level's pump drops its water and opens the stairs further down.
             // the last pump is gated by the eel (Stashes.Blocked: Story flag eel_fled)
             [Depths1] = new Dictionary<char, Thing> { ['6'] = new Thing { Name = "Cistern Pump", Look = "labswitch", Kind = "drain1", Needs = "power",
@@ -167,6 +200,12 @@ namespace GameCore
             return k != null && !Has(k);
         }
 
+/// <summary>A dungeon's own line for a lock's look ("zone:look"), where the default line (an iron gate's guard post...) does not fit the place.</summary>
+        static readonly Dictionary<string, string> Nags = new Dictionary<string, string>
+        {
+            ["drydock_tunnels:irongate"] = "A sluice gate, wound shut. The wheel's handle is gone from its square; whoever worked the sluices will have hung it up in their chamber.",
+        };
+
         static float _nagAt = -99f;
         /// <summary>Bumping into a lock says what it wants (not more than every 2 seconds). True if (x, y) was one.</summary>
         public static bool Nag(int x, int y)
@@ -176,7 +215,7 @@ namespace GameCore
             if (Time.time - _nagAt > 2f)
             {
                 _nagAt = Time.time;
-                GameLog.Write(t.Look == "sealslab" ? "A great stone slab seals the way, a carved dial in its face. Somewhere in the crypt the numbers must be written down."
+                GameLog.Write(Nags.TryGetValue(Zone + ":" + t.Look, out var own) ? own : t.Look == "sealslab" ? "A great stone slab seals the way, a carved dial in its face. Somewhere in the crypt the numbers must be written down."
                             : t.Look == "irongate" ? "An iron gate across the tunnel, padlocked. Whoever kept the guard post will have had the key."
                             : t.Look == "rockfall" ? "A slab of fallen rock fills the tunnel, too heavy to shift by hand. Something to lever it with, maybe."
                             : t.Look == "door_badge" ? "The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED."

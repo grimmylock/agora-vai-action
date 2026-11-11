@@ -36,7 +36,7 @@ Existing in code: **badge** (blue card-reader door, plan '1'), **power** (dead h
 | deep_caverns | - | natural caves | rockfall (pry) + dam lever (drain) | crawl, chimney |
 Not dungeons, so no locks planned: farmhouse_upper, school_upper, flats_2, flats_3 (a building's upper floors; optional locked rooms could come later).
 
-## Status: pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit flooded_bunker (2026-11-10) and stranded_ferry (2026-11-11) BUILT. Next: camp_shelter. Quick check of all of them on the real maps: `bash Tools/compile_check/compile_only.sh && (cd Tools/compile_check && dotnet /tmp/test.dll dungeons)`. Scare corners (DungeonLairs.cs) for the later dungeons: Yan will say where, after the base layouts.
+## Status: pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit flooded_bunker (2026-11-10) stranded_ferry, camp_shelter, drydock_tunnels and hospital_morgue (2026-11-11) BUILT. Next: the plan-based ones (maintenance_tunnels first). Quick check of all of them on the real maps: `bash Tools/compile_check/compile_only.sh && (cd Tools/compile_check && dotnet /tmp/test.dll dungeons)`. Scare corners (DungeonLairs.cs) for the later dungeons: Yan will say where, after the base layouts.
 
 ## Order proposed (small and self-contained first, boss labs last)
 pumping_basement, secret_cave, smugglers_tunnel, chapel_crypt, valley_mine, crusher_pit, flooded_bunker (story: check Tier1Story), stranded_ferry, camp_shelter, drydock_tunnels, hospital_morgue, then the plan-based ones (maintenance_tunnels, underground_bunker, underground_labyrinth, deep_caverns, siege_catacombs, lattice_foundry_lower), the story labs last (Beta with Boss 1, Gamma with the Sealed Vault).

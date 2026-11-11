@@ -154,125 +154,42 @@ namespace GameCore
 
         // The Camp Shelter: the summer camp's Cold War bomb shelter - the stair and blast door, decontamination, the
         // dormitory, the mess, the generator and filter rooms, and the shelter command post at the back.
+/// <summary>2026-11-11: the lock-and-key redo (dungeon_plans.py camp_shelter, graph dungeons/camp_shelter.mmd): 'E' the stair, '(' the blast door, '3' the warden's locker (badge), '1' the filter room's
+        /// badge door, '4' the fuse, '5' the generator switch (power), '2' the dead command door, 'G' the shelter command (goal), 'B' dormitory, 'M' mess, 'F' filter room, 'Q' generator room, 'J' 'K' 'L' stashes.</summary>
         public static MapLayout CampShelter()
         {
-            var c = new TerrainCanvas(42, 40, TerrainCanvas.Seed("camp_shelter"));
-            for (int y = 0; y < 40; y++) for (int x = 0; x < 42; x++) c.Put(x, y, Solid, "concrete");
-            Room(c, 18, 2, 6, 4, Concrete);
-            c.Landmark("Shelter Stair", 20, 3).Exit("crimson_woods", 20, 3);
-            Room(c, 18, 7, 6, 4, LabTile);
-            c.Put(20, 6, Door, "metal").Put(21, 11, Door, "metal");
-            c.Put(18, 8, HardCover, "lockers").Put(23, 8, HardCover, "lockers");
-            // the central hall
-            Room(c, 6, 12, 30, 4, Concrete);
-            // the dormitory west
-            Room(c, 3, 17, 14, 12, Floor);
-            c.Put(9, 16, Door);
-            for (int y = 18; y < 28; y += 3) { c.Put(4, y, ScatterCover, "crate"); c.Put(15, y, HardCover, "lockers"); }
-            c.Landmark("Dormitory", 9, 22);
-            // the mess east
-            Room(c, 24, 17, 14, 8, Floor);
-            c.Put(30, 16, Door);
-            for (int x = 26; x < 36; x += 3) c.Put(x, 20, ScatterCover, "desk");
-            c.Put(36, 23, ScatterCover, "crate");
-            // the generator and the air filters
-            Room(c, 18, 17, 5, 12, Concrete);
-            Passage(c, 20, 16, 20, 17, 2, Concrete);
-            c.Put(19, 19, HardCover, "machine").Put(19, 23, HardCover, "machine").Put(21, 27, HardCover, "machine");
-            c.Landmark("Generator Room", 20, 21);
-            Room(c, 24, 26, 14, 4, Concrete);
-            Passage(c, 30, 25, 30, 26, 2, Concrete);
-            for (int x = 25; x < 37; x += 3) c.Deco(x, 27, "pipe");
-            // the shelter command post
-            Room(c, 8, 31, 26, 6, Floor);
-            Passage(c, 10, 29, 10, 31, 2, Floor); Passage(c, 31, 30, 31, 31, 2, Concrete);
-            c.Put(12, 32, ScatterCover, "desk").Put(16, 32, ScatterCover, "desk").Put(22, 32, HardCover, "machine").Put(31, 35, HardCover, "lockers");
-            c.Stash("Shelter Safe", 32, 35);
-            c.Landmark("Shelter Command", 20, 34);
-            return Finish(c, "concrete");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Shelter Stair", "crimson_woods"), ['B'] = ("Dormitory", null), ['M'] = ("Mess", null), ['F'] = ("Filter Room", null),
+                ['Q'] = ("Generator Room", null), ['G'] = ("Shelter Command", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("camp_shelter")) { ['J'] = "Shelter Stores", ['K'] = "Shelter Safe", ['L'] = "Mess Cache" };
+            return FloorPlan("camp_shelter", LabPlans["camp_shelter"], "concrete", Concrete, marks, stashes);
         }
     
         // ------------------------------------------------------------------ Tier 5
 
         // The Dry Dock Tunnels: under the dock's pump house, the culverts that drained the dock - a pump gallery, the
         // flooded main culvert, the sluice chamber, and the old ship-fitters' store.
+/// <summary>2026-11-11: the lock-and-key redo (dungeon_plans.py drydock_tunnels, graph dungeons/drydock_tunnels.mmd): 'E' the stair, '4' the fuse (the workmen's niche), '6' the pump panel (needs the
+        /// fuse, drains the culvert 'W'), '3' the sluice wheel's handle, '$' the sluice gate and the service ladder's hatch, 'G' the fitters' store (goal), 'P' 'C' 'U' landmarks, 'J' 'K' stashes.</summary>
         public static MapLayout DrydockTunnels()
         {
-            var c = new TerrainCanvas(44, 40, TerrainCanvas.Seed("drydock_tunnels"));
-            for (int y = 0; y < 40; y++) for (int x = 0; x < 44; x++) c.Put(x, y, Solid, "concrete");
-            Room(c, 3, 3, 6, 5, Concrete);
-            c.Landmark("Pump House Stair", 5, 4).Exit("ship_graveyard", 5, 4);
-            // the pump gallery
-            Room(c, 3, 10, 18, 7, Concrete);
-            Passage(c, 5, 8, 5, 10, 3, Concrete);
-            for (int x = 5; x < 20; x += 4) c.Put(x, 12, HardCover, "machine");
-            for (int x = 4; x < 20; x++) if (x % 4 != 0) c.Deco(x, 15, x % 4 == 1 ? "pipepost" : "pipe");
-            c.Landmark("Pump Gallery", 12, 13);
-            // the main culvert east, flooded
-            Room(c, 22, 6, 4, 30, Concrete);
-            Passage(c, 20, 13, 22, 13, 2, Concrete);
-            Flood(c, 22, 10, 4, 24);
-            c.Landmark("Main Culvert", 24, 22);
-            // the sluice chamber
-            Room(c, 28, 3, 13, 10, Concrete);
-            Passage(c, 26, 7, 28, 7, 2, Concrete);
-            c.Put(30, 5, HardCover, "machine").Put(38, 5, HardCover, "machine").Put(34, 10, Solid, "pillar");
-            Flood(c, 29, 8, 11, 4);
-            c.Landmark("Sluice Chamber", 34, 6);
-            // the fitters' store at the far end
-            Room(c, 28, 26, 13, 10, Floor);
-            Passage(c, 26, 30, 28, 30, 2, Concrete);
-            c.Put(29, 27, HardCover, "lockers").Put(31, 27, HardCover, "lockers").Put(39, 34, ScatterCover, "crate").Put(36, 34, ScatterCover, "crate").Put(30, 33, ScatterCover, "desk");
-            c.Stash("Fitters' Store", 39, 27);
-            c.Landmark("Fitters' Store", 34, 31);
-            // a side drain back west
-            Room(c, 3, 20, 16, 4, Concrete);
-            Passage(c, 18, 22, 22, 22, 1, Concrete);
-            Room(c, 3, 26, 10, 10, Concrete);
-            Passage(c, 6, 24, 6, 26, 2, Concrete);
-            c.Put(5, 33, ScatterCover, "rustbarrel").Put(10, 28, ScatterCover, "crate").Deco(8, 31, "bones");
-            return Finish(c, "concrete");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Pump House Stair", "ship_graveyard"), ['P'] = ("Pump Gallery", null), ['C'] = ("Main Culvert", null), ['U'] = ("Sluice Chamber", null),
+                ['G'] = ("Fitters' Store", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("drydock_tunnels")) { ['J'] = "Side Drain Cache", ['K'] = "Fitters' Store" };
+            return FloorPlan("drydock_tunnels", LabPlans["drydock_tunnels"], "concrete", Concrete, marks, stashes);
         }
     
         // ------------------------------------------------------------------ Tier 6
 
         // The Hospital Morgue: under the Siege Ward hospital - the cold room, the autopsy theatre, the records, and the
         // service corridor to the boiler room. The worst of Tier 6 waits in the cold.
+/// <summary>2026-11-11: the lock-and-key redo (dungeon_plans.py hospital_morgue, graph dungeons/hospital_morgue.mmd): 'E' the landing, '3' the autopsy drawer (badge), '1' the theatre's badge door,
+        /// '4' the boilerman's locker (fuse), '5' the boiler switch (power), '2' the dead records door, 'G' the records room (goal), 'C' cold room, 'A' theatre, 'B' boiler room, 'K' 'L' stashes.</summary>
         public static MapLayout HospitalMorgue()
         {
-            var c = new TerrainCanvas(44, 40, TerrainCanvas.Seed("hospital_morgue"));
-            for (int y = 0; y < 40; y++) for (int x = 0; x < 44; x++) c.Put(x, y, Solid, "plaster");
-            Room(c, 19, 2, 6, 4, LabTile);
-            c.Landmark("Morgue Landing", 21, 3).Exit("hospital", 21, 3);
-            // the long corridor
-            Room(c, 4, 7, 36, 3, LabTile);
-            Passage(c, 21, 6, 21, 7, 3, LabTile);
-            // the cold room: drawers along the walls
-            Room(c, 4, 11, 14, 12, LabTile);
-            c.Put(10, 10, Door);
-            for (int y = 12; y < 22; y += 2) { c.Put(4, y, HardCover, "lockers"); c.Put(17, y, HardCover, "lockers"); }
-            c.Deco(10, 16, "bones");
-            c.Landmark("Cold Room", 10, 17);
-            // the autopsy theatre
-            Room(c, 22, 11, 14, 10, LabTile);
-            c.Put(28, 10, Door);
-            c.Put(26, 15, HardCover, "block").Put(31, 15, HardCover, "block").Put(23, 12, ScatterCover, "desk").Put(34, 19, ScatterCover, "crate");
-            c.Landmark("Autopsy Theatre", 29, 17);
-            // the records room
-            Room(c, 37, 11, 4, 14, Floor);
-            Passage(c, 38, 9, 38, 11, 2, LabTile);
-            c.Put(39, 13, ScatterCover, "desk").Put(39, 17, HardCover, "lockers").Put(39, 21, ScatterCover, "crate");
-            c.Stash("Records Safe", 39, 23);
-            // the service corridor and the boiler room
-            Room(c, 4, 25, 36, 3, Concrete);
-            Passage(c, 6, 22, 6, 25, 2, LabTile); Passage(c, 30, 21, 30, 25, 2, LabTile);
-            Room(c, 8, 29, 28, 8, Concrete);
-            Passage(c, 20, 28, 20, 29, 3, Concrete);
-            c.Put(12, 31, HardCover, "machine").Put(18, 31, HardCover, "machine").Put(30, 31, HardCover, "machine").Put(24, 35, ScatterCover, "rustbarrel");
-            for (int x = 9; x < 35; x++) if (x % 4 != 0) c.Deco(x, 30, x % 4 == 1 ? "pipepost" : "pipe");
-            c.Landmark("Boiler Room", 22, 33);
-            c.Stash("Boilerman's Locker", 34, 35);
-            return Finish(c, "plaster");
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Morgue Landing", "hospital"), ['C'] = ("Cold Room", null), ['A'] = ("Autopsy Theatre", null), ['B'] = ("Boiler Room", null),
+                ['G'] = ("Records Room", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("hospital_morgue")) { ['K'] = "Records Safe", ['L'] = "Linen Store" };
+            return FloorPlan("hospital_morgue", LabPlans["hospital_morgue"], "plaster", LabTile, marks, stashes);
         }
     }
 }

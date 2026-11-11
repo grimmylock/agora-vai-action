@@ -2027,6 +2027,36 @@ static class Program {
   static void DungeonRedoChecks() {
     PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); BunkerChecks();
     BadgePowerChecks("stranded_ferry", "ferry", "Car Deck", "Captain's Bridge", "dried_lake", 2, 2);
+    BadgePowerChecks("camp_shelter", "shelter", "Shelter Stair", "Shelter Command", "crimson_woods", 2, 2);
+    BadgePowerChecks("hospital_morgue", "morgue", "Morgue Landing", "Records Room", "hospital", 2, 2);
+    DrydockChecks();
+  }
+  // Dry Dock Tunnels (2026-11-11, dungeons/drydock_tunnels.mmd): fuse -> pump (drain) -> the sluice handle (gate), on the real built map.
+  static void DrydockChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset();
+    var keys = MacroState.Current.Keys; keys.Clear();
+    const string Z = "drydock_tunnels";
+    MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) {
+      var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy));
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } }
+      return seen;
+    }
+    bool In(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    var start = TerrainMap.Landmarks.First(l => l.Name == "Pump House Stair"); var store = TerrainMap.Landmarks.First(l => l.Name == "Fitters' Store");
+    var fuse = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "dock_fuse"); var pump = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "dock_drain"); var handle = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "dock_gate");
+    Check(fuse != null && pump != null && handle != null && pump.Requires == "dock_fuse" && Count(TileType.Difficult, "irongate") == 3 && Count(TileType.Difficult, "deepwater") > 100 && TerrainMap.Exits.Count(e => e.TargetZoneId == "ship_graveyard") == 1,
+      $"Drydock: the fuse, the pump controls (need the fuse), the sluice handle, the sluice gate + the ladder hatch ({Count(TileType.Difficult, "irongate")} tiles), the flooded culvert ({Count(TileType.Difficult, "deepwater")} tiles)");
+    var s0 = Flood(start.X, start.Y);
+    Check(In(s0, fuse.X, fuse.Y) && In(s0, pump.X, pump.Y) && !In(s0, handle.X, handle.Y) && !s0.Contains((store.X, store.Y)), "Drydock: at the start the fuse and the pump controls; not the sluice chamber or the store");
+    keys.Add("dock_fuse"); LabLocks.Granted("dock_fuse"); keys.Add("dock_drain"); LabLocks.Granted("dock_drain");
+    var s1 = Flood(start.X, start.Y);
+    Check(Count(TileType.Difficult, "deepwater") == 0 && In(s1, handle.X, handle.Y) && !s1.Contains((store.X, store.Y)), "Drydock: the pump drains the culvert - the sluice chamber opens, the store's gate does not");
+    keys.Add("dock_gate"); LabLocks.Granted("dock_gate");
+    Check(Count(TileType.Difficult, "irongate") == 0 && Flood(start.X, start.Y).Contains((store.X, store.Y)), "Drydock: the handle winds the sluice gate (and the ladder hatch) open - the fitters' store is reachable");
+    keys.Clear(); Rt.On = false;
   }
   static string WorldArtMissing(string zone) { if (!WorldArt.Ready) return ""; WorldArt.Begin(zone); return string.Join(", ", WorldArt.MissingArt()); }
 

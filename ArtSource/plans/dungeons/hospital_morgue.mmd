@@ -1,4 +1,4 @@
-%% Hospital Morgue (T6, under the Siege Ward). Theme: hospital basement. Locks: BADGE (autopsy drawer), POWER (boiler switch; fuse in the boiler room). Goal: the records safe behind the dead door. Loop: a service hole cold room<->boiler room.
+%% Hospital Morgue (T6, under the Siege Ward). Theme: hospital basement. Locks: BADGE (autopsy drawer), POWER (boiler switch; fuse in the boiler room). Goal: the records safe behind the dead door. Loop: a service hole cold room<->autopsy theatre (2026-11-11: it was cold room<->boiler room, which walked round the badge door).
 %% start: Ml
 %% goal: Rs
 flowchart TD
@@ -8,4 +8,4 @@ flowchart TD
   Sv --> Bo["Boiler Room {item:fuse}: the boilerman's locker"]
   Bo -->|req:fuse| Sw["Boiler switch {item:power}"]
   Ml -->|req:power| Rs["Records Safe {goal}"]
-  Cr -->|hole| Bo
+  Cr -->|hole| At
