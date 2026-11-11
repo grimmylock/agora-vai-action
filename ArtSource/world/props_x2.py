@@ -701,7 +701,7 @@ NEIGH = {"barrel": barrel, "rustbarrel": rustbarrel, "crate": crate, "console": 
 for _n, _f in (("chest", chest), ("duffel", duffel), ("footlocker", footlocker), ("toolbox", toolbox), ("safe", safe), ("pda", pda)):
     NEIGH["stash_" + _n] = (lambda f: lambda s: f(s, False))(_f); NEIGH["stash_" + _n + "_open"] = (lambda f: lambda s: f(s, True))(_f)
 NEIGH_VARIANTS = {"barrel": 1, "rustbarrel": 2, "crate": 2, "console": 2, "console_fn": 2, "labtable": 2, "labbench": 2, "jars": 2, "labswitch": 1, "dumpster": 3, "stash_duffel": 2, "stash_duffel_open": 2}
-INSTALL_NEIGH = False        # the sheet first (Yan sees it before it goes into the atlas)
+INSTALL_NEIGH = True         # installed 2026-11-11 (Yan: "install them")
 
 ALL = {**FURNITURE, **REST, **(NEIGH if INSTALL_NEIGH else {})}; ALL_VARIANTS = {**FURN_VARIANTS, **REST_VARIANTS, **(NEIGH_VARIANTS if INSTALL_NEIGH else {})}
 EVERY = {**FURNITURE, **REST, **NEIGH}
