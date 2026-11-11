@@ -1164,3 +1164,9 @@ VARIANTS = {"tree": 10, "pine": 8, "deadtree": 6, "redtree": 6, "bush": 4, "redb
 OLD_PROPS = dict(PROPS)
 import props_v2 as _v2          # (circular: if props_v2 was imported first it applies itself at its own end)
 if hasattr(_v2, "NEW"): PROPS.update(_v2.NEW); VARIANTS.update(_v2.V2_VARIANTS)
+# 2026-11-11: the double-density (x2) redraws go in LAST, over both of the above (props_x2.py; props_v2's own end applies them too, for when it is imported first).
+try:
+    import props_x2 as _x2
+    PROPS.update(_x2.ALL); VARIANTS.update(_x2.ALL_VARIANTS)
+except ImportError:
+    pass
