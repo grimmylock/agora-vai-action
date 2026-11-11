@@ -21,19 +21,20 @@ rig = _R(); rig.W0, rig.H0 = NEW.size
 W, H = rig.W0 + 2 * ox, rig.H0 + 2 * oy
 GROUND = oy + 36                        # his feet end on row 36
 CUT = 25                                # everything below this row is leg (redrawn); the belly outline sits on row 24
-LEGS = {"far_hind": ((15, 22), 0.50, True, False), "near_hind": ((10, 23), 0.00, False, False), "far_fore": ((47, 21), 0.00, True, True), "near_fore": ((37, 22), 0.50, False, True)}
+LEGS = {"far_hind": ((12, 28), 0.50, True, False), "near_hind": ((5, 28), 0.00, False, False), "far_fore": ((47, 21), 0.00, True, True), "near_fore": ((37, 22), 0.50, False, True)}
 L1, L2 = 6.0, 5.6
 STRIDE, LIFT = 4.4, 3.2
-BODY = Image.new("RGBA", NEW.size, (0, 0, 0, 0)); _a = np.array(NEW); _a[CUT:] = 0; BODY = Image.fromarray(_a)
+BODY = Image.new("RGBA", NEW.size, (0, 0, 0, 0)); _a = np.array(NEW); _a[29:, :24] = 0; _a[CUT:, 24:] = 0; BODY = Image.fromarray(_a)      # the hind THIGHS stay as Yan drew them (down to row 28); only the shins and the fore legs are redrawn
 HEAD = Image.new("RGBA", NEW.size, (0, 0, 0, 0))     # head rides the body (no separate sway for this sprite)
 # the leg colours: the sprite's own browns (the body is mostly the tan (99,81,68) with dark brown hollows (66,51,44) and pale streaks (142,128,108))
 C_MAIN, C_HOLLOW, C_PALE, C_DARK = (99, 81, 71), (63, 48, 43), (135, 122, 105), (37, 27, 26)
 OUT = (4, 1, 2, 255)
 
-def foot(ph):
-    if ph < 0.55: return (STRIDE - 2 * STRIDE * ph / 0.55, 0.0)
+def foot(ph, hind=False):
+    S_, L_ = (2.7, 2.2) if hind else (STRIDE, LIFT)       # the hind shin swings from a fixed knee (the thigh is Yan's pixels), so a smaller swing keeps it from trailing out sideways
+    if ph < 0.55: return (S_ - 2 * S_ * ph / 0.55, 0.0)
     u = (ph - 0.55) / 0.45
-    return (-STRIDE + 2 * STRIDE * (0.5 - 0.5 * math.cos(math.pi * u)), LIFT * math.sin(math.pi * u))
+    return (-S_ + 2 * S_ * (0.5 - 0.5 * math.cos(math.pi * u)), L_ * math.sin(math.pi * u))
 
 def solve(hip, ft, fwd, l1=None, l2=None):
     l1 = l1 or L1; l2 = l2 or L2
@@ -45,7 +46,7 @@ def solve(hip, ft, fwd, l1=None, l2=None):
 # His four legs in the standing sprite are unwrapped along their bones: every pixel of his leg (rows below the belly cut) is stored as (position along the bone 0..1, side offset in px, colour).
 # A redrawn leg takes, for each of its pixels, the colour of the nearest stored pixel in that (along, side) space, so its shading, black shadows and pale highlights are his, moved with the bones.
 HIS_BONES = {"near_fore": [(34, 22), (34, 27), (36, 32), (37, 36)], "far_fore": [(43, 22), (44, 27), (47, 32), (50, 36)],
-             "near_hind": [(13, 24), (6, 27), (3, 32), (3, 36)], "far_hind": [(14, 25), (12, 29), (11, 32), (11, 36)]}
+             "near_hind": [(6, 28), (5, 30), (4, 32), (3, 36)], "far_hind": [(12, 28), (12, 31), (11, 33), (11, 36)]}
 
 def _arcs(pts):
     L = [0.0]
@@ -66,7 +67,7 @@ TEX = {n: [] for n in HIS_BONES}
 _na = np.array(NEW)
 for _y in range(CUT, NEW.size[1]):
     for _x in range(NEW.size[0]):
-        if not _na[_y, _x, 3]: continue
+        if not _na[_y, _x, 3] or (_x < 24 and _y < 29): continue
         _c = [(_proj(HIS_BONES[n], _x, _y), n) for n in HIS_BONES]; (_arc, _side, _d), _n = min(_c, key=lambda t: t[0][2])
         if _d <= 4.6: TEX[_n].append((_arc / _arcs(HIS_BONES[_n])[-1], _side, tuple(int(v) for v in _na[_y, _x, :3])))
 TEXA = {n: (np.array([[t[0], t[1]] for t in v]), [t[2] for t in v]) for n, v in TEX.items()}
@@ -79,12 +80,12 @@ def tex_col(name, tn, side, total):
 def leg_img(name, i, bob, stand=False):
     """One leg: the bone from the walk rig (hind: thigh to the stifle, shank back to the hock, foot bone; fore: shoulder, elbow back, forearm, pastern), the colours from Yan's own leg texture (TEX)."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0
-    fo, fl = (0.0, 0.0) if stand else foot(ph)
+    fo, fl = (0.0, 0.0) if stand else foot(ph, name.endswith('hind'))
     if stand: fo = {"far_hind": -3.0, "near_hind": -9.0, "far_fore": 3.0, "near_fore": 0.0}[name]
     hind = name.endswith("hind")
     hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - 2 - fl)   # the stub plus its outline reaches the same bottom row as his standing sprite
     if hind:
-        hock = (ft[0] - 1.0, ft[1] - 3.4); st = solve(hip, hock, False, 7.0, 6.6); pts = [hip, st, hock, ft]; rad = [3.2, 2.5, 2.1, 1.9]
+        hock = (ft[0] - 1.0, ft[1] - 3.4); st = ((hip[0] + hock[0]) / 2, (hip[1] + hock[1]) / 2); pts = [hip, st, hock, ft]; rad = [2.3, 2.2, 2.0, 1.9]      # the shin from the knee Yan drew
     else:
         wr = (ft[0] - 0.3, ft[1] - 2.6); el = solve(hip, wr, True, 7.8, 7.4); pts = [hip, el, wr, ft]; rad = [3.0, 2.5, 2.1, 1.9]
     segs = [(pts[j], pts[j + 1], rad[j], rad[j + 1]) for j in range(3)]
