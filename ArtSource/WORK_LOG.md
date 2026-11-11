@@ -5755,3 +5755,8 @@ Yan: "can't you use this one as a reference and try animating another one based 
 
 ## The Pallid and Veil walks are in the game (2026-11-11)
 Yan: "the walking animation for those 2 are fine, put them in". `Rt.Sliding`, `MutantWalk.cs`, `UnitSprites.HDWalk`, `TacticalGridView.ApplyUnitArt`; strips in `Assets/Resources/Sprites/Mutants/anim/` (`export_mutant_walk.py`). Details and what is not done in `ArtSource/mutants_anim/WIRING.md`. Checked: the harness compiles; `MutantWalkChecks` (new: the picture follows the clock, loops, no walk picture for a standing mutant); `dungeons` PASSED; the full harness was started. NOT checked: Unity (the strips decode and show at the right size and height, the feet land on the ground line, nothing flickers between steps, the Veil shimmer still works).
+
+## Dread Prowler stand + walk draft (2026-11-11)
+Yan: "next do the dread prowler, the one of the 'leaping' sprite, it'll need a new sprite for it just standing there and then walking, the leaping will come into play when animating the attacks".
+`ArtSource/dread_walk.py` (same hybrid method as `veil_walk.py`): body/head/jaw/tail pixels of Yan's sprite kept, four thicker legs drawn fresh in the sprite's browns; 8 frames at 125 ms, diagonal gait, plus a planted stand pose (`mutants_anim/dread_walk/stand.png`). The leaping original is kept as `mutants_anim/dread_leap_original.png` for attacks. Per-leg check: all legs change on all 8 frames. A loose far-knee speck was removed.
+Not done: waiting on Yan's look; not exported or wired (idle sprite needs a code change since the current HD sprite is the leap); judged from stills only, not seen in Unity.
