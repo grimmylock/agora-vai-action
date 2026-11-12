@@ -14,14 +14,15 @@ GROUND = oy + LOW
 FAR = {"far_hind", "far_fore"}
 FOOT0 = {"near_hind": 5, "far_hind": 15, "near_fore": 27, "far_fore": 38}          # where his feet stand (x), hips are AXES[...][0]
 # (foot dx, lift in px, in the air)
-KEYS = {"near_hind": [(0, 0, 0), (-3, 0, 0), (-8, 0, 1), (-9, 0, 1), (-2, 3, 1), (4, 2, 0), (5, 0, 0), (2, 0, 0)],
-        "far_hind":  [(0, 0, 0), (-2, 0, 0), (-7, 0, 1), (-9, 0, 1), (-1, 3, 1), (3, 2, 0), (5, 0, 0), (3, 0, 0)],
-        "near_fore": [(0, 0, 0), (2, 1, 0), (7, 0, 1), (9, 0, 1), (4, 3, 1), (6, 0, 0), (3, 0, 0), (-1, 0, 0)],
-        "far_fore":  [(0, 0, 0), (1, 1, 0), (6, 0, 1), (9, 0, 1), (5, 3, 1), (7, 0, 0), (4, 0, 0), (-1, 0, 0)]}
+KEYS = {"near_hind": [(0, 0, 0), (-3, 0, 0), (-8, 1, 1), (-9, 1, 1), (-2, 3, 1), (4, 2, 0), (5, 0, 0), (2, 0, 0)],
+        "far_hind":  [(0, 0, 0), (-2, 0, 0), (-7, 1, 1), (-9, 1, 1), (-1, 3, 1), (3, 2, 0), (5, 0, 0), (3, 0, 0)],
+        "near_fore": [(0, 0, 0), (2, 1, 0), (7, 1, 1), (9, 1, 1), (4, 3, 1), (6, 0, 0), (3, 0, 0), (-1, 0, 0)],
+        "far_fore":  [(0, 0, 0), (1, 1, 0), (6, 1, 1), (9, 1, 1), (5, 3, 1), (7, 0, 0), (4, 0, 0), (-1, 0, 0)]}
 RISE = [0, 0, 2, 3, 2, 0, 0, 0]
 NOD = [0, 0, -1, -1, 0, 1, 1, 0]
 HAUNCH = [0, 0, 1, 1, 0, -1, -1, 0]
-L1, L2 = 6.0, 5.6
+L1, L2 = 6.8, 6.4
+MAX_REACH = 0.82                                      # a leg never stretches past this share of its length (Yan: too stretched in the extension frames)
 
 # ---- his legs unwrapped: (position along the axis 0..1, side offset px, colour)
 def _axis_param(name, x, y):
@@ -53,6 +54,9 @@ def leg_img(name, i):
     hind = name.endswith("hind"); hx, hy = AXES[name][0]
     hip = (hx + ox, hy + oy - RISE[i]) if air else (hx + ox, hy + oy)
     ft = (FOOT0[name] + ox + dx, GROUND - 2 - lift - (rise if air else 0))      # the outline row below the foot is the ground row
+    d = math.hypot(ft[0] - hip[0], ft[1] - hip[1]); mx = MAX_REACH * (L1 + L2)
+    if d > mx:                                                              # shorten the stride, keep the foot's height: the leg never stretches past MAX_REACH of its length
+        vy = ft[1] - hip[1]; hx_ = math.sqrt(max(0.0, mx * mx - vy * vy)); ft = (hip[0] + math.copysign(hx_, ft[0] - hip[0]), ft[1])
     knee = solve(hip, ft, not hind)                                       # hind: stifle forward; fore: elbow back
     segs = [(hip, knee, 1.3, 1.15), (knee, ft, 1.15, 1.0)]
     out = np.zeros((H, W, 4), np.uint8); ln_tot = sum(math.hypot(q[0] - p[0], q[1] - p[1]) for p, q, _, _ in segs); fx, fy = int(round(ft[0])), int(round(ft[1]))
