@@ -43,14 +43,15 @@ def solve(hip, ft, fwd, l1=None, l2=None):
     ang = math.acos(max(-1, min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)))); k = a + (ang if fwd else -ang)
     return (hip[0] + l1 * math.cos(k), hip[1] + l1 * math.sin(k))
 
-def leg_img(name, i, bob, stand=False):
+def leg_img(name, i, bob, stand=False, hdx=0, fo_fl=None):
     """One leg built on the Pallid Prowler's proportions (the walk Yan approved): slim, long, digitigrade. Hind: a thigh forward to the stifle, the shank back to the hock, a short straight foot bone down.
     Fore: shoulder, elbow back, a long forearm, a short pastern. Widths are about 3 px at the top of the thigh narrowing to 1-2 px at the shin, scaled up a little for the Dread's bigger body."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0
     fo, fl = (0.0, 0.0) if stand else foot(ph)
     if stand: fo = {"far_hind": -1.0, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name]
+    if fo_fl is not None: fo, fl = fo_fl
     hind = name.endswith("hind")
-    hip = (hx + ox, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1) + (-3 if hind and False else 0), GROUND - fl)
+    hip = (hx + ox + hdx, hy + oy + bob - 1); ft = (hx + ox + fo + (2 if fwd else -1) + (-3 if hind and False else 0), GROUND - fl)
     if hind:
         hock = (ft[0] - 0.6, ft[1] - 1.8); st = solve(hip, hock, False, 4.0, 3.6); pts = [hip, st, hock, ft]; rad = [2.8, 2.2, 1.6, 1.4]
     else:
