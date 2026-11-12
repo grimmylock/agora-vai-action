@@ -38,10 +38,19 @@ namespace GameCore
         /// <summary>Is this body still sliding to catch up with a tile jump (Glide)? That is what 'walking' looks like on screen, for NPCs and for co-op mirrors alike.</summary>
         public static bool Sliding(ICombatant u) => u != null && Slide.TryGetValue(u, out var sl) && (sl.x != 0f || sl.y != 0f);
 
+        // 2026-11-12: a pounce carries the body across by the animation's own travel curve (MutantAttack), so Glide leaves a held body alone and only follows where its tile is
+        static readonly HashSet<ICombatant> Held = new HashSet<ICombatant>();
+        public static void HoldSlide(ICombatant u) { if (u != null) Held.Add(u); }
+        public static void SetSlide(ICombatant u, float x, float y) { if (u != null) { Held.Add(u); Slide[u] = (x, y); } }
+        public static void ReleaseSlide(ICombatant u) { if (u != null) { Held.Remove(u); Slide[u] = (0f, 0f); Was.Remove(u); } }
+        /// <summary>Knocked down: sprawled for `seconds` like after a dive (can't move, a low target).</summary>
+        public static void Knockdown(Player p, float seconds) { if (p == null) return; var s = Of(p); s.DiveUntil = -1f; s.ProneUntil = Mathf.Max(s.ProneUntil, Time.time + seconds); }
+
         public static void Glide(float dt)
         {
             foreach (var e in EncounterState.Enemies)
             {
+                if (Held.Contains(e)) { var (hx, hy) = Slide.TryGetValue(e, out var hs) ? hs : (0f, 0f); var (hox, hoy) = Offset(e); Was[e] = (e.X + 0.5f + hox - hx, e.Y + 0.5f + hoy - hy); continue; }
                 // Melee 2e (Yan: "characters teleporting around"): the spot inside the tile too (a step into reach before a swing),
                 // not only the tile - every jump of where he stands slides
                 var (sx, sy) = Slide.TryGetValue(e, out var sl) ? sl : (0f, 0f);

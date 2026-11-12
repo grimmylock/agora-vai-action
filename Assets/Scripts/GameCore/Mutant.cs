@@ -286,9 +286,13 @@ namespace GameCore
         /// AC (advantage with Pack Tactics), natural 20 doubles. Claws and bites are physical -
         /// armor Phys-DR reduces them (Alpha Prowler ignores 20% of it); psi blasts (Mind/Void
         /// Weaver) only see Anom-DR, and cover applies against them. Hits can wound humans.</summary>
+        public float DamageMult = 1f;      // MutantAttack: a spit hits for a share of a bite
+        public bool IgnoreRange;           // MutantAttack: the spit's glob lands from a distance
+        public bool LastHit;               // did the last Attack() hit? (MutantAttack reads it for its knockdown / bleeding)
         public virtual void Attack(ICombatant target)
         {
-            if (!IsInEngageRange(target)) return;
+            LastHit = false;
+            if (!IgnoreRange && !IsInEngageRange(target)) return;
 
             if (ActiveCamouflage) IsCloaked = false; // attacking breaks Cloak
 
@@ -326,13 +330,13 @@ namespace GameCore
                 if (pr >= 14) return;
             }
             float tierMult = Rt.On ? 1f : CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
-            float raw = AttackDamage * tierMult;
+            float raw = AttackDamage * tierMult * DamageMult;
             int damage = psi
                 ? CombatRules.AnomalousDamage(raw, target.AnomDR)
                 : CombatRules.PhysicalDamage(raw, "Standard", target.PhysDR, Db?.ArmorPierce ?? 0f);
             int hpBefore = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - damage);
-            fx.Hit = true; fx.Killed = !target.IsAlive(); fx.Overkill = damage - hpBefore;
+            fx.Hit = true; LastHit = true; fx.Killed = !target.IsAlive(); fx.Overkill = damage - hpBefore;
             GameLog.Write($"{Name} hits {who} for {damage} {(psi ? "psi " : "")}damage{(crit ? " (headshot!)" : "")}. {who} HP is now {target.Hp}.");
             if (!psi) CombatRules.CheckWound(target, 0, CombatRules.HitWounds(tierMult, null));   // Batch 60
 

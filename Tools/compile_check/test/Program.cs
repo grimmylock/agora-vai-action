@@ -22,7 +22,7 @@ static class Program {
     if (args.Length > 0 && args[0] == "rtprobe") { RtLoadoutProbe(args.Length > 1 ? int.Parse(args[1]) : 30); return 0; }
     if (args.Length > 1 && args[0] == "diveframes") { DiveFrames(args[1], args.Length > 3 ? float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 1f, args.Length > 3 ? float.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 0f); return 0; }
     if (args.Length > 1 && args[0] == "gunslingframes") { GunslingFrames(args[1], args.Length > 2 && args[2] != "-" ? args[2] : "", args.Length > 3 ? args[3] : "PSh18Pchela"); return 0; }
-    if (args.Contains("dungeons")) { DungeonRedoChecks(); MutantWalkChecks(); Console.WriteLine(fails == 0 ? "DUNGEON CHECKS PASSED" : $"{fails} FAILURES"); return fails; }   // only the lock-and-key dungeons (quick: `dotnet /tmp/test.dll dungeons`)
+    if (args.Contains("dungeons")) { DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); Console.WriteLine(fails == 0 ? "DUNGEON CHECKS PASSED" : $"{fails} FAILURES"); return fails; }   // only the lock-and-key dungeons (quick: `dotnet /tmp/test.dll dungeons`)
     if (args.Contains("only72")) { Batch72Checks(); Console.WriteLine(fails == 0 ? "BATCH 72 CHECKS PASSED" : $"{fails} FAILURES"); return fails; }
     TerrainChecks(args);
     TierMapChecks();
@@ -61,7 +61,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
-    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); DepthsChecks(); EelChecks();
+    BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
     var atlas = SpriteAtlasIndex.Armor.ToHashSet();
@@ -2076,6 +2076,66 @@ static class Program {
     var mut = new Mutant("Pallid Prowler", 5, 5);
     Check(!Rt.Sliding(mut) && MutantWalk.Frame(mut, "Pallid Prowler", 1f) == null, "MutantWalk: a mutant that is not moving shows no walk picture (and no strip is loaded offline)");
     Rt.On = false;
+  }
+  // The canine attacks (2026-11-12, Yan's rules in ACTION_DESIGN.md): the table of strips, the timeline helpers, and the behaviour in a small arena - the hit lands at the contact frame, the cooldown counts from the start,
+  // a pounce lands next to the target (Dread knocks down, Maw bleeds), a spit lands on arrival and is toxic, a hobbled mutant does not leap.
+  static void MutantAttackChecks() {
+    bool tableOk = true; string why = "";
+    foreach (var kv in GameData.MutantAttackData.Table) foreach (var a in kv.Value) {
+      var d = a.Value; bool ok = d.Ms.Length == d.Frames && d.Travel.Length == d.Frames && d.Contact > 0 && d.Contact < d.Frames && d.ContactMs == d.Ms.Take(d.Contact).Sum() && d.TotalMs == d.Ms.Sum() && d.PivotY > 0f && d.PivotY < 1f;
+      if (a.Key == "pounce") ok = ok && d.Travel[d.Contact] == 1f && d.Travel[0] == 0f && d.Travel.Zip(d.Travel.Skip(1), (x, y) => y >= x).All(b => b);
+      if (!ok) { tableOk = false; why += kv.Key + "/" + a.Key + " "; }
+    }
+    Check(tableOk, "MutantAttack: every strip's table is consistent (timings add up, contact inside, pounce travel 0..1 and never back) " + why);
+    var v = GameData.MutantAttackData.Table["Veil Prowler"]["pounce"];
+    Check(MutantAttack.FrameIndexAt(v.Ms, 0f) == 0 && MutantAttack.FrameIndexAt(v.Ms, v.Ms[0] + 1f) == 1 && MutantAttack.FrameIndexAt(v.Ms, 99999f) == v.Frames - 1, "MutantAttack: frame index follows the durations and the last frame holds");
+    Check(MutantAttack.TravelAt(v.Ms, v.Travel, 0f) == 0f && MutantAttack.TravelAt(v.Ms, v.Travel, v.TotalMs) == 1f && MutantAttack.LaunchMs(v.Ms, v.Travel) > 200f, "MutantAttack: a leap starts at 0, ends at 1 and launches after the coil");
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MutantAttack.Reset(); p.HealPermanent(5000); EncounterState.Enemies.Clear();
+    UnityEngine.Time.time = 100f;
+    (Mutant m, float nextShot, float[] dmgAt) Spawn(string name, int dx) { string[] kt = name == "Dread Prowler" ? new[] { "tier4", "DreadProwler" } : name == "Blind Maw" ? new[] { "tier1", "BlindMaw" } : name == "Pallid Prowler" ? new[] { "tier1", "PallidProwler" } : new[] { "tier2", "VeilProwler" }; var mu = new Mutant(kt[1], px + dx, py, MutantDatabase.Get(kt[0], kt[1])); EncounterState.Enemies.Add(mu); Rt.SetOffset(mu, 0f, 0f); return (mu, 0f, null); }
+    // bite: damage only from the contact frame on, then the cooldown
+    var bite = Spawn("Dread Prowler", 1); var mb = bite.m; float ns = 0f; int hp0 = p.Hp; float firstHit = -1f, start = UnityEngine.Time.time; int bites = 0; bool wasPlaying = false;
+    for (int i = 0; i < 400; i++) {
+      UnityEngine.Time.time += 0.01f; bool pl = MutantAttack.Update(mb, p, UnityEngine.Time.time, ref ns);
+      if (pl && !wasPlaying) bites++; wasPlaying = pl;
+      if (firstHit < 0f && p.Hp < hp0) firstHit = (UnityEngine.Time.time - start) * 1000f;
+    }
+    var biteA = GameData.MutantAttackData.Table["Dread Prowler"]["bite"]; var biteB = GameData.MutantAttackData.Table["Dread Prowler"]["bite2"];
+    Check(firstHit >= System.Math.Min(biteA.ContactMs, biteB.ContactMs) - 15f && firstHit <= System.Math.Max(biteA.ContactMs, biteB.ContactMs) + 40f, $"MutantAttack: a bite's damage lands at its contact frame, not at once ({firstHit:0} ms; contact {biteA.ContactMs}/{biteB.ContactMs} ms)");
+    Check(bites >= 2 && bites <= 4, $"MutantAttack: bites repeat on the old cooldown (about 1.6 s for a big one): {bites} in 4 s");
+    // pounce: Dread from 4 tiles lands adjacent, knocks down; Maw bleeds
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
+    var pd = Spawn("Dread Prowler", 4); var md = pd.m; ns = 0f; int sx0 = md.X; bool slid = false, landedAdj = false; float knockUntil = -1f; int pounces = 0; wasPlaying = false; int farHp = p.Hp;
+    for (int i = 0; i < 300; i++) {
+      UnityEngine.Time.time += 0.01f; bool pl = MutantAttack.Update(md, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f);
+      if (pl && !wasPlaying && MutantAttack.KindOf(md) == "pounce") pounces++; wasPlaying = pl;
+      if (MutantAttack.KindOf(md) == "pounce" && Rt.Sliding(md)) slid = true;
+      if (md.X != sx0 && CombatantUtil.IsAdjacent(md, p)) landedAdj = true;
+      if (Rt.Of(p).ProneUntil > UnityEngine.Time.time) knockUntil = Rt.Of(p).ProneUntil;
+    }
+    Check(pounces == 1 && slid && landedAdj, $"MutantAttack: a Dread pounce from 4 tiles slides the body across and lands next to the target (pounces {pounces}, slid {slid}, adjacent {landedAdj})");
+    Check(knockUntil > 0f && p.Hp < farHp, "MutantAttack: the Dread's pounce knocks the target down and hurts it");
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.Of(p).ProneUntil = -1f; p.StatusEffects.Bleeding = false;
+    var pm = Spawn("Blind Maw", 3); var mm = pm.m; ns = 0f;
+    for (int i = 0; i < 200; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mm, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f); }
+    Check(p.StatusEffects.Bleeding, "MutantAttack: the Blind Maw's pounce applies bleeding");
+    // a hobbled mutant does not leap
+    p.StatusEffects.Bleeding = false; p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
+    var ph = Spawn("Dread Prowler", 4); var mh = ph.m; mh.StatusEffects.Wound = "Leg"; ns = 0f; bool leapt = false;
+    for (int i = 0; i < 200; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mh, p, UnityEngine.Time.time, ref ns); if (MutantAttack.KindOf(mh) == "pounce") leapt = true; }
+    Check(!leapt && MutantAttack.Has(mh), "MutantAttack: a hobbled Dread does not leap");
+    // spit: a Pallid at 5 tiles spits; the damage is a share of a bite and lands on arrival; toxic
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
+    var ps = Spawn("Pallid Prowler", 5); var ms = ps.m; ns = 0f; int hpS = p.Hp; bool spat = false, hitBeforeContact = false; float tSpit = -1f, dmgAt = -1f; var sp = GameData.MutantAttackData.Table["Pallid Prowler"]["spit"];
+    for (int i = 0; i < 400; i++) {
+      UnityEngine.Time.time += 0.01f; MutantAttack.Update(ms, p, UnityEngine.Time.time, ref ns);
+      if (!spat && MutantAttack.KindOf(ms) == "spit") { spat = true; tSpit = UnityEngine.Time.time; }
+      if (spat && dmgAt < 0f && p.Hp < hpS) dmgAt = (UnityEngine.Time.time - tSpit) * 1000f;
+    }
+    Check(spat && dmgAt > sp.ContactMs && p.StatusEffects.ToxicBleed, $"MutantAttack: a Pallid spits from 5 tiles, the damage lands after the glob flies ({dmgAt:0} ms > contact {sp.ContactMs} ms) and is toxic");
+    Check(MutantAttack.Anim("Pallid Prowler", "pounce") == null && MutantAttack.Anim("Veil Prowler", "pounce") != null, "MutantAttack: the Pallid has no pounce, the Veil has");
+    p.StatusEffects.ToxicBleed = false; EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.On = false;
   }
   // Any lock-and-key dungeon on the real built map (2026-11-11): every key object exists, the goal is unreachable with no keys and with all but the LAST key, reachable with all of them, one way out.
   static void ChainChecks(string Z, string startLm, string goalLm, string exitTo, params string[] keyOrder) {

@@ -110,6 +110,29 @@ namespace GameCore
         // Same density and pivot as the HD stand-still sprite (32 px a tile, the feet on the bottom row, the pivot 16 px above it, the head to the right). Pallid and Veil Prowler have one so far.
         public const int WalkFrames = 8;
         private static Dictionary<string, Sprite[]> _hdWalk;
+        // 2026-11-12: attack strips (ArtSource/export_mutant_attacks.py -> Sprites/Mutants/anim/<key>_<attack>.bytes): same density as the stand-still sprite, the frame size and the pivot (the ground contact
+        // row of the stand pose is 16 px under the pivot) come from GameData.MutantAttackData.
+        private static Dictionary<string, Sprite[]> _hdAtk;
+        public static Sprite[] HDAttack(string name, string kind)
+        {
+            if (name == null || kind == null) return null;
+            if (_hdAtk == null) _hdAtk = new Dictionary<string, Sprite[]>();
+            string key = name + "/" + kind;
+            if (_hdAtk.TryGetValue(key, out var cached)) return cached;
+            Sprite[] frames = null; var a = GameCore.MutantAttack.Anim(name, kind);
+            var asset = a == null ? null : Resources.Load<TextAsset>("Sprites/Mutants/anim/" + name.ToLowerInvariant().Replace(' ', '_') + "_" + kind);
+            if (asset != null)
+            {
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                if (tex.LoadImage(asset.bytes) && tex.width == a.W * a.Frames)
+                {
+                    tex.filterMode = FilterMode.Point; tex.wrapMode = TextureWrapMode.Clamp; frames = new Sprite[a.Frames];
+                    for (int i = 0; i < a.Frames; i++) frames[i] = Sprite.Create(tex, new Rect(i * a.W, 0, a.W, tex.height), new Vector2(0.5f, a.PivotY), 2 * Cell, 0, SpriteMeshType.FullRect);
+                }
+            }
+            _hdAtk[key] = frames; return frames;
+        }
+
         public static Sprite[] HDWalk(string name)
         {
             if (name == null) return null;
