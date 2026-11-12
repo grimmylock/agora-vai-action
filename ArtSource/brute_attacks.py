@@ -129,7 +129,7 @@ def render(p):
     r = p.get("rock")                                                # (frame, dx, dy): a boulder held in the fist
     if r is not None:
         fx, fy = fist(p); rk = ROCK[r[0] % 6]; out.alpha_composite(rk, (int(fx - rk.width / 2 + r[1]), int(fy - rk.height / 2 + r[2])))
-    if p.get("dust"): d = DUST[p["dust"] - 1]; fx, fy = (bigfist(p) if p.get('big') else fist(p)); out.alpha_composite(d, (int(fx - d.width / 2), GROUND - d.height + 6))
+    if p.get("dust"): d = DUST[p["dust"] - 1]; fx, fy = (ox + 10 + p.get('bx', 0), GROUND); out.alpha_composite(d, (int(fx - d.width / 2), GROUND - d.height + 6))
     a = np.array(out); lab, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))
     for j in range(1, k + 1):
         if (lab == j).sum() < 6: a[lab == j] = 0
@@ -145,18 +145,18 @@ SWIPE = [
     (dict(ashear=6, adx=1, bx=3, by=2, tilt=1), 110, 0),
     (dict(ashear=2, bx=1, by=1), 120, 0),
 ]
-SLAM = [
-    (dict(big=True), 120, 0),
-    (dict(big=True, bdy=-4, bdx=-1, bshear=-3, bx=1, by=1, tilt=1), 130, 0),
-    (dict(big=True, bdy=-11, bdx=-2, bshear=-5, bx=2, by=2, tilt=1), 130, 0),
-    (dict(big=True, bdy=-15, bdx=-3, bshear=-6, bx=3, by=3, tilt=2), 170, 0),
-    (dict(big=True, bdy=-6, bdx=-3, bshear=-3, bx=1, by=5, tilt=-1), 40, 0),
-    (dict(big=True, bdy=3, bdx=-3, bx=-3, by=6, tilt=-2, dust=1), 60, 0),
-    (dict(big=True, bdy=4, bdx=-3, bx=-3, by=6, tilt=-2, dust=2), 70, 0),
-    (dict(big=True, bdy=4, bdx=-3, bx=-3, by=5, tilt=-2, dust=3), 90, 0),
-    (dict(big=True, bdy=2, bdx=-2, bx=-2, by=4, tilt=-1, dust=4), 120, 0),
-    (dict(big=True, bdy=1, bx=-1, by=2, dust=5), 130, 0),
-    (dict(big=True, by=1, dust=6), 140, 0),
+SLAM = [                                                      # rear up over the planted big fist (left, on the ground), crash forward onto it; the thin arm just rides along
+    (dict(), 120, 0),
+    (dict(tilt=-1, by=-1, bx=1, lift_r=1, ashear=-3), 130, 0),
+    (dict(tilt=-3, by=-2, bx=3, lift_r=2, ashear=-6), 140, 0),
+    (dict(tilt=-5, by=-3, bx=5, lift_r=3, ashear=-8), 190, 0),
+    (dict(tilt=-1, by=2, bx=0, lift_r=1, ashear=-2), 40, 0),
+    (dict(tilt=3, by=6, bx=-4, ashear=6, dust=1), 60, 0),
+    (dict(tilt=4, by=7, bx=-5, ashear=7, dust=2), 80, 0),
+    (dict(tilt=3, by=6, bx=-4, ashear=6, dust=3), 100, 0),
+    (dict(tilt=2, by=4, bx=-3, ashear=4, dust=4), 120, 0),
+    (dict(tilt=1, by=2, bx=-1, ashear=2, dust=5), 140, 0),
+    (dict(by=1, dust=6), 150, 0),
 ]
 THROW = [
     (dict(), 110, 0),
