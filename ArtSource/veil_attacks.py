@@ -20,38 +20,23 @@ FAR = ("far_hind", "far_fore"); NEAR = ("near_hind", "near_fore")
 MOUTH_IN, MOUTH_BACK, TOOTH = (118, 22, 34, 255), (58, 8, 16, 255), (196, 192, 208, 255)       # inside of the mouth: the eye's red, darker toward the throat; teeth: the sprite's palest violet-white
 
 def open_head(g, flash=False):
-    """The head with the mouth opened g pixels at the tip (Yan: 'just kind of open the sprite where the mouth should be and close it very fast'): the snout is split along the lip line, from the hinge
-    (x 38) to the tip (x 47) the upper part rises and the lower jaw drops, each by whole pixels, growing toward the tip (no rotation, no resampling); the gap is filled with the dark red inside of a mouth
-    with a few teeth on both lips. g = 0 is the sprite as drawn."""
-    base = np.array(rig.base).copy(); hx, hy = rig.c["hinge"]; tx, ty = rig.c["tip"]
-    head = np.array(rig.parts["head"]).copy(); jaw = np.array(rig.parts["jaw"]).copy(); h0, w0 = base.shape[:2]
-    out = np.zeros((h0 + 8, w0 + 4, 4), np.uint8)               # 4 px of room above for the rising upper snout
-    out[4:4 + h0, :w0] = head                                    # the head part (the lower jaw is a separate part)
-    if g > 0:
-        up = np.zeros_like(out); lo = np.zeros_like(out)
-        for x in range(w0):
-            f = min(1.0, max(0.0, (x - hx) / float(tx - hx))); du = int(round(f * g * 0.5)); dl = int(round(f * g * 0.5)) + (1 if g >= 3 and f > 0.5 else 0)
-            for y in range(h0):
-                if x >= hx and y <= hy + 2 and head[y, x, 3] and y > 8 and (y <= rig.lip(x) + 0.5):
-                    up[4 + y - du, x] = head[y, x]
-                elif head[y, x, 3]: up[4 + y, x] = head[y, x]
-                if jaw[y, x, 3]: lo[4 + y + dl, x] = jaw[y, x]
-        out = np.maximum(up, 0); out[lo[..., 3] > 0] = lo[lo[..., 3] > 0]
-        # the inside: in every column of the open snout, between the upper lip and the lower jaw
-        for x in range(hx + 1, tx + 1):
-            ys_up = [y for y in range(out.shape[0]) if up[y, x, 3] and y <= 4 + rig.lip(x) + 0.5 - 0 and y >= 4 + 8]; ys_lo = [y for y in range(out.shape[0]) if lo[y, x, 3]]
-            if not ys_lo or not ys_up: continue
-            top, bot = max(ys_up) + 1, min(ys_lo)
-            for y in range(top, bot):
-                if not out[y, x, 3]: out[y, x] = MOUTH_IN if (x - hx) > 3 else MOUTH_BACK
-            if bot - top >= 2 and x >= hx + 4 and (x % 2 == 0): out[top, x] = TOOTH                       # upper teeth
-            if bot - top >= 3 and x >= hx + 5 and (x % 2 == 1): out[bot - 1, x] = TOOTH                    # lower teeth
-        if flash:
-            pass
-    else:
-        out[4:4 + h0, :w0] = head
-        jl = jaw[..., 3] > 0; sub = out[4:4 + h0, :w0]; sub[jl] = jaw[jl]
-    if flash and g == 0:
+    """The head with the mouth opened g pixels at the tip. Yan: 'a hole opens in its face instead of the mouth parts moving ... just the motion'. So no fill and no rotation: from the hinge (x 38) to the
+    tip the snout is split along the mouth line (between rows 15 and 16, so the lower jaw is the lower two rows of the snout plus the sprite's jaw pixels, four rows thick); the upper part rises and the
+    lower part drops by whole pixels, growing from 0 at the hinge to the full amount at the tip, so the two parts stay joined at the back and open like jaws. g = 0 is the sprite as drawn."""
+    base = np.array(rig.base).copy(); hx, hy = rig.c["hinge"]; tx, ty = rig.c["tip"]; h0, w0 = base.shape[:2]
+    head = np.array(rig.parts["head"]).copy(); jaw = np.array(rig.parts["jaw"]).copy()
+    allp = head.copy(); jl = jaw[..., 3] > 0; allp[jl] = jaw[jl]                  # the sprite's head and jaw together
+    out = np.zeros((h0 + 8, w0 + 4, 4), np.uint8)
+    SPLIT = 15                                                                    # rows <= SPLIT are the upper snout, rows > SPLIT the lower jaw (for x past the hinge)
+    for x in range(w0):
+        f = min(1.0, max(0.0, (x - hx) / float(tx - hx))) if g > 0 else 0.0
+        du = int(round(f * g * 0.45)); dl = int(round(f * g * 0.55))
+        for y in range(h0):
+            if not allp[y, x, 3]: continue
+            if x > hx and y > SPLIT and y <= rig.c["jaw_y1"]: out[4 + y + dl, x] = allp[y, x]
+            elif x > hx: out[4 + y - du, x] = allp[y, x]
+            else: out[4 + y, x] = allp[y, x]
+    if flash:
         sx, sy = tx - 2, ty + 2 + 4
         for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (2, 0), (-2, 0), (0, 2), (0, -2)):
             if 0 <= sx + dx < out.shape[1] and 0 <= sy + dy < out.shape[0]: out[sy + dy, sx + dx] = (255, 250, 232, 255)
@@ -74,7 +59,7 @@ def tilt_layer(img, tilt):
 def render(p):
     """p: bx/by whole-body offset (right/down), rise (up), tilt (px the nose end is raised over the hips, negative = up), nx/ny head offset, nrot head turn (+ = nose up), jaw degrees (-> gape px), flash, feet: {leg: (fo, fl)} overrides"""
     bx, by, rise = p.get("bx", 0), p.get("by", 0), p.get("rise", 0); nx, ny, nrot, tilt = p.get("nx", 0), p.get("ny", 0), p.get("nrot", 0), p.get("tilt", 0)
-    feet = dict(STAND_FEET); feet.update(p.get("feet", {})); g = int(round(p.get("jaw", 0) / 10.0)); bob = by - rise
+    feet = dict(STAND_FEET); feet.update(p.get("feet", {})); g = int(round(p.get("jaw", 0) / 8.0)); bob = by - rise
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     def leg(n):
         hx_ = V.LEGS[n][0][0] + ox + bx; return V.leg_img(n, 0, bob + tilt_shift(hx_, tilt), False, bx, feet[n])
@@ -122,17 +107,17 @@ BITE_B = [      # the earlier pounce, kept as a second bite (a short hop-and-bit
 # reach for the ground, the landing compresses, the jaw snaps and the body slides on. Momentum: slow in, fast launch, a long flight, a skid.
 POUNCE = [
     (dict(), 110, 0.0),
-    (dict(bx=-2, by=3, tilt=2, ny=1, jaw=10), 130, 0.0),
-    (dict(bx=-3, by=5, tilt=3, ny=2, nrot=3, jaw=20), 110, 0.0),
-    (dict(bx=1, by=1, rise=3, tilt=-2, nx=1, jaw=20, feet={"far_hind": (-6, 1), "near_hind": (-5, 1), "far_fore": (4, 4), "near_fore": (3, 4)}), 40, 0.06),
-    (dict(bx=4, rise=8, tilt=-3, nx=2, jaw=36, feet={"far_hind": (-12, 8), "near_hind": (-9, 5), "far_fore": (11, 9), "near_fore": (8, 6)}), 45, 0.28),
-    (dict(bx=5, rise=11, tilt=-3, nx=2, nrot=-2, jaw=50, feet={"far_hind": (-14, 10), "near_hind": (-10, 7), "far_fore": (12, 10), "near_fore": (9, 7)}), 80, 0.55),
-    (dict(bx=5, rise=9, tilt=-1, nx=2, nrot=-3, jaw=52, feet={"far_hind": (-12, 9), "near_hind": (-9, 6), "far_fore": (11, 8), "near_fore": (8, 6)}), 55, 0.78),
-    (dict(bx=6, rise=4, tilt=1, nx=2, ny=1, nrot=-4, jaw=52, feet={"far_hind": (-7, 4), "near_hind": (-6, 4), "far_fore": (8, 2), "near_fore": (7, 2)}), 50, 0.93),
-    (dict(bx=7, by=3, rise=0, tilt=1, nx=2, ny=1, nrot=-4, jaw=50, feet={"far_hind": (-4, 2), "near_hind": (-3, 2), "far_fore": (4, 0), "near_fore": (3, 0)}), 55, 1.0),
-    (dict(bx=7, by=4, nx=2, ny=1, nrot=-4, jaw=0, flash=True, feet={"far_hind": (-3, 1), "near_hind": (-2, 1), "far_fore": (3, 0), "near_fore": (3, 0)}), 70, 1.0),
-    (dict(bx=5, by=3, nx=1, ny=1, jaw=6), 110, 1.0),
-    (dict(bx=2, by=1, jaw=0), 90, 1.0),
+    (dict(bx=-3, by=4, tilt=3, ny=2, feet={"far_hind": (2, 0), "near_hind": (3, 0), "far_fore": (-2, 0), "near_fore": (-3, 0)}), 140, 0.0),
+    (dict(bx=-4, by=6, tilt=4, ny=2, nrot=3, jaw=12, feet={"far_hind": (3, 0), "near_hind": (4, 0), "far_fore": (-1, 0), "near_fore": (-2, 0)}), 120, 0.0),
+    (dict(bx=2, by=2, rise=1, tilt=-3, nx=1, jaw=24, feet={"far_hind": (-8, 0), "near_hind": (-9, 0), "far_fore": (5, 5), "near_fore": (4, 5)}), 40, 0.04),
+    (dict(bx=5, rise=6, tilt=-4, nx=2, jaw=40, feet={"far_hind": (-13, 3), "near_hind": (-11, 2), "far_fore": (12, 9), "near_fore": (10, 8)}), 45, 0.22),
+    (dict(bx=6, rise=10, tilt=-4, nx=3, nrot=-2, jaw=52, feet={"far_hind": (-16, 8), "near_hind": (-13, 6), "far_fore": (14, 11), "near_fore": (11, 9)}), 90, 0.5),
+    (dict(bx=7, rise=8, tilt=-2, nx=3, nrot=-3, jaw=52, feet={"far_hind": (-13, 7), "near_hind": (-10, 5), "far_fore": (13, 9), "near_fore": (10, 6)}), 55, 0.76),
+    (dict(bx=8, rise=3, tilt=0, nx=3, ny=1, nrot=-4, jaw=52, feet={"far_hind": (-9, 4), "near_hind": (-7, 3), "far_fore": (10, 3), "near_fore": (8, 2)}), 50, 0.92),
+    (dict(bx=9, by=3, tilt=1, nx=3, ny=1, nrot=-4, jaw=48, feet={"far_hind": (-6, 2), "near_hind": (-5, 2), "far_fore": (5, 0), "near_fore": (4, 0)}), 55, 1.0),
+    (dict(bx=9, by=4, nx=3, ny=1, nrot=-4, jaw=0, flash=True, feet={"far_hind": (-4, 1), "near_hind": (-3, 1), "far_fore": (4, 0), "near_fore": (4, 0)}), 70, 1.0),
+    (dict(bx=7, by=3, nx=2, ny=1, jaw=6, feet={"far_hind": (-2, 0), "near_hind": (-1, 0)}), 110, 1.0),
+    (dict(bx=3, by=1, jaw=0), 90, 1.0),
     (dict(), 90, 1.0),
 ]
 
