@@ -37,14 +37,22 @@ BODY = Image.fromarray(_BODY)
 # One stride per pair of legs, then each leg is that stride shifted in time (Yan: "the legs all move together ... the front legs should move first, alternating by a short offset, and then the back legs kick, that's how dogs run"):
 # near fore leads, far fore follows one frame later, then the hind pair lands 3 and 4 frames after the near fore and kicks off in turn.
 # Stride entries are (foot dx, knee dx, lift rows): planted and sliding back -> push off -> lifted/tucked -> swung forward -> reaching -> landed.
-FORE = [(0, 0, 0), (-2, -1, 0), (-4, -2, 1), (-2, 0, 3), (3, 1, 2), (6, 3, 1), (7, 3, 0), (4, 2, 0)]
-HIND = [(0, 0, 0), (-3, -1, 0), (-6, -3, 2), (-5, -2, 3), (1, 0, 3), (4, 2, 2), (4, 2, 0), (2, 1, 0)]
+def _stride(front, back, lift_max):
+    """8 evenly spaced steps of one stride: 4 on the ground sliding from `front` to `back` (about the same distance every frame), then 4 in the air swinging back to `front` with the foot lifted in an arc"""
+    out = []
+    for k in range(8):
+        if k < 4: dx = front + (back - front) * (k + 0.5) / 4.0; lift = 0
+        else: t = (k - 4 + 0.5) / 4.0; dx = back + (front - back) * t; lift = int(round(lift_max * math.sin(math.pi * t)))
+        out.append((int(round(dx)), int(round(dx * 0.45)), lift))
+    return out
+FORE = _stride(6, -3, 3)
+HIND = _stride(4, -6, 3)
 SHIFT = {"near_fore": 0, "far_fore": 1, "near_hind": 3, "far_hind": 4}
 def key(n, i):
     dx, kx, lift = (FORE if n.endswith("fore") else HIND)[(i - SHIFT[n]) % 8]
     return (dx, kx, lift, 1 if lift >= 2 else 0)
-KEYS = {n: [key(n, i) if i > 0 else (0, 0, 0, 0) for i in range(8)] for n in AXES}        # frame 0 is his standing pose
-RISE = [0] + [min(3, sum(KEYS[n][i][3] for n in AXES)) for i in range(1, 8)]               # the body is up as far as the legs that are off the ground
+KEYS = {n: [key(n, i) for i in range(8)] for n in AXES}       # evenly spread over all 8 frames (his stand sprite is a separate picture)
+RISE = [min(3, sum(KEYS[n][i][3] for n in AXES)) for i in range(8)]               # the body is up as far as the legs that are off the ground
 NOD = [0, 0, -1, -1, 1, 2, 1, 0]                    # head up in the extension, low in the landing
 HAUNCH = [0, 0, 0, 0, 0, 0, 0, 0]      # no haunch shear: it tore thin lines across the belly where the legs join                    # head
 
