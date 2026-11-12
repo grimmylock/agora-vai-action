@@ -12,7 +12,7 @@ namespace GameCore
 {
     public static class MutantAttack
     {
-        public const float BiteBShare = 0.4f, SpitSpeed = 10f, KnockdownSeconds = 0.9f, SpitDamageShare = 0.6f;
+        public const float BiteBShare = 0.4f, SpitSpeed = 10f, KnockdownSeconds = 0.9f, SpitDamageShare = 0.6f, RecloakSeconds = 3f, RecloakDistance = 3, CloakFadeSeconds = 0.35f;
 
         public class Rules { public int PounceMin = 2, PounceMax; public float PounceCd; public string PounceEffect; public int SpitMin = 3, SpitMax; public float SpitCd, SpitShare = SpitDamageShare; public bool PounceFromCloak; }
         public static readonly Dictionary<string, Rules> RuleSet = new Dictionary<string, Rules>
@@ -27,13 +27,13 @@ namespace GameCore
         {
             public string Kind; public float Start; public bool Hit, Launched;
             public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit;
-            public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone;
+            public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
         static State Of(Mutant m) { if (!States.TryGetValue(m, out var s)) States[m] = s = new State(); return s; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { States.Clear(); }
+        public static void Reset() { States.Clear(); Fade.Clear(); }
 
         public static bool Has(Mutant m) => m != null && !(m is HumanEnemy) && m.Db != null && MutantAttackData.Table.ContainsKey(m.Db.Name);
         public static AttackAnim Anim(string mutant, string kind) => mutant != null && MutantAttackData.Table.TryGetValue(mutant, out var t) && t.TryGetValue(kind, out var a) ? a : null;
@@ -81,6 +81,11 @@ namespace GameCore
             if (!m.IsAlive() || m.StatusEffects.Prone) { if (st.Kind != null) Cancel(m, st); return false; }
             if (st.Kind != null) { Advance(m, p, st, now); return st.Kind != null; }
             if (p == null || !p.IsAlive() || Body.Down(p)) return false;
+            if (st.Recloak)
+            {
+                if (m.Hp < st.RecloakHp) { st.RecloakHp = m.Hp; st.RecloakFrom = now; }                  // hit while slipping away: the timer starts again
+                else if (now - st.RecloakFrom >= RecloakSeconds && CombatantUtil.Distance(m, p) >= RecloakDistance) { m.IsCloaked = true; st.Recloak = false; }
+            }
             var rules = RuleSet[m.Db.Name]; int d = CombatantUtil.Distance(m, p);
             if (d <= 1)
             {
@@ -102,7 +107,11 @@ namespace GameCore
             return false;
         }
 
-        static void Begin(Mutant m, State st, string kind, float now) { st.Kind = kind; st.Start = now; st.Hit = false; st.Launched = false; }
+        static void Begin(Mutant m, State st, string kind, float now)
+        {
+            st.Kind = kind; st.Start = now; st.Hit = false; st.Launched = false; st.Recloak = false;
+            if (m.ActiveCamouflage && m.IsCloaked) m.IsCloaked = false;                      // the Veil shows itself as it strikes (the dissolve plays out in the view)
+        }
 
         static void Cancel(Mutant m, State st) { if (st.Kind == "pounce" && st.Launched) Rt.ReleaseSlide(m); st.Kind = null; }
 
@@ -119,13 +128,38 @@ namespace GameCore
                 if (st.Launched) { float k = 1f - TravelAt(a.Ms, a.Travel, tMs); Rt.SetSlide(m, (st.FromX - st.ToX) * k, (st.FromY - st.ToY) * k); }
             }
             if (!st.Hit && tMs >= a.ContactMs) { st.Hit = true; Contact(m, p, st, now); }
-            if (st.Kind == "spit" && st.SpitArrive > 0f && !st.SpitDone && now >= st.SpitArrive) { st.SpitDone = true; SpitLands(m, p, st); }
+            if (st.Kind == "spit" && st.SpitArrive > 0f && !st.SpitDone && now >= st.SpitArrive) { st.SpitDone = true; st.SplatStart = now; SpitLands(m, p, st); }
             if (tMs >= a.TotalMs && (st.Kind != "spit" || st.SpitDone || st.SpitArrive < 0f))
             {
                 if (st.Kind == "pounce" && st.Launched) Rt.ReleaseSlide(m);
-                st.Kind = null;
+                st.Kind = null; AfterAttack(m, p, st, now);
             }
         }
+
+        /// <summary>Yan: a cloaking hunter retreats 3 tiles after its strike and re-cloaks about 3 s later out of sight and without being hit.</summary>
+        static void AfterAttack(Mutant m, Player p, State st, float now)
+        {
+            if (!m.ActiveCamouflage || p == null) return;
+            st.Recloak = true; st.RecloakFrom = now; st.RecloakHp = m.Hp;
+            int dx = System.Math.Sign(m.X - p.X), dy = System.Math.Sign(m.Y - p.Y); if (dx == 0 && dy == 0) dx = 1;
+            for (int k = 3; k >= 1; k--)
+            {
+                int x = m.X + dx * k, y = m.Y + dy * k;
+                if (TerrainMap.CanEnterTile(x, y) && TerrainMap.UnitAt(x, y, m) == null) { RtAi.GoTo(m, (x, y)); return; }
+            }
+        }
+
+        // ---- the cloak's fade (drawn by the view): 0 = seen, 1 = cloaked, moving over CloakFadeSeconds; a mutant first seen cloaked starts cloaked ----
+        static readonly Dictionary<Mutant, (float fade, float t)> Fade = new Dictionary<Mutant, (float, float)>();
+        public static float CloakFade(Mutant m, float now)
+        {
+            if (m == null || !m.ActiveCamouflage) return 0f;
+            float target = m.IsCloaked ? 1f : 0f;
+            if (!Fade.TryGetValue(m, out var f)) f = (target, now);
+            f.fade = Mathf.MoveTowards(f.fade, target, Mathf.Clamp(now - f.t, 0f, 0.1f) / CloakFadeSeconds); f.t = now; Fade[m] = f; return f.fade;
+        }
+        /// <summary>Which pixel-dissolve frame (0..5) to draw while the cloak is fading, or -1.</summary>
+        public static int DissolveIndex(float fade) => fade <= 0.03f || fade >= 0.97f ? -1 : Mathf.Clamp((int)(fade * 6f), 0, 5);
 
         static void Contact(Mutant m, Player p, State st, float now)
         {
@@ -187,6 +221,17 @@ namespace GameCore
             var a = Anim(name, st.Kind); var frames = UnitSprites.HDAttack(name, st.Kind);
             if (a == null || frames == null) return null;
             return frames[Mathf.Clamp(FrameIndexAt(a.Ms, (now - st.Start) * 1000f), 0, frames.Length - 1)];
+        }
+
+        public static readonly int[] SplatMs = { 60, 60, 70, 80, 120, 140 };
+        /// <summary>The acid splash where a glob landed (tile space, ground level) and which of its frames is up, for 0.53 s after the landing.</summary>
+        public static bool SplatAt(Mutant m, float now, out float x, out float y, out int frame)
+        {
+            x = y = 0f; frame = 0;
+            if (m == null || !States.TryGetValue(m, out var st) || st.SplatStart < 0f) return false;
+            float tMs = (now - st.SplatStart) * 1000f; int total = 0; foreach (var d in SplatMs) total += d;
+            if (tMs < 0f || tMs >= total) return false;
+            frame = FrameIndexAt(SplatMs, tMs); x = st.SpitTx + 0.5f; y = st.SpitTy + 0.5f; return true;
         }
 
         /// <summary>Where the spit glob is right now (tile space), or false when none is in the air; the view flies the glob with it.</summary>

@@ -231,6 +231,7 @@ namespace GameCore
 
             DrawOrbs();
             DrawEel();
+            DrawAcid();
 
             float st = now - _shakeAt;
             float amp = st < ShakeTime ? _shakeAmp * (1f - st / ShakeTime) : 0f;

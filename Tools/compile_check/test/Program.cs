@@ -2134,6 +2134,18 @@ static class Program {
       if (spat && dmgAt < 0f && p.Hp < hpS) dmgAt = (UnityEngine.Time.time - tSpit) * 1000f;
     }
     Check(spat && dmgAt > sp.ContactMs && p.StatusEffects.ToxicBleed, $"MutantAttack: a Pallid spits from 5 tiles, the damage lands after the glob flies ({dmgAt:0} ms > contact {sp.ContactMs} ms) and is toxic");
+    // the Veil: it shows itself as it strikes, slips away, and re-cloaks about 3 s later out of reach and without being hit; a hit while slipping away restarts the timer
+    p.StatusEffects.ToxicBleed = false; p.StatusEffects.Bleeding = false; p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
+    var pv = Spawn("Veil Prowler", 1); var mv = pv.m; ns = 0f; bool cloakedAtStart = mv.IsCloaked; bool uncloaked = false;
+    for (int i = 0; i < 160; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mv, p, UnityEngine.Time.time, ref ns); if (!mv.IsCloaked) uncloaked = true; if (!MutantAttack.Playing(mv) && uncloaked && i > 20) break; }
+    Check(cloakedAtStart && uncloaked && !mv.IsCloaked, "MutantAttack: the Veil starts cloaked and shows itself when it strikes");
+    mv.X = px + 6; Rt.SetOffset(mv, 0f, 0f); float t0 = UnityEngine.Time.time; int hpV = mv.Hp; bool early = false;
+    for (int i = 0; i < 200; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mv, p, UnityEngine.Time.time, ref ns); if (mv.IsCloaked) early = true; }     // 2 s: still showing
+    mv.Hp -= 1; for (int i = 0; i < 200; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mv, p, UnityEngine.Time.time, ref ns); }                   // hit at 2 s, then 2 s more: the timer started over
+    bool stillShowing = !mv.IsCloaked;
+    for (int i = 0; i < 160; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mv, p, UnityEngine.Time.time, ref ns); }
+    Check(!early && stillShowing && mv.IsCloaked, $"MutantAttack: the Veil re-cloaks 3 s after its strike (early {early}); a hit while slipping away restarts the timer (still showing at 4 s: {stillShowing}); cloaked again at 5.6 s: {mv.IsCloaked}");
+    Check(MutantAttack.DissolveIndex(0f) == -1 && MutantAttack.DissolveIndex(1f) == -1 && MutantAttack.DissolveIndex(0.5f) == 3, "MutantAttack: the cloak's pixel dissolve plays only while the fade is in between");
     Check(MutantAttack.Anim("Pallid Prowler", "pounce") == null && MutantAttack.Anim("Veil Prowler", "pounce") != null, "MutantAttack: the Pallid has no pounce, the Veil has");
     p.StatusEffects.ToxicBleed = false; EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.On = false;
   }

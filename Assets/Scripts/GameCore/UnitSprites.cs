@@ -133,6 +133,25 @@ namespace GameCore
             _hdAtk[key] = frames; return frames;
         }
 
+        private static Dictionary<string, Sprite[]> _hdFx;
+        /// <summary>A small effect strip next to the mutant strips (Sprites/Mutants/anim/&lt;asset&gt;.bytes, `frames` equal frames, 32 px a tile), e.g. the Pallid's acid glob and splat.</summary>
+        public static Sprite[] HDFx(string asset, int frames, Vector2 pivot)
+        {
+            if (_hdFx == null) _hdFx = new Dictionary<string, Sprite[]>();
+            if (_hdFx.TryGetValue(asset, out var cached)) return cached;
+            Sprite[] list = null; var ta = Resources.Load<TextAsset>("Sprites/Mutants/anim/" + asset);
+            if (ta != null)
+            {
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                if (tex.LoadImage(ta.bytes) && tex.width % frames == 0)
+                {
+                    tex.filterMode = FilterMode.Point; tex.wrapMode = TextureWrapMode.Clamp; int w = tex.width / frames; list = new Sprite[frames];
+                    for (int i = 0; i < frames; i++) list[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), pivot, 2 * Cell, 0, SpriteMeshType.FullRect);
+                }
+            }
+            _hdFx[asset] = list; return list;
+        }
+
         public static Sprite[] HDWalk(string name)
         {
             if (name == null) return null;

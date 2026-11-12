@@ -1182,7 +1182,9 @@ namespace GameCore
                 var p = Player.Current;
                 int? tx = hm.IsAggroed && p != null ? p.X : hm.PatrolTarget?.x;
                 if (alive && tx.HasValue && tx.Value != unit.X) marker.flipX = tx.Value < unit.X;
-                if (hm.IsCloaked) live.a = 0.3f;                                  // the Veil Prowler's shimmer (no cloaked cell at this size)
+                float cloak = MutantAttack.CloakFade(hm, Time.time); live.a = 1f - 0.7f * cloak;       // the Veil Prowler's shimmer (no cloaked cell at this size), now faded in and out over 0.35 s
+                int dis = MutantAttack.DissolveIndex(cloak);
+                if (dis >= 0 && walkArt == null && hm.Db?.Name == "Veil Prowler") { var ds = UnitSprites.HDFx("veil_prowler_dissolve", 6, new Vector2(0.5f, 16f / 37f)); if (ds != null) marker.sprite = ds[dis]; }   // a pixel-noise dissolve on the stand pose
             }
             else marker.flipX = false;
             marker.color = alive ? live : new Color(0.35f, 0.32f, 0.3f, 0.9f);
