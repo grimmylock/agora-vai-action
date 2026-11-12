@@ -34,15 +34,15 @@ for y in range(CUT, S.shape[0]):
 BODY = Image.fromarray(_BODY)
 
 # key table, 8 frames, per leg: (dx forward in px at the foot, lift in rows). Frame 0 and 7 are his standing pose or close to it; 1-2 push off, 3-4 flight (fore reaching, hind trailing), 5-6 landing.
-KEYS = {"near_hind": [(0, 0, 0, 0), (-3, -1, 0, 0), (-6, -2, 0, 1), (-7, -3, 0, 1), (-3, 0, 2, 1), (4, 2, 1, 0), (5, 2, 0, 0), (2, 1, 0, 0)],
-        "far_hind":  [(0, 0, 0, 0), (-2, 0, 0, 0), (-5, -2, 0, 1), (-7, -3, 0, 1), (-1, 0, 2, 1), (3, 2, 1, 0), (5, 2, 0, 0), (3, 1, 0, 0)],
-        "near_fore": [(0, 0, 0, 0), (2, 1, 1, 0), (6, 3, 0, 1), (7, 3, 0, 1), (3, 1, 2, 1), (5, 2, 0, 0), (2, 1, 0, 0), (-1, 0, 0, 0)],
-        "far_fore":  [(0, 0, 0, 0), (1, 0, 1, 0), (5, 3, 0, 1), (7, 3, 0, 1), (4, 2, 2, 1), (6, 3, 0, 0), (3, 1, 0, 0), (-1, 0, 0, 0)]}
-# (foot dx, knee dx, lift rows, in the air): the rows shear piecewise from the hip row (0) to the knee row (knee dx) to the foot row (foot dx), at most one pixel per row so the leg stays whole.
-# Extension frames (2,3): legs full length, fore stretched forward and hind trailing, the figure up with the body; gather frame (4): legs tucked (rows deleted).
-RISE = [0, 0, 2, 3, 2, 0, 0, 0]                     # body up in the flight frames
-NOD = [0, 0, -1, -1, 0, 1, 1, 0]
-HAUNCH = [0, 0, 1, 1, 0, -1, -1, 0]                    # head
+KEYS = {"near_hind": [(0, 0, 0, 0), (-3, -1, 0, 0), (-7, -3, 1, 1), (-7, -3, 1, 1), (-2, 0, 3, 1), (4, 2, 1, 0), (5, 2, 0, 0), (2, 1, 0, 0)],
+        "far_hind":  [(0, 0, 0, 0), (-2, 0, 0, 0), (-6, -3, 1, 1), (-7, -3, 1, 1), (-1, 0, 3, 1), (3, 2, 1, 0), (5, 2, 0, 0), (3, 1, 0, 0)],
+        "near_fore": [(0, 0, 0, 0), (2, 1, 1, 0), (6, 3, 1, 1), (7, 3, 1, 1), (3, 1, 3, 1), (5, 2, 0, 0), (2, 1, 0, 0), (-1, 0, 0, 0)],
+        "far_fore":  [(0, 0, 0, 0), (1, 0, 1, 0), (5, 2, 1, 1), (7, 3, 1, 1), (4, 2, 3, 1), (6, 3, 0, 0), (3, 1, 0, 0), (-1, 0, 0, 0)]}
+# (foot dx, knee dx, lift rows, in the air): the rows shear from the hip row (0) to the knee row to the foot row, never more than about one pixel per row (so the leg stays whole and attached);
+# a leg swung out far loses a row (its length stays near what he drew), a tucked leg (frame 4) loses three. Frame 0 is his standing pose.
+RISE = [0, 0, 3, 4, 3, 0, 0, 0]                     # body up in the flight frames (frames 1 and 5 lift only the body, the legs push/land)
+NOD = [0, 0, -1, -2, -1, 1, 2, 0]
+HAUNCH = [0, 0, 0, 0, 0, 0, 0, 0]      # no haunch shear: it tore thin lines across the belly where the legs join                    # head
 
 def pose_leg(name, dx, kx, lift):
     """his leg pixels, rows sheared by dx (0 at the hip row, dx at the foot row), `lift` rows deleted from the middle (top-anchored: the foot rises)"""
@@ -50,7 +50,7 @@ def pose_leg(name, dx, kx, lift):
     cut = set(rows[n // 2: n // 2 + lift]) if lift else set(); keep = [y for y in rows if y not in cut]
     out = np.zeros((H, W, 4), np.uint8)
     for k, y in enumerate(keep):
-        yy = CUT + k; r = yy - CUT; KR = 4; sh = int(round(kx * r / KR)) if r <= KR else int(round(kx + (dx - kx) * (r - KR) / (LOW - CUT - KR)))
+        yy = CUT + k; u = k / max(1, len(keep) - 1); sh = int(round(kx * u / 0.5)) if u <= 0.5 else int(round(kx + (dx - kx) * (u - 0.5) / 0.5))
         for x in range(S.shape[1]):
             if p[y, x, 3]:
                 nx = x + sh + ox
