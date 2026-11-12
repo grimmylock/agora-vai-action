@@ -12,6 +12,9 @@ namespace GameCore
 {
     public static class MutantAttack
     {
+        /// <summary>Profile sprites look wrong running or leaping straight up or down the screen (Yan, 2026-11-12), so a charge only starts within ~31 degrees of horizontal (|dy| <= 0.6 |dx|) and a pounce within 45 degrees; otherwise the mutant first moves to a flank tile on its side of the target (Stance 3).</summary>
+        public const float ChargeSideRatio = 0.6f, PounceSideRatio = 1.0f;
+        public static bool SideOk(Mutant m, ICombatant t, float ratio) => System.Math.Abs(t.Y - m.Y) <= ratio * System.Math.Abs(t.X - m.X);
         public const float BiteBShare = 0.4f, SpitSpeed = 10f, KnockdownSeconds = 0.9f, SpitDamageShare = 0.6f, RecloakSeconds = 3f, RecloakDistance = 3, CloakFadeSeconds = 0.35f;
 
         public class Rules { public int PounceMin = 2, PounceMax; public float PounceCd; public string PounceEffect; public int SpitMin = 3, SpitMax; public float SpitCd, SpitShare = SpitDamageShare; public bool PounceFromCloak; public int ChargeMin, ChargeMax; public float ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd; }
@@ -94,13 +97,13 @@ namespace GameCore
                 Begin(m, st, Random.value < BiteBShare ? "bite2" : "bite", now); return true;
             }
             var grid = GameServices.RequireGrid(); bool los = grid != null && grid.CheckLineOfSight(m.X, m.Y, p.X, p.Y);
-            if (rules.ChargeMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.ChargeMin && d <= rules.ChargeMax && los && now >= st.NextCharge)
+            if (rules.ChargeMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.ChargeMin && d <= rules.ChargeMax && los && now >= st.NextCharge && SideOk(m, p, ChargeSideRatio))
             {
                 st.NextCharge = now + rules.ChargeCd; nextShot = System.Math.Max(nextShot, now + 1f); Begin(m, st, "charge", now);
                 float cx = m.X + 0.5f, cy = m.Y + 0.5f, tx = p.X + 0.5f - cx, ty = p.Y + 0.5f - cy, len = Mathf.Sqrt(tx * tx + ty * ty);
                 st.ChargeDx = tx / len; st.ChargeDy = ty / len; st.ChargeX0 = cx; st.ChargeY0 = cy; st.ChargeDist = 0f; st.ChargeRunStart = -1f; st.ChargeLast = now; st.ChargeEnd = -1f; return true;     // the direction is fixed NOW: it does not turn while it runs, so the player can step aside
             }
-            if (rules.PounceMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.PounceMin && d <= rules.PounceMax && los && now >= st.NextPounce && FindLanding(m, p, out int lx, out int ly))
+            if (rules.PounceMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.PounceMin && d <= rules.PounceMax && los && now >= st.NextPounce && SideOk(m, p, PounceSideRatio) && FindLanding(m, p, out int lx, out int ly))
             {
                 st.NextPounce = now + rules.PounceCd; st.FromX = m.X; st.FromY = m.Y; st.ToX = lx; st.ToY = ly; nextShot = System.Math.Max(nextShot, now + 1f);
                 Begin(m, st, "pounce", now); return true;
@@ -214,10 +217,24 @@ namespace GameCore
             switch (m.Db.Name)
             {
                 case "Pallid Prowler": return d < r.SpitMin ? -1 : (d > r.SpitMax || !los) ? 1 : 0;
-                case "Dread Prowler": if (now < st.NextPounce) return 2; return (d > r.PounceMax || !los) ? 1 : d < 3 ? -1 : 0;
-                case "Blind Maw": if (now < st.NextCharge) return 2; return d > r.ChargeMax ? 1 : d < r.ChargeMin ? -1 : los ? 0 : 1;
+                case "Dread Prowler": if (now < st.NextPounce) return 2; if (d > r.PounceMax || !los) return 1; if (d < 3) return -1; return SideOk(m, p, PounceSideRatio) ? 0 : 3;
+                case "Blind Maw": if (now < st.NextCharge) return 2; if (d > r.ChargeMax) return 1; if (d < r.ChargeMin) return -1; if (!los) return 1; return SideOk(m, p, ChargeSideRatio) ? 0 : 3;
                 default: return 2;
             }
+        }
+
+        /// <summary>The tile a canine steps to when its lunge would be vertical: level with the target (or one row off), on the side it is already on, at charge or pounce distance.</summary>
+        public static bool FlankGoal(Mutant m, ICombatant t, out int gx, out int gy)
+        {
+            var r = RuleSet[m.Db.Name]; int dist = r.ChargeMax > 0 ? r.ChargeMin + 1 : System.Math.Min(r.PounceMax, 4); int side = m.X >= t.X ? 1 : -1; gx = gy = 0;
+            foreach (int k in new[] { dist, dist - 1, dist + 1 })
+                foreach (int dy in new[] { 0, 1, -1 })
+                    foreach (int sd in new[] { side, -side })
+                    {
+                        int x = t.X + sd * k, y = t.Y + dy;
+                        if (TerrainMap.CanEnterTile(x, y) && TerrainMap.UnitAt(x, y, m) == null) { gx = x; gy = y; return true; }
+                    }
+            return false;
         }
 
         static void Contact(Mutant m, Player p, State st, float now)

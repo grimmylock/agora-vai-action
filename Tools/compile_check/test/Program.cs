@@ -2163,6 +2163,16 @@ static class Program {
     for (int i = 0; i < 160; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mv, p, UnityEngine.Time.time, ref ns); }
     Check(!early && stillShowing && mv.IsCloaked, $"MutantAttack: the Veil re-cloaks 3 s after its strike (early {early}); a hit while slipping away restarts the timer (still showing at 4 s: {stillShowing}); cloaked again at 5.6 s: {mv.IsCloaked}");
     Check(MutantAttack.DissolveIndex(0f) == -1 && MutantAttack.DissolveIndex(1f) == -1 && MutantAttack.DissolveIndex(0.5f) == 3, "MutantAttack: the cloak's pixel dissolve plays only while the fade is in between");
+    // profile sprites: a charge or a pounce straight up or down the screen is not started; the canine first moves level with the target
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); p.X = px; p.Y = py;
+    var above = new Mutant("BlindMaw", px, py - 5, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(above); Rt.SetOffset(above, 0f, 0f); ns = 0f; bool chargedVertical = false;
+    for (int i = 0; i < 100; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(above, p, UnityEngine.Time.time, ref ns); if (MutantAttack.KindOf(above) == "charge") chargedVertical = true; }
+    bool gotGoal = MutantAttack.FlankGoal(above, p, out int gx, out int gy);
+    Check(!chargedVertical && MutantAttack.Stance(above, p, UnityEngine.Time.time) == 3 && gotGoal && System.Math.Abs(gy - p.Y) <= 1 && System.Math.Abs(gx - p.X) >= 4, $"MutantAttack: a Maw straight above the player does not charge and heads for a flank tile ({gx},{gy}) level with the target");
+    var diag = new Mutant("BlindMaw", px + 5, py - 2, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(diag); Rt.SetOffset(diag, 0f, 0f); ns = 0f; bool chargedDiag = false;
+    for (int i = 0; i < 100; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(diag, p, UnityEngine.Time.time, ref ns); if (MutantAttack.KindOf(diag) == "charge") chargedDiag = true; }
+    Check(chargedDiag && MutantAttack.SideOk(diag, p, 0.6f) && !MutantAttack.SideOk(above, p, 1.0f), "MutantAttack: a Maw that is mostly level with the player charges");
+    EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
     // co-op: the host's attack state as the snapshot carries it replays on a client's mirror (kind, the slide of a pounce, the glob of a spit, the cloak flag)
     p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
     var hostD = Spawn("Dread Prowler", 4).m; ns = 0f; (byte code, byte t20, sbyte d1, sbyte d2) net = (0, 0, 0, 0);

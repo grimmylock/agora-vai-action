@@ -63,6 +63,7 @@ namespace GameCore
                 else if (stance == 1) m.MoveToward(p.X, p.Y);
                 else if (stance == -1) m.MoveAwayFrom(p);
                 else if (stance == 0) { }
+                else if (stance == 3) { if (MutantAttack.FlankGoal(m, p, out int fgx, out int fgy)) m.MoveToward(fgx, fgy); }      // level with the target before a lunge (profile sprites)
                 else if (s.Chasing && !CombatantUtil.IsAdjacent(m, p) && !m.IsInEngageRange(p)) m.MoveToward(p.X, p.Y);
                 else if (s.Goal.HasValue && (m.X, m.Y) != s.Goal.Value && !m.MoveToward(s.Goal.Value.x, s.Goal.Value.y)) s.Goal = null;
             }
