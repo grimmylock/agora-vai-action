@@ -1,0 +1,17 @@
+{
+ "boulder": {
+  "w": 16,
+  "h": 16,
+  "frames": 6
+ },
+ "rock_hit": {
+  "w": 36,
+  "h": 24,
+  "frames": 6
+ },
+ "slam_dust": {
+  "w": 64,
+  "h": 24,
+  "frames": 6
+ }
+}

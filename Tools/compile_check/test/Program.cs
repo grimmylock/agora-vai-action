@@ -2191,6 +2191,45 @@ static class Program {
     Check(sc == 4 && MutantAttack.KindOf(mirP) == "spit" && MutantAttack.GlobAt(mirP, UnityEngine.Time.time, out float glx, out float gly, out float gla), $"co-op: a client sees the spit's glob in flight (target {sdx} tiles away)");
     EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
     Check(MutantAttack.Anim("Pallid Prowler", "pounce") == null && MutantAttack.Anim("Veil Prowler", "pounce") != null, "MutantAttack: the Pallid has no pounce, the Veil has");
+    // the Blight Brute (Yan, 2026-11-12): no jump; adjacent = SLAM when ready (10 s, knocks down) else a lateral SWIPE; out of reach for 5 s in sight = a BOULDER that lands after it flies
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.Of(p).ProneUntil = -1f; p.X = px; p.Y = py;
+    var brute = new Mutant("BlightBrute", px + 1, py, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(brute); Rt.SetOffset(brute, 0f, 0f); ns = 0f;
+    var bSlam = GameData.MutantAttackData.Table["Blight Brute"]["slam"]; var bSwipe = GameData.MutantAttackData.Table["Blight Brute"]["swipe"]; var bThrow = GameData.MutantAttackData.Table["Blight Brute"]["throw"];
+    var kinds = new System.Collections.Generic.List<string>(); string lastKind = null; float tSlam = -1f, slamHitAt = -1f; int hpB = p.Hp; bool knocked = false;
+    for (int i = 0; i < 1500; i++) {
+      UnityEngine.Time.time += 0.01f; MutantAttack.Update(brute, p, UnityEngine.Time.time, ref ns); string k = MutantAttack.KindOf(brute);
+      if (k != null && k != lastKind) { kinds.Add(k); if (k == "slam") tSlam = UnityEngine.Time.time; }
+      lastKind = k;
+      if (tSlam > 0f && slamHitAt < 0f && p.Hp < hpB) { slamHitAt = (UnityEngine.Time.time - tSlam) * 1000f; knocked = Rt.Of(p).ProneUntil > UnityEngine.Time.time; }
+      if (p.Hp < 3000) p.HealPermanent(5000);
+    }
+    Check(kinds.Count >= 2 && kinds[0] == "slam" && kinds.Contains("swipe") && !kinds.Contains("pounce"), $"Blight Brute: adjacent it slams first, then swipes, and never jumps ({string.Join(",", kinds)})");
+    Check(slamHitAt >= bSlam.ContactMs && slamHitAt < bSlam.ContactMs + 150f && knocked, $"Blight Brute: the slam lands on its contact frame ({slamHitAt:0} ms, contact {bSlam.ContactMs} ms) and knocks the player down");
+    int slams = 0; foreach (var kk in kinds) if (kk == "slam") slams++;
+    Check(slams == 2, $"Blight Brute: 15 s adjacent = 2 slams (10 s cooldown), got {slams}");
+    // out of reach: nothing for 5 s, then a boulder; it lands after flying, and a player who stepped away from the target tile is missed
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.Of(p).ProneUntil = -1f; p.X = px; p.Y = py;
+    var far = new Mutant("BlightBrute", px + 6, py, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(far); Rt.SetOffset(far, 0f, 0f); ns = 0f; int hpF = p.Hp; float tb0 = UnityEngine.Time.time, tThrow = -1f, tDmg = -1f; bool sawRock = false;
+    for (int i = 0; i < 1100; i++) {
+      UnityEngine.Time.time += 0.01f; MutantAttack.Update(far, p, UnityEngine.Time.time, ref ns);
+      if (tThrow < 0f && MutantAttack.KindOf(far) == "throw") tThrow = UnityEngine.Time.time;
+      if (MutantAttack.BoulderAt(far, UnityEngine.Time.time, out float rbx, out float rby, out float rbh, out int rbf)) sawRock = true;
+      if (tThrow > 0f && tDmg < 0f && p.Hp < hpF) tDmg = UnityEngine.Time.time;
+    }
+    Check(tThrow - tb0 >= 5f && tThrow - tb0 < 5.3f, $"Blight Brute: a boulder only after 5 s out of reach ({tThrow - tb0:0.00} s)");
+    Check(sawRock && tDmg > tThrow + bThrow.ContactMs / 1000f && p.Hp < hpF, $"Blight Brute: the boulder flies, then hits after its contact frame ({(tDmg - tThrow) * 1000f:0} ms > {bThrow.ContactMs} ms)");
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); p.X = px; p.Y = py;
+    var far2 = new Mutant("BlightBrute", px + 6, py, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(far2); Rt.SetOffset(far2, 0f, 0f); ns = 0f; int hpG = p.Hp; bool moved = false;
+    for (int i = 0; i < 1100; i++) {
+      UnityEngine.Time.time += 0.01f; MutantAttack.Update(far2, p, UnityEngine.Time.time, ref ns);
+      if (!moved && MutantAttack.KindOf(far2) == "throw" && UnityEngine.Time.time - 0f > 0f) { p.Y = py + 4; moved = true; }
+    }
+    Check(moved && p.Hp >= hpG, "Blight Brute: a player who steps clear of the target tile dodges the boulder");
+    var hostB = new Mutant("BlightBrute", px + 1, py, MutantDatabase.Get("tier4", "BlightBrute")); p.Y = py; MutantAttack.Reset(); ns = 0f; (byte code, byte t20, sbyte d1, sbyte d2) nb = (0, 0, 0, 0);
+    for (int i = 0; i < 30; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(hostB, p, UnityEngine.Time.time, ref ns); }
+    nb = MutantAttack.NetState(hostB, UnityEngine.Time.time); var mirB = new Mutant("BlightBrute", hostB.X, hostB.Y, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(mirB);
+    MutantAttack.Mirror(mirB, nb.code, nb.t20 * 0.02f, nb.d1, nb.d2, UnityEngine.Time.time);
+    Check(nb.code == 6 && MutantAttack.KindOf(mirB) == "slam", $"co-op: a client's mirror plays the Brute's slam (code {nb.code})");
     p.StatusEffects.ToxicBleed = false; EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.On = false;
   }
   // Any lock-and-key dungeon on the real built map (2026-11-11): every key object exists, the goal is unreachable with no keys and with all but the LAST key, reachable with all of them, one way out.

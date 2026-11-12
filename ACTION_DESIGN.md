@@ -345,6 +345,15 @@ A cutscene, started by examining the drowned crewman on the slab (E, prompt "Exa
 - **Co-op:** the host sends each attacking canine's attack (kind, elapsed, a pounce's start tile or a spit's target tile) and the cloak flag in the snapshot (4 extra bytes only while an attack plays); joined players replay it on their mirrors (`MutantAttack.Mirror`); the damage and hit effects reach them as the host's strike events.
 - Art: `ArtSource/mutants_anim/{veil,pallid,dread,maw}_attacks/` (strips + json: ms, travel, spawn/muzzle). Only the body and the head animate (no jaw), except the Blind Maw's jaw chomp; no impact flash (the hit effects are the target's: `CombatFxView.Wound`).
 
+
+## Blight Brute's attacks (Yan, 2026-11-12)
+No jumps ("he's too heavy"). Art: Yan's own AI-generated pose sheet (`ArtSource/refs/brute/brute_poses_ai.jpg`), recovered to game pixels (`brute_recover.py`, `brute_build.py`); the new Brute REPLACES the old sprite everywhere (stand, walk, attacks).
+- **Lateral swipe** (adjacent, normal melee cooldown 1.0-1.6 s like every bite): the small arm sweeps across; damage on its contact frame.
+- **Ground slam** (adjacent, **10 s cooldown**, used first when ready): rears up and crashes down on the big fist, dust ring; on the contact frame **every player next to it** (co-op) is hit and **knocked down** (`KnockdownSeconds`, like the Dread's pounce).
+- **Boulder** (`MutantAttack.BoulderOutSeconds` = **5 s** out of reach in a row, in line of sight, 2-10 tiles): rips a rock up, lifts it, throws it; the rock flies at 9 tiles/s on an arc and lands after the throw's contact frame; **damage 40 % of its attack (about 250 of 600)**, and only a player within 1 tile of the tile it was thrown at is hit, so stepping aside dodges it. After a throw the 5 s start again.
+- Co-op: new attack codes 6 slam, 7 swipe, 8 throw in `MutantAttack.NetState/Mirror`; the rock and the dust are drawn from the same state on clients.
+- My numbers (not Yan's): boulder speed 9 tiles/s, range 2-10, 40 % damage, hit radius 1, throw/slam/swipe timings. Never run in Unity.
+
 ## Later list
 
 - **A front-facing eel sprite (Yan, 2026-11-06, "might be useful", for later):** the head and neck from the front (his reference: spiny frill, two white eyes, open dripping mouth, ribbed belly, a splash ring where it leaves the water). Use: the scream at the sky/camera, the rear-up, a lunge toward the screen. Save the reference into `ArtSource/refs/eel/` and bend/cut it from his drawing like the profile (`eel_poses.py`), never generate it.

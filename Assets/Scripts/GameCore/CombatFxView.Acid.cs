@@ -15,9 +15,29 @@ namespace GameCore
             {
                 var glob = UnitSprites.HDFx("pallid_acid_glob", 6, new Vector2(13f / 18f, 0.5f));      // the head is 5 px from the right edge, the tail streams left
                 var splat = UnitSprites.HDFx("pallid_acid_splat", 6, new Vector2(0.5f, 4f / 14f));      // bottom centre on the ground
+                var rock = UnitSprites.HDFx("brute_boulder", 6, new Vector2(0.5f, 0.5f)); var rockHit = UnitSprites.HDFx("brute_rock_hit", 6, new Vector2(0.5f, 6f / 24f)); var dust = UnitSprites.HDFx("brute_slam_dust", 6, new Vector2(0.5f, 5f / 24f));      // the Blight Brute's boulder, its shatter and the slam dust
                 foreach (var e in EncounterState.Enemies)
                 {
                     var m = e as Mutant; if (m == null || !MutantAttack.Has(m)) continue;
+                    if (m.Db.Name == "Blight Brute")
+                    {
+                        if (rock != null && MutantAttack.BoulderAt(m, Time.time, out float bx, out float by, out float bh, out int bf))
+                        {
+                            var sr = Pooled(_acid, n++, "Boulder", 9); if (sr == null) continue;
+                            sr.sprite = rock[bf % rock.Length]; sr.color = Color.white; sr.transform.position = W(bx, by, bh); sr.transform.rotation = Quaternion.identity; sr.transform.localScale = Vector3.one;
+                        }
+                        if (rockHit != null && MutantAttack.SplatAt(m, Time.time, out float hx, out float hy, out int hf))
+                        {
+                            var sr = Pooled(_acid, n++, "RockHit", 8); if (sr == null) continue;
+                            sr.sprite = rockHit[Mathf.Clamp(hf, 0, rockHit.Length - 1)]; sr.color = Color.white; sr.transform.position = W(hx, hy, 0.1f); sr.transform.rotation = Quaternion.identity; sr.transform.localScale = Vector3.one;
+                        }
+                        if (dust != null && MutantAttack.DustAt(m, Time.time, out int df))
+                        {
+                            var (dox, doy) = Rt.Offset(m); var sr = Pooled(_acid, n++, "SlamDust", 8); if (sr == null) continue;
+                            sr.sprite = dust[Mathf.Clamp(df, 0, dust.Length - 1)]; sr.color = Color.white; sr.transform.position = W(m.X + 0.5f + dox, m.Y + 0.5f + doy, 0.1f); sr.transform.rotation = Quaternion.identity; sr.transform.localScale = Vector3.one;
+                        }
+                        continue;
+                    }
                     if (glob != null && MutantAttack.GlobAt(m, Time.time, out float gx, out float gy, out float ang))
                     {
                         var sr = Pooled(_acid, n++, "Glob", 9); if (sr == null) continue;

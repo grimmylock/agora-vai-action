@@ -15,21 +15,23 @@ namespace GameCore
         /// <summary>Profile sprites look wrong running or leaping straight up or down the screen (Yan, 2026-11-12), so a charge only starts within ~31 degrees of horizontal (|dy| <= 0.6 |dx|) and a pounce within 45 degrees; otherwise the mutant first moves to a flank tile on its side of the target (Stance 3).</summary>
         public const float ChargeSideRatio = 0.6f, PounceSideRatio = 1.0f;
         public static bool SideOk(Mutant m, ICombatant t, float ratio) => System.Math.Abs(t.Y - m.Y) <= ratio * System.Math.Abs(t.X - m.X);
+        public const float BoulderSpeed = 9f, BoulderShare = 0.4f, BoulderOutSeconds = 5f; public const int BoulderHitRadius = 1;
         public const float BiteBShare = 0.4f, SpitSpeed = 10f, KnockdownSeconds = 0.9f, SpitDamageShare = 0.6f, RecloakSeconds = 3f, RecloakDistance = 3, CloakFadeSeconds = 0.35f;
 
-        public class Rules { public int PounceMin = 2, PounceMax; public float PounceCd; public string PounceEffect; public int SpitMin = 3, SpitMax; public float SpitCd, SpitShare = SpitDamageShare; public bool PounceFromCloak; public int ChargeMin, ChargeMax; public float ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd; }
+        public class Rules { public int PounceMin = 2, PounceMax; public float PounceCd; public string PounceEffect; public int SpitMin = 3, SpitMax; public float SpitCd, SpitShare = SpitDamageShare; public bool PounceFromCloak; public int ChargeMin, ChargeMax; public float ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd; public string MeleeA = "bite", MeleeB = "bite2"; public float SlamCd; public int BoulderMin, BoulderMax; }
         public static readonly Dictionary<string, Rules> RuleSet = new Dictionary<string, Rules>
         {
             ["Veil Prowler"] = new Rules { PounceMax = 4, PounceCd = 6f, PounceFromCloak = true },
             ["Pallid Prowler"] = new Rules { SpitMax = 6, SpitCd = 3.5f },
             ["Dread Prowler"] = new Rules { PounceMax = 6, PounceCd = 10f, PounceEffect = "knockdown" },
+            ["Blight Brute"] = new Rules { MeleeA = "swipe", MeleeB = null, SlamCd = 10f, BoulderMin = 2, BoulderMax = 10 },       // Yan, 2026-11-12: no jumps (too heavy): a lateral SWIPE, a GROUND SLAM (10 s, knocks down), a BOULDER after 5 s out of reach
             ["Blind Maw"] = new Rules { ChargeMin = 4, ChargeMax = 6, ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd = 8f, PounceEffect = "bleed" },     // the Maw does not leap: it CHARGES in a straight line (Yan, 2026-11-12)
         };
 
         class State
         {
             public string Kind; public float Start; public bool Hit, Launched;
-            public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit;
+            public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f;
             public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Mirror; public float DisengageUntil; public float NextCharge, ChargeRunStart = -1f, ChargeDx, ChargeDy, ChargeX0, ChargeY0, ChargeDist, ChargeLast, ChargeEnd = -1f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
@@ -92,9 +94,11 @@ namespace GameCore
             var rules = RuleSet[m.Db.Name]; int d = CombatantUtil.Distance(m, p);
             if (d <= 1)
             {
+                st.OutSince = -1f;
                 if (now < nextShot) return false;
                 nextShot = now + BiteCooldown(m, Random.value);
-                Begin(m, st, Random.value < BiteBShare ? "bite2" : "bite", now); return true;
+                if (rules.SlamCd > 0f && now >= st.NextSlam) { st.NextSlam = now + rules.SlamCd; st.DustStart = -99f; Begin(m, st, "slam", now); return true; }
+                Begin(m, st, rules.MeleeB != null && Random.value < BiteBShare ? rules.MeleeB : rules.MeleeA, now); return true;
             }
             var grid = GameServices.RequireGrid(); bool los = grid != null && grid.CheckLineOfSight(m.X, m.Y, p.X, p.Y);
             if (rules.ChargeMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.ChargeMin && d <= rules.ChargeMax && los && now >= st.NextCharge && SideOk(m, p, ChargeSideRatio))
@@ -107,6 +111,15 @@ namespace GameCore
             {
                 st.NextPounce = now + rules.PounceCd; st.FromX = m.X; st.FromY = m.Y; st.ToX = lx; st.ToY = ly; nextShot = System.Math.Max(nextShot, now + 1f);
                 Begin(m, st, "pounce", now); return true;
+            }
+            if (rules.BoulderMax > 0)                                                  // the Brute: out of reach for 5 s in a row and in sight, it rips up a rock and throws it
+            {
+                if (st.OutSince < 0f) st.OutSince = now;
+                if (d >= rules.BoulderMin && d <= rules.BoulderMax && los && now - st.OutSince >= BoulderOutSeconds)
+                {
+                    st.OutSince = -1f; st.SpitTx = p.X; st.SpitTy = p.Y; st.SpitArrive = -1f; st.SpitDone = false; nextShot = System.Math.Max(nextShot, now + 1f);
+                    Begin(m, st, "throw", now); return true;
+                }
             }
             if (rules.SpitMax > 0 && d >= rules.SpitMin && d <= rules.SpitMax && los && now >= st.NextSpit && Random.value < 0.6f)
             {
@@ -138,8 +151,9 @@ namespace GameCore
                 if (st.Launched) { float k = 1f - TravelAt(a.Ms, a.Travel, tMs); Rt.SetSlide(m, (st.FromX - st.ToX) * k, (st.FromY - st.ToY) * k); }
             }
             if (!st.Hit && tMs >= a.ContactMs) { st.Hit = true; Contact(m, p, st, now); }
-            if (st.Kind == "spit" && st.SpitArrive > 0f && !st.SpitDone && now >= st.SpitArrive) { st.SpitDone = true; st.SplatStart = now; SpitLands(m, p, st); }
-            if (tMs >= a.TotalMs && (st.Kind != "spit" || st.SpitDone || st.SpitArrive < 0f))
+            bool ranged = st.Kind == "spit" || st.Kind == "throw";
+            if (ranged && st.SpitArrive > 0f && !st.SpitDone && now >= st.SpitArrive) { st.SpitDone = true; st.SplatStart = now; if (st.Kind == "throw") BoulderLands(m, st); else SpitLands(m, p, st); }
+            if (tMs >= a.TotalMs && (!ranged || st.SpitDone || st.SpitArrive < 0f))
             {
                 if (st.Kind == "pounce" && st.Launched) Rt.ReleaseSlide(m);
                 st.Kind = null; AfterAttack(m, p, st, now);
@@ -239,8 +253,15 @@ namespace GameCore
 
         static void Contact(Mutant m, Player p, State st, float now)
         {
+            if (st.Kind == "slam")                                                    // the big fist lands: everyone next to it is hit and knocked down (co-op: every player, not only the target)
+            {
+                st.DustStart = now;
+                foreach (var pl in Player.All.ToArray())
+                    if (pl != null && pl.IsAlive() && !Body.Down(pl) && CombatantUtil.IsAdjacent(m, pl) && Strike(m, pl, 1f, false)) Effect(m, pl, "knockdown");
+                return;
+            }
             if (p == null || !p.IsAlive()) return;
-            if (st.Kind == "spit")
+            if (st.Kind == "spit" || st.Kind == "throw")
             {
                 float dist = Mathf.Sqrt((st.SpitTx - m.X) * (st.SpitTx - m.X) + (st.SpitTy - m.Y) * (st.SpitTy - m.Y));
                 st.SpitArrive = now + dist / SpitSpeed; return;                      // the glob is drawn by the view from GlobAt()
@@ -256,6 +277,16 @@ namespace GameCore
             if (CombatantUtil.Distance(m, p) < 1) return;
             bool hit = Strike(m, p, RuleSet[m.Db.Name].SpitShare, true);
             if (hit && p.IsAlive()) { p.StatusEffects.ToxicBleed = true; GameLog.Write("The acid burns: you suffer Toxic Bleed."); }
+        }
+
+        /// <summary>The rock comes down: every player within BoulderHitRadius tiles of where it lands is hit (a player who stepped away from the tile it was thrown at is missed).</summary>
+        static void BoulderLands(Mutant m, State st)
+        {
+            foreach (var pl in Player.All.ToArray())
+            {
+                if (pl == null || !pl.IsAlive() || Body.Down(pl) || CombatantUtil.Distance(pl, st.SpitTx, st.SpitTy) > BoulderHitRadius) continue;
+                if (Strike(m, pl, BoulderShare, true)) GameLog.Write("The boulder crashes into you!");
+            }
         }
 
         /// <summary>One resolved strike through Mutant.Attack (its fx event, the hurt/blood effects, the wound system); returns whether it hit.</summary>
@@ -291,7 +322,7 @@ namespace GameCore
         }
 
         // ---- co-op (2026-11-12): the host sends each mutant's attack as a code, the seconds since it began (20 ms steps) and two small tile deltas; a joined player's mirror replays it ----
-        const string Codes = "|bite|bite2|pounce|spit|charge";
+        const string Codes = "|bite|bite2|pounce|spit|charge|slam|swipe|throw";
         /// <summary>For a snapshot: (attack code 0..5, elapsed in 20 ms steps, d1, d2). d = (from tile - landing tile) for a pounce, (target tile - this tile) for a spit.</summary>
         public static (byte code, byte t20, sbyte d1, sbyte d2) NetState(Mutant m, float now)
         {
@@ -300,7 +331,7 @@ namespace GameCore
             sbyte D(int v) => (sbyte)Mathf.Clamp(v, -127, 127);
             sbyte d1 = 0, d2 = 0;
             if (st.Kind == "pounce") { d1 = D(st.FromX - m.X); d2 = D(st.FromY - m.Y); }
-            else if (st.Kind == "spit") { d1 = D(st.SpitTx - m.X); d2 = D(st.SpitTy - m.Y); }
+            else if (st.Kind == "spit" || st.Kind == "throw") { d1 = D(st.SpitTx - m.X); d2 = D(st.SpitTy - m.Y); }
             return ((byte)code, (byte)Mathf.Clamp(Mathf.RoundToInt((now - st.Start) * 50f), 0, 255), d1, d2);
         }
 
@@ -317,7 +348,7 @@ namespace GameCore
             var a = Anim(m.Db.Name, kind);
             if (kind == "pounce") { st.FromX = m.X + d1; st.FromY = m.Y + d2; st.ToX = m.X; st.ToY = m.Y; Rt.HoldSlide(m); }
             else if (kind == "charge") Rt.HoldSlide(m);                                      // the host's tile and in-tile offset already carry the run, no smoothing on top
-            else if (kind == "spit" && a != null)
+            else if ((kind == "spit" || kind == "throw") && a != null)
             {
                 st.SpitTx = m.X + d1; st.SpitTy = m.Y + d2;
                 float dist = Mathf.Sqrt(d1 * d1 + d2 * d2); st.SpitArrive = st.Start + a.ContactMs / 1000f + dist / SpitSpeed;
@@ -354,6 +385,30 @@ namespace GameCore
             float tMs = (now - ss) * 1000f; int total = 0; foreach (var d in SplatMs) total += d;
             if (tMs < 0f || tMs >= total) return false;
             frame = FrameIndexAt(SplatMs, tMs); x = st.SpitTx + 0.5f; y = st.SpitTy + 0.5f; return true;
+        }
+
+        /// <summary>The Brute's boulder in flight: tile-space position, height above the ground (an arc) and which of its 6 tumbling frames to draw.</summary>
+        public static bool BoulderAt(Mutant m, float now, out float x, out float y, out float h, out int frame)
+        {
+            x = y = h = 0f; frame = 0;
+            if (m == null || !States.TryGetValue(m, out var st) || st.Kind != "throw" || st.SpitArrive < 0f || st.SpitDone || now >= st.SpitArrive) return false;
+            var a = Anim(m.Db.Name, "throw"); if (a == null) return false;
+            float tStart = st.Start + a.ContactMs / 1000f, k = Mathf.Clamp01((now - tStart) / Mathf.Max(0.01f, st.SpitArrive - tStart));
+            float sx = m.X + 0.5f, sy = m.Y + 0.5f, tx = st.SpitTx + 0.5f, ty = st.SpitTy + 0.5f;
+            x = sx + (tx - sx) * k; y = sy + (ty - sy) * k; h = 0.9f * (1f - k) + 0.55f * Mathf.Sin(Mathf.PI * k) + 0.1f; frame = (int)(now * 14f) % 6; return true;
+        }
+
+        public static readonly int[] DustMs = { 60, 60, 70, 80, 120, 140 };
+        /// <summary>The slam's dust ring round the Brute (tile space) and which of its frames is up, for 0.53 s after the fist lands.</summary>
+        public static bool DustAt(Mutant m, float now, out int frame)
+        {
+            frame = 0;
+            if (m == null || !States.TryGetValue(m, out var st)) return false;
+            float ds = st.Kind == "slam" && st.Mirror ? st.Start + (Anim(m.Db.Name, "slam")?.ContactMs ?? 0) / 1000f : st.DustStart;
+            if (ds < 0f) return false;
+            float tMs = (now - ds) * 1000f; int total = 0; foreach (var d in DustMs) total += d;
+            if (tMs < 0f || tMs >= total) return false;
+            frame = FrameIndexAt(DustMs, tMs); return true;
         }
 
         /// <summary>Where the spit glob is right now (tile space), or false when none is in the air; the view flies the glob with it.</summary>
