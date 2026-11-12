@@ -334,6 +334,14 @@ flanks and suppresses; downed and bleed-out. Old turn-based saves are not compat
 ### The eel's introduction (Yan, 2026-11-07)
 A cutscene, started by examining the drowned crewman on the slab (E, prompt "Examine the body"): the eel erupts from the west pool, slithers round, swallows the body on its way to the east pool, then rises out of the middle pool and the fight starts. Camera work (glides, close-ups, black bars), ESC skips. See WORK_LOG "Eel: the introduction is a cutscene".
 
+## Canine mutants' attacks (Yan, 2026-11-12: Pallid, Veil, Dread, Blind Maw)
+- **Timing, all four:** an attack plays its animation; the cooldown is counted from the START of the animation (attack rate unchanged, no nerf); the damage, the hit effects and the blood land at the CONTACT frame (bite: the snap, about 45 % in; pounce: the landing; spit: when the glob arrives).
+- **Bite** when adjacent: bite A about 60 %, bite B (the rear-up/hop bite) about 40 %; cooldown 1.0 s, 1.6 s for big ones (as now).
+- **Pounce** when the target is 2-5 tiles away with a clear line and the mutant is not hobbled; it lands adjacent and bites on landing. Dread: up to 6 tiles, the hit KNOCKS DOWN what it hits, 10 s cooldown. Blind Maw: up to 4 tiles, 5 s, the hit applies BLEEDING. Veil: the ambush opener from cloak, up to 4 tiles.
+- **Pallid:** no pounce. Ranged acid spit at 3-6 tiles with a clear line when the target is not adjacent (adjacent: bite); 3.5 s cooldown; about 60 % of a bite's damage plus the toxic effect; in a pack some spit while the others close in.
+- **Veil vanish:** starts cloaked; its pounce or bite uncloaks it; it then retreats 3 tiles and re-cloaks after about 3 s out of the player's sight and without being hit; the fade is a short pixel-noise dissolve from full opacity down to the shimmer.
+- Art: `ArtSource/mutants_anim/{veil,pallid,dread,maw}_attacks/` (strips + json: ms, travel, spawn/muzzle). Only the body and the head animate (no jaw), except the Blind Maw's jaw chomp; no impact flash (the hit effects are the target's: `CombatFxView.Wound`).
+
 ## Later list
 
 - **A front-facing eel sprite (Yan, 2026-11-06, "might be useful", for later):** the head and neck from the front (his reference: spiny frill, two white eyes, open dripping mouth, ribbed belly, a splash ring where it leaves the water). Use: the scream at the sky/camera, the rear-up, a lunge toward the screen. Save the reference into `ArtSource/refs/eel/` and bend/cut it from his drawing like the profile (`eel_poses.py`), never generate it.
