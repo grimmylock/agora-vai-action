@@ -34,14 +34,15 @@ for y in range(CUT, S.shape[0]):
 BODY = Image.fromarray(_BODY)
 
 # key table, 8 frames, per leg: (dx forward in px at the foot, lift in rows). Frame 0 and 7 are his standing pose or close to it; 1-2 push off, 3-4 flight (fore reaching, hind trailing), 5-6 landing.
-KEYS = {"near_hind": [(0, 0, 0, 0), (-3, -1, 0, 0), (-7, -3, 1, 1), (-7, -3, 1, 1), (-2, 0, 3, 1), (4, 2, 1, 0), (5, 2, 0, 0), (2, 1, 0, 0)],
-        "far_hind":  [(0, 0, 0, 0), (-2, 0, 0, 0), (-6, -3, 1, 1), (-7, -3, 1, 1), (-1, 0, 3, 1), (3, 2, 1, 0), (5, 2, 0, 0), (3, 1, 0, 0)],
-        "near_fore": [(0, 0, 0, 0), (2, 1, 1, 0), (6, 3, 1, 1), (7, 3, 1, 1), (3, 1, 3, 1), (5, 2, 0, 0), (2, 1, 0, 0), (-1, 0, 0, 0)],
-        "far_fore":  [(0, 0, 0, 0), (1, 0, 1, 0), (5, 2, 1, 1), (7, 3, 1, 1), (4, 2, 3, 1), (6, 3, 0, 0), (3, 1, 0, 0), (-1, 0, 0, 0)]}
-# (foot dx, knee dx, lift rows, in the air): the rows shear from the hip row (0) to the knee row to the foot row, never more than about one pixel per row (so the leg stays whole and attached);
-# a leg swung out far loses a row (its length stays near what he drew), a tucked leg (frame 4) loses three. Frame 0 is his standing pose.
-RISE = [0, 0, 3, 4, 3, 0, 0, 0]                     # body up in the flight frames (frames 1 and 5 lift only the body, the legs push/land)
-NOD = [0, 0, -1, -2, -1, 1, 2, 0]
+KEYS = {"near_hind": [(0, 0, 0, 0), (-4, -2, 0, 0), (-7, -3, 1, 1), (-6, -3, 3, 1), (3, 1, 3, 1), (3, 1, 2, 0), (-2, -1, 0, 0), (1, 0, 0, 0)],
+        "far_hind":  [(0, 0, 0, 0), (-3, -1, 0, 0), (-6, -3, 1, 1), (-5, -2, 3, 1), (2, 1, 3, 1), (3, 1, 2, 0), (-1, 0, 0, 0), (2, 0, 0, 0)],
+        "near_fore": [(0, 0, 0, 0), (3, 1, 0, 0), (7, 3, 1, 1), (6, 3, 1, 1), (1, 0, 1, 1), (5, 2, 0, 0), (3, 1, 0, 0), (0, 0, 0, 0)],
+        "far_fore":  [(0, 0, 0, 0), (2, 1, 0, 0), (6, 3, 1, 1), (7, 3, 1, 1), (2, 0, 1, 1), (6, 3, 0, 0), (4, 2, 0, 0), (0, 0, 0, 0)]}
+# Order of poses taken from the online animator's run (Yan's recording, 2026-11-12; its art was unusable, its timing and poses were not): stand -> push off (hind trailing, fore reaching)
+# -> EXTENSION (long and low: fore forward, hind far back) -> hind foot kicks up behind -> GATHER (hind legs tucked forward under the body, fore straight under the shoulders, the body at its highest)
+# -> LANDING (fore reach and plant, hind folded, head low) -> fore planted, hind push -> back to the stand pose.
+RISE = [0, 0, 1, 1, 3, 0, 0, 0]                     # the body is lowest and longest in the extension, highest in the gather
+NOD = [0, 0, -1, -1, 1, 2, 1, 0]                    # head up in the extension, low in the landing
 HAUNCH = [0, 0, 0, 0, 0, 0, 0, 0]      # no haunch shear: it tore thin lines across the belly where the legs join                    # head
 
 def pose_leg(name, dx, kx, lift):
