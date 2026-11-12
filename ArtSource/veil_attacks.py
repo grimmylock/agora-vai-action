@@ -63,7 +63,7 @@ def render(p):
         hx_ = V.LEGS[n][0][0] + ox + bx; return V.leg_img(n, 0, bob + tilt_shift(hx_, tilt), False, bx, feet[n])
     for n in FAR: im.alpha_composite(leg(n))
     up = Image.new("RGBA", (W, H), (0, 0, 0, 0)); up.alpha_composite(rig.parts["hind"], (ox + bx, oy + bob)); up.alpha_composite(rig.parts["fore"], (ox + bx, oy + bob))
-    hd = open_head(g, p.get("flash", False)); piv = (rig.c["head_x"], rig.c["hinge"][1] - 2 + 4)
+    hd = open_head(g, False)      # no impact flash (Yan: blood and damage effects belong to the target that is hit); piv = (rig.c["head_x"], rig.c["hinge"][1] - 2 + 4)
     if nrot: hd = hd.rotate(nrot, resample=Image.NEAREST, center=piv)
     up.alpha_composite(hd, (ox + bx + nx, oy + bob + ny - 4)); im.alpha_composite(tilt_layer(up, tilt))
     for n in NEAR: im.alpha_composite(leg(n))
