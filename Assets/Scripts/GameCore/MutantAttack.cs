@@ -14,20 +14,20 @@ namespace GameCore
     {
         public const float BiteBShare = 0.4f, SpitSpeed = 10f, KnockdownSeconds = 0.9f, SpitDamageShare = 0.6f, RecloakSeconds = 3f, RecloakDistance = 3, CloakFadeSeconds = 0.35f;
 
-        public class Rules { public int PounceMin = 2, PounceMax; public float PounceCd; public string PounceEffect; public int SpitMin = 3, SpitMax; public float SpitCd, SpitShare = SpitDamageShare; public bool PounceFromCloak; }
+        public class Rules { public int PounceMin = 2, PounceMax; public float PounceCd; public string PounceEffect; public int SpitMin = 3, SpitMax; public float SpitCd, SpitShare = SpitDamageShare; public bool PounceFromCloak; public int ChargeMin, ChargeMax; public float ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd; }
         public static readonly Dictionary<string, Rules> RuleSet = new Dictionary<string, Rules>
         {
             ["Veil Prowler"] = new Rules { PounceMax = 4, PounceCd = 6f, PounceFromCloak = true },
             ["Pallid Prowler"] = new Rules { SpitMax = 6, SpitCd = 3.5f },
             ["Dread Prowler"] = new Rules { PounceMax = 6, PounceCd = 10f, PounceEffect = "knockdown" },
-            ["Blind Maw"] = new Rules { PounceMax = 4, PounceCd = 5f, PounceEffect = "bleed" },
+            ["Blind Maw"] = new Rules { ChargeMin = 4, ChargeMax = 6, ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd = 8f, PounceEffect = "bleed" },     // the Maw does not leap: it CHARGES in a straight line (Yan, 2026-11-12)
         };
 
         class State
         {
             public string Kind; public float Start; public bool Hit, Launched;
             public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit;
-            public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
+            public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Mirror; public float DisengageUntil; public float NextCharge, ChargeRunStart = -1f, ChargeDx, ChargeDy, ChargeX0, ChargeY0, ChargeDist, ChargeLast, ChargeEnd = -1f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
         static State Of(Mutant m) { if (!States.TryGetValue(m, out var s)) States[m] = s = new State(); return s; }
@@ -94,6 +94,12 @@ namespace GameCore
                 Begin(m, st, Random.value < BiteBShare ? "bite2" : "bite", now); return true;
             }
             var grid = GameServices.RequireGrid(); bool los = grid != null && grid.CheckLineOfSight(m.X, m.Y, p.X, p.Y);
+            if (rules.ChargeMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.ChargeMin && d <= rules.ChargeMax && los && now >= st.NextCharge)
+            {
+                st.NextCharge = now + rules.ChargeCd; nextShot = System.Math.Max(nextShot, now + 1f); Begin(m, st, "charge", now);
+                float cx = m.X + 0.5f, cy = m.Y + 0.5f, tx = p.X + 0.5f - cx, ty = p.Y + 0.5f - cy, len = Mathf.Sqrt(tx * tx + ty * ty);
+                st.ChargeDx = tx / len; st.ChargeDy = ty / len; st.ChargeX0 = cx; st.ChargeY0 = cy; st.ChargeDist = 0f; st.ChargeRunStart = -1f; st.ChargeLast = now; st.ChargeEnd = -1f; return true;     // the direction is fixed NOW: it does not turn while it runs, so the player can step aside
+            }
             if (rules.PounceMax > 0 && m.StatusEffects.Wound != "Leg" && d >= rules.PounceMin && d <= rules.PounceMax && los && now >= st.NextPounce && FindLanding(m, p, out int lx, out int ly))
             {
                 st.NextPounce = now + rules.PounceCd; st.FromX = m.X; st.FromY = m.Y; st.ToX = lx; st.ToY = ly; nextShot = System.Math.Max(nextShot, now + 1f);
@@ -117,6 +123,7 @@ namespace GameCore
 
         static void Advance(Mutant m, Player p, State st, float now)
         {
+            if (st.Kind == "charge") { AdvanceCharge(m, p, st, now); return; }
             var a = Anim(m.Db.Name, st.Kind); if (a == null) { st.Kind = null; return; }
             float tMs = (now - st.Start) * 1000f;
             if (st.Kind == "pounce")
@@ -137,9 +144,11 @@ namespace GameCore
         }
 
         /// <summary>Yan: a cloaking hunter retreats 3 tiles after its strike and re-cloaks about 3 s later out of sight and without being hit.</summary>
+        public const float DisengageSeconds = 1.0f;
         static void AfterAttack(Mutant m, Player p, State st, float now)
         {
-            if (!m.ActiveCamouflage || p == null) return;
+            if (!m.ActiveCamouflage) { st.DisengageUntil = now + DisengageSeconds; return; }       // nobody glues itself to the player (Yan): after a strike the others back off for a moment too
+            if (p == null) return;
             st.Recloak = true; st.RecloakFrom = now; st.RecloakHp = m.Hp;
             int dx = System.Math.Sign(m.X - p.X), dy = System.Math.Sign(m.Y - p.Y); if (dx == 0 && dy == 0) dx = 1;
             for (int k = 3; k >= 1; k--)
@@ -160,6 +169,56 @@ namespace GameCore
         }
         /// <summary>Which pixel-dissolve frame (0..5) to draw while the cloak is fading, or -1.</summary>
         public static int DissolveIndex(float fade) => fade <= 0.03f || fade >= 0.97f ? -1 : Mathf.Clamp((int)(fade * 6f), 0, 5);
+
+        public const float ChargeWindupSeconds = 0.3f, ChargeStumbleSeconds = 1.2f, ChargeHitRecoverSeconds = 0.7f, ChargeReach = 0.95f;
+
+        /// <summary>The Maw's charge: a short rear-back, then a straight run along the line fixed at the start for ChargeLen tiles at ChargeSpeed. The bite (and bleeding) lands if the player is in its path;
+        /// if the player stepped aside it runs the whole length, stops where it ends and stumbles for a moment (a window to hurt it). It stops short at a wall or another body.</summary>
+        static void AdvanceCharge(Mutant m, Player p, State st, float now)
+        {
+            var r = RuleSet[m.Db.Name];
+            if (st.ChargeEnd >= 0f) { if (now >= st.ChargeEnd) { Rt.ReleaseSlide(m); st.Kind = null; } return; }       // stumbling or recovering
+            if (now - st.Start < ChargeWindupSeconds) { st.ChargeLast = now; return; }
+            if (st.ChargeRunStart < 0f) { st.ChargeRunStart = now; st.ChargeLast = now; Rt.HoldSlide(m); }
+            float dt = Mathf.Clamp(now - st.ChargeLast, 0f, 0.1f); st.ChargeLast = now;
+            st.ChargeDist = Mathf.Min(r.ChargeLen, st.ChargeDist + r.ChargeSpeed * dt);
+            float fx = st.ChargeX0 + st.ChargeDx * st.ChargeDist, fy = st.ChargeY0 + st.ChargeDy * st.ChargeDist;
+            int nx = Mathf.FloorToInt(fx), ny = Mathf.FloorToInt(fy);
+            if ((nx != m.X || ny != m.Y))
+            {
+                if (TerrainMap.CanEnterTile(nx, ny) && TerrainMap.UnitAt(nx, ny, m) == null) { m.X = nx; m.Y = ny; }
+                else { Rt.SetSlide(m, 0f, 0f); st.ChargeEnd = now + ChargeStumbleSeconds; return; }                  // hit a wall or a body: stops dead
+            }
+            Rt.SetSlide(m, fx - (m.X + 0.5f), fy - (m.Y + 0.5f));
+            if (p != null && p.IsAlive() && !Body.Down(p))
+            {
+                var (mox, moy) = Rt.Offset(m); var (pox, poy) = Rt.Offset(p);
+                float mx = m.X + 0.5f + mox, my = m.Y + 0.5f + moy, px = p.X + 0.5f + pox, py = p.Y + 0.5f + poy;
+                if ((mx - px) * (mx - px) + (my - py) * (my - py) <= ChargeReach * ChargeReach)
+                {
+                    bool hit = Strike(m, p, 1f, true); if (hit) Effect(m, p, r.PounceEffect);
+                    Rt.SetSlide(m, 0f, 0f); st.ChargeEnd = now + ChargeHitRecoverSeconds; return;
+                }
+            }
+            if (st.ChargeDist >= r.ChargeLen) { Rt.SetSlide(m, 0f, 0f); st.ChargeEnd = now + ChargeStumbleSeconds; }       // ran the whole length without finding anything
+        }
+
+        /// <summary>Where a pack member wants to be (Yan, 2026-11-12): 1 = close in, -1 = back off, 0 = hold here, 2 = no opinion (the old chase). Pallid keeps at spit range, Dread at 3..6 tiles while its
+        /// pounce is ready, Maw at 4..6 while its charge is ready; the Veil goes in (its strike then slips away, AfterAttack).</summary>
+        public static int Stance(Mutant m, Player p, float now)
+        {
+            if (!Rt.On || !Has(m) || p == null || !p.IsAlive()) return 2;
+            var st = Of(m); var r = RuleSet[m.Db.Name]; int d = CombatantUtil.Distance(m, p);
+            if (now < st.DisengageUntil && d < 4) return -1;
+            var grid = GameServices.RequireGrid(); bool los = grid != null && grid.CheckLineOfSight(m.X, m.Y, p.X, p.Y);
+            switch (m.Db.Name)
+            {
+                case "Pallid Prowler": return d < r.SpitMin ? -1 : (d > r.SpitMax || !los) ? 1 : 0;
+                case "Dread Prowler": if (now < st.NextPounce) return 2; return (d > r.PounceMax || !los) ? 1 : d < 3 ? -1 : 0;
+                case "Blind Maw": if (now < st.NextCharge) return 2; return d > r.ChargeMax ? 1 : d < r.ChargeMin ? -1 : los ? 0 : 1;
+                default: return 2;
+            }
+        }
 
         static void Contact(Mutant m, Player p, State st, float now)
         {
@@ -214,10 +273,55 @@ namespace GameCore
             return found;
         }
 
+        // ---- co-op (2026-11-12): the host sends each mutant's attack as a code, the seconds since it began (20 ms steps) and two small tile deltas; a joined player's mirror replays it ----
+        const string Codes = "|bite|bite2|pounce|spit|charge";
+        /// <summary>For a snapshot: (attack code 0..5, elapsed in 20 ms steps, d1, d2). d = (from tile - landing tile) for a pounce, (target tile - this tile) for a spit.</summary>
+        public static (byte code, byte t20, sbyte d1, sbyte d2) NetState(Mutant m, float now)
+        {
+            if (m == null || m is HumanEnemy || !States.TryGetValue(m, out var st) || st.Kind == null) return (0, 0, 0, 0);
+            int code = System.Array.IndexOf(Codes.Split('|'), st.Kind); if (code <= 0) return (0, 0, 0, 0);
+            sbyte D(int v) => (sbyte)Mathf.Clamp(v, -127, 127);
+            sbyte d1 = 0, d2 = 0;
+            if (st.Kind == "pounce") { d1 = D(st.FromX - m.X); d2 = D(st.FromY - m.Y); }
+            else if (st.Kind == "spit") { d1 = D(st.SpitTx - m.X); d2 = D(st.SpitTy - m.Y); }
+            return ((byte)code, (byte)Mathf.Clamp(Mathf.RoundToInt((now - st.Start) * 50f), 0, 255), d1, d2);
+        }
+
+        /// <summary>On a client: set a mirror mutant's attack from the host's snapshot (the damage and the hit effects come as the host's strike events; this is the picture).</summary>
+        public static void Mirror(Mutant m, int code, float elapsed, int d1, int d2, float now)
+        {
+            if (m == null || !Has(m)) return;
+            var st = Of(m); st.Mirror = true;
+            string kind = code > 0 && code < Codes.Split('|').Length ? Codes.Split('|')[code] : null;
+            if (kind == null) { if (st.Kind == "pounce" || st.Kind == "charge") Rt.ReleaseSlide(m); st.Kind = null; return; }
+            bool fresh = st.Kind != kind || System.Math.Abs((now - st.Start) - elapsed) > 0.15f;
+            if (st.Kind != kind) st.Hit = false;
+            st.Kind = kind; if (fresh) st.Start = now - elapsed;
+            var a = Anim(m.Db.Name, kind);
+            if (kind == "pounce") { st.FromX = m.X + d1; st.FromY = m.Y + d2; st.ToX = m.X; st.ToY = m.Y; Rt.HoldSlide(m); }
+            else if (kind == "charge") Rt.HoldSlide(m);                                      // the host's tile and in-tile offset already carry the run, no smoothing on top
+            else if (kind == "spit" && a != null)
+            {
+                st.SpitTx = m.X + d1; st.SpitTy = m.Y + d2;
+                float dist = Mathf.Sqrt(d1 * d1 + d2 * d2); st.SpitArrive = st.Start + a.ContactMs / 1000f + dist / SpitSpeed;
+            }
+        }
+
         /// <summary>The attack frame to draw for this mutant now, or null (walk or stand-still sprite).</summary>
         public static Sprite Frame(Mutant m, string name, float now)
         {
             if (!Rt.On || m == null || !m.IsAlive() || !States.TryGetValue(m, out var st) || st.Kind == null) return null;
+            if (st.Mirror && st.Kind == "pounce")
+            {
+                var pa = Anim(name, "pounce"); float tm = (now - st.Start) * 1000f;
+                if (pa != null) { float k = 1f - TravelAt(pa.Ms, pa.Travel, tm); Rt.SetSlide(m, tm < LaunchMs(pa.Ms, pa.Travel) ? 0f : (st.FromX - st.ToX) * k, tm < LaunchMs(pa.Ms, pa.Travel) ? 0f : (st.FromY - st.ToY) * k); }
+            }
+            if (st.Kind == "charge")
+            {
+                if (st.Mirror) { var wfm = UnitSprites.HDWalk(name); return (now - st.Start) < ChargeWindupSeconds ? UnitSprites.HDAttack(name, "bite")?[2] : wfm == null ? null : wfm[Mathf.Max(0, Mathf.FloorToInt((now - st.Start - ChargeWindupSeconds) / (MutantWalk.FrameSeconds * 0.5f))) % wfm.Length]; }
+                if (st.ChargeRunStart < 0f || st.ChargeEnd >= 0f) { var rb = UnitSprites.HDAttack(name, "bite"); return st.ChargeEnd >= 0f ? null : rb != null ? rb[2] : null; }      // the rear-back before the run; stumbling shows the stand pose
+                var wf = UnitSprites.HDWalk(name); return wf == null ? null : wf[Mathf.Max(0, Mathf.FloorToInt((now - st.ChargeRunStart) / (MutantWalk.FrameSeconds * 0.5f))) % wf.Length];     // running: the walk, twice as fast
+            }
             var a = Anim(name, st.Kind); var frames = UnitSprites.HDAttack(name, st.Kind);
             if (a == null || frames == null) return null;
             return frames[Mathf.Clamp(FrameIndexAt(a.Ms, (now - st.Start) * 1000f), 0, frames.Length - 1)];
@@ -228,8 +332,9 @@ namespace GameCore
         public static bool SplatAt(Mutant m, float now, out float x, out float y, out int frame)
         {
             x = y = 0f; frame = 0;
-            if (m == null || !States.TryGetValue(m, out var st) || st.SplatStart < 0f) return false;
-            float tMs = (now - st.SplatStart) * 1000f; int total = 0; foreach (var d in SplatMs) total += d;
+            if (m == null || !States.TryGetValue(m, out var st)) return false;
+            float ss = st.SplatStart >= 0f ? st.SplatStart : st.SpitArrive > 0f ? st.SpitArrive : -99f; if (ss < 0f) return false;
+            float tMs = (now - ss) * 1000f; int total = 0; foreach (var d in SplatMs) total += d;
             if (tMs < 0f || tMs >= total) return false;
             frame = FrameIndexAt(SplatMs, tMs); x = st.SpitTx + 0.5f; y = st.SpitTy + 0.5f; return true;
         }
@@ -238,7 +343,7 @@ namespace GameCore
         public static bool GlobAt(Mutant m, float now, out float x, out float y, out float angle)
         {
             x = y = angle = 0f;
-            if (m == null || !States.TryGetValue(m, out var st) || st.Kind != "spit" || st.SpitArrive < 0f || st.SpitDone) return false;
+            if (m == null || !States.TryGetValue(m, out var st) || st.Kind != "spit" || st.SpitArrive < 0f || st.SpitDone || now >= st.SpitArrive) return false;
             var a = Anim(m.Db.Name, "spit"); if (a == null) return false;
             float tStart = st.Start + a.ContactMs / 1000f, k = Mathf.Clamp01((now - tStart) / Mathf.Max(0.01f, st.SpitArrive - tStart));
             float sx = m.X + 0.5f, sy = m.Y + 0.5f, tx = st.SpitTx + 0.5f, ty = st.SpitTy + 0.5f;

@@ -58,7 +58,11 @@ namespace GameCore
             {
                 s.NextStep = now + 1f / Speed(m) * (m.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
                 m.Mp = System.Math.Max(m.Mp, TurnLoop.WalkMp);
+                int stance = s.Chasing && !s.Flee ? MutantAttack.Stance(m, p, now) : 2;      // a canine in a pack keeps its own distance (MutantAttack.Stance)
                 if (s.Flee) m.MoveAwayFrom(p);
+                else if (stance == 1) m.MoveToward(p.X, p.Y);
+                else if (stance == -1) m.MoveAwayFrom(p);
+                else if (stance == 0) { }
                 else if (s.Chasing && !CombatantUtil.IsAdjacent(m, p) && !m.IsInEngageRange(p)) m.MoveToward(p.X, p.Y);
                 else if (s.Goal.HasValue && (m.X, m.Y) != s.Goal.Value && !m.MoveToward(s.Goal.Value.x, s.Goal.Value.y)) s.Goal = null;
             }

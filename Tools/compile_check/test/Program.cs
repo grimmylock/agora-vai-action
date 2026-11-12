@@ -2117,9 +2117,26 @@ static class Program {
     Check(pounces == 1 && slid && landedAdj, $"MutantAttack: a Dread pounce from 4 tiles slides the body across and lands next to the target (pounces {pounces}, slid {slid}, adjacent {landedAdj})");
     Check(knockUntil > 0f && p.Hp < farHp, "MutantAttack: the Dread's pounce knocks the target down and hurts it");
     p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.Of(p).ProneUntil = -1f; p.StatusEffects.Bleeding = false;
-    var pm = Spawn("Blind Maw", 3); var mm = pm.m; ns = 0f;
-    for (int i = 0; i < 200; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mm, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f); }
-    Check(p.StatusEffects.Bleeding, "MutantAttack: the Blind Maw's pounce applies bleeding");
+    // the Maw does not leap, it CHARGES: fixed direction, 8 tiles, bleeding if the player is in its path; a player who steps aside is missed and it runs on and stumbles
+    var pm = Spawn("Blind Maw", 5); var mm = pm.m; ns = 0f; int mx0 = mm.X;
+    for (int i = 0; i < 300; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mm, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f); }
+    Check(p.StatusEffects.Bleeding && mm.X < mx0 && CombatantUtil.Distance(mm, p) <= 2, $"MutantAttack: the Blind Maw charges the player in a straight line and bites (bleeding {p.StatusEffects.Bleeding}, ran {mx0 - mm.X} tiles)");
+    p.StatusEffects.Bleeding = false; p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
+    var pm2 = Spawn("Blind Maw", 5); var mm2 = pm2.m; ns = 0f; int sx2 = mm2.X; int sy2 = mm2.Y; bool dodged = false; int hpM = p.Hp; float tm = UnityEngine.Time.time;
+    for (int i = 0; i < 300; i++) {
+      UnityEngine.Time.time += 0.01f; MutantAttack.Update(mm2, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f);
+      if (!dodged && MutantAttack.KindOf(mm2) == "charge" && UnityEngine.Time.time - tm > 0.25f) { p.Y = py + 4; dodged = true; }       // the player steps 4 tiles aside once the Maw has committed
+    }
+    int ran = System.Math.Abs(mm2.X - sx2) + System.Math.Abs(mm2.Y - sy2);
+    Check(dodged && p.Hp == hpM && !p.StatusEffects.Bleeding && ran >= 7 && ran <= 9, $"MutantAttack: a player who steps aside is missed, the Maw keeps its line and runs the whole 8 tiles ({ran}) and stumbles");
+    p.Y = py; Rt.Reset();
+    // pack stances: the Pallid keeps at spit range, the Dread holds at 3..6 while its pounce is ready, the Maw at 4..6 while its charge is ready
+    EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); float now0 = UnityEngine.Time.time + 100f;
+    var sPal = Spawn("Pallid Prowler", 2).m; var sPal4 = Spawn("Pallid Prowler", 4).m; var sPal9 = Spawn("Pallid Prowler", 9).m;
+    Check(MutantAttack.Stance(sPal, p, now0) == -1 && MutantAttack.Stance(sPal4, p, now0) == 0 && MutantAttack.Stance(sPal9, p, now0) == 1, "MutantAttack: a Pallid backs off when too close, holds at spit range and closes in from far away");
+    var sDr = Spawn("Dread Prowler", 4).m; var sDr9 = Spawn("Dread Prowler", 9).m; var sMa = Spawn("Blind Maw", 5).m; var sMa2 = Spawn("Blind Maw", 2).m;
+    Check(MutantAttack.Stance(sDr, p, now0) == 0 && MutantAttack.Stance(sDr9, p, now0) == 1 && MutantAttack.Stance(sMa, p, now0) == 0 && MutantAttack.Stance(sMa2, p, now0) == -1, "MutantAttack: a Dread holds at pounce range, a Maw lines up at 4..6 and backs off when too close");
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
     // a hobbled mutant does not leap
     p.StatusEffects.Bleeding = false; p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
     var ph = Spawn("Dread Prowler", 4); var mh = ph.m; mh.StatusEffects.Wound = "Leg"; ns = 0f; bool leapt = false;
@@ -2146,6 +2163,23 @@ static class Program {
     for (int i = 0; i < 160; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(mv, p, UnityEngine.Time.time, ref ns); }
     Check(!early && stillShowing && mv.IsCloaked, $"MutantAttack: the Veil re-cloaks 3 s after its strike (early {early}); a hit while slipping away restarts the timer (still showing at 4 s: {stillShowing}); cloaked again at 5.6 s: {mv.IsCloaked}");
     Check(MutantAttack.DissolveIndex(0f) == -1 && MutantAttack.DissolveIndex(1f) == -1 && MutantAttack.DissolveIndex(0.5f) == 3, "MutantAttack: the cloak's pixel dissolve plays only while the fade is in between");
+    // co-op: the host's attack state as the snapshot carries it replays on a client's mirror (kind, the slide of a pounce, the glob of a spit, the cloak flag)
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
+    var hostD = Spawn("Dread Prowler", 4).m; ns = 0f; (byte code, byte t20, sbyte d1, sbyte d2) net = (0, 0, 0, 0);
+    for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(hostD, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f); }
+    net = MutantAttack.NetState(hostD, UnityEngine.Time.time);
+    Check(net.code == 3 && net.d1 != 0 || net.code == 3 && net.d2 != 0, $"co-op: a pouncing host mutant reports a pounce with the tile it left from (code {net.code}, from {net.d1},{net.d2})");
+    var mirD = new Mutant("DreadProwler", hostD.X, hostD.Y, MutantDatabase.Get("tier4", "DreadProwler")); EncounterState.Enemies.Add(mirD);
+    for (int i = 0; i < 40; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Mirror(mirD, net.code, net.t20 * 0.02f + 0.01f * i + 0.2f, net.d1, net.d2, UnityEngine.Time.time); }
+    Check(MutantAttack.KindOf(mirD) == "pounce", "co-op: the client's mirror plays the same attack");
+    MutantAttack.Mirror(mirD, 0, 0f, 0, 0, UnityEngine.Time.time);
+    Check(MutantAttack.KindOf(mirD) == null && !Rt.Sliding(mirD), "co-op: when the host's attack is over the mirror stops and its slide is released");
+    var hostP = Spawn("Pallid Prowler", 5).m; MutantAttack.Reset(); ns = 0f; byte sc = 0; int sdx = 0;
+    for (int i = 0; i < 400 && sc == 0; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(hostP, p, UnityEngine.Time.time, ref ns); var nn = MutantAttack.NetState(hostP, UnityEngine.Time.time); if (nn.code == 4 && nn.t20 * 20 > sp.ContactMs + 40) { sc = nn.code; sdx = nn.d1; } }
+    var mirP = new Mutant("PallidProwler", hostP.X, hostP.Y, MutantDatabase.Get("tier1", "PallidProwler")); EncounterState.Enemies.Add(mirP);
+    var n2 = MutantAttack.NetState(hostP, UnityEngine.Time.time); MutantAttack.Mirror(mirP, n2.code, n2.t20 * 0.02f, n2.d1, n2.d2, UnityEngine.Time.time);
+    Check(sc == 4 && MutantAttack.KindOf(mirP) == "spit" && MutantAttack.GlobAt(mirP, UnityEngine.Time.time, out float glx, out float gly, out float gla), $"co-op: a client sees the spit's glob in flight (target {sdx} tiles away)");
+    EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset();
     Check(MutantAttack.Anim("Pallid Prowler", "pounce") == null && MutantAttack.Anim("Veil Prowler", "pounce") != null, "MutantAttack: the Pallid has no pounce, the Veil has");
     p.StatusEffects.ToxicBleed = false; EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.On = false;
   }
