@@ -32,13 +32,39 @@ def fist(p):
     y = (ARM_TOP - span - 2 + oy + ady + p.get("by", 0) // 2) if p.get("aflip") else (ARM_BOT + oy + ady)
     return x, y
 
-def body_layers(p):
+BIGX, BIGTOP = 26, 28                                                       # the big arm (Yan's B): the left mass, x < 26 from row 28 down, fist on the ground at the bottom left
+def big_piece():
+    p = np.zeros_like(S); p[BIGTOP:, :BIGX] = S[BIGTOP:, :BIGX]; return p
+def body_whole(p):
+    """ONE piece: every row moves by `by` (whole-pixel squash: rows pushed below the ground are cut) and leans by the tilt, so the lower body never stays behind"""
     bx, by, tilt = p.get("bx", 0), p.get("by", 0), p.get("tilt", 0)
-    lower = np.zeros((H, W, 4), np.uint8); upper = np.zeros((H, W, 4), np.uint8)
+    src = BODY.copy()
+    if p.get("big"):                                                               # the big arm leaves: fill its place with the torso's own pixels mirrored, darkened, with a dark edge
+        for y in range(BIGTOP, S.shape[0]):
+            for x in range(BIGX):
+                m = S[y, min(BIGX + (BIGX - 1 - x), S.shape[1] - 1)]
+                src[y, x] = (m[0] * 0.55, m[1] * 0.55, m[2] * 0.55, 255) if S[y, x, 3] else 0
+            if S[y, BIGX - 1, 3] and p.get('bdy', 0) < -3: src[y, BIGX - 1] = (14, 14, 8, 255); src[y, BIGX - 2] = (14, 14, 8, 255)
+    out = np.zeros((H, W, 4), np.uint8)
     for y in range(S.shape[0]):
-        if y >= BW.SPLIT: lower[y + oy, ox: ox + S.shape[1]] = BODY[y]
-        elif y + by + oy < H: upper[y + by + oy, ox + bx: ox + bx + S.shape[1]] = BODY[y]
-    return BW.tilt(upper, tilt), lower
+        yy = y + by + oy
+        if yy <= GROUND: out[yy, ox + bx: ox + bx + S.shape[1]] = src[y]
+    return BW.tilt(out, tilt)
+
+def big_layer(p):
+    """the big arm piece: raised = flipped upside down (shoulder end stays), sheared from the shoulder by bshear px at the fist end"""
+    pc = big_piece(); a = np.zeros((H, W, 4), np.uint8); span = S.shape[0] - 1 - BIGTOP; sh = p.get("bshear", 0); dx, dy = p.get("bdx", 0), p.get("bdy", 0); flip = p.get("bflip", False)
+    for y in range(BIGTOP, S.shape[0]):
+        d = y - BIGTOP; s_ = int(round(sh * d / span)); yy = (BIGTOP - d + oy + dy + p.get("by", 0)) if flip else (y + oy + dy + p.get("by", 0))
+        for x in range(BIGX):
+            if pc[y, x, 3]:
+                xx = x + s_ + dx + ox + p.get("bx", 0)
+                if 0 <= xx < W and 0 <= yy < H and yy <= GROUND + (6 if not flip else 0): a[yy, xx] = pc[y, x]
+    return a
+
+def bigfist(p):
+    sh = p.get("bshear", 0); span = S.shape[0] - 1 - BIGTOP
+    return 6 + sh + p.get("bdx", 0) + ox + p.get("bx", 0), (BIGTOP - span if p.get("bflip") else S.shape[0] - 1) + oy + p.get("bdy", 0) + p.get("by", 0)
 
 # ---- the effects
 def rock_frames(n=6, size=20):
@@ -92,8 +118,10 @@ def dust_frames(n=6, w=64, h=24):
 ROCK = rock_frames(); HIT = hit_frames(); DUST = dust_frames()
 
 def render(p):
-    upper, lower = body_layers(p)
-    layers = [lower, upper, BW.leg("leg_l", 0, p.get("lift_l", 0), 0), BW.leg("leg_r", 0, p.get("lift_r", 0), 0), arm_layer(p)]
+    big = p.get("big", False)
+    legl = BW.leg("leg_l", 0, p.get("lift_l", 0), 0)
+    if big: legl[:, : ox + BIGX] = 0                                              # the left foot piece keeps only what is not the big arm
+    layers = [body_whole(p), legl, BW.leg("leg_r", 0, p.get("lift_r", 0), 0), arm_layer(p)] + ([big_layer(p)] if big else [])
     im = np.zeros((H, W, 4), np.uint8)
     for l in layers:
         m = l[..., 3] > 0; im[m] = l[m]
@@ -101,7 +129,7 @@ def render(p):
     r = p.get("rock")                                                # (frame, dx, dy): a boulder held in the fist
     if r is not None:
         fx, fy = fist(p); rk = ROCK[r[0] % 6]; out.alpha_composite(rk, (int(fx - rk.width / 2 + r[1]), int(fy - rk.height / 2 + r[2])))
-    if p.get("dust"): d = DUST[p["dust"] - 1]; fx, fy = fist(p); out.alpha_composite(d, (int(fx - d.width / 2), GROUND - d.height + 6))
+    if p.get("dust"): d = DUST[p["dust"] - 1]; fx, fy = (bigfist(p) if p.get('big') else fist(p)); out.alpha_composite(d, (int(fx - d.width / 2), GROUND - d.height + 6))
     a = np.array(out); lab, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))
     for j in range(1, k + 1):
         if (lab == j).sum() < 6: a[lab == j] = 0
@@ -118,17 +146,17 @@ SWIPE = [
     (dict(ashear=2, bx=1, by=1), 120, 0),
 ]
 SLAM = [
-    (dict(), 120, 0),
-    (dict(ashear=-9, bx=-2, by=1, tilt=-1), 130, 0),
-    (dict(aflip=True, ashear=-5, adx=-2, bx=-3, by=2, tilt=-2), 120, 0),
-    (dict(aflip=True, ashear=1, adx=2, bx=-4, by=3, tilt=-3), 150, 0),
-    (dict(ashear=6, adx=2, bx=2, by=4, tilt=1), 40, 0),
-    (dict(ashear=11, adx=6, bx=6, by=7, tilt=2, dust=1), 60, 0),
-    (dict(ashear=11, adx=6, bx=6, by=7, tilt=2, dust=2), 70, 0),
-    (dict(ashear=10, adx=6, bx=6, by=6, tilt=2, dust=3), 90, 0),
-    (dict(ashear=8, adx=4, bx=4, by=4, tilt=1, dust=4), 120, 0),
-    (dict(ashear=4, adx=2, bx=2, by=2, dust=5), 130, 0),
-    (dict(ashear=1, bx=1, by=1, dust=6), 140, 0),
+    (dict(big=True), 120, 0),
+    (dict(big=True, bdy=-4, bdx=-1, bshear=-3, bx=1, by=1, tilt=1), 130, 0),
+    (dict(big=True, bdy=-11, bdx=-2, bshear=-5, bx=2, by=2, tilt=1), 130, 0),
+    (dict(big=True, bdy=-15, bdx=-3, bshear=-6, bx=3, by=3, tilt=2), 170, 0),
+    (dict(big=True, bdy=-6, bdx=-3, bshear=-3, bx=1, by=5, tilt=-1), 40, 0),
+    (dict(big=True, bdy=3, bdx=-3, bx=-3, by=6, tilt=-2, dust=1), 60, 0),
+    (dict(big=True, bdy=4, bdx=-3, bx=-3, by=6, tilt=-2, dust=2), 70, 0),
+    (dict(big=True, bdy=4, bdx=-3, bx=-3, by=5, tilt=-2, dust=3), 90, 0),
+    (dict(big=True, bdy=2, bdx=-2, bx=-2, by=4, tilt=-1, dust=4), 120, 0),
+    (dict(big=True, bdy=1, bx=-1, by=2, dust=5), 130, 0),
+    (dict(big=True, by=1, dust=6), 140, 0),
 ]
 THROW = [
     (dict(), 110, 0),
