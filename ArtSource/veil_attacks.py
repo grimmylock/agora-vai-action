@@ -20,22 +20,20 @@ FAR = ("far_hind", "far_fore"); NEAR = ("near_hind", "near_fore")
 MOUTH_IN, MOUTH_BACK, TOOTH = (118, 22, 34, 255), (58, 8, 16, 255), (196, 192, 208, 255)       # inside of the mouth: the eye's red, darker toward the throat; teeth: the sprite's palest violet-white
 
 def open_head(g, flash=False):
-    """The head with the mouth opened g pixels at the tip. Yan: 'a hole opens in its face instead of the mouth parts moving ... just the motion'. So no fill and no rotation: from the hinge (x 38) to the
-    tip the snout is split along the mouth line (between rows 15 and 16, so the lower jaw is the lower two rows of the snout plus the sprite's jaw pixels, four rows thick); the upper part rises and the
-    lower part drops by whole pixels, growing from 0 at the hinge to the full amount at the tip, so the two parts stay joined at the back and open like jaws. g = 0 is the sprite as drawn."""
-    base = np.array(rig.base).copy(); hx, hy = rig.c["hinge"]; tx, ty = rig.c["tip"]; h0, w0 = base.shape[:2]
-    head = np.array(rig.parts["head"]).copy(); jaw = np.array(rig.parts["jaw"]).copy()
-    allp = head.copy(); jl = jaw[..., 3] > 0; allp[jl] = jaw[jl]                  # the sprite's head and jaw together
-    out = np.zeros((h0 + 8, w0 + 4, 4), np.uint8)
-    SPLIT = 15                                                                    # rows <= SPLIT are the upper snout, rows > SPLIT the lower jaw (for x past the hinge)
+    """The head with the lower jaw dropped g pixels at its tip. Yan (frame 3 circled): only the lower jaw may move, 'anything outside of it should not move; separate the upper face and snout/upper jaw from
+    the lower jaw first, then do the animation'. So the head part (face, snout, upper jaw) is drawn exactly as the sprite has it, and the sprite's own lower-jaw pixels (rig.parts['jaw']) are the only
+    thing that moves: each column of the jaw drops by whole pixels, 0 at its back end (where it joins the head) growing to g at the tip, so it opens like a hinged jaw and stays attached. No fill, no
+    rotation, no resampling. g = 0 is the sprite as drawn."""
+    head = np.array(rig.parts["head"]).copy(); jaw = np.array(rig.parts["jaw"]).copy(); h0, w0 = head.shape[:2]; tx, ty = rig.c["tip"]
+    out = np.zeros((h0 + 8, w0 + 4, 4), np.uint8); out[4:4 + h0, :w0] = head
+    xs = np.where((jaw[..., 3] > 0).any(axis=0))[0]; x0, x1 = int(xs.min()), int(xs.max())
     for x in range(w0):
-        f = min(1.0, max(0.0, (x - hx) / float(tx - hx))) if g > 0 else 0.0
-        du = int(round(f * g * 0.45)); dl = int(round(f * g * 0.55))
+        f = min(1.0, max(0.0, (x - x0) / float(max(1, x1 - x0)))) if g > 0 else 0.0; dl = int(round(f * g))
         for y in range(h0):
-            if not allp[y, x, 3]: continue
-            if x > hx and y > SPLIT and y <= rig.c["jaw_y1"]: out[4 + y + dl, x] = allp[y, x]
-            elif x > hx: out[4 + y - du, x] = allp[y, x]
-            else: out[4 + y, x] = allp[y, x]
+            if jaw[y, x, 3]:
+                if dl == 0 or not out[4 + y, x, 3] or True: out[4 + y + dl, x] = jaw[y, x]
+    if g == 0:                                                   # closed: the jaw sits over the head exactly like the sprite
+        pass
     if flash:
         sx, sy = tx - 2, ty + 2 + 4
         for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (2, 0), (-2, 0), (0, 2), (0, -2)):
