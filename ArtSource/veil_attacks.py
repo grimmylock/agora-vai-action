@@ -57,7 +57,7 @@ def tilt_layer(img, tilt):
 def render(p):
     """p: bx/by whole-body offset (right/down), rise (up), tilt (px the nose end is raised over the hips, negative = up), nx/ny head offset, nrot head turn (+ = nose up), jaw degrees (-> gape px), flash, feet: {leg: (fo, fl)} overrides"""
     bx, by, rise = p.get("bx", 0), p.get("by", 0), p.get("rise", 0); nx, ny, nrot, tilt = p.get("nx", 0), p.get("ny", 0), p.get("nrot", 0), p.get("tilt", 0)
-    feet = dict(STAND_FEET); feet.update(p.get("feet", {})); g = int(round(p.get("jaw", 0) / 8.0)); bob = by - rise
+    feet = dict(STAND_FEET); feet.update(p.get("feet", {})); g = 0; bob = by - rise      # the jaw does not animate (Yan: the view is not exactly a profile, so an opening jaw looked wrong); the poses' 'jaw' values are ignored, the head still moves (nx, ny, nrot)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     def leg(n):
         hx_ = V.LEGS[n][0][0] + ox + bx; return V.leg_img(n, 0, bob + tilt_shift(hx_, tilt), False, bx, feet[n])
