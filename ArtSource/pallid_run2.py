@@ -34,24 +34,27 @@ for y in range(CUT, S.shape[0]):
 BODY = Image.fromarray(_BODY)
 
 # key table, 8 frames, per leg: (dx forward in px at the foot, lift in rows). Frame 0 and 7 are his standing pose or close to it; 1-2 push off, 3-4 flight (fore reaching, hind trailing), 5-6 landing.
-KEYS = {"near_hind": [(0, 0, 0, 0), (-4, -2, 0, 0), (-7, -3, 1, 1), (-6, -3, 3, 1), (3, 1, 3, 1), (3, 1, 2, 0), (-2, -1, 0, 0), (1, 0, 0, 0)],
-        "far_hind":  [(0, 0, 0, 0), (-3, -1, 0, 0), (-6, -3, 1, 1), (-5, -2, 3, 1), (2, 1, 3, 1), (3, 1, 2, 0), (-1, 0, 0, 0), (2, 0, 0, 0)],
-        "near_fore": [(0, 0, 0, 0), (3, 1, 0, 0), (7, 3, 1, 1), (6, 3, 1, 1), (1, 0, 1, 1), (5, 2, 0, 0), (3, 1, 0, 0), (0, 0, 0, 0)],
-        "far_fore":  [(0, 0, 0, 0), (2, 1, 0, 0), (6, 3, 1, 1), (7, 3, 1, 1), (2, 0, 1, 1), (6, 3, 0, 0), (4, 2, 0, 0), (0, 0, 0, 0)]}
-# Order of poses taken from the online animator's run (Yan's recording, 2026-11-12; its art was unusable, its timing and poses were not): stand -> push off (hind trailing, fore reaching)
-# -> EXTENSION (long and low: fore forward, hind far back) -> hind foot kicks up behind -> GATHER (hind legs tucked forward under the body, fore straight under the shoulders, the body at its highest)
-# -> LANDING (fore reach and plant, hind folded, head low) -> fore planted, hind push -> back to the stand pose.
-RISE = [0, 0, 1, 1, 3, 0, 0, 0]                     # the body is lowest and longest in the extension, highest in the gather
+# One stride per pair of legs, then each leg is that stride shifted in time (Yan: "the legs all move together ... the front legs should move first, alternating by a short offset, and then the back legs kick, that's how dogs run"):
+# near fore leads, far fore follows one frame later, then the hind pair lands 3 and 4 frames after the near fore and kicks off in turn.
+# Stride entries are (foot dx, knee dx, lift rows): planted and sliding back -> push off -> lifted/tucked -> swung forward -> reaching -> landed.
+FORE = [(0, 0, 0), (-2, -1, 0), (-4, -2, 1), (-2, 0, 3), (3, 1, 2), (6, 3, 1), (7, 3, 0), (4, 2, 0)]
+HIND = [(0, 0, 0), (-3, -1, 0), (-6, -3, 2), (-5, -2, 3), (1, 0, 3), (4, 2, 2), (4, 2, 0), (2, 1, 0)]
+SHIFT = {"near_fore": 0, "far_fore": 1, "near_hind": 3, "far_hind": 4}
+def key(n, i):
+    dx, kx, lift = (FORE if n.endswith("fore") else HIND)[(i - SHIFT[n]) % 8]
+    return (dx, kx, lift, 1 if lift >= 2 else 0)
+KEYS = {n: [key(n, i) if i > 0 else (0, 0, 0, 0) for i in range(8)] for n in AXES}        # frame 0 is his standing pose
+RISE = [0] + [min(3, sum(KEYS[n][i][3] for n in AXES)) for i in range(1, 8)]               # the body is up as far as the legs that are off the ground
 NOD = [0, 0, -1, -1, 1, 2, 1, 0]                    # head up in the extension, low in the landing
 HAUNCH = [0, 0, 0, 0, 0, 0, 0, 0]      # no haunch shear: it tore thin lines across the belly where the legs join                    # head
 
-def pose_leg(name, dx, kx, lift):
+def pose_leg(name, dx, kx, lift, stretch=0):
     """his leg pixels, rows sheared by dx (0 at the hip row, dx at the foot row), `lift` rows deleted from the middle (top-anchored: the foot rises)"""
     p = PIECE[name]; rows = list(range(CUT, LOW + 1)); n = len(rows)
-    cut = set(rows[n // 2: n // 2 + lift]) if lift else set(); keep = [y for y in rows if y not in cut]
+    cut = set(rows[n // 2: n // 2 + lift]) if lift else set(); keep = [CUT] * stretch + [y for y in rows if y not in cut]
     out = np.zeros((H, W, 4), np.uint8)
     for k, y in enumerate(keep):
-        yy = CUT + k; u = k / max(1, len(keep) - 1); sh = int(round(kx * u / 0.5)) if u <= 0.5 else int(round(kx + (dx - kx) * (u - 0.5) / 0.5))
+        yy = CUT - stretch + k; u = k / max(1, len(keep) - 1); sh = int(round(kx * u / 0.5)) if u <= 0.5 else int(round(kx + (dx - kx) * (u - 0.5) / 0.5))
         for x in range(S.shape[1]):
             if p[y, x, 3]:
                 nx = x + sh + ox
@@ -84,7 +87,7 @@ def haunch_cols(img, amount):
     return Image.fromarray(a)
 
 def frame(i, only=None):
-    legs = {n: pose_leg(n, KEYS[n][i][0], KEYS[n][i][1], KEYS[n][i][2]) for n in AXES}
+    legs = {n: pose_leg(n, KEYS[n][i][0], KEYS[n][i][1], KEYS[n][i][2], 0 if KEYS[n][i][3] else RISE[i]) for n in AXES}
     if only: return legs[only]
     rise = RISE[i]; im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     def up(img): a = Image.new("RGBA", (W, H), (0, 0, 0, 0)); a.alpha_composite(img, (0, -rise)); return a       # a leg that is in the air rises with the body; its foot is already lifted by its key
