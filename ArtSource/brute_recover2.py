@@ -11,10 +11,11 @@ dark = lum < 36; lab, n = nd.label(dark); border = set(lab[0].tolist() + lab[-1]
 bg = np.isin(lab, list(border)); fg = ~bg; fg = nd.binary_opening(fg, iterations=1)
 ys, xs = np.where(fg); y0, y1, x0, x1 = ys.min() - 6, ys.max() + 7, xs.min() - 6, xs.max() + 7
 sub = im[max(0, y0):y1, max(0, x0):x1]; fgs = fg[max(0, y0):y1, max(0, x0):x1]; g = sub.mean(2)
-def period(v, lo=6.0, hi=12.0):
+def period(v, lo=None, hi=None):
+    lo = lo or 6.0 * im.shape[1] / 640.0; hi = hi or 12.0 * im.shape[1] / 640.0                  # blocks are about 9.4 px on a 640 canvas; scale for bigger images
     best = None
-    for p in np.arange(lo, hi, 0.02):
-        for ph in np.arange(0, p, 0.5):
+    for p in np.arange(lo, hi, 0.02 * im.shape[1] / 640.0):
+        for ph in np.arange(0, p, 0.5 * im.shape[1] / 640.0):
             idx = (np.arange(ph, len(v) - 1, p)).astype(int); sc = np.abs(v[np.minimum(idx + 1, len(v) - 1)] - v[idx]).sum()
             if best is None or sc > best[0]: best = (sc, p, ph)
     return best[1], best[2]
