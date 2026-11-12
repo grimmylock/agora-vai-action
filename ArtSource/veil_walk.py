@@ -40,13 +40,14 @@ def solve(hip, ft, fwd):
 def seg(d, p, q, w, col):
     d.line([p, q], fill=col, width=w)
 
-def leg_img(name, i, bob, stand=False):
+def leg_img(name, i, bob, stand=False, hdx=0, fo_fl=None):
     """Same geometry as before (the leg's shape and place are untouched); only the colours are decided differently: by where a pixel sits ON the leg (along the bone and which side of it), so the
     colouring is attached to the leg and does not shimmer as it moves. The body's own palette is mostly pale violet-grey (55,54,64) with darker violet (34,32,45) in its hollows and a few bright
     streaks (87,88,103) at its joints; the legs now use that mix instead of one flat dark violet."""
     (hx, hy), ph0, far, fwd = LEGS[name]; ph = (i / N + ph0) % 1.0; fo, fl = foot(ph)
-    if stand: fo, fl = {"far_hind": -1.5, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name], 0.0
-    hip = (hx + ox, hy + oy + bob); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
+    if fo_fl is not None: fo, fl = fo_fl
+    elif stand: fo, fl = {"far_hind": -1.5, "near_hind": 1.0, "far_fore": 1.0, "near_fore": -1.0}[name], 0.0
+    hip = (hx + ox + hdx, hy + oy + bob); ft = (hx + ox + fo + (2 if fwd else -1), GROUND - fl); kn = solve(hip, ft, fwd)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
     d.line([hip, kn], fill=(255, 255, 255, 255), width=2); d.line([kn, ft], fill=(255, 255, 255, 255), width=1)
     d.line([(hip[0] - 0.7, hip[1]), (kn[0] - 0.7, kn[1])], fill=(255, 255, 255, 255), width=1); d.line([(kn[0] - 0.5, kn[1]), (ft[0] - 0.5, ft[1])], fill=(255, 255, 255, 255), width=1)
