@@ -54,7 +54,9 @@ def tilt_layer(img, tilt):
 def render(p):
     bx, by, rise = p.get("bx", 0), p.get("by", 0), p.get("rise", 0); nx, ny, nrot, tilt = p.get("nx", 0), p.get("ny", 0), p.get("nrot", 0), p.get("tilt", 0)
     feet = dict(STAND_FEET)
-    for n, (fo, fl) in p.get("feet", {}).items(): feet[n] = (fo * 0.3, fl * 0.5)                   # stubby legs reach about a third as far as the Veil's (at half they stretched into long sticks)
+    for n, (fo, fl) in p.get("feet", {}).items():                                                       # stubby legs reach about a third as far as the Veil's (at half they stretched into long sticks)
+        sep = {"far_hind": -2.0, "far_fore": 1.5}.get(n, 0.0)                                         # and the far leg of a pair is held 2 px apart from the near one, so two legs read as two (they overlapped into one long leg)
+        feet[n] = (fo * 0.3 + sep + bx, fl * 0.5 + (1 if n in FAR else 0))     # + bx: in the air the feet travel with the body (before, they stayed at the stand pose's x while the body moved ahead, which stretched the legs into one long stick)
     bob = by - rise; im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     def leg(n):
         hx_ = MH.LEGS[n][0][0] + ox + bx; return MH.leg_img(n, 0, bob + tilt_shift(hx_, tilt), False, bx, feet[n])
