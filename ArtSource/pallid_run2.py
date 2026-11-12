@@ -34,21 +34,23 @@ for y in range(CUT, S.shape[0]):
 BODY = Image.fromarray(_BODY)
 
 # key table, 8 frames, per leg: (dx forward in px at the foot, lift in rows). Frame 0 and 7 are his standing pose or close to it; 1-2 push off, 3-4 flight (fore reaching, hind trailing), 5-6 landing.
-KEYS = {"near_hind": [(0, 0, 0), (-2, 0, 0), (-5, 0, 1), (-5, 0, 1), (-1, 2, 1), (2, 1, 0), (3, 0, 0), (1, 0, 0)],
-        "far_hind":  [(0, 0, 0), (-1, 0, 0), (-4, 0, 1), (-5, 0, 1), (0, 2, 1), (2, 1, 0), (3, 0, 0), (2, 0, 0)],
-        "near_fore": [(0, 0, 0), (1, 1, 0), (4, 0, 1), (5, 0, 1), (2, 2, 1), (3, 0, 0), (1, 0, 0), (-1, 0, 0)],
-        "far_fore":  [(0, 0, 0), (0, 1, 0), (3, 0, 1), (5, 0, 1), (3, 2, 1), (4, 0, 0), (2, 0, 0), (-1, 0, 0)]}
-# (dx, lift rows, in the air). Extension frames (2,3): legs stay full length, fore stretched forward and hind trailing, the whole figure up with the body; gather frame (4): legs tucked (rows deleted).
-RISE = [0, 0, 1, 2, 1, 0, 0, 0]                     # body up in the flight frames
-NOD = [0, 0, -1, -1, 0, 1, 1, 0]                    # head
+KEYS = {"near_hind": [(0, 0, 0, 0), (-3, -1, 0, 0), (-6, -2, 0, 1), (-7, -3, 0, 1), (-3, 0, 2, 1), (4, 2, 1, 0), (5, 2, 0, 0), (2, 1, 0, 0)],
+        "far_hind":  [(0, 0, 0, 0), (-2, 0, 0, 0), (-5, -2, 0, 1), (-7, -3, 0, 1), (-1, 0, 2, 1), (3, 2, 1, 0), (5, 2, 0, 0), (3, 1, 0, 0)],
+        "near_fore": [(0, 0, 0, 0), (2, 1, 1, 0), (6, 3, 0, 1), (7, 3, 0, 1), (3, 1, 2, 1), (5, 2, 0, 0), (2, 1, 0, 0), (-1, 0, 0, 0)],
+        "far_fore":  [(0, 0, 0, 0), (1, 0, 1, 0), (5, 3, 0, 1), (7, 3, 0, 1), (4, 2, 2, 1), (6, 3, 0, 0), (3, 1, 0, 0), (-1, 0, 0, 0)]}
+# (foot dx, knee dx, lift rows, in the air): the rows shear piecewise from the hip row (0) to the knee row (knee dx) to the foot row (foot dx), at most one pixel per row so the leg stays whole.
+# Extension frames (2,3): legs full length, fore stretched forward and hind trailing, the figure up with the body; gather frame (4): legs tucked (rows deleted).
+RISE = [0, 0, 2, 3, 2, 0, 0, 0]                     # body up in the flight frames
+NOD = [0, 0, -1, -1, 0, 1, 1, 0]
+HAUNCH = [0, 0, 1, 1, 0, -1, -1, 0]                    # head
 
-def pose_leg(name, dx, lift):
+def pose_leg(name, dx, kx, lift):
     """his leg pixels, rows sheared by dx (0 at the hip row, dx at the foot row), `lift` rows deleted from the middle (top-anchored: the foot rises)"""
     p = PIECE[name]; rows = list(range(CUT, LOW + 1)); n = len(rows)
     cut = set(rows[n // 2: n // 2 + lift]) if lift else set(); keep = [y for y in rows if y not in cut]
     out = np.zeros((H, W, 4), np.uint8)
     for k, y in enumerate(keep):
-        yy = CUT + k; sh = int(round(dx * (yy - CUT) / (LOW - CUT)))
+        yy = CUT + k; r = yy - CUT; KR = 4; sh = int(round(kx * r / KR)) if r <= KR else int(round(kx + (dx - kx) * (r - KR) / (LOW - CUT - KR)))
         for x in range(S.shape[1]):
             if p[y, x, 3]:
                 nx = x + sh + ox
@@ -67,14 +69,27 @@ def shear_cols(img, x0, x1, amount):
             if 0 <= ny < h and src[y, x, 3]: a[ny, x] = src[y, x]
     return Image.fromarray(a)
 
+def haunch_cols(img, amount):
+    """the haunch (columns 0..16) moves up/down against the head: whole columns by whole pixels, 0 at x=16 growing to `amount` at x<=6"""
+    if amount == 0: return img
+    a = np.array(img); src = a.copy(); h = a.shape[0]
+    for x in range(0, 16):
+        sh = int(round(amount * min(1.0, (16 - x) / 10.0)))
+        if sh == 0: continue
+        a[:, x] = 0
+        for y in range(h):
+            ny = y + sh
+            if 0 <= ny < h and src[y, x, 3]: a[ny, x] = src[y, x]
+    return Image.fromarray(a)
+
 def frame(i, only=None):
-    legs = {n: pose_leg(n, KEYS[n][i][0], KEYS[n][i][1]) for n in AXES}
+    legs = {n: pose_leg(n, KEYS[n][i][0], KEYS[n][i][1], KEYS[n][i][2]) for n in AXES}
     if only: return legs[only]
     rise = RISE[i]; im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     def up(img): a = Image.new("RGBA", (W, H), (0, 0, 0, 0)); a.alpha_composite(img, (0, -rise)); return a       # a leg that is in the air rises with the body; its foot is already lifted by its key
-    for n in ("far_hind", "far_fore"): im.alpha_composite(up(legs[n]) if KEYS[n][i][2] else legs[n])
-    b = Image.new("RGBA", (W, H), (0, 0, 0, 0)); b.alpha_composite(shear_cols(BODY, 28, 38, NOD[i]), (ox, oy - rise)); im.alpha_composite(b)
-    for n in ("near_hind", "near_fore"): im.alpha_composite(up(legs[n]) if KEYS[n][i][2] else legs[n])
+    for n in ("far_hind", "far_fore"): im.alpha_composite(up(legs[n]) if KEYS[n][i][3] else legs[n])
+    b = Image.new("RGBA", (W, H), (0, 0, 0, 0)); b.alpha_composite(shear_cols(haunch_cols(BODY, HAUNCH[i]), 28, 38, NOD[i]), (ox, oy - rise)); im.alpha_composite(b)
+    for n in ("near_hind", "near_fore"): im.alpha_composite(up(legs[n]) if KEYS[n][i][3] else legs[n])
     a = np.array(im); l, k = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))
     for j in range(1, k + 1):
         if (l == j).sum() < 6: a[l == j] = 0
