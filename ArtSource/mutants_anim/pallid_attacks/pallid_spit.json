@@ -1,0 +1,81 @@
+{
+ "pallid_prowler": {
+  "spit": {
+   "frame": [
+    75,
+    55
+   ],
+   "ms": [
+    90,
+    100,
+    120,
+    70,
+    45,
+    80,
+    90,
+    100
+   ],
+   "spawn_frame": 4,
+   "muzzle": [
+    [
+     59,
+     28
+    ],
+    [
+     57,
+     26
+    ],
+    [
+     56,
+     23
+    ],
+    [
+     56,
+     23
+    ],
+    [
+     64,
+     34
+    ],
+    [
+     64,
+     33
+    ],
+    [
+     61,
+     30
+    ],
+    [
+     59,
+     28
+    ]
+   ],
+   "ground_row": 38
+  },
+  "acid_glob": {
+   "frame": [
+    18,
+    10
+   ],
+   "frames": 6,
+   "ms": 70,
+   "anchor": "the glob's head is 5 px from the right edge, trail to the left; fly it from the muzzle at about 10 tiles a second, rotate it to the aim"
+  },
+  "acid_splat": {
+   "frame": [
+    22,
+    14
+   ],
+   "frames": 6,
+   "ms": [
+    60,
+    60,
+    70,
+    80,
+    120,
+    140
+   ],
+   "anchor": "bottom-centre on the target"
+  }
+ }
+}

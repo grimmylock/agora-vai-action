@@ -125,7 +125,7 @@ def render(p):
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "mutants_anim/pallid_attacks"; os.makedirs(out, exist_ok=True)
     VA.W, VA.H, VA.GROUND = W, H, GROUND; res = {}
-    for name, poses in (("bite", VA.BITE), ("bite2", VA.BITE_B), ("pounce", VA.POUNCE)):
+    for name, poses in (("bite", VA.BITE), ("bite2", VA.BITE_B)):       # the Pallid has no pounce any more (Yan: it gets a ranged spit instead, pallid_spit.py)
         fr = [render(p) for p, _, _ in poses]; ms = [t for _, t, _ in poses]; tr = [x for _, _, x in poses]
         for i, f in enumerate(fr): f.save(os.path.join(out, f"{name}_{i}.png"))
         VA.strip_of(fr).save(os.path.join(out, f"pallid_prowler_{name}_strip.png")); VA.gif(os.path.join(out, f"{name}.gif"), fr, ms)
