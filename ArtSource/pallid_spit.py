@@ -97,21 +97,28 @@ if __name__ == "__main__":
     json.dump({"pallid_prowler": {"spit": {"frame": [PA.W, PA.H], "ms": ms, "spawn_frame": SPAWN, "muzzle": [list(m) for m in mz], "ground_row": PA.GROUND},
                "acid_glob": {"frame": list(G[0].size), "frames": len(G), "ms": 70, "anchor": "the glob's head is 5 px from the right edge, trail to the left; fly it from the muzzle at about 10 tiles a second, rotate it to the aim"},
                "acid_splat": {"frame": list(Sp[0].size), "frames": len(Sp), "ms": [60, 60, 70, 80, 120, 140], "anchor": "bottom-centre on the target"}}}, open(os.path.join(out, "pallid_spit.json"), "w"), indent=1)
-    # preview: the spit, the glob flying to a target 70 px away (the hit effect is a placeholder blob), then the splat
-    sc = 8; pw = PA.W + 90; ph_ = PA.H; frames = []; durs = []
-    def base(): 
+    # preview on ONE timeline (40 ms steps): the body plays its frames in order and only once; the glob leaves the muzzle at the start of the spawn frame and flies to a target 70 px away while the body
+    # carries on to the recover frame (an earlier preview replayed the thrust pose while the glob flew, which looked like a second thrust); the splat plays on arrival.
+    sc = 8; pw = PA.W + 90; ph_ = PA.H; frames = []
+    def base():
         bg = Image.new("RGBA", (pw, ph_), (54, 49, 41, 255)); d = ImageDraw.Draw(bg); d.rectangle([0, PA.GROUND + 1, pw, ph_], fill=(60, 55, 46, 255)); return bg
-    for i, f in enumerate(fr):
-        bg = base(); bg.alpha_composite(f); frames.append(bg); durs.append(ms[i])
+    starts = np.concatenate([[0], np.cumsum(ms)])[:-1]; t_spawn = int(starts[SPAWN]); FLY = 280; SPL = [60, 60, 70, 80, 120, 140]; t_hit = t_spawn + FLY; t_end = max(int(sum(ms)), t_hit + sum(SPL)) + 300
     mx, my = mz[SPAWN]; tx = mx + 70
-    for k in range(7):
-        bg = base(); bg.alpha_composite(fr[5 + (1 if k > 3 else 0)]); x = int(mx + (tx - mx) * (k + 1) / 7.0); g = G[k % len(G)]
-        bg.alpha_composite(g, (x - g.width + 5 - 0, my - g.height // 2)); frames.append(bg); durs.append(40)
-    for k, s_ in enumerate(Sp):
-        bg = base(); bg.alpha_composite(fr[7]); bg.alpha_composite(s_, (tx - s_.width // 2, PA.GROUND - s_.height + 1)); frames.append(bg); durs.append([60, 60, 70, 80, 120, 140][k])
-    durs[-1] += 400
+    for t in range(0, t_end, 40):
+        bi = max(i for i in range(len(ms)) if starts[i] <= t) if t < sum(ms) else len(ms) - 1
+        bg = base(); bg.alpha_composite(fr[bi])
+        if t_spawn <= t < t_hit:
+            k = (t - t_spawn) / float(FLY); x = int(mx + (tx - mx) * k); g = G[((t - t_spawn) // 40) % len(G)]; bg.alpha_composite(g, (x - g.width + 5, my - g.height // 2))
+        elif t >= t_hit:
+            el = t - t_hit; si = 0; acc = 0
+            for j, d in enumerate(SPL):
+                acc += d
+                if el < acc: si = j; break
+                si = j
+            if el < sum(SPL): bg.alpha_composite(Sp[si], (tx - Sp[si].width // 2, PA.GROUND - Sp[si].height + 1))
+        frames.append(bg)
     q = [f.resize((pw * sc, ph_ * sc), Image.NEAREST).convert("RGB").quantize(colors=64, method=Image.MEDIANCUT, dither=Image.NONE) for f in frames]
-    q[0].save(os.path.join(out, "spit_preview.gif"), save_all=True, append_images=q[1:], duration=durs, loop=0)
+    q[0].save(os.path.join(out, "spit_preview.gif"), save_all=True, append_images=q[1:], duration=40, loop=0)
     sheet = Image.new("RGBA", (PA.W * 4 * sc, PA.H * 2 * sc), (105, 115, 90, 255))
     for k, f in enumerate(fr): sheet.alpha_composite(f.resize((PA.W * sc, PA.H * sc), Image.NEAREST), ((k % 4) * PA.W * sc, (k // 4) * PA.H * sc))
     sheet.convert("RGB").save(os.path.join(out, "spit_sheet.png"))
