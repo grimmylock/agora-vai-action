@@ -17,8 +17,10 @@ FOOT0 = {"near_hind": 5, "far_hind": 15, "near_fore": 27, "far_fore": 38}
 FAR = {"far_hind", "far_fore"}
 L1, L2 = 7.0, 6.6
 # palettes sampled from the walk's legs: near legs pale to grey, far legs dark
-PAL = {"near": dict(thigh=(193, 186, 168), thigh_sh=(160, 152, 138), shin=(168, 166, 150), shin_sh=(120, 118, 106), foot=(78, 78, 72)),
-       "far":  dict(thigh=(132, 128, 116), thigh_sh=(96, 94, 86), shin=(104, 102, 92), shin_sh=(72, 70, 66), foot=(50, 50, 48))}
+# colour ramps along the leg, read off the walk's legs (pale at the top, greying to a dark foot); the far legs are the same ramp darkened. Eight tones instead of three, like the walk.
+RAMP_NEAR = [(196, 189, 170), (190, 183, 165), (178, 172, 156), (162, 158, 144), (146, 143, 130), (124, 122, 112), (96, 95, 88), (64, 64, 60)]
+RAMP_FAR = [(150, 146, 133), (142, 138, 126), (130, 127, 116), (118, 115, 106), (104, 102, 94), (88, 86, 80), (70, 69, 65), (48, 48, 46)]
+SHADE = 0.82                                    # the side of the leg turned away from the light
 
 def solve(hip, ft, bend_fwd):
     dx, dy = ft[0] - hip[0], ft[1] - hip[1]; d = min(math.hypot(dx, dy), L1 + L2 - 0.2); a = math.atan2(dy, dx)
@@ -27,13 +29,13 @@ def solve(hip, ft, bend_fwd):
 
 def leg_img(name, i, drop=0):
     dx, kx, lift, air = R2.KEYS[name][i]; rise = R2.RISE[i]; hind = name.endswith("hind"); hx, hy = AXES[name][0]
-    hip = (hx + ox, hy + oy - rise)                                           # the hip rides the body
-    ft = (FOOT0[name] + ox + dx, GROUND - 2 - drop - lift - (rise if air else 0))     # the foot target: one row above the ground row (the contour below it is the lowest row)
+    hip = (hx + ox, hy + oy - rise - (0 if name in FAR else 2))               # the hip rides the body; a near leg starts 2 rows up inside the body, so its thigh reads as part of it
+    ft = (FOOT0[name] + ox + dx, GROUND - 1 - drop - lift - (rise if air else 0))     # the foot target: one row above the ground row (the contour below it is the lowest row)
     d = math.hypot(ft[0] - hip[0], ft[1] - hip[1]); mx = 0.9 * (L1 + L2)
     if d > mx: vy = ft[1] - hip[1]; ft = (hip[0] + math.copysign(math.sqrt(max(0.0, mx * mx - vy * vy)), ft[0] - hip[0]), ft[1])
     knee = solve(hip, ft, not hind)
-    segs = [(hip, knee, 1.8 if hind else 1.6, 1.25), (knee, ft, 1.25, 1.0)]
-    pal = PAL["far" if name in FAR else "near"]; out = np.zeros((H, W, 4), np.uint8); tot = sum(math.hypot(q[0] - p[0], q[1] - p[1]) for p, q, _, _ in segs); fx, fy = int(round(ft[0])), int(round(ft[1]))
+    segs = [(hip, knee, 1.5 if hind else 1.25, 0.95), (knee, ft, 0.95, 0.75)]       # slim like the walk's legs: about 2 px of colour inside the contour
+    ramp = RAMP_FAR if name in FAR else RAMP_NEAR; out = np.zeros((H, W, 4), np.uint8); tot = sum(math.hypot(q[0] - p[0], q[1] - p[1]) for p, q, _, _ in segs); fx, fy = int(round(ft[0])), int(round(ft[1]))
     for y in range(H):
         for x in range(W):
             best = None; acc = 0.0
@@ -45,10 +47,8 @@ def leg_img(name, i, drop=0):
                 acc += ln
             if best is None and y == fy and fx < x <= fx + 2: best = (1.0, 1.0, 0.0)              # a short toe forward of the foot
             if best is None: continue
-            t, side = best[1], best[2]; lit = side < 0.2
-            if t < 0.4: col = pal["thigh"] if lit else pal["thigh_sh"]
-            elif t < 0.8: col = pal["shin"] if lit else pal["shin_sh"]
-            else: col = pal["foot"]
+            t, side = best[1], best[2]; col = ramp[min(7, int(t * 8))]
+            if side > 0.25: col = tuple(int(v * SHADE) for v in col)
             out[y, x, :3] = col; out[y, x, 3] = 255
     res = m.outline(Image.fromarray(out))
     if drop < 2 and int(np.where(np.array(res)[..., 3] > 0)[0].max()) > GROUND: return leg_img(name, i, drop + 1)       # a foot that ended below the ground row is raised one row
