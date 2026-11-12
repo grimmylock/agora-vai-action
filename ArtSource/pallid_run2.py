@@ -45,8 +45,8 @@ def _stride(front, back, lift_max):
         else: t = (k - 4 + 0.5) / 4.0; dx = back + (front - back) * t; lift = int(round(lift_max * math.sin(math.pi * t)))
         out.append((int(round(dx)), int(round(dx * 0.45)), lift))
     return out
-FORE = _stride(6, -3, 3)
-HIND = _stride(4, -6, 3)
+FORE = _stride(4, -3, 3)
+HIND = _stride(3, -4, 3)      # short strides: on 8-10 px legs a +-9 px stride lays the legs almost flat (Yan: the run looked sprawled next to the walk's upright legs)
 SHIFT = {"near_fore": 0, "far_fore": 1, "near_hind": 3, "far_hind": 4}
 def key(n, i):
     dx, kx, lift = (FORE if n.endswith("fore") else HIND)[(i - SHIFT[n]) % 8]

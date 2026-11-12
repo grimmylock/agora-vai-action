@@ -13,6 +13,7 @@ import mutant_from_ref as m
 
 STAND, N, ox, oy, W, H, LOW, AXES, BODY = R2.STAND, R2.N, R2.ox, R2.oy, R2.W, R2.H, R2.LOW, R2.AXES, R2.BODY
 GROUND = oy + LOW
+RISE = [r + 1 for r in R2.RISE]                  # the whole body rides one row higher than in run2: longer, more upright legs like the walk's
 FOOT0 = {"near_hind": 5, "far_hind": 15, "near_fore": 27, "far_fore": 38}
 FAR = {"far_hind", "far_fore"}
 L1, L2 = 7.0, 6.6
@@ -28,7 +29,7 @@ def solve(hip, ft, bend_fwd):
     return (hip[0] + L1 * math.cos(k), hip[1] + L1 * math.sin(k))
 
 def leg_img(name, i, drop=0):
-    dx, kx, lift, air = R2.KEYS[name][i]; rise = R2.RISE[i]; hind = name.endswith("hind"); hx, hy = AXES[name][0]
+    dx, kx, lift, air = R2.KEYS[name][i]; rise = RISE[i]; hind = name.endswith("hind"); hx, hy = AXES[name][0]
     hip = (hx + ox, hy + oy - rise - (0 if name in FAR else 2))               # the hip rides the body; a near leg starts 2 rows up inside the body, so its thigh reads as part of it
     ft = (FOOT0[name] + ox + dx, GROUND - 1 - drop - lift - (rise if air else 0))     # the foot target: one row above the ground row (the contour below it is the lowest row)
     d = math.hypot(ft[0] - hip[0], ft[1] - hip[1]); mx = 0.9 * (L1 + L2)
@@ -45,7 +46,7 @@ def leg_img(name, i, drop=0):
                 dist = math.hypot(x - cx, y - cy); r = r0 + (r1 - r0) * u
                 if dist <= r and (best is None or dist / r < best[0]): best = (dist / r, (acc + u * ln) / tot, ((x - cx) * (-vy) + (y - cy) * vx) / ln)
                 acc += ln
-            if best is None and y == fy and fx < x <= fx + 2: best = (1.0, 1.0, 0.0)              # a short toe forward of the foot
+            if best is None and y == fy and fx < x <= fx + 1: best = (1.0, 1.0, 0.0)              # a short toe forward of the foot
             if best is None: continue
             t, side = best[1], best[2]; col = ramp[min(7, int(t * 8))]
             if side > 0.25: col = tuple(int(v * SHADE) for v in col)
@@ -56,7 +57,7 @@ def leg_img(name, i, drop=0):
 
 def frame(i, only=None):
     if only: return leg_img(only, i)
-    rise = R2.RISE[i]; im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    rise = RISE[i]; im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     for n in ("far_hind", "far_fore"): im.alpha_composite(leg_img(n, i))
     b = Image.new("RGBA", (W, H), (0, 0, 0, 0)); b.alpha_composite(R2.shear_cols(R2.haunch_cols(BODY, R2.HAUNCH[i]), 28, 38, R2.NOD[i]), (ox, oy - rise)); im.alpha_composite(b)
     for n in ("near_hind", "near_fore"): im.alpha_composite(leg_img(n, i))
