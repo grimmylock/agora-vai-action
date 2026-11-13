@@ -19,7 +19,13 @@ def period(v, lo=None, hi=None):
             idx = (np.arange(ph, len(v) - 1, p)).astype(int); sc = np.abs(v[np.minimum(idx + 1, len(v) - 1)] - v[idx]).sum()
             if best is None or sc > best[0]: best = (sc, p, ph)
     return best[1], best[2]
-px, fx = period(np.abs(np.diff(g, axis=1)).sum(0)); py, fy = period(np.abs(np.diff(g, axis=0)).sum(1))
+def phase(v, p):
+    best = None
+    for ph in np.arange(0, p, 0.25):
+        idx = (np.arange(ph, len(v) - 1, p)).astype(int); sc = np.abs(v[np.minimum(idx + 1, len(v) - 1)] - v[idx]).sum()
+        if best is None or sc > best[0]: best = (sc, ph)
+    return best[1]
+py, fy = period(np.abs(np.diff(g, axis=0)).sum(1)); px = py; fx = phase(np.abs(np.diff(g, axis=1)).sum(0), px)      # the pixels are square: one pitch for both axes
 idle = np.array(Image.open(os.path.join(D, "idle.png"))); pal = np.unique(idle[idle[..., 3] > 0][:, :3], axis=0)
 cx = np.arange(fx, sub.shape[1] - px, px); cy = np.arange(fy, sub.shape[0] - py, py); cell = np.zeros((len(cy), len(cx), 4), np.uint8)
 for j, y in enumerate(cy):
