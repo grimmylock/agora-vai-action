@@ -646,7 +646,11 @@ namespace GameCore
         {
             string cat = CombatRules.Category(e.Weapon?.Db);
             string px = cat == "shotgun" ? "muzzle_shotgun" : cat == "sidearm" ? "muzzle_pistol" : "muzzle_smg";
-            if (!PxFx(px, muzzle, to.x - muzzle.x, to.y - muzzle.y, PxHalf)) Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
+            // Yan, 2026-11-13: "it's coming basically from the hand". The ready-made strips are drawn round the frame's centre and the smoke and sparks trail BACK from it (the smg's reach a tile behind the
+            // centre), so centred on a muzzle half a tile from the glove they cover the hand. Pushed forward along the aim so the burst starts at the barrel tip (tiles; my numbers, tune here).
+            float ox = to.x - muzzle.x, oy = to.y - muzzle.y, ol = Mathf.Max(0.01f, Mathf.Sqrt(ox * ox + oy * oy)), fwd = cat == "shotgun" ? 0.15f : cat == "sidearm" ? 0.25f : 0.5f;
+            var at = new Vector3(muzzle.x + ox / ol * fwd, muzzle.y + oy / ol * fwd, muzzle.z);
+            if (!PxFx(px, at, ox, oy, PxHalf)) Flash(held, "fx_muzzle_" + feel.Flash, 0.06f, muzzle);
         }
 
         private void Puff(string strip, Vector3 at, float life, float rise = 0f, Color? tint = null, float scale = 1f)
