@@ -27,7 +27,7 @@ if os.path.exists(nc):
 melee = [r for r in rows if r[0] == "melee"]; guns = [r for r in rows if r[0] != "melee"]
 done = [r for r in guns if r[1] in dense]; todo = [r for r in guns if r[1] not in dense]
 out = ["# Weapon pictures: reworked vs old (generated, do not edit by hand)", "",
-       "Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (128x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.",
+       "Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.",
        "**Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.", "",
        f"**Guns: {len(done)} reworked, {len(todo)} old** (melee weapons are a separate hand-pixelled set, {len(melee)} of them, not part of this rework).", "",
        "## Reworked", "", "| Key | In-game name | Category | Real-world pattern | Reference photo (source, licence) | Density k |", "|-|-|-|-|-|-|"]

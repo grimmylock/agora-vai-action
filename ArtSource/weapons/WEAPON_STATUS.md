@@ -1,6 +1,6 @@
 # Weapon pictures: reworked vs old (generated, do not edit by hand)
 
-Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (128x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.
+Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.
 **Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.
 
 **Guns: 4 reworked, 51 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
@@ -11,8 +11,8 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 |-|-|-|-|-|-|
 | RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 4.64 |
 | HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 3.26 |
-| FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 3.00 |
-| Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 2.90 |
+| FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 3.60 |
+| Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 3.48 |
 
 ## Old (still to do)
 
