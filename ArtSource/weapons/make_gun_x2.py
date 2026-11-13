@@ -48,7 +48,7 @@ def auto_target(key):
 def target_width(key, tg):
     """the picture length in px from the REAL gun's length (gun_real_sizes.json): 102 * (cm / 29) ** 0.28, capped at 156; a gun without a real length falls back to 2 x the old menu width"""
     rs = json.load(open(os.path.join(HERE, "gun_real_sizes.json")))
-    if key in rs: return min(156, int(round(102 * (rs[key][0] / 29.0) ** 0.28)))
+    if key in rs: cm = rs[key][0]; return min(156, int(round(102 * (cm / 29.0) ** (1.0 if cm <= 32 else 0.28))))   # handguns scale linearly from the Rinaldi (29 cm = 102 px); longer guns keep the compressed 0.28 power (Yan, 2026-11-13: the pistols looked gigantic next to the Rinaldi)
     return int(round(tg["menu_w"] * 2 * tg.get("size", 1.0)))
 def main():
     args = sys.argv[1:]

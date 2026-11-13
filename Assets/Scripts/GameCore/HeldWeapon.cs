@@ -507,7 +507,7 @@ namespace GameCore
         public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
         {   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
             ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.63f, ["FrontierLeverRifle"] = 3.55f, ["Nightwalker4570"] = 3.55f,
-            ["SperlingS96"] = 4.22f, ["Halden45Service"] = 4.38f, ["HaldenServiceRevolver"] = 4.22f, ["WaldenP9"] = 3.86f,
+            ["SperlingS96"] = 4.22f, ["Halden45Service"] = 3.67f, ["HaldenServiceRevolver"] = 4.17f, ["WaldenP9"] = 3.10f,
         };
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
@@ -536,9 +536,9 @@ namespace GameCore
             ["BarbedWireBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 5.5f, 9f, float.NaN, float.NaN, 19f, 2.5f },
-            ["WaldenP9"] = new[] { 5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
-            ["Halden45Service"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 20f, 3.5f },
-            ["HaldenServiceRevolver"] = new[] { 3.5f, 8.5f, float.NaN, float.NaN, 22f, 3f },
+            ["WaldenP9"] = new[] { 20.2f, 12.3f, float.NaN, float.NaN, 35.2f, 6f },
+            ["Halden45Service"] = new[] { 15.7f, 11.2f, float.NaN, float.NaN, 31.2f, 5.3f },
+            ["HaldenServiceRevolver"] = new[] { 11.2f, 9.9f, float.NaN, float.NaN, 29.7f, 3.8f },
             ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
             ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
             ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
@@ -578,9 +578,6 @@ namespace GameCore
             ["M91Trekhlineyka"] = new[] { 12.5f, 7f, 31f, 7.5f, 45f, 5f },
             ["Nightwalker4570"] = new[] { 13.5f, 9.4f, 26.5f, 10.2f, 41.5f, 7.4f },   // virtual px of the double-size picture
             ["SperlingS96"] = new[] { 11.4f, 10.1f, float.NaN, float.NaN, 30.4f, 4f },
-            ["Halden45Service"] = new[] { 12.3f, 9.8f, float.NaN, float.NaN, 27.8f, 3.9f },
-            ["HaldenServiceRevolver"] = new[] { 10.9f, 9.8f, float.NaN, float.NaN, 29.4f, 3.8f },
-            ["WaldenP9"] = new[] { 15.1f, 10.2f, float.NaN, float.NaN, 30.1f, 3.9f },
             ["CorvanMarksman"] = new[] { 11.5f, 8f, 26f, 7.5f, 43f, 5.5f },
             ["SV2Strela"] = new[] { 10.5f, 7.5f, 27f, 7.5f, 45f, 6f },
             ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },
