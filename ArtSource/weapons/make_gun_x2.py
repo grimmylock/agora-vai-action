@@ -36,6 +36,15 @@ def thicken(im, x0, n):
         r = np.where(a[:, x, 3] > 0)[0]
         if len(r) and r.max() - r.min() + 1 <= 3: t = r.min(); out[t + 1: t + 1 + n, x] = (*body, 255)
     return Image.fromarray(out)
+def auto_target(key):
+    """a gun not yet in gun_x2_targets.json: read its OLD sizes from the game files (the 64x32 menu picture's content width, the in-hand picture's canvas, the old Grips row in HeldWeapon.cs) and store them, so a re-run never doubles twice"""
+    import re
+    hd = Image.open(os.path.join(WP, f"weapon_{key}_hd.png")).convert("RGBA"); assert hd.size == (64, 32), f"{key}: the menu picture is {hd.size}, not the old 64x32: already reworked? add it to gun_x2_targets.json by hand"
+    mw = bbox(hd); ih = Image.open(os.path.join(WP, f"weapon_{key}.png")).convert("RGBA"); ib = bbox(ih)
+    src = open(os.path.join(ROOT, "Assets", "Scripts", "GameCore", "HeldWeapon.cs")).read(); m = re.search(r'\["%s"\] = new\[\] \{ ([^}]*) \}' % key, src)
+    if not m: sys.exit(f"{key}: no Grips row in HeldWeapon.cs")
+    g = [None if t.strip() == "float.NaN" else float(t.strip().rstrip("f")) for t in m.group(1).split(",")]
+    return {"menu_w": mw[2] - mw[0], "inhand": [ib[2] - ib[0], ib[3] - ib[1]], "grips": g}
 def target_width(key, tg):
     """the picture length in px from the REAL gun's length (gun_real_sizes.json): 102 * (cm / 29) ** 0.28, capped at 156; a gun without a real length falls back to 2 x the old menu width"""
     rs = json.load(open(os.path.join(HERE, "gun_real_sizes.json")))
@@ -45,8 +54,11 @@ def main():
     args = sys.argv[1:]
     if len(args) < 2: print(__doc__); return
     key, still = args[0], args[1]; dry = "--dry" in args
-    tg = json.load(open(os.path.join(HERE, "gun_x2_targets.json"))).get(key)
-    if tg is None: sys.exit(f"{key} is not in gun_x2_targets.json: add its old menu_w, in-hand canvas and Grips row first (see the file's _note)")
+    tfile = os.path.join(HERE, "gun_x2_targets.json"); alltg = json.load(open(tfile)); tg = alltg.get(key)
+    if tg is None:
+        tg = auto_target(key); alltg[key] = tg
+        if not dry: json.dump(alltg, open(tfile, "w"), indent=1)
+        print(f"  (read the old sizes of {key} from the game files: {tg})")
     sp = Image.open(still).convert("RGBA"); x0, y0, x1, y1 = bbox(sp); sp = sp.crop((x0, y0, x1, y1))
     if "--lift" in args: i = args.index("--lift"); sp = lift(sp, float(args[i + 1]), float(args[i + 2]))
     tw = target_width(key, tg); th = int(round(sp.height * tw / sp.width)); img = shrink(sp, tw, th)
