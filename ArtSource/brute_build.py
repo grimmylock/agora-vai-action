@@ -67,30 +67,35 @@ walk = [walk_frame(i) for i in range(8)]
 for n_, r_ in ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)): P[f"dip{n_}"] = dip(I, r_)
 P["crouch"] = P["dip4"]
 # ---- the rock (boulder), its shatter and the slam dust, drawn here
+STONE = {"OL": (20, 18, 16), "DK": (62, 58, 54), "MID": (104, 100, 92), "HI": (150, 146, 134), "HI2": (178, 174, 160), "DIRT": (96, 74, 50)}
 def rock_frames(n=6, size=26):
-    """a BOULDER (Yan: the 16 px rock "reads as a pebble", at least 50 % bigger): 26 px, lumpy, faceted light from the upper left, dark cracks, yellow flecks like his own body, tumbling over 6 frames"""
-    OL, MID, DK, HI, FL = (14, 14, 8), (88, 84, 44), (46, 44, 24), (132, 128, 70), (200, 208, 70); rng = np.random.RandomState(5); out = []
+    """a BOULDER of GROUND stone (Yan: it looked like a fidget spinner and like it came from the Brute): an irregular angular polygon (9 corners, flat faces, no lobes), grey-brown stone, light from the upper left in three flat tones, dark cracks, a little dirt clinging at the bottom, no yellow; it tumbles over 6 frames"""
+    rng = np.random.RandomState(11); k = 9; base = [(2 * math.pi * i / k + rng.uniform(-0.25, 0.25), 0.74 + 0.26 * rng.rand()) for i in range(k)]
+    cracks = [(rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), rng.uniform(0, 6.28), rng.uniform(0.25, 0.5)) for _ in range(3)]; out = []
+    c = size / 2.0 - 0.5; r0 = size * 0.46
     for i in range(n):
-        a = np.zeros((size, size, 4), np.uint8); c = size / 2.0 - 0.5; ph = i * 1.05; r0 = size * 0.40
+        rot = i * (2 * math.pi / n) * 1.0; big = 4; im = Image.new("L", (size * big, size * big), 0); dr = ImageDraw.Draw(im)
+        pts = [((c + math.cos(a + rot) * rr * r0) * big + big / 2, (c + math.sin(a + rot) * rr * r0) * big + big / 2) for a, rr in base]; dr.polygon(pts, fill=255)
+        m = np.array(im.resize((size, size), Image.NEAREST)) > 127; edge = m & ~nd.binary_erosion(m); arr = np.zeros((size, size, 4), np.uint8)
         for y in range(size):
             for x in range(size):
-                ang = math.atan2(y - c, x - c); r = r0 * (1 + 0.14 * math.sin(3 * ang + ph) + 0.09 * math.sin(5 * ang - 2 * ph) + 0.05 * math.sin(7 * ang + ph)); d = math.hypot(x - c, y - c)
-                if d <= r:
-                    lit = (x - c) * -0.6 + (y - c) * -0.8; t = d / r; col = HI if (lit > r * 0.30 and t > 0.45) else DK if (lit < -r * 0.30 and t > 0.35) else MID; a[y, x] = (*col, 255)
-                elif d <= r + 1.0: a[y, x] = (*OL, 255)
-        for k in range(3):                                                  # cracks: short dark runs across the face, turning with the tumble
-            ang = ph + k * 2.1; cx0, cy0 = c + math.cos(ang) * 2, c + math.sin(ang) * 2
-            for step in range(7):
-                x, y = int(round(cx0 + math.cos(ang + 0.5) * step)), int(round(cy0 + math.sin(ang + 0.5) * step))
-                if 0 <= x < size and 0 <= y < size and a[y, x, 3] and tuple(a[y, x, :3]) != OL: a[y, x] = (*DK, 255)
-        for _ in range(5):
-            x, y = int(c + rng.uniform(-6, 6)), int(c + rng.uniform(-6, 6))
-            if a[y, x, 3] and tuple(a[y, x, :3]) not in (OL, DK): a[y, x] = (*FL, 255); a[y, min(size - 1, x + 1)] = (*FL, 255) if a[y, min(size - 1, x + 1), 3] else a[y, min(size - 1, x + 1)]
-        out.append(Image.fromarray(a))
+                if not m[y, x]: continue
+                if edge[y, x]: arr[y, x] = (*STONE["OL"], 255); continue
+                lit = ((x - c) * -0.65 + (y - c) * -0.75) / r0; d = math.hypot(x - c, y - c) / r0
+                col = STONE["HI2"] if (lit > 0.62 and d > 0.25) else STONE["HI"] if lit > 0.2 else STONE["MID"] if lit > -0.35 else STONE["DK"]; arr[y, x] = (*col, 255)
+        for (ox, oy, ang, ln) in cracks:                                         # cracks stay on the rock and turn with it
+            ca, sa = math.cos(rot), math.sin(rot); px, py = (ox * ca - oy * sa) * r0 + c, (ox * sa + oy * ca) * r0 + c
+            for st in range(int(ln * r0 * 1.6)):
+                x, y = int(round(px + math.cos(ang + rot) * st)), int(round(py + math.sin(ang + rot) * st))
+                if 0 <= x < size and 0 <= y < size and arr[y, x, 3] and not edge[y, x]: arr[y, x] = (*STONE["DK"], 255)
+        for y in range(size - 1, -1, -1):                                         # a little dirt clings to the underside of the rock
+            for x in range(size):
+                if arr[y, x, 3] and not edge[y, x] and ((y - c) / r0 > 0.45 + 0.2 * math.sin(x * 1.3 + i)) and rng.rand() < 0.35: arr[y, x] = (*STONE["DIRT"], 255)
+        out.append(Image.fromarray(arr))
     return out
 def hit_frames(n=6, w=60, h=40):
     """the boulder bursts on the target: a flash of dust, big chunks flying out and falling, a ground shockwave ring, pebbles left behind"""
-    OL, MID, DK, DUST, DUST2 = (14, 14, 8), (88, 84, 44), (46, 44, 24), (176, 166, 132), (120, 112, 88); rng = np.random.RandomState(9); ch = [(rng.uniform(-1, 1), rng.uniform(0.5, 1.0), rng.choice([4, 5, 6])) for _ in range(9)]; out = []
+    OL, MID, DK, DUST, DUST2 = STONE["OL"], STONE["MID"], STONE["DK"], (176, 160, 128), (120, 104, 80); rng = np.random.RandomState(9); ch = [(rng.uniform(-1, 1), rng.uniform(0.5, 1.0), rng.choice([4, 5, 6])) for _ in range(9)]; out = []
     for i in range(n):
         img = Image.new("RGBA", (w, h), (0, 0, 0, 0)); dr = ImageDraw.Draw(img); cx, cy = w / 2.0, h - 8.0; t = i / (n - 1.0)
         if i < 5:

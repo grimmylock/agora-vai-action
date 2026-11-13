@@ -24,9 +24,23 @@ json.dump(meta, open(os.path.join(OUT, "brute_attacks.json"), "w"), indent=1)
 tp = os.path.join(HERE, "mutants_anim", "brute_spritecook")
 thr = [Image.open(os.path.join(tp, f"throw_frame{i}.png")).convert("RGBA") for i in range(12)]
 PAD = 24; rock = Image.open(os.path.join(OUT, "fx", "brute_boulder_strip.png")).convert("RGBA").crop((0, 0, 26, 26)); HAND = {6: (14, 9), 7: (12, 5), 8: (12, 5), 9: (12, 5)}     # the top of the raised open hand (measured per frame)
+DIRT = [(96, 74, 50), (70, 56, 42), (120, 104, 80), (62, 58, 54)]
+def debris(g, i, fx, fy):
+    """dirt and pebbles thrown up where the big fist grips the ground (frames 3-5): rising and spreading, in ground colours"""
+    rng = np.random.RandomState(40 + i); n = 4 + 3 * (i - 2)
+    for k in range(n):
+        up = (i - 2) * 3.0 + rng.uniform(0, 5); x = int(fx + rng.uniform(-9, 9) * (0.6 + 0.3 * (i - 2))); y = int(fy - up - rng.uniform(0, 4) + PAD); s_ = 1 + int(rng.rand() < 0.4); col = DIRT[k % 4]
+        for dx in range(s_):
+            for dy in range(s_):
+                if 0 <= x + dx < g.width and 0 <= y + dy < g.height: g.putpixel((x + dx, y + dy), (*col, 255))
+FIST = (11, 60)                                                          # where the big fist grips the ground in frames 3-5 (px in the original frame)
 frames = []
 for i, f in enumerate(thr):
     g = Image.new("RGBA", (f.width, f.height + PAD), (0, 0, 0, 0)); g.alpha_composite(f, (0, PAD))
+    if i == 4:                                                           # the stone's top shows behind the fist, half buried
+        under = Image.new("RGBA", g.size, (0, 0, 0, 0)); under.alpha_composite(rock, (FIST[0] - rock.width // 2, FIST[1] + PAD - 6 - rock.height // 2)); under.alpha_composite(g); g = under
+    if i == 5: g.alpha_composite(rock, (FIST[0] - rock.width // 2 + 1, FIST[1] + PAD - 12 - rock.height // 2))     # lifted on the fist
+    if i in (3, 4, 5): debris(g, i, *FIST)
     if i in HAND: hx, hy = HAND[i]; g.alpha_composite(rock, (hx + 1 - rock.width // 2, hy + PAD - 7 - rock.height // 2))
     frames.append(g)
 low2 = max(int(np.where(np.array(f)[..., 3].any(1))[0].max()) for f in thr) + PAD; frames = [f.crop((0, 0, f.width, low2 + 1)) for f in frames]
