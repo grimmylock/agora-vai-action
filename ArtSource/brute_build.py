@@ -66,7 +66,6 @@ def walk_frame(i):
 walk = [walk_frame(i) for i in range(8)]
 for n_, r_ in ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)): P[f"dip{n_}"] = dip(I, r_)
 P["crouch"] = P["dip4"]
-for n_ in (3, 5, 7): P[f"st{n_}"] = stretch(I, n_)                                                    # his idle squashed 4 rows at the waist: the crouch before the rise and after the hit
 # ---- the rock (boulder), its shatter and the slam dust, drawn here
 def rock_frames(n=6, size=16):
     OL, MID, DK, HI, FL = (14, 14, 8), (88, 84, 44), (46, 44, 24), (132, 128, 70), (200, 208, 70); rng = np.random.RandomState(5); out = []
