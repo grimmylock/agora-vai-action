@@ -149,6 +149,8 @@ namespace GameCore
 
         // RT 8: every round in the air is a short streak along its path, at the height it flies
         private readonly Dictionary<Gunplay.Round, SpriteRenderer> _rounds = new Dictionary<Gunplay.Round, SpriteRenderer>();
+        private readonly Dictionary<Gunplay.Round, (Vector3 off, float gone)> _roundFrom = new Dictionary<Gunplay.Round, (Vector3, float)>();   // where the drawn round started relative to its real line
+        const float RampTiles = 1.2f;
         private void TickRounds()
         {
             foreach (var r in Gunplay.Flying)
@@ -162,12 +164,21 @@ namespace GameCore
                 }
                 float len = Mathf.Clamp(r.Speed * 0.012f, 0.25f, 1.2f), back = Mathf.Min(len, r.Gone);   // never behind the muzzle
                 float y = -(r.Y + 0.44f) + (r.H + r.Up * r.Gone / Ballistics.BodyTiles) * Ballistics.BodyTiles;
-                sr.transform.position = new Vector3(r.X - r.Dx * back * 0.5f, y + r.Dy * back * 0.5f, 0f);
+                // Yan, 2026-11-13: "the bullets are coming from the character's head, around the eye area". The round flies at the crosshair's height from the shooter's feet position, so aiming up the screen
+                // starts it at head height. VISUAL ONLY (the hit maths is untouched): it is drawn leaving the gun's muzzle and eases onto its real line over the first RampTiles of flight.
+                if (!_roundFrom.TryGetValue(r, out var st))
+                {
+                    var mk = r.Shooter != null ? _markerOf(r.Shooter) : null; var hv = mk != null ? _heldOf(mk)?.Use(r.W) : null;
+                    _roundFrom[r] = st = hv != null && hv.Visible ? (hv.Muzzle() - new Vector3(r.X, y, 0f), r.Gone) : (Vector3.zero, r.Gone);
+                }
+                float ease = 1f - Mathf.Clamp01((r.Gone - st.gone) / RampTiles); ease *= ease;
+                float ox = st.off.x * ease, oy = st.off.y * ease;
+                sr.transform.position = new Vector3(r.X - r.Dx * back * 0.5f + ox, y + r.Dy * back * 0.5f + oy, 0f);
                 sr.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-r.Dy, r.Dx) * Mathf.Rad2Deg);
                 sr.transform.localScale = new Vector3(back, (feel.Rail ? 2f : 1f) / WeaponArt.PixelsPerUnit, 1f);
                 sr.sortingOrder = TacticalGridView.SortAt(-r.Y) + 20;
             }
-            foreach (var k in _rounds.Keys.Where(k => !Gunplay.Flying.Contains(k)).ToList()) { if (_rounds[k] != null) Object.Destroy(_rounds[k].gameObject); _rounds.Remove(k); }
+            foreach (var k in _rounds.Keys.Where(k => !Gunplay.Flying.Contains(k)).ToList()) { if (_rounds[k] != null) Object.Destroy(_rounds[k].gameObject); _rounds.Remove(k); _roundFrom.Remove(k); }
         }
 
         public void Tick()
