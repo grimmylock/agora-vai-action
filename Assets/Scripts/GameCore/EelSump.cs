@@ -992,9 +992,10 @@ namespace GameCore
             unit = ZoneUnit(f, hit, out part); return true;
         }
         /// <summary>The part of the eel the crosshair (tile space) is over - the sprite is drawn lifted by each sample's height - with that sample's spot on the ground (where the round should be aimed).</summary>
+        public static float UnderZ;   // the height (tiles) of the part BodyUnder found: the shot is drawn rising to it, so it flies toward the crosshair instead of the part's footing
         public static bool BodyUnder(float mx, float my, out ICombatant unit, out float fx, out float fy)
         {
-            unit = null; fx = fy = 0f; var f = EelBoss.Current; var s = SpineOf(f); if (s == null || f.Stage == "hidden") return false;
+            UnderZ = 0f; unit = null; fx = fy = 0f; var f = EelBoss.Current; var s = SpineOf(f); if (s == null || f.Stage == "hidden") return false;
             int best = -1; float bk = 1f;
             for (int i = 0; i < N; i++)
             {
@@ -1003,7 +1004,7 @@ namespace GameCore
                 if (k < bk) { bk = k; best = i; }
             }
             if (best < 0) return false;
-            unit = ZoneUnit(f, best, out _); fx = s.X[best]; fy = s.Y[best]; return true;
+            unit = ZoneUnit(f, best, out _); fx = s.X[best]; fy = s.Y[best]; UnderZ = s.Z[best]; return true;
         }
         public static bool IsEelHead(ICombatant u, string part) => part == "Head" && EelBoss.Is(u);
         /// <summary>A melee swing from (px, py) facing (dx, dy) (a unit vector) with `reach` and an `arcDeg` wide arc: the nearest part of the body that is out of the water and low enough to cut (Z <= LowZ)

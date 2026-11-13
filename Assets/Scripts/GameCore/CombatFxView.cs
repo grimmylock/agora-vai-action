@@ -181,11 +181,55 @@ namespace GameCore
             foreach (var k in _rounds.Keys.Where(k => !Gunplay.Flying.Contains(k)).ToList()) { if (_rounds[k] != null) Object.Destroy(_rounds[k].gameObject); _rounds.Remove(k); _roundFrom.Remove(k); }
         }
 
+        // Yan, 2026-11-13: "show me the actual hitboxes on the enemies". F6 (dev). Every live enemy's boxes straight from Ballistics.Boxes (the numbers a round is tested against): red = head, yellow = torso (the thin
+        // inner one is the torso proper, the wider is the arm zone), green = legs, orange = a mutant's body; the eel's samples out of the water are columns from their footing up to the height they are drawn at
+        // (magenta = head zone, cyan = body). A round hits when its line passes inside a box's half-width at its own height; the eel ignores height inside its column.
+        private readonly List<SpriteRenderer> _boxPool = new List<SpriteRenderer>(); private int _boxUsed;
+        private void BoxLine(float x0, float y0, float x1, float y1, Color c)
+        {
+            if (_boxUsed >= _boxPool.Count) { var n = NewSprite("HitBox", White(), c, _root, 12); _boxPool.Add(n); }
+            var sr = _boxPool[_boxUsed++]; sr.gameObject.SetActive(true); sr.color = c; sr.sortingOrder = WorldArt.SortTop + 40;
+            float w = Mathf.Max(Mathf.Abs(x1 - x0), 0.03f), h = Mathf.Max(Mathf.Abs(y1 - y0), 0.03f);
+            sr.transform.position = new Vector3((x0 + x1) * 0.5f, (y0 + y1) * 0.5f, 0f); sr.transform.localScale = new Vector3(w, h, 1f);
+        }
+        private void BoxRect(float xc, float yLow, float half, float yHigh, Color c)
+        {
+            float l = xc - half, r = xc + half;
+            BoxLine(l, yLow, r, yLow, c); BoxLine(l, yHigh, r, yHigh, c); BoxLine(l, yLow, l, yHigh, c); BoxLine(r, yLow, r, yHigh, c);
+        }
+        private void TickBoxes()
+        {
+            _boxUsed = 0;
+            if (Ballistics.ShowBoxes)
+            {
+                foreach (var u in EncounterState.Enemies)
+                {
+                    if (u == null || !u.IsAlive()) continue;
+                    var (ux, uy) = Ballistics.Pos(u); float feet = -(uy + 0.44f);
+                    foreach (var (lo, hi, half, part) in Ballistics.Boxes(u))
+                    {
+                        var col = part == "Head" ? new Color(1f, 0.15f, 0.15f, 0.9f) : part == "Legs" ? new Color(0.2f, 1f, 0.3f, 0.9f) : part == "Body" ? new Color(1f, 0.55f, 0.1f, 0.9f) : part.StartsWith("Torso (") ? new Color(1f, 0.9f, 0.2f, 0.45f) : new Color(1f, 0.9f, 0.2f, 0.9f);
+                        BoxRect(ux, feet + lo * Ballistics.BodyTiles, half, feet + hi * Ballistics.BodyTiles, col);
+                    }
+                }
+                var f = EelBoss.Current; var s = f != null ? EelSump.SpineOf(f) : null;
+                if (s != null && f.Stage != "hidden")
+                    for (int i = 0; i < EelSump.N; i++)
+                    {
+                        if (s.Z[i] <= EelSump.HitZ) continue;
+                        float half = i <= EelSump.HeadSamples ? EelSump.HeadHalf : EelSump.BodyHalf;
+                        BoxRect(s.X[i], -s.Y[i], half, -s.Y[i] + s.Z[i], i <= EelSump.HeadSamples ? new Color(1f, 0.2f, 1f, 0.35f) : new Color(0.2f, 0.9f, 1f, 0.3f));
+                    }
+            }
+            for (int i = _boxUsed; i < _boxPool.Count; i++) if (_boxPool[i] != null && _boxPool[i].gameObject.activeSelf) _boxPool[i].gameObject.SetActive(false);
+        }
+
         public void Tick()
         {
             TickMelee();
             TickAura();
             TickRounds();
+            TickBoxes();
             float now = Time.time;
             foreach (var e in CombatFx.Pending)
             {
@@ -313,7 +357,7 @@ namespace GameCore
                         if (e.Hit && e.Target != null) Wound(e, to, lx / ll, ly / ll, false);
                         break;
                     }
-                    held?.AimAt(to, now + 0.35f + 0.07f * e.Rounds);
+                    if (!e.AtEel) held?.AimAt(to, now + 0.35f + 0.07f * e.Rounds);
                     if (e.Jammed) { At(now + 0.03f, () => held?.Twitch()); Sfx.Play("dryfire", from); return; }
                     for (int i = 0; i < e.Rounds; i++)
                     {

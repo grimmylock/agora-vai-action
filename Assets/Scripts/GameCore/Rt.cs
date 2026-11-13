@@ -485,6 +485,9 @@ namespace GameCore
             // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
             if (over != null) { var (ux, uy) = atEel ? (eelX, eelY) : Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
             if (len < 0.05f) return;
+            // Yan, 2026-11-13 (eel fight): "the aim keeps snapping toward its base in the water". The round is aimed at the part's footing on the ground (that is what the hit test reads), but the part is drawn Z tiles
+            // up, so the gun and the round went to the water. The round now RISES to the part's height over that distance (Up), and the gun stays on the crosshair (FxEvent.AtEel).
+            Gunplay.AimUp = atEel ? (EelSump.UnderZ - 0.45f * Ballistics.BodyTiles) / len : 0f;
             bool ambush = over is Mutant u && !u.IsAggroed;
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
             float spread = Gunplay.Spread(hd, aim, Of(p).Moving, p.Sneaking);
@@ -493,7 +496,7 @@ namespace GameCore
             spread += (2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f)) * Gunplay.PlayerSpread;
             if (!Of(p).Diving && (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil)) spread += 2f * Gunplay.PlayerSpread;   // RT 8 (Yan): no pinning mid-dive
             if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
-            Gunplay.AimAtEel = atEel; try { Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush); } finally { Gunplay.AimAtEel = false; }
+            Gunplay.AimAtEel = atEel; try { Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush); } finally { Gunplay.AimAtEel = false; Gunplay.AimUp = 0f; }
             aim.Bloom = System.Math.Min(Gunplay.PlayerMaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out (task #36: lower for the player)
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();

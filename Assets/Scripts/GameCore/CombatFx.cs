@@ -29,6 +29,7 @@ namespace GameCore
         // Real-time fork: a round resolved now (Gunplay) plays at once, not queued a beat apart behind the turn's other events;
         // it ends exactly where the round stopped (tile space, y down). Pellet = a shotgun's extra pellet: tracer only.
         public bool Now, Pellet;
+        public bool AtEel;             // aimed at the eel: the gun stays on the crosshair (its round is aimed at the part's footing)
         public bool Flying, Landed;    // RT 8: the trigger pull (flash, kick, no tracer) / where a flying round came down (impact only)
         public float Delay, EndX = -1f, EndY = -1f;
         public string Px;              // RT fx 4: kind "px" plays this pixelfx strip (Sprites/Fx/px_<Px>) at (FromX, FromY) - see CombatFx.PxAt

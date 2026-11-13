@@ -125,6 +125,7 @@ namespace GameCore
             }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             // dev keys for testing light and weather: F8 = colour grade on/off, F10 = +1 hour, F11 = next weather
+            if (keyboard != null && keyboard.f6Key.wasPressedThisFrame) { Ballistics.ShowBoxes = !Ballistics.ShowBoxes; GameLog.Write($"[DEV] hit boxes {(Ballistics.ShowBoxes ? "on" : "off")}"); return; }
             if (keyboard != null && keyboard.f8Key.wasPressedThisFrame) { ColorGrade.Off = !ColorGrade.Off; GameLog.Write($"[DEV] colour grade {(ColorGrade.Off ? "off" : "on")}"); return; }
             if (keyboard != null && keyboard.f10Key.wasPressedThisFrame) { Atmosphere.Advance(60f); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); return; }
             if (keyboard != null && keyboard.f11Key.wasPressedThisFrame)
@@ -343,6 +344,7 @@ namespace GameCore
             if (k.f9Key.wasPressedThisFrame) { SaveSystem.Load(); return; }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (k.f7Key.wasPressedThisFrame) { Lighting.Toggle(); return; }   // lighting v2 on/off, to compare with the old night overlay
+            if (k.f6Key.wasPressedThisFrame) { Ballistics.ShowBoxes = !Ballistics.ShowBoxes; GameLog.Write($"[DEV] hit boxes {(Ballistics.ShowBoxes ? "on" : "off")}"); return; }
             if (k.f8Key.wasPressedThisFrame) { ColorGrade.Off = !ColorGrade.Off; return; }
             if (k.f10Key.wasPressedThisFrame) { Atmosphere.Advance(60f); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); return; }
             if (k.f11Key.wasPressedThisFrame) { Atmosphere.Current = (Weather)(((int)Atmosphere.Current + 1) % 5); GameLog.Write($"[DEV] {Atmosphere.Clock()} {Atmosphere.Current}"); }

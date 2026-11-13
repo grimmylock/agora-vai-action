@@ -59,6 +59,23 @@ namespace GameCore
             part = "Legs"; return LegsHalf;
         }
 
+        public static bool ShowBoxes;                       // F6 (dev): CombatFxView draws every enemy's hit boxes
+
+        /// <summary>The hit boxes of a body as the round sees them: (from, to) as a share of a standing human's height, half-width in tiles, part. The same numbers HalfWidth uses.</summary>
+        public static List<(float lo, float hi, float half, string part)> Boxes(ICombatant u)
+        {
+            var l = new List<(float, float, float, string)>();
+            if (u == null || EelBoss.Is(u) || Rt.Untouchable(u)) return l;
+            if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
+            {
+                float size = MutantSize(m), top = (size + EelSump.LiftOfUnit(m)) / BodyTiles;
+                l.Add((0f, 0.7f * top, 0.25f * size, "Body")); l.Add((0.7f * top, top, 0.25f * size, "Head")); return l;
+            }
+            float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;
+            l.Add((0f, TorsoFrom * s, LegsHalf, "Legs")); l.Add((TorsoFrom * s, HeadFrom * s, TorsoHalf, "Torso")); l.Add((TorsoFrom * s, HeadFrom * s, ArmFrom, "Torso (arms are the outer part)")); l.Add((HeadFrom * s, s, HeadHalf, "Head"));
+            return l;
+        }
+
         /// <summary>Mutant height in tiles from its sprite size (hounds 1, Dread Prowler 1.5, Brute 2).</summary>
         public static float MutantSize(Mutant m) => m?.Db == null ? 1f : m.Db.Name == BrainBoss.Name ? 4.5f : m.Db.Name == EelBoss.Name ? 4f : m.Db.Name == EelSump.TailName ? 2.2f : m.Db.Name.Contains("Brute") ? 2f : m.Db.Name.Contains("Dread") ? 1.5f : 1f;
 

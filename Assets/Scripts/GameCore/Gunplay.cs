@@ -249,6 +249,7 @@ namespace GameCore
             public Ballistics.Hit Hit;                         // set when it lands
         }
         public static readonly List<Round> Flying = new List<Round>();
+        public static float AimUp;                             // extra climb (tan) of the rounds being made: the eel shot rises to the height of the part under the crosshair
         public static bool AimAtEel;                           // set by the player's fire code while the crosshair is over the eel, read when the rounds are made
 
         /// <summary>One trigger pull: rounds leave the muzzle, scattered by `spread` degrees sideways and up/down, at aim
@@ -264,11 +265,11 @@ namespace GameCore
                 float side = (aimSide + Gauss() * hd.Choke) * 0.0174533f, up = (aimUp + Gauss() * hd.Choke) * 0.0174533f;
                 float c = (float)System.Math.Cos(side), s = (float)System.Math.Sin(side);
                 var r = new Round { Shooter = shooter, W = w, Map = TerrainMap.ZoneId, X = x0, Y = y0, X0 = x0, Y0 = y0, Dx = dx * c - dy * s, Dy = dx * s + dy * c,
-                    H = h, Up = (float)System.Math.Tan(up), Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0, AtEel = AimAtEel };
+                    H = h, Up = (float)System.Math.Tan(up) + AimUp, Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0, AtEel = AimAtEel };
                 Flying.Add(r); rounds.Add(r);
             }
             // the trigger pull itself: flash, sound, kick, casing (CombatFxView); the gun points along the shot
-            CombatFx.Add(new FxEvent { Kind = "shot", Actor = shooter, Weapon = w, Now = true, Delay = delay, Flying = true,
+            CombatFx.Add(new FxEvent { Kind = "shot", Actor = shooter, Weapon = w, Now = true, Delay = delay, Flying = true, AtEel = AimAtEel,
                 EndX = x0 + dx * 6f, EndY = y0 + dy * 6f, FromX = shooter.X, FromY = shooter.Y });
             if (!CombatRules.IsMelee(w)) Noise.Make(shooter.X, shooter.Y, w.Db != null && w.Db.InnateSuppressor ? Noise.Suppressed : Noise.Shot, shooter);
             return rounds;
