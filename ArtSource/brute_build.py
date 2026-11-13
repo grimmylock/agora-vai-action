@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage as nd
 HERE = os.path.dirname(os.path.abspath(__file__)); D = os.path.join(HERE, "mutants_anim", "brute_poses"); OUT = os.path.join(HERE, "mutants_anim", "brute"); os.makedirs(OUT, exist_ok=True)
-SRC = {"idle": "idle", "slam_up": "slam_up", "slam_hit": "slam_hit", "out": "wind", "cock": "set3_f1"}       # round-2 poses (brute_recover2.py): his idle, slam wind-up, slam hit, arm out, arm cocked
+SRC = {"idle": "idle", "slam_up": "slam_up", "slam_hit": "slam_hit", "out": "wind", "cock": "set3_f1", "across": "set3_f3"}       # round-2 poses (brute_recover2.py): his idle, slam wind-up, slam hit, arm out, arm cocked
 P = {}
 def spine(a):
     yel = (a[..., 1] > 180) & (a[..., 2] < 120) & (a[..., 3] > 0); ys, xs = np.where(yel[: int(a.shape[0] * 0.45)]); return xs.max() - xs.min() + 1
@@ -117,18 +117,18 @@ def rock_in_fist(im, a, fr):
     hx, hy, ytop = hand(a); ox = CX - crest(a); oy = H - a.shape[0]; rk = ROCK[fr % 6]; im.alpha_composite(rk, (ox + hx - 11, oy + ytop - 12)); return im
 def build(seq):
     out = []
-    for key, ms, fx, n in seq:
-        im = put(P[key])
+    for key, ms, fx, n, *dxs in seq:
+        im = put(P[key], dxs[0] if dxs else 0)
         if fx == "arc": im = arc_over(im, P[key], n)
         elif fx == "rock": im = rock_in_fist(im, P[key], n)
         out.append(clean(im))
     return out
 SEQ = {
     "slam":  [("idle", 140, None, 0), ("slam_up", 480, None, 0), ("slam_hit", 70, None, 0), ("slam_hit", 330, None, 0), ("slam_hit", 260, None, 0), ("idle", 220, None, 0)],
-    "swipe": [("idle", 100, None, 0), ("cock", 300, None, 0), ("out", 60, "arc", 0), ("out", 70, "arc", 1), ("out", 110, "arc", 2), ("out", 150, None, 0), ("idle", 200, None, 0)],
+    "swipe": [("idle", 100, None, 0), ("cock", 280, None, 0), ("cock", 50, None, 0, -1), ("out", 50, None, 0, 1), ("across", 70, None, 0, 2), ("across", 130, None, 0, 2), ("across", 100, None, 0, 1), ("idle", 220, None, 0)],      # Yan: "keep that for the swipe/punch"
     "throw": [("idle", 120, None, 0), ("cock", 260, "rock", 0), ("cock", 220, "rock", 1), ("out", 90, None, 0), ("out", 250, None, 0), ("idle", 240, None, 0)],
 }
-CONTACT = {"slam": 2, "swipe": 2, "throw": 3}
+CONTACT = {"slam": 2, "swipe": 4, "throw": 3}
 def strip_of(fr):
     s = Image.new("RGBA", (W * len(fr), H), (0, 0, 0, 0))
     for i, f in enumerate(fr): s.alpha_composite(f, (i * W, 0))
@@ -140,7 +140,7 @@ def gif(path, frames, ms, sc=6):
     d = list(ms); d[-1] += 500; fs[0].save(path, save_all=True, append_images=fs[1:], duration=d, loop=0)
 meta = {}
 for name, seq in SEQ.items():
-    fr = build(seq); ms = [t for _, t, _, _ in seq]
+    fr = build(seq); ms = [t[1] for t in seq]
     strip_of(fr).save(os.path.join(OUT, f"blight_brute_{name}_strip.png")); gif(os.path.join(OUT, f"{name}.gif"), fr, ms)
     meta[name] = {"frame": [W, H], "ms": ms, "travel": [0.0] * len(fr)}
 for i, f in enumerate(walk): f.save(os.path.join(OUT, f"frame{i}.png"))
