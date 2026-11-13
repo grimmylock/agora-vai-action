@@ -83,7 +83,7 @@ namespace GameCore
             [4] = new Dictionary<string, Pool>
             {
                 ["melee"] = P(400, 650, "Serrated Trench Knife", "Sledgehammer"),
-                ["sidearm"] = P(4500, 7000, "Corvan 5.7", "Rinaldi R6", "Steppe Eagle"),
+                ["sidearm"] = P(4500, 7000, "Corvan 5.7", "Rinaldi R6", "Steppe Eagle", "Sperling S-96"),
                 ["smg"] = P(5000, 7500, "Corvan Gnat PDW"),
                 ["shotgun"] = P(5000, 8000, "Tambour-12", "SP-14 Warden", "Sayan-12", "Kaban-12"),
                 ["assault"] = P(6000, 9500, "BR-86 Bulldog", "VK-74 Obelisk", "NA-94 Yenisei", "Corvan Battle Rifle"),

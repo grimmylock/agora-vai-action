@@ -26,7 +26,7 @@ namespace GameCore
                 case "weapon":
                     switch (it.Category)
                     {
-                        case "sidearm": return it.Key == "RK12Kuvalda" || it.Key == "SteppeEagle" ? (3, 2) : (2, 2);
+                        case "sidearm": return it.Key == "RK12Kuvalda" || it.Key == "SteppeEagle" || it.Key == "SperlingS96" ? (3, 2) : (2, 2);
                         case "smg": return (3, 2);
                         case "shotgun": return it.Key == "Obrez66" ? (3, 2) : (5, 2);
                         case "assault": return (5, 2);

@@ -50,6 +50,7 @@ namespace GameCore
             ["Black Harrier"]           = (260, false, 1.5f, 0.9f, 0.50f, 4.4f),
             ["Corvan 5.7"]              = (380, false, 1.2f, 1.0f, 0.35f, 1.8f),
             ["Rinaldi R6"]              = (130, false, 2.4f, 0.8f, 0.50f, 3.4f),
+            ["Sperling S-96"]           = (330, false, 1.9f, 0.95f, 0.45f, 3.0f),   // long barrel steadies well, a stripper clip reloads slowly
             ["Steppe Eagle"]            = (200, false, 1.6f, 0.9f, 0.60f, 6.0f),
             ["RK-12 Kuvalda"]           = (75,  false, 3.0f, 0.8f, 0.65f, 7.5f),
             // SMGs: fast, light kick, wide
@@ -109,7 +110,7 @@ namespace GameCore
         // out of: a pistol crosses 6 tiles in 0.15 s (0.5 s in bullet time), a rifle 30 tiles in 0.4 s. Subsonic guns are slow.
         public static readonly Dictionary<string, float> Velocity = new Dictionary<string, float>
         {
-            ["Corvan 5.7"] = 55f, ["Steppe Eagle"] = 50f, ["RK-12 Kuvalda"] = 50f, ["Black Harrier"] = 48f, ["Vosa vz. 62"] = 35f,
+            ["Corvan 5.7"] = 55f, ["Sperling S-96"] = 52f, ["Steppe Eagle"] = 50f, ["RK-12 Kuvalda"] = 50f, ["Black Harrier"] = 48f, ["Vosa vz. 62"] = 35f,
             ["Corvan Gnat PDW"] = 60f, ["VKS-74U"] = 70f, ["TS-9 Tishina"] = 32f, ["VSN Shepot"] = 32f, ["Frontier Lever Rifle"] = 60f,
             ["Nightwalker .45-70"] = 55f, ["VK-127 Grom"] = 105f, ["Halden AM-50 Sledge"] = 110f, ["G-7 Rail Prototype"] = 250f, ["Obrez-66"] = 35f,
         };
