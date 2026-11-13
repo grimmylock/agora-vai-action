@@ -2230,6 +2230,17 @@ static class Program {
     nb = MutantAttack.NetState(hostB, UnityEngine.Time.time); var mirB = new Mutant("BlightBrute", hostB.X, hostB.Y, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(mirB);
     MutantAttack.Mirror(mirB, nb.code, nb.t20 * 0.02f, nb.d1, nb.d2, UnityEngine.Time.time);
     Check(nb.code == 6 && MutantAttack.KindOf(mirB) == "slam", $"co-op: a client's mirror plays the Brute's slam (code {nb.code})");
+    var bt = GameData.MutantAttackData.Table["Blight Brute"]["throw"]; Check(bt.MuzzleX != null && bt.MuzzleX.Length == bt.Frames && bt.Contact == 10, "Blight Brute: the throw carries a release point per frame and releases on frame 10");
+    p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); p.X = px; p.Y = py;
+    var fL = new Mutant("BlightBrute", px + 6, py, MutantDatabase.Get("tier4", "BlightBrute")); var fR = new Mutant("BlightBrute", px - 6, py, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(fL); EncounterState.Enemies.Add(fR); Rt.SetOffset(fL, 0f, 0f); Rt.SetOffset(fR, 0f, 0f); float nsL = 0f, nsR = 0f; float rxL = 0f, rxR = 0f; bool leftFaced = false, rightFaced = false;
+    for (int i = 0; i < 1100; i++) {
+      UnityEngine.Time.time += 0.01f; MutantAttack.Update(fL, p, UnityEngine.Time.time, ref nsL); MutantAttack.Update(fR, p, UnityEngine.Time.time, ref nsR);
+      if (rxL == 0f && MutantAttack.BoulderAt(fL, UnityEngine.Time.time, out float bxl, out float byl, out float bhl, out int bfl)) rxL = bxl - (fL.X + 0.5f);
+      if (rxR == 0f && MutantAttack.BoulderAt(fR, UnityEngine.Time.time, out float bxr, out float byr, out float bhr, out int bfr)) rxR = bxr - (fR.X + 0.5f);
+      if (MutantAttack.FaceOverride(fL, out bool lf) && lf) leftFaced = true; if (MutantAttack.FaceOverride(fR, out bool rf) && !rf) rightFaced = true;
+      if (p.Hp < 3000) p.HealPermanent(5000);
+    }
+    Check(leftFaced && rightFaced && rxL != 0f && rxR != 0f, $"Blight Brute: a throw faces its target and the rock leaves from the hand on that side (first offsets {rxL:0.00} / {rxR:0.00} tiles)");
     p.StatusEffects.ToxicBleed = false; EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); Rt.On = false;
   }
   // Any lock-and-key dungeon on the real built map (2026-11-11): every key object exists, the goal is unreachable with no keys and with all but the LAST key, reachable with all of them, one way out.

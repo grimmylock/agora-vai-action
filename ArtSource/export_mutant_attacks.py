@@ -5,7 +5,7 @@ import json, os, shutil, numpy as np
 from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(HERE, "..", "Assets", "Resources", "Sprites", "Mutants", "anim"); os.makedirs(OUT, exist_ok=True)
 SETS = {"veil_prowler": "veil_attacks", "pallid_prowler": "pallid_attacks", "dread_prowler": "dread_attacks", "blind_maw": "maw_attacks", "blight_brute": "brute"}
-CONTACT = {"veil_prowler": {"bite": 5, "bite2": 7, "pounce": 8}, "pallid_prowler": {"bite": 5, "bite2": 7}, "blind_maw": {"bite": 5, "bite2": 7, "pounce": 8}, "dread_prowler": {"bite": 5, "bite2": 5, "pounce": 8}, "blight_brute": {"slam": 6, "swipe": 4, "throw": 3}}
+CONTACT = {"veil_prowler": {"bite": 5, "bite2": 7, "pounce": 8}, "pallid_prowler": {"bite": 5, "bite2": 7}, "blind_maw": {"bite": 5, "bite2": 7, "pounce": 8}, "dread_prowler": {"bite": 5, "bite2": 5, "pounce": 8}, "blight_brute": {"slam": 6, "swipe": 4, "throw": 10}}
 table = {}
 for key, folder in SETS.items():
     d = os.path.join(HERE, "mutants_anim", folder); js = json.load(open(os.path.join(d, [f for f in os.listdir(d) if f.endswith(".json") and "attacks" in f][0])))[key]
@@ -17,6 +17,7 @@ for key, folder in SETS.items():
         shutil.copy(os.path.join(d, f"{key}_{atk}_strip.png"), os.path.join(OUT, f"{key}_{atk}.bytes"))
         ms = meta["ms"]; hit = CONTACT[key][atk]
         table[key][atk] = {"frames": n, "w": fw, "h": fh, "ms": ms, "travel": meta["travel"], "contact": hit, "contact_ms": int(sum(ms[:hit])), "total_ms": int(sum(ms)), "pivot_y": round(((fh - (last + 1)) + 16) / fh, 5)}
+        if meta.get("muzzle"): table[key][atk]["muzzle"] = meta["muzzle"]
     if spit:
         sp = spit["spit"]; strip = Image.open(os.path.join(d, "pallid_prowler_spit_strip.png")).convert("RGBA"); fw, fh = sp["frame"]
         f0 = np.array(strip.crop((0, 0, fw, fh)))[..., 3] > 0; last = int(np.where(f0.any(axis=1))[0].max())

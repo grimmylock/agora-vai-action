@@ -31,7 +31,7 @@ namespace GameCore
         class State
         {
             public string Kind; public float Start; public bool Hit, Launched;
-            public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f;
+            public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f; public bool ThrowFaceLeft;
             public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Mirror; public float DisengageUntil; public float NextCharge, ChargeRunStart = -1f, ChargeDx, ChargeDy, ChargeX0, ChargeY0, ChargeDist, ChargeLast, ChargeEnd = -1f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
@@ -117,7 +117,7 @@ namespace GameCore
                 if (st.OutSince < 0f) st.OutSince = now;
                 if (d >= rules.BoulderMin && d <= rules.BoulderMax && los && now - st.OutSince >= BoulderOutSeconds)
                 {
-                    st.OutSince = -1f; st.SpitTx = p.X; st.SpitTy = p.Y; st.SpitArrive = -1f; st.SpitDone = false; nextShot = System.Math.Max(nextShot, now + 1f);
+                    st.OutSince = -1f; st.SpitTx = p.X; st.SpitTy = p.Y; st.SpitArrive = -1f; st.SpitDone = false; st.ThrowFaceLeft = p.X < m.X; nextShot = System.Math.Max(nextShot, now + 1f);
                     Begin(m, st, "throw", now); return true;
                 }
             }
@@ -350,7 +350,7 @@ namespace GameCore
             else if (kind == "charge") Rt.HoldSlide(m);                                      // the host's tile and in-tile offset already carry the run, no smoothing on top
             else if ((kind == "spit" || kind == "throw") && a != null)
             {
-                st.SpitTx = m.X + d1; st.SpitTy = m.Y + d2;
+                st.SpitTx = m.X + d1; st.SpitTy = m.Y + d2; st.ThrowFaceLeft = st.SpitTx < m.X;
                 float dist = Mathf.Sqrt(d1 * d1 + d2 * d2); st.SpitArrive = st.Start + a.ContactMs / 1000f + dist / SpitSpeed;
             }
         }
@@ -394,8 +394,18 @@ namespace GameCore
             if (m == null || !States.TryGetValue(m, out var st) || st.Kind != "throw" || st.SpitArrive < 0f || st.SpitDone || now >= st.SpitArrive) return false;
             var a = Anim(m.Db.Name, "throw"); if (a == null) return false;
             float tStart = st.Start + a.ContactMs / 1000f, k = Mathf.Clamp01((now - tStart) / Mathf.Max(0.01f, st.SpitArrive - tStart));
-            float sx = m.X + 0.5f, sy = m.Y + 0.5f, tx = st.SpitTx + 0.5f, ty = st.SpitTy + 0.5f;
-            x = sx + (tx - sx) * k; y = sy + (ty - sy) * k; h = 0.9f * (1f - k) + 0.55f * Mathf.Sin(Mathf.PI * k) + 0.1f; frame = (int)(now * 14f) % 6; return true;
+            float ox = 0f, oh = 0.9f;                                                // where the rock leaves: the release point of the contact frame (px in the strip, 32 px a tile, pivot 16 px above the ground), mirrored with the sprite
+            if (a.MuzzleX != null && a.Contact < a.MuzzleX.Length) { ox = (st.ThrowFaceLeft ? -1f : 1f) * (a.MuzzleX[a.Contact] - a.W * 0.5f) / 32f; oh = (a.H * (1f - a.PivotY) - a.MuzzleY[a.Contact]) / 32f; }
+            float sx = m.X + 0.5f + ox, sy = m.Y + 0.5f, tx = st.SpitTx + 0.5f, ty = st.SpitTy + 0.5f;
+            x = sx + (tx - sx) * k; y = sy + (ty - sy) * k; h = oh * (1f - k) + 0.55f * Mathf.Sin(Mathf.PI * k) + 0.1f; frame = (int)(now * 14f) % 6; return true;
+        }
+
+        /// <summary>While the Brute throws, which way its sprite faces: toward the tile it throws at, fixed when the throw began (the view's usual flip follows the local player, which would turn the held rock the wrong way on a client).</summary>
+        public static bool FaceOverride(Mutant m, out bool left)
+        {
+            left = false;
+            if (m == null || !States.TryGetValue(m, out var st) || st.Kind != "throw") return false;
+            left = st.ThrowFaceLeft; return true;
         }
 
         public static readonly int[] DustMs = { 60, 60, 70, 80, 120, 140 };

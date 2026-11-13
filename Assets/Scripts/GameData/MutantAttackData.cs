@@ -36,7 +36,7 @@ namespace GameData
             {
                 ["slam"] = new AttackAnim { Frames = 12, W = 68, H = 68, Contact = 6, ContactMs = 760, TotalMs = 1510, PivotY = 0.23529f, Ms = new[] { 120, 110, 110, 120, 130, 170, 60, 130, 170, 150, 130, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
                 ["swipe"] = new AttackAnim { Frames = 8, W = 108, H = 88, Contact = 4, ContactMs = 480, TotalMs = 1000, PivotY = 0.18182f, Ms = new[] { 100, 280, 50, 50, 70, 130, 100, 220 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
-                ["throw"] = new AttackAnim { Frames = 6, W = 108, H = 88, Contact = 3, ContactMs = 490, TotalMs = 950, PivotY = 0.18182f, Ms = new[] { 120, 150, 220, 90, 120, 250 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+                ["throw"] = new AttackAnim { Frames = 12, W = 68, H = 82, Contact = 10, ContactMs = 1060, TotalMs = 1360, PivotY = 0.19512f, Ms = new[] { 90, 90, 90, 90, 90, 100, 90, 110, 140, 170, 80, 220 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, MuzzleX = new[] { 32, 32, 32, 32, 32, 32, 15, 13, 13, 13, 30, 30 }, MuzzleY = new[] { 34, 34, 34, 34, 34, 34, 19, 15, 15, 15, 20, 20 } },
             },
         };
     }
