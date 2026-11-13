@@ -23,3 +23,9 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 | `reference/tech_lab/` | Warped Top-Down Tech Lab 1 and 2 (wall panels, doors) | ansimuz | CC0 (public-license.txt) | https://opengameart.org/content/warped-top-down-tech-lab , .../warped-top-down-tech-lab-2 | reference for the keypad and steam doors |
 | `reference/lever_and_button/` | Lever and Button | FunnyDude | CC0 | https://opengameart.org/node/189813 | reference for the levers |
 | `reference/buch_blocky_dungeon_sheet.png` | A blocky dungeon | Buch | CC0 | https://opengameart.org/content/a-blocky-dungeon | reference for the portcullis |
+
+## Added 2026-11-13 (AI-generated animation and poses)
+| File | What | Author / tool | Licence | Source | Class |
+|-|-|-|-|-|-|
+| `../mutants_anim/pallid_online/` (the Pallid Prowler walk, in the game) | an 8-frame walk made from Yan's Pallid sprite, frames recovered from his screen recording | the online sprite animator Yan used on its free tier; Yan says it is SpriteCook (spritecook.ai), 2026-11-13 | per Yan (2026-11-11) the tool's terms allow commercial use; the terms were NOT read by me, to be checked on the site | https://www.spritecook.ai | to-use (in the game) |
+| `../refs/brute/*` (Brute poses) | single poses of the Brute generated against Yan's reference by an image generator Yan used (tool not named) | Yan's generator | not recorded; Yan owns the prompt and the reference | n/a | to-use (recovered to game pixels) |
