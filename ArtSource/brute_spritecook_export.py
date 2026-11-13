@@ -28,8 +28,9 @@ PAD = 24; _rs = Image.open(os.path.join(OUT, "fx", "brute_boulder_strip.png")).c
 HAND = {6: (14, 9), 7: (12, 5), 8: (12, 5), 9: (12, 5)}                    # the top of the raised open hand, per base frame (measured)
 DIRT = [(96, 74, 50), (70, 56, 42), (120, 104, 80), (62, 58, 54)]
 FIST = (11, 60); RX = 17; GY = 63 + PAD                                             # where the big fist grips the ground, and the ground line the stone is cut at (frame rows + PAD)
-SEQ = [(0, None), (1, None), (2, None), (3, 0.12), (3, 0.32), (4, 0.55), (4, 0.78), (5, 1.0), (6, None), (7, None), (8, None), (9, None), (10, None), (11, None)]       # (base frame, how far out of the ground)
-msT = [90, 90, 90, 80, 80, 80, 80, 100, 90, 110, 140, 170, 80, 220]; REL = (30, 6 + PAD); CONTACT_POS = 12
+SEQ = [(0, None), (1, None), (2, None), (3, 0.04), (3, 0.09), (4, 0.16), (4, 0.58), (5, 1.0), (6, None), (7, None), (8, None), (9, None), (10, None), (11, None)]       # (base frame, how far out of the ground): he strains (slow, the stone barely moves), then YANKS it out; the cracks and the dust follow the pull
+msT = [90, 90, 90, 110, 130, 120, 60, 110, 90, 110, 140, 170, 80, 220]; REL = (30, 6 + PAD); CONTACT_POS = 12
+CRACK = {3: 0.35, 4: 0.6, 5: 0.9, 6: 1.0, 7: 1.0}; DUSTK = {5: 0.4, 6: 1.0, 7: 0.7}                         # per position: how long the ground cracks are, how big the dust cloud is
 def debris(g, seed, r):
     rng = np.random.RandomState(60 + seed); n = 5 + int(10 * r)
     for k in range(n):
@@ -37,6 +38,19 @@ def debris(g, seed, r):
         for dx in range(sz):
             for dy in range(sz):
                 if 0 <= x + dx < g.width and 0 <= y + dy < g.height: g.putpixel((x + dx, y + dy), (*col, 255))
+def cracks(g, k):
+    """cracks in the ground round the stone, spreading as he strains (dark brown lines along the ground, slightly splayed)"""
+    d = ImageDraw.Draw(g); ln = int(5 + 14 * k)
+    for side in (-1, 1):
+        for off, dy in ((0, 0), (3, 1), (-2, 2)):
+            x0 = RX + side * (7 + off); d.line([(x0, GY + dy - 1), (x0 + side * ln, GY + dy + (1 if off else 0))], fill=(40, 30, 24, 255), width=1)
+def dust(g, k):
+    """a burst of ground dust as it tears free: separate puffs that billow up and out, lighter on top"""
+    d = ImageDraw.Draw(g); rng = np.random.RandomState(7)
+    for n in range(9):
+        side = -1 if n % 2 else 1; sp = (4 + rng.uniform(0, 11)) * (0.4 + 0.9 * k); rise = (1 + rng.uniform(0, 7)) * (0.3 + 0.9 * k); rad = int(round((2 + rng.uniform(0, 2.5)) * (0.6 + 0.8 * k)))
+        x = RX + side * sp; y = GY - 1 - rise; col = (150, 134, 104, 215) if rise < 3 else (196, 182, 150, 205)
+        d.ellipse([x - rad, y - rad * 0.8, x + rad, y + rad * 0.8], fill=col)
 def hole(g):
     d = ImageDraw.Draw(g); d.ellipse([RX - 9, GY - 2, RX + 9, GY + 2], fill=(46, 36, 28, 255)); d.ellipse([RX - 7, GY - 1, RX + 7, GY + 1], fill=(28, 22, 18, 255))
 frames = []; muz = []
@@ -44,10 +58,12 @@ for pos, (bi, r) in enumerate(SEQ):
     f = thr[bi]; g = Image.new("RGBA", (f.width, f.height + PAD), (0, 0, 0, 0)); g.alpha_composite(f, (0, PAD))
     if r is not None:
         under = Image.new("RGBA", g.size, (0, 0, 0, 0)); hole(under)
+        if pos in CRACK: cracks(under, CRACK[pos])
         top = int((GY - 1) + (1.0 - r) * (RH + 4) - RH) - (8 if r >= 1.0 else 0)                                   # top row of the stone: from fully under the ground (r 0) up to lifted clear of it (r 1)
         layer = Image.new("RGBA", g.size, (0, 0, 0, 0)); layer.alpha_composite(rock, (RX - RW // 2, top))
         if r < 1.0: la = np.array(layer); la[GY:, :, 3] = 0; layer = Image.fromarray(la)                              # everything under the ground line is cut: the stone is revealed row by row as it rises
         under.alpha_composite(g); under.alpha_composite(layer); g = under                                           # hole under him, the stone in front
+        if pos in DUSTK: dust(g, DUSTK[pos])
         debris(g, pos, r)
     if bi in HAND: hx, hy = HAND[bi]; g.alpha_composite(rock, (hx + 1 - RW // 2, hy + PAD - 7 - RH // 2))
     frames.append(g); muz.append(list((HAND[bi][0] + 1, HAND[bi][1] + PAD - 7)) if bi in HAND else list(REL) if bi >= 10 else [FIST[0], GY])

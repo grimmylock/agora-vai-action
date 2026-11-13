@@ -36,7 +36,7 @@ namespace GameData
             {
                 ["slam"] = new AttackAnim { Frames = 12, W = 68, H = 68, Contact = 6, ContactMs = 760, TotalMs = 1510, PivotY = 0.23529f, Ms = new[] { 120, 110, 110, 120, 130, 170, 60, 130, 170, 150, 130, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
                 ["swipe"] = new AttackAnim { Frames = 8, W = 108, H = 88, Contact = 4, ContactMs = 480, TotalMs = 1000, PivotY = 0.18182f, Ms = new[] { 100, 280, 50, 50, 70, 130, 100, 220 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
-                ["throw"] = new AttackAnim { Frames = 14, W = 68, H = 92, Contact = 12, ContactMs = 1200, TotalMs = 1500, PivotY = 0.17391f, Ms = new[] { 90, 90, 90, 80, 80, 80, 80, 100, 90, 110, 140, 170, 80, 220 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, MuzzleX = new[] { 11, 11, 11, 11, 11, 11, 11, 11, 15, 13, 13, 13, 30, 30 }, MuzzleY = new[] { 87, 87, 87, 87, 87, 87, 87, 87, 26, 22, 22, 22, 30, 30 } },
+                ["throw"] = new AttackAnim { Frames = 14, W = 68, H = 92, Contact = 12, ContactMs = 1310, TotalMs = 1610, PivotY = 0.17391f, Ms = new[] { 90, 90, 90, 110, 130, 120, 60, 110, 90, 110, 140, 170, 80, 220 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, MuzzleX = new[] { 11, 11, 11, 11, 11, 11, 11, 11, 15, 13, 13, 13, 30, 30 }, MuzzleY = new[] { 87, 87, 87, 87, 87, 87, 87, 87, 26, 22, 22, 22, 30, 30 } },
             },
         };
     }
