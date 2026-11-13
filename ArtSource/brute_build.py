@@ -67,7 +67,7 @@ walk = [walk_frame(i) for i in range(8)]
 for n_, r_ in ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)): P[f"dip{n_}"] = dip(I, r_)
 P["crouch"] = P["dip4"]
 # ---- the rock (boulder), its shatter and the slam dust, drawn here
-STONE = {"OL": (20, 18, 16), "DK": (62, 58, 54), "MID": (104, 100, 92), "HI": (150, 146, 134), "HI2": (178, 174, 160), "DIRT": (96, 74, 50)}
+STONE = {"OL": (22, 20, 28), "DK": (58, 56, 64), "MID": (112, 110, 114), "HI": (150, 146, 134), "HI2": (178, 174, 160), "DIRT": (96, 74, 50)}
 def rock_frames(n=6, size=26):
     """a BOULDER of GROUND stone (Yan: it looked like a fidget spinner and like it came from the Brute): an irregular angular polygon (9 corners, flat faces, no lobes), grey-brown stone, light from the upper left in three flat tones, dark cracks, a little dirt clinging at the bottom, no yellow; it tumbles over 6 frames"""
     rng = np.random.RandomState(11); k = 9; base = [(2 * math.pi * i / k + rng.uniform(-0.25, 0.25), 0.74 + 0.26 * rng.rand()) for i in range(k)]
@@ -117,7 +117,10 @@ def dust_frames(n=6, w=64, h=24):
             if i < n - 1: dr.rectangle([x - 1, y - 1, x + 1, y + 1], fill=(*DK, 255))
         out.append(img)
     return out
-ROCK, HIT, DUST = rock_frames(), hit_frames(), dust_frames()
+def boulder_frames(n=6):
+    """Yan's generated boulder (boulder_recover.py -> boulder.png), the same image 6 times (the game spins it in flight), padded to a square"""
+    b = Image.open(os.path.join(OUT, "boulder.png")).convert("RGBA"); sz = max(b.size); sq = Image.new("RGBA", (sz, sz), (0, 0, 0, 0)); sq.alpha_composite(b, ((sz - b.width) // 2, (sz - b.height) // 2)); return [sq.copy() for _ in range(n)]
+ROCK, HIT, DUST = boulder_frames(), hit_frames(), dust_frames()
 # ---- the attacks: his poses held with timings; the arc (swipe) and the rock in the fist (throw) are drawn here
 def hand(a):
     """the right fist: the rightmost opaque pixels of the pose -> (x, y) in the pose's own cells"""

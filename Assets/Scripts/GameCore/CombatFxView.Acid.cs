@@ -24,7 +24,7 @@ namespace GameCore
                         if (rock != null && MutantAttack.BoulderAt(m, Time.time, out float bx, out float by, out float bh, out int bf))
                         {
                             var sr = Pooled(_acid, n++, "Boulder", 9); if (sr == null) continue;
-                            sr.sprite = rock[bf % rock.Length]; sr.color = Color.white; sr.transform.position = W(bx, by, bh); sr.transform.rotation = Quaternion.identity; sr.transform.localScale = Vector3.one;
+                            sr.sprite = rock[0]; sr.color = Color.white; sr.transform.position = W(bx, by, bh); sr.transform.rotation = Quaternion.Euler(0f, 0f, -Time.time * 540f);      // one boulder image, spun in flight sr.transform.localScale = Vector3.one;
                         }
                         if (rockHit != null && MutantAttack.SplatAt(m, Time.time, out float hx, out float hy, out int hf))
                         {

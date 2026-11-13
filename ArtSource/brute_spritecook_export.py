@@ -23,7 +23,7 @@ json.dump(meta, open(os.path.join(OUT, "brute_attacks.json"), "w"), indent=1)
 # throw: the SpriteCook pantomime (empty hand) with the rock BAKED into the frames where the big hand is raised (6-9), so it flips with the sprite; 24 empty rows added on top for it. The rock leaves on frame 10.
 tp = os.path.join(HERE, "mutants_anim", "brute_spritecook")
 thr = [Image.open(os.path.join(tp, f"throw_frame{i}.png")).convert("RGBA") for i in range(12)]
-PAD = 24; rock = Image.open(os.path.join(OUT, "fx", "brute_boulder_strip.png")).convert("RGBA").crop((0, 0, 26, 26)); HAND = {6: (14, 9), 7: (12, 5), 8: (12, 5), 9: (12, 5)}     # the top of the raised open hand (measured per frame)
+PAD = 24; _rs = Image.open(os.path.join(OUT, "fx", "brute_boulder_strip.png")).convert("RGBA"); rock = _rs.crop((0, 0, _rs.width // 6, _rs.height)); HAND = {6: (14, 9), 7: (12, 5), 8: (12, 5), 9: (12, 5)}     # the top of the raised open hand (measured per frame)
 DIRT = [(96, 74, 50), (70, 56, 42), (120, 104, 80), (62, 58, 54)]
 def debris(g, i, fx, fy):
     """dirt and pebbles thrown up where the big fist grips the ground (frames 3-5): rising and spreading, in ground colours"""
