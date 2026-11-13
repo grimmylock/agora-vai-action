@@ -752,7 +752,7 @@ static class Program {
   // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
   static void HeldFrames(string path) {
     var sb = new System.Text.StringBuilder("[");
-    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sidearm", "RinaldiR6"), ("sidearm", "RK12Kuvalda"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66") };
+    var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sidearm", "RinaldiR6"), ("sidearm", "RK12Kuvalda"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66"), ("shotgun", "HaldenLeverShotgun"), ("sniper", "Nightwalker4570") };
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); if (armor < 0) armor = 0;   // bare hands, red cuffs: the hand work reads
     bool firstAnim = true;
     foreach (var (cat, key) in guns) {
@@ -2229,7 +2229,7 @@ static class Program {
     for (int i = 0; i < 30; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(hostB, p, UnityEngine.Time.time, ref ns); }
     nb = MutantAttack.NetState(hostB, UnityEngine.Time.time); var mirB = new Mutant("BlightBrute", hostB.X, hostB.Y, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(mirB);
     MutantAttack.Mirror(mirB, nb.code, nb.t20 * 0.02f, nb.d1, nb.d2, UnityEngine.Time.time);
-    Check(WeaponArt.Density("RinaldiR6") > 2.2f && WeaponArt.Density("RinaldiR6") < 2.4f && WeaponArt.Density("VK74") == 1f && WeaponArt.Density(null) == 1f && WeaponArt.Mag("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Cylinder("sidearm", "RinaldiR6") == (null, null), "WeaponArt: the Rinaldi is held with its big picture (density 2.3) and has no cut pieces, the other guns are unchanged");
+    Check(WeaponArt.Density("RinaldiR6") > 4.5f && WeaponArt.Density("HaldenLeverShotgun") > 3.2f && WeaponArt.Density("FrontierLeverRifle") == 3f && WeaponArt.Density("Nightwalker4570") > 2.8f && WeaponArt.Density("VK74") == 1f && WeaponArt.Density(null) == 1f && WeaponArt.Mag("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Cylinder("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Mag("shotgun", "HaldenLeverShotgun") == (null, null), "WeaponArt: the Rinaldi and the three lever guns are held with their double-size pictures (densities 4.6, 3.3, 3.0, 2.9) and have no cut pieces, the other guns are unchanged");
     Check(nb.code == 6 && MutantAttack.KindOf(mirB) == "slam", $"co-op: a client's mirror plays the Brute's slam (code {nb.code})");
     var bt = GameData.MutantAttackData.Table["Blight Brute"]["throw"]; Check(bt.MuzzleX != null && bt.MuzzleX.Length == bt.Frames && bt.Contact == 12, "Blight Brute: the throw carries a release point per frame and releases on frame 12");
     p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); p.X = px; p.Y = py;

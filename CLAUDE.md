@@ -119,7 +119,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
 4. **Art changes:** world sprites -> `ArtSource/world/pack.py` -> copy `world_atlas.png` to
    `Assets/Resources/Sprites/world_atlas.bytes` and `world_atlas.txt` to `world_atlas_meta.txt` (only after Yan approves).
    Item icons (trial, one icon so far): `ArtSource/pixel_draw/README.md` (sprite-gen `pixel-draw`, locked palette, hand-edited grid).
-   Weapons: the method Yan approved is **`ArtSource/weapons/hand/PIXEL_GUIDE.md`** (RT 7v melee set); the older guns in `ArtSource/weapons/` are due a redraw (`mags.py` cuts magazines). Mutants: `ArtSource/make_mutants_hd.py`,
+   Weapons: **guns are redone at DOUBLE size from real reference photos through SpriteCook, rules and pipeline in `ArtSource/weapons/WEAPON_SPRITE_RULES.md`** (Yan, 2026-11-13; read it first, it says what is decided; done/old list: `ArtSource/weapons/WEAPON_STATUS.md`, generated; `make_gun_x2.py` does the picture). Melee weapons keep **`ArtSource/weapons/hand/PIXEL_GUIDE.md`** (RT 7v melee set); `mags.py` cuts magazines (not yet for the double-size guns). Mutants: `ArtSource/make_mutants_hd.py`,
    `make_mutant_frames.py`. Audio: `ArtSource/audio/sfx.py` -> `Assets/Resources/Audio/`.
 5. **Test in Unity (Yan):** Play -> New Game (or Testing Ground). Check the Console for red.
 6. **Log every batch** at the end of `ArtSource/WORK_LOG.md`: what changed, why, Yan's words when he decided something, what

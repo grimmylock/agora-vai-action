@@ -1,0 +1,63 @@
+{
+ "_note": "Per reworked gun: the OLD sizes the double-size version is derived from (so a re-run never doubles twice). menu_w = content width of the old 64x32 menu picture; inhand = the old in-hand picture's canvas (w, h; its content fills it); grips = the old WeaponArt.Grips row in the OLD in-hand pixels (grip x, y, support x, y, muzzle x, y; null = none).",
+ "HaldenLeverShotgun": {
+  "menu_w": 62,
+  "inhand": [
+   38,
+   10
+  ],
+  "grips": [
+   11.5,
+   5.5,
+   26,
+   5,
+   37,
+   2.5
+  ]
+ },
+ "FrontierLeverRifle": {
+  "menu_w": 60,
+  "inhand": [
+   40,
+   10
+  ],
+  "grips": [
+   11.5,
+   5,
+   24,
+   6.5,
+   39,
+   3
+  ]
+ },
+ "Nightwalker4570": {
+  "menu_w": 58,
+  "inhand": [
+   40,
+   10
+  ],
+  "grips": [
+   11,
+   5.5,
+   24,
+   6.5,
+   39,
+   3
+  ]
+ },
+ "RinaldiR6": {
+  "menu_w": 51,
+  "inhand": [
+   22,
+   12
+  ],
+  "grips": [
+   3.5,
+   7,
+   null,
+   null,
+   21,
+   5.5
+  ]
+ }
+}

@@ -504,7 +504,10 @@ namespace GameCore
         /// <summary>2026-11-13 (Yan: use the big menu picture in the hand, "making everything bigger to compensate"): a gun listed here is held with its MENU picture (weapon_&lt;Key&gt;_hd) drawn k times denser, so it shows at the
         /// same on-screen size as before. Its grip/support/muzzle entries below stay in "virtual" pixels (texture pixels / k, the old 32-a-unit pixels), so all the pose maths and the muzzle offset need no change; only the sprite
         /// (pivot and pixels-per-unit) is made at k. No cut pieces (magazine, cylinder) for it yet: its reload is the hands alone.</summary>
-        public static readonly Dictionary<string, float> Dense = new Dictionary<string, float> { ["RinaldiR6"] = 51f / 22f };
+        public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
+        {   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
+            ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.26f, ["FrontierLeverRifle"] = 3.00f, ["Nightwalker4570"] = 2.90f,
+        };
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
         // per-weapon entries override the category
@@ -538,7 +541,7 @@ namespace GameCore
             ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
             ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
             ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
-            ["RinaldiR6"] = new[] { 6.5f, 8.3f, float.NaN, float.NaN, 25f, 5f },   // virtual px of the big menu picture (see Dense): the grip in the glove, the low bore at the muzzle
+            ["RinaldiR6"] = new[] { 6.3f, 7.9f, float.NaN, float.NaN, 23.8f, 6.4f },   // virtual px of the double-size picture (see Dense): the grip in the glove, the low bore at the muzzle
             ["SteppeEagle"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 22f, 3.5f },
             ["VosaVz62"] = new[] { 3.5f, 10f, float.NaN, float.NaN, 23f, 3.5f },
             ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
@@ -546,7 +549,7 @@ namespace GameCore
             ["CorvanHornet45"] = new[] { 12f, 8f, 23.5f, 8f, 31f, 4f },
             ["CorvanGnatPDW"] = new[] { 8f, 11.5f, 14f, 9f, 28f, 7.5f },
             ["Obrez66"] = new[] { 5.5f, 4f, 17f, 4f, 25f, 2f },
-            ["HaldenLeverShotgun"] = new[] { 11.5f, 5.5f, 26f, 5f, 37f, 2.5f },
+            ["HaldenLeverShotgun"] = new[] { 12.1f, 10.3f, 26.6f, 9.8f, 37.6f, 7.5f },   // virtual px of the double-size picture
             ["Hound13"] = new[] { 12f, 5f, 27.5f, 4f, 39f, 2f },
             ["RangerP8"] = new[] { 12.5f, 4.5f, 28f, 4f, 40f, 2f },
             ["BayouPump"] = new[] { 11.5f, 4.5f, 29f, 4.5f, 41f, 2f },
@@ -569,10 +572,10 @@ namespace GameCore
             ["CorvanBullpup"] = new[] { 11f, 11.5f, 22f, 11f, 32f, 8f },
             ["CorvanBattleRifle"] = new[] { 13f, 7.5f, 27f, 5.5f, 43f, 4f },
             ["SKNKarabin"] = new[] { 12.5f, 5f, 27f, 6f, 42f, 3.5f },
-            ["FrontierLeverRifle"] = new[] { 11.5f, 5f, 24f, 6.5f, 39f, 3f },
+            ["FrontierLeverRifle"] = new[] { 12.8f, 10.7f, 25.3f, 12.1f, 40.3f, 8.8f },   // virtual px of the double-size picture
             ["VSNShepot"] = new[] { 12f, 8.5f, 23.5f, 8f, 39f, 6f },
             ["M91Trekhlineyka"] = new[] { 12.5f, 7f, 31f, 7.5f, 45f, 5f },
-            ["Nightwalker4570"] = new[] { 11f, 5.5f, 24f, 6.5f, 39f, 3f },
+            ["Nightwalker4570"] = new[] { 13.1f, 11.3f, 26.1f, 12.1f, 41.1f, 9.3f },   // virtual px of the double-size picture
             ["CorvanMarksman"] = new[] { 11.5f, 8f, 26f, 7.5f, 43f, 5.5f },
             ["SV2Strela"] = new[] { 10.5f, 7.5f, 27f, 7.5f, 45f, 6f },
             ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },
