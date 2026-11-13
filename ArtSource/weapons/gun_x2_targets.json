@@ -1,5 +1,5 @@
 {
- "_note": "Per reworked gun: the OLD sizes the double-size version is derived from (so a re-run never doubles twice). menu_w = content width of the old 64x32 menu picture; inhand = the old in-hand picture's canvas (w, h; its content fills it); grips = the old WeaponArt.Grips row in the OLD in-hand pixels (grip x, y, support x, y, muzzle x, y; null = none). size = how much bigger than 'double the old menu width' the picture is made (default 1.0); the long rifles are 1.2 (Yan, 2026-11-13: the Rinaldi looked almost as big as the rifles).",
+ "_note": "Per reworked gun: the OLD sizes the double-size version is derived from (so a re-run never doubles twice). menu_w = content width of the old 64x32 menu picture; inhand = the old in-hand picture's canvas (w, h; its content fills it); grips = the old WeaponArt.Grips row in the OLD in-hand pixels (grip x, y, support x, y, muzzle x, y; null = none).",
  "HaldenLeverShotgun": {
   "menu_w": 62,
   "inhand": [
@@ -28,8 +28,7 @@
    6.5,
    39,
    3
-  ],
-  "size": 1.2
+  ]
  },
  "Nightwalker4570": {
   "menu_w": 58,
@@ -44,8 +43,7 @@
    6.5,
    39,
    3
-  ],
-  "size": 1.2
+  ]
  },
  "RinaldiR6": {
   "menu_w": 51,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Makes a gun's DOUBLE-SIZE picture (the standard since 2026-11-13, rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md) from a SpriteCook still.
    python3 ArtSource/weapons/make_gun_x2.py <Key> <still.png> [--lift TOP GAMMA] [--thicken X0 N] [--dry]
- - crops the still to the gun, area-average downscales it to TWICE the old menu picture's width (gun_x2_targets.json: menu_w, times its size factor, 1.2 for the long rifles), 16 colours, a 1 px dark outline (14,14,18);
+ - crops the still to the gun, area-average downscales it to the length given by the REAL gun's size (gun_real_sizes.json: 102 px x (real cm / 29) ^ 0.28, capped at 156), 16 colours, a 1 px dark outline (14,14,18);
  - --lift TOP GAMMA: tone lift for black guns (maps the 2..99 percentile of the brightness to 22..TOP with the gamma);  --thicken X0 N: add N rows of barrel body colour to every column from X0 that is 3 px or thinner;
  - writes Assets/Resources/Sprites/Weapons/weapon_<Key>_hd.png as a 160x64 canvas, gun centred (the old 64x32 one is backed up in ArtSource/weapons/gun_x2_backup/);
  - prints the lines to paste into HeldWeapon.cs: WeaponArt.Dense (k = new width / old in-hand width) and the Grips row in VIRTUAL pixels (texture px / k), mapped from the old row by position on the gun."""
@@ -36,6 +36,11 @@ def thicken(im, x0, n):
         r = np.where(a[:, x, 3] > 0)[0]
         if len(r) and r.max() - r.min() + 1 <= 3: t = r.min(); out[t + 1: t + 1 + n, x] = (*body, 255)
     return Image.fromarray(out)
+def target_width(key, tg):
+    """the picture length in px from the REAL gun's length (gun_real_sizes.json): 102 * (cm / 29) ** 0.28, capped at 156; a gun without a real length falls back to 2 x the old menu width"""
+    rs = json.load(open(os.path.join(HERE, "gun_real_sizes.json")))
+    if key in rs: return min(156, int(round(102 * (rs[key][0] / 29.0) ** 0.28)))
+    return int(round(tg["menu_w"] * 2 * tg.get("size", 1.0)))
 def main():
     args = sys.argv[1:]
     if len(args) < 2: print(__doc__); return
@@ -44,7 +49,7 @@ def main():
     if tg is None: sys.exit(f"{key} is not in gun_x2_targets.json: add its old menu_w, in-hand canvas and Grips row first (see the file's _note)")
     sp = Image.open(still).convert("RGBA"); x0, y0, x1, y1 = bbox(sp); sp = sp.crop((x0, y0, x1, y1))
     if "--lift" in args: i = args.index("--lift"); sp = lift(sp, float(args[i + 1]), float(args[i + 2]))
-    tw = int(round(tg["menu_w"] * 2 * tg.get("size", 1.0))); th = int(round(sp.height * tw / sp.width)); img = shrink(sp, tw, th)
+    tw = target_width(key, tg); th = int(round(sp.height * tw / sp.width)); img = shrink(sp, tw, th)
     if "--thicken" in args: i = args.index("--thicken"); img = thicken(img, int(args[i + 1]), int(args[i + 2])); th = img.height
     canvas = Image.new("RGBA", CANVAS, (0, 0, 0, 0)); nx0 = (CANVAS[0] - tw) // 2; ny0 = (CANVAS[1] - th) // 2; canvas.alpha_composite(img, (nx0, ny0))
     k = tw / float(tg["inhand"][0]); ow, oh = tg["inhand"]; g = tg["grips"]; v = []

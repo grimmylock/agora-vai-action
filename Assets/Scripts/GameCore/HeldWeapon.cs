@@ -506,7 +506,7 @@ namespace GameCore
         /// (pivot and pixels-per-unit) is made at k. No cut pieces (magazine, cylinder) for it yet: its reload is the hands alone.</summary>
         public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
         {   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
-            ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.26f, ["FrontierLeverRifle"] = 3.60f, ["Nightwalker4570"] = 3.48f,
+            ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.63f, ["FrontierLeverRifle"] = 3.55f, ["Nightwalker4570"] = 3.55f,
         };
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
@@ -549,7 +549,7 @@ namespace GameCore
             ["CorvanHornet45"] = new[] { 12f, 8f, 23.5f, 8f, 31f, 4f },
             ["CorvanGnatPDW"] = new[] { 8f, 11.5f, 14f, 9f, 28f, 7.5f },
             ["Obrez66"] = new[] { 5.5f, 4f, 17f, 4f, 25f, 2f },
-            ["HaldenLeverShotgun"] = new[] { 17f, 10.3f, 31.5f, 9.8f, 42.5f, 7.5f },   // virtual px of the double-size picture
+            ["HaldenLeverShotgun"] = new[] { 14.5f, 9.1f, 29f, 8.7f, 40f, 6.4f },   // virtual px of the double-size picture
             ["Hound13"] = new[] { 12f, 5f, 27.5f, 4f, 39f, 2f },
             ["RangerP8"] = new[] { 12.5f, 4.5f, 28f, 4f, 40f, 2f },
             ["BayouPump"] = new[] { 11.5f, 4.5f, 29f, 4.5f, 41f, 2f },
@@ -572,10 +572,10 @@ namespace GameCore
             ["CorvanBullpup"] = new[] { 11f, 11.5f, 22f, 11f, 32f, 8f },
             ["CorvanBattleRifle"] = new[] { 13f, 7.5f, 27f, 5.5f, 43f, 4f },
             ["SKNKarabin"] = new[] { 12.5f, 5f, 27f, 6f, 42f, 3.5f },
-            ["FrontierLeverRifle"] = new[] { 13.7f, 8.8f, 26.2f, 10.1f, 41.2f, 6.9f },   // virtual px of the double-size picture
+            ["FrontierLeverRifle"] = new[] { 14f, 9f, 26.5f, 10.4f, 41.5f, 7.2f },   // virtual px of the double-size picture
             ["VSNShepot"] = new[] { 12f, 8.5f, 23.5f, 8f, 39f, 6f },
             ["M91Trekhlineyka"] = new[] { 12.5f, 7f, 31f, 7.5f, 45f, 5f },
-            ["Nightwalker4570"] = new[] { 13.9f, 9.5f, 26.9f, 10.2f, 41.9f, 7.5f },   // virtual px of the double-size picture
+            ["Nightwalker4570"] = new[] { 13.5f, 9.4f, 26.5f, 10.2f, 41.5f, 7.4f },   // virtual px of the double-size picture
             ["CorvanMarksman"] = new[] { 11.5f, 8f, 26f, 7.5f, 43f, 5.5f },
             ["SV2Strela"] = new[] { 10.5f, 7.5f, 27f, 7.5f, 45f, 6f },
             ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },

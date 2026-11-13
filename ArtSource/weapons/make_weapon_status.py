@@ -18,6 +18,10 @@ for i, l in enumerate(lines):
     if k and i + 2 < len(lines): credits[k.group(1)] = (lines[i + 1].strip(), re.sub(r"\s*\|.*", "", lines[i + 2].replace("License:", "").strip()))
 # references that replaced the old pipeline's photo (the file CREDITS.txt keeps the old one)
 credits["Nightwalker4570"] = ("photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only)", "licence unknown")
+import json
+real = json.load(open(os.path.join(HERE, "gun_real_sizes.json")))
+def planned(k):
+    return min(156, int(round(102 * (real[k][0] / 29.0) ** 0.28))) if k in real else None
 names = {}
 nc = os.path.join(ROOT, "ArtSource", "NAME_CHANGES.md")
 if os.path.exists(nc):
@@ -30,10 +34,10 @@ out = ["# Weapon pictures: reworked vs old (generated, do not edit by hand)", ""
        "Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.",
        "**Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.", "",
        f"**Guns: {len(done)} reworked, {len(todo)} old** (melee weapons are a separate hand-pixelled set, {len(melee)} of them, not part of this rework).", "",
-       "## Reworked", "", "| Key | In-game name | Category | Real-world pattern | Reference photo (source, licence) | Density k |", "|-|-|-|-|-|-|"]
+       "## Reworked", "", "| Key | In-game name | Category | Real-world pattern | Real length (cm) | Picture length (px) | Reference photo (source, licence) | Density k |", "|-|-|-|-|-|-|-|-|"]
 def ref(k): c = credits.get(k); return f"{c[0]} ({c[1]})" if c else "none on file"
-for cat_, k, n, t in done: out.append(f"| {k} | {n} | {cat_} | {names.get(n, '')} | {ref(k)} | {dense[k]} |")
-out += ["", "## Old (still to do)", "", "| Key | In-game name | Category | Tier | Real-world pattern | Reference photo on file (source, licence) |", "|-|-|-|-|-|-|"]
-for cat_, k, n, t in sorted(todo, key=lambda r: (r[0], r[3], r[2])): out.append(f"| {k} | {n} | {cat_} | {t} | {names.get(n, '')} | {ref(k)} |")
+for cat_, k, n, t in done: out.append(f"| {k} | {n} | {cat_} | {names.get(n, '')} | {real.get(k, ['?'])[0]} | {planned(k)} | {ref(k)} | {dense[k]} |")
+out += ["", "## Old (still to do)", "", "| Key | In-game name | Category | Tier | Real-world pattern | Real length (cm) | Planned picture length (px) | Reference photo on file (source, licence) |", "|-|-|-|-|-|-|-|-|"]
+for cat_, k, n, t in sorted(todo, key=lambda r: (r[0], r[3], r[2])): out.append(f"| {k} | {n} | {cat_} | {t} | {names.get(n, '')} | {real.get(k, ['?'])[0]} | {planned(k)} | {ref(k)} |")
 out += ["", "## Melee (separate set, not part of this rework)", "", ", ".join(f"{n} (`{k}`)" for _, k, n, _ in melee), ""]
 open(os.path.join(HERE, "WEAPON_STATUS.md"), "w", encoding="utf-8").write("\n".join(out)); print(len(done), "reworked,", len(todo), "old,", len(melee), "melee")
