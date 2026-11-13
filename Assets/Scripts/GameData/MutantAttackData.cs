@@ -34,7 +34,7 @@ namespace GameData
             },
             ["Blight Brute"] = new Dictionary<string, AttackAnim>
             {
-                ["slam"] = new AttackAnim { Frames = 9, W = 108, H = 88, Contact = 4, ContactMs = 530, TotalMs = 1140, PivotY = 0.18182f, Ms = new[] { 100, 140, 200, 90, 70, 90, 120, 130, 200 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+                ["slam"] = new AttackAnim { Frames = 12, W = 68, H = 68, Contact = 6, ContactMs = 760, TotalMs = 1510, PivotY = 0.23529f, Ms = new[] { 120, 110, 110, 120, 130, 170, 60, 130, 170, 150, 130, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
                 ["swipe"] = new AttackAnim { Frames = 8, W = 108, H = 88, Contact = 4, ContactMs = 480, TotalMs = 1000, PivotY = 0.18182f, Ms = new[] { 100, 280, 50, 50, 70, 130, 100, 220 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
                 ["throw"] = new AttackAnim { Frames = 6, W = 108, H = 88, Contact = 3, ContactMs = 490, TotalMs = 950, PivotY = 0.18182f, Ms = new[] { 120, 150, 220, 90, 120, 250 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
             },
