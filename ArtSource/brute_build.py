@@ -128,7 +128,7 @@ def build(seq):
 SEQ = {
     "slam":  [("idle", 100, None, 0), ("dip2", 140, None, 0), ("dip3", 200, None, 0), ("dip2", 90, None, 0), ("dip6", 70, None, 0), ("dip5", 90, None, 0), ("dip3", 120, None, 0), ("dip1", 130, None, 0), ("idle", 200, None, 0)],      # squash only (deleting rows never smears): wind down, hold, drop hard
     "swipe": [("idle", 100, None, 0), ("cock", 280, None, 0), ("cock", 50, None, 0, -1), ("out", 50, None, 0, 1), ("across", 70, None, 0, 2), ("across", 130, None, 0, 2), ("across", 100, None, 0, 1), ("idle", 220, None, 0)],      # Yan: "keep that for the swipe/punch"
-    "throw": [("idle", 120, None, 0), ("cock", 260, "rock", 0), ("cock", 220, "rock", 1), ("out", 90, None, 0), ("out", 250, None, 0), ("idle", 240, None, 0)],
+    "throw": [("idle", 120, None, 0), ("dip2", 150, None, 0), ("dip4", 220, None, 0), ("dip1", 90, None, 0), ("idle", 120, None, 0), ("idle", 250, None, 0)],      # no arm pose (Yan scrapped the cocked-arm throw): he heaves, the rock appears in flight (drawn by the game)
 }
 CONTACT = {"slam": 4, "swipe": 4, "throw": 3}
 def strip_of(fr):
