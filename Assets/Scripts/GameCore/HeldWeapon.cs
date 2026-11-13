@@ -507,6 +507,7 @@ namespace GameCore
         public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
         {   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
             ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.63f, ["FrontierLeverRifle"] = 3.55f, ["Nightwalker4570"] = 3.55f,
+            ["SperlingS96"] = 4.22f, ["Halden45Service"] = 4.38f, ["HaldenServiceRevolver"] = 4.22f, ["WaldenP9"] = 3.86f,
         };
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
@@ -576,6 +577,10 @@ namespace GameCore
             ["VSNShepot"] = new[] { 12f, 8.5f, 23.5f, 8f, 39f, 6f },
             ["M91Trekhlineyka"] = new[] { 12.5f, 7f, 31f, 7.5f, 45f, 5f },
             ["Nightwalker4570"] = new[] { 13.5f, 9.4f, 26.5f, 10.2f, 41.5f, 7.4f },   // virtual px of the double-size picture
+            ["SperlingS96"] = new[] { 11.4f, 10.1f, float.NaN, float.NaN, 30.4f, 4f },
+            ["Halden45Service"] = new[] { 12.3f, 9.8f, float.NaN, float.NaN, 27.8f, 3.9f },
+            ["HaldenServiceRevolver"] = new[] { 10.9f, 9.8f, float.NaN, float.NaN, 29.4f, 3.8f },
+            ["WaldenP9"] = new[] { 15.1f, 10.2f, float.NaN, float.NaN, 30.1f, 3.9f },
             ["CorvanMarksman"] = new[] { 11.5f, 8f, 26f, 7.5f, 43f, 5.5f },
             ["SV2Strela"] = new[] { 10.5f, 7.5f, 27f, 7.5f, 45f, 6f },
             ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },

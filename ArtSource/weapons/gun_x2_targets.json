@@ -75,5 +75,50 @@
    3.5
   ],
   "_note": "NEW gun, no old art: the in-hand size follows the Rinaldi (22 px for 29 cm), the grip and muzzle are a sidearm guess (a Steppe Eagle-like hold)"
+ },
+ "Halden45Service": {
+  "menu_w": 50,
+  "inhand": [
+   21,
+   14
+  ],
+  "grips": [
+   4.5,
+   9.5,
+   null,
+   null,
+   20.0,
+   3.5
+  ]
+ },
+ "HaldenServiceRevolver": {
+  "menu_w": 52,
+  "inhand": [
+   23,
+   13
+  ],
+  "grips": [
+   3.5,
+   8.5,
+   null,
+   null,
+   22.0,
+   3.0
+  ]
+ },
+ "WaldenP9": {
+  "menu_w": 44,
+  "inhand": [
+   21,
+   16
+  ],
+  "grips": [
+   5.0,
+   10.0,
+   null,
+   null,
+   20.0,
+   3.5
+  ]
  }
 }

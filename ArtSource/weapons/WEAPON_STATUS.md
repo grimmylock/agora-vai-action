@@ -3,12 +3,16 @@
 Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.
 **Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.
 
-**Guns: 4 reworked, 51 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
+**Guns: 8 reworked, 48 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
 
 ## Reworked
 
 | Key | In-game name | Category | Real-world pattern | Real length (cm) | Picture length (px) | Reference photo (source, licence) | Density k |
 |-|-|-|-|-|-|-|-|
+| WaldenP9 | Walden P9 | sidearm | Walker P9m | 18.4 | 90 | https://commons.wikimedia.org/wiki/File:Walther_P99_9x19mm.png (CC BY 2.5) | 3.86 |
+| Halden45Service | Halden .45 Service | sidearm | Colt M1911 | 21.9 | 94 | https://commons.wikimedia.org/wiki/File:M1911A1.png (CC BY-SA 3.0) | 4.38 |
+| HaldenServiceRevolver | Halden Service Revolver | sidearm | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) | 4.22 |
+| SperlingS96 | Sperling S-96 | sidearm | Mauser C96 ("Red 9", 9x19) | 30 | 103 | none on file | 4.22 |
 | RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | 29 | 102 | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 4.64 |
 | HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 3.63 |
 | FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 3.55 |
@@ -46,10 +50,7 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | SP14Warden | SP-14 Warden | shotgun | 4 | SPSA14 | 80 | 136 | https://commons.wikimedia.org/wiki/File:Franchi_SPAS_12-P5120256-white.jpg (CC BY-SA 3.0 fr) |
 | Sayan12 | Sayan-12 | shotgun | 4 | Saiga-12 | 105 | 146 | https://commons.wikimedia.org/wiki/File:Saiga_12_black_stock.jpg (CC BY-SA 4.0) |
 | Tambour12 | Tambour-12 | shotgun | 4 | Protecta | 79 | 135 | https://commons.wikimedia.org/wiki/File:Armsel_Striker_no_background.png (CC BY-SA 2.0) |
-| HaldenServiceRevolver | Halden Service Revolver | sidearm | 1 | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) |
 | PSh18Pchela | PSh-18 Pchela | sidearm | 1 | PMm | 16.1 | 87 | https://commons.wikimedia.org/wiki/File:%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%9F%D0%9C%D0%9C_-_%D0%9E%D0%A1%D0%9D_%D0%A1%D0%B0%D1%82%D1%83%D1%80%D0%BD_01.jpg (CC BY-SA 4.0) |
-| Halden45Service | Halden .45 Service | sidearm | 2 | Colt M1911 | 21.9 | 94 | https://commons.wikimedia.org/wiki/File:M1911A1.png (CC BY-SA 3.0) |
-| WaldenP9 | Walden P9 | sidearm | 2 | Walker P9m | 18.4 | 90 | https://commons.wikimedia.org/wiki/File:Walther_P99_9x19mm.png (CC BY 2.5) |
 | BlackHarrier | Black Harrier | sidearm | 3 | Black Kite | 29 | 102 | https://commons.wikimedia.org/wiki/File:Wildey_IMG_6827-8_right.jpg (CC BY-SA 2.0 fr) |
 | SR21Gadyuka | SR-21 Gadyuka | sidearm | 3 | SP-21 Gyurza | 19.5 | 91 | https://commons.wikimedia.org/wiki/File:9mm_SR1PM_pistol_TVM2012_016.jpg (CC BY-SA 4.0) |
 | Corvan57 | Corvan 5.7 | sidearm | 4 | FN Five-seveN | 20.8 | 93 | https://commons.wikimedia.org/wiki/File:FN_Five_Seven.jpg (Public domain) |

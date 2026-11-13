@@ -61,7 +61,9 @@ def main():
         print(f"  (read the old sizes of {key} from the game files: {tg})")
     sp = Image.open(still).convert("RGBA"); x0, y0, x1, y1 = bbox(sp); sp = sp.crop((x0, y0, x1, y1))
     if "--lift" in args: i = args.index("--lift"); sp = lift(sp, float(args[i + 1]), float(args[i + 2]))
-    tw = target_width(key, tg); th = int(round(sp.height * tw / sp.width)); img = shrink(sp, tw, th)
+    tw = target_width(key, tg); th = int(round(sp.height * tw / sp.width))
+    if th > 60: th = 60; tw = int(round(sp.width * th / sp.height))                  # tall guns (pistols) must fit the 64 px canvas height
+    img = shrink(sp, tw, th)
     if "--thicken" in args: i = args.index("--thicken"); img = thicken(img, int(args[i + 1]), int(args[i + 2])); th = img.height
     canvas = Image.new("RGBA", CANVAS, (0, 0, 0, 0)); nx0 = (CANVAS[0] - tw) // 2; ny0 = (CANVAS[1] - th) // 2; canvas.alpha_composite(img, (nx0, ny0))
     k = tw / float(tg["inhand"][0]); ow, oh = tg["inhand"]; g = tg["grips"]; v = []
