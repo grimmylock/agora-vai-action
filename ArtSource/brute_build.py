@@ -64,9 +64,7 @@ def walk_frame(i):
     f = Image.new("RGBA", (W, H), (0, 0, 0, 0)); f.alpha_composite(Image.fromarray(im[pad:]), (CX - crest(I) - pad, H - I.shape[0]))
     return clean(f)
 walk = [walk_frame(i) for i in range(8)]
-def stretch(a, rows):                                                       # the opposite: repeat the waist row `rows` times, the body rears up taller (feet stay on the ground)
-    return np.concatenate([a[:WAIST], np.repeat(a[WAIST:WAIST + 1], rows, axis=0), a[WAIST:]], axis=0)
-for n_, r_ in ((2, 2), (3, 3), (4, 4), (5, 5), (6, 6)): P[f"dip{n_}"] = dip(I, r_)
+for n_, r_ in ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)): P[f"dip{n_}"] = dip(I, r_)
 P["crouch"] = P["dip4"]
 for n_ in (3, 5, 7): P[f"st{n_}"] = stretch(I, n_)                                                    # his idle squashed 4 rows at the waist: the crouch before the rise and after the hit
 # ---- the rock (boulder), its shatter and the slam dust, drawn here
@@ -129,11 +127,11 @@ def build(seq):
         out.append(clean(im))
     return out
 SEQ = {
-    "slam":  [("idle", 100, None, 0), ("dip3", 120, None, 0), ("st3", 130, None, 0), ("st5", 120, None, 0), ("st7", 260, None, 0), ("dip6", 70, None, 0), ("dip5", 80, None, 0), ("dip4", 110, None, 0), ("dip2", 130, None, 0), ("idle", 200, None, 0)],      # the stomp (Yan: option 1): crouch, rear up, crash down
+    "slam":  [("idle", 100, None, 0), ("dip2", 140, None, 0), ("dip3", 200, None, 0), ("dip2", 90, None, 0), ("dip6", 70, None, 0), ("dip5", 90, None, 0), ("dip3", 120, None, 0), ("dip1", 130, None, 0), ("idle", 200, None, 0)],      # squash only (deleting rows never smears): wind down, hold, drop hard
     "swipe": [("idle", 100, None, 0), ("cock", 280, None, 0), ("cock", 50, None, 0, -1), ("out", 50, None, 0, 1), ("across", 70, None, 0, 2), ("across", 130, None, 0, 2), ("across", 100, None, 0, 1), ("idle", 220, None, 0)],      # Yan: "keep that for the swipe/punch"
     "throw": [("idle", 120, None, 0), ("cock", 260, "rock", 0), ("cock", 220, "rock", 1), ("out", 90, None, 0), ("out", 250, None, 0), ("idle", 240, None, 0)],
 }
-CONTACT = {"slam": 5, "swipe": 4, "throw": 3}
+CONTACT = {"slam": 4, "swipe": 4, "throw": 3}
 def strip_of(fr):
     s = Image.new("RGBA", (W * len(fr), H), (0, 0, 0, 0))
     for i, f in enumerate(fr): s.alpha_composite(f, (i * W, 0))
