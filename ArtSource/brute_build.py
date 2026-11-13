@@ -64,6 +64,7 @@ def walk_frame(i):
     f = Image.new("RGBA", (W, H), (0, 0, 0, 0)); f.alpha_composite(Image.fromarray(im[pad:]), (CX - crest(I) - pad, H - I.shape[0]))
     return clean(f)
 walk = [walk_frame(i) for i in range(8)]
+P["crouch"] = dip(I, 4)                                                    # his idle squashed 4 rows at the waist: the crouch before the rise and after the hit
 # ---- the rock (boulder), its shatter and the slam dust, drawn here
 def rock_frames(n=6, size=16):
     OL, MID, DK, HI, FL = (14, 14, 8), (88, 84, 44), (46, 44, 24), (132, 128, 70), (200, 208, 70); rng = np.random.RandomState(5); out = []
@@ -124,11 +125,11 @@ def build(seq):
         out.append(clean(im))
     return out
 SEQ = {
-    "slam":  [("idle", 140, None, 0), ("slam_up", 480, None, 0), ("slam_hit", 70, None, 0), ("slam_hit", 330, None, 0), ("slam_hit", 260, None, 0), ("idle", 220, None, 0)],
+    "slam":  [("idle", 100, None, 0), ("crouch", 110, None, 0), ("slam_up", 160, None, 0, 1), ("slam_up", 260, None, 0), ("slam_up", 60, None, 0, -1), ("slam_hit", 70, None, 0, -2), ("slam_hit", 120, None, 0, -1), ("slam_hit", 260, None, 0), ("crouch", 130, None, 0), ("idle", 200, None, 0)],
     "swipe": [("idle", 100, None, 0), ("cock", 280, None, 0), ("cock", 50, None, 0, -1), ("out", 50, None, 0, 1), ("across", 70, None, 0, 2), ("across", 130, None, 0, 2), ("across", 100, None, 0, 1), ("idle", 220, None, 0)],      # Yan: "keep that for the swipe/punch"
     "throw": [("idle", 120, None, 0), ("cock", 260, "rock", 0), ("cock", 220, "rock", 1), ("out", 90, None, 0), ("out", 250, None, 0), ("idle", 240, None, 0)],
 }
-CONTACT = {"slam": 2, "swipe": 4, "throw": 3}
+CONTACT = {"slam": 5, "swipe": 4, "throw": 3}
 def strip_of(fr):
     s = Image.new("RGBA", (W * len(fr), H), (0, 0, 0, 0))
     for i, f in enumerate(fr): s.alpha_composite(f, (i * W, 0))
