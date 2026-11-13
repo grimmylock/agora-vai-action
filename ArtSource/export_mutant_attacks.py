@@ -5,7 +5,7 @@ import json, os, shutil, numpy as np
 from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(HERE, "..", "Assets", "Resources", "Sprites", "Mutants", "anim"); os.makedirs(OUT, exist_ok=True)
 SETS = {"veil_prowler": "veil_attacks", "pallid_prowler": "pallid_attacks", "dread_prowler": "dread_attacks", "blind_maw": "maw_attacks", "blight_brute": "brute"}
-CONTACT = {"veil_prowler": {"bite": 5, "bite2": 7, "pounce": 8}, "pallid_prowler": {"bite": 5, "bite2": 7}, "blind_maw": {"bite": 5, "bite2": 7, "pounce": 8}, "dread_prowler": {"bite": 5, "bite2": 5, "pounce": 8}, "blight_brute": {"slam": 2, "swipe": 2, "throw": 2}}
+CONTACT = {"veil_prowler": {"bite": 5, "bite2": 7, "pounce": 8}, "pallid_prowler": {"bite": 5, "bite2": 7}, "blind_maw": {"bite": 5, "bite2": 7, "pounce": 8}, "dread_prowler": {"bite": 5, "bite2": 5, "pounce": 8}, "blight_brute": {"slam": 2, "swipe": 2, "throw": 3}}
 table = {}
 for key, folder in SETS.items():
     d = os.path.join(HERE, "mutants_anim", folder); js = json.load(open(os.path.join(d, [f for f in os.listdir(d) if f.endswith(".json") and "attacks" in f][0])))[key]
