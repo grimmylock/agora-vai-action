@@ -501,6 +501,11 @@ namespace GameCore
     public static class WeaponArt
     {
         public const int PixelsPerUnit = 32;   // half-size pixels next to the 16 px characters
+        /// <summary>2026-11-13 (Yan: use the big menu picture in the hand, "making everything bigger to compensate"): a gun listed here is held with its MENU picture (weapon_&lt;Key&gt;_hd) drawn k times denser, so it shows at the
+        /// same on-screen size as before. Its grip/support/muzzle entries below stay in "virtual" pixels (texture pixels / k, the old 32-a-unit pixels), so all the pose maths and the muzzle offset need no change; only the sprite
+        /// (pivot and pixels-per-unit) is made at k. No cut pieces (magazine, cylinder) for it yet: its reload is the hands alone.</summary>
+        public static readonly Dictionary<string, float> Dense = new Dictionary<string, float> { ["RinaldiR6"] = 51f / 22f };
+        public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
         // per-weapon entries override the category
         private static readonly Dictionary<string, float[]> Grips = new Dictionary<string, float[]>
@@ -533,7 +538,7 @@ namespace GameCore
             ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
             ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
             ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
-            ["RinaldiR6"] = new[] { 3.5f, 7f, float.NaN, float.NaN, 21f, 5.5f },
+            ["RinaldiR6"] = new[] { 6.5f, 8.3f, float.NaN, float.NaN, 25f, 5f },   // virtual px of the big menu picture (see Dense): the grip in the glove, the low bore at the muzzle
             ["SteppeEagle"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 22f, 3.5f },
             ["VosaVz62"] = new[] { 3.5f, 10f, float.NaN, float.NaN, 23f, 3.5f },
             ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
@@ -611,6 +616,7 @@ namespace GameCore
         {
             if (key == null) return (null, null);
             if (MagCache.TryGetValue(key, out var hit)) return hit;
+            if (Density(key) > 1f) return MagCache[key] = (null, null);                  // the big picture has no cut pieces yet
             var g = For(cat, key).grip;
             Sprite Load(string part)
             {
@@ -628,6 +634,7 @@ namespace GameCore
         {
             if (key == null) return (null, null);
             if (CylCache.TryGetValue(key, out var hit)) return hit;
+            if (Density(key) > 1f) return CylCache[key] = (null, null);                  // no cylinder pieces for the big picture: the reload is the hands alone
             var cyl = Part(cat, key, "cyl");
             return CylCache[key] = cyl == null ? (null, null) : (Part(cat, key, "body"), cyl);
         }
@@ -676,15 +683,17 @@ namespace GameCore
         {
             string id = key ?? "cat_" + cat;
             if (Cache.TryGetValue(id, out var hit)) return hit;
-            var tex = key != null ? Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key) : null;
+            float dense = Density(key);
+            var tex = key != null ? Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + (dense > 1f ? "_hd" : "")) : null;
+            if (tex == null && dense > 1f) { dense = 1f; tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key); }        // no big picture: the small one at its own scale
             bool own = tex != null;
-            if (!own) tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_cat_" + cat);
+            if (!own) { dense = 1f; tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_cat_" + cat); }
             var g = own && Grips.TryGetValue(key, out var kg) ? kg : Grips.TryGetValue("cat_" + cat, out var cg) ? cg : Grips["cat_assault"];
             Sprite s = null;
             if (tex != null)
             {
                 tex.filterMode = FilterMode.Point;
-                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] / tex.width, 1f - g[1] / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
+                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] * dense / tex.width, 1f - g[1] * dense / tex.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);   // grip in virtual px = texture px / dense
             }
             return Cache[id] = (s, g);
         }

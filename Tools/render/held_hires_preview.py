@@ -20,6 +20,7 @@ def frame_new(anim, f, body, gun, gl, grip, k):
     for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):
         if on: c.alpha_composite(gg, (round((H.BX + x) * S - 2 * S), round((H.BY + y) * S - 1.5 * S)))
     return c
+# (the CURRENT row draws the old sprite with its own old grip point (3.5, 7), not the game's new grip value)
 def main(src, out):
     anims = [a for a in json.load(open(src)) if a["style"] == "cylinder"]; a = anims[0]
     atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA"); i = a["armor"]
@@ -28,13 +29,14 @@ def main(src, out):
     big = Image.open(os.path.join(SPR, "Weapons", "weapon_RinaldiR6_hd.png")).convert("RGBA")
     import numpy as np
     def bb(im): m = np.array(im)[..., 3] > 0; ys, xs = np.where(m); return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-    ox0, oy0, ox1, oy1 = bb(old); nx0, ny0, nx1, ny1 = bb(big); k = (nx1 - nx0) / float(ox1 - ox0)
-    gx, gy = a["gx"], a["gy"]; grip_new = ((gx - ox0) * k + nx0, (gy - oy0) * k + ny0); print("density factor %.2f, old grip (%.1f,%.1f) -> new (%.1f,%.1f)" % (k, gx, gy, *grip_new))
+    ox0, oy0, ox1, oy1 = bb(old); nx0, ny0, nx1, ny1 = bb(big); k = 51.0 / 22.0                                                   # = WeaponArt.Dense[RinaldiR6]
+    gx, gy = a["gx"], a["gy"]; grip_new = (gx * k, gy * k) if a["gx"] > 5 else ((gx - ox0) * k + nx0, (gy - oy0) * k + ny0)   # since 2026-11-13 the game's grip is in VIRTUAL px (texture px / k); before that it was the old sprite's px
+    print("density factor %.2f, grip (%.1f,%.1f) -> texture px (%.1f,%.1f)" % (k, gx, gy, *grip_new))
     parts = (Image.open(os.path.join(SPR, "Weapons", "weapon_RinaldiR6_body.png")).convert("RGBA"), Image.open(os.path.join(SPR, "Weapons", "weapon_RinaldiR6_cyl.png")).convert("RGBA"))
     n = len(a["frames"]); picks = [n - 1, 0, n // 5, n // 2, 3 * n // 4]; labels = ["rest (aiming)", "start", "20 %", "50 %", "75 %"]
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16); cw, ch = H.W * S, H.H * S
     sheet = Image.new("RGBA", (130 + len(picks) * (cw + 8), 36 + 2 * (ch + 26)), (27, 29, 31, 255)); d = ImageDraw.Draw(sheet)
-    for r, (lab, fn) in enumerate((("CURRENT in-hand picture", lambda f: H.frame(a, f, body, old, gl, parts)), ("MENU picture drawn smaller\n(no reload pieces yet)", lambda f: frame_new(a, f, body, big, gl, grip_new, k)))):
+    for r, (lab, fn) in enumerate((("CURRENT in-hand picture", lambda f: H.frame(dict(a, gx=3.5, gy=7.0), f, body, old, gl, parts)), ("MENU picture drawn smaller\n(no reload pieces yet)", lambda f: frame_new(a, f, body, big, gl, grip_new, k)))):
         y = 36 + r * (ch + 26); d.text((8, y + ch // 2 - 20), lab, font=font, fill=(255, 255, 0))
         for j, p in enumerate(picks): sheet.alpha_composite(fn(a["frames"][p]), (130 + j * (cw + 8), y)); d.text((134 + j * (cw + 8), y + ch + 3), labels[j], font=font, fill=(200, 200, 200))
     d.text((8, 8), "The character holding the Rinaldi: current vs the menu picture drawn at the same on-screen size (the game's own pose code)", font=font, fill=(235, 235, 235))
