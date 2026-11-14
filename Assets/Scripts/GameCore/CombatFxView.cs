@@ -217,7 +217,7 @@ namespace GameCore
                     for (int i = 0; i < EelSump.N; i++)
                     {
                         if (s.Z[i] <= EelSump.HitZ) continue;
-                        float half = i <= EelSump.HeadSamples ? EelSump.HeadHalf : EelSump.BodyHalf;
+                        float half = EelSump.HalfOf(i);
                         BoxRect(s.X[i], -s.Y[i], half, -s.Y[i] + s.Z[i], i <= EelSump.HeadSamples ? new Color(1f, 0.2f, 1f, 0.35f) : new Color(0.2f, 0.9f, 1f, 0.3f));
                     }
             }

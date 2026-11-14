@@ -970,7 +970,9 @@ namespace GameCore
         // Every spine sample that is out of the water is a round column on the ground (BodyHalf wide; the head zone, the first HeadSamples, wider) that a round can hit: the low parts (Z <= LowZ)
         // by any round that passes them, the airborne ones only by a round aimed at the eel (a column from the floor would wall the whole arena under an arch). Head zone: the head unit, part
         // "Head", HeadBonus x on top of the normal head multiplier; the tail zone (the last TailSamples): the tail unit; the rest: the head unit's HP, part "Body", normal damage.
-        public const int HeadSamples = 9, TailSamples = 24; public const float BodyHalf = 0.95f, HeadHalf = 1.5f, LowZ = 2.5f, HeadBonus = 1.5f;
+        public const int HeadSamples = 9, TailSamples = 24; public const float BodyHalf = 0.95f, HeadHalf = 1.5f, LowZ = 2.5f, HeadBonus = 1.5f;   // BodyHalf/HeadHalf: the old flat columns, kept for reference; the radius used now is HalfOf (Yan, 2026-11-14: hit shapes follow the sprites)
+        /// <summary>The radius (tiles) of the hit column at spine sample i: the thickness of the drawn body there (it tapers to the tail), the head picture's height for the head zone (GameData/HitProfiles.cs, ArtSource/make_hit_profiles.py).</summary>
+        public static float HalfOf(int i) => i <= HeadSamples ? GameData.HitProfiles.EelHeadHalf : GameData.HitProfiles.EelBody[System.Math.Min(i, GameData.HitProfiles.EelBody.Length - 1)];
         static ICombatant ZoneUnit(EelBoss.Fight f, int i, out string part) { if (i <= HeadSamples) { part = "Head"; return f.Unit; } part = "Body"; return f.Sump != null && i >= N - TailSamples ? (ICombatant)f.Sump.Tail : f.Unit; }
         /// <summary>The spine the view draws and the hit tests read: the Sump's own, or (Levels 1-2) the one EelBoss.FillView lays along the platform form's rig, so both forms share the drawing and the hitbox.</summary>
         public static State SpineOf(EelBoss.Fight f) => f == null || f.Gone ? null : f.Sump;
@@ -985,7 +987,7 @@ namespace GameCore
                 if (s.Z[i] <= HitZ || s.Z[i] > LowZ && !atEel) continue;
                 float rx = s.X[i] - x0, ry = s.Y[i] - y0, t = rx * dx + ry * dy;
                 if (t <= 0.05f || t > range || t >= bestT) continue;
-                float side = rx * dy - ry * dx; if (Mathf.Abs(side) > (i <= HeadSamples ? HeadHalf : BodyHalf)) continue;
+                float side = rx * dy - ry * dx; if (Mathf.Abs(side) > HalfOf(i)) continue;
                 bestT = t; bestSide = side; hit = i;
             }
             if (hit < 0) return false;
@@ -1000,7 +1002,7 @@ namespace GameCore
             for (int i = 0; i < N; i++)
             {
                 if (s.Z[i] <= HitZ) continue;
-                float r = i <= HeadSamples ? 1.8f : 1.1f, ddx = mx - s.X[i], ddy = my - (s.Y[i] - s.Z[i]), k = Mathf.Sqrt(ddx * ddx + ddy * ddy) / r;
+                float r = HalfOf(i) + (i <= HeadSamples ? 0.3f : 0.15f), ddx = mx - s.X[i], ddy = my - (s.Y[i] - s.Z[i]), k = Mathf.Sqrt(ddx * ddx + ddy * ddy) / r;
                 if (k < bk) { bk = k; best = i; }
             }
             if (best < 0) return false;
@@ -1016,7 +1018,7 @@ namespace GameCore
             for (int i = 0; i < N; i++)
             {
                 if (s.Z[i] <= HitZ || s.Z[i] > LowZ) continue;
-                float rx = s.X[i] - px, ry = s.Y[i] - py, dist = Mathf.Sqrt(rx * rx + ry * ry), r = i <= HeadSamples ? HeadHalf : BodyHalf, edge = Mathf.Max(0f, dist - r);
+                float rx = s.X[i] - px, ry = s.Y[i] - py, dist = Mathf.Sqrt(rx * rx + ry * ry), r = HalfOf(i), edge = Mathf.Max(0f, dist - r);
                 if (edge > reach || edge >= best) continue;
                 if (dist > r)                                                                    // outside the column: the swing's arc, widened by what the column covers from here
                 {
