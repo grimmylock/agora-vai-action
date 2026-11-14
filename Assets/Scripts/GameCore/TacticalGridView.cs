@@ -433,7 +433,7 @@ namespace GameCore
                 float lo = h >= Ballistics.HeadFrom * sc ? Ballistics.HeadFrom * sc : h >= Ballistics.TorsoFrom * sc ? Ballistics.TorsoFrom * sc : 0f;
                 float hi = lo >= Ballistics.HeadFrom * sc ? sc : lo >= Ballistics.TorsoFrom * sc ? Ballistics.HeadFrom * sc : Ballistics.TorsoFrom * sc;
                 var (ux, uy) = Ballistics.Pos(over);
-                float feet = -(uy + 0.44f), wide = lo >= Ballistics.HeadFrom * sc ? 0.28f : 0.4f;
+                float feet = -(uy + Ballistics.FeetBelow), wide = lo >= Ballistics.HeadFrom * sc ? 0.28f : 0.4f;
                 box.transform.position = new Vector3(ux, feet + (lo + hi) * 0.5f * Ballistics.BodyTiles, 0f);
                 box.transform.localScale = new Vector3(wide, (hi - lo) * Ballistics.BodyTiles, 1f);
                 box.color = new Color(1f, 0.9f, 0.4f, 0.35f);

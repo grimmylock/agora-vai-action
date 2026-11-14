@@ -17,7 +17,8 @@ namespace GameCore
         // feet at row 15, head rows 2-6, torso 7-11, legs 12-14.
         public const float HeadFrom = 0.61f, TorsoFrom = 0.23f;
         public const float CrouchScale = 0.7f;              // crouching: every part lower
-        public const float BodyTiles = 0.82f;               // a standing human, in tiles (feet to crown)
+        public const float BodyTiles = 1.0f;                // a standing human, in tiles (feet to crown): the 32 px armour sprite is exactly a tile tall (2026-11-14; was 0.82, from the old 16 px sprite with two empty rows)
+        public const float FeetBelow = 0.5f;                // a unit's feet (the sprite's bottom row) sit this far under its tile position (was 0.44)
         public const float LowCover = 0.55f;                // a low wall / sandbags / a tipped desk: waist high
         public const float LightCover = 0.42f;              // brush, a fence, debris
         public const float HeadHalf = 0.13f, TorsoHalf = 0.21f, ArmFrom = 0.12f, LegsHalf = 0.17f;   // half-widths, tiles
@@ -41,60 +42,56 @@ namespace GameCore
             return (u.X + 0.5f + ox, u.Y + 0.5f + oy);
         }
 
-        /// <summary>Half-width of a unit's footprint for a round at height h (share of a standing human). Mutants: one band.</summary>
-        static float HalfWidth(ICombatant u, float h, out string part)
+        /// <summary>Half-width of a unit's hit shape for a round at height h (share of a standing human) flying along the unit vector (dx, dy) (tile space). Yan, 2026-11-14: "hitboxes that actually match the
+        /// sprites": the width comes from the sprite's own silhouette (GameData/HitProfiles.cs, made by ArtSource/make_hit_profiles.py: the reach of each pixel row from the feet up), not a rectangle. The
+        /// silhouette is the width on screen, i.e. for a round that comes up or down the screen; one that comes along the screen sees only the body's depth (HitProfiles.DepthCap), blended by direction.</summary>
+        static float HalfWidth(ICombatant u, float h, float dx, float dy, out string part)
         {
             if (EelBoss.Is(u)) { part = null; return -1f; }   // Boss 3: the eel is hit along its whole body (EelSump.TraceBody), not at its two base units
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
             {
-                var (mh, mhalf) = MutantBox(m); float top = mh + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
-                part = h >= 0.7f * top / BodyTiles ? "Head" : "Body";
-                return h <= top / BodyTiles ? mhalf : -1f;
+                string key = m.Db?.Name; float top = MutantHeight(m) + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
+                part = h * BodyTiles >= 0.7f * top ? "Head" : "Body";
+                if (h * BodyTiles > top) return -1f;
+                float a = GameData.HitProfiles.Half(key, h * BodyTiles);
+                if (a < 0f) return key != null && GameData.HitProfiles.All.ContainsKey(key) ? -1f : 0.25f * MutantSize(m);   // no silhouette (the bosses): the old column
+                return Reach(a, GameData.HitProfiles.DepthCap(key), dx, dy);
             }
             if (Rt.Untouchable(u)) { part = null; return -1f; }   // RT 9: the dive's i-frames - the round passes
             float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;   // RT batch 3: diving or sprawled, low   // RT batch 2: someone down lies flat
             if (h > s) { part = null; return -1f; }        // over the head
-            if (h >= HeadFrom * s) { part = "Head"; return HeadHalf; }
-            if (h >= TorsoFrom * s) { part = "Torso"; return TorsoHalf; }
-            part = "Legs"; return LegsHalf;
+            part = h >= HeadFrom * s ? "Head" : h >= TorsoFrom * s ? "Torso" : "Legs";
+            float w = GameData.HitProfiles.Half("human", h / s * BodyTiles);                        // a crouched or sprawled body is the standing silhouette squashed to its height
+            return w < 0f ? -1f : w;
         }
 
-        public static bool ShowBoxes;                       // F6 (dev): CombatFxView draws every enemy's hit boxes
+        /// <summary>A silhouette half-width `a` (what shows on screen) with a front-to-back depth cap, seen along (dx, dy): an ellipse's half-width across the round's line.</summary>
+        static float Reach(float a, float cap, float dx, float dy) { float b = System.Math.Min(a, cap); return (float)System.Math.Sqrt(a * a * dy * dy + b * b * dx * dx); }
 
-        /// <summary>The hit boxes of a body as the round sees them: (from, to) as a share of a standing human's height, half-width in tiles, part. The same numbers HalfWidth uses.</summary>
+        /// <summary>A mutant's height in tiles: its sprite's (HitProfiles), else its size.</summary>
+        public static float MutantHeight(Mutant m) { float hh = GameData.HitProfiles.Height(m?.Db?.Name); return hh > 0f ? hh : MutantSize(m); }
+
+        public static bool ShowBoxes;                       // F6 (dev): CombatFxView draws every enemy's hit shape
+
+        /// <summary>The hit shape of a body as bands of 2 pixel rows for the F6 overlay: (from, to) as a share of a standing human's height, the silhouette's half-width on screen in tiles, part.</summary>
         public static List<(float lo, float hi, float half, string part)> Boxes(ICombatant u)
         {
             var l = new List<(float, float, float, string)>();
             if (u == null || EelBoss.Is(u) || Rt.Untouchable(u)) return l;
-            if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
+            bool mut = !(u is Player) && !(u is HumanEnemy) && u is Mutant;
+            var m = u as Mutant; string key = mut ? m.Db?.Name : "human";
+            if (mut && !GameData.HitProfiles.All.ContainsKey(key ?? "")) { float sz = MutantSize(m), top = (sz + EelSump.LiftOfUnit(m)) / BodyTiles; l.Add((0f, top, 0.25f * sz, "Body")); return l; }
+            float s = mut ? 1f : Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;
+            float height = mut ? MutantHeight(m) + EelSump.LiftOfUnit(m) : BodyTiles * s, step = 2f / 32f;
+            for (float y = 0f; y < height - 0.001f; y += step)
             {
-                var (mh, mhalf) = MutantBox(m); float top = (mh + EelSump.LiftOfUnit(m)) / BodyTiles;
-                l.Add((0f, 0.7f * top, mhalf, "Body")); l.Add((0.7f * top, top, mhalf, "Head")); return l;
+                float y2 = System.Math.Min(height, y + step), mid = (y + y2) * 0.5f, a = GameData.HitProfiles.Half(key, mut ? mid : mid / s);
+                if (a <= 0f) continue;
+                float hs = mid / BodyTiles;
+                string part = mut ? (mid >= 0.7f * height ? "Head" : "Body") : hs >= HeadFrom * s ? "Head" : hs >= TorsoFrom * s ? "Torso" : "Legs";
+                l.Add((y / BodyTiles, y2 / BodyTiles, a, part));
             }
-            float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;
-            l.Add((0f, TorsoFrom * s, LegsHalf, "Legs")); l.Add((TorsoFrom * s, HeadFrom * s, TorsoHalf, "Torso")); l.Add((TorsoFrom * s, HeadFrom * s, ArmFrom, "Torso (arms are the outer part)")); l.Add((HeadFrom * s, s, HeadHalf, "Head"));
             return l;
-        }
-
-        /// <summary>Yan, 2026-11-14: "can we have the hitboxes match the sprite?" A mutant's hit box: height (tiles, from the ground) and half-width, MEASURED off its sprite: the opaque height of the picture
-        /// and half the median width of its opaque rows (the legs, tail and spines stick out past it) - the 32 px a tile double-resolution sprites (Pallid, Blind Maw, Veil, Dread, Brute) and the 16 px a tile
-        /// atlas cells of the others. Before: a column `size` tiles tall (Dread 1.5, hounds 1) and 0.25 x size wide, whatever the picture. Bosses (the brain, the eel and its tail) keep their old boxes.
-        /// If a sprite is redrawn, re-measure it (ArtSource/measure_mutant_boxes.py prints these numbers).</summary>
-        public static (float height, float half) MutantBox(Mutant m)
-        {
-            switch (m?.Db?.Name)
-            {
-                case "Pallid Prowler": return (0.66f, 0.41f);
-                case "Blind Maw": return (1.00f, 0.53f);
-                case "Veil Prowler": return (0.91f, 0.31f);
-                case "Dread Prowler": return (1.16f, 0.52f);
-                case "Blight Brute": return (1.88f, 0.72f);
-                case "Rot Swarm": return (0.50f, 0.34f);
-                case "Alpha Prowler": return (0.94f, 0.25f);
-                case "Mind Weaver": return (0.94f, 0.31f);
-                case "Void Weaver": return (1.00f, 0.38f);
-            }
-            float size = MutantSize(m); return (size, 0.25f * size);
         }
 
         /// <summary>Mutant height in tiles from its sprite size (hounds 1, Dread Prowler 1.5, Brute 2).</summary>
@@ -117,7 +114,7 @@ namespace GameCore
                 float t = rx * dx + ry * dy;                 // along the line
                 if (t <= 0.05f || t > range || t >= bestT) continue;
                 float side = rx * dy - ry * dx;              // signed distance off the line (+ = the round passes on its right)
-                float half = HalfWidth(u, h, out string part);
+                float half = HalfWidth(u, h, dx, dy, out string part);
                 if (half <= 0f || System.Math.Abs(side) > half) continue;
                 if (part == "Torso" && System.Math.Abs(side) > ArmFrom) part = "Arm";
                 best = u; bestT = t; bestPart = part; bestSide = side;
@@ -162,7 +159,7 @@ namespace GameCore
         {
             if (over == null) return 0.45f;                  // nothing under the crosshair: chest height
             var (_, uy) = Pos(over);
-            float feet = uy + 0.44f;                         // the sprite's feet sit 7 px under its middle
+            float feet = uy + FeetBelow;                     // the sprite's feet are its bottom row, half a tile under its middle
             return System.Math.Max(0.02f, System.Math.Min(1.1f, (feet - mouseTileY) / BodyTiles));
         }
     }

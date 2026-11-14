@@ -667,9 +667,16 @@ namespace GameCore
             {
                 if (u is Player || !u.IsAlive() || EelBoss.Is(u) || !Vision.Shows(u)) continue;     // (the eel: below, by its whole body)
                 var (ux, uy) = Ballistics.Pos(u);
-                float tall = u is Mutant mm && !(u is HumanEnemy) ? Ballistics.MutantSize(mm) : 1f;
-                // the sprite covers half a tile each side and from its feet up to its crown
-                if (System.Math.Abs(x - ux) > 0.45f * tall || y > uy + 0.5f || y < uy + 0.44f - Ballistics.BodyTiles * tall - 0.1f) continue;
+                bool mut = u is Mutant mm && !(u is HumanEnemy);
+                // the crosshair is over the SPRITE's own pixels' reach (HitProfiles: the width of the row of the sprite at that height); a body without a silhouette (the bosses) keeps the old box
+                float a = GameData.HitProfiles.Half(mut ? ((Mutant)u).Db?.Name : "human", uy + Ballistics.FeetBelow - y);
+                if (a < 0f)
+                {
+                    if (!mut || GameData.HitProfiles.All.ContainsKey(((Mutant)u).Db?.Name ?? "")) continue;
+                    float tall = Ballistics.MutantSize((Mutant)u);
+                    if (System.Math.Abs(x - ux) > 0.45f * tall || y > uy + Ballistics.FeetBelow || y < uy + Ballistics.FeetBelow - tall) continue;
+                }
+                else if (System.Math.Abs(x - ux) > a) continue;
                 float d = System.Math.Abs(x - ux) + System.Math.Abs(y - uy);
                 if (d < bd) { bd = d; best = u; }
             }

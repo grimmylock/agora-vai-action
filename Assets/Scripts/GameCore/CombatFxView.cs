@@ -163,7 +163,7 @@ namespace GameCore
                     _rounds[r] = sr = NewSprite("Round", White(), col, _root, 8);
                 }
                 float len = Mathf.Clamp(r.Speed * 0.012f, 0.25f, 1.2f), back = Mathf.Min(len, r.Gone);   // never behind the muzzle
-                float y = -(r.Y + 0.44f) + (r.H + r.Up * r.Gone / Ballistics.BodyTiles) * Ballistics.BodyTiles;
+                float y = -(r.Y + Ballistics.FeetBelow) + (r.H + r.Up * r.Gone / Ballistics.BodyTiles) * Ballistics.BodyTiles;
                 // Yan, 2026-11-13: "the bullets are coming from the character's head, around the eye area". The round flies at the crosshair's height from the shooter's feet position, so aiming up the screen
                 // starts it at head height. VISUAL ONLY (the hit maths is untouched): it is drawn leaving the gun's muzzle and eases onto its real line over the first RampTiles of flight.
                 if (!_roundFrom.TryGetValue(r, out var st))
@@ -205,11 +205,11 @@ namespace GameCore
                 foreach (var u in EncounterState.Enemies)
                 {
                     if (u == null || !u.IsAlive()) continue;
-                    var (ux, uy) = Ballistics.Pos(u); float feet = -(uy + 0.44f);
+                    var (ux, uy) = Ballistics.Pos(u); float feet = -(uy + Ballistics.FeetBelow);
                     foreach (var (lo, hi, half, part) in Ballistics.Boxes(u))
                     {
-                        var col = part == "Head" ? new Color(1f, 0.15f, 0.15f, 0.9f) : part == "Legs" ? new Color(0.2f, 1f, 0.3f, 0.9f) : part == "Body" ? new Color(1f, 0.55f, 0.1f, 0.9f) : part.StartsWith("Torso (") ? new Color(1f, 0.9f, 0.2f, 0.45f) : new Color(1f, 0.9f, 0.2f, 0.9f);
-                        BoxRect(ux, feet + lo * Ballistics.BodyTiles, half, feet + hi * Ballistics.BodyTiles, col);
+                        var col = part == "Head" ? new Color(1f, 0.15f, 0.15f, 0.45f) : part == "Legs" ? new Color(0.2f, 1f, 0.3f, 0.45f) : part == "Body" ? new Color(1f, 0.55f, 0.1f, 0.45f) : new Color(1f, 0.9f, 0.2f, 0.45f);
+                        BoxLine(ux - half, feet + lo * Ballistics.BodyTiles, ux + half, feet + hi * Ballistics.BodyTiles, col);   // one filled band per 2 pixel rows: together, the silhouette the round sees
                     }
                 }
                 var f = EelBoss.Current; var s = f != null ? EelSump.SpineOf(f) : null;
