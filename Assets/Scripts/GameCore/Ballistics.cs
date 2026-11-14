@@ -47,9 +47,9 @@ namespace GameCore
             if (EelBoss.Is(u)) { part = null; return -1f; }   // Boss 3: the eel is hit along its whole body (EelSump.TraceBody), not at its two base units
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
             {
-                float size = MutantSize(m), top = size + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
+                var (mh, mhalf) = MutantBox(m); float top = mh + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
                 part = h >= 0.7f * top / BodyTiles ? "Head" : "Body";
-                return h <= top / BodyTiles ? 0.25f * size : -1f;
+                return h <= top / BodyTiles ? mhalf : -1f;
             }
             if (Rt.Untouchable(u)) { part = null; return -1f; }   // RT 9: the dive's i-frames - the round passes
             float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;   // RT batch 3: diving or sprawled, low   // RT batch 2: someone down lies flat
@@ -68,12 +68,33 @@ namespace GameCore
             if (u == null || EelBoss.Is(u) || Rt.Untouchable(u)) return l;
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
             {
-                float size = MutantSize(m), top = (size + EelSump.LiftOfUnit(m)) / BodyTiles;
-                l.Add((0f, 0.7f * top, 0.25f * size, "Body")); l.Add((0.7f * top, top, 0.25f * size, "Head")); return l;
+                var (mh, mhalf) = MutantBox(m); float top = (mh + EelSump.LiftOfUnit(m)) / BodyTiles;
+                l.Add((0f, 0.7f * top, mhalf, "Body")); l.Add((0.7f * top, top, mhalf, "Head")); return l;
             }
             float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;
             l.Add((0f, TorsoFrom * s, LegsHalf, "Legs")); l.Add((TorsoFrom * s, HeadFrom * s, TorsoHalf, "Torso")); l.Add((TorsoFrom * s, HeadFrom * s, ArmFrom, "Torso (arms are the outer part)")); l.Add((HeadFrom * s, s, HeadHalf, "Head"));
             return l;
+        }
+
+        /// <summary>Yan, 2026-11-14: "can we have the hitboxes match the sprite?" A mutant's hit box: height (tiles, from the ground) and half-width, MEASURED off its sprite: the opaque height of the picture
+        /// and half the median width of its opaque rows (the legs, tail and spines stick out past it) - the 32 px a tile double-resolution sprites (Pallid, Blind Maw, Veil, Dread, Brute) and the 16 px a tile
+        /// atlas cells of the others. Before: a column `size` tiles tall (Dread 1.5, hounds 1) and 0.25 x size wide, whatever the picture. Bosses (the brain, the eel and its tail) keep their old boxes.
+        /// If a sprite is redrawn, re-measure it (ArtSource/measure_mutant_boxes.py prints these numbers).</summary>
+        public static (float height, float half) MutantBox(Mutant m)
+        {
+            switch (m?.Db?.Name)
+            {
+                case "Pallid Prowler": return (0.66f, 0.41f);
+                case "Blind Maw": return (1.00f, 0.53f);
+                case "Veil Prowler": return (0.91f, 0.31f);
+                case "Dread Prowler": return (1.16f, 0.52f);
+                case "Blight Brute": return (1.88f, 0.72f);
+                case "Rot Swarm": return (0.50f, 0.34f);
+                case "Alpha Prowler": return (0.94f, 0.25f);
+                case "Mind Weaver": return (0.94f, 0.31f);
+                case "Void Weaver": return (1.00f, 0.38f);
+            }
+            float size = MutantSize(m); return (size, 0.25f * size);
         }
 
         /// <summary>Mutant height in tiles from its sprite size (hounds 1, Dread Prowler 1.5, Brute 2).</summary>
