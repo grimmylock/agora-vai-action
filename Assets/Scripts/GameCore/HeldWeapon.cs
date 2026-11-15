@@ -739,10 +739,44 @@ namespace GameCore
         }
         /// <summary>2026-11-15 (Yan: "we don't have the shell ejection animation"): where a gun throws its spent case from, in TEXTURE px of the double-size picture, and how long after the shot it does (a pump: when the fore-end is back).
         /// A gun without an entry throws it from a point a third of the way to the muzzle, at the shot.</summary>
-        public static readonly Dictionary<string, (float x, float y, float delay)> Ejects = new Dictionary<string, (float, float, float)>
+        public static readonly Dictionary<string, (float x, float y, float delay, bool onPart)> Ejects = new Dictionary<string, (float, float, float, bool)>
         {
-            ["RangerP8"] = (113f, 10f, 0.22f),
-            ["Halden45Service"] = (62f, 11f, 0.03f),
+            ["RangerP8"] = (113f, 10f, 0.22f, false),            // the port is on the receiver; the pump racks, then the shell leaves
+            ["Halden45Service"] = (62f, 11f, 0.03f, true),       // the port is cut in the slide: it moves back with it
+            // 2026-11-15: every other gun that throws its case, the port read off the double-size picture (rounded to the pixel; a pump or a lever throws when the action is cycled, a bolt gun later)
+            ["HaldenLeverShotgun"] = (104f, 10f, 0.28f, false),
+            ["FrontierLeverRifle"] = (104f, 11f, 0.28f, false),
+            ["Nightwalker4570"] = (116f, 10f, 0.28f, false),
+            ["SperlingS96"] = (65f, 11f, 0.03f, false),
+            ["WaldenP9"] = (60f, 14f, 0.03f, false),
+            ["VK74"] = (130f, 14f, 0.03f, false),
+            ["SKNKarabin"] = (112f, 11f, 0.03f, false),
+            ["CorvanWasp9"] = (118f, 30f, 0.03f, false),
+            ["Hound13"] = (100f, 10f, 0.22f, false),
+            ["SP14Warden"] = (105f, 14f, 0.22f, false),
+            ["HaldenHR36K"] = (105f, 22f, 0.03f, false),
+            ["M91Trekhlineyka"] = (100f, 12f, 0.55f, false),
+            ["Kaban12"] = (118f, 14f, 0.03f, false),
+            ["VK127Grom"] = (62f, 13f, 0.03f, false),
+            ["SteppeEagle"] = (80f, 13f, 0.03f, false),
+            ["VSNShepot"] = (90f, 10f, 0.03f, false),
+            ["Sayan12"] = (105f, 12f, 0.03f, false),
+            ["TS9Tishina"] = (130f, 14f, 0.03f, false),
+            ["CorvanHornet45"] = (135f, 22f, 0.03f, false),
+            ["VosaVz62"] = (118f, 12f, 0.03f, false),
+            ["HaldenAM50Sledge"] = (95f, 14f, 0.03f, false),
+            ["SV2Strela"] = (95f, 13f, 0.03f, false),
+            ["CorvanMarksman"] = (100f, 11f, 0.03f, false),
+            ["CorvanLMG"] = (110f, 30f, 0.03f, false),
+            ["PL74"] = (120f, 16f, 0.03f, false),
+            ["VK103"] = (120f, 14f, 0.03f, false),
+            ["CorvanBullpup"] = (150f, 24f, 0.03f, false),
+            ["RL44"] = (98f, 16f, 0.03f, false),
+            ["NA94Yenisei"] = (125f, 16f, 0.03f, false),
+            ["VKM"] = (120f, 14f, 0.03f, false),
+            ["CorvanBattleRifle"] = (108f, 20f, 0.03f, false),
+            ["BayouPump"] = (112f, 10f, 0.22f, false),
+            ["CorvanGnatPDW"] = (125f, 17f, 0.03f, false),
         };
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
         public static float PartPhase(string style, float since)
@@ -837,7 +871,11 @@ namespace GameCore
             var g = _sel2 ? _g2 : _g;
             if (g == null) return Sel.transform.position;
             float side = Sel.flipY ? -1f : 1f, lx, ly;
-            if (!_sel2 && _ejectKey != null && WeaponArt.Ejects.TryGetValue(_ejectKey, out var e)) { float dense = WeaponArt.Density(_ejectKey); lx = (e.x / dense - g[0]) / WeaponArt.PixelsPerUnit; ly = side * (g[1] - e.y / dense) / WeaponArt.PixelsPerUnit; }
+            if (!_sel2 && _ejectKey != null && WeaponArt.Ejects.TryGetValue(_ejectKey, out var e))
+            {
+                float dense = WeaponArt.Density(_ejectKey); lx = (e.x / dense - g[0]) / WeaponArt.PixelsPerUnit; ly = side * (g[1] - e.y / dense) / WeaponArt.PixelsPerUnit;
+                if (e.onPart && WeaponArt.PartInfo.TryGetValue(_ejectKey, out var pi)) lx -= WeaponArt.PartPhase(pi.style, Time.time - _shotAt) * pi.travel / (WeaponArt.PixelsPerUnit * dense);   // the port rides on the slide: where the slide is NOW
+            }
             else { lx = 0.35f * (g[4] - g[0]) / WeaponArt.PixelsPerUnit; ly = side * 0.35f * (g[1] - g[5]) / WeaponArt.PixelsPerUnit; }
             return Sel.transform.TransformPoint(new Vector3(lx, ly, 0f));
         }

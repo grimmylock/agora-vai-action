@@ -53,9 +53,23 @@ namespace GameCore
         /// <summary>One spent casing (brass) or shotgun shell (red) thrown from `at` with velocity (vx, vy), landing on `floor`.</summary>
         private void DropBrass(Vector3 at, bool shell, float vx, float vy, float floor, int order)
         {
-            var sr = NewSprite(shell ? "Shell" : "Casing", White(), shell ? new Color(0.69f, 0.16f, 0.16f) : new Color(0.79f, 0.65f, 0.24f), _root, order);
-            sr.transform.localScale = new Vector3((shell ? 2f : 1.5f) / WeaponArt.PixelsPerUnit, 1f / WeaponArt.PixelsPerUnit, 1f);
+            var sr = NewSprite(shell ? "Shell" : "Casing", CaseSprite(shell), Color.white, _root, order);
             _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = vx, Vy = vy, Deg = Random.Range(0f, 360f), Spin = Random.Range(-720f, 720f), Floor = floor, Brass = true });
+        }
+        // 2026-11-15 (Yan: "the casings are a colored pixel"): a drawn brass case (5x2 px: rim, body, dark mouth) and a shotgun shell (7x3 px: brass base, red hull), at the weapon pictures' scale
+        private static readonly Dictionary<bool, Sprite> _caseSprites = new Dictionary<bool, Sprite>();
+        private static Sprite CaseSprite(bool shell)
+        {
+            if (_caseSprites.TryGetValue(shell, out var hit) && hit != null) return hit;
+            string[] rows = shell ? new[] { "ABBRRRD", "ABBRrRD", "aBbRrdD" } : new[] { "ABBBD", "abbbd" };
+            var pal = new Dictionary<char, Color32>
+            {
+                ['A'] = new Color32(250, 226, 128, 255), ['B'] = new Color32(222, 184, 74, 255), ['b'] = new Color32(176, 136, 46, 255), ['a'] = new Color32(190, 150, 50, 255), ['D'] = new Color32(96, 70, 26, 255), ['d'] = new Color32(70, 40, 24, 255),
+                ['R'] = new Color32(200, 48, 44, 255), ['r'] = new Color32(150, 30, 30, 255),
+            };
+            int w = rows[0].Length, h = rows.Length; var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+            for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) { var c32 = pal[rows[y][x]]; tex.SetPixel(x, h - 1 - y, new Color(c32.r / 255f, c32.g / 255f, c32.b / 255f, 1f)); }
+            tex.Apply(); return _caseSprites[shell] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
         }
         /// <summary>A spent case or shell leaves the gun's ejection port, thrown out and up to the gun's left (up the screen when it aims right), then falls and lies on the floor.</summary>
         private void Eject(HeldWeaponView held, WeaponFeel feel)
