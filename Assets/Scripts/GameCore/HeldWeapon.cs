@@ -576,7 +576,7 @@ namespace GameCore
             ["Sever34"] = new[] { 13.7f, 5.3f, 24.7f, 4.1f, 41.7f, 2.4f },
             ["Tambour12"] = new[] { 16.8f, 6.3f, 30.8f, 5.5f, 37.8f, 2.9f },
             ["SP14Warden"] = new[] { 3f, 13f, 23f, 12f, 39f, 7.5f },
-            ["Sayan12"] = new[] { 10.8f, 6.5f, 25.8f, 5.1f, 40.8f, 4.4f },
+            ["Sayan12"] = new[] { 10.8f, 5.5f, 25.8f, 4.3f, 40.8f, 3.7f },
             ["Kaban12"] = new[] { 11f, 6.5f, 27f, 4f, 39f, 3.5f },
             ["VKS74U"] = new[] { 11.5f, 7f, 25f, 4f, 33f, 3.5f },
             ["Smerch3"] = new[] { 10.5f, 7.5f, 17f, 5f, 28f, 3.5f },
