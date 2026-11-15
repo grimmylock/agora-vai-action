@@ -9,6 +9,11 @@ a = np.array(Image.open(ORIG).convert('RGBA')); lum = a[..., :3].mean(2)
 a[(a[..., 3] > 0) & (lum > 215), :3] = (150, 152, 158)                                 # glare
 reg = a[10:23, 78:101]; reg[(reg[..., 3] > 0) & (reg[..., :3].mean(2) > 185), :3] = (128, 131, 138)   # light edge lines round the knurled tube
 a[11:24, 8:29] = 0                                                                     # the scribble
+from scipy import ndimage as nd                                                        # Yan: "there's a shadow in the side profile, it translated into a hole": the black gap under the cylinder (reference photo's shadow) is a see-through hole in A (215 px, x 41-77, y 24-29): filled with the frame's dark steel
+lab, n = nd.label(a[..., 3] == 0)
+for i in range(1, n + 1):
+    ys, xs = np.where(lab == i)
+    if len(xs) > 150 and ys.min() >= 20 and ys.max() <= 32 and xs.min() >= 38 and xs.max() <= 80: a[ys, xs] = (38, 40, 46, 255); a[ys[ys == ys.max()], xs[ys == ys.max()]] = (30, 32, 38, 255)
 im = Image.fromarray(a, 'RGBA'); d = ImageDraw.Draw(im)
 OUT, DK, MID, LT = (14, 14, 18, 255), (44, 46, 52, 255), (80, 83, 90, 255), (122, 126, 134, 255)
 horn = [(29, 19), (26, 15), (22, 13), (17, 12), (13, 12), (12, 13), (15, 14), (20, 15), (24, 18), (28, 22), (29, 23)]
