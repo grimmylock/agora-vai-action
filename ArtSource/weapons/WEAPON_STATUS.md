@@ -14,14 +14,14 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | HaldenServiceRevolver | Halden Service Revolver | sidearm | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) | 5.26 |
 | SperlingS96 | Sperling S-96 | sidearm | Mauser C96 ("Red 9", 9x19) | 30 | 103 | none on file | 5.00 |
 | RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | 29 | 102 | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 7.09 |
-| SteppeEagle | Steppe Eagle | sidearm |  | 26.4 | 99 | https://commons.wikimedia.org/wiki/File:Desert_Eagle_Chrome.JPG (CC BY-SA 3.0) | 5.52 |
+| SteppeEagle | Steppe Eagle | sidearm |  | 26.4 | 99 | https://commons.wikimedia.org/wiki/File:Desert_Eagle_Chrome.JPG (CC BY-SA 3.0) | 6.26 |
 | VosaVz62 | Vosa vz. 62 | smg | Skorpion vz. 61 | 27 | 100 | https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg (CC0) | 8.92 |
 | CorvanWasp9 | Corvan Wasp-9 | smg | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) | 6.91 |
 | CorvanHornet45 | Corvan Hornet .45 | smg | UMP-45 | 69 | 130 | https://commons.wikimedia.org/wiki/File:HKUMP45.JPG (CC BY-SA 3.0) | 6.94 |
 | CorvanGnatPDW | Corvan Gnat PDW | smg | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) | 6.79 |
 | HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 6.32 |
 | RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 5.95 |
-| Karusel5 | Karusel-5 | shotgun | Rossi Circuit Judge (revolver carbine, shotgun rounds) | ? | None | none on file | 6.67 |
+| Karusel5 | Karusel-5 | shotgun | Rossi Circuit Judge (revolver carbine, shotgun rounds) | ? | None | none on file | 6.61 |
 | BayouPump | Bayou Pump | shotgun | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) | 5.90 |
 | Sever34 | Sever-34 O/U | shotgun | TOZ-34 | 112 | 149 | https://commons.wikimedia.org/wiki/File:TOZ-34_Shotgun.jpg (CC BY-SA 4.0) | 5.55 |
 | Tambour12 | Tambour-12 | shotgun | Protecta | 79 | 135 | https://commons.wikimedia.org/wiki/File:Armsel_Striker_no_background.png (CC BY-SA 2.0) | 4.97 |
