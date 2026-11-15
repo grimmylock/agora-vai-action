@@ -21,7 +21,11 @@ def shrink(im, tw, th, ncol=16):
     cov = box(al); col = np.stack([box(rgb[..., c]) for c in range(3)], -1) / np.maximum(cov[..., None], 1e-3)
     mask = cov > 0.5; out = np.zeros((th, tw, 4), np.uint8); out[..., :3] = np.clip(col, 0, 255).astype(np.uint8); out[..., 3] = mask * 255
     q = Image.fromarray(out[..., :3]).quantize(colors=ncol, method=Image.MEDIANCUT, dither=Image.NONE).convert("RGB"); out[..., :3] = np.array(q); out[~mask, :3] = 0
-    edge = mask & ~nd.binary_erosion(mask, structure=np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])); out[edge, :3] = OUTLINE; return Image.fromarray(out)
+    edge = mask & ~nd.binary_erosion(mask, structure=np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])); out[edge, :3] = OUTLINE
+    lab, n = nd.label(out[..., 3] > 0, structure=np.ones((3, 3)))                       # stray specks left by the generator (under 12 px) are dropped
+    for i, sz in enumerate(nd.sum(out[..., 3] > 0, lab, range(1, n + 1))):
+        if sz < 12: out[lab == i + 1] = 0
+    return Image.fromarray(out)
 def thicken(im, x0, n):
     a = np.array(im); h, w = a.shape[:2]; out = np.zeros((h + n, w, 4), np.uint8); out[:h] = a
     body = None

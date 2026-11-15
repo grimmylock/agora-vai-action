@@ -3,7 +3,7 @@
 Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.
 **Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.
 
-**Guns: 8 reworked, 48 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
+**Guns: 12 reworked, 44 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
 
 ## Reworked
 
@@ -14,7 +14,11 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | HaldenServiceRevolver | Halden Service Revolver | sidearm | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) | 4.17 |
 | SperlingS96 | Sperling S-96 | sidearm | Mauser C96 ("Red 9", 9x19) | 30 | 103 | none on file | 4.22 |
 | RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | 29 | 102 | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 4.64 |
+| CorvanWasp9 | Corvan Wasp-9 | smg | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) | 3.81 |
 | HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 3.63 |
+| RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 3.59 |
+| VK74 | VK-74 | assault | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) | 3.38 |
+| SKNKarabin | SKN Karabin | sniper | SKS | 102 | 145 | https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG (Public domain) | 3.37 |
 | FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 3.55 |
 | Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | 95 | 142 | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 3.55 |
 
@@ -24,7 +28,6 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 |-|-|-|-|-|-|-|-|
 | VKS74U | VKS-74U | assault | 1 | AKS-74U | 73 | 132 | https://commons.wikimedia.org/wiki/File:AKS74U_(noBG).jpg (CC BY-SA 4.0) |
 | Smerch3 | Smerch-3 | assault | 2 | SR-3M Vikhr | 63 | 127 | https://commons.wikimedia.org/wiki/File:Oboronexpo2014part4-26.jpg (CC BY-SA 4.0) |
-| VK74 | VK-74 | assault | 2 | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) |
 | VKM | VKM | assault | 2 | AKM | 88 | 139 | https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg (Public domain) |
 | HaldenHR36K | Halden HR36K | assault | 3 | G36K | 86 | 138 | https://commons.wikimedia.org/wiki/File:Gewehr_G36K_noBG_02.png (CC BY-SA 4.0) |
 | TR30 | TR-30 | assault | 3 | TRs-301 | 84 | 137 | https://commons.wikimedia.org/wiki/File:LR_300.JPG (CC BY-SA 3.0) |
@@ -43,7 +46,6 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | PL74PPolovetsZulu | PL-74P Polovets Zulu | heavy | 5 | PKP Pecheneg Zulu | 121 | 152 | https://commons.wikimedia.org/wiki/File:Pecheneg_machine_gun-06.jpg (CC BY-SA 3.0) |
 | Obrez66 | Obrez-66 | shotgun | 1 | Sawed-off TOZ-66 | 45 | 115 | https://commons.wikimedia.org/wiki/File:Weapon_made_from_a_shotgun.png (Public domain) |
 | Hound13 | Hound 13 | shotgun | 2 | Chaser 13 | 100 | 144 | https://commons.wikimedia.org/wiki/File:Mossberg_Maverick_88.png (CC BY-SA 4.0) |
-| RangerP8 | Ranger P8 | shotgun | 2 | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) |
 | BayouPump | Bayou Pump | shotgun | 3 | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) |
 | Sever34 | Sever-34 O/U | shotgun | 3 | TOZ-34 | 112 | 149 | https://commons.wikimedia.org/wiki/File:TOZ-34_Shotgun.jpg (CC BY-SA 4.0) |
 | Kaban12 | Kaban-12 | shotgun | 4 | Vepr-12 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Vepr-12_ARMS_%26_Hunting_2012_01.jpg (CC BY-SA 4.0) |
@@ -59,9 +61,7 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | VosaVz62 | Vosa vz. 62 | smg | 1 | Skorpion vz. 61 | 27 | 100 | https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg (CC0) |
 | PPZZubr | PPZ Zubr | smg | 2 | PP-19 Bizon | 55 | 122 | https://commons.wikimedia.org/wiki/File:PP-19_Bizon_right_view.jpg (CC BY-SA 3.0) |
 | CorvanHornet45 | Corvan Hornet .45 | smg | 3 | UMP-45 | 69 | 130 | https://commons.wikimedia.org/wiki/File:HKUMP45.JPG (CC BY-SA 3.0) |
-| CorvanWasp9 | Corvan Wasp-9 | smg | 3 | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) |
 | CorvanGnatPDW | Corvan Gnat PDW | smg | 4 | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) |
-| SKNKarabin | SKN Karabin | sniper | 2 | SKS | 102 | 145 | https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG (Public domain) |
 | M91Trekhlineyka | M91 Trekhlineyka | sniper | 3 | Mosin Nagant | 123.5 | 153 | https://commons.wikimedia.org/wiki/File:Mosin-Nagant_m91-30_sniper_noBG.png (CC BY-SA 3.0) |
 | VSNShepot | VSN Shepot | sniper | 3 | Vintar BC | 89 | 140 | https://commons.wikimedia.org/wiki/File:Vss_vintorez_01.jpeg (CC BY-SA 3.0) |
 | CorvanMarksman | Corvan Marksman | sniper | 4 | SR-25 | 112 | 149 | https://commons.wikimedia.org/wiki/File:SR-25_pic02.jpg (CC BY 2.0) |
