@@ -1,0 +1,28 @@
+{
+ "name": "batch8",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch8",
+ "refs": [
+  [
+   "SteppeEagle",
+   "ArtSource/weapons/spritecook_pilot/batch8/SteppeEagle_ref.png"
+  ],
+  [
+   "VK127Grom",
+   "ArtSource/weapons/spritecook_pilot/batch8/VK127Grom_ref.png"
+  ],
+  [
+   "Karusel5",
+   "ArtSource/weapons/spritecook_pilot/batch8/Karusel5_ref.png"
+  ],
+  [
+   "Kaban12",
+   "ArtSource/weapons/spritecook_pilot/batch8/Kaban12_ref.png"
+  ]
+ ],
+ "rows": [
+  "large silver-chrome semi-automatic pistol with a heavy slide that has slanted grooves at the rear, a long flat top, a ventilated muzzle with a front sight at the end, a rail under the barrel, a black rubber grip and a trigger guard. No text.",
+  "black bullpup sniper rifle: a thick black cylindrical suppressor at the front, a slim black body with the magazine behind the pistol grip, a short skeletal butt at the rear, and a small folding bipod hanging under the front. No scope.",
+  "revolver-rifle: a black revolver cylinder in the middle of a long slim black barrel with a rail on top, a walnut wooden stock with a rubber butt pad, a wooden fore-end below the barrel, a trigger below the cylinder, and a front sight.",
+  "black AK-style shotgun: a black folding stock with an angled strut, a black receiver with a rail on top, a black handguard with vertical grooves, a black pistol grip, a long thin barrel with a muzzle end, and a long curved black box magazine."
+ ]
+}

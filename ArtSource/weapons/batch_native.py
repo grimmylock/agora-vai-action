@@ -64,6 +64,8 @@ def patch_cs(out):
         k, d = m.groups(); g = re.search(r'WeaponArt\.Grips:\s+(\["%s"\] = new\[\] \{[^}]*\})' % k, out).group(1)
         rows = re.findall(r'\["%s"\] = new\[\] \{[^}]*\}' % k, s)
         if len(rows) == 1: s = s.replace(rows[0], g)
+        elif len(rows) == 0:                                                   # a new gun: its row goes in next to the VKM one
+            i = s.index('["VKM"] = new[]'); j = s.index('\n', i); s = s[:j] + '\n            ' + g + ',' + s[j:]
         else: print('!! grips row for', k, 'found', len(rows), '- add by hand:', g)
         if re.search(r'\["%s"\] = [0-9.]+f,' % k, s): s = re.sub(r'\["%s"\] = [0-9.]+f,' % k, '["%s"] = %s,' % (k, d), s, 1)
         else:

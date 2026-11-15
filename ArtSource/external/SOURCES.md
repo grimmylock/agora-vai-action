@@ -78,3 +78,6 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - Saiga-12 (Sayan12): https://commons.wikimedia.org/wiki/File:Saiga_12_black_stock.jpg - CC BY-SA 4.0. Mirrored; red background and a name card cut away.
 - VSS Vintorez (VSNShepot): https://commons.wikimedia.org/wiki/File:Vss_vintorez_01.jpeg - CC BY-SA 3.0. Scope left out by the prompt.
 - Armsel Striker (Tambour12): https://commons.wikimedia.org/wiki/File:Armsel_Striker_no_background.png - CC BY-SA 2.0.
+
+### Gun reference photos, eighth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
+- Desert Eagle (SteppeEagle), VSSK Vychlop (VK127Grom, mirrored to face right), a revolver carbine for the new Karusel-5 (a Rossi Circuit Judge type, mirrored), Vepr-12 (Kaban12): photos Yan pasted into the chat; copies in `ArtSource/weapons/spritecook_pilot/batch8/*_ref.png` (background cut away).

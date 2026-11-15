@@ -90,6 +90,7 @@ namespace GameCore
             ["Halden Lever Shotgun"]    = (70, false, 3.0f, 1.4f, 0.50f, 6.0f),
             ["Hound 13"]                = (75, false, 2.6f, 1.3f, 0.50f, 6.0f),
             ["Ranger P8"]               = (80, false, 2.8f, 1.2f, 0.50f, 6.0f),
+            ["Karusel-5"]               = (130, false, 2.4f, 1.3f, 0.50f, 6.0f),   // five shots from a cylinder: faster than a pump, a wider spread
             ["Bayou Pump"]              = (75, false, 3.0f, 1.2f, 0.55f, 6.0f),
             ["Sever-34 O/U"]            = (150, false, 2.2f, 1.0f, 0.50f, 7.0f),
             ["Tambour-12"]              = (180, false, 4.0f, 1.5f, 0.60f, 6.5f),

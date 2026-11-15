@@ -107,6 +107,7 @@ namespace GameCore
             ["Nightwalker4570"] = f => { f.Reload = "tube"; },                              // RT 6h: a lever too
             ["M91Trekhlineyka"] = f => { f.Reload = "tube"; },                              // RT 6h: bolt open, round by round (ponytail: stripper clips later)
             ["SKNKarabin"] = f => { f.Reload = "tube"; },
+            ["Karusel5"] = f => { f.Reload = "tube"; f.ReloadTime = 1.4f; f.Casing = null; },   // a revolver carbine: the shells go in round by round through a loading gate, the spent ones stay in the cylinder (the revolver pose would hold a long gun straight up)
             ["HaldenAM50Sledge"] = f => { f.Flash = 4; f.Shake = 0.15f; },
             ["RK12Kuvalda"] = f => { f.Shake = 0.08f; },
         };

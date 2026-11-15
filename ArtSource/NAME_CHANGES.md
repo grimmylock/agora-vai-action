@@ -15,6 +15,7 @@ Old name on the left, current name on the right. Use the left column to match re
 | FN Five-seveN | Corvan 5.7 |
 | Chiappa Rhino | Rinaldi R6 |
 | Mauser C96 ("Red 9", 9x19) | Sperling S-96 |
+| Rossi Circuit Judge (revolver carbine, shotgun rounds) | Karusel-5 |
 | RSh-12 | RK-12 Kuvalda |
 | Skorpion vz. 61 | Vosa vz. 62 |
 | PP-19 Bizon | PPZ Zubr |

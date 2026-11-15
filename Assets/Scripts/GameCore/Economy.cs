@@ -71,7 +71,7 @@ namespace GameCore
                 ["melee"] = P(220, 350, "Steppe Machete", "Hammer", "Fire Axe"),
                 ["sidearm"] = P(1800, 2800, "SR-21 Gadyuka", "Black Harrier"),
                 ["smg"] = P(2000, 3200, "Corvan Wasp-9", "Corvan Hornet .45"),
-                ["shotgun"] = P(2200, 3500, "Bayou Pump", "Sever-34 O/U"),
+                ["shotgun"] = P(2200, 3500, "Bayou Pump", "Sever-34 O/U", "Karusel-5"),
                 ["assault"] = P(2800, 4000, "TS-9 Tishina", "TR-30", "Halden HR36K", "VK-103"),
                 ["heavy"] = P(3500, 4000, "Corvan LMG", "RL-44"),
                 ["sniper"] = P(3000, 4000, "Frontier Lever Rifle", "VSN Shepot", "M91 Trekhlineyka"),

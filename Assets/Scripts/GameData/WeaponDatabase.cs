@@ -82,6 +82,7 @@ namespace GameData
                 ["HaldenLeverShotgun"] = new WeaponDef { Name = "Halden Lever Shotgun", BaseDamage = 310, AmmoType = "12g", MagCapacity = 5, Range = "15cm", WeightKg = 3.6f, Tier = 2 },
                 ["Hound13"] = new WeaponDef { Name = "Hound 13", BaseDamage = 300, AmmoType = "12g", MagCapacity = 6, Range = "15cm", WeightKg = 3.2f, Tier = 2 },
                 ["RangerP8"] = new WeaponDef { Name = "Ranger P8", BaseDamage = 300, AmmoType = "12g", MagCapacity = 7, Range = "15cm", WeightKg = 3.6f, Tier = 2 },
+                ["Karusel5"] = new WeaponDef { Name = "Karusel-5", BaseDamage = 290, AmmoType = "12g", CylinderCapacity = 5, Range = "15cm", WeightKg = 3.1f, Tier = 3 },   // 2026-11-15 (Yan: "new one, shotgun revolver"): a carbine with a five-shot cylinder - quicker than a pump between shots, slower to reload (round by round, the revolver way), a little less damage per trigger pull
                 ["BayouPump"] = new WeaponDef { Name = "Bayou Pump", BaseDamage = 320, AmmoType = "12g", MagCapacity = 8, Range = "15cm", WeightKg = 3.4f, Tier = 3 },
                 ["Sever34"] = new WeaponDef { Name = "Sever-34 O/U", BaseDamage = 340, AmmoType = "12g", MagCapacity = 2, Range = "20cm", WeightKg = 3.2f, Tier = 3, ActionType = "Break" },
                 ["Tambour12"] = new WeaponDef { Name = "Tambour-12", BaseDamage = 320, AmmoType = "12g", CylinderCapacity = 12, Range = "15cm", WeightKg = 4.2f, Tier = 4, ReloadApCost = 2 },
