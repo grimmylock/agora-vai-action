@@ -96,5 +96,153 @@
   ],
   "fill_from": 203,
   "travel": 30
+ },
+ "WaldenP9": {
+  "style": "slide",
+  "rect": [
+   4,
+   2,
+   117,
+   22
+  ],
+  "travel": 9,
+  "fills": [
+   {
+    "rect": [
+     108,
+     8,
+     117,
+     17
+    ],
+    "color": "auto",
+    "shade": 0.8,
+    "outline": true
+   }
+  ]
+ },
+ "SteppeEagle": {
+  "style": "slide",
+  "rect": [
+   20,
+   3,
+   62,
+   27
+  ],
+  "travel": 8,
+  "fills": [
+   {
+    "rect": [
+     54,
+     6,
+     62,
+     25
+    ],
+    "color": "auto",
+    "shade": 0.8,
+    "outline": true
+   }
+  ]
+ },
+ "Corvan57": {
+  "style": "slide",
+  "rect": [
+   4,
+   3,
+   92,
+   22
+  ],
+  "travel": 8,
+  "fills": [
+   {
+    "rect": [
+     84,
+     8,
+     92,
+     16
+    ],
+    "color": "auto",
+    "shade": 0.8,
+    "outline": true
+   }
+  ]
+ },
+ "SR21Gadyuka": {
+  "style": "slide",
+  "rect": [
+   8,
+   3,
+   105,
+   21
+  ],
+  "travel": 9,
+  "fills": [
+   {
+    "rect": [
+     96,
+     8,
+     105,
+     17
+    ],
+    "color": "auto",
+    "shade": 0.8,
+    "outline": true
+   }
+  ]
+ },
+ "PSh18Pchela": {
+  "style": "slide",
+  "rect": [
+   6,
+   2,
+   99,
+   20
+  ],
+  "travel": 8,
+  "fills": [
+   {
+    "rect": [
+     91,
+     6,
+     99,
+     15
+    ],
+    "color": "auto",
+    "shade": 0.8,
+    "outline": true
+   }
+  ]
+ },
+ "BlackHarrier": {
+  "style": "slide",
+  "rect": [
+   18,
+   5,
+   78,
+   27
+  ],
+  "travel": 10,
+  "fills": [
+   {
+    "rect": [
+     68,
+     10,
+     78,
+     24
+    ],
+    "color": "auto",
+    "shade": 0.8,
+    "outline": true
+   }
+  ]
+ },
+ "SperlingS96": {
+  "style": "slide",
+  "rect": [
+   62,
+   8,
+   120,
+   18
+  ],
+  "travel": 5
  }
 }

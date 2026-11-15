@@ -24,8 +24,13 @@ def main(keys):
             x0, y0, x1, y1 = rects[0]; fx = c['fill_from']
             for y in range(y0, y1):
                 if a[y, fx, 3] > 0: body[y, x0:x1] = a[y, fx]
-        for f in c.get('fills', []):                                            # hand-placed fills (what shows when the part is away): {"rect": [x0, y0, x1, y1], "color": [r, g, b]}
-            x0, y0, x1, y1 = f['rect']; body[y0:y1, x0:x1] = [*f['color'], 255]
+        for f in c.get('fills', []):                                            # hand-placed fills (what shows when the part is away): {"rect": [x0, y0, x1, y1], "color": [r, g, b] | "auto", "shade": 0.8, "outline": true}
+            x0, y0, x1, y1 = f['rect']
+            if f['color'] == 'auto':                                            # the median colour of the part's own (non-outline) pixels, shaded: the barrel or frame in the slide's own steel
+                px = part[part[..., 3] > 0][:, :3].astype(float); px = px[px.mean(1) > 30]; col = np.median(px, axis=0) * f.get('shade', 0.8)
+            else: col = f['color']
+            body[y0:y1, x0:x1] = [*[int(v) for v in col], 255]
+            if f.get('outline'): body[y0:y0 + 1, x0:x1] = [14, 14, 18, 255]; body[y1 - 1:y1, x0:x1] = [14, 14, 18, 255]
         Image.fromarray(part, 'RGBA').save(os.path.join(WP, f'weapon_{k}_part.png')); Image.fromarray(body, 'RGBA').save(os.path.join(WP, f'weapon_{k}_body.png'))
         print(f'{k}: ["{k}"] = ("{c["style"]}", {c["travel"]}f),')
 if __name__ == '__main__': main(sys.argv[1:])

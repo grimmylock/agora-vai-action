@@ -735,6 +735,7 @@ namespace GameCore
         {
             ["RangerP8"] = ("pump", 26f),
             ["Halden45Service"] = ("slide", 12f),
+            ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together
             ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f), ["SP14Warden"] = ("pump", 30f),
         };
         private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
@@ -766,7 +767,7 @@ namespace GameCore
             ["FrontierLeverRifle"] = (104f, 11f, 0.28f, false),
             ["Nightwalker4570"] = (116f, 10f, 0.28f, false),
             ["SperlingS96"] = (65f, 11f, 0.03f, false),
-            ["WaldenP9"] = (60f, 14f, 0.03f, false),
+            ["WaldenP9"] = (60f, 14f, 0.03f, true),
             ["VK74"] = (130f, 14f, 0.03f, false),
             ["SKNKarabin"] = (112f, 11f, 0.03f, false),
             ["CorvanWasp9"] = (118f, 30f, 0.03f, false),
@@ -776,7 +777,7 @@ namespace GameCore
             ["M91Trekhlineyka"] = (100f, 12f, 0.55f, false),
             ["Kaban12"] = (118f, 14f, 0.03f, false),
             ["VK127Grom"] = (62f, 13f, 0.03f, false),
-            ["SteppeEagle"] = (80f, 13f, 0.03f, false),
+            ["SteppeEagle"] = (50f, 12f, 0.03f, true),
             ["VSNShepot"] = (90f, 10f, 0.03f, false),
             ["Sayan12"] = (105f, 12f, 0.03f, false),
             ["TS9Tishina"] = (130f, 14f, 0.03f, false),
@@ -796,8 +797,8 @@ namespace GameCore
             ["BayouPump"] = (112f, 10f, 0.22f, false),
             ["CorvanGnatPDW"] = (125f, 17f, 0.03f, false),
             ["VK74Obelisk"] = (118f, 12f, 0.03f, false), ["PL62Kobza"] = (130f, 26f, 0.03f, false),
-            ["Sever98"] = (112f, 10f, 0.55f, false), ["BR86Bulldog"] = (70f, 24f, 0.03f, false), ["Corvan57"] = (58f, 10f, 0.03f, false), ["PL74PPolovets"] = (110f, 24f, 0.03f, false), ["PL74PPolovetsZulu"] = (98f, 26f, 0.03f, false),
-            ["Smerch3"] = (90f, 12f, 0.03f, false), ["SR21Gadyuka"] = (78f, 13f, 0.03f, false), ["PSh18Pchela"] = (75f, 12f, 0.03f, false), ["BlackHarrier"] = (62f, 13f, 0.03f, false),
+            ["Sever98"] = (112f, 10f, 0.55f, false), ["BR86Bulldog"] = (70f, 24f, 0.03f, false), ["Corvan57"] = (58f, 10f, 0.03f, true), ["PL74PPolovets"] = (110f, 24f, 0.03f, false), ["PL74PPolovetsZulu"] = (98f, 26f, 0.03f, false),
+            ["Smerch3"] = (90f, 12f, 0.03f, false), ["SR21Gadyuka"] = (78f, 13f, 0.03f, true), ["PSh18Pchela"] = (75f, 12f, 0.03f, true), ["BlackHarrier"] = (62f, 13f, 0.03f, true),
             ["VKS74U"] = (108f, 14f, 0.03f, false), ["TR30"] = (112f, 15f, 0.03f, false), ["PPZZubr"] = (105f, 16f, 0.03f, false),
         };
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
