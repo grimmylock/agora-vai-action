@@ -17,12 +17,12 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | VosaVz62 | Vosa vz. 62 | smg | Skorpion vz. 61 | 27 | 100 | https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg (CC0) | 8.92 |
 | CorvanWasp9 | Corvan Wasp-9 | smg | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) | 6.91 |
 | CorvanHornet45 | Corvan Hornet .45 | smg | UMP-45 | 69 | 130 | https://commons.wikimedia.org/wiki/File:HKUMP45.JPG (CC BY-SA 3.0) | 6.94 |
-| CorvanGnatPDW | Corvan Gnat PDW | smg | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) | 6.34 |
+| CorvanGnatPDW | Corvan Gnat PDW | smg | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) | 6.79 |
 | HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 6.32 |
 | RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 5.95 |
-| BayouPump | Bayou Pump | shotgun | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) | 6.90 |
+| BayouPump | Bayou Pump | shotgun | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) | 5.90 |
 | Sever34 | Sever-34 O/U | shotgun | TOZ-34 | 112 | 149 | https://commons.wikimedia.org/wiki/File:TOZ-34_Shotgun.jpg (CC BY-SA 4.0) | 5.55 |
-| Tambour12 | Tambour-12 | shotgun | Protecta | 79 | 135 | https://commons.wikimedia.org/wiki/File:Armsel_Striker_no_background.png (CC BY-SA 2.0) | 5.05 |
+| Tambour12 | Tambour-12 | shotgun | Protecta | 79 | 135 | https://commons.wikimedia.org/wiki/File:Armsel_Striker_no_background.png (CC BY-SA 2.0) | 4.97 |
 | Sayan12 | Sayan-12 | shotgun | Saiga-12 | 105 | 146 | https://commons.wikimedia.org/wiki/File:Saiga_12_black_stock.jpg (CC BY-SA 4.0) | 4.71 |
 | VK74 | VK-74 | assault | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) | 5.79 |
 | VKM | VKM | assault | AKM | 88 | 139 | https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg (Public domain) | 5.76 |
@@ -30,10 +30,10 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | VK103 | VK-103 | assault | AK-103 | 94 | 142 | https://commons.wikimedia.org/wiki/File:AK-103.JPG (Public domain) | 5.55 |
 | NA94Yenisei | NA-94 Yenisei | assault | AN-94 Abakan | 94.3 | 142 | https://commons.wikimedia.org/wiki/File:Rifle_AN-94.jpg (Public domain) | 5.74 |
 | CorvanBullpup | Corvan Bullpup | assault | FT-200M | 69 | 130 | https://commons.wikimedia.org/wiki/File:FN_F2000S.JPG (Public domain) | 6.00 |
-| CorvanBattleRifle | Corvan Battle Rifle | assault | FN FAL | 110 | 148 | https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png (CC BY-SA 4.0) | 6.61 |
+| CorvanBattleRifle | Corvan Battle Rifle | assault | FN FAL | 110 | 148 | https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png (CC BY-SA 4.0) | 5.64 |
 | SKNKarabin | SKN Karabin | sniper | SKS | 102 | 145 | https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG (Public domain) | 5.67 |
 | FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 6.00 |
-| VSNShepot | VSN Shepot | sniper | Vintar BC | 89 | 140 | https://commons.wikimedia.org/wiki/File:Vss_vintorez_01.jpeg (CC BY-SA 3.0) | 4.83 |
+| VSNShepot | VSN Shepot | sniper | Vintar BC | 89 | 140 | https://commons.wikimedia.org/wiki/File:Vss_vintorez_01.jpeg (CC BY-SA 3.0) | 4.75 |
 | Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | 95 | 142 | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 6.00 |
 | CorvanMarksman | Corvan Marksman | sniper | SR-25 | 112 | 149 | https://commons.wikimedia.org/wiki/File:SR-25_pic02.jpg (CC BY 2.0) | 5.27 |
 | SV2Strela | SV-2 Strela | sniper | SVDm-2 | 122 | 153 | https://commons.wikimedia.org/wiki/File:SVD_Dragunov.jpg (CC BY-SA 4.0) | 5.09 |

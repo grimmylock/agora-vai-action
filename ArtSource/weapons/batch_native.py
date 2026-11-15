@@ -69,10 +69,27 @@ def patch_cs(out):
         else:
             i = s.index('["VK74"] = '); j = s.index('\n', i); s = s[:j] + '\n            ["%s"] = %s,' % (k, d) + s[j:]
     open(P, 'w').write(s)
+def recolor(a_path, b_path, dst):
+    """A's pixels get B's colours by brightness rank (histogram matching), done separately for the warm pixels (wood, saturation > 0.25 and red over blue) and the rest (steel, plastic), so the wood palette never leaks into the metal.
+    The shape and the shading stay A's, the colours (and their spread) are B's. Yan, 2026-11-15: "B color on the A sprite"."""
+    A = np.array(Image.open(a_path).convert('RGBA')); B = np.array(Image.open(b_path).convert('RGBA'))
+    def lum(x): return x[..., 0] * 0.3 + x[..., 1] * 0.59 + x[..., 2] * 0.11
+    def warm(x): f = x[..., :3].astype(float) / 255; mx = f.max(-1); sat = (mx - f.min(-1)) / np.maximum(mx, 1e-3); return (sat > 0.25) & (f[..., 0] > f[..., 2]) & (mx > 0.2)
+    ao = A[..., 3] > 0; bo = B[..., 3] > 0
+    for fam in (True, False):
+        am = ao & (warm(A) == fam); bm = bo & (warm(B) == fam)
+        if am.sum() < 10 or bm.sum() < 10: am = ao if not fam else am; bm = bo if not fam else bm
+        if am.sum() < 10 or bm.sum() < 10: continue
+        bc = B[bm][:, :3].astype(float); bc = bc[np.argsort(lum(bc))]
+        ys, xs = np.where(am); l = lum(A[ys, xs, :3].astype(float)); rank = np.argsort(np.argsort(l)) / max(1, len(l) - 1)
+        A[ys, xs, :3] = bc[np.clip((rank * (len(bc) - 1)).astype(int), 0, len(bc) - 1)].astype(np.uint8)
+    Image.fromarray(A, 'RGBA').save(dst)
 def install(b, picks):
     import shutil
     for (k, _), v in zip(b['refs'], picks):
-        dst = os.path.join(b['outdir'], f'{k}_spritecook.png'); shutil.copy(os.path.join(b['outdir'], f'{k}_{v}.png'), dst)
+        dst = os.path.join(b['outdir'], f'{k}_spritecook.png')
+        if v == 'AB': recolor(os.path.join(b['outdir'], f'{k}_A.png'), os.path.join(b['outdir'], f'{k}_B.png'), dst)   # A's shape, B's colouring
+        else: shutil.copy(os.path.join(b['outdir'], f'{k}_{v}.png'), dst)
         out = subprocess.run([sys.executable, os.path.join(HERE, 'make_gun_x2.py'), k, dst, '--native'], capture_output=True, text=True).stdout; print(out); patch_cs(out)
 if __name__ == '__main__':
     cmd, path = sys.argv[1], sys.argv[2]; b = json.load(open(path)); b['_path'] = path
