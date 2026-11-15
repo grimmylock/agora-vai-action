@@ -95,3 +95,7 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 
 ### Gun reference pictures, twelfth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
 - A SV-98 render (Sever-98, mirrored), an L85 vector drawing (BR-86 Bulldog, mirrored), a Five-seveN photo (Corvan 5.7), an airsoft PKP Pecheneg photo with a shop watermark (PL-74P Polovets and Zulu, mirrored; the watermark was cut away with the background). Pasted into the chat; cut-outs in `ArtSource/weapons/spritecook_pilot/batch12/*_ref.png`.
+
+### Gun reference pictures, thirteenth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
+- SR-3 Vikhr (Smerch-3), a Lewis gun photo (the PL-74P Polovets Zulu: Yan wanted its own reference instead of a recolour of the Polovets), an SP-21 photo (SR-21 Gadyuka), a Makarov photo (PSh-18 Pchela), a Wildey render (Black Harrier). Cut-outs in `ArtSource/weapons/spritecook_pilot/batch13/*_ref.png`.
+- G-7 Rail Prototype: no reference exists (a made-up gun); `batch13/G7RailPrototype_ref.png` is a rough layout sketch I drew (a long barrel with copper coil rings, a boxy receiver, a stock, a grip, a battery box) so SpriteCook had a place for the row.

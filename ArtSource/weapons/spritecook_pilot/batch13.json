@@ -1,0 +1,38 @@
+{
+ "name": "batch13",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch13",
+ "refs": [
+  [
+   "Smerch3",
+   "ArtSource/weapons/spritecook_pilot/batch13/Smerch3_ref.png"
+  ],
+  [
+   "PL74PPolovetsZulu",
+   "ArtSource/weapons/spritecook_pilot/batch13/PL74PPolovetsZulu_ref.png"
+  ],
+  [
+   "SR21Gadyuka",
+   "ArtSource/weapons/spritecook_pilot/batch13/SR21Gadyuka_ref.png"
+  ],
+  [
+   "PSh18Pchela",
+   "ArtSource/weapons/spritecook_pilot/batch13/PSh18Pchela_ref.png"
+  ],
+  [
+   "BlackHarrier",
+   "ArtSource/weapons/spritecook_pilot/batch13/BlackHarrier_ref.png"
+  ],
+  [
+   "G7RailPrototype",
+   "ArtSource/weapons/spritecook_pilot/batch13/G7RailPrototype_ref.png"
+  ]
+ ],
+ "rows": [
+  "compact black carbine: a short black polymer body, a thin metal folding stock folded along the body, a large long curved magazine behind a pistol grip, and a short barrel with a muzzle device.",
+  "dark-sand coloured light machine gun: a dark wooden-looking butt stock, a pistol grip, a flat round pan magazine lying on top of the receiver, a thick cooling jacket tube around the barrel ending in a flared muzzle, a carrying handle on top and a bipod folded out under the front.",
+  "black polymer pistol: a deep grip with horizontal finger grooves, a blocky slide with diagonal serrations at the back and a stepped muzzle block at the front, a large trigger guard. No text.",
+  "classic compact pistol: blued black steel with a rounded slide with serrations at the back, a big trigger guard and a plain brown checkered plastic grip. No text, no emblem.",
+  "large stainless-steel semi-automatic pistol: a long barrel shroud with a long slot, a boxy slide with serrations at the back, a dark-brown checkered wooden grip, a trigger guard and a hammer spur. No text.",
+  "made-up futuristic coil rail rifle in a simple rough sketch shape: a long thin dark barrel wrapped in copper coil rings, a boxy grey receiver, a plain angular stock, a pistol grip, a small green battery box under the receiver and a short rail on top. No text."
+ ]
+}
