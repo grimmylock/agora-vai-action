@@ -1,0 +1,23 @@
+{
+ "name": "batch7",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch7",
+ "refs": [
+  [
+   "Sayan12",
+   "ArtSource/weapons/spritecook_pilot/batch7/Sayan12_ref.png"
+  ],
+  [
+   "VSNShepot",
+   "ArtSource/weapons/spritecook_pilot/batch7/VSNShepot_ref.png"
+  ],
+  [
+   "Tambour12",
+   "ArtSource/weapons/spritecook_pilot/batch7/Tambour12_ref.png"
+  ]
+ ],
+ "rows": [
+  "black semi-automatic shotgun built like an assault rifle: a black plastic fixed stock with a pistol-style grip behind the trigger, a black receiver, a short black handguard, a long thin barrel, and a large curved black box magazine under the receiver. No cards, no labels.",
+  "integrally suppressed sniper rifle: a light-wood thumbhole stock with two big openings and a black rubber butt pad, a black steel receiver, a short straight box magazine, and a thick black cylindrical suppressor covering the whole front of the barrel with a small front sight at its end. No scope.",
+  "drum-fed riot shotgun: a very large round black drum cylinder in the middle, a black skeletal shoulder stock with a rubber butt pad, a black pistol grip, a black vertical foregrip near the front, and a long plain black barrel above the drum."
+ ]
+}

@@ -73,3 +73,8 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - Skorpion vz. 61 (VosaVz62): https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg - CC0. Mirrored to face right (stock folded forward).
 - HK UMP (CorvanHornet45): https://commons.wikimedia.org/wiki/File:HKUMP45.JPG - CC BY-SA 3.0. Mirrored.
 - AS Val (TS9Tishina): https://commons.wikimedia.org/wiki/File:AS_Val_(541-03).jpg - CC BY-SA 4.0. Left on its concrete ground (shell casings painted out): a mask would not hold the grey receiver.
+
+### Gun reference photos, seventh batch of 2026-11-15 (drawing references only)
+- Saiga-12 (Sayan12): https://commons.wikimedia.org/wiki/File:Saiga_12_black_stock.jpg - CC BY-SA 4.0. Mirrored; red background and a name card cut away.
+- VSS Vintorez (VSNShepot): https://commons.wikimedia.org/wiki/File:Vss_vintorez_01.jpeg - CC BY-SA 3.0. Scope left out by the prompt.
+- Armsel Striker (Tambour12): https://commons.wikimedia.org/wiki/File:Armsel_Striker_no_background.png - CC BY-SA 2.0.
