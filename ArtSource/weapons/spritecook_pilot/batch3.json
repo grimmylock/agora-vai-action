@@ -1,0 +1,5 @@
+{"name": "batch3", "outdir": "ArtSource/weapons/spritecook_pilot/batch3",
+ "refs": [["VKM", "ArtSource/weapons/spritecook_pilot/batch3/VKM_ref_AKM.png"], ["NA94Yenisei", "ArtSource/weapons/spritecook_pilot/batch3/NA94Yenisei_ref_AN94.png"], ["RL44", "ArtSource/weapons/spritecook_pilot/batch3/RL44_ref_RPD.png"]],
+ "rows": ["assault rifle with a dark reddish-brown wooden stock, a black steel receiver, two dark brown wooden handguards with a gas tube above the barrel, a brown wooden pistol grip, a curved dark red-brown plastic magazine, a front sight post and a slant muzzle brake.",
+          "black assault rifle with a plain black folding-style plastic stock, a black receiver with a round cover on top, a black ribbed handguard that ends in a long barrel with a small muzzle device, a black pistol grip and a long curved black magazine.",
+          "light machine gun with a plain wooden butt stock, a black steel receiver with a flat top cover, a wooden pistol grip, a wooden fore-grip, a round black drum magazine hanging under the receiver, a long barrel with an open gas tube and a folded bipod under it, a front sight at the muzzle."]}

@@ -51,3 +51,8 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - FN FAL (CorvanBattleRifle): https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png - CC BY-SA 4.0 (author on the file page).
 - Mossberg 590 (BayouPump): https://commons.wikimedia.org/wiki/File:M590A1.png - CC BY-SA 3.0.
 - MP7A1 (CorvanGnatPDW): https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png - CC BY-SA 2.5. The photo has a silencer and a red-dot sight: both were cropped off, then mirrored to face right.
+
+### Gun reference photos, third batch of 2026-11-15 (drawing references only)
+- AKM (VKM): https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg - public domain. Cut from its white background, levelled 11 degrees.
+- AN-94 (NA94Yenisei): https://commons.wikimedia.org/wiki/File:Rifle_AN-94.jpg - public domain. Grey photo (500 px), background removed by brightness.
+- RPD (RL44): https://commons.wikimedia.org/wiki/File:LMG-RPD-44_noBG.png - CC BY-SA 3.0. Drop shadow cut off.

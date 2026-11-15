@@ -3,7 +3,7 @@
 Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.
 **Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.
 
-**Guns: 15 reworked, 41 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
+**Guns: 18 reworked, 38 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
 
 ## Reworked
 
@@ -20,10 +20,13 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 5.95 |
 | BayouPump | Bayou Pump | shotgun | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) | 6.90 |
 | VK74 | VK-74 | assault | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) | 5.79 |
+| VKM | VKM | assault | AKM | 88 | 139 | https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg (Public domain) | 5.76 |
+| NA94Yenisei | NA-94 Yenisei | assault | AN-94 Abakan | 94.3 | 142 | https://commons.wikimedia.org/wiki/File:Rifle_AN-94.jpg (Public domain) | 5.74 |
 | CorvanBattleRifle | Corvan Battle Rifle | assault | FN FAL | 110 | 148 | https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png (CC BY-SA 4.0) | 6.61 |
 | SKNKarabin | SKN Karabin | sniper | SKS | 102 | 145 | https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG (Public domain) | 5.67 |
 | FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 6.00 |
 | Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | 95 | 142 | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 6.00 |
+| RL44 | RL-44 | heavy | RPD | 104 | 146 | https://commons.wikimedia.org/wiki/File:LMG-RPD-44_noBG.png (CC BY-SA 3.0) | 5.52 |
 
 ## Old (still to do)
 
@@ -31,18 +34,15 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 |-|-|-|-|-|-|-|-|
 | VKS74U | VKS-74U | assault | 1 | AKS-74U | 73 | 132 | https://commons.wikimedia.org/wiki/File:AKS74U_(noBG).jpg (CC BY-SA 4.0) |
 | Smerch3 | Smerch-3 | assault | 2 | SR-3M Vikhr | 63 | 127 | https://commons.wikimedia.org/wiki/File:Oboronexpo2014part4-26.jpg (CC BY-SA 4.0) |
-| VKM | VKM | assault | 2 | AKM | 88 | 139 | https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg (Public domain) |
 | HaldenHR36K | Halden HR36K | assault | 3 | G36K | 86 | 138 | https://commons.wikimedia.org/wiki/File:Gewehr_G36K_noBG_02.png (CC BY-SA 4.0) |
 | TR30 | TR-30 | assault | 3 | TRs-301 | 84 | 137 | https://commons.wikimedia.org/wiki/File:LR_300.JPG (CC BY-SA 3.0) |
 | TS9Tishina | TS-9 Tishina | assault | 3 | VLA | 88.6 | 139 | https://commons.wikimedia.org/wiki/File:AS_Val_(541-03).jpg (CC BY-SA 4.0) |
 | VK103 | VK-103 | assault | 3 | AK-103 | 94 | 142 | https://commons.wikimedia.org/wiki/File:AK-103.JPG (Public domain) |
 | BR86Bulldog | BR-86 Bulldog | assault | 4 | IL86 | 78.5 | 135 | https://commons.wikimedia.org/wiki/File:Enfield_L85A1-IWM_PR_17-IMG_6557-white.jpg (CC BY-SA 3.0 fr) |
-| NA94Yenisei | NA-94 Yenisei | assault | 4 | AN-94 Abakan | 94.3 | 142 | https://commons.wikimedia.org/wiki/File:Rifle_AN-94.jpg (Public domain) |
 | VK74Obelisk | VK-74 Obelisk | assault | 4 | AK-74 OBELISK | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) |
 | CorvanBullpup | Corvan Bullpup | assault | 5 | FT-200M | 69 | 130 | https://commons.wikimedia.org/wiki/File:FN_F2000S.JPG (Public domain) |
 | PL62Kobza | PL-62 Kobza | heavy | 2 |  | 104 | 146 | none on file |
 | CorvanLMG | Corvan LMG | heavy | 3 | M249 SAW | 104 | 146 | https://commons.wikimedia.org/wiki/File:PEO_M249_Para_ACOG.jpg (Public domain) |
-| RL44 | RL-44 | heavy | 3 | RPD | 104 | 146 | https://commons.wikimedia.org/wiki/File:LMG-RPD-44_noBG.png (CC BY-SA 3.0) |
 | PL74 | PL-74 | heavy | 4 | RP-74 | 116 | 150 | https://commons.wikimedia.org/wiki/File:PKM_DD-ST-85-01257.JPEG (Public domain) |
 | PL74PPolovets | PL-74P Polovets | heavy | 4 | PKP Pecheneg | 121 | 152 | https://commons.wikimedia.org/wiki/File:Pecheneg_machine_gun-06.jpg (CC BY-SA 3.0) |
 | PL74PPolovetsZulu | PL-74P Polovets Zulu | heavy | 5 | PKP Pecheneg Zulu | 121 | 152 | https://commons.wikimedia.org/wiki/File:Pecheneg_machine_gun-06.jpg (CC BY-SA 3.0) |
