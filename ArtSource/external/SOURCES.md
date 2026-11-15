@@ -62,3 +62,9 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - AK-103 (VK103): https://commons.wikimedia.org/wiki/File:AK-103.JPG - public domain.
 - PKM (PL74): https://commons.wikimedia.org/wiki/File:PKM_DD-ST-85-01257.JPEG - public domain (a colour-cast photo; colours given in the prompt).
 - M249 Para (CorvanLMG): https://commons.wikimedia.org/wiki/File:PEO_M249_Para_ACOG.jpg - public domain; the optic left to the prompt.
+
+### Gun reference photos, fifth batch of 2026-11-15 (drawing references only; all four mirrored to face right)
+- SR-25 (CorvanMarksman): https://commons.wikimedia.org/wiki/File:SR-25_pic02.jpg - CC BY 2.0. Scope and suppressor left out by the prompt.
+- SVD (SV2Strela): https://commons.wikimedia.org/wiki/File:SVD_Dragunov.jpg - CC BY-SA 4.0. Sling and scope left out by the prompt.
+- Barrett M82A1 (HaldenAM50Sledge): https://commons.wikimedia.org/wiki/File:Barrett-M82A1-Independence-Day-2017-IZE-048-white.jpg - CC BY 4.0.
+- TOZ-34 (Sever34): https://commons.wikimedia.org/wiki/File:TOZ-34_Shotgun.jpg - CC BY-SA 4.0 (a 400 px photo).

@@ -1,0 +1,28 @@
+{
+ "name": "batch5",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch5",
+ "refs": [
+  [
+   "CorvanMarksman",
+   "ArtSource/weapons/spritecook_pilot/batch5/CorvanMarksman_ref.png"
+  ],
+  [
+   "SV2Strela",
+   "ArtSource/weapons/spritecook_pilot/batch5/SV2Strela_ref.png"
+  ],
+  [
+   "HaldenAM50Sledge",
+   "ArtSource/weapons/spritecook_pilot/batch5/HaldenAM50Sledge_ref.png"
+  ],
+  [
+   "Sever34",
+   "ArtSource/weapons/spritecook_pilot/batch5/Sever34_ref.png"
+  ]
+ ],
+ "rows": [
+  "black semi-automatic marksman rifle with a black fixed stock, a black pistol grip, a long flat rail-covered handguard, a very long thin round barrel, and a small bipod folded forward under the handguard. No scope.",
+  "sniper rifle with a reddish-brown wooden thumbhole stock with a cheek rest, a slotted wooden handguard, a black steel receiver, a short straight box magazine, a long thin barrel with a flash hider and a front sight post. No sling, no scope.",
+  "heavy anti-materiel rifle: a very long heavy barrel with a big muzzle brake, a grey-black steel receiver, a large box magazine under it, a black pistol grip, a skeletal steel and black polymer shoulder stock with a rubber butt pad, and a bipod folded under the front. No scope.",
+  "over-under shotgun with two long stacked barrels, a thin metal receiver, a dark brown wooden fore-end, a trigger guard, a dark brown wooden stock with a ribbed black butt pad."
+ ]
+}
