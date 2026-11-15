@@ -65,7 +65,7 @@ def main(src, out):
     atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
     bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
-    anims = json.load(open(src))
+    anims = [a for a in json.load(open(src)) if a["style"] != "shot"]
     rows = []
     for a in anims:
         i = a["armor"]; body = atlas.crop(((i % 16) * 16, (i // 16) * 16, (i % 16) * 16 + 16, (i // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)

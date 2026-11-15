@@ -11,7 +11,7 @@ def dense():
     s = open(os.path.join(ROOT, "Assets/Scripts/GameCore/HeldWeapon.cs")).read(); m = re.search(r"Dense = new Dictionary<string, float>\s*\{(.*?)\};", s, re.S)
     return {k: float(v) for k, v in re.findall(r'\["(\w+)"\] = ([0-9.]+)f', m.group(1))}
 def main(src, out):
-    D = dense(); anims = [a for a in json.load(open(src)) if a["key"] in D and a["style"] != "jam"]
+    D = dense(); anims = [a for a in json.load(open(src)) if a["key"] in D and a["style"] not in ("jam", "shot")]
     atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA"); font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
     cw, ch = H.W * S, H.H * S; sheet = Image.new("RGBA", (170 + 5 * (cw + 8), 30 + len(anims) * (ch + 26)), (27, 29, 31, 255)); d = ImageDraw.Draw(sheet)
     d.text((8, 6), "Held with the double-size pictures (the game's own pose code, the grip rows and densities from HeldWeapon.cs)", font=font, fill=(235, 235, 235))

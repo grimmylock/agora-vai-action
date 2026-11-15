@@ -760,7 +760,7 @@ static class Program {
       var feel = WeaponFeel.For(db); var g = WeaponArt.GripOf(cat, key);   // the sprite's own points (For() falls back to the category's here: no textures offline)
       int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1, trips = Gunplay.ByRound(w) ? cap : 1;   // RT 6h: a trip per round, from empty
       float full = Gunplay.ByRound(w) ? (Gunplay.Revolver(w) ? Gunplay.CylinderOpen : 0f) + cap * Gunplay.PerRound(w) : Gunplay.For(w).ReloadTime;
-      foreach (var (style, secs) in new[] { (feel.Reload, full), ("jam", 0.8f) }) {
+      foreach (var (style, secs) in new[] { (feel.Reload, full), ("jam", 0.8f), ("shot", 0.7f) }) {   // "shot": 0.7 s after a trigger pull (the gun's own kick, climb and recover), for Tools/render/parts_preview.py
         if (!firstAnim) sb.Append(','); firstAnim = false;
         sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
         int n = (int)Math.Ceiling(secs * 30f) + 12;
@@ -771,7 +771,7 @@ static class Program {
         bool dumps = style == "cylinder" || style == "break"; float dumpAt = style == "cylinder" ? Math.Min(0.3f, 0.2f * secs) / secs : 0.17f;
         var brass = new System.Collections.Generic.List<float[]>(); var rnd = new Random(7);
         for (int i = 0; i < n; i++) {
-          var f = HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
+          var f = style == "shot" ? HeldPoseMath.Frame(cat, g, 12f, HeldPoseMath.Recoil(i / 30f, Math.Max(0.05f, feel.Recover)), feel.Climb, feel.Kick, 99f, 1f, "", 1) : HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
           if (f.MagDropped && !thrown && mp != null) {
             thrown = true;
             double a = f.GunDeg * Math.PI / 180, vx = (mp[2] - g[0]) * 0.5, vy = (mp[3] - g[1]) * 0.5 * (f.Left ? -1 : 1);
