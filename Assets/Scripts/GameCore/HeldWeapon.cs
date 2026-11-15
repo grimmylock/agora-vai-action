@@ -712,6 +712,39 @@ namespace GameCore
         public static readonly Dictionary<string, (float x, float y)> Hinges = new Dictionary<string, (float, float)> { ["Obrez66"] = (9f, 4f), ["Sever34"] = (16f, 4f) };
         private static readonly Dictionary<string, (Sprite, Sprite, float, float)> BreakCache = new Dictionary<string, (Sprite, Sprite, float, float)>();
 
+        /// <summary>2026-11-15 (Yan: "test it your way first, no spritecook"): a moving part cut out of a double-size picture and moved in code (ArtSource/weapons/cut_parts.py, gun_parts.json): the pump fore-end, a slide, a bolt.
+        /// style: "pump" (back after the shot, then forward) | "slide" (kicks back at the shot, snaps forward); travel in TEXTURE pixels. The body (the picture with the part's place filled) and the part have the picture's size and pivot.</summary>
+        public static readonly Dictionary<string, (string style, float travel)> PartInfo = new Dictionary<string, (string, float)>
+        {
+            ["RangerP8"] = ("pump", 26f),
+        };
+        private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
+        public static (Sprite body, Sprite part, string style, float travel) Parts(string cat, string key)
+        {
+            if (key == null || !PartInfo.TryGetValue(key, out var info)) return (null, null, null, 0f);
+            if (!PartCache.TryGetValue(key, out var sp))
+            {
+                var g = For(cat, key).grip; float dense = Density(key);
+                Sprite Load(string kind)
+                {
+                    var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + kind);
+                    if (tex == null) return null;
+                    tex.filterMode = FilterMode.Bilinear;
+                    return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] * dense / tex.width, 1f - g[1] * dense / tex.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);
+                }
+                PartCache[key] = sp = (Load("body"), Load("part"));
+            }
+            return (sp.Item1, sp.Item2, info.style, info.travel);
+        }
+        /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
+        public static float PartPhase(string style, float since)
+        {
+            if (since < 0f) return 0f;
+            if (style == "slide") return since < 0.03f ? since / 0.03f : since < 0.14f ? 1f - (since - 0.03f) / 0.11f : 0f;                                  // kicks back in 30 ms, returns in 110 ms
+            if (style == "pump") return since < 0.14f ? 0f : since < 0.32f ? Mathf.SmoothStep(0f, 1f, (since - 0.14f) / 0.18f) : since < 0.38f ? 1f : since < 0.56f ? 1f - Mathf.SmoothStep(0f, 1f, (since - 0.38f) / 0.18f) : 0f;   // the recoil settles, back, a beat, forward
+            return 0f;
+        }
+
         public static (Sprite sprite, float[] grip) For(string cat, string key)
         {
             string id = key ?? "cat_" + cat;
@@ -1002,6 +1035,18 @@ namespace GameCore
                 _mag.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY);
                 _mag.transform.localRotation = _gun.transform.localRotation;
             }
+            Vector3 pumpOff = Vector3.zero; bool pumping = false;                       // a pump: the off-hand goes with the fore-end
+            var pt = WeaponArt.Parts(cat, key);                                       // a moving part (pump fore-end, slide...): the body plus the part, the part slid along the barrel
+            if (pt.body != null && pt.part != null)
+            {
+                _gun.sprite = pt.body;
+                float slideBack = WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
+                _mag.gameObject.SetActive(true);
+                _mag.sprite = pt.part; _mag.flipY = f.Left; _mag.sortingOrder = _gun.sortingOrder;
+                _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(-slideBack * Mathf.Cos(ang), -slideBack * Mathf.Sin(ang), -0.01f);
+                if (pt.style == "pump") { pumping = true; pumpOff = new Vector3(-slideBack * Mathf.Cos(ang), -slideBack * Mathf.Sin(ang), 0f); }   // toward the stock = against the aim; in front of the body
+                _mag.transform.localRotation = _gun.transform.localRotation;
+            }
             // RT 6j: the old magazine leaves as a loose object (CombatFxView lets it fall and lie on the floor)
             if (f.MagDropped && !_magThrown && mag != null && MagDropped != null && WeaponMags.Points.TryGetValue(key, out var mp))
             {
@@ -1019,6 +1064,7 @@ namespace GameCore
             _support.gameObject.SetActive(f.HasSupport);
             _support.transform.localRotation = Quaternion.identity;               // (the empty hands hang turned)
             if (f.HasSupport) _support.transform.localPosition = Local(f.SupX, f.SupY);
+            if (f.HasSupport && pumping) _support.transform.localPosition += pumpOff;
             if (_w2?.Db != null && cat != "melee")
             {
                 // RT 7z-c: the left-hand pistol in the other glove, beside the first, with its own kick
