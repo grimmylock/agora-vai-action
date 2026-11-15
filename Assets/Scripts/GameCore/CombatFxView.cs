@@ -57,6 +57,13 @@ namespace GameCore
             sr.transform.localScale = new Vector3((shell ? 2f : 1.5f) / WeaponArt.PixelsPerUnit, 1f / WeaponArt.PixelsPerUnit, 1f);
             _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = vx, Vy = vy, Deg = Random.Range(0f, 360f), Spin = Random.Range(-720f, 720f), Floor = floor, Brass = true });
         }
+        /// <summary>A spent case or shell leaves the gun's ejection port, thrown out and up to the gun's left (up the screen when it aims right), then falls and lies on the floor.</summary>
+        private void Eject(HeldWeaponView held, WeaponFeel feel)
+        {
+            if (held == null || !held.Visible) return;
+            float a = held.Angle * Mathf.Deg2Rad, k = Random.Range(0.7f, 1.2f);
+            DropBrass(held.EjectWorld(), feel.Casing == "shell", (-Mathf.Sin(a) * 0.7f - Mathf.Cos(a) * 0.25f) * k, Random.Range(1.0f, 1.7f) + Mathf.Cos(a) * 0.2f, FloorOf(held), 7);
+        }
         /// <summary>The floor under a held gun's owner (its feet), for things it drops.</summary>
         private static float FloorOf(HeldWeaponView held) => held.Gun.parent != null ? held.Gun.parent.position.y - 0.42f : held.Gun.position.y - 0.4f;
         private readonly List<LooseMag> _mags = new List<LooseMag>();
@@ -458,6 +465,11 @@ namespace GameCore
                     if (feel.Rail) Flash(held, "fx_muzzle_rail", 0.1f, muzzle);
                     else if (feel.Flash == 0) Puff("fx_muzzle_puff", muzzle, 0.3f, 0.3f);
                     else Muzzle(e, feel, held, muzzle, to);
+                    if (feel.Casing != null && held != null)                      // 2026-11-15: the real-time branch threw no case at all; now from the gun's ejection port, a pump when its fore-end is back
+                    {
+                        float wait = held.EjectDelay; var h = held; var fe = feel;
+                        if (wait <= 0f) Eject(h, fe); else At(Time.time + wait, () => Eject(h, fe));
+                    }
                     if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
                 }
                 if (e.Flying) return;                                          // RT 8: the round itself is drawn while it flies (TickRounds)

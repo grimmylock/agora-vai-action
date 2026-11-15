@@ -717,6 +717,7 @@ namespace GameCore
         public static readonly Dictionary<string, (string style, float travel)> PartInfo = new Dictionary<string, (string, float)>
         {
             ["RangerP8"] = ("pump", 26f),
+            ["Halden45Service"] = ("slide", 12f),
         };
         private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
         public static (Sprite body, Sprite part, string style, float travel) Parts(string cat, string key)
@@ -736,6 +737,13 @@ namespace GameCore
             }
             return (sp.Item1, sp.Item2, info.style, info.travel);
         }
+        /// <summary>2026-11-15 (Yan: "we don't have the shell ejection animation"): where a gun throws its spent case from, in TEXTURE px of the double-size picture, and how long after the shot it does (a pump: when the fore-end is back).
+        /// A gun without an entry throws it from a point a third of the way to the muzzle, at the shot.</summary>
+        public static readonly Dictionary<string, (float x, float y, float delay)> Ejects = new Dictionary<string, (float, float, float)>
+        {
+            ["RangerP8"] = (113f, 10f, 0.22f),
+            ["Halden45Service"] = (62f, 11f, 0.03f),
+        };
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
         public static float PartPhase(string style, float since)
         {
@@ -820,6 +828,19 @@ namespace GameCore
         public Transform Gun => Sel.transform;
         public bool AimLeft => Sel.flipY;
         public float Angle => _angle;
+        private string _ejectKey;
+        /// <summary>When the spent case leaves the gun, seconds after the trigger pull (0 = at the shot).</summary>
+        public float EjectDelay => _ejectKey != null && WeaponArt.Ejects.TryGetValue(_ejectKey, out var e) ? e.delay : 0f;
+        /// <summary>World position of the gun's ejection port (the gun as last drawn).</summary>
+        public Vector3 EjectWorld()
+        {
+            var g = _sel2 ? _g2 : _g;
+            if (g == null) return Sel.transform.position;
+            float side = Sel.flipY ? -1f : 1f, lx, ly;
+            if (!_sel2 && _ejectKey != null && WeaponArt.Ejects.TryGetValue(_ejectKey, out var e)) { float dense = WeaponArt.Density(_ejectKey); lx = (e.x / dense - g[0]) / WeaponArt.PixelsPerUnit; ly = side * (g[1] - e.y / dense) / WeaponArt.PixelsPerUnit; }
+            else { lx = 0.35f * (g[4] - g[0]) / WeaponArt.PixelsPerUnit; ly = side * 0.35f * (g[1] - g[5]) / WeaponArt.PixelsPerUnit; }
+            return Sel.transform.TransformPoint(new Vector3(lx, ly, 0f));
+        }
         public Sprite GunSprite => _gun.sprite;
 
         public void Recoil(WeaponFeel f, float scale)
@@ -960,6 +981,7 @@ namespace GameCore
                 if (ddx * ddx + ddy * ddy > 0.0001f) _angle = Mathf.Atan2(ddy, ddx) * Mathf.Rad2Deg;
             }
             var (cat, key) = WeaponArt.Identify(weapon.Db);
+            _ejectKey = key;
             var (sprite, g) = WeaponArt.For(cat, key);
             _g = g;
 

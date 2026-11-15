@@ -1,3 +1,67 @@
 {
- "RangerP8": {"style": "pump", "rect": [146, 10, 206, 29], "fill_from": 145, "travel": 26}
+ "RangerP8": {
+  "style": "pump",
+  "rect": [
+   146,
+   10,
+   206,
+   29
+  ],
+  "fill_from": 145,
+  "travel": 26
+ },
+ "Halden45Service": {
+  "style": "slide",
+  "column_cut": {
+   "x": [
+    17,
+    123
+   ],
+   "y0": 5,
+   "scan_from": 15,
+   "dark": 24
+  },
+  "travel": 12,
+  "fills": [
+   {
+    "rect": [
+     100,
+     11,
+     123,
+     17
+    ],
+    "color": [
+     46,
+     58,
+     74
+    ]
+   },
+   {
+    "rect": [
+     100,
+     10,
+     123,
+     11
+    ],
+    "color": [
+     14,
+     14,
+     18
+    ]
+   },
+   {
+    "rect": [
+     100,
+     17,
+     123,
+     18
+    ],
+    "color": [
+     14,
+     14,
+     18
+    ]
+   }
+  ]
+ }
 }
