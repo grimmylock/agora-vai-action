@@ -56,3 +56,9 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - AKM (VKM): https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg - public domain. Cut from its white background, levelled 11 degrees.
 - AN-94 (NA94Yenisei): https://commons.wikimedia.org/wiki/File:Rifle_AN-94.jpg - public domain. Grey photo (500 px), background removed by brightness.
 - RPD (RL44): https://commons.wikimedia.org/wiki/File:LMG-RPD-44_noBG.png - CC BY-SA 3.0. Drop shadow cut off.
+
+### Gun reference photos, fourth batch of 2026-11-15 (drawing references only)
+- FN F2000 (CorvanBullpup): https://commons.wikimedia.org/wiki/File:FN_F2000S.JPG - public domain. Mirrored to face right; optics were left to the prompt ("no scope").
+- AK-103 (VK103): https://commons.wikimedia.org/wiki/File:AK-103.JPG - public domain.
+- PKM (PL74): https://commons.wikimedia.org/wiki/File:PKM_DD-ST-85-01257.JPEG - public domain (a colour-cast photo; colours given in the prompt).
+- M249 Para (CorvanLMG): https://commons.wikimedia.org/wiki/File:PEO_M249_Para_ACOG.jpg - public domain; the optic left to the prompt.

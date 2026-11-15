@@ -37,10 +37,22 @@ def fetch(b):
     keys = [k for k, _ in b['refs']]
     for v, a in zip('AB', t['assets']):
         path = os.path.join(b['outdir'], f'sheet_{v}.png'); urllib.request.urlretrieve(a['sprite_url'], path)
-        A = np.array(Image.open(path).convert('RGBA')); m = A[..., 3] > 0; lab, n = nd.label(nd.binary_dilation(m, iterations=2), structure=np.ones((3, 3))); lab = lab * m
-        sizes = nd.sum(m, lab, range(1, n + 1)); big = [i + 1 for i in np.argsort(sizes)[::-1] if sizes[i] > 800][:len(keys)]
+        A = np.array(Image.open(path).convert('RGBA')); m = A[..., 3] > 0
+        for it in (0, 1, 2):                                                   # the pixels' own islands first; bridge small gaps only when a gun is in pieces
+            lab, n = nd.label(nd.binary_dilation(m, iterations=it) if it else m, structure=np.ones((3, 3))); lab = lab * m
+            sizes = nd.sum(m, lab, range(1, n + 1)); big = [i + 1 for i in np.argsort(sizes)[::-1] if sizes[i] > 800][:len(keys)]
+            if len(big) == len(keys): break
         comps = sorted(big, key=lambda l: np.where(lab == l)[0].mean())
-        if len(comps) != len(keys): print('WARNING variation', v, 'found', len(comps), 'guns for', len(keys)); 
+        if len(comps) != len(keys):                                            # guns touching (bipods, magazines): cut the sheet at the emptiest row near each 1/n of its height instead
+            print('variation', v, 'found', len(comps), 'blobs for', len(keys), 'guns: cutting by rows')
+            rs = m.sum(1).astype(float); H = len(rs); cuts = [0]
+            for i in range(1, len(keys)):
+                c = int(H * i / len(keys)); w = max(4, H // (3 * len(keys))); lo, hi = max(cuts[-1] + 5, c - w), min(H - 5, c + w); cuts.append(lo + int(np.argmin(rs[lo:hi])))
+            cuts.append(H)
+            for k, y0, y1 in zip(keys, cuts[:-1], cuts[1:]):
+                band = A.copy(); band[:y0] = 0; band[y1:] = 0; mm = band[..., 3] > 0; l2, n2 = nd.label(mm, structure=np.ones((3, 3))); keep = np.isin(l2, [i + 1 for i, z in enumerate(nd.sum(mm, l2, range(1, n2 + 1))) if z >= 12]); band[~keep] = 0
+                ys, xs = np.where(band[..., 3] > 0); Image.fromarray(band, 'RGBA').crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)).save(os.path.join(b['outdir'], f'{k}_{v}.png'))
+            print('sliced variation', v, 'by rows at', cuts); continue
         for k, l in zip(keys, comps):
             ys, xs = np.where(lab == l); Image.fromarray(np.where((lab == l)[..., None], A, 0).astype(np.uint8), 'RGBA').crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)).save(os.path.join(b['outdir'], f'{k}_{v}.png'))
         print('sliced variation', v, [os.path.basename(path)])
