@@ -718,6 +718,7 @@ namespace GameCore
         {
             ["RangerP8"] = ("pump", 26f),
             ["Halden45Service"] = ("slide", 12f),
+            ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f), ["SP14Warden"] = ("pump", 30f),
         };
         private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
         public static (Sprite body, Sprite part, string style, float travel) Parts(string cat, string key)

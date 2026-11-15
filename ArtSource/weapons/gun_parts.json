@@ -63,5 +63,38 @@
     ]
    }
   ]
+ },
+ "BayouPump": {
+  "style": "pump",
+  "rect": [
+   150,
+   10,
+   202,
+   24
+  ],
+  "fill_from": 148,
+  "travel": 26
+ },
+ "Hound13": {
+  "style": "pump",
+  "rect": [
+   149,
+   10,
+   199,
+   23
+  ],
+  "fill_from": 147,
+  "travel": 25
+ },
+ "SP14Warden": {
+  "style": "pump",
+  "rect": [
+   137,
+   15,
+   199,
+   31
+  ],
+  "fill_from": 203,
+  "travel": 30
  }
 }
