@@ -1,0 +1,13 @@
+{
+ "name": "batch14",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch14",
+ "refs": [
+  [
+   "G7RailPrototype",
+   "ArtSource/weapons/spritecook_pilot/batch14/G7RailPrototype_ref.png"
+  ]
+ ],
+ "rows": [
+  "futuristic railgun rifle with exactly the shape of the reference: a dark grey-black angular folding stock with a cut-out, a flat receiver with a small optic on top, a pistol grip, a long open barrel shroud with two parallel rails and a heavy block at the muzzle. Add glowing parts so it reads as a railgun: thin bright cyan-blue energy lines running along the top and bottom rails of the barrel shroud, a glowing blue core window in the receiver, glowing blue slits in the muzzle block and a faint blue glow line on the stock. Everything else stays dark grey-black like the reference."
+ ]
+}

@@ -509,7 +509,7 @@ namespace GameCore
             ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
             ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
             ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
-            ["G7RailPrototype"] = 4.62f,
+            ["G7RailPrototype"] = 5.50f,
             ["BlackHarrier"] = 5.78f,
             ["PSh18Pchela"] = 4.80f,
             ["SR21Gadyuka"] = 5.20f,
@@ -628,7 +628,7 @@ namespace GameCore
             ["Sever98"] = new[] { 12.1f, 7.6f, 26.6f, 8.1f, 43.6f, 4.8f },
             ["VK127Grom"] = new[] { 14.7f, 8.3f, 26.7f, 7.6f, 44.7f, 2.5f },
             ["HaldenAM50Sledge"] = new[] { 14.3f, 10.5f, 28.8f, 8.7f, 48.8f, 3.1f },
-            ["G7RailPrototype"] = new[] { 13.4f, 7.5f, 28.9f, 6.6f, 41.9f, 5f },
+            ["G7RailPrototype"] = new[] { 13.2f, 8f, 28.7f, 6.9f, 41.7f, 5.2f },
             ["CorvanLMG"] = new[] { 13.2f, 10.7f, 28.7f, 9.4f, 43.7f, 5.6f },
             ["RL44"] = new[] { 12.2f, 6.9f, 24.7f, 5.7f, 44.7f, 2.2f },
             ["PL62Kobza"] = new[] { 15.7f, 6.8f, 31.7f, 5.2f, 45.7f, 3.6f },   // Batch 113
