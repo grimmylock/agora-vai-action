@@ -509,6 +509,10 @@ namespace GameCore
             ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
             ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
             ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
+            ["PL62Kobza"] = 5.46f,
+            ["Obrez66"] = 6.65f,
+            ["RK12Kuvalda"] = 7.17f,
+            ["VK74Obelisk"] = 5.74f,
             ["Hound13"] = 6.00f,
             ["SP14Warden"] = 6.00f,
             ["HaldenHR36K"] = 6.49f,
@@ -576,7 +580,7 @@ namespace GameCore
             ["CorvanWasp9"] = new[] { 6.6f, 10.1f, 21.1f, 6.4f, 32.6f, 4.7f },
             ["CorvanHornet45"] = new[] { 12.6f, 7.4f, 24.1f, 7.4f, 32.6f, 4.0f },
             ["CorvanGnatPDW"] = new[] { 8.6f, 8.9f, 14.6f, 7.1f, 29.6f, 3.6f },
-            ["Obrez66"] = new[] { 5.5f, 4f, 17f, 4f, 25f, 2f },
+            ["Obrez66"] = new[] { 6.1f, 3.7f, 17.6f, 3.7f, 25.6f, 2.1f },
             ["HaldenLeverShotgun"] = new[] { 12.1f, 5.7f, 26.6f, 5.2f, 38.6f, 1.3f },   // virtual px of the double-size picture
             ["Hound13"] = new[] { 12.7f, 4.2f, 29.0f, 2.8f, 40.7f, 2.0f },
             ["RangerP8"] = new[] { 13.2f, 5.6f, 29.6f, 3.3f, 41.7f, 1.5f },
@@ -596,7 +600,7 @@ namespace GameCore
             ["HaldenHR36K"] = new[] { 12.6f, 7.5f, 28.6f, 5.9f, 37.6f, 3.7f },
             ["VK103"] = new[] { 14.2f, 6.7f, 28.2f, 4.7f, 42.7f, 3.5f },
             ["BR86Bulldog"] = new[] { 15f, 11f, 25f, 8f, 36f, 6.5f },
-            ["VK74Obelisk"] = new[] { 13.5f, 9.5f, 27f, 8f, 41f, 5.5f },
+            ["VK74Obelisk"] = new[] { 14.2f, 8.1f, 27.7f, 6.9f, 41.7f, 5f },
             ["NA94Yenisei"] = new[] { 13.2f, 8.6f, 29.7f, 6.6f, 42.7f, 3.9f },
             ["CorvanBullpup"] = new[] { 11.7f, 7.9f, 22.7f, 7.6f, 33.7f, 3.5f },
             ["CorvanBattleRifle"] = new[] { 13.7f, 7.4f, 27.7f, 5.6f, 44.7f, 4.1f },
@@ -614,11 +618,11 @@ namespace GameCore
             ["G7RailPrototype"] = new[] { 12.5f, 10.5f, 28f, 9f, 41f, 6.5f },
             ["CorvanLMG"] = new[] { 13.2f, 10.7f, 28.7f, 9.4f, 43.7f, 5.6f },
             ["RL44"] = new[] { 12.2f, 6.9f, 24.7f, 5.7f, 44.7f, 2.2f },
-            ["PL62Kobza"] = new[] { 15f, 7.5f, 31f, 5.5f, 45f, 3.5f },   // Batch 113
+            ["PL62Kobza"] = new[] { 15.7f, 6.8f, 31.7f, 5.2f, 45.7f, 3.6f },   // Batch 113
             ["PL74"] = new[] { 13.3f, 8.6f, 27.8f, 8.6f, 45.8f, 3.5f },
             ["PL74PPolovets"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
             ["PL74PPolovetsZulu"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
-            ["RK12Kuvalda"] = new[] { 3f, 10f, float.NaN, float.NaN, 23f, 5.5f },
+            ["RK12Kuvalda"] = new[] { 3.6f, 8.6f, float.NaN, float.NaN, 23.6f, 5f },
         };
         public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
         /// <summary>The grip/support/muzzle points of a weapon's own sprite (its category's when it has none).</summary>
@@ -778,6 +782,7 @@ namespace GameCore
             ["CorvanBattleRifle"] = (108f, 20f, 0.03f, false),
             ["BayouPump"] = (112f, 10f, 0.22f, false),
             ["CorvanGnatPDW"] = (125f, 17f, 0.03f, false),
+            ["VK74Obelisk"] = (118f, 12f, 0.03f, false), ["PL62Kobza"] = (130f, 26f, 0.03f, false),
         };
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
         public static float PartPhase(string style, float since)

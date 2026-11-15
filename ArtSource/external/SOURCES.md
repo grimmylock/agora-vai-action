@@ -84,3 +84,6 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 
 ### Gun reference photos, ninth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
 - Mosin-Nagant (M91Trekhlineyka), a G36-type rifle (HaldenHR36K, mirrored), SPAS-12 (SP14Warden, levelled 25 degrees), Maverick 88 (Hound13, levelled 33 degrees): photos Yan pasted into the chat; background cut away (big white areas inside the gun too) in `ArtSource/weapons/spritecook_pilot/batch9/*_ref.png`.
+
+### Gun reference pictures, tenth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
+- A tactical AK-74 drawing (a stock-image illustration, white background; used for the VK-74 Obelisk), an RSh-12 revolver render on black (RK-12 Kuvalda, mirrored), a sawed-off double-barrel shotgun photo (Obrez-66, mirrored), an M240-type belt-fed machine gun photo (PL-62 Kobza, mirrored and levelled 6.5 degrees). Pasted into the chat; cut-outs in `ArtSource/weapons/spritecook_pilot/batch10/*_ref.png`. The AK-74 image carries a stock-photo watermark text on the original: only the gun was cut out, and it was used as a shape reference.

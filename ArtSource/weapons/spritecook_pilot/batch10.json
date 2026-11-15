@@ -1,0 +1,28 @@
+{
+ "name": "batch10",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch10",
+ "refs": [
+  [
+   "VK74Obelisk",
+   "ArtSource/weapons/spritecook_pilot/batch10/VK74Obelisk_ref.png"
+  ],
+  [
+   "RK12Kuvalda",
+   "ArtSource/weapons/spritecook_pilot/batch10/RK12Kuvalda_ref.png"
+  ],
+  [
+   "Obrez66",
+   "ArtSource/weapons/spritecook_pilot/batch10/Obrez66_ref.png"
+  ],
+  [
+   "PL62Kobza",
+   "ArtSource/weapons/spritecook_pilot/batch10/PL62Kobza_ref.png"
+  ]
+ ],
+ "rows": [
+  "modern black AK-74 rifle: a black adjustable telescoping stock with a cheek riser, a black receiver with a rail along the top, a long black slotted rail handguard, a black pistol grip, a long curved black magazine, a front sight and a muzzle device. No red dot, no suppressor, no foregrip, no laser.",
+  "large revolver pistol: a big grey steel cylinder, a long heavy slotted barrel shroud with a rail on top and a rail underneath, a front sight, a hammer spur at the back, a trigger guard and a large black pistol grip. No text.",
+  "sawed-off double-barrel shotgun: two short side-by-side steel barrels, a dark-brown wooden fore-end, no shoulder stock but a short curved wooden pistol-grip handle, two hammers and a trigger guard.",
+  "belt-fed machine gun: a black plastic shoulder stock, a black receiver with a hinged feed cover on top, a pistol grip with a trigger guard, a long barrel inside a slotted heat-shield handguard with a rail, a flash hider, and a bipod hanging under the front. No scope."
+ ]
+}
