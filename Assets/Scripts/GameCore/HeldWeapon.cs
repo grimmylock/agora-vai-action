@@ -506,10 +506,10 @@ namespace GameCore
         /// (pivot and pixels-per-unit) is made at k. No cut pieces (magazine, cylinder) for it yet: its reload is the hands alone.</summary>
         public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
         {   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
-            ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.63f, ["FrontierLeverRifle"] = 3.55f, ["Nightwalker4570"] = 3.55f,
-            ["SperlingS96"] = 4.22f, ["Halden45Service"] = 3.67f, ["HaldenServiceRevolver"] = 4.17f, ["WaldenP9"] = 3.10f,
-            ["VK74"] = 3.38f, ["RangerP8"] = 3.59f, ["SKNKarabin"] = 3.37f, ["CorvanWasp9"] = 3.81f,
-            ["CorvanBattleRifle"] = 3.36f, ["BayouPump"] = 3.43f, ["CorvanGnatPDW"] = 3.69f,
+            ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
+            ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
+            ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
+            ["CorvanBattleRifle"] = 6.61f, ["BayouPump"] = 6.90f, ["CorvanGnatPDW"] = 6.34f,
         };
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
@@ -538,24 +538,24 @@ namespace GameCore
             ["BarbedWireBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 5.5f, 9f, float.NaN, float.NaN, 19f, 2.5f },
-            ["WaldenP9"] = new[] { 20.2f, 12.3f, float.NaN, float.NaN, 35.2f, 6f },
-            ["Halden45Service"] = new[] { 15.7f, 11.2f, float.NaN, float.NaN, 31.2f, 5.3f },
-            ["HaldenServiceRevolver"] = new[] { 11.2f, 9.9f, float.NaN, float.NaN, 29.7f, 3.8f },
+            ["WaldenP9"] = new[] { 5.7f, 10.5f, float.NaN, float.NaN, 20.7f, 4.2f },
+            ["Halden45Service"] = new[] { 5.2f, 10f, float.NaN, float.NaN, 20.7f, 4.1f },
+            ["HaldenServiceRevolver"] = new[] { 4.3f, 10.1f, float.NaN, float.NaN, 22.8f, 4.1f },
             ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
             ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
             ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
-            ["RinaldiR6"] = new[] { 9.8f, 7.9f, float.NaN, float.NaN, 27.3f, 6.4f },   // virtual px of the double-size picture (see Dense): the grip in the glove, the low bore at the muzzle
+            ["RinaldiR6"] = new[] { 4.1f, 7.4f, float.NaN, float.NaN, 21.6f, 5.9f },   // virtual px of the double-size picture (see Dense): the grip in the glove, the low bore at the muzzle
             ["SteppeEagle"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 22f, 3.5f },
             ["VosaVz62"] = new[] { 3.5f, 10f, float.NaN, float.NaN, 23f, 3.5f },
             ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
-            ["CorvanWasp9"] = new[] { 11f, 10.1f, 25.5f, 6.4f, 36f, 5.3f },
+            ["CorvanWasp9"] = new[] { 6.6f, 10.1f, 21.1f, 6.4f, 31.6f, 5.3f },
             ["CorvanHornet45"] = new[] { 12f, 8f, 23.5f, 8f, 31f, 4f },
-            ["CorvanGnatPDW"] = new[] { 15f, 10.5f, 21f, 8.7f, 35f, 7.6f },
+            ["CorvanGnatPDW"] = new[] { 8.6f, 9f, 14.6f, 7.2f, 28.6f, 6.1f },
             ["Obrez66"] = new[] { 5.5f, 4f, 17f, 4f, 25f, 2f },
-            ["HaldenLeverShotgun"] = new[] { 14.5f, 9.1f, 29f, 8.7f, 40f, 6.4f },   // virtual px of the double-size picture
+            ["HaldenLeverShotgun"] = new[] { 12.1f, 5.7f, 26.6f, 5.2f, 37.6f, 2.9f },   // virtual px of the double-size picture
             ["Hound13"] = new[] { 12f, 5f, 27.5f, 4f, 39f, 2f },
-            ["RangerP8"] = new[] { 14.2f, 8.9f, 29.7f, 8.4f, 41.7f, 6.1f },
-            ["BayouPump"] = new[] { 13.8f, 8.9f, 31.3f, 8.9f, 43.3f, 7.2f },
+            ["RangerP8"] = new[] { 13.2f, 5.6f, 28.7f, 5.1f, 40.7f, 2.9f },
+            ["BayouPump"] = new[] { 12.1f, 3.6f, 29.6f, 3.6f, 41.6f, 1.9f },
             ["Sever34"] = new[] { 13f, 5.5f, 24f, 4f, 41f, 2f },
             ["Tambour12"] = new[] { 16f, 6.5f, 30f, 5.5f, 37f, 2.5f },
             ["SP14Warden"] = new[] { 3f, 13f, 23f, 12f, 39f, 7.5f },
@@ -563,7 +563,7 @@ namespace GameCore
             ["Kaban12"] = new[] { 11f, 6.5f, 27f, 4f, 39f, 3.5f },
             ["VKS74U"] = new[] { 11.5f, 7f, 25f, 4f, 33f, 3.5f },
             ["Smerch3"] = new[] { 10.5f, 7.5f, 17f, 5f, 28f, 3.5f },
-            ["VK74"] = new[] { 16.2f, 10.6f, 30.2f, 7.4f, 43.7f, 5.6f },
+            ["VK74"] = new[] { 14.2f, 10.1f, 28.2f, 6.9f, 41.7f, 5.1f },
             ["VKM"] = new[] { 13.5f, 7.5f, 27.5f, 5f, 41f, 3.5f },
             ["TS9Tishina"] = new[] { 11.5f, 6.5f, 25f, 4f, 37f, 3.5f },
             ["TR30"] = new[] { 11f, 7.5f, 25f, 5f, 39f, 3.5f },
@@ -573,13 +573,13 @@ namespace GameCore
             ["VK74Obelisk"] = new[] { 13.5f, 9.5f, 27f, 8f, 41f, 5.5f },
             ["NA94Yenisei"] = new[] { 12.5f, 8f, 29f, 6f, 41f, 4f },
             ["CorvanBullpup"] = new[] { 11f, 11.5f, 22f, 11f, 32f, 8f },
-            ["CorvanBattleRifle"] = new[] { 14.8f, 10.9f, 28.8f, 9.4f, 44.8f, 8.2f },
-            ["SKNKarabin"] = new[] { 14.6f, 9.3f, 29.1f, 10.4f, 44.1f, 7.8f },
-            ["FrontierLeverRifle"] = new[] { 14f, 9f, 26.5f, 10.4f, 41.5f, 7.2f },   // virtual px of the double-size picture
+            ["CorvanBattleRifle"] = new[] { 13.6f, 6.5f, 27.6f, 4.9f, 43.6f, 3.7f },
+            ["SKNKarabin"] = new[] { 13.2f, 5.9f, 27.7f, 6.9f, 42.7f, 4.3f },
+            ["FrontierLeverRifle"] = new[] { 12.2f, 4.9f, 24.7f, 6.2f, 39.7f, 3.2f },   // virtual px of the double-size picture
             ["VSNShepot"] = new[] { 12f, 8.5f, 23.5f, 8f, 39f, 6f },
             ["M91Trekhlineyka"] = new[] { 12.5f, 7f, 31f, 7.5f, 45f, 5f },
-            ["Nightwalker4570"] = new[] { 13.5f, 9.4f, 26.5f, 10.2f, 41.5f, 7.4f },   // virtual px of the double-size picture
-            ["SperlingS96"] = new[] { 11.4f, 10.1f, float.NaN, float.NaN, 30.4f, 4f },
+            ["Nightwalker4570"] = new[] { 11.7f, 5f, 24.7f, 5.8f, 39.7f, 3f },   // virtual px of the double-size picture
+            ["SperlingS96"] = new[] { 4.8f, 10.4f, float.NaN, float.NaN, 23.8f, 4.3f },
             ["CorvanMarksman"] = new[] { 11.5f, 8f, 26f, 7.5f, 43f, 5.5f },
             ["SV2Strela"] = new[] { 10.5f, 7.5f, 27f, 7.5f, 45f, 6f },
             ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },
@@ -699,7 +699,7 @@ namespace GameCore
             Sprite s = null;
             if (tex != null)
             {
-                tex.filterMode = FilterMode.Point;
+                tex.filterMode = tex.width > 200 ? FilterMode.Bilinear : FilterMode.Point;   // 2026-11-15: the guns used at the SpriteCook still's own size (about 6 texture px per old-pixel) are drawn smaller than their picture: bilinear, so they shrink smoothly instead of being sampled to noise
                 s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] * dense / tex.width, 1f - g[1] * dense / tex.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);   // grip in virtual px = texture px / dense
             }
             return Cache[id] = (s, g);

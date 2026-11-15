@@ -9,21 +9,21 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 
 | Key | In-game name | Category | Real-world pattern | Real length (cm) | Picture length (px) | Reference photo (source, licence) | Density k |
 |-|-|-|-|-|-|-|-|
-| WaldenP9 | Walden P9 | sidearm | Walker P9m | 18.4 | 90 | https://commons.wikimedia.org/wiki/File:Walther_P99_9x19mm.png (CC BY 2.5) | 3.10 |
-| Halden45Service | Halden .45 Service | sidearm | Colt M1911 | 21.9 | 94 | https://commons.wikimedia.org/wiki/File:M1911A1.png (CC BY-SA 3.0) | 3.67 |
-| HaldenServiceRevolver | Halden Service Revolver | sidearm | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) | 4.17 |
-| SperlingS96 | Sperling S-96 | sidearm | Mauser C96 ("Red 9", 9x19) | 30 | 103 | none on file | 4.22 |
-| RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | 29 | 102 | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 4.64 |
-| CorvanWasp9 | Corvan Wasp-9 | smg | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) | 3.81 |
-| CorvanGnatPDW | Corvan Gnat PDW | smg | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) | 3.69 |
-| HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 3.63 |
-| RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 3.59 |
-| BayouPump | Bayou Pump | shotgun | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) | 3.43 |
-| VK74 | VK-74 | assault | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) | 3.38 |
-| CorvanBattleRifle | Corvan Battle Rifle | assault | FN FAL | 110 | 148 | https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png (CC BY-SA 4.0) | 3.36 |
-| SKNKarabin | SKN Karabin | sniper | SKS | 102 | 145 | https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG (Public domain) | 3.37 |
-| FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 3.55 |
-| Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | 95 | 142 | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 3.55 |
+| WaldenP9 | Walden P9 | sidearm | Walker P9m | 18.4 | 90 | https://commons.wikimedia.org/wiki/File:Walther_P99_9x19mm.png (CC BY 2.5) | 5.38 |
+| Halden45Service | Halden .45 Service | sidearm | Colt M1911 | 21.9 | 94 | https://commons.wikimedia.org/wiki/File:M1911A1.png (CC BY-SA 3.0) | 5.71 |
+| HaldenServiceRevolver | Halden Service Revolver | sidearm | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) | 5.26 |
+| SperlingS96 | Sperling S-96 | sidearm | Mauser C96 ("Red 9", 9x19) | 30 | 103 | none on file | 5.00 |
+| RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | 29 | 102 | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 7.09 |
+| CorvanWasp9 | Corvan Wasp-9 | smg | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) | 6.91 |
+| CorvanGnatPDW | Corvan Gnat PDW | smg | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) | 6.34 |
+| HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 6.32 |
+| RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 5.95 |
+| BayouPump | Bayou Pump | shotgun | Mossberg 590 | 100 | 144 | https://commons.wikimedia.org/wiki/File:M590A1.png (CC BY-SA 3.0) | 6.90 |
+| VK74 | VK-74 | assault | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) | 5.79 |
+| CorvanBattleRifle | Corvan Battle Rifle | assault | FN FAL | 110 | 148 | https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png (CC BY-SA 4.0) | 6.61 |
+| SKNKarabin | SKN Karabin | sniper | SKS | 102 | 145 | https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG (Public domain) | 5.67 |
+| FrontierLeverRifle | Frontier Lever Rifle | sniper | Winchester 1886/1892 | 95 | 142 | https://commons.wikimedia.org/wiki/File:Winchester_92_short_rifle_transparent.png (CC0) | 6.00 |
+| Nightwalker4570 | Nightwalker .45-70 | sniper | Marlin Dark Series | 95 | 142 | photo supplied by Yan 2026-11-13 (black polymer lever rifle; source unknown, drawing reference only) (licence unknown) | 6.00 |
 
 ## Old (still to do)
 

@@ -65,17 +65,26 @@ def main():
         print(f"  (read the old sizes of {key} from the game files: {tg})")
     sp = Image.open(still).convert("RGBA"); x0, y0, x1, y1 = bbox(sp); sp = sp.crop((x0, y0, x1, y1))
     if "--lift" in args: i = args.index("--lift"); sp = lift(sp, float(args[i + 1]), float(args[i + 2]))
-    tw = target_width(key, tg); th = int(round(sp.height * tw / sp.width))
-    if th > 60: th = 60; tw = int(round(sp.width * th / sp.height))                  # tall guns (pistols) must fit the 64 px canvas height
-    img = shrink(sp, tw, th)
+    native = "--native" in args                                                          # Yan, 2026-11-15: "they lose too much detail": the still is used AS IT IS (no shrink, no palette change), the on-screen size is still set by k
+    if native:
+        tw, th = sp.size; img = sp
+        a = np.array(img); lab, n = nd.label(a[..., 3] > 0, structure=np.ones((3, 3)))
+        for i, sz in enumerate(nd.sum(a[..., 3] > 0, lab, range(1, n + 1))):
+            if sz < 12: a[lab == i + 1] = 0                                           # stray generator specks
+        img = Image.fromarray(a)
+    else:
+        tw = target_width(key, tg); th = int(round(sp.height * tw / sp.width))
+        if th > 60: th = 60; tw = int(round(sp.width * th / sp.height))              # tall guns (pistols) must fit the 64 px canvas height
+        img = shrink(sp, tw, th)
     if "--thicken" in args: i = args.index("--thicken"); img = thicken(img, int(args[i + 1]), int(args[i + 2])); th = img.height
-    canvas = Image.new("RGBA", CANVAS, (0, 0, 0, 0)); nx0 = (CANVAS[0] - tw) // 2; ny0 = (CANVAS[1] - th) // 2; canvas.alpha_composite(img, (nx0, ny0))
+    CV = (tw + 8, th + 8) if native else CANVAS
+    canvas = Image.new("RGBA", CV, (0, 0, 0, 0)); nx0 = (CV[0] - tw) // 2; ny0 = (CV[1] - th) // 2; canvas.alpha_composite(img, (nx0, ny0))
     k = tw / float(tg["inhand"][0]); ow, oh = tg["inhand"]; g = tg["grips"]; v = []
     for i in range(0, 6, 2):
         if g[i] is None: v += [None, None]; continue
         v += [round((nx0 + g[i] / ow * tw) / k, 1), round((ny0 + g[i + 1] / oh * th) / k, 1)]     # by position on the gun, then to virtual px (texture px / k)
     row = ", ".join("float.NaN" if t is None else f"{t:g}f" for t in v)
-    print(f"{key}: content {tw}x{th} on a {CANVAS[0]}x{CANVAS[1]} canvas at ({nx0},{ny0}); density k = {k:.2f}")
+    print(f"{key}: content {tw}x{th} on a {CV[0]}x{CV[1]} canvas at ({nx0},{ny0}); density k = {k:.2f}")
     print(f'  WeaponArt.Dense:   ["{key}"] = {k:.2f}f,'); print(f'  WeaponArt.Grips:   ["{key}"] = new[] {{ {row} }},')
     if dry: return
     dst = os.path.join(WP, f"weapon_{key}_hd.png"); bk = os.path.join(HERE, "gun_x2_backup"); os.makedirs(bk, exist_ok=True); bp = os.path.join(bk, f"{key}_hd_old.png")
