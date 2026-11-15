@@ -1,0 +1,23 @@
+{
+ "name": "batch6",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch6",
+ "refs": [
+  [
+   "VosaVz62",
+   "ArtSource/weapons/spritecook_pilot/batch6/VosaVz62_ref.png"
+  ],
+  [
+   "CorvanHornet45",
+   "ArtSource/weapons/spritecook_pilot/batch6/CorvanHornet45_ref.png"
+  ],
+  [
+   "TS9Tishina",
+   "ArtSource/weapons/spritecook_pilot/batch6/TS9Tishina_ref.png"
+  ]
+ ],
+ "rows": [
+  "compact machine pistol with a boxy black steel body, a thick wire stock folded forward over the top, a long curved black magazine, a golden-brown wooden pistol grip with grooves, a trigger guard and a short muzzle.",
+  "compact black submachine gun with a folding triangular skeletal stock, a rail along the top, a vertical foregrip under the front, a long straight magazine, a pistol grip and a short barrel with a small flash hider.",
+  "integrally suppressed black carbine: a thick black cylindrical suppressor covering the whole front of the barrel, a boxy black receiver with a grey-black plastic handguard, a skeletal black folding stock, a black pistol grip and a long slightly curved black magazine. Ignore the concrete ground in the reference, no shell casings."
+ ]
+}

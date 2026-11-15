@@ -3,7 +3,7 @@
 Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** = the gun is listed in `WeaponArt.Dense` (`Assets/Scripts/GameCore/HeldWeapon.cs`): its picture is the DOUBLE-SIZE one (160x64 canvas) made by `make_gun_x2.py`, used for the menus AND in the hand.
 **Old** = the hand-pixelled 64x32 menu picture and the small in-hand picture from before 2026-11-13. How to rework one: `WEAPON_SPRITE_RULES.md`.
 
-**Guns: 26 reworked, 30 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
+**Guns: 29 reworked, 27 old** (melee weapons are a separate hand-pixelled set, 12 of them, not part of this rework).
 
 ## Reworked
 
@@ -14,7 +14,9 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | HaldenServiceRevolver | Halden Service Revolver | sidearm | M1917 Revolver | 27.3 | 100 | https://commons.wikimedia.org/wiki/File:US_Colt_45_M1917_Revolver_noBG.jpg (CC BY-SA 4.0) | 5.26 |
 | SperlingS96 | Sperling S-96 | sidearm | Mauser C96 ("Red 9", 9x19) | 30 | 103 | none on file | 5.00 |
 | RinaldiR6 | Rinaldi R6 | sidearm | Chiappa Rhino | 29 | 102 | https://commons.wikimedia.org/wiki/File:Chiappa_Rhino_DS_60_Stormhunter.jpg (CC0) | 7.09 |
+| VosaVz62 | Vosa vz. 62 | smg | Skorpion vz. 61 | 27 | 100 | https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg (CC0) | 8.92 |
 | CorvanWasp9 | Corvan Wasp-9 | smg | Viper 5 | 55 | 122 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg (CC BY-SA 3.0) | 6.91 |
+| CorvanHornet45 | Corvan Hornet .45 | smg | UMP-45 | 69 | 130 | https://commons.wikimedia.org/wiki/File:HKUMP45.JPG (CC BY-SA 3.0) | 6.94 |
 | CorvanGnatPDW | Corvan Gnat PDW | smg | MP7 | 34 | 107 | https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png (CC BY-SA 2.5) | 6.34 |
 | HaldenLeverShotgun | Halden Lever Shotgun | shotgun | Winchester 1887 | 85 | 138 | https://commons.wikimedia.org/wiki/File:M1887_LH_noBG.png (CC BY-SA 4.0) | 6.32 |
 | RangerP8 | Ranger P8 | shotgun | Remington 870 | 106 | 147 | https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg (CC BY-SA 4.0) | 5.95 |
@@ -22,6 +24,7 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | Sever34 | Sever-34 O/U | shotgun | TOZ-34 | 112 | 149 | https://commons.wikimedia.org/wiki/File:TOZ-34_Shotgun.jpg (CC BY-SA 4.0) | 5.55 |
 | VK74 | VK-74 | assault | AK-74 | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) | 5.79 |
 | VKM | VKM | assault | AKM | 88 | 139 | https://commons.wikimedia.org/wiki/File:AKM-JH01.jpg (Public domain) | 5.76 |
+| TS9Tishina | TS-9 Tishina | assault | VLA | 88.6 | 139 | https://commons.wikimedia.org/wiki/File:AS_Val_(541-03).jpg (CC BY-SA 4.0) | 6.58 |
 | VK103 | VK-103 | assault | AK-103 | 94 | 142 | https://commons.wikimedia.org/wiki/File:AK-103.JPG (Public domain) | 5.55 |
 | NA94Yenisei | NA-94 Yenisei | assault | AN-94 Abakan | 94.3 | 142 | https://commons.wikimedia.org/wiki/File:Rifle_AN-94.jpg (Public domain) | 5.74 |
 | CorvanBullpup | Corvan Bullpup | assault | FT-200M | 69 | 130 | https://commons.wikimedia.org/wiki/File:FN_F2000S.JPG (Public domain) | 6.00 |
@@ -44,7 +47,6 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | Smerch3 | Smerch-3 | assault | 2 | SR-3M Vikhr | 63 | 127 | https://commons.wikimedia.org/wiki/File:Oboronexpo2014part4-26.jpg (CC BY-SA 4.0) |
 | HaldenHR36K | Halden HR36K | assault | 3 | G36K | 86 | 138 | https://commons.wikimedia.org/wiki/File:Gewehr_G36K_noBG_02.png (CC BY-SA 4.0) |
 | TR30 | TR-30 | assault | 3 | TRs-301 | 84 | 137 | https://commons.wikimedia.org/wiki/File:LR_300.JPG (CC BY-SA 3.0) |
-| TS9Tishina | TS-9 Tishina | assault | 3 | VLA | 88.6 | 139 | https://commons.wikimedia.org/wiki/File:AS_Val_(541-03).jpg (CC BY-SA 4.0) |
 | BR86Bulldog | BR-86 Bulldog | assault | 4 | IL86 | 78.5 | 135 | https://commons.wikimedia.org/wiki/File:Enfield_L85A1-IWM_PR_17-IMG_6557-white.jpg (CC BY-SA 3.0 fr) |
 | VK74Obelisk | VK-74 Obelisk | assault | 4 | AK-74 OBELISK | 94 | 142 | https://commons.wikimedia.org/wiki/File:Ak74l.png (CC BY-SA 3.0) |
 | PL62Kobza | PL-62 Kobza | heavy | 2 |  | 104 | 146 | none on file |
@@ -62,9 +64,7 @@ Regenerate with `python3 ArtSource/weapons/make_weapon_status.py`. **Reworked** 
 | Corvan57 | Corvan 5.7 | sidearm | 4 | FN Five-seveN | 20.8 | 93 | https://commons.wikimedia.org/wiki/File:FN_Five_Seven.jpg (Public domain) |
 | SteppeEagle | Steppe Eagle | sidearm | 4 |  | 26.4 | 99 | https://commons.wikimedia.org/wiki/File:Desert_Eagle_Chrome.JPG (CC BY-SA 3.0) |
 | RK12Kuvalda | RK-12 Kuvalda | sidearm | 5 | RSh-12 | 33 | 106 | none on file |
-| VosaVz62 | Vosa vz. 62 | smg | 1 | Skorpion vz. 61 | 27 | 100 | https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg (CC0) |
 | PPZZubr | PPZ Zubr | smg | 2 | PP-19 Bizon | 55 | 122 | https://commons.wikimedia.org/wiki/File:PP-19_Bizon_right_view.jpg (CC BY-SA 3.0) |
-| CorvanHornet45 | Corvan Hornet .45 | smg | 3 | UMP-45 | 69 | 130 | https://commons.wikimedia.org/wiki/File:HKUMP45.JPG (CC BY-SA 3.0) |
 | M91Trekhlineyka | M91 Trekhlineyka | sniper | 3 | Mosin Nagant | 123.5 | 153 | https://commons.wikimedia.org/wiki/File:Mosin-Nagant_m91-30_sniper_noBG.png (CC BY-SA 3.0) |
 | VSNShepot | VSN Shepot | sniper | 3 | Vintar BC | 89 | 140 | https://commons.wikimedia.org/wiki/File:Vss_vintorez_01.jpeg (CC BY-SA 3.0) |
 | Sever98 | Sever-98 | sniper | 4 | SV-98 | 118 | 151 | https://commons.wikimedia.org/wiki/File:SV-98-05.jpg (CC BY-SA 4.0) |

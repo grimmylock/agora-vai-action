@@ -68,3 +68,8 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - SVD (SV2Strela): https://commons.wikimedia.org/wiki/File:SVD_Dragunov.jpg - CC BY-SA 4.0. Sling and scope left out by the prompt.
 - Barrett M82A1 (HaldenAM50Sledge): https://commons.wikimedia.org/wiki/File:Barrett-M82A1-Independence-Day-2017-IZE-048-white.jpg - CC BY 4.0.
 - TOZ-34 (Sever34): https://commons.wikimedia.org/wiki/File:TOZ-34_Shotgun.jpg - CC BY-SA 4.0 (a 400 px photo).
+
+### Gun reference photos, sixth batch of 2026-11-15 (drawing references only)
+- Skorpion vz. 61 (VosaVz62): https://commons.wikimedia.org/wiki/File:Sa_vz._61_%C5%A0korpion.jpg - CC0. Mirrored to face right (stock folded forward).
+- HK UMP (CorvanHornet45): https://commons.wikimedia.org/wiki/File:HKUMP45.JPG - CC BY-SA 3.0. Mirrored.
+- AS Val (TS9Tishina): https://commons.wikimedia.org/wiki/File:AS_Val_(541-03).jpg - CC BY-SA 4.0. Left on its concrete ground (shell casings painted out): a mask would not hold the grey receiver.
