@@ -81,3 +81,6 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 
 ### Gun reference photos, eighth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
 - Desert Eagle (SteppeEagle), VSSK Vychlop (VK127Grom, mirrored to face right), a revolver carbine for the new Karusel-5 (a Rossi Circuit Judge type, mirrored), Vepr-12 (Kaban12): photos Yan pasted into the chat; copies in `ArtSource/weapons/spritecook_pilot/batch8/*_ref.png` (background cut away).
+
+### Gun reference photos, ninth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
+- Mosin-Nagant (M91Trekhlineyka), a G36-type rifle (HaldenHR36K, mirrored), SPAS-12 (SP14Warden, levelled 25 degrees), Maverick 88 (Hound13, levelled 33 degrees): photos Yan pasted into the chat; background cut away (big white areas inside the gun too) in `ArtSource/weapons/spritecook_pilot/batch9/*_ref.png`.

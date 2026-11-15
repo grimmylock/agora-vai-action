@@ -1,0 +1,28 @@
+{
+ "name": "batch9",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch9",
+ "refs": [
+  [
+   "M91Trekhlineyka",
+   "ArtSource/weapons/spritecook_pilot/batch9/M91Trekhlineyka_ref.png"
+  ],
+  [
+   "HaldenHR36K",
+   "ArtSource/weapons/spritecook_pilot/batch9/HaldenHR36K_ref.png"
+  ],
+  [
+   "SP14Warden",
+   "ArtSource/weapons/spritecook_pilot/batch9/SP14Warden_ref.png"
+  ],
+  [
+   "Hound13",
+   "ArtSource/weapons/spritecook_pilot/batch9/Hound13_ref.png"
+  ]
+ ],
+ "rows": [
+  "bolt-action rifle with a long full-length reddish-brown wooden stock, a black steel receiver with a bolt that has a round knob handle, a long thin black barrel with metal barrel bands and a front sight at the muzzle, a trigger guard. No bayonet.",
+  "black modern assault rifle with a flat rail along the top, a long black handguard with rectangular slots, a flash hider, a skeletal folding stock with holes, a black pistol grip and a translucent grey curved magazine.",
+  "pump-action combat shotgun: a black receiver, an olive-grey ribbed pump fore-end with slots, a long barrel with a magazine tube under it, a front sight, and a black folding stock with a pistol grip and a strut with round holes.",
+  "pump-action shotgun with a flat dark-tan polymer stock with a black rubber butt pad, a black receiver, a tan ribbed pump fore-end, a long black barrel with a magazine tube under it."
+ ]
+}
