@@ -509,6 +509,11 @@ namespace GameCore
             ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
             ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
             ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
+            ["PL74PPolovetsZulu"] = 6.16f,
+            ["PL74PPolovets"] = 6.16f,
+            ["Corvan57"] = 4.14f,
+            ["BR86Bulldog"] = 6.54f,
+            ["Sever98"] = 6.64f,
             ["PPZZubr"] = 7.97f,
             ["TR30"] = 6.05f,
             ["VKS74U"] = 6.85f,
@@ -575,7 +580,7 @@ namespace GameCore
             ["HaldenServiceRevolver"] = new[] { 4.3f, 10.1f, float.NaN, float.NaN, 23.8f, 2.3f },
             ["SR21Gadyuka"] = new[] { 4f, 10.5f, float.NaN, float.NaN, 19f, 3.5f },
             ["BlackHarrier"] = new[] { 4.5f, 9.5f, float.NaN, float.NaN, 22f, 5f },
-            ["Corvan57"] = new[] { 4.5f, 10f, float.NaN, float.NaN, 20f, 3.5f },
+            ["Corvan57"] = new[] { 5.5f, 10.9f, float.NaN, float.NaN, 21f, 4.5f },
             ["RinaldiR6"] = new[] { 4.1f, 7.4f, float.NaN, float.NaN, 22.6f, 3.2f },   // virtual px of the double-size picture (see Dense): the grip in the glove, the low bore at the muzzle
             ["SteppeEagle"] = new[] { 5.1f, 9.3f, float.NaN, float.NaN, 23.6f, 2.7f },
             ["VosaVz62"] = new[] { 3.9f, 6.6f, float.NaN, float.NaN, 24.4f, 2.8f },
@@ -602,7 +607,7 @@ namespace GameCore
             ["TR30"] = new[] { 11.7f, 8f, 25.7f, 5.6f, 39.7f, 4.1f },
             ["HaldenHR36K"] = new[] { 12.6f, 7.5f, 28.6f, 5.9f, 37.6f, 3.7f },
             ["VK103"] = new[] { 14.2f, 6.7f, 28.2f, 4.7f, 42.7f, 3.5f },
-            ["BR86Bulldog"] = new[] { 15f, 11f, 25f, 8f, 36f, 6.5f },
+            ["BR86Bulldog"] = new[] { 15.6f, 10f, 25.6f, 7.4f, 36.6f, 6.1f },
             ["VK74Obelisk"] = new[] { 14.2f, 8.1f, 27.7f, 6.9f, 41.7f, 5f },
             ["NA94Yenisei"] = new[] { 13.2f, 8.6f, 29.7f, 6.6f, 42.7f, 3.9f },
             ["CorvanBullpup"] = new[] { 11.7f, 7.9f, 22.7f, 7.6f, 33.7f, 3.5f },
@@ -615,7 +620,7 @@ namespace GameCore
             ["SperlingS96"] = new[] { 4.8f, 10.4f, float.NaN, float.NaN, 23.8f, 2.5f },
             ["CorvanMarksman"] = new[] { 12.3f, 8f, 26.8f, 7.5f, 44.8f, 2.2f },
             ["SV2Strela"] = new[] { 11.3f, 5.9f, 27.8f, 5.9f, 46.8f, 3.1f },
-            ["Sever98"] = new[] { 11.5f, 7.5f, 26f, 8f, 43f, 4.5f },
+            ["Sever98"] = new[] { 12.1f, 7.6f, 26.6f, 8.1f, 43.6f, 4.8f },
             ["VK127Grom"] = new[] { 14.7f, 8.3f, 26.7f, 7.6f, 44.7f, 2.5f },
             ["HaldenAM50Sledge"] = new[] { 14.3f, 10.5f, 28.8f, 8.7f, 48.8f, 3.1f },
             ["G7RailPrototype"] = new[] { 12.5f, 10.5f, 28f, 9f, 41f, 6.5f },
@@ -623,8 +628,8 @@ namespace GameCore
             ["RL44"] = new[] { 12.2f, 6.9f, 24.7f, 5.7f, 44.7f, 2.2f },
             ["PL62Kobza"] = new[] { 15.7f, 6.8f, 31.7f, 5.2f, 45.7f, 3.6f },   // Batch 113
             ["PL74"] = new[] { 13.3f, 8.6f, 27.8f, 8.6f, 45.8f, 3.5f },
-            ["PL74PPolovets"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
-            ["PL74PPolovetsZulu"] = new[] { 12.5f, 8.5f, 28f, 7.5f, 44f, 5f },
+            ["PL74PPolovets"] = new[] { 13.1f, 7.3f, 28.6f, 6.6f, 44.6f, 4.6f },
+            ["PL74PPolovetsZulu"] = new[] { 13.1f, 7.4f, 28.6f, 6.6f, 44.6f, 4.6f },
             ["RK12Kuvalda"] = new[] { 3.6f, 8.6f, float.NaN, float.NaN, 23.6f, 5f },
         };
         public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
@@ -786,6 +791,7 @@ namespace GameCore
             ["BayouPump"] = (112f, 10f, 0.22f, false),
             ["CorvanGnatPDW"] = (125f, 17f, 0.03f, false),
             ["VK74Obelisk"] = (118f, 12f, 0.03f, false), ["PL62Kobza"] = (130f, 26f, 0.03f, false),
+            ["Sever98"] = (112f, 10f, 0.55f, false), ["BR86Bulldog"] = (70f, 24f, 0.03f, false), ["Corvan57"] = (58f, 10f, 0.03f, false), ["PL74PPolovets"] = (110f, 24f, 0.03f, false), ["PL74PPolovetsZulu"] = (110f, 24f, 0.03f, false),
             ["VKS74U"] = (108f, 14f, 0.03f, false), ["TR30"] = (112f, 15f, 0.03f, false), ["PPZZubr"] = (105f, 16f, 0.03f, false),
         };
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>

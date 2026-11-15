@@ -1,0 +1,33 @@
+{
+ "name": "batch12",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch12",
+ "refs": [
+  [
+   "Sever98",
+   "ArtSource/weapons/spritecook_pilot/batch12/Sever98_ref.png"
+  ],
+  [
+   "BR86Bulldog",
+   "ArtSource/weapons/spritecook_pilot/batch12/BR86Bulldog_ref.png"
+  ],
+  [
+   "Corvan57",
+   "ArtSource/weapons/spritecook_pilot/batch12/Corvan57_ref.png"
+  ],
+  [
+   "PL74PPolovets",
+   "ArtSource/weapons/spritecook_pilot/batch12/PL74PPolovets_ref.png"
+  ],
+  [
+   "PL74PPolovetsZulu",
+   "ArtSource/weapons/spritecook_pilot/batch12/PL74PPolovetsZulu_ref.png"
+  ]
+ ],
+ "rows": [
+  "bolt-action sniper rifle: a dark grey-brown laminated wooden thumbhole stock with a cheek rest and an adjustable butt plate, a long thin barrel with a big muzzle brake, a bolt handle, a short box magazine and a folding bipod under the front. No scope.",
+  "bullpup assault rifle in olive green: olive plastic stock and handguard with slots, a black receiver with a carrying handle on top, a front sight post, a pistol grip in front of a long magazine that sits behind the grip, and a flash hider on a thin barrel.",
+  "black polymer pistol: a long slide with serrations at the front and the back, a rail under the barrel, a tall straight grip with a checkered texture, a trigger guard and a small rear sight. No text.",
+  "black general-purpose machine gun: a thumbhole stock, a pistol grip, a long thin barrel with a carrying handle over it, a front sight at the muzzle, a bipod folded out under the front and a green ammunition box hanging under the receiver. No watermark.",
+  "modern dark-sand coloured general-purpose machine gun: a thumbhole stock, a pistol grip, a rail along the top of the receiver, a long thin barrel with a carrying handle over it, a bipod folded out under the front and an olive ammunition box hanging under the receiver. No watermark."
+ ]
+}
