@@ -46,3 +46,8 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 - Remington 870 (RangerP8): https://commons.wikimedia.org/wiki/File:Remington_870_Wmaster.jpg - Burnyburnout, CC BY-SA 4.0. Cut out of its wooden floor by colour (some floor specks remained under the barrel).
 - SKS (SKNKarabin): https://commons.wikimedia.org/wiki/File:Simonov-SKS-45.JPG - public domain (original uploader BigBattles, cropped). Background whitened.
 - MP5 (CorvanWasp9): https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP5-1_(cropped).jpg - Samuli Silvennoinen, CC BY-SA 3.0. A 3/4 view, mirrored to face right: the weakest reference of the batch (the side-on Bizon photo could not be fetched, Wikimedia rate limit).
+
+### Gun reference photos, second batch of 2026-11-15 (drawing references only)
+- FN FAL (CorvanBattleRifle): https://commons.wikimedia.org/wiki/File:FN-FAL_belgian_noBG.png - CC BY-SA 4.0 (author on the file page).
+- Mossberg 590 (BayouPump): https://commons.wikimedia.org/wiki/File:M590A1.png - CC BY-SA 3.0.
+- MP7A1 (CorvanGnatPDW): https://commons.wikimedia.org/wiki/File:Heckler_%26_Koch_MP7A1.png - CC BY-SA 2.5. The photo has a silencer and a red-dot sight: both were cropped off, then mirrored to face right.

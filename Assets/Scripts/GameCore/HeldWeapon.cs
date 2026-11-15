@@ -509,6 +509,7 @@ namespace GameCore
             ["RinaldiR6"] = 4.64f, ["HaldenLeverShotgun"] = 3.63f, ["FrontierLeverRifle"] = 3.55f, ["Nightwalker4570"] = 3.55f,
             ["SperlingS96"] = 4.22f, ["Halden45Service"] = 3.67f, ["HaldenServiceRevolver"] = 4.17f, ["WaldenP9"] = 3.10f,
             ["VK74"] = 3.38f, ["RangerP8"] = 3.59f, ["SKNKarabin"] = 3.37f, ["CorvanWasp9"] = 3.81f,
+            ["CorvanBattleRifle"] = 3.36f, ["BayouPump"] = 3.43f, ["CorvanGnatPDW"] = 3.69f,
         };
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
@@ -549,12 +550,12 @@ namespace GameCore
             ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
             ["CorvanWasp9"] = new[] { 11f, 10.1f, 25.5f, 6.4f, 36f, 5.3f },
             ["CorvanHornet45"] = new[] { 12f, 8f, 23.5f, 8f, 31f, 4f },
-            ["CorvanGnatPDW"] = new[] { 8f, 11.5f, 14f, 9f, 28f, 7.5f },
+            ["CorvanGnatPDW"] = new[] { 15f, 10.5f, 21f, 8.7f, 35f, 7.6f },
             ["Obrez66"] = new[] { 5.5f, 4f, 17f, 4f, 25f, 2f },
             ["HaldenLeverShotgun"] = new[] { 14.5f, 9.1f, 29f, 8.7f, 40f, 6.4f },   // virtual px of the double-size picture
             ["Hound13"] = new[] { 12f, 5f, 27.5f, 4f, 39f, 2f },
             ["RangerP8"] = new[] { 14.2f, 8.9f, 29.7f, 8.4f, 41.7f, 6.1f },
-            ["BayouPump"] = new[] { 11.5f, 4.5f, 29f, 4.5f, 41f, 2f },
+            ["BayouPump"] = new[] { 13.8f, 8.9f, 31.3f, 8.9f, 43.3f, 7.2f },
             ["Sever34"] = new[] { 13f, 5.5f, 24f, 4f, 41f, 2f },
             ["Tambour12"] = new[] { 16f, 6.5f, 30f, 5.5f, 37f, 2.5f },
             ["SP14Warden"] = new[] { 3f, 13f, 23f, 12f, 39f, 7.5f },
@@ -572,7 +573,7 @@ namespace GameCore
             ["VK74Obelisk"] = new[] { 13.5f, 9.5f, 27f, 8f, 41f, 5.5f },
             ["NA94Yenisei"] = new[] { 12.5f, 8f, 29f, 6f, 41f, 4f },
             ["CorvanBullpup"] = new[] { 11f, 11.5f, 22f, 11f, 32f, 8f },
-            ["CorvanBattleRifle"] = new[] { 13f, 7.5f, 27f, 5.5f, 43f, 4f },
+            ["CorvanBattleRifle"] = new[] { 14.8f, 10.9f, 28.8f, 9.4f, 44.8f, 8.2f },
             ["SKNKarabin"] = new[] { 14.6f, 9.3f, 29.1f, 10.4f, 44.1f, 7.8f },
             ["FrontierLeverRifle"] = new[] { 14f, 9f, 26.5f, 10.4f, 41.5f, 7.2f },   // virtual px of the double-size picture
             ["VSNShepot"] = new[] { 12f, 8.5f, 23.5f, 8f, 39f, 6f },
