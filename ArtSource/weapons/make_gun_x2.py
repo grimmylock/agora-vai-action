@@ -74,7 +74,7 @@ def main():
         # Yan, 2026-11-15: "white pixels filling the holes" (the AK family's muzzle brake slots, a sight window): the generator paints see-through holes white. Small white clusters (up to 12 px) on a DARK gun become transparent again.
         rgb = a[..., :3].astype(int); lum = rgb.mean(2); op = a[..., 3] > 0
         if lum[op].mean() < 150:
-            white = op & (lum > 225) & ((rgb.max(2) - rgb.min(2)) < 30); lw, nw = nd.label(white, structure=np.ones((3, 3)))
+            white = op & (lum > 205) & ((rgb.max(2) - rgb.min(2)) < 30); lw, nw = nd.label(white, structure=np.ones((3, 3)))
             for i, sz in enumerate(nd.sum(white, lw, range(1, nw + 1))):
                 if sz <= 12: a[lw == i + 1] = 0
         img = Image.fromarray(a)

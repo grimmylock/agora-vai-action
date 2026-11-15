@@ -87,3 +87,8 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 
 ### Gun reference pictures, tenth batch (2026-11-15), supplied by Yan (provenance unknown, drawing references only)
 - A tactical AK-74 drawing (a stock-image illustration, white background; used for the VK-74 Obelisk), an RSh-12 revolver render on black (RK-12 Kuvalda, mirrored), a sawed-off double-barrel shotgun photo (Obrez-66, mirrored), an M240-type belt-fed machine gun photo (PL-62 Kobza, mirrored and levelled 6.5 degrees). Pasted into the chat; cut-outs in `ArtSource/weapons/spritecook_pilot/batch10/*_ref.png`. The AK-74 image carries a stock-photo watermark text on the original: only the gun was cut out, and it was used as a shape reference.
+
+### Gun reference pictures, eleventh batch (2026-11-15)
+- AKS-74U (VKS74U): https://commons.wikimedia.org/wiki/File:AKS74U_(noBG).jpg - CC BY-SA 4.0.
+- TRs-301 / LR-300 type (TR30): https://commons.wikimedia.org/wiki/File:LR_300.JPG - CC BY-SA 3.0; a line drawing (outline only), used as a shape reference.
+- PP-19 Bizon (PPZZubr): https://commons.wikimedia.org/wiki/File:PP-19_Bizon_right_view.jpg - CC BY-SA 3.0. Cut from a photo with a sling hanging over it (the sling cut off).

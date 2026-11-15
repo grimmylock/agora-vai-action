@@ -509,6 +509,9 @@ namespace GameCore
             ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
             ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
             ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
+            ["PPZZubr"] = 7.97f,
+            ["TR30"] = 6.05f,
+            ["VKS74U"] = 6.85f,
             ["PL62Kobza"] = 5.46f,
             ["Obrez66"] = 6.65f,
             ["RK12Kuvalda"] = 7.17f,
@@ -576,7 +579,7 @@ namespace GameCore
             ["RinaldiR6"] = new[] { 4.1f, 7.4f, float.NaN, float.NaN, 22.6f, 3.2f },   // virtual px of the double-size picture (see Dense): the grip in the glove, the low bore at the muzzle
             ["SteppeEagle"] = new[] { 5.1f, 9.3f, float.NaN, float.NaN, 23.6f, 2.7f },
             ["VosaVz62"] = new[] { 3.9f, 6.6f, float.NaN, float.NaN, 24.4f, 2.8f },
-            ["PPZZubr"] = new[] { 3.5f, 8f, 18f, 7f, 29f, 4f },
+            ["PPZZubr"] = new[] { 4f, 6.4f, 18.5f, 5.7f, 29.5f, 3.5f },
             ["CorvanWasp9"] = new[] { 6.6f, 10.1f, 21.1f, 6.4f, 32.6f, 4.7f },
             ["CorvanHornet45"] = new[] { 12.6f, 7.4f, 24.1f, 7.4f, 32.6f, 4.0f },
             ["CorvanGnatPDW"] = new[] { 8.6f, 8.9f, 14.6f, 7.1f, 29.6f, 3.6f },
@@ -590,13 +593,13 @@ namespace GameCore
             ["SP14Warden"] = new[] { 12.0f, 4.7f, 28.0f, 3.8f, 40.7f, 3.2f },
             ["Sayan12"] = new[] { 10.8f, 5.5f, 25.8f, 4.3f, 41.8f, 2.4f },
             ["Kaban12"] = new[] { 11.7f, 4.8f, 27.7f, 3.2f, 40.6f, 2.9f },
-            ["VKS74U"] = new[] { 11.5f, 7f, 25f, 4f, 33f, 3.5f },
+            ["VKS74U"] = new[] { 12.1f, 6.8f, 25.6f, 4.1f, 33.6f, 3.7f },
             ["Smerch3"] = new[] { 10.5f, 7.5f, 17f, 5f, 28f, 3.5f },
             ["VK74"] = new[] { 14.2f, 10.1f, 28.2f, 6.9f, 42.7f, 3.9f },
             ["VKM"] = new[] { 14.2f, 7.6f, 28.2f, 5.3f, 42.7f, 3.4f },
             ["Karusel5"] = new[] { 11.6f, 4.2f, 24.6f, 3.8f, 36.6f, 1.2f },
             ["TS9Tishina"] = new[] { 12.1f, 5.9f, 25.6f, 3.9f, 38.6f, 2.0f },
-            ["TR30"] = new[] { 11f, 7.5f, 25f, 5f, 39f, 3.5f },
+            ["TR30"] = new[] { 11.7f, 8f, 25.7f, 5.6f, 39.7f, 4.1f },
             ["HaldenHR36K"] = new[] { 12.6f, 7.5f, 28.6f, 5.9f, 37.6f, 3.7f },
             ["VK103"] = new[] { 14.2f, 6.7f, 28.2f, 4.7f, 42.7f, 3.5f },
             ["BR86Bulldog"] = new[] { 15f, 11f, 25f, 8f, 36f, 6.5f },
@@ -783,6 +786,7 @@ namespace GameCore
             ["BayouPump"] = (112f, 10f, 0.22f, false),
             ["CorvanGnatPDW"] = (125f, 17f, 0.03f, false),
             ["VK74Obelisk"] = (118f, 12f, 0.03f, false), ["PL62Kobza"] = (130f, 26f, 0.03f, false),
+            ["VKS74U"] = (108f, 14f, 0.03f, false), ["TR30"] = (112f, 15f, 0.03f, false), ["PPZZubr"] = (105f, 16f, 0.03f, false),
         };
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
         public static float PartPhase(string style, float since)

@@ -1,0 +1,23 @@
+{
+ "name": "batch11",
+ "outdir": "ArtSource/weapons/spritecook_pilot/batch11",
+ "refs": [
+  [
+   "VKS74U",
+   "ArtSource/weapons/spritecook_pilot/batch11/VKS74U_ref.png"
+  ],
+  [
+   "TR30",
+   "ArtSource/weapons/spritecook_pilot/batch11/TR30_ref.png"
+  ],
+  [
+   "PPZZubr",
+   "ArtSource/weapons/spritecook_pilot/batch11/PPZZubr_ref.png"
+  ]
+ ],
+ "rows": [
+  "short AK-74U carbine: a black triangular side-folding wire stock, a black receiver with a rail-less cover, two reddish-brown wooden handguards, a short barrel with a muzzle brake and a front sight post, a dark brown pistol grip and a short curved orange-brown plastic magazine.",
+  "black modern carbine in the outline drawing's shape: a collapsible stock with round holes, a black receiver with a charging handle, a long slotted handguard with rails, a long thin barrel with a flash hider, flip-up sights, a black pistol grip and a long slightly curved magazine with a light grey base.",
+  "compact black submachine gun built like an AK: a short black receiver with a wire stock folded, a black pistol grip with a checkered pattern, a big long black helical magazine tube running under the barrel and receiver, a slotted top handguard with oval holes, a front sight and a muzzle brake. No sling, no strap."
+ ]
+}
