@@ -76,6 +76,26 @@ def gaunt(pose='idle'):
     if pose == 'scream': hm = hm.rotate(24, resample=Image.NEAREST, center=(64, 20 + OY))        # the head thrown back, muzzle to the roof
     im.alpha_composite(hm)
     return outline(im)
+def head_image(OPEN=0):
+    """The skull, jaw, antlers, teeth and eye as one transparent image on the base canvas S (neck anchor at (66, 19 + OY)); the rig (make_gaunt_anims.py) rotates and places it."""
+    HL = []
+    def lay(build, cols, **kw):
+        m = Mask(S); build(m); HL.append(shade(m, cols, **kw))
+    lay(lambda m: m.ell(70, 18 + OY, 6.4, 6, 8).poly(Y([(70, 12), (80, 16), (90, 21), (92, 24), (90, 26), (73, 26), (68, 22)])), BONE, tex=0.1, seed=7, depth=2.8, bias=-0.15)
+    lay(lambda m: m.poly(Y([(71, 26), (92, 27.5), (88, 42 + OPEN), (80, 44 + OPEN), (73, 33)])), ramp("#1c1710", "#352d20", "#5a4e38", "#8a7a5a", "#b3a27a"), depth=1.6, tex=0.1, seed=8)
+    lay(lambda m: m.poly(Y([(72, 26), (91, 26.8), (87, 38 + OPEN), (79, 40 + OPEN), (74, 31)])), DARK, depth=1.0)
+    def ant(m):
+        m.tube(Y([(66, 13), (62, 5), (58, -3), (57, -8)]), [3.2, 2.6, 2, 1.4]); m.tube(Y([(62, 5), (55, 3), (50, -1)]), [2, 1.5, 1]); m.tube(Y([(58, -3), (64, -6), (67, -12)]), [1.8, 1.4, 0.9])
+        m.tube(Y([(70, 11), (70, 2), (76, -5), (74, -10)]), [3, 2.4, 1.8, 1.2]); m.tube(Y([(70, 2), (78, 1), (82, -3)]), [1.8, 1.3, 0.8]); m.tube(Y([(76, -5), (70, -8)]), [1.5, 0.8])
+    lay(ant, BONE, depth=1.3, tex=0.08, seed=9)
+    hm = paint(S, HL); tooth, tooth_d = rgb("#efe7cf"), rgb("#bdb396")
+    for x, ln in ((74, 1), (76, 2), (78, 1), (79, 3), (82, 1), (84, 2), (86, 1), (88, 4), (90, 3)): px(hm, [(x, 26 + OY + k) for k in range(ln)], tooth)
+    for x, ln in ((77, 2), (80, 1), (83, 3), (85, 1), (87, 2)): px(hm, [(x, 38 + OY + OPEN - k - (3 if x < 80 else 0)) for k in range(ln)], tooth_d)
+    line(hm, 80, 34 + OY, 83, 41 + OY + OPEN, rgb("#5e1d22")); line(hm, 81, 34 + OY, 84, 40 + OY + OPEN, rgb("#7b2a30"))
+    px(hm, [(x, y + OY) for x in range(69, 74) for y in range(14, 19)], rgb("#050304")); px(hm, [(70, 14 + OY), (73, 18 + OY), (69, 18 + OY)], BONE[1])
+    px(hm, [(71, 16 + OY)], rgb("#e8f2ff")); px(hm, [(72, 16 + OY)], rgb("#9fc4e8")); px(hm, [(86, 20 + OY), (87, 20 + OY)], rgb("#050304"))
+    line(hm, 66, 26 + OY, 64, 33 + OY, HIDE[2]); line(hm, 68, 27 + OY, 67, 35 + OY, HIDE[1]); line(hm, 74, 20 + OY, 80, 22 + OY, DARK[1])
+    return hm
 if __name__ == '__main__':
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mutants_anim', 'gaunt'); os.makedirs(out, exist_ok=True)
     ims = {p: gaunt(p) for p in ('idle', 'scream', 'point')}

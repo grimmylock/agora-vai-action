@@ -13,7 +13,7 @@ namespace GameCore
         public const string Name = "Gaunt";
         public const float CallEvery = 14f, Range = 16f, DriveFor = 9f, Haste = 1.35f, ScreamFor = 1.5f, PointFor = 1.1f;
 
-        class State { public float NextCall = -1f, PoseUntil = -1f; public string Pose; public bool WasAlive = true; }
+        class State { public float NextCall = -1f, PoseUntil = -1f, PoseAt = -1f; public string Pose; public bool WasAlive = true; }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
         static readonly Dictionary<Mutant, (float until, Player target)> Driven = new Dictionary<Mutant, (float, Player)>();
 
@@ -24,8 +24,18 @@ namespace GameCore
 
         /// <summary>The pose it is held in right now ("scream" while it calls, then "point"), or null (the standing sprite).</summary>
         public static string Pose(Mutant m) => States.TryGetValue(m, out var s) && Time.time < s.PoseUntil ? s.Pose : null;
-        /// <summary>The sprite for the pose, or null (UnitSprites.GauntPose).</summary>
-        public static Sprite Frame(Mutant m) => Pose(m) is string p ? UnitSprites.GauntPose(p) : null;
+        // the animations (make_gaunt_anims.py): frame durations in ms; the scream holds (frames 3-5 shake) until the pose ends, the point holds its last frame
+        static readonly int[] ScreamMs = { 100, 140, 120, 100, 100, 100, 140, 120 }, PointMs = { 90, 90, 110, 220, 220, 220 };
+        /// <summary>The picture for the pose it is in right now, or null (the standing sprite / the walk / the attack take over).</summary>
+        public static Sprite Frame(Mutant m)
+        {
+            if (!(Pose(m) is string p) || !States.TryGetValue(m, out var s)) return null;
+            var ms = p == "scream" ? ScreamMs : PointMs; var frames = UnitSprites.GauntAnim(p, ms.Length); if (frames == null) return null;
+            float t = (Time.time - s.PoseAt) * 1000f; int i = 0; float acc = 0f;
+            for (; i < ms.Length - 1; i++) { if (t < acc + ms[i]) break; acc += ms[i]; }
+            if (p == "scream" && t >= ScreamMs.Sum()) i = 3 + (int)((t - ScreamMs.Sum()) / 90f) % 3;             // the held scream shakes: frames 3, 4, 5
+            return frames[i];
+        }
 
         /// <summary>A mutant it is driving runs faster; 1 otherwise (RtAi.Speed).</summary>
         public static float Hurry(Mutant m) => Driven.TryGetValue(m, out var d) && Time.time < d.until && m.IsAlive() ? Haste : 1f;
@@ -34,7 +44,7 @@ namespace GameCore
         public static bool IsDriven(Mutant m) => Driven.TryGetValue(m, out var d) && Time.time < d.until;
 
         /// <summary>Hold a pose for `seconds` (the cutscene's scripted scream and point).</summary>
-        public static void ForcePose(Mutant m, string pose, float seconds) { var s = Of(m); s.Pose = pose; s.PoseUntil = Time.time + seconds; }
+        public static void ForcePose(Mutant m, string pose, float seconds) { var s = Of(m); if (s.Pose != pose || Time.time >= s.PoseUntil) s.PoseAt = Time.time; s.Pose = pose; s.PoseUntil = Time.time + seconds; }
         static State Of(Mutant m) { if (!States.TryGetValue(m, out var s)) States[m] = s = new State(); return s; }
 
         /// <summary>The call: a scream, then the arm flung at `target`; every other mutant within range is driven at it.</summary>
@@ -43,7 +53,7 @@ namespace GameCore
             var s = Of(g); float now = Time.time;
             s.NextCall = now + CallEvery;
             ForcePose(g, "scream", ScreamFor);
-            s.Pose = "scream"; s.PoseUntil = now + ScreamFor + PointFor;                  // the scream first (below), then the point: Pose() switches by time
+            s.PoseUntil = now + ScreamFor + PointFor;                                      // the scream first, then the point: Tick() switches them
             _pointAt[g] = now + ScreamFor;
             Sfx.Play("eel_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 0.62f);
             int n = 0;
