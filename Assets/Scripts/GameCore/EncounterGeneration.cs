@@ -41,7 +41,7 @@ namespace GameCore
             {
                 int tier = ParseTierKey(tierKey);
                 if (tier < minTier || tier > maxTier) continue;
-                pool.AddRange(MutantDatabase.Tiers[tierKey].Values);
+                pool.AddRange(MutantDatabase.Tiers[tierKey].Values.Where(d => d.Name != Gaunt.Name));   // the wild Gaunt lives only in the forests (SquadManager), not in every zone of its tier
             }
             return pool.Count == 0 ? null : pool[Random.Range(0, pool.Count)];
         }

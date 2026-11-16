@@ -252,7 +252,7 @@ namespace GameCore
             Wave(4.1f, nest.X, nest.Y - 10, ("Swarm", 12));
             Wave(6.6f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 3));
             Wave(9.6f, nest.X, nest.Y + 2, ("Swarm", 10), ("PallidProwler", 4));
-            _gaunt = Spawn("tier3", "Gaunt", nest.X, nest.Y - 14); _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
+            { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
         static Mutant _gaunt; static float _gauntStep, _screamAt = -1f; static bool _gauntWalking;

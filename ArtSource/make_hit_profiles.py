@@ -13,7 +13,7 @@ def profile(a, ppt):
     out = np.array(out); sm = np.maximum.reduce([out, np.append(out[1:], 0), np.insert(out[:-1], 0, 0)]); return sm, ppt
 E_ = {}
 at = np.array(Image.open(f'{R}/armor_atlas_x2.png').convert('RGBA'))[..., 3] > 0; E_['human'] = profile(at[0:32, 0:32], 32)
-for k, n in [('pallid_prowler', 'Pallid Prowler'), ('blind_maw', 'Blind Maw'), ('veil_prowler', 'Veil Prowler'), ('dread_prowler', 'Dread Prowler'), ('blight_brute', 'Blight Brute'), ('gaunt', 'Gaunt')]:
+for k, n in [('pallid_prowler', 'Pallid Prowler'), ('blind_maw', 'Blind Maw'), ('veil_prowler', 'Veil Prowler'), ('dread_prowler', 'Dread Prowler'), ('blight_brute', 'Blight Brute'), ('gaunt', 'Gaunt'), ('elder_gaunt', 'Elder Gaunt')]:
     E_[n] = profile(np.array(Image.open(f'{R}/Mutants/mutant_hd_{k}.png').convert('RGBA'))[..., 3] > 0, 32)
 ma = np.array(Image.open(f'{R}/mutant_atlas.png').convert('RGBA'))[..., 3] > 0
 for i, n in {2: 'Swarm', 7: 'Mind Weaver', 10: 'Void Weaver'}.items(): E_[n] = profile(ma[:, i * 16:(i + 1) * 16], 16)

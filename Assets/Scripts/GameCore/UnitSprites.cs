@@ -97,7 +97,7 @@ namespace GameCore
             if (_hd == null)
             {
                 _hd = new Dictionary<string, Sprite>();
-                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute", "Gaunt" })
+                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute", "Gaunt", "Elder Gaunt" })
                 {
                     var tex = Resources.Load<Texture2D>("Sprites/Mutants/mutant_hd_" + n.ToLowerInvariant().Replace(' ', '_'));
                     if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);
@@ -154,10 +154,10 @@ namespace GameCore
 
         private static readonly Dictionary<string, Sprite[]> _gauntAnim = new Dictionary<string, Sprite[]>();
         /// <summary>The Gaunt's own animations (ArtSource/make_gaunt_anims.py -> anim/gaunt_scream.bytes, gaunt_point.bytes): a strip of `frames` pictures on the same canvas, pivot and density as its standing sprite.</summary>
-        public static Sprite[] GauntAnim(string anim, int frames)
+        public static Sprite[] GauntAnim(string who, string anim, int frames)
         {
-            if (_gauntAnim.TryGetValue(anim, out var hit)) return hit;
-            Sprite[] sp = null; var asset = Resources.Load<TextAsset>("Sprites/Mutants/anim/gaunt_" + anim);
+            string ck = who + "/" + anim; if (_gauntAnim.TryGetValue(ck, out var hit)) return hit;
+            Sprite[] sp = null; var asset = Resources.Load<TextAsset>("Sprites/Mutants/anim/" + who.ToLowerInvariant().Replace(' ', '_') + "_" + anim);
             if (asset != null)
             {
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -167,7 +167,7 @@ namespace GameCore
                     for (int i = 0; i < frames; i++) sp[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);
                 }
             }
-            return _gauntAnim[anim] = sp;
+            return _gauntAnim[ck] = sp;
         }
         public static Sprite[] HDWalk(string name) => HDStrip(name, "walk");
         /// <summary>2026-11-16 (Yan: "runs when detecting enemies, walk when unaggroed"): the four canines' 8-frame gallop (ArtSource/export_mutant_walk.py ... run), same pivot rule as the walk; null for the rest.</summary>

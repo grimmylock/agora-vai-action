@@ -57,6 +57,7 @@ namespace GameCore
                     int minTier = System.Math.Min(MutantDatabase.MaxTier, System.Math.Max(1, zone.Tier - 1));
                     int maxTier = System.Math.Min(MutantDatabase.MaxTier, zone.Tier + 1);
                     var db = EncounterGeneration.PickRandomMutantByTier(minTier, maxTier);
+                    if (System.Array.IndexOf(Gaunt.Woods, zone.Id) >= 0 && Random.value < 0.3f) db = MutantDatabase.Get("tier3", "Gaunt");   // Yan, 2026-11-16: the wild Gaunt hunts the forests
                     var member = EncounterGeneration.CreateMutantFromDb(db, x, y);
                     member.IsAggroed = false;
                     squad.Members.Add(member);

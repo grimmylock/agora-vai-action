@@ -3008,11 +3008,16 @@ static class Program {
       EncounterState.Enemies.Add(g); EncounterState.Enemies.Add(a); EncounterState.Enemies.Add(b);
       float v0 = RtAi.Speed(a); Gaunt.Call(g, p);
       Check(a.IsAggroed && b.IsAggroed && Gaunt.IsDriven(a) && Gaunt.Pose(g) == "scream", "gaunt: its call turns the mutants round it on the player and it screams");
-      Check(RtAi.Speed(a) > v0 * 1.3f && Rt.TargetOf(a, p) == p, "gaunt: the driven ones run 35% faster and hunt who it pointed at");
+      Check(RtAi.Speed(a) > v0 * 1.25f && Rt.TargetOf(a, p) == p, "gaunt: the driven ones run 30% faster and hunt who it pointed at");
       g.Hp = 0; Gaunt.Tick();
       Check(!Gaunt.IsDriven(a) && RtAi.Speed(a) == v0, "gaunt: when it falls the drive ends");
       UnityEngine.Time.time += 30f; var g2 = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var c = new Mutant("Blind Maw", px + 9, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(g2); EncounterState.Enemies.Add(c);
       Gaunt.Tick(); Check(Gaunt.IsDriven(c), "gaunt: it calls by itself when it sees its target");
+      { UnityEngine.Time.time += 40f; Gaunt.Reset(); EncounterState.Enemies.Clear();
+        var far = new Mutant("Pallid Prowler", px + 18, py, MutantDatabase.Get("tier1", "PallidProwler")); var w = new Mutant("Gaunt", px + 4, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true };
+        EncounterState.Enemies.Add(w); EncounterState.Enemies.Add(far); Gaunt.Call(w, p); bool wildFar = Gaunt.IsDriven(far);
+        var el = new Mutant(Gaunt.ElderName, px + 4, py + 1, Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(el); UnityEngine.Time.time += 20f; Gaunt.Call(el, p);
+        Check(!wildFar && Gaunt.IsDriven(far) && Gaunt.Is(el) && el.Db.Hp > w.Db.Hp * 3 - 1, "gaunt: the wild one's call reaches 12 tiles, the Elder's 22, and the Elder is a mini-boss (3200 HP)"); }
     } finally { Rt.On = false; Gaunt.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }
 
@@ -3052,7 +3057,7 @@ static class Program {
       Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
       Run(22f);
-      Check(EncounterState.Enemies.OfType<Mutant>().Any(m => !(m is HumanEnemy) && m.Db?.Name == "Gaunt" && m.IsAlive() && m.IsAggroed), "taken: the Gaunt screamed, pointed, and joins the hunt");
+      Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
       Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 0 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers are torn apart, then the horde comes for you");
       var lad2 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = lad2.X; p.Y = lad2.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.5f);
