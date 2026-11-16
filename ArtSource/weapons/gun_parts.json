@@ -244,5 +244,47 @@
    18
   ],
   "travel": 5
+ },
+ "HaldenServiceRevolver": {
+  "style": "hammer",
+  "rect": [
+   27,
+   7,
+   42,
+   16
+  ],
+  "travel": 38,
+  "pivot": [
+   41,
+   15
+  ]
+ },
+ "RinaldiR6": {
+  "style": "hammer",
+  "rect": [
+   25,
+   12,
+   42,
+   19
+  ],
+  "travel": 30,
+  "pivot": [
+   40,
+   17
+  ]
+ },
+ "RK12Kuvalda": {
+  "style": "hammer",
+  "rect": [
+   14,
+   14,
+   34,
+   28
+  ],
+  "travel": 32,
+  "pivot": [
+   33,
+   26
+  ]
  }
 }

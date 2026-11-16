@@ -10,6 +10,7 @@ S = H.S; SPR = H.SPR
 def phase(style, t):
     ss = lambda x: x * x * (3 - 2 * x)
     if t < 0: return 0.0
+    if style == "hammer": return t / 0.06 if t < 0.06 else 1 - (t - 0.06) / 0.08 if t < 0.14 else 0.0
     if style == "slide": return t / 0.03 if t < 0.03 else 1 - (t - 0.03) / 0.11 if t < 0.14 else 0.0
     if t < 0.14: return 0.0
     if t < 0.32: return ss((t - 0.14) / 0.18)
@@ -23,6 +24,7 @@ def main(src, key, out):
     cs = open(os.path.join(H.ROOT, "Assets/Scripts/GameCore/HeldWeapon.cs")).read()
     dense = float(re.search(r'\["%s"\] = ([0-9.]+)f,' % key, cs).group(1)); gr = [float(v.strip().rstrip("f")) for v in re.search(r'\["%s"\] = new\[\] \{([^}]*)\}' % key, cs).group(1).replace("float.NaN", "nan").split(",")]
     pm = re.search(r'\["%s"\] = \("(\w+)", ([0-9.]+)f\)' % key, cs); style, travel = (pm.group(1), float(pm.group(2))) if pm else (None, 0.0)
+    hv = re.search(r'HammerPivot.*?\["%s"\] = \(([0-9.]+)f, ([0-9.]+)f\)' % key, cs, re.S); pivot = (float(hv.group(1)), float(hv.group(2))) if hv else None
     em = re.search(r'\["%s"\] = \(([0-9.]+)f, ([0-9.]+)f, ([0-9.]+)f, (true|false)\)' % key, cs); port = (float(em.group(1)), float(em.group(2)), float(em.group(3)), em.group(4) == "true") if em else None
     shell = key in ("RangerP8", "BayouPump", "Hound13", "SP14Warden", "HaldenLeverShotgun")
     allan = json.load(open(src)); shot = [x for x in allan if x["key"] == key and x["style"] == "shot"][0]; base = [x for x in allan if x["key"] == key and x["style"] not in ("jam", "shot")][0]
@@ -49,7 +51,8 @@ def main(src, key, out):
         t = n * dt; gx_, gy_, deg, hx, hy, sx, sy, has_sup, left = f[:9]; sh = phase(style, t) * travel if style else 0.0
         c = Image.new("RGBA", (H.W * S, H.H * S), H.BG); c.alpha_composite(body, (H.BX * S, H.BY * S))
         if style:
-            part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); part.alpha_composite(gp.crop((int(round(sh)), 0, gp.width, gp.height)) if sh >= 0.5 else gp, (0, 0))
+            if style == "hammer": part = gp.rotate(sh, center=pivot, resample=Image.BICUBIC) if sh > 0.5 else gp
+            else: part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); part.alpha_composite(gp.crop((int(round(sh)), 0, gp.width, gp.height)) if sh >= 0.5 else gp, (0, 0))
             P.paste2(c, gb, grip[0], grip[1], gx_, gy_, deg, left, dense); P.paste2(c, part, grip[0], grip[1], gx_, gy_, deg, left, dense)
         else: P.paste2(c, full, grip[0], grip[1], gx_, gy_, deg, left, dense)
         if style == "pump":                                                                               # the off-hand goes back with the fore-end

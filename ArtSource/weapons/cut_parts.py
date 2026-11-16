@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cuts a moving part out of a double-size gun picture so the game can move it in code (2026-11-15, Yan: "test it your way first, no spritecook"): the pump fore-end, a slide, a bolt, a lever.
    python3 ArtSource/weapons/cut_parts.py [Key ...]      (all keys of gun_parts.json when none given)
-Reads gun_parts.json: {"<Key>": {"style": "pump|slide", "rect": [x0, y0, x1, y1] (or "rects": [[...], ...]) in texture px (end exclusive), "fill_from": x (optional), "fills": [{"rect": [...], "color": [r, g, b]}] (optional), "travel": texture px}}.
+Reads gun_parts.json: {"<Key>": {"style": "pump|slide", "rect": [x0, y0, x1, y1] (or "rects": [[...], ...]) in texture px (end exclusive), "fill_from": x (optional), "fills": [{"rect": [...], "color": [r, g, b]}] (optional), "travel": texture px (degrees for style "hammer", which also takes "pivot": [x, y] in texture px, the hinge it turns on)}}.
 Writes weapon_<Key>_part.png (the pixels inside the rect) and weapon_<Key>_body.png (the rest, with the hole filled by smearing the column just left of the rect across it, so the barrel and the magazine tube show when the part slides away), BOTH the size of
 weapon_<Key>_hd.png so the grip pivot is the same. The menu and the inventory keep using the whole _hd picture. The style and travel go into HeldWeapon.cs (WeaponArt.Parts)."""
 import os, sys, json
@@ -32,5 +32,5 @@ def main(keys):
             body[y0:y1, x0:x1] = [*[int(v) for v in col], 255]
             if f.get('outline'): body[y0:y0 + 1, x0:x1] = [14, 14, 18, 255]; body[y1 - 1:y1, x0:x1] = [14, 14, 18, 255]
         Image.fromarray(part, 'RGBA').save(os.path.join(WP, f'weapon_{k}_part.png')); Image.fromarray(body, 'RGBA').save(os.path.join(WP, f'weapon_{k}_body.png'))
-        print(f'{k}: ["{k}"] = ("{c["style"]}", {c["travel"]}f),')
+        print(f'{k}: ["{k}"] = ("{c["style"]}", {c["travel"]}f),' + (f'   pivot ({c["pivot"][0]}f, {c["pivot"][1]}f)' if 'pivot' in c else ''))
 if __name__ == '__main__': main(sys.argv[1:])
