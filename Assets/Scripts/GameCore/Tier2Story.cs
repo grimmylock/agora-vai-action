@@ -70,11 +70,37 @@ namespace GameCore
             if (_mapSince < 0f) _mapSince = now;
             bool near = DistTo(p, "Gatehouse") <= 10f || DistTo(p, "The Causeway") <= 10f;
             if (!near && now - _mapSince < 240f) return;
+            BeginGrab(now);
+        }
+
+        /// <summary>The grab itself: the flashbang, the beating, black, the base (Grab goes on from here every frame).</summary>
+        static void BeginGrab(float now)
+        {
             Story.SetStep(Mission, 1); _stage = 0; _stageAt = now;
             foreach (var pl in Everyone) Rt.Knockdown(pl, 9f);
             Story.Fade(Color.white, 1f, 0.12f);
             Hear("explosion", 1f);
             Say("A flashbang bounces off the road. White. Nothing but white and a ringing that swallows everything.");
+        }
+
+        /// <summary>True from the grab until the mission is finished (the Testing Ground's respawn restarts it instead of going back to the range).</summary>
+        public static bool InProgress => Step >= 1 && !Story.IsDone(Mission);
+
+        /// <summary>The Testing Ground's "Tier 2: Taken" button (Yan, 2026-11-16: "add the mission to the testing ground, a button that takes us directly to the cutscene where we're kidnapped and the mission
+        /// starts"): forget the mission (not started, not done, no guns in the box), go to the Scrapyard, stand everyone by the Gatehouse and begin the grab right now. From there it is the real mission: the beating,
+        /// the interrogation, the hatch, the maze and its clock, the alarm and the horde, then out of the hatch with the guns back. Press the button again to start over.</summary>
+        public static void StartForTest()
+        {
+            foreach (var pl in Everyone) Return(pl, Player.All.IndexOf(pl));                  // pressed mid-mission: the guns in the box come back first
+            var flags = MacroState.Current.StoryFlags;
+            flags.RemoveAll(f => f.StartsWith("box:") || f == "f:taken_done");
+            Story.SetStep(Mission, 0); Story.SetObjective(Mission, null); Reset();
+            MacroState.Current.CurrentZoneId = "scrapyard";
+            ZoneTravel.EnterZone("scrapyard");
+            EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+            var gate = Mark("Gatehouse"); int k = 0;
+            foreach (var pl in Everyone) { if (gate != null) Put(pl, gate.X - 1 + k % 3, gate.Y + 1 + k / 3); k++; Rt.Knockdown(pl, 0f); }
+            BeginGrab(Time.time);
         }
 
         static void Grab(float now)

@@ -58,6 +58,7 @@ static class Program {
     FireModeChecks();
     NetBrainChecks();
     TakenChecks();
+    TakenTestingGroundChecks();
     GauntChecks();
     GunfeelChecks();
     DiveChecks();
@@ -3077,6 +3078,33 @@ static class Program {
         $"taken: out the top, the box gives everything back, a journal entry ({TerrainMap.ZoneId}, main {p.EquippedWeapon?.Name})");
       Run(5f); Check(Story.IsDone("taken") && Tier2Story.Step >= 99 || Story.IsDone("taken"), "taken: it happens once");
     } finally { Rt.On = false; Tier2Story.Reset(); Story.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
+  static void TakenTestingGroundChecks() {   // 2026-11-16: the Testing Ground's "Tier 2: Taken" button (Yan: "a button that takes us directly to the cutscene where we're kidnapped and the mission starts")
+    bool session0 = TestingGround.Session;
+    try {
+      TestingGround.Start(); Rt.On = true; Rt.Reset(); Tier2Story.Reset(); Story.Reset(); MacroState.Current.StoryFlags.Clear(); var p = Player.Current; Body.Reset();
+      var gun = ShopDatabase.Items.First(d => d.Type == "weapon" && d.Key == "VKS74U"); TestingGround.Take(p, gun, true);
+      Check(TestingGround.Here && Tier2Story.Step == 0, "taken (testing ground): the button's starting point is the range, the mission not started");
+      const float dt = 1f / 30f;
+      void Run(float seconds) { for (float t = 0f; t < seconds; t += dt) { UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.deltaTime = dt; Tier2Story.Tick(dt); } }
+      UnityEngine.Time.time = 95000f; UnityEngine.Time.unscaledTime = 95000f;
+      TestingGround.TakenMission(p);
+      var gate = TerrainMap.Landmarks.First(l => l.Name == "Gatehouse");
+      Check(TerrainMap.ZoneId == "scrapyard" && !TestingGround.Here && Tier2Story.Step == 1 && Tier2Story.InProgress && Math.Abs(p.X - gate.X) <= 4 && Math.Abs(p.Y - gate.Y) <= 4,
+        $"taken (testing ground): the button takes you to the Scrapyard's Gatehouse and the grab begins at once ({TerrainMap.ZoneId}, step {Tier2Story.Step})");
+      Run(0.2f); Check(Story.FadeAlpha > 0.3f, $"taken (testing ground): the flashbang's white ({Story.FadeAlpha:0.00})");
+      Run(11f);
+      int soldiers = EncounterState.Enemies.Count(e => e is HumanEnemy h && h.FactionName == "Garrison" && h.IsAlive());
+      Check(Tier2Story.Step == 2 && soldiers == 5, $"taken (testing ground): the beating, then the Garrison's base and its five soldiers ({Tier2Story.Step}, {soldiers})");
+      Tier2Story.BeginDescent();
+      Check(MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:0:")) && !p.Inventory.Items.Any(i => i.Key == "VKS74U"), "taken (testing ground): your range kit goes in the box like any other");
+      TestingGround.TakenMission(p);
+      Check(Tier2Story.Step == 1 && (p.EquippedWeaponKey == "VKS74U" || p.Inventory.Items.Any(i => i.Key == "VKS74U")) && !MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:")) && TerrainMap.ZoneId == "scrapyard",
+        $"taken (testing ground): pressed again mid-mission, the guns come back first and the mission starts over ({Tier2Story.Step})");
+      p.Hp = 0; GameState.Current.CurrentTurn = Turn.CombatOver; TestingGround.Respawn(p);
+      Check(Tier2Story.Step == 1 && TerrainMap.ZoneId == "scrapyard" && p.IsAlive() && GameState.Current.CurrentTurn == Turn.Player, $"taken (testing ground): dying in the mission respawns you at the grab, not on the range ({TerrainMap.ZoneId}, step {Tier2Story.Step})");
+    } finally { TestingGround.Session = session0; Rt.On = false; Tier2Story.Reset(); Story.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }
 
   static void SoloDeathChecks() {

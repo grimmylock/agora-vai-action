@@ -121,6 +121,14 @@ namespace GameCore
             GameLog.Write("[TESTING GROUND] Secret Lab Alpha, the vat room. Walk up to it. Main menu > Testing Ground to come back.");
         }
 
+        /// <summary>Story, Tier 2 beat 1 "Taken" (Yan, 2026-11-16: "add the mission to the testing ground, a button that takes us directly to the cutscene where we're kidnapped and the mission starts"):
+        /// the Scrapyard at the Gatehouse and the grab begins at once (Tier2Story.StartForTest); the rest is the real mission. Press it again to start over.</summary>
+        public static void TakenMission(Player p)
+        {
+            Tier2Story.StartForTest();
+            GameLog.Write("[TESTING GROUND] Tier 2, \"Taken\": the Scrapyard at the Gatehouse, the grab starts now. Your guns go in the Garrison's box and come back at the top of the hatch. Main menu > Testing Ground to come back.");
+        }
+
         /// <summary>Boss 3: the platform form (Levels 1-2 of Sub-Station Depths): the flooded level with its water deep again and the eel in it. `level` 1 or 2.</summary>
         public static void EelPlatformFight(Player p, int level)
         {
@@ -161,6 +169,7 @@ namespace GameCore
             p.HealPermanent(p.MaxHp * 2); p.Hp = p.MaxHp; p.StatusEffects.Bleeding = false;
             var s = Rt.Of(p); s.DiveUntil = -1f; s.ProneUntil = -1f; s.Stamina = Rt.StaminaMax; s.Slow = false; Rt.SetSlow(false);
             GameState.Current.CurrentTurn = Turn.Player;
+            if (Tier2Story.InProgress && (TerrainMap.ZoneId == Tier2Story.Maze || TerrainMap.ZoneId == "scrapyard")) { TakenMission(p); return; }   // died in the mission: straight back to the grab
             if (TerrainMap.ZoneId == BrainBoss.Lab) { BrainFight(p); return; }
             if (TerrainMap.ZoneId == LabLocks.Depths3) { EelFight(p); return; }
             if (!Here) { MacroState.Current.CurrentZoneId = Zone; ZoneTravel.EnterZone(Zone); }

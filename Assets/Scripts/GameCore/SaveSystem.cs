@@ -136,7 +136,7 @@ namespace GameCore
             if (Survival.On) { GameLog.Write("Survival runs aren't saved."); return false; }   // (a run must never overwrite a real slot)
             if (CharacterId == null || Dir == null)
             {
-                GameLog.Write(TestingGround.Here ? "The Testing Ground isn't saved." : "Nothing to save to.");
+                GameLog.Write(TestingGround.Here || TestingGround.Session ? "The Testing Ground isn't saved." : "Nothing to save to.");
                 return false;
             }
             if (!player.IsAlive())
