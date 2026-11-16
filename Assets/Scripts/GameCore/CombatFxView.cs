@@ -63,8 +63,9 @@ namespace GameCore
         internal static Sprite ClipSprite()
         {
             if (_clipSprite != null) return _clipSprite;
-            string[] rows = { "cccccccccc", "BBBBBBBBBB", "bBbBbBbBbB", "LLLLLLLLLL" };
-            var pal = new Dictionary<char, Color32> { ['c'] = new Color32(176, 180, 190, 255), ['B'] = new Color32(222, 184, 74, 255), ['b'] = new Color32(176, 136, 46, 255), ['L'] = new Color32(168, 108, 62, 255) };
+            // Yan's references (a Mauser C96's stripper clip): ten rounds stacked one above the other, bullet tips forward (right), a flat steel strip down the rear; shown upright, as carried
+            string[] rows = { "cccccLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cccccLL" };
+            var pal = new Dictionary<char, Color32> { ['c'] = new Color32(150, 154, 164, 255), ['B'] = new Color32(222, 184, 74, 255), ['b'] = new Color32(178, 138, 48, 255), ['L'] = new Color32(172, 112, 64, 255), ['l'] = new Color32(132, 84, 48, 255) };
             int w = rows[0].Length, h = rows.Length; var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
             for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) { var c32 = pal[rows[y][x]]; tex.SetPixel(x, h - 1 - y, new Color(c32.r / 255f, c32.g / 255f, c32.b / 255f, 1f)); }
             tex.Apply(); return _clipSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);

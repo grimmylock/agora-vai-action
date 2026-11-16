@@ -82,6 +82,32 @@ def cylinder(k):
     ring = ndi.binary_dilation(comp, structure=np.ones((3, 3))) & ~comp; cyl[ring] = K            # an outline of its own, since it leaves the frame
     save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdcyl.png', cyl)
     return int(comp.sum())
+# belt-fed guns whose picture draws no box (Yan: "draw the belt boxes for the four heavies"): (box centre x, receiver underside y) in virtual px. The box hangs under the feed tray with three rounds of belt going up into it;
+# it is drawn as the gun's magazine (always seated at rest, drops and is replaced on a reload); no body file, the gun is drawn whole.
+BOXES = {'PL62Kobza': (23.0, 5.9), 'PL74': (24.5, 5.4), 'CorvanLMG': (22.0, 8.0), 'PL74PPolovetsZulu': (22.5, 6.2)}
+def ammo_box(k):
+    im = load(k); d = D[k]; xc, yb = BOXES[k]; bw, bh = int(round(4.0 * d)), int(round(5.5 * d)); x0 = int(round(xc * d - bw / 2)); y0 = int(round((yb - 0.5) * d)); x1 = x0 + bw - 1; y1 = y0 + bh - 1
+    H, Wd = im.shape[:2]; canvas = np.zeros((max(H, y1 + 4), Wd, 4), np.uint8); box = np.zeros(canvas.shape[:2], bool); box[y0:y1 + 1, x0:x1 + 1] = True
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            tt = (x - x0) / max(1, bw - 1); lid = y - y0 < int(0.6 * d)
+            col = (118, 126, 90) if y == y0 else (38, 44, 30) if lid else (22, 26, 18) if y == y1 else (98, 108, 74) if tt < 0.25 else (72, 80, 54) if tt < 0.7 else (50, 56, 38)
+            canvas[y, x] = (*col, 255)
+    hh = int(round(0.5 * d))                                                                      # the carry handle on top
+    for y in range(y0 - hh, y0):
+        for x in range(x0 + int(bw * 0.28), x0 + int(bw * 0.72)): canvas[y, x] = (60, 66, 72, 255) if y == y0 - hh else (34, 38, 42, 255); box[y, x] = True
+    for x in range(x1 - int(0.5 * d), x1 + 1):                                                      # the latch on the front edge
+        for y in range(y0 + int(2.0 * d), y0 + int(3.2 * d)): canvas[y, x] = (126, 132, 140, 255)
+    for (rx, ry) in ((x0 + int(0.7 * d), y0 + int(0.25 * d)), (x1 - int(0.9 * d), y0 + int(0.25 * d))):   # rivets
+        canvas[ry:ry + 2, rx:rx + 2] = (150, 156, 120, 255)
+    for j in range(3):                                                                              # the belt going up into the feed tray: three brass rounds, copper tips
+        bx = x0 + int(bw * (0.36 + 0.14 * j)); rw = max(2, int(0.45 * d)); top = y0 - hh - int(1.3 * d)
+        for y in range(top, y0 - hh):
+            for x in range(bx, bx + rw): canvas[y, x] = (166, 108, 60, 255) if y < top + int(0.4 * d) else (206, 166, 70, 255)
+        box[top:y0 - hh, bx:bx + rw] = True
+    ring = ndi.binary_dilation(box, structure=np.ones((3, 3))) & ~box; canvas[ring] = K
+    save(f'weapon_{k}_hdmag.png', canvas)
+    ys, xs = np.where(canvas[..., 3] > 0); return ((x0 + x1 + 1) / 2 / d, y0 / d, (x0 + x1 + 1) / 2 / d, (y0 + y1 + 1) / 2 / d), int(box.sum())
 def hidden(k):
     im = load(k); a = im[..., 3] > 0; H, Wd = a.shape; d = D[k]; g = G[k]; gx, gy = g[0] * d, g[1] * d
     mag = np.zeros_like(im); rows = []
@@ -136,6 +162,7 @@ def main(keys):
         try:
             if k in CYL: print(k, 'cylinder', cylinder(k), 'px'); continue
             if k in BRK: print(k, 'barrels', breaker(k), 'px'); continue
+            if k in BOXES: r = ammo_box(k); pts[k] = r[0]; print(k, 'drawn box', r[1], 'px'); continue
             if k in HIDDEN: r = hidden(k); pts[k] = r[0]; print(k, 'hidden mag', r[1], 'px', [round(float(v), 1) for v in r[0]])
             else: r = finish_visible(k); pts[k] = r[0]; print(k, 'cut', r[2], 'px', 'box', r[1], [round(float(v), 1) for v in r[0]])
         except SystemExit as e: print('SKIPPED', e)

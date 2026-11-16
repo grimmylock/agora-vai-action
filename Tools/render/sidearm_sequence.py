@@ -33,10 +33,19 @@ def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, br
     gg = gl.transpose(Image.FLIP_LEFT_RIGHT) if left else gl
     for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):
         if on: c.alpha_composite(gg, (round((H.BX + x) * S - 2 * S), round((H.BY + y) * S - 1.5 * S)))
-    if shell is not None and has_sup:                                                                 # the round in the support hand (red hull for a shotgun, brass for a rifle)
-        d = ImageDraw.Draw(c); X, Y = (H.BX + sx) * S, (H.BY + sy) * S
-        wd = 3 if shell == 'clip' else 3
-        d.rectangle((X - (5 if shell == 'clip' else 3) * S // 2, Y - S // 2, X + (5 if shell == 'clip' else 3) * S // 2, Y + S // 2 + (S if shell == 'clip' else 0)), fill=(200, 48, 44) if shell is True else (222, 184, 74))
+    if shell is not None and has_sup:                                                                 # the round in the support hand (red hull for a shotgun, brass for a rifle); a stripper clip hangs 5.5 px under the hand, in the gun's frame
+        import math
+        X, Y = (H.BX + sx) * S, (H.BY + sy) * S
+        if shell == 'clip':
+            rows = ["cccccLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cccccLL"]
+            pal = {'c': (150, 154, 164), 'B': (222, 184, 74), 'b': (178, 138, 48), 'L': (172, 112, 64), 'l': (132, 84, 48)}; u = S // 2
+            clip = Image.new("RGBA", (7 * u, 11 * u), (0, 0, 0, 0)); dr = ImageDraw.Draw(clip)
+            for yy, row in enumerate(rows):
+                for xx, ch in enumerate(row): dr.rectangle((xx * u, yy * u, xx * u + u - 1, yy * u + u - 1), fill=(*pal[ch], 255))
+            ang = math.radians(deg); clip = clip.rotate(deg, expand=True, resample=Image.NEAREST)
+            cxp, cyp = X + 2.75 * S * math.sin(ang), Y + 2.75 * S * math.cos(ang); c.alpha_composite(clip, (int(cxp - clip.width / 2), int(cyp - clip.height / 2)))
+        else:
+            d = ImageDraw.Draw(c); d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell is True else (222, 184, 74))
     return c
 def one(src, key, outdir, slow=2.0):
     big, box = PP.main(src, key, os.path.join(outdir, "tmp_shot_" + key))

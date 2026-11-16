@@ -430,6 +430,12 @@ namespace GameCore
             float a = angle * Mathf.Deg2Rad;
             float ox = Mathf.Round(push * Mathf.Cos(a)), oy = Mathf.Round(-push * Mathf.Sin(a)) - Mathf.Round(jam.tap);   // the tap bumps it up
             bool free = false;                                              // the support hand is off the gun
+            if (style == "clip" && mag != null && pose.HasSupport)                 // a stripper clip: the hand's home is above the clip's seat on the receiver (it holds the clip by its top and pushes it down)
+            {
+                float ma0 = (angle + extra) * Mathf.Deg2Rad, ca0 = Mathf.Cos(ma0), sa0 = Mathf.Sin(ma0), fl0 = left ? -1f : 1f;
+                float vx0 = (mag[0] - g[0]) * 0.5f, vy0 = (mag[1] - 5.5f - g[1]) * 0.5f * fl0;
+                pose.SupportX = Mathf.Round(pose.GripX + vx0 * ca0 + vy0 * sa0) - 0f; pose.SupportY = Mathf.Round(pose.GripY + 1.5f + (-vx0 * sa0 + vy0 * ca0) - 1.5f);
+            }
             if (pouch > 0f && pose.HasSupport)                              // support hand off to the belt pouch
             {
                 float bx = pose.GripX + (left ? 3f : -3f), by = WaistTopRow + 1f;
@@ -650,6 +656,8 @@ namespace GameCore
             ["PL74PPolovetsZulu"] = new[] { 12.8f, 8.3f, 30f, 5.2f, 44.8f, 5.6f },
             ["RK12Kuvalda"] = new[] { 4.4f, 8.8f, float.NaN, float.NaN, 23.6f, 5f },
         };
+        /// <summary>Guns loaded with a stripper clip from the top (Sperling S-96): WeaponMags.Points holds the clip's resting place on the gun (centre x, y in virtual px; y negative = above the picture) and the support hand brings it there.</summary>
+        public static readonly HashSet<string> Clips = new HashSet<string> { "SperlingS96" };
         public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
         /// <summary>The grip/support/muzzle points of a weapon's own sprite (its category's when it has none).</summary>
         public static float[] GripOf(string cat, string key) => key != null && Grips.TryGetValue(key, out var kg) ? kg : Grips.TryGetValue("cat_" + cat, out var cg) ? cg : Grips["cat_assault"];
@@ -1144,7 +1152,7 @@ namespace GameCore
             float since = mc != null ? mc.Since(now) : now - _swingAt, hold = mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f;
             HeldFrame At(float sw) => HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover, _hold), _climb, _kick, sw,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
-                key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
+                key != null && (WeaponArt.Mag(cat, key).mag != null || WeaponArt.Clips.Contains(key)) && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
                 hold, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
                 mc?.PoseKey ?? key, mc != null ? mc.Move : (int)(_swingAt * 7f), mc != null ? mc.From : -1f,
                 mc != null ? Melee.T - mc.GuardAt : 99f, mc != null ? Melee.T - mc.BrokenAt : 99f, mc != null ? mc.OpenK(Melee.T) : 0f);
@@ -1267,6 +1275,11 @@ namespace GameCore
             {
                 var fl = WeaponFeel.For(weapon.Db); _shell.sprite = fl.Reload == "clip" ? CombatFxView.ClipSprite() : CombatFxView.CaseSprite(fl.Casing == "shell"); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
                 _shell.transform.localPosition = _support.transform.localPosition + new Vector3(0f, 0f, -0.01f); _shell.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+                if (fl.Reload == "clip")                                                   // the clip hangs 5.5 px under the hand, in the gun's frame (its seat is below the hand's home)
+                {
+                    float a1 = f.GunDeg * Mathf.Deg2Rad, dn = (f.Left ? 1f : -1f) * 5.5f / WeaponArt.PixelsPerUnit;
+                    _shell.transform.localPosition += new Vector3(-dn * Mathf.Sin(a1), dn * Mathf.Cos(a1), 0f);
+                }
             }
             if (_w2?.Db != null && cat != "melee")
             {

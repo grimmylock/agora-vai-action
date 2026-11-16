@@ -34,10 +34,10 @@ namespace GameCore
             ["HaldenAM50Sledge"] = new[] { 18.0f, 5.9f, 18.0f, 7.9f },
             ["Sayan12"] = new[] { 20.5f, 3.4f, 20.5f, 7.3f },
             ["Kaban12"] = new[] { 20.6f, 3.8f, 20.6f, 7.0f },
-            ["PL62Kobza"] = new[] { 23.0f, 4f, 22.5f, 9.5f },
-            ["CorvanLMG"] = new[] { 22.0f, 7f, 21.5f, 11.0f },
+            ["PL62Kobza"] = new[] { 23.1f, 5.3f, 23.1f, 8.1f },
+            ["CorvanLMG"] = new[] { 22.0f, 7.5f, 22.0f, 10.2f },
             ["RL44"] = new[] { 19.8f, 4.9f, 19.8f, 8.6f },
-            ["PL74"] = new[] { 20.0f, 5f, 19.5f, 8.5f },
+            ["PL74"] = new[] { 24.6f, 4.9f, 24.6f, 7.6f },
             ["PSh18Pchela"] = new[] { 5.3f, 5.0f, 5.3f, 10.3f },
             ["WaldenP9"] = new[] { 4.8f, 5.2f, 4.8f, 10.8f },
             ["Halden45Service"] = new[] { 4.2f, 4.7f, 4.2f, 9.5f },
@@ -48,6 +48,8 @@ namespace GameCore
             ["CorvanWasp9"] = new[] { 21.7f, 5.9f, 21.7f, 10.9f },
             ["PL74PPolovets"] = new[] { 21.5f, 4.9f, 21.5f, 7.6f },
             ["G7RailPrototype"] = new[] { 16.4f, 5.5f, 16.4f, 6.6f },
+            ["PL74PPolovetsZulu"] = new[] { 22.5f, 5.7f, 22.5f, 8.4f },
+            ["SperlingS96"] = new[] { 11.0f, -3.4f, 11.0f, -3.4f },   // the stripper clip's seat above the receiver (virtual px, ArtSource/weapons/mags_hd.py does not write this one)
         };
     }
 }
