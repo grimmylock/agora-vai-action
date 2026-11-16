@@ -1,6 +1,6 @@
 // The Gaunt (2026-11-16, Yan: "a kind of wendigo that controls other mutants, that'll come up in their fights as well"; the horror redesign of the Alpha Prowler, art: ArtSource/make_gaunt.py).
-// It does not just fight: its CALL (a scream, then one arm flung out at a player) drives every other mutant within 16 tiles for 9 seconds - they turn aggressive, hunt the player it pointed at
-// and run 35% faster - and it calls again every 14 s while it can see its target. Kill it and the driven ones falter: the drive ends and they stop for a moment (RtAi.Hold). The Tier 2 "Taken" horde
+// It does not just fight: its CALL is a recurring attack, ONE animation (Yan, 2026-11-16: the scream includes the point): it plants itself and screams for 1.5 s (killing it then cancels the call), then its arm snaps out
+// at a player and the call lands - every other mutant in range turns aggressive, hunts that player and runs faster for a while (the Elder also summons two wild Gaunts) - and it calls again every 10-16 s while it sees its target. Kill it and the driven ones falter: the drive ends and they stop for a moment (RtAi.Hold). The Tier 2 "Taken" horde
 // scene scripts the first Call (Tier2Story). Host-side like every enemy; clients do not see the poses yet.
 using System.Collections.Generic;
 using System.Linq;
@@ -17,11 +17,11 @@ namespace GameCore
         public static readonly string[] Woods = { "crimson_woods", "black_valley", "camp_shelter" };
         public static bool IsElder(Mutant m) => m?.Db?.Name == ElderName;
         public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
-        public const float ScreamFor = 1.5f, PointFor = 1.1f;
+        public const float ScreamFor = 1.5f, CallTotal = 2.6f;      // the arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal
         // the wild Gaunt calls a smaller, shorter drive; the Elder drives a whole horde (range tiles, drive seconds, speed factor, seconds between calls)
         static (float range, float drive, float haste, float every) Kit(Mutant m) => IsElder(m) ? (22f, 12f, 1.45f, 10f) : (12f, 7f, 1.3f, 16f);
 
-        class State { public float NextCall = -1f, PoseUntil = -1f, PoseAt = -1f, DiedAt = -1f; public string Pose; public bool WasAlive = true; }
+        class State { public float NextCall = -1f, PoseUntil = -1f, PoseAt = -1f, DiedAt = -1f, EffectAt = -1f; public Player Target; public string Pose; public bool WasAlive = true; }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
         static readonly Dictionary<Mutant, (float until, Player target, float haste)> Driven = new Dictionary<Mutant, (float, Player, float)>();
 
@@ -32,16 +32,17 @@ namespace GameCore
 
         /// <summary>The pose it is held in right now ("scream" while it calls, then "point"), or null (the standing sprite).</summary>
         public static string Pose(Mutant m) => States.TryGetValue(m, out var s) && Time.time < s.PoseUntil ? s.Pose : null;
-        // the animations (make_gaunt_anims.py): frame durations in ms; the scream holds (frames 3-5 shake) until the pose ends, the point holds its last frame
-        static readonly int[] ScreamMs = { 100, 140, 120, 100, 100, 100, 140, 120 }, PointMs = { 90, 90, 110, 220, 220, 220 };
+        // the call animation (SpriteCook, one strip, scream + point; 8 pictures, 2.6 s): frame durations in ms - breath, head back, the scream held, the arm snaps out (the call lands on frame 5), held, relax
+        static readonly int[] ScreamMs = { 200, 260, 300, 380, 380, 420, 380, 280 };
+        /// <summary>True while it is mid-call: it stands and screams, it does not walk or strike (RtAi.TickMutant).</summary>
+        public static bool Busy(Mutant m) => Is(m) && m.IsAlive() && Pose(m) == "scream";
         /// <summary>The picture for the pose it is in right now, or null (the standing sprite / the walk / the attack take over).</summary>
         public static Sprite Frame(Mutant m)
         {
             if (!(Pose(m) is string p) || !States.TryGetValue(m, out var s)) return null;
-            var ms = p == "scream" ? ScreamMs : PointMs; var frames = UnitSprites.GauntAnim(m.Db.Name, p, ms.Length); if (frames == null) return null;
+            var frames = UnitSprites.GauntAnim(m.Db.Name, "scream", ScreamMs.Length); if (frames == null) return null;
             float t = (Time.time - s.PoseAt) * 1000f; int i = 0; float acc = 0f;
-            for (; i < ms.Length - 1; i++) { if (t < acc + ms[i]) break; acc += ms[i]; }
-            if (p == "scream" && t >= ScreamMs.Sum()) i = 3 + (int)((t - ScreamMs.Sum()) / 90f) % 3;             // the held scream shakes: frames 3, 4, 5
+            for (; i < ScreamMs.Length - 1; i++) { if (t < acc + ScreamMs[i]) break; acc += ScreamMs[i]; }
             return frames[i];
         }
 
@@ -77,25 +78,31 @@ namespace GameCore
         public static (byte code, byte t20) NetPose(Mutant e)
         {
             if (!Is(e) || !(Pose(e) is string p) || !States.TryGetValue(e, out var s)) return (0, 0);
-            return ((byte)(p == "scream" ? 1 : 2), (byte)Mathf.Clamp(Mathf.RoundToInt((Time.time - s.PoseAt) * 20f), 0, 255));
+            return ((byte)1, (byte)Mathf.Clamp(Mathf.RoundToInt((Time.time - s.PoseAt) * 20f), 0, 255));
         }
         public static void Mirror(Mutant m, int code, float age)
         {
             if (!Is(m)) return;
             if (code == 0) { if (States.TryGetValue(m, out var s0)) s0.PoseUntil = -1f; return; }
-            var s = Of(m); s.Pose = code == 1 ? "scream" : "point"; s.PoseAt = Time.time - age; s.PoseUntil = Time.time + 0.3f;       // renewed every snapshot while the host still shows it
+            var s = Of(m); s.Pose = "scream"; s.PoseAt = Time.time - age; s.PoseUntil = Time.time + 0.3f;       // renewed every snapshot while the host still shows it
         }
 
-        /// <summary>The call: a scream, then the arm flung at `target`; every other mutant within range is driven at it.</summary>
+        /// <summary>Begins the call: it plants itself and screams; the call lands CallEffectAt later (Tick), unless it dies first.</summary>
         public static void Call(Mutant g, Player target)
         {
             var s = Of(g); float now = Time.time;
-            s.NextCall = now + Kit(g).every;
-            ForcePose(g, "scream", ScreamFor);
-            s.PoseUntil = now + ScreamFor + PointFor;                                      // the scream first, then the point: Tick() switches them
-            _pointAt[g] = now + ScreamFor;
+            s.NextCall = now + System.Math.Max(Kit(g).every, CallTotal + 2f);
+            ForcePose(g, "scream", CallTotal);
+            s.EffectAt = now + ScreamFor; s.Target = target;
             Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 1f);
-            if (IsElder(g)) Summon(g, target);                                                  // Yan, 2026-11-16: the Elder's call also brings two wild Gaunts
+        }
+
+        /// <summary>The arm snaps out: every other mutant in range is driven at the target (and the Elder summons two wild Gaunts).</summary>
+        static void Land(Mutant g, Player target)
+        {
+            if (target == null || !target.IsAlive()) target = Rt.TargetOf(g, Player.Current);
+            float now = Time.time;
+            if (IsElder(g)) Summon(g, target);
             int n = 0;
             foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m != g && m.IsAlive() && !Is(m) && CombatantUtil.Distance(g, m) <= Kit(g).range))
             { m.IsAggroed = true; Driven[m] = (now + Kit(g).drive, target, Kit(g).haste); n++; }
@@ -119,7 +126,6 @@ namespace GameCore
                 }
             if (made > 0) GameLog.Write(made == 1 ? "A wild Gaunt crawls out of the dark at its call." : $"{made} wild Gaunts crawl out of the dark at its call.");
         }
-        static readonly Dictionary<Mutant, float> _pointAt = new Dictionary<Mutant, float>();
 
         /// <summary>Every frame (Rt.WorldTick): a Gaunt in a fight calls when it can; one that just died frees the ones it drove.</summary>
         public static void Tick()
@@ -128,7 +134,8 @@ namespace GameCore
             foreach (var g in EncounterState.Enemies.OfType<Mutant>().Where(Is).ToList())
             {
                 var s = Of(g);
-                if (s.Pose == "scream" && _pointAt.TryGetValue(g, out var pa) && now >= pa && now < s.PoseUntil) s.Pose = "point";   // the scream ends, the arm comes up
+                if (s.EffectAt >= 0f && g.IsAlive() && now >= s.EffectAt) { s.EffectAt = -1f; Land(g, s.Target); }          // the call lands
+                if (!g.IsAlive()) s.EffectAt = -1f;                                                                      // killed mid-scream: nothing happens
                 if (g.IsAlive() == false)
                 {
                     if (s.WasAlive) { s.WasAlive = false; s.DiedAt = now; Falter(); }

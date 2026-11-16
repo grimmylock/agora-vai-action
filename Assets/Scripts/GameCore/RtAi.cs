@@ -53,6 +53,7 @@ namespace GameCore
             var s = Of(m);
             float now = Time.time;
             if (m.StatusEffects.Prone) return;
+            if (Gaunt.Busy(m)) return;                                                                     // a Gaunt mid-call stands and screams
             if (!s.Flee && MutantAttack.Has(m) && MutantAttack.Update(m, p, now, ref s.NextShot)) return;   // 2026-11-12: a canine plays its attack animation (no walking, the strike lands on its contact frame)
             if (now >= s.NextStep)
             {

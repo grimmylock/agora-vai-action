@@ -3007,19 +3007,25 @@ static class Program {
       var a = new Mutant("Pallid Prowler", px + 8, py + 1, MutantDatabase.Get("tier1", "PallidProwler")); var b = new Mutant("Swarm", px + 5, py - 2, MutantDatabase.Get("tier1", "Swarm"));
       EncounterState.Enemies.Add(g); EncounterState.Enemies.Add(a); EncounterState.Enemies.Add(b);
       float v0 = RtAi.Speed(a); Gaunt.Call(g, p);
-      Check(a.IsAggroed && b.IsAggroed && Gaunt.IsDriven(a) && Gaunt.Pose(g) == "scream", "gaunt: its call turns the mutants round it on the player and it screams");
+      Check(!Gaunt.IsDriven(a) && Gaunt.Busy(g) && Gaunt.Pose(g) == "scream", "gaunt: a call starts as a scream - it stands screaming and nothing is driven yet");
+      UnityEngine.Time.time += 1.6f; Gaunt.Tick();
+      Check(a.IsAggroed && b.IsAggroed && Gaunt.IsDriven(a), "gaunt: the arm snaps out and the call lands - the mutants round it turn on the player");
       Check(RtAi.Speed(a) > v0 * 1.25f && Rt.TargetOf(a, p) == p, "gaunt: the driven ones run 30% faster and hunt who it pointed at");
       g.Hp = 0; Gaunt.Tick();
       Check(!Gaunt.IsDriven(a) && RtAi.Speed(a) == v0, "gaunt: when it falls the drive ends");
       UnityEngine.Time.time += 30f; var g2 = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var c = new Mutant("Blind Maw", px + 9, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(g2); EncounterState.Enemies.Add(c);
-      Gaunt.Tick(); Check(Gaunt.IsDriven(c), "gaunt: it calls by itself when it sees its target");
+      Gaunt.Tick(); UnityEngine.Time.time += 1.6f; Gaunt.Tick(); Check(Gaunt.IsDriven(c), "gaunt: it calls by itself when it sees its target");
       { UnityEngine.Time.time += 40f; Gaunt.Reset(); EncounterState.Enemies.Clear();
         var far = new Mutant("Pallid Prowler", px + 18, py, MutantDatabase.Get("tier1", "PallidProwler")); var w = new Mutant("Gaunt", px + 4, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true };
-        EncounterState.Enemies.Add(w); EncounterState.Enemies.Add(far); Gaunt.Call(w, p); bool wildFar = Gaunt.IsDriven(far);
-        var el = new Mutant(Gaunt.ElderName, px + 4, py + 1, Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(el); UnityEngine.Time.time += 20f; Gaunt.Call(el, p);
+        EncounterState.Enemies.Add(w); EncounterState.Enemies.Add(far); Gaunt.Call(w, p); UnityEngine.Time.time += 1.6f; Gaunt.Tick(); bool wildFar = Gaunt.IsDriven(far);
+        var el = new Mutant(Gaunt.ElderName, px + 4, py + 1, Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(el); UnityEngine.Time.time += 20f; Gaunt.Call(el, p); UnityEngine.Time.time += 1.6f; Gaunt.Tick();
         int wilds0 = EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt");
         Check(EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt") - wilds0 >= 0 && EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt") >= 3, "gaunt: the Elder's call summons two wild Gaunts (the one that stood there plus two)");
         Check(!wildFar && Gaunt.IsDriven(far) && Gaunt.Is(el) && el.Db.Hp > w.Db.Hp * 3 - 1, "gaunt: the wild one's call reaches 12 tiles, the Elder's 22, and the Elder is a mini-boss (3200 HP)"); }
+      { UnityEngine.Time.time += 60f; Gaunt.Reset(); EncounterState.Enemies.Clear();
+        var g3 = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var d3 = new Mutant("Blind Maw", px + 8, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(g3); EncounterState.Enemies.Add(d3);
+        Gaunt.Call(g3, p); UnityEngine.Time.time += 0.8f; Gaunt.Tick(); g3.Hp = 0; UnityEngine.Time.time += 1.0f; Gaunt.Tick();
+        Check(!Gaunt.IsDriven(d3) && !d3.IsAggroed, "gaunt: killed in the middle of its scream, the call never lands"); }
     } finally { Rt.On = false; Gaunt.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }
 

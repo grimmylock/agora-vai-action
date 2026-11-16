@@ -279,14 +279,13 @@ namespace GameCore
                 bool arrived = bwl != null && System.Math.Abs(_gaunt.X - (bwl.X + 2)) <= 1 && System.Math.Abs(_gaunt.Y - bwl.Y) <= 2;
                 if (arrived || t >= 9f)
                 {
-                    _screamAt = now; Gaunt.ForcePose(_gaunt, "scream", 1.5f); Gaunt.ForcePose(_gaunt, "scream", 1.5f); GauntScream(_gaunt);
+                    _screamAt = now; Gaunt.ForcePose(_gaunt, "scream", Gaunt.CallTotal); GauntScream(_gaunt);
                     Say("It opens its jaw wider than a jaw should open and screams. Then it lifts one long arm and points at the soldiers.");
                 }
             }
             if (_gaunt == null || !_gaunt.IsAlive()) { if (_screamAt < 0f) _screamAt = now; }
             float ts = _screamAt < 0f ? -1f : now - _screamAt;
             if (ts < 0f) { GameOver(now); return; }                                         // the soldiers stand and stare at it until the scream is over
-            if (ts >= 1.5f && _gaunt != null && _gaunt.IsAlive() && Gaunt.Pose(_gaunt) == "scream") Gaunt.ForcePose(_gaunt, "point", 1.1f);
             // the soldiers charge down the corridor toward the noise and die one after another
             var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
             if (ts >= 2.6f) FollowPlayers(now, east, 0f, charge: true);
