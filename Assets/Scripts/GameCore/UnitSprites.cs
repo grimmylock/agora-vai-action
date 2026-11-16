@@ -152,13 +152,17 @@ namespace GameCore
             _hdFx[asset] = list; return list;
         }
 
-        public static Sprite[] HDWalk(string name)
+        public static Sprite[] HDWalk(string name) => HDStrip(name, "walk");
+        /// <summary>2026-11-16 (Yan: "runs when detecting enemies, walk when unaggroed"): the four canines' 8-frame gallop (ArtSource/export_mutant_walk.py ... run), same pivot rule as the walk; null for the rest.</summary>
+        public static Sprite[] HDRun(string name) => HDStrip(name, "run");
+        static Sprite[] HDStrip(string name, string kind)
         {
             if (name == null) return null;
             if (_hdWalk == null) _hdWalk = new Dictionary<string, Sprite[]>();
-            if (_hdWalk.TryGetValue(name, out var cached)) return cached;
+            string ck = kind == "walk" ? name : name + "/" + kind;
+            if (_hdWalk.TryGetValue(ck, out var cached)) return cached;
             Sprite[] frames = null;
-            var asset = Resources.Load<TextAsset>("Sprites/Mutants/anim/" + name.ToLowerInvariant().Replace(' ', '_') + "_walk");
+            var asset = Resources.Load<TextAsset>("Sprites/Mutants/anim/" + name.ToLowerInvariant().Replace(' ', '_') + "_" + kind);
             if (asset != null)
             {
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -169,7 +173,7 @@ namespace GameCore
                     for (int i = 0; i < WalkFrames; i++) frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);
                 }
             }
-            _hdWalk[name] = frames;
+            _hdWalk[ck] = frames;
             return frames;
         }
 

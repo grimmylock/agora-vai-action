@@ -12,6 +12,8 @@ namespace GameCore
         public const float FrameSeconds = 0.125f;
         /// <summary>A mutant that stopped sliding less than this long ago still counts as walking: Glide ends a hair before the next tile step, which would otherwise flicker to the stand-still sprite.</summary>
         public const float HoldSeconds = 0.25f;
+        /// <summary>Seconds a picture of the gallop stays up (8 pictures in 0.64 s: a canine at a run).</summary>
+        public const float RunFrameSeconds = 0.08f;
 
         static readonly Dictionary<ICombatant, (float start, float lastSlide)> State = new Dictionary<ICombatant, (float, float)>();
 
@@ -25,8 +27,10 @@ namespace GameCore
         public static Sprite Frame(Mutant m, string name, float now)
         {
             if (!Rt.On || m == null || !m.IsAlive()) return null;
-            var frames = UnitSprites.HDWalk(name);
-            if (frames == null) return null;
+            var walk = UnitSprites.HDWalk(name);
+            if (walk == null) return null;
+            var run = m.IsAggroed ? UnitSprites.HDRun(name) : null;                // Yan, 2026-11-16: it RUNS once it has detected enemies (IsAggroed, which co-op mirrors get from the snapshot), WALKS while it has not
+            var frames = run ?? walk; float fs = run != null ? RunFrameSeconds : FrameSeconds;
             State.TryGetValue(m, out var st);
             bool walking = st.lastSlide > 0f && now - st.lastSlide < HoldSeconds;
             if (Rt.Sliding(m))
@@ -35,7 +39,7 @@ namespace GameCore
                 st.lastSlide = now; walking = true;
             }
             State[m] = st;
-            return walking ? frames[FrameAt(now, st.start)] : null;
+            return walking ? frames[Mathf.Max(0, Mathf.FloorToInt((now - st.start) / fs)) % frames.Length] : null;
         }
     }
 }

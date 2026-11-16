@@ -366,9 +366,9 @@ namespace GameCore
             }
             if (st.Kind == "charge")
             {
-                if (st.Mirror) { var wfm = UnitSprites.HDWalk(name); return (now - st.Start) < ChargeWindupSeconds ? UnitSprites.HDAttack(name, "bite")?[2] : wfm == null ? null : wfm[Mathf.Max(0, Mathf.FloorToInt((now - st.Start - ChargeWindupSeconds) / (MutantWalk.FrameSeconds * 0.5f))) % wfm.Length]; }
+                if (st.Mirror) { var wfm = UnitSprites.HDRun(name) ?? UnitSprites.HDWalk(name); return (now - st.Start) < ChargeWindupSeconds ? UnitSprites.HDAttack(name, "bite")?[2] : wfm == null ? null : wfm[Mathf.Max(0, Mathf.FloorToInt((now - st.Start - ChargeWindupSeconds) / (MutantWalk.FrameSeconds * 0.5f))) % wfm.Length]; }
                 if (st.ChargeRunStart < 0f || st.ChargeEnd >= 0f) { var rb = UnitSprites.HDAttack(name, "bite"); return st.ChargeEnd >= 0f ? null : rb != null ? rb[2] : null; }      // the rear-back before the run; stumbling shows the stand pose
-                var wf = UnitSprites.HDWalk(name); return wf == null ? null : wf[Mathf.Max(0, Mathf.FloorToInt((now - st.ChargeRunStart) / (MutantWalk.FrameSeconds * 0.5f))) % wf.Length];     // running: the walk, twice as fast
+                var wf = UnitSprites.HDRun(name) ?? UnitSprites.HDWalk(name); return wf == null ? null : wf[Mathf.Max(0, Mathf.FloorToInt((now - st.ChargeRunStart) / (UnitSprites.HDRun(name) != null ? MutantWalk.RunFrameSeconds : MutantWalk.FrameSeconds * 0.5f))) % wf.Length];     // running: the gallop (the walk, twice as fast, where there is no gallop)
             }
             var a = Anim(name, st.Kind); var frames = UnitSprites.HDAttack(name, st.Kind);
             if (a == null || frames == null) return null;

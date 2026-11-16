@@ -414,4 +414,4 @@ No jumps ("he's too heavy"). Art: Yan's own AI-generated pose sheet (`ArtSource/
 - Not built (part 3): attachments as loot/shop items, an attach screen, saving them with the character, showing them on a co-op friend's gun. Until then the Testing Ground has a Sight and a Laser button for the gun in your hands.
 
 ## Canine movement (Yan, 2026-11-16)
-Dogs and other canines run when they detect enemies and walk when unaggroed. (The run strips in `ArtSource/mutants_anim/` are not wired into the game yet.)
+Dogs and other canines run when they detect enemies and walk when unaggroed. Wired 2026-11-16 (`MutantWalk.Frame`: run strip while `IsAggroed`, walk strip otherwise).
