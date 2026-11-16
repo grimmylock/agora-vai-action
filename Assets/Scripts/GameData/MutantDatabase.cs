@@ -44,7 +44,7 @@ namespace GameData
                 // CombatResolver.CalculateDamage halves Hollow Point's raw damage against ANY
                 // nonzero Phys-DR target (and it's the *only* ammo type that gets punished this
                 // way - Standard/AP/Dart don't care). With the old per-mutant Phys-DR, Hollow
-                // Point was only ever good against Rot Swarm (0%) and a straight loss against
+                // Point was only ever good against Swarm (0%) and a straight loss against
                 // every other mutant here - not a meaningful ammo choice, a trap. Stripping Phys-DR
                 // from everything except Blight Brute fixes that project-wide, not just for these
                 // three. HP below is the reference file's own compensation table; unchanged here
@@ -52,7 +52,7 @@ namespace GameData
                 // already matched the reference's post-rebalance numbers).
                 ["BlindMaw"] = new MutantDef { Name = "Blind Maw", Tier = 1, Hp = 400, PhysDR = 0.0f, AnomDR = 0.05f, Ap = 4, Mp = 5, Ac = 11, AttackDamage = 80, AgilityMod = 1, Behavior = "pack", PackTactics = true, PanicThreshold = 0.4f },
                 ["PallidProwler"] = new MutantDef { Name = "Pallid Prowler", Tier = 1, Hp = 450, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 4, Ac = 11, AttackDamage = 90, AgilityMod = 0, Behavior = "pack", PackTactics = true, ToxicBite = true, PanicThreshold = 0.35f },
-                ["RotSwarm"] = new MutantDef { Name = "Rot Swarm", Tier = 1, Hp = 300, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 6, Ac = 10, AttackDamage = 60, AgilityMod = 2, Behavior = "swarm", PackTactics = true, PanicThreshold = 0.5f },
+                ["Swarm"] = new MutantDef { Name = "Swarm", Tier = 1, Hp = 50, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 6, Ac = 10, AttackDamage = 50, AgilityMod = 2, Behavior = "swarm", PackTactics = true, PanicThreshold = 0.5f },
             },
             ["tier2"] = new Dictionary<string, MutantDef>
             {
@@ -63,7 +63,7 @@ namespace GameData
             ["tier3"] = new Dictionary<string, MutantDef>
             {
                 // Was PhysDR 25%/Hp 85 and PhysDR 20%/Hp 85 respectively - both bumped to compensate.
-                ["AlphaProwler"] = new MutantDef { Name = "Alpha Prowler", Tier = 3, Hp = 1000, PhysDR = 0.0f, AnomDR = 0.25f, Ap = 5, Mp = 5, Ac = 13, AttackDamage = 300, AgilityMod = 2, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.4f, ArmorPierce = 0.2f, PanicThreshold = 0.2f },
+                ["Gaunt"] = new MutantDef { Name = "Gaunt", Tier = 3, Hp = 1000, PhysDR = 0.0f, AnomDR = 0.25f, Ap = 5, Mp = 5, Ac = 13, AttackDamage = 300, AgilityMod = 2, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.4f, ArmorPierce = 0.2f, PanicThreshold = 0.2f },
                 ["MindWeaver"] = new MutantDef { Name = "Mind Weaver", Tier = 3, Hp = 900, PhysDR = 0.0f, AnomDR = 0.3f, Ap = 5, Mp = 4, Ac = 13, AttackDamage = 350, AgilityMod = 2, Behavior = "ranged", PsiBlast = true, PanicThreshold = 0.2f },
             },
             ["tier4"] = new Dictionary<string, MutantDef>

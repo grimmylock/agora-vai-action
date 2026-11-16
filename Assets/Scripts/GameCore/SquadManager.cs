@@ -60,6 +60,7 @@ namespace GameCore
                     var member = EncounterGeneration.CreateMutantFromDb(db, x, y);
                     member.IsAggroed = false;
                     squad.Members.Add(member);
+                    squad.Members.AddRange(EncounterGeneration.SwarmMates(db, x, y));   // a Swarm is 4-8 rats, not one
                 }
                 else
                 {

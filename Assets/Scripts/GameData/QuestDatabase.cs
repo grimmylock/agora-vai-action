@@ -76,7 +76,7 @@ namespace GameData
             Q("T1-03", "marshes", 1, QuestCategory.Elimination, "Caravans keep getting hit at the same spot.",
                 new[] { "Eliminate the Raider using the Reed Blind to ambush travelers" }, "NPC", 0),
             Q("T1-04", "smugglers_run", 1, QuestCategory.KillQuota, "The Runner's couriers keep getting swarmed.",
-                new[] { "Clear 3 Rot Swarm mutants nesting near Blind Curve" }, "Mutant", 1, count: 3),
+                new[] { "Kill 3 rats of the Swarm nesting near Blind Curve" }, "Mutant", 1, count: 3),
             Q("T1-05", null, 1, QuestCategory.Escort, "Low-stakes mentorship job - good campaign-opener filler.",
                 new[] { "Escort a greenhorn scavenger safely to their first destination" }),
 
@@ -100,12 +100,12 @@ namespace GameData
             Q("T3-04", null, 3, QuestCategory.Escort, "Good Sentinel-reputation builder, zone-agnostic.",
                 new[] { "Escort a Sentinel patrol through hostile territory" }),
             Q("T3-05", "dried_lake", 3, QuestCategory.Elimination, "Campaign note: may already be resolved by an ongoing Dried Lake questline.",
-                new[] { "Eliminate the Alpha Prowler claiming territory near the Sub-Station House" }, "Mutant", 3),
+                new[] { "Eliminate the Gaunt claiming territory near the Sub-Station House" }, "Mutant", 3),
 
             Q("T4-01", "vanguard_barracks", 4, QuestCategory.Retrieve, "Whichever faction currently holds the barracks needs this.",
                 new[] { "Recover ammo crates from the Motor Pool before Raiders scavenge them" }, "NPC", 0, guarded: true),
             Q("T4-02", "ghost_town", 4, QuestCategory.KillQuota, "Squatters want the block livable again.",
-                new[] { "Clear 2 Alpha Prowlers or Mind Weavers denning in the Row Houses" }, "Mutant", 3, count: 2),
+                new[] { "Clear 2 Gaunts or Mind Weavers denning in the Row Houses" }, "Mutant", 3, count: 2),
             Q("T4-03", "crimson_woods", 4, QuestCategory.Investigate, "Espionage-flavored - careful, non-combat play rewarded.",
                 new[] { "Investigate the Obelisk Shrine without provoking a fight", "Learn what Obelisk is doing at Deadfall Clearing" }),
             Q("T4-04", "ghost_town", 4, QuestCategory.Retrieve, "A solid payoff for actively searching a zone.",
@@ -172,7 +172,7 @@ namespace GameData
                 new[] { "Confront the named turncoat at the Signal Tower" }, "NPC", 1, npcId: "rail_yards", stage: 3, faction: "Contractors"),
 
             Q("OSEI-1", "dried_lake", 3, QuestCategory.Elimination, "Campaign note: may already be resolved - use that outcome as this stage's result.",
-                new[] { "Eliminate the Alpha Prowler guarding the Sub-Station", "Recover the dead researcher's hardened drive" },
+                new[] { "Eliminate the Gaunt guarding the Sub-Station", "Recover the dead researcher's hardened drive" },
                 "Mutant", 3, npcId: "dried_lake", stage: 1, faction: "Surveyors"),
             Q("OSEI-2", "dried_lake", 3, QuestCategory.Investigate, "Plants a lingering mystery thread.",
                 new[] { "Deliver the drive to Dr. Osei", "Investigate the Sub-Station Depths (Perception DC 16) for what the researcher was really tracking" },

@@ -89,7 +89,7 @@ namespace GameCore
         // Batch 130c's mutants at double resolution (ArtSource/make_mutants_hd.py -> Sprites/Mutants/mutant_hd_<key>.png): 32 px a
         // tile like the in-hand guns, so a 48x32 hound covers the ground a 24x16 one would; the feet sit on the tile's ground
         // line (16 px under the middle of a tile, where a 16 px human's feet are). They face right; TacticalGridView mirrors them.
-        // Mutants without one keep their old atlas cell (Rot Swarm, Alpha Prowler, Mind Weaver, Void Weaver).
+        // Mutants without one keep their old atlas cell (Swarm, Gaunt, Mind Weaver, Void Weaver).
         private static Dictionary<string, Sprite> _hd;
         public static Sprite HD(string name)
         {

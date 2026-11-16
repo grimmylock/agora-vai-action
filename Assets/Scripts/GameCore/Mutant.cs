@@ -69,7 +69,7 @@ namespace GameCore
         protected bool _packTacticsEnabled;
         public bool ActiveCamouflage;
 
-        /// <summary>Cloak (Veil Prowler/Alpha Prowler/Void Weaver): starts true for
+        /// <summary>Cloak (Veil Prowler/Gaunt/Void Weaver): starts true for
         /// ActiveCamouflage mutants, cleared by Attack(). See RequiresDetectionCheck for what it
         /// means mechanically - untargetable beyond 4 tiles without a Perception check, always
         /// visible within 3 regardless of this flag.
@@ -134,7 +134,7 @@ namespace GameCore
             Ac = db?.Ac ?? 10;
             AttackDamage = db?.AttackDamage ?? 6;
             _agilityMod = db?.AgilityMod ?? 0;
-            ThroatLacerationChance = db?.ThroatLacerationChance ?? 0f; // only Veil/Alpha Prowlers cause bleeding (file 04)
+            ThroatLacerationChance = db?.ThroatLacerationChance ?? 0f; // only Veil/Gaunts cause bleeding (file 04)
             _packTacticsEnabled = db?.PackTactics ?? false;
             ActiveCamouflage = db?.ActiveCamouflage ?? false;
             IsCloaked = ActiveCamouflage; // Cloak-capable mutants start every encounter cloaked
@@ -262,7 +262,7 @@ namespace GameCore
                 : CombatantUtil.IsAdjacent(this, target);
 
         /// <summary>New: the Mutants &amp; Factions reference's 12+Tier DC formula - used both for
-        /// Cloak detection (Veil Prowler 14, Alpha Prowler 15, Void Weaver 17) and for the Agility
+        /// Cloak detection (Veil Prowler 14, Gaunt 15, Void Weaver 17) and for the Agility
         /// dodge check against a Dread Prowler's Leap Attack. Read by PlayerController's target-
         /// selection guard.</summary>
         public int MutantCheckDC => 12 + (Db?.Tier ?? 1);
@@ -284,7 +284,7 @@ namespace GameCore
 
         /// <summary>Ported from attack(target), on the design's rules (file 04): d20 + Agility vs
         /// AC (advantage with Pack Tactics), natural 20 doubles. Claws and bites are physical -
-        /// armor Phys-DR reduces them (Alpha Prowler ignores 20% of it); psi blasts (Mind/Void
+        /// armor Phys-DR reduces them (Gaunt ignores 20% of it); psi blasts (Mind/Void
         /// Weaver) only see Anom-DR, and cover applies against them. Hits can wound humans.</summary>
         public float DamageMult = 1f;      // MutantAttack: a spit hits for a share of a bite
         public bool IgnoreRange;           // MutantAttack: the spit's glob lands from a distance

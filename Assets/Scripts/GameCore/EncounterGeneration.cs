@@ -14,6 +14,25 @@ namespace GameCore
         public static Mutant CreateMutantFromDb(MutantDef dbEntry, int x, int y) =>
             dbEntry == null ? new Mutant("Mutant", x, y, null) : new Mutant(dbEntry.Name, x, y, dbEntry);
 
+        /// <summary>2026-11-16 (Yan: "a group of small mutated rats, around 4 to 8, very low HP, each dies to even the weakest weapon in 1 shot but each takes a shot"): a Swarm is never one animal. Given the one just
+        /// created at (x, y), the other 3-7 rats of its group on free tiles close by (empty for every other mutant). Callers add them next to the first.</summary>
+        public static List<Mutant> SwarmMates(MutantDef db, int x, int y)
+        {
+            var mates = new List<Mutant>();
+            if (db == null || db.Behavior != "swarm") return mates;
+            int want = Random.Range(3, 8);
+            for (int r = 1; r <= 4 && mates.Count < want; r++)
+                for (int dy = -r; dy <= r && mates.Count < want; dy++)
+                    for (int dx = -r; dx <= r && mates.Count < want; dx++)
+                    {
+                        if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) != r || Random.value < 0.35f) continue;
+                        int tx = x + dx, ty = y + dy;
+                        if (tx < 0 || ty < 0 || tx >= TerrainMap.Width || ty >= TerrainMap.Height || !TerrainMap.CanEnterTile(tx, ty) || TerrainMap.UnitAt(tx, ty) != null || mates.Any(o => o.X == tx && o.Y == ty)) continue;
+                        mates.Add(new Mutant(db.Name, tx, ty, db) { IsAggroed = false });
+                    }
+            return mates;
+        }
+
         /// <summary>Ported from pickRandomMutantByTier(minTier, maxTier).</summary>
         public static MutantDef PickRandomMutantByTier(int minTier, int maxTier)
         {
@@ -168,6 +187,7 @@ namespace GameCore
                             var m = CreateMutantFromDb(db, ex, ey);
                             m.IsAggroed = false;
                             EncounterState.Enemies.Add(m);
+                            EncounterState.Enemies.AddRange(SwarmMates(db, ex, ey));
                         }
                     }
                     return;
@@ -187,6 +207,7 @@ namespace GameCore
                         var m = CreateMutantFromDb(db, ex, ey);
                         m.IsAggroed = false;
                         EncounterState.Enemies.Add(m);
+                        EncounterState.Enemies.AddRange(SwarmMates(db, ex, ey));
                     }
                 }
                 return;
@@ -241,7 +262,7 @@ namespace GameCore
                 var mutantDb = PickRandomMutantByTier(minT, maxT);
                 int ex = System.Math.Min(System.Math.Max(0, player.X + (i % 2 == 0 ? 2 : -2)), TerrainMap.Width - 1);
                 int ey = System.Math.Min(System.Math.Max(0, player.Y + (i > 1 ? 2 : -2)), TerrainMap.Height - 1);
-                if (mutantDb != null) EncounterState.Enemies.Add(CreateMutantFromDb(mutantDb, ex, ey));
+                if (mutantDb != null) { EncounterState.Enemies.Add(CreateMutantFromDb(mutantDb, ex, ey)); EncounterState.Enemies.AddRange(SwarmMates(mutantDb, ex, ey)); }
             }
         }
 
