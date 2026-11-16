@@ -86,5 +86,5 @@ def main(src, key, out):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14); sel = [0, 2, 5, 8, 12, 16, 21, 28]; sel = [j for j in sel if j < len(big)]
     tw, th = big[0].size; strip = Image.new("RGB", (len(sel) * (tw // 2 + 4), th // 2 + 22), (27, 29, 31)); dr = ImageDraw.Draw(strip)
     for q, j in enumerate(sel): strip.paste(big[j].resize((tw // 2, th // 2), Image.NEAREST), (q * (tw // 2 + 4), 0)); dr.text((q * (tw // 2 + 4) + 4, th // 2 + 3), f"{j * dt:.2f} s", font=font, fill=(220, 220, 220))
-    strip.save(out + ".png"); print("saved", out, len(big), "frames")
+    strip.save(out + ".png"); print("saved", out, len(big), "frames"); return big, box
 if __name__ == "__main__": main(*sys.argv[1:4])
