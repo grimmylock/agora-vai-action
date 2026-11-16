@@ -412,3 +412,6 @@ No jumps ("he's too heavy"). Art: Yan's own AI-generated pose sheet (`ArtSource/
 - Scopes (RMB aim): the camera leans further toward the mouse (reach 0.80 / 0.78 / 0.88, the gun's own lean stays if bigger), your look reach grows while aiming (x1.15 / 1.2 / 1.35, capped at 30 tiles), the aimed spread tightens (x0.90 / 0.85 / 0.75), the screen darkens round a circle that follows the crosshair with a reticle in it (`HudView.Scope.cs`). The view does NOT magnify: a top-down map shows the same tiles, a scope just lets you see and shoot further along the look cone.
 - Red dot: quicker to steady (x1.3), small spread gain, a red centre dot. Laser: hip-fire spread x0.8, a red beam from the muzzle to the crosshair (does not stop at walls yet).
 - Not built (part 3): attachments as loot/shop items, an attach screen, saving them with the character, showing them on a co-op friend's gun. Until then the Testing Ground has a Sight and a Laser button for the gun in your hands.
+
+## Canine movement (Yan, 2026-11-16)
+Dogs and other canines run when they detect enemies and walk when unaggroed. (The run strips in `ArtSource/mutants_anim/` are not wired into the game yet.)

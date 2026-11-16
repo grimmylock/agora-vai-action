@@ -100,25 +100,45 @@ def top_mag(k):
     save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdmag.png', mag)
     ys, xs = np.where(comp); cx = (xs.min() + xs.max() + 1) / 2 / d; return (cx, (ys.max() + 1) / d, cx, (ys.min() + ys.max() + 1) / 2 / d), int(comp.sum())
 def ammo_box(k):
+    """2026-11-16 (Yan: "the plain belt boxes -> try and fix it"): a stamped steel ammo box: corrugated side ribs, a lid seam with a hinge, a latch with a dark slot, a stencilled band, a carry handle with a grip,
+    and a visible belt: five brass rounds with copper tips joined by steel links, curving up into the feed tray."""
     im = load(k); d = D[k]; xc, yb = BOXES[k]; bw, bh = int(round(4.0 * d)), int(round(5.5 * d)); x0 = int(round(xc * d - bw / 2)); y0 = int(round((yb - 0.5) * d)); x1 = x0 + bw - 1; y1 = y0 + bh - 1
     H, Wd = im.shape[:2]; canvas = np.zeros((max(H, y1 + 4), Wd, 4), np.uint8); box = np.zeros(canvas.shape[:2], bool); box[y0:y1 + 1, x0:x1 + 1] = True
+    lidh = max(3, int(0.6 * d))
     for y in range(y0, y1 + 1):
         for x in range(x0, x1 + 1):
-            tt = (x - x0) / max(1, bw - 1); lid = y - y0 < int(0.6 * d)
-            col = (118, 126, 90) if y == y0 else (38, 44, 30) if lid else (22, 26, 18) if y == y1 else (98, 108, 74) if tt < 0.25 else (72, 80, 54) if tt < 0.7 else (50, 56, 38)
+            tt = (x - x0) / max(1, bw - 1); lid = y - y0 < lidh
+            col = (130, 140, 98) if y == y0 else (44, 50, 34) if y == y0 + lidh else (22, 26, 18) if y == y1 else (104, 114, 78) if tt < 0.22 else (78, 86, 58) if tt < 0.66 else (54, 60, 40)
+            if lid and y != y0: col = tuple(int(c * 1.15) for c in col)
+            if not lid and y != y1 and (y - y0 - lidh) % 4 == 2: col = tuple(int(c * 0.7) for c in col)       # the corrugation: a dark groove every four rows
             canvas[y, x] = (*col, 255)
-    hh = int(round(0.5 * d))                                                                      # the carry handle on top
+    bandy = y0 + lidh + max(2, int(0.9 * d))                                                          # a stencilled band, a pale strip with a few dark marks
+    for x in range(x0 + 2, x1 - 1):
+        canvas[bandy, x] = (150, 148, 118, 255) if (x - x0) % 5 else (60, 60, 44, 255); canvas[bandy + 1, x] = (96, 96, 74, 255)
+    hh = max(3, int(0.55 * d))                                                                        # the carry handle on top: a bar with a lit top edge and two stalks
     for y in range(y0 - hh, y0):
-        for x in range(x0 + int(bw * 0.28), x0 + int(bw * 0.72)): canvas[y, x] = (60, 66, 72, 255) if y == y0 - hh else (34, 38, 42, 255); box[y, x] = True
-    for x in range(x1 - int(0.5 * d), x1 + 1):                                                      # the latch on the front edge
-        for y in range(y0 + int(2.0 * d), y0 + int(3.2 * d)): canvas[y, x] = (126, 132, 140, 255)
+        for x in range(x0 + int(bw * 0.24), x0 + int(bw * 0.76)):
+            stalk = x < x0 + int(bw * 0.24) + 2 or x > x0 + int(bw * 0.76) - 3
+            if y == y0 - hh or stalk or y >= y0 - 1: canvas[y, x] = (96, 102, 108, 255) if y == y0 - hh else (44, 48, 54, 255); box[y, x] = True
+    for y in range(y0 - hh + 1, y0 - 1):                                                              # the gap under the handle stays empty (it is a loop)
+        for x in range(x0 + int(bw * 0.24) + 2, x0 + int(bw * 0.76) - 3): canvas[y, x] = 0; box[y, x] = False
+    for x in range(x1 - max(2, int(0.5 * d)), x1 + 1):                                                  # the latch on the front edge, with its dark slot
+        for y in range(y0 + int(2.0 * d), y0 + int(3.2 * d)): canvas[y, x] = (132, 138, 146, 255)
+    canvas[y0 + int(2.4 * d):y0 + int(2.8 * d), x1 - 1:x1 + 1] = (30, 32, 38, 255)
+    canvas[y0 + 1:y0 + lidh, x0 + 1:x0 + 3] = (60, 64, 70, 255)                                        # the hinge pin on the back edge
     for (rx, ry) in ((x0 + int(0.7 * d), y0 + int(0.25 * d)), (x1 - int(0.9 * d), y0 + int(0.25 * d))):   # rivets
-        canvas[ry:ry + 2, rx:rx + 2] = (150, 156, 120, 255)
-    for j in range(3):                                                                              # the belt going up into the feed tray: three brass rounds, copper tips
-        bx = x0 + int(bw * (0.36 + 0.14 * j)); rw = max(2, int(0.45 * d)); top = y0 - hh - int(1.3 * d)
-        for y in range(top, y0 - hh):
-            for x in range(bx, bx + rw): canvas[y, x] = (166, 108, 60, 255) if y < top + int(0.4 * d) else (206, 166, 70, 255)
-        box[top:y0 - hh, bx:bx + rw] = True
+        canvas[ry:ry + 2, rx:rx + 2] = (160, 166, 130, 255)
+    n = 5; top = y0 - hh - int(1.6 * d)
+    for j in range(n):                                                                                  # the belt: a round, then a steel link, climbing and leaning toward the tray
+        bx = x0 + int(bw * 0.30) + j * max(2, int(0.5 * d)); rw = max(2, int(0.42 * d)); lean = j // 2
+        for y in range(top + lean, y0 - hh):
+            for x in range(bx, bx + rw):
+                canvas[y, x] = (176, 118, 66, 255) if y < top + lean + int(0.45 * d) else (214, 172, 76, 255) if x == bx else (186, 146, 60, 255)
+        box[top + lean:y0 - hh, bx:bx + rw] = True
+        if j + 1 < n:
+            ly0 = y0 - hh - int(0.9 * d) + lean
+            for y in range(ly0, ly0 + 2):
+                for x in range(bx + rw, bx + max(2, int(0.5 * d))): canvas[y, x] = (118, 124, 132, 255); box[y, x] = True
     ring = ndi.binary_dilation(box, structure=np.ones((3, 3))) & ~box; canvas[ring] = K
     save(f'weapon_{k}_hdmag.png', canvas)
     ys, xs = np.where(canvas[..., 3] > 0); return ((x0 + x1 + 1) / 2 / d, y0 / d, (x0 + x1 + 1) / 2 / d, (y0 + y1 + 1) / 2 / d), int(box.sum())

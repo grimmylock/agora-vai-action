@@ -6050,3 +6050,10 @@ Done (code in `HeldWeapon.cs`):
 - **Rifles and heavies with magazines**: no part to move yet, so the support hand reaches back to the receiver, drags 3 px and lets go in the last 15% (`HeldPoseMath.Frame`).
 - **Karusel-5 hammer**: the spur cut from the picture (`gun_parts.json`, `cut_parts.py`), wired as a "hammer" part (35 deg, pivot (88, 9)); previewed as a PIL composite, not Unity.
 NOT done: charging-handle parts on the automatic rifles and the VK-127 bolt, the trigger moving, the Sperling hammer. Those are small parts that must be cut out of each picture and drawn by a SECOND part renderer (a gun carries one moving part today; the Sperling's slide rect also swallows its hammer ring). Harness passes; **not run in Unity**, and the preview tools (`sidearm_sequence.py`) do not know about the lock/rack yet.
+
+## Rough art redone (2026-11-16)
+Yan: "rough art: the lever loops (incl. the thin Nightwalker one), the plain belt boxes, the PPZ Zubr and Tambour drums, the G-7 cell -> try and fix it". No SpriteCook, all code-drawn:
+- **Lever loops** (`ArtSource/weapons/lever_redraw.py`, run after `lever_arc.py`): same silhouette and hinge, grown one pixel, dark outline outside and in, lit upper-left and shaded lower-right edge, in the lever's own steel colour (Frontier, Nightwalker, Halden shotgun).
+- **Belt boxes** (`mags_hd.py ammo_box`): corrugated stamped box, lid seam and hinge, latch with a slot, stencilled band, carry-handle loop, and a belt of five rounds joined by links leaning into the tray. WeaponMags rows unchanged.
+- **PPZ Zubr** helical magazine, **Tambour-12** drum, **G-7** cell (`ArtSource/weapons/rough_art.py`): same silhouettes and files, repainted: rounded shading, end caps with rim, slanted ribs on the Zubr, upright ribs on the drum, the G-7 cell is now a glowing cyan core in a steel casing. Previews: `maps/renders/rough_art/` (Python composites of the real files, not Unity captures; the lever previews rotate the part in PIL, so the swung look is only approximate).
+Not checked in Unity. Dog rule (Yan, same day): canines RUN when they detect enemies and WALK when unaggroed; the run strips are still not wired in the game.
