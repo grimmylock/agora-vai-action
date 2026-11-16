@@ -58,6 +58,17 @@ namespace GameCore
         }
         // 2026-11-15 (Yan: "the casings are a colored pixel"): a drawn brass case (5x2 px: rim, body, dark mouth) and a shotgun shell (7x3 px: brass base, red hull), at the weapon pictures' scale
         private static readonly Dictionary<bool, Sprite> _caseSprites = new Dictionary<bool, Sprite>();
+        static Sprite _clipSprite;
+        /// <summary>A stripper clip of ten rounds, side view (Sperling S-96: loaded from the top with the bolt open).</summary>
+        internal static Sprite ClipSprite()
+        {
+            if (_clipSprite != null) return _clipSprite;
+            string[] rows = { "cccccccccc", "BBBBBBBBBB", "bBbBbBbBbB", "LLLLLLLLLL" };
+            var pal = new Dictionary<char, Color32> { ['c'] = new Color32(176, 180, 190, 255), ['B'] = new Color32(222, 184, 74, 255), ['b'] = new Color32(176, 136, 46, 255), ['L'] = new Color32(168, 108, 62, 255) };
+            int w = rows[0].Length, h = rows.Length; var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+            for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) { var c32 = pal[rows[y][x]]; tex.SetPixel(x, h - 1 - y, new Color(c32.r / 255f, c32.g / 255f, c32.b / 255f, 1f)); }
+            tex.Apply(); return _clipSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
+        }
         internal static Sprite CaseSprite(bool shell)
         {
             if (_caseSprites.TryGetValue(shell, out var hit) && hit != null) return hit;

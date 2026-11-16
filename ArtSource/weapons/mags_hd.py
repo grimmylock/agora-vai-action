@@ -91,17 +91,35 @@ def hidden(k):
         while x0 > 0 and a[y, x0 - 1] and gx - x0 < 3.6 * d: x0 -= 1
         while x1 < Wd - 1 and a[y, x1 + 1] and x1 - gx < 3.6 * d: x1 += 1
         rows.append((y, x0, x1))
-    ymin, ymax = rows[0][0], rows[-1][0]
-    for y, x0, x1 in rows:
-        w = x1 - x0 + 1; plate = y > ymax - 4
-        for x in range(x0, x1 + 1):
-            t = (x - x0) / max(1, w - 1)
-            if x == x0 or x == x1 or y == ymax: col = (14, 14, 18)
-            elif plate: col = (70, 74, 82) if y == ymax - 3 else (36, 38, 44)
-            elif t < 0.28: col = (92, 98, 108)
-            elif t < 0.62: col = (60, 64, 72)
-            else: col = (36, 39, 45)
+    # a real magazine is long: extend it up inside the frame along the grip's own centre line (the part hidden by the gun until it slides out or drops)
+    ysr = np.array([r[0] for r in rows], float); cxr = np.array([(r[1] + r[2]) / 2 for r in rows]); w0 = int(np.median([r[2] - r[1] + 1 for r in rows]))
+    slope, icpt = np.polyfit(ysr, cxr, 1) if len(rows) > 2 else (0.0, cxr.mean()); ytop = int(gy - 5.2 * d)
+    ext = []
+    for y in range(max(0, ytop), rows[0][0]):
+        cxx = slope * y + icpt; x0e = int(round(cxx - w0 / 2)); ext.append((y, x0e, x0e + w0 - 1))
+    rows = [(y, int(round(slope * y + icpt - w0 / 2)), int(round(slope * y + icpt - w0 / 2)) + w0 - 1) for y in range(max(0, ytop), rows[-1][0] + 1)]   # straight edges along the grip's centre line (the silhouette's own ragged edge is not a magazine's)
+    ymin, ymax = rows[0][0], rows[-1][0]; plate = max(5, int(round(0.95 * d)))
+    # a pistol magazine as in Yan's references (2026-11-16): a blued steel box a little narrower than the grip, a column of round witness holes down the middle, a wider base plate with a lip
+    cxs = [(r[1] + r[2]) / 2 for r in rows]; hole_r = max(1, int(round(0.20 * d)))
+    for n, (y, x0, x1) in enumerate(rows):
+        pl = y > ymax - plate; inset = -1 if pl else 2                                       # the base plate is a little wider than the body
+        xa, xb = x0 + inset, x1 - inset; w = xb - xa + 1
+        for x in range(xa, xb + 1):
+            tt = (x - xa) / max(1, w - 1)
+            if x == xa or x == xb or y == ymax: col = (10, 10, 13)
+            elif y == ymin: col = (110, 116, 126)                                                    # the feed lips' lighter edge
+            elif pl: col = (84, 88, 98) if y == ymax - plate + 1 else (52, 55, 62) if tt < 0.2 else (30, 32, 37)
+            elif tt < 0.22: col = (82, 88, 98)
+            elif tt < 0.6: col = (46, 50, 58)
+            else: col = (27, 30, 36)
             mag[y, x] = (*col, 255)
+    gap = int(round(1.5 * d)); hy = ymax - plate - int(round(1.3 * d))
+    while hy > ymin + int(round(0.9 * d)):                                                                 # witness holes
+        i = min(len(rows) - 1, max(0, hy - ymin)); cx = int(round(cxs[i]))
+        for yy in range(hy - hole_r, hy + hole_r + 1):
+            for xx in range(cx - hole_r, cx + hole_r + 1):
+                if (xx - cx) ** 2 + (yy - hy) ** 2 <= hole_r * hole_r + 1 and 0 <= yy < mag.shape[0] and mag[yy, xx, 3]: mag[yy, xx] = (6, 6, 8, 255)
+        hy -= gap
     save(f'weapon_{k}_hdmag.png', mag)
     xs = [r[1] for r in rows] + [r[2] for r in rows]; cx = (min(xs) + max(xs) + 1) / 2
     return (cx / d, ymin / d, cx / d, (ymin + ymax + 1) / 2 / d), int(sum(r[2] - r[1] + 1 for r in rows))

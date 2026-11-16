@@ -112,6 +112,7 @@ namespace GameCore
             ["Karusel5"] = f => { f.Reload = "tube"; f.ReloadTime = 1.4f; f.Casing = null; },   // a revolver carbine: the shells go in round by round through a loading gate, the spent ones stay in the cylinder (the revolver pose would hold a long gun straight up)
             ["HaldenAM50Sledge"] = f => { f.Flash = 4; f.Shake = 0.15f; },
             ["RK12Kuvalda"] = f => { f.Shake = 0.08f; f.Kick *= 1.7f; f.Climb *= 1.8f; f.Hold = 0.12f; f.Recover *= 1.3f; },   // Yan, 2026-11-16: hits hard, long gap between shots: the gun goes up fast and stays up a moment
+            ["SperlingS96"] = f => { f.Reload = "clip"; f.ReloadTime = 1.7f; },                    // Yan, 2026-11-16: the S-96 is loaded from the top with a stripper clip
             ["SteppeEagle"] = f => { f.Kick *= 1.5f; f.Climb *= 1.7f; f.Hold = 0.10f; f.Recover *= 1.2f; },
         };
 

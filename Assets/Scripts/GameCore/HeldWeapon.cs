@@ -124,7 +124,7 @@ namespace GameCore
         }
 
         public static float ReloadTilt(string style) =>
-            style == "jam" ? 25f : style == "cylinder" ? 70f : style == "break" ? -50f : style == "tube" ? -20f : style == "belt" ? -15f : style == "mag" ? -35f : 0f;
+            style == "jam" ? 25f : style == "cylinder" ? 70f : style == "break" ? -50f : style == "tube" ? -20f : style == "belt" ? -15f : style == "mag" ? -35f : style == "clip" ? -30f : 0f;
 
         /// <summary>Reload progress r (0..1) -> how far the gun is tipped (0..1) and where the support
         /// hand is: 0 = on the gun, 1 = at the belt pouch. Mag: out to the pouch and back once.
@@ -134,7 +134,7 @@ namespace GameCore
             if (style == "jam") { var j = Jam(r); return (j.tip, 0f); }
             if (r < 0f || r >= 1f || style == "none") return (0f, 0f);
             float tip = Mathf.Min(1f, Mathf.Min(r / 0.15f, (1f - r) / 0.15f));
-            if (style == "belt" || style == "break") trips = 1;
+            if (style == "belt" || style == "break" || style == "clip") trips = 1;
             float inner = Mathf.Clamp01((r - 0.1f) / 0.8f);        // the hand works between 10% and 90%
             if (inner <= 0f || inner >= 1f) return (tip, 0f);
             float u = inner * Mathf.Max(1, trips) % 1f;             // 0..1 within one trip
@@ -491,10 +491,10 @@ namespace GameCore
                 cylDX = vy * Mathf.Sin(ca2); cylDY = vy * Mathf.Cos(ca2);
             }
             bool shellHand = false;                                                         // a tube reload: the hand carries one round at a time from the pouch back to the gun (Reload: u > 0.55 is the way back)
-            if (style == "tube" && r >= 0f && r < 1f && pose.HasSupport)
+            if ((style == "tube" || style == "clip") && r >= 0f && r < 1f && pose.HasSupport)
             {
                 float inner2 = Mathf.Clamp01((r - 0.1f) / 0.8f);
-                if (inner2 > 0f && inner2 < 1f) { float u2 = inner2 * Mathf.Max(1, trips) % 1f; shellHand = u2 >= 0.57f && u2 < 0.98f; }
+                if (inner2 > 0f && inner2 < 1f) { float u2 = inner2 * Mathf.Max(1, style == "clip" ? 1 : trips) % 1f; shellHand = u2 >= 0.57f && u2 < 0.98f; }
             }
             // RT 6i: a break-action drops its barrels open, holds them while the shells go in, snaps them shut
             float breakDeg = style == "break" && r >= 0f && r < 1f ? 35f * Mathf.Clamp01(Mathf.Min((r - 0.05f) / 0.12f, (0.92f - r) / 0.07f)) : 0f;
@@ -1207,9 +1207,10 @@ namespace GameCore
                 _gun.sprite = cy.body;                                                    // (a hammer part's body, set after this, is cut from the same cylinder-less picture)
                 cr.gameObject.SetActive(true);
                 cr.sprite = cy.cyl; cr.flipY = f.Left;
-                cr.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY) + new Vector3(0f, 0f, hdCyl ? 0.02f : 0f);
+                bool seated = f.CylDX * f.CylDX + f.CylDY * f.CylDY < 0.05f;                 // in the frame it shows in its window (on top); swung out it goes behind the frame (Yan: to the shooter's left, the far side from the camera) and peeks out beside the window
+                cr.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY) + new Vector3(0f, 0f, hdCyl ? (seated ? -0.004f : 0.02f) : 0f);
                 cr.transform.localRotation = _gun.transform.localRotation;
-                if (hdCyl) cr.sortingOrder = _gun.sortingOrder - 1;                          // Yan: it swings out to the shooter's left, the far side from the camera: behind the frame, peeking out beside the window
+                if (hdCyl) cr.sortingOrder = seated ? _gun.sortingOrder : _gun.sortingOrder - 1;
             }
             Vector3 pumpOff = Vector3.zero; bool pumping = false;                       // a pump: the off-hand goes with the fore-end
             var pt = WeaponArt.Parts(cat, key);                                       // a moving part (pump fore-end, slide...): the body plus the part, the part slid along the barrel
@@ -1264,7 +1265,7 @@ namespace GameCore
             _shell.gameObject.SetActive(shellOn);
             if (shellOn)
             {
-                _shell.sprite = CombatFxView.CaseSprite(WeaponFeel.For(weapon.Db).Casing == "shell"); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
+                var fl = WeaponFeel.For(weapon.Db); _shell.sprite = fl.Reload == "clip" ? CombatFxView.ClipSprite() : CombatFxView.CaseSprite(fl.Casing == "shell"); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
                 _shell.transform.localPosition = _support.transform.localPosition + new Vector3(0f, 0f, -0.01f); _shell.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
             }
             if (_w2?.Db != null && cat != "melee")

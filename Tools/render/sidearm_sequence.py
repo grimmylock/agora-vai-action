@@ -21,19 +21,22 @@ def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, br
         P.paste2(c, magimg, mp[2] * k, mp[3] * k, lx, ly, ldeg, left, k)
     for bx, by, bdeg, rest in brass:                                                                 # spent brass a revolver dumps (character px): lying under the unit or still falling
         d = ImageDraw.Draw(c); X, Y = (H.BX + bx) * S, (H.BY + by) * S; d.rectangle((X - 2, Y - 1, X + 3, Y + 1), fill=(201, 166, 62))
-    if magimg is not None and cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)             # a cylinder swung out on its crane: behind the frame (the far side), peeking out beside the window
+    seated = cyl and mdx * mdx + mdy * mdy < 0.05
+    if magimg is not None and cyl and not seated: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)             # a cylinder swung out on its crane: behind the frame (the far side), peeking out beside the window
     if magimg is not None and mshown and not cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)       # seated, or in the hand
     g2 = bodyimg if bodyimg is not None else gun
     if brkp is not None and f[12] != 0:                                                                # a break action: the barrels hang open on the hinge (clockwise in the gun's own picture)
         bar, hinge = brkp; layer = Image.new("RGBA", g2.size); layer.alpha_composite(g2); layer.alpha_composite(bar.rotate(-f[12], center=hinge, resample=Image.BICUBIC)); g2 = layer
     elif brkp is not None: layer = Image.new("RGBA", g2.size); layer.alpha_composite(g2); layer.alpha_composite(brkp[0]); g2 = layer
     P.paste2(c, g2, grip[0], grip[1], gx_, gy_, deg, left, k)
+    if magimg is not None and seated: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)                          # seated: in its window, on top
     gg = gl.transpose(Image.FLIP_LEFT_RIGHT) if left else gl
     for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):
         if on: c.alpha_composite(gg, (round((H.BX + x) * S - 2 * S), round((H.BY + y) * S - 1.5 * S)))
     if shell is not None and has_sup:                                                                 # the round in the support hand (red hull for a shotgun, brass for a rifle)
         d = ImageDraw.Draw(c); X, Y = (H.BX + sx) * S, (H.BY + sy) * S
-        d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell else (222, 184, 74))
+        wd = 3 if shell == 'clip' else 3
+        d.rectangle((X - (5 if shell == 'clip' else 3) * S // 2, Y - S // 2, X + (5 if shell == 'clip' else 3) * S // 2, Y + S // 2 + (S if shell == 'clip' else 0)), fill=(200, 48, 44) if shell is True else (222, 184, 74))
     return c
 def one(src, key, outdir, slow=2.0):
     big, box = PP.main(src, key, os.path.join(outdir, "tmp_shot_" + key))
@@ -47,7 +50,7 @@ def one(src, key, outdir, slow=2.0):
     mp = rel.get("mag"); trips = rel.get("trips", 1)
     brp = os.path.join(wp, f"weapon_{key}_hdbarrels.png"); isbrk = rel["style"] == "break" and os.path.exists(brp)
     brk = (Image.open(brp).convert("RGBA"), (hinges()[key][0] * k, hinges()[key][1] * k)) if isbrk else None; bodyimg = Image.open(bdp).convert("RGBA") if isbrk else bodyimg
-    shellkind = None if rel["style"] != "tube" else (True if key in ("BayouPump", "RangerP8", "Hound13", "SP14Warden", "HaldenLeverShotgun", "Karusel5") else False)
+    shellkind = "clip" if rel["style"] == "clip" else None if rel["style"] != "tube" else (True if key in ("BayouPump", "RangerP8", "Hound13", "SP14Warden", "HaldenLeverShotgun", "Karusel5") else False)
     def mk(i, f):
         sh = shellkind if (shellkind is not None and shell_in_hand(i / 30.0 / rel["secs"], trips)) else None
         if magimg is not None or isbrk or sh is not None: return dense_frame(rel, f, body, gun, gl, grip, k, magimg, bodyimg, mp, iscyl, brk, sh)
