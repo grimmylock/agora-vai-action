@@ -20,12 +20,13 @@ namespace GameCore
             public float SteadyMul = 1f;                  // how fast the aim steadies (a red dot is quick, a big scope is slow)
             public float View;                            // scopes: the lit circle's radius as a share of the screen height (the rest of the screen darkens)
             public Vector2 Pivot;                         // the sprite's mount point, texture px
+            public float Scale = 1f;                      // drawn size against the base (Yan, 2026-11-16: the scopes are 80%)
         }
         public static readonly Dictionary<string, Def> All = new Dictionary<string, Def>
         {
-            ["pu2"] = new Def { Id = "pu2", Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
-            ["acog"] = new Def { Id = "acog", Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
-            ["scope8"] = new Def { Id = "scope8", Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
+            ["pu2"] = new Def { Id = "pu2", Scale = 0.8f, Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
+            ["acog"] = new Def { Id = "acog", Scale = 0.8f, Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
+            ["scope8"] = new Def { Id = "scope8", Scale = 0.8f, Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
             ["reddot"] = new Def { Id = "reddot", Name = "Red dot", Kind = "dot", AimedSpread = 0.95f, HipSpread = 0.90f, SteadyMul = 1.30f, Pivot = new Vector2(13, 16) },
             ["laser"] = new Def { Id = "laser", Name = "Laser", Kind = "laser", Under = true, AimedSpread = 0.97f, HipSpread = 0.80f, Pivot = new Vector2(11, 1) },
         };
@@ -89,7 +90,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/Attachments/att_" + id);
             if (tex == null) return Sprites[id] = null;
             tex.filterMode = FilterMode.Bilinear;
-            return Sprites[id] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(d.Pivot.x / tex.width, 1f - d.Pivot.y / tex.height), WeaponArt.PixelsPerUnit * TexPerPixel, 0, SpriteMeshType.FullRect);
+            return Sprites[id] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(d.Pivot.x / tex.width, 1f - d.Pivot.y / tex.height), WeaponArt.PixelsPerUnit * TexPerPixel / d.Scale, 0, SpriteMeshType.FullRect);
         }
     }
 }

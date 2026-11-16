@@ -4,8 +4,8 @@ Writes Assets/Resources/Sprites/Attachments/att_<id>.png and prints each sprite'
 import numpy as np
 from PIL import Image
 OUT = 'Assets/Resources/Sprites/Attachments/'
-K = (8, 8, 11); D = (22, 24, 29); M = (41, 45, 53); L = (70, 77, 90); S = (118, 127, 144)
-W = (205, 205, 210); CH = (150, 156, 168); GR = (84, 205, 96); GRL = (170, 255, 150); GL = (34, 52, 74); GLL = (120, 170, 200)   # white dial rim, chrome, fibre green, lens glass
+K = (6, 6, 8); D = (15, 16, 18); M = (28, 29, 33); L = (48, 50, 56); S = (80, 82, 90)
+W = (176, 176, 180); CH = (112, 114, 122); GR = (58, 118, 66); GRL = (96, 158, 98); GL = (16, 22, 28); GLL = (66, 88, 100)   # white dial rim, chrome, fibre green, lens glass
 class C:
     def __init__(s, w, h): s.a = np.zeros((h, w, 4), np.uint8)
     def px(s, x, y, c, al=255):
@@ -50,7 +50,7 @@ def acog():                                                        # reference: 
     c = C(40, 22)
     c.tube(5, 6, 29, 16); c.tube(29, 5, 38, 16); c.tube(0, 8, 6, 15)
     c.rect(33, 7, 37, 14, GL); c.rect(33, 7, 37, 8, GLL); c.px(34, 9, GLL)                                         # objective glass
-    c.rect(7, 3, 27, 6, M); c.rect(7, 4, 27, 5, GR); c.rect(9, 4, 22, 5, GRL); c.rect(7, 3, 27, 4, L)               # fibre-optic strip in its housing
+    c.rect(7, 3, 27, 6, D); c.rect(7, 3, 27, 4, M); c.rect(8, 4, 26, 5, GR); c.rect(14, 4, 20, 5, GRL)                    # the fibre housing is black like the body; one thin, muted green line shows
     c.rect(26, 4, 29, 6, D)                                                                                         # housing end
     ellipse(c, 15, 11, 3.2, 3.2, M); ellipse(c, 15, 11, 2.2, 2.2, L); c.px(14, 10, S)                                # the adjuster cap
     c.rect(8, 16, 30, 20, M); c.rect(8, 16, 30, 17, L); c.rect(8, 19, 30, 20, D); c.rect(18, 17, 22, 20, D)       # the rail mount and its clamp notch
