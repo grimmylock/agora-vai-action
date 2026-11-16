@@ -82,7 +82,10 @@ def main(src, key, out):
                 if tt <= t: pos = (x, y)
             if pos and t >= port[2]:
                 X, Y = (H.BX + pos[0]) * S, (H.BY + pos[1]) * S; w, h = (7, 3) if shell else (5, 2)
-                d.rectangle((X, Y, X + w * S / 2.5, Y + h * S / 2.5), fill=(190, 40, 40) if shell else (222, 184, 74))
+                import sidearm_sequence as SQ
+                ci = SQ.ammo_img(SQ.ammo_kind(key), False)
+                if ci is not None: c.alpha_composite(ci.rotate((t * 700) % 360, expand=True, resample=Image.BICUBIC), (int(X - ci.width / 2), int(Y - ci.height / 2)))
+                else: d.rectangle((X, Y, X + w * S / 2.5, Y + h * S / 2.5), fill=(190, 40, 40) if shell else (222, 184, 74))
         frames.append(c)
     # crop to the gun's area and double it
     cw, chh = frames[0].size; box = (int(cw * 0.2), int(chh * 0.05), cw, int(chh * 0.85)); big = [f.crop(box).resize(((box[2] - box[0]) * 2 // 2, (box[3] - box[1]) * 2 // 2), Image.NEAREST).convert("RGB") for f in frames]

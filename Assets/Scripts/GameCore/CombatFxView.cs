@@ -51,13 +51,24 @@ namespace GameCore
         private const int MaxBrass = 160;
         private readonly Queue<SpriteRenderer> _brass = new Queue<SpriteRenderer>();
         /// <summary>One spent casing (brass) or shotgun shell (red) thrown from `at` with velocity (vx, vy), landing on `floor`.</summary>
-        private void DropBrass(Vector3 at, bool shell, float vx, float vy, float floor, int order)
+        private void DropBrass(Vector3 at, string kind, float vx, float vy, float floor, int order)
         {
-            var sr = NewSprite(shell ? "Shell" : "Casing", CaseSprite(shell), Color.white, _root, order);
+            var sr = NewSprite(kind == "shell12" ? "Shell" : "Casing", AmmoSprite(kind, false), Color.white, _root, order);
             _mags.Add(new LooseMag { Sr = sr, X = at.x, Y = at.y, Vx = vx, Vy = vy, Deg = Random.Range(0f, 360f), Spin = Random.Range(-720f, 720f), Floor = floor, Brass = true });
         }
         // 2026-11-15 (Yan: "the casings are a colored pixel"): a drawn brass case (5x2 px: rim, body, dark mouth) and a shotgun shell (7x3 px: brass base, red hull), at the weapon pictures' scale
         private static readonly Dictionary<bool, Sprite> _caseSprites = new Dictionary<bool, Sprite>();
+        static readonly Dictionary<string, Sprite> _ammoSprites = new Dictionary<string, Sprite>();
+        /// <summary>2026-11-16 (Yan: "actual sprites for the ammo"): the drawn spent case or live round of this ammunition class (ArtSource/ammo/ammo.py, drawn at 4 texture px to a world pixel); the old 5x2 / 7x3 pixel stand-ins only when a picture is missing.</summary>
+        internal static Sprite AmmoSprite(string kind, bool live)
+        {
+            string key = (live ? "round_" : "case_") + (kind ?? "pistol");
+            if (_ammoSprites.TryGetValue(key, out var hit) && hit != null) return hit;
+            var tex = Resources.Load<Texture2D>("Sprites/Ammo/ammo_" + key);
+            if (tex == null) return CaseSprite(kind == "shell12");
+            tex.filterMode = FilterMode.Bilinear;
+            return _ammoSprites[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit * 4f, 0, SpriteMeshType.FullRect);
+        }
         static Sprite _clipSprite;
         /// <summary>A stripper clip of ten rounds, side view (Sperling S-96: loaded from the top with the bolt open).</summary>
         internal static Sprite ClipSprite()
@@ -90,7 +101,7 @@ namespace GameCore
         {
             if (held == null || !held.Visible) return;
             float a = held.Angle * Mathf.Deg2Rad, k = Random.Range(0.7f, 1.2f);
-            DropBrass(held.EjectWorld(), feel.Casing == "shell", (-Mathf.Sin(a) * 0.7f - Mathf.Cos(a) * 0.25f) * k, Random.Range(1.0f, 1.7f) + Mathf.Cos(a) * 0.2f, FloorOf(held), 7);
+            DropBrass(held.EjectWorld(), feel.CaseKind, (-Mathf.Sin(a) * 0.7f - Mathf.Cos(a) * 0.25f) * k, Random.Range(1.0f, 1.7f) + Mathf.Cos(a) * 0.2f, FloorOf(held), 7);
         }
         /// <summary>The floor under a held gun's owner (its feet), for things it drops.</summary>
         private static float FloorOf(HeldWeaponView held) => held.Gun.parent != null ? held.Gun.parent.position.y - 0.42f : held.Gun.position.y - 0.4f;
@@ -470,7 +481,7 @@ namespace GameCore
                             // RT 6k (Yan): opening the cylinder or the breech dumps the spent ones - as many as were fired
                             int spent = e.Seconds > 0f ? e.Rounds : Mathf.Min(e.Weapon.MagCapacity, 6);
                             for (int i = 0; i < spent; i++)
-                                DropBrass(at, feel.Reload == "break", Random.Range(-0.4f, 0.4f), Random.Range(0.1f, 0.6f), FloorOf(held), 7);
+                                DropBrass(at, feel.CaseKind, Random.Range(-0.4f, 0.4f), Random.Range(0.1f, 0.6f), FloorOf(held), 7);
                         }
                     });
                     break;
@@ -526,7 +537,7 @@ namespace GameCore
             if (feel.Casing != null && held != null)
             {
                 float side = held.AimLeft ? -1f : 1f;
-                DropBrass(held.Gun.position, feel.Casing == "shell", -side * Random.Range(0.4f, 0.9f), Random.Range(1.2f, 1.8f), FloorOf(held), 7);   // RT 6k: it lands
+                DropBrass(held.Gun.position, feel.CaseKind, -side * Random.Range(0.4f, 0.9f), Random.Range(1.2f, 1.8f), FloorOf(held), 7);   // RT 6k: it lands
             }
             if (e.Actor is Player && feel.Shake > 0f) { _shakeAt = Time.time; _shakeAmp = feel.Shake; }
 

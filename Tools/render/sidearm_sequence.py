@@ -13,6 +13,14 @@ def shell_in_hand(r, trips):                                                    
     inner = min(1.0, max(0.0, (r - 0.1) / 0.8))
     if inner <= 0 or inner >= 1: return False
     u = inner * max(1, trips) % 1.0; return 0.57 <= u < 0.98
+KIND = {"12g": "shell12", "9x19mm": "pistol", "9x18mm": "pistol", ".45 ACP": "pistol", ".32 ACP": "pistol", "9x21mm": "pistol", "5.7x28mm": "pistol", "4.6x30mm": "pistol", ".357 Mag": "magnum", ".44 Mag": "magnum", ".45-70 Govt": "magnum",
+        "5.56x45mm": "rifle", "9x39mm": "rifle", "5.45x39mm": "rifle_steel", "7.62x39mm": "rifle_steel", "7.62x51mm": "rifleL", "7.62x54mmR": "rifleL", "12.7x55mm": "heavy", ".50 BMG": "heavy"}   # = CombatFx.CaseKindOf
+def ammo_kind(key):
+    s = open(os.path.join(H.ROOT, "Assets/Scripts/GameData/WeaponDatabase.cs")).read(); m = re.search(r'\["%s"\] = new WeaponDef \{[^}]*?AmmoType = "([^"]*)"' % key, s)
+    return KIND.get(m.group(1)) if m else None
+def ammo_img(kind, live):
+    f = os.path.join(SPR, "Ammo", f"ammo_{'round' if live else 'case'}_{kind}.png")
+    return Image.open(f).convert("RGBA") if kind and os.path.exists(f) else None
 def draw_shell(c, shell, extra, sx, sy, deg):
     import math
     X, Y = (H.BX + sx) * S, (H.BY + sy) * S
@@ -20,7 +28,9 @@ def draw_shell(c, shell, extra, sx, sy, deg):
         ci = extra['clip']; ang = math.radians(deg); ci = ci.rotate(deg, expand=True, resample=Image.BICUBIC)
         cxp, cyp = X + 1.75 * S * math.sin(ang), Y + 1.75 * S * math.cos(ang); c.alpha_composite(ci, (int(cxp - ci.width / 2), int(cyp - ci.height / 2)))
     else:
-        d = ImageDraw.Draw(c); d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell is True else (222, 184, 74))
+        im = extra.get('round') if extra else None
+        if im is not None: im = im.rotate(deg, expand=True, resample=Image.BICUBIC); c.alpha_composite(im, (int(X - im.width / 2), int(Y - im.height / 2)))
+        else: d = ImageDraw.Draw(c); d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell is True else (222, 184, 74))
 def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, brkp=None, shell=None, extra=None):
     """The reload frame of a double-size gun with its magazine moving (the game's own frame record + the cut pieces): the dropped magazine on the floor or falling, the seated/carried magazine, then the gun (the body without the magazine when it was cut), then the hands."""
     gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mdx, mdy, mshown, brk, thrown, lx, ly, ldeg, landed, brass = f
@@ -28,7 +38,9 @@ def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, br
     if magimg is not None and mp is not None and thrown:                                            # the old magazine: falling or lying on the floor (character px, centre pivot)
         P.paste2(c, magimg, mp[2] * k, mp[3] * k, lx, ly, ldeg, left, k)
     for bx, by, bdeg, rest in brass:                                                                 # spent brass a revolver dumps (character px): lying under the unit or still falling
-        d = ImageDraw.Draw(c); X, Y = (H.BX + bx) * S, (H.BY + by) * S; d.rectangle((X - 2, Y - 1, X + 3, Y + 1), fill=(201, 166, 62))
+        X, Y = (H.BX + bx) * S, (H.BY + by) * S; ci = (extra or {}).get('case')
+        if ci is not None: ci = ci.rotate(bdeg, expand=True, resample=Image.BICUBIC); c.alpha_composite(ci, (int(X - ci.width / 2), int(Y - ci.height / 2)))
+        else: d = ImageDraw.Draw(c); d.rectangle((X - 2, Y - 1, X + 3, Y + 1), fill=(201, 166, 62))
     seated = cyl and mdx * mdx + mdy * mdy < 0.05
     if magimg is not None and cyl and not seated: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)             # a cylinder swung out on its crane: behind the frame (the far side), peeking out beside the window
     if magimg is not None and mshown and not cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)       # seated, or in the hand
@@ -67,16 +79,17 @@ def one(src, key, outdir, slow=2.0):
     clipimg = None
     if rel["style"] == "clip":
         ci = Image.open(os.path.join(wp, "clip_stripper.png")).convert("RGBA"); th = 7 * S // 2; clipimg = ci.resize((max(1, round(ci.width * th / ci.height)), th), Image.LANCZOS)
+    akind = ammo_kind(key); rimg = ammo_img(akind, True); cimg = ammo_img(akind, False)
     def extra_for(i):
         r = i / 30.0 / rel["secs"]
-        if rel["style"] != "clip": return None
+        if rel["style"] != "clip": return {'round': rimg, 'case': cimg}
         o = 0.0 if r < 0.08 else sm((r - 0.08) / 0.10) if r < 0.18 else 1.0 if r < 0.93 else 1 - sm((r - 0.93) / 0.06) if r < 0.99 else 0.0
-        e = {'clip': clipimg, 'behind': sm((r - 0.88) / 0.08) > 0.01, 'open': o}
+        e = {'clip': clipimg, 'behind': sm((r - 0.88) / 0.08) > 0.01, 'open': o, 'round': rimg, 'case': cimg}
         if pm and os.path.exists(partp) and os.path.exists(bodyp): e.update(part=Image.open(partp).convert("RGBA"), partbody=Image.open(bodyp).convert("RGBA"), travel=float(pm.group(1)))
         return e
     def mk(i, f):
         rr = i / 30.0 / rel["secs"]; sh = shellkind if (shellkind is not None and ((0.556 <= rr < 0.965) if shellkind == 'clip' else shell_in_hand(rr, trips))) else None
-        if magimg is not None or isbrk or sh is not None or rel["style"] == "clip": return dense_frame(rel, f, body, gun, gl, grip, k, magimg, bodyimg, mp, iscyl, brk, sh, extra_for(i))
+        if magimg is not None or isbrk or sh is not None or rel["style"] in ("clip", "cylinder"): return dense_frame(rel, f, body, gun, gl, grip, k, magimg, bodyimg, mp, iscyl, brk, sh, extra_for(i))
         return P.frame_new(rel, f, body, gun, gl, grip, k)
     rf = [mk(i, f).crop(box).convert("RGB") for i, f in enumerate(rel["frames"])]
     if rel["style"] == "break": ki = max(range(len(rel["frames"])), key=lambda i: rel["frames"][i][12])                                  # a key frame for review: barrels most open / the first round in the hand / the middle of the reload

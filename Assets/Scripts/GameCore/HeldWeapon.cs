@@ -1285,7 +1285,7 @@ namespace GameCore
             _shell.gameObject.SetActive(shellOn);
             if (shellOn)
             {
-                var fl = WeaponFeel.For(weapon.Db); _shell.sprite = fl.Reload == "clip" ? CombatFxView.ClipSprite() : CombatFxView.CaseSprite(fl.Casing == "shell"); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
+                var fl = WeaponFeel.For(weapon.Db); _shell.sprite = fl.Reload == "clip" ? CombatFxView.ClipSprite() : CombatFxView.AmmoSprite(fl.CaseKind, true); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
                 _shell.transform.localPosition = _support.transform.localPosition + new Vector3(0f, 0f, -0.01f); _shell.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
                 if (fl.Reload == "clip")                                                   // the clip hangs 3.5 px under the hand, in the gun's frame (its seat is below the hand's home)
                 {

@@ -87,6 +87,7 @@ namespace GameCore
         public string Reload;      // "mag" | "cylinder" | "tube" | "break" | "belt" | "none"
         public float ReloadTime;   // seconds of reload animation
         public string Casing;      // per-shot ejection: "brass", "shell" or null (kept in the gun)
+        public string CaseKind;    // 2026-11-16: which drawn case / round it is (CaseKindOf: pistol, magnum, rifle, rifle_steel, rifleL, heavy, shell12; null = none), ArtSource/ammo/ammo.py
         public bool Rail;
 
         // category: kick, climb, recover, flash, shake, typical damage
@@ -116,6 +117,22 @@ namespace GameCore
             ["SteppeEagle"] = f => { f.Kick *= 1.5f; f.Climb *= 1.7f; f.Hold = 0.10f; f.Recover *= 1.2f; },
         };
 
+        /// <summary>The drawn case/round class of an ammunition type (Sprites/Ammo/ammo_case_*.png, ammo_round_*.png).</summary>
+        public static string CaseKindOf(string ammo)
+        {
+            switch (ammo)
+            {
+                case "12g": return "shell12";
+                case "9x19mm": case "9x18mm": case ".45 ACP": case ".32 ACP": case "9x21mm": case "5.7x28mm": case "4.6x30mm": return "pistol";
+                case ".357 Mag": case ".44 Mag": case ".45-70 Govt": return "magnum";
+                case "5.56x45mm": case "9x39mm": return "rifle";
+                case "5.45x39mm": case "7.62x39mm": return "rifle_steel";
+                case "7.62x51mm": case "7.62x54mmR": return "rifleL";
+                case "12.7x55mm": case ".50 BMG": return "heavy";
+                default: return null;                                                            // a battery cell and the like throw nothing
+            }
+        }
+
         private static readonly Dictionary<WeaponDef, WeaponFeel> Cache = new Dictionary<WeaponDef, WeaponFeel>();
 
         public static WeaponFeel For(WeaponDef db)
@@ -142,6 +159,7 @@ namespace GameCore
             else if (cat == "heavy") { f.Reload = "belt"; f.ReloadTime = 2f + extra; f.Casing = "brass"; }
             else { f.Reload = "mag"; f.ReloadTime = (cat == "sidearm" ? 0.7f : cat == "sniper" ? 1.2f : 1f) + extra; f.Casing = cat == "shotgun" ? "shell" : "brass"; }
 
+            f.CaseKind = CaseKindOf(db.AmmoType);
             if (key != null && Overrides.TryGetValue(key, out var o)) o(f);
             return Cache[db] = f;
         }
