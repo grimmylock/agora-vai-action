@@ -286,5 +286,81 @@
    33,
    26
   ]
+ },
+ "M91Trekhlineyka": {
+  "style": "bolt",
+  "rect": [
+   66,
+   3,
+   102,
+   13
+  ],
+  "travel": 18,
+  "fills": [
+   {
+    "rect": [
+     66,
+     10,
+     102,
+     13
+    ],
+    "color": "auto",
+    "shade": 0.5,
+    "outline": true
+   }
+  ]
+ },
+ "Sever98": {
+  "style": "bolt",
+  "rect": [
+   86,
+   15,
+   99,
+   26
+  ],
+  "fill_from": 84,
+  "travel": 14
+ },
+ "FrontierLeverRifle": {
+  "style": "lever",
+  "rect": [
+   68,
+   31,
+   88,
+   40
+  ],
+  "travel": 55,
+  "pivot": [
+   84,
+   23
+  ]
+ },
+ "HaldenLeverShotgun": {
+  "style": "lever",
+  "rect": [
+   70,
+   34,
+   93,
+   55
+  ],
+  "travel": 55,
+  "pivot": [
+   88,
+   31
+  ]
+ },
+ "Nightwalker4570": {
+  "style": "lever",
+  "rect": [
+   74,
+   35,
+   94,
+   46
+  ],
+  "travel": 55,
+  "pivot": [
+   92,
+   29
+  ]
  }
 }

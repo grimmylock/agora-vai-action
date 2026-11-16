@@ -11,12 +11,15 @@ def phase(style, t):
     ss = lambda x: x * x * (3 - 2 * x)
     if t < 0: return 0.0
     if style == "hammer": return t / 0.06 if t < 0.06 else 1 - (t - 0.06) / 0.08 if t < 0.14 else 0.0
+    if style == "lever": return 0.0 if t < 0.12 else ss((t - 0.12) / 0.14) if t < 0.26 else 1.0 if t < 0.31 else 1 - ss((t - 0.31) / 0.14) if t < 0.45 else 0.0
+    if style == "bolt": return 0.0 if t < 0.36 else ss((t - 0.36) / 0.18) if t < 0.54 else 1.0 if t < 0.58 else 1 - ss((t - 0.58) / 0.14) if t < 0.72 else 0.0
     if style == "slide": return t / 0.03 if t < 0.03 else 1 - (t - 0.03) / 0.11 if t < 0.14 else 0.0
     if t < 0.14: return 0.0
     if t < 0.32: return ss((t - 0.14) / 0.18)
     if t < 0.38: return 1.0
     if t < 0.56: return 1 - ss((t - 0.38) / 0.18)
     return 0.0
+def boltlift(t): return 0.0 if t < 0.30 else (t - 0.30) / 0.06 if t < 0.36 else 1.0 if t < 0.72 else 1 - (t - 0.72) / 0.06 if t < 0.78 else 0.0
 def rot(dx, dy, deg):
     """a vector in the gun's picture (x along the barrel, y down) turned by the gun's angle (CCW), image y down"""
     d = math.radians(deg); return dx * math.cos(d) + dy * math.sin(d), -dx * math.sin(d) + dy * math.cos(d)
@@ -51,7 +54,9 @@ def main(src, key, out):
         t = n * dt; gx_, gy_, deg, hx, hy, sx, sy, has_sup, left = f[:9]; sh = phase(style, t) * travel if style else 0.0
         c = Image.new("RGBA", (H.W * S, H.H * S), H.BG); c.alpha_composite(body, (H.BX * S, H.BY * S))
         if style:
-            if style == "hammer": part = gp.rotate(sh, center=pivot, resample=Image.BICUBIC) if sh > 0.5 else gp
+            if style in ("hammer", "lever"): part = gp.rotate(sh, center=pivot, resample=Image.BICUBIC) if abs(sh) > 0.5 else gp
+            elif style == "bolt":
+                part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); lift = int(round(boltlift(t) * 0.22 * travel)); part.alpha_composite(gp.crop((int(round(sh)), 0, gp.width, gp.height)) if sh >= 0.5 else gp, (0, -lift))
             else: part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); part.alpha_composite(gp.crop((int(round(sh)), 0, gp.width, gp.height)) if sh >= 0.5 else gp, (0, 0))
             P.paste2(c, gb, grip[0], grip[1], gx_, gy_, deg, left, dense); P.paste2(c, part, grip[0], grip[1], gx_, gy_, deg, left, dense)
         else: P.paste2(c, full, grip[0], grip[1], gx_, gy_, deg, left, dense)
