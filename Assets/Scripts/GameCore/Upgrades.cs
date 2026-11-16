@@ -14,7 +14,7 @@ namespace GameCore
             ["Calibrated"] = "+1 to hit",
             ["Reinforced"] = "+3 base damage",
             ["Extended Mag"] = "+50% magazine",
-            ["Hardened"] = "wear never makes it jam more (stays at 1%)",
+            ["Hardened"] = "(retired: weapons no longer jam)",
         };
         public static readonly Dictionary<string, string> Armor = new Dictionary<string, string>
         {

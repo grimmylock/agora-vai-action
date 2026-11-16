@@ -2,7 +2,7 @@
 // (HumanLootSystem rolled it into the dropped item's Name string) - nothing ever read it back out.
 // Centralizes the three real effects the Economy file ties to condition so Weapon.Fire, the armor
 // DR calc, and ShopSystem's sell-back all agree on the same rule instead of drifting: Damaged cuts
-// output (damage/DR) by 25%; each wear step adds 2% to the jam chance (CombatRules.JamChance); the
+// output (damage/DR) by 25%; (no jam chance any more: jams were removed 2026-11-16); the
 // sell-back price multiplier is the one place all three tiers differ.
 // Null/empty Condition (every item added before this batch, or bought fresh from a shop) is
 // treated as "Working" - pristine, no penalty.

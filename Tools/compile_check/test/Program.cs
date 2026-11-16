@@ -637,13 +637,8 @@ static class Program {
     Check(CombatRules.BurstPenalty(gnat) == -1 && CombatRules.BurstRounds(gnat) == 5 && CombatRules.BurstApCost(gnat) == 2, "SMG burst");
     Check(CombatRules.BurstRounds(pl74) == 10 && CombatRules.BurstMultiplier(pl74) == 3f, "heavy burst");
     Check(!CombatRules.CanBurst(W("sidearm", "PSh18Pchela")), "pistol can't burst");
-    // Batch 63 (Yan): jams are 1%, +2% per wear step
-    Check(CombatRules.JamChance(vk74) == 1 && CombatRules.Jams(1, vk74) && !CombatRules.Jams(2, vk74), "a working gun jams 1% of the time");
-    vk74.Condition = ItemCondition.Dirty; Check(CombatRules.JamChance(vk74) == 3, "dirty jams 3%");
-    CombatRules.DegradeOnJam(vk74); Check(vk74.Condition == ItemCondition.Damaged && CombatRules.JamChance(vk74) == 5, "a jam wears it to Damaged: 5%");
-    CombatRules.DegradeOnJam(vk103); Check(vk103.Condition != ItemCondition.Dirty, "VK-103 reliable");
-    vk74.Upgrades.Add("Hardened"); Check(CombatRules.JamChance(vk74) == 1, "hardened stays at 1% however worn"); vk74.Upgrades.Clear();
-    { int n = 0; for (int i = 1; i <= 100; i++) if (CombatRules.Jams(i, vk74)) n++; int r = CombatRules.RollJam(); Check(n == 5 && r >= 1 && r <= 100, $"Damaged jams on 5 of 100 ({n})"); }
+    // 2026-11-16 (Yan): no jam chance anywhere
+    Check(typeof(CombatRules).GetMethod("Jams") == null && typeof(CombatRules).GetMethod("JamChance") == null && typeof(CombatRules).GetMethod("RollJam") == null, "jams are gone from the rules");
     Check(new HumanEnemy("p", 0, 0, "Garrison", "Professional", null, null).Frags == 0 && new HumanEnemy("v", 0, 0, "Garrison", "Veteran", null, null).Frags == 1, "only Veterans and up carry grenades");
     // Batch 56: hit tiers on 2d10
     Check(!CombatRules.HitWounds(0.85f, null) && !CombatRules.HitWounds(1f, null) && CombatRules.HitWounds(1.2f, null) && CombatRules.HitWounds(1.5f, null) && CombatRules.HitWounds(1f, W("assault", "VKM")), "only vital hits and headshots wound (the VKM on a clean hit too)");   // Batch 60

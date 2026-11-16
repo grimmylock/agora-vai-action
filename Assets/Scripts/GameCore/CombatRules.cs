@@ -4,8 +4,7 @@
 //     rounds, damage x2.0 / x2.4 / x3.0. AP 3 (SMG 2, NA-94 2).
 //   * Batch 56: attacks roll 2d10. A hit by 0-3 over AC grazes (x0.85), 4-6 is a clean hit (x1.0), 7+ a
 //     vital hit (x1.2); a natural 20 (both dice 10, 1%) is a headshot: auto-hit, x1.5. All before ammo and armor.
-//   * Batch 63: a separate d100 per attack jams 1% of the time, +2% per wear step (Dirty 3%, Damaged 5%).
-//   * Jams drop the weapon one Condition step (Working > Dirty > Damaged > Broken).
+//   * (Jams were removed 2026-11-16: no weapon jams any more.)
 //   * Ammo vs total Phys-DR: Hollow Point x1.25 at 0%, x0.5 at 20%+; AP = DR x0.4; Dart = DR x0.5;
 //     then the weapon's "ignores X%". Phys-DR and Anom-DR are capped at 75%. Anom-DR never applies
 //     to bullets or melee.
@@ -210,29 +209,7 @@ namespace GameCore
 
         public static string HitName(float mult) => mult >= 1.5f ? "Headshot!" : mult > 1f ? "Vital hit" : mult < 1f ? "Graze" : "Clean hit";
 
-        /// <summary>Batch 63 (Yan): jam chance in percent - 1%, +2% per wear step. The BR-86 Bulldog is finicky (one
-        /// step worse); a Hardened gun doesn't jam more as it wears.</summary>
-        public static int JamChance(Weapon w)
-        {
-            if (w != null && IsMelee(w)) return 0;   // Batch 92: a blade doesn't jam (the harness caught a knife "jamming")
-            int steps = w?.Condition == ItemCondition.Dirty ? 1 : w?.Condition == ItemCondition.Damaged ? 2 : 0;
-            if (w != null && w.Upgrades.Contains("Hardened")) steps = 0;
-            if (w?.Db?.Name == "BR-86 Bulldog") steps++;
-            return 1 + 2 * steps;
-        }
-
-        public static bool Jams(int d100, Weapon w) => d100 <= JamChance(w);
-
-        public static int RollJam() => UnityEngine.Random.Range(1, 101);
-
-        /// <summary>A jam costs the weapon one Condition step (VK-103 is Reliable: never).</summary>
-        public static void DegradeOnJam(Weapon w)
-        {
-            if (w == null || w.Db?.Name == "VK-103") return;
-            string before = w.Condition;
-            w.Condition = ItemCondition.Worse(w.Condition);
-            if (w.Condition != before) GameLog.Write($"{w.Name} is now {w.Condition}.");
-        }
+        // 2026-11-16 (Yan: "remove jam chance from the game completely, it ruins automatic weapons"): there is no jam roll any more - guns wear (Condition) but never jam.
 
         public static int WoundThreshold(Weapon w) => w?.Db?.Name == "VKM" ? 15 : 20;
 

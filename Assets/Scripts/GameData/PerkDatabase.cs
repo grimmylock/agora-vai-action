@@ -41,7 +41,7 @@ namespace GameData
             ["DesperateParry"] = P("Melee", "Desperate Parry", "End your turn with 1+ AP: the first melee hit on you gets an Agility DC 14 to negate it."),
             ["CombatMedic"] = P("Survival", "Combat Medic", "Medkits and stims heal +10 HP."),
             ["QuickHands"] = P("Survival", "Quick Hands", "Reloads cost 0 AP in combat."),
-            ["Gunsmith"] = P("Survival", "Gunsmith", "Clearing a jam costs 0 AP."),
+            ["Gunsmith"] = P("Survival", "Gunsmith", "(Retired: weapons no longer jam.)"),
             ["Sprinter"] = P("Survival", "Sprinter", "+2 MP per turn."),
             ["TacticalReposition"] = P("Survival", "Tactical Reposition", "+1 MP per turn; end your turn in cover for +1 AC."),
             ["AdrenalineSurge"] = P("Survival", "Adrenaline Surge", "First time you drop below 30 HP in a fight: +20 temp HP and +2 AP next turn."),

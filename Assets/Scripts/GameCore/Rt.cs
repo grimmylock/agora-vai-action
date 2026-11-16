@@ -469,10 +469,8 @@ namespace GameCore
         {
             aim.NextShot = Time.time + 60f / hd.Rpm * (SlowMo ? SlowScale : 1f);   // RT 7z-g: bullet time never slows a player's trigger (enemies stay slowed)
             if (CombatRules.IsMelee(w)) { Melee.PlayerAttack(p, w, at, Of(p).Aiming); return; }   // RT 7a: swing, or aim and throw
-            if (w.IsJammed) { CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} is jammed - R to clear it."); return; }
             if (w.CurrentMagazine <= 0) { Sfx.Play("dryfire", TacticalGridView.GridToWorld(p.X, p.Y)); return; }
             w.CurrentMagazine--;
-            if (CombatRules.Jams(CombatRules.RollJam(), w)) { w.IsJammed = true; CombatRules.DegradeOnJam(w); CombatFx.Push("shot", p, null, w).Jammed = true; GameLog.Write($"{w.Name} jams!"); return; }
             var (px, py) = Ballistics.Pos(p);
             float dx = at.x - px, dy = at.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
             if (len < 0.05f) return;

@@ -90,7 +90,7 @@ namespace GameCore
                     EquippedWeapon.ApplyUpgrades();
                     if (d.EquippedWeaponMagazine >= 0) EquippedWeapon.CurrentMagazine = System.Math.Min(d.EquippedWeaponMagazine, EquippedWeapon.MagCapacity);
                     if (!string.IsNullOrEmpty(d.EquippedWeaponAmmoType)) EquippedWeapon.CurrentAmmoType = d.EquippedWeaponAmmoType;
-                    EquippedWeapon.IsJammed = d.EquippedWeaponJammed;
+                    EquippedWeapon.IsJammed = false;   // jams were removed (2026-11-16): an old save's jammed gun is simply working
                 }
             }
             if (!string.IsNullOrEmpty(d.EquippedArmorTier))

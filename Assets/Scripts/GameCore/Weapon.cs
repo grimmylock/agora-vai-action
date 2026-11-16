@@ -150,11 +150,6 @@ namespace GameCore
         /// NPCs); everything situational is added here.</summary>
         public WeaponFireResult Fire(ICombatant target, string fireMode = null, int modifier = 0, string aimedPart = null, bool ambush = false)
         {
-            if (IsJammed)
-            {
-                GameLog.Write($"{Name} is jammed and cannot fire.");
-                return new WeaponFireResult { Hit = false, Jammed = true };
-            }
             if (ItemCondition.IsBroken(Condition))
             {
                 GameLog.Write($"{Name} is broken and can't fire until it's repaired.");
@@ -225,15 +220,6 @@ namespace GameCore
             var parts = hp.Parts.Where(x => x.v != 0).Select(x => $"{x.v:+0;-0} {x.what}").ToList();
             var result = combat.RollAttack(adv, totalMod, targetAc, parts.Count == 0 ? null : "(" + string.Join(", ", parts) + ")");
             int die = result.ChosenRoll;
-
-            if (CombatRules.Jams(CombatRules.RollJam(), this))
-            {
-                IsJammed = true;
-                fx.Jammed = true;
-                GameLog.Write($"{Name} jams!");
-                CombatRules.DegradeOnJam(this);
-                return new WeaponFireResult { Hit = false, Jammed = true };
-            }
 
             // Controlled Taps: a kept 2d10 of 14+ refunds 1 AP, once per turn.
             if (attacker is Player tapper && CombatantUtil.HasPerk(tapper, "ControlledTaps") && die >= 14 && !tapper.ControlledTapsUsed)
@@ -455,14 +441,6 @@ namespace GameCore
             var shooter = Owner ?? (ICombatant)Player.Current;
             int mod = modifier + (burst ? CombatRules.BurstPenalty(this) : 0) + CombatRules.AttackerPenalty(shooter);
             var result = GameServices.RequireCombat().RollAttack("standard", mod, ObjectAc);
-            if (CombatRules.Jams(CombatRules.RollJam(), this))
-            {
-                IsJammed = true;
-                fx.Jammed = true;
-                GameLog.Write($"{Name} jams!");
-                CombatRules.DegradeOnJam(this);
-                return false;
-            }
             if (!result.Hit)
             {
                 GameLog.Write($"{Name} misses.");

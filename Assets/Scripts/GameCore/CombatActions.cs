@@ -78,7 +78,7 @@ namespace GameCore
                 Blocked = p => CombatRules.CanBurst(p.EquippedWeapon) ? null : "This gun only fires single shots.",
                 On = p => p.FireMode == "Burst", Run = p => p.ToggleFireMode() },
             new ActionDef { Id = "reload", Icon = "reload", Key = "R", Name = "Reload",
-                Desc = "Reload, or clear a jam.", Ap = p => p.EquippedWeapon != null && p.EquippedWeapon.IsJammed ? 1 : p.EquippedWeapon?.Db?.ReloadApCost ?? 1,
+                Desc = "Reload.", Ap = p => p.EquippedWeapon != null && p.EquippedWeapon.IsJammed ? 1 : p.EquippedWeapon?.Db?.ReloadApCost ?? 1,
                 Blocked = p => p.EquippedWeapon == null || CombatRules.IsMelee(p.EquippedWeapon) ? "Nothing to reload."
                     : !p.EquippedWeapon.IsJammed && p.EquippedWeapon.CurrentMagazine >= p.EquippedWeapon.MagCapacity ? "Already full." : null,
                 Run = p => { if (p.EquippedWeapon.IsJammed) p.ClearWeaponJam(); else p.ReloadWeapon(); } },

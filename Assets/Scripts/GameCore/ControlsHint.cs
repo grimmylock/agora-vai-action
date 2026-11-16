@@ -22,7 +22,7 @@ namespace GameCore
             "Right mouse: aim (steadier, look further)\n" +
             "Left mouse: fire (hold for automatics)\n" +
             "Crosshair height on a body = where you hit\n" +
-            "R: reload / clear jam   Y: swap weapon\n" +
+            "R: reload   Y: swap weapon\n" +
             "E: interact / loot body / pick up\n" +
             "F: parry (melee weapon in hand)\n" +
             "G: search anomaly / area / quest (F/G: Options)\n" +

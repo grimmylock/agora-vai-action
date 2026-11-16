@@ -169,7 +169,6 @@ namespace GameCore
             }
             if (s.BurstLeft <= 0) s.BurstLeft = hd.Auto ? Random.Range(3, 6) : 1;
             w.CurrentMagazine--;
-            if (CombatRules.Jams(CombatRules.RollJam(), w)) { w.IsJammed = true; CombatRules.DegradeOnJam(w); s.BurstLeft = 0; return; }
             float extra = (now - s.MovedAt < 0.4f ? 1.5f : 0f) + (Pinned(h) ? 2f : 0f);
             Gunplay.NpcShootOnce(h, w, p, extra);
             s.BurstLeft--;

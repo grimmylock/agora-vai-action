@@ -140,7 +140,7 @@ namespace GameCore
                 ("Radio check.", "Static. Same as always."),
                 ("How long till relief?", "Six hours. Stop asking."),
                 ("Sector's quiet.", "Sector's never quiet."),
-                ("You clean your weapon?", "Twice. It still jams."),
+                ("You clean your weapon?", "Twice. Still sticky."),
                 ("Command wants a report by dusk.", "Command wants a lot of things."),
                 ("Those tracks back there, fresh?", "Fresh enough. Keep your eyes open."),
                 ("I signed up for six months.", "We all did."),
