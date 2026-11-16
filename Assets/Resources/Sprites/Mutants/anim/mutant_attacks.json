@@ -660,8 +660,8 @@
  "gaunt": {
   "claw": {
    "frames": 8,
-   "w": 122,
-   "h": 109,
+   "w": 106,
+   "h": 98,
    "ms": [
     110,
     150,
@@ -685,14 +685,14 @@
    "contact": 5,
    "contact_ms": 540,
    "total_ms": 820,
-   "pivot_y": 0.14679
+   "pivot_y": 0.16327
   }
  },
  "elder_gaunt": {
   "claw": {
    "frames": 8,
    "w": 150,
-   "h": 144,
+   "h": 127,
    "ms": [
     110,
     150,
@@ -716,7 +716,7 @@
    "contact": 5,
    "contact_ms": 540,
    "total_ms": 820,
-   "pivot_y": 0.11111
+   "pivot_y": 0.12598
   }
  }
 }

@@ -109,6 +109,7 @@ namespace GameCore
         {
             if (target == null || !target.IsAlive()) target = Rt.TargetOf(g, Player.Current);
             float now = Time.time;
+            CombatFx.PxAt("thunderclap", g.X, g.Y);                                                // the call lands as a ring of force
             if (IsElder(g)) Summon(g, target);
             int n = 0;
             foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m != g && m.IsAlive() && !Is(m) && CombatantUtil.Distance(g, m) <= Kit(g).range && (IsElder(g) || Ballistics.MutantSize(m) < 2f)))   // Yan: the wild one only calls the smaller mutants; the Elder drives everything
