@@ -262,7 +262,8 @@ namespace GameCore
 
             var k = Keyboard.current;
             UpdatePack();                                                             // Pack 1: I - the pack screen
-            UpdateHurt();                                                             // getting hit: the red edge and flash
+            UpdateHurt();
+            UpdateScope(p);                                                           // 2026-11-16: the scope overlay while you aim through one (HudView.Scope.cs)                                                             // getting hit: the red edge and flash
             if (k != null && !GameState.Current.ModalOpen)
             {
                 // (I opens the pack screen now - HudView.Pack.cs; the old text panels stay hidden)

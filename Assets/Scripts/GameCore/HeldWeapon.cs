@@ -861,7 +861,7 @@ namespace GameCore
     /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
     public class HeldWeaponView
     {
-        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels;
+        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels, _optic, _under;
         private readonly SpriteRenderer[] _smear = new SpriteRenderer[HeldPoseMath.SmearCount];   // Melee 4: the strike's ghosts
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
@@ -893,6 +893,7 @@ namespace GameCore
             _grip = Child(body, "GripHand", 3);
             _mag = Child(body, "Magazine", 1);
             _barrels = Child(body, "Barrels", 2);
+            _optic = Child(body, "Optic", 1); _under = Child(body, "UnderAttachment", 1);   // Optics.cs: a sight on the rail, a laser under the barrel
             _gun2 = Child(body, "OffhandWeapon", 2);
             for (int i = 0; i < _smear.Length; i++) _smear[i] = Child(body, "Smear" + i, 0);
             _item = Child(body, "UseItem", 2);
@@ -989,7 +990,7 @@ namespace GameCore
         /// Called after Show each frame while he holds the eel's jaws.</summary>
         public void GripHands(ArmorDef armor, Vector3 upperWorld, Vector3 lowerWorld, float faceX)
         {
-            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false);
             foreach (var sm in _smear) sm.gameObject.SetActive(false);
             var big = HandSprite(armor, false);
             for (int h = 0; h < 2; h++)
@@ -1014,6 +1015,18 @@ namespace GameCore
         /// <summary>aimAt: world position the unit points its weapon at, or null to keep the last angle. back: the unit shows
         /// its back (UnitSprites.Away) - Batch 128 (Yan: "when they're with their back turned, the weapon is covered by the body
         /// and the hands change orientation"): gun and hands go under the body and the gloves flip, seen from the other side.</summary>
+        void AttachmentView(SpriteRenderer r, Optics.Def d, string key, float[] g, HeldFrame f, int slot, float now)
+        {
+            var sp = d != null && key != null ? Optics.SpriteOf(d.Id) : null;
+            if (sp == null || !GameData.OpticMounts.Mount.TryGetValue(key, out var mt)) { r.gameObject.SetActive(false); return; }
+            float hd = WeaponArt.Density(key), ang = f.GunDeg * Mathf.Deg2Rad;
+            float hx = (mt[slot] / hd - g[0]) / WeaponArt.PixelsPerUnit, hy = (f.Left ? 1f : -1f) * (mt[slot + 1] / hd - g[1]) / WeaponArt.PixelsPerUnit;
+            if (slot == 0 && WeaponArt.PartInfo.TryGetValue(key, out var pi) && pi.style == "slide") hx -= WeaponArt.PartPhase(pi.style, now - _shotAt) * pi.travel / (WeaponArt.PixelsPerUnit * hd);   // the sight sits on the slide
+            r.gameObject.SetActive(true); r.sprite = sp; r.flipY = f.Left; r.sortingOrder = _gun.sortingOrder;
+            r.transform.localPosition = _gun.transform.localPosition + new Vector3(hx * Mathf.Cos(ang) - hy * Mathf.Sin(ang), hx * Mathf.Sin(ang) + hy * Mathf.Cos(ang), slot == 0 ? -0.02f : -0.015f);
+            r.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+        }
+
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
             bool on = visible && weapon?.Db != null; BodyPose = null;
@@ -1021,7 +1034,7 @@ namespace GameCore
             _item.gameObject.SetActive(false);
             _w2 = on ? offhand : null;
             _gun2.gameObject.SetActive(_w2?.Db != null);
-            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false);
             if (!visible) return;
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
             _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
@@ -1167,6 +1180,9 @@ namespace GameCore
                 _mag.transform.localRotation = _gun.transform.localRotation;
                 }
             }
+            // Optics (Optics.cs): a sight on the rail, a laser under the barrel; drawn with the gun, so they ride its kick (a sight on a slide pistol rides the slide)
+            AttachmentView(_optic, Optics.OpticOf(weapon), key, g, f, 0, now);
+            AttachmentView(_under, Optics.UnderOf(weapon), key, g, f, 2, now);
             // RT 6j: the old magazine leaves as a loose object (CombatFxView lets it fall and lie on the floor)
             if (f.MagDropped && !_magThrown && mag != null && MagDropped != null && WeaponMags.Points.TryGetValue(key, out var mp))
             {

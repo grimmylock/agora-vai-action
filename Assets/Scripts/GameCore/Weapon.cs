@@ -38,6 +38,7 @@ namespace GameCore
         public Dictionary<string, int> ReserveAmmo;
         public string FireMode = "Single"; // "Single" | "Burst"
         public bool IsJammed;
+        public string Optic, Under;      // 2026-11-16 (Optics.cs): the sight on the rail ("pu2", "acog", "scope8", "reddot") and the laser under the barrel ("laser"); null = none. Not saved yet.
 
         public ICombatant Owner;         // set to whoever equips it (matches weapon.owner in JS)
         public WeaponDef Db;             // source database entry, for db.maxMpWhileHeld etc.

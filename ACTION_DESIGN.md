@@ -404,3 +404,10 @@ No jumps ("he's too heavy"). Art: Yan's own AI-generated pose sheet (`ArtSource/
 - A real run cycle for the hounds (Batch 131f): the knee-rig walk looks wrong at running speed.
 - Shotguns: 3 full patterns to drop a mid-armor target at 5 tiles (2-4 s with a pump) vs ~1 s for rifles - look at it after playing.
 - SMGs still need 14-15 chest hits on the heaviest tier 3 armor (Wasp-9, Hornet): their answer is aiming for the head or AP.
+
+## Optics and attachments (Yan, 2026-11-16)
+- Drawn on top of or under the existing gun picture, never redrawn into it (`Optics.cs`, sprites `ArtSource/weapons/attachments.py`, mounts `ArtSource/weapons/mounts.py` -> `GameData/OpticMounts.cs`). State on the `Weapon` (`Optic`, `Under`), so per player.
+- What fits: **PU 2x** on the old rifles (Mosin, SKN, SV-2, VSN, Frontier lever, the four old AK-pattern rifles); **ACOG 4x** on the modern assault rifles; **ACOG 4x or 8x** on the modern snipers; **red dot** on every sidearm and every SMG; **laser** (under the barrel) on every sidearm; **shotguns and heavies: nothing** ("SMGs get red dot, shotguns nothing").
+- Scopes (RMB aim): the camera leans further toward the mouse (reach 0.80 / 0.78 / 0.88, the gun's own lean stays if bigger), your look reach grows while aiming (x1.15 / 1.2 / 1.35, capped at 30 tiles), the aimed spread tightens (x0.90 / 0.85 / 0.75), the screen darkens round a circle that follows the crosshair with a reticle in it (`HudView.Scope.cs`). The view does NOT magnify: a top-down map shows the same tiles, a scope just lets you see and shoot further along the look cone.
+- Red dot: quicker to steady (x1.3), small spread gain, a red centre dot. Laser: hip-fire spread x0.8, a red beam from the muzzle to the crosshair (does not stop at walls yet).
+- Not built (part 3): attachments as loot/shop items, an attach screen, saving them with the character, showing them on a co-op friend's gun. Until then the Testing Ground has a Sight and a Laser button for the gun in your hands.

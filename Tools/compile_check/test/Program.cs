@@ -48,6 +48,7 @@ static class Program {
     RaidChecks();
     RtChecks();
     TestingGroundChecks();
+    OpticChecks();
     SaveSlotChecks();
     NetChecks();
     NetEelChecks();
@@ -3133,6 +3134,28 @@ static class Program {
       var all = SaveSystem.Slots();
       Check(all.Count == 2 && all.Any(x => x.Rank == "Experienced" && x.Day == 3) && File.Exists(Path.Combine(dir, "savegame.json.migrated")), "RT 7x: the old single save becomes a slot");
     } finally { SaveSystem.Root = null; SaveSystem.CharacterId = SaveSystem.WorldId = null; try { Directory.Delete(dir, true); } catch { } }
+  }
+
+  static void OpticChecks() {   // 2026-11-16: optics and attachments (Optics.cs, GameData/OpticMounts.cs)
+    Console.WriteLine("-- optics --");
+    bool tables = true;
+    foreach (var kv in GameData.OpticMounts.Allowed) {
+      bool known = WeaponDatabase.Categories.Any(c => c.Value.ContainsKey(kv.Key));
+      tables &= known && GameData.OpticMounts.Mount.ContainsKey(kv.Key) && WeaponArt.Density(kv.Key) > 1f && kv.Value.All(id => Optics.All.ContainsKey(id)) && GameData.OpticMounts.Mount[kv.Key].Length == 4;
+    }
+    Check(tables && GameData.OpticMounts.Allowed.Count == GameData.OpticMounts.Mount.Count, "optics: every fitted gun is a real double-size gun with a mount and known attachments");
+    Check(WeaponDatabase.Categories["shotgun"].Keys.All(k => !GameData.OpticMounts.Allowed.ContainsKey(k)), "optics: shotguns take nothing (Yan)");
+    Check(WeaponDatabase.Categories["smg"].Keys.All(k => GameData.OpticMounts.Allowed.TryGetValue(k, out var a) && a.Length == 1 && a[0] == "reddot"), "optics: SMGs take a red dot only (Yan)");
+    Check(WeaponDatabase.Categories["sidearm"].Keys.All(k => GameData.OpticMounts.Allowed.TryGetValue(k, out var a) && a.OrderBy(x => x).SequenceEqual(new[] { "laser", "reddot" })), "optics: sidearms take a red dot or a laser (Yan)");
+    var mosin = W("sniper", "M91Trekhlineyka"); var obelisk = W("assault", "VK74Obelisk"); var amr = W("sniper", "HaldenAM50Sledge"); var gun = W("sidearm", "WaldenP9");
+    Check(Optics.Fit(mosin, "pu2") && !Optics.Fit(mosin, "scope8") && !Optics.Fit(mosin, "reddot") && mosin.Optic == "pu2", "optics: the Mosin takes the PU 2x and nothing bigger");
+    Check(Optics.Fit(obelisk, "acog") && !Optics.Fit(obelisk, "scope8") && Optics.Fit(amr, "scope8") && Optics.Fit(amr, "acog"), "optics: an assault rifle takes the ACOG, a modern sniper the ACOG or the 8x");
+    Check(Optics.Fit(gun, "reddot") && Optics.Fit(gun, "laser") && gun.Optic == "reddot" && gun.Under == "laser" && Optics.CycleOptic(gun) == null && gun.Optic == null && Optics.ToggleUnder(gun) == null && gun.Under == null, "optics: a pistol carries a sight and a laser at once; the Testing Ground buttons cycle them");
+    Check(Optics.SpreadMul(mosin, 1f) < 1f && Optics.SpreadMul(mosin, 1f) < Optics.SpreadMul(mosin, 0f) && Optics.SpreadMul(W("sidearm", "WaldenP9"), 1f) == 1f, "optics: a scope tightens an aimed shot, no attachment changes nothing");
+    Optics.Fit(gun, "laser"); Check(Optics.SpreadMul(gun, 0f) < Optics.SpreadMul(gun, 1f), "optics: a laser helps most from the hip");
+    Check(Optics.Reach(mosin, 0.75f) >= 0.8f && Optics.Reach(obelisk, 0.5f) >= 0.78f && Optics.Reach(gun, 0.5f) == 0.5f && Optics.LookMul(amr, true) >= 1.2f && Optics.LookMul(amr, false) == 1f, "optics: scopes lean the camera and look further only while aiming");
+    var wasp = W("smg", "CorvanWasp9"); float s0 = Optics.SteadyMul(wasp); Optics.Fit(wasp, "reddot");
+    Check(s0 == 1f && Optics.SteadyMul(wasp) > 1f, "optics: a red dot steadies the aim faster");
   }
 
   static void TestingGroundChecks() {

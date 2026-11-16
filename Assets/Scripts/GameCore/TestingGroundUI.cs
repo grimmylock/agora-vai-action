@@ -83,6 +83,10 @@ namespace GameCore
             var p = Player.Current;
             UIBuildUtil.CreateText(_body, "Title", new Vector2(0.02f, 0.93f), new Vector2(0.7f, 0.99f), "TESTING GROUND", 22, HudView.Yellow, TextAlignmentOptions.Left);
             Btn(new Vector2(0.84f, 0.93f), new Vector2(0.98f, 0.99f), "Close", Close);
+            // 2026-11-16: fit a sight and a laser on the gun in your hands (Optics.cs; only what that gun takes: sidearms red dot + laser, SMGs red dot, old rifles PU 2x, assault ACOG 4x, modern snipers ACOG or 8x)
+            var held = p?.EquippedWeapon;
+            Btn(new Vector2(0.27f, 0.93f), new Vector2(0.5f, 0.99f), "Sight: " + (Optics.OpticOf(held)?.Name ?? (Optics.AllowedFor(held).Length == 0 ? "-" : "none")), () => Optics.CycleOptic(held));
+            Btn(new Vector2(0.51f, 0.93f), new Vector2(0.7f, 0.99f), "Laser: " + (Optics.UnderOf(held) != null ? "on" : System.Array.IndexOf(Optics.AllowedFor(held), "laser") >= 0 ? "off" : "-"), () => Optics.ToggleUnder(held));
             for (int i = 0; i < Tabs.Length; i++)
             {
                 int t = i;

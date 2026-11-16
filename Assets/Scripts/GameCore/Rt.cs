@@ -351,7 +351,7 @@ namespace GameCore
             var w = p.EquippedWeapon;
             var aim = Gunplay.AimOf(p);
             var hd = Gunplay.For(w);
-            Gunplay.Tick(hd, aim, s.Aiming || s.Diving, s.Moving, SlowMo ? Time.unscaledDeltaTime : dt);   // in bullet time your aim keeps real-time speed
+            Gunplay.Tick(hd, aim, s.Aiming || s.Diving, s.Moving, (SlowMo ? Time.unscaledDeltaTime : dt) * Optics.SteadyMul(w));   // in bullet time your aim keeps real-time speed
             var mw = i.Mouse;
             TickReload(p, w, aim, Time.time);
             if (i.Reload && w != null && aim.ReloadUntil < 0f && s.UsingId == null && !CombatRules.IsMelee(w)
@@ -380,7 +380,7 @@ namespace GameCore
             if (mw.HasValue)
             {
                 var (px, py) = Ballistics.Pos(p);
-                float reach = s.Aiming ? (CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;
+                float reach = s.Aiming ? Optics.Reach(w, CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;   // a scope leans the camera further (Optics.cs)
                 s.Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
             }
         }
@@ -491,6 +491,7 @@ namespace GameCore
             bool ambush = over is Mutant u && !u.IsAggroed;
             if (!EncounterState.InCombat) Contact.ShotFrom(p);
             float spread = Gunplay.Spread(hd, aim, Of(p).Moving, p.Sneaking);
+            spread *= Optics.SpreadMul(w, aim.Steady);                                       // 2026-11-16: a sight or a laser on this gun (Optics.cs), per player
             // RT batch 2: broken arms sway, a concussion blurs; RT batch 4: their near misses pin you. RT 7z-d: halved like the rest of
             // your spread (Gunplay.PlayerSpread) - left whole in RT 7z, a pin alone tripled a steady pistol's spread
             spread += (2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f)) * Gunplay.PlayerSpread;

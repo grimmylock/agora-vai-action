@@ -213,7 +213,8 @@ namespace GameCore
             _look = look; _lookZone = _builtZoneId;
             var aimAt = MouseWorld();
             if (aimAt.HasValue) _aim = Mathf.Atan2(aimAt.Value.y - _playerMarker.transform.position.y, aimAt.Value.x - _playerMarker.transform.position.x);
-            float lookReach = Rt.On ? look.Vision * (1f + 0.5f * (1f - Mathf.Clamp01(look.Night / 0.8f))) : 0f;   // real time: the look cone (Vision.LookReach)
+            float lookReach = Rt.On ? look.Vision * (1f + 0.5f * (1f - Mathf.Clamp01(look.Night / 0.8f))) : 0f;
+            if (Rt.On) lookReach *= Optics.LookMul(player.EquippedWeapon, Rt.Me.Aiming);   // 2026-11-16: aiming through a scope gives some of dusk/rain/fog back (Vision caps it at MaxRadius)   // real time: the look cone (Vision.LookReach)
             Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
             Rt.Me.LookReach = Vision.LookReach;                                  // co-op: fair shots read each player's own reach
             _roofs?.Tick(player);
@@ -395,7 +396,7 @@ namespace GameCore
 
         // Real-time fork: four ticks round the mouse, as far apart as the round can stray at that distance (one spread),
         // so steadying the aim visibly closes them. Red while reloading or empty; the centre dot turns red over a body.
-        private readonly List<SpriteRenderer> _reticle = new List<SpriteRenderer>();
+        private readonly List<SpriteRenderer> _reticle = new List<SpriteRenderer>(), _laser = new List<SpriteRenderer>();
         private void Reticle(Player player)
         {
             while (_reticle.Count < 6)
@@ -410,6 +411,7 @@ namespace GameCore
             float dist = Mathf.Sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
             var aim = Gunplay.AimOf(player);
             float spread = Gunplay.Spread(Gunplay.For(w), aim, Rt.Me.Moving, player.Sneaking);
+            spread *= Optics.SpreadMul(w, aim.Steady);                                  // the ticks close the way the rounds do (Optics.cs)
             float gap = Mathf.Clamp(dist * Mathf.Sin(spread * Mathf.Deg2Rad) + 2f / 16f, 2f / 16f, 3f);
             bool dry = aim.ReloadUntil >= 0f || (!CombatRules.IsMelee(w) && w.CurrentMagazine <= 0) || w.IsJammed;
             var col = dry ? new Color(1f, 0.35f, 0.3f, 0.9f) : new Color(1f, 1f, 1f, 0.85f);
@@ -417,11 +419,29 @@ namespace GameCore
             Vector3[] at = { c + new Vector3(gap, 0f, 0f), c + new Vector3(-gap, 0f, 0f), c + new Vector3(0f, gap, 0f), c + new Vector3(0f, -gap, 0f), c };
             Vector3[] size = { new Vector3(3f, 1f, 1f), new Vector3(3f, 1f, 1f), new Vector3(1f, 3f, 1f), new Vector3(1f, 3f, 1f), Vector3.one };
             var over = Rt.UnitUnder(mx, my);
+            bool redDot = Optics.OpticOf(w)?.Kind == "dot";                              // a red-dot sight: the centre dot is red and a little bigger
+            if (redDot) size[4] = new Vector3(1.6f, 1.6f, 1f);
             for (int i = 0; i < 5; i++)
             {
                 _reticle[i].transform.position = at[i];
                 _reticle[i].transform.localScale = size[i] * (1f / 16f);
-                _reticle[i].color = i == 4 && over != null ? new Color(1f, 0.3f, 0.25f, 1f) : col;
+                _reticle[i].color = i == 4 && (over != null || redDot) ? new Color(1f, redDot ? 0.15f : 0.3f, redDot ? 0.1f : 0.25f, 1f) : col;
+            }
+            // a laser under the barrel: a thin red beam from the muzzle toward the crosshair (14 tiles at most; it does not stop at walls yet) and a dot where it ends
+            while (_laser.Count < 2) _laser.Add(CreateMarker("LaserBeam", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite()));
+            bool beam = Optics.UnderOf(w) != null && !player.Sneaking && !dry && _playerMarker != null && Held(_playerMarker).Visible;
+            foreach (var l in _laser) l.gameObject.SetActive(beam);
+            if (beam)
+            {
+                var m0 = Held(_playerMarker).Muzzle(); float ddx = c.x - m0.x, ddy = c.y - m0.y, dl = Mathf.Sqrt(ddx * ddx + ddy * ddy), len = Mathf.Min(dl, 14f);
+                if (len > 0.05f)
+                {
+                    var dir = new Vector3(ddx / dl, ddy / dl, 0f); var end = m0 + dir * len;
+                    _laser[0].transform.position = (m0 + end) * 0.5f; _laser[0].transform.localScale = new Vector3(len, 1f / 20f, 1f);
+                    _laser[0].transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg); _laser[0].color = new Color(1f, 0.15f, 0.1f, 0.5f);
+                    _laser[1].transform.position = end; _laser[1].transform.localScale = new Vector3(3f / 16f, 3f / 16f, 1f); _laser[1].transform.rotation = Quaternion.identity; _laser[1].color = new Color(1f, 0.25f, 0.2f, 0.95f);
+                }
+                else foreach (var l in _laser) l.gameObject.SetActive(false);
             }
             // RT batch 3: in bullet time the part under the crosshair lights up (head, torso or legs band of the sprite)
             var box = _reticle[5];
