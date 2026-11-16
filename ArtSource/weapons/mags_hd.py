@@ -67,6 +67,15 @@ def finish_visible(k):
     ys, xs = np.where(comp); top, left, right, bottom = ys.min(), xs.min(), xs.max(), ys.max()
     save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdmag.png', mag)
     return ((left + right + 1) / 2 / d, top / d, (left + right + 1) / 2 / d, (top + bottom + 1) / 2 / d), box, int(comp.sum())
+# revolvers: the cylinder's interior box (x0, x1, y0, y1, inclusive, texture px). The cylinder becomes weapon_<Key>_hdcyl.png (outlined), the frame weapon_<Key>_hdbody.png keeps a dark empty window; the game slides the cylinder out along the underside for the whole reload.
+CYL = {'HaldenServiceRevolver': (50, 72, 9, 28), 'RinaldiR6': (51, 76, 17, 39), 'RK12Kuvalda': (45, 81, 13, 36)}
+def cylinder(k):
+    im = load(k); x0, x1, y0, y1 = CYL[k]; box = np.zeros(im.shape[:2], bool); box[y0:y1 + 1, x0:x1 + 1] = True; a = im[..., 3] > 0; comp = box & a
+    body = im.copy(); body[comp] = (24, 26, 30, 255)                                           # the empty window: the dark inside of the frame
+    cyl = np.zeros_like(im); cyl[comp] = im[comp]
+    ring = ndi.binary_dilation(comp, structure=np.ones((3, 3))) & ~comp; cyl[ring] = K            # an outline of its own, since it leaves the frame
+    save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdcyl.png', cyl)
+    return int(comp.sum())
 def hidden(k):
     im = load(k); a = im[..., 3] > 0; H, Wd = a.shape; d = D[k]; g = G[k]; gx, gy = g[0] * d, g[1] * d
     mag = np.zeros_like(im); rows = []
@@ -101,6 +110,7 @@ def main(keys):
     pts = {}
     for k in keys:
         try:
+            if k in CYL: print(k, 'cylinder', cylinder(k), 'px'); continue
             if k in HIDDEN: r = hidden(k); pts[k] = r[0]; print(k, 'hidden mag', r[1], 'px', [round(float(v), 1) for v in r[0]])
             else: r = finish_visible(k); pts[k] = r[0]; print(k, 'cut', r[2], 'px', 'box', r[1], [round(float(v), 1) for v in r[0]])
         except SystemExit as e: print('SKIPPED', e)

@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); WP = os.path.join(HERE, '..',
 def main(keys):
     cfg = json.load(open(os.path.join(HERE, 'gun_parts.json')))
     for k in keys or cfg:
-        c = cfg[k]; a = np.array(Image.open(os.path.join(WP, f'weapon_{k}_hd.png')).convert('RGBA')); rects = c.get('rects') or ([c['rect']] if 'rect' in c else [])
+        c = cfg[k]; a = np.array(Image.open(os.path.join(WP, f'weapon_{k}_hdbody.png' if os.path.exists(os.path.join(WP, f'weapon_{k}_hdbody.png')) else f'weapon_{k}_hd.png')).convert('RGBA')); rects = c.get('rects') or ([c['rect']] if 'rect' in c else [])
         part = np.zeros_like(a); body = a.copy()
         if 'column_cut' in c:                                                   # a slide: per column from y0 down to (and including) the first black outline pixel at or below scan_from = the slide's lower edge
             cc = c['column_cut']

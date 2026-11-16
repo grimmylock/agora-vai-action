@@ -698,7 +698,19 @@ namespace GameCore
         {
             if (key == null) return (null, null);
             if (CylCache.TryGetValue(key, out var hit)) return hit;
-            if (Density(key) > 1f) return CylCache[key] = (null, null);                  // no cylinder pieces for the big picture: the reload is the hands alone
+            if (Density(key) > 1f)                                                       // 2026-11-16: the double-size revolvers - the frame with an empty window and the cylinder (ArtSource/weapons/mags_hd.py)
+            {
+                float dense = Density(key); var gh = For(cat, key).grip;
+                Sprite LoadHd(string part)
+                {
+                    var tx = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_hd" + part);
+                    if (tx == null) return null;
+                    tx.filterMode = FilterMode.Bilinear;
+                    return Sprite.Create(tx, new Rect(0, 0, tx.width, tx.height), new Vector2(gh[0] * dense / tx.width, 1f - gh[1] * dense / tx.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);
+                }
+                var hc = LoadHd("cyl");
+                return CylCache[key] = hc == null ? (null, null) : (LoadHd("body"), hc);
+            }
             var cyl = Part(cat, key, "cyl");
             return CylCache[key] = cyl == null ? (null, null) : (Part(cat, key, "body"), cyl);
         }
@@ -1167,11 +1179,13 @@ namespace GameCore
             var cy = WeaponArt.Cylinder(cat, key);
             if (cy.cyl != null && cy.body != null)                                    // RT 6l: frame + cylinder, the cylinder on the magazine's layer
             {
-                _gun.sprite = cy.body;
-                _mag.gameObject.SetActive(true);
-                _mag.sprite = cy.cyl; _mag.flipY = f.Left;
-                _mag.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY);
-                _mag.transform.localRotation = _gun.transform.localRotation;
+                bool hdCyl = WeaponArt.Density(key) > 1f; var cr = hdCyl ? _magHd : _mag;   // a double-size revolver's hammer part uses _mag, so its cylinder has its own renderer
+                _gun.sprite = cy.body;                                                    // (a hammer part's body, set after this, is cut from the same cylinder-less picture)
+                cr.gameObject.SetActive(true);
+                cr.sprite = cy.cyl; cr.flipY = f.Left;
+                cr.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY) + new Vector3(0f, 0f, hdCyl ? -0.004f : 0f);
+                cr.transform.localRotation = _gun.transform.localRotation;
+                if (hdCyl) cr.sortingOrder = _gun.sortingOrder;
             }
             Vector3 pumpOff = Vector3.zero; bool pumping = false;                       // a pump: the off-hand goes with the fore-end
             var pt = WeaponArt.Parts(cat, key);                                       // a moving part (pump fore-end, slide...): the body plus the part, the part slid along the barrel
