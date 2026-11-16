@@ -58,7 +58,7 @@ namespace GameCore
         }
         // 2026-11-15 (Yan: "the casings are a colored pixel"): a drawn brass case (5x2 px: rim, body, dark mouth) and a shotgun shell (7x3 px: brass base, red hull), at the weapon pictures' scale
         private static readonly Dictionary<bool, Sprite> _caseSprites = new Dictionary<bool, Sprite>();
-        private static Sprite CaseSprite(bool shell)
+        internal static Sprite CaseSprite(bool shell)
         {
             if (_caseSprites.TryGetValue(shell, out var hit) && hit != null) return hit;
             string[] rows = shell ? new[] { "ABBRRRD", "ABBRrRD", "aBbRrdD" } : new[] { "ABBBD", "abbbd" };

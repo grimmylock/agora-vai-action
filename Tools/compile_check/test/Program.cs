@@ -763,7 +763,7 @@ static class Program {
       float full = Gunplay.ByRound(w) ? (Gunplay.Revolver(w) ? Gunplay.CylinderOpen : 0f) + cap * Gunplay.PerRound(w) : Gunplay.For(w).ReloadTime;
       foreach (var (style, secs) in new[] { (feel.Reload, full), ("jam", 0.8f), ("shot", 0.7f) }) {   // "shot": 0.7 s after a trigger pull (the gun's own kick, climb and recover), for Tools/render/parts_preview.py
         if (!firstAnim) sb.Append(','); firstAnim = false;
-        sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
+        sb.Append($"{{\"key\":\"{key}\",\"name\":\"{db.Name}\",\"style\":\"{style}\",\"secs\":{secs:0.00},\"trips\":{trips},\"armor\":{armor},\"cuff\":\"{SpriteAtlasIndex.ArmorCuff[armor]}\",\"glove\":\"{SpriteAtlasIndex.ArmorGlove[armor]}\",\"gx\":{g[0]},\"gy\":{g[1]},\"frames\":[");
         int n = (int)Math.Ceiling(secs * 30f) + 12;
         // RT 6j: the dropped magazine, through the same fall the game runs (HeldPoseMath.Fall), in character px (y down)
         float[] mp = WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null;

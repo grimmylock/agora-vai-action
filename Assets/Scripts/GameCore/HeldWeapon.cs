@@ -36,6 +36,7 @@ namespace GameCore
         public string Body;                 // Melee 3: the body's pose frame (UnitSprites.Pose key), null = standing
         public float Length;                // Melee 2: the weapon's drawn length (1, or less mid-sweep: 0 = unset, read as 1)
         public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)
+        public bool ShellInHand;            // 2026-11-16: a tube-fed gun's reload: the support hand carries a round from the pouch to the loading port
         public bool Left, HasSupport;
     }
 
@@ -489,11 +490,17 @@ namespace GameCore
                 float vy = (left ? -1f : 1f) * o;                                           // along the gun's underside
                 cylDX = vy * Mathf.Sin(ca2); cylDY = vy * Mathf.Cos(ca2);
             }
+            bool shellHand = false;                                                         // a tube reload: the hand carries one round at a time from the pouch back to the gun (Reload: u > 0.55 is the way back)
+            if (style == "tube" && r >= 0f && r < 1f && pose.HasSupport)
+            {
+                float inner2 = Mathf.Clamp01((r - 0.1f) / 0.8f);
+                if (inner2 > 0f && inner2 < 1f) { float u2 = inner2 * Mathf.Max(1, trips) % 1f; shellHand = u2 >= 0.57f && u2 < 0.98f; }
+            }
             // RT 6i: a break-action drops its barrels open, holds them while the shells go in, snaps them shut
             float breakDeg = style == "break" && r >= 0f && r < 1f ? 35f * Mathf.Clamp01(Mathf.Min((r - 0.05f) / 0.12f, (0.92f - r) / 0.07f)) : 0f;
             return new HeldFrame
             {
-                CylDX = cylDX, CylDY = cylDY, MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg,
+                CylDX = cylDX, CylDY = cylDY, MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg, ShellInHand = shellHand,
                 Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
                 GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
                 GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
@@ -747,6 +754,19 @@ namespace GameCore
             if (key == null || !Hinges.TryGetValue(key, out var h)) return (null, null, 0f, 0f);
             if (BreakCache.TryGetValue(key, out var hit)) return hit;
             var g = For(cat, key).grip;
+            if (Density(key) > 1f)                                                       // 2026-11-16: the double-size break actions - the body and the barrels (with the fore-end), the barrels' pivot on the hinge (texture px = virtual px x density)
+            {
+                float dense = Density(key);
+                Sprite LoadHd(string part, float px, float py)
+                {
+                    var tx = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_hd" + part);
+                    if (tx == null) return null;
+                    tx.filterMode = FilterMode.Bilinear;
+                    return Sprite.Create(tx, new Rect(0, 0, tx.width, tx.height), new Vector2(px / tx.width, 1f - py / tx.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);
+                }
+                var bars = LoadHd("barrels", h.x * dense, h.y * dense);
+                return BreakCache[key] = bars == null ? (null, null, 0f, 0f) : (LoadHd("body", g[0] * dense, g[1] * dense), bars, h.x, h.y);
+            }
             Sprite Load(string part, float px, float py)
             {
                 var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
@@ -756,7 +776,7 @@ namespace GameCore
             }
             return BreakCache[key] = (Load("body", g[0], g[1]), Load("barrels", h.x, h.y), h.x, h.y);
         }
-        public static readonly Dictionary<string, (float x, float y)> Hinges = new Dictionary<string, (float, float)> { ["Obrez66"] = (9f, 4f), ["Sever34"] = (16f, 4f) };
+        public static readonly Dictionary<string, (float x, float y)> Hinges = new Dictionary<string, (float, float)> { ["Obrez66"] = (9.8f, 3.6f), ["Sever34"] = (19.3f, 3.4f) };   // virtual px of the double-size pictures (mags_hd.py BRK)
         private static readonly Dictionary<string, (Sprite, Sprite, float, float)> BreakCache = new Dictionary<string, (Sprite, Sprite, float, float)>();
 
         /// <summary>2026-11-15 (Yan: "test it your way first, no spritecook"): a moving part cut out of a double-size picture and moved in code (ArtSource/weapons/cut_parts.py, gun_parts.json): the pump fore-end, a slide, a bolt.
@@ -888,7 +908,7 @@ namespace GameCore
     /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
     public class HeldWeaponView
     {
-        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels, _optic, _under, _magHd;
+        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels, _optic, _under, _magHd, _shell;
         private readonly SpriteRenderer[] _smear = new SpriteRenderer[HeldPoseMath.SmearCount];   // Melee 4: the strike's ghosts
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
@@ -919,6 +939,7 @@ namespace GameCore
             _support = Child(body, "SupportHand", 2);
             _grip = Child(body, "GripHand", 3);
             _mag = Child(body, "Magazine", 1);
+            _shell = Child(body, "ShellInHand", 3);   // a round in the support hand on a tube reload
             _magHd = Child(body, "MagazineHd", 1);   // the double-size guns' magazine (the slide of a pistol uses _mag)
             _barrels = Child(body, "Barrels", 2);
             _optic = Child(body, "Optic", 1); _under = Child(body, "UnderAttachment", 1);   // Optics.cs: a sight on the rail, a laser under the barrel
@@ -1018,7 +1039,7 @@ namespace GameCore
         /// Called after Show each frame while he holds the eel's jaws.</summary>
         public void GripHands(ArmorDef armor, Vector3 upperWorld, Vector3 lowerWorld, float faceX)
         {
-            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false); _shell.gameObject.SetActive(false);
             foreach (var sm in _smear) sm.gameObject.SetActive(false);
             var big = HandSprite(armor, false);
             for (int h = 0; h < 2; h++)
@@ -1062,7 +1083,7 @@ namespace GameCore
             _item.gameObject.SetActive(false);
             _w2 = on ? offhand : null;
             _gun2.gameObject.SetActive(_w2?.Db != null);
-            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false); _shell.gameObject.SetActive(false);
             if (!visible) return;
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
             _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
@@ -1239,6 +1260,13 @@ namespace GameCore
             _support.transform.localRotation = Quaternion.identity;               // (the empty hands hang turned)
             if (f.HasSupport) _support.transform.localPosition = Local(f.SupX, f.SupY);
             if (f.HasSupport && pumping) _support.transform.localPosition += pumpOff;
+            bool shellOn = f.ShellInHand && f.HasSupport && weapon?.Db != null;                   // a tube reload: the round the hand brings to the port
+            _shell.gameObject.SetActive(shellOn);
+            if (shellOn)
+            {
+                _shell.sprite = CombatFxView.CaseSprite(WeaponFeel.For(weapon.Db).Casing == "shell"); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
+                _shell.transform.localPosition = _support.transform.localPosition + new Vector3(0f, 0f, -0.01f); _shell.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+            }
             if (_w2?.Db != null && cat != "melee")
             {
                 // RT 7z-c: the left-hand pistol in the other glove, beside the first, with its own kick
