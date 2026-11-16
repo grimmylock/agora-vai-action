@@ -39,7 +39,10 @@ def heuristic(k):
             if a[y:y + run, x].all(): return y
         return int(top[x])
     ty = int(np.median([solid_top(x) for x in range(max(0, tx - (4 if (k in SIDEARM or k in SMG) else 16)), tx + (5 if (k in SIDEARM or k in SMG) else 17))]))
-    ux = int(round(x0 + 0.68 * L)); wb = bot[max(0, ux - 3):ux + 4]; uy = int(np.max(wb))
+    # the laser hangs on the front of the frame, AHEAD of the trigger guard: find where the guard's front edge is (the last column in the middle of the gun whose underside is lower than the dust cover/barrel up front) and sit a laser's width in front of it
+    base = int(np.median(bot[int(x0 + 0.80 * L):int(x0 + 0.92 * L) + 1])); mid = range(int(x0 + 0.25 * L), int(x0 + 0.80 * L))
+    guard = [x for x in mid if bot[x] > base + 3]; gf = max(guard) if guard else int(x0 + 0.5 * L)
+    ux = int(min(gf + 13, x1 - 12)); wb = bot[max(0, ux - 3):ux + 4]; uy = int(np.max(wb))
     return tx, ty, ux, uy
 def main():
     rows = {}
