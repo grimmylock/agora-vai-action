@@ -35,6 +35,7 @@ def main(src, key, out):
     body = atlas.crop(((i % 16) * 16, (i // 16) * 16, (i % 16) * 16 + 16, (i // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST); gl = H.glove(base["cuff"], base["glove"])
     wp = os.path.join(SPR, "Weapons"); full = Image.open(f"{wp}/weapon_{key}_hd.png").convert("RGBA")
     if style: gb = Image.open(f"{wp}/weapon_{key}_body.png").convert("RGBA"); gp = Image.open(f"{wp}/weapon_{key}_part.png").convert("RGBA")
+    hwm = re.search(r'HandWork = new Dictionary.*?\["%s"\] = \("(\w+)", (-?[0-9.]+)f, (-?[0-9.]+)f\)' % key, cs, re.S); hw = (hwm.group(1), float(hwm.group(2)), float(hwm.group(3))) if hwm else None   # the trigger hand works the action (WeaponArt.HandWork)
     grip = (gr[0] * dense, gr[1] * dense); frames = []; dt = 1 / 30.0
     # the case: starts at the port at its delay (the port's place in THAT frame), then falls (gravity 14 tiles/s^2, 16 char px a tile)
     case = None
@@ -64,6 +65,9 @@ def main(src, key, out):
         else: P.paste2(c, full, grip[0], grip[1], gx_, gy_, deg, left, dense)
         if style == "pump":                                                                               # the off-hand goes back with the fore-end
             o = sh / dense; sx, sy = sx - o * math.cos(math.radians(deg)), sy + o * math.sin(math.radians(deg))
+        if hw:                                                                                            # lever/bolt guns: the grip hand pulls, lifts, pushes (same timing as the part)
+            hph = phase(hw[0], t); hup = boltlift(t) if hw[0] == "bolt" else hph; hf = hw[1] * hph / dense; hv = hw[2] * hup / dense; a_ = math.radians(deg)
+            hx, hy = hx + hf * math.cos(a_) - hv * math.sin(a_), hy - hf * math.sin(a_) - hv * math.cos(a_)
         gg = gl.transpose(Image.FLIP_LEFT_RIGHT) if left else gl
         for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):
             if on: c.alpha_composite(gg, (round((H.BX + x) * S - 2 * S), round((H.BY + y) * S - 1.5 * S)))
