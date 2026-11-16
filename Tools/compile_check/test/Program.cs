@@ -3145,7 +3145,7 @@ static class Program {
     }
     Check(tables && GameData.OpticMounts.Allowed.Count == GameData.OpticMounts.Mount.Count, "optics: every fitted gun is a real double-size gun with a mount and known attachments");
     Check(WeaponDatabase.Categories["shotgun"].Keys.All(k => !GameData.OpticMounts.Allowed.ContainsKey(k)), "optics: shotguns take nothing (Yan)");
-    Check(WeaponDatabase.Categories["smg"].Keys.All(k => GameData.OpticMounts.Allowed.TryGetValue(k, out var a) && a.Length == 1 && a[0] == "reddot"), "optics: SMGs take a red dot only (Yan)");
+    Check(WeaponDatabase.Categories["smg"].Keys.All(k => GameData.OpticMounts.Allowed.TryGetValue(k, out var a) && a.OrderBy(x => x).SequenceEqual(new[] { "laser", "reddot" })), "optics: SMGs take a red dot or a laser (Yan)");
     Check(WeaponDatabase.Categories["sidearm"].Keys.All(k => GameData.OpticMounts.Allowed.TryGetValue(k, out var a) && a.OrderBy(x => x).SequenceEqual(new[] { "laser", "reddot" })), "optics: sidearms take a red dot or a laser (Yan)");
     var mosin = W("sniper", "M91Trekhlineyka"); var obelisk = W("assault", "VK74Obelisk"); var amr = W("sniper", "HaldenAM50Sledge"); var gun = W("sidearm", "WaldenP9");
     Check(Optics.Fit(mosin, "pu2") && !Optics.Fit(mosin, "scope8") && !Optics.Fit(mosin, "reddot") && mosin.Optic == "pu2", "optics: the Mosin takes the PU 2x and nothing bigger");

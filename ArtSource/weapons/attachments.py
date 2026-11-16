@@ -4,7 +4,8 @@ Writes Assets/Resources/Sprites/Attachments/att_<id>.png and prints each sprite'
 import numpy as np
 from PIL import Image
 OUT = 'Assets/Resources/Sprites/Attachments/'
-K = (12, 12, 16); D = (34, 36, 43); M = (62, 67, 78); L = (100, 107, 122); S = (158, 166, 182)
+K = (8, 8, 11); D = (22, 24, 29); M = (41, 45, 53); L = (70, 77, 90); S = (118, 127, 144)
+W = (205, 205, 210); CH = (150, 156, 168); GR = (84, 205, 96); GRL = (170, 255, 150); GL = (34, 52, 74); GLL = (120, 170, 200)   # white dial rim, chrome, fibre green, lens glass
 class C:
     def __init__(s, w, h): s.a = np.zeros((h, w, 4), np.uint8)
     def px(s, x, y, c, al=255):
@@ -26,31 +27,52 @@ class C:
         out[edge] = (*K, 255); return out
 def save(name, c, pivot):
     img = c.outline(); Image.fromarray(img).save(OUT + f'att_{name}.png'); print(name, img.shape[1], 'x', img.shape[0], 'pivot', (pivot[0] + 1, pivot[1] + 1))   # +1: the outline margin
-def pu2():                                                         # a long thin side-mounted scope with a flared front bell
-    c = C(62, 16); c.tube(8, 3, 52, 10); c.tube(52, 1, 61, 12); c.tube(0, 2, 9, 11)
-    c.rect(57, 3, 60, 10, (70, 130, 150)); c.px(58, 4, (170, 220, 235)); c.px(58, 5, (170, 220, 235))   # the front lens
-    c.rect(26, 0, 33, 3, M); c.px(27, 0, L); c.px(28, 0, L)                                         # elevation turret
-    c.rect(19, 10, 24, 12, D); c.rect(35, 10, 40, 12, D); c.rect(16, 12, 44, 15, M); c.rect(16, 14, 44, 15, D)   # rings and the side mount base
-    for x in (20, 37): c.px(x, 13, L)
-    save('pu2', c, (30, 15)); return c
-def acog():                                                        # a compact prism sight: chunky body, amber fibre tube on top
-    c = C(40, 19); c.tube(4, 5, 30, 15); c.tube(30, 4, 39, 15); c.tube(0, 6, 5, 13)
-    c.rect(6, 1, 26, 4, (176, 122, 40)); c.rect(6, 1, 26, 2, (230, 176, 70)); c.rect(10, 2, 14, 4, (200, 140, 48))   # the fibre-optic tube
-    c.rect(35, 6, 38, 13, (70, 130, 150)); c.px(36, 7, (170, 220, 235)); c.px(36, 8, (170, 220, 235))
-    c.rect(8, 15, 28, 18, M); c.rect(8, 17, 28, 18, D); c.rect(15, 15, 20, 18, D)                 # the mount and its notch
-    save('acog', c, (18, 18)); return c
-def scope8():                                                      # a long variable scope: big bell, turrets, two rings
-    c = C(76, 19); c.tube(14, 4, 62, 13); c.tube(62, 1, 75, 16); c.tube(2, 3, 15, 14)
-    c.rect(70, 4, 74, 13, (70, 130, 150)); c.px(71, 5, (170, 220, 235)); c.px(71, 6, (170, 220, 235)); c.px(71, 7, (170, 220, 235))
-    c.rect(30, 0, 37, 4, M); c.rect(31, 0, 36, 1, L); c.rect(46, 1, 51, 4, M); c.px(47, 1, L)   # the turrets
-    c.rect(24, 13, 30, 16, D); c.rect(50, 13, 56, 16, D); c.rect(20, 15, 60, 18, M); c.rect(20, 17, 60, 18, D)
-    for x in (25, 52): c.px(x, 14, L)
-    c.rect(66, 3, 69, 5, L)                                         # bell glint
-    save('scope8', c, (40, 18)); return c
+def ellipse(c, cx, cy, rx, ry, col, al=255):
+    for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+        for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0: c.px(x, y, col, al)
+def pu2():                                                         # reference: a slim matte tube, a rubber-ringed eyepiece, two rings, a white-rimmed turret on top and the big side-mount bracket with its round hole
+    c = C(62, 24)
+    c.tube(11, 4, 52, 11); c.tube(52, 3, 59, 12)                   # the tube and its thicker objective end
+    c.rect(0, 3, 12, 12, D); c.tube(2, 3, 11, 12); c.rect(0, 5, 3, 10, M); c.px(1, 6, L)                         # eyepiece with its rubber ring
+    c.rect(56, 4, 59, 11, GL); c.px(57, 5, GLL); c.px(57, 6, GLL)                                                  # objective glass
+    c.rect(24, 1, 33, 4, D); c.rect(24, 1, 33, 2, L); c.rect(26, 0, 31, 1, W)                                     # the turret on top with its white dial rim
+    for x in (14, 40): c.rect(x, 2, x + 5, 4, M); c.rect(x, 11, x + 5, 13, M); c.px(x + 1, 2, L)                    # the two rings
+    c.rect(19, 13, 41, 23, M); c.rect(19, 13, 41, 14, L); c.rect(19, 22, 41, 23, D); c.rect(40, 13, 41, 23, D)    # the bracket: one tall plate under the tube ...
+    c.rect(41, 19, 49, 23, D); c.rect(41, 19, 49, 20, M)                                                           # ... with a lug that hooks the receiver
+    c.rect(15, 21, 19, 23, D)                                                                                       # and a toe at the other end
+    for yy in range(15, 21):
+        for xx in range(26, 33):
+            if (xx - 29.0) ** 2 + (yy - 17.5) ** 2 <= 6.5: c.a[yy, xx] = (0, 0, 0, 0)                               # the round hole
+    c.px(22, 15, S); c.px(37, 15, S)
+    save('pu2', c, (31, 22)); return c
+def acog():                                                        # reference: a black prism sight, a green fibre strip on top, a round adjuster cap on the side, a flat-top rail mount
+    c = C(40, 22)
+    c.tube(5, 6, 29, 16); c.tube(29, 5, 38, 16); c.tube(0, 8, 6, 15)
+    c.rect(33, 7, 37, 14, GL); c.rect(33, 7, 37, 8, GLL); c.px(34, 9, GLL)                                         # objective glass
+    c.rect(7, 3, 27, 6, M); c.rect(7, 4, 27, 5, GR); c.rect(9, 4, 22, 5, GRL); c.rect(7, 3, 27, 4, L)               # fibre-optic strip in its housing
+    c.rect(26, 4, 29, 6, D)                                                                                         # housing end
+    ellipse(c, 15, 11, 3.2, 3.2, M); ellipse(c, 15, 11, 2.2, 2.2, L); c.px(14, 10, S)                                # the adjuster cap
+    c.rect(8, 16, 30, 20, M); c.rect(8, 16, 30, 17, L); c.rect(8, 19, 30, 20, D); c.rect(18, 17, 22, 20, D)       # the rail mount and its clamp notch
+    c.px(10, 18, S); c.px(27, 18, S)
+    save('acog', c, (19, 21)); return c
+def scope8():                                                      # reference: a long matte variable scope, flip-up caps open at both ends, turrets, two rings
+    c = C(80, 26)
+    c.tube(14, 8, 62, 16); c.tube(62, 4, 77, 19); c.tube(3, 6, 15, 17)
+    c.rect(72, 7, 76, 17, GL); c.rect(72, 7, 76, 8, GLL); c.px(73, 9, GLL); c.px(73, 10, GLL)                      # objective glass
+    c.rect(3, 8, 5, 15, M); c.px(3, 9, L)                                                                          # eyepiece ring
+    ellipse(c, 74, 2.5, 5.5, 2.4, D); ellipse(c, 74, 2.5, 4.2, 1.5, M); c.rect(70, 3, 78, 5, D)                      # the front cap, flipped up
+    ellipse(c, 6, 3.0, 4.5, 2.2, D); ellipse(c, 6, 3.0, 3.2, 1.3, M); c.rect(3, 4, 10, 6, D)                         # the rear cap, flipped up
+    c.rect(31, 3, 41, 9, D); c.rect(31, 3, 41, 4, L); c.rect(33, 2, 39, 3, M); c.rect(32, 5, 40, 6, M)               # the big turret on top
+    c.rect(47, 5, 53, 9, D); c.rect(47, 5, 53, 6, L)                                                                # the second turret
+    for x in (24, 54): c.rect(x, 6, x + 6, 8, CH); c.rect(x, 16, x + 6, 19, M); c.rect(x, 6, x + 6, 7, S)           # chrome-edged rings
+    c.rect(20, 19, 62, 22, M); c.rect(20, 19, 62, 20, L); c.rect(20, 21, 62, 22, D)                                # the rail clamp
+    c.rect(66, 6, 69, 8, L)
+    save('scope8', c, (41, 24)); return c
 def reddot():                                                      # a small reflex sight: low hood, tinted window, one red dot
     c = C(24, 16); c.rect(2, 3, 20, 12, M); c.rect(2, 3, 20, 4, L); c.rect(2, 11, 20, 12, D)
     c.rect(2, 1, 20, 3, D); c.rect(2, 1, 20, 2, M)                                                   # hood
-    c.rect(14, 4, 19, 11, (60, 110, 130)); c.rect(14, 4, 19, 5, (120, 175, 195)); c.px(16, 7, (255, 70, 55)); c.px(15, 7, (255, 110, 90))
+    c.rect(14, 4, 19, 11, GL); c.rect(14, 4, 19, 5, GLL); c.px(16, 7, (255, 70, 55)); c.px(15, 7, (255, 110, 90))
     c.rect(2, 12, 22, 15, M); c.rect(2, 14, 22, 15, D); c.rect(7, 12, 11, 15, D)
     save('reddot', c, (12, 15)); return c
 def laser():                                                       # a small box under the barrel, red lens at the front, a clamp on top
@@ -60,7 +82,7 @@ def laser():                                                       # a small box
     save('laser', c, (10, 0)); return c
 if __name__ == '__main__':
     cs = [pu2(), acog(), scope8(), reddot(), laser()]
-    sheet = Image.new('RGB', (900, 140), (84, 92, 80))
+    sheet = Image.new('RGB', (980, 150), (84, 92, 80))
     x = 6
     for c in cs:
         im = Image.fromarray(c.outline()); im = im.resize((im.width * 3, im.height * 3), Image.NEAREST); sheet.paste(im, (x, 10), im); x += im.width + 12

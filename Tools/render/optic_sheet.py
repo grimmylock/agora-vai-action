@@ -4,7 +4,7 @@ import os, re, sys
 from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, ROOT + "/ArtSource/weapons"); import mounts as M
-PIV = {'pu2': (31, 16), 'acog': (19, 19), 'scope8': (41, 19), 'reddot': (13, 16), 'laser': (11, 1)}   # texture px, from attachments.py
+PIV = {'pu2': (32, 23), 'acog': (20, 22), 'scope8': (42, 25), 'reddot': (13, 16), 'laser': (11, 1)}   # texture px, from attachments.py
 cs = open(ROOT + "/Assets/Scripts/GameData/OpticMounts.cs").read()
 MT = {k: [float(v.rstrip('f')) for v in row.split(',')] for k, row in re.findall(r'\["(\w+)"\] = new\[\] \{ ([0-9., f]*) \}', cs.split("Allowed")[0])}
 def tile(k, S=3):

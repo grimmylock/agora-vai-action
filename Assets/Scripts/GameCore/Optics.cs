@@ -23,9 +23,9 @@ namespace GameCore
         }
         public static readonly Dictionary<string, Def> All = new Dictionary<string, Def>
         {
-            ["pu2"] = new Def { Id = "pu2", Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(31, 16) },
-            ["acog"] = new Def { Id = "acog", Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(19, 19) },
-            ["scope8"] = new Def { Id = "scope8", Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(41, 19) },
+            ["pu2"] = new Def { Id = "pu2", Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
+            ["acog"] = new Def { Id = "acog", Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
+            ["scope8"] = new Def { Id = "scope8", Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
             ["reddot"] = new Def { Id = "reddot", Name = "Red dot", Kind = "dot", AimedSpread = 0.95f, HipSpread = 0.90f, SteadyMul = 1.30f, Pivot = new Vector2(13, 16) },
             ["laser"] = new Def { Id = "laser", Name = "Laser", Kind = "laser", Under = true, AimedSpread = 0.97f, HipSpread = 0.80f, Pivot = new Vector2(11, 1) },
         };

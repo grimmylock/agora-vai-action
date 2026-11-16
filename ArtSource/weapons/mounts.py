@@ -19,7 +19,7 @@ SNIPER_OLD = ['M91Trekhlineyka', 'SKNKarabin', 'SV2Strela', 'VSNShepot', 'Fronti
 SNIPER_MODERN = ['CorvanMarksman', 'HaldenAM50Sledge', 'Sever98', 'VK127Grom', 'G7RailPrototype', 'Nightwalker4570']
 ALLOWED = {}
 for k in SIDEARM: ALLOWED[k] = ['reddot', 'laser']
-for k in SMG: ALLOWED[k] = ['reddot']
+for k in SMG: ALLOWED[k] = ['reddot', 'laser']                 # Yan: SMGs get lasers too
 for k in AK_OLD + SNIPER_OLD: ALLOWED[k] = ['pu2']
 for k in ASSAULT_MODERN: ALLOWED[k] = ['acog']
 for k in SNIPER_MODERN: ALLOWED[k] = ['acog', 'scope8']
@@ -40,7 +40,8 @@ def heuristic(k):
         return int(top[x])
     ty = int(np.median([solid_top(x) for x in range(max(0, tx - (4 if (k in SIDEARM or k in SMG) else 16)), tx + (5 if (k in SIDEARM or k in SMG) else 17))]))
     # the laser hangs on the front of the frame, AHEAD of the trigger guard: find where the guard's front edge is (the last column in the middle of the gun whose underside is lower than the dust cover/barrel up front) and sit a laser's width in front of it
-    base = int(np.median(bot[int(x0 + 0.80 * L):int(x0 + 0.92 * L) + 1])); mid = range(int(x0 + 0.25 * L), int(x0 + 0.80 * L))
+    far = (k in SMG)                                                                       # an SMG's barrel runs further past its foregrip and magazine, so look further forward
+    base = int(np.median(bot[int(x0 + (0.90 if far else 0.80) * L):int(x0 + (0.97 if far else 0.92) * L) + 1])); mid = range(int(x0 + 0.25 * L), int(x0 + (0.90 if far else 0.80) * L))
     guard = [x for x in mid if bot[x] > base + 3]; gf = max(guard) if guard else int(x0 + 0.5 * L)
     ux = int(min(gf + 13, x1 - 12)); wb = bot[max(0, ux - 3):ux + 4]; uy = int(np.max(wb))
     return tx, ty, ux, uy
