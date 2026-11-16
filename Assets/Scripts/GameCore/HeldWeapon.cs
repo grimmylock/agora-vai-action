@@ -818,7 +818,7 @@ namespace GameCore
             ["M91Trekhlineyka"] = ("bolt", 18f), ["Sever98"] = ("bolt", 16f), ["SperlingS96"] = ("slide", 22f),   // (Yan, 2026-11-16: "use this version for now", the weapons_only2 GIF) a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
             ["HaldenServiceRevolver"] = ("hammer", 38f), ["RinaldiR6"] = ("hammer", 30f), ["RK12Kuvalda"] = ("hammer", 32f),   // a hammer: travel is DEGREES, it turns on its hinge (HammerPivot)
             ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together
-            ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f),
+            ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f), ["VK127Grom"] = ("bolt", 16f),
             ["Karusel5"] = ("hammer", 35f),   // 2026-11-16: the revolver carbine's hammer spur (ArtSource/weapons/gun_parts.json)
         };
         /// <summary>Hand work on the lever and bolt guns, riding the part animation (Yan, 2026-11-16: "use this version for now, just make sure the characters hands move as well when cocking the lever and bolts"):
@@ -826,7 +826,7 @@ namespace GameCore
         public static readonly Dictionary<string, (string style, float fwd, float up)> HandWork = new Dictionary<string, (string, float, float)>
         {
             ["FrontierLeverRifle"] = ("lever", 3f, -7f), ["HaldenLeverShotgun"] = ("lever", 3f, -8f), ["Nightwalker4570"] = ("lever", 3f, -7f),   // the hand pulls the loop down and forward, then back up
-            ["M91Trekhlineyka"] = ("bolt", -16f, 5f), ["Sever98"] = ("bolt", -14f, 5f),                                                          // Mosin: the hand lifts to the handle, drags the bolt back and pushes it forward; Sever-98: the hand goes up and back with the handle
+            ["M91Trekhlineyka"] = ("bolt", -16f, 5f), ["Sever98"] = ("bolt", -14f, 5f), ["VK127Grom"] = ("bolt", -14f, 5f),                                                          // Mosin: the hand lifts to the handle, drags the bolt back and pushes it forward; Sever-98: the hand goes up and back with the handle
         };
 
         /// <summary>The hinge a "hammer" part turns on, in TEXTURE px of the double-size picture (its part sprite has this point as its pivot).</summary>
@@ -835,10 +835,36 @@ namespace GameCore
             ["Karusel5"] = (88f, 9f), ["HaldenServiceRevolver"] = (41f, 15f), ["RinaldiR6"] = (40f, 17f), ["RK12Kuvalda"] = (33f, 26f),
             ["FrontierLeverRifle"] = (87f, 29f), ["HaldenLeverShotgun"] = (90f, 36f), ["Nightwalker4570"] = (93f, 31f),
         };
+        /// <summary>The SECOND moving part (2026-11-16, Yan: "build the second part renderer"): a gun may move one part through PartInfo (slide, pump, lever, bolt) and one more through this table, drawn by its own renderer.
+        /// style: "hammer" (turns on its pivot as the shot goes off: cocks back, falls) | "trigger" (turns on its pivot, pulled at the shot) | "charge" (a charging handle: runs back with the shot and is dragged at the end of a magazine reload).
+        /// travel: DEGREES for hammer and trigger (the sign is the way it turns), texture px for a handle. (px, py): the pivot in TEXTURE px of the double-size picture. Cut by ArtSource/weapons/cut_parts.py ("second").</summary>
+        public static readonly Dictionary<string, (string style, float travel, float px, float py)> Part2Info = new Dictionary<string, (string, float, float, float)>
+        {
+            ["SperlingS96"] = ("hammer", 30f, 19f, 16f),
+            ["WaldenP9"] = ("trigger", -14f, 58f, 35f), ["PSh18Pchela"] = ("trigger", -14f, 56f, 31f), ["SR21Gadyuka"] = ("trigger", -14f, 48f, 30f),   // cut by polygon (cut_parts.py "poly")
+            ["CorvanBattleRifle"] = ("charge", 8f, 0f, 0f),
+            ["VK74"] = ("charge", 6f, 0f, 0f), ["VKM"] = ("charge", 6f, 0f, 0f), ["VKS74U"] = ("charge", 6f, 0f, 0f), ["VK74Obelisk"] = ("charge", 6f, 0f, 0f), ["VK103"] = ("charge", 6f, 0f, 0f),   // drawn handles (second_parts.py)
+        };
+        public static float TriggerPhase(float since) => since < 0f ? 0f : since < 0.03f ? since / 0.03f : since < 0.12f ? 1f - (since - 0.03f) / 0.09f : 0f;
+        /// <summary>The charging handle's drag at the end of a magazine reload (matches the support hand's reach in HeldPoseMath.Frame: back 0.90-0.94, let go 0.94-0.97).</summary>
+        public static float ChargeRack(float r) => r < 0.90f ? 0f : r < 0.94f ? (r - 0.90f) / 0.04f : r < 0.97f ? 1f - (r - 0.94f) / 0.03f : 0f;
+        private static readonly Dictionary<string, Sprite> Part2Cache = new Dictionary<string, Sprite>();
+        public static Sprite Part2Sprite(string key)
+        {
+            if (key == null || !Part2Info.TryGetValue(key, out var info)) return null;
+            if (Part2Cache.TryGetValue(key, out var hit)) return hit;
+            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_part2");
+            if (tex == null) return Part2Cache[key] = null;
+            tex.filterMode = FilterMode.Bilinear;
+            var g = For(null, key).grip; float dense = Density(key);
+            var pv = info.style == "charge" ? (g[0] * dense, g[1] * dense) : (info.px, info.py);          // a handle slides with the gun's own pivot; a hammer or trigger turns on its own
+            return Part2Cache[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(pv.Item1 / tex.width, 1f - pv.Item2 / tex.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);
+        }
         private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
         public static (Sprite body, Sprite part, string style, float travel) Parts(string cat, string key)
         {
-            if (key == null || !PartInfo.TryGetValue(key, out var info)) return (null, null, null, 0f);
+            if (key == null) return (null, null, null, 0f);
+            if (!PartInfo.TryGetValue(key, out var info)) { if (!Part2Info.ContainsKey(key)) return (null, null, null, 0f); info = (null, 0f); }   // only a second part: the body is the gun without it
             if (!PartCache.TryGetValue(key, out var sp))
             {
                 var g = For(cat, key).grip; float dense = Density(key);
@@ -945,7 +971,7 @@ namespace GameCore
     /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
     public class HeldWeaponView
     {
-        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels, _optic, _under, _magHd, _shell;
+        private readonly SpriteRenderer _part2, _gun, _support, _grip, _mag, _barrels, _optic, _under, _magHd, _shell;
         private readonly SpriteRenderer[] _smear = new SpriteRenderer[HeldPoseMath.SmearCount];   // Melee 4: the strike's ghosts
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
@@ -979,7 +1005,7 @@ namespace GameCore
             _shell = Child(body, "ShellInHand", 3);   // a round in the support hand on a tube reload
             _magHd = Child(body, "MagazineHd", 1);   // the double-size guns' magazine (the slide of a pistol uses _mag)
             _barrels = Child(body, "Barrels", 2);
-            _optic = Child(body, "Optic", 1); _under = Child(body, "UnderAttachment", 1);   // Optics.cs: a sight on the rail, a laser under the barrel
+            _part2 = Child(body, "Part2", 1); _optic = Child(body, "Optic", 1); _under = Child(body, "UnderAttachment", 1);   // Optics.cs: a sight on the rail, a laser under the barrel
             _gun2 = Child(body, "OffhandWeapon", 2);
             for (int i = 0; i < _smear.Length; i++) _smear[i] = Child(body, "Smear" + i, 0);
             _item = Child(body, "UseItem", 2);
@@ -1076,7 +1102,7 @@ namespace GameCore
         /// Called after Show each frame while he holds the eel's jaws.</summary>
         public void GripHands(ArmorDef armor, Vector3 upperWorld, Vector3 lowerWorld, float faceX)
         {
-            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false); _shell.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _part2.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false); _shell.gameObject.SetActive(false);
             foreach (var sm in _smear) sm.gameObject.SetActive(false);
             var big = HandSprite(armor, false);
             for (int h = 0; h < 2; h++)
@@ -1120,7 +1146,7 @@ namespace GameCore
             _item.gameObject.SetActive(false);
             _w2 = on ? offhand : null;
             _gun2.gameObject.SetActive(_w2?.Db != null);
-            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false); _shell.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _part2.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false); _shell.gameObject.SetActive(false);
             if (!visible) return;
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
             _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
@@ -1255,6 +1281,7 @@ namespace GameCore
             float psince = now - _shotAt;
             var pt = WeaponArt.Parts(cat, key);                                       // a moving part (pump fore-end, slide...): the body plus the part, the part slid along the barrel
             float lockBack = pt.style == "slide" && !CombatRules.IsMelee(weapon) ? WeaponArt.SlideLock(weapon.CurrentMagazine <= 0, _reloadEmpty, rr) : 0f;
+            if (pt.body != null && pt.part == null) _gun.sprite = pt.body;                    // a gun whose only moving part is the second one
             if (pt.body != null && pt.part != null)
             {
                 _gun.sprite = pt.body;
@@ -1275,6 +1302,25 @@ namespace GameCore
                 _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(-slideBack * Mathf.Cos(ang) - lift * Mathf.Sin(ang), -slideBack * Mathf.Sin(ang) + lift * Mathf.Cos(ang), -0.01f);
                 if (pt.style == "pump") { pumping = true; pumpOff = new Vector3(-slideBack * Mathf.Cos(ang), -slideBack * Mathf.Sin(ang), 0f); }   // toward the stock = against the aim; in front of the body
                 _mag.transform.localRotation = _gun.transform.localRotation;
+                }
+            }
+            var p2s = pt.body != null ? WeaponArt.Part2Sprite(key) : null;                    // the second moving part: a hammer, a trigger, a charging handle
+            if (p2s != null)
+            {
+                var p2 = WeaponArt.Part2Info[key]; float hd2 = WeaponArt.Density(key), ang2 = f.GunDeg * Mathf.Deg2Rad, sg = f.Left ? -1f : 1f;
+                _part2.gameObject.SetActive(true); _part2.sprite = p2s; _part2.flipY = f.Left; _part2.sortingOrder = _gun.sortingOrder;
+                if (p2.style == "charge")
+                {
+                    float ph = Mathf.Max(WeaponArt.PartPhase("slide", now - _shotAt), _reloadStyle == "mag" || _reloadStyle == "belt" ? WeaponArt.ChargeRack(rr) : 0f), pback = ph * p2.travel / (WeaponArt.PixelsPerUnit * hd2);
+                    _part2.transform.localPosition = _gun.transform.localPosition + new Vector3(-pback * Mathf.Cos(ang2), -pback * Mathf.Sin(ang2), -0.012f);
+                    _part2.transform.localRotation = _gun.transform.localRotation;
+                }
+                else
+                {
+                    float hx2 = (p2.px / hd2 - g[0]) / WeaponArt.PixelsPerUnit, hy2 = (f.Left ? 1f : -1f) * (p2.py / hd2 - g[1]) / WeaponArt.PixelsPerUnit;
+                    float ph = p2.style == "trigger" ? WeaponArt.TriggerPhase(now - _shotAt) : WeaponArt.PartPhase("hammer", now - _shotAt);
+                    _part2.transform.localPosition = _gun.transform.localPosition + new Vector3(hx2 * Mathf.Cos(ang2) - hy2 * Mathf.Sin(ang2), hx2 * Mathf.Sin(ang2) + hy2 * Mathf.Cos(ang2), -0.012f);
+                    _part2.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + sg * ph * p2.travel);
                 }
             }
             // Optics (Optics.cs): a sight on the rail, a laser under the barrel; drawn with the gun, so they ride its kick (a sight on a slide pistol rides the slide)

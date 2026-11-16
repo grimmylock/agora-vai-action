@@ -31,6 +31,17 @@ def main(keys):
             else: col = f['color']
             body[y0:y1, x0:x1] = [*[int(v) for v in col], 255]
             if f.get('outline'): body[y0:y0 + 1, x0:x1] = [14, 14, 18, 255]; body[y1 - 1:y1, x0:x1] = [14, 14, 18, 255]
-        Image.fromarray(part, 'RGBA').save(os.path.join(WP, f'weapon_{k}_part.png')); Image.fromarray(body, 'RGBA').save(os.path.join(WP, f'weapon_{k}_body.png'))
+        if 'second' in c:                                                       # a SECOND moving part (2026-11-16: the hammer, the trigger, a charging handle): cut from what is left of the body, drawn by the game's second part renderer
+            sc = c['second']; part2 = np.zeros_like(a)
+            for x0, y0, x1, y1 in (sc.get('rects') or ([sc['rect']] if 'rect' in sc else [])): part2[y0:y1, x0:x1] = body[y0:y1, x0:x1]; body[y0:y1, x0:x1] = 0
+            if 'poly' in sc:                                                    # a thin curved part (a trigger blade) that no rectangle isolates: the pixels inside a polygon, texture px
+                from PIL import ImageDraw
+                pm = Image.new('L', (a.shape[1], a.shape[0]), 0); ImageDraw.Draw(pm).polygon([tuple(p) for p in sc['poly']], fill=255); pm = np.array(pm) > 0
+                part2[pm] = body[pm]; body[pm] = 0
+            Image.fromarray(part2, 'RGBA').save(os.path.join(WP, f'weapon_{k}_part2.png'))
+            print(f'{k}: part2 ("{sc["style"]}", {sc["travel"]}f)   pivot ({sc["pivot"][0]}f, {sc["pivot"][1]}f)')
+        if rects or 'column_cut' in c: Image.fromarray(part, 'RGBA').save(os.path.join(WP, f'weapon_{k}_part.png'))
+        Image.fromarray(body, 'RGBA').save(os.path.join(WP, f'weapon_{k}_body.png'))
+        if 'style' not in c: continue
         print(f'{k}: ["{k}"] = ("{c["style"]}", {c["travel"]}f),' + (f'   pivot ({c["pivot"][0]}f, {c["pivot"][1]}f)' if 'pivot' in c else ''))
 if __name__ == '__main__': main(sys.argv[1:])
