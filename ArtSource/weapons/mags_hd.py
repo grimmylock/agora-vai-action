@@ -87,9 +87,17 @@ def cylinder(k):
 BOXES = {'PL62Kobza': (23.0, 5.9), 'PL74': (24.5, 5.4), 'CorvanLMG': (22.0, 8.0)}
 # a magazine that sits ON TOP (the Zulu's pan, the round thing on its receiver, Yan: "this one has the ammo on that round thing on top"): the opaque pixels in the box (x0, x1, y0, y1 texture px) come off; the reload moves it up (WeaponArt.TopMags)
 TOP = {'PL74PPolovetsZulu': (82, 114, 14, 27)}
+JACKET = {'PL74PPolovetsZulu': (77, 20)}                          # (the column behind the pan whose pixels continue the jacket, the row of its top outline)
 def top_mag(k):
     im = load(k); d = D[k]; x0, x1, y0, y1 = TOP[k]; box = np.zeros(im.shape[:2], bool); box[y0:y1 + 1, x0:x1 + 1] = True; comp = box & (im[..., 3] > 0)
-    body = im.copy(); body[comp] = 0; mag = np.zeros_like(im); mag[comp] = im[comp]; save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdmag.png', mag)
+    body = im.copy(); body[comp] = 0; mag = np.zeros_like(im); mag[comp] = im[comp]
+    # the pan covered part of the receiver jacket: put the jacket back where the pan was, copying the column just behind it (its top outline included), so only the round thing leaves (Yan: "removes the entire piece")
+    if k in JACKET:
+        src, ytop = JACKET[k]
+        for y in range(ytop, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if comp[y, x] and im[y, src, 3] > 0: body[y, x] = im[y, src]
+    save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdmag.png', mag)
     ys, xs = np.where(comp); cx = (xs.min() + xs.max() + 1) / 2 / d; return (cx, (ys.max() + 1) / d, cx, (ys.min() + ys.max() + 1) / 2 / d), int(comp.sum())
 def ammo_box(k):
     im = load(k); d = D[k]; xc, yb = BOXES[k]; bw, bh = int(round(4.0 * d)), int(round(5.5 * d)); x0 = int(round(xc * d - bw / 2)); y0 = int(round((yb - 0.5) * d)); x1 = x0 + bw - 1; y1 = y0 + bh - 1

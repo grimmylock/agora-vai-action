@@ -59,7 +59,7 @@ namespace GameCore
         // 2026-11-15 (Yan: "the casings are a colored pixel"): a drawn brass case (5x2 px: rim, body, dark mouth) and a shotgun shell (7x3 px: brass base, red hull), at the weapon pictures' scale
         private static readonly Dictionary<bool, Sprite> _caseSprites = new Dictionary<bool, Sprite>();
         static readonly Dictionary<string, Sprite> _ammoSprites = new Dictionary<string, Sprite>();
-        /// <summary>2026-11-16 (Yan: "actual sprites for the ammo"): the drawn spent case or live round of this ammunition class (ArtSource/ammo/ammo.py, drawn at 4 texture px to a world pixel); the old 5x2 / 7x3 pixel stand-ins only when a picture is missing.</summary>
+        /// <summary>2026-11-16 (Yan: "actual sprites for the ammo"): the drawn spent case or live round of this ammunition class (ArtSource/ammo/ammo.py, drawn at 8 texture px to a world pixel (half the first size)); the old 5x2 / 7x3 pixel stand-ins only when a picture is missing.</summary>
         internal static Sprite AmmoSprite(string kind, bool live)
         {
             string key = (live ? "round_" : "case_") + (kind ?? "pistol");
@@ -67,7 +67,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/Ammo/ammo_" + key);
             if (tex == null) return CaseSprite(kind == "shell12");
             tex.filterMode = FilterMode.Bilinear;
-            return _ammoSprites[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit * 4f, 0, SpriteMeshType.FullRect);
+            return _ammoSprites[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit * 8f, 0, SpriteMeshType.FullRect);   // 8 texture px to a world pixel: half the size of the first version (Yan: "reduce the size by about 50%")
         }
         static Sprite _clipSprite;
         /// <summary>A stripper clip of ten rounds, side view (Sperling S-96: loaded from the top with the bolt open).</summary>

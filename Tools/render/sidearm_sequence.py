@@ -20,7 +20,8 @@ def ammo_kind(key):
     return KIND.get(m.group(1)) if m else None
 def ammo_img(kind, live):
     f = os.path.join(SPR, "Ammo", f"ammo_{'round' if live else 'case'}_{kind}.png")
-    return Image.open(f).convert("RGBA") if kind and os.path.exists(f) else None
+    if not (kind and os.path.exists(f)): return None
+    im = Image.open(f).convert("RGBA"); return im.resize((max(1, im.width // 2), max(1, im.height // 2)), Image.LANCZOS)      # drawn at 8 texture px to a world pixel in the game: half the file size here
 def draw_shell(c, shell, extra, sx, sy, deg):
     import math
     X, Y = (H.BX + sx) * S, (H.BY + sy) * S
