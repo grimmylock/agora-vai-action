@@ -161,8 +161,17 @@ namespace GameCore
         static void SpawnEscorts()
         {
             Escorts.Clear(); NextStep.Clear();
-            var l = Mark(Ladder); if (l == null) return;
-            for (int i = 0; i < 5; i++) { var h = NewSoldier(l.X - 2 + i % 3, l.Y - 1 - i / 3, i == 0); Escorts.Add(h); EncounterState.Enemies.Add(h); }
+            var p = Player.Current; if (p == null) return;
+            var spots = Around(p.X, p.Y + 2, 5);                                           // round the player: at the ladder on the way down, at the door after the second auto-save
+            for (int i = 0; i < spots.Count; i++) { var h = NewSoldier(spots[i].x, spots[i].y, i == 0); Escorts.Add(h); EncounterState.Enemies.Add(h); }
+        }
+
+        /// <summary>Which way the lab door lies from the nearest player, as a word.</summary>
+        static string Bearing()
+        {
+            var d = Mark(Door); var p = Everyone.Where(x => x.IsAlive()).OrderBy(x => DistTo(x, Door)).FirstOrDefault(); if (d == null || p == null) return "ahead";
+            float dx = d.X - p.X, dy = d.Y - p.Y; string ns = dy < -6 ? "north" : dy > 6 ? "south" : "", ew = dx > 6 ? "east" : dx < -6 ? "west" : "";
+            return ns + (ns != "" && ew != "" ? "-" : "") + ew is string r && r != "" ? r : "close by";
         }
 
         static void Descent(float now)
@@ -177,10 +186,10 @@ namespace GameCore
             KeepDocile(); FollowPlayers(now, Mark(Door), 3.5f);
             if (GameOver(now)) return;
             float t = now - _descentAt;
-            if (!_warned1 && t > ShotAfter * 0.55f) { _warned1 = true; Say("\"Faster. Or I decide you don't know the way.\""); }
+            if (!_warned1 && t > ShotAfter * 0.55f) { _warned1 = true; Say("\"Faster. Or I decide you don't know the way.\""); Say($"The sergeant wets a finger. \"Draught from the {Bearing()}. And the floor - the old concrete. Someone kept this route up. Follow it.\""); }
             if (!_warned2 && t > ShotAfter * 0.85f) { _warned2 = true; Say("The sergeant's rifle clicks off safe."); }
             if (t > ShotAfter) { Say("\"Enough.\" A flat crack."); Hear("shot_rifle"); LoseAndReload(); return; }
-            if (Everyone.Any(p => p.IsAlive() && DistTo(p, Door) <= 4.5f)) StartAlarm(now);
+            if (Everyone.Any(p => p.IsAlive() && DistTo(p, Door) <= 4.5f)) { SaveSystem.Save(); StartAlarm(now); }   // a second auto-save: dying in the run starts at the door, not at the ladder (replay cost)
         }
 
         // ------------------------------------------------------------------ 3 -> 4: the door, the alarm, the horde

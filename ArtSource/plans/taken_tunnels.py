@@ -46,7 +46,7 @@ def build(seed):
         tries += 1; p = (rnd.randint(8, 72), rnd.randint(18, 54))
         if all(math.hypot(p[0] - q[0], p[1] - q[1]) >= 12 for q in nodes): nodes.append(p)
     for i, (x, y) in enumerate(nodes):
-        concrete = rnd.random() < 0.35; r = rnd.uniform(3.2, 5.6) if i else 3.5
+        concrete = (rnd.random() < 0.35) and False; r = rnd.uniform(3.2, 5.6) if i else 3.5
         blob(x, y, r, ',' if concrete else '.')
     # --- a spanning tree (nearest-first from a random start order, so it winds), plus a few loops
     order = nodes[1:]; rnd.shuffle(order)                                # grow the tree in random order, each new room off one of its nearest neighbours: it winds and doubles back
@@ -57,7 +57,7 @@ def build(seed):
     for _ in range(int(os.environ.get('LOOPS', '1'))):
         a, b = rnd.sample(nodes, 2)
         if math.hypot(a[0] - b[0], a[1] - b[1]) < 30: edges.append((a, b))
-    for a, b in edges: tunnel(a, b, rnd.choice((3, 3, 4, 4, 5)), ',' if rnd.random() < 0.3 else '.')
+    for a, b in edges: tunnel(a, b, rnd.choice((3, 3, 4, 4, 5)), ',' if (rnd.random() < 0.3 and False) else '.')
     # the corridor's west end bends down into the nearest room to the north-west
     nw = min(nodes, key=lambda p: math.hypot(p[0] - 8, p[1] - 20))
     for y in range(6, 12):
@@ -72,6 +72,24 @@ def build(seed):
     for yy in range(ey - 1, ey + 2):
         for xx in range(ex - 1, ex + 2):
             if g[yy][xx] in '+h?': g[yy][xx] = '.'
+    rows = [''.join(r) for r in g]
+    # --- guidance without words (level-design skill: two independent cues per critical decision): the way to the lab was kept up - the old service route is concrete underfoot (',') where every
+    # side cave stays bare rock ('.'), a leading line from the ladder to the corridor. Painted from the shortest way, 3 wide.
+    wk = lambda c: c in '.,EFBH'
+    par = {ladder: None}; qq = deque([ladder])
+    while qq:
+        x, y = qq.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n = (x + dx, y + dy)
+            if 0 <= n[0] < W and 0 <= n[1] < H and wk(rows[n[1]][n[0]]) and n not in par: par[n] = (x, y); qq.append(n)
+    cur = (6, 9)
+    while cur is not None and cur in par:
+        for yy in range(cur[1] - 1, cur[1] + 2):
+            for xx in range(cur[0] - 1, cur[0] + 2):
+                if g[yy][xx] == '.': g[yy][xx] = ','
+        cur = par[cur]
+    for yy in range(H):                                                    # side caves: nothing but rock floor (the dressing of the rooms stays)
+        pass
     rows = [''.join(r) for r in g]
     # a way from the ladder to the corridor's west end (BFS over walkable tiles)
     walk = lambda c: c in '.,EFB+h?H' and c not in '+h?'
