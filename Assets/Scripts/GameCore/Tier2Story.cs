@@ -27,12 +27,12 @@ namespace GameCore
         static int _stage;                              // the grab's stage while step 1; the horde's soldiers lost so far while step 4
         static bool _warned1, _warned2, _released1, _released2;
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
-        static readonly List<Mutant> WaveA = new List<Mutant>(), WaveB = new List<Mutant>();
+        static readonly List<(float at, List<Mutant> who)> Waves = new List<(float, List<Mutant>)>();   // the horde, released in waves (seconds after the alarm)
         static readonly float[] DeathTimes = { 3.0f, 4.4f, 5.8f, 7.2f, 8.8f };
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); WaveA.Clear(); WaveB.Clear(); NextStep.Clear(); }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -180,17 +180,17 @@ namespace GameCore
             if (!_warned1 && t > ShotAfter * 0.55f) { _warned1 = true; Say("\"Faster. Or I decide you don't know the way.\""); }
             if (!_warned2 && t > ShotAfter * 0.85f) { _warned2 = true; Say("The sergeant's rifle clicks off safe."); }
             if (t > ShotAfter) { Say("\"Enough.\" A flat crack."); Hear("shot_rifle"); LoseAndReload(); return; }
-            if (Everyone.Any(p => p.IsAlive() && DistTo(p, Door) <= 3.2f)) StartAlarm(now);
+            if (Everyone.Any(p => p.IsAlive() && DistTo(p, Door) <= 4.5f)) StartAlarm(now);
         }
 
         // ------------------------------------------------------------------ 3 -> 4: the door, the alarm, the horde
 
         static void StartAlarm(float now)
         {
-            Story.SetStep(Mission, 4); _hordeAt = now; _stage = 0; _released1 = _released2 = false;
+            Story.SetStep(Mission, 4); _hordeAt = now; _stage = 0;
             Say("The sergeant shoves you at the lock. You run the card through it. A red light. A buzz. A scream of sirens down the whole corridor.");
             Hear("explosion", 0.8f);
-            Say("Far down the corridor, something answers. Many somethings.");
+            Say("At the far end of the corridor the wall bursts outward. Something answers from the dark behind it. Many somethings.");
             SpawnHorde();
             Story.SetObjective(Mission, "RUN - back to the hatch ladder", Ladder);
         }
@@ -201,12 +201,38 @@ namespace GameCore
             var m = EncounterGeneration.CreateMutantFromDb(def, fx, fy); m.IsAggroed = false; EncounterState.Enemies.Add(m); return m;
         }
 
+        /// <summary>`n` free tiles in a spiral round (x, y): where a wave stands before it is let go.</summary>
+        static List<(int x, int y)> Around(int x, int y, int n)
+        {
+            var spots = new List<(int, int)>(); var taken = new HashSet<(int, int)>(EncounterState.Enemies.Select(e => (e.X, e.Y)));
+            for (int r = 0; r <= 12 && spots.Count < n; r++)
+                for (int dy = -r; dy <= r && spots.Count < n; dy++)
+                    for (int dx = -r; dx <= r && spots.Count < n; dx++)
+                    {
+                        if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) != r) continue;
+                        int tx = x + dx, ty = y + dy;
+                        if (tx < 1 || ty < 1 || tx >= TerrainMap.Width - 1 || ty >= TerrainMap.Height - 1 || !TerrainMap.CanEnterTile(tx, ty) || taken.Contains((tx, ty))) continue;
+                        spots.Add((tx, ty)); taken.Add((tx, ty));
+                    }
+            return spots;
+        }
+
+        static void Wave(float at, int x, int y, params (string key, int n)[] kinds)
+        {
+            var who = new List<Mutant>(); var spots = Around(x, y, kinds.Sum(k => k.n)); int i = 0;
+            foreach (var (key, n) in kinds) for (int k = 0; k < n && i < spots.Count; k++, i++) who.Add(Spawn("tier1", key, spots[i].x, spots[i].y));
+            Waves.Add((at, who));
+        }
+
+        /// <summary>Yan (2026-11-16): "the horde feels kinda small" - now about 45: the soldiers' killers at the broken wall, then three waves out of the dark tunnel (rats in dozens, Maws and Prowlers among them).</summary>
         static void SpawnHorde()
         {
-            WaveA.Clear(); WaveB.Clear();
-            for (int i = 0; i < 5; i++) WaveA.Add(Spawn("tier1", i < 3 ? "PallidProwler" : "BlindMaw", 58 + i % 3, 8 + i / 3));        // met the soldiers first
-            for (int i = 0; i < 6; i++) WaveB.Add(Spawn("tier1", "Swarm", 62 + i % 3, 8 + i / 3 % 3));                                   // the pack of rats behind them
-            for (int i = 0; i < 4; i++) WaveB.Add(Spawn("tier1", i % 2 == 0 ? "BlindMaw" : "PallidProwler", 66 + i % 2, 5 + i / 2 * 2));    // out of the nest itself
+            Waves.Clear();
+            var bw = Mark("Broken Wall"); var nest = Mark("Nest"); if (bw == null || nest == null) return;
+            Wave(10f, bw.X + 4, bw.Y, ("PallidProwler", 4), ("BlindMaw", 4));
+            Wave(12f, nest.X, nest.Y - 10, ("Swarm", 12));
+            Wave(15f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 3));
+            Wave(18f, nest.X, nest.Y + 2, ("Swarm", 10), ("PallidProwler", 4));
         }
 
         static void Alarm(float now)
@@ -214,7 +240,7 @@ namespace GameCore
             float t = now - _hordeAt;
             if (TerrainMap.ZoneId != Maze) { Out(); return; }
             // the soldiers charge down the corridor toward the noise and die one after another
-            var east = new LandmarkInstance { Name = "charge", X = 56, Y = 9 };
+            var bwl = Mark("Broken Wall"); var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
             foreach (var e in Escorts) if (e.IsAlive()) e.IsAggroed = false;
             FollowPlayers(now, east, 0f, charge: true);
             while (_stage < DeathTimes.Length && t >= DeathTimes[_stage])
@@ -223,8 +249,7 @@ namespace GameCore
                 if (h != null) { Hear("shot_rifle", 0.9f); Hear(_stage % 2 == 0 ? "claw" : "hit_flesh"); Say(_stage % 2 == 0 ? "A soldier screams. Then a lot of them do." : "Automatic fire, a short burst, and a wet sound over it."); h.Hp = 0; }
                 _stage++;
             }
-            if (!_released1 && t >= 10f) { _released1 = true; foreach (var m in WaveA.Where(m => m.IsAlive())) m.IsAggroed = true; Say("Some of them have stopped feeding. They are looking down the corridor at you."); }
-            if (!_released2 && t >= 15f) { _released2 = true; foreach (var m in WaveB.Where(m => m.IsAlive())) m.IsAggroed = true; }
+            foreach (var w in Waves) if (t >= w.at && w.who.Any(m => m.IsAlive() && !m.IsAggroed)) { foreach (var m in w.who.Where(m => m.IsAlive())) m.IsAggroed = true; if (w.at == 10f) Say("Some of them have stopped feeding. They are looking down the corridor at you."); else if (w.at == 15f) Say("More. Dozens more, coming up out of the dark tunnel."); }
             if (GameOver(now)) return;
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
         }
@@ -279,7 +304,7 @@ namespace GameCore
         static void Out()
         {
             Story.Fade(Color.black, 1f, 0.6f);
-            Escorts.Clear(); WaveA.Clear(); WaveB.Clear(); NextStep.Clear();
+            Escorts.Clear(); Waves.Clear(); NextStep.Clear();
             EncounterState.Enemies.Clear();
             ZoneTravel.EnterZone("industrial_basin", Maze);
             foreach (var p in Everyone) { Rt.Knockdown(p, 0f); }

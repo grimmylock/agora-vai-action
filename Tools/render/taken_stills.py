@@ -50,24 +50,28 @@ def main(out):
         person(sc, tile(sc, tw, th, cx, cy, x, y), a, w, c, ang)
     dialogue(sc, 'Garrison Sergeant', ['"You came up this road with something that points at a place that is not on our maps. So. What is down there?"'], ['I don\'t know.', 'A lab. Old research, I think.', 'Nothing you\'d want.'])
     caption(sc, 'Interrogation at the Loading Dock (dialogue box drawn here, not the real UI)'); sc.convert('RGB').save(os.path.join(out, 'taken_1_interrogation.png'))
-    # 2. down the tunnels: the ladder at the maze's south-east corner, the squad behind you
-    tw, th, cx, cy = 22, 12, 63, 45; sc = mapcrop('taken_tunnels', cx, cy, tw, th)
-    person(sc, tile(sc, tw, th, cx, cy, 65, 43), 45)
-    for i, (x, y, a, w, c, ang) in enumerate([(67, 46, 63, 'BR86Bulldog', 'assault', 150), (68, 45, 64, 'Corvan57', 'assault', 160), (67, 44, 63, 'BayouPump', 'shotgun', 170), (68, 47, 63, 'BlackHarrier', 'smg', 150)]):
+    plan = [l.strip().strip('",') for l in open(os.path.join(HERE, '..', '..', 'Assets/Scripts/GameCore/TierDungeons.TakenPlan.cs')) if l.strip().startswith('"') and len(l.strip()) > 50]
+    floor = lambda x, y: plan[y][x] in '.,EFB'
+    # 2. down the tunnels: the ladder in the south-east cave, the squad behind you
+    tw, th, cx, cy = 22, 12, 70, 50; sc = mapcrop('taken_tunnels', cx, cy, tw, th)
+    person(sc, tile(sc, tw, th, cx, cy, 70, 49), 45)
+    for i, (x, y, a, w, c, ang) in enumerate([(73, 52, 63, 'BR86Bulldog', 'assault', 150), (74, 51, 64, 'Corvan57', 'assault', 160), (73, 50, 63, 'BayouPump', 'shotgun', 170), (74, 53, 63, 'BlackHarrier', 'smg', 150)]):
         person(sc, tile(sc, tw, th, cx, cy, x, y), a, w, c, ang, 'a' if i % 2 else None)
-    dim(sc, 0.38); caption(sc, 'Down the hatch: the maze\'s ladder, the squad behind the player'); sc.convert('RGB').save(os.path.join(out, 'taken_2_going_down.png'))
-    # 3. the door: the corridor's middle, the lab door in the north wall, the alarm
-    tw, th, cx, cy = 22, 9, 36, 9; sc = mapcrop('taken_tunnels', cx, cy, tw, th)
-    person(sc, tile(sc, tw, th, cx, cy, 36, 9), 45)
-    for i, (x, y, a, w, c, ang) in enumerate([(33, 9, 63, 'BR86Bulldog', 'assault', 0), (32, 10, 64, 'Corvan57', 'assault', 10), (31, 8, 63, 'BayouPump', 'shotgun', 0), (30, 9, 63, 'BlackHarrier', 'smg', 10), (29, 10, 63, 'BR86Bulldog', 'assault', 0)]):
+    dim(sc, 0.38); caption(sc, 'Down the hatch: the cave under the dock, the squad behind the player'); sc.convert('RGB').save(os.path.join(out, 'taken_2_going_down.png'))
+    # 3. the door: the 6-wide corridor, the badge-reader door in the north wall, the alarm
+    tw, th, cx, cy = 24, 10, 40, 8; sc = mapcrop('taken_tunnels', cx, cy, tw, th)
+    person(sc, tile(sc, tw, th, cx, cy, 40, 8), 45)
+    for i, (x, y, a, w, c, ang) in enumerate([(37, 8, 63, 'BR86Bulldog', 'assault', 0), (35, 9, 64, 'Corvan57', 'assault', 10), (34, 7, 63, 'BayouPump', 'shotgun', 0), (33, 10, 63, 'BlackHarrier', 'smg', 10), (31, 8, 63, 'BR86Bulldog', 'assault', 0)]):
         person(sc, tile(sc, tw, th, cx, cy, x, y), a, w, c, ang)
     dim(sc, 0.3); red = Image.new('RGBA', sc.size, (190, 20, 14, 70)); sc.alpha_composite(red)
-    caption(sc, 'The Lab Door in the corridor wall: the card fails, the alarm (tint drawn here)'); sc.convert('RGB').save(os.path.join(out, 'taken_3_the_door.png'))
-    # 4. the horde against the soldiers: the corridor's east end
-    tw, th, cx, cy = 22, 9, 55, 8; sc = mapcrop('taken_tunnels', cx, cy, tw, th); rnd = random.Random(4)
-    for i, (x, y, a, w, c, ang) in enumerate([(48, 8, 63, 'BR86Bulldog', 'assault', 0), (47, 9, 64, 'Corvan57', 'assault', 0), (49, 10, 63, 'BayouPump', 'shotgun', 0)]):
+    caption(sc, 'The lab door (badge reader) in the corridor wall: the card fails, the alarm (tint drawn here)'); sc.convert('RGB').save(os.path.join(out, 'taken_3_the_door.png'))
+    # 4. the horde against the soldiers: the broken wall at the corridor's east end, the dark tunnel behind it
+    tw, th, cx, cy = 30, 14, 78, 14; sc = mapcrop('taken_tunnels', cx, cy, tw, th); rnd = random.Random(4)
+    for i, (x, y, a, w, c, ang) in enumerate([(70, 7, 63, 'BR86Bulldog', 'assault', 0), (69, 9, 64, 'Corvan57', 'assault', 0), (71, 10, 63, 'BayouPump', 'shotgun', 0), (68, 8, 63, 'BlackHarrier', 'smg', 0)]):
         person(sc, tile(sc, tw, th, cx, cy, x, y), a, w, c, ang, shoot=True)
-    for (x, y, n) in [(54, 8, 'pallid_prowler'), (55, 9, 'blind_maw'), (56, 8, 'pallid_prowler'), (57, 10, 'blind_maw'), (60, 9, 'pallid_prowler'), (58, 8, 'blind_maw')]: mutant(sc, tile(sc, tw, th, cx, cy, x, y), n, flip=True)
-    for i in range(12): rat(sc, tile(sc, tw, th, cx, cy, 52 + rnd.random() * 9, 7.6 + rnd.random() * 3), flip=True)
-    dim(sc, 0.3); caption(sc, 'The horde meets the soldiers, corridor east end (rats: old atlas cell)'); sc.convert('RGB').save(os.path.join(out, 'taken_4_horde_vs_soldiers.png'))
+    spots = [(x, y) for x in range(72, 92) for y in range(6, 26) if floor(x, y)]; rnd.shuffle(spots)
+    big = [(n, spots.pop()) for n in ['pallid_prowler', 'blind_maw'] * 4]
+    for n, (x, y) in sorted(big, key=lambda t: t[1][1]): mutant(sc, tile(sc, tw, th, cx, cy, x, y), n, flip=True)
+    for (x, y) in sorted(spots[:40], key=lambda t: t[1]): rat(sc, tile(sc, tw, th, cx, cy, x + rnd.random() * .6, y), flip=True)
+    dim(sc, 0.3); caption(sc, 'The broken wall at the corridor\'s end: the horde (8 big + 40 rats shown) against the soldiers'); sc.convert('RGB').save(os.path.join(out, 'taken_4_horde_vs_soldiers.png'))
 if __name__ == '__main__': main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '..', '..', 'maps', 'renders', 'taken'))

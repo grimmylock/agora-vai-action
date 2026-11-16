@@ -345,6 +345,7 @@ namespace GameData
             {
                 L("Hatch Ladder", "The ladder up from the Garrison's dig under the Loading Dock."),
                 L("Lab Door", "A steel door in the corridor wall, an electronic lock beside it."),
+                L("Broken Wall", "The corridor's east wall has burst outward. Behind the rubble a tunnel runs down into the dark, and warm air breathes out of it."),
                 L("Nest", "Where the corridor ends. The air is warm and smells of meat."),
             },
             ["crusher_pit"] = new List<LandmarkDef>

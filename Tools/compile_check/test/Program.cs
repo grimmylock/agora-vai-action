@@ -3030,8 +3030,8 @@ static class Program {
       var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); p.X = door.X; p.Y = door.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.2f);
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
-      Check(Tier2Story.Step == 4 && horde >= 14 && rats >= 6, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) pours in");
-      Run(17f);
+      Check(Tier2Story.Step == 4 && horde >= 44 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
+      Run(20f);
       Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 0 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers are torn apart, then the horde comes for you");
       var lad2 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = lad2.X; p.Y = lad2.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.5f);
