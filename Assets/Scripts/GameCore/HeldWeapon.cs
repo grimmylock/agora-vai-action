@@ -492,6 +492,14 @@ namespace GameCore
                 else if (r < 0.75f) hand = L(bx, by, belowX, belowY, (r - 0.5f) / 0.25f);
                 else if (r < 0.85f) hand = L(belowX, belowY, holdX, holdY, (r - 0.75f) / 0.1f);
                 else hand = L(holdX, holdY, homeX, homeY, (r - 0.85f) / 0.15f);
+                if (r >= 0.85f && !float.IsNaN(g[2]) && (style == "mag" || style == "belt"))   // a long gun: the support hand reaches back to the charging handle, drags it and lets it go (2026-11-16, Yan: "chambering a round at the end of a reload")
+                {
+                    float rx0 = Mathf.Lerp(homeX, gunX, 0.6f), ry0 = Mathf.Lerp(homeY, gunY, 0.6f); var back = Rot(-3f, 0f);
+                    if (r < 0.90f) hand = L(holdX, holdY, rx0, ry0, (r - 0.85f) / 0.05f);
+                    else if (r < 0.94f) hand = L(rx0, ry0, rx0 + back.x, ry0 + back.y, (r - 0.90f) / 0.04f);
+                    else if (r < 0.97f) hand = L(rx0 + back.x, ry0 + back.y, rx0, ry0, (r - 0.94f) / 0.03f);
+                    else hand = L(rx0, ry0, homeX, homeY, (r - 0.97f) / 0.03f);
+                }
                 supX = Mathf.Round(hand.hx); supY = Mathf.Round(hand.hy); handMoved = true;
                 dropped = r < 0.5f;
                 magShown = r >= 0.5f;
@@ -811,6 +819,7 @@ namespace GameCore
             ["HaldenServiceRevolver"] = ("hammer", 38f), ["RinaldiR6"] = ("hammer", 30f), ["RK12Kuvalda"] = ("hammer", 32f),   // a hammer: travel is DEGREES, it turns on its hinge (HammerPivot)
             ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together
             ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f),
+            ["Karusel5"] = ("hammer", 35f),   // 2026-11-16: the revolver carbine's hammer spur (ArtSource/weapons/gun_parts.json)
         };
         /// <summary>Hand work on the lever and bolt guns, riding the part animation (Yan, 2026-11-16: "use this version for now, just make sure the characters hands move as well when cocking the lever and bolts"):
         /// the trigger hand works the action after every shot, on the "lever" or "bolt" timing of PartPhase. (style, forward px, up px) in TEXTURE px of the double-size picture, along the gun's own axis.</summary>
@@ -823,7 +832,7 @@ namespace GameCore
         /// <summary>The hinge a "hammer" part turns on, in TEXTURE px of the double-size picture (its part sprite has this point as its pivot).</summary>
         public static readonly Dictionary<string, (float x, float y)> HammerPivot = new Dictionary<string, (float, float)>
         {
-            ["HaldenServiceRevolver"] = (41f, 15f), ["RinaldiR6"] = (40f, 17f), ["RK12Kuvalda"] = (33f, 26f),
+            ["Karusel5"] = (88f, 9f), ["HaldenServiceRevolver"] = (41f, 15f), ["RinaldiR6"] = (40f, 17f), ["RK12Kuvalda"] = (33f, 26f),
             ["FrontierLeverRifle"] = (87f, 29f), ["HaldenLeverShotgun"] = (90f, 36f), ["Nightwalker4570"] = (93f, 31f),
         };
         private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
@@ -893,6 +902,14 @@ namespace GameCore
         /// <summary>How far a bolt handle is lifted (0..1) `since` seconds after the shot: up before the run back, down after the run forward.</summary>
         public static float BoltLift(float since) => since < 0.30f ? 0f : since < 0.36f ? (since - 0.30f) / 0.06f : since < 0.72f ? 1f : since < 0.78f ? 1f - (since - 0.72f) / 0.06f : 0f;
         /// <summary>How far back (0..1 of the travel) a moving part is `since` seconds after the shot.</summary>
+        /// <summary>2026-11-16 (Yan: "slide lock-back on an empty pistol, chambering a round at the end of a reload, the pump racking at the end of a shotgun reload"): the part's own shot cycle replayed as a rack at progress u (0..1) of the reload's last stretch.</summary>
+        public static float RackSince(string style, float u) => style == "bolt" ? 0.30f + u * 0.48f : style == "lever" ? 0.12f + u * 0.33f : style == "pump" ? 0.14f + u * 0.42f : 0f;
+        /// <summary>How far a slide is held back (0..1): locked open when the gun runs dry, kept open through a reload from empty, then let go with a snap that chambers the round.</summary>
+        public static float SlideLock(bool dry, bool wasDry, float r)
+        {
+            if (r < 1f) return wasDry ? (r < 0.86f ? 1f : r < 0.92f ? 1f - (r - 0.86f) / 0.06f : 0f) : 0f;
+            return dry ? 1f : 0f;
+        }
         public static float PartPhase(string style, float since)
         {
             if (since < 0f) return 0f;
@@ -941,7 +958,7 @@ namespace GameCore
         private float _shotAt = -99f, _kick, _climb, _recover, _hold;
         private float _swingAt = -99f;
         private float _reloadAt = -99f, _reloadTime;
-        private string _reloadStyle = "none";
+        private string _reloadStyle = "none"; private float _lastReloadAt = -1f; private bool _reloadEmpty;   // _reloadEmpty: the gun was dry when this reload began (the slide was locked back)
         private int _reloadTrips = 1;
         private bool _magThrown;
         /// <summary>RT 6j: (sprite, world centre, degrees, flipped, floor y, sorting order) - a magazine let go.</summary>
@@ -1084,13 +1101,13 @@ namespace GameCore
         /// <summary>aimAt: world position the unit points its weapon at, or null to keep the last angle. back: the unit shows
         /// its back (UnitSprites.Away) - Batch 128 (Yan: "when they're with their back turned, the weapon is covered by the body
         /// and the hands change orientation"): gun and hands go under the body and the gloves flip, seen from the other side.</summary>
-        void AttachmentView(SpriteRenderer r, Optics.Def d, string key, float[] g, HeldFrame f, int slot, float now)
+        void AttachmentView(SpriteRenderer r, Optics.Def d, string key, float[] g, HeldFrame f, int slot, float now, float slideHeld = 0f)
         {
             var sp = d != null && key != null ? Optics.SpriteOf(d.Id) : null;
             if (sp == null || !GameData.OpticMounts.Mount.TryGetValue(key, out var mt)) { r.gameObject.SetActive(false); return; }
             float hd = WeaponArt.Density(key), ang = f.GunDeg * Mathf.Deg2Rad;
             float hx = (mt[slot] / hd - g[0]) / WeaponArt.PixelsPerUnit, hy = (f.Left ? 1f : -1f) * (mt[slot + 1] / hd - g[1]) / WeaponArt.PixelsPerUnit;
-            if (slot == 0 && WeaponArt.PartInfo.TryGetValue(key, out var pi) && pi.style == "slide") hx -= WeaponArt.PartPhase(pi.style, now - _shotAt) * pi.travel / (WeaponArt.PixelsPerUnit * hd);   // the sight sits on the slide
+            if (slot == 0 && WeaponArt.PartInfo.TryGetValue(key, out var pi) && pi.style == "slide") hx -= Mathf.Max(WeaponArt.PartPhase(pi.style, now - _shotAt), slideHeld) * pi.travel / (WeaponArt.PixelsPerUnit * hd);   // the sight sits on the slide
             r.gameObject.SetActive(true); r.sprite = sp; r.flipY = f.Left; r.sortingOrder = _gun.sortingOrder;
             r.transform.localPosition = _gun.transform.localPosition + new Vector3(hx * Mathf.Cos(ang) - hy * Mathf.Sin(ang), hx * Mathf.Sin(ang) + hy * Mathf.Cos(ang), slot == 0 ? -0.02f : -0.015f);
             r.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
@@ -1233,29 +1250,35 @@ namespace GameCore
                 if (hdCyl) cr.sortingOrder = seated ? _gun.sortingOrder : _gun.sortingOrder - 1;
             }
             Vector3 pumpOff = Vector3.zero; bool pumping = false;                       // a pump: the off-hand goes with the fore-end
+            float rr = _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f;
+            if (_reloadAt != _lastReloadAt) { _lastReloadAt = _reloadAt; _reloadEmpty = weapon.CurrentMagazine <= 0; }
+            float psince = now - _shotAt;
             var pt = WeaponArt.Parts(cat, key);                                       // a moving part (pump fore-end, slide...): the body plus the part, the part slid along the barrel
+            float lockBack = pt.style == "slide" && !CombatRules.IsMelee(weapon) ? WeaponArt.SlideLock(weapon.CurrentMagazine <= 0, _reloadEmpty, rr) : 0f;
             if (pt.body != null && pt.part != null)
             {
                 _gun.sprite = pt.body;
+                if ((_reloadStyle == "tube" || _reloadStyle == "clip") && rr >= 0.86f && rr < 1f && (pt.style == "pump" || pt.style == "lever" || pt.style == "bolt"))
+                    psince = WeaponArt.RackSince(pt.style, (rr - 0.86f) / 0.14f);                 // the action is worked once at the end of a reload: the pump racks, the lever cycles, the bolt runs
                 if ((pt.style == "hammer" || pt.style == "lever") && WeaponArt.HammerPivot.TryGetValue(key, out var hinge))
                 {
                     float hd = WeaponArt.Density(key), hang = f.GunDeg * Mathf.Deg2Rad, hx = (hinge.x / hd - g[0]) / WeaponArt.PixelsPerUnit, hy = (f.Left ? 1f : -1f) * (hinge.y / hd - g[1]) / WeaponArt.PixelsPerUnit;
                     _mag.gameObject.SetActive(true); _mag.sprite = pt.part; _mag.flipY = f.Left; _mag.sortingOrder = _gun.sortingOrder;
                     _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(hx * Mathf.Cos(hang) - hy * Mathf.Sin(hang), hx * Mathf.Sin(hang) + hy * Mathf.Cos(hang), -0.01f);
-                    _mag.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + (f.Left ? -1f : 1f) * WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel);
+                    _mag.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + (f.Left ? -1f : 1f) * WeaponArt.PartPhase(pt.style, psince) * pt.travel);
                 }
                 else {
-                float slideBack = (pt.style == "lever" ? -0.35f : 1f) * Mathf.Max(WeaponArt.PartPhase(pt.style, now - _shotAt), pt.style == "slide" ? f.PartOpen : 0f) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
+                float slideBack = (pt.style == "lever" ? -0.35f : 1f) * Mathf.Max(WeaponArt.PartPhase(pt.style, psince), pt.style == "slide" ? Mathf.Max(f.PartOpen, lockBack) : 0f) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
                 _mag.gameObject.SetActive(true);
                 _mag.sprite = pt.part; _mag.flipY = f.Left; _mag.sortingOrder = _gun.sortingOrder;
-                float lift = pt.style == "lever" ? -WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : pt.style == "bolt" ? WeaponArt.BoltLift(now - _shotAt) * 0.05f * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : 0f;   // the handle is raised before it runs back
+                float lift = pt.style == "lever" ? -WeaponArt.PartPhase(pt.style, psince) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : pt.style == "bolt" ? WeaponArt.BoltLift(psince) * 0.05f * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : 0f;   // the handle is raised before it runs back
                 _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(-slideBack * Mathf.Cos(ang) - lift * Mathf.Sin(ang), -slideBack * Mathf.Sin(ang) + lift * Mathf.Cos(ang), -0.01f);
                 if (pt.style == "pump") { pumping = true; pumpOff = new Vector3(-slideBack * Mathf.Cos(ang), -slideBack * Mathf.Sin(ang), 0f); }   // toward the stock = against the aim; in front of the body
                 _mag.transform.localRotation = _gun.transform.localRotation;
                 }
             }
             // Optics (Optics.cs): a sight on the rail, a laser under the barrel; drawn with the gun, so they ride its kick (a sight on a slide pistol rides the slide)
-            AttachmentView(_optic, Optics.OpticOf(weapon), key, g, f, 0, now);
+            AttachmentView(_optic, Optics.OpticOf(weapon), key, g, f, 0, now, Mathf.Max(f.PartOpen, lockBack));
             AttachmentView(_under, Optics.UnderOf(weapon), key, g, f, 2, now);
             // RT 6j: the old magazine leaves as a loose object (CombatFxView lets it fall and lie on the floor)
             if (f.MagDropped && !_magThrown && mag != null && MagDropped != null && WeaponMags.Points.TryGetValue(key, out var mp))
@@ -1273,7 +1296,7 @@ namespace GameCore
             _grip.transform.localRotation = Quaternion.Euler(0f, 0f, f.HandDeg);
             if (WeaponArt.HandWork.TryGetValue(key, out var hw))                                // lever/bolt guns: the trigger hand works the action after each shot
             {
-                float hph = WeaponArt.PartPhase(hw.style, now - _shotAt), hup = hw.style == "bolt" ? WeaponArt.BoltLift(now - _shotAt) : hph;
+                float hph = WeaponArt.PartPhase(hw.style, psince), hup = hw.style == "bolt" ? WeaponArt.BoltLift(psince) : hph;
                 float hu = 1f / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), hf = hw.fwd * hph * hu, hv = hw.up * hup * hu * (f.Left ? -1f : 1f), hang = f.GunDeg * Mathf.Deg2Rad;
                 _grip.transform.localPosition += new Vector3(hf * Mathf.Cos(hang) - hv * Mathf.Sin(hang), hf * Mathf.Sin(hang) + hv * Mathf.Cos(hang), 0f);
             }
