@@ -1210,6 +1210,7 @@ namespace GameCore
                 if (dis >= 0 && walkArt == null && hm.Db?.Name == "Veil Prowler") { var ds = UnitSprites.HDFx("veil_prowler_dissolve", 6, new Vector2(0.5f, 16f / 37f)); if (ds != null) marker.sprite = ds[dis]; }   // a pixel-noise dissolve on the stand pose
             }
             else marker.flipX = false;
+            if (unit is Mutant gx && Gaunt.Is(gx)) { float tilt = Gaunt.DeathTilt(gx); marker.transform.localRotation = Quaternion.Euler(0f, 0f, marker.flipX ? -tilt : tilt); }   // a dead Gaunt tips over backwards (no death strip: done in code)
             marker.color = alive ? live : new Color(0.35f, 0.32f, 0.3f, 0.9f);
         }
 

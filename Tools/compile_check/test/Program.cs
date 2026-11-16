@@ -3026,6 +3026,10 @@ static class Program {
         var g3 = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var d3 = new Mutant("Blind Maw", px + 8, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(g3); EncounterState.Enemies.Add(d3);
         Gaunt.Call(g3, p); UnityEngine.Time.time += 0.8f; Gaunt.Tick(); g3.Hp = 0; UnityEngine.Time.time += 1.0f; Gaunt.Tick();
         Check(!Gaunt.IsDriven(d3) && !d3.IsAggroed, "gaunt: killed in the middle of its scream, the call never lands"); }
+      { UnityEngine.Time.time += 60f; Gaunt.Reset(); EncounterState.Enemies.Clear();
+        var wg = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var small = new Mutant("Pallid Prowler", px + 8, py, MutantDatabase.Get("tier1", "PallidProwler")); var big = new Mutant("Blight Brute", px + 9, py + 1, MutantDatabase.Get("tier4", "BlightBrute"));
+        EncounterState.Enemies.Add(wg); EncounterState.Enemies.Add(small); EncounterState.Enemies.Add(big); Gaunt.Call(wg, p); UnityEngine.Time.time += 1.6f; Gaunt.Tick();
+        Check(Gaunt.IsDriven(small) && !Gaunt.IsDriven(big), "gaunt: the wild one calls the smaller mutants only (a Brute ignores it)"); }
     } finally { Rt.On = false; Gaunt.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }
 

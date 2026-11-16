@@ -30,7 +30,7 @@ namespace GameCore
             var walk = UnitSprites.HDWalk(name);
             if (walk == null) return null;
             var run = m.IsAggroed ? UnitSprites.HDRun(name) : null;                // Yan, 2026-11-16: it RUNS once it has detected enemies (IsAggroed, which co-op mirrors get from the snapshot), WALKS while it has not
-            var frames = run ?? walk; float fs = Gaunt.Is(m) ? (run != null ? Gaunt.RunFrameSeconds : Gaunt.WalkFrameSeconds) : run != null ? RunFrameSeconds : FrameSeconds;   // the Gaunt's legs were drawn for its own ground speed
+            var frames = run ?? walk; float fs = Gaunt.Is(m) ? (m.IsAggroed ? Gaunt.RunFrameSeconds : Gaunt.WalkFrameSeconds) : run != null ? RunFrameSeconds : FrameSeconds;   // the Gaunt's legs were drawn for its own ground speed
             State.TryGetValue(m, out var st);
             bool walking = st.lastSlide > 0f && now - st.lastSlide < HoldSeconds;
             if (Rt.Sliding(m))

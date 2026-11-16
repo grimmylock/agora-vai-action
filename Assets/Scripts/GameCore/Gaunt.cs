@@ -17,7 +17,7 @@ namespace GameCore
         public static readonly string[] Woods = { "crimson_woods", "black_valley", "camp_shelter" };
         public static bool IsElder(Mutant m) => m?.Db?.Name == ElderName;
         public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
-        public const float ScreamFor = 1.5f, CallTotal = 2.6f;      // the arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal
+        public const float ScreamFor = 1.2f, CallTotal = 2.6f;      // the arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal
         // the wild Gaunt calls a smaller, shorter drive; the Elder drives a whole horde (range tiles, drive seconds, speed factor, seconds between calls)
         static (float range, float drive, float haste, float every) Kit(Mutant m) => IsElder(m) ? (22f, 12f, 1.45f, 10f) : (12f, 7f, 1.3f, 16f);
 
@@ -53,6 +53,13 @@ namespace GameCore
             if (!Is(m) || !m.IsAlive()) return null;
             var frames = UnitSprites.GauntAnim(m.Db.Name, "idle", 8); if (frames == null) return null;
             return frames[(int)(Time.time / 0.16f + (m.X * 7 + m.Y * 3)) % frames.Length];     // out of step with its neighbours
+        }
+        /// <summary>Its fall without a strip (Yan, 2026-11-16: death is done in code to save credits): the standing picture tips over backwards about its feet, 0 to 84 degrees in 0.8 s (TacticalGridView turns the marker).</summary>
+        public static float DeathTilt(Mutant m)
+        {
+            if (!Is(m)) return 0f; if (m.IsAlive()) return 0f;
+            var s = Of(m); if (s.DiedAt < 0f) s.DiedAt = Time.time;
+            float u = Mathf.Clamp01((Time.time - s.DiedAt) / 0.8f); return 84f * u * u * (3f - 2f * u);
         }
         /// <summary>Its fall (8 pictures), then the last one: it stays where it dropped.</summary>
         public static Sprite DeathFrame(Mutant m)
@@ -104,7 +111,7 @@ namespace GameCore
             float now = Time.time;
             if (IsElder(g)) Summon(g, target);
             int n = 0;
-            foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m != g && m.IsAlive() && !Is(m) && CombatantUtil.Distance(g, m) <= Kit(g).range))
+            foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m != g && m.IsAlive() && !Is(m) && CombatantUtil.Distance(g, m) <= Kit(g).range && (IsElder(g) || Ballistics.MutantSize(m) < 2f)))   // Yan: the wild one only calls the smaller mutants; the Elder drives everything
             { m.IsAggroed = true; Driven[m] = (now + Kit(g).drive, target, Kit(g).haste); n++; }
             if (n > 0) GameLog.Write($"The Gaunt screams and points. {n} {(n == 1 ? "creature turns" : "creatures turn")} on {(target == Player.Current ? "you" : "your friend")}.");
             else GameLog.Write("The Gaunt screams.");
