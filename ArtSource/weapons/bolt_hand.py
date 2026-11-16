@@ -26,4 +26,13 @@ def sever():
     iy, ix = ndi.distance_transform_edt(~keep, return_distances=False, return_indices=True)
     fill = m & (yy >= 14); body[fill] = im[iy[fill], ix[fill]]
     part = np.zeros_like(im); part[m] = im[m]; save(k, body, part); print(k, int(m.sum()), 'px handle')
-mosin(); sever()
+def sever_rack():
+    """Sever98 like the Mosin: the whole bolt handle assembly (rear block, stem, knob: the steel pixels at x 86-96) slides back with the hand."""
+    k = 'Sever98'; im = load(k); a = im[..., 3] > 0; H, W = a.shape; yy, xx = np.mgrid[0:H, 0:W]
+    r, g, b = (im[..., i].astype(int) for i in range(3)); stock = (r > b + 6) & (r + g + b > 60)
+    m = a & ~stock & (xx >= 86) & (xx <= 96) & (yy >= 8) & (yy <= 25)
+    body = im.copy(); body[m] = 0
+    keep = a & ~m; iy, ix = ndi.distance_transform_edt(~keep, return_distances=False, return_indices=True)
+    fill = m & (yy >= 15); body[fill] = im[iy[fill], ix[fill]]                                 # the stock behind the stem
+    part = np.zeros_like(im); part[m] = im[m]; save(k, body, part); print(k, int(m.sum()), 'px bolt assembly')
+if __name__ == '__main__': mosin(); sever_rack()

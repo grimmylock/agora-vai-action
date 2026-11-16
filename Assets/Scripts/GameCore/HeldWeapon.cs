@@ -739,25 +739,25 @@ namespace GameCore
             ["RangerP8"] = ("pump", 26f),
             ["Halden45Service"] = ("slide", 12f),
             // levers: the whole lever (lever_arc.py: loop + thick root) swings DEGREES (positive = loop tip down and forward) about its hinge (HammerPivot)
-            ["FrontierLeverRifle"] = ("lever", 34f), ["HaldenLeverShotgun"] = ("lever", 34f), ["Nightwalker4570"] = ("lever", 34f), ["Sever98"] = ("lever", -60f),   // 
-            ["M91Trekhlineyka"] = ("bolt", 18f),   // (Yan, 2026-11-16: "use this version for now", the weapons_only2 GIF) a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
+            ["FrontierLeverRifle"] = ("lever", 34f), ["HaldenLeverShotgun"] = ("lever", 34f), ["Nightwalker4570"] = ("lever", 34f),   // 
+            ["M91Trekhlineyka"] = ("bolt", 18f), ["Sever98"] = ("bolt", 16f),   // (Yan, 2026-11-16: "use this version for now", the weapons_only2 GIF) a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
             ["HaldenServiceRevolver"] = ("hammer", 38f), ["RinaldiR6"] = ("hammer", 30f), ["RK12Kuvalda"] = ("hammer", 32f),   // a hammer: travel is DEGREES, it turns on its hinge (HammerPivot)
             ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together
-            ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f), ["SP14Warden"] = ("pump", 30f),
+            ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f),
         };
         /// <summary>Hand work on the lever and bolt guns, riding the part animation (Yan, 2026-11-16: "use this version for now, just make sure the characters hands move as well when cocking the lever and bolts"):
         /// the trigger hand works the action after every shot, on the "lever" or "bolt" timing of PartPhase. (style, forward px, up px) in TEXTURE px of the double-size picture, along the gun's own axis.</summary>
         public static readonly Dictionary<string, (string style, float fwd, float up)> HandWork = new Dictionary<string, (string, float, float)>
         {
             ["FrontierLeverRifle"] = ("lever", 3f, -7f), ["HaldenLeverShotgun"] = ("lever", 3f, -8f), ["Nightwalker4570"] = ("lever", 3f, -7f),   // the hand pulls the loop down and forward, then back up
-            ["M91Trekhlineyka"] = ("bolt", -16f, 5f), ["Sever98"] = ("lever", -10f, 6f),                                                          // Mosin: the hand lifts to the handle, drags the bolt back and pushes it forward; Sever-98: the hand goes up and back with the handle
+            ["M91Trekhlineyka"] = ("bolt", -16f, 5f), ["Sever98"] = ("bolt", -14f, 5f),                                                          // Mosin: the hand lifts to the handle, drags the bolt back and pushes it forward; Sever-98: the hand goes up and back with the handle
         };
 
         /// <summary>The hinge a "hammer" part turns on, in TEXTURE px of the double-size picture (its part sprite has this point as its pivot).</summary>
         public static readonly Dictionary<string, (float x, float y)> HammerPivot = new Dictionary<string, (float, float)>
         {
             ["HaldenServiceRevolver"] = (41f, 15f), ["RinaldiR6"] = (40f, 17f), ["RK12Kuvalda"] = (33f, 26f),
-            ["FrontierLeverRifle"] = (87f, 29f), ["HaldenLeverShotgun"] = (90f, 36f), ["Nightwalker4570"] = (93f, 31f), ["Sever98"] = (94f, 13f),
+            ["FrontierLeverRifle"] = (87f, 29f), ["HaldenLeverShotgun"] = (90f, 36f), ["Nightwalker4570"] = (93f, 31f),
         };
         private static readonly Dictionary<string, (Sprite, Sprite)> PartCache = new Dictionary<string, (Sprite, Sprite)>();
         public static (Sprite body, Sprite part, string style, float travel) Parts(string cat, string key)
@@ -794,7 +794,7 @@ namespace GameCore
             ["SKNKarabin"] = (112f, 11f, 0.03f, false),
             ["CorvanWasp9"] = (118f, 30f, 0.03f, false),
             ["Hound13"] = (100f, 10f, 0.22f, false),
-            ["SP14Warden"] = (105f, 14f, 0.22f, false),
+            ["SP14Warden"] = (105f, 14f, 0.03f, false),   // semi-auto (Yan: "the SPAS-12 is semi-auto"): the case leaves with the shot, no pump
             ["HaldenHR36K"] = (105f, 22f, 0.03f, false),
             ["M91Trekhlineyka"] = (100f, 12f, 0.55f, false),
             ["Kaban12"] = (118f, 14f, 0.03f, false),
