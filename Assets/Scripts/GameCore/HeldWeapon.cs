@@ -735,8 +735,8 @@ namespace GameCore
         {
             ["RangerP8"] = ("pump", 26f),
             ["Halden45Service"] = ("slide", 12f),
-            // levers parked (Yan: "doesnt look right"): the loop is fused to the trigger guard, a cut-out loop falls apart. Body/part PNGs and the "lever" style stay for a redo.
-            // ["FrontierLeverRifle"] = ("lever", 7f), ["HaldenLeverShotgun"] = ("lever", 7f), ["Nightwalker4570"] = ("lever", 7f),   // a lever: the loop drops this many texture px (and a third of it forward), clean pixels, no rotation
+            // levers: the big loop (lever_ring.py cuts it exactly, round its enclosed hole) drops and comes back up
+            ["FrontierLeverRifle"] = ("lever", 7f), ["HaldenLeverShotgun"] = ("lever", 7f), ["Nightwalker4570"] = ("lever", 7f),   // a lever: the loop drops this many texture px (and a third of it forward), clean pixels, no rotation
             ["M91Trekhlineyka"] = ("bolt", 18f), ["Sever98"] = ("bolt", 14f),   // a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
             ["HaldenServiceRevolver"] = ("hammer", 38f), ["RinaldiR6"] = ("hammer", 30f), ["RK12Kuvalda"] = ("hammer", 32f),   // a hammer: travel is DEGREES, it turns on its hinge (HammerPivot)
             ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together

@@ -54,7 +54,9 @@ def main(src, key, out):
         t = n * dt; gx_, gy_, deg, hx, hy, sx, sy, has_sup, left = f[:9]; sh = phase(style, t) * travel if style else 0.0
         c = Image.new("RGBA", (H.W * S, H.H * S), H.BG); c.alpha_composite(body, (H.BX * S, H.BY * S))
         if style:
-            if style in ("hammer", "lever"): part = gp.rotate(sh, center=pivot, resample=Image.BICUBIC) if abs(sh) > 0.5 else gp
+            if style == "lever":
+                part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); part.alpha_composite(gp, (int(round(0.35 * sh)), int(round(sh))))
+            elif style == "hammer": part = gp.rotate(sh, center=pivot, resample=Image.BICUBIC) if abs(sh) > 0.5 else gp
             elif style == "bolt":
                 part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); lift = int(round(boltlift(t) * 0.22 * travel)); part.alpha_composite(gp.crop((int(round(sh)), 0, gp.width, gp.height)) if sh >= 0.5 else gp, (0, -lift))
             else: part = Image.new("RGBA", gp.size, (0, 0, 0, 0)); part.alpha_composite(gp.crop((int(round(sh)), 0, gp.width, gp.height)) if sh >= 0.5 else gp, (0, 0))
