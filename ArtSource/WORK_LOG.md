@@ -5988,3 +5988,4 @@ Yan: "the pistols look gigantic in the characters hands... way bigger than the r
 - `ArtSource/weapons/lever_split.py` runs after `cut_parts.py` and returns stock pixels the lever rectangle caught to the body.
 - `Tools/render/parts_preview.py` handles "lever" and "bolt".
 - Not checked: Unity. Previews are Python only. Left alone: VK-127 Grom bolt, charging handles on the autos, triggers. The Nightwalker loop has a few stray outline pixels and the Halden grip is a little ragged mid-swing.
+- Follow-up: Yan, "doesnt look right" on the lever previews. Rotation shredded the 1 px outlines; a plain drop was clean but the cut loop is only a fragment (it is fused to the trigger guard). The three lever guns are parked as static again (PartInfo entries commented out). Bolts (Mosin, Sever-98) stay animated.

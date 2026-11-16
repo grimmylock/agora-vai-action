@@ -735,7 +735,8 @@ namespace GameCore
         {
             ["RangerP8"] = ("pump", 26f),
             ["Halden45Service"] = ("slide", 12f),
-            ["FrontierLeverRifle"] = ("lever", 55f), ["HaldenLeverShotgun"] = ("lever", 55f), ["Nightwalker4570"] = ("lever", 55f),   // a lever: DEGREES (negative = the loop swings down and forward), hinge in HammerPivot
+            // levers parked (Yan: "doesnt look right"): the loop is fused to the trigger guard, a cut-out loop falls apart. Body/part PNGs and the "lever" style stay for a redo.
+            // ["FrontierLeverRifle"] = ("lever", 7f), ["HaldenLeverShotgun"] = ("lever", 7f), ["Nightwalker4570"] = ("lever", 7f),   // a lever: the loop drops this many texture px (and a third of it forward), clean pixels, no rotation
             ["M91Trekhlineyka"] = ("bolt", 18f), ["Sever98"] = ("bolt", 14f),   // a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
             ["HaldenServiceRevolver"] = ("hammer", 38f), ["RinaldiR6"] = ("hammer", 30f), ["RK12Kuvalda"] = ("hammer", 32f),   // a hammer: travel is DEGREES, it turns on its hinge (HammerPivot)
             ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together
@@ -759,7 +760,7 @@ namespace GameCore
                     var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + kind);
                     if (tex == null) return null;
                     tex.filterMode = FilterMode.Bilinear;
-                    var hp = kind == "part" && (info.style == "hammer" || info.style == "lever") && HammerPivot.TryGetValue(key, out var hv) ? hv : (g[0] * dense, g[1] * dense);   // a hammer turns on its own hinge: that is the part sprite's pivot
+                    var hp = kind == "part" && (info.style == "hammer") && HammerPivot.TryGetValue(key, out var hv) ? hv : (g[0] * dense, g[1] * dense);   // a hammer turns on its own hinge: that is the part sprite's pivot
                     return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(hp.Item1 / tex.width, 1f - hp.Item2 / tex.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);
                 }
                 PartCache[key] = sp = (Load("body"), Load("part"));
@@ -1138,7 +1139,7 @@ namespace GameCore
             if (pt.body != null && pt.part != null)
             {
                 _gun.sprite = pt.body;
-                if ((pt.style == "hammer" || pt.style == "lever") && WeaponArt.HammerPivot.TryGetValue(key, out var hinge))
+                if (pt.style == "hammer" && WeaponArt.HammerPivot.TryGetValue(key, out var hinge))
                 {
                     float hd = WeaponArt.Density(key), hang = f.GunDeg * Mathf.Deg2Rad, hx = (hinge.x / hd - g[0]) / WeaponArt.PixelsPerUnit, hy = (f.Left ? 1f : -1f) * (hinge.y / hd - g[1]) / WeaponArt.PixelsPerUnit;
                     _mag.gameObject.SetActive(true); _mag.sprite = pt.part; _mag.flipY = f.Left; _mag.sortingOrder = _gun.sortingOrder;
@@ -1146,10 +1147,10 @@ namespace GameCore
                     _mag.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + (f.Left ? -1f : 1f) * WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel);
                 }
                 else {
-                float slideBack = WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
+                float slideBack = (pt.style == "lever" ? -0.35f : 1f) * WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
                 _mag.gameObject.SetActive(true);
                 _mag.sprite = pt.part; _mag.flipY = f.Left; _mag.sortingOrder = _gun.sortingOrder;
-                float lift = pt.style == "bolt" ? WeaponArt.BoltLift(now - _shotAt) * 0.22f * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : 0f;   // the handle is raised before it runs back
+                float lift = pt.style == "lever" ? -WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : pt.style == "bolt" ? WeaponArt.BoltLift(now - _shotAt) * 0.22f * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : 0f;   // the handle is raised before it runs back
                 _mag.transform.localPosition = _gun.transform.localPosition + new Vector3(-slideBack * Mathf.Cos(ang) - lift * Mathf.Sin(ang), -slideBack * Mathf.Sin(ang) + lift * Mathf.Cos(ang), -0.01f);
                 if (pt.style == "pump") { pumping = true; pumpOff = new Vector3(-slideBack * Mathf.Cos(ang), -slideBack * Mathf.Sin(ang), 0f); }   // toward the stock = against the aim; in front of the body
                 _mag.transform.localRotation = _gun.transform.localRotation;
