@@ -255,9 +255,9 @@ namespace GameCore
             var q = Pos(p); float dx = q.x - fx, dy = q.y - fy, l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f;
             Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + prone);
             if (dist < 0.4f) return;
-            Rt.MoveBy(p, dx / l * dist, dy / l * dist); var q1 = Pos(p); Place(p, q.x, q.y);
-            if (Dist(q.x, q.y, q1.x, q1.y) < 0.3f) return;                                                    // a wall right behind him: no room to fly
-            s.Air[p] = new Fling { X0 = q.x, Y0 = q.y, Z0 = 0.2f, X1 = q1.x, Y1 = q1.y, T0 = -2f, Dur = 0.55f, Apex = 1.6f, Land = "knock", Spin = 0f };
+            // 2026-11-16 ("it half works, the attacks still teleport the player around instead of knocking him back"): the arc moved him by lerping a hand-placed position, which read as a jump; now it is a real
+            // slide (Rt.Shove: eased, walls and friends stop it like walking) with a short stagger, so the player visibly skids back from the blow
+            Rt.Shove(p, dx / l * dist, dy / l * dist, 0.4f);
         }
         static bool Damage(State s, Player p, int dmg, string what, float fx, float fy, float knock, float prone, float now)
         {

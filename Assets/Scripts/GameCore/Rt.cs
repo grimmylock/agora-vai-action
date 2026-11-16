@@ -46,6 +46,21 @@ namespace GameCore
         /// <summary>Knocked down: sprawled for `seconds` like after a dive (can't move, a low target).</summary>
         public static void Knockdown(Player p, float seconds) { if (p == null) return; var s = Of(p); s.DiveUntil = -1f; s.ProneUntil = Mathf.Max(s.ProneUntil, Time.time + seconds); }
 
+        /// <summary>A knock-back: slides the body (dx, dy) tiles over `seconds`, fast at first and easing out, stopped by walls and friends like walking (MoveBy). Yan, 2026-11-16: the eel "teleports the player around instead of knocking him back".</summary>
+        public static void Shove(Player p, float dx, float dy, float seconds = 0.35f)
+        {
+            if (p == null || (dx == 0f && dy == 0f)) return;
+            var s = Of(p); s.ShoveX = dx; s.ShoveY = dy; s.ShoveFrom = Time.time; s.ShoveLen = Mathf.Max(0.05f, seconds);
+        }
+        static void ShoveTick(Player p, State s)
+        {
+            if (s.ShoveFrom < 0f) return;
+            float u0 = Mathf.Clamp01((Time.time - Time.deltaTime - s.ShoveFrom) / s.ShoveLen), u1 = Mathf.Clamp01((Time.time - s.ShoveFrom) / s.ShoveLen);
+            float e0 = 1f - (1f - u0) * (1f - u0), e1 = 1f - (1f - u1) * (1f - u1), d = e1 - e0;      // ease-out: the share of the slide done this frame
+            if (d > 0f) MoveBy(p, s.ShoveX * d, s.ShoveY * d);
+            if (u1 >= 1f) s.ShoveFrom = -1f;
+        }
+
         public static void Glide(float dt)
         {
             foreach (var e in EncounterState.Enemies)
@@ -86,6 +101,7 @@ namespace GameCore
             public float LookReach = Vision.MaxRadius;                // how far this player sees where they look (Vision, for fair shots)
             public int FireMode, BurstLeft;                           // 0 auto, 1 3-round burst, 2 semi (Gunplay.HasModes guns only); the rounds of the burst still to fire
             public bool Aiming;
+            public float ShoveX, ShoveY, ShoveFrom = -1f, ShoveLen;   // a knock-back in progress: the total offset, when it began, how long it takes (Rt.Shove)
             public int Moving;                                        // 0 still, 1 walking, 2 sprinting
             public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
             public string UsingId;
@@ -282,7 +298,7 @@ namespace GameCore
         public static void PlayerTick(Player p, Input i)
         {
             float dt = Time.deltaTime;
-            var s = Of(p);
+            var s = Of(p); ShoveTick(p, s);
             p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: AP/MP only gate old actions
             if (i.Parry) Parry.Press(p);                                                       // Boss 1
 

@@ -226,7 +226,7 @@ namespace GameCore
                         if (ShockAt.TryGetValue(p, out var t0) && now - t0 < ShockGap) continue;
                         ShockAt[p] = now;
                         f.Shocked.Add(p); f.Label = "SHOCK: you touched the coils"; Hurt(p, ShockDamage, "The coils shock you", "Psi");
-                        float k = rd < 0.01f ? 0f : 1f / rd; Rt.MoveBy(p, (f.PX - qx) * k * 1.6f, (f.PY - qy) * k * 1.6f);
+                        float k = rd < 0.01f ? 0f : 1f / rd; Rt.Shove(p, (f.PX - qx) * k * 1.6f, (f.PY - qy) * k * 1.6f, 0.3f);
                     }
                     if (age >= Burst + Hold) { Go(f, "release"); f.Discharged = false; f.Label = "it lets go"; }
                     break;
@@ -351,6 +351,7 @@ namespace GameCore
             if (dx * dx + dy * dy > z.R * z.R) return;
             if (once) { if (Current.Shocked.Contains(p)) return; Current.Shocked.Add(p); }
             Hurt(p, dmg, what, "Slash");
+            float l = Mathf.Sqrt(dx * dx + dy * dy) + 1e-3f; Rt.Shove(p, dx / l * 2.4f, dy / l * 2.4f, 0.4f); Rt.Knockdown(p, 0.6f);   // flung out of the strike circle, not left standing in it
         }
 
         static void Hurt(Player p, int dmg, string what, string kind)
