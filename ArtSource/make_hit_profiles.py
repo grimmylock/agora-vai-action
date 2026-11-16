@@ -13,10 +13,10 @@ def profile(a, ppt):
     out = np.array(out); sm = np.maximum.reduce([out, np.append(out[1:], 0), np.insert(out[:-1], 0, 0)]); return sm, ppt
 E_ = {}
 at = np.array(Image.open(f'{R}/armor_atlas_x2.png').convert('RGBA'))[..., 3] > 0; E_['human'] = profile(at[0:32, 0:32], 32)
-for k, n in [('pallid_prowler', 'Pallid Prowler'), ('blind_maw', 'Blind Maw'), ('veil_prowler', 'Veil Prowler'), ('dread_prowler', 'Dread Prowler'), ('blight_brute', 'Blight Brute')]:
+for k, n in [('pallid_prowler', 'Pallid Prowler'), ('blind_maw', 'Blind Maw'), ('veil_prowler', 'Veil Prowler'), ('dread_prowler', 'Dread Prowler'), ('blight_brute', 'Blight Brute'), ('gaunt', 'Gaunt')]:
     E_[n] = profile(np.array(Image.open(f'{R}/Mutants/mutant_hd_{k}.png').convert('RGBA'))[..., 3] > 0, 32)
 ma = np.array(Image.open(f'{R}/mutant_atlas.png').convert('RGBA'))[..., 3] > 0
-for i, n in {2: 'Rot Swarm', 5: 'Alpha Prowler', 7: 'Mind Weaver', 10: 'Void Weaver'}.items(): E_[n] = profile(ma[:, i * 16:(i + 1) * 16], 16)
+for i, n in {2: 'Swarm', 7: 'Mind Weaver', 10: 'Void Weaver'}.items(): E_[n] = profile(ma[:, i * 16:(i + 1) * 16], 16)
 # bosses (2026-11-14): the brain in its vat (the sheet's first frame; the sprite's bottom is 10 px under the tile's middle, the model's ground line 16 px, so 6 base rows are added) and the eel's body: the thickness of
 # the baked body strip (boss_eel_body_s0.png, 8 px a spine sample, 32 px a tile) per spine sample, half of it = the column's radius; the head zone is the head picture's height.
 vat = np.array(Image.open(f'{R}/Mutants/boss_brain_vat.png').convert('RGBA'))[..., 3] > 0; p_, ppt_ = profile(vat[0:160, 0:128], 32); E_['The Specimen'] = (np.concatenate([np.full(6, p_[0]), p_]), ppt_)

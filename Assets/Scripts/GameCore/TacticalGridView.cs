@@ -1191,7 +1191,8 @@ namespace GameCore
         {
             var art = UnitSprites.For(unit);
             Sprite walkArt = null;                                                   // 2026-11-11: a walking mutant with a walk strip plays it (MutantWalk), same size and pivot as its stand-still sprite
-            if (art != null && alive && unit is Mutant wm && !(unit is HumanEnemy) && !BrainBoss.Is(wm)) { string wn = wm.Db?.Name ?? wm.Name; if (art == UnitSprites.HD(wn)) walkArt = Gaunt.Frame(wm) ?? MutantAttack.Frame(wm, wn, Time.time) ?? MutantWalk.Frame(wm, wn, Time.time); }
+            if (art != null && alive && unit is Mutant wm && !(unit is HumanEnemy) && !BrainBoss.Is(wm)) { string wn = wm.Db?.Name ?? wm.Name; if (art == UnitSprites.HD(wn)) walkArt = Gaunt.Frame(wm) ?? MutantAttack.Frame(wm, wn, Time.time) ?? MutantWalk.Frame(wm, wn, Time.time) ?? Gaunt.Idle(wm); }
+            else if (art != null && !alive && Gaunt.Is(unit as Mutant)) walkArt = Gaunt.DeathFrame((Mutant)unit);                // its fall, then it lies where it dropped
             marker.sprite = walkArt != null ? walkArt : art != null ? art : (_spriteBeing != null ? _spriteBeing : GetWhiteSprite());
             marker.transform.localScale = Vector3.one * (art != null ? TileWorldSize : TileWorldSize * 0.7f);
             Color live = art != null ? Color.white : fallbackColor;

@@ -25,7 +25,7 @@ namespace GameCore
             ["Pallid Prowler"] = new Rules { SpitMax = 6, SpitCd = 3.5f },
             ["Dread Prowler"] = new Rules { PounceMax = 6, PounceCd = 10f, PounceEffect = "knockdown" },
             ["Blight Brute"] = new Rules { MeleeA = "swipe", MeleeB = null, SlamCd = 10f, BoulderMin = 2, BoulderMax = 10 },       // Yan, 2026-11-12: no jumps (too heavy): a lateral SWIPE, a GROUND SLAM (10 s, knocks down), a BOULDER after 5 s out of reach
-            ["Gaunt"] = new Rules { MeleeA = "claw" },                                                                                   // 2026-11-16: a long-armed claw lash (ArtSource/make_gaunt_anims.py); the rest of its fighting is Gaunt.cs
+            ["Gaunt"] = new Rules { MeleeA = "claw", MeleeB = "bite" },                                                                                   // 2026-11-16: a long-armed claw lash (ArtSource/make_gaunt_anims.py); the rest of its fighting is Gaunt.cs
             ["Blind Maw"] = new Rules { ChargeMin = 4, ChargeMax = 6, ChargeLen = 8f, ChargeSpeed = 7f, ChargeCd = 8f, PounceEffect = "bleed" },     // the Maw does not leap: it CHARGES in a straight line (Yan, 2026-11-12)
         };
 

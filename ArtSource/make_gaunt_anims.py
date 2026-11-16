@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pxart import *
 import make_gaunt as G
 HIDE, HIDE_FAR, BONE, DARK = G.HIDE, G.HIDE_FAR, G.BONE, G.DARK
-CW, CH, OX, OY = 170, 150, 40, 36                         # the rig canvas and where the base drawing's origin sits on it
+CW, CH, OX, OY = 220, 150, 80, 36                         # the rig canvas and where the base drawing's origin sits on it
 P0 = (34, 58)                                              # the pelvis: the upper body leans about it
 def rot(p, piv, deg):
     a = math.radians(deg); dx, dy = p[0] - piv[0], p[1] - piv[1]
@@ -123,24 +123,55 @@ ANIMS = {'walk': ([walk(k) for k in range(8)], [110] * 8),
          'claw': ([claw(k) for k in range(8)], [100, 160, 140, 70, 60, 90, 110, 110]),
          'scream': ([scream(k) for k in range(8)], [100, 140, 120, 100, 100, 100, 140, 120]),
          'point': ([point(k) for k in range(6)], [90, 90, 110, 220, 220, 220])}
+
+def bite(k):                                                                           # 8 frames: draw back, the neck lunges, the jaw snaps shut on frame 4, recoil (contact on frame 4)
+    T = [dict(),
+         dict(lean=-6, dx=-2, head=(-3, 1, 6), jaw=6, armn=(46, 0, 22, -4)),
+         dict(lean=-10, dx=-4, head=(-5, 2, 10), jaw=10, armn=(52, 8, 24, 0)),
+         dict(lean=8, dx=5, head=(6, 3, -4), jaw=12, armn=(36, -16, 20, -10), armf=(22, -4, 14)),
+         dict(lean=16, dx=10, head=(13, 5, -9), jaw=1, armn=(30, -18, 16, -12), armf=(26, -2, 14)),
+         dict(lean=15, dx=10, head=(12, 5, -9), jaw=0, armn=(30, -18, 16, -12)),
+         dict(lean=8, dx=5, head=(5, 2, -3), jaw=3),
+         dict(lean=2, dx=1, head=(1, 0, -1), jaw=0)]
+    d = dict(T[k]); d.setdefault('legn', (33, -24, 25) if k in (3, 4, 5) else (29.7, -26.6, 25)); d.setdefault('legf', (22, -32, 20) if k in (3, 4, 5) else (26.6, -26.6, 20)); return d
+def idle(k, n=8):                                                                      # breathing: the chest and shoulders rise, the head sways, a finger twitches
+    f = 2 * PI * k / n
+    return dict(dy=-0.7 * S(f), lean=0.8 * S(f), head=(0.3 * S(f + 1), 0.6 * S(f + 0.4), 1.6 * S(f + 1.2)), jaw=(1 if S(f + 2) > 0.6 else 0), armn=(39.8 + 1.2 * S(f), -12.5, 21.8 + 1.5 * S(f + 1), -8.1))
+def death(k):                                                                          # 8 frames: thrown back by the blow, the knees go, it folds forward and falls on its side (the last frames turn the whole picture)
+    T = [dict(lean=-12, dx=-3, head=(-3, 0, 16), jaw=8, armn=(30, 20, 30, 20), armf=(30, 10, 20)),
+         dict(lean=-6, dx=-4, dy=4, head=(-2, 3, 8), jaw=6, legn=(55, -10, 20), legf=(50, -12, 20), armn=(25, 10, 24, 14)),
+         dict(lean=-14, dx=-2, dy=12, head=(-3, 6, 14), jaw=5, legn=(75, 10, 30), legf=(70, 8, 30), armn=(30, 15, 25, 10)),
+         dict(lean=-22, dx=-1, dy=22, head=(-6, 10, 22), jaw=4, legn=(86, 40, 40), legf=(82, 36, 36), armn=(40, 30, 20, 8), armf=(36, 30, 24))]
+    return dict(T[k]) if k < 4 else None
+ANIMS['bite'] = ([bite(k) for k in range(8)], [110, 130, 150, 60, 50, 80, 110, 110])
+ANIMS['idle'] = ([idle(k) for k in range(8)], [160] * 8)
+
 def build(out):
     os.makedirs(out, exist_ok=True)
     frames = {name: [render(**p) for p in poses] for name, (poses, ms) in ANIMS.items()}
-    frames['idle'] = [render()]
+    frames['still'] = [render()]
+    dth = [render(**death(k)) for k in range(4)]                                       # then the fall: the last collapsed picture turns onto its side about its feet
+    base = dth[3]; bb0 = base.getbbox(); feet = ((bb0[0] + bb0[2]) // 2, bb0[3])
+    for ang in (30, 58, 82, 90):
+        r = base.rotate(ang, resample=Image.NEAREST, center=(feet[0] - 14, feet[1]), expand=False); dth.append(r)      # thrown back: it falls over backwards
+    frames['death'] = dth; ANIMS['death'] = (None, [90, 120, 130, 160, 120, 110, 110, 900])
     allf = [f for fs in frames.values() for f in fs]
-    bb = [f.getbbox() for f in allf]; box = (min(b[0] for b in bb) - 1, min(b[1] for b in bb) - 1, max(b[2] for b in bb) + 1, max(b[3] for b in bb) + 1)
-    frames = {n: [f.crop(box) for f in fs] for n, fs in frames.items()}
-    W, H = frames['idle'][0].size
-    for n, fs in frames.items():
-        strip = Image.new('RGBA', (W * len(fs), H), (0, 0, 0, 0))
-        for i, f in enumerate(fs): strip.alpha_composite(f, (i * W, 0))
+    bb = [f.getbbox() for f in allf]; y0 = min(b[1] for b in bb) - 1; y1 = max(b[3] for b in bb) + 1
+    sb = frames['still'][0].getbbox(); xc = (sb[0] + sb[2]) // 2                      # the standing figure's centre: the sprite pivot (0.5) must stay on it in every strip
+    size = {}
+    for n, fs in list(frames.items()):
+        half = max(max(abs(f.getbbox()[0] - xc), abs(f.getbbox()[2] - xc)) for f in fs) + 2
+        frames[n] = [f.crop((xc - half, y0, xc + half, y1)) for f in fs]; size[n] = frames[n][0].size
+        strip = Image.new('RGBA', (size[n][0] * len(fs), size[n][1]), (0, 0, 0, 0))
+        for i, f in enumerate(frames[n]): strip.alpha_composite(f, (i * size[n][0], 0))
         strip.save(os.path.join(out, 'gaunt_%s_strip.png' % n))
-    meta = {n: dict(frame=[W, H], ms=ANIMS[n][1], travel=[0] * len(ANIMS[n][1])) for n in ANIMS}
-    json.dump({'gaunt': {'claw': meta['claw']}}, open(os.path.join(out, 'gaunt_attacks.json'), 'w'), indent=1)
-    json.dump({n: dict(frame=[W, H], ms=ANIMS[n][1]) for n in ANIMS}, open(os.path.join(out, 'gaunt_anims.json'), 'w'), indent=1)
+    W, H = size['still']
+    meta = {n: dict(frame=list(size[n]), ms=ANIMS[n][1], travel=[0] * len(ANIMS[n][1])) for n in ANIMS}
+    json.dump({'gaunt': {'claw': meta['claw'], 'bite': meta['bite']}}, open(os.path.join(out, 'gaunt_attacks.json'), 'w'), indent=1)
+    json.dump({n: dict(frame=list(size[n]), ms=ANIMS[n][1]) for n in ANIMS}, open(os.path.join(out, 'gaunt_anims.json'), 'w'), indent=1)
     return frames, (W, H)
 def gif(frames, W, H, out):                                                            # half speed, on the alarm-red dark: every action in a row
-    names = ['walk', 'run', 'claw', 'scream', 'point']; Sx = 2
+    names = ['idle', 'walk', 'run', 'claw', 'bite', 'scream', 'point', 'death']; Sx = 2
     seq = []
     for n in names:
         ms = ANIMS[n][1]
@@ -155,7 +186,7 @@ def export(out):
     A = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Assets', 'Resources', 'Sprites', 'Mutants'); os.makedirs(os.path.join(A, 'anim'), exist_ok=True)
     import shutil
     # the standing sprite is the rig's neutral frame on the same canvas as every strip (nothing jumps between poses)
-    idle = Image.open(os.path.join(out, 'gaunt_idle_strip.png')); idle.save(os.path.join(A, 'mutant_hd_gaunt.png'))
-    for n in ('walk', 'run', 'scream', 'point'): shutil.copy(os.path.join(out, 'gaunt_%s_strip.png' % n), os.path.join(A, 'anim', 'gaunt_%s.bytes' % n))
+    idle = Image.open(os.path.join(out, 'gaunt_still_strip.png')); idle.save(os.path.join(A, 'mutant_hd_gaunt.png'))
+    for n in ('walk', 'run', 'scream', 'point', 'idle', 'death'): shutil.copy(os.path.join(out, 'gaunt_%s_strip.png' % n), os.path.join(A, 'anim', 'gaunt_%s.bytes' % n))
 if __name__ == '__main__':
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mutants_anim', 'gaunt'); fr, (W, H) = build(out); gif(fr, W, H, os.path.join(out, 'gaunt_actions.gif')); export(out); print('canvas', W, H)

@@ -40,7 +40,8 @@ namespace GameData
             },
             ["Gaunt"] = new Dictionary<string, AttackAnim>
             {
-                ["claw"] = new AttackAnim { Frames = 8, W = 155, H = 145, Contact = 4, ContactMs = 470, TotalMs = 840, PivotY = 0.16552f, Ms = new[] { 100, 160, 140, 70, 60, 90, 110, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+                ["claw"] = new AttackAnim { Frames = 8, W = 168, H = 152, Contact = 4, ContactMs = 470, TotalMs = 840, PivotY = 0.20395f, Ms = new[] { 100, 160, 140, 70, 60, 90, 110, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+                ["bite"] = new AttackAnim { Frames = 8, W = 130, H = 152, Contact = 4, ContactMs = 450, TotalMs = 800, PivotY = 0.20395f, Ms = new[] { 110, 130, 150, 60, 50, 80, 110, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
             },
         };
     }

@@ -101,9 +101,10 @@ namespace GameCore
                 int fr = human ? ((System.Math.Max(0, _fac.IndexOf(h.FactionName)) << 3) | System.Math.Max(0, CombatRules.RankIndex(h.Rank))) : 0;
                 var (ox, oy) = Rt.Offset(e); bool alive = e.IsAlive() && e.Hp > 0;
                 bool spotted = now - e.SpottedAt < 2.5f, calling = EncounterState.Caller == e && EncounterState.CallAt >= 0f;      // the "!" over its head (yellow while it notices you, red when it spots you) and the radio icon
-                w.Write((ushort)IdOf(e)); w.Write((byte)((human ? 1 : 0) | (alive ? 2 : 0) | (e.IsAggroed ? 4 : 0) | (spotted ? 8 : 0) | (calling ? 16 : 0) | (e.IsCloaked ? 32 : 0) | (MutantAttack.NetState(e, now).code != 0 ? 64 : 0))); w.Write((ushort)a); w.Write((ushort)b); w.Write((byte)fr);
+                w.Write((ushort)IdOf(e)); w.Write((byte)((human ? 1 : 0) | (alive ? 2 : 0) | (e.IsAggroed ? 4 : 0) | (spotted ? 8 : 0) | (calling ? 16 : 0) | (e.IsCloaked ? 32 : 0) | (MutantAttack.NetState(e, now).code != 0 ? 64 : 0) | (Gaunt.NetPose(e).code != 0 ? 128 : 0))); w.Write((ushort)a); w.Write((ushort)b); w.Write((byte)fr);
                 w.Write((short)e.X); w.Write((short)e.Y); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(ox * 127f), -127, 127)); w.Write((sbyte)Mathf.Clamp(Mathf.RoundToInt(oy * 127f), -127, 127)); w.Write((ushort)Mathf.Clamp(e.Hp, 0, 65535)); w.Write((byte)Mathf.Clamp(Mathf.RoundToInt(e.Alert * 100f), 0, 100));
                 var at = MutantAttack.NetState(e, now); if (at.code != 0) { w.Write(at.code); w.Write(at.t20); w.Write(at.d1); w.Write(at.d2); }      // 2026-11-12: the canines' attack animation, only while one plays
+                var gp = Gaunt.NetPose(e); if (gp.code != 0) { w.Write(gp.code); w.Write(gp.t20); }                                                 // 2026-11-16: the Gaunt's scream / point (1 / 2) and how long ago it began
             }
             WriteBrain(w);
             // forget the ids of enemies that are gone
@@ -155,7 +156,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ the client
-        public class Entry { public int Id, A, B, Fr, X, Y, Hp, Alert, Atk, AtkT, D1, D2; public bool Human, Alive, Aggro, Spotted, Calling, Cloaked; public float Ox, Oy; }
+        public class Entry { public int Id, A, B, Fr, X, Y, Hp, Alert, Atk, AtkT, D1, D2, GPose, GT; public bool Human, Alive, Aggro, Spotted, Calling, Cloaked; public float Ox, Oy; }
         public class FxIn { public int Seq, Kind, Weapon, Rounds, FromX, FromY, ToX, ToY, Overkill; public byte ActorT, TargetT; public ulong Actor, Target; public int Flags; public float EndX, EndY, Seconds; public string Px; }
         public class WorldIn { public BrainIn Brain; public bool Slow; public float Stop; public List<(int seq, string text)> Logs = new List<(int, string)>(); public List<(int seq, byte t, ulong who, int kind, string text)> Nums = new List<(int, byte, ulong, int, string)>(); public List<FxIn> Fx = new List<FxIn>(); public List<Entry> Enemies = new List<Entry>(); }
         public static WorldIn Read(BinaryReader r)
@@ -174,7 +175,7 @@ namespace GameCore
             for (int i = 0; i < n; i++)
             {
                 var e = new Entry { Id = r.ReadUInt16() }; int fl = r.ReadByte(); e.Human = (fl & 1) != 0; e.Alive = (fl & 2) != 0; e.Aggro = (fl & 4) != 0; e.Spotted = (fl & 8) != 0; e.Calling = (fl & 16) != 0; e.Cloaked = (fl & 32) != 0; e.A = r.ReadUInt16(); e.B = r.ReadUInt16(); e.Fr = r.ReadByte();
-                e.X = r.ReadInt16(); e.Y = r.ReadInt16(); e.Ox = r.ReadSByte() / 127f; e.Oy = r.ReadSByte() / 127f; e.Hp = r.ReadUInt16(); e.Alert = r.ReadByte(); if ((fl & 64) != 0) { e.Atk = r.ReadByte(); e.AtkT = r.ReadByte(); e.D1 = r.ReadSByte(); e.D2 = r.ReadSByte(); } o.Enemies.Add(e);
+                e.X = r.ReadInt16(); e.Y = r.ReadInt16(); e.Ox = r.ReadSByte() / 127f; e.Oy = r.ReadSByte() / 127f; e.Hp = r.ReadUInt16(); e.Alert = r.ReadByte(); if ((fl & 64) != 0) { e.Atk = r.ReadByte(); e.AtkT = r.ReadByte(); e.D1 = r.ReadSByte(); e.D2 = r.ReadSByte(); } if ((fl & 128) != 0) { e.GPose = r.ReadByte(); e.GT = r.ReadByte(); } o.Enemies.Add(e);
             }
             o.Brain = ReadBrain(r);
             return o;
@@ -206,7 +207,7 @@ namespace GameCore
                     else { if (e.A >= _mut.Count) continue; var (tier, key) = _mut[e.A]; m = new Mutant(key, e.X, e.Y, MutantDatabase.Get(tier, key)); }
                     Mirror[e.Id] = m; EncounterState.Enemies.Add(m);
                 }
-                m.X = e.X; m.Y = e.Y; Rt.SetOffset(m, e.Ox, e.Oy); m.Hp = e.Alive ? System.Math.Max(1, e.Hp) : 0; m.IsAggroed = e.Aggro; if (m.ActiveCamouflage) m.IsCloaked = e.Cloaked; MutantAttack.Mirror(m, e.Atk, e.AtkT * 0.02f, e.D1, e.D2, Time.time); m.Alert = e.Alert / 100f; m.SpottedAt = e.Spotted ? Time.time - 0.2f : -99f;
+                m.X = e.X; m.Y = e.Y; Rt.SetOffset(m, e.Ox, e.Oy); m.Hp = e.Alive ? System.Math.Max(1, e.Hp) : 0; m.IsAggroed = e.Aggro; if (m.ActiveCamouflage) m.IsCloaked = e.Cloaked; MutantAttack.Mirror(m, e.Atk, e.AtkT * 0.02f, e.D1, e.D2, Time.time); Gaunt.Mirror(m, e.GPose, e.GT * 0.05f); m.Alert = e.Alert / 100f; m.SpottedAt = e.Spotted ? Time.time - 0.2f : -99f;
                 if (e.Calling && m is HumanEnemy hcall) { EncounterState.Caller = hcall; if (EncounterState.CallAt < 0f) EncounterState.CallAt = Time.time; } else if (EncounterState.Caller == m) { EncounterState.Caller = null; EncounterState.CallAt = -1f; }
             }
             foreach (var id in Mirror.Keys.Where(k => !seen.Contains(k)).ToList()) { EncounterState.Enemies.Remove(Mirror[id]); Mirror.Remove(id); }

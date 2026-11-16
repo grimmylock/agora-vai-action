@@ -11,9 +11,10 @@ namespace GameCore
     public static class Gaunt
     {
         public const string Name = "Gaunt";
+        public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
         public const float CallEvery = 14f, Range = 16f, DriveFor = 9f, Haste = 1.35f, ScreamFor = 1.5f, PointFor = 1.1f;
 
-        class State { public float NextCall = -1f, PoseUntil = -1f, PoseAt = -1f; public string Pose; public bool WasAlive = true; }
+        class State { public float NextCall = -1f, PoseUntil = -1f, PoseAt = -1f, DiedAt = -1f; public string Pose; public bool WasAlive = true; }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
         static readonly Dictionary<Mutant, (float until, Player target)> Driven = new Dictionary<Mutant, (float, Player)>();
 
@@ -37,6 +38,24 @@ namespace GameCore
             return frames[i];
         }
 
+        static readonly int[] DeathMs = { 90, 120, 130, 160, 120, 110, 110, 900 };
+        /// <summary>Standing still: a breathing loop (8 pictures, 160 ms each); null when it is not alive.</summary>
+        public static Sprite Idle(Mutant m)
+        {
+            if (!Is(m) || !m.IsAlive()) return null;
+            var frames = UnitSprites.GauntAnim("idle", 8); if (frames == null) return null;
+            return frames[(int)(Time.time / 0.16f + (m.X * 7 + m.Y * 3)) % frames.Length];     // out of step with its neighbours
+        }
+        /// <summary>Its fall (8 pictures), then the last one: it stays where it dropped.</summary>
+        public static Sprite DeathFrame(Mutant m)
+        {
+            var s = Of(m); if (s.DiedAt < 0f) s.DiedAt = Time.time;
+            var frames = UnitSprites.GauntAnim("death", 8); if (frames == null) return null;
+            float t = (Time.time - s.DiedAt) * 1000f; int i = 0; float acc = 0f;
+            for (; i < frames.Length - 1; i++) { if (t < acc + DeathMs[i]) break; acc += DeathMs[i]; }
+            return frames[i];
+        }
+
         /// <summary>A mutant it is driving runs faster; 1 otherwise (RtAi.Speed).</summary>
         public static float Hurry(Mutant m) => Driven.TryGetValue(m, out var d) && Time.time < d.until && m.IsAlive() ? Haste : 1f;
         /// <summary>The player a driven mutant hunts: the one the Gaunt pointed at (Rt.TargetOf), or null.</summary>
@@ -47,6 +66,19 @@ namespace GameCore
         public static void ForcePose(Mutant m, string pose, float seconds) { var s = Of(m); if (s.Pose != pose || Time.time >= s.PoseUntil) s.PoseAt = Time.time; s.Pose = pose; s.PoseUntil = Time.time + seconds; }
         static State Of(Mutant m) { if (!States.TryGetValue(m, out var s)) States[m] = s = new State(); return s; }
 
+        // ---- co-op: the host sends the pose and its age (in 1/20 s); a client's mirror plays it the same way (NetWorld) ----
+        public static (byte code, byte t20) NetPose(Mutant e)
+        {
+            if (!Is(e) || !(Pose(e) is string p) || !States.TryGetValue(e, out var s)) return (0, 0);
+            return ((byte)(p == "scream" ? 1 : 2), (byte)Mathf.Clamp(Mathf.RoundToInt((Time.time - s.PoseAt) * 20f), 0, 255));
+        }
+        public static void Mirror(Mutant m, int code, float age)
+        {
+            if (!Is(m)) return;
+            if (code == 0) { if (States.TryGetValue(m, out var s0)) s0.PoseUntil = -1f; return; }
+            var s = Of(m); s.Pose = code == 1 ? "scream" : "point"; s.PoseAt = Time.time - age; s.PoseUntil = Time.time + 0.3f;       // renewed every snapshot while the host still shows it
+        }
+
         /// <summary>The call: a scream, then the arm flung at `target`; every other mutant within range is driven at it.</summary>
         public static void Call(Mutant g, Player target)
         {
@@ -55,7 +87,7 @@ namespace GameCore
             ForcePose(g, "scream", ScreamFor);
             s.PoseUntil = now + ScreamFor + PointFor;                                      // the scream first, then the point: Tick() switches them
             _pointAt[g] = now + ScreamFor;
-            Sfx.Play("eel_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 0.62f);
+            Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 1f);
             int n = 0;
             foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m != g && m.IsAlive() && !Is(m) && CombatantUtil.Distance(g, m) <= Range))
             { m.IsAggroed = true; Driven[m] = (now + DriveFor, target); n++; }
@@ -74,7 +106,7 @@ namespace GameCore
                 if (s.Pose == "scream" && _pointAt.TryGetValue(g, out var pa) && now >= pa && now < s.PoseUntil) s.Pose = "point";   // the scream ends, the arm comes up
                 if (g.IsAlive() == false)
                 {
-                    if (s.WasAlive) { s.WasAlive = false; Falter(); }
+                    if (s.WasAlive) { s.WasAlive = false; s.DiedAt = now; Falter(); }
                     continue;
                 }
                 if (!g.IsAggroed || now < s.NextCall || Net.Mode == Net.Role.Client) continue;

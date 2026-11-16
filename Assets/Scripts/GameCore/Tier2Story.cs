@@ -302,7 +302,7 @@ namespace GameCore
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
         }
 
-        static void GauntScream(Mutant g) { Sfx.Play("eel_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 0.62f); }
+        static void GauntScream(Mutant g) { Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 1f); }
 
         // ------------------------------------------------------------------ the soldiers' walking
 
