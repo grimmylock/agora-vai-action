@@ -93,9 +93,12 @@ namespace GameCore
         // ---- Batch 22: combat animation curves (all plain floats, see the Batch 22 checks) ----
 
         /// <summary>Recoil left after `since` seconds: 1 at the shot, easing to 0 at `recover`.</summary>
-        public static float Recoil(float since, float recover)
+        public static float Recoil(float since, float recover, float hold = 0f)
         {
-            if (since < 0f || recover <= 0f || since >= recover) return 0f;
+            if (since < 0f || recover <= 0f) return 0f;
+            if (since < hold) return 1f;                                   // a hard hitter: the gun stays up for `hold` seconds before it comes down
+            since -= hold;
+            if (since >= recover) return 0f;
             float k = 1f - since / recover;
             return k * k;
         }
@@ -868,7 +871,7 @@ namespace GameCore
         private static void ResetCaches() { HandCache.Clear(); ItemSprites.Clear(); }
 
 
-        private float _shotAt = -99f, _kick, _climb, _recover;
+        private float _shotAt = -99f, _kick, _climb, _recover, _hold;
         private float _swingAt = -99f;
         private float _reloadAt = -99f, _reloadTime;
         private string _reloadStyle = "none";
@@ -899,7 +902,7 @@ namespace GameCore
         private readonly SpriteRenderer _gun2;
         private Weapon _w2;
         private float[] _g2;
-        private float _shotAt2 = -99f, _kick2, _climb2, _recover2;
+        private float _shotAt2 = -99f, _kick2, _climb2, _recover2, _hold2;
         private bool _sel2;
         /// <summary>Points Gun / Muzzle / Recoil at the gun that fired: the left-hand one when it's `w`, else the main one.</summary>
         public HeldWeaponView Use(Weapon w) { _sel2 = w != null && w == _w2 && _gun2.gameObject.activeSelf; return this; }
@@ -930,13 +933,13 @@ namespace GameCore
 
         public void Recoil(WeaponFeel f, float scale)
         {
-            if (_sel2) { _shotAt2 = Time.time; _kick2 = f.Kick * scale; _climb2 = f.Climb * scale; _recover2 = Mathf.Max(0.05f, f.Recover); return; }
-            _shotAt = Time.time; _kick = f.Kick * scale; _climb = f.Climb * scale; _recover = Mathf.Max(0.05f, f.Recover);
+            if (_sel2) { _shotAt2 = Time.time; _kick2 = f.Kick * scale; _climb2 = f.Climb * scale; _recover2 = Mathf.Max(0.05f, f.Recover); _hold2 = f.Hold; return; }
+            _shotAt = Time.time; _kick = f.Kick * scale; _climb = f.Climb * scale; _recover = Mathf.Max(0.05f, f.Recover); _hold = f.Hold;
         }
         public void Twitch()   // jammed: click, nothing
         {
-            if (_sel2) { _shotAt2 = Time.time; _kick2 = 0.5f; _climb2 = -4f; _recover2 = 0.1f; return; }
-            _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f;
+            if (_sel2) { _shotAt2 = Time.time; _kick2 = 0.5f; _climb2 = -4f; _recover2 = 0.1f; _hold2 = 0f; return; }
+            _shotAt = Time.time; _kick = 0.5f; _climb = -4f; _recover = 0.1f; _hold = 0f;
         }
         public void Swing() => _swingAt = Time.time;
         /// <summary>RT 7c: the body's lean while swinging a melee weapon (degrees, for the unit's tilt): back on the wind-up, into the chop.</summary>
@@ -1077,7 +1080,7 @@ namespace GameCore
             float bodyTurn = _gun.transform.parent != null ? _gun.transform.parent.localEulerAngles.z : 0f;
             float local = Mathf.DeltaAngle(0f, _angle - bodyTurn);
             float since = mc != null ? mc.Since(now) : now - _swingAt, hold = mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f;
-            HeldFrame At(float sw) => HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover), _climb, _kick, sw,
+            HeldFrame At(float sw) => HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover, _hold), _climb, _kick, sw,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,
                 key != null && WeaponArt.Mag(cat, key).mag != null && WeaponMags.Points.TryGetValue(key, out var pts) ? pts : null,
                 hold, mc != null && mc.ThrowFrom >= 0f ? now - mc.ThrowFrom : -1f, mc != null ? now - mc.ThrewAt : 99f,
@@ -1194,7 +1197,7 @@ namespace GameCore
                 var (cat2, key2) = WeaponArt.Identify(_w2.Db);
                 var (sprite2, g2) = WeaponArt.For(cat2, key2);
                 _g2 = g2;
-                var f2 = HeldPoseMath.Offhand(HeldPoseMath.Frame(cat2, g2, local, HeldPoseMath.Recoil(now - _shotAt2, _recover2), _climb2, _kick2, 99f, 1f, "", 1), local);
+                var f2 = HeldPoseMath.Offhand(HeldPoseMath.Frame(cat2, g2, local, HeldPoseMath.Recoil(now - _shotAt2, _recover2, _hold2), _climb2, _kick2, 99f, 1f, "", 1), local);
                 _gun2.sprite = sprite2; _gun2.flipY = f2.Left;
                 _gun2.sortingOrder = _base + (back ? -3 : 1);                           // behind the right-hand gun
                 _gun2.transform.localPosition = Local(f2.GunX, f2.GunY);

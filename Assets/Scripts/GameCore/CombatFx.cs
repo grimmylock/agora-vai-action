@@ -80,6 +80,7 @@ namespace GameCore
         public float Kick;         // character px the gun jumps back per shot
         public float Climb;        // degrees the muzzle climbs per shot
         public float Recover;      // seconds to settle back
+        public float Hold;         // seconds the gun stays at full recoil before it settles (hard hitters with a slow rate of fire)
         public int Flash;          // 0 = suppressed (smoke puff only), 1 small .. 4 huge
         public float Shake;        // camera shake in tiles when the player fires
         public float Tracer = 1f;  // tracer opacity
@@ -110,7 +111,8 @@ namespace GameCore
             ["Tambour12"] = f => { f.Casing = null; },   // a drum shotgun: the shells stay in the drum
             ["Karusel5"] = f => { f.Reload = "tube"; f.ReloadTime = 1.4f; f.Casing = null; },   // a revolver carbine: the shells go in round by round through a loading gate, the spent ones stay in the cylinder (the revolver pose would hold a long gun straight up)
             ["HaldenAM50Sledge"] = f => { f.Flash = 4; f.Shake = 0.15f; },
-            ["RK12Kuvalda"] = f => { f.Shake = 0.08f; },
+            ["RK12Kuvalda"] = f => { f.Shake = 0.08f; f.Kick *= 1.7f; f.Climb *= 1.8f; f.Hold = 0.12f; f.Recover *= 1.3f; },   // Yan, 2026-11-16: hits hard, long gap between shots: the gun goes up fast and stays up a moment
+            ["SteppeEagle"] = f => { f.Kick *= 1.5f; f.Climb *= 1.7f; f.Hold = 0.10f; f.Recover *= 1.2f; },
         };
 
         private static readonly Dictionary<WeaponDef, WeaponFeel> Cache = new Dictionary<WeaponDef, WeaponFeel>();

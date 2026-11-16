@@ -771,7 +771,7 @@ static class Program {
         bool dumps = style == "cylinder" || style == "break"; float dumpAt = style == "cylinder" ? Math.Min(0.3f, 0.2f * secs) / secs : 0.17f;
         var brass = new System.Collections.Generic.List<float[]>(); var rnd = new Random(7);
         for (int i = 0; i < n; i++) {
-          var f = style == "shot" ? HeldPoseMath.Frame(cat, g, 12f, HeldPoseMath.Recoil(i / 30f, Math.Max(0.05f, feel.Recover)), feel.Climb, feel.Kick, 99f, 1f, "", 1) : HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
+          var f = style == "shot" ? HeldPoseMath.Frame(cat, g, 12f, HeldPoseMath.Recoil(i / 30f, Math.Max(0.05f, feel.Recover), feel.Hold), feel.Climb, feel.Kick, 99f, 1f, "", 1) : HeldPoseMath.Frame(cat, g, 12f, 0f, 0f, 0f, 99f, i / 30f / secs, style, trips, mp);
           if (f.MagDropped && !thrown && mp != null) {
             thrown = true;
             double a = f.GunDeg * Math.PI / 180, vx = (mp[2] - g[0]) * 0.5, vy = (mp[3] - g[1]) * 0.5 * (f.Left ? -1 : 1);
