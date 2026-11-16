@@ -38,10 +38,12 @@ def build(sheet_path):
         cv = Image.new('RGBA', (FW + 40, FW), (0, 0, 0, 0)); cv.alpha_composite(arm, (dx, dy)); cv.alpha_composite(f)     # the arm is BEHIND the body
         out.append(cv); info.append((round(sc, 2), dx, dy))
     return out, info
-def cells(fs):
-    bb = [f.getbbox() for f in fs]; y0 = min(b[1] for b in bb); y1 = max(b[3] for b in bb); xc = int(np.mean([(b[0] + b[2]) / 2 for b in bb])); half = max(max(abs(b[0] - xc), abs(b[2] - xc)) for b in bb) + 2
+STILL_HEAD = -18          # where the still puts the skull template's left edge, in px from its cell's centre column (the walk is centred so the body does not jump when the game switches pictures)
+def cells(fs, heads):
+    bb = [f.getbbox() for f in fs]; y0 = min(b[1] for b in bb); y1 = max(b[3] for b in bb)
+    xc = int(round(np.mean(heads) - STILL_HEAD)); half = max(max(abs(b[0] - xc), abs(b[2] - xc)) for b in bb) + 2
     return [f.crop((xc - half, y0, xc + half, y1)) for f in fs]
 if __name__ == '__main__':
     fs, info = build(sys.argv[1]); print('head match (iou, dx, dy):', info)
-    cs = cells(fs); W, H = cs[0].size; st = X.strip(cs); od = X.OUT; os.makedirs(od, exist_ok=True)
+    cs = cells(fs, [50 + i[1] for i in info]); W, H = cs[0].size; st = X.strip(cs); od = X.OUT; os.makedirs(od, exist_ok=True)
     st.save(os.path.join(od, 'elder_gaunt_walk_strip.png')); X.gif(cs, [110] * 8, os.path.join(X.PRE, 'elder3_walk.gif')); X.sheet(cs, os.path.join(X.PRE, 'elder3_walk_frames.png')); print('walk cell', W, 'x', H)
