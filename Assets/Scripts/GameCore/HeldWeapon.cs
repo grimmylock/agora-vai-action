@@ -669,8 +669,19 @@ namespace GameCore
         {
             if (key == null) return (null, null);
             if (MagCache.TryGetValue(key, out var hit)) return hit;
-            if (Density(key) > 1f) return MagCache[key] = (null, null);                  // the big picture has no cut pieces yet
             var g = For(cat, key).grip;
+            if (Density(key) > 1f)                                                       // 2026-11-16: the double-size guns - body without the magazine (none for a pistol: its magazine is hidden in the grip) and the magazine, same canvas and pivot as the picture
+            {
+                float dense = Density(key);
+                Sprite LoadHd(string part)
+                {
+                    var tx = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_hd" + part);
+                    if (tx == null) return null;
+                    tx.filterMode = FilterMode.Bilinear;
+                    return Sprite.Create(tx, new Rect(0, 0, tx.width, tx.height), new Vector2(g[0] * dense / tx.width, 1f - g[1] * dense / tx.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);
+                }
+                return MagCache[key] = (LoadHd("body"), LoadHd("mag"));
+            }
             Sprite Load(string part)
             {
                 var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_" + part);
@@ -706,10 +717,11 @@ namespace GameCore
         {
             if (key == null || !WeaponMags.Points.TryGetValue(key, out var mp)) return null;
             if (LooseCache.TryGetValue(key, out var hit)) return hit;
-            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + "_mag");
+            float dn = Density(key);                                                      // the double-size guns: their own magazine picture (texture px = virtual px x density)
+            var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + key + (dn > 1f ? "_hdmag" : "_mag"));
             if (tex == null) return LooseCache[key] = null;
-            tex.filterMode = FilterMode.Point;
-            return LooseCache[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(mp[2] / tex.width, 1f - mp[3] / tex.height), PixelsPerUnit, 0, SpriteMeshType.FullRect);
+            tex.filterMode = dn > 1f ? FilterMode.Bilinear : FilterMode.Point;
+            return LooseCache[key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(mp[2] * dn / tex.width, 1f - mp[3] * dn / tex.height), PixelsPerUnit * dn, 0, SpriteMeshType.FullRect);
         }
         private static readonly Dictionary<string, Sprite> LooseCache = new Dictionary<string, Sprite>();
 
@@ -861,7 +873,7 @@ namespace GameCore
     /// Batch 22: also plays recoil, melee swings and reloads (started by CombatFxView).</summary>
     public class HeldWeaponView
     {
-        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels, _optic, _under;
+        private readonly SpriteRenderer _gun, _support, _grip, _mag, _barrels, _optic, _under, _magHd;
         private readonly SpriteRenderer[] _smear = new SpriteRenderer[HeldPoseMath.SmearCount];   // Melee 4: the strike's ghosts
         private float _angle;
         private static readonly Dictionary<string, Sprite> HandCache = new Dictionary<string, Sprite>();
@@ -892,6 +904,7 @@ namespace GameCore
             _support = Child(body, "SupportHand", 2);
             _grip = Child(body, "GripHand", 3);
             _mag = Child(body, "Magazine", 1);
+            _magHd = Child(body, "MagazineHd", 1);   // the double-size guns' magazine (the slide of a pistol uses _mag)
             _barrels = Child(body, "Barrels", 2);
             _optic = Child(body, "Optic", 1); _under = Child(body, "UnderAttachment", 1);   // Optics.cs: a sight on the rail, a laser under the barrel
             _gun2 = Child(body, "OffhandWeapon", 2);
@@ -990,7 +1003,7 @@ namespace GameCore
         /// Called after Show each frame while he holds the eel's jaws.</summary>
         public void GripHands(ArmorDef armor, Vector3 upperWorld, Vector3 lowerWorld, float faceX)
         {
-            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(false); _gun2.gameObject.SetActive(false); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _item.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false);
             foreach (var sm in _smear) sm.gameObject.SetActive(false);
             var big = HandSprite(armor, false);
             for (int h = 0; h < 2; h++)
@@ -1034,7 +1047,7 @@ namespace GameCore
             _item.gameObject.SetActive(false);
             _w2 = on ? offhand : null;
             _gun2.gameObject.SetActive(_w2?.Db != null);
-            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false);
+            _gun.gameObject.SetActive(on); _grip.gameObject.SetActive(visible); _support.gameObject.SetActive(visible); _mag.gameObject.SetActive(false); _barrels.gameObject.SetActive(false); _optic.gameObject.SetActive(false); _under.gameObject.SetActive(false); _magHd.gameObject.SetActive(false);
             if (!visible) return;
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
             _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
@@ -1144,10 +1157,12 @@ namespace GameCore
             }
             if (mag != null && f.MagShown)
             {
-                _mag.gameObject.SetActive(true);
-                _mag.sprite = mag; _mag.flipY = f.Left;
-                _mag.transform.localPosition = Local(f.GunX + f.MagDX, f.GunY + f.MagDY);   // seated, or riding in the hand
-                _mag.transform.localRotation = _gun.transform.localRotation;
+                bool hdMag = WeaponArt.Density(key) > 1f; var mr = hdMag ? _magHd : _mag;   // a double-size gun's magazine has its own renderer (its slide uses _mag)
+                mr.gameObject.SetActive(true);
+                mr.sprite = mag; mr.flipY = f.Left;
+                mr.transform.localPosition = Local(f.GunX + f.MagDX, f.GunY + f.MagDY) + new Vector3(0f, 0f, hdMag ? (body == null ? 0.02f : -0.005f) : 0f);   // seated, or riding in the hand; a pistol's hidden one sits behind the gun
+                mr.transform.localRotation = _gun.transform.localRotation;
+                if (hdMag) mr.sortingOrder = body == null ? _gun.sortingOrder - 1 : _gun.sortingOrder;
             }
             var cy = WeaponArt.Cylinder(cat, key);
             if (cy.cyl != null && cy.body != null)                                    // RT 6l: frame + cylinder, the cylinder on the magazine's layer

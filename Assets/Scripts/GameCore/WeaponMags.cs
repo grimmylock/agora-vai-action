@@ -9,10 +9,10 @@ namespace GameCore
     {
         public static readonly Dictionary<string, float[]> Points = new Dictionary<string, float[]>
         {
-            ["PPZZubr"] = new[] { 18.0f, 4f, 18.0f, 6.5f },
-            ["CorvanHornet45"] = new[] { 21.0f, 4f, 20.5f, 10.0f },
-            ["VosaVz62"] = new[] { 14.0f, 7f, 14.5f, 11.5f },
-            ["CorvanGnatPDW"] = new[] { 8.0f, 12f, 7.5f, 15.0f },
+            ["PPZZubr"] = new[] { 21.1f, 3.9f, 21.1f, 5.1f },
+            ["CorvanHornet45"] = new[] { 22.0f, 5.2f, 22.0f, 9.7f },
+            ["VosaVz62"] = new[] { 17.7f, 4.3f, 17.7f, 7.3f },
+            ["CorvanGnatPDW"] = new[] { 18.0f, 8.8f, 18.0f, 11.2f },
             ["VKS74U"] = new[] { 20.0f, 3f, 20.5f, 8.5f },
             ["Smerch3"] = new[] { 16.0f, 5f, 16.0f, 8.5f },
             ["VK74"] = new[] { 22.0f, 4f, 22.0f, 8.5f },
@@ -38,13 +38,14 @@ namespace GameCore
             ["CorvanLMG"] = new[] { 22.0f, 7f, 21.5f, 11.0f },
             ["RL44"] = new[] { 19.0f, 4f, 19.0f, 9.0f },
             ["PL74"] = new[] { 20.0f, 5f, 19.5f, 8.5f },
-            ["PSh18Pchela"] = new[] { 4.5f, 6f, 4.5f, 10.0f },
-            ["WaldenP9"] = new[] { 4.5f, 8f, 4.5f, 12.0f },
-            ["Halden45Service"] = new[] { 4.5f, 6f, 4.5f, 10.0f },
-            ["SR21Gadyuka"] = new[] { 3.5f, 8f, 3.5f, 12.0f },
-            ["BlackHarrier"] = new[] { 4.5f, 6f, 4.5f, 10.0f },
-            ["Corvan57"] = new[] { 4.5f, 7f, 4.5f, 11.0f },
-            ["SteppeEagle"] = new[] { 4.5f, 7f, 4.5f, 11.0f },
+            ["PSh18Pchela"] = new[] { 5.5f, 9.8f, 5.5f, 12.7f },
+            ["WaldenP9"] = new[] { 5.2f, 10.0f, 5.2f, 13.2f },
+            ["Halden45Service"] = new[] { 4.5f, 9.6f, 4.5f, 11.9f },
+            ["SR21Gadyuka"] = new[] { 4.1f, 9.0f, 4.1f, 11.6f },
+            ["BlackHarrier"] = new[] { 4.5f, 8.8f, 4.5f, 11.1f },
+            ["Corvan57"] = new[] { 4.7f, 10.4f, 4.7f, 13.0f },
+            ["SteppeEagle"] = new[] { 5.1f, 8.9f, 5.1f, 11.3f },
+            ["CorvanWasp9"] = new[] { 21.7f, 5.9f, 21.7f, 10.9f },
         };
     }
 }
