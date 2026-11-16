@@ -154,6 +154,7 @@ namespace GameCore
         /// `fallback` (the local player) when nobody else qualifies.</summary>
         public static Player TargetOf(Mutant e, Player fallback)
         {
+            if (Gaunt.Marked(e) is Player marked) return marked;                  // a mutant the Gaunt drove at someone hunts that player
             Player best = null; int bd = int.MaxValue; bool bestSees = false;
             var grid = GameServices.Grid;
             foreach (var p in Player.All)
@@ -721,6 +722,7 @@ namespace GameCore
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
+            Gaunt.Tick();                                                          // the Gaunt: its call, and the ones it drove when it falls
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
             foreach (var e in EncounterState.Enemies.ToList())
             {

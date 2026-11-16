@@ -58,6 +58,7 @@ static class Program {
     FireModeChecks();
     NetBrainChecks();
     TakenChecks();
+    GauntChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2997,6 +2998,24 @@ static class Program {
 
   // Yan, 2026-11-08: dying alone wakes you at the camp, like the squad wipe; only the Testing Ground keeps the death screen
   static bool _sessionShake;
+  static void GauntChecks() {   // 2026-11-16: the Gaunt (Gaunt.cs)
+    Console.WriteLine("-- gaunt --");
+    try {
+      GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true; Rt.Reset(); Gaunt.Reset(); EncounterState.Enemies.Clear();
+      var p = Player.Current; int px = p.X, py = p.Y; UnityEngine.Time.time = 70000f;
+      var g = new Mutant("Gaunt", px + 6, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true };
+      var a = new Mutant("Pallid Prowler", px + 8, py + 1, MutantDatabase.Get("tier1", "PallidProwler")); var b = new Mutant("Swarm", px + 5, py - 2, MutantDatabase.Get("tier1", "Swarm"));
+      EncounterState.Enemies.Add(g); EncounterState.Enemies.Add(a); EncounterState.Enemies.Add(b);
+      float v0 = RtAi.Speed(a); Gaunt.Call(g, p);
+      Check(a.IsAggroed && b.IsAggroed && Gaunt.IsDriven(a) && Gaunt.Pose(g) == "scream", "gaunt: its call turns the mutants round it on the player and it screams");
+      Check(RtAi.Speed(a) > v0 * 1.3f && Rt.TargetOf(a, p) == p, "gaunt: the driven ones run 35% faster and hunt who it pointed at");
+      g.Hp = 0; Gaunt.Tick();
+      Check(!Gaunt.IsDriven(a) && RtAi.Speed(a) == v0, "gaunt: when it falls the drive ends");
+      UnityEngine.Time.time += 30f; var g2 = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var c = new Mutant("Blind Maw", px + 9, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(g2); EncounterState.Enemies.Add(c);
+      Gaunt.Tick(); Check(Gaunt.IsDriven(c), "gaunt: it calls by itself when it sees its target");
+    } finally { Rt.On = false; Gaunt.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
   static void TakenChecks() {   // 2026-11-16: Tier 2 beat 1 "Taken" (Tier2Story)
     Console.WriteLine("-- taken --");
     try {
@@ -3030,8 +3049,10 @@ static class Program {
       var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); p.X = door.X; p.Y = door.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.2f);
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
-      Check(Tier2Story.Step == 4 && horde >= 44 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
-      Run(20f);
+      Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
+      Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
+      Run(22f);
+      Check(EncounterState.Enemies.OfType<Mutant>().Any(m => !(m is HumanEnemy) && m.Db?.Name == "Gaunt" && m.IsAlive() && m.IsAggroed), "taken: the Gaunt screamed, pointed, and joins the hunt");
       Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 0 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers are torn apart, then the horde comes for you");
       var lad2 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = lad2.X; p.Y = lad2.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.5f);

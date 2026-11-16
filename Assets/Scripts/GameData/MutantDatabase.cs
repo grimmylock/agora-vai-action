@@ -63,7 +63,8 @@ namespace GameData
             ["tier3"] = new Dictionary<string, MutantDef>
             {
                 // Was PhysDR 25%/Hp 85 and PhysDR 20%/Hp 85 respectively - both bumped to compensate.
-                ["Gaunt"] = new MutantDef { Name = "Gaunt", Tier = 3, Hp = 1000, PhysDR = 0.0f, AnomDR = 0.25f, Ap = 5, Mp = 5, Ac = 13, AttackDamage = 300, AgilityMod = 2, Behavior = "ambush", ActiveCamouflage = true, ThroatLacerationChance = 0.4f, ArmorPierce = 0.2f, PanicThreshold = 0.2f },
+                ["Gaunt"] = new MutantDef { Name = "Gaunt", Tier = 3, Hp = 1000, PhysDR = 0.0f, AnomDR = 0.25f, Ap = 5, Mp = 5, Ac = 13, AttackDamage = 300, AgilityMod = 2, Behavior = "ambush", ActiveCamouflage = false,   // 2026-11-16: no cloak any more - the wendigo walks out of the dark in plain sight and screams (Gaunt.cs)
+                 ThroatLacerationChance = 0.4f, ArmorPierce = 0.2f, PanicThreshold = 0.2f },
                 ["MindWeaver"] = new MutantDef { Name = "Mind Weaver", Tier = 3, Hp = 900, PhysDR = 0.0f, AnomDR = 0.3f, Ap = 5, Mp = 4, Ac = 13, AttackDamage = 350, AgilityMod = 2, Behavior = "ranged", PsiBlast = true, PanicThreshold = 0.2f },
             },
             ["tier4"] = new Dictionary<string, MutantDef>

@@ -97,7 +97,7 @@ namespace GameCore
             if (_hd == null)
             {
                 _hd = new Dictionary<string, Sprite>();
-                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute" })
+                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute", "Gaunt" })
                 {
                     var tex = Resources.Load<Texture2D>("Sprites/Mutants/mutant_hd_" + n.ToLowerInvariant().Replace(' ', '_'));
                     if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);
@@ -152,6 +152,15 @@ namespace GameCore
             _hdFx[asset] = list; return list;
         }
 
+        private static readonly Dictionary<string, Sprite> _gauntPose = new Dictionary<string, Sprite>();
+        /// <summary>The Gaunt's cutscene poses (ArtSource/make_gaunt.py -> anim/gaunt_scream.bytes, gaunt_point.bytes): same canvas, pivot and density as its standing sprite.</summary>
+        public static Sprite GauntPose(string pose)
+        {
+            if (_gauntPose.TryGetValue(pose, out var hit)) return hit;
+            Sprite sp = null; var asset = Resources.Load<TextAsset>("Sprites/Mutants/anim/gaunt_" + pose);
+            if (asset != null) { var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false); if (tex.LoadImage(asset.bytes)) { tex.filterMode = FilterMode.Point; tex.wrapMode = TextureWrapMode.Clamp; sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect); } }
+            return _gauntPose[pose] = sp;
+        }
         public static Sprite[] HDWalk(string name) => HDStrip(name, "walk");
         /// <summary>2026-11-16 (Yan: "runs when detecting enemies, walk when unaggroed"): the four canines' 8-frame gallop (ArtSource/export_mutant_walk.py ... run), same pivot rule as the walk; null for the rest.</summary>
         public static Sprite[] HDRun(string name) => HDStrip(name, "run");

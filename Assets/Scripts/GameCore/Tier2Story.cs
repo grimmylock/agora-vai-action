@@ -28,11 +28,11 @@ namespace GameCore
         static bool _warned0, _warned1, _warned2, _released1, _released2;
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
         static readonly List<(float at, List<Mutant> who)> Waves = new List<(float, List<Mutant>)>();   // the horde, released in waves (seconds after the alarm)
-        static readonly float[] DeathTimes = { 3.0f, 4.4f, 5.8f, 7.2f, 8.8f };
+        static readonly float[] DeathTimes = { 4.5f, 5.8f, 7.1f, 8.4f, 9.8f };   // seconds after the Gaunt's scream
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -248,31 +248,61 @@ namespace GameCore
         {
             Waves.Clear();
             var bw = Mark("Broken Wall"); var nest = Mark("Nest"); if (bw == null || nest == null) return;
-            Wave(10f, bw.X + 4, bw.Y, ("PallidProwler", 4), ("BlindMaw", 4));
-            Wave(12f, nest.X, nest.Y - 10, ("Swarm", 12));
-            Wave(15f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 3));
-            Wave(18f, nest.X, nest.Y + 2, ("Swarm", 10), ("PallidProwler", 4));
+            Wave(2.6f, bw.X + 4, bw.Y, ("PallidProwler", 4), ("BlindMaw", 4));                // seconds after the Gaunt's scream
+            Wave(4.1f, nest.X, nest.Y - 10, ("Swarm", 12));
+            Wave(6.6f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 3));
+            Wave(9.6f, nest.X, nest.Y + 2, ("Swarm", 10), ("PallidProwler", 4));
+            _gaunt = Spawn("tier3", "Gaunt", nest.X, nest.Y - 14); _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
+        static Mutant _gaunt; static float _gauntStep, _screamAt = -1f; static bool _gauntWalking;
+
+        /// <summary>Yan (2026-11-16): the Gaunt is the first thing out of the dark: it walks into the red light at the broken wall, SCREAMS and POINTS at the soldiers - and only then does the horde come.
+        /// Timeline from the alarm: 2.5 s the Gaunt starts out of the tunnel (camera on it), it screams on arrival (or at 9 s), the waves follow 2.6 / 4.1 / 6.6 / 9.6 s after the scream, the soldiers fall from
+        /// 4.5 s on, the Gaunt itself joins at 4 s.</summary>
         static void Alarm(float now)
         {
             float t = now - _hordeAt;
             if (TerrainMap.ZoneId != Maze) { Out(); return; }
             Sfx.Ambient("amb_alarm");                                                        // the siren keeps wailing (nothing else sets the ambient meanwhile)
-            // the soldiers charge down the corridor toward the noise and die one after another
-            var bwl = Mark("Broken Wall"); var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
+            var bwl = Mark("Broken Wall");
             foreach (var e in Escorts) if (e.IsAlive()) e.IsAggroed = false;
-            FollowPlayers(now, east, 0f, charge: true);
-            while (_stage < DeathTimes.Length && t >= DeathTimes[_stage])
+            if (_gaunt != null && _gaunt.IsAlive() && _screamAt < 0f && t >= 2.5f)
+            {
+                if (!_gauntWalking) { _gauntWalking = true; Say("Something tall is walking out of the dark."); Story.Cutscene(_gaunt.X, _gaunt.Y, 7f); }
+                if (now >= _gauntStep)
+                {
+                    _gauntStep = now + 0.45f; _gaunt.Mp = System.Math.Max(_gaunt.Mp, TurnLoop.WalkMp);
+                    if (bwl != null && (System.Math.Abs(_gaunt.X - (bwl.X + 2)) > 1 || System.Math.Abs(_gaunt.Y - bwl.Y) > 1)) _gaunt.MoveToward(bwl.X + 2, bwl.Y);
+                }
+                Story.LookAt = (_gaunt.X, _gaunt.Y);
+                bool arrived = bwl != null && System.Math.Abs(_gaunt.X - (bwl.X + 2)) <= 1 && System.Math.Abs(_gaunt.Y - bwl.Y) <= 2;
+                if (arrived || t >= 9f)
+                {
+                    _screamAt = now; Gaunt.ForcePose(_gaunt, "scream", 1.5f); Gaunt.ForcePose(_gaunt, "scream", 1.5f); GauntScream(_gaunt);
+                    Say("It opens its jaw wider than a jaw should open and screams. Then it lifts one long arm and points at the soldiers.");
+                }
+            }
+            if (_gaunt == null || !_gaunt.IsAlive()) { if (_screamAt < 0f) _screamAt = now; }
+            float ts = _screamAt < 0f ? -1f : now - _screamAt;
+            if (ts < 0f) { GameOver(now); return; }                                         // the soldiers stand and stare at it until the scream is over
+            if (ts >= 1.5f && _gaunt != null && _gaunt.IsAlive() && Gaunt.Pose(_gaunt) == "scream") Gaunt.ForcePose(_gaunt, "point", 1.1f);
+            // the soldiers charge down the corridor toward the noise and die one after another
+            var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
+            if (ts >= 2.6f) FollowPlayers(now, east, 0f, charge: true);
+            while (_stage < DeathTimes.Length && ts >= DeathTimes[_stage])
             {
                 var h = Escorts.FirstOrDefault(e => e.IsAlive());
                 if (h != null) { Hear("shot_rifle", 0.9f); Hear(_stage % 2 == 0 ? "claw" : "hit_flesh"); Say(_stage % 2 == 0 ? "A soldier screams. Then a lot of them do." : "Automatic fire, a short burst, and a wet sound over it."); h.Hp = 0; }
                 _stage++;
             }
-            foreach (var w in Waves) if (t >= w.at && w.who.Any(m => m.IsAlive() && !m.IsAggroed)) { foreach (var m in w.who.Where(m => m.IsAlive())) m.IsAggroed = true; if (w.at == 10f) Say("Some of them have stopped feeding. They are looking down the corridor at you."); else if (w.at == 15f) Say("More. Dozens more, coming up out of the dark tunnel."); }
+            foreach (var w in Waves) if (ts >= w.at && w.who.Any(m => m.IsAlive() && !m.IsAggroed)) { foreach (var m in w.who.Where(m => m.IsAlive())) m.IsAggroed = true; if (w.at <= 2.7f) Say("Everything that was feeding turns its head toward the corridor and comes."); else if (w.at <= 4.2f) Say("More. Dozens more, coming up out of the dark tunnel."); }
+            if (_gaunt != null && _gaunt.IsAlive() && ts >= 4f) _gaunt.IsAggroed = true;      // it joins the hunt: from here the game's Gaunt (its call, its drive) takes over
             if (GameOver(now)) return;
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
         }
+
+        static void GauntScream(Mutant g) { Sfx.Play("eel_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 0.62f); }
 
         // ------------------------------------------------------------------ the soldiers' walking
 

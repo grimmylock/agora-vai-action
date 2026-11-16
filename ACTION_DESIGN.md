@@ -415,3 +415,6 @@ No jumps ("he's too heavy"). Art: Yan's own AI-generated pose sheet (`ArtSource/
 
 ## Canine movement (Yan, 2026-11-16)
 Dogs and other canines run when they detect enemies and walk when unaggroed. Wired 2026-11-16 (`MutantWalk.Frame`: run strip while `IsAggroed`, walk strip otherwise).
+
+## The Gaunt (Yan, 2026-11-16)
+The Alpha Prowler, redesigned as a wendigo: elongated limbs, canine skull with antlers, exposed bones, a real horror feel (the next mutants too: "the dogs and brute are too tame"). It CONTROLS other mutants: its call (a scream and one pointed arm) drives every mutant within 16 tiles at a player for 9 s (aggressive, +35% speed) and repeats every 14 s; killing it frees them. It leads the horde in Tier 2 "Taken": first out of the dark into the red light, screams, points at the soldiers, then the horde comes. (`Gaunt.cs`, `Tier2Story.cs`, `ArtSource/make_gaunt.py`.)
