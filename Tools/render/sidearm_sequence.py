@@ -13,9 +13,9 @@ def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False):
         P.paste2(c, magimg, mp[2] * k, mp[3] * k, lx, ly, ldeg, left, k)
     for bx, by, bdeg, rest in brass:                                                                 # spent brass a revolver dumps (character px): lying under the unit or still falling
         d = ImageDraw.Draw(c); X, Y = (H.BX + bx) * S, (H.BY + by) * S; d.rectangle((X - 2, Y - 1, X + 3, Y + 1), fill=(201, 166, 62))
+    if magimg is not None and cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)             # a cylinder swung out on its crane: behind the frame (the far side), peeking out beside the window
     if magimg is not None and mshown and not cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)       # seated, or in the hand
     P.paste2(c, bodyimg if bodyimg is not None else gun, grip[0], grip[1], gx_, gy_, deg, left, k)
-    if magimg is not None and cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)             # a cylinder swung out on its crane, over the frame
     gg = gl.transpose(Image.FLIP_LEFT_RIGHT) if left else gl
     for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):
         if on: c.alpha_composite(gg, (round((H.BX + x) * S - 2 * S), round((H.BY + y) * S - 1.5 * S)))

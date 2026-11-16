@@ -408,6 +408,9 @@ namespace GameCore
         /// <summary>RT 6f: everything HeldWeaponView.Show draws for a held gun (moved here from it so the harness can render it):
         /// aim, then recoil (k: 0..1 left of the last shot's kick), swing, and the reload or jam-clearing pose at progress r.
         /// g = WeaponArt grip/support/muzzle points.</summary>
+        /// <summary>How far (character px) a revolver's cylinder swings out from the frame: Yan circled the limit on a render, 2026-11-16 (it was 2.5, a visible gap; now it sits just beside the window).</summary>
+        public const float CylinderOut = 2.0f;
+
         public static HeldFrame Frame(string cat, float[] g, float angle, float k, float climb, float kick, float sinceSwing,
             float r, string style, int trips, float[] mag = null, float swingHold = -1f, float throwHold = -1f, float sinceThrow = 99f,
             string key = null, int move = 0, float from = -1f, float sinceGuard = 99f, float sinceBroken = 99f, float open = 0f)
@@ -482,7 +485,7 @@ namespace GameCore
             float cylDX = 0f, cylDY = 0f;
             if (style == "cylinder" && r >= 0f && r < 1f)
             {
-                float o = Mathf.Clamp01(Mathf.Min((r - 0.03f) / 0.09f, (0.96f - r) / 0.04f)) * 2.5f, ca2 = (angle + extra) * Mathf.Deg2Rad;
+                float o = Mathf.Clamp01(Mathf.Min((r - 0.03f) / 0.09f, (0.96f - r) / 0.04f)) * CylinderOut, ca2 = (angle + extra) * Mathf.Deg2Rad;
                 float vy = (left ? -1f : 1f) * o;                                           // along the gun's underside
                 cylDX = vy * Mathf.Sin(ca2); cylDY = vy * Mathf.Cos(ca2);
             }
@@ -1183,9 +1186,9 @@ namespace GameCore
                 _gun.sprite = cy.body;                                                    // (a hammer part's body, set after this, is cut from the same cylinder-less picture)
                 cr.gameObject.SetActive(true);
                 cr.sprite = cy.cyl; cr.flipY = f.Left;
-                cr.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY) + new Vector3(0f, 0f, hdCyl ? -0.004f : 0f);
+                cr.transform.localPosition = Local(f.GunX + f.CylDX, f.GunY + f.CylDY) + new Vector3(0f, 0f, hdCyl ? 0.02f : 0f);
                 cr.transform.localRotation = _gun.transform.localRotation;
-                if (hdCyl) cr.sortingOrder = _gun.sortingOrder;
+                if (hdCyl) cr.sortingOrder = _gun.sortingOrder - 1;                          // Yan: it swings out to the shooter's left, the far side from the camera: behind the frame, peeking out beside the window
             }
             Vector3 pumpOff = Vector3.zero; bool pumping = false;                       // a pump: the off-hand goes with the fore-end
             var pt = WeaponArt.Parts(cat, key);                                       // a moving part (pump fore-end, slide...): the body plus the part, the part slid along the barrel
