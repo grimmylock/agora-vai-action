@@ -163,6 +163,15 @@ namespace GameCore
             if (a > 0.01f) _hurtEdge.color = new Color(0.78f, 0.04f, 0.03f, 0.7f * a);
         }
 
+        Image _fade;
+        void UpdateFade()
+        {
+            float a = Story.FadeAlpha;
+            if (_fade == null) { _fade = Img(_root.transform, "ScreenFade", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.clear); var fr = _fade.rectTransform; fr.anchorMin = Vector2.zero; fr.anchorMax = Vector2.one; fr.sizeDelta = Vector2.zero; _fade.raycastTarget = false; }
+            _fade.gameObject.SetActive(a > 0.003f);
+            if (a > 0.003f) { _fade.transform.SetAsLastSibling(); var c = Story.FadeColor; _fade.color = new Color(c.r, c.g, c.b, a); }
+        }
+
         static void Pin(RectTransform r, Vector2 anchor, Vector2 pos) { r.anchorMin = r.anchorMax = r.pivot = anchor; r.anchoredPosition = pos; }
     }
 }

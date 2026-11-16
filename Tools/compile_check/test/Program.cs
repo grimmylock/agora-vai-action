@@ -57,6 +57,7 @@ static class Program {
     SoloDeathChecks();
     FireModeChecks();
     NetBrainChecks();
+    TakenChecks();
     GunfeelChecks();
     DiveChecks();
     GunslingerChecks();
@@ -2996,6 +2997,50 @@ static class Program {
 
   // Yan, 2026-11-08: dying alone wakes you at the camp, like the squad wipe; only the Testing Ground keeps the death screen
   static bool _sessionShake;
+  static void TakenChecks() {   // 2026-11-16: Tier 2 beat 1 "Taken" (Tier2Story)
+    Console.WriteLine("-- taken --");
+    try {
+      GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true; Rt.Reset(); Tier2Story.Reset(); Story.Reset();
+      MacroState.Current.StoryFlags.Clear(); var p = Player.Current; Body.Reset();
+      MacroState.Current.CurrentZoneId = "scrapyard"; TerrainMap.BuildTerrainForZone("scrapyard"); EncounterState.Enemies.Clear();
+      p.EquipWeapon("sidearm", "PSh18Pchela"); var rd = ShopDatabase.Items.First(d => d.Type == "weapon" && d.Key == "RangerP8"); p.AddItem(new InventoryItem { Id = rd.Id, Name = rd.Name, WeightKg = rd.WeightKg, Qty = 1, Type = "weapon", Category = rd.Category, Key = rd.Key });
+      var gate = TerrainMap.Landmarks.First(l => l.Name == "Gatehouse"); p.X = gate.X; p.Y = gate.Y + 1; Rt.SetOffset(p, 0f, 0f);
+      const float dt = 1f / 30f;
+      void Run(float seconds) { for (float t = 0f; t < seconds; t += dt) { UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.deltaTime = dt; Tier2Story.Tick(dt); } }
+      UnityEngine.Time.time = 90000f; UnityEngine.Time.unscaledTime = 90000f;
+      Run(0.2f);
+      Check(Tier2Story.Step == 1 && Story.FadeAlpha > 0.3f, $"taken: near the Gatehouse the grab begins - flash ({Tier2Story.Step}, white {Story.FadeAlpha:0.00})");
+      Run(11f);
+      int soldiers = EncounterState.Enemies.Count(e => e is HumanEnemy h && h.FactionName == "Garrison" && h.IsAlive());
+      var dock = TerrainMap.Landmarks.First(l => l.Name == "Loading Dock");
+      Check(Tier2Story.Step == 2 && soldiers == 5 && Math.Abs(p.X - dock.X) <= 6 && Math.Abs(p.Y - dock.Y) <= 6 && p.Hp < p.MaxHp, $"taken: you wake at the Loading Dock among 5 Garrison soldiers, beaten ({Tier2Story.Step}, {soldiers} soldiers, hp {p.Hp}/{p.MaxHp})");
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().All(h => !h.IsAggroed), "taken: the soldiers hold their fire");
+      Tier2Story.BeginDescent();
+      Check(!p.Inventory.Items.Any(i => i.Type == "weapon" && i.Category != "melee") && (p.EquippedWeapon == null || CombatRules.IsMelee(p.EquippedWeapon)) && MacroState.Current.StoryFlags.Count(f => f.StartsWith("box:0:")) >= 2,
+        $"taken: the guns go in the box ({MacroState.Current.StoryFlags.Count(f => f.StartsWith("box:0:"))} recorded, main {p.EquippedWeapon?.Name})");
+      Run(3f);
+      var lad = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Hatch Ladder");
+      Check(TerrainMap.ZoneId == "taken_tunnels" && lad != null && Math.Abs(p.X - lad.X) <= 3 && Math.Abs(p.Y - lad.Y) <= 3, $"taken: down the hatch - the maze, at its ladder ({TerrainMap.ZoneId})");
+      Run(1f);
+      int esc = EncounterState.Enemies.Count(e => e is HumanEnemy h && h.IsAlive());
+      Check(Tier2Story.Step == 3 && esc == 5, $"taken: five soldiers walk you through ({Tier2Story.Step}, {esc})");
+      Run(425f);   // too slow: the sergeant shoots, the walk starts again (no save slot in the harness, so the same descent)
+      int esc2 = EncounterState.Enemies.Count(e => e is HumanEnemy h && h.IsAlive()); var lad1 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder");
+      Check(Tier2Story.Step == 3 && TerrainMap.ZoneId == "taken_tunnels" && esc2 == 5 && p.IsAlive() && Math.Abs(p.X - lad1.X) <= 3 && Math.Abs(p.Y - lad1.Y) <= 3, $"taken: too slow and you are shot - the walk starts again at the ladder ({Tier2Story.Step}, {esc2} soldiers, alive {p.IsAlive()})");
+      var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); p.X = door.X; p.Y = door.Y; Rt.SetOffset(p, 0f, 0f);
+      Run(0.2f);
+      int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
+      Check(Tier2Story.Step == 4 && horde >= 14 && rats >= 6, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) pours in");
+      Run(17f);
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 0 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers are torn apart, then the horde comes for you");
+      var lad2 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = lad2.X; p.Y = lad2.Y; Rt.SetOffset(p, 0f, 0f);
+      Run(0.5f);
+      Check(Story.IsDone("taken") && TerrainMap.ZoneId == "scrapyard" && p.Inventory.Items.Any(i => i.Key == "RangerP8") && p.EquippedWeapon?.Db?.Name == "PSh-18 Pchela" && !MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:")) && Story.JournalEntries.Any(j => j.Contains("Loading Dock")),
+        $"taken: out the top, the box gives everything back, a journal entry ({TerrainMap.ZoneId}, main {p.EquippedWeapon?.Name})");
+      Run(5f); Check(Story.IsDone("taken") && Tier2Story.Step >= 99 || Story.IsDone("taken"), "taken: it happens once");
+    } finally { Rt.On = false; Tier2Story.Reset(); Story.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
   static void SoloDeathChecks() {
     bool session0 = TestingGround.Session;
     try {
@@ -4639,7 +4684,7 @@ static class Program {
     m.OfflineSquads.RemoveAll(q => q.ZoneId == thin.Id || q.ZoneId == m.CurrentZoneId);
     int hours = 0;
     while (!m.OfflineSquads.Any(q => q.ZoneId == thin.Id) && hours < 24 * 10) { Atmosphere.Advance(60f); hours++; }
-    Check(m.OfflineSquads.Any(q => q.ZoneId == thin.Id) && m.WorldNews.Any(n => n.Contains("|M|" + thin.Id + "|")), $"an emptied zone fills back up and it's news ({hours} h, {thin.Id}, heading there: {string.Join(",", m.OfflineSquads.Where(q => q.Heading == thin.Id).Select(q => q.Faction + "@" + q.ZoneId))})");
+    Check(m.OfflineSquads.Any(q => q.ZoneId == thin.Id) && m.WorldNews.Any(n => n.Contains("|" + thin.Id + "|")), $"an emptied zone fills back up and it's news ({hours} h, {thin.Id}, news [{string.Join(" ;; ", m.WorldNews.TakeLast(4))}], heading there: {string.Join(",", m.OfflineSquads.Where(q => q.Heading == thin.Id).Select(q => q.Faction + "@" + q.ZoneId))})");
     int most = 0;
     string crowd = "";
     for (int i = 0; i < 24 * 20; i++) { Atmosphere.Advance(60f); var g7 = m.OfflineSquads.Where(q => q.Heading == null && !(q.Job ?? "").StartsWith("migration:")).GroupBy(q => q.ZoneId).OrderByDescending(g => g.Count()).First(); if (g7.Count() > most) { most = g7.Count(); crowd = g7.Key + ":" + string.Join(",", g7.Select(q => q.Faction + (q.QuestId ?? "") + (q.Job != null ? "/" + q.Job : ""))); } }

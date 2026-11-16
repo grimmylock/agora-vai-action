@@ -56,7 +56,7 @@ namespace GameData
             // ponytail: no IsSafeZone here on purpose - the TTRPG source's Zone Map calls Industrial
             // Basin out explicitly as a transit zone with no static trader ("that absence is
             // intentional texture, not an oversight"). Wandering Traders (Batch 4) cover it instead.
-            new ZoneDef { Id = "industrial_basin", Name = "Industrial Basin", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "smugglers_run", "scrapyard", "black_valley" }, AllowedFactions = { "Wanderers", "Garrison" }, HiddenConnections = new List<string> { "secret_lab_alpha" }, MapId = "scrapyard" },
+            new ZoneDef { Id = "industrial_basin", Name = "Industrial Basin", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "smugglers_run", "scrapyard", "black_valley" }, AllowedFactions = { "Wanderers", "Garrison" }, HiddenConnections = new List<string> { "secret_lab_alpha", "taken_tunnels" }, MapId = "scrapyard" },
             new ZoneDef { Id = "black_valley", Name = "Black Valley", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "scrapyard", "industrial_basin", "scavengers_hub", "valley_mine" }, AllowedFactions = { "Raiders", "Liberators" }, MapId = "scrapyard" },
 
             // Middle Tier (T3)
@@ -100,6 +100,7 @@ namespace GameData
             new ZoneDef { Id = "pumping_basement", Name = "Pumping Station Basement", Tier = 1, BaseHazardModifier = 1, ConnectedZones = { "marshes" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "flooded_bunker", Name = "Flooded Bunker", Tier = 1, BaseHazardModifier = 2, ConnectedZones = { "marshes" }, AllowedFactions = { "Mutant" }, IsDungeon = true, RequiresKey = "flooded_bunker" },
             new ZoneDef { Id = "smugglers_tunnel", Name = "Smugglers' Tunnel", Tier = 1, BaseHazardModifier = 1, ConnectedZones = { "smugglers_run" }, AllowedFactions = { "Raiders", "Mutant" }, IsDungeon = true },
+            new ZoneDef { Id = "taken_tunnels", Name = "The Hatch Tunnels", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "industrial_basin" }, AllowedFactions = { }, IsDungeon = true },   // 2026-11-16: Tier 2 beat 1 "Taken" (Tier2Story): entered by the story, never by an exit
             new ZoneDef { Id = "crusher_pit", Name = "The Crusher Pit", Tier = 2, BaseHazardModifier = 2, ConnectedZones = { "scrapyard" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "valley_mine", Name = "The Valley Mine", Tier = 2, BaseHazardModifier = 2, ConnectedZones = { "black_valley" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "stranded_ferry", Name = "The Stranded Ferry", Tier = 3, BaseHazardModifier = 3, ConnectedZones = { "dried_lake" }, AllowedFactions = { "Mutant" }, IsDungeon = true },

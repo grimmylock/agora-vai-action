@@ -341,6 +341,12 @@ namespace GameData
                 L("Smugglers' Den", "A dug-out room shored with planks, where the crews sit out the patrols."),
                 L("Cache Room", "The smugglers' store at the end of the tunnel. They don't like visitors in here."),
             },
+            ["taken_tunnels"] = new List<LandmarkDef>
+            {
+                L("Hatch Ladder", "The ladder up from the Garrison's dig under the Loading Dock."),
+                L("Lab Door", "A steel door in the corridor wall, an electronic lock beside it."),
+                L("Nest", "Where the corridor ends. The air is warm and smells of meat."),
+            },
             ["crusher_pit"] = new List<LandmarkDef>
             {
                 L("Pit Ladder", "The rungs down from Crusher Row, slick with oil."),

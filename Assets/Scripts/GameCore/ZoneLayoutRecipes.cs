@@ -62,6 +62,7 @@ namespace GameCore
                 // Tier 2 is one map too (owned by "scrapyard")
                 ["scrapyard"] = TierMaps.Tier2(),
                 ["crusher_pit"] = TierDungeons.CrusherPit(),
+                ["taken_tunnels"] = TierDungeons.TakenTunnels(),
                 ["valley_mine"] = TierDungeons.ValleyMine(),
 
                 // Tier 3 is one map (owned by the hub)

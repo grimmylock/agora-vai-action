@@ -677,6 +677,7 @@ namespace GameCore
             c.Deco(40, 162, "hatch");
             c.Put(26, 160, Barrel).Put(52, 166, Barrel);
             c.Landmark("Loading Dock", 40, 162).Exit("secret_lab_alpha", 40, 162);
+            c.Exit("taken_tunnels", 44, 160);   // the Garrison's dig (Tier2Story): a hidden node, found by the story, never by the map
             // the workers' flats
             c.Block(76, 140, 14, 14, "plaster", 2, Asphalt);
             c.Block(76, 158, 14, 14, "plaster", 2, Asphalt);

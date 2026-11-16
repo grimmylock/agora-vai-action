@@ -263,6 +263,7 @@ namespace GameCore
             var k = Keyboard.current;
             UpdatePack();                                                             // Pack 1: I - the pack screen
             UpdateHurt();
+            UpdateFade();                                                             // Story.Fade: the flashbang's white, the black before a load
             UpdateScope(p);                                                           // 2026-11-16: the scope overlay while you aim through one (HudView.Scope.cs)                                                             // getting hit: the red edge and flash
             if (k != null && !GameState.Current.ModalOpen)
             {

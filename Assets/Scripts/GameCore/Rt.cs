@@ -720,6 +720,7 @@ namespace GameCore
             Boss.TickAll();                                                        // Boss 1: the hit-stop, a looted boss's smoke
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
+            Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
             foreach (var e in EncounterState.Enemies.ToList())
             {

@@ -114,6 +114,12 @@ namespace GameCore
         public static (float x, float y)? CamLock; public static float CamHalf = 6f, CamRate = 4f; public static bool Letterbox, CamCut;
         public static void CineEnd() { CamLock = null; Letterbox = false; CutsceneUntil = -1f; }
 
-        public static void Reset() { LookAt = null; CutsceneUntil = -1f; CineEnd(); }
+        // ---------------- the screen fade (2026-11-16, Tier 2 "Taken": a flashbang's white, the black before a load) ----------------
+        public static Color FadeColor = Color.black; static float _fadeFrom, _fadeTo, _fadeAt = -9f, _fadeFor = 0.01f;
+        /// <summary>Fades the whole screen to `color` at `alpha` over `seconds` (alpha 0 clears it); from whatever it shows now.</summary>
+        public static void Fade(Color color, float alpha, float seconds) { _fadeFrom = FadeAlpha; FadeColor = color; _fadeTo = alpha; _fadeAt = Time.unscaledTime; _fadeFor = Mathf.Max(0.01f, seconds); }
+        public static float FadeAlpha => Mathf.Lerp(_fadeFrom, _fadeTo, Mathf.Clamp01((Time.unscaledTime - _fadeAt) / _fadeFor));
+
+        public static void Reset() { LookAt = null; CutsceneUntil = -1f; CineEnd(); _fadeFrom = _fadeTo = 0f; }
     }
 }
