@@ -159,6 +159,7 @@ namespace GameCore
                 if (e.HasAim && p != Player.Current) st.AimAt = (e.AimX, e.AimY);   // your own gun follows your own mouse
                 st.DiveUntil = e.DiveT >= 0f ? now + Rt.DiveTime - e.DiveT : -1f;
                 st.ProneUntil = now + e.ProneLeft; st.DiveX = e.DiveX; st.DiveY = e.DiveY;
+                if (p != Player.Current && p.EquippedWeapon != null) { p.EquippedWeapon.Optic = Optics.FromWire(Optics.WireOptic(e.Fit)); p.EquippedWeapon.Under = Optics.FromWire(Optics.WireUnder(e.Fit)); }   // their scope and laser show on their gun
             }
             foreach (var gone in ByOwner.Keys.Where(k => !seen.Contains(k)).ToList()) { Player.All.Remove(ByOwner[gone]); ByOwner.Remove(gone); }
             EelSump.ApplyNet(s.Eel);                                                       // the Sump's eel and its cutscene
@@ -190,6 +191,7 @@ namespace GameCore
         }
 
         public class PlayerEntry { public ulong Owner; public int X, Y, Hp; public float Ox, Oy; public bool Aiming;
+            public byte Fit = 255;   // Optics.WireFit: the sight (low half) and laser (high half) on their gun, 15 = none
             public bool HasAim; public float AimX, AimY, DiveT = -1f, ProneLeft, DiveX, DiveY; }   // RT 7z: where they aim, the dive's moment
         public class Snapshot { public string Map; public float Hour; public List<PlayerEntry> Players = new List<PlayerEntry>(); public EelSump.NetState Eel; public NetWorld.WorldIn World; }     // Eel: the Sump's boss and its cutscene (EelSump.WriteNet)
 
@@ -205,6 +207,7 @@ namespace GameCore
                 w.Write(OwnerOf(p)); w.Write(p.X); w.Write(p.Y); w.Write(ox); w.Write(oy); w.Write(p.Hp); w.Write(st.Aiming);
                 w.Write(st.AimAt.HasValue); w.Write(st.AimAt?.x ?? 0f); w.Write(st.AimAt?.y ?? 0f);
                 w.Write(st.Diving ? Rt.DiveTime - (st.DiveUntil - now) : -1f); w.Write(Mathf.Max(0f, st.ProneUntil - now)); w.Write(st.DiveX); w.Write(st.DiveY);
+                w.Write(Optics.WireFit(p.EquippedWeapon));
             }
             EelSump.WriteNet(w); w.Flush();
             NetWorld.Write(w, (int)ms.Length);                                                        // the clock, log lines, numbers, effects and enemies, in what is left of the packet
@@ -218,7 +221,7 @@ namespace GameCore
             int n = r.ReadByte();
             for (int k = 0; k < n; k++)
                 s.Players.Add(new PlayerEntry { Owner = r.ReadUInt64(), X = r.ReadInt32(), Y = r.ReadInt32(), Ox = r.ReadSingle(), Oy = r.ReadSingle(), Hp = r.ReadInt32(), Aiming = r.ReadBoolean(),
-                    HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveX = r.ReadSingle(), DiveY = r.ReadSingle() });
+                    HasAim = r.ReadBoolean(), AimX = r.ReadSingle(), AimY = r.ReadSingle(), DiveT = r.ReadSingle(), ProneLeft = r.ReadSingle(), DiveX = r.ReadSingle(), DiveY = r.ReadSingle(), Fit = r.ReadByte() });
             s.Eel = EelSump.ReadNet(r); s.World = NetWorld.Read(r);
             return s;
         }

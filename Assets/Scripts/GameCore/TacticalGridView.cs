@@ -427,13 +427,14 @@ namespace GameCore
                 _reticle[i].transform.localScale = size[i] * (1f / 16f);
                 _reticle[i].color = i == 4 && (over != null || redDot) ? new Color(1f, redDot ? 0.15f : 0.3f, redDot ? 0.1f : 0.25f, 1f) : col;
             }
-            // a laser under the barrel: a thin red beam from the muzzle toward the crosshair (14 tiles at most; it does not stop at walls yet) and a dot where it ends
+            // a laser under the barrel: a thin red beam from the muzzle toward the crosshair (14 tiles at most; a wall or a tall cover stops it, Ballistics.Trace at gun height) and a dot where it ends
             while (_laser.Count < 2) _laser.Add(CreateMarker("LaserBeam", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite()));
             bool beam = Optics.UnderOf(w) != null && !player.Sneaking && !dry && _playerMarker != null && Held(_playerMarker).Visible;
             foreach (var l in _laser) l.gameObject.SetActive(beam);
             if (beam)
             {
                 var m0 = Held(_playerMarker).Muzzle(); float ddx = c.x - m0.x, ddy = c.y - m0.y, dl = Mathf.Sqrt(ddx * ddx + ddy * ddy), len = Mathf.Min(dl, 14f);
+                if (dl > 0.05f) { var hit = Ballistics.Trace(player, m0.x, m0.y, ddx / dl, ddy / dl, len, 0.8f, System.Array.Empty<ICombatant>()); if (hit.Wall || hit.Cover) len = Mathf.Max(0.1f, hit.Dist); }
                 if (len > 0.05f)
                 {
                     var dir = new Vector3(ddx / dl, ddy / dl, 0f); var end = m0 + dir * len;

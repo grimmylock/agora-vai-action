@@ -26,13 +26,14 @@ namespace GameCore
         // callers already assume.
         public string Condition;
         public string Upgrades;   // technician upgrades, comma list (Upgrades.cs)
+        public string Optic, Under;   // a weapon item: the sight on its rail / the laser under it (Optics.cs); an "attachment" item is itself one (Key = its id)
         public int GridX = -1, GridY;   // Pack 1: where it sits in the bag (Pack.cs); -1 = not in it (didn't fit)
         public bool Rot;                // turned a quarter
 
         public InventoryItem Clone() => new InventoryItem
         {
             Id = Id, Name = Name, WeightKg = WeightKg, Qty = Qty, Type = Type, Price = Price,
-            Category = Category, Key = Key, Condition = Condition, Upgrades = Upgrades,
+            Category = Category, Key = Key, Condition = Condition, Upgrades = Upgrades, Optic = Optic, Under = Under,
         };
     }
 

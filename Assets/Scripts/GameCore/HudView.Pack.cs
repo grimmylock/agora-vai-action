@@ -86,7 +86,7 @@ namespace GameCore
             }
             _packInfo = Txt(_pack, "Info", new Vector2(rx, -346), new Vector2(400, 120), "", false, 15, Cream);
             _packInfo.enableWordWrapping = true;
-            _packHint = Txt(_pack, "Hint", new Vector2(rx, -H + 84), new Vector2(400, 80), "DRAG to move, onto a slot to equip, out of a slot to unequip    R turn\nRIGHT-CLICK use / equip / unequip    X drop    I close", true, 11, Dim);
+            _packHint = Txt(_pack, "Hint", new Vector2(rx, -H + 84), new Vector2(400, 80), "DRAG to move, onto a slot to equip, out of a slot to unequip    R turn\nRIGHT-CLICK use / equip / unequip    X drop    sights: onto the gun slot, C / V off    I close", true, 11, Dim);
             _packHint.enableWordWrapping = true;
         }
 
@@ -117,6 +117,7 @@ namespace GameCore
             {
                 tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + it.Key + "_hd") ?? Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + it.Key);
             }
+            else if (it.Type == "attachment") tex = Resources.Load<Texture2D>("Sprites/Attachments/att_" + it.Key);
             else if (it.Type == "armor")
             {
                 int i = System.Array.IndexOf(SpriteAtlasIndex.Armor, it.Name);
@@ -203,7 +204,11 @@ namespace GameCore
             int over = SlotAt(screen);
             if (over >= 0 && hover == null)                                                   // an equipped slot: drag it out or right-click to unequip
             {
-                if (m.rightButton.wasPressedThisFrame) { Unequip(p, over, null); _packStamp = null; }
+                var sw = over == 0 ? p.EquippedWeapon : over == 1 ? p.SecondaryWeapon : null;
+                if (sw != null) _packInfo.text = $"<b>{sw.Name}</b>\n{Optics.Describe(sw)}" + (sw.Optic != null || sw.Under != null ? "\nC takes the sight off, V the laser" : "");
+                if (sw != null && k != null && k.cKey.wasPressedThisFrame) { Optics.TakeOff(p, sw, false); _packStamp = null; }
+                else if (sw != null && k != null && k.vKey.wasPressedThisFrame) { Optics.TakeOff(p, sw, true); _packStamp = null; }
+                else if (m.rightButton.wasPressedThisFrame) { Unequip(p, over, null); _packStamp = null; }
                 else if (m.leftButton.wasPressedThisFrame && SlotItem(p, over) is InventoryItem si && over < 2) { StartDrag(si, 0, 0); _dragSlot = over; }
                 return;
             }
@@ -243,6 +248,7 @@ namespace GameCore
             else if (slot == 1 && it.Type == "weapon") p.EquipSecondaryFromInventory(it.Id);
             else if (slot == 2 && it.Type == "armor") p.EquipArmorFromInventory(it.Id);
             else if (slot == 3 && it.Type == "backpack") p.EquipBackpackFromInventory(it.Id);
+            else if (slot < 2 && it.Type == "attachment") Optics.FitFromInventory(p, it, slot == 0 ? p.EquippedWeapon : p.SecondaryWeapon);
             else GameLog.Write($"The {it.Name} doesn't go there.");
         }
 
@@ -268,6 +274,7 @@ namespace GameCore
                 case "detector": p.EquipDetectorFromInventory(it.Id); break;
                 case "artifact": p.EquipArtifactFromInventory(it.Id); break;
                 case "armorMod": p.FitArmorMod(it.Id); break;
+                case "attachment": if (!Optics.FitFromInventory(p, it, p.EquippedWeapon)) Optics.FitFromInventory(p, it, p.SecondaryWeapon); break;   // main gun first, then the second
                 case "backpack": p.EquipBackpackFromInventory(it.Id); break;
             }
         }

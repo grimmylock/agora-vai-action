@@ -231,7 +231,7 @@ namespace GameCore
             if (OffhandWeapon == null) return;
             var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == "sidearm" && i.Key == OffhandKey);
             if (d != null) AddItem(new InventoryItem { Id = d.Id, Name = d.Name, WeightKg = d.WeightKg, Qty = 1, Type = "weapon", Price = d.Price,
-                Category = "sidearm", Key = OffhandKey, Condition = OffhandWeapon.Condition, Upgrades = Upgrades.Join(OffhandWeapon.Upgrades) });
+                Category = "sidearm", Key = OffhandKey, Condition = OffhandWeapon.Condition, Upgrades = Upgrades.Join(OffhandWeapon.Upgrades), Optic = OffhandWeapon.Optic, Under = OffhandWeapon.Under });
             OffhandWeapon = null; OffhandKey = null;
             ApplyCarryEffects();
         }

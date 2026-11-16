@@ -40,6 +40,7 @@ namespace GameCore
                 case "armor": return (3, 3);
                 case "backpack": return (2, 2);
                 case "detector": case "armorMod": return (2, 1);
+                case "attachment": return it.Key == "reddot" || it.Key == "laser" ? (1, 1) : (2, 1);
                 case "consumable":
                     if (it.Id == null) return (1, 1);
                     if (it.Id.Contains("Medkit") || it.Id == "splint" || it.Id == "mre") return (2, 1);

@@ -178,6 +178,8 @@ namespace GameCore
                     return Mid(PoolBandByName("artifact", item.Name) ?? (item.Price ?? 500, item.Price ?? 500));
                 case "detector":
                     return Mid(PoolBandByName("detector", item.Name) ?? (item.Price ?? 1000, item.Price ?? 1000));
+                case "attachment":
+                    return Optics.All.TryGetValue(item.Key ?? "", out var od) ? od.Price : item.Price ?? 200;
                 case "armorMod":
                     return Mid(PoolBandByName("mod", item.Name) ?? (item.Price ?? 300, item.Price ?? 300));
                 case "consumable":
@@ -198,6 +200,7 @@ namespace GameCore
                 case "artifact": return 0.45f;
                 case "detector": return 0.30f;
                 case "armorMod": return 0.25f;
+                case "attachment": return 0.35f;
                 case "consumable": return 0.20f;
                 case "mutantPart": return 1f;     // traders pay the part's rolled value
                 default: return 0.5f;
@@ -236,7 +239,7 @@ namespace GameCore
                 int d = Random.Range(1, 101);
                 if (d >= 98) { t = System.Math.Min(5, t + 1); d = Random.Range(1, 98); }   // Lucky find: next tier up
                 string cat = d <= 16 ? "consumable" : d <= 21 ? "melee" : d <= 28 ? "sidearm" : d <= 33 ? "smg" : d <= 38 ? "shotgun"
-                    : d <= 45 ? "assault" : d <= 49 ? "heavy" : d <= 54 ? "sniper" : d <= 67 ? "armor" : d <= 72 ? "mod" : d <= 78 ? "artifact"
+                    : d <= 45 ? "assault" : d <= 49 ? "heavy" : d <= 54 ? "sniper" : d <= 67 ? "armor" : d <= 70 ? "mod" : d <= 72 ? "attachment" : d <= 78 ? "artifact"
                     : d <= 83 ? (Random.value < 0.5f ? "detector" : "backpack") : d <= 90 ? "cash" : "junk";
 
                 if (cat == "cash")
@@ -246,6 +249,7 @@ namespace GameCore
                 }
                 if (cat == "junk") return new LootRoll { Type = "junk", Name = "Junk", Price = Random.Range(10, 51) };
                 if (cat == "armor") return RollArmor(t);
+                if (cat == "attachment") return RollAttachment(t);
 
                 if (!Pools[t].TryGetValue(cat, out var pool)) continue;                     // no pool at this tier: reroll
                 string name = pool.Names[Random.Range(0, pool.Names.Length)];
@@ -280,6 +284,15 @@ namespace GameCore
                 if (r != null) return r;
             }
             return null;
+        }
+
+        /// <summary>A sight or laser by tier: 1 laser / red dot / PU 2x, 2-3 adds the ACOG, 4+ the 8x (Optics.cs).</summary>
+        private static LootRoll RollAttachment(int tier)
+        {
+            var ids = new System.Collections.Generic.List<string> { "laser", "reddot", "pu2" };
+            if (tier >= 2) ids.Add("acog"); if (tier >= 4) ids.Add("scope8");
+            var d = Optics.All[ids[Random.Range(0, ids.Count)]];
+            return new LootRoll { Type = "attachment", Id = Optics.ItemId(d.Id), Key = d.Id, Name = d.Name, Price = Random.Range(d.Price * 8 / 10, d.Price * 12 / 10 + 1), WeightKg = 0.3f };
         }
 
         private static LootRoll RollArmor(int tier)

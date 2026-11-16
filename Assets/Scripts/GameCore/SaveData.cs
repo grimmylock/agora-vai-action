@@ -31,6 +31,7 @@ namespace GameCore
         public string Category;
         public string Key;
         public string Upgrades;
+        public string Optic, Under;
         public string Condition;
         public int GridX = -1, GridY; public bool Rot;   // Pack 1 (an old save has none: -1, settled on load)
     }
@@ -47,6 +48,7 @@ namespace GameCore
 
         public string EquippedWeaponCategory, EquippedWeaponKey, EquippedWeaponCondition, EquippedWeaponUpgrades, EquippedArmorUpgrades;
         public string OffhandKey, OffhandCondition, OffhandUpgrades;
+        public string EquippedWeaponOptic, EquippedWeaponUnder, SecondaryOptic, SecondaryUnder, OffhandOptic, OffhandUnder;   // Optics.cs
         public string SecondaryCategory, SecondaryKey, SecondaryCondition, SecondaryUpgrades, SecondaryAmmoType;   // Batch 80
         public bool Sneaking, FlashlightOff;   // Batch 96: toggles survive a load (off, not on, so old saves load with the light on)
         public int SecondaryMagazine;

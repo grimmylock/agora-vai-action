@@ -121,7 +121,7 @@ namespace GameCore
 
             string category = item.Category, key = item.Key;
             var upgrades = Upgrades.Parse(item.Upgrades);
-            var previousUpgrades = EquippedWeapon?.Upgrades;
+            var previousUpgrades = EquippedWeapon?.Upgrades; string previousOptic = EquippedWeapon?.Optic, previousUnder = EquippedWeapon?.Under;
             // New: carried through onto the equipped Weapon below (see Weapon.Condition) - without
             // this, swapping in a looted Dirty/Damaged weapon silently reset it to pristine.
             string condition = item.Condition;
@@ -144,7 +144,7 @@ namespace GameCore
                     {
                         Id = previousDef.Id, Name = previousDef.Name, WeightKg = previousDef.WeightKg, Qty = 1,
                         Type = "weapon", Price = previousDef.Price, Category = previousCategory, Key = previousKey,
-                        Condition = previousCondition, Upgrades = previousUpgrades != null ? GameCore.Upgrades.Join(previousUpgrades) : null,
+                        Condition = previousCondition, Upgrades = previousUpgrades != null ? GameCore.Upgrades.Join(previousUpgrades) : null, Optic = previousOptic, Under = previousUnder,
                     });
             }
 
@@ -152,7 +152,7 @@ namespace GameCore
             if (EquippedWeapon != null)
             {
                 EquippedWeapon.Condition = string.IsNullOrEmpty(condition) ? ItemCondition.Working : condition;
-                EquippedWeapon.Upgrades = upgrades;
+                EquippedWeapon.Upgrades = upgrades; Optics.Restore(EquippedWeapon, item.Optic, item.Under);
                 EquippedWeapon.ApplyUpgrades();
                 if (!CombatRules.IsMelee(EquippedWeapon)) EquippedWeapon.CurrentMagazine = 0;   // a gun out of the pack isn't loaded - and swapping back and forth isn't a free reload
             }
@@ -184,7 +184,7 @@ namespace GameCore
             if (w == null || !RemoveItem(itemId, 1)) return;
             StowSecondary();
             w.Condition = string.IsNullOrEmpty(item.Condition) ? ItemCondition.Working : item.Condition;
-            w.Upgrades = Upgrades.Parse(item.Upgrades);
+            w.Upgrades = Upgrades.Parse(item.Upgrades); Optics.Restore(w, item.Optic, item.Under);
             w.ApplyUpgrades();
             if (!CombatRules.IsMelee(w)) w.CurrentMagazine = 0;   // out of the pack it isn't loaded, like the main gun
             SecondaryWeapon = w; SecondaryCategory = item.Category; SecondaryKey = item.Key;
@@ -203,7 +203,7 @@ namespace GameCore
             }
             var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == SecondaryCategory && i.Key == SecondaryKey);
             if (d != null) AddItem(new InventoryItem { Id = d.Id, Name = d.Name, WeightKg = d.WeightKg, Qty = 1, Type = "weapon", Price = d.Price,
-                Category = SecondaryCategory, Key = SecondaryKey, Condition = w.Condition, Upgrades = GameCore.Upgrades.Join(w.Upgrades) });
+                Category = SecondaryCategory, Key = SecondaryKey, Condition = w.Condition, Upgrades = GameCore.Upgrades.Join(w.Upgrades), Optic = w.Optic, Under = w.Under });
             SecondaryWeapon = null; SecondaryCategory = SecondaryKey = null;
             ApplyCarryEffects();
         }
@@ -218,7 +218,7 @@ namespace GameCore
             StowOffhand();
             var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == EquippedWeaponCategory && i.Key == EquippedWeaponKey);
             var item = new InventoryItem { Id = d?.Id ?? EquippedWeaponKey, Name = d?.Name ?? w.Name, WeightKg = d?.WeightKg ?? 1f, Qty = 1, Type = "weapon", Price = d?.Price,
-                Category = EquippedWeaponCategory, Key = EquippedWeaponKey, Condition = w.Condition, Upgrades = GameCore.Upgrades.Join(w.Upgrades) };
+                Category = EquippedWeaponCategory, Key = EquippedWeaponKey, Condition = w.Condition, Upgrades = GameCore.Upgrades.Join(w.Upgrades), Optic = w.Optic, Under = w.Under };
             EquippedWeapon = null; EquippedWeaponCategory = EquippedWeaponKey = null;
             AddItem(item);
             if (SecondaryWeapon != null) SwapWeapons();

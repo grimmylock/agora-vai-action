@@ -23,7 +23,8 @@ namespace GameCore
                 Ap = Ap, Mp = Mp,
                 StatS = Stats.S, StatA = Stats.A, StatI = Stats.I, StatP = Stats.P,
                 EquippedWeaponCategory = EquippedWeaponCategory, EquippedWeaponKey = EquippedWeaponKey,
-                EquippedWeaponCondition = EquippedWeapon?.Condition,
+                EquippedWeaponCondition = EquippedWeapon?.Condition, EquippedWeaponOptic = EquippedWeapon?.Optic, EquippedWeaponUnder = EquippedWeapon?.Under,
+                SecondaryOptic = SecondaryWeapon?.Optic, SecondaryUnder = SecondaryWeapon?.Under, OffhandOptic = OffhandWeapon?.Optic, OffhandUnder = OffhandWeapon?.Under,
                 EquippedWeaponUpgrades = EquippedWeapon != null ? Upgrades.Join(EquippedWeapon.Upgrades) : null,
                 EquippedArmorUpgrades = Upgrades.Join(EquippedArmorUpgrades),
                 EquippedWeaponMagazine = EquippedWeapon?.CurrentMagazine ?? -1, EquippedWeaponAmmoType = EquippedWeapon?.CurrentAmmoType,
@@ -56,7 +57,7 @@ namespace GameCore
                 d.InventoryItems.Add(new InventoryItemSave
                 {
                     Id = item.Id, Name = item.Name, WeightKg = item.WeightKg, Qty = item.Qty, Type = item.Type,
-                    Price = item.Price ?? 0, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades,
+                    Price = item.Price ?? 0, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades, Optic = item.Optic, Under = item.Under,
                     GridX = item.GridX, GridY = item.GridY, Rot = item.Rot,
                 });
 
@@ -87,6 +88,7 @@ namespace GameCore
                 {
                     EquippedWeapon.Condition = string.IsNullOrEmpty(d.EquippedWeaponCondition) ? ItemCondition.Working : d.EquippedWeaponCondition;
                     EquippedWeapon.Upgrades = Upgrades.Parse(d.EquippedWeaponUpgrades);
+                    Optics.Restore(EquippedWeapon, d.EquippedWeaponOptic, d.EquippedWeaponUnder);
                     EquippedWeapon.ApplyUpgrades();
                     if (d.EquippedWeaponMagazine >= 0) EquippedWeapon.CurrentMagazine = System.Math.Min(d.EquippedWeaponMagazine, EquippedWeapon.MagCapacity);
                     if (!string.IsNullOrEmpty(d.EquippedWeaponAmmoType)) EquippedWeapon.CurrentAmmoType = d.EquippedWeaponAmmoType;
@@ -107,6 +109,7 @@ namespace GameCore
                 {
                     OffhandWeapon.Condition = string.IsNullOrEmpty(d.OffhandCondition) ? ItemCondition.Working : d.OffhandCondition;
                     OffhandWeapon.Upgrades = Upgrades.Parse(d.OffhandUpgrades);
+                    Optics.Restore(OffhandWeapon, d.OffhandOptic, d.OffhandUnder);
                     OffhandWeapon.ApplyUpgrades();
                 }
             }
@@ -116,6 +119,7 @@ namespace GameCore
                 SecondaryCategory = d.SecondaryCategory; SecondaryKey = d.SecondaryKey;
                 SecondaryWeapon.Condition = string.IsNullOrEmpty(d.SecondaryCondition) ? ItemCondition.Working : d.SecondaryCondition;
                 SecondaryWeapon.Upgrades = Upgrades.Parse(d.SecondaryUpgrades);
+                Optics.Restore(SecondaryWeapon, d.SecondaryOptic, d.SecondaryUnder);
                 SecondaryWeapon.ApplyUpgrades();
                 SecondaryWeapon.CurrentMagazine = System.Math.Min(d.SecondaryMagazine, SecondaryWeapon.MagCapacity);
                 if (!string.IsNullOrEmpty(d.SecondaryAmmoType)) SecondaryWeapon.CurrentAmmoType = d.SecondaryAmmoType;
@@ -138,7 +142,7 @@ namespace GameCore
                 Inventory.Items.Add(new InventoryItem
                 {
                     Id = item.Id, Name = item.Name, WeightKg = item.WeightKg, Qty = item.Qty, Type = item.Type,
-                    Price = item.Price, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades,
+                    Price = item.Price, Category = item.Category, Key = item.Key, Condition = item.Condition, Upgrades = item.Upgrades, Optic = item.Optic, Under = item.Under,
                     GridX = item.GridX, GridY = item.GridY, Rot = item.Rot,
                 });
 

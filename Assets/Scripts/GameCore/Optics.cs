@@ -20,15 +20,16 @@ namespace GameCore
             public float SteadyMul = 1f;                  // how fast the aim steadies (a red dot is quick, a big scope is slow)
             public float View;                            // scopes: the lit circle's radius as a share of the screen height (the rest of the screen darkens)
             public Vector2 Pivot;                         // the sprite's mount point, texture px
+            public int Price = 300;                       // the shop band (Economy.ValueOf)
             public float Scale = 1f;                      // drawn size against the base (Yan, 2026-11-16: the scopes are 80%)
         }
         public static readonly Dictionary<string, Def> All = new Dictionary<string, Def>
         {
-            ["pu2"] = new Def { Id = "pu2", Scale = 0.8f, Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
-            ["acog"] = new Def { Id = "acog", Scale = 0.8f, Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
-            ["scope8"] = new Def { Id = "scope8", Scale = 0.8f, Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
-            ["reddot"] = new Def { Id = "reddot", Name = "Red dot", Kind = "dot", AimedSpread = 0.95f, HipSpread = 0.90f, SteadyMul = 1.30f, Pivot = new Vector2(13, 16) },
-            ["laser"] = new Def { Id = "laser", Name = "Laser", Kind = "laser", Under = true, AimedSpread = 0.97f, HipSpread = 0.80f, Pivot = new Vector2(11, 1) },
+            ["pu2"] = new Def { Id = "pu2", Price = 220, Scale = 0.8f, Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
+            ["acog"] = new Def { Id = "acog", Price = 450, Scale = 0.8f, Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
+            ["scope8"] = new Def { Id = "scope8", Price = 800, Scale = 0.8f, Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
+            ["reddot"] = new Def { Id = "reddot", Price = 250, Name = "Red dot", Kind = "dot", AimedSpread = 0.95f, HipSpread = 0.90f, SteadyMul = 1.30f, Pivot = new Vector2(13, 16) },
+            ["laser"] = new Def { Id = "laser", Price = 180, Name = "Laser", Kind = "laser", Under = true, AimedSpread = 0.97f, HipSpread = 0.80f, Pivot = new Vector2(11, 1) },
         };
         /// <summary>The attachment sprites are drawn at 6 texture px to one in-game pixel on every gun, so one set fits all.</summary>
         public const float TexPerPixel = 6f;
@@ -65,6 +66,57 @@ namespace GameCore
             bool ok = System.Array.IndexOf(AllowedFor(w), "laser") >= 0;
             w.Under = ok && w.Under == null ? "laser" : null;
             return w.Under;
+        }
+
+
+        // ---- items: a sight or a laser in the bag (Type "attachment", Id "att_<id>", Key <id>) ----
+        static readonly string[] Order = { "pu2", "acog", "scope8", "reddot", "laser" };
+        static int Ix(string id) { int i = id == null ? -1 : System.Array.IndexOf(Order, id); return i < 0 ? 15 : i; }
+        /// <summary>One byte on the wire: the sight in the low half, the laser in the high half (15 = none).</summary>
+        public static byte WireFit(Weapon w) => (byte)(Ix(w?.Optic) | Ix(w?.Under) << 4);
+        public static byte WireOptic(byte b) => (byte)(b & 15);
+        public static byte WireUnder(byte b) => (byte)(b >> 4);
+        public static string FromWire(byte b) => b < Order.Length ? Order[b] : null;
+        public static string ItemId(string id) => "att_" + id;
+        public static InventoryItem MakeItem(string id) => id != null && All.TryGetValue(id, out var d)
+            ? new InventoryItem { Id = ItemId(id), Key = id, Name = d.Name, Type = "attachment", WeightKg = 0.3f, Qty = 1, Price = d.Price } : null;
+        /// <summary>A saved gun gets its fittings back (only what it can still take).</summary>
+        public static void Restore(Weapon w, string optic, string under)
+        {
+            if (w == null) return;
+            w.Optic = optic != null && All.TryGetValue(optic, out var a) && !a.Under && System.Array.IndexOf(AllowedFor(w), optic) >= 0 ? optic : null;
+            w.Under = under != null && All.TryGetValue(under, out var b) && b.Under && System.Array.IndexOf(AllowedFor(w), under) >= 0 ? under : null;
+        }
+        /// <summary>Screw an attachment item onto a gun: the one it replaces goes back into the bag. false (and a log line) when this gun cannot take it.</summary>
+        public static bool FitFromInventory(Player p, InventoryItem it, Weapon w)
+        {
+            if (p == null || it == null || w == null || it.Type != "attachment") return false;
+            if (!All.TryGetValue(it.Key ?? "", out var d)) return false;
+            if (System.Array.IndexOf(AllowedFor(w), d.Id) < 0) { GameLog.Write($"The {d.Name} doesn't fit the {w.Name}."); return false; }
+            if (!p.RemoveItem(it.Id, 1)) return false;
+            string old = d.Under ? w.Under : w.Optic;
+            Fit(w, d.Id);
+            if (old != null && MakeItem(old) is InventoryItem back) p.AddItem(back);
+            GameLog.Write($"{d.Name} fitted to the {w.Name}.");
+            return true;
+        }
+        /// <summary>Take the sight (or the laser) off into the bag.</summary>
+        public static bool TakeOff(Player p, Weapon w, bool under)
+        {
+            string id = under ? w?.Under : w?.Optic;
+            if (p == null || id == null) return false;
+            if (under) w.Under = null; else w.Optic = null;
+            p.AddItem(MakeItem(id));
+            GameLog.Write($"{All[id].Name} taken off the {w.Name}.");
+            return true;
+        }
+        public static string Describe(Weapon w)
+        {
+            if (w == null) return "";
+            string o = OpticOf(w)?.Name, u = UnderOf(w)?.Name;
+            var may = AllowedFor(w);
+            if (o == null && u == null) return may.Length == 0 ? "no mounts" : "no attachments";
+            return (o ?? "-") + (u != null ? " + " + u : "");
         }
 
         // ---- what they do (all per weapon, so per player) ----

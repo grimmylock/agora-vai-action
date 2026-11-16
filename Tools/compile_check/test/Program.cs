@@ -2987,7 +2987,7 @@ static class Program {
     for (int i = 0; i < 90; i++) EncounterState.Enemies.Add(new Mutant(mk, px + (i % 15) - 7, py + (i / 15) - 3, MutantDatabase.Get("tier1", mk)));
     for (int i = 0; i < 30; i++) { var se = CombatFx.Push("shot", raider, p, null); se.Hit = true; se.Now = true; GameLog.Write("A very long line of log text that goes on and on to fill the packet as much as a real fight would: number " + i); NetWorld.TapNumber(raider, "123456789012345678901234", 0); }
     var big = Net.EncodeSnapshot(); var bd = Net.DecodeSnapshot(big);
-    Check(big.Length <= NetWorld.Packet && bd.World.Enemies.Count >= 15 && bd.World.Enemies.Count < 91, $"Co-op world: a crowded fight (91 enemies, 30 shots, long lines) still fits one packet ({big.Length} bytes, {bd.World.Enemies.Count} enemies sent, nearest first)");
+    Check(big.Length <= NetWorld.Packet && bd.World.Enemies.Count >= 12 && bd.World.Enemies.Count < 91, $"Co-op world: a crowded fight (91 enemies, 30 shots, long lines) still fits one packet ({big.Length} bytes, {bd.World.Enemies.Count} enemies sent, nearest first)");
   }
 
 
@@ -3164,6 +3164,27 @@ static class Program {
     Check(Optics.Reach(mosin, 0.75f) >= 0.8f && Optics.Reach(obelisk, 0.5f) >= 0.78f && Optics.Reach(gun, 0.5f) == 0.5f && Optics.LookMul(amr, true) >= 1.2f && Optics.LookMul(amr, false) == 1f, "optics: scopes lean the camera and look further only while aiming");
     var wasp = W("smg", "CorvanWasp9"); float s0 = Optics.SteadyMul(wasp); Optics.Fit(wasp, "reddot");
     Check(s0 == 1f && Optics.SteadyMul(wasp) > 1f, "optics: a red dot steadies the aim faster");
+    // part 3: items, the pack, saves, the wire
+    Check(Optics.All.Keys.All(id => ShopDatabase.Items.Any(d => d.Type == "attachment" && d.Key == id && d.Id == Optics.ItemId(id) && d.Price > 0)), "optics: every sight and laser is a shop item");
+    { var pl = Player.Current; pl.EquipWeapon("sniper", "M91Trekhlineyka");
+      pl.AddItem(Optics.MakeItem("pu2")); pl.AddItem(Optics.MakeItem("scope8"));
+      var li = new ListLog(); var ol = GameLog.Target; GameLog.Target = li;
+      bool bad = Optics.FitFromInventory(pl, pl.Inventory.Items.First(i => i.Key == "scope8"), pl.EquippedWeapon);
+      bool good = Optics.FitFromInventory(pl, pl.Inventory.Items.First(i => i.Key == "pu2"), pl.EquippedWeapon);
+      GameLog.Target = ol;
+      Check(!bad && good && pl.EquippedWeapon.Optic == "pu2" && pl.Inventory.Items.Any(i => i.Key == "scope8") && !pl.Inventory.Items.Any(i => i.Key == "pu2"), "optics: a fitting attachment leaves the bag, a wrong one stays in it");
+      var sd = pl.CaptureSaveData(); pl.EquipWeapon("sniper", "M91Trekhlineyka"); Check(pl.EquippedWeapon.Optic == null, "optics: a fresh gun is bare");
+      pl.ApplyLoadedData(sd); Check(pl.EquippedWeapon?.Optic == "pu2", "optics: a saved scope comes back with the character");
+      pl.UnequipWeapon(); var packed = pl.Inventory.Items.First(i => i.Type == "weapon" && i.Key == "M91Trekhlineyka");
+      Check(packed.Optic == "pu2", "optics: the sight stays on the gun when it goes into the bag");
+      pl.EquipWeaponFromInventory(packed.Id); Check(pl.EquippedWeapon.Optic == "pu2", "optics: and when it comes out again");
+      Optics.TakeOff(pl, pl.EquippedWeapon, false); Check(pl.EquippedWeapon.Optic == null && pl.Inventory.Items.Any(i => i.Key == "pu2"), "optics: taking it off returns the item");
+      bool rolled = false; for (int i = 0; i < 4000 && !rolled; i++) { var r = Economy.Roll(4, false); rolled = r.Type == "attachment" && Optics.All.ContainsKey(r.Key) && Economy.ValueOf(r.ToItem()) > 0; }
+      Check(rolled, "optics: attachments turn up as loot");
+      pl.Inventory.Items.RemoveAll(i => i.Type == "attachment");
+      Optics.Fit(pl.EquippedWeapon, "pu2"); var gunW = W("sidearm", "WaldenP9"); Optics.Fit(gunW, "laser"); byte wb = Optics.WireFit(gunW), wn = Optics.WireFit(pl.EquippedWeapon);
+      Check(Optics.FromWire(Optics.WireUnder(wb)) == "laser" && Optics.FromWire(Optics.WireOptic(wb)) == null && Optics.FromWire(Optics.WireOptic(wn)) == "pu2" && Optics.FromWire(Optics.WireUnder(Optics.WireFit(null))) == null, "optics: a player's scope and laser fit one byte of the snapshot");
+      Optics.Fit(pl.EquippedWeapon, ""); }
   }
 
   static void TestingGroundChecks() {

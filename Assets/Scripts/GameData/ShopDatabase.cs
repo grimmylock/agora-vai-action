@@ -144,6 +144,9 @@ namespace GameData
                 });
             }
 
+            // Optics (2026-11-16): sights and lasers are items; Key = the Optics id, Id = "att_" + id (Optics.ItemId)
+            foreach (var d in GameCore.Optics.All.Values)
+                list.Add(new ShopItemDef { Id = GameCore.Optics.ItemId(d.Id), Name = d.Name, Price = d.Price, WeightKg = 0.3f, Type = "attachment", Key = d.Id });
             return list;
         }
 
