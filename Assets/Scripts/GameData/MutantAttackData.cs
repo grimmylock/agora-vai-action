@@ -44,7 +44,7 @@ namespace GameData
             },
             ["Elder Gaunt"] = new Dictionary<string, AttackAnim>
             {
-                ["claw"] = new AttackAnim { Frames = 8, W = 150, H = 127, Contact = 5, ContactMs = 540, TotalMs = 820, PivotY = 0.12598f, Ms = new[] { 110, 150, 140, 70, 70, 60, 110, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+                ["claw"] = new AttackAnim { Frames = 8, W = 218, H = 160, Contact = 5, ContactMs = 540, TotalMs = 820, PivotY = 0.1f, Ms = new[] { 110, 150, 140, 70, 70, 60, 110, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
             },
         };
     }
