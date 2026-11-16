@@ -26,7 +26,7 @@ namespace GameCore
         static readonly Dictionary<Mutant, (float until, Player target, float haste)> Driven = new Dictionary<Mutant, (float, Player, float)>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { States.Clear(); Driven.Clear(); }
+        public static void Reset() { States.Clear(); Driven.Clear(); Summoned.Clear(); }
 
         public static bool Is(ICombatant u) => u is Mutant m && !(u is HumanEnemy) && (m.Db?.Name == Name || m.Db?.Name == ElderName);
 
@@ -95,11 +95,29 @@ namespace GameCore
             s.PoseUntil = now + ScreamFor + PointFor;                                      // the scream first, then the point: Tick() switches them
             _pointAt[g] = now + ScreamFor;
             Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 1f);
+            if (IsElder(g)) Summon(g, target);                                                  // Yan, 2026-11-16: the Elder's call also brings two wild Gaunts
             int n = 0;
             foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m != g && m.IsAlive() && !Is(m) && CombatantUtil.Distance(g, m) <= Kit(g).range))
             { m.IsAggroed = true; Driven[m] = (now + Kit(g).drive, target, Kit(g).haste); n++; }
             if (n > 0) GameLog.Write($"The Gaunt screams and points. {n} {(n == 1 ? "creature turns" : "creatures turn")} on {(target == Player.Current ? "you" : "your friend")}.");
             else GameLog.Write("The Gaunt screams.");
+        }
+        static readonly List<Mutant> Summoned = new List<Mutant>();
+        public const int SummonPer = 2, SummonCap = 4;
+        /// <summary>The Elder's call summons two wild Gaunts out of the dark round it (never more than four of its own alive at once); they arrive aggressive and driven at the player it pointed at.</summary>
+        static void Summon(Mutant elder, Player target)
+        {
+            Summoned.RemoveAll(m => m == null || !m.IsAlive());
+            int want = System.Math.Min(SummonPer, SummonCap - Summoned.Count); if (want <= 0) return;
+            var def = GameData.MutantDatabase.Get("tier3", Name); int made = 0;
+            for (int r = 3; r <= 9 && made < want; r++)
+                for (int k = 0; k < 24 && made < want; k++)
+                {
+                    float a = (k * 2.399f + r) % 6.283f; int x = elder.X + Mathf.RoundToInt(Mathf.Cos(a) * r), y = elder.Y + Mathf.RoundToInt(Mathf.Sin(a) * r);
+                    if (x < 1 || y < 1 || x >= TerrainMap.Width - 1 || y >= TerrainMap.Height - 1 || !TerrainMap.CanEnterTile(x, y) || TerrainMap.UnitAt(x, y, null) != null || CombatantUtil.Distance(target, new Mutant("probe", x, y, def)) < 3) continue;
+                    var w = new Mutant(Name, x, y, def) { IsAggroed = true }; EncounterState.Enemies.Add(w); Summoned.Add(w); Driven[w] = (Time.time + Kit(elder).drive, target, Kit(elder).haste); made++;
+                }
+            if (made > 0) GameLog.Write(made == 1 ? "A wild Gaunt crawls out of the dark at its call." : $"{made} wild Gaunts crawl out of the dark at its call.");
         }
         static readonly Dictionary<Mutant, float> _pointAt = new Dictionary<Mutant, float>();
 

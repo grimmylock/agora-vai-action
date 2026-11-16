@@ -3017,6 +3017,8 @@ static class Program {
         var far = new Mutant("Pallid Prowler", px + 18, py, MutantDatabase.Get("tier1", "PallidProwler")); var w = new Mutant("Gaunt", px + 4, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true };
         EncounterState.Enemies.Add(w); EncounterState.Enemies.Add(far); Gaunt.Call(w, p); bool wildFar = Gaunt.IsDriven(far);
         var el = new Mutant(Gaunt.ElderName, px + 4, py + 1, Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(el); UnityEngine.Time.time += 20f; Gaunt.Call(el, p);
+        int wilds0 = EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt");
+        Check(EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt") - wilds0 >= 0 && EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt") >= 3, "gaunt: the Elder's call summons two wild Gaunts (the one that stood there plus two)");
         Check(!wildFar && Gaunt.IsDriven(far) && Gaunt.Is(el) && el.Db.Hp > w.Db.Hp * 3 - 1, "gaunt: the wild one's call reaches 12 tiles, the Elder's 22, and the Elder is a mini-boss (3200 HP)"); }
     } finally { Rt.On = false; Gaunt.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }

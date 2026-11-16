@@ -28,6 +28,7 @@ namespace GameCore
             if (_mut != null) return;
             _mut = new List<(string, string)>(); _mutIdx = new Dictionary<MutantDef, int>();
             foreach (var t in MutantDatabase.Tiers) foreach (var m in t.Value) { _mutIdx[m.Value] = _mut.Count; _mut.Add((t.Key, m.Key)); }
+            _mutIdx[Gaunt.ElderDef] = _mut.Count; _mut.Add(("special", "elder"));                // the Elder Gaunt is in no tier table: mirrors of it are built from this entry
             _wep = new List<(string, string)>(); _wepIdx = new Dictionary<WeaponDef, int>();
             foreach (var c in WeaponDatabase.Categories) foreach (var w in c.Value) { _wepIdx[w.Value] = _wep.Count; _wep.Add((c.Key, w.Key)); }
             _arm = new List<(string, string)>(); _armIdx = new Dictionary<ArmorDef, int>();
@@ -204,7 +205,7 @@ namespace GameCore
                         string fac = _fac[System.Math.Min(_fac.Count - 1, e.Fr >> 3)], rank = CombatRules.RankOrder[System.Math.Min(CombatRules.RankOrder.Length - 1, e.Fr & 7)];
                         m = new HumanEnemy(fac == "Raiders" ? "Raider" : fac, e.X, e.Y, fac, rank, wd, ad);
                     }
-                    else { if (e.A >= _mut.Count) continue; var (tier, key) = _mut[e.A]; m = new Mutant(key, e.X, e.Y, MutantDatabase.Get(tier, key)); }
+                    else { if (e.A >= _mut.Count) continue; var (tier, key) = _mut[e.A]; m = tier == "special" ? new Mutant(Gaunt.ElderName, e.X, e.Y, Gaunt.ElderDef) : new Mutant(key, e.X, e.Y, MutantDatabase.Get(tier, key)); }
                     Mirror[e.Id] = m; EncounterState.Enemies.Add(m);
                 }
                 m.X = e.X; m.Y = e.Y; Rt.SetOffset(m, e.Ox, e.Oy); m.Hp = e.Alive ? System.Math.Max(1, e.Hp) : 0; m.IsAggroed = e.Aggro; if (m.ActiveCamouflage) m.IsCloaked = e.Cloaked; MutantAttack.Mirror(m, e.Atk, e.AtkT * 0.02f, e.D1, e.D2, Time.time); Gaunt.Mirror(m, e.GPose, e.GT * 0.05f); m.Alert = e.Alert / 100f; m.SpottedAt = e.Spotted ? Time.time - 0.2f : -99f;
