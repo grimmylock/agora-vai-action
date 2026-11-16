@@ -36,6 +36,7 @@ namespace GameCore
         public string Body;                 // Melee 3: the body's pose frame (UnitSprites.Pose key), null = standing
         public float Length;                // Melee 2: the weapon's drawn length (1, or less mid-sweep: 0 = unset, read as 1)
         public float BreakDeg;              // RT 6i: how far a break-action's barrels hang open (degrees)
+        public float ClipIn, PartOpen;      // 2026-11-16 (Sperling): how far the stripper clip has gone into the receiver (0..1, behind the gun), and how far the bolt stands open for the reload (0..1)
         public bool ShellInHand;            // 2026-11-16: a tube-fed gun's reload: the support hand carries a round from the pouch to the loading port
         public bool Left, HasSupport;
     }
@@ -430,11 +431,19 @@ namespace GameCore
             float a = angle * Mathf.Deg2Rad;
             float ox = Mathf.Round(push * Mathf.Cos(a)), oy = Mathf.Round(-push * Mathf.Sin(a)) - Mathf.Round(jam.tap);   // the tap bumps it up
             bool free = false;                                              // the support hand is off the gun
+            float partOpen = 0f, clipIn = 0f, clipBack = 0f;                             // the Sperling's reload: the bolt flies open, the clip is pushed home and stripped, the bolt closes
+            if (style == "clip" && r >= 0f && r < 1f)
+            {
+                float Sm(float q) { q = Mathf.Clamp01(q); return q * q * (3f - 2f * q); }
+                partOpen = r < 0.08f ? 0f : r < 0.18f ? Sm((r - 0.08f) / 0.10f) : r < 0.93f ? 1f : r < 0.99f ? 1f - Sm((r - 0.93f) / 0.06f) : 0f;
+                clipIn = Sm((r - 0.88f) / 0.08f); clipBack = Sm((r - 0.955f) / 0.045f);
+            }
             if (style == "clip" && mag != null && pose.HasSupport)                 // a stripper clip: the hand's home is above the clip's seat on the receiver (it holds the clip by its top and pushes it down)
             {
                 float ma0 = (angle + extra) * Mathf.Deg2Rad, ca0 = Mathf.Cos(ma0), sa0 = Mathf.Sin(ma0), fl0 = left ? -1f : 1f;
-                float vx0 = (mag[0] - g[0]) * 0.5f, vy0 = (mag[1] - 5.5f - g[1]) * 0.5f * fl0;
-                pose.SupportX = Mathf.Round(pose.GripX + vx0 * ca0 + vy0 * sa0) - 0f; pose.SupportY = Mathf.Round(pose.GripY + 1.5f + (-vx0 * sa0 + vy0 * ca0) - 1.5f);
+                float vx0 = (mag[0] - g[0]) * 0.5f, vy0 = (mag[1] - 5.5f + 6.5f * clipIn - g[1]) * 0.5f * fl0;      // the hand holds the clip by its top and pushes it down 6.5 px
+                float sxc = Mathf.Round(pose.GripX + vx0 * ca0 + vy0 * sa0), syc = Mathf.Round(pose.GripY + (-vx0 * sa0 + vy0 * ca0));
+                pose.SupportX = Mathf.Lerp(sxc, pose.SupportX, clipBack); pose.SupportY = Mathf.Lerp(syc, pose.SupportY, clipBack);                 // then it goes back to the gun
             }
             if (pouch > 0f && pose.HasSupport)                              // support hand off to the belt pouch
             {
@@ -502,11 +511,12 @@ namespace GameCore
                 float inner2 = Mathf.Clamp01((r - 0.1f) / 0.8f);
                 if (inner2 > 0f && inner2 < 1f) { float u2 = inner2 * Mathf.Max(1, style == "clip" ? 1 : trips) % 1f; shellHand = u2 >= 0.57f && u2 < 0.98f; }
             }
+            if (style == "clip") shellHand = pose.HasSupport && r >= 0.556f && r < 0.965f;       // the clip is in view from the pouch until it has gone in
             // RT 6i: a break-action drops its barrels open, holds them while the shells go in, snaps them shut
             float breakDeg = style == "break" && r >= 0f && r < 1f ? 35f * Mathf.Clamp01(Mathf.Min((r - 0.05f) / 0.12f, (0.92f - r) / 0.07f)) : 0f;
             return new HeldFrame
             {
-                CylDX = cylDX, CylDY = cylDY, MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg, ShellInHand = shellHand,
+                CylDX = cylDX, CylDY = cylDY, MagDX = magDX, MagDY = magDY, MagShown = magShown, MagDropped = dropped, BreakDeg = breakDeg, ShellInHand = shellHand, ClipIn = clipIn, PartOpen = partOpen,
                 Left = pose.AimLeft, GunDeg = angle + extra, HasSupport = pose.HasSupport,
                 GunX = pose.GripX + ox + cx, GunY = pose.GripY + oy + 1.5f,
                 GripX = pose.GripX + ox + cx, GripY = pose.GripY + oy + 1.5f,
@@ -795,7 +805,7 @@ namespace GameCore
             ["Halden45Service"] = ("slide", 12f),
             // levers: the whole lever (lever_arc.py: loop + thick root) swings DEGREES (positive = loop tip down and forward) about its hinge (HammerPivot)
             ["FrontierLeverRifle"] = ("lever", 34f), ["HaldenLeverShotgun"] = ("lever", 34f), ["Nightwalker4570"] = ("lever", 34f),   // 
-            ["M91Trekhlineyka"] = ("bolt", 18f), ["Sever98"] = ("bolt", 16f),   // (Yan, 2026-11-16: "use this version for now", the weapons_only2 GIF) a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
+            ["M91Trekhlineyka"] = ("bolt", 18f), ["Sever98"] = ("bolt", 16f), ["SperlingS96"] = ("slide", 22f),   // (Yan, 2026-11-16: "use this version for now", the weapons_only2 GIF) a bolt handle: lifts, runs back, forward, down (travel = the run back in texture px)
             ["HaldenServiceRevolver"] = ("hammer", 38f), ["RinaldiR6"] = ("hammer", 30f), ["RK12Kuvalda"] = ("hammer", 32f),   // a hammer: travel is DEGREES, it turns on its hinge (HammerPivot)
             ["WaldenP9"] = ("slide", 9f), ["SteppeEagle"] = ("slide", 8f), ["Corvan57"] = ("slide", 8f), ["SR21Gadyuka"] = ("slide", 9f), ["PSh18Pchela"] = ("slide", 8f), ["BlackHarrier"] = ("slide", 10f), ["SperlingS96"] = ("slide", 5f),   // the C96's barrel and bolt run back together
             ["BayouPump"] = ("pump", 26f), ["Hound13"] = ("pump", 25f),
@@ -843,7 +853,7 @@ namespace GameCore
             ["HaldenLeverShotgun"] = (104f, 10f, 0.28f, false),
             ["FrontierLeverRifle"] = (104f, 11f, 0.28f, false),
             ["Nightwalker4570"] = (116f, 10f, 0.28f, false),
-            ["SperlingS96"] = (65f, 11f, 0.03f, false),
+            ["SperlingS96"] = (65f, 11f, 0.03f, true),
             ["WaldenP9"] = (60f, 14f, 0.03f, true),
             ["VK74"] = (130f, 14f, 0.03f, false),
             ["SKNKarabin"] = (112f, 11f, 0.03f, false),
@@ -1233,7 +1243,7 @@ namespace GameCore
                     _mag.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg + (f.Left ? -1f : 1f) * WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel);
                 }
                 else {
-                float slideBack = (pt.style == "lever" ? -0.35f : 1f) * WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
+                float slideBack = (pt.style == "lever" ? -0.35f : 1f) * Mathf.Max(WeaponArt.PartPhase(pt.style, now - _shotAt), pt.style == "slide" ? f.PartOpen : 0f) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)), ang = f.GunDeg * Mathf.Deg2Rad;
                 _mag.gameObject.SetActive(true);
                 _mag.sprite = pt.part; _mag.flipY = f.Left; _mag.sortingOrder = _gun.sortingOrder;
                 float lift = pt.style == "lever" ? -WeaponArt.PartPhase(pt.style, now - _shotAt) * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : pt.style == "bolt" ? WeaponArt.BoltLift(now - _shotAt) * 0.05f * pt.travel / (WeaponArt.PixelsPerUnit * WeaponArt.Density(key)) * (f.Left ? -1f : 1f) : 0f;   // the handle is raised before it runs back
@@ -1279,6 +1289,7 @@ namespace GameCore
                 {
                     float a1 = f.GunDeg * Mathf.Deg2Rad, dn = (f.Left ? 1f : -1f) * 5.5f / WeaponArt.PixelsPerUnit;
                     _shell.transform.localPosition += new Vector3(-dn * Mathf.Sin(a1), dn * Mathf.Cos(a1), 0f);
+                    if (f.ClipIn > 0.01f) { _shell.sortingOrder = _gun.sortingOrder - 1; _shell.transform.localPosition += new Vector3(0f, 0f, 0.03f); }   // pushed into the receiver: behind the gun
                 }
             }
             if (_w2?.Db != null && cat != "melee")

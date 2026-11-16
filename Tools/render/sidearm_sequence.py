@@ -13,7 +13,15 @@ def shell_in_hand(r, trips):                                                    
     inner = min(1.0, max(0.0, (r - 0.1) / 0.8))
     if inner <= 0 or inner >= 1: return False
     u = inner * max(1, trips) % 1.0; return 0.57 <= u < 0.98
-def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, brkp=None, shell=None):
+def draw_shell(c, shell, extra, sx, sy, deg):
+    import math
+    X, Y = (H.BX + sx) * S, (H.BY + sy) * S
+    if shell == 'clip':
+        ci = extra['clip']; ang = math.radians(deg); ci = ci.rotate(deg, expand=True, resample=Image.BICUBIC)
+        cxp, cyp = X + 2.75 * S * math.sin(ang), Y + 2.75 * S * math.cos(ang); c.alpha_composite(ci, (int(cxp - ci.width / 2), int(cyp - ci.height / 2)))
+    else:
+        d = ImageDraw.Draw(c); d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell is True else (222, 184, 74))
+def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, brkp=None, shell=None, extra=None):
     """The reload frame of a double-size gun with its magazine moving (the game's own frame record + the cut pieces): the dropped magazine on the floor or falling, the seated/carried magazine, then the gun (the body without the magazine when it was cut), then the hands."""
     gx_, gy_, deg, hx, hy, sx, sy, has_sup, left, mdx, mdy, mshown, brk, thrown, lx, ly, ldeg, landed, brass = f
     c = Image.new("RGBA", (H.W * S, H.H * S), H.BG); c.alpha_composite(body, (H.BX * S, H.BY * S))
@@ -25,6 +33,9 @@ def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, br
     if magimg is not None and cyl and not seated: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)             # a cylinder swung out on its crane: behind the frame (the far side), peeking out beside the window
     if magimg is not None and mshown and not cyl: P.paste2(c, magimg, grip[0], grip[1], gx_ + mdx, gy_ + mdy, deg, left, k)       # seated, or in the hand
     g2 = bodyimg if bodyimg is not None else gun
+    if extra and extra.get('part') is not None:                                                        # a slide/bolt part that stands open for the reload (Sperling): the part shifted back along the gun
+        layer = Image.new("RGBA", extra['partbody'].size); layer.alpha_composite(extra['partbody']); layer.alpha_composite(extra['part'], (-int(round(extra['open'] * extra['travel'])), 0)); g2 = layer
+    if shell == 'clip' and extra and extra.get('behind') and has_sup: draw_shell(c, shell, extra, sx, sy, deg)       # pushed into the receiver: behind the gun
     if brkp is not None and f[12] != 0:                                                                # a break action: the barrels hang open on the hinge (clockwise in the gun's own picture)
         bar, hinge = brkp; layer = Image.new("RGBA", g2.size); layer.alpha_composite(g2); layer.alpha_composite(bar.rotate(-f[12], center=hinge, resample=Image.BICUBIC)); g2 = layer
     elif brkp is not None: layer = Image.new("RGBA", g2.size); layer.alpha_composite(g2); layer.alpha_composite(brkp[0]); g2 = layer
@@ -33,19 +44,8 @@ def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, br
     gg = gl.transpose(Image.FLIP_LEFT_RIGHT) if left else gl
     for (x, y, on) in ((sx, sy, has_sup), (hx, hy, 1)):
         if on: c.alpha_composite(gg, (round((H.BX + x) * S - 2 * S), round((H.BY + y) * S - 1.5 * S)))
-    if shell is not None and has_sup:                                                                 # the round in the support hand (red hull for a shotgun, brass for a rifle); a stripper clip hangs 5.5 px under the hand, in the gun's frame
-        import math
-        X, Y = (H.BX + sx) * S, (H.BY + sy) * S
-        if shell == 'clip':
-            rows = ["cccccLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cccccLL"]
-            pal = {'c': (150, 154, 164), 'B': (222, 184, 74), 'b': (178, 138, 48), 'L': (172, 112, 64), 'l': (132, 84, 48)}; u = S // 2
-            clip = Image.new("RGBA", (7 * u, 11 * u), (0, 0, 0, 0)); dr = ImageDraw.Draw(clip)
-            for yy, row in enumerate(rows):
-                for xx, ch in enumerate(row): dr.rectangle((xx * u, yy * u, xx * u + u - 1, yy * u + u - 1), fill=(*pal[ch], 255))
-            ang = math.radians(deg); clip = clip.rotate(deg, expand=True, resample=Image.NEAREST)
-            cxp, cyp = X + 2.75 * S * math.sin(ang), Y + 2.75 * S * math.cos(ang); c.alpha_composite(clip, (int(cxp - clip.width / 2), int(cyp - clip.height / 2)))
-        else:
-            d = ImageDraw.Draw(c); d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell is True else (222, 184, 74))
+    if shell is not None and has_sup and not (shell == 'clip' and extra and extra.get('behind')):   # the round in the support hand; a stripper clip hangs 5.5 px under the hand in the gun's frame
+        draw_shell(c, shell, extra, sx, sy, deg)
     return c
 def one(src, key, outdir, slow=2.0):
     big, box = PP.main(src, key, os.path.join(outdir, "tmp_shot_" + key))
@@ -60,9 +60,23 @@ def one(src, key, outdir, slow=2.0):
     brp = os.path.join(wp, f"weapon_{key}_hdbarrels.png"); isbrk = rel["style"] == "break" and os.path.exists(brp)
     brk = (Image.open(brp).convert("RGBA"), (hinges()[key][0] * k, hinges()[key][1] * k)) if isbrk else None; bodyimg = Image.open(bdp).convert("RGBA") if isbrk else bodyimg
     shellkind = "clip" if rel["style"] == "clip" else None if rel["style"] != "tube" else (True if key in ("BayouPump", "RangerP8", "Hound13", "SP14Warden", "HaldenLeverShotgun", "Karusel5") else False)
+    import math
+    def sm(q): q = min(1.0, max(0.0, q)); return q * q * (3 - 2 * q)
+    partp = os.path.join(wp, f"weapon_{key}_part.png"); bodyp = os.path.join(wp, f"weapon_{key}_body.png"); cs = open(os.path.join(H.ROOT, "Assets/Scripts/GameCore/HeldWeapon.cs")).read()
+    pm = re.search(r'\["%s"\] = \("slide", ([0-9.]+)f\)' % key, cs)
+    clipimg = None
+    if rel["style"] == "clip":
+        ci = Image.open(os.path.join(wp, "clip_stripper.png")).convert("RGBA"); th = 11 * S // 2; clipimg = ci.resize((max(1, round(ci.width * th / ci.height)), th), Image.LANCZOS)
+    def extra_for(i):
+        r = i / 30.0 / rel["secs"]
+        if rel["style"] != "clip": return None
+        o = 0.0 if r < 0.08 else sm((r - 0.08) / 0.10) if r < 0.18 else 1.0 if r < 0.93 else 1 - sm((r - 0.93) / 0.06) if r < 0.99 else 0.0
+        e = {'clip': clipimg, 'behind': sm((r - 0.88) / 0.08) > 0.01, 'open': o}
+        if pm and os.path.exists(partp) and os.path.exists(bodyp): e.update(part=Image.open(partp).convert("RGBA"), partbody=Image.open(bodyp).convert("RGBA"), travel=float(pm.group(1)))
+        return e
     def mk(i, f):
-        sh = shellkind if (shellkind is not None and shell_in_hand(i / 30.0 / rel["secs"], trips)) else None
-        if magimg is not None or isbrk or sh is not None: return dense_frame(rel, f, body, gun, gl, grip, k, magimg, bodyimg, mp, iscyl, brk, sh)
+        rr = i / 30.0 / rel["secs"]; sh = shellkind if (shellkind is not None and ((0.556 <= rr < 0.965) if shellkind == 'clip' else shell_in_hand(rr, trips))) else None
+        if magimg is not None or isbrk or sh is not None or rel["style"] == "clip": return dense_frame(rel, f, body, gun, gl, grip, k, magimg, bodyimg, mp, iscyl, brk, sh, extra_for(i))
         return P.frame_new(rel, f, body, gun, gl, grip, k)
     rf = [mk(i, f).crop(box).convert("RGB") for i, f in enumerate(rel["frames"])]
     if rel["style"] == "break": ki = max(range(len(rel["frames"])), key=lambda i: rel["frames"][i][12])                                  # a key frame for review: barrels most open / the first round in the hand / the middle of the reload

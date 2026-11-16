@@ -49,7 +49,7 @@ namespace GameCore
             ["PL74PPolovets"] = new[] { 21.5f, 4.9f, 21.5f, 7.6f },
             ["G7RailPrototype"] = new[] { 16.4f, 5.5f, 16.4f, 6.6f },
             ["PL74PPolovetsZulu"] = new[] { 22.5f, 5.7f, 22.5f, 8.4f },
-            ["SperlingS96"] = new[] { 11.0f, -3.4f, 11.0f, -3.4f },   // the stripper clip's seat above the receiver (virtual px, ArtSource/weapons/mags_hd.py does not write this one)
+            ["SperlingS96"] = new[] { 10.5f, -3.0f, 10.5f, -3.0f },   // the stripper clip's seat above the open receiver (virtual px; mags_hd.py does not write this row)
         };
     }
 }

@@ -238,12 +238,27 @@
  "SperlingS96": {
   "style": "slide",
   "rect": [
-   62,
-   8,
-   120,
-   18
+   14,
+   4,
+   71,
+   21
   ],
-  "travel": 5
+  "travel": 22,
+  "fills": [
+   {
+    "rect": [
+     22,
+     7,
+     70,
+     19
+    ],
+    "color": [
+     24,
+     27,
+     33
+    ]
+   }
+  ]
  },
  "HaldenServiceRevolver": {
   "style": "hammer",

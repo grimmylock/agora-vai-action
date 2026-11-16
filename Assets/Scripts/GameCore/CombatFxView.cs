@@ -63,6 +63,8 @@ namespace GameCore
         internal static Sprite ClipSprite()
         {
             if (_clipSprite != null) return _clipSprite;
+            var yan = Resources.Load<Texture2D>("Sprites/Weapons/clip_stripper");                          // Yan's own picture (ArtSource/weapons/hand/clip_stripper.py), mirrored so the bullets point right; drawn 11 sprite px tall
+            if (yan != null) { yan.filterMode = FilterMode.Bilinear; return _clipSprite = Sprite.Create(yan, new Rect(0, 0, yan.width, yan.height), new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit * yan.height / 11f, 0, SpriteMeshType.FullRect); }
             // Yan's references (a Mauser C96's stripper clip): ten rounds stacked one above the other, bullet tips forward (right), a flat steel strip down the rear; shown upright, as carried
             string[] rows = { "cccccLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cbbbbLL", "cBBBBLl", "cccccLL" };
             var pal = new Dictionary<char, Color32> { ['c'] = new Color32(150, 154, 164, 255), ['B'] = new Color32(222, 184, 74, 255), ['b'] = new Color32(178, 138, 48, 255), ['L'] = new Color32(172, 112, 64, 255), ['l'] = new Color32(132, 84, 48, 255) };
