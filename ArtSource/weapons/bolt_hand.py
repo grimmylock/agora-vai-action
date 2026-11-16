@@ -4,7 +4,9 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
 D = 'Assets/Resources/Sprites/Weapons/'
-def load(k): return np.array(Image.open(D + f'weapon_{k}_hd.png').convert('RGBA'))
+def load(k):                                                       # the gun without its magazine when that was cut (mags_hd.py): the part body must not bring the magazine back
+    import os
+    return np.array(Image.open(D + (f'weapon_{k}_hdbody.png' if os.path.exists(D + f'weapon_{k}_hdbody.png') else f'weapon_{k}_hd.png')).convert('RGBA'))
 def save(k, body, part):
     Image.fromarray(body).save(D + f'weapon_{k}_body.png'); Image.fromarray(part).save(D + f'weapon_{k}_part.png')
 def mosin():

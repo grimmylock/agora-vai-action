@@ -15,8 +15,13 @@ for k, row in re.findall(r'\["(\w+)"\] = new\[\] \{([^}]*)\}', re.search(r"Dicti
     G[k] = [float('nan') if 'NaN' in v else float(v.strip().rstrip('f')) for v in row.split(',')]
 K = (14, 14, 18, 255)
 HIDDEN = ['PSh18Pchela', 'WaldenP9', 'Halden45Service', 'SR21Gadyuka', 'BlackHarrier', 'Corvan57', 'SteppeEagle']
-VISIBLE = ['CorvanHornet45', 'CorvanWasp9', 'CorvanGnatPDW', 'VosaVz62', 'PPZZubr']
+SMGS = ['CorvanHornet45', 'CorvanWasp9', 'CorvanGnatPDW', 'VosaVz62', 'PPZZubr']
+RIFLES = ['VK74', 'VKM', 'VKS74U', 'VK74Obelisk', 'VK103', 'NA94Yenisei', 'CorvanBattleRifle', 'CorvanBullpup', 'TS9Tishina', 'HaldenHR36K', 'TR30', 'BR86Bulldog', 'Smerch3']
+SNIPERS = ['VSNShepot', 'CorvanMarksman', 'SV2Strela', 'Sever98', 'VK127Grom', 'HaldenAM50Sledge']
+VISIBLE = SMGS + RIFLES + SNIPERS
 # per-gun overrides for the visible cut: (x0, x1, y0) texture px - the columns of the magazine and the row it starts at (None = automatic)
+# guns whose magazine sits behind the grip or beside a bipod/foregrip the automatic search would take: key -> (centre x, top y, half width) in VIRTUAL px (the old in-hand art's magazine place)
+NEAR = {'CorvanMarksman': (18, 4.0, 3.5), 'VK127Grom': (10.2, 4.4, 3.0), 'HaldenAM50Sledge': (19, 6.0, 4.0), 'BR86Bulldog': (11.5, 6.5, 3.5), 'CorvanBullpup': (10.5, 7.4, 2.4)}
 OVR = {'CorvanGnatPDW': (111, 134, 60),     # the magazine is the lower part of the pistol-grip column (an MP7-style gun): only that part comes out
        'PPZZubr': (121, 216, 31)}          # the helical magazine under the barrel
 def load(k): return np.array(Image.open(W + f'weapon_{k}_hd.png').convert('RGBA'))
@@ -33,7 +38,8 @@ def visible(k):
     for x in range(Wd):
         if hang[x] >= 0 and start is None: start = x
         if (hang[x] < 0 or x == Wd - 1) and start is not None: runs.append((start, x - 1)); start = None
-    if k in OVR: x0, x1, y0 = OVR[k]
+    if k in NEAR: cx, ty, hw = NEAR[k]; x0, x1, y0 = int((cx - hw) * d), int((cx + hw) * d), int(ty * d)
+    elif k in OVR: x0, x1, y0 = OVR[k]
     else:
         if not runs: raise SystemExit(k + ': no hanging magazine found')
         x0, x1 = max(runs, key=lambda r: (bot[r[0]:r[1] + 1].max() - body_bot) * (r[1] - r[0] + 1) ** 0.5); y0 = body_bot - 1
@@ -41,6 +47,16 @@ def visible(k):
     ys = np.where(a[:, x0:x1 + 1].any(1))[0]; ylow = ys.max(); xs = np.where(a[ylow, x0:x1 + 1])[0]; seed = (ylow, x0 + int(xs[len(xs) // 2]))
     allow = np.zeros_like(a); allow[y0:, max(0, x0 - 2):x1 + 3] = True
     lab, _ = ndi.label(a & allow, structure=np.ones((3, 3))); comp = lab == lab[seed]
+    op = ndi.binary_opening(comp, structure=np.ones((6, 6)))                                # thin protrusions (a strip of the handguard's lip, a trigger-guard tab) are not the magazine
+    if op.sum() > 0.6 * comp.sum(): lab2, _ = ndi.label(op, structure=np.ones((3, 3))); comp = lab2 == lab2[seed] if lab2[seed] else comp
+    ys2, xs2 = np.where(comp)                                                                # the top rows: clip to the width of the magazine's body a little lower (the handguard's lip beside the top is not the magazine)
+    top = ys2.min(); body_rows = (ys2 >= top + 16) & (ys2 <= top + 26)
+    if body_rows.sum() > 20:
+        L, R = xs2[body_rows].min() - 2, xs2[body_rows].max() + 2
+        for y in range(top, top + 16):
+            row = np.where(comp[y])[0]
+            for x in row:
+                if x < L or x > R: comp[y, x] = False
     return im, comp, (x0, x1, y0)
 def finish_visible(k):
     im, comp, box = visible(k); d = D[k]
