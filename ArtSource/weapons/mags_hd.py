@@ -84,7 +84,13 @@ def cylinder(k):
     return int(comp.sum())
 # belt-fed guns whose picture draws no box (Yan: "draw the belt boxes for the four heavies"): (box centre x, receiver underside y) in virtual px. The box hangs under the feed tray with three rounds of belt going up into it;
 # it is drawn as the gun's magazine (always seated at rest, drops and is replaced on a reload); no body file, the gun is drawn whole.
-BOXES = {'PL62Kobza': (23.0, 5.9), 'PL74': (24.5, 5.4), 'CorvanLMG': (22.0, 8.0), 'PL74PPolovetsZulu': (22.5, 6.2)}
+BOXES = {'PL62Kobza': (23.0, 5.9), 'PL74': (24.5, 5.4), 'CorvanLMG': (22.0, 8.0)}
+# a magazine that sits ON TOP (the Zulu's pan, the round thing on its receiver, Yan: "this one has the ammo on that round thing on top"): the opaque pixels in the box (x0, x1, y0, y1 texture px) come off; the reload moves it up (WeaponArt.TopMags)
+TOP = {'PL74PPolovetsZulu': (82, 114, 14, 27)}
+def top_mag(k):
+    im = load(k); d = D[k]; x0, x1, y0, y1 = TOP[k]; box = np.zeros(im.shape[:2], bool); box[y0:y1 + 1, x0:x1 + 1] = True; comp = box & (im[..., 3] > 0)
+    body = im.copy(); body[comp] = 0; mag = np.zeros_like(im); mag[comp] = im[comp]; save(f'weapon_{k}_hdbody.png', body); save(f'weapon_{k}_hdmag.png', mag)
+    ys, xs = np.where(comp); cx = (xs.min() + xs.max() + 1) / 2 / d; return (cx, (ys.max() + 1) / d, cx, (ys.min() + ys.max() + 1) / 2 / d), int(comp.sum())
 def ammo_box(k):
     im = load(k); d = D[k]; xc, yb = BOXES[k]; bw, bh = int(round(4.0 * d)), int(round(5.5 * d)); x0 = int(round(xc * d - bw / 2)); y0 = int(round((yb - 0.5) * d)); x1 = x0 + bw - 1; y1 = y0 + bh - 1
     H, Wd = im.shape[:2]; canvas = np.zeros((max(H, y1 + 4), Wd, 4), np.uint8); box = np.zeros(canvas.shape[:2], bool); box[y0:y1 + 1, x0:x1 + 1] = True
@@ -162,6 +168,7 @@ def main(keys):
         try:
             if k in CYL: print(k, 'cylinder', cylinder(k), 'px'); continue
             if k in BRK: print(k, 'barrels', breaker(k), 'px'); continue
+            if k in TOP: r = top_mag(k); pts[k] = r[0]; print(k, 'pan on top', r[1], 'px', [round(float(v), 1) for v in r[0]]); continue
             if k in BOXES: r = ammo_box(k); pts[k] = r[0]; print(k, 'drawn box', r[1], 'px'); continue
             if k in HIDDEN: r = hidden(k); pts[k] = r[0]; print(k, 'hidden mag', r[1], 'px', [round(float(v), 1) for v in r[0]])
             else: r = finish_visible(k); pts[k] = r[0]; print(k, 'cut', r[2], 'px', 'box', r[1], [round(float(v), 1) for v in r[0]])

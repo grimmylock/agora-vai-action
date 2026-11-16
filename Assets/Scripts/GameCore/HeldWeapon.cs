@@ -441,7 +441,7 @@ namespace GameCore
             if (style == "clip" && mag != null && pose.HasSupport)                 // a stripper clip: the hand's home is above the clip's seat on the receiver (it holds the clip by its top and pushes it down)
             {
                 float ma0 = (angle + extra) * Mathf.Deg2Rad, ca0 = Mathf.Cos(ma0), sa0 = Mathf.Sin(ma0), fl0 = left ? -1f : 1f;
-                float vx0 = (mag[0] - g[0]) * 0.5f, vy0 = (mag[1] - 5.5f + 6.5f * clipIn - g[1]) * 0.5f * fl0;      // the hand holds the clip by its top and pushes it down 6.5 px
+                float vx0 = (mag[0] - g[0]) * 0.5f, vy0 = (mag[1] - 3.5f + 6.0f * clipIn - g[1]) * 0.5f * fl0;      // the hand holds the clip by its top and pushes it down 6 px
                 float sxc = Mathf.Round(pose.GripX + vx0 * ca0 + vy0 * sa0), syc = Mathf.Round(pose.GripY + (-vx0 * sa0 + vy0 * ca0));
                 pose.SupportX = Mathf.Lerp(sxc, pose.SupportX, clipBack); pose.SupportY = Mathf.Lerp(syc, pose.SupportY, clipBack);                 // then it goes back to the gun
             }
@@ -479,7 +479,7 @@ namespace GameCore
                 float gunX = pose.GripX + ox + cx, gunY = pose.GripY + oy + 1.5f;
                 float homeX = pose.SupportX + ox + cx, homeY = pose.SupportY + oy + 1.5f;  // the hand's place on the gun
                 var w = Rot((mag[0] - g[0]) * 0.5f, (mag[1] - g[1]) * 0.5f * fl);
-                var dn = Rot(0f, fl);                                                       // the gun's underside
+                var dn = Rot(0f, key != null && WeaponArt.TopMags.Contains(key) ? -fl : fl);   // the gun's underside (a pan magazine sits on top: the other way)
                 float wellX = gunX + w.x, wellY = gunY + w.y;
                 float holdX = wellX + 3f * dn.x, holdY = wellY + 3f * dn.y;                 // the hand on the seated magazine
                 float belowX = wellX + 6f * dn.x, belowY = wellY + 6f * dn.y;               // ... with it still under the well
@@ -668,6 +668,8 @@ namespace GameCore
         };
         /// <summary>Guns loaded with a stripper clip from the top (Sperling S-96): WeaponMags.Points holds the clip's resting place on the gun (centre x, y in virtual px; y negative = above the picture) and the support hand brings it there.</summary>
         public static readonly HashSet<string> Clips = new HashSet<string> { "SperlingS96" };
+        /// <summary>Guns whose magazine sits on TOP (a pan magazine: the PL-74P Zulu): the reload moves it up and away, not down.</summary>
+        public static readonly HashSet<string> TopMags = new HashSet<string> { "PL74PPolovetsZulu" };
         public static bool HasGrip(string key) => key != null && Grips.ContainsKey(key);
         /// <summary>The grip/support/muzzle points of a weapon's own sprite (its category's when it has none).</summary>
         public static float[] GripOf(string cat, string key) => key != null && Grips.TryGetValue(key, out var kg) ? kg : Grips.TryGetValue("cat_" + cat, out var cg) ? cg : Grips["cat_assault"];
@@ -1285,9 +1287,9 @@ namespace GameCore
             {
                 var fl = WeaponFeel.For(weapon.Db); _shell.sprite = fl.Reload == "clip" ? CombatFxView.ClipSprite() : CombatFxView.CaseSprite(fl.Casing == "shell"); _shell.flipY = f.Left; _shell.sortingOrder = _support.sortingOrder + 1;
                 _shell.transform.localPosition = _support.transform.localPosition + new Vector3(0f, 0f, -0.01f); _shell.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
-                if (fl.Reload == "clip")                                                   // the clip hangs 5.5 px under the hand, in the gun's frame (its seat is below the hand's home)
+                if (fl.Reload == "clip")                                                   // the clip hangs 3.5 px under the hand, in the gun's frame (its seat is below the hand's home)
                 {
-                    float a1 = f.GunDeg * Mathf.Deg2Rad, dn = (f.Left ? 1f : -1f) * 5.5f / WeaponArt.PixelsPerUnit;
+                    float a1 = f.GunDeg * Mathf.Deg2Rad, dn = (f.Left ? 1f : -1f) * 3.5f / WeaponArt.PixelsPerUnit;
                     _shell.transform.localPosition += new Vector3(-dn * Mathf.Sin(a1), dn * Mathf.Cos(a1), 0f);
                     if (f.ClipIn > 0.01f) { _shell.sortingOrder = _gun.sortingOrder - 1; _shell.transform.localPosition += new Vector3(0f, 0f, 0.03f); }   // pushed into the receiver: behind the gun
                 }

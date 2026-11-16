@@ -18,7 +18,7 @@ def draw_shell(c, shell, extra, sx, sy, deg):
     X, Y = (H.BX + sx) * S, (H.BY + sy) * S
     if shell == 'clip':
         ci = extra['clip']; ang = math.radians(deg); ci = ci.rotate(deg, expand=True, resample=Image.BICUBIC)
-        cxp, cyp = X + 2.75 * S * math.sin(ang), Y + 2.75 * S * math.cos(ang); c.alpha_composite(ci, (int(cxp - ci.width / 2), int(cyp - ci.height / 2)))
+        cxp, cyp = X + 1.75 * S * math.sin(ang), Y + 1.75 * S * math.cos(ang); c.alpha_composite(ci, (int(cxp - ci.width / 2), int(cyp - ci.height / 2)))
     else:
         d = ImageDraw.Draw(c); d.rectangle((X - 3 * S // 2, Y - S // 2, X + 3 * S // 2, Y + S // 2), fill=(200, 48, 44) if shell is True else (222, 184, 74))
 def dense_frame(a, f, body, gun, gl, grip, k, magimg, bodyimg, mp, cyl=False, brkp=None, shell=None, extra=None):
@@ -66,7 +66,7 @@ def one(src, key, outdir, slow=2.0):
     pm = re.search(r'\["%s"\] = \("slide", ([0-9.]+)f\)' % key, cs)
     clipimg = None
     if rel["style"] == "clip":
-        ci = Image.open(os.path.join(wp, "clip_stripper.png")).convert("RGBA"); th = 11 * S // 2; clipimg = ci.resize((max(1, round(ci.width * th / ci.height)), th), Image.LANCZOS)
+        ci = Image.open(os.path.join(wp, "clip_stripper.png")).convert("RGBA"); th = 7 * S // 2; clipimg = ci.resize((max(1, round(ci.width * th / ci.height)), th), Image.LANCZOS)
     def extra_for(i):
         r = i / 30.0 / rel["secs"]
         if rel["style"] != "clip": return None
