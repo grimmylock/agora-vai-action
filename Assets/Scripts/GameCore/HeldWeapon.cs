@@ -580,7 +580,7 @@ namespace GameCore
             ["BarbedWireBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 6.3f, 10.3f, float.NaN, float.NaN, 19.8f, 3.5f },
-            ["WaldenP9"] = new[] { 5.7f, 10.5f, float.NaN, float.NaN, 21.7f, 3.5f },
+            ["WaldenP9"] = new[] { 5.7f, 10.5f, float.NaN, float.NaN, 21.7f, 3.4f },
             ["Halden45Service"] = new[] { 5.2f, 10f, float.NaN, float.NaN, 21.7f, 3.2f },
             ["HaldenServiceRevolver"] = new[] { 4.3f, 10.1f, float.NaN, float.NaN, 23.8f, 2.3f },
             ["SR21Gadyuka"] = new[] { 4.8f, 9.6f, float.NaN, float.NaN, 19.8f, 3.7f },
