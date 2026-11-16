@@ -4,7 +4,7 @@
 //     (primary, secondary or armor) wears one step; a friend can bring you back with E, but only out of combat.
 //  3. DEAD DEAD: the whole squad is dead. Everyone comes back at the last camp - a bonfire you made camp at (E at the fire), or
 //     Bonfire Village by default - each with their armor one step more worn, half the pack gone, and the reputation penalty.
-// Solo play wipes the moment you die and wakes at the camp too (Yan, 2026-11-08); only the Testing Ground keeps the death screen (TestingGround.Session). Yan: deaths cost rank XP
+// Solo play wipes the moment you die and wakes at the camp too (Yan, 2026-11-08); since 2026-11-16 as a RESCUE (Death.Rescue: a note, a medkit, a bandage, some consumables gone, gear a condition lower, no pack dropped); only the Testing Ground keeps the death screen (TestingGround.Session). Yan: deaths cost rank XP
 // (Player.LoseXp: never a rank, never below 0) - no reputation; what leaves your pack lies where you fell (DropPack).
 using System.Linq;
 using GameData;
@@ -50,11 +50,17 @@ namespace GameCore
             var m = MacroState.Current;
             string zone = m.CampZone ?? "bonfire_village";
             GameLog.Write("[SQUAD WIPED] The Zone takes its toll. You come to by the camp fire.");
+            bool solo = Player.All.Count == 1;
+            if (solo) GameLog.Write("[YOU WERE SAVED] Someone found you and dragged you back to the camp fire.");
             foreach (var p in Player.All)
             {
-                if (p.EquippedArmor != null && !ItemCondition.IsBroken(p.EquippedArmorCondition)) p.EquippedArmorCondition = ItemCondition.Worse(p.EquippedArmorCondition);
-                var pack = p.Inventory.Items.ToList();
-                DropPack(p, pack.OrderBy(_ => Random.value).Take(pack.Count / 2).ToList());   // half the pack, where you fell
+                if (solo) Rescue(p);                                                       // Yan (2026-11-16): someone "saved" you - a note, a medkit and a bandage, but you pay for it
+                else
+                {
+                    if (p.EquippedArmor != null && !ItemCondition.IsBroken(p.EquippedArmorCondition)) p.EquippedArmorCondition = ItemCondition.Worse(p.EquippedArmorCondition);
+                    var pack = p.Inventory.Items.ToList();
+                    DropPack(p, pack.OrderBy(_ => Random.value).Take(pack.Count / 2).ToList());   // half the pack, where you fell
+                }
                 p.LoseXp(WipeXp);
                 Body.Forget(p); p.StatusEffects.Bleeding = false; p.HealPermanent(p.MaxHp * 2);
                 var s = Rt.Of(p); s.Dead = false; s.DiveUntil = s.ProneUntil = s.VaultFrom = -1f; s.UsingId = null;
@@ -72,6 +78,39 @@ namespace GameCore
                 p.X = spot.x; p.Y = spot.y; Rt.SetOffset(p, 0f, 0f);
             }
             GameState.Current.CurrentTurn = Turn.Player;
+        }
+
+        static readonly string[] RescueNotes =
+        {
+            "Found you face down on the road. Stitched what I could, took a few things for the trouble. Medkit's on me. Don't die where I can see.",
+            "You were still breathing, so I dragged you. Your pockets are lighter - I have a family. There's a bandage and a medkit. Be quicker next time.",
+            "Not my business, but someone had to. Cleaned you up and left you by the fire. Some of your supplies went on the stitching. Good luck out there.",
+            "Heard the shooting, found you after. Your gear took a beating and so did you. Left what medicine I could spare. Ask nobody who I am.",
+            "I don't know who you are. You owe me a couple of tins and a favour. The medkit's yours.",
+        };
+        /// <summary>Yan, 2026-11-16: solo death uses the camp respawn and "someone saved you": they leave a note, a basic medkit and one bandage, but some of your consumables are gone and your weapons and armor can be one condition lower.</summary>
+        public static void Rescue(Player p)
+        {
+            int lost = 0;
+            foreach (var it in p.Inventory.Items.Where(i => i.Type == "consumable").ToList())                // some consumables are gone: each stack loses a random third to two thirds of its count (a single one goes half the time)
+            {
+                int take = it.Qty <= 1 ? (Random.value < 0.5f ? 1 : 0) : Mathf.Clamp(Mathf.RoundToInt(it.Qty * Random.Range(0.33f, 0.67f)), 1, it.Qty);
+                if (take <= 0) continue;
+                lost += take; it.Qty -= take; if (it.Qty <= 0) p.Inventory.Items.Remove(it);
+            }
+            int worn = 0;                                                                                     // weapons and armor "can be" a condition lower: each a coin flip
+            void Wear(ref string cond, bool present) { if (present && !ItemCondition.IsBroken(cond) && Random.value < 0.5f) { cond = ItemCondition.Worse(cond); worn++; } }
+            if (p.EquippedWeapon != null) { var c = p.EquippedWeapon.Condition; Wear(ref c, true); p.EquippedWeapon.Condition = c; }
+            if (p.SecondaryWeapon != null) { var c = p.SecondaryWeapon.Condition; Wear(ref c, true); p.SecondaryWeapon.Condition = c; }
+            if (p.EquippedArmor != null) { var c = p.EquippedArmorCondition; Wear(ref c, true); p.EquippedArmorCondition = c; }
+            foreach (var it in p.Inventory.Items.Where(i => (i.Type == "weapon" || i.Type == "armor"))) { var c = it.Condition; Wear(ref c, true); it.Condition = c; }
+            foreach (var id in new[] { "basicMedkit", "bandage" })
+            {
+                var d = ShopDatabase.Find(id);
+                if (d != null) p.AddItem(new InventoryItem { Id = d.Id, Name = d.Name, WeightKg = d.WeightKg, Qty = 1, Type = d.Type, Price = d.Price });
+            }
+            GameLog.Write($"There is a note pinned to your jacket: \"{RescueNotes[Random.Range(0, RescueNotes.Length)]}\"");
+            GameLog.Write($"You find a medkit and a bandage beside you. {(lost > 0 ? $"{lost} of your supplies are missing. " : "")}{(worn > 0 ? "Your gear looks more worn than you remember." : "")}".TrimEnd());
         }
 
         /// <summary>E at a bonfire: the squad comes back here if it wipes. True if there was a fire to camp at.</summary>

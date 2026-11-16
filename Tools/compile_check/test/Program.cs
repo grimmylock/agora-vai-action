@@ -49,6 +49,7 @@ static class Program {
     RtChecks();
     TestingGroundChecks();
     OpticChecks();
+    RescueChecks();
     SaveSlotChecks();
     NetChecks();
     NetEelChecks();
@@ -2999,7 +3000,7 @@ static class Program {
       var p = Player.Current; int px = p.X, py = p.Y; var m = MacroState.Current; m.CampZone = m.CurrentZoneId; m.CampX = px; m.CampY = py - 2; EncounterState.Enemies.Clear();
       p.Exp = 60; for (int k = 0; k < 4; k++) p.AddItem(new InventoryItem { Id = "junk" + k, Name = "Junk", Qty = 1, Type = "junk" }); int pack0 = p.Inventory.Items.Count;
       p.X = px; p.Y = py + 5; Rt.SetOffset(p, 0f, 0f); Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
-      Check(p.IsAlive() && p.Hp > 0 && GameState.Current.CurrentTurn == Turn.Player && Math.Abs(p.Y - (py - 2)) <= 3 && p.Exp == 0 && p.Inventory.Items.Count < pack0, $"solo death: you wake at the camp with the wipe's penalties, not at a death screen (hp {p.Hp}, turn {GameState.Current.CurrentTurn}, XP {p.Exp}, pack {pack0} -> {p.Inventory.Items.Count})");
+      Check(p.IsAlive() && p.Hp > 0 && GameState.Current.CurrentTurn == Turn.Player && Math.Abs(p.Y - (py - 2)) <= 3 && p.Exp == 0 && p.Inventory.Items.Count(i => i.Id.StartsWith("junk")) == 4 && p.Inventory.Items.Any(i => i.Id == "basicMedkit") && p.Inventory.Items.Any(i => i.Id == "bandage"), $"solo death: you are rescued at the camp (a medkit and a bandage, the pack kept, XP lost), not at a death screen (hp {p.Hp}, turn {GameState.Current.CurrentTurn}, XP {p.Exp}, pack {pack0} -> {p.Inventory.Items.Count})");
       TestingGround.Session = true; Rt.On = false; p.Hp = 0; Rt.On = true; TurnLoop.CheckCombatEnd();
       Check(GameState.Current.CurrentTurn == Turn.CombatOver, "solo death in the Testing Ground still ends at the death screen");
     } finally { TestingGround.Session = session0; Rt.On = false; GameState.Current.CurrentTurn = Turn.Player; }
@@ -3129,6 +3130,18 @@ static class Program {
       var all = SaveSystem.Slots();
       Check(all.Count == 2 && all.Any(x => x.Rank == "Experienced" && x.Day == 3) && File.Exists(Path.Combine(dir, "savegame.json.migrated")), "RT 7x: the old single save becomes a slot");
     } finally { SaveSystem.Root = null; SaveSystem.CharacterId = SaveSystem.WorldId = null; try { Directory.Delete(dir, true); } catch { } }
+  }
+
+  static void RescueChecks() {   // 2026-11-16: the solo rescue (Death.Rescue)
+    Console.WriteLine("-- rescue --");
+    var p = Player.Current; int Count(string id) => p.Inventory.Items.Where(i => i.Id == id).Sum(i => i.Qty);
+    p.AddItem(new InventoryItem { Id = "rescueTestStim", Name = "Test stim", Qty = 12, Type = "consumable", WeightKg = 0.1f });
+    int med0 = Count("basicMedkit"), band0 = Count("bandage"); UnityEngine.Random.InitState(5); var rl = new ListLog(); var oldLog = GameLog.Target; GameLog.Target = rl;
+    Death.Rescue(p); GameLog.Target = oldLog;
+    Check(Count("basicMedkit") >= 1 && Count("bandage") >= 1 && Count("basicMedkit") <= med0 + 1 && Count("bandage") <= band0 + 1, "rescue: a medkit and a bandage are left with you");
+    Check(Count("rescueTestStim") < 12 && Count("rescueTestStim") >= 4, "rescue: some of your consumables are gone");
+    Check(rl.L.Any(l => l.Contains("note pinned to your jacket")), "rescue: a note is left");
+    p.Inventory.Items.RemoveAll(i => i.Id == "rescueTestStim");
   }
 
   static void OpticChecks() {   // 2026-11-16: optics and attachments (Optics.cs, GameData/OpticMounts.cs)
