@@ -17,7 +17,7 @@ namespace GameCore
             "########################################1#######################################################",
             "####,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,h.#############",
             "####,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,F,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,h....###########",
-            "####,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.....###########",
+            "####,,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,,,i,,,.....###########",
             "####,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,B....###########",
             "###,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,h.....##########",
             "####,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,......#########",
@@ -69,11 +69,16 @@ namespace GameCore
             "################################################################################################",
         };
 
+        /// <summary>The blood trail along the way to the lab: x, y, kind (1 smear, 2 splat), flattened.</summary>
+        public static readonly int[] TakenTrail = { 70, 46, 1, 69, 44, 2, 67, 42, 1, 62, 38, 2, 62, 35, 1, 63, 32, 1, 62, 30, 1, 59, 29, 2, 56, 29, 1, 54, 29, 1, 51, 31, 1, 49, 32, 2, 45, 32, 1, 45, 32, 1, 40, 35, 2, 39, 36, 1, 37, 40, 1, 33, 43, 1, 30, 43, 1, 27, 43, 1, 24, 44, 2, 23, 44, 1, 20, 43, 1, 17, 50, 1, 17, 52, 1, 14, 53, 1, 11, 54, 2, 9, 53, 1, 6, 51, 1, 6, 49, 1, 7, 44, 2, 7, 41, 1, 9, 41, 1, 10, 38, 1, 9, 36, 2, 10, 34, 1, 11, 32, 1, 11, 28, 1, 12, 25, 2, 10, 21, 1, 12, 19, 1, 11, 15, 1, 9, 15, 2, 7, 13, 1, 5, 11, 1, 6, 9, 1 };
+
         /// <summary>The underground under the Loading Dock: 'E' the hatch ladder (the way back up), 'F' the lab door's spot, 'B' the broken wall, 'H' the nest. Entered by the story (Tier2Story), not by an exit.</summary>
         public static MapLayout TakenTunnels()
         {
             var marks = new Dictionary<char, (string, string)> { ['E'] = ("Hatch Ladder", "industrial_basin"), ['F'] = ("Lab Door", null), ['B'] = ("Broken Wall", null), ['H'] = ("Nest", null) };
-            return FloorPlan("taken_tunnels", TakenPlan, "cliff", CaveFloor, marks, null);
+            var m = FloorPlan("taken_tunnels", TakenPlan, "cliff", CaveFloor, marks, null);
+            for (int i = 0; i + 2 < TakenTrail.Length; i += 3) if (m.Looks != null && TakenTrail[i + 1] < m.Looks.Length && m.Looks[TakenTrail[i + 1]][TakenTrail[i]] == null) m.Looks[TakenTrail[i + 1]][TakenTrail[i]] = TakenTrail[i + 2] == 2 ? "blood" : "bloodtrail";
+            return m;
         }
     }
 }

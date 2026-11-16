@@ -21,18 +21,18 @@ namespace GameCore
     public static class Tier2Story
     {
         public const string Mission = "taken", Maze = "taken_tunnels", Dock = "Loading Dock", Ladder = "Hatch Ladder", Door = "Lab Door";
-        public const float ShotAfter = 420f;            // seconds in the maze before they lose patience (the way takes 3-4 minutes of wandering)
+        public const float ShotAfter = 240f;            // seconds in the maze before they lose patience (Yan, 2026-11-16: "7 minutes might be too much, we need them feeling nervous"; the route is ~200 tiles, a minute if you knew it)
 
         static float _mapSince = -1f, _stageAt = -1f, _descentAt = -1f, _hordeAt = -1f, _gameOverAt = -1f;
         static int _stage;                              // the grab's stage while step 1; the horde's soldiers lost so far while step 4
-        static bool _warned1, _warned2, _released1, _released2;
+        static bool _warned0, _warned1, _warned2, _released1, _released2;
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
         static readonly List<(float at, List<Mutant> who)> Waves = new List<(float, List<Mutant>)>();   // the horde, released in waves (seconds after the alarm)
         static readonly float[] DeathTimes = { 3.0f, 4.4f, 5.8f, 7.2f, 8.8f };
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -151,7 +151,7 @@ namespace GameCore
             var l = Mark(Ladder); int k = 0;
             foreach (var pl in Everyone) { if (l != null) Put(pl, l.X - 1 + k++ % 3, l.Y - 1); Rt.Knockdown(pl, 0f); }
             SpawnEscorts();
-            _descentAt = Time.time; _warned1 = _warned2 = false;
+            _descentAt = Time.time; _warned0 = _warned1 = _warned2 = false;
             Story.SetObjective(Mission, "Find the hidden lab's door - the soldiers are watching the clock", Door);
             Story.Journal("The Garrison dragged us down a hatch under the Loading Dock into a maze, to find a door nobody has ever opened. They are not patient.");
             SaveSystem.Save();                                                             // "Auto-save here": being shot means starting this walk again
@@ -180,12 +180,13 @@ namespace GameCore
             if (TerrainMap.ZoneId != Maze) { _descentAt = -1f; return; }
             if (_descentAt < 0f)                                                            // a load into the maze (the auto-save): the soldiers and the clock start again
             {
-                SpawnEscorts(); _descentAt = now; _warned1 = _warned2 = false;
+                SpawnEscorts(); _descentAt = now; _warned0 = _warned1 = _warned2 = false;
                 Story.SetObjective(Mission, "Find the hidden lab's door - the soldiers are watching the clock", Door);
             }
             KeepDocile(); FollowPlayers(now, Mark(Door), 3.5f);
             if (GameOver(now)) return;
             float t = now - _descentAt;
+            if (!_warned0 && t > ShotAfter * 0.25f) { _warned0 = true; Say("\"Don't stop. Don't look back at me. Walk.\""); }
             if (!_warned1 && t > ShotAfter * 0.55f) { _warned1 = true; Say("\"Faster. Or I decide you don't know the way.\""); Say($"The sergeant wets a finger. \"Draught from the {Bearing()}. And the floor - the old concrete. Someone kept this route up. Follow it.\""); }
             if (!_warned2 && t > ShotAfter * 0.85f) { _warned2 = true; Say("The sergeant's rifle clicks off safe."); }
             if (t > ShotAfter) { Say("\"Enough.\" A flat crack."); Hear("shot_rifle"); LoseAndReload(); return; }
@@ -199,9 +200,18 @@ namespace GameCore
             Story.SetStep(Mission, 4); _hordeAt = now; _stage = 0;
             Say("The sergeant shoves you at the lock. You run the card through it. A red light. A buzz. A scream of sirens down the whole corridor.");
             Hear("explosion", 0.8f);
+            RedLights();
             Say("At the far end of the corridor the wall bursts outward. Something answers from the dark behind it. Many somethings.");
             SpawnHorde();
             Story.SetObjective(Mission, "RUN - back to the hatch ladder", Ladder);
+        }
+
+        /// <summary>Yan (2026-11-16): the corridor is white-lit; when the card fails the ceiling lights turn to red hazard lights (their tiles change look, the light map and the lighting bake follow) and the siren starts.</summary>
+        static void RedLights()
+        {
+            for (int y = 6; y <= 11; y++) for (int x = 6; x <= 80; x++) if (TerrainMap.GetTile(x, y)?.Look == "light") TerrainMap.SetTileType(x, y, TileType.Empty, "redlight");
+            LightMap.Reset();
+            Sfx.Ambient("amb_alarm");
         }
 
         static Mutant Spawn(string tier, string key, int x, int y)
@@ -248,6 +258,7 @@ namespace GameCore
         {
             float t = now - _hordeAt;
             if (TerrainMap.ZoneId != Maze) { Out(); return; }
+            Sfx.Ambient("amb_alarm");                                                        // the siren keeps wailing (nothing else sets the ambient meanwhile)
             // the soldiers charge down the corridor toward the noise and die one after another
             var bwl = Mark("Broken Wall"); var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
             foreach (var e in Escorts) if (e.IsAlive()) e.IsAggroed = false;
