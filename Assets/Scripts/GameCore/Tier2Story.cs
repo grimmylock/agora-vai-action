@@ -388,7 +388,7 @@ namespace GameCore
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
         }
 
-        static readonly Dictionary<HumanEnemy, float> NextFire = new Dictionary<HumanEnemy, float>(), NextMaul = new Dictionary<HumanEnemy, float>();
+        static readonly Dictionary<HumanEnemy, float> NextMaul = new Dictionary<HumanEnemy, float>();
         static void SoldiersFight(float now, float ts)
         {
             var grid = GameServices.Grid; if (grid == null) return;
@@ -400,28 +400,17 @@ namespace GameCore
                 if (foe == null) continue;
                 h.FaceToward(foe.X, foe.Y);
                 var w = h.EquippedWeapon;
-                if (w != null && !CombatRules.IsMelee(w) && !PlayerInLine(h, foe)) Fire(h, w, foe, now);
+                if (w != null && !CombatRules.IsMelee(w) && !PlayerInLine(h, foe))
+                {
+                    if (w.CurrentMagazine <= 0 && w.ReserveAmmo.Values.Sum() < w.MagCapacity) w.ReserveAmmo["Standard"] = w.MagCapacity * 3;   // the Garrison came loaded: they reload by the gun's own rules (RtAi.Shoot: bursts, rpm, reload time), they just never run dry in this corridor
+                    RtAi.TickFoe(h, foe);
+                }
                 foreach (var m in foes.Where(m => CombatantUtil.IsAdjacent(m, h)))                       // what reaches a soldier is stuck on him
                 {
                     RtAi.Pin(m, 0.5f);
                     if (now >= (NextMaul.TryGetValue(h, out var nm) ? nm : 0f)) { NextMaul[h] = now + 0.45f; Hear(Random.value < 0.5f ? "claw" : "hit_flesh", 0.8f); h.Hp -= System.Math.Max(40, m.Db?.AttackDamage ?? 60); if (h.Hp <= 0) { h.Hp = 0; Hear("shot_rifle", 0.5f); Say("A soldier goes down under them, still firing."); } }
                 }
             }
-        }
-
-        static readonly Dictionary<HumanEnemy, int> BurstLeft = new Dictionary<HumanEnemy, int>(); static readonly Dictionary<HumanEnemy, float> ReloadUntil = new Dictionary<HumanEnemy, float>();
-        /// <summary>One soldier's trigger, by his own gun (Yan: "uncapped fire-rate", "never reload", "even the pistol soldier was firing as a machinegun", "perfect aim"): a self-loader fires one round per
-        /// 0.4-0.9 s, an automatic fires 3-5 round bursts at its own rate and rests 1.2-2.4 s; every round leaves the magazine and an empty one costs the gun's reload time; the aim is rough (+2.5 spread).</summary>
-        static void Fire(HumanEnemy h, Weapon w, Mutant foe, float now)
-        {
-            if (ReloadUntil.TryGetValue(h, out var ru) && now < ru) return;
-            var hd = Gunplay.For(w);
-            if (w.CurrentMagazine <= 0) { ReloadUntil[h] = now + System.Math.Max(1.5f, hd.ReloadTime); w.CurrentMagazine = w.MagCapacity; BurstLeft[h] = 0; Hear("reload_mag", 0.6f); return; }
-            if (now < (NextFire.TryGetValue(h, out var nf) ? nf : 0f)) return;
-            int left = BurstLeft.TryGetValue(h, out var b) && b > 0 ? b : (hd.Auto ? Random.Range(3, 6) : 1);
-            w.CurrentMagazine--; left--; BurstLeft[h] = left;
-            NextFire[h] = left > 0 ? now + 60f / System.Math.Max(60f, hd.Rpm) : now + (hd.Auto ? Random.Range(1.2f, 2.4f) : Random.Range(0.4f, 0.9f));
-            Gunplay.NpcShootOnce(h, w, foe, 2.5f);
         }
 
         static bool PlayerInLine(HumanEnemy h, Mutant foe)

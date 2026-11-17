@@ -356,6 +356,8 @@ No jumps ("he's too heavy"). Art: Yan's own AI-generated pose sheet (`ArtSource/
 
 ## Later list
 
+- **Tier 2 "Taken" aftermath (Yan, 2026-11-17, "put in the to-do list"):** the mission ends at the ladder, nothing follows yet. To design with him: the revisit hatch (the Gaunt corridor and the sealed door, worth coming back for with better gear), what the Raiders at the Loading Dock do, the Scrap King job, and the mission in co-op. The wild Gaunt keeps its shear claw/call frames for now (Yan: leave as is); the Swarm rats have no walk animation art (see WORK_LOG).
+
 - **A front-facing eel sprite (Yan, 2026-11-06, "might be useful", for later):** the head and neck from the front (his reference: spiny frill, two white eyes, open dripping mouth, ribbed belly, a splash ring where it leaves the water). Use: the scream at the sky/camera, the rear-up, a lunge toward the screen. Save the reference into `ArtSource/refs/eel/` and bend/cut it from his drawing like the profile (`eel_poses.py`), never generate it.
 - **Rework the eel's swallow-the-body reveal (Yan, 2026-11-06: "it looks bad"):** the Sump fight opens with the eel rising out of the big pool, swooping at the body on the slab and swallowing it (`EelSump.Reveal`, the `reveal` stage); in the Unity view the body is not drawn going down the neck and the pose reads wrong. Same for the vomit at its death. Needs the body drawn (the dead-body sprite carried along the spine, a bulge in the neck - the Python painter's `bulge` does this in the clips), the head's approach and the gulp timed to it.
 

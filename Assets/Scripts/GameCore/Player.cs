@@ -78,7 +78,6 @@ namespace GameCore
         public int Ac { get => CombatRules.RankAc(Rank); set { } }
 
         // New (file 00/01 combat rules)
-        public string AimedPart;                // Batch 57: L cycles Legs / Arms / Torso / Head / off
         public string FireMode = "Single";      // toggled with X; Burst only on AR/SMG/heavy
         public bool ControlledTapsUsed;         // Controlled Taps refunds once per turn
         public int RhinoShots;                  // Rinaldi R6: 2, 1, 1 AP cycle within a turn
@@ -475,7 +474,6 @@ namespace GameCore
                 if (StatusEffects.Wound != null) statuses.Add($"{StatusEffects.Wound} wound");
                 if (StatusEffects.Suppressed) statuses.Add("Suppressed");
                 if (StatusEffects.AimBonus > 0) statuses.Add($"Aiming +{StatusEffects.AimBonus}");
-                if (StatusEffects.TakeCoverAc > 0) statuses.Add(StatusEffects.EvasiveMelee ? "Evasive" : "In cover");
                 if (ActivePerks.Count > 0) statuses.Add($"Perks: {string.Join(", ", ActivePerks)}");
                 return statuses.Count > 0 ? string.Join(", ", statuses) : "Healthy";
             }
@@ -557,8 +555,6 @@ namespace GameCore
             if (cat == "sidearm" && fireMode == "Single" && SidearmShotsThisTurn == 1 && CombatantUtil.HasPerk(this, "DoubleTap") && !dual) apCost = 1 + CombatRules.Kick(weapon);
             if (dual) apCost = 2 + System.Math.Max(CombatRules.Kick(weapon), CombatRules.Kick(OffhandWeapon));   // Gunslinger: always 2 AP (3 with an RK-12), no Rhino cadence or Double Tap
             apCost += isStarving ? 1 : 0;
-            string aimed = fireMode == "Single" && !melee ? AimedPart : null;   // Batch 57
-            if (aimed != null) apCost += 1;
             int roundsToUse = fireMode == "Burst" ? CombatRules.BurstRounds(weapon) * (cat == "heavy" && CombatantUtil.HasPerk(this, "Shredder") ? 2 : 1) : 1;
             if (melee) roundsToUse = 0;
 
@@ -609,7 +605,7 @@ namespace GameCore
             EncounterState.InCombat = true;
             if (target is Mutant shotAt) shotAt.IsAggroed = true;
             int mod = (int)AgilityMod + CombatRules.RankMod(Rank);
-            var result = weapon.Fire(target, fireMode, mod - (dual ? CombatRules.GunslingerPenalty : 0), aimed, ambush);
+            var result = weapon.Fire(target, fireMode, mod - (dual ? CombatRules.GunslingerPenalty : 0), null, ambush);
             var off = OffhandWeapon;
             if (dual && target.IsAlive() && off.IsLoaded && !off.IsJammed && !ItemCondition.IsBroken(off.Condition)
                 && CombatantUtil.Distance(this, target) <= off.MaxReach)
@@ -657,10 +653,7 @@ namespace GameCore
             if (StatusEffects.HalfMpNextTurn) { Mp = MaxMp / 2f; StatusEffects.HalfMpNextTurn = false; GameLog.Write($"Still reeling from the boulder: {Mp:0.#} MP this turn."); }
             ControlledTapsUsed = false;
             RhinoShots = 0;
-            StatusEffects.TakeCoverAc = 0;
-            StatusEffects.EvasiveMelee = false;
-            StatusEffects.Hunkered = false;
-            MovedThisTurn = HitAndRunUsed = RunAndGunUsed = OverwatchHeld = ParryHeld = false;
+            MovedThisTurn = HitAndRunUsed = RunAndGunUsed = ParryHeld = false;
             MeleeAttacksThisTurn = SidearmShotsThisTurn = 0;
             if (!EncounterState.InCombat) AdrenalineUsed = BracedUsed = false;
             if (AdrenalineApNextTurn > 0) { Ap += AdrenalineApNextTurn; AdrenalineApNextTurn = 0; GameLog.Write("Adrenaline: +2 AP this turn."); }
@@ -672,15 +665,10 @@ namespace GameCore
         {
             StatusEffects.AimBonus = 0;
             StatusEffects.Suppressed = false;
-            ArmedAction = null;
             if (EncounterState.InCombat)
             {
-                if (CombatantUtil.HasPerk(this, "Overwatch") && Ap >= CombatRules.SingleShotAp(EquippedWeapon) && CombatRules.Category(EquippedWeapon?.Db) == "sniper" && EquippedWeapon.IsLoaded)
-                { OverwatchHeld = true; GameLog.Write("Overwatch: holding 2 AP on your sights."); }
                 if (CombatantUtil.HasPerk(this, "DesperateParry") && Ap >= 1)
                 { ParryHeld = true; GameLog.Write("Desperate Parry: holding 1 AP to parry."); }
-                if (CombatantUtil.HasPerk(this, "TacticalReposition") && TerrainMap.GetAdjacentCoords(X, Y).Any(c => TerrainMap.CoverAcAt(c.x, c.y) > 0) | TerrainMap.CoverAcAt(X, Y) > 0)
-                { StatusEffects.TakeCoverAc = System.Math.Max(StatusEffects.TakeCoverAc, 1); GameLog.Write("Tactical Reposition: settled into cover, +1 AC."); }
             }
             TerrainMap.TickSmoke();
             if (EncounterState.InCombat) WorldEvents.TickSurge();   // exploring, TurnLoop.TickAwareness counts tiles instead

@@ -13,7 +13,6 @@ namespace GameCore
         public bool HasTile;
         public int TileX, TileY;   // the cover tile that took the bonus - near misses chip it
         public bool Flanked;
-        public bool Hunkered;      // Batch 72: the target is hunkered down - cover from every side, doubled
     }
 
     public static class CoverUtil
@@ -31,26 +30,7 @@ namespace GameCore
         {
             if (IsMeleeAttack(attacker, target, weapon)) return new CoverResult();
             if (CombatantUtil.Distance(attacker, target) <= 1 && CombatantUtil.HasPerk(attacker, "PointBlankExecution") && CombatRules.Category(weapon?.Db) == "sidearm") return new CoverResult();
-            var c = GetCoverAt(attacker.X, attacker.Y, target.X, target.Y);
-            if (target.StatusEffects != null && target.StatusEffects.Hunkered) c = Hunker(c, target.X, target.Y);
-            return c;
-        }
-
-        /// <summary>Batch 72 (Yan chose "Hunker + Overwatch"): hunkered down, the best cover on or next to you counts
-        /// from every direction (nobody flanks you) and its AC bonus is doubled: light +2, hard +4.</summary>
-        public static CoverResult Hunker(CoverResult c, int tx, int ty)
-        {
-            int best = c.AcBonus, bx = c.TileX, by = c.TileY;
-            bool has = c.HasTile;
-            int on = TerrainMap.CoverAcAt(tx, ty);
-            if (on > best) { best = on; bx = tx; by = ty; has = true; }
-            foreach (var adj in TerrainMap.GetAdjacentCoords(tx, ty))
-            {
-                int ac = TerrainMap.CoverAcAt(adj.x, adj.y);
-                if (ac > best) { best = ac; bx = adj.x; by = adj.y; has = true; }
-            }
-            if (best <= 0) return c;
-            return new CoverResult { AcBonus = best * 2, HasTile = has, TileX = bx, TileY = by, Hunkered = true };
+            return GetCoverAt(attacker.X, attacker.Y, target.X, target.Y);
         }
 
         /// <summary>Cover a ranged shot from (ax,ay) at someone standing on (tx,ty) would face -

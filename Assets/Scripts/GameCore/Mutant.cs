@@ -308,9 +308,7 @@ namespace GameCore
             {
                 var cover = CoverUtil.GetCover(this, target, null);
                 ac += cover.AcBonus;
-                if (cover.AcBonus > 0 && target.StatusEffects.TakeCoverAc > 0 && !target.StatusEffects.EvasiveMelee) ac += target.StatusEffects.TakeCoverAc;
             }
-            else if (target.StatusEffects.EvasiveMelee) ac += target.StatusEffects.TakeCoverAc;
 
             if (Rt.On && target is Player diver && Rt.Of(diver).Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
             var result = Rt.On ? new AttackRollResult { Hit = true, ChosenRoll = 0 }   // real time: no dice - in reach when it strikes = hit

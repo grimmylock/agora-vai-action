@@ -80,7 +80,7 @@ namespace GameCore
         }
 
         /// <summary>A tile two steps to one side of the line to the target (whichever side is open), for a clear shot.</summary>
-        static (int x, int y)? SideStep(HumanEnemy h, Player p)
+        static (int x, int y)? SideStep(HumanEnemy h, ICombatant p)
         {
             int dx = System.Math.Sign(p.X - h.X), dy = System.Math.Sign(p.Y - h.Y);
             foreach (int side in Random.value < 0.5f ? new[] { 1, -1 } : new[] { -1, 1 })
@@ -133,7 +133,22 @@ namespace GameCore
                 if (moved && Rt.Ledge(h.X, h.Y)) s.NextStep += StepSeconds;   // climbing over low cover, as you do (Rt.TryVault)
             }
 
-            // ---- shooting ----
+            Shoot(h, s, p, p, null);
+        }
+
+        /// <summary>One frame of a story soldier fighting a mutant: the same trigger discipline as `Tick` (no walking: the story walks him).</summary>
+        public static void TickFoe(HumanEnemy h, Mutant foe)
+        {
+            var s = Of(h);
+            if (s.PinnedUntil >= 0f && Time.time >= s.PinnedUntil) { s.PinnedUntil = -1f; h.StatusEffects.Suppressed = false; }
+            if (h.StatusEffects.Prone || Melee.Busy(h)) return;
+            Shoot(h, s, foe, null, null);
+        }
+
+        /// <summary>The shooting half of a frame: his own gun's rules (bursts, rpm, magazine and reload time, jams, the fair-shot reach, a friend in the line). `pl` = the target as a Player (the fair-shot vision rules), null for a mutant.</summary>
+        static void Shoot(HumanEnemy h, Mind s, ICombatant t, Player pl, object _)
+        {
+            float now = Time.time;
             var w = h.EquippedWeapon;
             if (s.ReloadUntil >= 0f)
             {
@@ -141,17 +156,17 @@ namespace GameCore
                 s.ReloadUntil = -1f;
                 if (w != null) { if (w.IsJammed) w.ClearJam(); else if (!w.Reload()) { s.Dry = true; Shout(h, "I'm out!"); } }
             }
-            if (s.Flee || now < s.NextShot || Body.Down(p) || !p.IsAlive()) return;
+            if (s.Flee || now < s.NextShot || (pl != null && Body.Down(pl)) || !t.IsAlive()) return;
             var grid = GameServices.Grid;
             if (grid == null) return;
-            if (s.Dry) s.Goal = (p.X, p.Y);
+            if (s.Dry && pl != null) s.Goal = (t.X, t.Y);
             if (w == null || CombatRules.IsMelee(w) || s.Dry)
             {
-                if (CombatantUtil.IsAdjacent(h, p))
+                if (CombatantUtil.IsAdjacent(h, t))
                 {
                     s.NextShot = now + 1.2f;
-                    if (w != null && CombatRules.IsMelee(w)) w.Fire(p);                  // Melee 2c: a real swing with his blade (it winds up: parry it)
-                    else h.MeleeAttack(p);                                             // out of rounds: fists and the rifle butt
+                    if (w != null && CombatRules.IsMelee(w)) w.Fire(t);                  // Melee 2c: a real swing with his blade (it winds up: parry it)
+                    else h.MeleeAttack(t);                                             // out of rounds: fists and the rifle butt
                 }
                 return;
             }
@@ -168,18 +183,19 @@ namespace GameCore
             // a fair shot (Yan: "i can't see past a certain range but enemies keep shooting me ... Enemies also see me through walls"):
             // only from as far as you could see him if you looked (Vision.LookReach), and the line of sight has to hold both ways -
             // a tile line traced from him to you can slip past a corner that the line from you to him doesn't
-            if (CombatantUtil.Distance(h, p) > System.Math.Min(hd.Reach, Rt.Of(p).LookReach) || !Contact.Mutual(h, p) || !Contact.Knows(h, p)) { s.BurstLeft = 0; return; }
+            if (pl != null ? (CombatantUtil.Distance(h, t) > System.Math.Min(hd.Reach, Rt.Of(pl).LookReach) || !Contact.Mutual(h, pl) || !Contact.Knows(h, pl))
+                : (CombatantUtil.Distance(h, t) > hd.Reach || !grid.CheckLineOfSight(h.X, h.Y, t.X, t.Y))) { s.BurstLeft = 0; return; }   // the story's soldiers shoot mutants: plain line of sight
 
-            if (Gunplay.AllyInLine(h, p))                                  // a friend in the line of fire: hold, and step aside for a clear shot
+            if (Gunplay.AllyInLine(h, t))                                  // a friend in the line of fire: hold, and step aside for a clear shot
             {
                 s.BurstLeft = 0; s.NextShot = now + 0.3f;
-                if (s.Goal == null || (h.X, h.Y) == s.Goal.Value) s.Goal = SideStep(h, p);
+                if (s.Goal == null || (h.X, h.Y) == s.Goal.Value) s.Goal = SideStep(h, t);
                 return;
             }
             if (s.BurstLeft <= 0) s.BurstLeft = hd.Auto ? Random.Range(3, 6) : 1;
             w.CurrentMagazine--;
             float extra = (now - s.MovedAt < 0.4f ? 1.5f : 0f) + (Pinned(h) ? 2f : 0f);
-            Gunplay.NpcShootOnce(h, w, p, extra);
+            Gunplay.NpcShootOnce(h, w, t, extra);
             s.BurstLeft--;
             int rank = CombatRules.RankIndex(h.Rank);
             float pause = Random.Range(0.7f, 1.6f) * (1.25f - 0.08f * rank) * (Pinned(h) ? 2f : 1f);

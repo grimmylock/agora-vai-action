@@ -72,7 +72,6 @@ namespace GameCore
             if (e.StatusEffects.Bleeding) st.Add("bleeding");
             if (e.StatusEffects.Suppressed) st.Add("pinned");
             if (e.StatusEffects.Prone) st.Add("prone");
-            if (e.StatusEffects.Hunkered) st.Add("hunkered");
             if (!e.IsAggroed) st.Add("<color=#62b25a>hasn't seen you</color>");
             if (st.Count > 0) { lines.Add(""); lines.Add(string.Join(", ", st)); }
             if (p != null)

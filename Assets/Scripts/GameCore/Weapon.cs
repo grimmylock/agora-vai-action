@@ -109,8 +109,6 @@ namespace GameCore
             var cover = GameServices.RequireCombat().GetCover(attacker, target, this);
             hp.Cover = cover;
             int targetAc = target.Ac + cover.AcBonus;
-            if (cover.AcBonus > 0 && target.StatusEffects.TakeCoverAc > 0 && !target.StatusEffects.EvasiveMelee) targetAc += target.StatusEffects.TakeCoverAc;
-            if (isMelee && target.StatusEffects.EvasiveMelee) targetAc += target.StatusEffects.TakeCoverAc;
             hp.TargetAc = targetAc;
             int flankMod = cover.Flanked ? 2 : 0;
             int burstMod = 0;
@@ -208,8 +206,7 @@ namespace GameCore
             int targetAc = hp.TargetAc, totalMod = hp.TotalMod;
             aimedPart = hp.AimedPart;
             if (hp.Elevation != 0) GameLog.Write(hp.Elevation > 0 ? $"High ground advantage: +{hp.Elevation} to hit." : $"Firing from below: {hp.Elevation} to hit.");
-            if (cover.Hunkered) GameLog.Write($"{target.Name} is hunkered down: +{targetAc - target.Ac} AC.");
-            else if (cover.AcBonus > 0) GameLog.Write($"{target.Name} is in {(cover.AcBonus >= 2 ? "hard" : "light")} cover: +{targetAc - target.Ac} AC.");
+            if (cover.AcBonus > 0) GameLog.Write($"{target.Name} is in {(cover.AcBonus >= 2 ? "hard" : "light")} cover: +{targetAc - target.Ac} AC.");
             else if (cover.Flanked) GameLog.Write($"{target.Name} is flanked: +2 to hit.");
             if (hp.Aim > 0) { attacker.StatusEffects.AimBonus = 0; GameLog.Write($"Aimed shot: +{hp.Aim}."); }
             if (hp.PouchFallback) GameLog.Write($"{target.Name} has no grenade on them - a plain shot.");

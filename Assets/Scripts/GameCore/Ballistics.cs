@@ -97,7 +97,7 @@ namespace GameCore
         /// <summary>Mutant height in tiles from its sprite size (hounds 1, Dread Prowler 1.5, Brute 2).</summary>
         public static float MutantSize(Mutant m) => m?.Db == null ? 1f : m.Db.Name == BrainBoss.Name ? 4.5f : m.Db.Name == EelBoss.Name ? 4f : m.Db.Name == EelSump.TailName ? 2.2f : m.Db.Name.Contains("Brute") ? 2f : m.Db.Name.Contains("Dread") ? 1.5f : 1f;
 
-        public static bool Crouched(ICombatant u) => u is Player p ? p.Sneaking : u.StatusEffects != null && (u.StatusEffects.Hunkered || u.StatusEffects.Prone);
+        public static bool Crouched(ICombatant u) => u is Player p ? p.Sneaking : u.StatusEffects != null && u.StatusEffects.Prone;
 
         /// <summary>Trace one round from (x0, y0) along the unit direction (dx, dy) for up to `range` tiles at height h.
         /// The first body, wall or blocking cover on the way ends it.</summary>

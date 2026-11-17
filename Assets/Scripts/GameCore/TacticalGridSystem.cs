@@ -81,7 +81,6 @@ namespace GameCore
             if (unit is Player mover) mover.MovedThisTurn = true;
 
             GameServices.AnomalyTrigger?.TriggerAnomalyIfPresent(unit);
-            Perks.OnStep(unit);   // Batch 72: Overwatch fires on the first hostile step it sees
             return true;
         }
 
