@@ -6239,3 +6239,7 @@ Not run in Unity.
 - **The card scene no longer cuts to red**: the camera stays (no release between the door scene and the alarm), the lights go red and the sirens start with the camera on the sergeant, who shouts "WHAT'S THAT?! ASSUME DEFENSIVE POSITIONS!" over his head at 0.5 s; the squad starts for its posts at 1.4 s; at 4.4 s (`GauntAt`) the camera goes to the wall and the Gaunt starts out of the tunnel (it used to start at 2.5 s, with no explanation before it).
 - Swarm speed cap 88% -> 70% of a sprinting player (3.1 tiles/s).
 Not run in Unity.
+
+## Fog of war only underground (2026-11-17, Yan: "the mission is working for now ... the system doesn't work properly outside the cave, its bugging a lot")
+Yan's second screenshot pair (the Industrial Basin at night, only a lit disc round the player, everything else black). Full hiding of what is out of sight (`AtmosphereView`, unseen = 1) now applies only to interior maps (`ZoneLayoutRecipes.IsInterior`: caves, dungeons, the Hatch Tunnels); the open world is back to the 60% dim it had (`UnseenK`, `FineTexel`'s new `unseenK` argument, default 0.6 for the offline render). The tripled radius and the long look cone (`Vision`) are still in: Yan only objected to the black. If the outdoors still looks wrong at night, the next suspects are those two (`Vision.Update`: `RadiusMul`, the cone forced to 30). Also noted: "Yan: the mission is working for now, we'll improve it when we get better mutant stuff."
+Not run in Unity.

@@ -152,7 +152,7 @@ namespace GameCore
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
                     bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);   // a roof is seen from outside
                     float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : Mathf.Max(sight ? Vision.Light(gx, gy, true, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
-                    float unseen = _backdrop ? 0f : 1f * (1f - lit);                    // unseen is hidden (Yan, 2026-11-17; it was dimmed at 0.6)
+                    float unseen = _backdrop ? 0f : UnseenK() * (1f - lit);               // unseen is dimmed in the open, hidden underground (Yan, 2026-11-17)
                     float dark = l.Night * (1f - lit);                                  // night: unlit is black
                     float a = 1f - (1f - unseen) * (1f - dark);
                     var col = night;
@@ -220,7 +220,7 @@ namespace GameCore
                     float sight = (_cSight[a] * (1 - fx) + _cSight[b] * fx) * (1 - fy) + (_cSight[d] * (1 - fx) + _cSight[e] * fx) * fy;
                     float litV = (_cLit[a] * (1 - fx) + _cLit[b] * fx) * (1 - fy) + (_cLit[d] * (1 - fx) + _cLit[e] * fx) * fy;
                     int k = j * fw + i;
-                    _fpx[(fh - 1 - j) * fw + i] = FineTexel(sight, litV, lamps, lamps ? lr[k] : 0f, lamps ? lg[k] : 0f, lamps ? lb[k] : 0f, _backdrop, l.Night, night);
+                    _fpx[(fh - 1 - j) * fw + i] = FineTexel(sight, litV, lamps, lamps ? lr[k] : 0f, lamps ? lg[k] : 0f, lamps ? lb[k] : 0f, _backdrop, l.Night, night, UnseenK());
                 }
             }
             _lightTex.SetPixels32(_fpx);
@@ -234,11 +234,14 @@ namespace GameCore
         /// whether it's in your line of sight, `litV` your own light there, (lr, lg, lb) the placed lights' summed light (WorldArt.AddLight); `night` the
         /// hour's darkness and `nightCol` the colour of the dark. Shared with the offline render (Tools/render, LIGHTS=.. GAME=1) so what it shows is what
         /// the game draws.</summary>
-        public static Color32 FineTexel(float sight, float litV, bool lamps, float rr, float gg, float bb, bool backdrop, float nightAmount, Color32 nightCol)
+        /// <summary>How much of what is out of your sight the dark covers: all of it in caves and dungeons (Yan: the way through the caverns showed when he zoomed out), 60% in the open.</summary>
+        static float UnseenK() => ZoneLayoutRecipes.IsInterior(MacroState.Current?.CurrentZoneId) ? 1f : 0.6f;
+
+        public static Color32 FineTexel(float sight, float litV, bool lamps, float rr, float gg, float bb, bool backdrop, float nightAmount, Color32 nightCol, float unseenK = 0.6f)
         {
             float lampE = lamps ? Mathf.Clamp01(0.30f * LightingShoulder(rr) + 0.59f * LightingShoulder(gg) + 0.11f * LightingShoulder(bb)) * (backdrop ? 1f : sight) : 0f;
             float lit = Mathf.Max(litV, lampE);
-            float unseen = backdrop ? 0f : 1f * (1f - lit);   // Yan, 2026-11-17: "any map structure that is not in the players field of vision is obscured" (it was 0.6: dimmed, so the way through the caverns showed when zoomed out)
+            float unseen = backdrop ? 0f : unseenK * (1f - lit);   // Yan, 2026-11-17: in caves and dungeons what is out of sight is hidden (1); in the open it stays dimmed (0.6): fully hiding it there bugged the outdoors
             float dark = nightAmount * (1f - lit);
             float al = 1f - (1f - unseen) * (1f - dark);
             var col = nightCol;
