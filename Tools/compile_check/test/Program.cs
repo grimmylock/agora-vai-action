@@ -58,6 +58,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
     TestingGroundChecks();
     OpticChecks();
+    MutantParryChecks();
     RescueChecks();
     SaveSlotChecks();
     NetChecks();
@@ -3636,6 +3637,36 @@ static class Program {
       int C(string s2) => cap.Lines.Count(l => l.Contains(s2));
       Console.WriteLine($"MUTANT {key,-14} x{n}: first damage {(first < 0 ? "never" : first.ToString("0.0") + " s")}, damage taken {hp0 - p.Hp} (lowest HP {minHp} of {hp0}), closest {minDist} tiles | log: attacks {C(" hits ")}, LEAPS {C("LEAPS")}, d20 dodge lines {C("Agility")}, boulders {C("boulder")}, slams {C("SLAMS")}, staggered {C("staggered")}, shimmers {C("shimmers")} | animations played: {(seen.Count == 0 ? "none (no strips)" : string.Join(", ", seen))}");
       EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; }
+  }
+  // 2026-11-17: parry and dodge against mutants - a parried bite does nothing and pins the mutant, a spit can be walked out of, a charge cannot be parried
+  static void MutantParryChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MutantAttack.Reset(); p.HealPermanent(5000); EncounterState.Enemies.Clear(); Rt.SetOffset(p, 0f, 0f);
+    UnityEngine.Time.time = 500f; UnityEngine.Time.deltaTime = 0.02f;
+    var knife = WeaponDatabase.Categories["melee"].Keys.First(); p.EquipWeapon("melee", knife);
+    Mutant Make(string tier, string key, int dx) { var m = new Mutant(key, px + dx, py, MutantDatabase.Get(tier, key)) { IsAggroed = true }; EncounterState.Enemies.Add(m); Rt.SetOffset(m, 0f, 0f); return m; }
+    var dread = Make("tier4", "DreadProwler", 1);
+    int hp0 = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.1f; dread.Attack(p);   // inside the perfect window
+    Check(p.Hp == hp0, $"parry: a bite {0.1f:0.0} s after the key does no damage ({hp0} -> {p.Hp})");
+    Check(RtAi.BusyFor(dread) > 0.5f, $"parry: a perfect parry pins the mutant for a moment ({RtAi.BusyFor(dread):0.0} s)");
+    UnityEngine.Time.time += 2f; hp0 = p.Hp; dread.Attack(p);
+    Check(p.Hp < hp0, "parry: with no key press the same bite lands");
+    UnityEngine.Time.time += 2f; Rt.Of(p).ParryReady = -1f; hp0 = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.3f; dread.Attack(p);   // late in the window: blocked
+    Check(p.Hp == hp0, $"parry: a late press still blocks ({hp0} -> {p.Hp})");
+    // the pounce, the slam and a plain claw go through the same strike; a charge cannot be parried
+    UnityEngine.Time.time += 2f; Rt.Of(p).ParryReady = -1f; var maw = Make("tier1", "BlindMaw", 2); hp0 = p.Hp; Parry.Press(p); UnityEngine.Time.time += 0.05f;
+    var strike = typeof(MutantAttack).GetMethod("Strike", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+    bool hit = (bool)strike.Invoke(null, new object[] { maw, p, 1f, true, false });
+    Check(hit && p.Hp < hp0, $"parry: a charge's body-slam cannot be parried ({hp0} -> {p.Hp})");
+    // the spit: standing still it lands, walking out of the splash makes it miss
+    var pallid = Make("tier1", "PallidProwler", 5); var spitLands = typeof(MutantAttack).GetMethod("SpitLands", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+    var stType = typeof(MutantAttack).GetNestedType("State", System.Reflection.BindingFlags.NonPublic); var st = Activator.CreateInstance(stType);
+    stType.GetField("SpitTx").SetValue(st, p.X); stType.GetField("SpitTy").SetValue(st, p.Y);
+    p.HealPermanent(5000); hp0 = p.Hp; spitLands.Invoke(null, new object[] { pallid, p, st });
+    Check(p.Hp < hp0, $"spit: standing where it was thrown, it lands ({hp0} -> {p.Hp})");
+    p.HealPermanent(5000); p.StatusEffects.ToxicBleed = false; Rt.SetOffset(p, 0f, 1.8f); hp0 = p.Hp; spitLands.Invoke(null, new object[] { pallid, p, st });
+    Check(p.Hp == hp0, $"spit: 1.8 tiles away from the splash it misses ({hp0} -> {p.Hp})");
+    Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.On = false; Rt.Reset();
   }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();

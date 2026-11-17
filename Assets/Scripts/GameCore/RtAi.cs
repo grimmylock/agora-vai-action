@@ -99,6 +99,9 @@ namespace GameCore
         /// <summary>A mutant busy with something else (the story's soldiers): it neither walks nor bites for `seconds`.</summary>
         public static void Pin(Mutant m, float seconds) { var s = Of(m); float t = Time.time + seconds; s.NextStep = System.Math.Max(s.NextStep, t); s.NextShot = System.Math.Max(s.NextShot, t); }
 
+        /// <summary>Seconds until this mutant may walk and strike again (a parry or a story pin pushes it out); 0 when free.</summary>
+        public static float BusyFor(Mutant m) => Minds.TryGetValue(m, out var s) ? System.Math.Max(0f, System.Math.Min(s.NextStep, s.NextShot) - Time.time) : 0f;
+
         public static void Hold(Mutant m, float seconds) { var s = Of(m); s.NextShot = System.Math.Max(s.NextShot, Time.time + seconds); s.BurstLeft = 0; }
 
         public static bool Pinned(Mutant m) => Minds.TryGetValue(m, out var s) && Time.time < s.PinnedUntil;

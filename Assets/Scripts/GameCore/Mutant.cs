@@ -62,6 +62,7 @@ namespace GameCore
         public int DamageTakenThisRound;
         public int ChaseTurns;         // Batch 130: Blight Brute turns started without reaching you (the 4th throws a boulder)
         public bool SlamUsed;          // Blight Brute's Ground Slam is once per encounter
+        public bool NoParry;           // set by MutantAttack.Strike for what cannot be parried (a spit, a thrown rock, a charge's body-slam); everything else a mutant does in melee can be (Parry.Try)
         public bool LeapAdvantage;     // set for the duration of a Dread Prowler's Leap Attack
 
         protected float _agilityMod;
@@ -284,6 +285,7 @@ namespace GameCore
             fx.Psi = psi;
 
             if (target is Player diver && Rt.Of(diver).Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
+            if (!psi && !NoParry && target is Player par && Parry.Try(par, this) != Parry.Result.None) { fx.Hit = false; return; }   // 2026-11-17 (Yan): a bite, claw, swipe or slam can be parried like a blade: perfect = it staggers
             // real time: no dice - in reach when it strikes = hit
             float raw = AttackDamage * DamageMult;
             int damage = psi

@@ -15,6 +15,9 @@ namespace GameCore
         /// <summary>Profile sprites look wrong running or leaping straight up or down the screen (Yan, 2026-11-12), so a charge only starts within ~31 degrees of horizontal (|dy| <= 0.6 |dx|) and a pounce within 45 degrees; otherwise the mutant first moves to a flank tile on its side of the target (Stance 3).</summary>
         public const float ChargeSideRatio = 0.6f, PounceSideRatio = 1.0f;
         public static bool SideOk(Mutant m, ICombatant t, float ratio) => System.Math.Abs(t.Y - m.Y) <= ratio * System.Math.Abs(t.X - m.X);
+        public const float SpitSplashRadius = 1.0f;
+        /// <summary>A perfect parry (Parry.Try, Boss.Stagger): the strike in progress is cut short.</summary>
+        public static void Interrupt(Mutant m) { if (m != null && States.TryGetValue(m, out var st) && st.Kind != null) Cancel(m, st); }
         public const float BoulderSpeed = 9f, BoulderShare = 0.4f, BoulderOutSeconds = 5f; public const int BoulderHitRadius = 1;
         public const float BiteBShare = 0.4f, SpitSpeed = 10f, KnockdownSeconds = 0.9f, SpitDamageShare = 0.6f, RecloakSeconds = 3f, RecloakDistance = 3, CloakFadeSeconds = 0.35f;
 
@@ -215,7 +218,7 @@ namespace GameCore
                 float mx = m.X + 0.5f + mox, my = m.Y + 0.5f + moy, px = p.X + 0.5f + pox, py = p.Y + 0.5f + poy;
                 if ((mx - px) * (mx - px) + (my - py) * (my - py) <= ChargeReach * ChargeReach)
                 {
-                    bool hit = Strike(m, p, 1f, true); if (hit) Effect(m, p, r.PounceEffect);
+                    bool hit = Strike(m, p, 1f, true, false); if (hit) Effect(m, p, r.PounceEffect);   // a charging body: no parry, step aside or dive
                     Rt.SetSlide(m, 0f, 0f); st.ChargeEnd = now + ChargeHitRecoverSeconds; return;
                 }
             }
@@ -277,7 +280,9 @@ namespace GameCore
         {
             if (p == null || !p.IsAlive() || Body.Down(p)) return;
             if (CombatantUtil.Distance(m, p) < 1) return;
-            bool hit = Strike(m, p, RuleSet[m.Db.Name].SpitShare, true);
+            var (ppx, ppy) = Ballistics.Pos(p); float sdx = ppx - (st.SpitTx + 0.5f), sdy = ppy - (st.SpitTy + 0.5f);
+            if (sdx * sdx + sdy * sdy > SpitSplashRadius * SpitSplashRadius) return;   // 2026-11-17 (Yan): the glob lands where you WERE aimed at, not where you are: walk out of the splash and it misses
+            bool hit = Strike(m, p, RuleSet[m.Db.Name].SpitShare, true, false);
             if (hit && p.IsAlive()) { p.StatusEffects.ToxicBleed = true; GameLog.Write("The acid burns: you suffer Toxic Bleed."); }
         }
 
@@ -287,16 +292,16 @@ namespace GameCore
             foreach (var pl in Player.All.ToArray())
             {
                 if (pl == null || !pl.IsAlive() || Body.Down(pl) || CombatantUtil.Distance(pl, st.SpitTx, st.SpitTy) > BoulderHitRadius) continue;
-                if (Strike(m, pl, BoulderShare, true)) GameLog.Write("The boulder crashes into you!");
+                if (Strike(m, pl, BoulderShare, true, false)) GameLog.Write("The boulder crashes into you!");
             }
         }
 
         /// <summary>One resolved strike through Mutant.Attack (its fx event, the hurt/blood effects, the wound system); returns whether it hit.</summary>
-        static bool Strike(Mutant m, Player p, float share, bool anyRange)
+        static bool Strike(Mutant m, Player p, float share, bool anyRange, bool parry = true)
         {
-            m.DamageMult = share; m.IgnoreRange = anyRange; m.LastHit = false;
+            m.DamageMult = share; m.IgnoreRange = anyRange; m.LastHit = false; m.NoParry = !parry;
             m.Attack(p);
-            m.DamageMult = 1f; m.IgnoreRange = false;
+            m.DamageMult = 1f; m.IgnoreRange = false; m.NoParry = false;
             return m.LastHit;
         }
 

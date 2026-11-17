@@ -231,7 +231,12 @@ namespace GameCore
         public static bool Stagger(ICombatant u, float seconds)
         {
             var f = Of(u);
-            if (f == null) { if (u is HumanEnemy he) RtAi.Hold(he, seconds); return true; }
+            if (f == null)
+            {
+                if (u is HumanEnemy he) RtAi.Hold(he, seconds);
+                else if (u is Mutant mu) { MutantAttack.Interrupt(mu); RtAi.Pin(mu, seconds); }   // a parried bite, claw or slam: the strike is cut short and it reels for a second
+                return true;
+            }
             if (f.Broken) return false;
             if (Time.time - f.LastParryAt > GuardRecovers) f.Parries = 0;
             f.LastParryAt = Time.time;

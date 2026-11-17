@@ -9,7 +9,8 @@
 // - A perfect parry is a moment (Yan: "maybe time slows down for the second as well? a slow-down effect on the screen, maybe a
 //   little zoom-in and something on the edges"): the hit-stop, then a second of slow motion, the camera leaning in, a cold edge
 //   round the screen (Boss.ParryMoment, HudView.Boss.cs).
-// ponytail: mutants' claws and bites don't go through Melee.Strike yet, so they can't be parried; the melee slot isn't built, so
+// 2026-11-17 (Yan: "do both"): mutants' bites, claws, swipes and slams go through Parry.Try too (Mutant.Attack); a spit, a thrown rock, a psi blast and a charge's body-slam can't be parried (dodge them). A perfect parry cuts the
+//   strike short and pins the mutant for StaggerSeconds. ponytail: the melee slot isn't built, so
 // the drawn weapon stays in your hand (Y / the pack to go back to the gun).
 using System.Linq;
 using UnityEngine;
