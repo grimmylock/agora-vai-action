@@ -121,7 +121,7 @@ namespace GameCore
         /// view, eight, with the lamps' own light and shadows merged in (DrawLightFine).</summary>
         void DrawLight(Vector3 c, float vw, float vh, AtmosphereLook l)
         {
-            if (Lighting.Enabled && !Lighting.Failed && (l.Night > 0.02f || _fineHold > 0))
+            if (!Lighting2D.On && Lighting.Enabled && !Lighting.Failed && (l.Night > 0.02f || _fineHold > 0))
             {
                 try { if (DrawLightFine(c, vw, vh, l)) return; }
                 catch (System.Exception e) { Lighting.Fail(e); }
@@ -152,12 +152,13 @@ namespace GameCore
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
                     bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);   // a roof is seen from outside
                     float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : Mathf.Max(sight ? Vision.Light(gx, gy, true, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
+                    if (Lighting2D.On && !_backdrop) lit = sight ? 1f : 0f;               // the 2D lights test (F6): Unity's lights darken and light the world; this overlay is only the sight mask
                     float unseen = _backdrop ? 0f : UnseenK() * (1f - lit);               // unseen is dimmed in the open, hidden underground (Yan, 2026-11-17)
-                    float dark = l.Night * (1f - lit);                                  // night: unlit is black
+                    float dark = (Lighting2D.On ? 0f : l.Night) * (1f - lit);              // night: unlit is black
                     float a = 1f - (1f - unseen) * (1f - dark);
                     var col = night;
                     // Batch 92: a lamp's pool is tinted (warm work light, red emergency light) where the dark would be
-                    float lamp = sight && l.Night > 0.3f ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : 0f;
+                    float lamp = !Lighting2D.On && sight && l.Night > 0.3f ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : 0f;
                     if (lamp > 0.02f)
                     {
                         var t = LightMap.Tint(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy));

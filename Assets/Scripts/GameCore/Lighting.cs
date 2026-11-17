@@ -38,6 +38,8 @@ namespace GameCore
         static float[] _lr, _lg, _lb;
 
         public static bool Active => _lights != null;
+        /// <summary>The map's placed lights (the 2D lights test turns each into a Light2D).</summary>
+        public static IReadOnlyList<WorldArt.PointLight> Placed() => Ensure() ? (IReadOnlyList<WorldArt.PointLight>)_lights : System.Array.Empty<WorldArt.PointLight>();
         public static void Reset() { _lights = null; _bakes = null; _zone = null; }
 
         static bool Ensure()

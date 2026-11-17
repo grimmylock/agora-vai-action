@@ -19,7 +19,7 @@ $ref = Join-Path $pack.FullName "ref\net8.0"
 $Src = (Resolve-Path $Src).Path
 $out = Join-Path $env:TEMP "agora_harness"; New-Item -ItemType Directory -Force $out | Out-Null
 # Editor/ and Net/ are Unity-only (editor tools, Netcode, Services): left out, as in runtest.sh
-$files = Get-ChildItem $Src -Recurse -Filter *.cs | Where-Object { $_.FullName -notmatch '\\(Editor|Net)\\' } | ForEach-Object { $_.FullName }
+$files = Get-ChildItem $Src -Recurse -Filter *.cs | Where-Object { $_.FullName -notmatch '\\(Editor|Net|Unity2D)\\' } | ForEach-Object { $_.FullName }
 $rsp = @("-nologo", "-noconfig", "-nostdlib", "-t:exe", "-langversion:9.0", "-out:$out\test.dll", "-nowarn:0168,0169,0219,0414,0649,0162,8981,0108,0114,0067")
 $rsp += Get-ChildItem "$ref\*.dll" | ForEach-Object { "-r:`"$($_.FullName)`"" }
 $rsp += "`"$PSScriptRoot\stubs.cs`""; $rsp += "`"$PSScriptRoot\test\Program.cs`""; $rsp += $files | ForEach-Object { "`"$_`"" }
