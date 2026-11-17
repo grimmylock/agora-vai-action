@@ -112,7 +112,7 @@ namespace GameCore
             Splash(def.Name.ToUpperInvariant(), def.Title);
             Sfx.Play("boss_sting", null, 1f, 0f);
             HitStop(0.4f);
-            GameLog.Write($"{def.Name}: {def.Title}");
+            GameLog.Event($"{def.Name}: {def.Title}");
             return f;
         }
 
@@ -261,7 +261,7 @@ namespace GameCore
             Splash("EXECUTE", "E - next to him");
             CombatFx.Push("stagger", u, null, null).Now = true;
             HitStop(0.35f);
-            GameLog.Write($"{f.Def.Name} drops to one knee. E next to him: execute.");
+            GameLog.Event($"{f.Def.Name} drops to one knee. E next to him: execute.");
         }
 
         public static Fight BrokenNear(Player p) => Fights.FirstOrDefault(f => f.Broken && !f.Finished && CombatantUtil.Distance(p, f.Unit) <= 2);
@@ -280,7 +280,7 @@ namespace GameCore
             Weapon.OnTargetKilled(p, f.Unit);
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");
             Rt.AddFocus(p, Rt.FocusMax);                                           // Yan: "executing gives slow-mo energy" - Focus full
-            GameLog.Write($"You execute {f.Def.Name}. Your Focus surges.");
+            GameLog.Event($"You execute {f.Def.Name}. Your Focus surges.");
             if (f.Def == Visor) Story.Set("visor_done");
             return true;
         }
@@ -311,7 +311,7 @@ namespace GameCore
             TerrainMap.SetTileType(l.X, l.Y, TileType.Difficult, "rubble");
             Sfx.Play("door_break", TacticalGridView.GridToWorld(l.X, l.Y));
             Noise.Make(l.X, l.Y, 10, p);
-            GameLog.Write("The plaster was hollow. It caves in - behind it, a long dark corridor that isn't on any plan.");
+            GameLog.Event("The plaster was hollow. It caves in - behind it, a long dark corridor that isn't on any plan.");
             return true;
         }
 
@@ -329,8 +329,8 @@ namespace GameCore
         {
             var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "TacticalHatchet");
             if (d != null) { p.AddItem(TestingGround.ItemOf(d)); p.EquipWeaponFromInventory(d.Id); }
-            GameLog.Write("You work the hatchet loose from the black armour. It comes free with a wet sound.");
-            GameLog.Write("Behind the visor, a red light comes on.");
+            GameLog.Event("You work the hatchet loose from the black armour. It comes free with a wet sound.");
+            GameLog.Event("Behind the visor, a red light comes on.");
             Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f);
             var f = Spawn(Visor, x, y);
             f.NextMoveAt = Time.time + 2.6f;                                       // he gets up slowly. Then he doesn't do anything slowly.
@@ -360,7 +360,7 @@ namespace GameCore
                 f.Gone = true;
                 CombatFx.Push("smoke", f.Unit, null, null).Now = true;
                 EncounterState.Enemies.Remove(f.Unit);
-                GameLog.Write("A smoke grenade hisses out of nowhere. When it clears, the body is gone.");
+                GameLog.Event("A smoke grenade hisses out of nowhere. When it clears, the body is gone.");
             }
         }
 

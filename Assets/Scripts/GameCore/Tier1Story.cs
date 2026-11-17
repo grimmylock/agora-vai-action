@@ -73,7 +73,7 @@ namespace GameCore
         static void Pay(int ru, string why)
         {
             foreach (var p in Player.All) p.Ru += ru;
-            GameLog.Write($"+{ru} Ru ({why}).");
+            GameLog.Event($"+{ru} Ru ({why}).");
         }
 
         static void Give(string id, string name) =>
@@ -93,22 +93,22 @@ namespace GameCore
             if (Story.Step("courier") == 1 && Story.Near(p, Story.Spot("courier"), 2) && Holder(Pack) == null)
             {
                 Give(Pack, "Courier's Pack");
-                GameLog.Write("The pack is still on him. Something has been chewing the straps.");
+                GameLog.Event("The pack is still on him. Something has been chewing the straps.");
                 Story.SetObjective("courier", "Bring the courier's pack to Yefim", Yefim);
                 return true;
             }
             if ((Story.Step("fence") == 1 || Story.Step("fence") == 2) && !Story.Has("fence_inspected") && Story.Near(p, Fence, 3))
             {
                 Story.Set("fence_inspected");
-                GameLog.Write("The wire isn't torn. It's cut - clean, square ends. Bolt cutters.");
-                GameLog.Write("A scrap of dark grey cloth is caught on a barb.");
+                GameLog.Event("The wire isn't torn. It's cut - clean, square ends. Bolt cutters.");
+                GameLog.Event("A scrap of dark grey cloth is caught on a barb.");
                 Story.Journal("The fence at Watchtower 3 was cut with bolt cutters. A scrap of grey cloth was caught on the wire.");
                 return true;
             }
             if (Story.Step("burst") == 2 && Story.Near(p, Story.Spot("distress"), 2))
             {
                 Give(Note, "Note signed \"P.\"");
-                GameLog.Write("A battered radio wired to a car battery, still looping. Under it, a note.");
+                GameLog.Event("A battered radio wired to a car battery, still looping. Under it, a note.");
                 Story.Talk("Note", new[] { "\"Bunker under the marsh. Key with the fishermen - the Headman knows. Grey ones are looking for me. If you read this and you're not one of them, come. - P.\"" });
                 Story.Journal("A note from \"P.\": a bunker under the marsh, the key with the fishing village's Headman, grey ones hunting him.");
                 Story.Finish("burst");
@@ -262,7 +262,7 @@ namespace GameCore
         static void GiveKey()
         {
             MacroState.Current.Keys.Add("flooded_bunker");
-            GameLog.Write("You have the Flooded Bunker's key.");
+            GameLog.Event("You have the Flooded Bunker's key.");
             Story.Finish("key");
             Story.SetStep("engineer", 1);
             Story.SetObjective("engineer", "Find \"P.\" in the Flooded Bunker", "Flooded Bunker");

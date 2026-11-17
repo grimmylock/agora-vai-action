@@ -106,7 +106,7 @@ namespace GameCore
         public static bool BlocksPump(string grantsKey)
         {
             if (grantsKey == null || grantsKey != LabLocks.Key("drain3") || TerrainMap.ZoneId != LabLocks.Depths3 || Story.Has(Fled)) return false;
-            GameLog.Write("The pump's panel sits at the edge of the pool, and something huge is circling right beside it. Nobody is touching that panel until it is put down.");
+            GameLog.Event("The pump's panel sits at the edge of the pool, and something huge is circling right beside it. Nobody is touching that panel until it is put down.");
             return true;
         }
 
@@ -128,7 +128,7 @@ namespace GameCore
         {
             EelLamps.Tell = null;
             int pct = Mathf.Clamp(Mathf.RoundToInt((1f - f.Unit.Hp / (float)MaxHp) * 100f / 5f) * 5, 0, 20); if (pct > 0) Story.Set("eelwound" + pct.ToString("00"));          // the level below remembers the wounds
-            f.Gone = true; EncounterState.Enemies.Remove(f.Unit); GameLog.Write("The pump drags the black water down. Far below, something huge thrashes in the dark, and goes quiet.");
+            f.Gone = true; EncounterState.Enemies.Remove(f.Unit); GameLog.Event("The pump drags the black water down. Far below, something huge thrashes in the dark, and goes quiet.");
         }
 
         // ---- the reward (Yan 2026-11-07: "do the story key and eel-parts drop"): what is on the crewman it brings back up. He is looted like any body (CorpseLootUI): his tier-4 suit, a tier-3 chest's worth
@@ -142,7 +142,7 @@ namespace GameCore
             foreach (var (name, price, qty) in Parts) inv.Add(new InventoryItem { Id = "eel_part_" + name.Replace("'", "").Replace(' ', '_').ToLowerInvariant(), Name = name, Type = "mutantPart", Qty = qty, WeightKg = 2.5f, Price = price, Category = "4" });
             HumanLootSystem.RollSpawnStash(f.Body, 3);                                                     // a tier-3 chest's worth of random loot
             for (int n = 0; n < 2; n++) { LootRoll r = null; for (int k = 0; k < 10 && (r == null || r.Type == "junk" || r.Type == "cash"); k++) r = Economy.Roll(3, trader: false); if (r != null && r.Type != "junk" && r.Type != "cash") inv.Add(r.ToItem(ItemCondition.Working)); }
-            GameLog.Write("The crewman's armour is split open. Something heavy is taped inside it, and the eel's own parts are caught in his pack.");
+            GameLog.Event("The crewman's armour is split open. Something heavy is taped inside it, and the eel's own parts are caught in his pack.");
         }
 
         // ---- the introduction: E on the body (Yan 2026-11-07); the cutscene is EelSump.Intro
@@ -152,7 +152,7 @@ namespace GameCore
             x = y = 0; var f = Current; if (f == null || f.Gone || f.Level != "sump" || f.Stage != "hidden" || p == null || !p.IsAlive()) return false;
             x = f.BodyX; y = f.BodyY; return System.Math.Max(System.Math.Abs(p.X - x), System.Math.Abs(p.Y - y)) <= 2;
         }
-        public static bool TryExamine(Player p) { if (!CanExamine(p, out _, out _)) return false; GameLog.Write($"A drowned crewman in {Current.BodyArmor}, soaked through. The water round the slab is very still."); StartIntro(Current); return true; }
+        public static bool TryExamine(Player p) { if (!CanExamine(p, out _, out _)) return false; GameLog.Event($"A drowned crewman in {Current.BodyArmor}, soaked through. The water round the slab is very still."); StartIntro(Current); return true; }
         public static void StartIntro(Fight f) { f.Started = true; Go(f, "intro"); EelSump.BeginIntro(f); }
         /// <summary>A client that has just entered the map (Net.OnSnapshot clears the enemy list): put the dormant eel and the body back, so the host's snapshots have something to move.</summary>
         public static void NetRestore() { var f = Current; if (f == null || f.Gone || f.Sump == null || f.Level != "sump") return; foreach (var u in new ICombatant[] { f.Unit, f.Sump.Tail }) if (!EncounterState.Enemies.Contains(u)) EncounterState.Enemies.Add((Mutant)u); if (!f.Swallowed && !EncounterState.Enemies.Contains(f.Body)) EncounterState.Enemies.Add(f.Body); }
@@ -172,7 +172,7 @@ namespace GameCore
             int ph = PhaseOf(u.Hp);
             if (ph >= 1 && f.Sump != null && !f.Sump.Stage2) { f.Sump.Stage2 = true; f.Sump.Queue.Insert(0, "flood"); }      // 75% HP: the flood surge is the phase transition, and the snare and the flood join the moves
             if (ph >= 2 && f.Sump != null && !f.Sump.Stage3) { f.Sump.Stage3 = true; f.Sump.Queue.Add("storm"); }      // 50% HP: the storm is the third phase's transition, then one of the moves
-            if (ph > f.Phase) { f.Phase = ph; f.Enraged = ph >= 2; f.Sump.Bag.Clear(); GameLog.Write(ph >= 2 ? $"The Drowner's wounds open ({ph}): it gets worse." : $"The Drowner's wounds open ({ph})."); Sfx.Play("boss_sting", null, 0.7f, 0f, 1f); }
+            if (ph > f.Phase) { f.Phase = ph; f.Enraged = ph >= 2; f.Sump.Bag.Clear(); GameLog.Event(ph >= 2 ? $"The Drowner's wounds open ({ph}): it gets worse." : $"The Drowner's wounds open ({ph})."); Sfx.Play("boss_sting", null, 0.7f, 0f, 1f); }
         }
 
         // ---------------------------------------------------------------- the clock
@@ -206,16 +206,16 @@ namespace GameCore
                     float dx = gx - f.SX, dy = gy - f.SY, d = Mathf.Sqrt(dx * dx + dy * dy) + 0.001f;
                     f.SX += dx / d * Mathf.Min(d, 3.4f * dt); f.SY += dy / d * Mathf.Min(d, 3.4f * dt); f.Unit.X = (int)f.SX; f.Unit.Y = (int)f.SY;
                     if (d < 0.6f && now >= f.Next && feint) { f.PX = gx; f.PY = gy; f.WantFeint = false; Go(f, "feint"); f.Label = "the lamps flicker..."; EelSump.PlatformEvent(f, "ripple", gx, gy, 1f, true); break; }
-                    if (d < 0.6f && now >= f.Next && gx == pl.x && !feint) { f.PX = pl.x; f.PY = pl.y; f.Started = true; EelSump.PlatformEvent(f, "ripple", pl.x, pl.y, 1f, true); Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Write("The water swells under the platform."); }
+                    if (d < 0.6f && now >= f.Next && gx == pl.x && !feint) { f.PX = pl.x; f.PY = pl.y; f.Started = true; EelSump.PlatformEvent(f, "ripple", pl.x, pl.y, 1f, true); Go(f, "wind"); f.Label = "WIND-UP: the lamps flicker, the water swells"; GameLog.Event("The water swells under the platform."); }
                     break;
                 case "feint":                                                                                   // a false alarm: the lamps flicker and buzz as if it were drawing power, then they come back - no silence, no strike
-                    f.Label = "the lamps flicker..."; if (age >= 1.3f) { f.Next = now + 5f; Go(f, "lurk"); f.Label = "lurking"; GameLog.Write("The lamps steady again. Nothing came."); }
+                    f.Label = "the lamps flicker..."; if (age >= 1.3f) { f.Next = now + 5f; Go(f, "lurk"); f.Label = "lurking"; GameLog.Event("The lamps steady again. Nothing came."); }
                     break;
                 case "wind":
-                    if (age >= 1.3f) { EelSump.PlatformEvent(f, "impact", f.PX, f.PY, 2f, true); Go(f, "wrap"); f.Wraps++; f.Discharged = false; SetCoilSlots(f); f.Label = "WRAP: coils burst round the platform"; f.Shocked.Clear(); Sfx.Play("explosion", null, 0.5f, 0.05f, 0.6f); GameLog.Write("It bursts out and coils round the platform!"); }
+                    if (age >= 1.3f) { EelSump.PlatformEvent(f, "impact", f.PX, f.PY, 2f, true); Go(f, "wrap"); f.Wraps++; f.Discharged = false; SetCoilSlots(f); f.Label = "WRAP: coils burst round the platform"; f.Shocked.Clear(); Sfx.Play("explosion", null, 0.5f, 0.05f, 0.6f); GameLog.Event("It bursts out and coils round the platform!"); }
                     break;
                 case "wrap":
-                    if (age >= Burst + ConstrictFor && !f.Discharged) { f.Discharged = true; Sfx.Play("explosion", null, 0.4f, 0.1f, 1.4f); GameLog.Write("The coils crackle with current."); }   // the segments are in place: the discharge
+                    if (age >= Burst + ConstrictFor && !f.Discharged) { f.Discharged = true; Sfx.Play("explosion", null, 0.4f, 0.1f, 1.4f); GameLog.Event("The coils crackle with current."); }   // the segments are in place: the discharge
                     f.Label = f.Discharged ? "DISCHARGE held - touching the coils SHOCKS" : age < Burst ? "WRAP: the head races round the platform, the body coils in" : "CONSTRICT: the coil tightens round the platform";
                     f.Zones.Clear(); f.Zones.Add(new Zone { X = f.PX, Y = f.PY, R = RingOut, Kind = "ring", Live = f.Discharged });
                     if (age >= Burst) foreach (var p in players)      // from the end of the burst the coil is a wall; once it is charged, a wall that shocks

@@ -382,7 +382,7 @@ namespace GameCore
                 }
                 Rt.Of(p).ProneUntil = Mathf.Max(Rt.Of(p).ProneUntil, now + 0.8f);
                 if (into == null) continue;
-                Place(p, into.X, into.Y); Impact(s, into.X, into.Y, 1.0f, true); GameLog.Write("The wave drags you into the pool...");
+                Place(p, into.X, into.Y); Impact(s, into.X, into.Y, 1.0f, true); GameLog.Event("The wave drags you into the pool...");
                 EelBoss.HurtPublic(p, FallDamage, "The wave drags you under", "Blunt"); s.Events.Add(new Ev { Kind = "hit", Who = Index(p), Dmg = FallDamage, Text = "pulled under", X = into.X, Y = into.Y });
                 s.Air[p] = new Fling { X0 = into.X, Y0 = into.Y, Z0 = -3f, T0 = -1f, Dur = 0f, Land = "under" }; s.Pulled.Add((p, into, q0.x, q0.y));      // stays under until the dive is over
             }
@@ -838,7 +838,7 @@ namespace GameCore
         public static void BeginIntro(EelBoss.Fight f)
         {
             var s = f.Sump; s.Lump = -1f; s.IntroSwallowed = false; s.IntroSkip = false; s.IntroRip = 0f; s.IntroEv = 0; s.Mouth = -1f; s.Rear = 0f; s.Charge = 0f; BuildIntro(s);
-            GameLog.Write("You lean over the body. The water in the pools goes very still...  (ESC skips the scene)");
+            GameLog.Event("You lean over the body. The water in the pools goes very still...  (ESC skips the scene)");
         }
         static void BuildIntro(State s)
         {
@@ -898,12 +898,12 @@ namespace GameCore
                 if (age >= 6.3f && !s.IntroSwallowed)                                                               // the jaws close on the body: it is carried in them, lifted, until it goes down the throat
                 {
                     s.IntroSwallowed = true; s.CarryBody = true; Snd("eel_slam", s.SlabX, s.SlabY, 1.0f); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 1.8f, Water = false });
-                    GameLog.Write("The eel snaps the body up in one gulp.");
+                    GameLog.Event("The eel snaps the body up in one gulp.");
                 }
                 if (s.CarryBody)                                                                                    // in the mouth: it hangs from the jaws, lifted with the head
                 {
                     float cx = s.X[0] + (s.X[0] < s.X[Mathf.Min(8, N - 1)] ? -0.5f : 0.5f), cy = s.Y[0] - Mathf.Max(0f, s.Z[0]) * 0.8f; int tx = (int)Mathf.Floor(cx), ty = (int)Mathf.Floor(cy); f.Body.X = tx; f.Body.Y = ty; Rt.SetOffset(f.Body, cx - tx - 0.5f, cy - ty - 0.5f);
-                    if (age >= 7.1f) { s.CarryBody = false; f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); GameLog.Write("It gulps, and the body is gone."); }
+                    if (age >= 7.1f) { s.CarryBody = false; f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); GameLog.Event("It gulps, and the body is gone."); }
                 }
                 s.Lump = f.Swallowed ? Mathf.Max(0f, (age - 7.1f) * 11f) : -1f; if (s.Lump > 50f) s.Lump = -1f;                       // down the neck
                 if (age >= 9.9f && s.IntroEv < 3) { s.IntroEv = 3; Snd("eel_rush", east.X, east.Y, 0.9f); }
@@ -927,7 +927,7 @@ namespace GameCore
         {
             if (!f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
             s.Lump = -1f; s.Mouth = -1f; s.Rear = 0f; s.Twitch = 0f; s.IntroBig = null; s.IntroSkip = false; Hide(s, s.Big); f.Unit.IsAggroed = true; f.Started = true; Story.CineEnd();
-            f.Stage = "idle"; f.StageAt = now; f.Next = now + (skipped ? 1.5f : 0.8f); f.Zones.Clear(); GameLog.Write("The Drowner settles in under the pools.");
+            f.Stage = "idle"; f.StageAt = now; f.Next = now + (skipped ? 1.5f : 0.8f); f.Zones.Clear(); GameLog.Event("The Drowner settles in under the pools.");
         }
 
         // ---- the reveal (it swallows the body on the slab) and the death (it brings the body back up, then goes down the big pool's centre)
@@ -939,13 +939,13 @@ namespace GameCore
             {
                 f.Label = u < 1.6f ? "REVEAL: it rises out of the big pool" : u < 2.3f ? "REVEAL: it swoops at the body" : u < 3.0f ? "REVEAL: it swallows the body" : "REVEAL: it sinks back to start the fight";
                 if (u >= 2.3f && !f.Swallowed) { f.Swallowed = true; EncounterState.Enemies.Remove(f.Body); }
-                if (u >= 4.2f) { f.Stage = "idle"; f.StageAt = now; f.Next = now + 1.0f; s.Hs = null; GameLog.Write("The Drowner settles in under the pools."); }
+                if (u >= 4.2f) { f.Stage = "idle"; f.StageAt = now; f.Next = now + 1.0f; s.Hs = null; GameLog.Event("The Drowner settles in under the pools."); }
             }
             else
             {
                 f.Label = u < 2.3f ? "VOMIT: it rises with the body in its throat" : u < 3.0f ? "VOMIT: the body is thrown up on the slab" : "RETREAT: it sinks down the big pool's centre";
-                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); EelBoss.GiveSpoils(f); GameLog.Write("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
-                if (u >= 4.2f) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); EncounterState.Enemies.Remove(s.Tail); Story.Set(EelBoss.Fled); GameLog.Write("The Drowner slides back down the pool. This isn't over."); }
+                if (u >= 2.3f && !f.Ejected) { f.Ejected = true; f.Body.X = f.BodyX; f.Body.Y = f.BodyY; EncounterState.Enemies.Add(f.Body); EelBoss.GiveSpoils(f); GameLog.Event("It heaves the body up onto the slab."); s.Events.Add(new Ev { Kind = "impact", X = s.SlabX, Y = s.SlabY, Power = 0.6f, Water = false }); }
+                if (u >= 4.2f) { f.Gone = true; f.Label = "gone"; EncounterState.Enemies.Remove(f.Unit); EncounterState.Enemies.Remove(s.Tail); Story.Set(EelBoss.Fled); GameLog.Event("The Drowner slides back down the pool. This isn't over."); }
             }
         }
 
@@ -1040,7 +1040,7 @@ namespace GameCore
         {
             var s = f.Sump; bool tailVisible = false; for (int i = N - TailSamples; i < N; i++) if (s.Z[i] > HitZ) { tailVisible = true; break; }
             if (!tailVisible) { u.Hp = System.Math.Max(s.LastTailHp, 1); return; }          // no part of the tail is out of the water: nothing lands
-            if (u.Hp <= 1) { u.Hp = 1; s.TailBroken = true; s.TailDownUntil = Time.time + 9f; GameLog.Write("The Drowner's tail is torn up - it goes down."); }
+            if (u.Hp <= 1) { u.Hp = 1; s.TailBroken = true; s.TailDownUntil = Time.time + 9f; GameLog.Event("The Drowner's tail is torn up - it goes down."); }
         }
     }
 }

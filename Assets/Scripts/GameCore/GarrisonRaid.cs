@@ -35,7 +35,7 @@ namespace GameCore
                 if (EncounterState.InCombat && InBase(p) && MacroState.Current.Day >= MacroState.Current.GarrisonRaidReadyDay && GarrisonHere().Any(h => h.IsAggroed)) Start();
                 return;
             }
-            if (!InBase(p) && !EncounterState.InCombat) { GameLog.Write("[RAID] You pulled out of the Siege Ward. Garrison locks the base down again."); End(false); return; }
+            if (!InBase(p) && !EncounterState.InCombat) { GameLog.Event("[RAID] You pulled out of the Siege Ward. Garrison locks the base down again."); End(false); return; }
             foreach (var m in _raiders) if (m.IsAlive()) m.IsAggroed = true;   // Batch 89: the sirens are on - they know you're here (no breaking contact mid-raid)
             if (_wave < Waves && --_roundsToNext <= 0) SendWave(p);
             else if (_wave >= Waves && Left == 0) End(true);   // Batch 89: only the raid's own soldiers (not Garrison elsewhere on the map)
@@ -50,7 +50,7 @@ namespace GameCore
             var hq = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Siege Ward Hospital");
             _raiders.AddRange(GarrisonHere().Where(h => TerrainMap.RegionAt(h.X, h.Y) == Region
                 && (hq == null || System.Math.Max(System.Math.Abs(h.X - hq.X), System.Math.Abs(h.Y - hq.Y)) <= BaseRadius)));
-            GameLog.Write("[RAID] Sirens wail across the Siege Ward. Garrison is calling every man in the base to arms.");
+            GameLog.Event("[RAID] Sirens wail across the Siege Ward. Garrison is calling every man in the base to arms.");
             Sfx.Play("alert");
         }
 
@@ -58,7 +58,7 @@ namespace GameCore
         {
             _wave++; _roundsToNext = WaveGapRounds;
             var sq = SquadManager.CreateOfflineSquad(Region, "Garrison", 4 + UnityEngine.Random.Range(0, 3));
-            if (sq == null) { GameLog.Write("[RAID] The base has nobody left to send."); return; }
+            if (sq == null) { GameLog.Event("[RAID] The base has nobody left to send."); return; }
             var lead = sq.Members.OfType<HumanEnemy>().OrderByDescending(h => CombatRules.RankIndex(h.Rank)).FirstOrDefault();
             if (_wave == Waves && lead != null && !lead.Named) { SquadManager.MakeBoss(lead); SquadManager.Arm(sq); }
             var gate = Gate(p);
@@ -72,7 +72,7 @@ namespace GameCore
                 m.X = spot.x; m.Y = spot.y; m.IsAggroed = true;
                 EncounterState.Enemies.Add(m); _raiders.Add(m);
             }
-            GameLog.Write(_wave == Waves ? $"[RAID] The last of the garrison pours out of the hospital, led by {lead?.Name}." : "[RAID] More Garrison troops come running out of the hospital.");
+            GameLog.Event(_wave == Waves ? $"[RAID] The last of the garrison pours out of the hospital, led by {lead?.Name}." : "[RAID] More Garrison troops come running out of the hospital.");
         }
 
         /// <summary>Where a wave comes out: the base's doors farthest from you (at least out of arm's reach).</summary>
@@ -90,16 +90,16 @@ namespace GameCore
             MacroState.Current.GarrisonRaidReadyDay = MacroState.Current.Day + RaidCooldownDays;
             if (!won) return;
             MacroState.Current.GarrisonArmoryOpen = true;
-            GameLog.Write("[RAID] The Siege Ward falls quiet. The armory door hangs open.");
+            GameLog.Event("[RAID] The Siege Ward falls quiet. The armory door hangs open.");
         }
 
         /// <summary>E at the armory (InteractionEngine, before stashes).</summary>
         public static bool TryInteract(Player p)
         {
             if (!InBase(p) || !TerrainMap.Landmarks.Any(l => l.Name == Armory && System.Math.Max(System.Math.Abs(l.X - p.X), System.Math.Abs(l.Y - p.Y)) <= 2)) return false;
-            if (!MacroState.Current.GarrisonArmoryOpen) { GameLog.Write("The armory is barred from the inside. Garrison still holds the Siege Ward."); return true; }
+            if (!MacroState.Current.GarrisonArmoryOpen) { GameLog.Event("The armory is barred from the inside. Garrison still holds the Siege Ward."); return true; }
             MacroState.Current.GarrisonArmoryOpen = false;
-            GameLog.Write("[RAID] You strip the Garrison armory:");
+            GameLog.Event("[RAID] You strip the Garrison armory:");
             Loot(p);
             return true;
         }
@@ -110,13 +110,13 @@ namespace GameCore
                 foreach (var kind in new[] { "ArmorPiercing", "HollowPoint" })
                 {
                     var key = Ammo.Key(w.Db, kind); int n = ShopSystem.RoundsPerBox(w) * 4;
-                    Ammo.Add(p.Inventory, key, n); GameLog.Write($"  - {n} {Ammo.Label(key)}");
+                    Ammo.Add(p.Inventory, key, n); GameLog.Event($"  - {n} {Ammo.Label(key)}");
                 }
             foreach (var (id, qty) in new[] { ("scientificMedkit", 3), ("scientificStim", 2), ("bandage", 3) })
             {
                 var d = ConsumableDatabase.All[id];
                 p.AddItem(new InventoryItem { Id = id, Name = d.Name, Type = "consumable", Qty = qty, WeightKg = 0.3f });
-                GameLog.Write($"  - {d.Name} x{qty}");
+                GameLog.Event($"  - {d.Name} x{qty}");
             }
             foreach (int tier in new[] { 4, 4, 5 }) Give(p, "weapon", tier);
             Give(p, "armor", 5);
@@ -128,7 +128,7 @@ namespace GameCore
             if (pool.Count == 0) return;
             var d = pool[UnityEngine.Random.Range(0, pool.Count)];
             p.AddItem(new InventoryItem { Id = d.Id, Name = d.Name, WeightKg = d.WeightKg, Qty = 1, Type = type, Price = d.Price, Category = d.Category, Key = d.Key, Condition = ItemCondition.Working });
-            GameLog.Write($"  - {d.Name}");
+            GameLog.Event($"  - {d.Name}");
         }
     }
 }

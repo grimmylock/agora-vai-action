@@ -91,7 +91,7 @@ namespace GameCore
             if (squad.Members.Count == 0) return null;
             Arm(squad);   // Batch 80
             MacroState.Current.OfflineSquads.Add(squad);
-            GameLog.Write($"[SQUAD] A {faction} force takes position in {zone?.Name ?? zoneId}.");
+            GameLog.Event($"[SQUAD] A {faction} force takes position in {zone?.Name ?? zoneId}.");
             SaveOfflineSquadsToDisk();
             return squad;
         }
@@ -545,7 +545,7 @@ namespace GameCore
             if (helper != null)
             {
                 helper.Heading = zoneId; helper.Job = "backup";
-                GameLog.Write($"[RADIO] A {faction} squad in {MacroMapDatabase.Find(helper.ZoneId)?.Name ?? helper.ZoneId} answers: they're on their way.");
+                GameLog.Event($"[RADIO] A {faction} squad in {MacroMapDatabase.Find(helper.ZoneId)?.Name ?? helper.ZoneId} answers: they're on their way.");
                 answered++;
             }
             return answered;
@@ -562,7 +562,7 @@ namespace GameCore
                 var name = MacroMapDatabase.Find(squad.ZoneId)?.Name ?? squad.ZoneId;
                 WorldEvents.News('M', squad.ZoneId, $"A trade caravan rolled into {name}.");
                 bool quiet = GameLog.Quiet; GameLog.Quiet = false;
-                GameLog.Write($"[ZONE EVENT] A caravan has pulled into {name} - extra stock today.");
+                GameLog.Event($"[ZONE EVENT] A caravan has pulled into {name} - extra stock today.");
                 GameLog.Quiet = quiet;
             }
             else if (squad.Job == "goal") squad.Job = "hold";              // Batch 46: dig in
@@ -709,7 +709,7 @@ namespace GameCore
         static void ArriveRegion(OfflineSquad squad)
         {
             if (squad.Heading != squad.LeavingFor && Staying(squad.LeavingFor) >= MaxSquadsPerZone) { squad.LeavingFor = null; return; }   // full up there: they stay put
-            GameLog.Write($"[MOVEMENT] {squad.Faction} squad moves on into {MacroMapDatabase.Find(squad.LeavingFor)?.Name ?? squad.LeavingFor}.");
+            GameLog.Event($"[MOVEMENT] {squad.Faction} squad moves on into {MacroMapDatabase.Find(squad.LeavingFor)?.Name ?? squad.LeavingFor}.");
             squad.ZoneId = squad.LeavingFor; squad.LeavingFor = null;
             squad.LastUpdatedTick = MacroState.Current.WorldTickCounter;
             if (squad.Heading == squad.ZoneId) { squad.Heading = null; OnArrived(squad); }
@@ -739,7 +739,7 @@ namespace GameCore
                 if (m is HumanEnemy h && h.Morale != "Surrendered") { h.Morale = "Steady"; h.HpShaken = false; }
                 EncounterState.Enemies.Add(m);
             }
-            GameLog.Write($"[MOVEMENT] {Cap(Who(squad.Faction))} comes in from {MacroMapDatabase.Find(fromZoneId)?.Name ?? fromZoneId}.");
+            GameLog.Event($"[MOVEMENT] {Cap(Who(squad.Faction))} comes in from {MacroMapDatabase.Find(fromZoneId)?.Name ?? fromZoneId}.");
             return true;
         }
 
@@ -798,7 +798,7 @@ namespace GameCore
         static void Leave(OfflineSquad squad)
         {
             EncounterState.Enemies.RemoveAll(e => e.IsAlive() && squad.Members.Contains(e));
-            GameLog.Write($"[MOVEMENT] {squad.Faction} squad leaves {MacroMapDatabase.Find(squad.ZoneId)?.Name ?? squad.ZoneId} for {MacroMapDatabase.Find(squad.LeavingFor)?.Name ?? squad.LeavingFor}.");
+            GameLog.Event($"[MOVEMENT] {squad.Faction} squad leaves {MacroMapDatabase.Find(squad.ZoneId)?.Name ?? squad.ZoneId} for {MacroMapDatabase.Find(squad.LeavingFor)?.Name ?? squad.LeavingFor}.");
             squad.ZoneId = squad.LeavingFor; squad.LeavingFor = null;
             if (squad.Heading == squad.ZoneId) { squad.Heading = null; OnArrived(squad); }
             squad.WorldX = TerrainMap.Width / 2; squad.WorldY = TerrainMap.Height / 2;
@@ -842,7 +842,7 @@ namespace GameCore
                 squad.WorldY = TerrainMap.Height / 2;
                 squad.LastUpdatedTick = MacroState.Current.WorldTickCounter;
                 var destZone = MacroMapDatabase.Find(destId);
-                GameLog.Write($"[MOVEMENT] {squad.Faction} squad migrates from {currentZone.Name} to {destZone?.Name ?? destId}.");
+                GameLog.Event($"[MOVEMENT] {squad.Faction} squad migrates from {currentZone.Name} to {destZone?.Name ?? destId}.");
                 WorldEvents.News('M', destId, $"{(squad.Job == "caravan" ? "A trade caravan" : Cap(Who(squad.Faction)))} was seen heading from {currentZone.Name} into {destZone?.Name ?? destId}.");
                 if (OnMap(destId, skipZone)) ArriveLive(squad, currentZone.Id);
                 if (arrived) { squad.Heading = null; OnArrived(squad); }
@@ -868,7 +868,7 @@ namespace GameCore
                         if (a.QuestId != null || b.QuestId != null) continue;
                         if (a.Job == "retreat" || b.Job == "retreat" || !a.Members.Any(x => x.IsAlive()) || !b.Members.Any(x => x.IsAlive())) continue;   // Batch 53: they're already pulling out   // ponytail: quest squads sit out off-screen fights (a quest only counts your kills); upgrade = "someone got there first" outcomes   // Batch 40: either side, as on the live map (NpcFights)
 
-                        GameLog.Write($"[OFFSCREEN WAR] {a.Faction} and {b.Faction} clash in {group.Key}.");
+                        GameLog.Event($"[OFFSCREEN WAR] {a.Faction} and {b.Faction} clash in {group.Key}.");
                         ResolveSquadSkirmish(a, b);
                     }
                 }
@@ -941,13 +941,13 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             bool aDead = !combatantsA.Any(x => x.IsAlive()), bDead = !combatantsB.Any(x => x.IsAlive()), spoils = false;
             if (aDead)
             {
-                GameLog.Write($"[OFFSCREEN WAR] {a.Faction} squad has been destroyed.");
+                GameLog.Event($"[OFFSCREEN WAR] {a.Faction} squad has been destroyed.");
                 a.Members.Clear();
                 spoils |= DropWarSpoils(a.ZoneId, a.Faction);
             }
             if (bDead)
             {
-                GameLog.Write($"[OFFSCREEN WAR] {b.Faction} squad has been destroyed.");
+                GameLog.Event($"[OFFSCREEN WAR] {b.Faction} squad has been destroyed.");
                 b.Members.Clear();
                 spoils |= DropWarSpoils(b.ZoneId, b.Faction);
             }
@@ -1011,7 +1011,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                 },
                 Description = $"The remains of a {loserFaction} squad, picked over but not yet emptied.",
             });
-            GameLog.Write($"[OFFSCREEN WAR] Salvage left behind in {MacroMapDatabase.Find(zoneId)?.Name ?? zoneId}.");
+            GameLog.Event($"[OFFSCREEN WAR] Salvage left behind in {MacroMapDatabase.Find(zoneId)?.Name ?? zoneId}.");
             return true;
         }
 
@@ -1059,7 +1059,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                 winner.GainXp(HumanEnemy.Worth(target));
                 if (target is HumanEnemy loser) winner.LootFrom(loser);
             }
-            GameLog.Write($"[OFFSCREEN WAR] {attacker.Name} performs {attackCount} simulated strike(s) for {applied} total damage on {target.Name}. {target.Name} HP now {target.Hp}.");
+            GameLog.Event($"[OFFSCREEN WAR] {attacker.Name} performs {attackCount} simulated strike(s) for {applied} total damage on {target.Name}. {target.Name} HP now {target.Hp}.");
         }
 
         // -------------------- Persistence --------------------
@@ -1207,7 +1207,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             }
             catch (System.Exception ex)
             {
-                GameLog.Write($"[PERSIST] Failed to save offline squads: {ex.Message}");
+                GameLog.Event($"[PERSIST] Failed to save offline squads: {ex.Message}");
             }
         }
 
@@ -1299,11 +1299,11 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                         created.ShakedownDone = ps.ShakedownDone; created.TruceUntil = ps.TruceUntil; created.BossRolled = ps.BossRolled;
                     }
                 }
-                GameLog.Write($"[PERSIST] Loaded {wrapper.Squads.Count} offline squad(s) from disk.");
+                GameLog.Event($"[PERSIST] Loaded {wrapper.Squads.Count} offline squad(s) from disk.");
             }
             catch (System.Exception ex)
             {
-                GameLog.Write($"[PERSIST] Failed to load offline squads: {ex.Message}");
+                GameLog.Event($"[PERSIST] Failed to load offline squads: {ex.Message}");
             }
         }
 

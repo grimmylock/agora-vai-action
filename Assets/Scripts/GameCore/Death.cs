@@ -28,7 +28,7 @@ namespace GameCore
                 if (p.IsAlive()) { s.Dead = false; continue; }
                 if (s.Dead) continue;
                 s.Dead = true;
-                GameLog.Write("A squadmate is dead. Get them back on their feet once the fighting's over (hold E over them).");
+                GameLog.Event("A squadmate is dead. Get them back on their feet once the fighting's over (hold E over them).");
                 p.LoseXp(DeadXp);
                 WearOne(p);
             }
@@ -41,7 +41,7 @@ namespace GameCore
             p.StatusEffects.Bleeding = false;
             p.HealPermanent(Mathf.Max(1, Mathf.RoundToInt(p.MaxHp * ReviveHp)));
             Rt.Of(p).Dead = false;
-            GameLog.Write("Your squadmate gasps back to life.");
+            GameLog.Event("Your squadmate gasps back to life.");
         }
 
         /// <summary>The whole squad is dead: everyone back at the last camp, with the wipe penalties.</summary>
@@ -49,9 +49,9 @@ namespace GameCore
         {
             var m = MacroState.Current;
             string zone = m.CampZone ?? "bonfire_village";
-            GameLog.Write("[SQUAD WIPED] The Zone takes its toll. You come to by the camp fire.");
+            GameLog.Event("[SQUAD WIPED] The Zone takes its toll. You come to by the camp fire.");
             bool solo = Player.All.Count == 1;
-            if (solo) GameLog.Write("[YOU WERE SAVED] Someone found you and dragged you back to the camp fire.");
+            if (solo) GameLog.Event("[YOU WERE SAVED] Someone found you and dragged you back to the camp fire.");
             foreach (var p in Player.All)
             {
                 if (solo) Rescue(p);                                                       // Yan (2026-11-16): someone "saved" you - a note, a medkit and a bandage, but you pay for it
@@ -109,8 +109,8 @@ namespace GameCore
                 var d = ShopDatabase.Find(id);
                 if (d != null) p.AddItem(new InventoryItem { Id = d.Id, Name = d.Name, WeightKg = d.WeightKg, Qty = 1, Type = d.Type, Price = d.Price });
             }
-            GameLog.Write($"There is a note pinned to your jacket: \"{RescueNotes[Random.Range(0, RescueNotes.Length)]}\"");
-            GameLog.Write($"You find a medkit and a bandage beside you. {(lost > 0 ? $"{lost} of your supplies are missing. " : "")}{(worn > 0 ? "Your gear looks more worn than you remember." : "")}".TrimEnd());
+            GameLog.Event($"There is a note pinned to your jacket: \"{RescueNotes[Random.Range(0, RescueNotes.Length)]}\"");
+            GameLog.Event($"You find a medkit and a bandage beside you. {(lost > 0 ? $"{lost} of your supplies are missing. " : "")}{(worn > 0 ? "Your gear looks more worn than you remember." : "")}".TrimEnd());
         }
 
         /// <summary>E at a bonfire: the squad comes back here if it wipes. True if there was a fire to camp at.</summary>
@@ -121,7 +121,7 @@ namespace GameCore
             if (!fire) return false;
             var m = MacroState.Current;
             m.CampZone = m.CurrentZoneId; m.CampX = p.X; m.CampY = p.Y;
-            GameLog.Write("You make camp by the fire. If the whole squad falls, this is where you'll wake.");
+            GameLog.Event("You make camp by the fire. If the whole squad falls, this is where you'll wake.");
             return true;
         }
 
@@ -141,7 +141,7 @@ namespace GameCore
                 TerrainMap.GroundItems.Add(g); pack.Items.Add(g);
             }
             Packs.Add(pack);
-            GameLog.Write($"Some of your gear is left lying where you fell ({items.Count} item{(items.Count == 1 ? "" : "s")}).");
+            GameLog.Event($"Some of your gear is left lying where you fell ({items.Count} item{(items.Count == 1 ? "" : "s")}).");
         }
 
         /// <summary>Yan: "if enemies are nearby they can loot it, so the player needs to kill them to get them back". Each minute
@@ -160,7 +160,7 @@ namespace GameCore
                 if (taker == null) continue;
                 if (System.Math.Max(System.Math.Abs(taker.X - pack.X), System.Math.Abs(taker.Y - pack.Y)) > 1) { taker.PatrolTarget = (pack.X, pack.Y); continue; }
                 foreach (var g in pack.Items) { TerrainMap.GroundItems.Remove(g); taker.Inventory.Items.Add(g.Item); }
-                GameLog.Write($"{taker.Name} goes through the gear you left behind and pockets it.");
+                GameLog.Event($"{taker.Name} goes through the gear you left behind and pockets it.");
                 Packs.Remove(pack);
             }
         }

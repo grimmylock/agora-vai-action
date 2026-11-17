@@ -82,7 +82,7 @@ namespace GameCore
 
             string previousZoneId = MacroState.Current.CurrentZoneId;
             MacroState.Current.CurrentZoneId = targetZoneId;
-            GameLog.Write(shortHop ? $"You climb into {targetZone.Name}." : $"Crossing into {targetZone.Name} (Tier {targetZone.Tier}).");
+            GameLog.Event(shortHop ? $"You climb into {targetZone.Name}." : $"Crossing into {targetZone.Name} (Tier {targetZone.Tier}).");
 
             EnterZone(targetZoneId, previousZoneId);
             if (!shortHop)
@@ -107,7 +107,7 @@ namespace GameCore
             var zone = MacroMapDatabase.Find(here);
             if (zone == null) return;
             MacroState.Current.CurrentZoneId = here;
-            GameLog.Write(zone.IsSafeZone ? $"[SAFE ZONE] You walk into {zone.Name}. Weapons hold." : $"You're in {zone.Name} now.");
+            GameLog.Event(zone.IsSafeZone ? $"[SAFE ZONE] You walk into {zone.Name}. Weapons hold." : $"You're in {zone.Name} now.");
             StorySystem.OnEnterZone(zone);
             G7Lab.OnEnterZone(zone);   // Batch 88
             DungeonLairs.OnEnterZone(zone);   // 2026-11-10: authored mutant lairs in dungeons
@@ -189,7 +189,7 @@ namespace GameCore
             GameState.Current.Mode = GameMode.Tactical;
             GameState.Current.CurrentTurn = Turn.Player;
 
-            GameLog.Write(zone.IsSafeZone
+            GameLog.Event(zone.IsSafeZone
                 ? $"[SAFE ZONE] Entered {zone.Name}. Weapons hold."
                 : $"Entered {zone.Name} (Tier {zone.Tier} | Hazard {WorldEvents.Hazard(zone)}).");
             if (zone.IsSafeZone) WorldEvents.TellRumors();
@@ -271,7 +271,7 @@ namespace GameCore
         static void Discover(ZoneDef hidden)
         {
             MacroState.Current.DiscoveredHiddenNodes.Add(hidden.Id);
-            GameLog.Write($"You discover a hidden path to {hidden.Name}!");
+            GameLog.Event($"You discover a hidden path to {hidden.Name}!");
             QuestSystem.OnHiddenNodeDiscovered(hidden.Id);
         }
 

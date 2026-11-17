@@ -62,7 +62,7 @@ namespace GameCore
                 // Batch 45: a real caravan sets out from the Zone's edge; the hub gets its stock only if it arrives
                 var hub = NearestSafeZone(m.CurrentZoneId);
                 if (SquadManager.SendCaravan(hub) == null) return "Quiet day.";
-                GameLog.Write($"[ZONE EVENT] Radio chatter: a trade caravan is on its way to {MacroMapDatabase.Find(hub)?.Name ?? "the hub"}.");
+                GameLog.Event($"[ZONE EVENT] Radio chatter: a trade caravan is on its way to {MacroMapDatabase.Find(hub)?.Name ?? "the hub"}.");
                 return $"Caravan heading for {MacroMapDatabase.Find(hub)?.Name}.";
             }
             if (d <= 12)
@@ -75,7 +75,7 @@ namespace GameCore
                     if (SquadManager.SendMigration(through).Count == 0) return "Quiet day.";
                     m.MigrationZoneId = through;
                     m.MigrationDaysLeft = 2;
-                    GameLog.Write($"[ZONE EVENT] Radio chatter: mutants are migrating through {MacroMapDatabase.Find(m.MigrationZoneId)?.Name}.");
+                    GameLog.Event($"[ZONE EVENT] Radio chatter: mutants are migrating through {MacroMapDatabase.Find(m.MigrationZoneId)?.Name}.");
                     return $"Mutant migration: {MacroMapDatabase.Find(m.MigrationZoneId)?.Name}.";
                 }
                 return "Quiet day.";
@@ -90,7 +90,7 @@ namespace GameCore
                 if (m.NamedNpcs.Count > 0)
                 {
                     string who = m.NamedNpcs[Random.Range(0, m.NamedNpcs.Count)];
-                    GameLog.Write($"[ZONE EVENT] Word reaches you from someone you know: {who.Split('|')[0].Trim()} wants to talk.");
+                    GameLog.Event($"[ZONE EVENT] Word reaches you from someone you know: {who.Split('|')[0].Trim()} wants to talk.");
                     return "A Named NPC makes contact.";
                 }
                 return "Quiet day.";
@@ -98,7 +98,7 @@ namespace GameCore
             if (d <= 18)
             {
                 ShiftAnomalies(MacroMapDatabase.MapOf(m.CurrentZoneId));
-                GameLog.Write("[ZONE EVENT] The air ripples - the anomalies around you have shifted. Searched anomalies can be searched again.");
+                GameLog.Event("[ZONE EVENT] The air ripples - the anomalies around you have shifted. Searched anomalies can be searched again.");
                 return "Anomaly shift.";
             }
             if (StorySystem.ContainPrices && d < 20) return "Quiet day.";   // Contain ending: Surges only on a 20
@@ -144,7 +144,7 @@ namespace GameCore
             var m = MacroState.Current;
             m.SurgeRounds = 3;
             m.SurgeZoneId = MacroMapDatabase.MapOf(m.CurrentZoneId);
-            GameLog.Write("[SURGE] The sky turns red and sirens wail. 3 rounds to get indoors, underground or into a Safe Zone!");
+            GameLog.Event("[SURGE] The sky turns red and sirens wail. 3 rounds to get indoors, underground or into a Safe Zone!");
         }
 
         /// <summary>Indoors (a building floor), a hidden sub-node, or a Safe Zone.</summary>
@@ -164,17 +164,17 @@ namespace GameCore
             if (m.SurgeRounds <= 0 || p == null) return;
             if (!crossing && --m.SurgeRounds > 0)
             {
-                GameLog.Write($"[SURGE] {m.SurgeRounds} round{(m.SurgeRounds > 1 ? "s" : "")} left to find shelter{(Sheltered(p) ? " (you're under cover)" : "")}.");
+                GameLog.Event($"[SURGE] {m.SurgeRounds} round{(m.SurgeRounds > 1 ? "s" : "")} left to find shelter{(Sheltered(p) ? " (you're under cover)" : "")}.");
                 return;
             }
             m.SurgeRounds = 0;
-            if (Sheltered(p)) GameLog.Write("[SURGE] The wave passes overhead. You're safe in here.");
+            if (Sheltered(p)) GameLog.Event("[SURGE] The wave passes overhead. You're safe in here.");
             else
             {
                 int dmg = CombatRules.AnomalousDamage(600, p.AnomDR);
                 p.Hp = System.Math.Max(0, p.Hp - dmg);
                 p.StatusEffects.Irradiated = true;
-                GameLog.Write($"[SURGE] Caught in the open! {dmg} anomalous damage and you're Irradiated.");
+                GameLog.Event($"[SURGE] Caught in the open! {dmg} anomalous damage and you're Irradiated.");
                 TurnLoop.CheckCombatEnd();
             }
             // the zone's anomalies are fresh again, +3 to the next search
@@ -220,7 +220,7 @@ namespace GameCore
             if (open.Count == 0) return;
             var g = open[Random.Range(0, open.Count)];
             var sent = SquadManager.SendGoalSquad(g.Faction, GoalGround[g.Faction].zone);
-            if (sent != null) GameLog.Write($"[ZONE EVENT] The {g.Faction} are pushing for {MacroMapDatabase.Find(GoalGround[g.Faction].zone)?.Name}.");
+            if (sent != null) GameLog.Event($"[ZONE EVENT] The {g.Faction} are pushing for {MacroMapDatabase.Find(GoalGround[g.Faction].zone)?.Name}.");
         }
 
         /// <summary>Moves a faction's track. Quests for a faction fill a box; quests against it or
@@ -234,11 +234,11 @@ namespace GameCore
             var m = MacroState.Current;
             int boxes = Mathf.Clamp(Boxes(faction) + delta, 0, 6);
             m.GoalBoxes[faction] = boxes;
-            if (delta > 0 && !why.StartsWith("holding")) GameLog.Write($"[FACTION] {faction}: \"{goal.Goal}\" {Track(faction)}");
+            if (delta > 0 && !why.StartsWith("holding")) GameLog.Event($"[FACTION] {faction}: \"{goal.Goal}\" {Track(faction)}");
             if (boxes >= 6)
             {
                 m.CompletedGoals.Add(faction);
-                GameLog.Write($"[FACTION] {faction} achieve their goal! {goal.Result}");
+                GameLog.Event($"[FACTION] {faction} achieve their goal! {goal.Result}");
             }
         }
 
@@ -284,10 +284,10 @@ namespace GameCore
             TickSurge(crossing: true);
             if (!Done("Raiders") || (fromZone != "black_valley" && toZone != "black_valley")) return;
             var p = Player.Current;
-            if (p.Ru >= 200) { p.Ru -= 200; GameLog.Write("Raiders at the Chokepoint Bridge take their 200 RU toll."); }
+            if (p.Ru >= 200) { p.Ru -= 200; GameLog.Event("Raiders at the Chokepoint Bridge take their 200 RU toll."); }
             else
             {
-                GameLog.Write("You can't pay the Raiders' bridge toll. They come for you.");
+                GameLog.Event("You can't pay the Raiders' bridge toll. They come for you.");
                 foreach (var e in EncounterState.Enemies.OfType<HumanEnemy>().Where(e => e.FactionName == "Raiders")) e.IsAggroed = true;
                 EncounterState.InCombat = EncounterState.Enemies.Any(e => e.IsAggroed && e.IsAlive());
             }
@@ -311,7 +311,7 @@ namespace GameCore
             if (kind != 'F' || !nextDoor || _lastRadioTick == m.WorldTickCounter) return;
             _lastRadioTick = m.WorldTickCounter;
             bool quiet = GameLog.Quiet; GameLog.Quiet = false;
-            GameLog.Write($"[RADIO] Gunfire next door. {text}");
+            GameLog.Event($"[RADIO] Gunfire next door. {text}");
             GameLog.Quiet = quiet;
         }
 
@@ -358,7 +358,7 @@ namespace GameCore
                 string r = pool[pick];
                 pool.RemoveAt(pick);
                 m.Rumors.Insert(0, $"Day {m.Day}: {r}");
-                GameLog.Write($"[RUMOR] {r}");
+                GameLog.Event($"[RUMOR] {r}");
             }
             while (m.Rumors.Count > 10) m.Rumors.RemoveAt(m.Rumors.Count - 1);
         }

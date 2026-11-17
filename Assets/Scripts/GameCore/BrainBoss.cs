@@ -124,7 +124,7 @@ namespace GameCore
                 f.Stage = "still"; f.StageAt = Time.time;
                 Boss.HitStop(0.4f);
                 CombatFx.Push("stagger", u, null, null).Now = true;
-                GameLog.Write($"The last of the liquid runs out. {Name} slumps in the empty vat, still.");
+                GameLog.Event($"The last of the liquid runs out. {Name} slumps in the empty vat, still.");
                 return;
             }
             int ph = PhaseOf(u.Hp);
@@ -133,7 +133,7 @@ namespace GameCore
             f.PulseAt = Time.time + PulseWind;                   // eyes shut, gathering - then the pulse
             Boss.HitStop(0.25f);
             CombatFx.Push("stagger", u, null, null).Now = true;
-            GameLog.Write(ph == 3 ? "The glass gives. The brain sags out of the liquid, every eye shut tight." : "The glass cracks. Its eyes squeeze shut.");
+            GameLog.Event(ph == 3 ? "The glass gives. The brain sags out of the liquid, every eye shut tight." : "The glass cracks. Its eyes squeeze shut.");
         }
 
         static void Start(Fight f)
@@ -141,7 +141,7 @@ namespace GameCore
             f.Started = true; f.Next = Time.time + 1.2f; f.Unit.IsAggroed = true;
             EncounterState.InCombat = true;
             Boss.SplashTitle = Name.ToUpperInvariant(); Boss.SplashSub = "Break the vat"; Boss.SplashAt = Time.unscaledTime;
-            GameLog.Write("Something in the vat opens its eyes.");
+            GameLog.Event("Something in the vat opens its eyes.");
         }
 
         // ---------------- the loop ----------------
@@ -170,7 +170,7 @@ namespace GameCore
                 f.PulseAt = -1f; f.Next = now + 1.6f;
                 Pulse = new Wave();
                 CombatFx.Push("pulse", f.Unit, null, null).Now = true;
-                GameLog.Write("Its eyes snap open. A wave of force rolls out across the room.");
+                GameLog.Event("Its eyes snap open. A wave of force rolls out across the room.");
                 return;
             }
             if (players.Count == 0) return;
@@ -244,13 +244,13 @@ namespace GameCore
                     float start = Mathf.Atan2(target.Y - f.Unit.Y, target.X - f.Unit.X) * Mathf.Rad2Deg + 90f;   // starts off to your side, comes round
                     Beams.Add(new Beam { Angle = start, Until = now + LaserFor });
                     if (f.Phase >= 3) Beams.Add(new Beam { Angle = start + 180f, Until = now + LaserFor });
-                    GameLog.Write("A beam lances out of the vat and starts to sweep the room.");
+                    GameLog.Event("A beam lances out of the vat and starts to sweep the room.");
                     Done(f, mv, now);
                     break;
                 case "pull":
                     f.PullUntil = now + PullFor; f.NextOrb = now + 0.4f; Done(f, mv, now);
                     CombatFx.Push("void", f.Unit, null, null).Now = true;
-                    GameLog.Write("The air bends toward the vat.");
+                    GameLog.Event("The air bends toward the vat.");
                     break;
                 default: Done(f, mv, now); break;
             }
@@ -292,7 +292,7 @@ namespace GameCore
                 TerrainMap.SetTileType(x, y, TileType.Empty, "");
                 ripped++;
             }
-            GameLog.Write(ripped > 0 ? "Your cover tears loose from the floor and hangs in the air." : "Nothing near you to tear loose - it glares.");
+            GameLog.Event(ripped > 0 ? "Your cover tears loose from the floor and hangs in the air." : "Nothing near you to tear loose - it glares.");
         }
 
         /// <summary>The cover piece to rip for a player: a neighbour on the vat's side first, then any next to them, then the nearest within 7 tiles.</summary>
@@ -428,12 +428,12 @@ namespace GameCore
             {
                 f.Stage = "rise"; f.StageAt = now;
                 var g = CombatFx.Push("release", f.Unit, null, null); g.Now = true;
-                GameLog.Write("Its eyes open again. It lifts off the floor of the vat.");
+                GameLog.Event("Its eyes open again. It lifts off the floor of the vat.");
             }
             else if (f.Stage == "rise" && now - f.StageAt >= RiseFor)
             {
                 f.Stage = "eye"; f.StageAt = now;
-                GameLog.Write("Something huge slides out from behind it - an eye, on a cord of flesh. It looks straight at you.");
+                GameLog.Event("Something huge slides out from behind it - an eye, on a cord of flesh. It looks straight at you.");
             }
             else if (f.Stage == "eye" && now - f.StageAt >= EyeFor)
             {
@@ -441,7 +441,7 @@ namespace GameCore
                 CombatFx.Push("escape", f.Unit, null, null).Now = true;
                 EncounterState.Enemies.Remove(f.Unit);
                 Story.Set(Escaped);
-                GameLog.Write("The void opens in the vat and swallows it whole. It isn't dead. It's somewhere else, thinking.");
+                GameLog.Event("The void opens in the vat and swallows it whole. It isn't dead. It's somewhere else, thinking.");
                 Rt.AddFocus(Player.Current, Rt.FocusMax);
                 TurnLoop.CheckCombatEnd();
             }

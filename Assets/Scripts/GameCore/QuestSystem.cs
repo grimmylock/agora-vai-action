@@ -139,10 +139,10 @@ namespace GameCore
             player.ActiveQuests.Add(aqNew);
             // accepted where the job is (or for an already-found hidden node): set it up now
             foreach (var o in objectives.Where(o => o.Kind == "SkillCheck" && o.HiddenNodeId != null && MacroState.Current.DiscoveredHiddenNodes.Contains(o.HiddenNodeId))) o.Done = true;
-            GameLog.Write($"Quest accepted: {q.Hook}");
-            GameLog.Write($"  Complication (d6 = {aqNew.Complication}): {ComplicationText(aqNew.Complication)}");
+            GameLog.Event($"Quest accepted: {q.Hook}");
+            GameLog.Event($"  Complication (d6 = {aqNew.Complication}): {ComplicationText(aqNew.Complication)}");
             var (g, alt) = Sides(q, zoneId);
-            GameLog.Write($"  Two ways to finish: turn in to the {g}, or take it to the {alt} instead.");
+            GameLog.Event($"  Two ways to finish: turn in to the {g}, or take it to the {alt} instead.");
             if (objectives.Any(o => o.Kind == "Kill" || o.Kind == "ClearZone")) SpawnTargets(aqNew, MacroMapDatabase.Find(zoneId));   // Batch 44: they're out there now
             if (aqNew.Complication == 2) SendRival(aqNew);
             if (aqNew.AllDone) CompleteQuest(player, aqNew);
@@ -238,7 +238,7 @@ namespace GameCore
         static void FindClue(ActiveQuest aq, QuestObjectiveRuntime o)
         {
             o.Done = true;
-            GameLog.Write($"[QUEST] You found what you were looking for: \"{QuestDatabase.Find(aq.QuestId)?.Hook}\".");
+            GameLog.Event($"[QUEST] You found what you were looking for: \"{QuestDatabase.Find(aq.QuestId)?.Hook}\".");
             if (aq.AllDone) CompleteQuest(Player.Current, aq);
         }
 
@@ -258,8 +258,8 @@ namespace GameCore
             var (aq, o) = open.OrderBy(c => Dist(p, c.o.ClueX, c.o.ClueY)).First();
             int d = Dist(p, o.ClueX, o.ClueY);
             if (d <= 2 * ClueRange()) FindClue(aq, o);
-            else if (d <= 30) GameLog.Write($"[QUEST] Signs point {ZoneTravel.Compass(o.ClueX - p.X, o.ClueY - p.Y)} - what you're after is that way.");
-            else GameLog.Write("[QUEST] Nothing here. What you're after is somewhere else in this zone.");
+            else if (d <= 30) GameLog.Event($"[QUEST] Signs point {ZoneTravel.Compass(o.ClueX - p.X, o.ClueY - p.Y)} - what you're after is that way.");
+            else GameLog.Event("[QUEST] Nothing here. What you're after is somewhere else in this zone.");
         }
 
         // ---- Completion & reward ----
@@ -341,7 +341,7 @@ namespace GameCore
             }
             if (humans.Count > 0) SquadManager.PlaceQuestSquad(zone.Id, faction, humans, aq.QuestId);
             if (mutants.Count > 0) SquadManager.PlaceQuestSquad(zone.Id, "Mutant", mutants, aq.QuestId);
-            if (humans.Count + mutants.Count > 0) GameLog.Write($"[QUEST] Your targets for \"{QuestDatabase.Find(aq.QuestId)?.Hook}\" are in {zone.Name}.");
+            if (humans.Count + mutants.Count > 0) GameLog.Event($"[QUEST] Your targets for \"{QuestDatabase.Find(aq.QuestId)?.Hook}\" are in {zone.Name}.");
         }
 
         public static void OnEnterZone(string zoneId)
@@ -364,8 +364,8 @@ namespace GameCore
             if (zone == null || zone.IsSafeZone) return;
             var local = WorldEvents.Factions(zone).Where(f => f != "Mutant" && f != "Zombie");
             var crew = SquadManager.SendQuestSquad(new[] { "Raiders", "Wanderers" }, zone.Id, "rival:" + aq.QuestId) ?? SquadManager.SendQuestSquad(local, zone.Id, "rival:" + aq.QuestId);   // locals may already be there (their base)
-            if (crew == null) { GameLog.Write("[QUEST] Word is someone else wanted this job, but nobody could get there."); return; }
-            GameLog.Write($"[QUEST] You're not the only one on this job - a {crew.Faction} crew is on its way to {zone.Name} for the same thing.");
+            if (crew == null) { GameLog.Event("[QUEST] Word is someone else wanted this job, but nobody could get there."); return; }
+            GameLog.Event($"[QUEST] You're not the only one on this job - a {crew.Faction} crew is on its way to {zone.Name} for the same thing.");
         }
 
         private static readonly string[] Bidders = { "Contractors", "Surveyors", "Garrison", "Wanderers", "Prospectors", "Cartel" };
@@ -394,7 +394,7 @@ namespace GameCore
             if (aq.Complication == 5 && MacroState.Current.Day - aq.AcceptedDay > 2)
             {
                 reward /= 2;
-                GameLog.Write("[QUEST] You took too long - the pay is halved.");
+                GameLog.Event("[QUEST] You took too long - the pay is halved.");
             }
 
             player.NoteQuestDone(q);
@@ -424,13 +424,13 @@ namespace GameCore
                     {
                         if (aq.Complication == 4)   // the double-cross is the giver's. Batch 48: your standing decides it, not a d20
                         {
-                            if (player.GetRepLevel(giver) == "Friendly") GameLog.Write($"[QUEST] The giver starts to short you, then thinks better of crossing a friend of the {giver}. Full pay.");
-                            else { pay /= 2; GameLog.Write($"[QUEST] The giver shorts you - you're nobody to the {giver}. Half pay."); }
+                            if (player.GetRepLevel(giver) == "Friendly") GameLog.Event($"[QUEST] The giver starts to short you, then thinks better of crossing a friend of the {giver}. Full pay.");
+                            else { pay /= 2; GameLog.Event($"[QUEST] The giver shorts you - you're nobody to the {giver}. Half pay."); }
                         }
                         player.Ru += pay;
                         player.AdjustReputation(giver, giverRep * Player.RepPoint);
                         WorldEvents.AddBox(giver, 1, "your work");
-                        GameLog.Write($"Quest complete: {q.Hook} (+{pay} RU, +{giverRep} reputation with the {giver})");
+                        GameLog.Event($"Quest complete: {q.Hook} (+{pay} RU, +{giverRep} reputation with the {giver})");
                     }
                     else
                     {
@@ -438,7 +438,7 @@ namespace GameCore
                         player.AdjustReputation(alt, Player.RepPoint);
                         player.AdjustReputation(giver, -Player.RepPoint);
                         WorldEvents.AddBox(alt, 1, "your work");
-                        GameLog.Write($"Quest complete: {q.Hook} - you sold it to the {alt} (+{altPay} RU). The {giver} won't forget.");
+                        GameLog.Event($"Quest complete: {q.Hook} - you sold it to the {alt} (+{altPay} RU). The {giver} won't forget.");
                     }
                 });
         }
@@ -452,7 +452,7 @@ namespace GameCore
             if (hidden.parent == null) return;
             string r = $"Your contact swears there's a hidden way into {MacroMapDatabase.Find(hidden.id)?.Name} from {hidden.parent.Name}. (true)";
             m.Rumors.Insert(0, $"Day {m.Day}: {r}");
-            GameLog.Write($"[RUMOR] {r}");
+            GameLog.Event($"[RUMOR] {r}");
         }
 
         /// <summary>Economy file's formula: (Zone Base Reward + Target Difficulty Bonus) × Quest

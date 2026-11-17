@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace GameCore
 {
-    public class RuntimeGameLog : MonoBehaviour, IGameLogTarget
+    public class RuntimeGameLog : MonoBehaviour, IGameLogTarget, IGameLogEvents
     {
         private const int MaxLines = 16;
 
@@ -57,6 +57,12 @@ namespace GameCore
             }
 
             GameLog.Target = this;
+        }
+
+        public void Append(string message, bool isEvent)
+        {
+            if (Rt.On && !isEvent) { Debug.Log(message); return; }          // real time: the screen log is for dialogue and world events only (GameLog.Event)
+            AppendLine(message);
         }
 
         public void AppendLine(string message)

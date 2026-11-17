@@ -75,18 +75,18 @@ namespace GameCore
             {
                 Set("keycard");
                 GiveKey(p, "story_keycard", "Alpha Access Keycard");
-                GameLog.Write("[STORY] A dead guard by the airlock still has his keycard clipped on: ALPHA ACCESS - PROJECT HEARTH.");
+                GameLog.Event("[STORY] A dead guard by the airlock still has his keycard clipped on: ALPHA ACCESS - PROJECT HEARTH.");
                 return true;
             }
             if (zone == "secret_lab_alpha" && !Has("alpha") && Near(p, "Sample Storage") != null)
             {
-                if (!Has("keycard")) { GameLog.Write("[STORY] A sealed terminal blinks: ACCESS CARD REQUIRED."); return true; }
+                if (!Has("keycard")) { GameLog.Event("[STORY] A sealed terminal blinks: ACCESS CARD REQUIRED."); return true; }
                 Set("alpha");
                 p.RemoveItem("story_keycard", 1);
                 GiveKey(p, "story_fragment_alpha", "Fragment Alpha (Origin Log)");
-                GameLog.Write("[STORY] Act 1 - Origin. The terminal spits out a data core: the Origin Log.");
-                GameLog.Write("  'Project Hearth, day 412. The Source responds to the lattice. Director approves full-power test.'");
-                GameLog.Write("  The accident wasn't an accident. Somebody was studying something under the reactor before the Zone existed.");
+                GameLog.Event("[STORY] Act 1 - Origin. The terminal spits out a data core: the Origin Log.");
+                GameLog.Event("  'Project Hearth, day 412. The Source responds to the lattice. Director approves full-power test.'");
+                GameLog.Event("  The accident wasn't an accident. Somebody was studying something under the reactor before the Zone existed.");
                 RewardCrate(p, 4, 2);
                 p.CheckRankUp();
                 return true;
@@ -95,8 +95,8 @@ namespace GameCore
             {
                 Set("beta_drive");
                 GiveKey(p, "story_drive_beta", "Lab Beta Research Drive (encrypted)");
-                GameLog.Write("[STORY] Act 2 - Guardians. Behind the archive's fire door, a hardened drive with the Hearth logo. Encrypted.");
-                GameLog.Write("  Dr. Osei at the Dried Lake could crack it. So could you, at a working lab terminal, with a lot of patience.");
+                GameLog.Event("[STORY] Act 2 - Guardians. Behind the archive's fire door, a hardened drive with the Hearth logo. Encrypted.");
+                GameLog.Event("  Dr. Osei at the Dried Lake could crack it. So could you, at a working lab terminal, with a lot of patience.");
                 return true;
             }
             if (Has("beta_drive") && !Has("beta"))
@@ -109,27 +109,27 @@ namespace GameCore
                 }
                 if (zone.StartsWith("secret_lab") && TerrainMap.Landmarks.Any(l => System.Math.Max(System.Math.Abs(l.X - p.X), System.Math.Abs(l.Y - p.Y)) <= 2))
                 {
-                    if (p.Ap < 2) { GameLog.Write("Not enough AP."); return true; }
+                    if (p.Ap < 2) { GameLog.Event("Not enough AP."); return true; }
                     p.Ap -= 2;
                     int roll = UnityEngine.Random.Range(1, 21) + p.IntelligenceMod;
-                    GameLog.Write($"You work the lab terminal on the drive: {roll} vs DC 18.");
+                    GameLog.Event($"You work the lab terminal on the drive: {roll} vs DC 18.");
                     if (roll >= 18) DecodeBeta(p, "The encryption gives way.");
-                    else GameLog.Write("Gibberish. You'll have to try again (or find Dr. Osei).");
+                    else GameLog.Event("Gibberish. You'll have to try again (or find Dr. Osei).");
                     return true;
                 }
             }
             if (zone == "secret_lab_gamma" && Has("beta") && !Has("gamma") && Near(p, "Sealed Vault") != null)
             {
-                if (!p.Inventory.Items.Any(i => i.Id == EelBoss.VaultKeyId)) { GameLog.Write("[STORY] The Sealed Vault's door has a brass lock plate stamped SUB-STATION DEPTHS. The crew who sealed it never came back up. You need their key."); return true; }   // Boss 3: the eel's crewman carries it
-                if (HostilesNear(p, 10)) { GameLog.Write("[STORY] Not with them still on you. Clear the room first."); return true; }
+                if (!p.Inventory.Items.Any(i => i.Id == EelBoss.VaultKeyId)) { GameLog.Event("[STORY] The Sealed Vault's door has a brass lock plate stamped SUB-STATION DEPTHS. The crew who sealed it never came back up. You need their key."); return true; }   // Boss 3: the eel's crewman carries it
+                if (HostilesNear(p, 10)) { GameLog.Event("[STORY] Not with them still on you. Clear the room first."); return true; }
                 Set("gamma");
                 p.MainStoryAct3Done = true;
                 GiveKey(p, "story_fragment_gamma", "Fragment Gamma");
                 var compass = ArtifactDatabase.All["theLodestone"];
                 p.AddItem(new InventoryItem { Id = "theLodestone", Name = compass.Name, Type = "artifact", Qty = 1, WeightKg = compass.WeightKg, Price = 20000 });
-                GameLog.Write("[STORY] Act 3 - The Signal. The vault opens on a hum you feel in your teeth.");
-                GameLog.Write("  The array isn't broadcasting to anyone. It's relaying the Source's voice - and Obelisk answers it like a god.");
-                GameLog.Write("  You take Fragment Gamma, and a legendary artifact from its cradle: The Lodestone.");
+                GameLog.Event("[STORY] Act 3 - The Signal. The vault opens on a hum you feel in your teeth.");
+                GameLog.Event("  The array isn't broadcasting to anyone. It's relaying the Source's voice - and Obelisk answers it like a god.");
+                GameLog.Event("  You take Fragment Gamma, and a legendary artifact from its cradle: The Lodestone.");
                 p.CheckRankUp();
                 return true;
             }
@@ -143,27 +143,27 @@ namespace GameCore
             {
                 Set("wound_heart");
                 GiveArtifact(p, "heartOfTheWound", 22000);
-                GameLog.Write("[LEGEND] At the very edge of The Wound, where the air folds over itself, something pulses like a heartbeat: the Heart of the Wound.");
+                GameLog.Event("[LEGEND] At the very edge of The Wound, where the air folds over itself, something pulses like a heartbeat: the Heart of the Wound.");
                 return true;
             }
             if (zone == "siege_catacombs" && !Has("lucifer") && Near(p, "Sealed Crypt") != null)
             {
-                if (EncounterState.Enemies.Any(e => e.Named && e.IsAlive())) { GameLog.Write("[LEGEND] Not with its guardian still breathing down your neck."); return true; }
-                if (p.Ap < 2) { GameLog.Write("Not enough AP."); return true; }
+                if (EncounterState.Enemies.Any(e => e.Named && e.IsAlive())) { GameLog.Event("[LEGEND] Not with its guardian still breathing down your neck."); return true; }
+                if (p.Ap < 2) { GameLog.Event("Not enough AP."); return true; }
                 p.Ap -= 2;
                 int roll = UnityEngine.Random.Range(1, 21) + p.StrengthMod;
-                GameLog.Write($"You put your shoulder to the crypt's stone lid: {roll} vs DC 18.");
-                if (roll < 18) { GameLog.Write("It doesn't budge. Yet."); return true; }
+                GameLog.Event($"You put your shoulder to the crypt's stone lid: {roll} vs DC 18.");
+                if (roll < 18) { GameLog.Event("It doesn't budge. Yet."); return true; }
                 Set("lucifer");
                 GiveArtifact(p, "lucifer", 24000);
-                GameLog.Write("[LEGEND] The lid grinds aside. In the dust of a very old grave: Lucifer, warm to the touch.");
+                GameLog.Event("[LEGEND] The lid grinds aside. In the dust of a very old grave: Lucifer, warm to the touch.");
                 return true;
             }
             if (zone == "reactor_core" && Has("sponsor") && !Has("ending") && Near(p, "The Last Gate") != null)
             {
                 if (!Has("control_room") && ReactorClear()) OnKill();
-                if (!Has("control_room") || HostilesNear(p, 12)) { GameLog.Write("[STORY] Obelisk still holds the Control Room. You won't get the Gate open under their guns."); return true; }
-                if (!(Has("alpha") && Has("beta") && Has("gamma"))) { GameLog.Write("[STORY] Three sockets in the Gate. You don't have all three Fragments."); return true; }
+                if (!Has("control_room") || HostilesNear(p, 12)) { GameLog.Event("[STORY] Obelisk still holds the Control Room. You won't get the Gate open under their guns."); return true; }
+                if (!(Has("alpha") && Has("beta") && Has("gamma"))) { GameLog.Event("[STORY] Three sockets in the Gate. You don't have all three Fragments."); return true; }
                 LastGate(p);
                 return true;
             }
@@ -175,9 +175,9 @@ namespace GameCore
             Set("beta");
             p.RemoveItem("story_drive_beta", 1);
             GiveKey(p, "story_fragment_beta", "Fragment Beta (decoded drive)");
-            GameLog.Write($"[STORY] {how}");
-            GameLog.Write("  The labs bred the mutants on purpose - Dread Prowlers and worse, guardians for the Source.");
-            GameLog.Write("  And the drive names a relay: the Antenna Grid. Secret Lab Gamma is under it.");
+            GameLog.Event($"[STORY] {how}");
+            GameLog.Event("  The labs bred the mutants on purpose - Dread Prowlers and worse, guardians for the Source.");
+            GameLog.Event("  And the drive names a relay: the Antenna Grid. Secret Lab Gamma is under it.");
         }
 
         /// <summary>Called on every kill: the Reactor Core's Control Room counts as taken once the
@@ -187,7 +187,7 @@ namespace GameCore
             if (target is Mutant nm && nm.Named) OnNamedKilled(nm);
             if (MacroState.Current.CurrentZoneId != "reactor_core" || Has("control_room") || !ReactorClear()) return;
             Set("control_room");
-            GameLog.Write("[STORY] The Control Room falls silent. Nothing stands between you and The Last Gate.");
+            GameLog.Event("[STORY] The Control Room falls silent. Nothing stands between you and The Last Gate.");
         }
 
         // Obelisk's own people stand aside for their prophet-to-be (a Friendly faction doesn't block).
@@ -207,7 +207,7 @@ namespace GameCore
                     string sponsor = i < friends.Count ? friends[i] : "Alone";
                     MacroState.Current.Sponsor = sponsor;
                     Set("sponsor");
-                    GameLog.Write(sponsor == "Alone"
+                    GameLog.Event(sponsor == "Alone"
                         ? "[STORY] Act 4 - you go alone. Nobody will help you through the Siege Ward, and nobody will own you after."
                         : $"[STORY] Act 4 - the {sponsor} back you. Their people will hold the Siege Ward open for you.");
                 });
@@ -234,9 +234,9 @@ namespace GameCore
             foreach (var id in new[] { "story_fragment_alpha", "story_fragment_beta", "story_fragment_gamma" }) p.RemoveItem(id, 1);
             var star = ArtifactDatabase.All["theBlackStar"];
             p.AddItem(new InventoryItem { Id = "theBlackStar", Name = star.Name, Type = "artifact", Qty = 1, WeightKg = star.WeightKg, Price = 25000 });
-            GameLog.Write("[STORY] Act 5 - The Last Gate. Three Fragments, three sockets. The Gate opens on the Source.");
-            GameLog.Write($"[ENDING] {name.ToUpperInvariant()}. {text}");
-            GameLog.Write("  Behind the Gate you find The Black Star. The Zone goes on - and now everyone knows your name.");
+            GameLog.Event("[STORY] Act 5 - The Last Gate. Three Fragments, three sockets. The Gate opens on the Source.");
+            GameLog.Event($"[ENDING] {name.ToUpperInvariant()}. {text}");
+            GameLog.Event("  Behind the Gate you find The Black Star. The Zone goes on - and now everyone knows your name.");
             ApplyEnding(p, apply: true);
             p.MainStoryFinaleDone = true;
             p.CheckRankUp();
@@ -317,7 +317,7 @@ namespace GameCore
             var m = new Mutant(pick.Value.Name, x + 1, y, pick.Value);
             m.MakeNamed(Titles[System.Math.Abs(ZoneExitPlacer.StableHash(zone.Id + MacroState.Current.Day)) % Titles.Length]);
             EncounterState.Enemies.Add(m);
-            GameLog.Write(guardian
+            GameLog.Event(guardian
                 ? $"[LEGEND] Something old is curled around the Sealed Crypt: {m.Name}."
                 : $"[LEGEND] scavengers whisper about this place now. {m.Name} hunts here.");
             WorldEvents.NoteNpc(m.Name, "Hostile", "alive");
@@ -328,7 +328,7 @@ namespace GameCore
         {
             Set("named:" + MacroState.Current.CurrentZoneId);
             WorldEvents.NoteNpc(m.Name, "Hostile", "dead - you killed it");
-            GameLog.Write($"[LEGEND] {m.Name} is dead. People will talk about this.");
+            GameLog.Event($"[LEGEND] {m.Name} is dead. People will talk about this.");
         }
 
         private static void GiveKey(Player p, string id, string name) =>
@@ -338,17 +338,17 @@ namespace GameCore
         /// Tier `tier` table (no junk or cash) plus a Ru purse.</summary>
         private static void RewardCrate(Player p, int tier, int count)
         {
-            GameLog.Write("[STORY] Sample Storage's back room holds a Hearth supply crate:");
+            GameLog.Event("[STORY] Sample Storage's back room holds a Hearth supply crate:");
             for (int i = 0; i < count; i++)
             {
                 LootRoll r = null;
                 for (int k = 0; k < 10 && (r == null || r.Type == "junk" || r.Type == "cash" || r.Type == "consumable"); k++) r = Economy.Roll(tier, trader: true);
                 if (r == null || r.Type == "junk" || r.Type == "cash") continue;
                 p.AddItem(r.ToItem(ItemCondition.Working));
-                GameLog.Write($"  - {r.Name}");
+                GameLog.Event($"  - {r.Name}");
             }
             p.Ru += tier * 500;
-            GameLog.Write($"  - {tier * 500} Ru in old Hearth scrip, still good with the Contractors.");
+            GameLog.Event($"  - {tier * 500} Ru in old Hearth scrip, still good with the Contractors.");
         }
     }
 }

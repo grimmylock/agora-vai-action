@@ -179,7 +179,7 @@ namespace GameCore
             var p = Player.Current;
             if (p == null) { Close(); return; }
             var sb = new StringBuilder();
-            sb.AppendLine($"<size=24>{p.CharacterName.ToUpperInvariant()} - {p.Rank.ToUpperInvariant()}</size>   Ru {p.Ru}   AP {p.MaxAp}   AC {p.Ac}   HP {p.Hp}/{p.MaxHp}");
+            sb.AppendLine($"<size=24>{p.CharacterName.ToUpperInvariant()} - {p.Rank.ToUpperInvariant()}</size>   Ru {p.Ru}   HP {p.Hp}/{p.MaxHp}");
             sb.AppendLine($"S {p.Stats.S}  P {p.Stats.P}  A {p.Stats.A}  I {p.Stats.I}");
             sb.AppendLine();
             sb.AppendLine("<color=#e0c060>REPUTATION</color>  (-3 Hostile, +3 Friendly)");

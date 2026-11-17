@@ -44,7 +44,7 @@ namespace GameCore
         static float DistTo(Player p, string landmark) { var l = Mark(landmark); return l == null ? 9999f : Mathf.Sqrt((p.X - l.X) * (p.X - l.X) + (p.Y - l.Y) * (p.Y - l.Y)); }
 
         static void Put(ICombatant u, int x, int y) { var (fx, fy) = TerrainMap.FindNearestEnterable(x, y); u.X = fx; u.Y = fy; Rt.SetOffset(u, 0f, 0f); }
-        static void Say(string text) => GameLog.Write(text);
+        static void Say(string text) => GameLog.Event(text);
         static void Hear(string sfx, float vol = 1f) { var p = Player.Current; if (p != null) Sfx.Play(sfx, TacticalGridView.GridToWorld(p.X, p.Y), vol, 0.05f, 1f); }
 
         // ------------------------------------------------------------------ the per-frame tick

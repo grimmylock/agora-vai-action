@@ -20,14 +20,14 @@ namespace GameCore
         public static string Body(Mutant e, Player p)
         {
             var lines = new List<string>();
-            lines.Add($"<color=#c8443a>HP {e.Hp}/{e.MaxHp}</color>   AC {e.Ac}   AP {(e is HumanEnemy ? CombatRules.NpcAp(e) : e.Db?.Ap ?? 4)}   MP {e.MaxMp}");
+            lines.Add(Rt.On ? $"<color=#c8443a>HP {e.Hp}/{e.MaxHp}</color>" : $"<color=#c8443a>HP {e.Hp}/{e.MaxHp}</color>   AC {e.Ac}   AP {(e is HumanEnemy ? CombatRules.NpcAp(e) : e.Db?.Ap ?? 4)}   MP {e.MaxMp}");   // (real time has no AC/AP/MP)
             if (e is HumanEnemy h)
             {
                 lines.Add(h.Morale == "Steady" ? "Steady" : h.Morale == "Shaken" ? "<color=#e8c547>Shaken</color> (-2 to hit)" : $"<color=#62b25a>{h.Morale}</color>");
                 var w = h.EquippedWeapon;
                 lines.Add("");
                 lines.Add("<color=#e8c547>WEAPON</color>");
-                if (w == null || h.GunDropped) lines.Add(h.GunDropped ? "Gun on the ground (2 AP to pick up)" : "Unarmed");
+                if (w == null || h.GunDropped) lines.Add(h.GunDropped ? Rt.On ? "Gun on the ground" : "Gun on the ground (2 AP to pick up)" : "Unarmed");
                 else
                 {
                     string cat = CombatRules.Category(w.Db);
