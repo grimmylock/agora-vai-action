@@ -391,8 +391,11 @@ namespace GameCore
             int dist = CombatantUtil.Distance(m, player);
             string behavior = m.Db?.Behavior ?? "pack";
 
+            // 2026-11-17 (Yan: fix the leftovers): in real time a mutant with attack strips (MutantAttack) pounces, slams and throws on its own cooldowns - the old turn-based leap (an instant teleport and a d20 dodge), the
+            // boulder every third turn and the once-a-fight slam with its d20 stay for the turn-based game only.
+            bool strips = Rt.On && MutantAttack.Has(m);
             // Dread Prowler: circles at 3-5, then Leap Attack (2 AP + all MP) from up to MP tiles.
-            if (m.Db != null && m.Db.Leap && m.StatusEffects.Wound != "Leg")   // Batch 57: a hobbled Prowler can't leap
+            if (!strips && m.Db != null && m.Db.Leap && m.StatusEffects.Wound != "Leg")   // Batch 57: a hobbled Prowler can't leap
             {
                 if (dist >= 2 && dist <= m.Reach && LeapAttack(m, player)) { m.StalkRounds = 0; return; }
                 // Batch 61: circling only works if a leap line opens up; behind a wall or up a ledge it never does
@@ -403,7 +406,7 @@ namespace GameCore
 
             // Batch 130 (Yan: "if he can't reach the player in 3 turns he throws a boulder he rips of the ground, if the player is hit it
             // loses half his mp next turn"): three turns of charging without reaching you, and the fourth it throws instead.
-            if (m.Db != null && m.Db.GroundSlam)
+            if (!strips && m.Db != null && m.Db.GroundSlam)
             {
                 if (CombatantUtil.IsAdjacent(m, player)) m.ChaseTurns = 0;
                 else if (m.ChaseTurns >= BoulderAfterTurns && dist <= BoulderRange && grid.CheckLineOfSight(m.X, m.Y, player.X, player.Y))
@@ -412,7 +415,7 @@ namespace GameCore
             }
 
             // Blight Brute: Ground Slam once per encounter when it gets someone adjacent.
-            if (m.Db != null && m.Db.GroundSlam && !m.SlamUsed)
+            if (!strips && m.Db != null && m.Db.GroundSlam && !m.SlamUsed)
             {
                 Approach(m, player.X, player.Y, packMate: false);
                 if (CombatantUtil.IsAdjacent(m, player)) { GroundSlam(m, player); return; }
