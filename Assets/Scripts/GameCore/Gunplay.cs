@@ -472,8 +472,10 @@ namespace GameCore
         }
 
         /// <summary>Damage (armor as before: CombatRules.PhysicalDamage), aggro, death hooks and the shot's effects.</summary>
+        public static System.Action<ICombatant, Weapon, Ballistics.Hit> Probe;   // the harness listens to where every round ends (RTBAL=7); nothing in the game sets it
         static void Resolve(ICombatant shooter, Weapon w, Ballistics.Hit hit, bool ambush, bool first, float delay, int pellets)
         {
+            Probe?.Invoke(shooter, w, hit);
             var fx = new FxEvent { Kind = "shot", Actor = shooter, Weapon = w, Now = true, Delay = delay, Pellet = !first, Landed = true,
                 EndX = hit.EndX, EndY = hit.EndY, FromX = shooter.X, FromY = shooter.Y };
             if (hit.CoverX >= 0)

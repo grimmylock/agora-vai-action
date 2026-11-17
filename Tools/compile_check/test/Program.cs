@@ -54,6 +54,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "5") WeaponApReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3580,6 +3581,41 @@ static class Program {
           for (int yy = y - 50; yy <= y + 50; yy++) for (int xx = x - 50; xx <= x + 50; xx++) { if (xx < 0 || yy < 0 || xx >= TerrainMap.Width || yy >= TerrainMap.Height || !Vision.Sees(xx, yy)) continue; double d = Math.Sqrt((xx - x) * (xx - x) + (yy - y) * (yy - y)); if (d > 50) continue; if (!TerrainMap.CanEnterTile(xx, yy)) continue; tot++; if (d > 10) cnt[0]++; if (d > 15) cnt[1]++; if (d > 30) cnt[2]++; if (d > 40) cnt[3]++; } }
         Console.WriteLine($"VISBENCH open ground in line of sight (of all standable cells seen within 50 tiles) {zid}: beyond 10 tiles {100.0 * cnt[0] / tot:F0}%, beyond 15 {100.0 * cnt[1] / tot:F0}%, beyond 30 {100.0 * cnt[2] / tot:F0}%, beyond 40 {100.0 * cnt[3] / tot:F0}% ({tot / spots.Count} cells per spot)"); }
       Console.WriteLine($"VISBENCH MaxRadius {Vision.MaxRadius} {zid} {TerrainMap.Width}x{TerrainMap.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms per Vision.Update ({n} calls)");
+    }
+  }
+  // RTBAL=7: where do enemy shots really come from and where do they end? Squads of 4 spawn 38-46 tiles from a standing player on the real Tier 1 map (random open spots), already aware of him, and
+  // fight with the real AI for 45 s of game time. Every round they fire at him is logged by distance: body (hit him), blocked (wall or cover) or air (flew past).
+  static void FightRangeReport() {
+    var edges = new[] { 0, 10, 15, 20, 30, 40, 60 };
+    foreach (var (rank, tier) in new[] { ("Experienced", 1), ("Veteran", 3) }) {
+      var rows = new Dictionary<string, int[]>(); int trials = 0, downed = 0; var firstShot = new List<float>();
+      for (int seed = 0; seed < 40; seed++) {
+        UnityEngine.Random.InitState(5000 + seed); var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); p.Hp = p.MaxHp;
+        var rnd = new Random(seed * 31 + 7); int px = 0, py = 0;
+        for (int tries = 0; tries < 5000; tries++) { px = rnd.Next(60, TerrainMap.Width - 60); py = rnd.Next(60, TerrainMap.Height - 60); if (TerrainMap.CanEnterTile(px, py)) break; }
+        p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); var foes = new List<HumanEnemy>();
+        int ex = -1, ey = -1;
+        for (int tries = 0; tries < 8000 && ex < 0; tries++) { int x = px + rnd.Next(-46, 47), y = py + rnd.Next(-46, 47); int d = Math.Max(Math.Abs(x - px), Math.Abs(y - py)); if (d >= 38 && d <= 46 && x > 2 && y > 2 && x < TerrainMap.Width - 2 && y < TerrainMap.Height - 2 && TerrainMap.CanEnterTile(x, y)) { ex = x; ey = y; } }
+        if (ex < 0) continue;
+        for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", rank, tier); int sx = ex, sy = ey; for (int k = 0; k < 40; k++) { int x = ex + rnd.Next(-3, 4), y = ey + rnd.Next(-3, 4); if (TerrainMap.CanEnterTile(x, y) && TerrainMap.UnitAt(x, y, null) == null) { sx = x; sy = y; break; } }
+          var h = new HumanEnemy("Raider" + i, sx, sy, "Raiders", rank, w, a) { IsAggroed = true }; Rt.SetOffset(h, 0f, 0f); foes.Add(h); EncounterState.Enemies.Add(h); }
+        float tNow = 0f; float firstAt = -1f;
+        Gunplay.Probe = (sh, wp, hit) => {
+          if (!(sh is HumanEnemy)) return; var (sx2, sy2) = Ballistics.Pos(sh); var (tx2, ty2) = Ballistics.Pos(p); float d = (float)Math.Sqrt((sx2 - tx2) * (sx2 - tx2) + (sy2 - ty2) * (sy2 - ty2));
+          int b = 0; for (int e = 0; e < edges.Length - 1; e++) if (d >= edges[e]) b = e;
+          string key = CombatRules.Category(wp.Db); if (!rows.TryGetValue(key, out var arr)) rows[key] = arr = new int[(edges.Length - 1) * 3];
+          arr[b * 3 + (hit.Unit == p ? 0 : hit.Wall || hit.Cover ? 1 : 2)]++; if (firstAt < 0f) firstAt = tNow; };
+        UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; EncounterState.InCombat = true; Contact.Spot(p); const float dt = 1f / 30f;
+        for (; tNow < 45f && p.Hp > 0 && !Body.Down(p); tNow += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); Gunplay.Fly(dt); }
+        Gunplay.Probe = null; trials++; if (p.Hp <= 0 || Body.Down(p)) downed++; if (firstAt >= 0f) firstShot.Add(firstAt);
+        EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; }
+      firstShot.Sort();
+      Console.WriteLine($"FIGHTRANGE squads of 4 {rank} (tier {tier} loadouts), {trials} trials on the real map, player standing still; downed in {downed}; first shot at {(firstShot.Count > 0 ? firstShot[firstShot.Count / 2] : -1f):0.0} s (median, {firstShot.Count} had one)");
+      var all = new int[(edges.Length - 1) * 3]; foreach (var a in rows.Values) for (int i = 0; i < all.Length; i++) all[i] += a[i];
+      foreach (var kv in rows.Concat(new[] { new KeyValuePair<string, int[]>("ALL", all) }))
+      { var sb = new System.Text.StringBuilder($"  {kv.Key,-8}"); int tot = kv.Value.Sum();
+        for (int e = 0; e < edges.Length - 1; e++) { int n = kv.Value[e * 3] + kv.Value[e * 3 + 1] + kv.Value[e * 3 + 2]; sb.Append($" | {edges[e]}-{edges[e + 1]}t {(tot > 0 ? 100 * n / tot : 0)}% (body {(n > 0 ? 100 * kv.Value[e * 3] / n : 0)}/wall {(n > 0 ? 100 * kv.Value[e * 3 + 1] / n : 0)}/air {(n > 0 ? 100 * kv.Value[e * 3 + 2] / n : 0)})"); }
+        Console.WriteLine(sb.ToString() + $" | {tot} rounds"); }
     }
   }
   static void RtChecks() {
