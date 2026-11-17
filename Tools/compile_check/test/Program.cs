@@ -47,6 +47,7 @@ static class Program {
     RaidChecks();
     RtChecks();
     RtBalanceChecks();
+    if (Environment.GetEnvironmentVariable("RTBAL") != null) WeaponBalanceReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3315,6 +3316,23 @@ static class Program {
       Rt.WorldTick(p); Rt.Glide(dt);
     }
     Rt.On = was;
+  }
+
+  // Weapon balance report (RTBAL=1): per gun, from the real-time tables (Gunplay.For, ClassDamage, Ballistics.PartMult): damage per round to the torso and head,
+  // rounds to kill a 1000 HP target, seconds to dump a magazine, sustained damage per second including the reload, and the damage a full magazine does.
+  static void WeaponBalanceReport() {
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine("gun | cat | tier | base dmg | torso | head | rpm | mag | reload s | reach | rounds to kill (torso) | s to kill (mag dump) | sustained dps | mag damage | steady deg | kick");
+    foreach (var cat in new[] { "sidearm", "smg", "assault", "shotgun", "sniper", "heavy" }) {
+      foreach (var kv in WeaponDatabase.Categories[cat]) {
+        var db = kv.Value; var w0 = W(cat, kv.Key); var hd = Gunplay.For(w0);
+        int pel = hd.Pellets > 1 ? hd.Pellets : 1;
+        float torso = Gunplay.RoundDamage(w0, "Torso", 3f, pel) * pel, head = Gunplay.RoundDamage(w0, "Head", 3f, pel) * pel;   // a shotgun's pellets all landing at 3 tiles
+        float perSec = hd.Rpm / 60f, rtk = (float)Math.Ceiling(1000f / torso), dump = w0.MagCapacity / perSec, sust = w0.MagCapacity * torso / (dump + hd.ReloadTime);
+        sb.AppendLine($"{db.Name} | {cat} | {db.Tier} | {db.BaseDamage} | {torso:0} | {head:0} | {hd.Rpm:0} | {w0.MagCapacity} | {hd.ReloadTime:0.0} | {hd.Reach:0} | {rtk:0} | {(rtk - 1) / perSec:0.00} | {sust:0} | {w0.MagCapacity * torso:0} | {hd.Steady:0.00} | {hd.Kick:0.0}");
+      }
+    }
+    Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_balance.txt", sb.ToString());
   }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
