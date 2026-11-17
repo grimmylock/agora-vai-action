@@ -51,6 +51,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "2") WeaponVsArmorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "3") GangKillReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "4") AmmoReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "5") WeaponApReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3341,10 +3342,10 @@ static class Program {
   // Real-combat weapon test (RTBAL=2): per gun, distance and armor tier, the average damage a fired round does to a standing human in a real armor of that tier (the tier's median
   // Phys-DR armor, helmet included), measured by firing hundreds of real rounds through Gunplay.Shoot / Ballistics / Resolve with the player's own steady-up, kick and bloom
   // (steadied aim, holding the trigger on automatics, tapping at 4 a second on the rest). Then seconds to kill 1000 HP with magazines and reloads counted.
-  static (float dmgPerRound, int hitPct, float rate) RtRoundMC(string cat, string key, int dist, int tier, bool auto, bool burst, int seed) {
+  static (float dmgPerRound, int hitPct, float rate) RtRoundMC(string cat, string key, int dist, int tier, bool auto, bool burst, int seed, string kind = "Standard") {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Random.InitState(seed);
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 3; x <= px + 45; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
-    p.EquipWeapon(cat, key); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); var w = p.EquippedWeapon; var hd = Gunplay.For(w);
+    p.EquipWeapon(cat, key); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); var w = p.EquippedWeapon; w.CurrentAmmoType = kind; var hd = Gunplay.For(w);
     var armors = ArmorDatabase.Tiers["tier" + tier].Values.OrderBy(a => a.PhysDR).ToList(); var armor = armors[armors.Count / 2];
     var d = new HumanEnemy("Dummy", px + dist, py, "Raiders", "Rookie", null, armor) { IsAggroed = true }; d.MaxHp = d.Hp = 1000000; EncounterState.Enemies.Add(d); Rt.SetOffset(d, 0f, 0f);
     var aim = Gunplay.AimOf(p); aim.Steady = 1f; aim.Bloom = 0f; float interval = auto ? 60f / hd.Rpm : Math.Max(60f / hd.Rpm, 0.25f); const float BurstRest = 0.35f;
@@ -3409,6 +3410,29 @@ static class Program {
       foreach (var l in c.Loads) sb.AppendLine($"{c.Id} | {c.Class} | {c.Box} | {(l == c.Loads[0] ? guns : "")} | {l.Name} | {l.Kind} | {l.Damage:0.00} | {l.DrMult:0.00} | {(l.Hollow ? "yes" : "")} | {l.Tier} | {l.RoundPrice:0.#} | {l.RoundPrice * c.Box:0}");
     }
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/ammo_table.txt", sb.ToString());
+  }
+
+  // Tier 3+ guns with armor-piercing rounds (RTBAL=5): seconds to kill 1000 HP in tier 3/4/5 armor at 6 and 15 tiles with the standard load and with the caliber's armor-piercing load.
+  static void WeaponApReport() {
+    var sb = new System.Text.StringBuilder("gun | cat | tier | AP load | armor x | AP dmg | " + string.Join(" | ", new[] { 6, 15 }.SelectMany(dd => new[] { 3, 4, 5 }.SelectMany(tt => new[] { $"{dd}t T{tt} std", $"{dd}t T{tt} AP" }))) + " | same-tier all hits, std | same-tier all hits, AP\n");
+    var med = new Dictionary<int, float>(); foreach (var kv in ArmorDatabase.Tiers) { var l = kv.Value.Values.Select(a => a.PhysDR).OrderBy(x => x).ToList(); med[int.Parse(kv.Key.Replace("tier", ""))] = l[l.Count / 2]; }
+    foreach (var cat in new[] { "sidearm", "smg", "assault", "shotgun", "sniper", "heavy" })
+      foreach (var kv in WeaponDatabase.Categories[cat]) {
+        var db = kv.Value; if (db.Tier < 3) continue; var w0 = W(cat, kv.Key); var hd = Gunplay.For(w0); bool auto = hd.Auto; var ap = AmmoDatabase.Of(db)?.Find("ArmorPiercing");
+        var cells = new List<string>();
+        foreach (int dd in new[] { 6, 15 }) foreach (int tt in new[] { 3, 4, 5 }) foreach (var kind in new[] { "Standard", "ArmorPiercing" }) {
+          if (kind == "ArmorPiercing" && ap == null) { cells.Add("no AP"); continue; }
+          float best = 1e9f;
+          foreach (bool burst in auto ? new[] { false, true } : new[] { false }) {
+            var r = RtRoundMC(cat, kv.Key, dd, tt, auto, burst, 7, kind);
+            float rn = r.dmgPerRound <= 0.01f ? 1e9f : 800f / r.dmgPerRound; float secs = rn / r.rate + (float)Math.Floor(rn / w0.MagCapacity) * hd.ReloadTime; best = Math.Min(best, secs); }
+          cells.Add(best > 60f ? "-" : best.ToString("0.0")); }
+        float Allhits(string kind) { var ld = AmmoDatabase.Load(db, kind); if (ld == null) return -1f; int pel = hd.Pellets > 1 ? hd.Pellets : 1; float torso = Gunplay.RoundDamage(w0, "Torso", 3f, pel) * pel * Gunplay.TuneMult(w0, true);
+          int dmg = CombatRules.PhysicalDamage(torso, ld, med[db.Tier], db.IgnorePhysDRPercent ?? 0f); int rounds = (int)Math.Ceiling(800f / dmg); float rate = hd.Auto || cat == "smg" || cat == "heavy" ? hd.Rpm / 60f : Math.Min(hd.Rpm / 60f, 4f); return (rounds - 1) / rate + ((rounds - 1) / w0.MagCapacity) * hd.ReloadTime; }
+        float a1 = Allhits("Standard"), a2 = ap == null ? -1f : Allhits("ArmorPiercing");
+        sb.AppendLine($"{db.Name} | {cat} | {db.Tier} | {(ap == null ? "-" : ap.Name)} | {(ap == null ? "-" : ap.DrMult.ToString("0.00"))} | {(ap == null ? "-" : ap.Damage.ToString("0.00"))} | {string.Join(" | ", cells)} | {a1:0.0} | {(a2 < 0 ? "no AP" : a2.ToString("0.0"))}");
+      }
+    Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_ap.txt", sb.ToString());
   }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
