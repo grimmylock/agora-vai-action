@@ -6357,3 +6357,5 @@ Yan: "make it so the effective range of each weapon is half of its total range, 
 - Harness: the fall-off check rewritten to the new numbers; the rest green. The balance tables (`WEAPON_VS_ARMOR_RT.md`, slug, AP, tier list) were measured with the old start distances and are NOT regenerated: the 6 m and 15 m columns are unchanged for most guns, the 30 m column is lower for pistols/SMGs/rifles. Not played in Unity.
 
 Tables regenerated after the effective-range change (2026-11-17): `WEAPON_VS_ARMOR_RT.md`, `WEAPON_AP_RT.md`, `WEAPON_BALANCE_RT.md` (RTBAL=1,2,4,5,6; the 30 m columns now include the fall-off from half the reach). The tier-list spreadsheets were not rebuilt.
+
+Tier-list spreadsheet rebuilt (2026-11-17) from the regenerated tables: `ArtSource/weapons/WEAPON_TIERLIST_RT.xlsx` (my base file, no notes column; Yan's edited copy `WEAPON_TIERLIST_RT_YAN.xlsx` is untouched). Yan: "now we can use range as balancing as well if needed" - range (reach and the half-reach effective range) is a lever next to damage, rate, spread, kick, reload and the ammo load.
