@@ -77,7 +77,7 @@ namespace GameData
             ["shotgun"] = new Dictionary<string, WeaponDef>
             {
                 ["Obrez66"] = new WeaponDef { Name = "Obrez-66", BaseDamage = 300, AmmoType = "12g", MagCapacity = 2, Range = "15cm", WeightKg = 2f, Tier = 1, ActionType = "Break" },
-                ["HaldenLeverShotgun"] = new WeaponDef { Name = "Halden Lever Shotgun", BaseDamage = 310, AmmoType = "12g", MagCapacity = 5, Range = "15cm", WeightKg = 3.6f, Tier = 2 },
+                ["HaldenLeverShotgun"] = new WeaponDef { Name = "Halden Lever Shotgun", BaseDamage = 310, AmmoType = "12g", MagCapacity = 8, Range = "15cm", WeightKg = 3.6f, Tier = 2 },
                 ["Hound13"] = new WeaponDef { Name = "Hound 13", BaseDamage = 300, AmmoType = "12g", MagCapacity = 6, Range = "15cm", WeightKg = 3.2f, Tier = 2 },
                 ["RangerP8"] = new WeaponDef { Name = "Ranger P8", BaseDamage = 300, AmmoType = "12g", MagCapacity = 7, Range = "15cm", WeightKg = 3.6f, Tier = 2 },
                 ["Karusel5"] = new WeaponDef { Name = "Karusel-5", BaseDamage = 290, AmmoType = "12g", CylinderCapacity = 5, Range = "15cm", WeightKg = 3.1f, Tier = 3 },   // 2026-11-15 (Yan: "new one, shotgun revolver"): a carbine with a five-shot cylinder - quicker than a pump between shots, slower to reload (round by round, the revolver way), a little less damage per trigger pull

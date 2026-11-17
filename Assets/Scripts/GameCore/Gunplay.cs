@@ -26,11 +26,11 @@ namespace GameCore
         // bullet speed in tiles a second (RT 8; Velocity below for the guns that differ from their class)
         static readonly Dictionary<string, float[]> Table = new Dictionary<string, float[]>
         {
-            ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 22f, 1.3f, 0.6f, 40f },
-            ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 24f, 1.7f, 0.5f, 45f },
+            ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 40f, 1.3f, 0.6f, 40f },
+            ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 50f, 1.7f, 0.5f, 45f },
             ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f, 1f, 80f },
-            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 5f, 50f, 0f, 70f, 2.6f, 1.6f, 100f },
-            ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 14f, 2.4f, 0.8f, 40f },
+            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 5f, 50f, 0f, 100f, 2.6f, 1.6f, 100f },
+            ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 30f, 2.4f, 0.8f, 40f },
             ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f, 1.5f, 85f },
         };
 
@@ -43,9 +43,9 @@ namespace GameCore
         public static readonly Dictionary<string, (float rate, float vsHuman)> Tune = new Dictionary<string, (float rate, float vsHuman)>
         {
             ["PSh-18 Pchela"] = (1.00f, 0.87f),
-            ["Walden P9"] = (1.00f, 0.65f),
+            ["Walden P9"] = (1.00f, 0.693f),
             ["Halden .45 Service"] = (1.00f, 0.83f),
-            ["Halden Service Revolver"] = (1.00f, 0.87f),
+            ["Halden Service Revolver"] = (1.00f, 1.117f),
             ["SR-21 Gadyuka"] = (1.00f, 0.62f),
             ["Black Harrier"] = (1.00f, 0.62f),
             ["Corvan 5.7"] = (1.00f, 0.66f),
@@ -54,23 +54,23 @@ namespace GameCore
             ["Steppe Eagle"] = (1.00f, 0.72f),
             ["RK-12 Kuvalda"] = (1.00f, 1.68f),
             ["Vosa vz. 62"] = (0.80f, 0.48f),
-            ["PPZ Zubr"] = (0.80f, 0.44f),
+            ["PPZ Zubr"] = (0.80f, 0.404f),
             ["Corvan Wasp-9"] = (0.80f, 0.43f),
             ["Corvan Hornet .45"] = (0.80f, 0.44f),
             ["Corvan Gnat PDW"] = (0.80f, 0.44f),
             ["VKS-74U"] = (0.80f, 0.24f),
-            ["Smerch-3"] = (0.80f, 0.17f),
+            ["Smerch-3"] = (0.80f, 0.192f),
             ["VK-74"] = (0.70f, 0.22f),
             ["VKM"] = (0.70f, 0.23f),
             ["TS-9 Tishina"] = (0.65f, 0.22f),
             ["TR-30"] = (0.65f, 0.22f),
             ["Halden HR36K"] = (0.65f, 0.22f),
             ["VK-103"] = (0.65f, 0.24f),
-            ["BR-86 Bulldog"] = (0.60f, 0.25f),
+            ["BR-86 Bulldog"] = (0.60f, 0.185f),
             ["VK-74 Obelisk"] = (0.60f, 0.25f),
             ["NA-94 Yenisei"] = (0.60f, 0.32f),
-            ["Corvan Bullpup"] = (0.65f, 0.27f),
-            ["Corvan Battle Rifle"] = (0.60f, 0.24f),
+            ["Corvan Bullpup"] = (0.65f, 0.212f),
+            ["Corvan Battle Rifle"] = (0.60f, 0.267f),
             ["Obrez-66"] = (1.00f, 0.70f),
             ["Halden Lever Shotgun"] = (1.00f, 0.58f),
             ["Hound 13"] = (1.00f, 0.59f),
@@ -97,7 +97,7 @@ namespace GameCore
             ["Corvan LMG"] = (0.65f, 0.18f),
             ["RL-44"] = (0.65f, 0.22f),
             ["PL-74"] = (0.60f, 0.22f),
-            ["PL-74P Polovets"] = (0.60f, 0.22f),
+            ["PL-74P Polovets"] = (0.60f, 0.311f),
             ["PL-74P Polovets Zulu"] = (0.60f, 0.31f),
         };
 
@@ -116,20 +116,20 @@ namespace GameCore
             new Dictionary<string, (float, bool, float, float, float, float)>
         {
             // sidearms: quick to raise; revolvers slow to reload, magnums kick
-            ["PSh-18 Pchela"]           = (300, false, 1.4f, 1.4f, 0.40f, 2.2f),
-            ["Walden P9"]               = (360, false, 1.2f, 1.1f, 0.40f, 2.2f),
-            ["Halden .45 Service"]      = (300, false, 1.3f, 1.0f, 0.45f, 3.0f),
-            ["Halden Service Revolver"] = (120, false, 2.6f, 1.0f, 0.50f, 3.2f),
-            ["SR-21 Gadyuka"]           = (340, false, 1.3f, 1.1f, 0.45f, 2.6f),
-            ["Black Harrier"]           = (260, false, 1.5f, 0.9f, 0.50f, 4.4f),
-            ["Corvan 5.7"]              = (380, false, 1.2f, 1.0f, 0.35f, 1.8f),
-            ["Rinaldi R6"]              = (130, false, 2.4f, 0.8f, 0.50f, 3.4f),
-            ["Sperling S-96"]           = (330, false, 1.9f, 0.95f, 0.45f, 3.0f),   // long barrel steadies well, a stripper clip reloads slowly
+            ["PSh-18 Pchela"]           = (200, false, 1.4f, 1.4f, 0.4f, 2.2f),
+            ["Walden P9"]               = (250, false, 1.6f, 1.1f, 0.4f, 2.2f),
+            ["Halden .45 Service"]      = (290, false, 1.3f, 1f, 0.45f, 3f),
+            ["Halden Service Revolver"] = (150, false, 2.6f, 1f, 0.5f, 3.2f),
+            ["SR-21 Gadyuka"]           = (290, false, 1.3f, 1.1f, 0.45f, 2.6f),
+            ["Black Harrier"]           = (250, false, 1.5f, 0.72f, 0.5f, 4.4f),
+            ["Corvan 5.7"]              = (300, false, 1.2f, 1f, 0.35f, 1.8f),
+            ["Rinaldi R6"]              = (190, false, 2.4f, 0.8f, 0.5f, 3.4f),
+            ["Sperling S-96"]           = (300, false, 1.9f, 0.95f, 0.45f, 3f),   // long barrel steadies well, a stripper clip reloads slowly
             ["Steppe Eagle"]            = (200, false, 1.6f, 0.9f, 0.60f, 6.0f),
             ["RK-12 Kuvalda"]           = (75,  false, 3.0f, 0.8f, 0.65f, 7.5f),
             // SMGs: fast, light kick, wide
             ["Vosa vz. 62"]             = (850, true, 1.5f, 2.2f, 0.30f, 1.1f),
-            ["PPZ Zubr"]                = (680, true, 2.4f, 1.8f, 0.45f, 1.2f),
+            ["PPZ Zubr"]                = (680, true, 2.6f, 1.8f, 0.45f, 1.2f),
             ["Corvan Wasp-9"]           = (800, true, 1.8f, 1.4f, 0.40f, 1.2f),
             ["Corvan Hornet .45"]       = (600, true, 1.9f, 1.6f, 0.45f, 2.0f),
             ["Corvan Gnat PDW"]         = (950, true, 1.7f, 1.5f, 0.30f, 1.0f),
@@ -148,20 +148,20 @@ namespace GameCore
             ["Corvan Bullpup"]          = (750, true, 2.3f, 0.55f, 0.65f, 1.6f),
             ["Corvan Battle Rifle"]     = (600, true, 2.4f, 0.5f, 0.85f, 3.0f),
             // snipers: semis fire faster and wander more; bolts are the tightest
-            ["SKN Karabin"]             = (120, false, 2.4f, 0.30f, 0.9f, 4.5f),
+            ["SKN Karabin"]             = (120, false, 2.4f, 0.225f, 0.9f, 3.4f),
             ["Frontier Lever Rifle"]    = (70, false, 3.2f, 0.25f, 0.9f, 5.0f),
-            ["VSN Shepot"]              = (150, false, 2.2f, 0.30f, 0.8f, 3.5f),
+            ["VSN Shepot"]              = (150, false, 2.2f, 0.24f, 0.8f, 3.5f),
             ["M91 Trekhlineyka"]        = (40, false, 3.4f, 0.10f, 1.2f, 7.0f),
             ["Nightwalker .45-70"]      = (55, false, 3.0f, 0.20f, 1.1f, 8.0f),
-            ["Corvan Marksman"]         = (110, false, 2.5f, 0.15f, 1.1f, 5.0f),
-            ["SV-2 Strela"]             = (100, false, 2.6f, 0.15f, 1.2f, 6.0f),
-            ["Sever-98"]                = (45, false, 2.8f, 0.08f, 1.3f, 7.0f),
-            ["VK-127 Grom"]             = (40, false, 3.0f, 0.10f, 1.4f, 9.0f),
-            ["Halden AM-50 Sledge"]     = (70, false, 3.4f, 0.10f, 1.8f, 11f),
+            ["Corvan Marksman"]         = (110, false, 2.5f, 0.12f, 1.1f, 5f),
+            ["SV-2 Strela"]             = (100, false, 2.6f, 0.1125f, 1.2f, 4.5f),
+            ["Sever-98"]                = (36, false, 3.4f, 0.08f, 1.3f, 7f),
+            ["VK-127 Grom"]             = (30, false, 3f, 0.1f, 1.4f, 9f),
+            ["Halden AM-50 Sledge"]     = (70, false, 3.4f, 0.1f, 1.8f, 13.5f),
             ["G-7 Rail Prototype"]      = (40, false, 3.0f, 0.05f, 1.4f, 4.0f),
             // shotguns (spread = where the pattern goes; Choke = how wide it is): pumps and levers slow, semis and doubles quick
             ["Obrez-66"]                = (200, false, 2.0f, 1.8f, 0.35f, 8.0f),
-            ["Halden Lever Shotgun"]    = (70, false, 3.0f, 1.4f, 0.50f, 6.0f),
+            ["Halden Lever Shotgun"]    = (70, false, 2.2f, 1.4f, 0.5f, 6f),
             ["Hound 13"]                = (75, false, 2.6f, 1.3f, 0.50f, 6.0f),
             ["Ranger P8"]               = (80, false, 2.8f, 1.2f, 0.50f, 6.0f),
             ["Karusel-5"]               = (130, false, 2.4f, 1.3f, 0.50f, 6.0f),   // five shots from a cylinder: faster than a pump, a wider spread
@@ -175,9 +175,9 @@ namespace GameCore
             ["PL-62 Kobza"]             = (650, true, 4.0f, 1.4f, 0.90f, 2.2f),
             ["Corvan LMG"]              = (750, true, 4.5f, 1.3f, 0.90f, 1.9f),
             ["RL-44"]                   = (600, true, 4.2f, 1.2f, 1.00f, 2.4f),
-            ["PL-74"]                   = (650, true, 4.5f, 1.1f, 1.00f, 2.6f),
-            ["PL-74P Polovets"]         = (650, true, 4.5f, 1.0f, 1.00f, 2.5f),
-            ["PL-74P Polovets Zulu"]    = (650, true, 4.5f, 0.8f, 1.10f, 2.4f),
+            ["PL-74"]                   = (650, true, 4.5f, 0.88f, 1f, 2.6f),
+            ["PL-74P Polovets"]         = (650, true, 3.9f, 0.8f, 1f, 2.5f),
+            ["PL-74P Polovets Zulu"]    = (650, true, 3.9f, 0.8f, 1.1f, 2.4f),
         };
 
         // RT 8 (Yan: "i want real bullets for everyone, guns will need a bullet velocity stat too"): tiles a second, game time (bullet
@@ -187,7 +187,7 @@ namespace GameCore
         {
             ["Corvan 5.7"] = 55f, ["Sperling S-96"] = 52f, ["Steppe Eagle"] = 50f, ["RK-12 Kuvalda"] = 50f, ["Black Harrier"] = 48f, ["Vosa vz. 62"] = 35f,
             ["Corvan Gnat PDW"] = 60f, ["VKS-74U"] = 70f, ["TS-9 Tishina"] = 32f, ["VSN Shepot"] = 32f, ["Frontier Lever Rifle"] = 60f,
-            ["Nightwalker .45-70"] = 55f, ["VK-127 Grom"] = 105f, ["Halden AM-50 Sledge"] = 110f, ["G-7 Rail Prototype"] = 250f, ["Obrez-66"] = 35f,
+            ["Nightwalker .45-70"] = 55f, ["VK-127 Grom"] = 80f, ["Halden AM-50 Sledge"] = 110f, ["G-7 Rail Prototype"] = 250f, ["Obrez-66"] = 35f,
         };
 
         // RT 6h (Yan: "individual bullet reloading for revolvers and lever actions/ shotguns"): tube shotguns, levers, revolvers
@@ -338,7 +338,31 @@ namespace GameCore
             public int CoverX = -1, CoverY = -1, Pellets = 1;
             public bool Ambush, First, AtEel;                  // AtEel: aimed at the eel (it may hit the parts of its body that are in the air)
             public Ballistics.Hit Hit;                         // set when it lands
+            public int Pierce;                                 // 2026-11-17: targets it can still pass through (Pierce table)
+            public float PierceMul = 0.75f;                    // damage left after each body it passes
+            public HashSet<ICombatant> Hurt;                   // bodies it already went through
         }
+
+        // 2026-11-17 (Yan's sheet: "shots pen targets"): rounds of these guns pass through bodies and keep flying. (targets it can hit with the gun's own rounds, with armor-piercing rounds, damage left
+        // after each body). A round stops at walls and cover as before.
+        public static readonly Dictionary<string, (int targets, int ap, float mul)> Pierce = new Dictionary<string, (int, int, float)>
+        {
+            ["RK-12 Kuvalda"] = (2, 3, 0.75f), ["Steppe Eagle"] = (2, 3, 0.75f),
+            ["SKN Karabin"] = (2, 2, 0.75f), ["VSN Shepot"] = (2, 2, 0.75f), ["Frontier Lever Rifle"] = (2, 2, 0.75f), ["M91 Trekhlineyka"] = (2, 2, 0.75f), ["Nightwalker .45-70"] = (2, 2, 0.75f), ["SV-2 Strela"] = (2, 2, 0.75f),
+            ["Corvan Marksman"] = (3, 3, 0.75f), ["Sever-98"] = (3, 3, 0.75f), ["VK-127 Grom"] = (3, 3, 0.75f), ["Halden AM-50 Sledge"] = (3, 3, 0.75f),
+            ["G-7 Rail Prototype"] = (99, 99, 0.9f), ["PL-74P Polovets Zulu"] = (2, 2, 0.75f),
+        };
+
+        /// <summary>How many bodies a round of this gun can go through (1 = it stops in the first), by the load in the chamber.</summary>
+        public static (int targets, float mul) PierceOf(Weapon w)
+        {
+            if (w?.Db == null || !Pierce.TryGetValue(w.Db.Name, out var p)) return (1, 1f);
+            return (w.CurrentAmmoType == "ArmorPiercing" ? p.ap : p.targets, p.mul);
+        }
+
+        /// <summary>Lever guns (2026-11-17, Yan: "can be levered when hip-fired, hip fire speed increased by 200%"): worked from the hip they fire three times as fast; aimed, they cycle at their listed rate.</summary>
+        public static readonly HashSet<string> Levers = new HashSet<string> { "Nightwalker .45-70", "Frontier Lever Rifle", "Halden Lever Shotgun" };
+        public static float HipRate(Weapon w, bool aiming) => !aiming && w?.Db != null && Levers.Contains(w.Db.Name) ? 3f : 1f;
         public static readonly List<Round> Flying = new List<Round>();
         public static float AimUp;                             // extra climb (tan) of the rounds being made: the eel shot rises to the height of the part under the crosshair
         public static bool AimAtEel;                           // set by the player's fire code while the crosshair is over the eel, read when the rounds are made
@@ -356,7 +380,7 @@ namespace GameCore
                 float side = (aimSide + Gauss() * hd.Choke) * 0.0174533f, up = (aimUp + Gauss() * hd.Choke) * 0.0174533f;
                 float c = (float)System.Math.Cos(side), s = (float)System.Math.Sin(side);
                 var r = new Round { Shooter = shooter, W = w, Map = TerrainMap.ZoneId, X = x0, Y = y0, X0 = x0, Y0 = y0, Dx = dx * c - dy * s, Dy = dx * s + dy * c,
-                    H = h, Up = (float)System.Math.Tan(up) + AimUp, Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0, AtEel = AimAtEel };
+                    H = h, Up = (float)System.Math.Tan(up) + AimUp, Range = hd.Reach, Speed = System.Math.Max(5f, hd.Speed), Wait = delay, Pellets = hd.Pellets, Ambush = ambush, First = p == 0, Pierce = PierceOf(w).targets - 1, PierceMul = PierceOf(w).mul, AtEel = AimAtEel };
                 Flying.Add(r); rounds.Add(r);
             }
             // the trigger pull itself: flash, sound, kick, casing (CombatFxView); the gun points along the shot
@@ -382,12 +406,18 @@ namespace GameCore
                 if (r.Wait > 0f) { r.Wait -= dt; continue; }
                 float step = System.Math.Min(r.Speed * dt, r.Range - r.Gone);
                 float h = r.H + r.Up * (r.Gone + step * 0.5f) / Ballistics.BodyTiles;
-                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, Targets(r.Shooter), r.AtEel);
+                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, r.Hurt == null ? Targets(r.Shooter) : Targets(r.Shooter).Where(u => !r.Hurt.Contains(u)), r.AtEel);
                 r.Through *= hit.Through;
                 if (hit.CoverX >= 0) { r.CoverX = hit.CoverX; r.CoverY = hit.CoverY; }
                 r.X = hit.EndX; r.Y = hit.EndY; r.Gone += hit.Dist;
                 if (hit.Unit == null && !hit.Wall && !hit.Cover && r.Gone < r.Range - 0.001f) continue;
                 hit.Through = r.Through; hit.CoverX = r.CoverX; hit.CoverY = r.CoverY; hit.Dist = r.Gone;
+                if (hit.Unit != null && r.Pierce > 0 && !hit.Wall && !Boss.Deflects(hit.Unit))     // through the body and on (a wall or a deflecting boss stops it)
+                {
+                    Resolve(r.Shooter, r.W, hit, r.Ambush, r.First, 0f, r.Pellets);
+                    (r.Hurt ?? (r.Hurt = new HashSet<ICombatant>())).Add(hit.Unit); r.Pierce--; r.Through *= r.PierceMul; r.First = false;
+                    continue;
+                }
                 Flying.RemoveAt(i--);
                 Land(r, hit);
             }

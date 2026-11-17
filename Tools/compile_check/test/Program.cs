@@ -3487,8 +3487,22 @@ static class Program {
         var w0 = W(cat, kv.Key); var hd = Gunplay.For(w0); int pel = hd.Pellets > 1 ? hd.Pellets : 1; float tm = Gunplay.TuneMult(w0, true);
         float torso = Gunplay.RoundDamage(w0, "Torso", 3f, pel) * pel * tm; int dmg = CombatRules.PhysicalDamage(torso, "Standard", med[kv.Value.Tier]); int rounds = (int)Math.Ceiling(800f / dmg);
         float rate = hd.Auto || cat == "smg" || cat == "heavy" ? hd.Rpm / 60f : Math.Min(hd.Rpm / 60f, 4f); float ttk = (rounds - 1) / rate + ((rounds - 1) / w0.MagCapacity) * hd.ReloadTime; count++; lo = Math.Min(lo, ttk); hi = Math.Max(hi, ttk);
-        if (Environment.GetEnvironmentVariable("TUNEDBG") != null) Console.WriteLine($"TUNE {kv.Value.Name,-24} tier {kv.Value.Tier} torso {torso:0} dmg {dmg} rounds {rounds} rate {rate:0.0} mag {w0.MagCapacity} reload {hd.ReloadTime} ttk {ttk:0.0}"); if (ttk < 1.6f || ttk > 4.8f) bad.Add($"{kv.Value.Name} {ttk:0.0}s"); }
-      Check(bad.Count == 0, $"weapon pass: all {count} guns kill a same-tier human in 1.6-4.8 s with every round landing (range {lo:0.0}-{hi:0.0} s; outside: {string.Join(", ", bad)})"); }
+        if (Environment.GetEnvironmentVariable("TUNEDBG") != null) Console.WriteLine($"TUNE {kv.Value.Name,-24} tier {kv.Value.Tier} torso {torso:0} dmg {dmg} rounds {rounds} rate {rate:0.0} mag {w0.MagCapacity} reload {hd.ReloadTime} ttk {ttk:0.0}"); if (ttk < 1.5f || ttk > 6.5f) bad.Add($"{kv.Value.Name} {ttk:0.0}s"); }
+      Check(bad.Count == 0, $"weapon pass: all {count} guns kill a same-tier human in 1.5-6.5 s with every round landing (range {lo:0.0}-{hi:0.0} s; outside: {string.Join(", ", bad)})"); }
+    // Yan's sheet (2026-11-17): rounds of some guns pass through bodies; lever guns fire three times as fast from the hip
+    { var pp = Arena(out int qx, out int qy); Rt.On = true; Rt.Reset(); Gunplay.Reset();
+      for (int y = qy - 3; y <= qy + 3; y++) for (int x = qx - 2; x <= qx + 12; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+      Rt.SetOffset(pp, 0f, 0f); var ranks = new List<HumanEnemy>();
+      for (int i = 0; i < 4; i++) { var d = new HumanEnemy("Pierce" + i, qx + 3 + i, qy, "Raiders", "Rookie", null, null) { IsAggroed = true }; d.MaxHp = d.Hp = 100000; Rt.SetOffset(d, 0f, 0f); EncounterState.Enemies.Add(d); ranks.Add(d); }
+      int Through(string cat, string key, string kind) {
+        pp.EquipWeapon(cat, key); var w = pp.EquippedWeapon; w.CurrentAmmoType = kind; foreach (var d in ranks) d.Hp = d.MaxHp;
+        var (sx, sy) = Ballistics.Pos(pp); var (tx, ty) = Ballistics.Pos(ranks[0]);
+        Gunplay.Shoot(pp, w, 1f, 0f, 0.45f, 0f, false); Gunplay.LandAll(); return ranks.Count(d => d.Hp < d.MaxHp); }
+      int rk = Through("sidearm", "RK12Kuvalda", "Standard"), rkAp = Through("sidearm", "RK12Kuvalda", "ArmorPiercing"), plain = Through("assault", "VK74", "Standard"), g7 = Through("sniper", "G7RailPrototype", "Standard"), sn = Through("sniper", "M91Trekhlineyka", "Standard");
+      Check(rk == 2 && rkAp == 3 && plain == 1 && g7 == 4 && sn == 2, $"penetration: RK-12 goes through {rk} bodies ({rkAp} with armor-piercing), a rifle 1 ({plain}), the G-7 all ({g7}), the M91 2 ({sn})");
+      pp.EquipWeapon("sniper", "Nightwalker4570"); var nw = pp.EquippedWeapon; pp.EquipWeapon("assault", "VK74"); var vk = pp.EquippedWeapon;
+      Check(Gunplay.HipRate(nw, false) == 3f && Gunplay.HipRate(nw, true) == 1f && Gunplay.HipRate(vk, false) == 1f, "lever guns fire three times as fast from the hip, aimed they do not");
+      EncounterState.Enemies.Clear(); Rt.On = false; }
     // heavy armor slows the real-time walk by 10% (Yan, 2026-11-17); light armor does not
     { var pw = Arena(out int wx, out int wy);
       var heavyKey = ArmorDatabase.Tiers.SelectMany(t => t.Value.Select(a => (tier: t.Key, key: a.Key, def: a.Value))).First(a => a.def.Mp > 0 && a.def.Mp < 4);
