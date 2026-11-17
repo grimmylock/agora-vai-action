@@ -1,9 +1,6 @@
-// Ported from script.js: playerEndTurn(). This is the master enemy-AI turn loop — vision/aggro
-// checks, ambient patrol wandering, per-behavior tactics (ranged/ambush/berserk), morale/fleeing,
-// and finally handing the turn back to the player. Calls to updateUI()/render() from the original
-// are omitted (see the UI wiring notes at the end of this response) — this is the pure game-state
-// version; a MonoBehaviour can call TurnLoop.PlayerEndTurn() and then refresh its own UI/visuals
-// afterward.
+// The world round's shared parts: vision/aggro checks with idle wandering (CheckVisionAndWander, also run once per explored tile by
+// TickAwareness), the minute clock's awareness tick, morale/flee reactions, calling for backup, and the end of a fight. (The turn-based
+// PlayerEndTurn that used to sit here is gone: real time runs these from Rt.WorldTick.)
 using System.Linq;
 using GameData;
 
@@ -11,66 +8,6 @@ namespace GameCore
 {
     public static class TurnLoop
     {
-        /// <summary>Ported from playerEndTurn().</summary>
-        public static void PlayerEndTurn()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player) return;
-
-            GameState.Current.CurrentTurn = Turn.Mutant;
-            GameLog.Write("Player ends turn. Mutant turn begins.");
-            if (EncounterState.InCombat) Atmosphere.Advance(Atmosphere.MinutesPerStep);   // a combat round is a minute too
-
-            var player = Player.Current;
-            player.EndTurn();
-            var grid = GameServices.RequireGrid();
-            EnemyAI.BeginEnemyRound(player);
-            GarrisonRaid.Round(player);   // Batch 87
-            if (EncounterState.Surprised) GameLog.Write("SURPRISE! They never saw you coming and lose their turn.");
-            try
-            {
-
-                foreach (var enemy in EncounterState.Enemies.ToList())
-                {
-                    if (!enemy.IsAlive()) continue;
-                    if (Companion.Is(enemy)) { Companion.Act(player, grid, true); continue; }   // Batch 69: your partner
-
-                    var target = TargetSelection.GetNearestHostile(enemy, new[] { player });
-                    if (target == null) { NpcFights.Act(enemy, grid); continue; }   // Batch 39: friendly to you, maybe not to others
-
-                    // 1 & 2. Vision/aggro check + ambient wander - shared with TickAwareness() below,
-                    // which runs this same check once per tile during free exploration.
-                    CheckVisionAndWander(enemy, player, grid);
-                    if (!enemy.IsAggroed) continue; // wandered instead of fighting this round
-                    if (EncounterState.Surprised) continue;   // Batch 69: caught off guard, they only take cover in their heads
-
-                    if (Companion.TakesFire(enemy, player, grid)) continue;   // Batch 69: your partner is the closer target
-
-                    // 3. Combat (file 04 roles, morale, mutant behaviors) - see EnemyAI.
-                    EnemyAI.TakeTurn(enemy, player);
-                    if (!player.IsAlive()) break;
-                    Perks.TryAdrenaline(player);
-                }
-
-            }
-            catch (System.Exception e)
-            {
-                // one broken hook mustn't leave CurrentTurn stuck on the enemy - log it and carry on
-                UnityEngine.Debug.LogException(e);
-                GameLog.Write("[ERROR] Something went wrong during the enemy turn - see the Console.");
-            }
-            EncounterState.Surprised = false;
-            if (EncounterState.InCombat && player.IsAlive()) Contact.EndRound(player);   // Batch 62
-            CheckCombatEnd();
-            if (GameState.Current.CurrentTurn == Turn.CombatOver) return;
-            if (EncounterState.InCombat) RadioForHelp();
-
-            player.StartTurn();
-            AnomalyEngine.ProcessTurnStart(player);
-            if (!player.IsAlive()) { CheckCombatEnd(); return; }   // bled out at the start of the turn
-            GameState.Current.CurrentTurn = Turn.Player;
-            GameLog.Write("Player turn begins. AP and MP refreshed.");
-        }
-
         /// <summary>New: resolved once, the instant an NPC's morale actually breaks (see
         /// CheckMorale's doc comment - "parting shot, drop-and-run"). First a free parting shot if
         /// the player still has a loaded ranged weapon in range (no AP cost - the NPC is turning
@@ -235,7 +172,7 @@ namespace GameCore
             {
                 _exploreTiles = 0;
                 if (MacroState.Current.SurgeRounds > 0) WorldEvents.TickSurge();
-                player.EndTurn(); player.StartTurn();
+                player.Upkeep();
                 AnomalyEngine.ProcessTurnStart(player);
                 if (!player.IsAlive()) CheckCombatEnd();
             }
@@ -309,7 +246,7 @@ namespace GameCore
                 // win a fight). The defeated squad members are already marked dead in place (see
                 // SquadManager), so re-entering this zone later won't respawn them.
                 GameLog.Write("All hostiles down. Area secured.");
-                player.StartTurn();
+                player.Upkeep();
                 GameState.Current.CurrentTurn = Turn.Player;
                 QuestSystem.CheckClearZone();   // a fight can end by surrender or flight, not just a kill
             }

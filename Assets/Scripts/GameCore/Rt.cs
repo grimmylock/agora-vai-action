@@ -752,7 +752,7 @@ namespace GameCore
             EnemyAI.BeginEnemyRound(local);                                 // ponytail: morale and radio still read the local player
             foreach (var pl in Player.All.ToList())                         // every player's upkeep: bleeding, effects, anomalies
             {
-                pl.EndTurn(); pl.StartTurn();
+                pl.Upkeep();
                 AnomalyEngine.ProcessTurnStart(pl);
                 if (pl.IsAlive()) Contact.EndRound(pl);
             }

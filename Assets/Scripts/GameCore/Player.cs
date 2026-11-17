@@ -229,7 +229,7 @@ namespace GameCore
             // or higher + artifacts + mods; heavy weapons cap at 2; a Leg wound costs 2 (min 1).
             float baseMaxMP = (EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4) + ArmorModMpBonus + ArtifactMpBonus
                 + (CombatRules.RankIndex(Rank) >= CombatRules.RankIndex("Expert") ? 1 : 0);
-            float weaponClamp = CombatantUtil.HasPerk(this, "WalkingTank") ? baseMaxMP : EquippedWeapon?.Db?.MaxMpWhileHeld ?? baseMaxMP;
+            float weaponClamp = EquippedWeapon?.Db?.MaxMpWhileHeld ?? baseMaxMP;
 
             bool isStarving = IsDepleted();
             if (CurrentCarryWeight > totalCap)
@@ -243,18 +243,7 @@ namespace GameCore
             }
 
             if (StatusEffects.Wound == "Leg") MaxMp = System.Math.Max(1, MaxMp - 2);
-            // Batch 76 (Yan): Bull Rush - a melee weapon in hand doubles your MP. Swapping to a gun mid-turn takes the extra
-            // MP back off what you have left (so you can't run on the knife's MP and then shoot); swapping to the blade
-            // mid-turn gives nothing until your next turn.
-            // Batch 78 (Yan): any blade in hand is +2 MP; Bull Rush then doubles that
-            bool blade = EquippedWeapon != null && CombatRules.IsMelee(EquippedWeapon);
-            int rush = blade ? 2 + (CombatantUtil.HasPerk(this, "BullRush") ? MaxMp + 2 : 0) : 0;
-            RushBonus = rush;
-            MaxMp += rush;
         }
-
-        /// <summary>Batch 76: the part of MaxMp that Bull Rush adds right now.</summary>
-        public int RushBonus;
 
         public void ApplyWoundEffects() => ApplyCarryEffects();
 
@@ -496,26 +485,16 @@ namespace GameCore
 
 
 
-        /// <summary>Start-of-turn refresh shared by the turn loop and the end of a fight: MP back
-        /// to full, per-turn trackers reset, Take Cover / Evasive bonuses expire.</summary>
-        public void StartTurn()
+        /// <summary>The player's upkeep, once per world round in real time (Rt.WorldTick, every ~6 s) and once per explored stretch:
+        /// carry effects settle, an unused Aim is lost, Suppression wears off, smoke thins, the Surge ticks in a fight, and what
+        /// resets between fights does. (It was the start and the end of a turn in the turn-based game.)</summary>
+        public void Upkeep()
         {
             ApplyCarryEffects();
-            MovedThisTurn = HitAndRunUsed = RunAndGunUsed = ParryHeld = false;
-            MeleeAttacksThisTurn = SidearmShotsThisTurn = 0;
+            MovedThisTurn = false;
             if (!EncounterState.InCombat) AdrenalineUsed = BracedUsed = false;
-        }
-
-        /// <summary>End of the player's turn: an unused Aim is lost, Suppression wears off.</summary>
-        public void EndTurn()
-        {
             StatusEffects.AimBonus = 0;
             StatusEffects.Suppressed = false;
-            if (EncounterState.InCombat)
-            {
-                if (CombatantUtil.HasPerk(this, "DesperateParry"))
-                { ParryHeld = true; GameLog.Write("Desperate Parry: ready to parry."); }
-            }
             TerrainMap.TickSmoke();
             if (EncounterState.InCombat) WorldEvents.TickSurge();   // exploring, TurnLoop.TickAwareness counts tiles instead
         }

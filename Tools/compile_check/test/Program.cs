@@ -671,7 +671,7 @@ static class Program {
     EncounterState.Enemies.Clear(); EncounterState.InCombat = false; EncounterState.ResetFight();
     for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++)
       if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
-    p.StartTurn(); p.HealPermanent(100);
+    p.Upkeep(); p.HealPermanent(100);
     return p;
   }
 
@@ -4116,8 +4116,7 @@ static class Program {
         b.MakeBoss("Test");
         Check(b.ActivePerks.Contains("MarksmansFocus") && b.ActivePerks.Contains("HighVelocityImpact") && b.ActivePerks.Count == 2, "sniper boss: Marksman's Focus + High-Velocity Impact");
         b.EquipWeaponFromDb(WeaponDatabase.Categories["heavy"]["RL44"]);
-        Check(b.ActivePerks.Contains("Shredder") && b.ActivePerks.Contains("WalkingTank") && !b.ActivePerks.Contains("MarksmansFocus"), "perks follow a new gun");
-        Check(b.TurnMp() > (b.EquippedWeapon.Db.MaxMpWhileHeld ?? 99), $"Walking Tank lifts the heavy MP cap ({b.TurnMp()})");
+        Check(b.ActivePerks.Contains("Shredder") && !b.ActivePerks.Contains("MarksmansFocus"), "perks follow a new gun");
         b.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
         var tgt = Arena(out int tx, out int ty); b.X = tx + 3; b.Y = ty; EncounterState.Enemies.Add(b); b.IsAggroed = true;
       }
@@ -4243,9 +4242,7 @@ static class Program {
     int before = ShopSystem.GetBuyPrice(item); pl.TakePerk("Haggler"); int after = ShopSystem.GetBuyPrice(item);
     Check(after < before, $"haggler {before}->{after}");
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
-    pl.ApplyCarryEffects(); int capped = pl.MaxMp; pl.TakePerk("WalkingTank"); pl.ApplyCarryEffects();
-    Check(pl.MaxMp >= capped, $"walking tank {capped}->{pl.MaxMp}");
-    Check(PerkDatabase.All.Count == 33, "perk count (37 less Overwatch, Suppressive Fire, Run and Gun and Controlled Taps, which were turn-based) " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 24, "perk count (37 less the 13 perks that only worked with turns, AP or MP) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80
@@ -4951,7 +4948,7 @@ static class Program {
     int crossings = 0, fights = 0, kills = 0, restarts = 0;
     var why = new System.Collections.Generic.Dictionary<string, int>();
     var cap = new ConsoleLog(); 
-    GameBootstrap.StartNewGame(new CharacterSpec { Loadout = "Ex-Military", Perk = "Sprinter" });
+    GameBootstrap.StartNewGame(new CharacterSpec { Loadout = "Ex-Military", Perk = "Haggler" });
     string step = "";
     try {
       for (int i = 0; i < 400; i++) {

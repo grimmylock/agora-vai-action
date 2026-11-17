@@ -97,7 +97,7 @@ namespace GameCore
             AnomDR = db.AnomDR;
             MaxMp = db.Mp > 0 ? db.Mp : 4;
 
-            if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue && !CombatantUtil.HasPerk(this, "WalkingTank"))
+            if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue)
                 MaxMp = System.Math.Min(MaxMp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
 
 
@@ -336,7 +336,7 @@ namespace GameCore
         {
             int armorMp = EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4;
             int maxMp = armorMp;
-            if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue && !CombatantUtil.HasPerk(this, "WalkingTank"))
+            if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue)
                 maxMp = System.Math.Min(maxMp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
 
             MaxMp = maxMp;

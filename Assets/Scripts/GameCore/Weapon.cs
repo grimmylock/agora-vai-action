@@ -272,14 +272,6 @@ namespace GameCore
                 GameLog.Write("Breacher: +4 shotgun damage at close range.");
             }
 
-            // Desperate Parry (file 05): a held AP and an Agility DC 14 negate a melee hit.
-            if (isMelee && target is Player parrier && parrier.ParryHeld)
-            {
-                parrier.ParryHeld = false;
-                int pr = UnityEngine.Random.Range(1, 21) + (int)parrier.AgilityMod;
-                GameLog.Write($"Desperate Parry: {pr} vs DC 14 - {(pr >= 14 ? "you knock the blow aside!" : "too slow.")}");
-                if (pr >= 14) return new WeaponFireResult { Hit = false };
-            }
             var shakenBefore = aimedPart == "Head" && target is HumanEnemy hv ? EnemyAI.Squad(hv).Where(o => o != hv && o.Morale == "Shaken").ToList() : null;   // Batch 57
             int hpBefore = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - damage);

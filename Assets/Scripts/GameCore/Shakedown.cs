@@ -139,7 +139,6 @@ namespace GameCore
                 case Refuse:
                     Fight(gang, p);
                     GameLog.Write($"\"Wrong answer.\" {boss.Name}'s gang opens fire!");
-                    if (!Rt.On && GameState.Current.CurrentTurn == Turn.Player) TurnLoop.PlayerEndTurn();   // they shoot first (real-time: they're already drawing)
                     break;
                 default:
                     Fight(gang, p);

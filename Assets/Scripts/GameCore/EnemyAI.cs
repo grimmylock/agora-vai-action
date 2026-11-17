@@ -241,7 +241,6 @@ namespace GameCore
         private static void HumanTurn(HumanEnemy h, Player player)
         {
             var grid = GameServices.RequireGrid();
-            h.NewTurn();   // Batch 86: per-turn perk counters
             AnomalyEngine.ProcessTurnStart(h);
             if (!h.IsAlive()) return;
 

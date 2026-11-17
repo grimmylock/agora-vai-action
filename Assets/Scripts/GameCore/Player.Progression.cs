@@ -23,8 +23,7 @@ namespace GameCore
         public int NamedKilled;                                     // Named mutants and bosses killed
 
         // per-turn / per-fight perk trackers
-        public bool MovedThisTurn, HitAndRunUsed, RunAndGunUsed, ParryHeld, AdrenalineUsed;
-        public int MeleeAttacksThisTurn, SidearmShotsThisTurn;
+        public bool MovedThisTurn, AdrenalineUsed;
 
         private static readonly string[] PerkRanks = { "Professional", "Expert", "Legend" };
 

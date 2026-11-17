@@ -312,13 +312,6 @@ namespace GameCore
                 return;
             }
 
-            if (!psi && target is Player parrier && parrier.ParryHeld)
-            {
-                parrier.ParryHeld = false;
-                int pr = Random.Range(1, 21) + (int)parrier.AgilityMod;
-                GameLog.Write($"Desperate Parry: {pr} vs DC 14 - {(pr >= 14 ? "you knock the blow aside!" : "too slow.")}");
-                if (pr >= 14) return;
-            }
             float tierMult = Rt.On ? 1f : CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
             float raw = AttackDamage * tierMult * DamageMult;
             int damage = psi

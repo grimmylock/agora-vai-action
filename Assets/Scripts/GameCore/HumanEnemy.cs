@@ -43,8 +43,7 @@ namespace GameCore
         {
             int mp = (EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4)
                 + (CombatRules.RankIndex(Rank) >= CombatRules.RankIndex("Expert") ? 1 : 0);
-            if (EquippedWeapon?.Db?.MaxMpWhileHeld != null && !CombatantUtil.HasPerk(this, "WalkingTank")) mp = System.Math.Min(mp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
-            if (CombatRules.IsMelee(EquippedWeapon) && CombatantUtil.HasPerk(this, "BullRush")) mp *= 2;   // Batch 86
+            if (EquippedWeapon?.Db?.MaxMpWhileHeld != null) mp = System.Math.Min(mp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
             if (StatusEffects.Wound == "Leg") mp = System.Math.Max(1, mp - 2);
             return mp;
         }
@@ -125,9 +124,9 @@ namespace GameCore
         static readonly Dictionary<string, string[]> PerksByClass = new Dictionary<string, string[]>
         {
             ["sniper"] = new[] { "MarksmansFocus", "HighVelocityImpact" }, ["assault"] = new[] { "RecoilControl" },
-            ["smg"] = new[] { "BulletHose", "HitAndRun" }, ["heavy"] = new[] { "Shredder", "WalkingTank" },
-            ["shotgun"] = new[] { "Breacher", "StaggeringBlast" }, ["sidearm"] = new[] { "PointBlankExecution", "DoubleTap" },
-            ["melee"] = new[] { "BullRush", "BladeDancer" },
+            ["smg"] = new[] { "BulletHose" }, ["heavy"] = new[] { "Shredder" },
+            ["shotgun"] = new[] { "Breacher", "StaggeringBlast" }, ["sidearm"] = new[] { "PointBlankExecution" },
+            ["melee"] = new string[0],
         };
 
         /// <summary>A boss's 2 perks follow the gun (or blade) in its hands - set again if it picks up another kind.</summary>
@@ -137,9 +136,7 @@ namespace GameCore
             if (EquippedWeapon != null && PerksByClass.TryGetValue(CombatRules.Category(EquippedWeapon.Db), out var mine)) ActivePerks.AddRange(mine);
         }
 
-        public bool TapUsed;                          // Controlled Taps, once a turn
-        public int SidearmShots, Cuts, Attacks;       // Double Tap, Blade Dancer, Hit and Run - this turn
-        public void NewTurn() { TapUsed = false; SidearmShots = Cuts = Attacks = 0; }
+        public int Attacks;
 
         /// <summary>Batch 80: this one carries armor-piercing rounds (SquadManager.Arm) - kept through re-kits and looted guns.</summary>
         public bool ApRounds, ArmRolled;
@@ -266,9 +263,6 @@ namespace GameCore
                     && EquippedWeapon.CurrentMagazine >= CombatRules.BurstRounds(EquippedWeapon);
                 string cat = CombatRules.Category(EquippedWeapon.Db);
                 bool melee = CombatRules.IsMelee(EquippedWeapon);
-                if (melee && CombatantUtil.HasPerk(this, "BladeDancer") && Cuts >= 3) return;
-                if (!burst && cat == "sidearm") SidearmShots++;
-                if (melee) Cuts++;
                 ++Attacks;
                 GameLog.Write($"{Name} {(burst ? "opens up with a burst from" : "fires")} {EquippedWeapon.Name} at {(target is Player ? "Player" : target.Name)}!");
                 EquippedWeapon.Fire(target, burst ? "Burst" : "Single", D20Mod);
