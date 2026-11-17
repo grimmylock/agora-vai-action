@@ -17,6 +17,7 @@ namespace GameCore
         public static readonly string[] Woods = { "crimson_woods", "black_valley", "camp_shelter" };
         public static bool IsElder(Mutant m) => m?.Db?.Name == ElderName;
         public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
+        public const float ArtScale = 32f / 43f;                    // Yan, 2026-11-17: "reduce the gaunt size by 25% ... they barely fit the screen": both Gaunts are drawn at this fraction of their art (HitProfiles are cut at 43 px a tile to match)
         public const float ScreamFor = 1.2f, CallTotal = 2.6f;      // the arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal
         // the wild Gaunt calls a smaller, shorter drive; the Elder drives a whole horde (range tiles, drive seconds, speed factor, seconds between calls)
         static (float range, float drive, float haste, float every) Kit(Mutant m) => IsElder(m) ? (22f, 12f, 1.45f, 10f) : (12f, 7f, 1.3f, 16f);

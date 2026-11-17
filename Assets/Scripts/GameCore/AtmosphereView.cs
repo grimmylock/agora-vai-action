@@ -152,7 +152,7 @@ namespace GameCore
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
                     bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);   // a roof is seen from outside
                     float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : Mathf.Max(sight ? Vision.Light(gx, gy, true, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
-                    float unseen = _backdrop ? 0f : 0.6f * (1f - lit);                  // day: unseen is dimmed
+                    float unseen = _backdrop ? 0f : 1f * (1f - lit);                    // unseen is hidden (Yan, 2026-11-17; it was dimmed at 0.6)
                     float dark = l.Night * (1f - lit);                                  // night: unlit is black
                     float a = 1f - (1f - unseen) * (1f - dark);
                     var col = night;
@@ -238,7 +238,7 @@ namespace GameCore
         {
             float lampE = lamps ? Mathf.Clamp01(0.30f * LightingShoulder(rr) + 0.59f * LightingShoulder(gg) + 0.11f * LightingShoulder(bb)) * (backdrop ? 1f : sight) : 0f;
             float lit = Mathf.Max(litV, lampE);
-            float unseen = backdrop ? 0f : 0.6f * (1f - lit);
+            float unseen = backdrop ? 0f : 1f * (1f - lit);   // Yan, 2026-11-17: "any map structure that is not in the players field of vision is obscured" (it was 0.6: dimmed, so the way through the caverns showed when zoomed out)
             float dark = nightAmount * (1f - lit);
             float al = 1f - (1f - unseen) * (1f - dark);
             var col = nightCol;

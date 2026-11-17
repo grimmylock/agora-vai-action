@@ -6228,3 +6228,8 @@ Not run in Unity again.
 - **Swarm** speed capped at 88% of a sprinting player (`RtAi.Speed`, 3.9 tiles/s against 4.4), Gaunt-driven or not. This is Yan's call against the "never nerf enemies" rule; the lever is that one line.
 - Footsteps (`TacticalGridView`, `Sfx.Step`) at a fifth of their volume, the player's and everyone's.
 Not run in Unity.
+
+## Gaunts 25% smaller, unseen structure hidden (2026-11-17, Yan)
+- Both Gaunts are drawn at `Gaunt.ArtScale` = 32/43 (-26%) of their art (`TacticalGridView.ApplyUnitArt`); their hit shapes are cut at 43 px a tile in `make_hit_profiles.py` (Gaunt 2.28 tiles, Elder 3.00 tall; they were 3.06 and 4.03) so hitboxes still match the sprites. The animation strips need nothing: they go through the same marker.
+- Fog of war: the overlay dimmed what is out of your line of sight at only 60% (`AtmosphereView`, the coarse pass and `FineTexel`), so the layout of the caverns showed when zoomed out. Unseen cells are now fully hidden (lamps and glows are gated by sight already); seen-but-unlit cells still follow the night/flashlight rules.
+Not run in Unity.

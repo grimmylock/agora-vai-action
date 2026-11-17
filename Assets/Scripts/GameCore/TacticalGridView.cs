@@ -1194,7 +1194,7 @@ namespace GameCore
             if (art != null && alive && unit is Mutant wm && !(unit is HumanEnemy) && !BrainBoss.Is(wm)) { string wn = wm.Db?.Name ?? wm.Name; if (art == UnitSprites.HD(wn)) walkArt = Gaunt.Frame(wm) ?? MutantAttack.Frame(wm, wn, Time.time) ?? MutantWalk.Frame(wm, wn, Time.time) ?? Gaunt.Idle(wm); }
             else if (art != null && !alive && Gaunt.Is(unit as Mutant)) walkArt = Gaunt.DeathFrame((Mutant)unit);                // its fall, then it lies where it dropped
             marker.sprite = walkArt != null ? walkArt : art != null ? art : (_spriteBeing != null ? _spriteBeing : GetWhiteSprite());
-            marker.transform.localScale = Vector3.one * (art != null ? TileWorldSize : TileWorldSize * 0.7f);
+            marker.transform.localScale = Vector3.one * (art != null ? TileWorldSize : TileWorldSize * 0.7f) * (unit is Mutant gsc && Gaunt.Is(gsc) ? Gaunt.ArtScale : 1f);
             Color live = art != null ? Color.white : fallbackColor;
             if (unit is HumanEnemy h && h.Morale == "Surrendered") live = new Color(0.7f, 0.75f, 0.9f, 0.85f);   // hands up
             if (unit is Mutant nm && nm.Named) { live = Color.Lerp(Color.white, new Color(1f, 0.55f, 0.2f), 0.35f + 0.25f * Mathf.Sin(Time.time * 3f)); marker.transform.localScale *= 1.2f; }
