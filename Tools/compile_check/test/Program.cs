@@ -3623,18 +3623,18 @@ static class Program {
   // RTBAL=8: each mutant kind alone (and the swarm as 6) against a standing player 8 tiles away in the open, real AI for 20 s: when the first damage lands, how much, and which turn-based leftovers fire
   // (dice lines, instant leaps, thrown boulders, slams). Tier of each kind from the database.
   static void MutantBehaviorReport() {
-    var kinds = new[] { ("tier1", "BlindMaw", 1), ("tier1", "PallidProwler", 1), ("tier1", "Swarm", 6), ("tier2", "VeilProwler", 1), ("tier3", "Gaunt", 1), ("tier3", "MindWeaver", 1), ("tier4", "BlightBrute", 1), ("tier4", "DreadProwler", 1), ("tier5", "VoidWeaver", 1) };
+    var kinds = new[] { ("tier1", "BlindMaw", 1), ("tier1", "PallidProwler", 1), ("tier1", "Swarm", 6), ("tier2", "VeilProwler", 1), ("tier3", "Gaunt", 1), ("special", "Elder Gaunt", 1), ("tier3", "MindWeaver", 1), ("tier4", "BlightBrute", 1), ("tier4", "DreadProwler", 1), ("tier5", "VoidWeaver", 1) };
     foreach (var (tier, key, n) in kinds) {
       UnityEngine.Random.InitState(77); var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MutantAttack.Reset(); p.Hp = p.MaxHp; p.HealPermanent(100000);
       for (int y = py - 12; y <= py + 12; y++) for (int x = px - 4; x <= px + 24; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
       Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); var ms = new List<Mutant>();
-      for (int i = 0; i < n; i++) { var m = new Mutant(key, px + 8, py - n / 2 + i, MutantDatabase.Get(tier, key)) { IsAggroed = true }; Rt.SetOffset(m, 0f, 0f); EncounterState.Enemies.Add(m); ms.Add(m); }
+      for (int i = 0; i < n; i++) { var m = tier == "special" ? new Mutant(Gaunt.ElderName, px + 8, py, Gaunt.ElderDef) { IsAggroed = true } : new Mutant(key, px + (key == "BlightBrute" ? 14 : 8), py - n / 2 + i, MutantDatabase.Get(tier, key)) { IsAggroed = true }; Rt.SetOffset(m, 0f, 0f); EncounterState.Enemies.Add(m); ms.Add(m); }
       var cap = new LogCatch(); GameLog.Target = cap;
-      UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; EncounterState.InCombat = true; Contact.Spot(p); const float dt = 1f / 30f; float t = 0f, first = -1f; int hp0 = p.Hp; int minDist = 99, atRangeFrames = 0, minHp = p.Hp;
-      for (; t < 20f && ms.Any(m => m.IsAlive()); t += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); if (first < 0f && p.Hp < hp0) first = t; minHp = Math.Min(minHp, p.Hp); minDist = Math.Min(minDist, ms.Min(m => CombatantUtil.Distance(m, p))); }
+      UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; EncounterState.InCombat = true; Contact.Spot(p); const float dt = 1f / 30f; float t = 0f, first = -1f; int hp0 = p.Hp; int minDist = 99, atRangeFrames = 0, minHp = p.Hp; var seen = new SortedSet<string>(); var walkFrames = 0;
+      for (; t < 20f && ms.Any(m => m.IsAlive()); t += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); if (first < 0f && p.Hp < hp0) first = t; foreach (var mm in ms) { var kd = MutantAttack.KindOf(mm); if (kd != null) seen.Add(kd); } minHp = Math.Min(minHp, p.Hp); minDist = Math.Min(minDist, ms.Min(m => CombatantUtil.Distance(m, p))); }
       GameLog.Target = null;
       int C(string s2) => cap.Lines.Count(l => l.Contains(s2));
-      Console.WriteLine($"MUTANT {key,-14} x{n}: first damage {(first < 0 ? "never" : first.ToString("0.0") + " s")}, damage taken {hp0 - p.Hp} (lowest HP {minHp} of {hp0}), closest {minDist} tiles | log: attacks {C(" hits ")}, LEAPS {C("LEAPS")}, d20 dodge lines {C("Agility")}, boulders {C("boulder")}, slams {C("SLAMS")}, staggered {C("staggered")}, shimmers {C("shimmers")}");
+      Console.WriteLine($"MUTANT {key,-14} x{n}: first damage {(first < 0 ? "never" : first.ToString("0.0") + " s")}, damage taken {hp0 - p.Hp} (lowest HP {minHp} of {hp0}), closest {minDist} tiles | log: attacks {C(" hits ")}, LEAPS {C("LEAPS")}, d20 dodge lines {C("Agility")}, boulders {C("boulder")}, slams {C("SLAMS")}, staggered {C("staggered")}, shimmers {C("shimmers")} | animations played: {(seen.Count == 0 ? "none (no strips)" : string.Join(", ", seen))}");
       EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; }
   }
   static void RtChecks() {
