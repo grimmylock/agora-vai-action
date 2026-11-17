@@ -3034,6 +3034,7 @@ static class Program {
     } finally { Rt.On = false; Gaunt.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }
 
+  static bool ZoneTravelBlocked() => Tier2Story.BlocksTravel && !ZoneTravel.TravelToSector("secret_lab_alpha");
   static void TakenChecks() {   // 2026-11-16: Tier 2 beat 1 "Taken" (Tier2Story)
     Console.WriteLine("-- taken --");
     try {
@@ -3047,14 +3048,23 @@ static class Program {
       UnityEngine.Time.time = 90000f; UnityEngine.Time.unscaledTime = 90000f;
       Run(0.2f);
       Check(Tier2Story.Step == 1 && Story.FadeAlpha > 0.3f, $"taken: near the Gatehouse the grab begins - flash ({Tier2Story.Step}, white {Story.FadeAlpha:0.00})");
-      Run(11f);
+      Run(6.9f);   // 7 s in: awake at the base, the questions not asked yet
       int soldiers = EncounterState.Enemies.Count(e => e is HumanEnemy h && h.FactionName == "Garrison" && h.IsAlive());
       var dock = TerrainMap.Landmarks.First(l => l.Name == "Loading Dock");
-      Check(Tier2Story.Step == 2 && soldiers == 5 && Math.Abs(p.X - dock.X) <= 6 && Math.Abs(p.Y - dock.Y) <= 6 && p.Hp < p.MaxHp, $"taken: you wake at the Loading Dock among 5 Garrison soldiers, beaten ({Tier2Story.Step}, {soldiers} soldiers, hp {p.Hp}/{p.MaxHp})");
-      Check(EncounterState.Enemies.OfType<HumanEnemy>().All(h => !h.IsAggroed), "taken: the soldiers hold their fire");
-      Tier2Story.BeginDescent();
-      Check(!p.Inventory.Items.Any(i => i.Type == "weapon" && i.Category != "melee") && (p.EquippedWeapon == null || CombatRules.IsMelee(p.EquippedWeapon)) && MacroState.Current.StoryFlags.Count(f => f.StartsWith("box:0:")) >= 2,
-        $"taken: the guns go in the box ({MacroState.Current.StoryFlags.Count(f => f.StartsWith("box:0:"))} recorded, main {p.EquippedWeapon?.Name})");
+      Check(Tier2Story.Step == 2 && soldiers == 5 && Math.Abs(p.X - dock.X) <= 6 && Math.Abs(p.Y - dock.Y) <= 6 && p.Hp < p.MaxHp && (p.EquippedWeapon != null || p.Inventory.Items.Any(i => i.Type == "weapon")),
+        $"taken: you wake at the Loading Dock among 5 Garrison soldiers, beaten, the guns still on you until the questions are over ({Tier2Story.Step}, {soldiers} soldiers, hp {p.Hp}/{p.MaxHp})");
+      var squad = EncounterState.Enemies.OfType<HumanEnemy>().Where(h => h.FactionName == "Garrison").ToList();
+      p.Reputation["Garrison"] = -3 * Player.RepPoint;   // hostile (the Testing Ground sets every faction so; a neutral soldier never "notices" you at all)
+      for (int k = 0; k < 8; k++) TurnLoop.TickAwareness();   // eight game minutes of the game's own awareness, right next to you
+      Check(squad.All(h => !h.IsAggroed && h.Alert <= 0f && Tier2Story.Holds(h)) && !EncounterState.InCombat && ZoneTravelBlocked(), $"taken: the soldiers hold their fire and say nothing - no alert, no FIGHT, no walking out of the hatch (combat {EncounterState.InCombat})");
+      { MacroState.Current.Hour = 12f; Atmosphere.Current = Weather.Clear; var (sw, sa) = EncounterGeneration.PickFactionLoadout("Garrison", "Experienced", 2); var (sx, sy) = TerrainMap.FindNearestEnterable(p.X + 2, p.Y);
+        var stray = new HumanEnemy("Stray", sx, sy, "Garrison", "Experienced", sw, sa) { IsAggroed = false }; stray.FaceToward(p.X, p.Y); EncounterState.Enemies.Add(stray); Vision.Update(p, 0);
+        for (int k = 0; k < 8; k++) TurnLoop.TickAwareness();
+        Check(stray.IsAggroed || stray.Alert > 0f, $"taken (control): an ordinary Garrison soldier next to you does notice you, so the held squad's calm is the story's doing (aggro {stray.IsAggroed}, alert {stray.Alert:0.0})");
+        EncounterState.Enemies.Remove(stray); EncounterState.InCombat = false; }
+      Run(3f);     // 10 s in: the sergeant has asked (no panel in the harness: every line is answered at once) and the story went on
+      Check(Tier2Story.Step == 3 && !p.Inventory.Items.Any(i => i.Type == "weapon" && i.Category != "melee") && (p.EquippedWeapon == null || CombatRules.IsMelee(p.EquippedWeapon)) && MacroState.Current.StoryFlags.Count(f => f.StartsWith("box:0:")) >= 2,
+        $"taken: the interrogation happens by itself, then the guns go in the box ({MacroState.Current.StoryFlags.Count(f => f.StartsWith("box:0:"))} recorded, main {p.EquippedWeapon?.Name}, step {Tier2Story.Step})");
       Run(3f);
       var lad = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Hatch Ladder");
       Check(TerrainMap.ZoneId == "taken_tunnels" && lad != null && Math.Abs(p.X - lad.X) <= 3 && Math.Abs(p.Y - lad.Y) <= 3, $"taken: down the hatch - the maze, at its ladder ({TerrainMap.ZoneId})");
@@ -3070,6 +3080,7 @@ static class Program {
       Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
       Check(Sfx.MusicName == null, "taken: no chase song while the Gaunt's scene is still going");
+      Check(EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).OfType<Mutant>().All(m => Tier2Story.Holds(m)), "taken: the horde and the Gaunt wait in the dark, held by the story, until they are let go");
       Run(22f);
       Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
       Check(Sfx.MusicName == Tier2Story.ChaseTrack, $"taken: the chase song plays once the scream and the point are over ({Sfx.MusicName})");
@@ -3079,6 +3090,7 @@ static class Program {
       Check(Story.IsDone("taken") && TerrainMap.ZoneId == "scrapyard" && p.Inventory.Items.Any(i => i.Key == "RangerP8") && p.EquippedWeapon?.Db?.Name == "PSh-18 Pchela" && !MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:")) && Story.JournalEntries.Any(j => j.Contains("Loading Dock")),
         $"taken: out the top, the box gives everything back, a journal entry ({TerrainMap.ZoneId}, main {p.EquippedWeapon?.Name})");
       Check(Sfx.MusicName == null, "taken: the song stops at the top of the ladder");
+      Check(!Tier2Story.BlocksTravel, "taken: once it is over the hatch is free again");
       Run(5f); Check(Story.IsDone("taken") && Tier2Story.Step >= 99 || Story.IsDone("taken"), "taken: it happens once");
       Sfx.Music("harness_track"); Check(Sfx.MusicName == "harness_track", "music: a track that was asked for is remembered even with no clip (silent, nothing breaks)"); Sfx.StopMusic(0f); Check(Sfx.MusicName == null, "music: stopped");
       string caveBed = Sfx.AmbientFor("secret_cave");
@@ -3101,11 +3113,11 @@ static class Program {
       Check(TerrainMap.ZoneId == "scrapyard" && !TestingGround.Here && Tier2Story.Step == 1 && Tier2Story.InProgress && Math.Abs(p.X - gate.X) <= 4 && Math.Abs(p.Y - gate.Y) <= 4,
         $"taken (testing ground): the button takes you to the Scrapyard's Gatehouse and the grab begins at once ({TerrainMap.ZoneId}, step {Tier2Story.Step})");
       Run(0.2f); Check(Story.FadeAlpha > 0.3f, $"taken (testing ground): the flashbang's white ({Story.FadeAlpha:0.00})");
-      Run(11f);
+      Run(6.9f);
       int soldiers = EncounterState.Enemies.Count(e => e is HumanEnemy h && h.FactionName == "Garrison" && h.IsAlive());
       Check(Tier2Story.Step == 2 && soldiers == 5, $"taken (testing ground): the beating, then the Garrison's base and its five soldiers ({Tier2Story.Step}, {soldiers})");
-      Tier2Story.BeginDescent();
-      Check(MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:0:")) && !p.Inventory.Items.Any(i => i.Key == "VKS74U"), "taken (testing ground): your range kit goes in the box like any other");
+      Run(3f);
+      Check(Tier2Story.Step == 3 && MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:0:")) && !p.Inventory.Items.Any(i => i.Key == "VKS74U"), $"taken (testing ground): the interrogation runs by itself and your range kit goes in the box like any other ({Tier2Story.Step})");
       TestingGround.TakenMission(p);
       Check(Tier2Story.Step == 1 && (p.EquippedWeaponKey == "VKS74U" || p.Inventory.Items.Any(i => i.Key == "VKS74U")) && !MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:")) && TerrainMap.ZoneId == "scrapyard",
         $"taken (testing ground): pressed again mid-mission, the guns come back first and the mission starts over ({Tier2Story.Step})");

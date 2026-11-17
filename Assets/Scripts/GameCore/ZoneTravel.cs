@@ -18,8 +18,10 @@ namespace GameCore
     {
         /// <summary>Ported from travelToSector(targetZoneId), minus the old mode/encounter
         /// branching - see EnterZone for what replaced it.</summary>
+        static float _storyNag;
         public static bool TravelToSector(string targetZoneId)
         {
+            if (Tier2Story.BlocksTravel) { if (Time.time >= _storyNag) { _storyNag = Time.time + 4f; GameLog.Write("A rifle barrel in your back. Not now."); } return false; }   // Tier 2 "Taken": the story decides when you go down and when you come up
             var currentZone = MacroMapDatabase.Find(MacroState.Current.CurrentZoneId);
             var targetZone = MacroMapDatabase.Find(targetZoneId);
 

@@ -793,7 +793,7 @@ namespace GameCore
             {
                 var aim = AimPoint(h, marker);
                 if (h.IsAggroed && EncounterState.InCombat && aim.HasValue && Lean(h, aim.Value.x - pos.x, aim.Value.y - pos.y) is string lean) return lean;
-                if (!h.IsAggroed && still > NpcSitAfter && h.Morale != "Surrendered") return h.Facing.x < 0 ? "sit_l" : "sit_r";
+                if (!h.IsAggroed && still > NpcSitAfter && h.Morale != "Surrendered" && !Tier2Story.Holds(h)) return h.Facing.x < 0 ? "sit_l" : "sit_r";   // (the squad that holds you in "Taken" stands guard)
             }
             return null;
         }

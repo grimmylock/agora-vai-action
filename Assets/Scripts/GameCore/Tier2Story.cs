@@ -56,7 +56,7 @@ namespace GameCore
             if (step == 1 && _stageAt < 0f) { Story.SetStep(Mission, 0); step = 0; }          // a load in the middle of the grab: start over
             if (step == 0) { TryStart(now); return; }
             if (step == 1) { Grab(now); return; }
-            if (step == 2) { KeepDocile(); return; }                                          // the interrogation is a ChoiceUI; its answer goes on from there
+            if (step == 2) { AtBase(now); return; }                                           // the interrogation is a ChoiceUI; its answer goes on from there (BeginDescent)
             if (step == 3) { Descent(now); return; }
             if (step == 4) { Alarm(now); }
         }
@@ -111,9 +111,28 @@ namespace GameCore
             if (_stage == 0 && t >= 1.4f) { _stage = 1; Say("Boots. Fists. A rifle butt across the back of the head."); Hear("hit_flesh"); }
             if (_stage == 1 && t >= 2.6f) { _stage = 2; Hear("hit_flesh"); Say("Somebody is laughing. Somebody says: \"Enough. Bag them.\""); }
             if (_stage == 2 && t >= 4.0f) { _stage = 3; Story.Fade(Color.black, 1f, 1.2f); }
-            if (_stage == 3 && t >= 6.0f) { _stage = 4; WakeAtBase(); Story.Fade(Color.black, 0f, 1.8f); }
-            if (_stage == 4 && t >= 9.0f) { _stage = 5; Interrogate(); }
+            if (_stage == 3 && t >= 6.0f) { _stage = 4; WakeAtBase(); Story.Fade(Color.black, 0f, 1.8f); }   // WakeAtBase moves the story to step 2: from here AtBase runs, not Grab
         }
+
+        /// <summary>Step 2, every frame: the soldiers stay calm, you are still coming round (nobody shoots a soldier before the questions), and 3 s after the wake the sergeant starts the interrogation.
+        /// (2026-11-17, found by Yan in Unity: this used to sit at the end of Grab, which stops running the moment WakeAtBase sets step 2 - so the questions never came, the soldiers stood about and you kept your gun.
+        /// A load into step 2 has _stage 0: it asks at once.)</summary>
+        static void AtBase(float now)
+        {
+            KeepDocile();
+            if (_stage >= 5) return;                                                       // the ChoiceUI has the floor
+            foreach (var pl in Everyone) if (pl.IsAlive()) Rt.Knockdown(pl, 0.4f);
+            if (_stage != 4 || now - _stageAt >= 9.0f) { _stage = 5; Interrogate(); }
+        }
+
+        /// <summary>The Garrison squad that holds you: while the story runs them (the base, the maze, the horde) they take no part in the game's own awareness - no "!", no "Intruder! Engage!", no FIGHT,
+        /// no sitting down - because TurnLoop.CheckVisionAndWander would alert them to you every game minute and KeepDocile can only undo the aggro, not the shouting.</summary>
+        public static bool Holds(ICombatant u) => Step >= 2 && !Story.IsDone(Mission)
+            && (u is HumanEnemy h ? Escorts.Contains(h) : u is Mutant m && !m.IsAggroed && (m == _gaunt || Waves.Any(w => w.who.Contains(m))));   // (the horde and the Gaunt wait in the dark, unaggroed, until Alarm lets them go)
+
+        /// <summary>Steps 1-3 (the beating, the base, the walk to the door): nobody walks out of the hatch, down to the lab or up the ladder - the guns are in the box and only the story gives them back. (Step 4, the
+        /// run, ends by walking out: Alarm notices it.)</summary>
+        public static bool BlocksTravel => Step >= 1 && Step <= 3;
 
         // ------------------------------------------------------------------ 2: the Garrison's base
 
@@ -147,6 +166,7 @@ namespace GameCore
 
         static void Interrogate()
         {
+            var sergeant = Escorts.FirstOrDefault(e => e.IsAlive());                          // the squad turns to you while he talks
             Story.Talk("Garrison Sergeant", new[] {
                 "Sit up. Hands where I can see them.",
                 "You came up this road with something that points at a place that is not on our maps. We have been looking for a way into it for two years.",
@@ -156,8 +176,8 @@ namespace GameCore
                     Story.Talk("Garrison Sergeant", new[] {
                         i == 0 ? "Then you'll show us." : i == 1 ? "A lab. Good. Then you know the way." : "That's for us to decide. Show us.",
                         "Everything that shoots goes in the box. You can keep the knife and the armour - we are not animals. And a bandage, in case you need one.",
-                        "Move. You go first, and you go where I tell you to stop." }, null, _ => BeginDescent());
-                });
+                        "Move. You go first, and you go where I tell you to stop." }, null, _ => BeginDescent(), sergeant);
+                }, sergeant);
         }
 
         // ------------------------------------------------------------------ 2 -> 3: down the hatch

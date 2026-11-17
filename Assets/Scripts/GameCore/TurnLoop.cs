@@ -119,6 +119,7 @@ namespace GameCore
         private static void CheckVisionAndWander(Mutant enemy, Player player, IGridService grid)
         {
             if (Shakedown.Approaching(enemy)) return;   // Batch 73: walking over to ask for the toll (Shakedown.Tick moves them)
+            if (Tier2Story.Holds(enemy)) return;        // 2026-11-17: the Garrison squad of "Taken" is run by the story: no spotting you, no shouting, no wandering off
             if (!enemy.IsAggroed)
             {
                 int distToPlayer = CombatantUtil.Distance(enemy, player);
