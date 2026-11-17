@@ -3503,6 +3503,14 @@ static class Program {
       pp.EquipWeapon("sniper", "Nightwalker4570"); var nw = pp.EquippedWeapon; pp.EquipWeapon("assault", "VK74"); var vk = pp.EquippedWeapon;
       Check(Gunplay.HipRate(nw, false) == 3f && Gunplay.HipRate(nw, true) == 1f && Gunplay.HipRate(vk, false) == 1f, "lever guns fire three times as fast from the hip, aimed they do not");
       EncounterState.Enemies.Clear(); Rt.On = false; }
+    // damage fall-off (Yan: pistols start losing damage at 30 tiles, SMGs 40, rifles and heavy MGs 50, snipers 60, shotguns never): half the damage at the end of the gun's reach
+    { Weapon G(string c, string k) => W(c, k);
+      var pst = G("sidearm", "PSh18Pchela"); var smgW = G("smg", "CorvanWasp9"); var rifle = G("assault", "VK74"); var mg = G("heavy", "CorvanLMG"); var snp = G("sniper", "M91Trekhlineyka"); var sg = G("shotgun", "BayouPump");
+      Check(Gunplay.FalloffMult(pst, 30f) == 1f && Math.Abs(Gunplay.FalloffMult(pst, 35f) - 0.75f) < 0.01f && Math.Abs(Gunplay.FalloffMult(pst, 40f) - 0.5f) < 0.01f && Math.Abs(Gunplay.FalloffMult(smgW, 45f) - 0.75f) < 0.01f
+        && Gunplay.FalloffMult(rifle, 40f) == 1f && Math.Abs(Gunplay.FalloffMult(mg, 55f) - 0.75f) < 0.01f && Gunplay.FalloffMult(snp, 60f) == 1f && Math.Abs(Gunplay.FalloffMult(snp, 80f) - 0.75f) < 0.01f && Gunplay.FalloffMult(sg, 20f) == 1f,
+        "fall-off: pistols from 30 tiles, SMGs 40, rifles/MGs 50, snipers 60, half the damage at the end of the reach, none for shotguns");
+      var withPen = new[] { "Corvan 5.7", "SR-21 Gadyuka", "RK-12 Kuvalda" }.Select(n => WeaponDatabase.Categories["sidearm"].Values.First(d => d.Name == n).IgnorePhysDRPercent).ToList();
+      Check(withPen.All(v => v.HasValue && v > 0f) && Gunplay.For(mg).Reach == 60f && Gunplay.For(snp).Recover >= 9f, $"the Corvan 5.7, SR-21 and RK-12 keep their own armor penetration ({string.Join(", ", withPen)}); heavy MGs reach 60 tiles; snipers' kick settles at 9 deg a second"); }
     // heavy armor slows the real-time walk by 10% (Yan, 2026-11-17); light armor does not
     { var pw = Arena(out int wx, out int wy);
       var heavyKey = ArmorDatabase.Tiers.SelectMany(t => t.Value.Select(a => (tier: t.Key, key: a.Key, def: a.Value))).First(a => a.def.Mp > 0 && a.def.Mp < 4);

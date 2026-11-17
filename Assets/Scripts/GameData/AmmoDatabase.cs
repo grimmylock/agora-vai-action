@@ -2,7 +2,8 @@
 // Every caliber is its own ammunition and has its own list of loads. A weapon's WeaponDef.AmmoType is its caliber; the loads (Kind ids "Standard", "HollowPoint",
 // "ArmorPiercing", "Dart" are kept for saves and NPC data) change what a round does: Damage multiplies the damage, DrMult multiplies the target's Phys-DR (below 1 =
 // pierces armor), Hollow is the hollow-point rule (more damage on the unarmored, less on armor of 20%+). Tier = the first map tier whose traders and loot carry the load.
-// Standard is the baseline every gun was tuned against (damage 1.0, DR x1.0 except where a caliber's own round already pierces); the other loads are the balance lever.
+// Standard is the baseline every gun was tuned against (damage 1.0, DR x1.0 for every caliber: a gun that pierces by itself, the Corvan 5.7, SR-21, RK-12, Grom, Sledge, G-7..., has its own
+// WeaponDef.IgnorePhysDRPercent, which Gunplay.Resolve applies); the other loads are the balance lever.
 using System.Collections.Generic;
 using System.Linq;
 
@@ -41,23 +42,23 @@ namespace GameData
             C(".32 ACP",     "pistol", 20, Ball("Ball", 3), HP(3)),
             C("9x18mm",      "pistol", 20, Ball("Ball", 4), HP(4), AP(4, 3, "Armor-Piercing", 0.9f, 0.55f)),
             C("9x19mm",      "pistol", 20, Ball("Ball", 5), HP(5), AP(5)),
-            C("9x21mm",      "pistol", 20, Ball("Ball", 6, 0.95f), HP(6), AP(6, 3)),
+            C("9x21mm",      "pistol", 20, Ball("Ball", 6), HP(6), AP(6, 3)),
             C(".45 ACP",     "pistol", 20, Ball("Ball", 6), HP(6), AP(6)),
-            C("5.7x28mm",    "pistol", 30, Ball("Ball", 9, 0.85f), HP(9), AP(9, 4, "Armor-Piercing", 0.9f, 0.5f)),
-            C("4.6x30mm",    "pistol", 30, Ball("Ball", 9, 0.8f), HP(9), AP(9, 4, "Armor-Piercing", 0.9f, 0.45f)),
+            C("5.7x28mm",    "pistol", 30, Ball("Ball", 9), HP(9), AP(9, 4, "Armor-Piercing", 0.9f, 0.5f)),
+            C("4.6x30mm",    "pistol", 30, Ball("Ball", 9), HP(9), AP(9, 4, "Armor-Piercing", 0.9f, 0.45f)),
             C(".357 Mag",    "pistol", 12, Ball("Soft Point", 8), HP(8), AP(8, 3, "Hard-Cast", 1.0f, 0.6f)),
             C(".44 Mag",     "pistol", 12, Ball("Soft Point", 12), HP(12), AP(12, 3, "Hard-Cast", 1.0f, 0.6f)),
-            C("12.7x55mm",   "pistol", 10, Ball("Ball", 25, 0.9f), AP(25, 4, "Armor-Piercing", 1.0f, 0.5f)),
+            C("12.7x55mm",   "pistol", 10, Ball("Ball", 25), AP(25, 4, "Armor-Piercing", 1.0f, 0.5f)),
             // rifle calibers
             C("5.45x39mm",   "rifle",  30, Ball("Ball", 6), HP(6), AP(6), Dart(6)),
             C("5.56x45mm",   "rifle",  30, Ball("Ball", 7), HP(7), AP(7), Dart(7)),
             C("7.62x39mm",   "rifle",  30, Ball("Ball", 7), HP(7), AP(7), Dart(7)),
             C("7.62x51mm",   "rifle",  20, Ball("Ball", 9), HP(9), AP(9)),
-            C("9x39mm",      "rifle",  20, Ball("Subsonic", 10, 0.85f), HP(10, "Soft Point"), AP(10, 3)),
+            C("9x39mm",      "rifle",  20, Ball("Subsonic", 10), HP(10, "Soft Point"), AP(10, 3)),
             // sniper and heavy calibers
             C("7.62x54mmR",  "sniper", 20, Ball("Ball", 12), HP(12), AP(12)),
             C(".45-70 Govt", "sniper", 10, Ball("Ball", 14), HP(14, "Soft Point")),
-            C(".50 BMG",     "sniper", 10, Ball("Ball", 35, 0.9f), AP(35, 4, "Armor-Piercing", 1.0f, 0.45f)),
+            C(".50 BMG",     "sniper", 10, Ball("Ball", 35), AP(35, 4, "Armor-Piercing", 1.0f, 0.45f)),
             // shotgun
             C("12g",         "shotgun", 10, Ball("Buckshot", 8), HP(8, "Birdshot"), AP(8, 3, "Flechette", 0.9f, 0.5f)),
             // the G-7

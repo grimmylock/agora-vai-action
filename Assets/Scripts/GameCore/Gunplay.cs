@@ -29,9 +29,9 @@ namespace GameCore
             ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 40f, 1.3f, 0.6f, 40f },
             ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 50f, 1.7f, 0.5f, 45f },
             ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f, 1f, 80f },
-            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 5f, 50f, 0f, 100f, 2.6f, 1.6f, 100f },
+            ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 9f, 50f, 0f, 100f, 2.6f, 1.6f, 100f },
             ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 30f, 2.4f, 0.8f, 40f },
-            ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f, 1.5f, 85f },
+            ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 60f, 3.2f, 1.5f, 85f },
         };
 
 
@@ -51,7 +51,7 @@ namespace GameCore
             ["Corvan 5.7"] = (1.00f, 0.66f),
             ["Sperling S-96"] = (1.00f, 0.69f),
             ["Rinaldi R6"] = (1.00f, 1.21f),
-            ["Steppe Eagle"] = (1.00f, 0.72f),
+            ["Steppe Eagle"] = (1.00f, 0.792f),
             ["RK-12 Kuvalda"] = (1.00f, 1.68f),
             ["Vosa vz. 62"] = (0.80f, 0.48f),
             ["PPZ Zubr"] = (0.80f, 0.404f),
@@ -85,7 +85,7 @@ namespace GameCore
             ["SKN Karabin"] = (1.00f, 0.29f),
             ["Frontier Lever Rifle"] = (1.00f, 0.43f),
             ["VSN Shepot"] = (1.00f, 0.22f),
-            ["M91 Trekhlineyka"] = (1.00f, 0.43f),
+            ["M91 Trekhlineyka"] = (1.00f, 0.494f),
             ["Nightwalker .45-70"] = (1.00f, 0.53f),
             ["Corvan Marksman"] = (1.00f, 0.31f),
             ["SV-2 Strela"] = (1.00f, 0.26f),
@@ -121,11 +121,11 @@ namespace GameCore
             ["Halden .45 Service"]      = (290, false, 1.3f, 1f, 0.45f, 3f),
             ["Halden Service Revolver"] = (150, false, 2.6f, 1f, 0.5f, 3.2f),
             ["SR-21 Gadyuka"]           = (290, false, 1.3f, 1.1f, 0.45f, 2.6f),
-            ["Black Harrier"]           = (250, false, 1.5f, 0.72f, 0.5f, 4.4f),
+            ["Black Harrier"]           = (250, false, 1.5f, 0.72f, 0.5f, 3.2f),
             ["Corvan 5.7"]              = (300, false, 1.2f, 1f, 0.35f, 1.8f),
             ["Rinaldi R6"]              = (190, false, 2.4f, 0.8f, 0.5f, 3.4f),
             ["Sperling S-96"]           = (300, false, 1.9f, 0.95f, 0.45f, 3f),   // long barrel steadies well, a stripper clip reloads slowly
-            ["Steppe Eagle"]            = (200, false, 1.6f, 0.9f, 0.60f, 6.0f),
+            ["Steppe Eagle"]            = (200, false, 1.3f, 0.9f, 0.60f, 6.0f),
             ["RK-12 Kuvalda"]           = (75,  false, 3.0f, 0.8f, 0.65f, 7.5f),
             // SMGs: fast, light kick, wide
             ["Vosa vz. 62"]             = (850, true, 1.5f, 2.2f, 0.30f, 1.1f),
@@ -362,6 +362,16 @@ namespace GameCore
 
         /// <summary>Lever guns (2026-11-17, Yan: "can be levered when hip-fired, hip fire speed increased by 200%"): worked from the hip they fire three times as fast; aimed, they cycle at their listed rate.</summary>
         public static readonly HashSet<string> Levers = new HashSet<string> { "Nightwalker .45-70", "Frontier Lever Rifle", "Halden Lever Shotgun" };
+        /// <summary>Damage fall-off (2026-11-17, Yan: "pistols start at 30, smg 40, shotgun doesn't need because spread already does it, rifles and heavy machineguns at 50, snipers at 60"): a round keeps
+        /// all its damage out to its class's start distance, then loses it in a straight line to half at the end of the gun's reach (a gun whose reach is not past the start never loses any).</summary>
+        public static readonly Dictionary<string, float> FalloffStart = new Dictionary<string, float> { ["sidearm"] = 30f, ["smg"] = 40f, ["assault"] = 50f, ["heavy"] = 50f, ["sniper"] = 60f };
+        public static float FalloffMult(Weapon w, float dist)
+        {
+            if (w?.Db == null || !FalloffStart.TryGetValue(CombatRules.Category(w.Db), out var start)) return 1f;
+            float reach = For(w).Reach; if (reach <= start || dist <= start) return 1f;
+            return 1f - 0.5f * System.Math.Min(1f, (dist - start) / (reach - start));
+        }
+
         public static float HipRate(Weapon w, bool aiming) => !aiming && w?.Db != null && Levers.Contains(w.Db.Name) ? 3f : 1f;
         public static readonly List<Round> Flying = new List<Round>();
         public static float AimUp;                             // extra climb (tan) of the rounds being made: the eel shot rises to the height of the part under the crosshair
@@ -488,7 +498,7 @@ namespace GameCore
                     return;
                 }
                 float raw = RoundDamage(w, hit.Part, hit.Dist, pellets) * hit.Through;
-                raw *= TuneMult(w, target is Player || target is HumanEnemy);                // the 2026-11-17 weapon pass (Tune)
+                raw *= TuneMult(w, target is Player || target is HumanEnemy) * FalloffMult(w, hit.Dist);   // the 2026-11-17 weapon pass (Tune) and the fall-off with distance
                 if (ambush) raw *= 1.3f;                                       // they never saw it coming (Batch 64, as a bonus now)
                 if (EelSump.IsEelHead(target, hit.Part)) raw *= EelSump.HeadBonus;   // Boss 3: only the eel's head takes extra damage (Yan, 2026-11-06)
                 if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;

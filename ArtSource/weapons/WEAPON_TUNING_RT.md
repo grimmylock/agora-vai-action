@@ -13,11 +13,11 @@ Yan: every gun individually, not one global knob; a 1-against-1 where every roun
 | Halden .45 Service | sidearm | 2 | 1.00 | 0.830 | 8 | 3.1 | 1.00 | 3.0 | 100 | 90 | 58 |
 | Halden Service Revolver | sidearm | 1 | 1.00 | 1.117 | 5 | 1.6 | 1.00 | 3.2 | 100 | 90 | 58 |
 | SR-21 Gadyuka | sidearm | 3 | 1.00 | 0.620 | 11 | 2.5 | 1.10 | 2.6 | 100 | 91 | 55 |
-| Black Harrier | sidearm | 3 | 1.00 | 0.620 | 9 | 2.0 | 0.72 | 4.4 | 81 | 32 | 9 |
+| Black Harrier | sidearm | 3 | 1.00 | 0.620 | 9 | 2.0 | 0.72 | 3.2 | 100 | 98 | 77 |
 | Corvan 5.7 | sidearm | 4 | 1.00 | 0.660 | 13 | 3.0 | 1.00 | 1.8 | 100 | 90 | 58 |
 | Sperling S-96 | sidearm | 4 | 1.00 | 0.690 | 11 | 4.4 | 0.95 | 3.0 | 100 | 94 | 60 |
 | Rinaldi R6 | sidearm | 4 | 1.00 | 1.210 | 6 | 1.6 | 0.80 | 3.4 | 100 | 98 | 72 |
-| Steppe Eagle | sidearm | 4 | 1.00 | 0.720 | 9 | 4.0 | 0.90 | 6.0 | 87 | 43 | 15 |
+| Steppe Eagle | sidearm | 4 | 1.00 | 0.792 | 8 | 2.1 | 0.90 | 6.0 | 87 | 43 | 15 |
 | RK-12 Kuvalda | sidearm | 5 | 1.00 | 1.680 | 4 | 2.4 | 0.80 | 7.5 | 96 | 97 | 72 |
 | Vosa vz. 62 | smg | 1 | 0.80 | 0.480 | 20 | 1.7 | 2.20 | 1.1 | 96 | 55 | 19 |
 | PPZ Zubr | smg | 2 | 0.80 | 0.404 | 25 | 2.6 | 1.80 | 1.2 | 98 | 66 | 33 |
@@ -48,16 +48,16 @@ Yan: every gun individually, not one global knob; a 1-against-1 where every roun
 | SP-14 Warden | shotgun | 4 | 1.00 | 0.370 | 8 | 2.1 | 1.30 | 5.5 | 90 | 47 | 14 |
 | Sayan-12 | shotgun | 4 | 1.00 | 0.380 | 8 | 2.3 | 1.50 | 6.0 | 88 | 50 | 15 |
 | Kaban-12 | shotgun | 4 | 1.00 | 0.330 | 9 | 2.4 | 1.30 | 5.5 | 90 | 47 | 14 |
-| SKN Karabin | sniper | 2 | 1.00 | 0.290 | 7 | 3.0 | 0.23 | 3.4 | 76 | 30 | 7 |
-| Frontier Lever Rifle | sniper | 3 | 1.00 | 0.430 | 5 | 3.4 | 0.25 | 5.0 | 90 | 60 | 20 |
-| VSN Shepot | sniper | 3 | 1.00 | 0.220 | 9 | 3.2 | 0.24 | 3.5 | 67 | 21 | 5 |
-| M91 Trekhlineyka | sniper | 3 | 1.00 | 0.430 | 4 | 4.5 | 0.10 | 7.0 | 84 | 100 | 100 |
-| Nightwalker .45-70 | sniper | 4 | 1.00 | 0.530 | 4 | 3.3 | 0.20 | 8.0 | 100 | 98 | 74 |
-| Corvan Marksman | sniper | 4 | 1.00 | 0.310 | 7 | 3.3 | 0.12 | 5.0 | 82 | 30 | 8 |
-| SV-2 Strela | sniper | 4 | 1.00 | 0.260 | 7 | 3.6 | 0.11 | 4.5 | 83 | 34 | 12 |
+| SKN Karabin | sniper | 2 | 1.00 | 0.290 | 7 | 3.0 | 0.23 | 3.4 | 82 | 100 | 100 |
+| Frontier Lever Rifle | sniper | 3 | 1.00 | 0.430 | 5 | 3.4 | 0.25 | 5.0 | 52 | 100 | 45 |
+| VSN Shepot | sniper | 3 | 1.00 | 0.220 | 9 | 3.2 | 0.24 | 3.5 | 100 | 100 | 99 |
+| M91 Trekhlineyka | sniper | 3 | 1.00 | 0.494 | 4 | 4.5 | 0.10 | 7.0 | 84 | 100 | 100 |
+| Nightwalker .45-70 | sniper | 4 | 1.00 | 0.530 | 4 | 3.3 | 0.20 | 8.0 | 100 | 100 | 100 |
+| Corvan Marksman | sniper | 4 | 1.00 | 0.310 | 7 | 3.3 | 0.12 | 5.0 | 95 | 86 | 51 |
+| SV-2 Strela | sniper | 4 | 1.00 | 0.260 | 7 | 3.6 | 0.11 | 4.5 | 82 | 100 | 100 |
 | Sever-98 | sniper | 4 | 1.00 | 0.450 | 4 | 5.0 | 0.08 | 7.0 | 86 | 100 | 100 |
 | VK-127 Grom | sniper | 5 | 1.00 | 0.580 | 4 | 6.0 | 0.10 | 9.0 | 100 | 100 | 100 |
-| Halden AM-50 Sledge | sniper | 5 | 1.00 | 0.430 | 5 | 3.4 | 0.10 | 13.5 | 98 | 65 | 31 |
+| Halden AM-50 Sledge | sniper | 5 | 1.00 | 0.430 | 5 | 3.4 | 0.10 | 13.5 | 100 | 100 | 100 |
 | G-7 Rail Prototype | sniper | 5 | 1.00 | 0.530 | 3 | 3.0 | 0.05 | 4.0 | 100 | 100 | 100 |
 | PL-62 Kobza | heavy | 2 | 0.65 | 0.230 | 23 | 3.1 | 1.40 | 2.2 | 50 | 21 | 5 |
 | Corvan LMG | heavy | 3 | 0.65 | 0.180 | 28 | 3.3 | 1.30 | 1.9 | 93 | 56 | 22 |
