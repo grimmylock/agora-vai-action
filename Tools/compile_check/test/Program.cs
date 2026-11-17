@@ -47,7 +47,8 @@ static class Program {
     RaidChecks();
     RtChecks();
     RtBalanceChecks();
-    if (Environment.GetEnvironmentVariable("RTBAL") != null) WeaponBalanceReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "1") WeaponBalanceReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "2") WeaponVsArmorReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3333,6 +3334,43 @@ static class Program {
       }
     }
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_balance.txt", sb.ToString());
+  }
+
+  // Real-combat weapon test (RTBAL=2): the bot shoots a pinned human in a real armor of tier 1-5 (the tier's median Phys-DR armor, head protection included) through the real player
+  // code (steady-up, bloom, recoil, reload), holding the trigger like a player would. Result: seconds to kill 1000 HP, and the share of rounds that did damage.
+  static (float ttk, int hitPct) RtGunVsArmor(string cat, string key, int dist, int tier, int seed) {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Random.InitState(seed);
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 3; x <= px + 45; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    p.EquipWeapon(cat, key); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); p.EquippedWeapon.ReserveAmmo["Standard"] = 99999;
+    var armors = ArmorDatabase.Tiers["tier" + tier].Values.OrderBy(a => a.PhysDR).ToList(); var armor = armors[armors.Count / 2];
+    var d = new HumanEnemy("Dummy", px + dist, py, "Raiders", "Rookie", null, armor) { IsAggroed = true }; d.MaxHp = d.Hp = 1000; EncounterState.Enemies.Add(d); Rt.SetOffset(d, 0f, 0f);
+    RtAi.Pin(d, 99999f); EncounterState.InCombat = true; Contact.Spot(p);
+    UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; UnityEngine.Time.timeScale = 1f;
+    var w = p.EquippedWeapon; int fired = 0, landed = 0, prevMag = w.CurrentMagazine, prevHp = d.Hp;
+    const float dt = 1f / 30f; float t = 0f;
+    for (; t < 60f && d.Hp > 0; t += dt) {
+      UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+      RtAi.Pin(d, 99999f); bool dry = w.CurrentMagazine <= 0; var (tx, ty) = Ballistics.Pos(d);
+      Rt.PlayerTick(p, new Rt.Input { Aim = true, Fire = !dry, FireDown = !dry && ((int)(t / dt) % 2 == 0), Reload = dry, Mouse = (tx, ty + 0.44f - AimShare(p, d) * Ballistics.BodyTiles) });
+      Rt.WorldTick(p); Rt.Glide(dt); if (p.Hp < p.MaxHp) p.Hp = p.MaxHp;
+      if (w.CurrentMagazine < prevMag) fired += prevMag - w.CurrentMagazine; prevMag = w.CurrentMagazine;
+      if (d.Hp < prevHp) landed++; prevHp = d.Hp;
+    }
+    bool dead = d.Hp <= 0; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false;
+    return (dead ? t : 99f, fired == 0 ? 0 : Math.Min(100, landed * 100 / fired));
+  }
+
+  static void WeaponVsArmorReport() {
+    var sb = new System.Text.StringBuilder(); sb.AppendLine("gun | cat | " + string.Join(" | ", new[] { 12, 30 }.SelectMany(dd => Enumerable.Range(1, 5).Select(tt => $"{dd}t vs T{tt}"))) + " | hit% 12t T1");
+    foreach (var cat in new[] { "sidearm", "smg", "assault", "shotgun", "sniper", "heavy" })
+      foreach (var kv in WeaponDatabase.Categories[cat]) {
+        var cells = new List<string>(); int h1 = 0;
+        foreach (int dd in new[] { 12, 30 }) for (int tt = 1; tt <= 5; tt++) {
+          var l = new List<float>(); for (int i = 0; i < 5; i++) { var r = RtGunVsArmor(cat, kv.Key, dd, tt, 300 + i); l.Add(r.ttk); if (dd == 12 && tt == 1 && i == 2) h1 = r.hitPct; }
+          l.Sort(); cells.Add(l[2] >= 99f ? "-" : l[2].ToString("0.0")); }
+        sb.AppendLine($"{kv.Value.Name} | {cat} | {string.Join(" | ", cells)} | {h1}");
+      }
+    Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_vs_armor.txt", sb.ToString());
   }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
