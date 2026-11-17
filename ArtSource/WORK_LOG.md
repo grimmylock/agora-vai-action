@@ -6206,3 +6206,9 @@ Yan: the soldiers formed a line he could not get past and he died in the crossfi
 - **Barks**: the sergeant's lines (the walk's warnings, the shot, the door scene) are `Banter.Say` over his head; narration stays in the log.
 - **MP**: `Player.cs` logged "Player moved to ..., MP remaining" on every step (and the flee/retreat lines in `Mutant.cs`, `HumanEnemy.cs`): off in real time.
 - Harness: E at the door starts the scene, nothing happens by itself, the alarm comes after it. Not run in Unity again.
+
+## Taken: the sergeant's first words, the glow, the camera pump (2026-11-17, Yan)
+- On entering the maze the sergeant says (over his head, as the black clears): "Show us the way. And don't take too long - my patience is running thin."
+- **The glow**: Yan: "i didn't mean a GLOW around the character, only the front of him should be illuminated in a cone by the flashlight, the rest should be dark". The tripled radius and the full-range look cone now only decide what the game treats as SEEN (`Vision.Sees/Shows`: enemies are drawn and targetable); what is drawn lit is as before (`Vision.Light(visual: true)`: the old radius, the flashlight cone, the day's look cone, lamps).
+- **The camera pumping while walking**: the camera eases out to fit every hostile that is shown; with the look cone seeing 30 tiles, enemies at its far edge flickered in and out as the cone swept. It now only fits hostiles within 14 tiles and eases back in slowly (1.5 tiles/s; out at 4).
+Not run in Unity.

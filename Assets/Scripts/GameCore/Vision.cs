@@ -22,7 +22,7 @@ namespace GameCore
         public const float RadiusMul = 3f;
         /// <summary>A unit the story wants seen whatever the light (the Gaunt stepping out of the dark in "Taken").</summary>
         public static Mutant Spotlight;
-        private static float _look;
+        private static float _look, _radiusVis = MaxRadius, _lookVis;
         public static float LookReach => _look > 0f ? System.Math.Max(_look, _radius) : MaxRadius;
         const int LeanReach = 12;                           // leaning a step shows round corners this far (the cost was 4x the cone)
         private static bool[] _los, _show;
@@ -44,6 +44,9 @@ namespace GameCore
             if (p == null) return;
             // Yan, 2026-11-17: "anything inside a radius triple of what it is now around the player is visible, and anything in the player's direction of vision fov is visible regardless of distance,
             // right now they just pop in and out" - the all-round radius is tripled (underground 2.5 -> 7.5), and the look cone, when there is one, reaches the whole line-of-sight range (MaxRadius).
+            // ...for what the GAME counts as seen (Sees/Shows). What is DRAWN lit stays as it was (Light(visual: true): the old radius, the flashlight cone, the day's look cone) - Yan: "i didn't mean a GLOW around
+            // the character, only the front of him should be illuminated in a cone by the flashlight, the rest should be dark".
+            _radiusVis = System.Math.Min(radius, MaxRadius); _lookVis = System.Math.Min(look, MaxRadius);
             radius = System.Math.Min(radius * RadiusMul, MaxRadius); if (look > 0f) look = MaxRadius;
             bool moved = _los == null || p.X != _px || p.Y != _py || worldStamp != _stamp || !ReferenceEquals(_tiles, TerrainMap.Tiles);
             bool lit = System.Math.Abs(radius - _radius) > 0.25f || System.Math.Abs(cone - _cone) > 0.25f
@@ -100,16 +103,17 @@ namespace GameCore
 
         /// <summary>0..1 how lit a cell is from the player's own light (1 inside the radius, the cone
         /// fading toward its edges and its reach). Line of sight not included.</summary>
-        public static float Light(float x, float y, bool lamps = true)
+        public static float Light(float x, float y, bool lamps = true, bool visual = false)
         {
+            float rad = visual ? _radiusVis : _radius, lk = visual ? _lookVis : _look;
             float dx = x - _px, dy = y - _py, d = (float)System.Math.Sqrt(dx * dx + dy * dy);
-            float near = System.Math.Max(Clamp01((_radius - d) / 1.5f + 0.3f), lamps ? LightMap.At((int)System.Math.Round(x), (int)System.Math.Round(y)) : 0f);   // Batch 92: lamps (lamps = false: the picture's own light pass draws them, with shadows)
+            float near = System.Math.Max(Clamp01((rad - d) / 1.5f + 0.3f), lamps ? LightMap.At((int)System.Math.Round(x), (int)System.Math.Round(y)) : 0f);   // Batch 92: lamps (lamps = false: the picture's own light pass draws them, with shadows)
             if (Glows.Count > 0) near = System.Math.Max(near, GlowAt(x, y));
-            if (_cone <= 0f && _look <= 0f || d < 0.5f) return near;
+            if (_cone <= 0f && lk <= 0f || d < 0.5f) return near;
             float ang = (float)System.Math.Atan2(-dy, dx);                      // grid y points down; aim is world (y up)
             float da = (float)System.Math.Abs(System.Math.IEEERemainder(ang - _aim, 2 * System.Math.PI));
             float cone = _cone <= 0f ? 0f : Clamp01((ConeHalfAngle - da) / 0.25f) * Clamp01((_cone - d) / 3f);
-            float look = _look <= 0f ? 0f : Clamp01((LookHalfAngle - da) / 0.25f + 0.3f) * Clamp01((_look - d) / 1.5f + 0.3f);
+            float look = lk <= 0f ? 0f : Clamp01((LookHalfAngle - da) / 0.25f + 0.3f) * Clamp01((lk - d) / 1.5f + 0.3f);
             return System.Math.Max(near, System.Math.Max(cone, look));
         }
 

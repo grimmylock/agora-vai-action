@@ -1153,13 +1153,13 @@ namespace GameCore
             if (p != null)
                 foreach (var e in EncounterState.Enemies)
                 {
-                    if (!e.IsAlive() || !(e.IsAggroed || Shakedown.Approaching(e) || Vision.Senses(p, e)) || Companion.Is(e) || !Vision.Shows(e)) continue;   // Batch 127c: and anyone you sense
+                    if (!e.IsAlive() || !(e.IsAggroed || Shakedown.Approaching(e) || Vision.Senses(p, e)) || Companion.Is(e) || !Vision.Shows(e) || CombatantUtil.Distance(p, e) > 14) continue;   // Batch 127c: and anyone you sense (2026-11-17: only within 14 tiles - the look cone now sees 30, and enemies at its far edge flickering in and out made the zoom pump while walking)
                     float dx = Mathf.Abs(e.X - p.X) + 1.5f, dy = Mathf.Abs(e.Y - p.Y) + 1.5f;
                     need = Mathf.Max(need, Mathf.Max(dy, dx / Mathf.Max(0.5f, cam.aspect)));
                 }
             if (speaker.HasValue) need = Mathf.Max(need, Mathf.Max(Mathf.Abs(speaker.Value.y - me.y) * 2f + 2f, Mathf.Abs(speaker.Value.x - me.x) / Mathf.Max(0.5f, cam.aspect) + 2f));
             float want = Mathf.Clamp(Mathf.Max(_zoom, need), CameraViewHalfHeightTiles, CameraMaxHalfHeightTiles);
-            _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * 6f);
+            _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * (want > _shown ? 4f : 1.5f));   // out quickly, back in slowly
             _close = Mathf.MoveTowards(_close, EelSump.Gripping(Player.Current) ? 1f : 0f, Time.unscaledDeltaTime * 4f);   // Boss 3: the jaw-hold's close-up, leaning in on the player holding the eel's mouth
             cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.8f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
             // Boss 3's introduction: a cinematic camera (Story.CamLock). It glides to its point and zoom; when the lock ends it eases back to the player's own view instead of snapping.

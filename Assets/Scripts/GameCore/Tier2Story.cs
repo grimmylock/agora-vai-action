@@ -198,7 +198,8 @@ namespace GameCore
             ZoneTravel.EnterZone(Maze, "industrial_basin");
             var l = Mark(Ladder); int k = 0;
             foreach (var pl in Everyone) { if (l != null) Put(pl, l.X - 1 + k++ % 3, l.Y - 1); Rt.Knockdown(pl, 0f); }
-            SpawnEscorts(); Sfx.Preload(ChaseTrack);                                       // the song is read from disk now, not in the middle of the alarm
+            SpawnEscorts(); Sfx.Preload(ChaseTrack); Shout("Show us the way. And don't take too long - my patience is running thin.", 2.2f);   // Yan: the sergeant's first words down here, as the black clears
+                                                  // the song is read from disk now, not in the middle of the alarm
             _descentAt = Time.time; _warned0 = _warned1 = _warned2 = false; _doorAt = -1f; _doorHint = false;
             Story.SetObjective(Mission, "Find the hidden lab's door - the soldiers are watching the clock", Door);
             Story.Journal("The Garrison dragged us down a hatch under the Loading Dock into a maze, to find a door nobody has ever opened. They are not patient.");
@@ -262,9 +263,9 @@ namespace GameCore
         }
 
         /// <summary>What a soldier says: over his head (Banter), not in the log in the corner (Yan, 2026-11-17).</summary>
-        static void Shout(string text)
+        static void Shout(string text, float delay = 0f)
         {
-            var s = Escorts.FirstOrDefault(e => e.IsAlive()); if (s != null) Banter.Say(s, text, 2); else Say("\"" + text + "\"");
+            var s = Escorts.FirstOrDefault(e => e.IsAlive()); if (s != null) Banter.Say(s, text, 2, delay); else Say("\"" + text + "\"");
         }
 
         static void StartAlarm(float now)
