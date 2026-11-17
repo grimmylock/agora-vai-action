@@ -47,6 +47,7 @@ static class Program {
     Batch72Checks();
     RaidChecks();
     RtChecks();
+    RtBalanceChecks();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3368,6 +3369,75 @@ static class Program {
         "dummy: a dropped dummy stands up again in its place, and that isn't a hit");
       TestingGround.Now = -1f;
       Check(TestingGround.AllMutants().Count() > 5 && ShopDatabase.Items.Count(d => d.Type == "weapon") > 20, "testing ground: every mutant and weapon is on offer");
+    }
+  }
+
+
+  // Real-time balance sim (2026-11-17, replaces the turn-based fight sims as the bulk check of the shared hit/damage maths): a bot with a
+  // gun fights through Rt.PlayerTick / Rt.WorldTick / RtAi / Ballistics at 30 frames a second on a fake clock, seeded, many trials.
+  // It prints win rate, time to kill and HP lost, and checks them against wide bands: it is a tripwire for a gun/armor/AI change that
+  // breaks the feel (a rookie that can't hurt you, a lone mutant that melts), not a tuning target. Yan's playtests decide the feel.
+  static string RtDuelNote = "";
+  // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
+  static float AimShare(Player p, Mutant tgt) {
+    var (sx, sy) = Ballistics.Pos(p); var (tx, ty) = Ballistics.Pos(tgt); float dx = tx - sx, dy = ty - sy, l = (float)Math.Sqrt(dx * dx + dy * dy);
+    foreach (float h in new[] { 0.5f, 0.4f, 0.6f, 0.3f, 0.7f, 0.2f, 0.8f, 0.9f, 0.1f }) if (Ballistics.Trace(p, sx, sy, dx / l, dy / l, 30f, h, Gunplay.Targets(p)).Unit == tgt) return h;
+    return 0.5f;
+  }
+  static string TraceNote(Player p, Mutant tgt) {
+    var (sx, sy) = Ballistics.Pos(p); var (tx, ty) = Ballistics.Pos(tgt); float dx = tx - sx, dy = ty - sy, l = (float)Math.Sqrt(dx * dx + dy * dy);
+    var h = Ballistics.Trace(p, sx, sy, dx / l, dy / l, 30f, 0.45f, Gunplay.Targets(p));
+    var sbh = new System.Text.StringBuilder(); foreach (float hh in new[] { 0.1f, 0.3f, 0.5f, 0.7f, 0.9f }) { var hx = Ballistics.Trace(p, sx, sy, dx / l, dy / l, 30f, hh, Gunplay.Targets(p)); sbh.Append($" h{hh}:{hx.Unit?.Name ?? (hx.Wall ? "W" : hx.Cover ? "C" : "-")}"); }
+    return sbh + $" ENEMIES={EncounterState.Enemies.Count} alive={EncounterState.Enemies.Count(e => e.IsAlive())} inTargets={Gunplay.Targets(p).Contains(tgt)} trace: hit={h.Unit?.Name} part={h.Part} wall={h.Wall} cover={h.Cover} bodies={Gunplay.Bodies().Count()}";
+  }
+  static (bool won, float secs, int hpLeft) RtDuel(string pCat, string pGun, Func<int, int, List<Mutant>> spawn, float limit = 90f) {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    for (int y = py - 9; y <= py + 9; y++) for (int x = px - 4; x <= px + 22; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    p.EquipWeapon(pCat, pGun); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f);
+    UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; UnityEngine.Time.timeScale = 1f;
+    var foes = spawn(px, py); foreach (var f in foes) { EncounterState.Enemies.Add(f); f.IsAggroed = true; Rt.SetOffset(f, 0f, 0f); }
+    EncounterState.InCombat = true; Contact.Spot(p);
+    var dbgLog = new ListLog(); var oldTarget = GameLog.Target; GameLog.Target = dbgLog;
+    const float dt = 1f / 30f; float t = 0f;
+    for (; t < limit; t += dt) {
+      UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+      var live = foes.Where(f => f.IsAlive() && EncounterState.Enemies.Contains(f)).ToList(); if (live.Count == 0 || Body.Down(p) || !p.IsAlive()) break;
+      var tgt = live.OrderBy(f => CombatantUtil.Distance(p, f)).First(); var (tx, ty) = Ballistics.Pos(tgt);
+      var w = p.EquippedWeapon; bool needReload = w != null && w.CurrentMagazine <= 0;
+      if (needReload) w.ReserveAmmo["Standard"] = 999;
+      Rt.PlayerTick(p, new Rt.Input { Mouse = (tx, ty + 0.44f - AimShare(p, tgt) * Ballistics.BodyTiles), Aim = true, Fire = !needReload, FireDown = !needReload && ((int)(t / dt) % 2 == 0), Reload = needReload });
+      Rt.WorldTick(p); Rt.Glide(dt);
+      if (Environment.GetEnvironmentVariable("BALDBG2") != null && (int)(t / dt) % 90 == 0) Console.WriteLine($"      t={t:0} mag={w?.CurrentMagazine} reloadUntil={Gunplay.AimOf(p).ReloadUntil:0.0} now={UnityEngine.Time.time:0.0} foeHp={string.Join(",", foes.Select(f => f.Hp))} me={p.Hp} jam={w?.IsJammed} slow={Rt.SlowMo} aiming={Rt.Of(p).Aiming} usingId={Rt.Of(p).UsingId} live: {live.Count} tgt={tgt.Name} prone={tgt.StatusEffects.Prone} low={Rt.Low(tgt)} down={Body.Down(tgt)} pos={Ballistics.Pos(tgt)} morale={(tgt as HumanEnemy)?.Morale} aimy={ty} mePos={Ballistics.Pos(p)} {TraceNote(p, tgt)} untouch={Rt.Untouchable(tgt)} share={AimShare(p, tgt)} hum={tgt is HumanEnemy} db={tgt.Db?.Name}");
+    }
+    GameLog.Target = oldTarget; if (Environment.GetEnvironmentVariable("BALDBG3") != null && foes.Any(f => f.IsAlive())) foreach (var l in dbgLog.L.TakeLast(8)) Console.WriteLine("        log: " + l);
+    RtDuelNote = (Environment.GetEnvironmentVariable("BALDBG") != null ? string.Join("", Enumerable.Range(0, 14).Select(dx => TerrainMap.CoverAcAt(px + dx, py) + (TerrainMap.BlocksSight(px + dx, py) ? "W" : "."))) + " " + (foes.Count > 0 ? "mutual=" + (foes[0] is Mutant fm ? Contact.Mutual(fm, p).ToString() : "") + " aggro=" + foes[0].IsAggroed : "") + " " : "") + string.Join(",", foes.Select(f => $"{f.Hp}/{f.MaxHp}@{f.X - px},{f.Y - py}")) + $" me@{p.X - px},{p.Y - py} mag {p.EquippedWeapon?.CurrentMagazine}";
+    bool won = foes.All(f => !f.IsAlive() || !EncounterState.Enemies.Contains(f)) && p.IsAlive() && !Body.Down(p); int left = p.Hp;
+    EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; UnityEngine.Time.timeScale = 1f;
+    return (won, t, left);
+  }
+
+  static void RtBalanceChecks() {
+    string gun = WeaponDatabase.Categories["assault"].Keys.First();
+    HumanEnemy Raider(int x, int y, string rank, string cat, string key) { var h = new HumanEnemy("Raider", x, y, "Raiders", rank, null, null); h.EquipWeaponFromDb(WeaponDatabase.Categories[cat][key]); return h; }
+    string pistol = "PSh18Pchela";
+    var scen = new List<(string name, Func<int, int, List<Mutant>> mk)> {
+      ("1 Rookie pistol", (x, y) => new List<Mutant> { Raider(x + 8, y, "Rookie", "sidearm", pistol) }),
+      ("3 Rookies pistol", (x, y) => new List<Mutant> { Raider(x + 8, y - 3, "Rookie", "sidearm", pistol), Raider(x + 8, y, "Rookie", "sidearm", pistol), Raider(x + 8, y + 3, "Rookie", "sidearm", pistol) }),
+      ("4 Experienced rifles", (x, y) => Enumerable.Range(0, 4).Select(i => (Mutant)Raider(x + 9, y - 4 + i * 3, "Experienced", "assault", gun)).ToList()),
+      ("4 Pallid Prowlers", (x, y) => Enumerable.Range(0, 4).Select(i => new Mutant("Pallid Prowler", x + 14, y - 3 + i * 2, MutantDatabase.Tiers.Values.SelectMany(d => d).First(k => k.Key == "PallidProwler").Value)).ToList()),
+      ("1 Pallid Prowler", (x, y) => new List<Mutant> { new Mutant("Pallid Prowler", x + 8, y, MutantDatabase.Tiers.Values.SelectMany(d => d).First(k => k.Key == "PallidProwler").Value) }),
+    };
+    // wide bands (wins out of 12, average HP lost over all 12 trials): a tripwire, not a target. Rookies are beatable, four trained rifles are a real
+    // threat ("overwhelmed and still coming out on top": a good player wins, this bot - which never moves or dives - mostly does not), a lone mutant is a quick kill
+    var bands = new Dictionary<string, (int minWins, int maxWins, int minLost, int maxLost)> {
+      ["1 Rookie pistol"] = (9, 12, 0, 400), ["3 Rookies pistol"] = (8, 12, 20, 800), ["4 Experienced rifles"] = (0, 8, 300, 1000),
+      ["4 Pallid Prowlers"] = (6, 12, 0, 700), ["1 Pallid Prowler"] = (9, 12, 0, 300) };
+    foreach (var (name, mk) in scen) {
+      int wins = 0; float tk = 0f; int lost = 0; const int N = 12;
+      for (int i = 0; i < N; i++) { UnityEngine.Random.InitState(1000 + i); var r = RtDuel("assault", gun, mk); lost += 1000 - Math.Min(1000, r.hpLeft); if (r.won) { wins++; tk += r.secs; } }
+      lost /= N; var bd = bands[name]; Console.WriteLine($"  rt balance: {name}: {wins}/{N} won, {(wins > 0 ? tk / wins : 0):0.0} s, {lost} HP lost");
+      Check(wins >= bd.minWins && wins <= bd.maxWins && lost >= bd.minLost && lost <= bd.maxLost,
+        $"rt balance: {name}: {wins}/{N} won, {(wins > 0 ? tk / wins : 0):0.0} s to win, {lost} HP lost on average (bands {bd.minWins}-{bd.maxWins} wins, {bd.minLost}-{bd.maxLost} HP; assault rifle {gun})");
     }
   }
 
