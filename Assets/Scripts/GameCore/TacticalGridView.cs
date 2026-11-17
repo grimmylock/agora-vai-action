@@ -1009,6 +1009,17 @@ namespace GameCore
             _focus = Vector3.Lerp(_focus, off, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 6f));
             target += _focus;
             _lookAhead = Vector3.Lerp(_lookAhead, Rt.On && !speaker.HasValue ? Rt.Me.Look : Vector3.zero, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 4f));   // real-time fork: look toward the mouse
+            if (Rt.On && !speaker.HasValue)
+            {   // 2026-11-17: the pull is capped so the view's edge stops at the gun's reach (Rt.PullEdgeOf): hw/hh = half the view, the edge along the pull is 1 / max(|dx|/hw, |dy|/hh) from the camera centre
+                float len = Mathf.Sqrt(_lookAhead.x * _lookAhead.x + _lookAhead.y * _lookAhead.y);
+                if (len > 0.01f)
+                {
+                    float hh = cam.orthographicSize, hw = hh * cam.aspect, dx = Mathf.Abs(_lookAhead.x) / len, dy = Mathf.Abs(_lookAhead.y) / len;
+                    float extent = 1f / Mathf.Max(Mathf.Max(dx / hw, dy / hh), 1e-4f);
+                    float cap = Mathf.Max(0f, Rt.Me.PullEdge - extent);
+                    if (len > cap) _lookAhead = new Vector3(_lookAhead.x * cap / len, _lookAhead.y * cap / len, 0f);
+                }
+            }
             target += _lookAhead;
             cam.transform.position = new Vector3(target.x, target.y, -10f);
             // Batch 65: mouse wheel zooms between the close view and twice as far (long guns reach past the close view)

@@ -104,6 +104,7 @@ namespace GameCore
             public float ShoveX, ShoveY, ShoveFrom = -1f, ShoveLen;   // a knock-back in progress: the total offset, when it began, how long it takes (Rt.Shove)
             public int Moving;                                        // 0 still, 1 walking, 2 sprinting
             public Vector3 Look;                                      // camera look-ahead (world), eased by TacticalGridView
+            public float PullEdge = 30f;                              // how far from the player the view's edge may be pulled toward the cursor (tiles): the gun's reach, scopes stretch it (PullEdgeOf); TacticalGridView clamps the pull to it
             public string UsingId;
             public float Reviving;                                    // seconds E has been held over a downed friend
             public (float x, float y)? AimAt;                         // RT 7z: where this player's crosshair is (tile space) - friends' guns point there
@@ -398,7 +399,16 @@ namespace GameCore
                 var (px, py) = Ballistics.Pos(p);
                 float reach = s.Aiming ? Optics.Reach(w, CombatRules.Category(w?.Db) == "sniper" ? 0.75f : 0.5f) : 0.25f;   // a scope leans the camera further (Optics.cs)
                 s.Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
+                s.PullEdge = PullEdgeOf(w);
             }
+        }
+
+        /// <summary>2026-11-17 (Yan: pull the camera toward the cursor like Zero Sievert, the pull based on the gun's max range so nobody tries to shoot what is out of range): how far from the player the edge of the view may reach
+        /// toward the cursor, in tiles = the gun's reach (a scope stretches it, Optics.PullMul), never past what the player can see (Vision.MaxRadius). Melee and fists: a short pull.</summary>
+        public static float PullEdgeOf(Weapon w)
+        {
+            if (w?.Db == null || CombatRules.IsMelee(w)) return 12f;
+            return System.Math.Min(Gunplay.For(w).Reach * Optics.PullMul(w), Vision.MaxRadius);
         }
 
         /// <summary>X: the next fire mode (auto, burst, semi) on a gun with a selector; the old designs say they only have the one.</summary>

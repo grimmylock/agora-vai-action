@@ -15,6 +15,7 @@ namespace GameCore
             public string Id, Name, Kind;                 // Kind: "scope" (looks further), "dot" (a red-dot sight), "laser"
             public bool Under;                            // hangs under the barrel (the laser) instead of sitting on the rail
             public float Reach;                           // scopes: how far the camera leans toward the mouse while you aim (1/(1-Reach) times the cursor's offset); the gun's own lean stays if it is bigger
+            public float PullMul = 1f;                    // scopes: factor on the gun's reach for the camera pull (Rt.PullEdgeOf)
             public float LookMul;                         // scopes: your look reach while aiming (dusk, rain and fog cut it; a scope gives some back, capped at Vision.MaxRadius)
             public float AimedSpread = 1f, HipSpread = 1f;   // spread multipliers when fully steady / from the hip (blended by how steady you are)
             public float SteadyMul = 1f;                  // how fast the aim steadies (a red dot is quick, a big scope is slow)
@@ -25,9 +26,9 @@ namespace GameCore
         }
         public static readonly Dictionary<string, Def> All = new Dictionary<string, Def>
         {
-            ["pu2"] = new Def { Id = "pu2", Price = 220, Scale = 0.8f, Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
-            ["acog"] = new Def { Id = "acog", Price = 450, Scale = 0.8f, Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
-            ["scope8"] = new Def { Id = "scope8", Price = 800, Scale = 0.8f, Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
+            ["pu2"] = new Def { Id = "pu2", PullMul = 1.15f, Price = 220, Scale = 0.8f, Name = "PU 2x", Kind = "scope", Reach = 0.80f, LookMul = 1.15f, AimedSpread = 0.90f, SteadyMul = 0.95f, View = 0.34f, Pivot = new Vector2(32, 23) },
+            ["acog"] = new Def { Id = "acog", PullMul = 1.3f, Price = 450, Scale = 0.8f, Name = "ACOG 4x", Kind = "scope", Reach = 0.78f, LookMul = 1.20f, AimedSpread = 0.85f, SteadyMul = 0.90f, View = 0.30f, Pivot = new Vector2(20, 22) },
+            ["scope8"] = new Def { Id = "scope8", PullMul = 1.6f, Price = 800, Scale = 0.8f, Name = "8x scope", Kind = "scope", Reach = 0.88f, LookMul = 1.35f, AimedSpread = 0.75f, SteadyMul = 0.75f, View = 0.26f, Pivot = new Vector2(42, 25) },
             ["reddot"] = new Def { Id = "reddot", Price = 250, Name = "Red dot", Kind = "dot", AimedSpread = 0.95f, HipSpread = 0.90f, SteadyMul = 1.30f, Pivot = new Vector2(13, 16) },
             ["laser"] = new Def { Id = "laser", Price = 180, Name = "Laser", Kind = "laser", Under = true, AimedSpread = 0.97f, HipSpread = 0.80f, Pivot = new Vector2(11, 1) },
         };
@@ -130,6 +131,7 @@ namespace GameCore
         public static float SteadyMul(Weapon w) { float m = 1f; foreach (var d in new[] { OpticOf(w), UnderOf(w) }) if (d != null) m *= d.SteadyMul; return m; }
         /// <summary>How far the camera leans toward the mouse while aiming: the gun's own lean, or more with a scope.</summary>
         public static float Reach(Weapon w, float baseline) { var d = OpticOf(w); return d != null && d.Kind == "scope" ? Mathf.Max(baseline, d.Reach) : baseline; }
+        public static float PullMul(Weapon w) { var d = OpticOf(w); return d != null && d.Kind == "scope" ? d.PullMul : 1f; }   // scopes stretch how far the camera may be pulled toward the cursor (the gun's reach times this, capped by the view)
         public static float LookMul(Weapon w, bool aiming) { var d = OpticOf(w); return aiming && d != null && d.Kind == "scope" ? d.LookMul : 1f; }
 
         // ---- the sprites ----
