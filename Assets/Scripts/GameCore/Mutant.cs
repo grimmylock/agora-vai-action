@@ -229,7 +229,7 @@ namespace GameCore
             if (!GameServices.RequireGrid().AttemptMove(this, newX, newY))
                 return false;
 
-            GameLog.Write($"{Name} retreats to ({X}, {Y}). MP remaining: {Mp}.");
+            if (!Rt.On) GameLog.Write($"{Name} retreats to ({X}, {Y}). MP remaining: {Mp}.");
             return true;
         }
 

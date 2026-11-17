@@ -307,7 +307,7 @@ namespace GameCore
             foreach (var j in Player.All) if (j != player && j.IsAlive())                         // joined players, on their last packet (presses spent once)
             {
                 var ji = Net.TakeInput(j); bool edge = ji.Use && !_remoteUse.Contains(j); if (ji.Use) _remoteUse.Add(j); else _remoteUse.Remove(j);
-                if (edge && EelBoss.TryExamine(j)) continue;                                      // a friend presses E at the crewman on the slab: the eel's cutscene
+                if (edge && (EelBoss.TryExamine(j) || Tier2Story.TryUseDoor(j))) continue;                                      // a friend presses E at the crewman on the slab: the eel's cutscene
                 Rt.PlayerTick(j, Story.InCutscene ? default : ji);                                // and in a cutscene they stand still, like the host
             }
             TickClock(player);
@@ -318,7 +318,7 @@ namespace GameCore
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
                 var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);
-                if (EelBoss.TryExamine(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
+                if (EelBoss.TryExamine(player) || Tier2Story.TryUseDoor(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
                 else if (corpse != null) { if (!Boss.TryWake(player, corpse)) CorpseLootUI.Open(corpse); }   // Boss 1: the Visor's body
                 else if (ground.Count > 0)
                 {

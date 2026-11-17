@@ -6197,3 +6197,12 @@ Yan: died and respawned at the entrance with the soldiers alive; "the soldiers d
 - **Dying**: in the Testing Ground there is no save slot, so being shot or killed restarts the walk at the ladder with a fresh squad (a real game reloads the second auto-save at the door). Unchanged.
 - **Mutant animations**: Pallid Prowler and Blind Maw have walk, run and bite strips; the Swarm (34 of the 49) has NO sprite art beyond its static old-atlas cell, so it only slides. Not fixed: needs a rat sprite and a walk from SpriteCook (about 32 of the 38 credits left).
 Not run in Unity again.
+
+## Taken, third Unity run: the door scene, the Gaunt in the corridor, barks, the MP spam (2026-11-17, Yan)
+Yan: the soldiers formed a line he could not get past and he died in the crossfire; wants a cutscene at the door when he interacts with it before the Gaunt's scream, the Gaunt coming out of the dark into the red-lit corridor after the card fails, enemy dialogue above their heads not in the corner, and why an MP cost shows every step.
+- **Door scene**: reaching the door no longer fires the alarm by itself. Within 3.5 tiles an "E: Run the passcard through the lock" prompt shows (`InteractionPrompts`, E handled in `PlayerController`/`InteractionEngine` -> `Tier2Story.TryUseDoor`); E starts a 6 s scene (second auto-save, camera locked on the lock with letterbox, everyone stands still, the sergeant orders the card, the reader buzzes, he asks why it will not open), then the alarm. The walk's clock stops during it.
+- **The Gaunt** now walks (0.25 s a tile) out of the dark tunnel and 20 tiles INTO the red-lit corridor (door x + 20), lit and framed (`Vision.Spotlight`, the cinematic camera), and screams and points there. (My previous edit had cut the block that moves it; restored.)
+- **The soldiers' posts**: at the alarm they walk to posts 4-16 tiles east of the door on the corridor's two edges, leaving the middle rows open so you can run west past them, and never fire along a line that has a player within a tile of it (`PlayerInLine`).
+- **Barks**: the sergeant's lines (the walk's warnings, the shot, the door scene) are `Banter.Say` over his head; narration stays in the log.
+- **MP**: `Player.cs` logged "Player moved to ..., MP remaining" on every step (and the flee/retreat lines in `Mutant.cs`, `HumanEnemy.cs`): off in real time.
+- Harness: E at the door starts the scene, nothing happens by itself, the alarm comes after it. Not run in Unity again.

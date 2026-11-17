@@ -215,7 +215,7 @@ namespace GameCore
             if (!GameServices.RequireGrid().AttemptMove(this, newX, newY))
                 return false;
 
-            GameLog.Write($"{Name} flees to ({X}, {Y}). MP remaining: {Mp}.");
+            if (!Rt.On) GameLog.Write($"{Name} flees to ({X}, {Y}). MP remaining: {Mp}.");
             return true;
         }
 

@@ -39,6 +39,7 @@ namespace GameCore
             var an = AnomalyEngine.SearchableNear(p);
             if (an != null) Add(an.X, an.Y, "F", "Search the " + an.DisplayName);
             // click: bodies with something on them, things on the ground
+            if (Tier2Story.CanUseDoor(p) && Tier2Story.DoorTile is (int dx0, int dy0)) Add(dx0, dy0, "E", "Run the passcard through the lock");   // Tier 2 "Taken"
             if (EelBoss.CanExamine(p, out var exx, out var exy)) Add(exx, exy, "E", "Examine the body");          // Boss 3: starts the eel's introduction
             foreach (var e in EncounterState.Enemies.OfType<HumanEnemy>())
                 if (!e.IsAlive() && !(EelBoss.Current != null && EelBoss.Current.Body == e && EelBoss.Current.Stage == "hidden") && D(p, e.X, e.Y) <= 2 && e.Inventory.Items.Count > 0) Add(e.X, e.Y, "CLICK", "Search the body");

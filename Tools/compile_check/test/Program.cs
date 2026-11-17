@@ -3076,8 +3076,12 @@ static class Program {
       Check(Tier2Story.Step == 3 && TerrainMap.ZoneId == "taken_tunnels" && esc2 == 5 && p.IsAlive() && Math.Abs(p.X - lad1.X) <= 3 && Math.Abs(p.Y - lad1.Y) <= 3, $"taken: too slow and you are shot - the walk starts again at the ladder ({Tier2Story.Step}, {esc2} soldiers, alive {p.IsAlive()})");
       var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); p.X = door.X; p.Y = door.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.2f);
+      Check(Tier2Story.Step == 3 && Tier2Story.CanUseDoor(p), "taken: at the door nothing happens by itself - E uses the passcard");
+      Check(Tier2Story.TryUseDoor(p), "taken: E at the door starts the door scene");
+      Run(5f); Check(Tier2Story.Step == 3 && Story.CamLock.HasValue && Story.Letterbox, "taken: the door scene: the camera on the lock, bars, the alarm not yet");
+      Run(3f);
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
-      Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
+      Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall (step {Tier2Story.Step})");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
       Check(Sfx.MusicName == null, "taken: no chase song while the Gaunt's scene is still going");
       Check(EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).OfType<Mutant>().All(m => Tier2Story.Holds(m)), "taken: the horde and the Gaunt wait in the dark, held by the story, until they are let go");

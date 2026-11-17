@@ -515,7 +515,7 @@ namespace GameCore
             if (!GameServices.RequireGrid().AttemptMove(this, newX, newY))
                 return;
 
-            GameLog.Write($"Player moved to ({X}, {Y}), MP remaining: {Mp}.");
+            if (!Rt.On) GameLog.Write($"Player moved to ({X}, {Y}), MP remaining: {Mp}.");   // (real time has no MP: Yan, 2026-11-17, "why is there an MP cost being displayed everytime i walk")
         }
 
         /// <summary>Ported from attack(target, fireMode). Depends on GameServices.Combat via Weapon.Fire.</summary>
