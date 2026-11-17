@@ -12,7 +12,6 @@ namespace GameCore
         string Name { get; }
         int X { get; set; }
         int Y { get; set; }
-        int MaxMp { get; set; }
         float PhysDR { get; set; }
         float AnomDR { get; set; }
         int Ac { get; set; }

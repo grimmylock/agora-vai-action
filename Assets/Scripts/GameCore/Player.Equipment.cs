@@ -73,7 +73,6 @@ namespace GameCore
             EquippedWeaponKey = key;
 
             GameLog.Write($"Equipped weapon: {w.Name} (range {w.RangeTiles} tiles).");
-            ApplyMpConstraintsAfterEquip();
             ApplyCarryEffects();
         }
 
@@ -95,13 +94,8 @@ namespace GameCore
             EquippedArmorCondition = string.IsNullOrEmpty(condition) ? ItemCondition.Working : condition;
             PhysDR = db.PhysDR;
             AnomDR = db.AnomDR;
-            MaxMp = db.Mp > 0 ? db.Mp : 4;
 
-            if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue)
-                MaxMp = System.Math.Min(MaxMp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
-
-
-            GameLog.Write($"Equipped armor: {db.Name}. Phys-DR {PhysDR}, Anom-DR {AnomDR}, Max MP {MaxMp}.");
+            GameLog.Write($"Equipped armor: {db.Name}. Phys-DR {PhysDR}, Anom-DR {AnomDR}{(HeavyArmorSlows ? ", heavy: -10% move speed" : "")}.");
             ApplyArmorModsForPlayer();
             ApplyCarryEffects();
         }
@@ -232,7 +226,6 @@ namespace GameCore
             (EquippedWeaponKey, SecondaryKey) = (SecondaryKey, EquippedWeaponKey);
             if (SecondaryWeapon == null) SecondaryCategory = SecondaryKey = null;
             GameLog.Write($"You draw your {EquippedWeapon.Name}.");
-            ApplyMpConstraintsAfterEquip();
             ApplyCarryEffects();
             return true;
         }
@@ -330,16 +323,6 @@ namespace GameCore
             if (!BackpackDatabase.All.TryGetValue(old, out var bp)) return;
             var shop = ShopDatabase.Find(old);
             AddItem(new InventoryItem { Id = old, Name = bp.Name, Type = "backpack", Qty = 1, WeightKg = shop?.WeightKg ?? 1f, Price = shop?.Price });
-        }
-
-        public void ApplyMpConstraintsAfterEquip()
-        {
-            int armorMp = EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4;
-            int maxMp = armorMp;
-            if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue)
-                maxMp = System.Math.Min(maxMp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
-
-            MaxMp = maxMp;
         }
 
         /// <summary>Ported from useConsumable(itemId).</summary>
@@ -480,7 +463,6 @@ namespace GameCore
             AnomDR = System.Math.Max(0f, AnomDR + ArtifactAnomDRBonus + ArtifactAnomPenalty);
 
             ArmorModMpBonus = mpModifier;
-            MaxMp = System.Math.Max(2, (EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4) + mpModifier);
             ArmorModBeltSlotBonus = beltBonus; // player-local, not mutating the shared ArmorDef
 
             var backpackDef = BackpackDatabase.All.TryGetValue(Inventory.Backpack ?? "none", out var bp) ? bp : null;

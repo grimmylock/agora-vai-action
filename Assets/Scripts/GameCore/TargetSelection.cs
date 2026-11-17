@@ -19,26 +19,5 @@ namespace GameCore
                 .FirstOrDefault();
         }
 
-        /// <summary>Ported from getTargetInRange().</summary>
-        public static Mutant GetTargetInRange()
-        {
-            var player = Player.Current;
-            if (player == null) return null;
-
-            var weapon = player.EquippedWeapon;
-            int range = weapon != null ? weapon.MaxReach : 1;
-
-            // Prefer the player's manually selected target, as long as it's still valid.
-            if (GameState.Current.SelectedEnemy is Mutant selected
-                && selected.IsAlive() && !Companion.Is(selected)
-                && CombatantUtil.Distance(player, selected) <= range)
-            {
-                return selected;
-            }
-
-            // Otherwise fall back to the nearest living hostile enemy in range.
-            var hostile = GetNearestHostile(player, EncounterState.Enemies.Where(e => !Companion.Is(e)).Cast<ICombatant>(), range);
-            return hostile as Mutant;
-        }
     }
 }

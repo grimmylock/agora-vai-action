@@ -6,8 +6,6 @@ namespace GameData
 {
     public class RankDef
     {
-        public int Ap;
-        public int Mp;
         public int D20Mod;
         public int MoraleHPPercent;
     }
@@ -22,7 +20,7 @@ namespace GameData
     public static class FactionDatabase
     {
         // Ranks: Rookie, Experienced, Professional, Veteran, Expert, Master, Legend
-        // Each rank: AP, MP, d20 modifier, morale threshold (HP percent when they flee)
+        // Each rank: d20 modifier (only the off-screen squad-vs-squad dice use it), morale threshold (HP percent when they flee)
         // Fix: D20Mod used to climb +1 per rank straight through Legend (-1..+5), which is steeper
         // than the Mutants & Factions reference's curve (it compresses at the top: Veteran/Expert
         // and Expert/Master share a modifier). That made a Legend NPC's AC noticeably tougher than
@@ -30,13 +28,13 @@ namespace GameData
         // "Flees at <=1% HP" (Legends essentially never break).
         public static readonly Dictionary<string, RankDef> Ranks = new Dictionary<string, RankDef>
         {
-            ["Rookie"] = new RankDef { Ap = 4, Mp = 4, D20Mod = -1, MoraleHPPercent = 50 },
-            ["Experienced"] = new RankDef { Ap = 4, Mp = 4, D20Mod = 0, MoraleHPPercent = 30 },
-            ["Professional"] = new RankDef { Ap = 4, Mp = 4, D20Mod = 1, MoraleHPPercent = 25 },
-            ["Veteran"] = new RankDef { Ap = 4, Mp = 4, D20Mod = 1, MoraleHPPercent = 20 },
-            ["Expert"] = new RankDef { Ap = 4, Mp = 5, D20Mod = 2, MoraleHPPercent = 15 },
-            ["Master"] = new RankDef { Ap = 4, Mp = 5, D20Mod = 2, MoraleHPPercent = 10 },
-            ["Legend"] = new RankDef { Ap = 4, Mp = 5, D20Mod = 3, MoraleHPPercent = 1 },
+            ["Rookie"] = new RankDef { D20Mod = -1, MoraleHPPercent = 50 },
+            ["Experienced"] = new RankDef { D20Mod = 0, MoraleHPPercent = 30 },
+            ["Professional"] = new RankDef { D20Mod = 1, MoraleHPPercent = 25 },
+            ["Veteran"] = new RankDef { D20Mod = 1, MoraleHPPercent = 20 },
+            ["Expert"] = new RankDef { D20Mod = 2, MoraleHPPercent = 15 },
+            ["Master"] = new RankDef { D20Mod = 2, MoraleHPPercent = 10 },
+            ["Legend"] = new RankDef { D20Mod = 3, MoraleHPPercent = 1 },
         };
 
         // Faction decks define relative weightings for ranks when spawning enemies.

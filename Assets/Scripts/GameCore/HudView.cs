@@ -295,7 +295,7 @@ namespace GameCore
             _portrait.sprite = UnitSprites.For(p);
             FillSegs(_hpSeg, p.Hp / (float)Mathf.Max(1, p.MaxHp), Red);
             _hpNum.text = p.Hp.ToString();
-            _ac.text = Rt.On ? Body.Summary(p) : $"AC {p.Ac}";   // RT batch 2: each part's health
+            _ac.text = Body.Summary(p);   // RT batch 2: each part's health
             var st = new List<(string, Color)>();
             if (Rt.On)
             {

@@ -269,10 +269,9 @@ namespace GameCore
                     if (player.Hunger <= 0) depletedStats.Add("hunger");
                     if (player.Thirst <= 0) depletedStats.Add("thirst");
                     if (player.Tiredness <= 0) depletedStats.Add("tiredness");
-                    GameLog.Write($"[SURVIVAL WARNING] You are critically low on {string.Join(" and ", depletedStats)}! Weapons cost +1 AP and carry penalties double.");
+                    GameLog.Write($"[SURVIVAL WARNING] You are critically low on {string.Join(" and ", depletedStats)}! It costs you HP every round until you eat, drink or rest.");
 
-                    // New: depletion previously had no cost beyond the AP/carry penalties above -
-                    // a player could sit at 0 hunger/thirst/tiredness indefinitely with nothing
+                    // New: depletion had no cost - a player could sit at 0 hunger/thirst/tiredness indefinitely with nothing
                     // actually punishing it. 1 HP per depleted stat per turn is a mild, escalating
                     // tax (worse the more stats are empty at once) rather than a death sentence -
                     // ponytail: flat rate, not scaled by how deep into the negative a stat is

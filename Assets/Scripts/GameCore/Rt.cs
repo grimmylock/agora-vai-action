@@ -327,6 +327,7 @@ namespace GameCore
             else if ((s.StaminaRest -= dt) <= 0f) s.Stamina = Mathf.Min(StaminaMax, s.Stamina + StaminaRegen * dt);
             float speed = sprint ? Sprint : p.Sneaking ? Crouch : Walk;
             if (s.Aiming) speed *= AimSlow;
+            speed *= p.MoveScale;                                       // heavy armor -10% (Yan); artifacts and armor mods nudge it
             if (Body.LegHurt(p)) speed *= 0.6f;                       // RT batch 2: a broken or fractured leg limps
             if (s.UsingId != null) speed *= 0.5f;                     // patching yourself up
             if (down) speed = Crawl;

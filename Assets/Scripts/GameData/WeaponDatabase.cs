@@ -26,7 +26,6 @@ namespace GameData
         public bool MagFed;
         public bool InnateSuppressor;
         public string[] PreAttached;
-        public int? MaxMpWhileHeld;
         public bool ImmuneToBurstJams;
     }
 
@@ -121,12 +120,12 @@ namespace GameData
             },
             ["heavy"] = new Dictionary<string, WeaponDef>
             {
-                ["PL62Kobza"] = new WeaponDef { Name = "PL-62 Kobza", BaseDamage = 200, AmmoType = "7.62x39mm", MagCapacity = 75, Range = "40cm", WeightKg = 6.5f, Tier = 2, MaxMpWhileHeld = 2 },   // Batch 79: the Tier 2 light machine gun
-                ["CorvanLMG"] = new WeaponDef { Name = "Corvan LMG", BaseDamage = 240, AmmoType = "5.56x45mm", MagCapacity = 200, Range = "40cm", WeightKg = 7.5f, Tier = 3, MaxMpWhileHeld = 2 },
-                ["RL44"] = new WeaponDef { Name = "RL-44", BaseDamage = 240, AmmoType = "7.62x39mm", MagCapacity = 100, Range = "40cm", WeightKg = 7.4f, Tier = 3, MaxMpWhileHeld = 2 },
-                ["PL74"] = new WeaponDef { Name = "PL-74", BaseDamage = 280, AmmoType = "7.62x54mmR", MagCapacity = 100, Range = "45cm", WeightKg = 8f, Tier = 4, MaxMpWhileHeld = 2 },
-                ["PL74PPolovets"] = new WeaponDef { Name = "PL-74P Polovets", BaseDamage = 280, AmmoType = "7.62x54mmR", MagCapacity = 100, Range = "50cm", WeightKg = 8.5f, Tier = 4, MaxMpWhileHeld = 2, ImmuneToBurstJams = true },
-                ["PL74PPolovetsZulu"] = new WeaponDef { Name = "PL-74P Polovets Zulu", BaseDamage = 280, AmmoType = "7.62x54mmR", MagCapacity = 100, Range = "50cm", WeightKg = 9f, Tier = 5, PreAttached = new[] { "4x Scope", "Laser" }, MaxMpWhileHeld = 2 },
+                ["PL62Kobza"] = new WeaponDef { Name = "PL-62 Kobza", BaseDamage = 200, AmmoType = "7.62x39mm", MagCapacity = 75, Range = "40cm", WeightKg = 6.5f, Tier = 2 },   // Batch 79: the Tier 2 light machine gun
+                ["CorvanLMG"] = new WeaponDef { Name = "Corvan LMG", BaseDamage = 240, AmmoType = "5.56x45mm", MagCapacity = 200, Range = "40cm", WeightKg = 7.5f, Tier = 3 },
+                ["RL44"] = new WeaponDef { Name = "RL-44", BaseDamage = 240, AmmoType = "7.62x39mm", MagCapacity = 100, Range = "40cm", WeightKg = 7.4f, Tier = 3 },
+                ["PL74"] = new WeaponDef { Name = "PL-74", BaseDamage = 280, AmmoType = "7.62x54mmR", MagCapacity = 100, Range = "45cm", WeightKg = 8f, Tier = 4 },
+                ["PL74PPolovets"] = new WeaponDef { Name = "PL-74P Polovets", BaseDamage = 280, AmmoType = "7.62x54mmR", MagCapacity = 100, Range = "50cm", WeightKg = 8.5f, Tier = 4, ImmuneToBurstJams = true },
+                ["PL74PPolovetsZulu"] = new WeaponDef { Name = "PL-74P Polovets Zulu", BaseDamage = 280, AmmoType = "7.62x54mmR", MagCapacity = 100, Range = "50cm", WeightKg = 9f, Tier = 5, PreAttached = new[] { "4x Scope", "Laser" } },
             },
         };
 

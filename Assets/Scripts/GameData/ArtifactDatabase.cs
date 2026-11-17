@@ -56,9 +56,9 @@ namespace GameData
             ["rosary"] = new ArtifactDef { Name = "Rosary", Type = "Thermal", Tier = 4, AnomPenalty = -0.20f, BleedNegate = true, WeightKg = 0.5f, Description = "Negates bleeding damage entirely" },
 
             // Electrical (MP & Avoidance)
-            ["staticWisp"] = new ArtifactDef { Name = "Static Wisp", Type = "Electrical", Tier = 1, AnomPenalty = -0.05f, MpBonus = 1, WeightKg = 0.5f, Description = "+1 MP" },
-            ["quickglass"] = new ArtifactDef { Name = "Quickglass", Type = "Electrical", Tier = 3, AnomPenalty = -0.15f, MpBonus = 1, AnomalyAvoidanceBonus = 1, WeightKg = 0.5f, Description = "+1 MP and +1 Anomaly Avoidance" },
-            ["frostLattice"] = new ArtifactDef { Name = "Frost Lattice", Type = "Electrical", Tier = 5, AnomPenalty = -0.25f, MpBonus = 2, AnomalyAvoidanceBonus = 2, WeightKg = 0.5f, Description = "+2 MP and +2 Anomaly Avoidance" },
+            ["staticWisp"] = new ArtifactDef { Name = "Static Wisp", Type = "Electrical", Tier = 1, AnomPenalty = -0.05f, MpBonus = 1, WeightKg = 0.5f, Description = "+5% move speed" },
+            ["quickglass"] = new ArtifactDef { Name = "Quickglass", Type = "Electrical", Tier = 3, AnomPenalty = -0.15f, MpBonus = 1, AnomalyAvoidanceBonus = 1, WeightKg = 0.5f, Description = "+5% move speed and +1 Anomaly Avoidance" },
+            ["frostLattice"] = new ArtifactDef { Name = "Frost Lattice", Type = "Electrical", Tier = 5, AnomPenalty = -0.25f, MpBonus = 2, AnomalyAvoidanceBonus = 2, WeightKg = 0.5f, Description = "+10% move speed and +2 Anomaly Avoidance" },
 
             // Tier 6 Legendaries
             ["heartOfTheWound"] = new ArtifactDef { Name = "Heart of the Wound", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, HpRegen = 100, ImmuneBleed = true, WeightKg = 0.8f, Description = "Heals 100 HP/turn, immune to bleed" },

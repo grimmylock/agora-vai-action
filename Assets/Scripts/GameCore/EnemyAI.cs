@@ -31,8 +31,6 @@ namespace GameCore
         private static readonly Dictionary<string, HumanEnemy> _leaders = new Dictionary<string, HumanEnemy>();
         private static readonly HashSet<string> _leaderLost = new HashSet<string>();
 
-        /// <summary>This squad's leader has gone down or fled this fight (Intimidate advantage).</summary>
-        public static bool LeaderLost(HumanEnemy h) => _leaderLost.Contains(h.FactionName);
         // how many enemy rounds the player has sat on the same cover tile (frag trigger)
         private static (int x, int y) _playerSpot = (-1, -1);
         private static int _playerSpotRounds;
@@ -59,22 +57,6 @@ namespace GameCore
 
         // =============================================================== humans
 
-        /// <summary>A surrendered NPC (file 04): take their gear, interrogate them (Intelligence or
-        /// Strength DC 12, once - a stash lead or a true rumor), or let them go (+rep, except
-        /// Raiders and Obelisk). Right-click is still an execution.</summary>
-        public static void HandlePrisoner(HumanEnemy h, Player p)
-        {
-            var options = new List<string> { "Take their gear" };
-            if (!h.Interrogated) options.Add("Interrogate (Int or Str, DC 12)");
-            options.Add("Let them go");
-            ChoiceUI.Show("Surrender", "\"Don't shoot! I'm done, I'm done.\" Hands up, weapon on the ground. (Right-click executes instead.)", options, i =>
-            {
-                string pick = options[i];
-                if (pick.StartsWith("Take")) CorpseLootUI.Open(h);
-                else if (pick.StartsWith("Interrogate")) Interrogate(h, p);
-                else LetGo(h, p);
-            }, h);
-        }
 
         public static void Interrogate(HumanEnemy h, Player p)
         {
@@ -157,7 +139,7 @@ namespace GameCore
         {
             if (h.Rank == "Legend" || h.Morale != "Steady") return;
             h.Morale = "Shaken";
-            GameLog.Write($"{h.Name} {why} and is SHAKEN (-2 to hit, -1 AP, falls back).");
+            GameLog.Write($"{h.Name} {why} and is SHAKEN (falls back).");
         }
 
         /// <summary>Breaks an NPC. Batch 48: decided by the situation, not a d20 - it surrenders when it can't get away
@@ -540,15 +522,14 @@ namespace GameCore
 
         public const int BoulderAfterTurns = 3, BoulderRange = 10, BoulderDamage = 250;
 
-        /// <summary>Batch 130: the Blight Brute rips a boulder out of the ground and hurls it (its whole turn). 2d10 + 3 against your AC
-        /// (it arcs over cover); a hit does 25 and you start your next turn on half MP.</summary>
+        /// <summary>Batch 130: the Blight Brute rips a boulder out of the ground and hurls it. Real time: no dice - it lands unless you
+        /// are diving (it arcs over cover); a hit does 25.</summary>
         public static void ThrowBoulder(Mutant m, Player player)
         {
             m.FaceToward(player.X, player.Y);
-            int a = Random.Range(1, 11), b = Random.Range(1, 11), total = a + b + 3;
-            GameLog.Write($"{m.Name} rips a boulder out of the ground and HURLS it! (2d10 {a}+{b} +3 = {total} vs AC {player.Ac})");
+            GameLog.Write($"{m.Name} rips a boulder out of the ground and HURLS it!");
             Sfx.Play("hit_concrete", null, 1f, 0.06f, 0.55f);   // a deep crunch: the concrete hit pitched way down
-            if (total < player.Ac) { GameLog.Write("The boulder smashes down beside you."); return; }
+            if (Rt.Untouchable(player)) { GameLog.Write("The boulder smashes down where you were."); return; }
             int dmg = CombatRules.PhysicalDamage(BoulderDamage, "Standard", player.PhysDR);
             player.Hp = System.Math.Max(0, player.Hp - dmg);
             GameLog.Write($"The boulder hits you for {dmg}.");
@@ -583,7 +564,6 @@ namespace GameCore
             public int X { get; set; }
             public int Y { get; set; }
             public float Mp { get; set; }
-            public int MaxMp { get; set; }
             public float PhysDR { get; set; }
             public float AnomDR { get; set; }
             public int Ac { get; set; }

@@ -116,7 +116,7 @@ static class Program {
       }
       Check(cut.Count == 0, "every map exit can be walked to: cut off " + string.Join("; ", cut));
       MacroState.Current.CurrentZoneId = "scrapyard"; TerrainMap.BuildTerrainForZone("scrapyard"); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
-      var hub = TerrainMap.Exits.First(e => e.TargetZoneId == "scavengers_hub"); walker.X = 60; walker.Y = 59; walker.MaxMp = 2;   // overloaded
+      var hub = TerrainMap.Exits.First(e => e.TargetZoneId == "scavengers_hub"); walker.X = 60; walker.Y = 59;
       Check(grid.FindPath(60, 59, hub.X, hub.Y, walker).Count > 1, "an overloaded walker still finds the road to the Hub while exploring");
     }
     { // Batch 124: stashes sit where they make sense, drawn as what they are, never two close together
@@ -3386,6 +3386,12 @@ static class Program {
       pp.ActivePerks.AddRange(new[] { "MarksmansFocus", "RecoilControl", "BulletHose", "Shredder" });
       Check(Steady("sniper", "M91Trekhlineyka") < s0 * 0.9f && Kick("assault", "VK74") < k0 * 0.9f && Kick("smg", "CorvanHornet45") < m0 * 0.9f && Steady("heavy", "RL44") < h0 * 0.9f,
         "RT perks: Marksman's Focus, Recoil Control, Bullet Hose and Shredder tune the gun they belong to"); }
+    // heavy armor slows the real-time walk by 10% (Yan, 2026-11-17); light armor does not
+    { var pw = Arena(out int wx, out int wy);
+      var heavyKey = ArmorDatabase.Tiers.SelectMany(t => t.Value.Select(a => (tier: t.Key, key: a.Key, def: a.Value))).First(a => a.def.Mp > 0 && a.def.Mp < 4);
+      var lightKey = ArmorDatabase.Tiers.SelectMany(t => t.Value.Select(a => (tier: t.Key, key: a.Key, def: a.Value))).First(a => a.def.Mp >= 4);
+      pw.EquipArmor(lightKey.tier, lightKey.key); float light = pw.MoveScale; pw.EquipArmor(heavyKey.tier, heavyKey.key); float heavy = pw.MoveScale;
+      Check(Math.Abs(light - 1f) < 0.001f && Math.Abs(heavy - 0.9f) < 0.001f, $"heavy armor ({heavyKey.def.Name}) slows the walk 10%: light {light}, heavy {heavy}"); }
   }
 
   static void RtChecks() {
@@ -3548,7 +3554,7 @@ static class Program {
     TerrainMap.SetTileType(px + 5, py, TileType.Empty);
     p.Sneaking = true; Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.6f) == "Head", "crouching: a head-height round goes over you"); p.Sneaking = false;
     // the old turn AI's gunfire becomes real rounds
-    int hits = 0, n = 120;
+    int hits = 0, n = 300; UnityEngine.Random.InitState(11); r.EquipWeaponFromDb(WeaponDatabase.Categories["assault"]["VK74"]);   // a fixed rifle: the loadout is random and a sniper in his hands misses a lot at 6 tiles by design
     for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; Body.Forget(p); p.Sneaking = false; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); Gunplay.LandAll(); if (p.Hp < p.MaxHp) hits++; }
     Check(hits > 8 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");   // (120 shots: 40 tripped on chance)
     // RT batch 2: limb health, Yan's wound rule, down and bleed-out, timed items
@@ -4065,7 +4071,7 @@ static class Program {
         Check(threw == 4, $"the boulder comes on the 4th turn without reaching you (turn {threw})");
         p.Hp = p.MaxHp;
         int hits = 0; for (int i = 0; i < 40; i++) { EnemyAI.ThrowBoulder(brute, p); if (p.Hp < p.MaxHp) hits++; p.Hp = p.MaxHp; }
-        Check(hits > 5 && hits < 40, $"boulders hit sometimes ({hits}/40)");
+        Check(hits == 40, $"a boulder always lands on someone who is not diving ({hits}/40)");
         GameLog.Target = oldLog; EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
       }
       // Batch 73: Tier 1 Raider gangs are at most 3
@@ -4127,7 +4133,6 @@ static class Program {
         Check(SquadManager.Settle(sq, true) && MacroMapDatabase.Find(sq.ZoneId).Tier < 6, $"a Rookie-led squad moves down (now {sq.ZoneId})");
         MacroState.Current.OfflineSquads.Clear(); }
       // Batch 77: the hit chance the targeting panel shows is the real one
-      Check(Math.Abs(CombatRules.HitChance(0, 10) - 0.64f) < 0.001f && Math.Abs(CombatRules.HitChance(0, 10, true) - 0.8704f) < 0.001f && CombatRules.HitChance(-30, 10) > 0.009f, "2d10 hit chance (double 10 always hits)");
       { p = Arena(out px, out py); EncounterState.InCombat = true;
         var (gw2, ga2) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
         var dummy = new HumanEnemy("Dummy", px + 5, py, "Raiders", "Rookie", gw2, ga2) { IsAggroed = true }; dummy.MaxHp = dummy.Hp = 100000;
@@ -4237,7 +4242,7 @@ static class Program {
     int before = ShopSystem.GetBuyPrice(item); pl.TakePerk("Haggler"); int after = ShopSystem.GetBuyPrice(item);
     Check(after < before, $"haggler {before}->{after}");
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
-    Check(PerkDatabase.All.Count == 23, "perk count (37 less the 14 perks that only worked with turns, AP, MP or the 2d10 roll) " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 22, "perk count (37 less the 15 perks that only worked with turns, AP, MP or the 2d10 roll) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80
@@ -4782,7 +4787,7 @@ static class Program {
     var pl = Player.Current; var foot = TerrainMap.FindNearestEnterable(pl.X + 4, pl.Y); var top = TerrainMap.FindNearestEnterable(foot.x + 1, foot.y);
     if (top.x == foot.x + 1 && top.y == foot.y)
     {
-      int h0 = TerrainMap.Tiles[top.y, top.x].Height; TerrainMap.Tiles[top.y, top.x].Height = TerrainMap.GetHeight(foot.x, foot.y) + pl.MaxMp + 1;
+      int h0 = TerrainMap.Tiles[top.y, top.x].Height; TerrainMap.Tiles[top.y, top.x].Height = TerrainMap.GetHeight(foot.x, foot.y) + (int)Pathfinding.MaxStepCost + 1;
       var ledge = GameServices.RequireGrid().FindPath(foot.x, foot.y, top.x, top.y, pl);
       TerrainMap.Tiles[top.y, top.x].Height = h0;
       Check(ledge.Count == 0, $"no path up a ledge taller than a turn's MP ({ledge.Count} steps)");

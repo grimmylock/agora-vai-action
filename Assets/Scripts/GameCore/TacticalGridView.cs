@@ -120,8 +120,6 @@ namespace GameCore
             s.transform.localScale = new Vector3(1f + Mathf.Abs(lean) * 0.9f, 1f, 1f);
         }
         private readonly HashSet<SpriteRenderer> _fadeNow = new HashSet<SpriteRenderer>();
-        private SpriteRenderer _reachSr;
-        private Texture2D _reachTex;
         // Batch 31: time of day, weather and line of sight are drawn by AtmosphereView
         private AtmosphereView _atmo;
         private AtmosphereLook _look;
@@ -134,7 +132,6 @@ namespace GameCore
 
         private bool _built;
         private string _builtZoneId;
-        private int _highlightX = int.MinValue, _highlightY = int.MinValue; private float _highlightMp = float.MinValue;
 
         private static TacticalGridView _self;
         private void Awake() { _self = this; }
@@ -200,7 +197,6 @@ namespace GameCore
                 TerrainMap.DirtyTiles.Clear();
                 _mapTex.SetPixels32(_mapPx);
                 _mapTex.Apply();
-                _highlightX = int.MinValue; // move costs may have changed
             }
 
             SlideProps();
@@ -457,9 +453,6 @@ namespace GameCore
         // Batch 116 (Yan: "a line indicating the path the character is gonna take if you click there, it could be green when in
         // range and turn to red when out of range (not enough MP)"): a dotted line along the route a click on the hovered tile would
         // walk (the same A* and smoothing). In a fight the dots are green while your MP lasts and red past it; exploring they're pale.
-        private readonly List<SpriteRenderer> _pathDots = new List<SpriteRenderer>();
-        private (int x, int y, int px, int py, float mp, bool fight) _pathKey = (int.MinValue, 0, 0, 0, 0, false);
-        static readonly Color PathGreen = new Color(0.45f, 0.95f, 0.45f, 0.9f), PathRed = new Color(1f, 0.32f, 0.28f, 0.9f), PathPale = new Color(0.9f, 0.9f, 0.8f, 0.45f);
 
         /// <summary>The sun moved (or the weather cleared / clouded over): re-bake the ground off the main thread.</summary>
         private void BakeTick()
@@ -523,7 +516,7 @@ namespace GameCore
             _root = new GameObject("TacticalGridRoot");
             _root.transform.SetParent(transform, false);
             _smokePool.Clear();
-            _speakerMark = null; _playerAlert = null; _alertMarks.Clear(); _standing.Clear(); _fires.Clear(); _faded.Clear(); _reachSr = null; _pathDots.Clear(); _pathKey = (int.MinValue, 0, 0, 0, 0, false);
+            _speakerMark = null; _playerAlert = null; _alertMarks.Clear(); _standing.Clear(); _fires.Clear(); _faded.Clear();
             Vision.Reset(); _lastFoot.Clear(); _shadows.Clear();
             _atmo = new AtmosphereView(_root.transform);
             _enemyMarkers.Clear();
@@ -534,7 +527,6 @@ namespace GameCore
             _landmarkMarkers.Clear();
             _exitCount = TerrainMap.Exits.Count;
             _builtTiles = TerrainMap.Tiles;
-            _highlightX = int.MinValue; // force a highlight recompute against the fresh tiles
 
             _world = WorldArt.Ready;
             _bake = null;                                         // an unfinished re-bake belongs to the old map
@@ -906,45 +898,6 @@ namespace GameCore
             foreach (var sr in _fadeNow) _faded.Add(sr);
         }
 
-        /// <summary>The cells the player can reach this turn as one soft area with an outline (no grid squares).</summary>
-        private void DrawReach(ICollection<(int x, int y)> cells, int px0, int py0)
-        {
-            if (_reachSr == null)
-            {
-                _reachSr = CreateMarker("Reach", Color.white, 1f, 1, _root.transform);
-            }
-            int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
-            foreach (var c in cells) { minX = Mathf.Min(minX, c.x); minY = Mathf.Min(minY, c.y); maxX = Mathf.Max(maxX, c.x); maxY = Mathf.Max(maxY, c.y); }
-            if (cells.Count <= 1) { _reachSr.gameObject.SetActive(false); return; }
-            _reachSr.gameObject.SetActive(true);
-            const int P = 16;
-            int w = (maxX - minX + 1) * P, h = (maxY - minY + 1) * P;
-            var set = new HashSet<(int, int)>(cells);
-            var px = new Color32[w * h];
-            var fill = new Color32(255, 236, 160, 22); var edge = new Color32(255, 230, 140, 150);
-            foreach (var (cx, cy) in cells)
-            {
-                bool n = set.Contains((cx, cy - 1)), s = set.Contains((cx, cy + 1)), wv = set.Contains((cx - 1, cy)), e = set.Contains((cx + 1, cy));
-                for (int y = 0; y < P; y++)
-                    for (int x = 0; x < P; x++)
-                    {
-                        bool border = (!n && y == 0) || (!s && y == P - 1) || (!wv && x == 0) || (!e && x == P - 1);
-                        int tx = (cx - minX) * P + x, ty = h - 1 - ((cy - minY) * P + y);
-                        px[ty * w + tx] = border ? edge : fill;
-                    }
-            }
-            if (_reachTex == null || _reachTex.width != w || _reachTex.height != h)
-            {
-                if (_reachTex != null) Destroy(_reachTex);
-                _reachTex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-            }
-            _reachTex.SetPixels32(px);
-            _reachTex.Apply();
-            if (_reachSr.sprite != null && _reachSr.sprite.texture == _reachTex) Destroy(_reachSr.sprite);
-            _reachSr.sprite = Sprite.Create(_reachTex, new Rect(0, 0, w, h), new Vector2(0f, 1f), P);
-            _reachSr.transform.localScale = Vector3.one;
-            _reachSr.transform.position = new Vector3(minX * TileWorldSize, -minY * TileWorldSize, 0f);
-        }
 
         /// <summary>The scene still has a few default "New Text" TMP objects from early prototyping - hide them.</summary>
         private static void HideStrayTexts()

@@ -45,20 +45,6 @@ namespace GameCore
             return t >= 1 && t < ArmorScaleByTier.Length ? ArmorScaleByTier[t] : 1f;
         }
 
-        /// <summary>Batch 77: the chance (0..1) that a 2d10 attack hits: kept total + mod >= AC, and a double 10 always hits.
-        /// With advantage the better of two pairs is kept.</summary>
-        public static float HitChance(int mod, int ac, bool advantage = false)
-        {
-            float single = 0f, cdfMiss = 0f;
-            var pSum = new float[21];
-            for (int a = 1; a <= 10; a++) for (int b = 1; b <= 10; b++) pSum[a + b] += 0.01f;
-            for (int sum = 2; sum <= 20; sum++) if (sum + mod >= ac || sum == Headshot) single += pSum[sum];
-            if (!advantage) return single;
-            // keep the higher sum of two pairs: hit unless both pairs miss... except a miss pair can't make the other one miss,
-            // and "hit" is monotone in the sum (a double 10 is the top sum), so P(hit) = 1 - P(miss)^2
-            cdfMiss = 1f - single;
-            return 1f - cdfMiss * cdfMiss;
-        }
 
 
         public const float DrCap = 0.75f;
@@ -104,7 +90,6 @@ namespace GameCore
 
         // 2026-11-16 (Yan: "remove jam chance from the game completely, it ruins automatic weapons"): there is no jam roll any more - guns wear (Condition) but never jam.
 
-        public static int WoundThreshold(Weapon w) => w?.Db?.Name == "VKM" ? 15 : 20;
 
         /// <summary>Batch 60 (Yan: "Vital hits only"): a gun or claw wounds - and wears armor down - on a vital hit or a
         /// headshot. The VKM's heavy round (it used to wound from 15 damage) also wounds on a clean hit. Blasts still go by damage.</summary>
@@ -148,7 +133,7 @@ namespace GameCore
             switch (wound)
             {
                 case "Arm": GameLog.Write($"{who} takes an ARM wound: -2 to attack rolls until bandaged."); break;
-                case "Leg": GameLog.Write($"{who} takes a LEG wound: -2 MP until bandaged."); break;
+                case "Leg": GameLog.Write($"{who} takes a LEG wound: a limp until bandaged."); break;
                 case "Torso":
                     target.StatusEffects.Bleeding = true;
                     GameLog.Write($"{who} takes a TORSO wound and is bleeding.");

@@ -148,7 +148,7 @@ namespace GameCore
             Atmosphere.Advance(Atmosphere.MinutesPerStep * (player.Sneaking && EncounterState.InCombat ? 2 : 1));   // Batch 31: a step is a minute (Batch 66: two sneaking; Batch 67: exploring, this is the clock's minute and sneaking costs time by walking slower)
             // Out of combat there are no turns (Batch 59) - a full move's worth of tiles counts as a round for the
             // Surge and for your own upkeep (bleeding, healing over time, smoke); enemies already react tile by tile above.
-            if (!EncounterState.InCombat && ++_exploreTiles >= System.Math.Max(1, player.MaxMp))
+            if (!EncounterState.InCombat && ++_exploreTiles >= ExploreRoundTiles)
             {
                 _exploreTiles = 0;
                 if (MacroState.Current.SurgeRounds > 0) WorldEvents.TickSurge();
@@ -159,6 +159,8 @@ namespace GameCore
         }
 
         private static int _exploreTiles;
+        /// <summary>Exploring has no turns: this many tiles count as one round for upkeep (bleeding, healing over time, smoke) and the Surge.</summary>
+        public const int ExploreRoundTiles = 4;
 
         /// <summary>Batch 59: a fight that drags on gets the enemy on the radio. After 3 rounds per enemy it started
         /// with, the leader of the biggest human squad still fighting calls for help; if they're still up and in the

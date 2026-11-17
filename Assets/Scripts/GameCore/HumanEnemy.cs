@@ -38,14 +38,13 @@ namespace GameCore
 
         /// <summary>MP for a turn (file 04): armor MP (4 unarmored), +1 at Expert or higher, heavy
         /// weapons cap at 2, a Leg wound costs 2 (minimum 1).</summary>
-        public override float Reach => TurnMp();
-        public int TurnMp()
+        public override float Reach
         {
-            int mp = (EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4)
-                + (CombatRules.RankIndex(Rank) >= CombatRules.RankIndex("Expert") ? 1 : 0);
-            if (EquippedWeapon?.Db?.MaxMpWhileHeld != null) mp = System.Math.Min(mp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
-            if (StatusEffects.Wound == "Leg") mp = System.Math.Max(1, mp - 2);
-            return mp;
+            get
+            {
+                float r = (EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4) + (CombatRules.RankIndex(Rank) >= CombatRules.RankIndex("Expert") ? 1 : 0);
+                return StatusEffects.Wound == "Leg" ? System.Math.Max(1, r - 2) : r;
+            }
         }
 
         /// <summary>Armor drops one Condition step on a 20+ or natural-20 hit (file 00).</summary>
@@ -64,7 +63,7 @@ namespace GameCore
             Rank = string.IsNullOrEmpty(rankName) ? "Rookie" : rankName;
             RankData = FactionDatabase.Ranks.TryGetValue(Rank, out var rd)
                 ? rd
-                : new RankDef { Ap = 4, Mp = 4, D20Mod = 0, MoraleHPPercent = 50 };
+                : new RankDef { D20Mod = 0, MoraleHPPercent = 50 };
 
             D20Mod = RankData.D20Mod;
             MoraleHPPercent = RankData.MoraleHPPercent > 0 ? RankData.MoraleHPPercent : 50;
@@ -189,7 +188,6 @@ namespace GameCore
             EquippedArmor = db;
             PhysDR = db.PhysDR;
             AnomDR = db.AnomDR;
-            MaxMp = db.Mp > 0 ? db.Mp : 4;
         }
 
         /// <summary>Ported from isFleeing() override.</summary>

@@ -22,11 +22,10 @@ namespace GameData
             ["HighVelocityImpact"] = P("Sniper", "High-Velocity Impact", "Sniper shots at 12+ tiles ignore an extra 20% of Phys-DR."),
             ["RecoilControl"] = P("Assault", "Recoil Control", "Assault rifles kick 30% less."),
             ["BulletHose"] = P("SMG", "Bullet Hose", "SMGs kick 30% less."),
-            ["Entrenched"] = P("Heavy", "Entrenched", "+20% Phys-DR on turns you didn't move."),
             ["Shredder"] = P("Heavy", "Shredder", "Machine guns are steadier (-25% spread, -15% kick)."),
             ["Breacher"] = P("Shotgun", "Breacher", "+25% shotgun damage within 4 tiles."),
             ["StaggeringBlast"] = P("Shotgun", "Staggering Blast", "Shotgun hits within 4 tiles stagger the target for a second."),
-            ["Gunslinger"] = new PerkDef { Group = "Sidearm", Name = "Gunslinger", Requires = "PointBlankExecution", Description = "Needs Point-Blank Execution. Two sidearms (Off-hand button in the pack): single shots fire both, 2 AP, -1 each; reload both for +1 AP. Not with Double Tap." },   // Batch 80 (Yan)
+            ["Gunslinger"] = new PerkDef { Group = "Sidearm", Name = "Gunslinger", Requires = "PointBlankExecution", Description = "Needs Point-Blank Execution. Two sidearms (Off-hand button in the pack): one trigger per hand (left and right mouse button), each gun with its own aim, kick and reload." },   // Batch 80 (Yan)
             ["PointBlankExecution"] = P("Sidearm", "Point-Blank Execution", "Sidearms fired from the hip spread 25% less."),
             ["CombatMedic"] = P("Survival", "Combat Medic", "Medkits and stims heal +10 HP."),
             ["QuickHands"] = P("Survival", "Quick Hands", "Reload 40% faster."),

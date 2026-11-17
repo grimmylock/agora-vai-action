@@ -27,7 +27,7 @@ namespace GameCore
                 var w = h.EquippedWeapon;
                 lines.Add("");
                 lines.Add("<color=#e8c547>WEAPON</color>");
-                if (w == null || h.GunDropped) lines.Add(h.GunDropped ? Rt.On ? "Gun on the ground" : "Gun on the ground (2 AP to pick up)" : "Unarmed");
+                if (w == null || h.GunDropped) lines.Add(h.GunDropped ? "Gun on the ground" : "Unarmed");
                 else
                 {
                     string cat = CombatRules.Category(w.Db);

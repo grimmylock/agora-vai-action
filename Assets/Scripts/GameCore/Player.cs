@@ -53,7 +53,6 @@ namespace GameCore
         public int TempHPDuration = 0;
         public StatusEffects StatusEffects { get; } = new StatusEffects();
 
-        public int MaxMp { get; set; } = 4;
 
         public StatBlock Stats = new StatBlock();
 
@@ -65,19 +64,14 @@ namespace GameCore
         public ArmorDef EquippedArmor;    // the field actually used throughout
 
         public float BasePhysDR;
-        /// <summary>Armor Phys-DR, +20% while Entrenched (didn't move this turn, file 05).</summary>
-        public float PhysDR
-        {
-            get => BasePhysDR + (MovedThisTurn || !EncounterState.InCombat || !CombatantUtil.HasPerk(this, "Entrenched") ? 0f : 0.2f);
-            set => BasePhysDR = value;
-        }
+        public float PhysDR { get => BasePhysDR; set => BasePhysDR = value; }
         public float AnomDR { get; set; } = 0f;
         // AC = 10 + rank modifier, minimum 10 (file 04). Cover / Take Cover are added per attack.
         public int Ac { get => CombatRules.RankAc(Rank); set { } }
 
         // New (file 00/01 combat rules)
         public string FireMode = "Single";      // toggled with X; Burst only on AR/SMG/heavy
-        public int ArmorModMpBonus;             // set by ApplyArmorModsForPlayer, read by ApplyCarryEffects
+        public int ArmorModMpBonus;             // set by ApplyArmorModsForPlayer: armor mods' +/- steps of move speed (MoveScale)
         public string ArmedThrowable;           // consumable id of a grenade waiting for a target click
 
         public object ActiveDetector { get; set; } // DetectorDef once equipped; typed loosely to match JS's easy null-checks
@@ -164,7 +158,11 @@ namespace GameCore
         public float ArtifactRegen;
         /// <summary>Batch 90: a worn artifact that stops bleeding (Rosary, Heart of the Wound) - it only cleared bleeding once, when put on.</summary>
         public bool BleedImmune => ArtifactSlots.Any(id => id != null && GameData.ArtifactDatabase.All.TryGetValue(id, out var a) && (a.ImmuneBleed || a.BleedNegate == true));
-        public float ArtifactMpBonus;
+        public float ArtifactMpBonus;   // artifacts' steps of move speed (MoveScale)
+        /// <summary>Heavy armor (the armor data's Mp under 4) slows you unless an Advanced Hydraulics mod cancels it.</summary>
+        public bool HeavyArmorSlows => EquippedArmor != null && EquippedArmor.Mp > 0 && EquippedArmor.Mp < 4 && ArmorMods.SlotA != "AdvancedHydraulics" && ArmorMods.SlotB != "AdvancedHydraulics";
+        /// <summary>Real-time walking speed factor: heavy armor slows you 10% (Yan, 2026-11-17); each step of an artifact's or armor mod's old MP bonus is +/-5%.</summary>
+        public float MoveScale => System.Math.Max(0.6f, System.Math.Min(1.3f, 1f - (HeavyArmorSlows ? 0.10f : 0f) + 0.05f * (ArtifactMpBonus + ArmorModMpBonus)));
         public float ArtifactAvoidanceBonus { get; set; }
         public bool ArtifactAutoPassAnomalies { get; set; }
         // New (Batch 8): Lucifer's flat Phys/Anom-DR bonus and The Black Star's Phys-DR bypass/
@@ -220,29 +218,7 @@ namespace GameCore
         /// <summary>Ported from applyCarryEffects().</summary>
         public void ApplyCarryEffects()
         {
-            float baseCap = CombatantUtil.HasPerk(this, "PackMule") ? 50f : Inventory.CarryCapacityBase;
-            float totalCap = baseCap + CarryCapacityBonus + ArtifactCarryBonus;
             CalculateCarryWeight();
-
-            // Fix: same dead fields as above - armor MP and the heavy-weapon MP cap were ignored and
-            // every equip ended with MaxMp reset to 4. File 00: armor MP (4 unarmored) + 1 at Expert
-            // or higher + artifacts + mods; heavy weapons cap at 2; a Leg wound costs 2 (min 1).
-            float baseMaxMP = (EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4) + ArmorModMpBonus + ArtifactMpBonus
-                + (CombatRules.RankIndex(Rank) >= CombatRules.RankIndex("Expert") ? 1 : 0);
-            float weaponClamp = EquippedWeapon?.Db?.MaxMpWhileHeld ?? baseMaxMP;
-
-            bool isStarving = IsDepleted();
-            if (CurrentCarryWeight > totalCap)
-            {
-                int overweightDivisor = isStarving ? 4 : 2;
-                MaxMp = System.Math.Max(2, (int)System.Math.Floor(System.Math.Min(baseMaxMP, weaponClamp) / overweightDivisor));
-            }
-            else
-            {
-                MaxMp = (int)System.Math.Min(baseMaxMP, weaponClamp);
-            }
-
-            if (StatusEffects.Wound == "Leg") MaxMp = System.Math.Max(1, MaxMp - 2);
         }
 
         public void ApplyWoundEffects() => ApplyCarryEffects();
@@ -490,7 +466,6 @@ namespace GameCore
         public void Upkeep()
         {
             ApplyCarryEffects();
-            MovedThisTurn = false;
             if (!EncounterState.InCombat) AdrenalineUsed = BracedUsed = false;
             StatusEffects.Suppressed = false;
             TerrainMap.TickSmoke();
@@ -597,12 +572,6 @@ namespace GameCore
         }
 
 
-        public bool NearCover()
-        {
-            if (TerrainMap.CoverAcAt(X, Y) > 0) return true;
-            foreach (var adj in TerrainMap.GetAdjacentCoords(X, Y)) if (TerrainMap.CoverAcAt(adj.x, adj.y) > 0) return true;
-            return false;
-        }
 
         /// <summary>Ported from reloadWeapon().</summary>
         public void ReloadWeapon()
@@ -618,16 +587,5 @@ namespace GameCore
             if (Gunslinging && OffhandWeapon.CurrentMagazine < OffhandWeapon.MagCapacity) reloaded |= OffhandWeapon.Reload();
         }
 
-        /// <summary>Ported from clearWeaponJam().</summary>
-        public void ClearWeaponJam()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player)
-            {
-                GameLog.Write("Cannot clear jam outside your turn.");
-                return;
-            }
-            var weapon = EquippedWeapon;
-            bool cleared = weapon.ClearJam();
-        }
     }
 }

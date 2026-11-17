@@ -156,10 +156,6 @@ namespace GameCore
         }
 
 
-        /// <summary>Suppressive Fire (S, then click): 3 AP with any automatic gun (Batch 127; was the perk's and rifles' only);
-        /// every enemy within 2 tiles of the tile (4 with the Suppressive Fire perk) is Suppressed and must pass Agility DC 13
-        /// or lose 2 AP next turn.</summary>
-        public static int SuppressRadius(Player p) => CombatantUtil.HasPerk(p, "SuppressiveFire") ? 4 : 2;
 
 
 
@@ -185,7 +181,7 @@ namespace GameCore
             OffhandWeapon.Upgrades = Upgrades.Parse(item.Upgrades);
             OffhandWeapon.ApplyUpgrades();
             OffhandKey = item.Key;
-            GameLog.Write($"Off hand: {OffhandWeapon.Name}. Single shots now fire both guns (2 AP, -1 each).");
+            GameLog.Write($"Off hand: {OffhandWeapon.Name}. Left mouse fires the right-hand gun, right mouse the left.");
             ApplyCarryEffects();
         }
 

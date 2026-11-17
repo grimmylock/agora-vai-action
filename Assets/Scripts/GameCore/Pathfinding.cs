@@ -6,6 +6,8 @@ namespace GameCore
 {
     public static class Pathfinding
     {
+        /// <summary>A single step that costs more than this (a ledge too high for anyone to climb) is a wall.</summary>
+        public const float MaxStepCost = 4f;
         /// <summary>Ported from getStraightLinePath(start, end) — Bresenham's line algorithm.</summary>
         public static List<(int x, int y)> GetStraightLinePath(int startX, int startY, int endX, int endY)
         {
@@ -96,8 +98,7 @@ namespace GameCore
                 float c = unit != null ? GameServices.RequireGrid().StepCost(unit, cx, cy, nx, ny) : (diag ? TacticalGridSystem.Diagonal : 1f);
                 // Batch 125: exploring tops MP up every step (PlayerController.Step), so an overloaded walker (max MP 2) still gets over a
                 // ramp or a gulley crossing - only a ledge too high for anyone (more than 4) is a wall then (it had no route off the valley floor)
-                float wall = explore ? System.Math.Max(unit?.MaxMp ?? 0, 4) : unit?.MaxMp ?? 0;
-                if (float.IsInfinity(c) || unit != null && wall > 0 && c > wall) return float.PositiveInfinity;
+                if (float.IsInfinity(c) || unit != null && c > MaxStepCost) return float.PositiveInfinity;   // a step dearer than this (a ledge too high to climb) is a wall
                 return explore ? (diag ? TacticalGridSystem.Diagonal : 1f) : c;   // Batch 67: out of a fight a step is a step (a minute), so take the shortest way, not the one that dodges bushes
             }
             _heapN = 0;

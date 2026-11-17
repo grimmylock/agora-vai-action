@@ -26,7 +26,6 @@ namespace GameCore
         public bool Unkillable;
         public float PhysDR { get; set; }
         public float AnomDR { get; set; }
-        public int MaxMp { get; set; } // not set by the original Mutant ctor (defaults to 0); HumanEnemy sets it via armor
         /// <summary>How many tiles it may cover in one think (squad wandering, tile choice, a Leap): the def's Mp stat as a movement
         /// range, minus 2 with a leg wound. (Real time has no movement points: walking is paced by RtAi.Speed.)</summary>
         public virtual float Reach { get { float r = Db?.Mp ?? 4; if (StatusEffects.Wound == "Leg") r = System.Math.Max(1, r - 2); return r; } }
@@ -225,17 +224,6 @@ namespace GameCore
             return true;
         }
 
-        /// <summary>
-        /// Ported from the `typeof enemy.executeSpecial === 'function'` check in playerEndTurn().
-        /// NOTE (pre-existing dead code, preserved): no class in the original script.js ever
-        /// actually defines executeSpecial — not Mutant, not any subclass — so this branch never
-        /// ran in the original either. It reads as a hook left in place for a special-ability
-        /// system that was never implemented. Kept here as a virtual returning false so the turn
-        /// loop's shape matches exactly; override it on a subclass if you want to actually wire up
-        /// mutant special abilities (psi blast, ground slam, etc. currently only affect flavor
-        /// text/log lines inside Attack(), not real bonus effects).
-        /// </summary>
-        public virtual bool ExecuteSpecial(ICombatant target) => false;
 
         /// <summary>New: Behavior=="ranged" mutants (MindWeaver/PsiBlast, VoidWeaver/NeuralOverload)
         /// deliberately hold position instead of closing to melee when the player is 2-5 tiles away
