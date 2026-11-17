@@ -28,10 +28,14 @@ namespace GameCore
             public float NextStep, NextShot, ReloadUntil = -1f, PinnedUntil = -1f, MovedAt = -9f;
             public int BurstLeft;
             public bool Dry;                                          // out of rounds: closes in to swing
+            public float ReadyAt = -1f, CanShootAt = -9f;             // 2026-11-17: when he is done reacting to a target he can finally shoot at (ReactionSeconds), and when he last could
         }
         static readonly Dictionary<Mutant, Mind> Minds = new Dictionary<Mutant, Mind>();
         static Mind Of(Mutant m) { if (!Minds.TryGetValue(m, out var s)) Minds[m] = s = new Mind(); return s; }
         public static void Reset() => Minds.Clear();
+
+        /// <summary>How long a human enemy takes to react to a target he can shoot at before the first round: 0.95 s for a Rookie, 0.1 s less for every rank above (0.35 s for a Legend), +/-20%.</summary>
+        public static float ReactionSeconds(HumanEnemy h) => Random.Range(0.8f, 1.2f) * System.Math.Max(0.25f, 0.95f - 0.1f * CombatRules.RankIndex(h.Rank));
 
         public static void SetGoal(HumanEnemy h, (int x, int y) goal, string role)
         {
@@ -189,13 +193,20 @@ namespace GameCore
                 if (s.Goal == null || (h.X, h.Y) == s.Goal.Value) s.Goal = SideStep(h, t);
                 return;
             }
+            // Yan (2026-11-17): a gang of raiders "gunned me down in like 0.2 seconds" the moment the talk turned: nobody opens fire in the same frame. He reacts first (ReactionSeconds),
+            // then his aim settles over 0.8 s, like the player's does. Losing the target for more than 2.5 s makes him react again.
+            if (s.ReadyAt < 0f || now - s.CanShootAt > 2.5f) s.ReadyAt = now + ReactionSeconds(h);
+            s.CanShootAt = now;
+            if (now < s.ReadyAt) { s.BurstLeft = 0; return; }
             if (s.BurstLeft <= 0) s.BurstLeft = hd.Auto ? Random.Range(3, 6) : 1;
             w.CurrentMagazine--;
-            float extra = (now - s.MovedAt < 0.4f ? 1.5f : 0f) + (Pinned(h) ? 2f : 0f);
+            float extra = (now - s.MovedAt < 0.4f ? 1.5f : 0f) + (Pinned(h) ? 2f : 0f) + 2.5f * Mathf.Clamp01(1f - (now - s.ReadyAt) / 0.8f);
             Gunplay.NpcShootOnce(h, w, t, extra);
             s.BurstLeft--;
             int rank = CombatRules.RankIndex(h.Rank);
-            float pause = Random.Range(0.7f, 1.6f) * (1.25f - 0.08f * rank) * (Pinned(h) ? 2f : 1f);
+            // the rest between bursts (an automatic) or between two pulls (anything else): the old 0.7-1.6 s pause came from the turn-based days and made a rifleman's real rate a third of
+            // the gun's, and a pistol one shot a second (2026-11-17: a Rookie with every shot landing took 25 s to kill a player who stood still). Now a short, rank-scaled breath.
+            float pause = (hd.Auto ? Random.Range(0.3f, 0.8f) : Random.Range(0.2f, 0.45f)) * (1.25f - 0.08f * rank) * (Pinned(h) ? 2f : 1f);
             s.NextShot = now + (s.BurstLeft > 0 ? 60f / hd.Rpm : System.Math.Max(60f / hd.Rpm, pause));
         }
     }

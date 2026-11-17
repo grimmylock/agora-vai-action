@@ -34,6 +34,80 @@ namespace GameCore
             ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 40f, 3.2f, 1.5f, 85f },
         };
 
+
+        // 2026-11-17 weapon pass (Yan: fix them one by one, every gun 2-4 s to kill a human of its own tier with every round landing on the torso; rifles differ by range role).
+        // rate = share of the old rounds-per-minute (automatics only: the old 600-950 rpm made a rifle kill in half a second), vsHuman = damage multiplier against players and
+        // human enemies only (mutants and bosses keep their old balance: against them the damage is 1 / rate, so a gun's dps against mutants did not change).
+        // Solved per gun against its target time (see ArtSource/weapons/WEAPON_TUNING_RT.md); change a gun's row to retune it. A human dies when his torso pool
+        // (80% of his HP) or head pool (50%) is gone (Body.cs), so "kill" means 800 torso damage after armor.
+        public static readonly Dictionary<string, (float rate, float vsHuman)> Tune = new Dictionary<string, (float rate, float vsHuman)>
+        {
+            ["PSh-18 Pchela"] = (1.00f, 0.87f),
+            ["Walden P9"] = (1.00f, 0.65f),
+            ["Halden .45 Service"] = (1.00f, 0.83f),
+            ["Halden Service Revolver"] = (1.00f, 0.87f),
+            ["SR-21 Gadyuka"] = (1.00f, 0.62f),
+            ["Black Harrier"] = (1.00f, 0.62f),
+            ["Corvan 5.7"] = (1.00f, 0.66f),
+            ["Sperling S-96"] = (1.00f, 0.69f),
+            ["Rinaldi R6"] = (1.00f, 1.21f),
+            ["Steppe Eagle"] = (1.00f, 0.72f),
+            ["RK-12 Kuvalda"] = (1.00f, 1.68f),
+            ["Vosa vz. 62"] = (0.80f, 0.48f),
+            ["PPZ Zubr"] = (0.80f, 0.44f),
+            ["Corvan Wasp-9"] = (0.80f, 0.43f),
+            ["Corvan Hornet .45"] = (0.80f, 0.44f),
+            ["Corvan Gnat PDW"] = (0.80f, 0.44f),
+            ["VKS-74U"] = (0.80f, 0.24f),
+            ["Smerch-3"] = (0.80f, 0.17f),
+            ["VK-74"] = (0.70f, 0.22f),
+            ["VKM"] = (0.70f, 0.23f),
+            ["TS-9 Tishina"] = (0.65f, 0.22f),
+            ["TR-30"] = (0.65f, 0.22f),
+            ["Halden HR36K"] = (0.65f, 0.22f),
+            ["VK-103"] = (0.65f, 0.24f),
+            ["BR-86 Bulldog"] = (0.60f, 0.25f),
+            ["VK-74 Obelisk"] = (0.60f, 0.25f),
+            ["NA-94 Yenisei"] = (0.60f, 0.32f),
+            ["Corvan Bullpup"] = (0.65f, 0.27f),
+            ["Corvan Battle Rifle"] = (0.60f, 0.24f),
+            ["Obrez-66"] = (1.00f, 0.70f),
+            ["Halden Lever Shotgun"] = (1.00f, 0.58f),
+            ["Hound 13"] = (1.00f, 0.59f),
+            ["Ranger P8"] = (1.00f, 0.59f),
+            ["Karusel-5"] = (1.00f, 0.57f),
+            ["Bayou Pump"] = (1.00f, 0.51f),
+            ["Sever-34 O/U"] = (1.00f, 0.81f),
+            ["Tambour-12"] = (1.00f, 0.38f),
+            ["SP-14 Warden"] = (1.00f, 0.37f),
+            ["Sayan-12"] = (1.00f, 0.38f),
+            ["Kaban-12"] = (1.00f, 0.33f),
+            ["SKN Karabin"] = (1.00f, 0.29f),
+            ["Frontier Lever Rifle"] = (1.00f, 0.43f),
+            ["VSN Shepot"] = (1.00f, 0.22f),
+            ["M91 Trekhlineyka"] = (1.00f, 0.43f),
+            ["Nightwalker .45-70"] = (1.00f, 0.53f),
+            ["Corvan Marksman"] = (1.00f, 0.31f),
+            ["SV-2 Strela"] = (1.00f, 0.26f),
+            ["Sever-98"] = (1.00f, 0.45f),
+            ["VK-127 Grom"] = (1.00f, 0.58f),
+            ["Halden AM-50 Sledge"] = (1.00f, 0.43f),
+            ["G-7 Rail Prototype"] = (1.00f, 0.53f),
+            ["PL-62 Kobza"] = (0.65f, 0.23f),
+            ["Corvan LMG"] = (0.65f, 0.18f),
+            ["RL-44"] = (0.65f, 0.22f),
+            ["PL-74"] = (0.60f, 0.22f),
+            ["PL-74P Polovets"] = (0.60f, 0.22f),
+            ["PL-74P Polovets Zulu"] = (0.60f, 0.31f),
+        };
+
+        /// <summary>Damage multiplier of one gun against one kind of target (see Tune): humans take `vsHuman`, everything else 1 / rate.</summary>
+        public static float TuneMult(Weapon w, bool humanTarget)
+        {
+            if (w?.Db == null || !Tune.TryGetValue(w.Db.Name, out var t)) return 1f;
+            return humanTarget ? t.vsHuman : 1f / t.rate;
+        }
+
         // RT 6d: a shotgun's pellets leave as one shot (the aim spread moves the whole pattern) and spread round it by the choke, degrees
         public static readonly Dictionary<string, float> Choke = new Dictionary<string, float> { ["Obrez-66"] = 2.4f, ["Sever-34 O/U"] = 1.1f, ["Halden Lever Shotgun"] = 1.8f };
 
@@ -158,6 +232,7 @@ namespace GameCore
             {
                 if (Velocity.TryGetValue(w.Db.Name, out var v)) h.Speed = v;
                 if (Guns.TryGetValue(w.Db.Name, out var g)) { h.Rpm = g.rpm; h.Auto = g.auto; h.ReloadTime = g.reload; h.Steady = g.steady; h.SteadyTime = g.steadyTime; h.Kick = g.kick; }
+                if (Tune.TryGetValue(w.Db.Name, out var tu)) h.Rpm *= tu.rate;
                 if (CombatRules.IsShotgun(w)) { h.Pellets = 6; h.Choke = Choke.TryGetValue(w.Db.Name, out var c) ? c : 1.5f; }
             }
             if (ItemCondition.IsDamaged(w?.Condition ?? ItemCondition.Working)) h.Steady *= 1.4f;
@@ -383,6 +458,7 @@ namespace GameCore
                     return;
                 }
                 float raw = RoundDamage(w, hit.Part, hit.Dist, pellets) * hit.Through;
+                raw *= TuneMult(w, target is Player || target is HumanEnemy);                // the 2026-11-17 weapon pass (Tune)
                 if (ambush) raw *= 1.3f;                                       // they never saw it coming (Batch 64, as a bonus now)
                 if (EelSump.IsEelHead(target, hit.Part)) raw *= EelSump.HeadBonus;   // Boss 3: only the eel's head takes extra damage (Yan, 2026-11-06)
                 if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
