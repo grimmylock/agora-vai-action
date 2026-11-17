@@ -15,7 +15,8 @@ namespace GameData
         public int Price;
         public float WeightKg;
         public string Type; // "consumable" | "ammo" | "backpack" | "mutantPart" | ...
-        public string AmmoType;
+        public string AmmoType;   // the load (kind) of an ammo item: "Standard", "HollowPoint", ...
+        public string Caliber;    // 2026-11-17: the caliber of an ammo item ("5.45x39mm"); null on an old generic box = the caliber of the gun in your hands
         public int? Rounds;
         public int? CapacityBonus;
         // New: only set on the auto-generated "weapon"/"armor" entries below - see InventoryItem's
@@ -57,10 +58,6 @@ namespace GameData
                 new ShopItemDef { Id = "radBlockPill", Name = "Rad-Block Pill", Price = 60, WeightKg = 0.2f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "mre", Name = "MRE", Price = 50, WeightKg = 0.5f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "energyDrink", Name = "Energy Drink", Price = 40, WeightKg = 0.3f, Type = "consumable", Baseline = true },
-                new ShopItemDef { Id = "ammo_standard", Name = "Ammo box: Standard", Price = 150, WeightKg = 1.0f, Type = "ammo", AmmoType = "Standard", Baseline = true },
-                new ShopItemDef { Id = "ammo_hollowpoint", Name = "Ammo box: Hollow Point", Price = 250, WeightKg = 1.0f, Type = "ammo", AmmoType = "HollowPoint", Baseline = true },
-                new ShopItemDef { Id = "ammo_dart", Name = "Ammo box: Dart", Price = 400, WeightKg = 1.0f, Type = "ammo", AmmoType = "Dart", Baseline = true },
-                new ShopItemDef { Id = "ammo_ap", Name = "Ammo box: Armor Piercing", Price = 600, WeightKg = 1.0f, Type = "ammo", AmmoType = "ArmorPiercing", Baseline = true },
                 new ShopItemDef { Id = "fragGrenade", Name = "Frag Grenade", Price = 250, WeightKg = 0.5f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "smokeGrenade", Name = "Smoke Grenade", Price = 150, WeightKg = 0.5f, Type = "consumable", Baseline = true },
                 new ShopItemDef { Id = "flashbang", Name = "Flashbang", Price = 200, WeightKg = 0.5f, Type = "consumable", Baseline = true },

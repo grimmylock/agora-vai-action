@@ -107,9 +107,9 @@ namespace GameCore
         public static void Loot(Player p)
         {
             foreach (var w in new[] { p.EquippedWeapon, p.SecondaryWeapon }.Where(w => w != null && !CombatRules.IsMelee(w)))
-                foreach (var kind in new[] { "ArmorPiercing", "HollowPoint" })
+                foreach (var kind in new[] { "ArmorPiercing", "HollowPoint" }.Where(k => GameData.AmmoDatabase.Of(w.Db)?.Find(k) != null))      // only the loads this caliber has
                 {
-                    var key = Ammo.Key(w.Db, kind); int n = ShopSystem.RoundsPerBox(w) * 4;
+                    var key = Ammo.Key(w.Db, kind); int n = GameData.AmmoDatabase.Of(w.Db).Box * 4;
                     Ammo.Add(p.Inventory, key, n); GameLog.Event($"  - {n} {Ammo.Label(key)}");
                 }
             foreach (var (id, qty) in new[] { ("scientificMedkit", 3), ("scientificStim", 2), ("bandage", 3) })

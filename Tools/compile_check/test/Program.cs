@@ -50,6 +50,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "1") WeaponBalanceReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "2") WeaponVsArmorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "3") GangKillReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "4") AmmoReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3399,6 +3400,16 @@ static class Program {
       Console.WriteLine($"GANG {n} {rank} raiders at {dist} tiles vs a standing player ({Player.Current.MaxHp} HP): first hit lands after {firstHit[12]:0.0} s (median), player down after {times[12]:0.0} s median (fastest {times[0]:0.0}, slowest {times[24]:0.0})");
     }
   }
+
+  // Ammo table (RTBAL=4): calibers, their loads and the guns that take them (ArtSource/weapons/AMMO_RT.md).
+  static void AmmoReport() {
+    var sb = new System.Text.StringBuilder("caliber | class | box | guns | load | kind | damage | armor x | hollow | map tier | RU a round | RU a box\n");
+    foreach (var c in AmmoDatabase.Calibers.Values.OrderBy(c => c.Class).ThenBy(c => c.Id)) {
+      var guns = string.Join(", ", WeaponDatabase.Categories.Values.SelectMany(x => x.Values).Where(d => d.AmmoType == c.Id).OrderBy(d => d.Tier).Select(d => d.Name));
+      foreach (var l in c.Loads) sb.AppendLine($"{c.Id} | {c.Class} | {c.Box} | {(l == c.Loads[0] ? guns : "")} | {l.Name} | {l.Kind} | {l.Damage:0.00} | {l.DrMult:0.00} | {(l.Hollow ? "yes" : "")} | {l.Tier} | {l.RoundPrice:0.#} | {l.RoundPrice * c.Box:0}");
+    }
+    Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/ammo_table.txt", sb.ToString());
+  }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
   static float AimShare(Player p, Mutant tgt) {
@@ -4025,7 +4036,22 @@ static class Program {
       p.EquipWeapon("sniper", "G7RailPrototype"); p.EquippedWeapon.CurrentMagazine = 0;
       Check(p.EquippedWeapon.Reload() && p.EquippedWeapon.CurrentMagazine == 6, "the G-7 loads rail cells");
       m.CurrentZoneId = "bonfire_village"; EncounterState.Enemies.Clear(); }
-    Check(ShopSystem.AmmoBoxPrice("Standard", 1) == 150 && ShopSystem.AmmoBoxPrice("HollowPoint", 3) == 427.5f && ShopSystem.AmmoBoxPrice("ArmorPiercing", 5) == 1200, "ammo boxes priced by tier and kind");   // Batch 87
+    // 2026-11-17: ammo by caliber (Yan: "separate them by caliber ... then we can balance using ammo too"). Every gun's caliber exists and has a Standard load; calibers do not share rounds, guns of one caliber do.
+    { var missing = WeaponDatabase.Categories.Values.SelectMany(c => c.Values).Where(d => !string.IsNullOrEmpty(d.AmmoType) && AmmoDatabase.Of(d) == null).Select(d => d.Name + " " + d.AmmoType).ToList();
+      Check(missing.Count == 0, "every gun's caliber is in the ammo database: " + string.Join(", ", missing));
+      var vks = WeaponDatabase.Categories["assault"].Values.First(d => d.Name == "VKS-74U"); var vk74 = WeaponDatabase.Categories["assault"].Values.First(d => d.Name == "VK-74"); var smerch = WeaponDatabase.Categories["assault"].Values.First(d => d.Name == "Smerch-3");
+      Check(Ammo.Key(vks, "Standard") == Ammo.Key(vk74, "Standard") && Ammo.Key(vks, "Standard") != Ammo.Key(smerch, "Standard") && Ammo.Key(vks, "Standard") == "5.45x39mm|Standard", $"rounds are per caliber: VKS-74U and VK-74 share {Ammo.Key(vks, "Standard")}, the Smerch-3 takes {Ammo.Key(smerch, "Standard")}");
+      float dr = 0.5f; var ball = AmmoDatabase.Calibers["5.45x39mm"].Find("Standard"); var apl = AmmoDatabase.Calibers["5.45x39mm"].Find("ArmorPiercing"); var hpl = AmmoDatabase.Calibers["5.45x39mm"].Find("HollowPoint");
+      Check(CombatRules.PhysicalDamage(100f, apl, dr) > CombatRules.PhysicalDamage(100f, ball, dr) && CombatRules.PhysicalDamage(100f, hpl, 0f) > CombatRules.PhysicalDamage(100f, ball, 0f) && CombatRules.PhysicalDamage(100f, hpl, dr) < CombatRules.PhysicalDamage(100f, ball, dr),
+        "loads: armor-piercing beats armor, hollow point beats the unarmored and loses to armor");
+      var pa = Arena(out int ax, out int ay); pa.EquipWeapon("assault", WeaponDatabase.Categories["assault"].First(kv => kv.Value.Name == "VKS-74U").Key);
+      var t1 = ShopSystem.AmmoStock(pa, 1); var t3 = ShopSystem.AmmoStock(pa, 3);
+      Check(t1.Any(i => i.Caliber == "5.45x39mm" && i.AmmoType == "Standard") && !t1.Any(i => i.AmmoType == "ArmorPiercing") && t3.Any(i => i.AmmoType == "ArmorPiercing") && !t3.Any(i => i.Caliber != "5.45x39mm"),
+        $"the shop sells loads of the calibers you carry, by map tier (tier 1: {string.Join(", ", t1.Select(i => i.Name))}; tier 3 adds armor-piercing)");
+      var box = ShopSystem.AmmoItem(AmmoDatabase.Calibers["5.45x39mm"], apl); Check(ShopSystem.AmmoBoxPrice(box) == apl.RoundPrice * 30 && apl.RoundPrice > ball.RoundPrice * 2, "a box costs its load's round price times the rounds in it");
+      // old saves: class-and-tier pools and bare kinds are converted to calibers
+      pa.Inventory.AmmoReserve.Clear(); pa.Inventory.AmmoReserve["rifle3|HollowPoint"] = 40; pa.Inventory.AmmoReserve["Standard"] = 12; pa.Inventory.AmmoReserve["sniper2|Standard"] = 7; Ammo.Migrate(pa);
+      Check(Ammo.Get(pa.Inventory, "5.45x39mm|HollowPoint") == 40 && Ammo.Get(pa.Inventory, "5.45x39mm|Standard") == 12 && Ammo.Get(pa.Inventory, "7.62x54mmR|Standard") == 7 && !pa.Inventory.AmmoReserve.Keys.Any(k => k.StartsWith("rifle") || k.StartsWith("sniper") || k == "Standard"), "old pools migrate to calibers"); }
     GameLog.Target = null;
   }
 
@@ -4265,7 +4291,7 @@ static class Program {
     var ak = new InventoryItem { Type = "weapon", Category = "assault", Key = "VK74", Name = "VK-74" };
     Check(Economy.ValueOf(ak) == 1150, "VK-74 value " + Economy.ValueOf(ak));
     Check(Economy.RepairCost(new InventoryItem { Type = "weapon", Category = "assault", Key = "VK74", Condition = "Damaged" }) == 230, "repair cost");
-    Check(ShopDatabase.Items.Count(i => i.Baseline) == 16, "baseline count (15 + the splint, RT batch 2) " + ShopDatabase.Items.Count(i => i.Baseline));
+    Check(ShopDatabase.Items.Count(i => i.Baseline) == 12, "baseline count (16 less the four generic ammo boxes: ammo is sold per caliber now) " + ShopDatabase.Items.Count(i => i.Baseline));
     foreach (var b in ShopDatabase.Items.Where(i => i.Baseline && i.Type == "consumable")) Check(ConsumableDatabase.All.ContainsKey(b.Id), "baseline consumable missing def " + b.Id);
   }
 
@@ -5089,13 +5115,13 @@ static class Program {
     var p = Player.Current;
     string pk = Ammo.Key(p.EquippedWeapon.Db, "Standard");   // Batch 80: "pistol1|Standard"
     int stash = Ammo.Get(p.Inventory, pk), mag = p.EquippedWeapon.CurrentMagazine;
-    Check(pk == "pistol1|Standard" && stash == 30 && Ammo.Label(pk) == "T1 pistol rounds (Standard)", $"starting rounds are T1 pistol ({pk} {stash})");
+    Check(pk == "9x18mm|Standard" && stash == 30 && Ammo.Label(pk) == "9x18mm Ball", $"starting rounds are 9x18mm ball ({pk} {stash})");
     Check(p.SecondaryWeapon?.Db?.Name == "Hunting Knife", "the starting knife sits in the second slot");
     { var w = p.EquippedWeapon; int m0 = w.CurrentMagazine; w.CurrentMagazine = 0; int keep = Ammo.Get(p.Inventory, pk); p.Inventory.AmmoReserve[pk] = 0;
       Ammo.Add(p.Inventory, "pistol2|Standard", 50); Ammo.Add(p.Inventory, "rifle1|Standard", 50);
       Check(!w.Reload() && w.CurrentMagazine == 0, "a T1 pistol won't load T2 pistol or T1 rifle rounds");
       p.Inventory.AmmoReserve[pk] = keep; p.Inventory.AmmoReserve.Remove("pistol2|Standard"); p.Inventory.AmmoReserve.Remove("rifle1|Standard"); w.CurrentMagazine = m0;
-      Check(ShopSystem.AmmoKeyHere("HollowPoint") == $"pistol{MacroMapDatabase.Find(MacroState.Current.CurrentZoneId).Tier}|HollowPoint", "a trader sells rounds of its own tier: " + ShopSystem.AmmoKeyHere("HollowPoint")); }
+      }
     p.StowSecondary();
     var knife = p.Inventory.Items.First(i => i.Key == "HuntingKnife");
     p.EquipWeaponFromInventory(knife.Id);

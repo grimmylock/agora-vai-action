@@ -13,7 +13,7 @@ namespace GameCore
     {
         // Batch 91: two floors. The test level (upstairs) has a guard squad; the Foreman, his crew and the synthesizer are on
         // the synthesis level below.
-        public const string Upper = "lattice_foundry", Zone = "lattice_foundry_lower", Machine = "Cell Synthesizer", CellKey = "cell|Standard";
+        public const string Upper = "lattice_foundry", Zone = "lattice_foundry_lower", Machine = "Cell Synthesizer", CellKey = "2mm Battery|Standard";
         const string CrewFlag = "g7_crew", GuardFlag = "g7_guards";
         public const int SpareCells = 12;
 

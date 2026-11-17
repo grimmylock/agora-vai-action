@@ -477,7 +477,8 @@ namespace GameCore
                 }
                 if (shooter is Player sp && sp.ArtifactBypassPhysDR > 0) ignore = 1f - (1f - ignore) * (1f - sp.ArtifactBypassPhysDR);
                 float dr = hit.Part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(target)).dr : target.PhysDR * CombatRules.ArmorScale(target);   // RT batch 6: helmets
-                int dmg = CombatRules.PhysicalDamage(raw, w.CurrentAmmoType, dr, ignore);
+                var load = AmmoDatabase.Load(w.Db, w.CurrentAmmoType);                       // what this caliber's load does (AmmoDatabase)
+                int dmg = load != null ? CombatRules.PhysicalDamage(raw, load, dr, ignore) : CombatRules.PhysicalDamage(raw, w.CurrentAmmoType, dr, ignore);
                 int before = target.Hp;
                 target.Hp = System.Math.Max(0, target.Hp - dmg);
                 Boss.OnDamaged(target);

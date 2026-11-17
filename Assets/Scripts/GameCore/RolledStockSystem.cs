@@ -62,6 +62,9 @@ namespace GameCore
             }
             if (roll <= 75) // specialty ammo box
             {
+                // 2026-11-17: a special load (not Standard) of a caliber you carry a gun for, if this trader's tier has it; else the old generic box for the gun in your hands
+                var specials = ShopSystem.OwnedCalibers(Player.Current).SelectMany(c => c.Loads.Where(l => l.Kind != "Standard" && l.Tier <= traderTier).Select(l => (c, l))).ToList();
+                if (specials.Count > 0) { var (c0, l0) = specials[Random.Range(0, specials.Count)]; var box0 = ShopSystem.AmmoItem(c0, l0); box0.Id = "roll_" + box0.Id; box0.Baseline = false; return box0; }
                 string[] types = { "HollowPoint", "ArmorPiercing" };
                 string t = types[Random.Range(0, types.Length)];
                 return new ShopItemDef

@@ -204,6 +204,7 @@ namespace GameCore
             // File 05: Layer 1 is the fixed baseline every trader carries; weapons, armor, artifacts
             // and the rest are this trader's rolled stock below (file 07).
             var stock = ShopDatabase.Items.Where(i => i.Baseline).ToList();
+            stock.AddRange(ShopSystem.AmmoStock(player, traderTier));      // 2026-11-17: ammo by caliber, for the guns you carry
             foreach (var item in stock.Take(MaxBuyRowsShown))
             {
                 var row = UIBuildUtil.CreateRow(_buyList, $"Buy_{item.Id}", RowHeight, new Color(1f, 1f, 1f, 0.05f));
@@ -311,13 +312,12 @@ namespace GameCore
             }
         }
 
-    /// <summary>Batch 80: "T3 rifle rounds (Standard) x30", and a warning when your gun takes another tier.</summary>
+    /// <summary>"5.45x39mm Armor-Piercing x30", and a warning when an old generic box is for another caliber than your gun's.</summary>
     static string AmmoLabel(ShopItemDef item, Player player)
     {
-        string key = ShopSystem.AmmoKeyHere(item.AmmoType);
+        string key = ShopSystem.AmmoKey(item);
         if (key == null) return $"{item.Name} (draw a gun first)";
-        string mine = Ammo.Key(player.EquippedWeapon.Db, item.AmmoType);
-        return $"{Ammo.Label(key)} x{item.Rounds ?? ShopSystem.RoundsPerBox(player.EquippedWeapon)}" + (key != mine ? $" <color=#e8c547>- your gun takes {Ammo.Label(mine).Split(' ')[0]}</color>" : "");
+        return $"{Ammo.Label(key)} x{item.Rounds ?? ShopSystem.RoundsPerBox(player.EquippedWeapon)}";
     }
     }
 }

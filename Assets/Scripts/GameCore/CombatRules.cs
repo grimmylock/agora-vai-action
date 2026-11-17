@@ -114,6 +114,17 @@ namespace GameCore
             return System.Math.Max(1, (int)System.Math.Ceiling(dmg * (1f - dr)));
         }
 
+        /// <summary>Physical damage of a round of a given load (AmmoDatabase): the load multiplies the damage, hollow loads follow the hollow-point rule, DrMult scales the armor.</summary>
+        public static int PhysicalDamage(float rawDamage, AmmoLoad load, float targetPhysDR, float ignorePercent = 0f)
+        {
+            float dr = Mathf.Min(DrCap, Mathf.Max(0f, targetPhysDR));
+            float dmg = rawDamage * load.Damage;
+            if (load.Hollow) { if (dr <= 0f) dmg *= 1.25f; else if (dr >= 0.20f) dmg *= 0.5f; }
+            dr *= load.DrMult;
+            dr *= 1f - ignorePercent;
+            return System.Math.Max(1, (int)System.Math.Ceiling(dmg * (1f - dr)));
+        }
+
         /// <summary>Anomaly / psi damage: only Anom-DR applies.</summary>
         public static int AnomalousDamage(float rawDamage, float targetAnomDR) =>
             System.Math.Max(1, (int)System.Math.Ceiling(rawDamage * (1f - Mathf.Min(DrCap, Mathf.Max(0f, targetAnomDR)))));

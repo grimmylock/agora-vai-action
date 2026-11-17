@@ -27,6 +27,9 @@ namespace GameCore
 {
     public static class HumanLootSystem
     {
+        /// <summary>The kind to give out for a gun: `kind` if its caliber has that load and this map's tier has reached it, else Standard.</summary>
+        static string LoadFor(GameData.WeaponDef d, string kind, int zoneTier = 99) { var l = GameData.AmmoDatabase.Of(d)?.Find(kind); return l != null && l.Tier <= zoneTier ? kind : "Standard"; }
+
         /// <summary>includeWornArmor=false for the "drop and run" flee case - a fleeing NPC is
         /// still alive and wearing their armor, only their weapon and any loose extras spill out
         /// of their pack in the panic, straight into the player's hands. includeWornArmor=true
@@ -254,7 +257,7 @@ namespace GameCore
             switch (loot.Kind)
             {
                 case LootKind.Ammo:
-                    Ammo.Add(player.Inventory, Ammo.Key(Ammo.PoolAt(player.EquippedWeapon?.Db, zoneTier) ?? "pistol" + zoneTier, loot.AmmoType), loot.Amount);   // Batch 80: rounds of this map's tier
+                    Ammo.Add(player.Inventory, Ammo.Key(Ammo.Pool(player.EquippedWeapon?.Db) ?? "9x19mm", LoadFor(player.EquippedWeapon?.Db, loot.AmmoType, zoneTier)), loot.Amount);   // rounds for the gun in your hands (the load, if its caliber has it)
                     break;
                 case LootKind.Cash:
                 case LootKind.Scrap:
@@ -278,7 +281,7 @@ namespace GameCore
             switch (loot.Kind)
             {
                 case LootKind.Ammo:
-                    Ammo.Add(npc.Inventory, Ammo.Key(Ammo.Pool(npc.EquippedWeapon?.Db) ?? "pistol" + zoneTier, loot.AmmoType), loot.Amount);   // Batch 80: rounds for their own gun
+                    Ammo.Add(npc.Inventory, Ammo.Key(Ammo.Pool(npc.EquippedWeapon?.Db) ?? "9x19mm", LoadFor(npc.EquippedWeapon?.Db, loot.AmmoType, zoneTier)), loot.Amount);   // rounds for their own gun
                     break;
                 case LootKind.Cash:
                 case LootKind.Scrap:

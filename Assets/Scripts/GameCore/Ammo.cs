@@ -1,65 +1,61 @@
-// Batch 80 (Yan: "something like 'tier 1 rifle ammo / tier 2 rifle ammo' ... tier 5 ammo only in tier 5 maps"; "hollow point
-// and armor piercing will need the tiered + per weapon class system as well"; "same tier ammo no damage change"): the
-// player's spare rounds are kept per weapon class and tier - a Tier 3 rifle only loads Tier 3 rifle rounds. The kind
-// (Standard, Hollow Point, Dart, Armor Piercing) still decides what a round does; the tier never changes damage.
-// Pool key: "<class><tier>|<kind>", e.g. "rifle3|HollowPoint". NPC guns keep their own per-weapon reserve (unchanged).
+// 2026-11-17 (Yan: "separate them by caliber now, have the actual ammo in the game"): the player's spare rounds are kept per CALIBER and load, not per weapon class
+// and tier any more (Batch 80's "rifle3|HollowPoint" is gone: old saves are converted in Migrate). Pool key: "<caliber>|<kind>", e.g. "5.45x39mm|ArmorPiercing";
+// the loads of every caliber, what they do and what they cost are in GameData/AmmoDatabase.cs. NPC guns keep their own per-weapon reserve (unchanged).
 using System.Collections.Generic;
+using System.Linq;
 using GameData;
 
 namespace GameCore
 {
     public static class Ammo
     {
-        static readonly Dictionary<string, string> ClassOf = new Dictionary<string, string>
-        {
-            ["sidearm"] = "pistol", ["smg"] = "smg", ["shotgun"] = "shotgun", ["assault"] = "rifle", ["sniper"] = "sniper", ["heavy"] = "belt",
-        };
-
-        /// <summary>"rifle3" for a Tier 3 assault rifle; null for a blade. The G-7 runs on its own cells.</summary>
-        public static string Pool(WeaponDef d)
-        {
-            if (d == null || string.IsNullOrEmpty(d.AmmoType)) return null;
-            if (d.Name == "G-7 Rail Prototype") return "cell";
-            return PoolAt(d, d.Tier);
-        }
-
-        /// <summary>The same class at another tier (what a trader or a stash of that tier has for this gun).</summary>
-        public static string PoolAt(WeaponDef d, int tier) =>
-            d == null || string.IsNullOrEmpty(d.AmmoType) ? null : (ClassOf.TryGetValue(CombatRules.Category(d), out var c) ? c : "misc") + System.Math.Max(1, tier);
+        /// <summary>The caliber of a gun, as the pool name ("5.45x39mm"); null for a blade.</summary>
+        public static string Pool(WeaponDef d) => d == null || string.IsNullOrEmpty(d.AmmoType) ? null : d.AmmoType;
 
         public static string Key(WeaponDef d, string kind) => Pool(d) + "|" + (kind ?? "Standard");
         public static string Key(string pool, string kind) => pool + "|" + (kind ?? "Standard");
         public static string Kind(string key) { int i = key.IndexOf('|'); return i < 0 ? key : key.Substring(i + 1); }
+        public static string Caliber(string key) { int i = key.IndexOf('|'); return i < 0 ? key : key.Substring(0, i); }
 
-        static readonly Dictionary<string, string> KindName = new Dictionary<string, string>
-        {
-            ["Standard"] = "Standard", ["HollowPoint"] = "Hollow Point", ["Dart"] = "Dart", ["ArmorPiercing"] = "Armor Piercing",
-        };
-
-        /// <summary>"T3 rifle rounds (Hollow Point)".</summary>
+        /// <summary>"5.45x39mm Armor-Piercing".</summary>
         public static string Label(string key)
         {
             int i = key.IndexOf('|');
             if (i < 0) return key;
-            string pool = key.Substring(0, i), kind = KindName.TryGetValue(Kind(key), out var k) ? k : Kind(key);
-            if (pool == "cell") return $"Rail cells ({kind})";
-            int t = pool.Length - 1;
-            while (t > 0 && char.IsDigit(pool[t - 1])) t--;
-            return $"T{pool.Substring(t)} {pool.Substring(0, t)} rounds ({kind})";
+            string cal = key.Substring(0, i), kind = Kind(key);
+            string load = AmmoDatabase.Calibers.TryGetValue(cal, out var c) ? c.Find(kind)?.Name ?? kind : kind;
+            return cal == "2mm Battery" ? "Rail cells" : $"{cal} {load}";
         }
+
+        /// <summary>The kinds a gun can be loaded with (the loads of its caliber), in order.</summary>
+        public static List<string> Kinds(WeaponDef d) => AmmoDatabase.Of(d)?.Loads.Select(l => l.Kind).ToList() ?? new List<string> { "Standard" };
+
+        /// <summary>The player-facing name of the load a weapon is firing ("Armor-Piercing").</summary>
+        public static string LoadName(Weapon w) => AmmoDatabase.Load(w?.Db, w?.CurrentAmmoType)?.Name ?? (w?.CurrentAmmoType ?? "Standard");
 
         public static int Get(PlayerInventory inv, string key) => inv.AmmoReserve.TryGetValue(key, out var n) ? n : 0;
         public static void Add(PlayerInventory inv, string key, int n) => inv.AmmoReserve[key] = System.Math.Max(0, Get(inv, key) + n);
 
         /// <summary>A bare kind ("Standard", from an old save or old loot) becomes rounds for the gun in your hands.</summary>
-        public static string Normalize(Player p, string key) => key.IndexOf('|') >= 0 ? key : Key(Pool(p.EquippedWeapon?.Db) ?? "pistol1", key);
+        public static string Normalize(Player p, string key) => key.IndexOf('|') >= 0 ? key : Key(Pool(p.EquippedWeapon?.Db) ?? "9x19mm", key);
 
-        /// <summary>Old saves kept one pile per kind: those rounds go to the gun in your hands.</summary>
+        static readonly Dictionary<string, string> OldClasses = new Dictionary<string, string> { ["pistol"] = "pistol", ["smg"] = "pistol", ["rifle"] = "rifle", ["sniper"] = "sniper", ["shotgun"] = "shotgun", ["belt"] = "sniper", ["cell"] = "cell" };
+
+        /// <summary>Old saves: one pile per kind (before Batch 80) or per class and tier ("rifle3|HollowPoint", before the caliber split): those rounds go to the caliber of the gun in your hands
+        /// when it is of that class, else to the commonest caliber of the class (9x19mm, 5.45x39mm, 7.62x54mmR, 12g, rail cells).</summary>
         public static void Migrate(Player p)
         {
-            var pool = Pool(p.EquippedWeapon?.Db) ?? "pistol1";
+            var inHand = p.EquippedWeapon?.Db; string handClass = AmmoDatabase.Of(inHand)?.Class;
             foreach (var k in new List<string>(p.Inventory.AmmoReserve.Keys))
-                if (k.IndexOf('|') < 0) { int n = p.Inventory.AmmoReserve[k]; p.Inventory.AmmoReserve.Remove(k); Add(p.Inventory, Key(pool, k), n); }
+            {
+                string cal = Caliber(k), kind = Kind(k);
+                if (k.IndexOf('|') >= 0 && AmmoDatabase.Calibers.ContainsKey(cal)) continue;                  // already a caliber pool
+                string cls = k.IndexOf('|') < 0 ? handClass ?? "pistol" : cal.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+                if (cls == "belt" && handClass == "sniper") cls = "sniper";
+                string target = (handClass != null && (cls == handClass || (cls == "belt" && handClass == "rifle") || (cls == "smg" && handClass == "pistol"))) ? AmmoDatabase.Of(inHand).Id
+                    : AmmoDatabase.DefaultOf(OldClasses.TryGetValue(cls, out var oc) ? oc : "pistol")?.Id ?? "9x19mm";
+                int n = p.Inventory.AmmoReserve[k]; p.Inventory.AmmoReserve.Remove(k); Add(p.Inventory, Key(target, kind), n);
+            }
         }
     }
 }

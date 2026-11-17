@@ -72,7 +72,7 @@ namespace GameCore
 
         // ---------------- what the panel does ----------------
 
-        public static readonly string[] Kinds = { "Standard", "HollowPoint", "ArmorPiercing", "Dart" };
+        public static readonly string[] Kinds = { "Standard", "HollowPoint", "ArmorPiercing", "Dart" };   // (a gun only gets the loads its caliber has: see RefillAmmo)
 
         public static InventoryItem ItemOf(ShopItemDef d, int qty = 1) => new InventoryItem
         { Id = d.Id, Name = d.Name, WeightKg = d.WeightKg, Qty = qty, Type = d.Type, Price = d.Price, Category = d.Category, Key = d.Key };
@@ -184,7 +184,7 @@ namespace GameCore
             var guns = p.Inventory.Items.Where(i => i.Type == "weapon" && i.Category != "melee")
                 .Select(i => WeaponDatabase.Categories.TryGetValue(i.Category ?? "", out var cat) && cat.TryGetValue(i.Key ?? "", out var d) ? d : null)
                 .Concat(new[] { p.EquippedWeapon?.Db, p.SecondaryWeapon?.Db }).Where(d => d != null && d.Range != "Adjacent").Distinct();
-            foreach (var d in guns) foreach (var k in Kinds) Ammo.Add(p.Inventory, Ammo.Key(d, k), 300 - Ammo.Get(p.Inventory, Ammo.Key(d, k)));
+            foreach (var d in guns) foreach (var k in Ammo.Kinds(d)) Ammo.Add(p.Inventory, Ammo.Key(d, k), 300 - Ammo.Get(p.Inventory, Ammo.Key(d, k)));      // every load of the gun's own caliber
             foreach (var w in new[] { p.EquippedWeapon, p.SecondaryWeapon, p.OffhandWeapon }) if (w != null && !CombatRules.IsMelee(w)) { w.CurrentMagazine = w.MagCapacity; w.IsJammed = false; }
             GameLog.Write("[TESTING GROUND] Ammo topped up.");
         }

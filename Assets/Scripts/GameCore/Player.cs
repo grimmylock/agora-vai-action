@@ -479,7 +479,7 @@ namespace GameCore
         {
             var w = EquippedWeapon;
             if (w == null || CombatRules.IsMelee(w)) { GameLog.Write("Nothing to load."); return; }
-            string[] order = { "Standard", "HollowPoint", "Dart", "ArmorPiercing" };
+            var order = Ammo.Kinds(w.Db).ToArray();                          // the loads of this gun's caliber
             int start = System.Array.IndexOf(order, w.CurrentAmmoType);
             for (int i = 1; i <= order.Length; i++)
             {
@@ -489,7 +489,7 @@ namespace GameCore
                 Ammo.Add(Inventory, Ammo.Key(w.Db, w.CurrentAmmoType), w.CurrentMagazine);
                 w.CurrentMagazine = 0;
                 w.CurrentAmmoType = next;
-                GameLog.Write($"Loading {next} rounds.");
+                GameLog.Write($"Loading {Ammo.Label(Ammo.Key(w.Db, next))}.");
                 ReloadWeapon();
                 return;
             }

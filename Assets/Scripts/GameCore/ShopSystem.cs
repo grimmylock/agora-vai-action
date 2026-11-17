@@ -11,10 +11,40 @@ namespace GameCore
         /// GetSellValuePerUnit price against the actual trader standing in front of the player
         /// rather than a zone-agnostic guess. Faction is null (no Friendly discount/bonus) for the
         /// zone-tier and Wandering Trader cases - only a named Quartermaster has one.</summary>
-        /// <summary>Batch 80: the rounds an ammo box here holds - the class of the gun in your hands, at this trader's tier
-        /// (tier N rounds are only sold on tier N maps). Null with no gun out.</summary>
-        public static string AmmoKeyHere(string kind) =>
-            Ammo.PoolAt(Player.Current?.EquippedWeapon?.Db, CurrentTraderContext().tier) is string pool ? Ammo.Key(pool, kind) : null;
+        /// <summary>The pool key of an ammo box: its own caliber and load, or (an old generic rolled box) the caliber of the gun in your hands. Null with no gun out and no caliber on the box.</summary>
+        public static string AmmoKey(ShopItemDef it)
+        {
+            string cal = !string.IsNullOrEmpty(it.Caliber) ? it.Caliber : Ammo.Pool(Player.Current?.EquippedWeapon?.Db);
+            if (cal == null) return null;
+            var c = AmmoDatabase.Calibers.TryGetValue(cal, out var cc) ? cc : null;
+            string kind = c != null && c.Find(it.AmmoType) == null ? "Standard" : it.AmmoType;
+            return Ammo.Key(cal, kind);
+        }
+
+        /// <summary>The calibers of the guns you carry (hands, second slot, off hand, pack).</summary>
+        public static System.Collections.Generic.List<Caliber> OwnedCalibers(Player p)
+        {
+            var found = new System.Collections.Generic.List<Caliber>();
+            void Add(WeaponDef d) { var c = AmmoDatabase.Of(d); if (c != null && !found.Contains(c)) found.Add(c); }
+            if (p == null) return found;
+            Add(p.EquippedWeapon?.Db); Add(p.SecondaryWeapon?.Db); Add(p.OffhandWeapon?.Db);
+            foreach (var it in p.Inventory.Items) if (it.Type == "weapon" && !string.IsNullOrEmpty(it.Category) && WeaponDatabase.Categories.TryGetValue(it.Category, out var cat) && cat.TryGetValue(it.Key ?? "", out var def)) Add(def);
+            return found;
+        }
+
+        /// <summary>One box of one load of one caliber, as a shop item.</summary>
+        public static ShopItemDef AmmoItem(Caliber c, AmmoLoad l) => new ShopItemDef
+        {
+            Id = "ammo|" + c.Id + "|" + l.Kind, Name = $"{c.Id} {l.Name} x{c.Box}", Type = "ammo", AmmoType = l.Kind, Caliber = c.Id, Rounds = c.Box, WeightKg = 0.02f * c.Box, Baseline = true,
+        };
+
+        /// <summary>What every trader of this tier sells in ammo: for each caliber you carry a gun for, the loads whose tier the map has reached.</summary>
+        public static System.Collections.Generic.List<ShopItemDef> AmmoStock(Player p, int tier)
+        {
+            var list = new System.Collections.Generic.List<ShopItemDef>();
+            foreach (var c in OwnedCalibers(p)) foreach (var l in c.Loads) if (l.Tier <= tier) list.Add(AmmoItem(c, l));
+            return list;
+        }
 
         private static (int tier, string faction) CurrentTraderContext()
         {
@@ -42,16 +72,19 @@ namespace GameCore
             float haggle = CombatantUtil.HasPerk(Player.Current, "Haggler") ? 0.85f : 1f;
             if (StorySystem.ContainPrices && Player.Current != null) repMult = ReputationPricing.FriendlyMultiplier("Friendly", isSelling: false);
             haggle *= StorySystem.PriceMultiplier;
-            float basePrice = item.Type == "ammo" ? AmmoBoxPrice(item.AmmoType, tier) : item.Price;
+            float basePrice = item.Type == "ammo" ? AmmoBoxPrice(item) : item.Price;
             return (int)(basePrice * ReputationPricing.RemotenessMarkup(tier) * repMult * haggle);
         }
 
-        // Batch 87 (Yan: "yes for the ammo"): a box costs more the higher its rounds' tier (a trader sells its own tier's), and
-        // the kind multiplies the Standard price. Before the markup, Haggler and reputation.
-        static readonly float[] AmmoTierPrice = { 150, 150, 210, 285, 375, 480, 600, 750 };
-        public static float AmmoBoxPrice(string kind, int tier) =>
-            AmmoTierPrice[System.Math.Min(System.Math.Max(tier, 1), AmmoTierPrice.Length - 1)]
-            * (kind == "HollowPoint" ? 1.5f : kind == "Dart" ? 2f : kind == "ArmorPiercing" ? 2.5f : 1f);
+        // 2026-11-17: a box costs its load's price per round times the rounds in it (AmmoDatabase), before the remoteness markup, Haggler and reputation. An old generic rolled box is priced as the load of the
+        // gun in your hands (a box of 20 when it does not say).
+        public static float AmmoBoxPrice(ShopItemDef it)
+        {
+            string key = AmmoKey(it);
+            if (key == null || !AmmoDatabase.Calibers.TryGetValue(Ammo.Caliber(key), out var c)) return 150f;
+            var load = c.Find(Ammo.Kind(key)) ?? c.Standard;
+            return load.RoundPrice * (it.Rounds ?? c.Box);
+        }
 
         /// <summary>New: sell value used to be flat item.Price with no remoteness/reputation swing
         /// (same gap as GetBuyPrice) and no condition penalty despite ItemCondition.SellMultiplier
@@ -76,6 +109,11 @@ namespace GameCore
         public static void BuyItem(string itemId)
         {
             var it = ShopDatabase.Find(itemId);
+            if (it == null && itemId != null && itemId.StartsWith("ammo|"))                       // a box generated for a caliber you carry (AmmoStock)
+            {
+                var parts = itemId.Split('|');
+                if (parts.Length == 3 && AmmoDatabase.Calibers.TryGetValue(parts[1], out var cal) && cal.Find(parts[2]) is AmmoLoad load) it = AmmoItem(cal, load);
+            }
             if (it == null) return;
             ApplyPurchase(it);
         }
@@ -100,7 +138,7 @@ namespace GameCore
         {
             var player = Player.Current;
             int price = GetBuyPrice(it);
-            if (it.Type == "ammo" && AmmoKeyHere(it.AmmoType) == null) { GameLog.Write("Draw the gun you want rounds for first."); return false; }
+            if (it.Type == "ammo" && AmmoKey(it) == null) { GameLog.Write("Draw the gun you want rounds for first."); return false; }
             if (player.Ru < price)
             {
                 GameLog.Write($"Not enough RU to buy {it.Name}");
@@ -111,7 +149,7 @@ namespace GameCore
 
             if (it.Type == "ammo")
             {
-                string key = AmmoKeyHere(it.AmmoType);
+                string key = AmmoKey(it);
                 int rounds = it.Rounds ?? RoundsPerBox(player.EquippedWeapon);
                 Ammo.Add(player.Inventory, key, rounds);
                 GameLog.Write($"Bought {rounds} {Ammo.Label(key)}.");

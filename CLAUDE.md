@@ -88,7 +88,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
 - **A-Life.** `SquadManager` (hourly on the clock): factions draw squads from rank decks (`FactionDeck`), squads walk through
   exits, hold posts and take tasks (`Posts.cs`), fight off-screen with dice and on your map for real (`NpcFights`), retreat,
   carry quests, caravans, migrations. Raider gangs are 4-6, at most 3 in Tier 1. Squads keep to their band (Tiers 1-3 / 4+).
-- **Economy and gear.** Weapons/armor databases in `GameData/`; tiered ammo (`Ammo.cs`); condition Working/Dirty/Damaged/Broken
+- **Economy and gear.** Weapons/armor databases in `GameData/`; ammo by caliber and load (`Ammo.cs`, `GameData/AmmoDatabase.cs`, table in `ArtSource/weapons/AMMO_RT.md`); condition Working/Dirty/Damaged/Broken
   (`ItemCondition.cs`); shops (`ShopSystem`/`ShopUI`), quests (`QuestSystem`), stashes (`Stashes.cs`), props you can tip and
   kick (`Props.cs`), materials (`Materials.cs`: rounds go through wood/tin/brush/cloth).
 - **Saves.** `SaveSystem.cs`: one slot (`savegame.json`), character + world flags (incl. the camp). Slots and a host-world /

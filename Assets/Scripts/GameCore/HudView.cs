@@ -338,8 +338,8 @@ namespace GameCore
             SetChip(_wChips[1], w == null || melee ? "" : Rt.On ? Gunplay.ModeLabel(w, Rt.Of(p).FireMode) : (CombatRules.CanBurst(w) ? p.FireMode.ToUpperInvariant() : "SINGLE"), Dim);
             _wMag.text = w == null || melee ? "-" : w.CurrentMagazine.ToString();
             _wCap.text = w == null || melee ? "" : $"/ {w.MagCapacity}";
-            string ammo = w?.CurrentAmmoType ?? "Standard";
-            int spare = w == null || melee ? 0 : Ammo.Get(p.Inventory, Ammo.Key(w.Db, ammo));
+            string ammo = w == null ? "Standard" : Ammo.LoadName(w);
+            int spare = w == null || melee ? 0 : Ammo.Get(p.Inventory, Ammo.Key(w.Db, w.CurrentAmmoType));
             _wAmmo.text = w == null || melee ? "" : $"{ammo.ToUpperInvariant()}\n+{spare} SPARE";
 
             // belt: the first four kinds of consumable; artifacts in the belt slots
