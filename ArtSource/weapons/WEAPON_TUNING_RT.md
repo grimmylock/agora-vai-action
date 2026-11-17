@@ -35,7 +35,7 @@ Yan: every gun individually, not one global knob; a 1-against-1 where every roun
 | BR-86 Bulldog | assault | 4 | 0.60 | 0.185 | 29 | 4.3 | 0.55 | 1.5 | 100 | 100 | 91 |
 | VK-74 Obelisk | assault | 4 | 0.60 | 0.250 | 23 | 3.4 | 0.50 | 1.6 | 100 | 100 | 90 |
 | NA-94 Yenisei | assault | 4 | 0.60 | 0.320 | 21 | 3.3 | 0.55 | 1.4 | 100 | 100 | 91 |
-| Corvan Bullpup | assault | 5 | 0.65 | 0.212 | 32 | 6.1 | 0.55 | 1.6 | 60 | 96 | 71 |
+| Corvan Bullpup | assault | 5 | 0.65 | 0.242 | 29 | 3.4 | 0.55 | 1.6 | 60 | 96 | 71 |
 | Corvan Battle Rifle | assault | 4 | 0.60 | 0.267 | 18 | 2.8 | 0.50 | 3.0 | 95 | 71 | 45 |
 | Obrez-66 | shotgun | 1 | 1.00 | 0.700 | 3 | 2.6 | 1.80 | 8.0 | 85 | 39 | 7 |
 | Halden Lever Shotgun | shotgun | 2 | 1.00 | 0.580 | 4 | 2.6 | 1.40 | 6.0 | 100 | 77 | 35 |
@@ -55,8 +55,8 @@ Yan: every gun individually, not one global knob; a 1-against-1 where every roun
 | Nightwalker .45-70 | sniper | 4 | 1.00 | 0.530 | 4 | 3.3 | 0.20 | 8.0 | 100 | 100 | 100 |
 | Corvan Marksman | sniper | 4 | 1.00 | 0.310 | 7 | 3.3 | 0.12 | 5.0 | 95 | 86 | 51 |
 | SV-2 Strela | sniper | 4 | 1.00 | 0.260 | 7 | 3.6 | 0.11 | 4.5 | 82 | 100 | 100 |
-| Sever-98 | sniper | 4 | 1.00 | 0.450 | 4 | 5.0 | 0.08 | 7.0 | 86 | 100 | 100 |
-| VK-127 Grom | sniper | 5 | 1.00 | 0.580 | 4 | 6.0 | 0.10 | 9.0 | 100 | 100 | 100 |
+| Sever-98 | sniper | 4 | 1.00 | 0.600 | 3 | 2.7 | 0.08 | 7.0 | 86 | 100 | 100 |
+| VK-127 Grom | sniper | 5 | 1.00 | 0.783 | 3 | 4.0 | 0.10 | 9.0 | 100 | 100 | 100 |
 | Halden AM-50 Sledge | sniper | 5 | 1.00 | 0.430 | 5 | 3.4 | 0.10 | 13.5 | 100 | 100 | 100 |
 | G-7 Rail Prototype | sniper | 5 | 1.00 | 0.530 | 3 | 3.0 | 0.05 | 4.0 | 100 | 100 | 100 |
 | PL-62 Kobza | heavy | 2 | 0.65 | 0.230 | 23 | 3.1 | 1.40 | 2.2 | 50 | 21 | 5 |
