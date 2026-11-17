@@ -55,6 +55,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3618,6 +3619,24 @@ static class Program {
         Console.WriteLine(sb.ToString() + $" | {tot} rounds"); }
     }
   }
+  class LogCatch : IGameLogTarget { public List<string> Lines = new List<string>(); public void AppendLine(string m) { Lines.Add(m); } }
+  // RTBAL=8: each mutant kind alone (and the swarm as 6) against a standing player 8 tiles away in the open, real AI for 20 s: when the first damage lands, how much, and which turn-based leftovers fire
+  // (dice lines, instant leaps, thrown boulders, slams). Tier of each kind from the database.
+  static void MutantBehaviorReport() {
+    var kinds = new[] { ("tier1", "BlindMaw", 1), ("tier1", "PallidProwler", 1), ("tier1", "Swarm", 6), ("tier2", "VeilProwler", 1), ("tier3", "Gaunt", 1), ("tier3", "MindWeaver", 1), ("tier4", "BlightBrute", 1), ("tier4", "DreadProwler", 1), ("tier5", "VoidWeaver", 1) };
+    foreach (var (tier, key, n) in kinds) {
+      UnityEngine.Random.InitState(77); var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MutantAttack.Reset(); p.Hp = p.MaxHp; p.HealPermanent(100000);
+      for (int y = py - 12; y <= py + 12; y++) for (int x = px - 4; x <= px + 24; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+      Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); var ms = new List<Mutant>();
+      for (int i = 0; i < n; i++) { var m = new Mutant(key, px + 8, py - n / 2 + i, MutantDatabase.Get(tier, key)) { IsAggroed = true }; Rt.SetOffset(m, 0f, 0f); EncounterState.Enemies.Add(m); ms.Add(m); }
+      var cap = new LogCatch(); GameLog.Target = cap;
+      UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; EncounterState.InCombat = true; Contact.Spot(p); const float dt = 1f / 30f; float t = 0f, first = -1f; int hp0 = p.Hp; int minDist = 99, atRangeFrames = 0, minHp = p.Hp;
+      for (; t < 20f && ms.Any(m => m.IsAlive()); t += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); if (first < 0f && p.Hp < hp0) first = t; minHp = Math.Min(minHp, p.Hp); minDist = Math.Min(minDist, ms.Min(m => CombatantUtil.Distance(m, p))); }
+      GameLog.Target = null;
+      int C(string s2) => cap.Lines.Count(l => l.Contains(s2));
+      Console.WriteLine($"MUTANT {key,-14} x{n}: first damage {(first < 0 ? "never" : first.ToString("0.0") + " s")}, damage taken {hp0 - p.Hp} (lowest HP {minHp} of {hp0}), closest {minDist} tiles | log: attacks {C(" hits ")}, LEAPS {C("LEAPS")}, d20 dodge lines {C("Agility")}, boulders {C("boulder")}, slams {C("SLAMS")}, staggered {C("staggered")}, shimmers {C("shimmers")}");
+      EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; }
+  }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
     // Yan's first real-time playtest: sprinting made enemies zoom - each tile you crossed also ticked the world
@@ -3646,10 +3665,19 @@ static class Program {
       var raider = new HumanEnemy("Raider", q.X + 5, q.Y, "Raiders", "Experienced", null, null) { IsAggroed = true };
       raider.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]); EncounterState.Enemies.Add(raider);
       Check(Rt.TargetOf(raider, p) == q && Gunplay.Bodies().Contains(q), "co-op: an enemy fights the player nearest it, and rounds can hit either player");
+      // 2026-11-17 (Yan: squads divide their attention, half to the closest player, the rest shared among the others): 200 enemies nearer to q than to you
+      { var crowd = new List<HumanEnemy>(); for (int i = 0; i < 200; i++) { var c = new HumanEnemy("C" + i, px + (i % 5), py + 7, "Raiders", "Rookie", null, null) { IsAggroed = true }; Rt.SetOffset(c, 0f, 0f); crowd.Add(c); }
+        Rt.SetOffset(raider, 0f, 0f); Rt.SetOffset(q, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+        int onQ = crowd.Count(c => Rt.AttentionOf(c, p) == q); int again = crowd.Count(c => Rt.AttentionOf(c, p) == q);
+        Check(onQ >= 80 && onQ <= 120 && again == onQ, $"co-op: with two players about half of a squad is on the nearer one, the rest on the other ({onQ}/200 on the near one; kept for several seconds: {again})");
+        var r3 = Player.Join(); r3.X = px + 2; r3.Y = py - 5; Rt.SetOffset(r3, 0f, 0f); UnityEngine.Time.time += 10f;
+        int a1 = 0, a2 = 0, a3 = 0; foreach (var c in crowd) { var w = Rt.AttentionOf(c, p); if (w == q) a1++; else if (w == p) a2++; else if (w == r3) a3++; }
+        Check(a1 >= 80 && a1 <= 120 && a2 >= 40 && a2 <= 60 && a3 >= 40 && a3 <= 60, $"co-op: with three players: 50% the nearest, the rest shared ({a1} near / {a2} / {a3} of 200)");
+        Player.All.Remove(r3); UnityEngine.Time.time += 10f; }
       Rt.SetOffset(raider, 0f, 0f); Rt.SetOffset(q, 0f, 0f);   // tile centres: the check is who it shoots, not how a random stand spot lines up
       EncounterState.InCombat = true; Contact.Spot(q); int qh = q.Hp, ph = p.Hp;
       for (int f = 0; f < 1500 && q.Hp == qh; f++) { Rt.WorldTick(p); UnityEngine.Time.time += 0.02f; }
-      Check(q.Hp < qh && p.Hp == ph, $"co-op: the Raider shoots the near player ({qh} -> {q.Hp}), not you ({p.Hp})");
+      Check(q.Hp < qh, $"co-op: the Raider shoots a player in range ({qh} -> {q.Hp}; he may pick you too now, {ph} -> {p.Hp})");
       Rt.Of(q).Stamina = 50f; float pst = Rt.Of(p).Stamina; Rt.PlayerTick(q, new Rt.Input { X = -1f, Jump = true });
       Check(Rt.Of(q).Diving && !Rt.Of(p).Diving && Rt.Of(q).Stamina < 50f && Rt.Of(p).Stamina == pst, "co-op: a dive spends that player's stamina and only they dive");
       for (int f = 0; f < 60 && Rt.Of(q).Diving; f++) { Rt.PlayerTick(q, default); UnityEngine.Time.time += 0.02f; }

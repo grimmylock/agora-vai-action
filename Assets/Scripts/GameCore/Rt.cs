@@ -167,9 +167,26 @@ namespace GameCore
             }
             return best ?? fallback;
         }
+        /// <summary>Co-op (Yan, 2026-11-17: "enemy squads divide attention between coop players, 50% to the closest player and the rest divides between the rest of players"): who an enemy in a fight is on right now.
+        /// Each enemy re-draws every 4-8 s (and when its target dies or is out of sight range): half the draws go to the player `TargetOf` names (the closest, one it can see first), the other half is shared evenly
+        /// by the other living players within sight range of the map (Vision.MaxRadius); alone, or with nobody else near, it is always the closest. A mutant the Gaunt drove keeps its mark.</summary>
+        public static Player AttentionOf(Mutant e, Player fallback)
+        {
+            var closest = TargetOf(e, fallback);
+            if (Player.All.Count < 2 || Gaunt.Marked(e) != null) return closest;
+            float now = Time.time;
+            if (Attention.TryGetValue(e, out var a) && now < a.until && a.who != null && a.who.IsAlive() && CombatantUtil.Distance(e, a.who) <= Vision.MaxRadius + 10) return a.who;
+            var others = new List<Player>();
+            foreach (var p in Player.All) if (p != closest && p.IsAlive() && CombatantUtil.Distance(e, p) <= Vision.MaxRadius) others.Add(p);
+            var pick = others.Count == 0 || Random.value < 0.5f ? closest : others[Random.Range(0, others.Count)];
+            Attention[e] = (pick, now + Random.Range(4f, 8f));
+            return pick;
+        }
+        static readonly Dictionary<Mutant, (Player who, float until)> Attention = new Dictionary<Mutant, (Player, float)>();
+
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); BrainBoss.Reset(); _round = 0f; }
+        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Attention.Clear(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); BrainBoss.Reset(); _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -740,7 +757,7 @@ namespace GameCore
                 if (BrainBoss.Is(e) || EelBoss.Is(e)) continue;                  // Boss 2/3: their own Tick runs them
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); continue; }
-                p = Companion.Is(e) ? local : TargetOf(e, local);                // co-op: each enemy fights the player nearest it
+                p = Companion.Is(e) ? local : AttentionOf(e, local);             // co-op: half the enemies fight the player nearest them, the rest are shared among the others (AttentionOf)
                 if (e is HumanEnemy rh && !Companion.Is(e)) RtAi.Tick(rh, p);   // RT batch 4: walks and shoots every frame; thinks below
                 else if (!(e is HumanEnemy)) RtAi.TickMutant(e, p);              // RT batch 5: mutants too
                 if (!NextTurn.TryGetValue(e, out var at)) { NextTurn[e] = now + Random.Range(0.5f, 1.3f); continue; }   // reaction time

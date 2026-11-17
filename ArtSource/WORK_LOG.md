@@ -6373,3 +6373,9 @@ Yan: "Yes" to the three changes after RTBAL=7. CORRECTION to the entry above: th
 - `EnemyAI.HumanTurn` (real time): he picks tiles at 60% of his gun's effective range (rifle ~18, pistol ~12, SMG ~15, shotgun ~9), snipers their whole reach.
 - Buckshot is never fired from beyond its effective range (15 tiles); slugs and every other gun are not limited (the probing-shot gate stays for them).
 Not changed: damage, rate, spread. Fights still start at 20-30 tiles because a rifleman may fire from 30 while walking in. Harness green. Not played in Unity.
+
+## Co-op: enemies divide their attention (2026-11-17)
+Yan: "make it so enemy squads divide attention between coop players, 50% to the closest player and the rest divides between the rest of players, check individual mutant behavior".
+- `Rt.AttentionOf(e, local)` (used by `Rt.WorldTick` for every fighting enemy; `TargetOf` stays the "closest" rule, and still decides who a squad NOTICES): each enemy draws its target every 4-8 s (or when the target dies or goes beyond `Vision.MaxRadius + 10`): 50% the closest player (the old rule: one it can see first), 50% split evenly among the other living players within `Vision.MaxRadius`. Alone, or with nobody else near, it is always the closest. A mutant the Gaunt drove keeps its mark. Bosses still fight the nearest. Harness: 200 enemies, two players about 100/100, three players about 100/50/50.
+- Harness check "the Raider shoots the near player, not you" relaxed: he may now pick you.
+- Mutants: `RTBAL=8` (`MutantBehaviorReport`): each kind alone, or the swarm as 6, against a standing player at 8 tiles, 20 s. Findings in the reply to Yan: the old turn-based Dread Prowler leap (instant teleport + d20 dodge, `EnemyAI.LeapAttack`) still fires in real time next to the new pounce (3 leaps and 3 d20 lines in 20 s); the Blight Brute's old once-per-fight `GroundSlam` (d20 knock-prone) runs next to the new slam/boulder; not changed yet.
