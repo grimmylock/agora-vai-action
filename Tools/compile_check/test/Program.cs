@@ -3554,6 +3554,14 @@ static class Program {
     TerrainMap.SetTileType(px + 5, py, TileType.Empty);
     p.Sneaking = true; Check(PartAt(r, p, 0.8f) == "miss" && PartAt(r, p, 0.6f) == "Head", "crouching: a head-height round goes over you"); p.Sneaking = false;
     // the old turn AI's gunfire becomes real rounds
+    // enemy accuracy at 6 tiles by gun class (standing target, clean aim state): a sniper is the most accurate class, a rifle hits more than half, pistols and SMGs
+    // less (a worry that enemy snipers were harmless up close came from a test that left the shooter and the target off their tile centres: they were not)
+    { Rt.SetOffset(r, 0f, 0f); Rt.SetOffset(p, 0f, 0f); r.X = p.X + 6; r.Y = p.Y; var rates = new Dictionary<string, int>();
+      foreach (var (cat, key) in new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("sniper", "SKNKarabin") }) {
+        r.EquipWeaponFromDb(WeaponDatabase.Categories[cat][key]); int hc = 0; UnityEngine.Random.InitState(5);
+        for (int i = 0; i < 200; i++) { p.Hp = p.MaxHp; Body.Forget(p); Rt.Of(p).ProneUntil = -1f; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; r.EquippedWeapon.Fire(p); Gunplay.LandAll(); if (p.Hp < p.MaxHp) hc++; }
+        rates[cat] = hc * 100 / 200; }
+      Check(rates["sniper"] >= 50 && rates["sniper"] >= rates["assault"] && rates["assault"] >= 30 && rates["sidearm"] >= 10, $"enemy accuracy at 6 tiles: sidearm {rates["sidearm"]}%, rifle {rates["assault"]}%, sniper {rates["sniper"]}%"); }
     int hits = 0, n = 300; UnityEngine.Random.InitState(11); r.EquipWeaponFromDb(WeaponDatabase.Categories["assault"]["VK74"]);   // a fixed rifle: the loadout is random and a sniper in his hands misses a lot at 6 tiles by design
     for (int i = 0; i < n; i++) { p.Hp = p.MaxHp; Body.Forget(p); p.Sneaking = false; r.EquippedWeapon.CurrentMagazine = r.EquippedWeapon.MagCapacity; var res = r.EquippedWeapon.Fire(p); Gunplay.LandAll(); if (p.Hp < p.MaxHp) hits++; }
     Check(hits > 8 && hits < n, $"a Rookie at 6 tiles hits sometimes ({hits}/{n})");   // (120 shots: 40 tripped on chance)
