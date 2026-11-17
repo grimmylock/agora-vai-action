@@ -43,7 +43,6 @@ static class Program {
     LiveSquadChecks();
     GroundedChecks(); DeckChecks();
     SoakTest();
-    FightSim(args);
     Batch72Checks();
     RaidChecks();
     RtChecks();
@@ -664,78 +663,6 @@ static class Program {
   class ConsoleLog : IGameLogTarget { public bool Clicker; public int Lines; public System.Collections.Generic.Dictionary<string, int> Counts;
     public void AppendLine(string m) { Lines++; if (Clicker) Console.WriteLine("  | " + m);
       if (Counts != null) { var k = new string(m.TakeWhile(c => !char.IsDigit(c)).Take(40).ToArray()); Counts[k] = (Counts.TryGetValue(k, out var n) ? n : 0) + 1; } } }
-  static void FightSim(string[] args) {
-    var log = new ConsoleLog { Clicker = args.Contains("fightlog") };
-    GameLog.Target = log;
-    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
-    int playerWins = 0, deaths = 0;
-    for (int fight = 0; fight < 30; fight++) {
-      try {
-        GameBootstrap.StartNewGame();
-        GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;
-        var p = Player.Current;
-        p.Inventory.Items.Add(new InventoryItem { Id = "fragGrenade", Name = "Frag Grenade", Type = "consumable", Qty = 2, WeightKg = 0.5f });
-        EncounterState.Enemies.Clear();
-        // clear a 12x5 arena next to the player, two raiders + a blind maw
-        for (int y = p.Y - 2; y <= p.Y + 2; y++) for (int x = p.X; x <= p.X + 12; x++) if (x < TerrainMap.Width - 1 && y > 0 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
-        TerrainMap.SetTileType(p.X + 7, p.Y, TileType.HardCover);
-        var (w1, a1) = EncounterGeneration.PickFactionLoadout("Raiders", "Experienced", 1);
-        var r1 = new HumanEnemy("Raider A", p.X + 8, p.Y, "Raiders", "Experienced", w1, a1) { IsAggroed = true };
-        var (w2, a2) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
-        var r2 = new HumanEnemy("Raider B", p.X + 9, p.Y + 2, "Raiders", "Rookie", w2, a2) { IsAggroed = true };
-        string[] mk = { "tier1/BlindMaw", "tier2/VeilProwler", "tier4/DreadProwler", "tier4/BlightBrute", "tier3/MindWeaver", "tier5/VoidWeaver" };
-        var mkey = mk[fight % mk.Length].Split('/');
-        var maw = new Mutant(mkey[1], p.X + 5, p.Y - 2, MutantDatabase.Get(mkey[0], mkey[1])) { IsAggroed = true };
-        p.StartTurn(); p.HealPermanent(100);
-        EncounterState.Enemies.AddRange(new Mutant[] { r1, r2, maw });
-        for (int round = 0; round < 25 && p.IsAlive() && EncounterState.Enemies.Any(e => e.IsAlive()); round++) {
-          if (round == 1 && fight % 3 == 0) { p.ArmedThrowable = "fragGrenade"; p.ThrowAt(r1.X, r1.Y); }
-          if (fight % 2 == 0 && p.EquippedWeapon?.IsJammed == true) p.ClearWeaponJam();
-          for (int k = 0; k < 3; k++) {
-            var t = EncounterState.Enemies.Where(e => e.IsAlive()).OrderBy(e => CombatantUtil.Distance(p, e)).FirstOrDefault();
-            if (t == null) break;
-            if (!p.EquippedWeapon.IsLoaded) p.ReloadWeapon();
-            else if (CombatantUtil.Distance(p, t) > p.EquippedWeapon.RangeTiles) { p.Move(Math.Sign(t.X - p.X), 0); }
-            else p.Attack(t, null);
-          }
-          TurnLoop.CheckCombatEnd();
-          if (GameState.Current.CurrentTurn == Turn.Player) TurnLoop.PlayerEndTurn();
-        }
-        if (!p.IsAlive()) deaths++; else if (!EncounterState.Enemies.Any(e => e.IsAlive())) playerWins++;
-      } catch (Exception e) { Check(false, "fight sim threw: " + e); break; }
-    }
-    Console.WriteLine($"fight sim: 30 fights, player won {playerWins}, died {deaths}, {log.Lines} log lines");
-    // fair duels: fresh rookie vs one rookie raider (and vs one Tier 1 mutant), plain shoot-out
-    foreach (var foe in new[] { "raider", "mutant" }) {
-      int w = 0, d = 0, hpLeft = 0;
-      for (int fight = 0; fight < 100; fight++) {
-        GameBootstrap.StartNewGame();
-        GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;
-        var p = Player.Current;
-        EncounterState.Enemies.Clear();
-        for (int y = p.Y - 2; y <= p.Y + 2; y++) for (int x = p.X; x <= p.X + 10; x++) if (x < TerrainMap.Width - 1 && y > 0 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
-        Mutant e;
-        if (foe == "raider") { var (w1, a1) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1); e = new HumanEnemy("Raider", p.X + 6, p.Y, "Raiders", "Rookie", w1, a1) { IsAggroed = true }; }
-        else { var keys = MutantDatabase.Tiers["tier1"].Keys.ToArray(); var k = keys[fight % keys.Length]; e = new Mutant(k, p.X + 6, p.Y, MutantDatabase.Get("tier1", k)) { IsAggroed = true }; }
-        p.StartTurn(); p.HealPermanent(100);
-        EncounterState.Enemies.Add(e);
-        for (int round = 0; round < 25 && p.IsAlive() && e.IsAlive() && !(e is HumanEnemy h0 && EnemyAI.IsOut(h0)); round++) {
-          if (p.EquippedWeapon.IsJammed) p.ClearWeaponJam();
-          for (int k = 0; k < 3 && e.IsAlive(); k++) {
-            if (!p.EquippedWeapon.IsLoaded) p.ReloadWeapon();
-            else if (CombatantUtil.Distance(p, e) > p.EquippedWeapon.RangeTiles) p.Move(Math.Sign(e.X - p.X), 0);
-            else p.Attack(e, null);
-          }
-          TurnLoop.CheckCombatEnd();
-          if (GameState.Current.CurrentTurn == Turn.Player) TurnLoop.PlayerEndTurn();
-        }
-        if (!p.IsAlive()) d++; else { w++; hpLeft += p.Hp; }
-      }
-      Console.WriteLine($"duel vs {foe}: 100 fights, player won/outlasted {w}, died {d}, avg hp left {(w > 0 ? hpLeft / w : 0)}/{Player.Current.MaxHp}");
-    }
-    GameLog.Target = null;
-  }
-
   // Batch 72: Hunker Down, Overwatch on movement, the Raider shakedown, and the action bar's entries
   static Player Arena(out int px, out int py) {
     GameBootstrap.StartNewGame();
@@ -3377,6 +3304,19 @@ static class Program {
   // gun fights through Rt.PlayerTick / Rt.WorldTick / RtAi / Ballistics at 30 frames a second on a fake clock, seeded, many trials.
   // It prints win rate, time to kill and HP lost, and checks them against wide bands: it is a tripwire for a gun/armor/AI change that
   // breaks the feel (a rookie that can't hurt you, a lone mutant that melts), not a tuning target. Yan's playtests decide the feel.
+
+  // a short real-time bot burst at one target (3 game seconds at 30 fps): the soak's fights run through the real-time code too
+  static void RtBurst(Player p, Mutant t, int frames) {
+    bool was = Rt.On; Rt.On = true; Rt.SetOffset(p, 0f, 0f); Rt.SetOffset(t, 0f, 0f); float tm = UnityEngine.Time.time; if (tm < 30000f) { UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; }
+    for (int fr = 0; fr < frames && t.IsAlive() && p.IsAlive() && !Body.Down(p); fr++) {
+      const float dt = 1f / 30f; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+      var w = p.EquippedWeapon; var (tx, ty) = Ballistics.Pos(t); bool melee = w != null && CombatRules.IsMelee(w);
+      bool dry = !melee && w != null && w.CurrentMagazine <= 0; if (dry) w.ReserveAmmo["Standard"] = 999;
+      Rt.PlayerTick(p, new Rt.Input { Aim = true, Fire = !dry, FireDown = !dry && fr % 2 == 0, Reload = dry, Mouse = (tx, ty + 0.44f - 0.5f * Ballistics.BodyTiles) });
+      Rt.WorldTick(p); Rt.Glide(dt);
+    }
+    Rt.On = was;
+  }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
   static float AimShare(Player p, Mutant tgt) {
@@ -4450,19 +4390,17 @@ static class Program {
         var e1 = new HumanEnemy("R1", p.X + 5, p.Y, "Raiders", "Rookie", w1, a1) { IsAggroed = true };
         var e2 = new HumanEnemy("R2", p.X + 5, p.Y + 1, "Raiders", "Rookie", w1, a1) { IsAggroed = true };
         EncounterState.Enemies.AddRange(new Mutant[] { e1, e2 });
-        p.StartTurn();
-        for (int round = 0; round < 15 && p.IsAlive() && EncounterState.Enemies.Any(e => e.IsAlive()); round++) {
-          if (p.EquippedWeapon.IsJammed) p.ClearWeaponJam();
-          for (int k = 0; k < 4; k++) {
-            var t = EncounterState.Enemies.Where(e => e.IsAlive()).OrderBy(e => CombatantUtil.Distance(p, e)).FirstOrDefault();
-            if (t == null) break;
-            if (!p.EquippedWeapon.IsLoaded && !CombatRules.IsMelee(p.EquippedWeapon)) p.ReloadWeapon();
-            else if (CombatantUtil.Distance(p, t) > p.EquippedWeapon.RangeTiles) p.Move(Math.Sign(t.X - p.X), 0);
-            else p.Attack(t, null);
-          }
-          TurnLoop.CheckCombatEnd();
-          if (GameState.Current.CurrentTurn == Turn.Player) TurnLoop.PlayerEndTurn();
+        // real time (2026-11-17): the same smoke test through Rt.PlayerTick / Rt.WorldTick, 20 game seconds at 30 fps with a bot that aims, fires, reloads and walks into melee range
+        Rt.On = true; Rt.Reset(); Rt.SetOffset(p, 0f, 0f); foreach (var en in EncounterState.Enemies) Rt.SetOffset(en, 0f, 0f);
+        UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; UnityEngine.Time.timeScale = 1f; EncounterState.InCombat = true; Contact.Spot(p);
+        for (int fr = 0; fr < 600 && p.IsAlive() && !Body.Down(p) && EncounterState.Enemies.Any(e => e.IsAlive()); fr++) {
+          const float dt = 1f / 30f; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+          var t = EncounterState.Enemies.Where(e => e.IsAlive()).OrderBy(e => CombatantUtil.Distance(p, e)).First(); var (tx, ty) = Ballistics.Pos(t); var w = p.EquippedWeapon; bool melee = CombatRules.IsMelee(w);
+          bool dry = !melee && w != null && w.CurrentMagazine <= 0; if (dry) w.ReserveAmmo["Standard"] = 999;
+          Rt.PlayerTick(p, new Rt.Input { X = melee && CombatantUtil.Distance(p, t) > 1 ? Math.Sign(t.X - p.X) : 0f, Aim = true, Fire = !dry, FireDown = !dry && fr % 2 == 0, Reload = dry, Mouse = (tx, ty + 0.44f - 0.5f * Ballistics.BodyTiles) });
+          Rt.WorldTick(p); Rt.Glide(dt);
         }
+        Rt.On = false; EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
       } catch (Exception ex) { Check(false, $"perk {perk} fight threw: {ex}"); }
     }
     GameLog.Target = null;
@@ -5085,15 +5023,11 @@ static class Program {
           if (t == null) break;
           fights++;
           t.IsAggroed = true; EncounterState.InCombat = true;
-          for (int k = 0; k < 3 && t.IsAlive(); k++) {
-            if (p.EquippedWeapon.IsJammed) p.ClearWeaponJam();
-            else if (!p.EquippedWeapon.IsLoaded) p.ReloadWeapon();
-            else if (CombatantUtil.Distance(p, t) > p.EquippedWeapon.RangeTiles) { p.X = t.X - 2 < 0 ? t.X + 2 : t.X - 2; p.Y = t.Y; }
-            else p.Attack(t, null);
-          }
+          if (CombatantUtil.Distance(p, t) > Math.Max(2, p.EquippedWeapon.RangeTiles)) { p.X = t.X - 2 < 0 ? t.X + 2 : t.X - 2; p.Y = t.Y; }
+          RtBurst(p, t, 90);
           if (!t.IsAlive()) kills++;
           TurnLoop.CheckCombatEnd();
-          if (GameState.Current.CurrentTurn == Turn.Player) { p.HealPermanent(100); TurnLoop.PlayerEndTurn(); }
+          p.HealPermanent(100);
           if (GameState.Current.CurrentTurn == Turn.CombatOver) break;
         }
         if (GameState.Current.CurrentTurn == Turn.CombatOver) continue;
