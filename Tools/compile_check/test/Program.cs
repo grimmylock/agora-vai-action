@@ -3084,7 +3084,10 @@ static class Program {
       Run(22f);
       Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
       Check(Sfx.MusicName == Tier2Story.ChaseTrack, $"taken: the chase song plays once the scream and the point are over ({Sfx.MusicName})");
-      Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 0 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers are torn apart, then the horde comes for you");
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 5 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers hold the corridor (nothing has reached them yet) and the whole horde is loose");
+      { var sold = EncounterState.Enemies.OfType<HumanEnemy>().First(h => h.IsAlive()); var mm = EncounterState.Enemies.OfType<Mutant>().First(m => !(m is HumanEnemy) && m.IsAlive() && m.Db?.Name == "Swarm");
+        mm.X = sold.X + 1; mm.Y = sold.Y; Run(40f);
+        Check(!sold.IsAlive() || sold.Hp < sold.MaxHp, $"taken: what reaches a soldier mauls him for real (hp {sold.Hp}/{sold.MaxHp})"); }
       var lad2 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = lad2.X; p.Y = lad2.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.5f);
       Check(Story.IsDone("taken") && TerrainMap.ZoneId == "scrapyard" && p.Inventory.Items.Any(i => i.Key == "RangerP8") && p.EquippedWeapon?.Db?.Name == "PSh-18 Pchela" && !MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:")) && Story.JournalEntries.Any(j => j.Contains("Loading Dock")),
@@ -3481,8 +3484,8 @@ static class Program {
       EncounterState.Enemies.Clear(); }
     // "make the entire screen seeable as long as im looking at it": the look cone reaches far where you point, not behind you
     { Vision.Reset(); Vision.Update(p, 4242, 8f, 0f, 0f, 24f);
-      Check(Vision.Light(px + 20, py) > 0.35f && Vision.Light(px - 20, py) < 0.35f && Vision.Light(px - 6, py) > 0.35f && Vision.LookReach == 24f,
-        $"real time: you see 20 tiles where you look ({Vision.Light(px + 20, py):0.00}), not behind ({Vision.Light(px - 20, py):0.00}), 6 all round");
+      Check(Vision.Light(px + 28, py) > 0.35f && Vision.Light(px - 20, py) > 0.35f && Vision.Light(px - 27, py) < 0.35f && Vision.Light(px - 6, py) > 0.35f && Vision.LookReach == Vision.MaxRadius,
+        $"real time (Yan 2026-11-17): the all-round radius is tripled (8 -> 24: 20 behind is seen {Vision.Light(px - 20, py):0.00}, 27 is not {Vision.Light(px - 27, py):0.00}) and the look cone reaches the whole range (28 ahead {Vision.Light(px + 28, py):0.00})");
       Vision.Reset(); }
     // ... and "damage rolls are still happening": in real time a mutant's strike and an NPC's blade land on reach, no 2d10
     { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);

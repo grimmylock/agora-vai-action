@@ -313,16 +313,15 @@ namespace GameCore
             if (TerrainMap.ZoneId != Maze) { Out(); return; }
             Sfx.Ambient("amb_alarm");                                                        // the siren keeps wailing (nothing else sets the ambient meanwhile)
             var bwl = Mark("Broken Wall");
+            // Yan: "the camera did not zoom at the gaunt and i didn't see it": from its first step to the end of its scream and point it stands in the dark, so it is lit for the scene (Vision.Spotlight) and the
+            // cinematic camera (letterbox, zoom, as the eel's introduction) is locked on it; then the camera eases back to you.
+            if (_gaunt != null && _gaunt.IsAlive() && t >= 2.5f && (_screamAt < 0f || now - _screamAt < Gaunt.CallTotal + 0.4f))
+            { Vision.Spotlight = _gaunt; Story.CamLock = (_gaunt.X + 0.5f, _gaunt.Y + 0.5f); Story.CamHalf = 7f; Story.CamRate = 3f; Story.Letterbox = true; Story.CutsceneUntil = Time.time + 0.4f; Story.LookAt = (_gaunt.X, _gaunt.Y); }
+            else if (Vision.Spotlight != null && Vision.Spotlight == _gaunt) { Vision.Spotlight = null; Story.CineEnd(); }
             foreach (var e in Escorts) if (e.IsAlive()) e.IsAggroed = false;
             if (_gaunt != null && _gaunt.IsAlive() && _screamAt < 0f && t >= 2.5f)
             {
-                if (!_gauntWalking) { _gauntWalking = true; Say("Something tall is walking out of the dark."); Story.Cutscene(_gaunt.X, _gaunt.Y, 7f); }
-                if (now >= _gauntStep)
-                {
-                    _gauntStep = now + 0.45f; _gaunt.Mp = System.Math.Max(_gaunt.Mp, TurnLoop.WalkMp);
-                    if (bwl != null && (System.Math.Abs(_gaunt.X - (bwl.X + 2)) > 1 || System.Math.Abs(_gaunt.Y - bwl.Y) > 1)) _gaunt.MoveToward(bwl.X + 2, bwl.Y);
-                }
-                Story.LookAt = (_gaunt.X, _gaunt.Y);
+                if (!_gauntWalking) { _gauntWalking = true; Say("Something tall is walking out of the dark."); }
                 bool arrived = bwl != null && System.Math.Abs(_gaunt.X - (bwl.X + 2)) <= 1 && System.Math.Abs(_gaunt.Y - bwl.Y) <= 2;
                 if (arrived || t >= 9f)
                 {
@@ -334,19 +333,33 @@ namespace GameCore
             float ts = _screamAt < 0f ? -1f : now - _screamAt;
             if (ts < 0f) { GameOver(now); return; }                                         // the soldiers stand and stare at it until the scream is over
             if (!_chaseMusic && ts >= Gaunt.CallTotal) { _chaseMusic = true; Sfx.Music(ChaseTrack, 1.5f); }   // the scream and the point are over: the horde is let go and the chase song starts (it ends at the ladder, or when you go down)
-            // the soldiers charge down the corridor toward the noise and die one after another
-            var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
-            if (ts >= 2.6f) FollowPlayers(now, east, 0f, charge: true);
-            while (_stage < DeathTimes.Length && ts >= DeathTimes[_stage])
-            {
-                var h = Escorts.FirstOrDefault(e => e.IsAlive());
-                if (h != null) { Hear("shot_rifle", 0.9f); Hear(_stage % 2 == 0 ? "claw" : "hit_flesh"); Say(_stage % 2 == 0 ? "A soldier screams. Then a lot of them do." : "Automatic fire, a short burst, and a wet sound over it."); h.Hp = 0; }
-                _stage++;
-            }
+            // Yan (2026-11-17): "the soldiers didn't shoot the mutants or hold their ground, they just kinda died without being touched": they hold the corridor and fight for real (real bullets at the nearest
+            // mutant they can see; whatever reaches them is pinned on them and mauls them), so the horde has to chew through five rifles before it gets to you.
+            SoldiersFight(now, ts);
             foreach (var w in Waves) if (ts >= w.at && w.who.Any(m => m.IsAlive() && !m.IsAggroed)) { foreach (var m in w.who.Where(m => m.IsAlive())) m.IsAggroed = true; if (w.at <= 2.7f) Say("Everything that was feeding turns its head toward the corridor and comes."); else if (w.at <= 4.2f) Say("More. Dozens more, coming up out of the dark tunnel."); }
             if (_gaunt != null && _gaunt.IsAlive() && ts >= 4f) _gaunt.IsAggroed = true;      // it joins the hunt: from here the game's Gaunt (its call, its drive) takes over
             if (GameOver(now)) return;
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
+        }
+
+        static readonly Dictionary<HumanEnemy, float> NextFire = new Dictionary<HumanEnemy, float>(), NextMaul = new Dictionary<HumanEnemy, float>();
+        static void SoldiersFight(float now, float ts)
+        {
+            var grid = GameServices.Grid; if (grid == null) return;
+            var foes = EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive() && m.IsAggroed).ToList();
+            foreach (var h in Escorts.Where(e => e.IsAlive()))
+            {
+                var foe = foes.Where(m => CombatantUtil.Distance(h, m) <= 18 && grid.CheckLineOfSight(h.X, h.Y, m.X, m.Y)).OrderBy(m => CombatantUtil.Distance(h, m)).FirstOrDefault();
+                if (foe == null) continue;
+                h.FaceToward(foe.X, foe.Y);
+                var w = h.EquippedWeapon;
+                if (w != null && !CombatRules.IsMelee(w) && now >= (NextFire.TryGetValue(h, out var nf) ? nf : 0f)) { w.CurrentMagazine = System.Math.Max(w.CurrentMagazine, 2); NextFire[h] = now + Random.Range(0.14f, 0.3f); Gunplay.NpcShootOnce(h, w, foe, 0.6f); }
+                foreach (var m in foes.Where(m => CombatantUtil.IsAdjacent(m, h)))                       // what reaches a soldier is stuck on him
+                {
+                    RtAi.Pin(m, 0.5f);
+                    if (now >= (NextMaul.TryGetValue(h, out var nm) ? nm : 0f)) { NextMaul[h] = now + 0.45f; Hear(Random.value < 0.5f ? "claw" : "hit_flesh", 0.8f); h.Hp -= System.Math.Max(40, m.Db?.AttackDamage ?? 60); if (h.Hp <= 0) { h.Hp = 0; Hear("shot_rifle", 0.5f); Say("A soldier goes down under them, still firing."); } }
+                }
+            }
         }
 
         static void GauntScream(Mutant g) { Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 1f); }
@@ -384,7 +397,7 @@ namespace GameCore
 
         static void LoseAndReload()
         {
-            Sfx.StopMusic(0.8f); _chaseMusic = false;
+            Sfx.StopMusic(0.8f); _chaseMusic = false; Vision.Spotlight = null; Story.CineEnd();
             foreach (var p in Everyone) { Rt.Knockdown(p, 5f); }
             Story.Fade(Color.black, 1f, 1.0f);
             _gameOverAt = Time.time + 1.6f;
@@ -402,7 +415,7 @@ namespace GameCore
         static void Out()
         {
             Story.Fade(Color.black, 1f, 0.6f);
-            Sfx.StopMusic(2.5f); _chaseMusic = false;
+            Sfx.StopMusic(2.5f); _chaseMusic = false; Vision.Spotlight = null; Story.CineEnd();
             Escorts.Clear(); Waves.Clear(); NextStep.Clear();
             EncounterState.Enemies.Clear();
             ZoneTravel.EnterZone("industrial_basin", Maze);

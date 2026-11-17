@@ -87,6 +87,9 @@ namespace GameCore
         }
 
         /// <summary>Holds its fire for `seconds` (caught off guard: the shakedown's "shoot first").</summary>
+        /// <summary>A mutant busy with something else (the story's soldiers): it neither walks nor bites for `seconds`.</summary>
+        public static void Pin(Mutant m, float seconds) { var s = Of(m); float t = Time.time + seconds; s.NextStep = System.Math.Max(s.NextStep, t); s.NextShot = System.Math.Max(s.NextShot, t); }
+
         public static void Hold(Mutant m, float seconds) { var s = Of(m); s.NextShot = System.Math.Max(s.NextShot, Time.time + seconds); s.BurstLeft = 0; }
 
         public static bool Pinned(Mutant m) => Minds.TryGetValue(m, out var s) && Time.time < s.PinnedUntil;

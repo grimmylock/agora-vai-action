@@ -19,6 +19,9 @@ namespace GameCore
         // edge in daylight (30), less in rain, fog and dusk, nothing extra at night (the flashlight does that). All round you
         // the old radius stays. LookReach is also how far an enemy may shoot you from (RtAi: a fair shot).
         public const float LookHalfAngle = 0.87f;
+        public const float RadiusMul = 3f;
+        /// <summary>A unit the story wants seen whatever the light (the Gaunt stepping out of the dark in "Taken").</summary>
+        public static Mutant Spotlight;
         private static float _look;
         public static float LookReach => _look > 0f ? System.Math.Max(_look, _radius) : MaxRadius;
         const int LeanReach = 12;                           // leaning a step shows round corners this far (the cost was 4x the cone)
@@ -39,6 +42,9 @@ namespace GameCore
         public static void Update(Player p, int worldStamp, float radius, float cone, float aim, float look = 0f)
         {
             if (p == null) return;
+            // Yan, 2026-11-17: "anything inside a radius triple of what it is now around the player is visible, and anything in the player's direction of vision fov is visible regardless of distance,
+            // right now they just pop in and out" - the all-round radius is tripled (underground 2.5 -> 7.5), and the look cone, when there is one, reaches the whole line-of-sight range (MaxRadius).
+            radius = System.Math.Min(radius * RadiusMul, MaxRadius); if (look > 0f) look = MaxRadius;
             bool moved = _los == null || p.X != _px || p.Y != _py || worldStamp != _stamp || !ReferenceEquals(_tiles, TerrainMap.Tiles);
             bool lit = System.Math.Abs(radius - _radius) > 0.25f || System.Math.Abs(cone - _cone) > 0.25f
                        || System.Math.Abs(System.Math.Min(look, MaxRadius) - _look) > 0.25f
@@ -90,7 +96,7 @@ namespace GameCore
             return v;
         }
 
-        public static void Reset() { _los = null; _show = null; _px = int.MinValue; _radius = MaxRadius; _cone = 0f; _look = 0f; Version++; }
+        public static void Reset() { Spotlight = null; _los = null; _show = null; _px = int.MinValue; _radius = MaxRadius; _cone = 0f; _look = 0f; Version++; }
 
         /// <summary>0..1 how lit a cell is from the player's own light (1 inside the radius, the cone
         /// fading toward its edges and its reach). Line of sight not included.</summary>
@@ -121,7 +127,7 @@ namespace GameCore
         }
 
         /// <summary>Living enemies are only shown, described and targetable while seen; bodies stay put.</summary>
-        public static bool Shows(ICombatant u) => u == null || !u.IsAlive() || Sees(u.X, u.Y) && !(u is Mutant m && m.HiddenByCloak());   // Batch 49: cloak hides
+        public static bool Shows(ICombatant u) => u == null || (u == Spotlight && u.IsAlive()) || !u.IsAlive() || Sees(u.X, u.Y) && !(u is Mutant m && m.HiddenByCloak());   // Batch 49: cloak hides
 
         /// <summary>Drawn as in sight (ignoring light): line of sight from the player's cell or one step from it.
         /// The overlay keeps lit-but-blocked cells dark; roofs come off rooms seen into.</summary>
