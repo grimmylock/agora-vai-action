@@ -18,7 +18,7 @@ namespace GameCore
             if (unit is Player camper && Death.TryCamp(camper)) return;                  // E at a bonfire: make camp   // the testing ground's crate and terminal
             if (GameState.Current.CurrentTurn != Turn.Player)
             {
-                GameLog.Write("Cannot interact outside your turn.");
+                GameLog.Write("You can't interact right now.");
                 return;
             }
             if (unit is Player storyPlayer && StorySystem.TryInteract(storyPlayer)) return;

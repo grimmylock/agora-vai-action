@@ -1,7 +1,7 @@
 // Batch 30: the in-game HUD from the approved mockup (outputs/ui_hud_mock.png), replacing the
-// debug text panels: zone card (top-left), turn banner + hovered-enemy card (top-centre), player
-// card with HP / AC / status chips / AP+MP pips / food-water-rest (bottom-left), weapon card with
-// magazine, ammo, belt and artifacts (bottom-right), end-turn button, key strip. The combat log
+// debug text panels: zone card (top-left), state banner + hovered-enemy card (top-centre), player
+// card with HP / body parts / status chips / food-water-rest (bottom-left), weapon card with
+// magazine, ammo, belt and artifacts (bottom-right), key strip. The combat log
 // stays RuntimeGameLog's, restyled. The old status / equipment / inventory / controls panels are
 // hidden: I toggles the inventory (gear), F1 the controls list. 1-4 use the first four
 // consumables shown on the belt. Pixel fonts: Resources/Fonts (Silkscreen + Pixelify Sans, OFL).

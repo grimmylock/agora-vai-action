@@ -45,10 +45,10 @@ namespace GameData
             ["weightlessPearl"] = new ArtifactDef { Name = "Weightless Pearl", Type = "Gravitational", Tier = 5, AnomPenalty = -0.25f, CarryWeightBonus = 30, WeightKg = 0.5f, Description = "+30kg Carry Weight" },
 
             // Chemical (Auto-Regeneration)
-            ["pulsePebble"] = new ArtifactDef { Name = "Pulse Pebble", Type = "Chemical", Tier = 1, AnomPenalty = -0.05f, HpRegen = 10, WeightKg = 0.5f, Description = "+10 HP Auto-Regeneration per turn" },
-            ["fieryRouge"] = new ArtifactDef { Name = "Fiery Rouge", Type = "Chemical", Tier = 2, AnomPenalty = -0.10f, HpRegen = 20, WeightKg = 0.5f, Description = "+20 HP Auto-Regeneration per turn" },
-            ["heartspark"] = new ArtifactDef { Name = "Heartspark", Type = "Chemical", Tier = 3, AnomPenalty = -0.15f, HpRegen = 30, WeightKg = 0.5f, Description = "+30 HP Auto-Regeneration per turn" },
-            ["lanternSeed"] = new ArtifactDef { Name = "Lantern Seed", Type = "Chemical", Tier = 5, AnomPenalty = -0.25f, HpRegen = 50, WeightKg = 0.5f, Description = "+50 HP Auto-Regeneration per turn" },
+            ["pulsePebble"] = new ArtifactDef { Name = "Pulse Pebble", Type = "Chemical", Tier = 1, AnomPenalty = -0.05f, HpRegen = 10, WeightKg = 0.5f, Description = "+10 HP Auto-Regeneration every 6 seconds" },
+            ["fieryRouge"] = new ArtifactDef { Name = "Fiery Rouge", Type = "Chemical", Tier = 2, AnomPenalty = -0.10f, HpRegen = 20, WeightKg = 0.5f, Description = "+20 HP Auto-Regeneration every 6 seconds" },
+            ["heartspark"] = new ArtifactDef { Name = "Heartspark", Type = "Chemical", Tier = 3, AnomPenalty = -0.15f, HpRegen = 30, WeightKg = 0.5f, Description = "+30 HP Auto-Regeneration every 6 seconds" },
+            ["lanternSeed"] = new ArtifactDef { Name = "Lantern Seed", Type = "Chemical", Tier = 5, AnomPenalty = -0.25f, HpRegen = 50, WeightKg = 0.5f, Description = "+50 HP Auto-Regeneration every 6 seconds" },
 
             // Thermal (Bleeding Control)
             ["clot"] = new ArtifactDef { Name = "Clot", Type = "Thermal", Tier = 1, AnomPenalty = -0.05f, BleedNegate = false, WeightKg = 0.5f, Description = "Mitigates minor bleed effects" },

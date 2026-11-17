@@ -1,12 +1,11 @@
-// Enemy turns, on file 04's rules. TurnLoop handles vision/aggro; once an enemy is fighting,
-// TakeTurn runs its whole turn here.
+// How enemies think, on file 04's rules (real time: RtAi walks and shoots every frame; this decides what they want, about every 3 s).
+// TurnLoop handles vision/aggro; once an enemy is fighting, TakeTurn runs one "think" here.
 //
 // Humans: morale (Steady > Shaken > Broken: flee or surrender), a Combat Role picked from their
 // weapon (Anchor: assault/heavy/sniper; Rusher: shotgun/SMG; Flanker: sidearm/melee) and one
-// Leader per squad (highest rank). Each turn they score the tiles they can reach - cover against
-// the player, line of sight, range, flanking - walk to the best one, then shoot. Anchors favour
-// bursts and aim with spare AP, Leaders command and rally, Professional+ carry a frag and throw it
-// at a player who sits on the same cover for two rounds.
+// Leader per squad (highest rank). Each think they score the tiles they can reach - cover against
+// the player, line of sight, range, flanking - and RtAi walks to the best one and shoots. Leaders
+// rally, Professional+ carry a frag and throw it at a player who sits on the same cover for two rounds.
 // Mutants: pack/swarm close in together (Pack Tactics), ambushers cloak/strike/re-cloak, ranged
 // psi mutants keep 3-5 tiles away, berserkers charge; Dread Prowler leaps, Blight Brute slams.
 using System.Collections.Generic;

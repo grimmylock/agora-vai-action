@@ -106,7 +106,7 @@ namespace GameCore
 
             GameLog.Write("GameBootstrap: Core services initialized.");
             GameLog.Write("Explore freely: click a tile to move, click an enemy to fire. Green markers are exits to connected zones - walk onto one to cross over.");
-            GameLog.Write("E interacts with a nearby object, F searches the area for hidden routes, R reloads, B opens the shop in a Safe Zone, Space ends your turn.");
+            GameLog.Write("E interacts with a nearby object, F searches the area for hidden routes, R reloads, B opens the shop in a Safe Zone.");
             GameLog.Write("F5 saves your game, F9 loads your last save.");
         }
 

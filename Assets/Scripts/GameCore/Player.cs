@@ -438,7 +438,7 @@ namespace GameCore
         {
             if (GameState.Current.CurrentTurn != Turn.Player)
             {
-                GameLog.Write("Wait until your turn to move.");
+                GameLog.Write("You can't move right now.");
                 return;
             }
 
@@ -578,7 +578,7 @@ namespace GameCore
         {
             if (GameState.Current.CurrentTurn != Turn.Player)
             {
-                GameLog.Write("Cannot reload outside your turn.");
+                GameLog.Write("You can't reload right now.");
                 return;
             }
 
