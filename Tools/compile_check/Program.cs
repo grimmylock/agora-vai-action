@@ -401,8 +401,6 @@ static class Program {
         p.StartTurn();
         for (int round = 0; round < 15 && p.IsAlive() && EncounterState.Enemies.Any(e => e.IsAlive()); round++) {
           if (p.EquippedWeapon.IsJammed) p.ClearWeaponJam();
-          if (perk == "RunAndGun") p.RunAndGun();
-          if (perk == "SuppressiveFire") { p.EquipWeapon("assault", "VKS74U"); p.EquippedWeapon.Reload(); p.ArmSuppressiveFire(); p.SuppressAt(e1.X, e1.Y); }
           for (int k = 0; k < 4; k++) {
             var t = EncounterState.Enemies.Where(e => e.IsAlive()).OrderBy(e => CombatantUtil.Distance(p, e)).FirstOrDefault();
             if (t == null) break;

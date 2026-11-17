@@ -157,48 +157,13 @@ namespace GameCore
             GainXp(QuestXp, "job done");
         }
 
-        /// <summary>Run and Gun (H): once per turn, 1 AP for +2 MP.</summary>
-        public void RunAndGun()
-        {
-            if (!CombatantUtil.HasPerk(this, "RunAndGun")) { GameLog.Write("You need the Run and Gun perk."); return; }
-            if (RunAndGunUsed || Ap < 1) { GameLog.Write(RunAndGunUsed ? "Already used Run and Gun this turn." : "Not enough AP."); return; }
-            RunAndGunUsed = true; Ap -= 1; Mp += 2;
-            GameLog.Write("Run and Gun: 1 AP for +2 MP.");
-        }
 
         /// <summary>Suppressive Fire (S, then click): 3 AP with any automatic gun (Batch 127; was the perk's and rifles' only);
         /// every enemy within 2 tiles of the tile (4 with the Suppressive Fire perk) is Suppressed and must pass Agility DC 13
         /// or lose 2 AP next turn.</summary>
         public static int SuppressRadius(Player p) => CombatantUtil.HasPerk(p, "SuppressiveFire") ? 4 : 2;
 
-        public void ArmSuppressiveFire()
-        {
-            if (!CombatRules.CanBurst(EquippedWeapon)) { GameLog.Write("Suppressing fire needs an automatic gun."); return; }
-            ArmedAction = ArmedAction == "suppress" ? null : "suppress";
-            GameLog.Write(ArmedAction == null ? "Suppressive Fire cancelled." : "Suppressive Fire: click a tile in range (3 AP). Right-click cancels.");
-        }
 
-        public void SuppressAt(int x, int y)
-        {
-            ArmedAction = null;
-            var w = EquippedWeapon;
-            int rounds = CombatRules.CanBurst(w) ? CombatRules.BurstRounds(w) : 3;
-            if (Ap < 3) { GameLog.Write("Suppressive Fire needs 3 AP."); return; }
-            if (w == null || w.IsJammed || w.CurrentMagazine < rounds) { GameLog.Write($"Suppressive Fire needs {rounds} rounds loaded."); return; }
-            if (System.Math.Max(System.Math.Abs(x - X), System.Math.Abs(y - Y)) > w.MaxReach || !GameServices.RequireGrid().CheckLineOfSight(X, Y, x, y))
-            { GameLog.Write("That spot is out of range or out of sight."); return; }
-            Ap -= 3; w.CurrentMagazine -= rounds;
-            EncounterState.InCombat = true;
-            GameLog.Write($"You hose the area with {rounds} rounds!");
-            foreach (var e in EncounterState.Enemies.Where(e => e.IsAlive() && System.Math.Max(System.Math.Abs(e.X - x), System.Math.Abs(e.Y - y)) <= SuppressRadius(this)))
-            {
-                e.IsAggroed = true;
-                e.StatusEffects.Suppressed = true;
-                int roll = UnityEngine.Random.Range(1, 21) + (int)e.AgilityMod;
-                if (roll < 13) { e.PendingApDrain += 2; GameLog.Write($"{e.Name} is pinned down (Suppressed, -2 AP next turn)."); }
-                else GameLog.Write($"{e.Name} is Suppressed but keeps moving.");
-            }
-        }
 
         // ---- Gunslinger (file 05): a second sidearm in the off hand ----
         public Weapon OffhandWeapon;

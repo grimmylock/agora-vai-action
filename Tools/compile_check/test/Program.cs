@@ -3926,35 +3926,7 @@ static class Program {
     var log = new ConsoleLog(); GameLog.Target = log;
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     try {
-      // Hunker Down: hard cover east of you counts double, and from the north too (no flank)
-      var p = Arena(out int px, out int py);
-      TerrainMap.SetTileType(px + 1, py, TileType.HardCover);
-      var east = new HumanEnemy("E", px + 6, py, "Raiders", "Rookie", null, null) { IsAggroed = true };
-      var north = new HumanEnemy("N", px, py - 6, "Raiders", "Rookie", null, null) { IsAggroed = true };
-      var c0 = CoverUtil.GetCover(east, p, null); var f0 = CoverUtil.GetCover(north, p, null);
-      Check(c0.AcBonus == 2 && f0.Flanked, $"plain: hard cover +2 from the east ({c0.AcBonus}), flanked from the north ({f0.Flanked})");
-      EncounterState.Enemies.AddRange(new Mutant[] { east, north }); EncounterState.InCombat = true;
-      Check(p.CanHunker(out _), "can hunker next to cover in a fight");
-      p.StatusEffects.Hunkered = true;
-      var c1 = CoverUtil.GetCover(east, p, null); var f1 = CoverUtil.GetCover(north, p, null);
-      Check(c1.AcBonus == 4 && f1.AcBonus == 4 && !f1.Flanked && f1.Hunkered, $"hunkered: +4 from every side ({c1.AcBonus}, {f1.AcBonus})");
-      p.StartTurn(); Check(!p.StatusEffects.Hunkered, "hunker ends at the start of your turn");
-      p.Ap = 3; p.HunkerDown();
-      Check(GameState.Current.CurrentTurn == Turn.Player && p.Ap == p.MaxAp, "hunkering ends your turn (and the next one starts)");
-
-      // Overwatch: the first hostile step in view draws one shot
-      p = Arena(out px, out py);
-      var (w1, a1) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
-      var r = new HumanEnemy("Walker", px + 5, py, "Raiders", "Rookie", w1, a1) { IsAggroed = true };
-      EncounterState.Enemies.Add(r); EncounterState.InCombat = true;
-      p.EquippedWeapon.CurrentMagazine = p.EquippedWeapon.MagCapacity;
-      Check(p.CanOverwatch(out var why), "can overwatch with a loaded gun: " + why);
-      int mag = p.EquippedWeapon.CurrentMagazine;
-      p.OverwatchHeld = true; GameState.Current.CurrentTurn = Turn.Mutant; r.Mp = 4;
-      GameServices.Grid.AttemptMove(r, r.X - 1, r.Y);
-      Check(p.EquippedWeapon.CurrentMagazine == mag - 1 && !p.OverwatchHeld, $"overwatch fired once on the step ({mag} -> {p.EquippedWeapon.CurrentMagazine})");
-      if (r.IsAlive()) { r.Mp = 4; GameServices.Grid.AttemptMove(r, r.X - 1, r.Y); Check(p.EquippedWeapon.CurrentMagazine == mag - 1, "only one overwatch shot"); }
-      GameState.Current.CurrentTurn = Turn.Player;
+      var p = Arena(out int px, out int py);   // (the Hunker Down and Overwatch checks went with those actions, 2026-11-17)
 
       // the shakedown: a Tier 1 Raider gang asks once; paying buys a day's truce
       _sessionShake = TestingGround.Session; TestingGround.Session = true;      // (the gang's first volley may hurt: dying alone now wakes you at the camp and stands them down, which is not what this loop is about)
@@ -4184,19 +4156,8 @@ static class Program {
       { p = Arena(out px, out py); EncounterState.InCombat = true;
         var (gw2, ga2) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
         var dummy = new HumanEnemy("Dummy", px + 5, py, "Raiders", "Rookie", gw2, ga2) { IsAggroed = true }; dummy.MaxHp = dummy.Hp = 100000;
-        TerrainMap.SetTileType(px + 4, py, TileType.HardCover);
-        EncounterState.Enemies.Add(dummy);
-        var (pre, ap0, amb0, why0) = p.PreviewShot(dummy, null);
-        var (preHead, apH, _, _) = p.PreviewShot(dummy, "Head");
-        int hits = 0, shots = 0; var w = p.EquippedWeapon; int mod = (int)p.AgilityMod + CombatRules.RankMod(p.Rank);
-        if (Environment.GetEnvironmentVariable("DBG77") == "1") { GameLog.Target = new ConsoleLog { Clicker = true }; for (int i = 0; i < 4; i++) { w.CurrentMagazine = w.MagCapacity; w.Fire(dummy, "Single", mod); } }
-        for (int i = 0; i < 3000; i++) { w.CurrentMagazine = w.MagCapacity; w.IsJammed = false; w.Condition = ItemCondition.Working; TerrainMap.SetTileType(px + 4, py, TileType.HardCover); var res = w.Fire(dummy, "Single", mod); if (res.Jammed) continue; shots++; if (res.Hit) hits++; }
-        float real = hits / (float)shots;
-        Check(why0 == null && Math.Abs(real - pre.Chance) < 0.04f && preHead.Chance < pre.Chance && apH == ap0 + 1, $"preview {pre.Chance:P0} vs fired {real:P0} (head {preHead.Chance:P0}, {apH} AP)");
         string body = Examine.Body(dummy, p), mbody = Examine.Body(new Mutant("BlindMaw", px + 2, py, MutantDatabase.Get("tier1", "BlindMaw")), p);
         Check(body.Contains(gw2?.Name ?? "Unarmed") && body.Contains("Phys-DR") && mbody.Contains("Phys-DR"), "examine shows weapon, armor and resistances");
-        var far = new HumanEnemy("Far", px + 60, py, "Raiders", "Rookie", gw2, ga2) { IsAggroed = true };
-        Check(p.PreviewShot(far, null).why != null, "out of reach is refused in the preview");
         EncounterState.InCombat = false; }
       // not in Tier 2+, not other factions
       p = Arena(out px, out py);
@@ -4303,7 +4264,7 @@ static class Program {
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
     pl.ApplyCarryEffects(); int capped = pl.MaxMp; pl.TakePerk("WalkingTank"); pl.ApplyCarryEffects();
     Check(pl.MaxMp >= capped, $"walking tank {capped}->{pl.MaxMp}");
-    Check(PerkDatabase.All.Count == 37, "perk count (35 + Tumbler, Cold Blood) " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 34, "perk count (37 less Overwatch, Suppressive Fire and Run and Gun, which were turn-based actions) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80
@@ -4326,9 +4287,6 @@ static class Program {
     Player.Current.StowOffhand(); Check(Player.Current.OffhandWeapon == null && Player.Current.Inventory.Items.Any(i => i.Key == "PSh18Pchela"), "stow off-hand");
     // Batch 57: aimed shots - L cycles the part, +1 AP, single shots only, effects on a clean hit or better
     { var ap = Player.Current; ap.StowOffhand(); ap.Ap = 4; ap.EquippedWeapon.Reload(); ap.EquippedWeapon.IsJammed = false;
-      ap.CycleAimedPart(); Check(ap.AimedPart == "Legs", "L aims for the legs");
-      ap.Attack(dummy, "Single"); Check(ap.Ap == 1, $"an aimed shot costs 1 AP more (ap {ap.Ap})");
-      for (int i = 0; i < 6; i++) ap.CycleAimedPart(); Check(ap.AimedPart == null, "L cycles back to off");
       var t = new HumanEnemy("T", 0, 0, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VK74"], ga);   // a gun to drop (a random loadout can be a knife)
       CombatRules.ApplyAimed(t, "Legs", 0.85f); Check(t.StatusEffects.Wound == null, "a graze on a limb does no wound");
       int mp = t.TurnMp(); CombatRules.ApplyAimed(t, "Legs", 1.2f); Check(t.StatusEffects.Wound == "Leg" && t.StatusEffects.Prone && t.TurnMp() == Math.Max(1, mp - 2), "a vital leg shot hobbles and drops them");
@@ -4425,8 +4383,6 @@ static class Program {
         p.StartTurn();
         for (int round = 0; round < 15 && p.IsAlive() && EncounterState.Enemies.Any(e => e.IsAlive()); round++) {
           if (p.EquippedWeapon.IsJammed) p.ClearWeaponJam();
-          if (perk == "RunAndGun") p.RunAndGun();
-          if (perk == "SuppressiveFire") { p.EquipWeapon("assault", "VKS74U"); p.EquippedWeapon.Reload(); p.ArmSuppressiveFire(); p.SuppressAt(e1.X, e1.Y); }
           for (int k = 0; k < 4; k++) {
             var t = EncounterState.Enemies.Where(e => e.IsAlive()).OrderBy(e => CombatantUtil.Distance(p, e)).FirstOrDefault();
             if (t == null) break;

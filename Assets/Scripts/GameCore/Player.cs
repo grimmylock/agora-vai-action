@@ -518,38 +518,7 @@ namespace GameCore
             if (!Rt.On) GameLog.Write($"Player moved to ({X}, {Y}), MP remaining: {Mp}.");   // (real time has no MP: Yan, 2026-11-17, "why is there an MP cost being displayed everytime i walk")
         }
 
-        /// <summary>Ported from attack(target, fireMode). Depends on GameServices.Combat via Weapon.Fire.</summary>
-        /// <summary>Batch 77: what a shot at `target` would need (the targeting panel): the hit chance, AP cost, and whether
-        /// it's an ambush (they haven't seen you: one hit tier higher). Null if you can't shoot it from here.</summary>
-        public (HitPreview hit, int ap, bool ambush, string why) PreviewShot(ICombatant target, string aimedPart)
-        {
-            var w = EquippedWeapon;
-            if (w == null) return (null, 0, false, "No weapon in your hands.");
-            string mode = CombatRules.CanBurst(w) ? FireMode : "Single";
-            bool burst = mode == "Burst";
-            bool melee = CombatRules.IsMelee(w);
-            if (burst || melee) aimedPart = null;
-            int ap = burst ? CombatRules.BurstApCost(w) : CombatRules.SingleShotAp(w);
-            if (Gunslinging && !burst) ap = 2 + System.Math.Max(CombatRules.Kick(w), CombatRules.Kick(OffhandWeapon));
-            if (aimedPart != null) ap += 1;
-            ap += IsDepleted() ? 1 : 0;
-            int dist = CombatantUtil.Distance(this, target);
-            string why = dist > w.MaxReach ? "Out of range." : !melee && !GameServices.RequireGrid().CheckLineOfSight(X, Y, target.X, target.Y) ? "No line of sight."
-                : w.IsJammed ? "Jammed: reload (R) clears it." : !melee && !w.IsLoaded ? "Empty: reload (R)." : Ap < ap ? $"Needs {ap} AP." : null;
-            int mod = (int)AgilityMod + CombatRules.RankMod(Rank) - (Gunslinging && !burst ? CombatRules.GunslingerPenalty : 0);
-            var hp = w.PreviewHit(this, target, burst, aimedPart, mod);
-            bool ambush = target is Mutant m && !m.IsAggroed;
-            return (hp, ap, ambush, why);
-        }
 
-        /// <summary>Batch 77: fire at `target` going for `part` (null = centre mass) - the targeting panel's button.</summary>
-        public void AttackPart(ICombatant target, string part)
-        {
-            string old = AimedPart;
-            AimedPart = part;
-            try { Attack(target, null); }
-            finally { AimedPart = old; }
-        }
 
         public void Attack(ICombatant target, string fireMode)
         {
@@ -734,30 +703,6 @@ namespace GameCore
             Explosions.Throw(this, def, x, y);
         }
 
-        /// <summary>T: Intimidate (2 AP) the nearest human enemy within 8 tiles in LoS (file 00):
-        /// d20 + best of Strength/Intelligence + your rank modifier vs DC 12 + their rank modifier,
-        /// advantage if their leader is down or fled. Steady > Shaken, Shaken > Broken. Legends
-        /// are immune.</summary>
-        public void Intimidate()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player || Ap < 2) { GameLog.Write("Intimidating takes 2 AP."); return; }
-            var grid = GameServices.RequireGrid();
-            var target = EncounterState.Enemies.OfType<HumanEnemy>()
-                .Where(e => EncounterState.IsActive(e) && CombatantUtil.Distance(this, e) <= 8 && grid.CheckLineOfSight(X, Y, e.X, e.Y))
-                .OrderBy(e => CombatantUtil.Distance(this, e)).FirstOrDefault();
-            if (target == null) { GameLog.Write("Nobody close enough to hear your threats."); return; }
-            Ap -= 2;
-            if (target.Rank == "Legend") { GameLog.Write($"{target.Name} laughs at you. Legends don't scare."); return; }
-            bool leaderGone = EnemyAI.LeaderLost(target);
-            var roll = DiceRoller.RollD20(leaderGone ? "advantage" : "standard");
-            int total = roll.Chosen + System.Math.Max(StrengthMod, IntelligenceMod) + CombatRules.RankMod(Rank);
-            int dc = 12 + CombatRules.RankMod(target.Rank);
-            GameLog.Write($"You bark at {target.Name}: {total} vs DC {dc}.");
-            if (total < dc) { GameLog.Write($"{target.Name} doesn't flinch."); return; }
-            if (target.Morale == "Shaken") EnemyAI.Break(target, this);
-            else EnemyAI.Shake(target, "is rattled by your threats");
-            TurnLoop.CheckCombatEnd();
-        }
 
         /// <summary>Q: switch the loaded ammo to the next type you have rounds for (Standard >
         /// Hollow Point > Dart > Armor Piercing). The rounds in the magazine go back to the stash
@@ -849,18 +794,6 @@ namespace GameCore
             return false;
         }
 
-        /// <summary>G: arm the next grenade type you carry (frag > smoke > flashbang > none).</summary>
-        public void CycleThrowable()
-        {
-            var owned = new List<string>();
-            foreach (var it in Inventory.Items)
-                if (ConsumableDatabase.All.TryGetValue(it.Id, out var d) && d.Throwable != null && !owned.Contains(it.Id)) owned.Add(it.Id);
-            if (owned.Count == 0) { ArmedThrowable = null; GameLog.Write("You have no grenades."); return; }
-            int next = ArmedThrowable == null ? 0 : owned.IndexOf(ArmedThrowable) + 1;
-            if (next >= owned.Count) { ArmedThrowable = null; GameLog.Write("Grenade put away."); return; }
-            ArmedThrowable = owned[next];
-            GameLog.Write($"{ConsumableDatabase.All[ArmedThrowable].Name} ready - click a tile within 8 to throw (G for the next type, right-click to cancel).");
-        }
 
         /// <summary>Batch 66: N - sneak. Moving costs double (MP in a fight, minutes out of one); enemies see you at half range.</summary>
         public bool Sneaking;
@@ -876,21 +809,6 @@ namespace GameCore
             GameLog.Write(Sneaking ? "You move quietly: half speed, enemies spot you at half range." : "You stop sneaking.");
         }
 
-        /// <summary>L: aimed shots (Batch 57) - cycle the body part your single shots go for, or off.</summary>
-        public void CycleAimedPart()
-        {
-            int i = System.Array.IndexOf(CombatRules.AimedParts, AimedPart);
-            AimedPart = i + 1 < CombatRules.AimedParts.Length ? CombatRules.AimedParts[i + 1] : null;
-            GameLog.Write(AimedPart == null ? "Aimed shots off." : AimedPart switch
-            {
-                "Legs" => "Aiming for the legs (-2 to hit, +1 AP): hobbles them, a vital hit knocks them down.",
-                "Arms" => "Aiming for the arms (-2 to hit, +1 AP): worse aim for them, a vital hit shoots the gun out of their hands.",
-                "Torso" => "Aiming for the body (-1 to hit, +1 AP): they bleed.",
-                "Head" => "Aiming for the head (-5 to hit, +1 AP): one hit tier higher, dazes them, and a kill shakes their squad.",
-                "Armor" => "Aiming for the armor plates (-1 to hit, +1 AP): breaks their armor down a step.",
-                _ => "Aiming for the grenade pouch (-4 to hit, +1 AP): only on someone carrying one - it goes off on them.",
-            });
-        }
 
         /// <summary>X: switch between single shots and bursts (assault rifles, SMGs, heavy weapons).</summary>
         public void ToggleFireMode()
@@ -908,86 +826,12 @@ namespace GameCore
                 : "Single fire.");
         }
 
-        /// <summary>A: Aim (1 AP) - +2 on your next attack this turn (+3 with the Halden HR36K's optic).</summary>
-        public void Aim()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player || Ap < 1) { GameLog.Write("Aiming takes 1 AP."); return; }
-            if (StatusEffects.AimBonus > 0) { GameLog.Write("Already aiming."); return; }
-            Ap -= 1;
-            StatusEffects.AimBonus = EquippedWeapon?.Db?.Name == "Halden HR36K" ? 3 : 2;
-            GameLog.Write($"You steady your aim: +{StatusEffects.AimBonus} on your next attack this turn.");
-        }
 
-        /// <summary>C: Take Cover (2 AP, only next to or on cover) - +2 AC on top of the cover's
-        /// bonus until the start of your next turn.</summary>
-        public void TakeCover()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player || Ap < 2) { GameLog.Write("Taking cover costs 2 AP."); return; }
-            bool nearCover = TerrainMap.CoverAcAt(X, Y) > 0;
-            foreach (var adj in TerrainMap.GetAdjacentCoords(X, Y)) nearCover |= TerrainMap.CoverAcAt(adj.x, adj.y) > 0;
-            if (!nearCover) { GameLog.Write("There's no cover here to get behind."); return; }
-            Ap -= 2;
-            StatusEffects.TakeCoverAc = 2;
-            StatusEffects.EvasiveMelee = false;
-            GameLog.Write("You hunker down behind cover: +2 AC on top of the cover until your next turn.");
-        }
 
-        /// <summary>V: Evasive Maneuvers (2 AP) - +2 AC against melee until your next turn.</summary>
-        public void EvasiveManeuvers()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player || Ap < 2) { GameLog.Write("Evasive maneuvers cost 2 AP."); return; }
-            Ap -= 2;
-            StatusEffects.TakeCoverAc = 2;
-            StatusEffects.EvasiveMelee = true;
-            GameLog.Write("You keep moving: +2 AC against melee until your next turn.");
-        }
 
-        /// <summary>Batch 72 (Yan chose "Hunker + Overwatch"): K - Hunker Down. Spends the rest of your AP (at least 1)
-        /// and ends your turn: until your next turn the cover on or next to you counts from every side and its AC
-        /// bonus doubles (light +2, hard +4). See CoverUtil.Hunker.</summary>
-        public bool CanHunker(out string why)
-        {
-            why = null;
-            if (!EncounterState.InCombat) why = "Only in a fight.";
-            else if (Ap < 1) why = "Needs at least 1 AP.";
-            else if (!NearCover()) why = "No cover here to hunker behind.";
-            return why == null;
-        }
 
-        public void HunkerDown()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player) return;
-            if (!CanHunker(out var why)) { GameLog.Write(why); return; }
-            Ap = 0;
-            StatusEffects.Hunkered = true;
-            GameLog.Write("You hunker down: your cover counts from every side and its AC doubles until your next turn.");
-            TurnLoop.PlayerEndTurn();
-        }
 
-        /// <summary>Batch 72: O - Overwatch. Needs a loaded gun and a shot's AP (3 with a sniper rifle); spends the rest of your AP and ends your turn.
-        /// The first hostile that takes a step where you can see it, in range, eats a shot (Perks.OnStep).</summary>
-        public bool CanOverwatch(out string why)
-        {
-            why = null;
-            var w = EquippedWeapon;
-            int cost = CombatRules.SingleShotAp(w) + (IsDepleted() ? 1 : 0);
-            if (!EncounterState.InCombat) why = "Only in a fight.";
-            else if (w == null || CombatRules.IsMelee(w)) why = "Overwatch needs a gun.";
-            else if (w.IsJammed) why = "Your gun is jammed.";
-            else if (!w.IsLoaded) why = "Your gun is empty.";
-            else if (Ap < cost) why = $"Needs {cost} AP.";
-            return why == null;
-        }
 
-        public void Overwatch()
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player) return;
-            if (!CanOverwatch(out var why)) { GameLog.Write(why); return; }
-            Ap = 0;
-            OverwatchHeld = true;
-            GameLog.Write("Overwatch: you watch down your sights. The first enemy that moves where you can see it gets shot.");
-            TurnLoop.PlayerEndTurn();
-        }
 
         public bool NearCover()
         {

@@ -20,12 +20,9 @@ namespace GameData
         {
             ["MarksmansFocus"] = P("Sniper", "Marksman's Focus", "+2 to attack rolls with a sniper rifle."),
             ["HighVelocityImpact"] = P("Sniper", "High-Velocity Impact", "Sniper shots at 12+ tiles ignore an extra 20% of Phys-DR."),
-            ["Overwatch"] = P("Sniper", "Overwatch", "End your turn with 3+ AP and a sniper rifle: the first enemy that moves in your sights eats a free shot."),
             ["RecoilControl"] = P("Assault", "Recoil Control", "No burst penalty with assault rifles."),
             ["ControlledTaps"] = P("Assault", "Controlled Taps", "Once per turn, an attack die of 15+ refunds 1 AP."),
-            ["SuppressiveFire"] = P("Assault", "Suppressive Fire", "Suppressing fire (S) reaches 4 tiles round the spot instead of 2."),
             ["BulletHose"] = P("SMG", "Bullet Hose", "SMG bursts have no penalty within 4 tiles."),
-            ["RunAndGun"] = P("SMG", "Run and Gun", "H: once per turn, 1 AP for +2 MP."),
             ["HitAndRun"] = P("SMG", "Hit and Run", "After your first attack each turn, +2 MP."),
             ["Entrenched"] = P("Heavy", "Entrenched", "+20% Phys-DR on turns you didn't move."),
             ["Shredder"] = P("Heavy", "Shredder", "Heavy bursts roll with advantage but use double ammo."),

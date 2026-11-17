@@ -313,9 +313,6 @@ namespace GameCore
             if (p.StatusEffects.Suppressed) st.Add(("PINNED", Yellow));
             if (p.StatusEffects.Wound != null) st.Add(("WOUND", Red));
             if (p.StatusEffects.AimBonus > 0) st.Add(("AIMING", Cyan));
-            if (p.StatusEffects.TakeCoverAc > 0) st.Add((p.StatusEffects.EvasiveMelee ? "EVASIVE" : "COVER", Cyan));
-            if (p.StatusEffects.Hunkered) st.Add(("HUNKERED", Cyan));
-            if (p.OverwatchHeld) st.Add(("OVERWATCH", Yellow));
             for (int i = 0; i < _chips.Count; i++)
             {
                 bool on = i < st.Count;
