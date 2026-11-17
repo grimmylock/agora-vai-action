@@ -249,7 +249,6 @@ namespace GameCore
         private static void HumanTurn(HumanEnemy h, Player player)
         {
             var grid = GameServices.RequireGrid();
-            h.Ap = CombatRules.NpcAp(h);   // Batch 77: 4 for every rank; bosses follow the player's rule
             h.Mp = h.TurnMp();
             h.NewTurn();   // Batch 86: per-turn perk counters
             DrainMp(h);
@@ -258,17 +257,13 @@ namespace GameCore
 
             UpdateMorale(h, player);
             if (h.Morale == "Surrendered") return;
-            if (h.Morale == "Shaken") h.Ap = System.Math.Max(0, h.Ap - 1);   // Batch 127: keeping their head down costs them a shot
             if (h.IsFleeing())
             {
-                if (Rt.On) { RtAi.Flee(h); return; }   // RT batch 4: runs off step by step
-                while (h.Mp > 0 && h.IsAlive() && h.MoveAwayFrom(player)) { }
-                return;
+                RtAi.Flee(h); return;   // RT batch 4: runs off step by step
             }
 
-            if (h.StatusEffects.Prone && h.Ap >= 1)
+            if (h.StatusEffects.Prone)
             {
-                h.Ap -= 1;
                 h.StatusEffects.Prone = false;
                 GameLog.Write($"{h.Name} gets back up.");
             }
@@ -281,9 +276,8 @@ namespace GameCore
             if (role == "Leader")
             {
                 var shaken = Squad(h).FirstOrDefault(o => o != h && !IsOut(o) && o.Morale == "Shaken" && CombatantUtil.Distance(h, o) <= 6);
-                if (shaken != null && h.Ap >= 4)
+                if (shaken != null)
                 {
-                    h.Ap -= 2;
                     shaken.Morale = "Steady";
                     GameLog.Write($"{h.Name} rallies {shaken.Name} - steady again.");
                 }
@@ -300,11 +294,10 @@ namespace GameCore
 
             // Frag: Professional+ carry one; thrown at a player who has sat on the same cover for
             // two enemy rounds (file 04), from outside the blast.
-            if (h.Frags > 0 && h.Ap >= 2 && _playerSpotRounds >= 2 && CombatantUtil.Distance(h, player) <= 8
+            if (h.Frags > 0 && _playerSpotRounds >= 2 && CombatantUtil.Distance(h, player) <= 8
                 && CombatantUtil.Distance(h, player) > Explosions.ThrowRadius + 1 && grid.CheckLineOfSight(h.X, h.Y, player.X, player.Y))
             {
                 h.Frags--;
-                h.Ap -= 2;
                 RtAi.Shout(h, "Grenade!");
                 _playerSpotRounds = 0;
                 Explosions.Throw(h, ConsumableDatabase.All["fragGrenade"], player.X, player.Y);
@@ -313,18 +306,16 @@ namespace GameCore
 
             // Extra throwable (file 04, disciplined factions): smoke to cover a Shaken retreat,
             // a flashbang at a player who's closed to within 4 tiles.
-            if (h.ExtraThrowable != null && h.Ap >= 2 && grid.CheckLineOfSight(h.X, h.Y, player.X, player.Y))
+            if (h.ExtraThrowable != null && grid.CheckLineOfSight(h.X, h.Y, player.X, player.Y))
             {
                 int dist = CombatantUtil.Distance(h, player);
                 if (h.ExtraThrowable == "smokeGrenade" && h.Morale == "Shaken")
                 {
-                    h.Ap -= 2;
                     Explosions.Throw(h, ConsumableDatabase.All["smokeGrenade"], h.X, h.Y);
                     h.ExtraThrowable = null;
                 }
                 else if (h.ExtraThrowable == "flashbang" && dist <= 4 && dist > Explosions.ThrowRadius + 1)
                 {
-                    h.Ap -= 2;
                     Explosions.Throw(h, ConsumableDatabase.All["flashbang"], player.X, player.Y);
                     h.ExtraThrowable = null;
                     if (!player.IsAlive()) return;
@@ -336,35 +327,7 @@ namespace GameCore
 
             // Move to the best tile this role can reach.
             var best = PickTile(h, player, role, range);
-            if (Rt.On) { RtAi.SetGoal(h, best, role); if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player); return; }   // RT batch 4: RtAi walks there and shoots
-            WalkTo(h, best);
-            if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player);   // Batch 103: roll a barrel up to you to shoot, or tip a desk for cover
-
-            // Shoot with what's left.
-            bool canBurst = role != "Flanker" && CombatRules.CanBurst(weapon);
-            int guard = 0;
-            while (h.Ap >= 2 && h.IsAlive() && player.IsAlive() && guard++ < 6)
-            {
-                bool inRange = weapon != null && CombatantUtil.Distance(h, player) <= range;
-                if (!inRange || !grid.CheckLineOfSight(h.X, h.Y, player.X, player.Y))
-                {
-                    if (weapon == null && CombatantUtil.IsAdjacent(h, player)) { h.Ap -= 2; h.MeleeAttack(player); continue; }
-                    break;
-                }
-                // Anchor/Leader with spare AP: aim first (1 AP), then a single aimed shot.
-                if ((role == "Anchor" || role == "Leader") && h.Ap == 3 && h.StatusEffects.AimBonus == 0)
-                {
-                    h.Ap -= 1;
-                    h.StatusEffects.AimBonus = 2;
-                    GameLog.Write($"{h.Name} takes aim.");
-                }
-                int before = h.Ap;
-                bool burst = canBurst && h.Ap >= CombatRules.BurstApCost(weapon) && weapon.CurrentMagazine >= CombatRules.BurstRounds(weapon)
-                    && (role == "Anchor" || CombatantUtil.Distance(h, player) <= 4);
-                h.Attack(player, burst ? "Burst" : "Single");
-                if (h.Ap == before) break;
-            }
-            h.StatusEffects.Suppressed = false;
+            RtAi.SetGoal(h, best, role); if (!Props.KickAtFoe(h, player)) Props.FlipForCover(h, player);   // RT batch 4: RtAi walks there and shoots
         }
 
         // ------------------------------------------------------------- tile choice
@@ -459,7 +422,6 @@ namespace GameCore
         private static void MutantTurn(Mutant m, Player player)
         {
             var grid = GameServices.RequireGrid();
-            m.Ap = m.Db?.Ap ?? 4;
             m.Mp = m.Db?.Mp ?? 4;
             if (m.StatusEffects.Wound == "Leg") m.Mp = System.Math.Max(1, m.Mp - 2);   // Batch 57: aimed leg shots
             DrainMp(m);
@@ -474,11 +436,9 @@ namespace GameCore
 
             if (m.IsFleeing())
             {
-                if (Rt.On) { RtAi.Flee(m); return; }   // RT batch 5
-                while (m.Mp > 0 && m.IsAlive() && m.MoveAwayFrom(player)) { }
-                return;
+                RtAi.Flee(m); return;   // RT batch 5
             }
-            if (m.StatusEffects.Prone) { m.StatusEffects.Prone = false; m.Ap = System.Math.Max(0, m.Ap - 1); }
+            if (m.StatusEffects.Prone) m.StatusEffects.Prone = false;
             if (!Contact.Knows(m, player)) { Search(m); if (!Contact.Sees(m, player)) return; Contact.Spot(player); }   // Batch 62
 
             int dist = CombatantUtil.Distance(m, player);
@@ -487,11 +447,10 @@ namespace GameCore
             // Dread Prowler: circles at 3-5, then Leap Attack (2 AP + all MP) from up to MP tiles.
             if (m.Db != null && m.Db.Leap && m.StatusEffects.Wound != "Leg")   // Batch 57: a hobbled Prowler can't leap
             {
-                if (dist >= 2 && dist <= m.Mp && m.Ap >= 2 && LeapAttack(m, player)) { m.StalkRounds = 0; return; }
+                if (dist >= 2 && dist <= m.Mp && LeapAttack(m, player)) { m.StalkRounds = 0; return; }
                 // Batch 61: circling only works if a leap line opens up; behind a wall or up a ledge it never does
                 if (m.StalkRounds++ < 2) Circle(m, player, 3, 5);
                 else Approach(m, player.X, player.Y, false);
-                if (!Rt.On && m.Ap >= 2 && m.IsInEngageRange(player)) { m.Ap -= 2; m.Attack(player); m.StalkRounds = 0; }
                 return;
             }
 
@@ -500,7 +459,7 @@ namespace GameCore
             if (m.Db != null && m.Db.GroundSlam)
             {
                 if (CombatantUtil.IsAdjacent(m, player)) m.ChaseTurns = 0;
-                else if (m.ChaseTurns >= BoulderAfterTurns && m.Ap >= 2 && dist <= BoulderRange && grid.CheckLineOfSight(m.X, m.Y, player.X, player.Y))
+                else if (m.ChaseTurns >= BoulderAfterTurns && dist <= BoulderRange && grid.CheckLineOfSight(m.X, m.Y, player.X, player.Y))
                 { ThrowBoulder(m, player); m.ChaseTurns = 0; return; }
                 else m.ChaseTurns++;
             }
@@ -509,7 +468,7 @@ namespace GameCore
             if (m.Db != null && m.Db.GroundSlam && !m.SlamUsed)
             {
                 Approach(m, player.X, player.Y, packMate: false);
-                if (CombatantUtil.IsAdjacent(m, player) && m.Ap >= 2) { GroundSlam(m, player); return; }
+                if (CombatantUtil.IsAdjacent(m, player)) { GroundSlam(m, player); return; }
             }
 
             switch (behavior)
@@ -529,12 +488,6 @@ namespace GameCore
                 default:
                     Approach(m, player.X, player.Y, behavior == "pack" || behavior == "swarm");
                     break;
-            }
-
-            if (!Rt.On && m.Ap >= 2 && m.IsInEngageRange(player))   // RT batch 5: RtAi strikes on its own clock
-            {
-                m.Ap -= 2;
-                m.Attack(player);
             }
 
             // ambushers slip away and re-cloak if they can get 4+ tiles from everyone
@@ -604,14 +557,11 @@ namespace GameCore
                 .OrderBy(p => CombatantUtil.Distance(m, p.x, p.y)).Cast<(int x, int y)?>().FirstOrDefault();
             if (!spot.HasValue) return false;
             GameLog.Write($"{m.Name} crouches low... and LEAPS!");
-            m.Ap -= 2;
             m.Mp = 0;
             m.X = spot.Value.x;
             m.Y = spot.Value.y;
             // Telegraph & dodge (file 04): with an AP to spare, the player throws themselves aside.
-            if (player.Ap >= 1)
             {
-                player.Ap -= 1;
                 int roll = Random.Range(1, 21) + (int)player.AgilityMod;
                 if (roll >= m.MutantCheckDC)
                 {
@@ -633,7 +583,7 @@ namespace GameCore
         /// (it arcs over cover); a hit does 25 and you start your next turn on half MP.</summary>
         public static void ThrowBoulder(Mutant m, Player player)
         {
-            m.Ap = 0; m.FaceToward(player.X, player.Y);
+            m.FaceToward(player.X, player.Y);
             int a = Random.Range(1, 11), b = Random.Range(1, 11), total = a + b + 3;
             GameLog.Write($"{m.Name} rips a boulder out of the ground and HURLS it! (2d10 {a}+{b} +3 = {total} vs AC {player.Ac})");
             Sfx.Play("hit_concrete", null, 1f, 0.06f, 0.55f);   // a deep crunch: the concrete hit pitched way down
@@ -648,7 +598,6 @@ namespace GameCore
         private static void GroundSlam(Mutant m, Player player)
         {
             m.SlamUsed = true;
-            m.Ap -= 2;
             GameLog.Write($"{m.Name} rears up and SLAMS the ground!");
             var victims = new List<ICombatant> { player };
             victims.AddRange(EncounterState.Enemies.OfType<HumanEnemy>().Where(e => e.IsAlive()));
@@ -673,7 +622,6 @@ namespace GameCore
             public string Name => "spot";
             public int X { get; set; }
             public int Y { get; set; }
-            public int Ap { get; set; }
             public float Mp { get; set; }
             public int MaxMp { get; set; }
             public float PhysDR { get; set; }
@@ -685,7 +633,6 @@ namespace GameCore
             public string Faction => "None";
             public StatusEffects StatusEffects { get; } = new StatusEffects();
             public float AgilityMod => 0;
-            public int PendingApDrain { get; set; }
             public float ArtifactAvoidanceBonus => 0;
             public bool ArtifactAutoPassAnomalies => false;
             public object ActiveDetector => null;

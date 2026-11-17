@@ -44,8 +44,8 @@ namespace GameCore
             }
         }
 
-        /// <summary>Flashbang: everyone in the blast rolls Agility DC 13 or loses 2 AP at the start
-        /// of their next turn. No damage.</summary>
+        /// <summary>Flashbang: everyone in the blast rolls Agility DC 13 or is blinded. No damage (the blinding itself has no
+        /// effect in real time yet: it used to drain action points, which real time does not have).</summary>
         public static void Flash(int cx, int cy, int radius)
         {
             var units = new List<ICombatant>();
@@ -57,8 +57,7 @@ namespace GameCore
                 int roll = Random.Range(1, 21) + (int)u.AgilityMod;
                 string who = u is Player ? "Player" : u.Name;
                 if (roll >= SaveDc) { GameLog.Write($"{who} shields their eyes from the flash (Agility {roll})."); continue; }
-                u.PendingApDrain += 2;
-                GameLog.Write($"{who} is blinded by the flash (Agility {roll} vs {SaveDc}): -2 AP next turn.");
+                GameLog.Write($"{who} is blinded by the flash (Agility {roll} vs {SaveDc}).");
             }
         }
 

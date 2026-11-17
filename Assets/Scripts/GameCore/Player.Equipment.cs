@@ -173,7 +173,6 @@ namespace GameCore
         public static bool PairOk(string a, string b) => a == null || b == null || (a != "sniper" && b != "sniper") || SmallWeapon(a) || SmallWeapon(b);
 
         /// <summary>AP to swap now: drawing a pistol or a blade is free, anything else 1 (only counts in a fight).</summary>
-        public int SwapAp => SecondaryWeapon == null || SmallWeapon(SecondaryCategory) || !EncounterState.InCombat ? 0 : 1;
 
         public void EquipSecondaryFromInventory(string itemId)
         {
@@ -229,14 +228,11 @@ namespace GameCore
         public bool SwapWeapons()
         {
             if (SecondaryWeapon == null) { GameLog.Write("No second weapon (Second in the pack)."); return false; }
-            int ap = SwapAp;
-            if (Ap < ap) { GameLog.Write($"Swapping to {SecondaryWeapon.Name} needs {ap} AP."); return false; }
-            Ap -= ap;
             (EquippedWeapon, SecondaryWeapon) = (SecondaryWeapon, EquippedWeapon);
             (EquippedWeaponCategory, SecondaryCategory) = (SecondaryCategory, EquippedWeaponCategory);
             (EquippedWeaponKey, SecondaryKey) = (SecondaryKey, EquippedWeaponKey);
             if (SecondaryWeapon == null) SecondaryCategory = SecondaryKey = null;
-            GameLog.Write($"You draw your {EquippedWeapon.Name}{(ap > 0 ? $" ({ap} AP)" : "")}.");
+            GameLog.Write($"You draw your {EquippedWeapon.Name}.");
             ApplyMpConstraintsAfterEquip();
             ApplyCarryEffects();
             return true;
@@ -378,20 +374,6 @@ namespace GameCore
             }
             if (Rt.On && !Rt.Applying) { Rt.BeginUse(this, def); return; }   // real-time fork: it takes a few seconds (Rt.UseSeconds)
             if (Body.Down(this) && !(def.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
-            int apCost = def.ApCost > 0 ? def.ApCost : 2;
-            bool inPlayerTacticalTurn = GameState.Current.Mode == GameMode.Tactical && GameState.Current.CurrentTurn == Turn.Player;
-
-            if (inPlayerTacticalTurn && Ap < apCost)
-            {
-                GameLog.Write($"Not enough AP to use {def.Name}.");
-                return;
-            }
-            if (inPlayerTacticalTurn)
-            {
-                Ap = System.Math.Max(0, Ap - apCost);
-                GameLog.Write($"{def.Name} used for {apCost} AP.");
-            }
-
             int medic = CombatantUtil.HasPerk(this, "CombatMedic") ? 10 : 0;
             if (def.HealingPermanent.HasValue && def.HealingPermanent.Value > 0)
             {

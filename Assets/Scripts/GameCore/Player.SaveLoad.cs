@@ -20,7 +20,7 @@ namespace GameCore
                 PermHP = PermHP, TempHP = TempHP, TempHPDuration = TempHPDuration,
                 Bleeding = StatusEffects.Bleeding, ToxicBleed = StatusEffects.ToxicBleed,
                 Irradiated = StatusEffects.Irradiated, Prone = StatusEffects.Prone,
-                Ap = Ap, Mp = Mp,
+                Mp = Mp,
                 StatS = Stats.S, StatA = Stats.A, StatI = Stats.I, StatP = Stats.P,
                 EquippedWeaponCategory = EquippedWeaponCategory, EquippedWeaponKey = EquippedWeaponKey,
                 EquippedWeaponCondition = EquippedWeapon?.Condition, EquippedWeaponOptic = EquippedWeapon?.Optic, EquippedWeaponUnder = EquippedWeapon?.Under,
@@ -189,7 +189,6 @@ namespace GameCore
             PermHP = System.Math.Min(MaxHp, d.PermHP);
             TempHP = System.Math.Max(0, System.Math.Min(MaxHp - PermHP, d.TempHP));
             TempHPDuration = d.TempHPDuration;
-            Ap = d.Ap;
             Mp = System.Math.Min(MaxMp, d.Mp);
             StatusEffects.Bleeding = d.Bleeding;
             StatusEffects.ToxicBleed = d.ToxicBleed;

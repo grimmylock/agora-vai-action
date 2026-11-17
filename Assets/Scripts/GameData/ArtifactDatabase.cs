@@ -28,12 +28,10 @@ namespace GameData
         // Legendaries
         public bool ImmuneBleed;
         public bool PassAllAnomalies;
-        public int? ApBonus;
         public float? PhysDRBonus;
         public float? AnomDRBonus;
         public int? MaxHpPenalty;
         public float? BypassPhysDR;
-        public bool KillRefundAp;
     }
 
     public static class ArtifactDatabase
@@ -65,8 +63,8 @@ namespace GameData
             // Tier 6 Legendaries
             ["heartOfTheWound"] = new ArtifactDef { Name = "Heart of the Wound", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, HpRegen = 100, ImmuneBleed = true, WeightKg = 0.8f, Description = "Heals 100 HP/turn, immune to bleed" },
             ["theLodestone"] = new ArtifactDef { Name = "The Lodestone", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, PassAllAnomalies = true, WeightKg = 0.8f, Description = "Pass all Anomaly Avoidance checks automatically" },
-            ["lucifer"] = new ArtifactDef { Name = "Lucifer", Type = "Legendary", Tier = 6, AnomPenalty = -0.40f, ApBonus = 1, PhysDRBonus = 0.10f, AnomDRBonus = 0.10f, MaxHpPenalty = 250, WeightKg = 0.8f, Description = "+1 AP, +10% Phys/Anom-DR, Max HP -25" },
-            ["theBlackStar"] = new ArtifactDef { Name = "The Black Star (Awakened)", Type = "Legendary", Tier = 6, AnomPenalty = -0.35f, BypassPhysDR = 0.30f, KillRefundAp = true, CarryWeightBonus = -10, WeightKg = 0.8f, Description = "Bypasses 30% Phys-DR, kills refund 1 AP, Carry -10kg" },
+            ["lucifer"] = new ArtifactDef { Name = "Lucifer", Type = "Legendary", Tier = 6, AnomPenalty = -0.40f, PhysDRBonus = 0.10f, AnomDRBonus = 0.10f, MaxHpPenalty = 250, WeightKg = 0.8f, Description = "+10% Phys/Anom-DR, Max HP -25" },
+            ["theBlackStar"] = new ArtifactDef { Name = "The Black Star (Awakened)", Type = "Legendary", Tier = 6, AnomPenalty = -0.35f, BypassPhysDR = 0.30f, CarryWeightBonus = -10, WeightKg = 0.8f, Description = "Bypasses 30% Phys-DR, Carry -10kg" },
         };
     }
 }

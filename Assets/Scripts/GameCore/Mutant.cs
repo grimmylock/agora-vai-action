@@ -26,7 +26,6 @@ namespace GameCore
         public bool Unkillable;
         public float PhysDR { get; set; }
         public float AnomDR { get; set; }
-        public int Ap { get; set; }
         public float Mp { get; set; }
         public int MaxMp { get; set; } // not set by the original Mutant ctor (defaults to 0); HumanEnemy sets it via armor
         public int Ac { get; set; }
@@ -103,7 +102,6 @@ namespace GameCore
 
         // Added for the anomaly system generalization — see ICombatant.cs note.
         public StatusEffects StatusEffects { get; } = new StatusEffects();
-        public int PendingApDrain { get; set; }
         public float ArtifactAvoidanceBonus => 0f;
         public bool ArtifactAutoPassAnomalies => false;
         public object ActiveDetector => null;
@@ -129,7 +127,6 @@ namespace GameCore
             Hp = MaxHp;
             PhysDR = db?.PhysDR ?? 0f;
             AnomDR = db?.AnomDR ?? 0f;
-            Ap = db?.Ap ?? 4;
             Mp = db?.Mp ?? 4;
             Ac = db?.Ac ?? 10;
             AttackDamage = db?.AttackDamage ?? 6;
@@ -349,15 +346,6 @@ namespace GameCore
                 {
                     target.StatusEffects.ToxicBleed = true;
                     GameLog.Write($"The bite festers: {who} suffers Toxic Bleed.");
-                }
-                if (Db != null && Db.NeuralOverload && target is Player p)
-                {
-                    int roll = Random.Range(1, 21) + p.IntelligenceMod;
-                    if (roll < 14)
-                    {
-                        p.PendingApDrain += 1;
-                        GameLog.Write($"Neural Overload (Intelligence {roll} vs 14): you lose 1 AP next turn.");
-                    }
                 }
             }
             else if (target is HumanEnemy) Weapon.OnTargetKilled(this, target);

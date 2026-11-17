@@ -83,7 +83,6 @@ namespace GameCore
                 for (int i = 0; i < 2 && CombatantUtil.Distance(c, p) > 2; i++) if (!c.MoveToward(p.X, p.Y)) break;
                 return;
             }
-            if (fullTurn) c.Ap = System.Math.Max(c.Ap, 4);
             Engage(c, foe, grid);
         }
 
@@ -107,8 +106,7 @@ namespace GameCore
             int range = h?.EquippedWeapon != null && h.EquippedWeapon.RangeTiles > 0 ? h.EquippedWeapon.RangeTiles : 1;
             for (int i = 0; i < 2 && CombatantUtil.Distance(u, foe) > range; i++) if (!u.MoveToward(foe.X, foe.Y)) break;
             if (CombatantUtil.Distance(u, foe) > range || !grid.CheckLineOfSight(u.X, u.Y, foe.X, foe.Y)) return;
-            u.Ap = System.Math.Max(u.Ap, 2);
-            for (int shot = 0; shot < 2 && u.Ap >= 2 && foe.IsAlive(); shot++)
+            for (int shot = 0; shot < 2 && foe.IsAlive(); shot++)
             {
                 if (h != null) { if (h.EquippedWeapon != null && !h.EquippedWeapon.IsLoaded) h.EquippedWeapon.Reload(); h.Attack(foe, "Single"); }
                 else u.Attack(foe);

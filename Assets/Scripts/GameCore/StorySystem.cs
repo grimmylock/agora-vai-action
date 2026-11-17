@@ -109,8 +109,6 @@ namespace GameCore
                 }
                 if (zone.StartsWith("secret_lab") && TerrainMap.Landmarks.Any(l => System.Math.Max(System.Math.Abs(l.X - p.X), System.Math.Abs(l.Y - p.Y)) <= 2))
                 {
-                    if (p.Ap < 2) { GameLog.Event("Not enough AP."); return true; }
-                    p.Ap -= 2;
                     int roll = UnityEngine.Random.Range(1, 21) + p.IntelligenceMod;
                     GameLog.Event($"You work the lab terminal on the drive: {roll} vs DC 18.");
                     if (roll >= 18) DecodeBeta(p, "The encryption gives way.");
@@ -149,8 +147,6 @@ namespace GameCore
             if (zone == "siege_catacombs" && !Has("lucifer") && Near(p, "Sealed Crypt") != null)
             {
                 if (EncounterState.Enemies.Any(e => e.Named && e.IsAlive())) { GameLog.Event("[LEGEND] Not with its guardian still breathing down your neck."); return true; }
-                if (p.Ap < 2) { GameLog.Event("Not enough AP."); return true; }
-                p.Ap -= 2;
                 int roll = UnityEngine.Random.Range(1, 21) + p.StrengthMod;
                 GameLog.Event($"You put your shoulder to the crypt's stone lid: {roll} vs DC 18.");
                 if (roll < 18) { GameLog.Event("It doesn't budge. Yet."); return true; }

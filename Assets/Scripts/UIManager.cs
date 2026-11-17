@@ -43,7 +43,7 @@ public class UIManager : MonoBehaviour
               (w.IsJammed ? " JAMMED" : "") + (CombatRules.CanBurst(w) ? $" [{p.FireMode}]" : "");
         statusText.text = $"ZONA ATUAL: {MacroState.Current.CurrentZoneId}\n" +
                           $"HP: {p.Hp} / {p.MaxHp}  AC: {p.Ac}\n" +
-                          $"AP: {p.Ap}/{p.MaxAp} | MP: {p.Mp}/{p.MaxMp}\n" +
+                          $"MP: {p.Mp}/{p.MaxMp}\n" +
                           weapon + "\n" +
                           $"Hunger: {p.Hunger:0.0} | Thirst: {p.Thirst:0.0} | Tiredness: {p.Tiredness:0.0}\n" +
                           $"Status: {p.StatusText}\n" +

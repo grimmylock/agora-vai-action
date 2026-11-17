@@ -64,7 +64,6 @@ namespace GameCore
         {
             if (!Movable(x, y)) return "Nothing to shove there.";
             if (CombatantUtil.Distance(who, x, y) != 1) return "Get next to it first.";
-            if (EncounterState.InCombat && who.Ap < ShoveAp) return $"Needs {ShoveAp} AP.";
             return null;
         }
 
@@ -86,7 +85,6 @@ namespace GameCore
             }
             else moved = Push(x, y, dx, dy, Barrel(t) ? RollMax : 1, who);
             if (!moved) { if (who is Player) GameLog.Write("It won't budge: something's in the way."); return false; }
-            if (EncounterState.InCombat) who.Ap -= ShoveAp;
             Noise.Make(x, y, Noise.Blast / 3, who);
             return true;
         }
@@ -126,7 +124,7 @@ namespace GameCore
         /// so it can shoot it next (HumanEnemy.FindBarrelNear). True if it did.</summary>
         public static bool KickAtFoe(HumanEnemy h, ICombatant foe)
         {
-            if (h.Ap < ShoveAp + 2 || string.IsNullOrEmpty(h.EquippedWeapon?.Db?.AmmoType)) return false;
+            if (string.IsNullOrEmpty(h.EquippedWeapon?.Db?.AmmoType)) return false;
             foreach (var (x, y) in TerrainMap.GetAdjacentCoords(h.X, h.Y))
             {
                 if (x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height || TerrainMap.GetTile(x, y).Type != TileType.Barrel) continue;
@@ -163,7 +161,7 @@ namespace GameCore
         /// <summary>An enemy with no cover from the player flips a desk next to it if that would shield it. True if it did.</summary>
         public static bool FlipForCover(ICombatant h, ICombatant foe)
         {
-            if (h.Ap < ShoveAp + 2 || CoverUtil.GetCoverAt(foe.X, foe.Y, h.X, h.Y).AcBonus > 0) return false;
+            if (CoverUtil.GetCoverAt(foe.X, foe.Y, h.X, h.Y).AcBonus > 0) return false;
             foreach (var (x, y) in TerrainMap.GetAdjacentCoords(h.X, h.Y))
             {
                 if (!Movable(x, y) || !Desk(TerrainMap.GetTile(x, y))) continue;

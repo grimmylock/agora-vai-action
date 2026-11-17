@@ -142,8 +142,7 @@ namespace GameCore
 
             if (anomaly.AnomalyType == "Livewire")
             {
-                unit.PendingApDrain += 2;
-                GameLog.Write($"{label} will lose 2 AP on next turn due to Livewire failure.");
+                GameLog.Write($"{label} is shocked by a Livewire failure.");
                 CombatFx.Push("zap", unit, unit).Now = true;                                  // RT fx 3: the discharge (pixelfx zap)
             }
 
@@ -158,14 +157,9 @@ namespace GameCore
             {
                 unit.StatusEffects.Prone = true;
                 ThrowPlayerAway(unit, anomaly);
-                GameLog.Write($"{label} is now prone and must spend 1 AP to stand up before moving.");
+                GameLog.Write($"{label} is now prone and is knocked down.");
             }
 
-            if (anomaly.Effects != null && anomaly.Effects.ApDrain.HasValue && anomaly.AnomalyType != "Livewire")
-            {
-                unit.PendingApDrain += anomaly.Effects.ApDrain.Value;
-                GameLog.Write($"{label} will lose {anomaly.Effects.ApDrain.Value} AP on next turn.");
-            }
         }
 
         /// <summary>The nearest revealed, unsearched anomaly on or next to the player.</summary>
@@ -180,8 +174,6 @@ namespace GameCore
             var a = SearchableNear(p);
             if (a == null) return false;
             if (GameState.Current.CurrentTurn != Turn.Player) return true;
-            if (p.Ap < 2) { GameLog.Write("Not enough AP to search the anomaly."); return true; }
-            p.Ap -= 2;
             a.Searched = true;
             GameLog.Write($"You comb the {a.DisplayName} field.");
             if (a.Artifact == null) { GameLog.Write("Nothing in this one. Fields fill up again after a Surge."); return true; }
@@ -230,13 +222,6 @@ namespace GameCore
             if (isPlayer && CombatantUtil.HasPerk(unit, "Sprinter"))
                 unit.Mp += 2;   // file 05: +2 MP per turn
 
-            if (unit.PendingApDrain > 0)
-            {
-                int drain = System.Math.Min(unit.Ap, unit.PendingApDrain);
-                unit.Ap = System.Math.Max(0, unit.Ap - drain);
-                GameLog.Write($"{label} loses {drain} AP (drained).");
-                unit.PendingApDrain = 0;
-            }
 
             // New: NPCs and mutants bleed too (wounds, serrated blades, Prowler claws) - this
             // used to only ever tick for the player.

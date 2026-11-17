@@ -75,7 +75,6 @@ namespace GameCore
             }
             if (s.Flee || now < s.NextShot || Body.Down(p) || !p.IsAlive() || !m.IsInEngageRange(p)) return;
             s.NextShot = now + (Ballistics.MutantSize(m) >= 2f ? 1.6f : 1.0f) * Random.Range(0.85f, 1.2f);
-            m.Ap = System.Math.Max(m.Ap, 2);
             m.Attack(p);
         }
 

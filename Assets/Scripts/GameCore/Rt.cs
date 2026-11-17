@@ -181,7 +181,7 @@ namespace GameCore
             int tx = Mathf.FloorToInt(x), ty = Mathf.FloorToInt(y);
             if (tx != p.X || ty != p.Y)
             {
-                p.Mp = System.Math.Max(p.Mp, TurnLoop.WalkMp); p.Ap = System.Math.Max(p.Ap, p.MaxAp);
+                p.Mp = System.Math.Max(p.Mp, TurnLoop.WalkMp);
                 int bx = p.X, by = p.Y;
                 PlayerController.StepFree(p, tx - p.X, ty - p.Y);
                 if (p.X == bx && p.Y == by) return;                       // refused: someone stands there
@@ -300,7 +300,7 @@ namespace GameCore
         {
             float dt = Time.deltaTime;
             var s = Of(p); ShoveTick(p, s);
-            p.Ap = System.Math.Max(p.Ap, p.MaxAp); p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: AP/MP only gate old actions
+            p.Mp = System.Math.Max(p.Mp, p.MaxMp);   // no turns: MP only gates old walking code
             if (i.Parry) Parry.Press(p);                                                       // Boss 1
 
             // ---- reviving: hold E over a downed friend (Yan: "downed players can be revived by holding E over them for a few seconds") ----

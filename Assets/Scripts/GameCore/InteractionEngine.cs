@@ -21,12 +21,6 @@ namespace GameCore
                 GameLog.Write("Cannot interact outside your turn.");
                 return;
             }
-            if (unit.Ap < 2)
-            {
-                GameLog.Write("Not enough AP to interact.");
-                return;
-            }
-
             if (unit is Player storyPlayer && StorySystem.TryInteract(storyPlayer)) return;
             if (unit is Player raider && GarrisonRaid.TryInteract(raider)) return;   // Batch 87
             if (unit is Player synth && G7Lab.TryInteract(synth)) return;            // Batch 88
@@ -39,7 +33,6 @@ namespace GameCore
             }
 
             if (Stashes.Blocked(obj)) return;   // Batch 126: locked (key / code), or a code note read
-            unit.Ap -= 2;
             var check = SkillCheck.RollSkillCheck(unit, obj.Stat, obj.Dc);
 
             if (check.Success)

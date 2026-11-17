@@ -1050,8 +1050,8 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                 ? combat.CalculateDamage(human.EquippedWeapon.Db.BaseDamage, human.EquippedWeapon.CurrentAmmoType, target.PhysDR, target.AnomDR)
                 : combat.CalculateDamage(attacker is Mutant m ? m.AttackDamage : 40, "Standard", target.PhysDR, target.AnomDR);
 
-            // Scale effective offscreen strikes by AP to approximate multi-action lethality without running full AI.
-            int attackCount = System.Math.Max(1, attacker.Ap / 2); // ~2 attacks for 4 AP, 3 for 6 AP, etc.
+            // Off-screen strikes count double to approximate multi-action lethality without running the full AI (the old 4-AP default gave 2).
+            int attackCount = 2;
             int applied = System.Math.Max(1, (int)(baseDamage * tierMult * attackCount));
             target.Hp = System.Math.Max(0, target.Hp - applied);
             if (!target.IsAlive() && attacker is HumanEnemy winner)   // Batch 53: the killer learns from it and takes the better gear
@@ -1110,7 +1110,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             public int Y;
             public int Hp;
             public int MaxHp;
-            public int Ap;
             public float Mp;
             public int Ac;
             public int AttackDamage;
@@ -1176,7 +1175,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                                 Y = m.Y,
                                 Hp = m.Hp,
                                 MaxHp = m.MaxHp,
-                                Ap = m.Ap,
                                 Mp = m.Mp,
                                 Ac = m.Ac,
                                 AttackDamage = m.AttackDamage,
@@ -1259,7 +1257,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                             var he = new HumanEnemy(string.IsNullOrEmpty(pm.Name) ? pm.Faction + " Operative" : pm.Name, pm.X, pm.Y, pm.Faction ?? ps.Faction, pm.Rank ?? "Rookie", wdb, adb);
                             he.Hp = pm.Hp; he.Card = pm.Card; he.Xp = pm.Xp;
                             he.Named = pm.Named; he.ApRounds = pm.ApRounds; he.ArmRolled = true; if (he.ApRounds) he.LoadApRounds(); if (he.Named) he.BossPerks();   // Batch 80
-                            he.Ap = pm.Ap;
                             he.Mp = pm.Mp;
                             he.IsAggroed = pm.IsAggroed;
                             // ponytail: the disk format (PersistedMember) never serialized
@@ -1275,7 +1272,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                             MutantDef mdb = FindMutantDefByName(pm.DbName ?? pm.Name);
                             var m = EncounterGeneration.CreateMutantFromDb(mdb, pm.X, pm.Y);
                             m.Hp = pm.Hp;
-                            m.Ap = pm.Ap;
                             m.Mp = pm.Mp;
                             m.IsAggroed = pm.IsAggroed;
                             squad.Members.Add(m);

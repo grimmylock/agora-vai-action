@@ -53,7 +53,6 @@ namespace GameCore
         public int TempHPDuration = 0;
         public StatusEffects StatusEffects { get; } = new StatusEffects();
 
-        public int Ap { get; set; } = 4;
         public float Mp { get; set; } = 4;
         public int MaxMp { get; set; } = 4;
 
@@ -79,8 +78,6 @@ namespace GameCore
 
         // New (file 00/01 combat rules)
         public string FireMode = "Single";      // toggled with X; Burst only on AR/SMG/heavy
-        public bool ControlledTapsUsed;         // Controlled Taps refunds once per turn
-        public int RhinoShots;                  // Rinaldi R6: 2, 1, 1 AP cycle within a turn
         public int ArmorModMpBonus;             // set by ApplyArmorModsForPlayer, read by ApplyCarryEffects
         public string ArmedThrowable;           // consumable id of a grenade waiting for a target click
 
@@ -169,7 +166,6 @@ namespace GameCore
         /// <summary>Batch 90: a worn artifact that stops bleeding (Rosary, Heart of the Wound) - it only cleared bleeding once, when put on.</summary>
         public bool BleedImmune => ArtifactSlots.Any(id => id != null && GameData.ArtifactDatabase.All.TryGetValue(id, out var a) && (a.ImmuneBleed || a.BleedNegate == true));
         public float ArtifactMpBonus;
-        public float ArtifactApBonus;
         public float ArtifactAvoidanceBonus { get; set; }
         public bool ArtifactAutoPassAnomalies { get; set; }
         // New (Batch 8): Lucifer's flat Phys/Anom-DR bonus and The Black Star's Phys-DR bypass/
@@ -177,8 +173,6 @@ namespace GameCore
         public float ArtifactPhysDRBonus;
         public float ArtifactAnomDRBonus;
         public float ArtifactBypassPhysDR;
-        public bool ArtifactKillRefundAp;
-        public int PendingApDrain { get; set; }
 
         public Player() : this(true) { }
 
@@ -282,12 +276,10 @@ namespace GameCore
             float carryBonus = 0;
             float regenBonus = 0;
             float mpBonusAdd = 0;
-            float apBonusAdd = 0;
             float anomalyAvoidanceAdd = 0;
             float physDRBonusAdd = 0;
             float anomDRBonusAdd = 0;
             float bypassPhysDRAdd = 0;
-            bool killRefundApAdd = false;
             ArtifactAutoPassAnomalies = false;
             bool hasArtifactHandlerPerk = CombatantUtil.HasPerk(this, "ArtifactHandler");
             MaxHp = 1000 + BonusMaxHp;   // was never reset: taking Lucifer off left you at -25 Max HP for good
@@ -309,7 +301,6 @@ namespace GameCore
                 if (art.CarryWeightBonus.HasValue) carryBonus += art.CarryWeightBonus.Value;
                 if (art.HpRegen.HasValue) regenBonus += art.HpRegen.Value;
                 if (art.MpBonus.HasValue) mpBonusAdd += art.MpBonus.Value;
-                if (art.ApBonus.HasValue) apBonusAdd += art.ApBonus.Value;
                 if (art.AnomalyAvoidanceBonus.HasValue) anomalyAvoidanceAdd += art.AnomalyAvoidanceBonus.Value;
                 if (art.PassAllAnomalies) ArtifactAutoPassAnomalies = true;
                 // New (Batch 8): BleedNegate (Clot/Scab Stone/Rosary) was set on data but
@@ -321,7 +312,6 @@ namespace GameCore
                 if (art.PhysDRBonus.HasValue) physDRBonusAdd += art.PhysDRBonus.Value;
                 if (art.AnomDRBonus.HasValue) anomDRBonusAdd += art.AnomDRBonus.Value;
                 if (art.BypassPhysDR.HasValue) bypassPhysDRAdd += art.BypassPhysDR.Value;
-                if (art.KillRefundAp) killRefundApAdd = true;
             }
 
             if (PermHP > MaxHp) PermHP = MaxHp;   // Lucifer's -25 Max HP has to actually cost HP
@@ -329,12 +319,10 @@ namespace GameCore
             ArtifactCarryBonus = carryBonus;
             ArtifactRegen = regenBonus;
             ArtifactMpBonus = mpBonusAdd;
-            ArtifactApBonus = apBonusAdd;
             ArtifactAvoidanceBonus = anomalyAvoidanceAdd;
             ArtifactPhysDRBonus = physDRBonusAdd;
             ArtifactAnomDRBonus = anomDRBonusAdd;
             ArtifactBypassPhysDR = bypassPhysDRAdd;
-            ArtifactKillRefundAp = killRefundApAdd;
 
             // PhysDR/AnomDR are otherwise owned by ApplyArmorModsForPlayer (recomputed from scratch
             // on every armor change) - route through it here too so the artifact bonus isn't wiped
@@ -495,14 +483,8 @@ namespace GameCore
 
             if (StatusEffects.Prone)
             {
-                if (Ap < 1)
-                {
-                    GameLog.Write("Cannot stand from prone: not enough AP.");
-                    return;
-                }
-                Ap -= 1;
                 StatusEffects.Prone = false;
-                GameLog.Write("Player spends 1 AP to stand up from prone.");
+                GameLog.Write("You stand up from prone.");
             }
 
             int newX = X + dx;
@@ -518,145 +500,16 @@ namespace GameCore
 
 
 
-        public void Attack(ICombatant target, string fireMode)
-        {
-            var weapon = EquippedWeapon;
-
-            if (GameState.Current.CurrentTurn != Turn.Player)
-            {
-                GameLog.Write("Cannot attack outside your turn.");
-                return;
-            }
-            if (Companion.Is(target)) { GameLog.Write($"{target.Name} is on your side."); return; }
-            if (TryTakedown(target)) return;
-
-            if (weapon == null)
-            {
-                GameLog.Write("No weapon equipped.");
-                return;
-            }
-
-            // Fire mode comes from the X toggle (FireMode). Burst is the assault rifle / SMG / heavy
-            // weapon option (file 01); anything else just fires single.
-            fireMode = string.IsNullOrEmpty(fireMode) ? FireMode : fireMode;
-            if (fireMode == "Burst" && !CombatRules.CanBurst(weapon)) fireMode = "Single";
-            bool isStarving = IsDepleted();
-            int apCost = fireMode == "Burst" ? CombatRules.BurstApCost(weapon) : CombatRules.SingleShotAp(weapon);   // Batch 76: 3 with a sniper rifle
-            bool rhino = weapon.Db?.Name == "Rinaldi R6" && fireMode == "Single";
-            if (rhino && RhinoShots % 3 != 0) apCost = 1;              // 2, 1, 1, then 2 again
-            string cat = CombatRules.Category(weapon.Db);
-            bool melee = CombatRules.IsMelee(weapon);
-            if (melee && CombatantUtil.HasPerk(this, "BladeDancer"))
-            {
-                if (MeleeAttacksThisTurn >= 3) { GameLog.Write("Blade Dancer: that's your 3 cuts this turn."); return; }
-                apCost = MeleeAttacksThisTurn == 0 ? 2 : 1;
-            }
-            bool dual = Gunslinging && fireMode == "Single";
-            if (cat == "sidearm" && fireMode == "Single" && SidearmShotsThisTurn == 1 && CombatantUtil.HasPerk(this, "DoubleTap") && !dual) apCost = 1 + CombatRules.Kick(weapon);
-            if (dual) apCost = 2 + System.Math.Max(CombatRules.Kick(weapon), CombatRules.Kick(OffhandWeapon));   // Gunslinger: always 2 AP (3 with an RK-12), no Rhino cadence or Double Tap
-            apCost += isStarving ? 1 : 0;
-            int roundsToUse = fireMode == "Burst" ? CombatRules.BurstRounds(weapon) * (cat == "heavy" && CombatantUtil.HasPerk(this, "Shredder") ? 2 : 1) : 1;
-            if (melee) roundsToUse = 0;
-
-            if (ItemCondition.IsBroken(weapon.Condition))
-            {
-                GameLog.Write($"{weapon.Name} is broken. Get it repaired or swap weapons.");
-                return;
-            }
-
-            if (weapon.IsJammed)
-            {
-                GameLog.Write("Weapon is jammed. Clear jam before attacking.");
-                return;
-            }
-
-            if (Ap < apCost)
-            {
-                GameLog.Write($"Not enough AP to {fireMode} fire. {apCost} AP required.");
-                return;
-            }
-
-            if (weapon.CurrentMagazine < roundsToUse)
-            {
-                GameLog.Write($"Not enough ammo in magazine for {fireMode} fire. Need {roundsToUse} round{(roundsToUse > 1 ? "s" : "")}.");
-                return;
-            }
-
-            int rangeTiles = weapon.MaxReach;   // Batch 74: out to twice the range, at -2 past it
-            if (CombatantUtil.Distance(this, target) > rangeTiles)
-            {
-                GameLog.Write("Target is out of range for attack.");
-                return;
-            }
-            if (!CombatRules.IsMelee(weapon) && !GameServices.RequireGrid().CheckLineOfSight(X, Y, target.X, target.Y))
-            {
-                GameLog.Write("No line of sight - you'd be shooting at a wall.");
-                return;
-            }
-
-            Ap -= apCost;
-            if (rhino) RhinoShots++;
-            if (melee) MeleeAttacksThisTurn++;
-            if (cat == "sidearm" && fireMode == "Single") SidearmShotsThisTurn++;
-            if (!HitAndRunUsed && CombatantUtil.HasPerk(this, "HitAndRun")) { HitAndRunUsed = true; Mp += 2; GameLog.Write("Hit and Run: +2 MP."); }
-            bool ambush = target is Mutant unaware && !unaware.IsAggroed;   // Batch 64: they never saw you coming
-            if (ambush && !EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.Surprised = true;   // Batch 69: nobody was onto you
-            if (!EncounterState.InCombat) Contact.ShotFrom(this);
-            EncounterState.InCombat = true;
-            if (target is Mutant shotAt) shotAt.IsAggroed = true;
-            int mod = (int)AgilityMod + CombatRules.RankMod(Rank);
-            var result = weapon.Fire(target, fireMode, mod - (dual ? CombatRules.GunslingerPenalty : 0), null, ambush);
-            var off = OffhandWeapon;
-            if (dual && target.IsAlive() && off.IsLoaded && !off.IsJammed && !ItemCondition.IsBroken(off.Condition)
-                && CombatantUtil.Distance(this, target) <= off.MaxReach)
-            {
-                GameLog.Write($"Off hand: {off.Name}.");
-                off.Fire(target, "Single", mod - CombatRules.GunslingerPenalty);
-            }
-
-            if (result.Jammed)
-                GameLog.Write("Weapon jammed during the attack. Press R to clear it.");
-            // Batch 78 (Yan): a blade kill on someone who hadn't seen you makes no sound - if nobody else is onto you, no fight starts
-            if (melee && ambush && !target.IsAlive() && !EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed))
-            {
-                EncounterState.InCombat = false;
-                EncounterState.Surprised = false;
-                GameLog.Write("Nobody heard a thing.");
-            }
-        }
-
-        /// <summary>Batch 69: sneak up on someone who hasn't spotted you and attack them from the next tile - a silent
-        /// knife kill, whatever you're holding. Masters and Legends are too sharp for it; squadmates who see the body
-        /// are shaken (and may spot you), nobody else hears a thing.</summary>
-        private bool TryTakedown(ICombatant target)
-        {
-            if (!Sneaking || !(target is HumanEnemy h) || h.IsAggroed || !h.IsAlive() || CombatantUtil.Distance(this, h) > 1) return false;
-            if (CombatRules.RankIndex(h.Rank) >= CombatRules.RankIndex("Master")) { GameLog.Write($"{h.Name} is too sharp to grab from behind."); return false; }
-            if (Ap < 2) { GameLog.Write("Not enough AP for a takedown. 2 AP required."); return true; }
-            Ap -= 2;
-            h.Hp = 0;
-            GameLog.Write($"TAKEDOWN: you grab {h.Name} from behind and drop them without a sound.");
-            Weapon.OnTargetKilled(this, h);
-            return true;
-        }
-
-        /// <summary>Max AP from rank (file 04: Rookie-Experienced 4, Professional+ 5) + artifacts.</summary>
-        public int MaxAp => CombatRules.PlayerRankAp(Rank) + (int)ArtifactApBonus + CombatRules.PlayerApBonus;   // Batch 77: 5, 6 from Veteran
-
-        /// <summary>Start-of-turn refresh shared by the turn loop and the end of a fight: AP/MP back
+        /// <summary>Start-of-turn refresh shared by the turn loop and the end of a fight: MP back
         /// to full, per-turn trackers reset, Take Cover / Evasive bonuses expire.</summary>
         public void StartTurn()
         {
-            Ap = MaxAp;
             ApplyCarryEffects();
             Mp = MaxMp;
             if (StatusEffects.HalfMpNextTurn) { Mp = MaxMp / 2f; StatusEffects.HalfMpNextTurn = false; GameLog.Write($"Still reeling from the boulder: {Mp:0.#} MP this turn."); }
-            ControlledTapsUsed = false;
-            RhinoShots = 0;
             MovedThisTurn = HitAndRunUsed = RunAndGunUsed = ParryHeld = false;
             MeleeAttacksThisTurn = SidearmShotsThisTurn = 0;
             if (!EncounterState.InCombat) AdrenalineUsed = BracedUsed = false;
-            if (AdrenalineApNextTurn > 0) { Ap += AdrenalineApNextTurn; AdrenalineApNextTurn = 0; GameLog.Write("Adrenaline: +2 AP this turn."); }
             if (CombatantUtil.HasPerk(this, "TacticalReposition")) Mp += 1;
         }
 
@@ -667,30 +520,12 @@ namespace GameCore
             StatusEffects.Suppressed = false;
             if (EncounterState.InCombat)
             {
-                if (CombatantUtil.HasPerk(this, "DesperateParry") && Ap >= 1)
-                { ParryHeld = true; GameLog.Write("Desperate Parry: holding 1 AP to parry."); }
+                if (CombatantUtil.HasPerk(this, "DesperateParry"))
+                { ParryHeld = true; GameLog.Write("Desperate Parry: ready to parry."); }
             }
             TerrainMap.TickSmoke();
             if (EncounterState.InCombat) WorldEvents.TickSurge();   // exploring, TurnLoop.TickAwareness counts tiles instead
         }
-
-        /// <summary>Throws the armed grenade at a tile (file 00 §6): 2 AP, within 8 tiles and in
-        /// LoS, d20 + Agility vs DC 12 - a miss lands 1d4 tiles off in a random direction.</summary>
-        public void ThrowAt(int x, int y)
-        {
-            string id = ArmedThrowable;
-            ArmedThrowable = null;
-            if (id == null || !ConsumableDatabase.All.TryGetValue(id, out var def)) return;
-            if (GameState.Current.CurrentTurn != Turn.Player) return;
-            int apCost = 2 + (IsDepleted() ? 1 : 0);
-            if (Ap < apCost) { GameLog.Write($"Throwing takes {apCost} AP."); return; }
-            if (System.Math.Max(System.Math.Abs(x - X), System.Math.Abs(y - Y)) > 8) { GameLog.Write("Too far to throw (8 tiles max)."); return; }
-            if (!GameServices.RequireGrid().CheckLineOfSight(X, Y, x, y)) { GameLog.Write("You can't see that spot to throw at it."); return; }
-            if (!RemoveItem(id, 1)) { GameLog.Write($"No {def.Name} left."); return; }
-            Ap -= apCost;
-            Explosions.Throw(this, def, x, y);
-        }
-
 
         /// <summary>Q: switch the loaded ammo to the next type you have rounds for (Standard >
         /// Hollow Point > Dart > Armor Piercing). The rounds in the magazine go back to the stash
@@ -706,12 +541,6 @@ namespace GameCore
                 string next = order[(start + i + order.Length) % order.Length];
                 if (next == w.CurrentAmmoType) break;
                 if (Ammo.Get(Inventory, Ammo.Key(w.Db, next)) <= 0) continue;
-                int reloadCost = w.Db?.ReloadApCost ?? 1;
-                if (GameState.Current.CurrentTurn == Turn.Player && EncounterState.InCombat && Ap < reloadCost)
-                {
-                    GameLog.Write($"Not enough AP to change ammo ({reloadCost}).");
-                    return;
-                }
                 Ammo.Add(Inventory, Ammo.Key(w.Db, w.CurrentAmmoType), w.CurrentMagazine);
                 w.CurrentMagazine = 0;
                 w.CurrentAmmoType = next;
@@ -815,29 +644,8 @@ namespace GameCore
             }
 
             var weapon = EquippedWeapon;
-            // New: ReloadApCost (Tambour-12 = 2 AP) was set on data but never read - reload always
-            // cost a hardcoded flat 1 AP regardless of what the weapon's own data said.
-            int reloadCost = weapon?.Db?.ReloadApCost ?? 1;
-            // New (Batch 8): QuickHands perk - CombatReloadFree was set on Player but never read
-            // anywhere; TurnLoop now flips it true the moment a fight starts (first enemy aggroes),
-            // so the first reload after that costs 0 AP.
-            bool freeReload = EncounterState.InCombat && CombatantUtil.HasPerk(this, "QuickHands");   // file 05: every reload in combat
-            if (freeReload) reloadCost = 0;
-            if (Ap < reloadCost)
-            {
-                GameLog.Write($"Not enough AP to reload. {reloadCost} AP required.");
-                return;
-            }
-
-            if (Gunslinging && reloadCost > 0) reloadCost += 1;   // Gunslinger: both guns in one action, +1 AP
-            if (Ap < reloadCost) { GameLog.Write($"Not enough AP to reload both guns. {reloadCost} AP required."); return; }
             bool reloaded = weapon.Reload();
             if (Gunslinging && OffhandWeapon.CurrentMagazine < OffhandWeapon.MagCapacity) reloaded |= OffhandWeapon.Reload();
-            if (reloaded)
-            {
-                Ap -= reloadCost;
-                if (freeReload) GameLog.Write("Quick Hands: free reload.");
-            }
         }
 
         /// <summary>Ported from clearWeaponJam().</summary>
@@ -848,15 +656,8 @@ namespace GameCore
                 GameLog.Write("Cannot clear jam outside your turn.");
                 return;
             }
-            if (Ap < 1)
-            {
-                GameLog.Write("Not enough AP to clear jam.");
-                return;
-            }
-
             var weapon = EquippedWeapon;
             bool cleared = weapon.ClearJam();
-            if (cleared && !CombatantUtil.HasPerk(this, "Gunsmith")) Ap -= 1;   // Gunsmith clears jams for free
         }
     }
 }

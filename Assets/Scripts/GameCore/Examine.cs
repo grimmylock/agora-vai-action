@@ -20,7 +20,7 @@ namespace GameCore
         public static string Body(Mutant e, Player p)
         {
             var lines = new List<string>();
-            lines.Add(Rt.On ? $"<color=#c8443a>HP {e.Hp}/{e.MaxHp}</color>" : $"<color=#c8443a>HP {e.Hp}/{e.MaxHp}</color>   AC {e.Ac}   AP {(e is HumanEnemy ? CombatRules.NpcAp(e) : e.Db?.Ap ?? 4)}   MP {e.MaxMp}");   // (real time has no AC/AP/MP)
+            lines.Add($"<color=#c8443a>HP {e.Hp}/{e.MaxHp}</color>");   // (real time has no AC/AP/MP)
             if (e is HumanEnemy h)
             {
                 lines.Add(h.Morale == "Steady" ? "Steady" : h.Morale == "Shaken" ? "<color=#e8c547>Shaken</color> (-2 to hit)" : $"<color=#62b25a>{h.Morale}</color>");

@@ -24,7 +24,7 @@ namespace GameCore
 
         // per-turn / per-fight perk trackers
         public bool MovedThisTurn, HitAndRunUsed, RunAndGunUsed, ParryHeld, AdrenalineUsed;
-        public int MeleeAttacksThisTurn, SidearmShotsThisTurn, AdrenalineApNextTurn;
+        public int MeleeAttacksThisTurn, SidearmShotsThisTurn;
 
         private static readonly string[] PerkRanks = { "Professional", "Expert", "Legend" };
 
@@ -106,7 +106,7 @@ namespace GameCore
                 Exp -= XpToNext(next);
                 Rank = next;
                 GameLog.Write($"[RANK UP] You are now {next}.");
-                GameLog.Write($"  AP {MaxAp}, attack/AC modifier {CombatRules.RankMod(Rank):+0;-0;0}.");
+                GameLog.Write($"  Attack/AC modifier {CombatRules.RankMod(Rank):+0;-0;0}.");
                 if (PerkRanks.Contains(next))
                 {
                     PendingPerkPicks++;

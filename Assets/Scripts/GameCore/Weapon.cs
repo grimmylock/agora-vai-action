@@ -218,18 +218,6 @@ namespace GameCore
             var result = combat.RollAttack(adv, totalMod, targetAc, parts.Count == 0 ? null : "(" + string.Join(", ", parts) + ")");
             int die = result.ChosenRoll;
 
-            // Controlled Taps: a kept 2d10 of 14+ refunds 1 AP, once per turn.
-            if (attacker is Player tapper && CombatantUtil.HasPerk(tapper, "ControlledTaps") && die >= 14 && !tapper.ControlledTapsUsed)
-            {
-                tapper.ControlledTapsUsed = true;
-                tapper.Ap = System.Math.Min(tapper.MaxAp, tapper.Ap + 1);
-                GameLog.Write("Controlled Taps triggers: regained 1 AP.");
-            }
-            else if (attacker is HumanEnemy boss && CombatantUtil.HasPerk(boss, "ControlledTaps") && die >= 14 && !boss.TapUsed)
-            {
-                boss.TapUsed = true; boss.Ap += 1;   // Batch 86: bosses use their perks too
-                GameLog.Write($"{boss.Name}'s Controlled Taps: +1 AP.");
-            }
 
             bool crit = die == CombatRules.Headshot;
             bool isShotgun = CombatRules.IsShotgun(this);
@@ -385,11 +373,6 @@ namespace GameCore
                     QuestSystem.OnKill("Mutant", mutantKilled.Db?.Tier ?? 1, MacroState.Current.CurrentZoneId);
                 }
 
-                if (Player.Current.ArtifactKillRefundAp)
-                {
-                    Player.Current.Ap = System.Math.Min(Player.Current.MaxAp, Player.Current.Ap + 1);
-                    GameLog.Write("The Black Star pulses: 1 AP refunded on the kill.");
-                }
             }
         }
 

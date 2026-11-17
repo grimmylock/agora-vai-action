@@ -121,8 +121,8 @@ namespace GameCore
         private static bool Step(Player player, int dx, int dy, bool alreadyInCombat)
         {
             int beforeX = player.X, beforeY = player.Y, known = EncounterState.Anomalies.Count(a => a.Revealed);
-            // Batch 59: exploring has no turns - walking out of combat never runs out of MP or AP
-            if (!EncounterState.InCombat && GameState.Current.CurrentTurn == Turn.Player) { player.Mp = System.Math.Max(player.Mp, System.Math.Max(player.MaxMp, TurnLoop.WalkMp)); player.Ap = System.Math.Max(player.Ap, player.MaxAp); }   // Batch 110: a diagonal through a bush costs 3, even overloaded
+            // Batch 59: exploring has no turns - walking out of combat never runs out of MP
+            if (!EncounterState.InCombat && GameState.Current.CurrentTurn == Turn.Player) { player.Mp = System.Math.Max(player.Mp, System.Math.Max(player.MaxMp, TurnLoop.WalkMp)); }   // Batch 110: a diagonal through a bush costs 3, even overloaded
             bool exploring = Exploring();
             player.Move(dx, dy);
             if (player.X == beforeX && player.Y == beforeY) return false; // step was rejected (blocked / out of MP)

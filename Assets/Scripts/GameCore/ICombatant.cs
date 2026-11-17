@@ -12,7 +12,6 @@ namespace GameCore
         string Name { get; }
         int X { get; set; }
         int Y { get; set; }
-        int Ap { get; set; }
         float Mp { get; set; }   // Batch 102: float - a diagonal step costs 1.5
         int MaxMp { get; set; }
         float PhysDR { get; set; }
@@ -35,7 +34,6 @@ namespace GameCore
 
         StatusEffects StatusEffects { get; }
         float AgilityMod { get; }
-        int PendingApDrain { get; set; }
 
         /// <summary>0 for units with no artifact system (Mutant/HumanEnemy).</summary>
         float ArtifactAvoidanceBonus { get; }

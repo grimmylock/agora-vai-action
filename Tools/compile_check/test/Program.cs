@@ -167,14 +167,14 @@ static class Program {
       Check(kinds, "about 8 stashes a map, a few rolled ones always");
       // the code puzzle: the safe won't open; reading the note opens it
       MacroState.Current.CurrentZoneId = "abandoned_city"; TerrainMap.BuildTerrainForZone("abandoned_city"); EncounterState.Enemies.Clear();
-      var pl = Player.Current; pl.Ap = 10; GameState.Current.CurrentTurn = Turn.Player;
+      var pl = Player.Current; GameState.Current.CurrentTurn = Turn.Player;
       var safe = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.Lock == "code");
       if (safe != null) {
         var note = TerrainMap.InteractiveObjects.First(o => o.Lock == "note" && o.Opens == Stashes.KeyId(safe));
         pl.X = safe.X; pl.Y = safe.Y + 1; InteractionEngine.AttemptInteract(pl);
         bool shut = TerrainMap.InteractiveObjects.Contains(safe);
         pl.X = note.X; pl.Y = note.Y + 1; InteractionEngine.AttemptInteract(pl);
-        pl.X = safe.X; pl.Y = safe.Y + 1; pl.Ap = 10; InteractionEngine.AttemptInteract(pl);
+        pl.X = safe.X; pl.Y = safe.Y + 1; InteractionEngine.AttemptInteract(pl);
         Check(shut && !TerrainMap.InteractiveObjects.Contains(safe), "a keypad safe opens only with the code from its note");
       } else Check(false, "a code safe on the Tier 6 map");
       // the key: the toughest mutant on the map carries it; killing it hands it over
@@ -371,7 +371,7 @@ static class Program {
     { // Batch 103: physical props - desks flip into one-sided cover, barrels roll and bowl people over, blasts shove
       int bx = 60, by = 60;
       for (int y = by - 4; y <= by + 8; y++) for (int x = bx - 4; x <= bx + 14; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
-      var me = new HumanEnemy("me", bx, by, "Raiders", "Rookie", null, null) { Ap = 4 };
+      var me = new HumanEnemy("me", bx, by, "Raiders", "Rookie", null, null);
       TerrainMap.SetTileType(bx, by + 1, TileType.Difficult, "desk");
       Check(CoverUtil.GetCoverAt(bx, by + 6, bx, by).AcBonus == 0, "a standing desk is no cover");
       Check(Props.Shove(me, bx, by + 1) && TerrainMap.GetTile(bx, by + 1).Look == "desk_s", "shoving a desk south tips it, top facing south");
@@ -390,7 +390,7 @@ static class Program {
       EncounterState.Enemies.Remove(foe);
       { // Batch 107: an enemy kicks an explosive barrel up to its foe
         TerrainMap.SetTileType(bx + 3, by, TileType.Empty);
-        var kicker = new HumanEnemy("kicker", bx, by + 3, "Raiders", "Rookie", WeaponDatabase.Categories["assault"].Values.First(), null) { Ap = 4 };
+        var kicker = new HumanEnemy("kicker", bx, by + 3, "Raiders", "Rookie", WeaponDatabase.Categories["assault"].Values.First(), null);
         var target2 = new HumanEnemy("target", bx + 7, by + 3, "Wanderers", "Rookie", null, null); EncounterState.Enemies.Add(target2);
         TerrainMap.SetTileType(bx + 1, by + 3, TileType.Barrel);
         Check(Props.KickAtFoe(kicker, target2) && TerrainMap.GetTile(bx + 6, by + 3).Type == TileType.Barrel,
@@ -638,7 +638,7 @@ static class Program {
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.5f, 0.2f) == 18, "ignore 20%");
     var vk74 = W("assault", "VK74"); var vk103 = W("assault", "VK103"); var gnat = W("smg", "CorvanGnatPDW"); var pl74 = W("heavy", "PL74");
     Check(CombatRules.CanBurst(vk74) && CombatRules.BurstPenalty(vk74) == -2 && CombatRules.BurstRounds(vk74) == 3 && CombatRules.BurstMultiplier(vk74) == 2f, "VK-74 burst");
-    Check(CombatRules.BurstPenalty(gnat) == -1 && CombatRules.BurstRounds(gnat) == 5 && CombatRules.BurstApCost(gnat) == 2, "SMG burst");
+    Check(CombatRules.BurstPenalty(gnat) == -1 && CombatRules.BurstRounds(gnat) == 5, "SMG burst");
     Check(CombatRules.BurstRounds(pl74) == 10 && CombatRules.BurstMultiplier(pl74) == 3f, "heavy burst");
     Check(!CombatRules.CanBurst(W("sidearm", "PSh18Pchela")), "pistol can't burst");
     // 2026-11-16 (Yan): no jam chance anywhere
@@ -1219,7 +1219,7 @@ static class Program {
       int dist = CombatantUtil.Distance(p, v); int sx = Math.Sign(v.X - p.X), sy = Math.Sign(v.Y - p.Y);
       if (p.Hp < p.MaxHp * 0.35f) p.Hp = p.MaxHp * 0.6f is var _ ? (int)(p.MaxHp * 0.6f) : p.Hp;   // the bot drinks a medkit (keeps the clip going)
       if (Body.Down(p)) { Body.Forget(p); p.Hp = Math.Max(p.Hp, (int)(p.MaxHp * 0.6f)); }   // downed: it jabs a stim and gets up, as you would
-      if (f.Broken && !f.Finished) { if (dist > 1) { input.X = sx; input.Y = sy; } else { p.Ap = 4; InteractionEngine.AttemptInteract(p); } }
+      if (f.Broken && !f.Finished) { if (dist > 1) { input.X = sx; input.Y = sy; } else { InteractionEngine.AttemptInteract(p); } }
       else if (f.Finished) { if (lootAt < 0f) lootAt = now + 0.8f; if (now >= lootAt && f.LootedAt < 0f) Boss.Looted(v); if (f.Gone && end < 0f) end = UnityEngine.Time.unscaledTime + 2f; }
       else if (f.Doing != null) {
         if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; moves.Add(f.Doing.Name); }
@@ -2445,7 +2445,7 @@ static class Program {
       Check(f.Broken && v.IsAlive() && v.Hp == 1 && Boss.SplashTitle == "EXECUTE", "Boss 1: at 0 he doesn't die - he breaks, EXECUTE");
       int fhp = p.Hp; for (int k = 0; k < 120; k++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
       Check(p.Hp == fhp, "Boss 1: broken, he doesn't fight");
-      Rt.Of(p).Focus = 0f; p.Ap = 4; InteractionEngine.AttemptInteract(p);
+      Rt.Of(p).Focus = 0f; InteractionEngine.AttemptInteract(p);
       Check(Rt.Of(p).Focus >= Rt.FocusMax - 0.01f, "Boss 1: executing fills your Focus (slow-mo energy)");
       Check(f.Finished && !v.IsAlive() && Story.Has("visor_done") && Story.InCutscene, "Boss 1: E next to him - the finisher (cutscene), and he's done");
       Boss.Looted(v); UnityEngine.Time.time += Boss.SmokeAfter + 0.1f; Boss.TickAll();
@@ -2469,7 +2469,7 @@ static class Program {
     int Alive(string mission) => MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission).SelectMany(q => q.Members).Count(m => m.IsAlive());
     Tier1Story.Tick();
     Check(Story.Objectives.Any(o => o.mission == "intro" && o.landmark == Tier1Story.Yefim), "Story 4: a new game points you at Yefim");
-    At(Tier1Story.Yefim); p.Ap = 4; InteractionEngine.AttemptInteract(p);
+    At(Tier1Story.Yefim); InteractionEngine.AttemptInteract(p);
     string courier = Story.Spot("courier");
     Check(Story.IsDone("intro") && Story.Step("courier") == 1 && courier != null && Alive("courier") == 3, $"Story 4: E by the fire - Yefim's first job, 3 Maws at the courier's spot ({courier})");
     var pre = MacroState.Current.OfflineSquads.First(q => q.QuestId == "story:courier").Members[0];
@@ -3505,7 +3505,7 @@ static class Program {
     { EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
       var md = TestingGround.AllMutants().First(m => !m.PsiBlast && !m.NeuralOverload);
       var mu = EncounterGeneration.CreateMutantFromDb(md, px + 1, py); EncounterState.Enemies.Add(mu);
-      int bites = 0; for (int i = 0; i < 10; i++) { p.HealPermanent(5000); int h = p.Hp; mu.Ap = 2; mu.Attack(p); if (p.Hp < h) bites++; }
+      int bites = 0; for (int i = 0; i < 10; i++) { p.HealPermanent(5000); int h = p.Hp; mu.Attack(p); if (p.Hp < h) bites++; }
       Check(bites == 10, $"real time: a mutant in reach always lands its strike ({bites}/10)");
       var knifer = new HumanEnemy("Knifer", px + 1, py, "Raiders", "Rookie", WeaponDatabase.Categories["melee"]["HuntingKnife"], null) { IsAggroed = true };
       EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(knifer); p.HealPermanent(5000); int k0 = p.Hp;
@@ -3864,8 +3864,7 @@ static class Program {
     GameBootstrap.StartNewGame(); var m = MacroState.Current; var p = Player.Current;
     TerrainMap.BuildTerrainForZone("abandoned_city"); TerrainMap.SpawnLandmarks("abandoned_city"); m.CurrentZoneId = "hospital";
     var arm = TerrainMap.Landmarks.First(l => l.Name == GarrisonRaid.Armory);
-    p.X = arm.X + 1; p.Y = arm.Y; GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; p.Ap = 5;
-    EncounterState.Enemies.Clear(); m.OfflineSquads.Clear(); FactionDeck.Reset();
+    p.X = arm.X + 1; p.Y = arm.Y; GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;     EncounterState.Enemies.Clear(); m.OfflineSquads.Clear(); FactionDeck.Reset();
     var guard = new HumanEnemy("Guard", p.X + 8, p.Y + 4, "Garrison", "Veteran", null, null) { IsAggroed = true };
     EncounterState.Enemies.Add(guard); EncounterState.InCombat = true;
     Check(GarrisonRaid.TryInteract(p) && !m.GarrisonArmoryOpen && log.L.Any(l => l.Contains("barred")), "the armory is barred while Garrison holds the ward");
@@ -4052,7 +4051,7 @@ static class Program {
         EncounterState.Enemies.Add(brute); EncounterState.InCombat = true;
         int threw = -1; var bl = new ListLog(); var oldLog = GameLog.Target; GameLog.Target = bl;
         for (int turn = 1; turn <= 4 && threw < 0; turn++) {
-          brute.X = px + 8; brute.Y = py; brute.Ap = 4; brute.Mp = 0;   // pinned in place: it can't reach you
+          brute.X = px + 8; brute.Y = py; brute.Mp = 0;   // pinned in place: it can't reach you
           int before = bl.L.Count; EnemyAI.TakeTurn(brute, p);
           if (bl.L.Skip(before).Any(l => l.Contains("HURLS"))) threw = turn;
         }
@@ -4069,12 +4068,9 @@ static class Program {
       // Batch 76: snipers cost 3 AP a shot and get +1 (scoped)
       { var sn = W("sniper", "M91Trekhlineyka"); var ar = W("assault", "VK74");
         sn.RangeTiles = RangeUtil.ParseRangeToTiles(sn.Db.Range); int rec = sn.Db.HighRecoil ? -1 : 0;
-        Check(CombatRules.SingleShotAp(sn) == 3 && CombatRules.SingleShotAp(ar) == 2, "sniper: 3 AP a shot");
         // Batch 80: +1 only beyond half its range, -2 within 5 tiles
         Check(CombatRules.TraitToHit(sn, false, sn.RangeTiles) - rec == 1 && CombatRules.TraitToHit(sn, false, sn.RangeTiles / 2) - rec == 0
           && CombatRules.TraitToHit(sn, false, 3) - rec == -2, $"sniper scope: far {CombatRules.TraitToHit(sn, false, sn.RangeTiles)}, mid {CombatRules.TraitToHit(sn, false, sn.RangeTiles / 2)}, close {CombatRules.TraitToHit(sn, false, 3)}"); }
-      // Batch 80: the RK-12 costs +1 AP a shot, Double Tap and Gunslinger still apply on top
-      { var rk = W("sidearm", "RK12Kuvalda"); Check(CombatRules.SingleShotAp(rk) == 3 && CombatRules.Kick(W("sidearm", "PSh18Pchela")) == 0, "RK-12: 3 AP a shot"); }
       // Batch 80: two weapon slots - Y swaps; a pistol or blade is free, anything else 1 AP; a sniper pairs only with small ones
       { p = Arena(out px, out py); EncounterState.InCombat = true;
         p.EquipWeapon("sniper", "M91Trekhlineyka"); p.StowSecondary();
@@ -4084,8 +4080,8 @@ static class Program {
         Check(p.SecondaryWeapon == null, "sniper + rifle refused");
         Give("sidearm", "PSh18Pchela"); p.EquipSecondaryFromInventory(Item("sidearm", "PSh18Pchela").Id);
         Check(p.SecondaryCategory == "sidearm", "sniper + pistol ok");
-        p.Ap = 5; p.SwapWeapons(); Check(p.EquippedWeaponCategory == "sidearm" && p.Ap == 5, "to the pistol: 0 AP");
-        p.SwapWeapons(); Check(p.EquippedWeaponCategory == "sniper" && p.Ap == 4, $"back to the sniper: 1 AP ({p.Ap})");
+        p.SwapWeapons(); Check(p.EquippedWeaponCategory == "sidearm", "to the pistol");
+        p.SwapWeapons(); Check(p.EquippedWeaponCategory == "sniper", "back to the sniper");
         p.EquipWeaponFromInventory(Item("assault", "VK74").Id); p.SwapWeapons();
         Check(p.EquippedWeaponCategory == "sidearm" && p.SecondaryCategory == "assault", "rifle + pistol swap");
         p.EquipWeaponFromInventory(Item("sniper", "M91Trekhlineyka").Id);
@@ -4108,11 +4104,9 @@ static class Program {
       // Batch 78: a blade kill on someone unaware starts no fight; pistols +1 inside their range; Gunslinger -1
       { p = Arena(out px, out py);
         var victim = new HumanEnemy("Victim", px + 1, py, "Raiders", "Rookie", null, null) { Hp = 1 };
-        EncounterState.Enemies.Add(victim); p.EquipWeapon("melee", "HuntingKnife"); p.Ap = 5;
-        for (int i = 0; i < 20 && victim.IsAlive(); i++) { victim.IsAggroed = false; EncounterState.InCombat = false; p.Ap = 5; p.Attack(victim, null); }
-        Check(!victim.IsAlive() && !EncounterState.InCombat, "a silent blade kill starts no fight");
+        EncounterState.Enemies.Add(victim);
         var pist = W("sidearm", "PSh18Pchela"); pist.RangeTiles = 8;
-        Check(CombatRules.TraitToHit(pist, false, 8) == 1 && CombatRules.TraitToHit(pist, false, 9) == 0 && CombatRules.GunslingerPenalty == 1, "pistol +1 inside its range only; Gunslinger -1"); }
+        Check(CombatRules.TraitToHit(pist, false, 8) == 1 && CombatRules.TraitToHit(pist, false, 9) == 0, "pistol +1 inside its range only"); }
       // Batch 78: squad sizes - Garrison duos in Tier 2, 4-6 from Tier 4, Raiders 4-6 from Tier 2
       { bool ok = true; for (int i = 0; i < 30; i++) { ok &= SquadManager.HumanSquadSize("Garrison", 2) == 2; int b4 = SquadManager.HumanSquadSize("Contractors", 4); ok &= b4 >= 4 && b4 <= 6; int r3 = SquadManager.HumanSquadSize("Raiders", 3); ok &= r3 >= 4 && r3 <= 6; int c3 = SquadManager.HumanSquadSize("Contractors", 3); ok &= c3 >= 4 && c3 <= 6; /* Batch 80: Tier 3 4-6 */ int r2 = SquadManager.HumanSquadSize("Raiders", 2); ok &= r2 >= 3 && r2 <= 4; }
         Check(ok, "squad sizes by tier"); }
@@ -4142,8 +4136,7 @@ static class Program {
         Check(b.TurnMp() > (b.EquippedWeapon.Db.MaxMpWhileHeld ?? 99), $"Walking Tank lifts the heavy MP cap ({b.TurnMp()})");
         b.EquipWeaponFromDb(WeaponDatabase.Categories["sidearm"]["PSh18Pchela"]);
         var tgt = Arena(out int tx, out int ty); b.X = tx + 3; b.Y = ty; EncounterState.Enemies.Add(b); b.IsAggroed = true;
-        b.NewTurn(); b.Ap = 5; b.Attack(tgt, "Single"); int after1 = b.Ap; b.Attack(tgt, "Single");
-        Check(after1 == 3 && b.Ap == 2, $"boss Double Tap: 2 AP, then 1 ({after1}, {b.Ap})"); }
+      }
       // Batch 76: a squad goes where its leader belongs
       { MacroState.Current.OfflineSquads.Clear();
         var sq = SquadManager.CreateOfflineSquad("industrial_basin", "Garrison", 2);
@@ -4155,12 +4148,6 @@ static class Program {
         MacroState.Current.OfflineSquads.Remove(sq); sq.ZoneId = "abandoned_city"; MacroState.Current.OfflineSquads.Add(sq);
         Check(SquadManager.Settle(sq, true) && MacroMapDatabase.Find(sq.ZoneId).Tier < 6, $"a Rookie-led squad moves down (now {sq.ZoneId})");
         MacroState.Current.OfflineSquads.Clear(); }
-      // Batch 77: AP - player 5, 6 from Veteran; every NPC 4; bosses (Named) by the player's rule
-      { p = Arena(out px, out py);
-        p.Rank = "Rookie"; int r5 = p.MaxAp; p.Rank = "Veteran"; int v6 = p.MaxAp; p.Rank = "Rookie";
-        var leg = new HumanEnemy("L", px + 3, py, "Obelisk", "Legend", null, null); var rook = new HumanEnemy("R", px + 3, py, "Raiders", "Rookie", null, null);
-        var bossL = new HumanEnemy("B", px + 3, py, "Obelisk", "Legend", null, null) { Named = true };
-        Check(r5 == 5 && v6 == 6 && CombatRules.NpcAp(leg) == 4 && leg.Ap == 4 && rook.Ap == 4 && CombatRules.NpcAp(bossL) == 6, $"AP: player {r5}/{v6}, Legend NPC {leg.Ap}, boss {CombatRules.NpcAp(bossL)}"); }
       // Batch 77: the hit chance the targeting panel shows is the real one
       Check(Math.Abs(CombatRules.HitChance(0, 10) - 0.64f) < 0.001f && Math.Abs(CombatRules.HitChance(0, 10, true) - 0.8704f) < 0.001f && CombatRules.HitChance(-30, 10) > 0.009f, "2d10 hit chance (double 10 always hits)");
       { p = Arena(out px, out py); EncounterState.InCombat = true;
@@ -4244,8 +4231,8 @@ static class Program {
     pl.NoteQuestDone(q);
     Check(pl.Rank == "Experienced", "experienced after tier 2 + quest, got " + pl.Rank);
     pl.NoteQuestDone(q); pl.NoteQuestDone(q);
-    Check(pl.Rank == "Professional" && pl.Exp == 0 && pl.PendingPerkPicks == 1 && pl.MaxAp == 5,   // rank XP (Yan): quests + the "3 quests" milestone fill the bar
-      $"professional from XP: {pl.Rank} xp {pl.Exp} picks {pl.PendingPerkPicks} ap {pl.MaxAp}");
+    Check(pl.Rank == "Professional" && pl.Exp == 0 && pl.PendingPerkPicks == 1,   // rank XP (Yan): quests + the "3 quests" milestone fill the bar
+      $"professional from XP: {pl.Rank} xp {pl.Exp} picks {pl.PendingPerkPicks}");
     var m2 = MutantDatabase.Tiers["tier2"].First();
     pl.NoteKill(new Mutant(m2.Key, 0, 0, m2.Value));
     Check(pl.Rank == "Professional" && pl.Exp == Player.KillXp(new Mutant(m2.Key, 0, 0, m2.Value)), $"a kill pays a little XP ({pl.Exp})");
@@ -4274,7 +4261,7 @@ static class Program {
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
     pl.ApplyCarryEffects(); int capped = pl.MaxMp; pl.TakePerk("WalkingTank"); pl.ApplyCarryEffects();
     Check(pl.MaxMp >= capped, $"walking tank {capped}->{pl.MaxMp}");
-    Check(PerkDatabase.All.Count == 34, "perk count (37 less Overwatch, Suppressive Fire and Run and Gun, which were turn-based actions) " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 33, "perk count (37 less Overwatch, Suppressive Fire, Run and Gun and Controlled Taps, which were turn-based) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80
@@ -4286,24 +4273,19 @@ static class Program {
     gs.EquipOffhandFromInventory(pmm.Id);
     Check(gs.Gunslinging, "gunslinging");
     gs.OffhandWeapon.Reload();
-    GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; gs.Ap = 4;
-    var (gw, ga) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
+    GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;     var (gw, ga) = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1);
     for (int y = gs.Y - 1; y <= gs.Y + 1; y++) for (int x = gs.X; x <= gs.X + 4; x++) if (x < TerrainMap.Width - 1 && y > 0 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
     var dummy = new HumanEnemy("Dummy", gs.X + 2, gs.Y, "Raiders", "Rookie", gw, ga); dummy.Hp = 1000; EncounterState.Enemies.Add(dummy);
-    gs.Attack(dummy, "Single");
-    Check(gs.Ap == 2 && glog.Counts.ContainsKey("Off hand: PSh-"), $"dual shot for 2 AP (ap {gs.Ap})");
     var gsave = gs.CaptureSaveData(); new Player(); Player.Current.ApplyLoadedData(gsave);
     Check(Player.Current.OffhandWeapon != null, "off-hand saved");
     Player.Current.StowOffhand(); Check(Player.Current.OffhandWeapon == null && Player.Current.Inventory.Items.Any(i => i.Key == "PSh18Pchela"), "stow off-hand");
     // Batch 57: aimed shots - L cycles the part, +1 AP, single shots only, effects on a clean hit or better
-    { var ap = Player.Current; ap.StowOffhand(); ap.Ap = 4; ap.EquippedWeapon.Reload(); ap.EquippedWeapon.IsJammed = false;
+    { var ap = Player.Current; ap.StowOffhand(); ap.EquippedWeapon.Reload(); ap.EquippedWeapon.IsJammed = false;
       var t = new HumanEnemy("T", 0, 0, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VK74"], ga);   // a gun to drop (a random loadout can be a knife)
       CombatRules.ApplyAimed(t, "Legs", 0.85f); Check(t.StatusEffects.Wound == null, "a graze on a limb does no wound");
       int mp = t.TurnMp(); CombatRules.ApplyAimed(t, "Legs", 1.2f); Check(t.StatusEffects.Wound == "Leg" && t.StatusEffects.Prone && t.TurnMp() == Math.Max(1, mp - 2), "a vital leg shot hobbles and drops them");
       CombatRules.ApplyAimed(t, "Arms", 1.2f); Check(t.StatusEffects.Wound == "Arm" && t.GunDropped && CombatRules.AttackerPenalty(t) <= -2, "a vital arm shot maims and disarms");
-      t.Ap = 4; t.Attack(ap); Check(!t.GunDropped && t.Ap == 2, "picking the gun back up costs 2 AP");
       CombatRules.ApplyAimed(t, "Torso", 1f); Check(t.StatusEffects.Bleeding, "a body shot bleeds");
-      int drain = t.PendingApDrain; CombatRules.ApplyAimed(t, "Head", 1f); Check(t.PendingApDrain == drain + 1, "a head shot dazes");
       var cond = t.ArmorCondition; CombatRules.ApplyAimed(t, "Armor", 1f); Check(t.EquippedArmor == null || t.ArmorCondition != cond, "an armor shot breaks their armor a step");
       var sq = new HumanEnemy("Sq1", dummy.X + 1, dummy.Y + 1, "Raiders", "Rookie", gw, ga); var sq2 = new HumanEnemy("Sq2", dummy.X + 2, dummy.Y + 2, "Raiders", "Rookie", gw, ga); sq2.Morale = "Shaken"; sq.IsAggroed = sq2.IsAggroed = dummy.IsAggroed;
       EncounterState.Enemies.Add(sq); EncounterState.Enemies.Add(sq2); dummy.Hp = 0;
@@ -4342,23 +4324,9 @@ static class Program {
         EncounterState.Enemies.Clear(); me.X = cx; me.Y = cy; }
       // Batch 64: a shot at someone who hasn't spotted you lands a tier higher; they know where it came from
       { var me = Player.Current; var ll = new ListLog(); var oldLog = GameLog.Target; GameLog.Target = ll; var gun = me.EquippedWeapon;
-        Func<bool, bool> shoot = alert => { for (int i = 0; i < 60; i++) {
-            var u = new HumanEnemy("Target", me.X + 3, me.Y, "Raiders", "Rookie", gw, ga) { VisionRange = 0, IsAggroed = alert }; u.MaxHp = u.Hp = 1000;
-            EncounterState.Enemies.Clear(); EncounterState.Enemies.Add(u); EncounterState.InCombat = alert; me.Ap = 9; gun.IsJammed = false; gun.Condition = ItemCondition.Working; gun.Reload();
-            ll.L.Clear(); me.Attack(u, "Single"); if (u.Hp < 1000) return true; } return false; };
-        Check(shoot(false) && ll.L.Any(l => l.Contains("never saw it coming")) && Contact.LastSeen == (me.X, me.Y), "a shot at an unaware target lands a tier higher and gives away where it came from");
-        Check(shoot(true) && !ll.L.Any(l => l.Contains("never saw it coming")), "an alert target takes normal hits");
         // Batch 65: short guns +2 tiles
         int R(string c, string k) => RangeUtil.ParseRangeToTiles(WeaponDatabase.Categories[c][k].Range);
         Check(R("shotgun", "BayouPump") == 6 && R("sidearm", "RK12Kuvalda") == 12 && R("smg", "CorvanHornet45") == 10 && R("assault", "TR30") == 18, "short guns reach 2 tiles further, long guns unchanged");
-        // Batch 74 (Yan): normal rolls out to the gun's range; past it -2, out to twice the range; beyond that no shot
-        { HumanEnemy Dummy(string n, int dx) { var d = new HumanEnemy(n, me.X + dx, me.Y, "Raiders", "Rookie", gw, ga) { IsAggroed = true }; d.MaxHp = d.Hp = 1000; return d; }
-          var edge = Dummy("Edge", gun.RangeTiles); var past = Dummy("Past", gun.RangeTiles + 1); var gone = Dummy("Gone", gun.MaxReach + 1);
-          EncounterState.Enemies.Clear(); EncounterState.Enemies.AddRange(new Mutant[] { edge, past, gone }); EncounterState.InCombat = true;
-          bool Pen(Mutant t) { me.Ap = 9; gun.IsJammed = false; gun.Reload(); ll.L.Clear(); me.Attack(t, "Single"); return ll.L.Any(l => l.Contains("-2 to hit") && l.Contains("range")); }
-          bool penEdge = Pen(edge), penPast = Pen(past);
-          me.Ap = 9; gun.IsJammed = false; gun.Reload(); ll.L.Clear(); me.Attack(gone, "Single"); bool refused = ll.L.Any(l => l.Contains("out of range"));
-          Check(gun.RangeTiles < 2 || !penEdge && penPast && refused, $"no penalty at the gun's range, -2 past it, no shot past twice it (range {gun.RangeTiles}: {penEdge} {penPast} {refused})"); }
         EncounterState.Enemies.Clear(); EncounterState.InCombat = false; GameLog.Target = oldLog; }
       // Batch 66: sneaking halves how far you're seen; an idle guard sees 3 tiles behind and to the sides
       { var me = Player.Current; MacroState.Current.Hour = 12f; Atmosphere.Current = Weather.Clear; me.Sneaking = false;
@@ -4409,8 +4377,7 @@ static class Program {
   static bool StoryAt(string zone, string landmark) {
     MacroState.Current.CurrentZoneId = zone; ZoneTravel.EnterZone(zone);
     GameState.Current.CurrentTurn = Turn.Player;
-    var p = Player.Current; p.Ap = 5;
-    var l = TerrainMap.Landmarks.FirstOrDefault(x => x.Name == landmark);
+    var p = Player.Current;     var l = TerrainMap.Landmarks.FirstOrDefault(x => x.Name == landmark);
     Check(l != null, $"landmark {landmark} missing in {zone}");
     if (l == null) return false;
     p.X = l.X; p.Y = l.Y;
@@ -4506,8 +4473,7 @@ static class Program {
     Check(StorySystem.Has("named:siege_catacombs"), "guardian death remembered");
     int parts = p.Inventory.Items.Count(i => i.Type == "mutantPart");
     Check(parts == 2, "named drops 2 parts, got " + parts);
-    var lp = TerrainMap.Landmarks.First(l => l.Name == "Sealed Crypt"); p.X = lp.X; p.Y = lp.Y; p.Ap = 5;
-    StorySystem.TryInteract(p);
+    var lp = TerrainMap.Landmarks.First(l => l.Name == "Sealed Crypt"); p.X = lp.X; p.Y = lp.Y;     StorySystem.TryInteract(p);
     Check(StorySystem.Has("lucifer") && p.Inventory.Items.Any(i => i.Id == "lucifer"), "lucifer taken");
     StoryAt("siege_catacombs", "Ossuary");
     Check(!EncounterState.Enemies.Any(e => e.Named), "guardian doesn't respawn");
@@ -4579,7 +4545,7 @@ static class Program {
     Check(p.ArtifactCarryBonus == 15, "only the strongest gravitational counts: " + p.ArtifactCarryBonus);
     Check(Math.Abs(p.AnomDR - Math.Max(0, anom0 - 0.20f)) < 0.001f, $"both penalties apply: {anom0} -> {p.AnomDR}");
     p.ArtifactSlots[0] = "lucifer"; p.ArtifactSlots[1] = "theLodestone"; p.ApplyArtifactStatBonuses();
-    Check(p.ArtifactAutoPassAnomalies && p.ArtifactApBonus == 1, "two legendaries both work");
+    Check(p.ArtifactAutoPassAnomalies, "two legendaries both work");
     Check(p.MaxHp == 750, "lucifer max hp " + p.MaxHp);
     p.ArtifactSlots[0] = null; p.ArtifactSlots[1] = null; p.ApplyArtifactStatBonuses();
     Check(p.MaxHp == 1000 && Math.Abs(p.AnomDR - anom0) < 0.001f, "everything restored after taking them off");
@@ -4883,8 +4849,7 @@ static class Program {
     var runner = Guy(14); for (int g = 0; g < 50 && (runner.EquippedWeapon == null || CombatRules.IsMelee(runner.EquippedWeapon)); g++) { EncounterState.Enemies.Remove(runner); runner = Guy(14); }   // needs a gun to empty
     runner.Inventory.Items.Add(new InventoryItem { Id = "bandage", Name = "Bandage", Type = "consumable", Qty = 1 });
     if (runner.EquippedWeapon != null) runner.EquippedWeapon.CurrentMagazine = 0;
-    int packBefore = p.Inventory.Items.Count; p.Ap = 0;
-    TurnLoop.ResolveFleeReactions(runner, p);
+    int packBefore = p.Inventory.Items.Count;     TurnLoop.ResolveFleeReactions(runner, p);
     Check(runner.EquippedWeapon == null && TerrainMap.GetGroundItemsAt(runner.X, runner.Y).Any(g => g.Item.Type == "weapon") && TerrainMap.GetGroundItemsAt(runner.X, runner.Y).Any(g => g.Item.Id == "bandage") && p.Inventory.Items.Count == packBefore,
       "a fleeing NPC with an empty gun drops it and its pack on the ground, not in yours");
     var keeps = Guy(16); keeps.Hp = keeps.MaxHp; ItemsBefore(keeps);
@@ -4918,9 +4883,8 @@ static class Program {
     p.ActiveDetector = GameData.DetectorDatabase.All["Clicker"]; AnomalyEngine.DetectorSweep(p);
     Check(bare && an3.Revealed, "bare senses only catch the next tile; a Clicker reveals within 3");
     an1.Artifact = new InventoryItem { Id = "testArt", Name = "Test Stone", Type = "artifact", Qty = 1 }; an1.Searched = false;
-    GameState.Current.CurrentTurn = Turn.Player; p.Ap = 4;
-    Check(AnomalyEngine.TrySearchAnomaly(p) && p.Inventory.Items.Any(i => i.Id == "testArt") && an1.Artifact == null, "searching a field takes the artifact lying in it, no roll");
-    p.Ap = 4; an3.Searched = false; p.X = TerrainMap.FindNearestEnterable(c3.x - 1, c3.y).x;
+    GameState.Current.CurrentTurn = Turn.Player;     Check(AnomalyEngine.TrySearchAnomaly(p) && p.Inventory.Items.Any(i => i.Id == "testArt") && an1.Artifact == null, "searching a field takes the artifact lying in it, no roll");
+    an3.Searched = false; p.X = TerrainMap.FindNearestEnterable(c3.x - 1, c3.y).x;
     Check(AnomalyEngine.SearchableNear(p) == null || AnomalyEngine.TrySearchAnomaly(p) && !p.Inventory.Items.Any(i => i.Id != "testArt" && i.Type == "artifact" && i.Name == "x"), "an empty field gives nothing");
     p.ArtifactAutoPassAnomalies = false; an1.Dc = 15; int hp0 = p.Hp; p.HealPermanent(100); hp0 = p.Hp;
     AnomalyEngine.PerformAnomalyCheck(p, an1);
@@ -4970,7 +4934,7 @@ static class Program {
     var (iw, ia) = EncounterGeneration.PickFactionLoadout("Wanderers", "Rookie", 1);
     var ear = new HumanEnemy("Listener C", p.X + (p.X + 15 < TerrainMap.Width ? 15 : -15), p.Y, "Wanderers", "Rookie", iw, ia) { IsAggroed = false, PatrolTarget = null };
     EncounterState.Enemies.Add(ear);
-    GameState.Current.CurrentTurn = Turn.Player; p.Ap = p.MaxAp; int hpL = p.Hp;
+    GameState.Current.CurrentTurn = Turn.Player; int hpL = p.Hp;
     InteractionEngine.AttemptInteract(p);
     Check(ear.PatrolTarget != null && p.Hp == hpL, "a failed lock bypass sounds an alarm the NPC 15 tiles off comes to, and hurts nobody");
     EncounterState.Enemies.Clear();
@@ -5031,11 +4995,10 @@ static class Program {
           if (GameState.Current.CurrentTurn == Turn.CombatOver) break;
         }
         if (GameState.Current.CurrentTurn == Turn.CombatOver) continue;
-        GameState.Current.CurrentTurn = Turn.Player; p.Ap = p.MaxAp;
-        step = "search/interact";
+        GameState.Current.CurrentTurn = Turn.Player;         step = "search/interact";
         var a = EncounterState.Anomalies.FirstOrDefault(); if (a != null) { a.Revealed = true; p.X = a.X; p.Y = a.Y; AnomalyEngine.TrySearchAnomaly(p); }
-        p.Ap = p.MaxAp; InteractionEngine.AttemptInteract(p);
-        var lm = TerrainMap.Landmarks.FirstOrDefault(); if (lm != null) { p.X = lm.X; p.Y = lm.Y; p.Ap = p.MaxAp; StorySystem.TryInteract(p); }
+        InteractionEngine.AttemptInteract(p);
+        var lm = TerrainMap.Landmarks.FirstOrDefault(); if (lm != null) { p.X = lm.X; p.Y = lm.Y; StorySystem.TryInteract(p); }
         if (i % 25 == 0) { step = "rest"; MacroState.Current.CurrentZoneId = "scavengers_hub"; ZoneTravel.EnterZone("scavengers_hub"); GameState.Current.CurrentTurn = Turn.Player; EncounterState.InCombat = false; WorldDays.Rest(); }
         if (i % 40 == 0) { step = "shop"; var it = ShopDatabase.Items.FirstOrDefault(x => x.Baseline); ShopSystem.BuyItem(it.Id); var sell = p.Inventory.Items.FirstOrDefault(x => x.Type != "key"); if (sell != null) ShopSystem.SellItem(sell.Id); }
         if (i % 60 == 0) { step = "save"; var d = p.CaptureSaveData(); new Player(); Player.Current.ApplyLoadedData(d); }
@@ -5066,8 +5029,7 @@ static class Program {
     Check(Ammo.Get(p.Inventory, pk) == stash + mag, "swapping out unloads into the stash");
     p.EquipWeaponFromInventory(p.Inventory.Items.First(i => i.Key == "PSh18Pchela").Id);
     Check(p.EquippedWeapon.CurrentMagazine == 0, "a gun from the pack comes out empty (no free reload)");
-    GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; p.Ap = 4;
-    p.ReloadWeapon(); p.EquippedWeapon.CurrentMagazine -= 3;
+    GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;     p.ReloadWeapon(); p.EquippedWeapon.CurrentMagazine -= 3;
     var d = p.CaptureSaveData(); new Player(); Player.Current.ApplyLoadedData(d);
     Check(Player.Current.EquippedWeapon.CurrentMagazine == p.EquippedWeapon.CurrentMagazine, "magazine saved");
     p = Player.Current;

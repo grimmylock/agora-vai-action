@@ -60,16 +60,6 @@ namespace GameCore
             return 1f - cdfMiss * cdfMiss;
         }
 
-        /// <summary>Batch 77 (Yan): the player starts with 5 AP and gets +1 at Veteran (about 30% into the game). Bosses
-        /// (Named units) follow the same rule; every other NPC has 4 AP whatever its rank (`NpcAp`).</summary>
-        public static int PlayerRankAp(string rank) => RankIndex(rank ?? "Rookie") >= RankIndex("Veteran") ? 6 : 5;
-        public const int NpcBaseAp = 4;
-        /// <summary>Batch 78 (Yan): each gun of a Gunslinger pair at -1 to hit (was -2).</summary>
-        public const int GunslingerPenalty = 1;
-        public static int NpcAp(Mutant m) => m is HumanEnemy h && h.Named ? PlayerRankAp(h.Rank) : NpcBaseAp;
-
-        /// <summary>Batch 75 (the build probe): extra AP for the player only. 0 = unchanged.</summary>
-        public static int PlayerApBonus = 0;
 
         public const float DrCap = 0.75f;
 
@@ -115,17 +105,7 @@ namespace GameCore
             return Category(w?.Db) == "smg" ? -1 : -3;
         }
 
-        public static int BurstApCost(Weapon w) =>
-            w?.Db?.BurstFireApCost ?? (Category(w?.Db) == "smg" ? 2 : 3);
-
         /// <summary>Weapon-specific to-hit modifiers (file 01 traits) for one attack.</summary>
-        /// <summary>Batch 76 (Yan): "nerf snipers to consume 3 ap per shot". A single shot costs 2 AP, 3 with a sniper rifle.</summary>
-        public static int SingleShotAp(Weapon w) => (Category(w?.Db) == "sniper" ? 3 : 2) + Kick(w);
-
-        /// <summary>Batch 80 (Yan: "make it cost +1 ap per shot"): the RK-12's extra AP. Added after Double Tap and Gunslinger,
-        /// so those perks still work with it (a Double Tap follow-up is 2, a Gunslinger pair 3).</summary>
-        public static int Kick(Weapon w) => w?.Db?.Name == "RK-12 Kuvalda" ? 1 : 0;
-
         public static int TraitToHit(Weapon w, bool burst, int distance)
         {
             if (w?.Db == null) return 0;
@@ -192,8 +172,7 @@ namespace GameCore
                     GameLog.Write($"Body shot: {who} is bleeding.");
                     break;
                 case "Head":
-                    target.PendingApDrain += 1;
-                    GameLog.Write($"Head shot: {who} is dazed (-1 AP next turn).");
+                    GameLog.Write($"Head shot: {who} is dazed.");
                     break;
             }
         }
@@ -261,8 +240,7 @@ namespace GameCore
                     GameLog.Write($"{who} takes a TORSO wound and is bleeding.");
                     break;
                 default:
-                    target.PendingApDrain += 1;
-                    GameLog.Write($"{who} takes a HEAD wound: -1 AP next turn.");
+                    GameLog.Write($"{who} takes a HEAD wound.");
                     break;
             }
             if (target is Player p) { p.ApplyWoundEffects(); p.WearArmor(); }

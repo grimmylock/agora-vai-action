@@ -84,10 +84,7 @@ namespace GameCore
             bool isRanged = weapon?.Db != null && !string.IsNullOrEmpty(weapon.Db.AmmoType);
             int range = weapon != null ? weapon.MaxReach : 1;
 
-            // player.Ap >= 1 isn't spent by this shot (it's free) - it's a readiness gate: only a
-            // player who didn't dump every last point of AP on their own turn still has a round
-            // "in the chamber" to react with here.
-            if (player.Ap >= 1 && weapon != null && weapon.IsLoaded && isRanged && CombatantUtil.Distance(player, npc) <= range)
+            if (weapon != null && weapon.IsLoaded && isRanged && CombatantUtil.Distance(player, npc) <= range)
             {
                 GameLog.Write($"{npc.Name} breaks and runs - free parting shot!");
                 weapon.Fire(npc, "Single", (int)player.AgilityMod + CombatRules.RankMod(player.Rank));

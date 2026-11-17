@@ -66,7 +66,6 @@ namespace GameCore
                 ? rd
                 : new RankDef { Ap = 4, Mp = 4, D20Mod = 0, MoraleHPPercent = 50 };
 
-            Ap = CombatRules.NpcAp(this);   // Batch 77: 4 for every rank; bosses follow the player's rule
             Mp = RankData.Mp;
             D20Mod = RankData.D20Mod;
             MoraleHPPercent = RankData.MoraleHPPercent > 0 ? RankData.MoraleHPPercent : 50;
@@ -125,7 +124,7 @@ namespace GameCore
         // Batch 86 (Yan: "boss perks = 2 perks based on their main weapon"). Every pair works for an NPC.
         static readonly Dictionary<string, string[]> PerksByClass = new Dictionary<string, string[]>
         {
-            ["sniper"] = new[] { "MarksmansFocus", "HighVelocityImpact" }, ["assault"] = new[] { "RecoilControl", "ControlledTaps" },
+            ["sniper"] = new[] { "MarksmansFocus", "HighVelocityImpact" }, ["assault"] = new[] { "RecoilControl" },
             ["smg"] = new[] { "BulletHose", "HitAndRun" }, ["heavy"] = new[] { "Shredder", "WalkingTank" },
             ["shotgun"] = new[] { "Breacher", "StaggeringBlast" }, ["sidearm"] = new[] { "PointBlankExecution", "DoubleTap" },
             ["melee"] = new[] { "BullRush", "BladeDancer" },
@@ -226,13 +225,11 @@ namespace GameCore
         public override void Attack(ICombatant target) => Attack(target, "Single");
 
         /// <summary>One attack action. Burst only for assault rifles / SMGs / heavy weapons (file 01),
-        /// at that weapon's own AP cost; single shots cost 2.</summary>
+        /// (no action points any more: one call is one action).</summary>
         public void Attack(ICombatant target, string fireMode)
         {
             if (GunDropped)
             {
-                if (Ap < 2) return;
-                Ap -= 2;
                 GunDropped = false;
                 GameLog.Write($"{Name} scrambles to pick up their {EquippedWeapon?.Name ?? "gun"}.");
                 return;
@@ -256,39 +253,31 @@ namespace GameCore
                 return;
             }
 
-            if (EquippedWeapon.IsJammed && Ap >= 1)
+            if (EquippedWeapon.IsJammed)
             {
-                Ap -= 1;
                 EquippedWeapon.ClearJam();
                 GameLog.Write($"{Name} clears a jam.");
             }
-            else if (Ap >= 2 && EquippedWeapon.IsLoaded && FindBarrelNear(target, out int bx, out int by))
+            else if (EquippedWeapon.IsLoaded && FindBarrelNear(target, out int bx, out int by))
             {
-                Ap -= 2;
                 GameLog.Write($"{Name} shoots at the barrel next to {target.Name}!");
                 EquippedWeapon.FireAtTile(bx, by, "Single", D20Mod);
             }
-            else if (Ap >= CombatRules.SingleShotAp(EquippedWeapon) && EquippedWeapon.IsLoaded)
+            else if (EquippedWeapon.IsLoaded)
             {
                 bool burst = fireMode == "Burst" && CombatRules.CanBurst(EquippedWeapon)
-                    && Ap >= CombatRules.BurstApCost(EquippedWeapon) && EquippedWeapon.CurrentMagazine >= CombatRules.BurstRounds(EquippedWeapon);
+                    && EquippedWeapon.CurrentMagazine >= CombatRules.BurstRounds(EquippedWeapon);
                 string cat = CombatRules.Category(EquippedWeapon.Db);
                 bool melee = CombatRules.IsMelee(EquippedWeapon);
                 if (melee && CombatantUtil.HasPerk(this, "BladeDancer") && Cuts >= 3) return;
-                int cost = burst ? CombatRules.BurstApCost(EquippedWeapon) : CombatRules.SingleShotAp(EquippedWeapon);
-                // Batch 86: the perks a boss can have (the player's rules for each)
-                if (!burst && cat == "sidearm" && SidearmShots == 1 && CombatantUtil.HasPerk(this, "DoubleTap")) cost = 1 + CombatRules.Kick(EquippedWeapon);
-                if (melee && CombatantUtil.HasPerk(this, "BladeDancer")) cost = Cuts == 0 ? 2 : 1;
-                Ap -= cost;
                 if (!burst && cat == "sidearm") SidearmShots++;
                 if (melee) Cuts++;
                 if (++Attacks == 1 && CombatantUtil.HasPerk(this, "HitAndRun")) Mp += 2;
                 GameLog.Write($"{Name} {(burst ? "opens up with a burst from" : "fires")} {EquippedWeapon.Name} at {(target is Player ? "Player" : target.Name)}!");
                 EquippedWeapon.Fire(target, burst ? "Burst" : "Single", D20Mod);
             }
-            else if (!EquippedWeapon.IsLoaded && Ap >= 1)
+            else if (!EquippedWeapon.IsLoaded)
             {
-                Ap -= 1;
                 if (EquippedWeapon.Reload()) GameLog.Write($"{Name} reloads their weapon.");
                 else
                 {
