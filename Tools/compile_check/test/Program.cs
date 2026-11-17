@@ -4046,7 +4046,7 @@ static class Program {
     Check(Med("smg", true) >= 4 && Med("smg", true) <= 6, $"SMGs: 4-6 head hits ({Med("smg", true)})");
     Check(Med("sniper", true) == 1 && Med("sniper", false) <= 2, $"snipers: 1 head, 2 chest ({Med("sniper", true)}/{Med("sniper", false)})");
     var sg = W("shotgun", WeaponDatabase.Categories["shotgun"].Keys.First());
-    Check(Hits(sg, med[1], "Head", 2f, false) == 1 && Hits(sg, med[1], "Head", 12f, false) > 1, $"shotgun: 1 head close ({Hits(sg, med[1], "Head", 2f, false)}), more far ({Hits(sg, med[1], "Head", 12f, false)})");
+    Check(Hits(sg, med[1], "Head", 2f, false) == 1 && Hits(sg, med[1], "Head", 12f, false) == Hits(sg, med[1], "Head", 2f, false), $"shotgun: 1 head close ({Hits(sg, med[1], "Head", 2f, false)}) and just as many far ({Hits(sg, med[1], "Head", 12f, false)}): no range fall-off, the spread does it (Yan, 2026-11-17)");
   }
 
   // Batch 87: the Garrison raid - fighting in the Siege Ward brings 2 more waves (the last led by a boss), then the armory opens

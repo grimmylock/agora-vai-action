@@ -541,7 +541,7 @@ namespace GameCore
 
         // RT batch 6 (Yan's targets, weapon vs armor of its own tier: rifles 2-4 head hits, snipers 1 head / 2 chest, pistols 2-4,
         // SMGs 4-6, shotguns 1 to many by range, machine guns like rifles): the per-round damage was tuned for one shot per turn,
-        // so each class gets a real-time multiplier. Shotguns fade with range: full to 4 tiles, down to 30% at 12.
+        // so each class gets a real-time multiplier. Shotguns have no range fall-off any more (2026-11-17): their pellet spread does it.
         public static readonly Dictionary<string, float> ClassDamage = new Dictionary<string, float>
             { ["sidearm"] = 1f, ["smg"] = 0.8f, ["assault"] = 1f, ["sniper"] = 1.8f, ["shotgun"] = 1f, ["heavy"] = 1f };
 
@@ -550,7 +550,7 @@ namespace GameCore
         {
             string cat = CombatRules.Category(w?.Db);
             float raw = (w.BaseDamage + (w.Upgrades.Contains("Reinforced") ? 30 : 0)) * (ClassDamage.TryGetValue(cat, out var m) ? m : 1f) * Ballistics.PartMult(part);
-            if (pellets > 1) raw = raw / pellets * 1.5f * (dist <= 4f ? 1f : System.Math.Max(0.3f, 1f - (dist - 4f) / 8f * 0.7f));
+            if (pellets > 1) raw = raw / pellets * 1.5f;                      // 2026-11-17 (Yan): no damage fall-off for shotguns, the spread of the pellets is the fall-off
             return raw;
         }
 
