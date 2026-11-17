@@ -49,6 +49,7 @@ static class Program {
     RtBalanceChecks();
     if (Environment.GetEnvironmentVariable("RTBAL") == "1") WeaponBalanceReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "2") WeaponVsArmorReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "3") GangKillReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3381,6 +3382,23 @@ static class Program {
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_vs_armor.txt", sb.ToString());
   }
 
+
+  // How fast a gang kills a player who does nothing (RTBAL=3): the shakedown "refuse" case. n raiders at `dist` tiles, all aggroed at once, the player stands still with the starting kit.
+  static void GangKillReport() {
+    foreach (var (n, rank, dist) in new[] { (1, "Rookie", 6), (3, "Rookie", 6), (4, "Experienced", 6), (4, "Experienced", 12), (6, "Veteran", 8) }) {
+      var times = new List<float>(); var firstHit = new List<float>();
+      for (int seed = 0; seed < 25; seed++) {
+        UnityEngine.Random.InitState(900 + seed); var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); p.Hp = p.MaxHp;
+        for (int y = py - 8; y <= py + 8; y++) for (int x = px - 4; x <= px + 24; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+        Rt.SetOffset(p, 0f, 0f); var foes = new List<HumanEnemy>();
+        for (int i = 0; i < n; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", rank, 1); var h = new HumanEnemy("Raider" + i, px + dist, py - n / 2 + i, "Raiders", rank, w, a) { IsAggroed = true }; Rt.SetOffset(h, 0f, 0f); foes.Add(h); EncounterState.Enemies.Add(h); }
+        UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; EncounterState.InCombat = true; Contact.Spot(p); const float dt = 1f / 30f; float t = 0f, fh = -1f; int hp0 = p.Hp;
+        for (; t < 30f && p.Hp > 0 && !Body.Down(p); t += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); if (fh < 0f && p.Hp < hp0) fh = t; }
+        times.Add(p.Hp > 0 && !Body.Down(p) ? 31f : t); firstHit.Add(fh < 0f ? 31f : fh); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; }
+      times.Sort(); firstHit.Sort();
+      Console.WriteLine($"GANG {n} {rank} raiders at {dist} tiles vs a standing player ({Player.Current.MaxHp} HP): first hit lands after {firstHit[12]:0.0} s (median), player down after {times[12]:0.0} s median (fastest {times[0]:0.0}, slowest {times[24]:0.0})");
+    }
+  }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
   static float AimShare(Player p, Mutant tgt) {
