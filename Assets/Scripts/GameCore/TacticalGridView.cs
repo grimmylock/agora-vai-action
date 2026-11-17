@@ -867,7 +867,7 @@ namespace GameCore
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))
-                Sfx.Play(Sfx.Step(TerrainMap.GetTile(u.X, u.Y).Ground), marker.transform.position, u is Player ? 0.6f : 0.4f, 0.12f);
+                Sfx.Play(Sfx.Step(TerrainMap.GetTile(u.X, u.Y).Ground), marker.transform.position, (u is Player ? 0.6f : 0.4f) * 0.2f, 0.12f);   // 2026-11-17 (Yan: "lower the walking sound effect volume by like 80%, running too"): footsteps at a fifth
             if (wf >= 0 && wf != lastWf && u is Player && TerrainMap.GetTile(u.X, u.Y).Ground == GroundType.Water && Time.time - _rippleAt > 0.6f)
             { _rippleAt = Time.time; CombatFx.PxAt("ripples", u.X, u.Y); }   // RT fx 4: wading sets the water moving
             _lastFoot[marker] = wf;

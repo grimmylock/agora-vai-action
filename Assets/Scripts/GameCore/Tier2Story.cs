@@ -342,7 +342,7 @@ namespace GameCore
             float t = now - _hordeAt;
             if (TerrainMap.ZoneId != Maze) { Out(); return; }
             Sfx.Ambient("amb_alarm");                                                        // the siren keeps wailing (nothing else sets the ambient meanwhile)
-            var dmk = Mark(Door); int sx = (dmk?.X ?? 40) + 20, sy = 9;      // Yan (2026-11-17): the Gaunt comes out of the dark tunnel and INTO the red-lit corridor, 20 tiles from the door, to scream at you
+            var dmk = Mark(Door); var bwk = Mark("Broken Wall"); int sx = bwk?.X ?? 80, sy = bwk?.Y ?? 9;      // Yan (2026-11-17): the Gaunt comes out of the dark tunnel and INTO the red-lit corridor, 20 tiles from the door, to scream at you
             // Yan: "the camera did not zoom at the gaunt and i didn't see it": from its first step to the end of its scream and point it stands in the dark, so it is lit for the scene (Vision.Spotlight) and the
             // cinematic camera (letterbox, zoom, as the eel's introduction) is locked on it; then the camera eases back to you.
             if (_gaunt != null && _gaunt.IsAlive() && t >= 2.5f && (_screamAt < 0f || now - _screamAt < Gaunt.CallTotal + 0.4f))
@@ -356,7 +356,7 @@ namespace GameCore
                 if (now >= _gauntStep)
                 {
                     _gauntStep = now + 0.25f; _gaunt.Mp = System.Math.Max(_gaunt.Mp, TurnLoop.WalkMp);
-                    if (System.Math.Abs(_gaunt.X - sx) > 1 || System.Math.Abs(_gaunt.Y - sy) > 1) { _gaunt.FaceToward(sx, sy); _gaunt.MoveToward(sx, sy); }   // (it moonwalked: the sprite follows Facing)
+                    if (System.Math.Abs(_gaunt.X - sx) > 1 || System.Math.Abs(_gaunt.Y - sy) > 1) { _gaunt.FaceToward(sx, sy); _gaunt.PatrolTarget = (sx, sy); _gaunt.MoveToward(sx, sy); }   // (it moonwalked: an unaggroed mutant is drawn turned toward its PatrolTarget, not its Facing)
                 }
                 bool arrived = System.Math.Abs(_gaunt.X - sx) <= 1 && System.Math.Abs(_gaunt.Y - sy) <= 2;
                 if (arrived || t >= 20f)

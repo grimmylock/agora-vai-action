@@ -6221,3 +6221,10 @@ Yan: "the soldiers DESTROYED the horde", only 2 shooting, "their weapons never n
 - **Siren**: `TacticalGridView` re-sets the zone's ambience every frame and overwrote the alarm; `Sfx.AmbientFor` now answers "amb_alarm" while `Tier2Story.AlarmOn` (step 4 in the maze).
 - **Red lights**: `RedLights` swapped the tiles and reset `LightMap`, but the picture's lamp field (`Lighting`) bakes the lights on its own and kept the white ones; `Lighting.Reset()` added. Neither was visible to the harness; unconfirmed until Yan runs it.
 Not run in Unity again.
+
+## Taken: the Gaunt's stop, the real moonwalk cause, the rats, the footsteps (2026-11-17, Yan)
+- The Gaunt walks out of the tunnel only as far as the Broken Wall (it came 20 tiles into the corridor, too close to the soldiers) and screams there.
+- **Moonwalking, for real this time**: an unaggroed mutant is drawn turned toward its `PatrolTarget` (`TacticalGridView.ApplyUnitArt`: `tx = IsAggroed ? player.X : PatrolTarget`), not its `Facing`, so my earlier `FaceToward` did nothing. The story now sets `PatrolTarget` to where it walks.
+- **Swarm** speed capped at 88% of a sprinting player (`RtAi.Speed`, 3.9 tiles/s against 4.4), Gaunt-driven or not. This is Yan's call against the "never nerf enemies" rule; the lever is that one line.
+- Footsteps (`TacticalGridView`, `Sfx.Step`) at a fifth of their volume, the player's and everyone's.
+Not run in Unity.
