@@ -53,6 +53,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "4") AmmoReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "5") WeaponApReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
+    if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3564,6 +3565,19 @@ static class Program {
       Check(Math.Abs(light - 1f) < 0.001f && Math.Abs(heavy - 0.9f) < 0.001f, $"heavy armor ({heavyKey.def.Name}) slows the walk 10%: light {light}, heavy {heavy}"); }
   }
 
+  // VISBENCH=1: what one Vision.Update costs (line of sight to every cell within Vision.MaxRadius) on the open tier maps, ms per call; compare runs with different MaxRadius.
+  static void VisionBench() {
+    foreach (var zid in new[] { "abandoned_city", "perimeter", "marshes" }) {
+      MacroState.Current.CurrentZoneId = zid; TerrainMap.BuildTerrainForZone(zid);
+      var pv = new Player(); var spots = new List<(int, int)>(); var rnd = new Random(7);
+      for (int tries = 0; tries < 20000 && spots.Count < 40; tries++) { int x = rnd.Next(5, TerrainMap.Width - 5), y = rnd.Next(5, TerrainMap.Height - 5); if (TerrainMap.CanEnterTile(x, y)) spots.Add((x, y)); }
+      foreach (var (x, y) in spots.Take(5)) { pv.X = x; pv.Y = y; Vision.Reset(); Vision.Update(pv, 0); }   // warm up
+      var sw = System.Diagnostics.Stopwatch.StartNew(); int n = 0;
+      for (int rep = 0; rep < 3; rep++) foreach (var (x, y) in spots) { pv.X = x; pv.Y = y; Vision.Reset(); Vision.Update(pv, 0); n++; }
+      sw.Stop();
+      Console.WriteLine($"VISBENCH MaxRadius {Vision.MaxRadius} {zid} {TerrainMap.Width}x{TerrainMap.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms per Vision.Update ({n} calls)");
+    }
+  }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
     // Yan's first real-time playtest: sprinting made enemies zoom - each tile you crossed also ticked the world

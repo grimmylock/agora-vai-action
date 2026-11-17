@@ -7,7 +7,7 @@ namespace GameCore
 {
     public static class Vision
     {
-        public const int MaxRadius = 30;   // Batch 65: was 13; real time: 30, the far zoom's corners (the look cone reaches them)
+        public const int MaxRadius = 50;   // Batch 65: was 13; real time: 30; 2026-11-17 (Yan): 50, so long guns and scopes can use their reach without zooming out (the camera pull, Rt.PullEdgeOf)
         /// <summary>Batch 127c (Yan: "an awareness meter for the player (perception stat boosts it)"): how far a hostile you can see
         /// raises the ! over your head and pulls the camera out to it - 14 tiles at Perception 10, +1 a point, at most your sight.</summary>
         public static int SenseRange(Player p) => System.Math.Max(8, System.Math.Min(MaxRadius, 14 + (p.Stats.P - 10)));
