@@ -28,7 +28,7 @@ namespace GameCore
         {
             ["sidearm"] = new[] { 1.2f, 3.5f, 0.45f, 2.6f, 14f, 320f, 0f, 40f, 1.3f, 0.6f, 40f },
             ["smg"]     = new[] { 1.9f, 3f, 0.4f, 1.5f, 16f, 720f, 1f, 50f, 1.7f, 0.5f, 45f },
-            ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 40f, 2.0f, 1f, 80f },
+            ["assault"] = new[] { 0.7f, 5f, 0.7f, 1.9f, 11f, 600f, 1f, 60f, 2.0f, 1f, 80f },
             ["sniper"]  = new[] { 0.12f, 8f, 1.2f, 7f, 9f, 50f, 0f, 100f, 2.6f, 1.6f, 100f },
             ["shotgun"] = new[] { 1.4f, 4f, 0.5f, 6f, 9f, 75f, 0f, 30f, 2.4f, 0.8f, 40f },
             ["heavy"]   = new[] { 1.4f, 7f, 0.9f, 2.2f, 8f, 560f, 1f, 60f, 3.2f, 1.5f, 85f },

@@ -6338,3 +6338,6 @@ Yan's remark: 40 tiles is not much: a soldier holding the Gaunt corridor could n
 
 ## Shotgun range fall-off removed (2026-11-17)
 Yan: "remove the shotgun damage falloff, we'll let the spread be our falloff". The pellet fade in `Gunplay.RoundDamage` (full damage to 4 tiles, 30% at 12) is gone: every pellet that lands does the same damage at any range; the pellet cone (choke + aim spread) alone decides how many land. Effect (400 real rounds, tier 1 armor, standing target): pumps and levers kill at 15 tiles in 10-14 s with buckshot (was 35-55 s), fast semi-autos 18-24 s; at 6 tiles unchanged. The slug keeps its own fall-off from 15 tiles (it has no spread to fade it): say if that should go too. The old harness check "more head hits far than close" now asserts equal. Harness green.
+
+## Rifle reach 60, slug fade kept (2026-11-17)
+Yan: slug keeps its fade from 15 tiles ("leave it"); rifle (assault class) reach 40 -> 60 so it matches its fall-off start at 50 (`Gunplay.Table` "assault"). Note: enemies still only fire inside `min(reach, LookReach)`, LookReach <= `Vision.MaxRadius` 30, so fights stay inside 30 tiles until that is raised. Camera: half-height 7 tiles near, 14 far (`TacticalGridView.cs:914`). Harness green; balance tables not regenerated.
