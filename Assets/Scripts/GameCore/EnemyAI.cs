@@ -229,7 +229,7 @@ namespace GameCore
 
             string role = Role(h);
             var weapon = h.EquippedWeapon;
-            int range = weapon != null ? weapon.MaxReach : 1;                 // Batch 74: can shoot out to twice its range (normal rolls only inside it)
+            int range = weapon != null ? (Rt.On ? (int)System.Math.Ceiling(CombatRules.Category(weapon.Db) == "sniper" ? Gunplay.For(weapon).Reach : Gunplay.EffectiveRange(weapon)) : weapon.MaxReach) : 1;   // real time: he picks a tile inside his gun's effective range (half its reach; a sniper keeps his whole reach) - Batch 74: can shoot out to twice its range (normal rolls only inside it)
 
             // Leader: Command (free, once a round, unless suppressed) and Rally (2 AP).
             if (role == "Leader")

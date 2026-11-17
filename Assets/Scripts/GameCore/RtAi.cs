@@ -27,6 +27,7 @@ namespace GameCore
             public bool Flee, Chasing;
             public float NextStep, NextShot, ReloadUntil = -1f, PinnedUntil = -1f, MovedAt = -9f;
             public int BurstLeft;
+            public float FarShotAt = -9f;                             // the last probing shot taken from outside his effective range while still closing in
             public bool Dry;                                          // out of rounds: closes in to swing
             public float ReadyAt = -1f, CanShootAt = -9f;             // 2026-11-17: when he is done reacting to a target he can finally shoot at (ReactionSeconds), and when he last could
         }
@@ -186,6 +187,14 @@ namespace GameCore
             // a tile line traced from him to you can slip past a corner that the line from you to him doesn't
             if (pl != null ? (CombatantUtil.Distance(h, t) > System.Math.Min(hd.Reach, Rt.Of(pl).LookReach) || !Contact.Mutual(h, pl) || !Contact.Knows(h, pl))
                 : (CombatantUtil.Distance(h, t) > hd.Reach || !grid.CheckLineOfSight(h.X, h.Y, t.X, t.Y))) { s.BurstLeft = 0; return; }   // the story's soldiers shoot mutants: plain line of sight
+
+            // 2026-11-17 (Yan: "enemies try to move in the effective range before shooting too much, that way fights happen more inside the normal vision range (besides snipers)"): while he is still walking
+            // closer (he has a goal he has not reached) and the target is past half his gun's reach, he only takes a probing shot every 3 s; snipers shoot from where they are.
+            if (pl != null && CombatRules.Category(w.Db) != "sniper" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w) && s.Goal.HasValue && (h.X, h.Y) != s.Goal.Value && !s.Flee)
+            {
+                if (now < s.FarShotAt + 3f) { s.BurstLeft = 0; return; }
+                s.FarShotAt = now; s.BurstLeft = 1;
+            }
 
             if (Gunplay.AllyInLine(h, t))                                  // a friend in the line of fire: hold, and step aside for a clear shot
             {

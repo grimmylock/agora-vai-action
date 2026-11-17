@@ -364,15 +364,15 @@ namespace GameCore
 
         /// <summary>Lever guns (2026-11-17, Yan: "can be levered when hip-fired, hip fire speed increased by 200%"): worked from the hip they fire three times as fast; aimed, they cycle at their listed rate.</summary>
         public static readonly HashSet<string> Levers = new HashSet<string> { "Nightwalker .45-70", "Frontier Lever Rifle", "Halden Lever Shotgun" };
-        /// <summary>Damage fall-off (2026-11-17, Yan: "pistols start at 30, smg 40, shotgun doesn't need because spread already does it, rifles and heavy machineguns at 50, snipers at 60"): a round keeps
-        /// all its damage out to its class's start distance, then loses it in a straight line to half at the end of the gun's reach (a gun whose reach is not past the start never loses any).</summary>
-        public static readonly Dictionary<string, float> FalloffStart = new Dictionary<string, float> { ["sidearm"] = 30f, ["smg"] = 40f, ["assault"] = 50f, ["heavy"] = 50f, ["sniper"] = 60f };
+        /// <summary>Effective range (2026-11-17, Yan: "make it so the effective range of each weapon is half of its total range"): a round keeps all its damage out to half the gun's reach, then loses it in a straight line to
+        /// half damage at the reach itself (pistol 40: 20..40, SMG 50: 25..50, rifle 60: 30..60, heavy MG 60: 30..60, sniper 100: 50..100). Buckshot has no fall-off (its spread is the fall-off); a slug (reach 30) fades from 15.</summary>
+        public static float EffectiveRange(Weapon w) => w?.Db == null ? 1f : For(w).Reach * 0.5f;
         public static float FalloffMult(Weapon w, float dist)
         {
-            float start;
-            if (w?.Db != null && w.CurrentAmmoType == "Slug" && CombatRules.IsShotgun(w)) start = 15f;                  // a slug has no spread to fade it: from 15 tiles on
-            else if (w?.Db == null || !FalloffStart.TryGetValue(CombatRules.Category(w.Db), out start)) return 1f;
-            float reach = For(w).Reach; if (reach <= start || dist <= start) return 1f;
+            if (w?.Db == null) return 1f;
+            if (CombatRules.IsShotgun(w) && w.CurrentAmmoType != "Slug") return 1f;
+            if (CombatRules.IsMelee(w)) return 1f;
+            float reach = For(w).Reach, start = reach * 0.5f; if (reach <= 1f || dist <= start) return 1f;
             return 1f - 0.5f * System.Math.Min(1f, (dist - start) / (reach - start));
         }
 
