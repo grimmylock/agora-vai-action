@@ -12,30 +12,30 @@ Yan: separate the weapons by caliber, have the actual ammo in the game, and bala
 | .32 ACP | pistol | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 4.5 | 90 |
 | .357 Mag | pistol | 12 | Black Harrier, Rinaldi R6 | Soft Point | Standard | 1.00 | 1.00 |  | 1 | 8 | 96 |
 | .357 Mag | pistol | 12 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 12 | 144 |
-| .357 Mag | pistol | 12 |  | Hard-Cast | ArmorPiercing | 1.00 | 0.60 |  | 3 | 20 | 240 |
+| .357 Mag | pistol | 12 |  | Hard-Cast | ArmorPiercing | 1.00 | 0.70 |  | 3 | 20 | 240 |
 | .44 Mag | pistol | 12 | Frontier Lever Rifle, Steppe Eagle | Soft Point | Standard | 1.00 | 1.00 |  | 1 | 12 | 144 |
 | .44 Mag | pistol | 12 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 18 | 216 |
-| .44 Mag | pistol | 12 |  | Hard-Cast | ArmorPiercing | 1.00 | 0.60 |  | 3 | 30 | 360 |
+| .44 Mag | pistol | 12 |  | Hard-Cast | ArmorPiercing | 1.00 | 0.70 |  | 3 | 30 | 360 |
 | .45 ACP | pistol | 20 | Halden Service Revolver, Halden .45 Service, Corvan Hornet .45 | Ball | Standard | 1.00 | 1.00 |  | 1 | 6 | 120 |
 | .45 ACP | pistol | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 9 | 180 |
-| .45 ACP | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.50 |  | 3 | 15 | 300 |
-| 12.7x55mm | pistol | 10 | RK-12 Kuvalda, VK-127 Grom | Ball | Standard | 1.00 | 0.90 |  | 1 | 25 | 250 |
-| 12.7x55mm | pistol | 10 |  | Armor-Piercing | ArmorPiercing | 1.00 | 0.50 |  | 4 | 62.5 | 625 |
-| 4.6x30mm | pistol | 30 | Corvan Gnat PDW | Ball | Standard | 1.00 | 0.80 |  | 1 | 9 | 270 |
+| .45 ACP | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.65 |  | 3 | 15 | 300 |
+| 12.7x55mm | pistol | 10 | RK-12 Kuvalda, VK-127 Grom | Ball | Standard | 1.00 | 1.00 |  | 1 | 25 | 250 |
+| 12.7x55mm | pistol | 10 |  | Armor-Piercing | ArmorPiercing | 1.00 | 0.65 |  | 4 | 62.5 | 625 |
+| 4.6x30mm | pistol | 30 | Corvan Gnat PDW | Ball | Standard | 1.00 | 1.00 |  | 1 | 9 | 270 |
 | 4.6x30mm | pistol | 30 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 13.5 | 405 |
-| 4.6x30mm | pistol | 30 |  | Armor-Piercing | ArmorPiercing | 0.90 | 0.45 |  | 4 | 22.5 | 675 |
-| 5.7x28mm | pistol | 30 | Corvan 5.7 | Ball | Standard | 1.00 | 0.85 |  | 1 | 9 | 270 |
+| 4.6x30mm | pistol | 30 |  | Armor-Piercing | ArmorPiercing | 0.90 | 0.60 |  | 4 | 22.5 | 675 |
+| 5.7x28mm | pistol | 30 | Corvan 5.7 | Ball | Standard | 1.00 | 1.00 |  | 1 | 9 | 270 |
 | 5.7x28mm | pistol | 30 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 13.5 | 405 |
-| 5.7x28mm | pistol | 30 |  | Armor-Piercing | ArmorPiercing | 0.90 | 0.50 |  | 4 | 22.5 | 675 |
+| 5.7x28mm | pistol | 30 |  | Armor-Piercing | ArmorPiercing | 0.90 | 0.65 |  | 4 | 22.5 | 675 |
 | 9x18mm | pistol | 20 | PSh-18 Pchela, PPZ Zubr | Ball | Standard | 1.00 | 1.00 |  | 1 | 4 | 80 |
 | 9x18mm | pistol | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 6 | 120 |
-| 9x18mm | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.90 | 0.55 |  | 3 | 10 | 200 |
+| 9x18mm | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.90 | 0.70 |  | 3 | 10 | 200 |
 | 9x19mm | pistol | 20 | Walden P9, Corvan Wasp-9, Sperling S-96 | Ball | Standard | 1.00 | 1.00 |  | 1 | 5 | 100 |
 | 9x19mm | pistol | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 7.5 | 150 |
-| 9x19mm | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.50 |  | 3 | 12.5 | 250 |
-| 9x21mm | pistol | 20 | SR-21 Gadyuka | Ball | Standard | 1.00 | 0.95 |  | 1 | 6 | 120 |
+| 9x19mm | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.65 |  | 3 | 12.5 | 250 |
+| 9x21mm | pistol | 20 | SR-21 Gadyuka | Ball | Standard | 1.00 | 1.00 |  | 1 | 6 | 120 |
 | 9x21mm | pistol | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 9 | 180 |
-| 9x21mm | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.50 |  | 3 | 15 | 300 |
+| 9x21mm | pistol | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.65 |  | 3 | 15 | 300 |
 | 5.45x39mm | rifle | 30 | VKS-74U, VK-74, VK-74 Obelisk, NA-94 Yenisei | Ball | Standard | 1.00 | 1.00 |  | 1 | 6 | 180 |
 | 5.45x39mm | rifle | 30 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 9 | 270 |
 | 5.45x39mm | rifle | 30 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.50 |  | 3 | 15 | 450 |
@@ -51,15 +51,16 @@ Yan: separate the weapons by caliber, have the actual ammo in the game, and bala
 | 7.62x51mm | rifle | 20 | Corvan Battle Rifle, Corvan Marksman | Ball | Standard | 1.00 | 1.00 |  | 1 | 9 | 180 |
 | 7.62x51mm | rifle | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 13.5 | 270 |
 | 7.62x51mm | rifle | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.50 |  | 3 | 22.5 | 450 |
-| 9x39mm | rifle | 20 | Smerch-3, TS-9 Tishina, VSN Shepot | Subsonic | Standard | 1.00 | 0.85 |  | 1 | 10 | 200 |
+| 9x39mm | rifle | 20 | Smerch-3, TS-9 Tishina, VSN Shepot | Subsonic | Standard | 1.00 | 1.00 |  | 1 | 10 | 200 |
 | 9x39mm | rifle | 20 |  | Soft Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 15 | 300 |
 | 9x39mm | rifle | 20 |  | Armor-Piercing | ArmorPiercing | 0.95 | 0.50 |  | 3 | 25 | 500 |
 | 12g | shotgun | 10 | Obrez-66, Halden Lever Shotgun, Hound 13, Ranger P8, Karusel-5, Bayou Pump, Sever-34 O/U, Tambour-12, SP-14 Warden, Sayan-12, Kaban-12 | Buckshot | Standard | 1.00 | 1.00 |  | 1 | 8 | 80 |
 | 12g | shotgun | 10 |  | Birdshot | HollowPoint | 1.00 | 1.00 | yes | 1 | 12 | 120 |
+| 12g | shotgun | 10 |  | Slug | Slug | 1.35 | 0.70 |  | 2 | 14.4 | 144 |
 | 12g | shotgun | 10 |  | Flechette | ArmorPiercing | 0.90 | 0.50 |  | 3 | 20 | 200 |
 | .45-70 Govt | sniper | 10 | Nightwalker .45-70 | Ball | Standard | 1.00 | 1.00 |  | 1 | 14 | 140 |
 | .45-70 Govt | sniper | 10 |  | Soft Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 21 | 210 |
-| .50 BMG | sniper | 10 | Halden AM-50 Sledge | Ball | Standard | 1.00 | 0.90 |  | 1 | 35 | 350 |
+| .50 BMG | sniper | 10 | Halden AM-50 Sledge | Ball | Standard | 1.00 | 1.00 |  | 1 | 35 | 350 |
 | .50 BMG | sniper | 10 |  | Armor-Piercing | ArmorPiercing | 1.00 | 0.45 |  | 4 | 87.5 | 875 |
 | 7.62x54mmR | sniper | 20 | M91 Trekhlineyka, SV-2 Strela, Sever-98, PL-74, PL-74P Polovets, PL-74P Polovets Zulu | Ball | Standard | 1.00 | 1.00 |  | 1 | 12 | 240 |
 | 7.62x54mmR | sniper | 20 |  | Hollow Point | HollowPoint | 1.00 | 1.00 | yes | 1 | 18 | 360 |

@@ -52,6 +52,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "3") GangKillReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "4") AmmoReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "5") WeaponApReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
     TestingGroundChecks();
     OpticChecks();
     RescueChecks();
@@ -3434,6 +3435,19 @@ static class Program {
       }
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_ap.txt", sb.ToString());
   }
+
+  // Shotgun slug vs buckshot (RTBAL=6): seconds to kill 1000 HP in tier 1-5 armor at 6, 15 and 30 tiles.
+  static void SlugReport() {
+    var sb = new System.Text.StringBuilder("gun | tier | " + string.Join(" | ", new[] { 6, 15, 30 }.SelectMany(dd => new[] { 1, 3, 5 }.SelectMany(tt => new[] { $"{dd}t T{tt} buck", $"{dd}t T{tt} slug" }))) + " | hit% 15t buck | hit% 15t slug\n");
+    foreach (var kv in WeaponDatabase.Categories["shotgun"]) {
+      var w0 = W("shotgun", kv.Key); var hd = Gunplay.For(w0); var cells = new List<string>(); int hb = 0, hsl = 0;
+      foreach (int dd in new[] { 6, 15, 30 }) foreach (int tt in new[] { 1, 3, 5 }) foreach (var kind in new[] { "Standard", "Slug" }) {
+        var r = RtRoundMC("shotgun", kv.Key, dd, tt, false, false, 7, kind); if (dd == 15 && tt == 1) { if (kind == "Slug") hsl = r.hitPct; else hb = r.hitPct; }
+        float rn = r.dmgPerRound <= 0.01f ? 1e9f : 800f / r.dmgPerRound; float rate = Math.Min(hd.Rpm / 60f, 4f); float secs = rn / rate + (float)Math.Floor(rn / w0.MagCapacity) * hd.ReloadTime; cells.Add(secs > 60f ? "-" : secs.ToString("0.0")); }
+      sb.AppendLine($"{kv.Value.Name} | {kv.Value.Tier} | {string.Join(" | ", cells)} | {hb} | {hsl}");
+    }
+    Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_slug.txt", sb.ToString());
+  }
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
   static float AimShare(Player p, Mutant tgt) {
@@ -3535,6 +3549,13 @@ static class Program {
         "fall-off: pistols from 30 tiles, SMGs 40, rifles/MGs 50, snipers 60, half the damage at the end of the reach, none for shotguns");
       var withPen = new[] { "Corvan 5.7", "SR-21 Gadyuka", "RK-12 Kuvalda" }.Select(n => WeaponDatabase.Categories["sidearm"].Values.First(d => d.Name == n).IgnorePhysDRPercent).ToList();
       Check(withPen.All(v => v.HasValue && v > 0f) && Gunplay.For(mg).Reach == 60f && Gunplay.For(snp).Recover >= 9f, $"the Corvan 5.7, SR-21 and RK-12 keep their own armor penetration ({string.Join(", ", withPen)}); heavy MGs reach 60 tiles; snipers' kick settles at 9 deg a second"); }
+    // the shotgun slug: one projectile, tight, through 2 bodies, fading from 15 tiles, much better than buckshot at range and against armor
+    { var sl = W("shotgun", "BayouPump"); sl.CurrentAmmoType = "Slug"; var bk = W("shotgun", "BayouPump");
+      var hs = RtRoundMC("shotgun", "BayouPump", 15, 3, false, false, 7, "Slug"); var hb = RtRoundMC("shotgun", "BayouPump", 15, 3, false, false, 7, "Standard");
+      var s6 = RtRoundMC("shotgun", "BayouPump", 6, 5, false, false, 7, "Slug"); var b6 = RtRoundMC("shotgun", "BayouPump", 6, 5, false, false, 7, "Standard");
+      Check(Gunplay.For(sl).Pellets == 1 && Gunplay.For(bk).Pellets == 6 && Gunplay.PierceOf(sl).targets == 2 && Gunplay.PierceOf(bk).targets == 1 && Gunplay.FalloffMult(sl, 15f) == 1f && Gunplay.FalloffMult(sl, 30f) < 0.55f && Gunplay.FalloffMult(bk, 30f) == 1f,
+        "the slug is one projectile that passes through 2 bodies and fades from 15 tiles");
+      Check(hs.hitPct >= 80 && hs.dmgPerRound > hb.dmgPerRound * 2f && s6.dmgPerRound > b6.dmgPerRound, $"slug vs buckshot (Bayou Pump): at 15 tiles {hs.hitPct}% hits, {hs.dmgPerRound:0} damage a round against {hb.hitPct}% and {hb.dmgPerRound:0}; at 6 tiles vs tier 5 armor {s6.dmgPerRound:0} against {b6.dmgPerRound:0}"); }
     // heavy armor slows the real-time walk by 10% (Yan, 2026-11-17); light armor does not
     { var pw = Arena(out int wx, out int wy);
       var heavyKey = ArmorDatabase.Tiers.SelectMany(t => t.Value.Select(a => (tier: t.Key, key: a.Key, def: a.Value))).First(a => a.def.Mp > 0 && a.def.Mp < 4);

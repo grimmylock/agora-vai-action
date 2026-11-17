@@ -233,7 +233,7 @@ namespace GameCore
                 if (Velocity.TryGetValue(w.Db.Name, out var v)) h.Speed = v;
                 if (Guns.TryGetValue(w.Db.Name, out var g)) { h.Rpm = g.rpm; h.Auto = g.auto; h.ReloadTime = g.reload; h.Steady = g.steady; h.SteadyTime = g.steadyTime; h.Kick = g.kick; }
                 if (Tune.TryGetValue(w.Db.Name, out var tu)) h.Rpm *= tu.rate;
-                if (CombatRules.IsShotgun(w)) { h.Pellets = 6; h.Choke = Choke.TryGetValue(w.Db.Name, out var c) ? c : 1.5f; }
+                if (CombatRules.IsShotgun(w)) { if (w.CurrentAmmoType == "Slug") { h.Pellets = 1; h.Choke = 0f; } else { h.Pellets = 6; h.Choke = Choke.TryGetValue(w.Db.Name, out var c) ? c : 1.5f; } }   // a slug is one projectile
             }
             if (ItemCondition.IsDamaged(w?.Condition ?? ItemCondition.Working)) h.Steady *= 1.4f;
             if (w != null && w.Upgrades.Contains("Calibrated")) h.Steady *= 0.9f;                     // a calibrated barrel groups tighter (it was +1 to hit)
@@ -356,9 +356,11 @@ namespace GameCore
         /// <summary>How many bodies a round of this gun can go through (1 = it stops in the first), by the load in the chamber.</summary>
         public static (int targets, float mul) PierceOf(Weapon w)
         {
+            if (w?.Db != null && w.CurrentAmmoType == "Slug" && CombatRules.IsShotgun(w)) return (2, 0.75f);          // a slug passes through 2 bodies
             if (w?.Db == null || !Pierce.TryGetValue(w.Db.Name, out var p)) return (1, 1f);
             return (w.CurrentAmmoType == "ArmorPiercing" ? p.ap : p.targets, p.mul);
         }
+        // (a slug goes through 2 bodies: see PierceOf below)
 
         /// <summary>Lever guns (2026-11-17, Yan: "can be levered when hip-fired, hip fire speed increased by 200%"): worked from the hip they fire three times as fast; aimed, they cycle at their listed rate.</summary>
         public static readonly HashSet<string> Levers = new HashSet<string> { "Nightwalker .45-70", "Frontier Lever Rifle", "Halden Lever Shotgun" };
@@ -367,7 +369,9 @@ namespace GameCore
         public static readonly Dictionary<string, float> FalloffStart = new Dictionary<string, float> { ["sidearm"] = 30f, ["smg"] = 40f, ["assault"] = 50f, ["heavy"] = 50f, ["sniper"] = 60f };
         public static float FalloffMult(Weapon w, float dist)
         {
-            if (w?.Db == null || !FalloffStart.TryGetValue(CombatRules.Category(w.Db), out var start)) return 1f;
+            float start;
+            if (w?.Db != null && w.CurrentAmmoType == "Slug" && CombatRules.IsShotgun(w)) start = 15f;                  // a slug has no spread to fade it: from 15 tiles on
+            else if (w?.Db == null || !FalloffStart.TryGetValue(CombatRules.Category(w.Db), out start)) return 1f;
             float reach = For(w).Reach; if (reach <= start || dist <= start) return 1f;
             return 1f - 0.5f * System.Math.Min(1f, (dist - start) / (reach - start));
         }

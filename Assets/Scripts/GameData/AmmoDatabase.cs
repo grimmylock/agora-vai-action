@@ -34,6 +34,10 @@ namespace GameData
         static AmmoLoad AP(float price, int tier = 3, string name = "Armor-Piercing", float dmg = 0.95f, float dr = 0.5f) => new AmmoLoad { Kind = "ArmorPiercing", Name = name, RoundPrice = price * 2.5f, DrMult = dr, Damage = dmg, Tier = tier };
         static AmmoLoad Dart(float price, int tier = 4) => new AmmoLoad { Kind = "Dart", Name = "Sabot Dart", RoundPrice = price * 2f, DrMult = 0.4f, Damage = 0.85f, Tier = tier };
 
+        /// <summary>A shotgun slug (2026-11-17): one heavy projectile instead of the pellets (Gunplay: no spread cone, tight aim, passes through 2 bodies, loses damage from 15 tiles on),
+        /// +35% damage and it pierces some armor (x0.7). Where buckshot is the close-range load, the slug is the answer to armor and to range.</summary>
+        static AmmoLoad Slug(float price, int tier = 2) => new AmmoLoad { Kind = "Slug", Name = "Slug", RoundPrice = price * 1.8f, Damage = 1.35f, DrMult = 0.7f, Tier = tier };
+
         static Caliber C(string id, string cls, int box, params AmmoLoad[] loads) => new Caliber { Id = id, Class = cls, Box = box, Loads = loads.ToList() };
 
         public static readonly Dictionary<string, Caliber> Calibers = new[]
@@ -60,7 +64,7 @@ namespace GameData
             C(".45-70 Govt", "sniper", 10, Ball("Ball", 14), HP(14, "Soft Point")),
             C(".50 BMG",     "sniper", 10, Ball("Ball", 35), AP(35, 4, "Armor-Piercing", 1.0f, 0.45f)),
             // shotgun
-            C("12g",         "shotgun", 10, Ball("Buckshot", 8), HP(8, "Birdshot"), AP(8, 3, "Flechette", 0.9f, 0.5f)),
+            C("12g",         "shotgun", 10, Ball("Buckshot", 8), HP(8, "Birdshot"), Slug(8), AP(8, 3, "Flechette", 0.9f, 0.5f)),
             // the G-7
             C("2mm Battery", "cell",    5, Ball("Cell", 60)),
         }.ToDictionary(c => c.Id);
