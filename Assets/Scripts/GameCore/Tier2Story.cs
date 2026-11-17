@@ -26,7 +26,8 @@ namespace GameCore
 
         static float _mapSince = -1f, _stageAt = -1f, _descentAt = -1f, _hordeAt = -1f, _gameOverAt = -1f;
         static int _stage;                              // the grab's stage while step 1; the horde's soldiers lost so far while step 4
-        static bool _warned0, _warned1, _warned2, _released1, _released2, _chaseMusic, _doorHint;
+        static bool _warned0, _warned1, _warned2, _released1, _released2, _chaseMusic, _doorHint, _orderGiven;
+        const float GauntAt = 4.4f;                       // seconds after the alarm: the sergeant has the camera until then, then the Gaunt
         static float _doorAt = -1f; static int _doorStage; static readonly List<(int x, int y)> Posts = new List<(int, int)>();
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
         static readonly List<(float at, List<Mutant> who)> Waves = new List<(float, List<Mutant>)>();   // the horde, released in waves (seconds after the alarm)
@@ -34,7 +35,7 @@ namespace GameCore
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; Posts.Clear(); }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -261,7 +262,7 @@ namespace GameCore
             if (_doorStage == 1 && t >= 2.4f) { _doorStage = 2; Say("You run the passcard through the reader."); Hear("ui_click"); }
             if (_doorStage == 2 && t >= 3.8f) { _doorStage = 3; Say("The reader blinks once. A flat buzz."); Hear("dryfire"); }
             if (_doorStage == 3 && t >= 4.9f) { _doorStage = 4; Shout("Why isn't it opening? Again!"); }
-            if (_doorStage == 4 && t >= 6.2f) { _doorAt = -1f; Story.CineEnd(); StartAlarm(now); }
+            if (_doorStage == 4 && t >= 6.2f) { _doorAt = -1f; StartAlarm(now); }                       // (the camera is not released: Alarm takes it on, the sergeant first)
         }
 
         /// <summary>What a soldier says: over his head (Banter), not in the log in the corner (Yan, 2026-11-17).</summary>
@@ -273,7 +274,8 @@ namespace GameCore
         static void StartAlarm(float now)
         {
             Story.SetStep(Mission, 4); _hordeAt = now; _stage = 0;
-            Say("The sergeant shoves you at the lock. You run the card through it. A red light. A buzz. A scream of sirens down the whole corridor.");
+            _orderGiven = false;
+            Say("The lights go red. Sirens start up all down the corridor.");
             Hear("explosion", 0.8f);
             RedLights();
             Posts.Clear(); var dm = Mark(Door); int dx = dm?.X ?? 40;
@@ -345,12 +347,20 @@ namespace GameCore
             var dmk = Mark(Door); var bwk = Mark("Broken Wall"); int sx = bwk?.X ?? 80, sy = bwk?.Y ?? 9;      // Yan (2026-11-17): the Gaunt comes out of the dark tunnel and INTO the red-lit corridor, 20 tiles from the door, to scream at you
             // Yan: "the camera did not zoom at the gaunt and i didn't see it": from its first step to the end of its scream and point it stands in the dark, so it is lit for the scene (Vision.Spotlight) and the
             // cinematic camera (letterbox, zoom, as the eel's introduction) is locked on it; then the camera eases back to you.
-            if (_gaunt != null && _gaunt.IsAlive() && t >= 2.5f && (_screamAt < 0f || now - _screamAt < Gaunt.CallTotal + 0.4f))
-            { Vision.Spotlight = _gaunt; Story.CamLock = (_gaunt.X + 0.5f, _gaunt.Y + 0.5f); Story.CamHalf = 7f; Story.CamRate = 3f; Story.Letterbox = true; Story.CutsceneUntil = Time.time + 0.4f; Story.LookAt = (_gaunt.X, _gaunt.Y); }
+            // Yan (2026-11-17): "it just SUDDENLY turns red and the soldiers walk without explanation and hold the line": the lights go red with the camera on the sergeant, who shouts the order; the squad moves after
+            // it (from 1.4 s); then the camera goes to the wall and the Gaunt walks up to it.
+            var sarge = Escorts.FirstOrDefault(e => e.IsAlive());
+            if (t < GauntAt && sarge != null)
+            {
+                Story.CamLock = (sarge.X + 0.5f, sarge.Y + 0.5f); Story.CamHalf = 4.5f; Story.CamRate = 3f; Story.Letterbox = true; Story.CutsceneUntil = Time.time + 0.4f; Story.LookAt = (sarge.X, sarge.Y);
+                if (!_orderGiven && t >= 0.5f) { _orderGiven = true; Banter.Say(sarge, "WHAT'S THAT?! ASSUME DEFENSIVE POSITIONS!", 2); }
+            }
+            if (_gaunt != null && _gaunt.IsAlive() && t >= GauntAt && (_screamAt < 0f || now - _screamAt < Gaunt.CallTotal + 0.4f))
+            { Vision.SpotAt = (sx, sy); Vision.Spotlight = _gaunt; Story.CamLock = (_gaunt.X + 0.5f, _gaunt.Y + 0.5f); Story.CamHalf = 7f; Story.CamRate = 3f; Story.Letterbox = true; Story.CutsceneUntil = Time.time + 0.4f; Story.LookAt = (_gaunt.X, _gaunt.Y); }
             else if (Vision.Spotlight != null && Vision.Spotlight == _gaunt) { Vision.Spotlight = null; Story.CineEnd(); }
             foreach (var e in Escorts) if (e.IsAlive()) e.IsAggroed = false;
-            { int i = 0; foreach (var h in Escorts) { if (i < Posts.Count && h.IsAlive() && (h.X, h.Y) != Posts[i] && now >= (NextStep.TryGetValue(h, out var at0) ? at0 : 0f)) { NextStep[h] = now + 0.25f; h.Mp = System.Math.Max(h.Mp, TurnLoop.WalkMp); h.MoveToward(Posts[i].x, Posts[i].y); } i++; } }
-            if (_gaunt != null && _gaunt.IsAlive() && _screamAt < 0f && t >= 2.5f)
+            { int i = 0; foreach (var h in Escorts) { if (t >= 1.4f && i < Posts.Count && h.IsAlive() && (h.X, h.Y) != Posts[i] && now >= (NextStep.TryGetValue(h, out var at0) ? at0 : 0f)) { NextStep[h] = now + 0.25f; h.Mp = System.Math.Max(h.Mp, TurnLoop.WalkMp); h.MoveToward(Posts[i].x, Posts[i].y); } i++; } }
+            if (_gaunt != null && _gaunt.IsAlive() && _screamAt < 0f && t >= GauntAt)
             {
                 if (!_gauntWalking) { _gauntWalking = true; Say("Something tall is walking out of the dark."); }
                 if (now >= _gauntStep)

@@ -92,9 +92,12 @@ namespace GameCore
         public static readonly System.Collections.Generic.List<(float x, float y, float r, float k)> Glows = new System.Collections.Generic.List<(float x, float y, float r, float k)>();
 
         /// <summary>0..1 light from the glowing things at a point, whether or not the player's line of sight reaches it (the overlay uses this for cells the player cannot see: a glow is seen from afar).</summary>
+        /// <summary>Where the story's spotlight is lit (the Gaunt at the broken wall): a little dim light there, so it is seen standing in the dark rather than glowing.</summary>
+        public static (float x, float y)? SpotAt;
         public static float GlowAt(float x, float y)
         {
             float v = 0f;
+            if (Spotlight != null && SpotAt.HasValue) { float sx = x - SpotAt.Value.x, sy = y - SpotAt.Value.y, sd = (float)System.Math.Sqrt(sx * sx + sy * sy); if (sd < 5.5f) v = 0.42f * (1f - sd / 5.5f); }
             for (int i = 0; i < Glows.Count; i++) { var g = Glows[i]; float gx = x - g.x, gy = y - g.y, gd = (float)System.Math.Sqrt(gx * gx + gy * gy); if (gd < g.r) v = System.Math.Max(v, g.k * (1f - gd / g.r)); }
             return v;
         }

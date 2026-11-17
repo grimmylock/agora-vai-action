@@ -6233,3 +6233,9 @@ Not run in Unity.
 - Both Gaunts are drawn at `Gaunt.ArtScale` = 32/43 (-26%) of their art (`TacticalGridView.ApplyUnitArt`); their hit shapes are cut at 43 px a tile in `make_hit_profiles.py` (Gaunt 2.28 tiles, Elder 3.00 tall; they were 3.06 and 4.03) so hitboxes still match the sprites. The animation strips need nothing: they go through the same marker.
 - Fog of war: the overlay dimmed what is out of your line of sight at only 60% (`AtmosphereView`, the coarse pass and `FineTexel`), so the layout of the caverns showed when zoomed out. Unseen cells are now fully hidden (lamps and glows are gated by sight already); seen-but-unlit cells still follow the night/flashlight rules.
 Not run in Unity.
+
+## Taken: the alarm gets a scene, the Gaunt in the dark, the rats slower (2026-11-17, Yan: "almost great")
+- **The Gaunt was invisible** because the new full fog (unseen = hidden) covered it even though the Spotlight draws it. `Vision.SpotAt` gives the broken wall a little dim light (a 5.5-tile pool, 42%) while the scene runs (`GlowAt`): it walks out of the dark and is seen standing at the wall, still in shadow.
+- **The card scene no longer cuts to red**: the camera stays (no release between the door scene and the alarm), the lights go red and the sirens start with the camera on the sergeant, who shouts "WHAT'S THAT?! ASSUME DEFENSIVE POSITIONS!" over his head at 0.5 s; the squad starts for its posts at 1.4 s; at 4.4 s (`GauntAt`) the camera goes to the wall and the Gaunt starts out of the tunnel (it used to start at 2.5 s, with no explanation before it).
+- Swarm speed cap 88% -> 70% of a sprinting player (3.1 tiles/s).
+Not run in Unity.

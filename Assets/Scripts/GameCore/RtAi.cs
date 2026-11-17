@@ -48,7 +48,7 @@ namespace GameCore
         public static float Speed(Mutant m)
         {
             float v = (m is HumanEnemy ? 2.2f : System.Math.Max(1.8f, System.Math.Min(5f, 0.6f * (m.Db?.Mp ?? 4)))) * Gaunt.Hurry(m);   // a mutant the Gaunt drives runs 35% faster
-            if (m.Db?.Name == "Swarm") v = System.Math.Min(v, Rt.Sprint * 0.88f);        // Yan, 2026-11-17: "the rot swarm is waay too fast and can't be outrun": the rats are slower than a sprinting player, driven or not
+            if (m.Db?.Name == "Swarm") v = System.Math.Min(v, Rt.Sprint * 0.7f);        // Yan, 2026-11-17: "the rot swarm is waay too fast and can't be outrun": the rats are slower than a sprinting player (70%: 88% still caught Yan), driven or not
             return v;
         }
 
