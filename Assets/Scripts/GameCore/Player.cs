@@ -798,64 +798,11 @@ namespace GameCore
         }
 
 
-        /// <summary>X: switch between single shots and bursts (assault rifles, SMGs, heavy weapons).</summary>
-        public void ToggleFireMode()
-        {
-            if (!CombatRules.CanBurst(EquippedWeapon))
-            {
-                FireMode = "Single";
-                GameLog.Write($"{EquippedWeapon?.Name ?? "This weapon"} only fires single shots.");
-                return;
-            }
-            FireMode = FireMode == "Burst" ? "Single" : "Burst";
-            var w = EquippedWeapon;
-            GameLog.Write(FireMode == "Burst"
-                ? $"Burst fire: {CombatRules.BurstRounds(w)} rounds, {CombatRules.BurstPenalty(w)} to hit, x{CombatRules.BurstMultiplier(w):0.#} damage, {CombatRules.BurstApCost(w)} AP."
-                : "Single fire.");
-        }
-
-
-
-
-
-
-
-
         public bool NearCover()
         {
             if (TerrainMap.CoverAcAt(X, Y) > 0) return true;
             foreach (var adj in TerrainMap.GetAdjacentCoords(X, Y)) if (TerrainMap.CoverAcAt(adj.x, adj.y) > 0) return true;
             return false;
-        }
-
-        /// <summary>Fires at a map object (barrel, door, cover) - right-click in PlayerController.
-        /// Same AP/ammo/range rules as Attack; see Weapon.FireAtTile for the roll.</summary>
-        public void ShootTile(int x, int y)
-        {
-            if (GameState.Current.CurrentTurn != Turn.Player) return;
-            var weapon = EquippedWeapon;
-            if (weapon == null) { GameLog.Write("No weapon equipped."); return; }
-            if (TileRules.MaxIntegrity(TerrainMap.GetTile(x, y)) <= 0)
-            {
-                GameLog.Write("Nothing there to shoot.");
-                return;
-            }
-            if (weapon.IsJammed) { GameLog.Write("Weapon is jammed. Clear jam before attacking."); return; }
-            int apCost = CombatRules.SingleShotAp(weapon) + (IsDepleted() ? 1 : 0);
-            if (Ap < apCost) { GameLog.Write($"Not enough AP to fire. {apCost} AP required."); return; }
-            int rangeTiles = weapon.MaxReach;   // Batch 74: out to twice the range, at -2 past it
-            if (System.Math.Max(System.Math.Abs(X - x), System.Math.Abs(Y - y)) > rangeTiles)
-            {
-                GameLog.Write("Target is out of range for attack.");
-                return;
-            }
-            if (!weapon.IsLoaded && weapon.Db != null && !string.IsNullOrEmpty(weapon.Db.AmmoType))
-            {
-                GameLog.Write("Magazine is empty.");
-                return;
-            }
-            Ap -= apCost;
-            weapon.FireAtTile(x, y, "Single", (int)AgilityMod);
         }
 
         /// <summary>Ported from reloadWeapon().</summary>
