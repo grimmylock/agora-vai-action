@@ -133,6 +133,8 @@ namespace GameCore
 
         /// <summary>Steps 1-3 (the beating, the base, the walk to the door): nobody walks out of the hatch, down to the lab or up the ladder - the guns are in the box and only the story gives them back. (Step 4, the
         /// run, ends by walking out: Alarm notices it.)</summary>
+        /// <summary>The siren is wailing (Sfx.AmbientFor asks: the view re-sets the zone's ambience every frame, which used to drown it).</summary>
+        public static bool AlarmOn => Step == 4 && TerrainMap.ZoneId == Maze;
         public static bool BlocksTravel => Step >= 1 && Step <= 3;
 
         // ------------------------------------------------------------------ 2: the Garrison's base
@@ -285,7 +287,7 @@ namespace GameCore
         static void RedLights()
         {
             for (int y = 6; y <= 11; y++) for (int x = 6; x <= 80; x++) if (TerrainMap.GetTile(x, y)?.Look == "light") TerrainMap.SetTileType(x, y, TileType.Empty, "redlight");
-            LightMap.Reset();
+            LightMap.Reset(); Lighting.Reset();                                              // (the picture's lamp field keeps its own bake of the lights: it must collect them again)
             Sfx.Ambient("amb_alarm");
         }
 
@@ -354,7 +356,7 @@ namespace GameCore
                 if (now >= _gauntStep)
                 {
                     _gauntStep = now + 0.25f; _gaunt.Mp = System.Math.Max(_gaunt.Mp, TurnLoop.WalkMp);
-                    if (System.Math.Abs(_gaunt.X - sx) > 1 || System.Math.Abs(_gaunt.Y - sy) > 1) _gaunt.MoveToward(sx, sy);
+                    if (System.Math.Abs(_gaunt.X - sx) > 1 || System.Math.Abs(_gaunt.Y - sy) > 1) { _gaunt.FaceToward(sx, sy); _gaunt.MoveToward(sx, sy); }   // (it moonwalked: the sprite follows Facing)
                 }
                 bool arrived = System.Math.Abs(_gaunt.X - sx) <= 1 && System.Math.Abs(_gaunt.Y - sy) <= 2;
                 if (arrived || t >= 20f)
@@ -381,19 +383,35 @@ namespace GameCore
         {
             var grid = GameServices.Grid; if (grid == null) return;
             var foes = EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive() && m.IsAggroed).ToList();
+            var targets = foes.Where(m => !Gaunt.IsElder(m)).ToList();                                 // the Elder is the scene's: the soldiers' fire goes to the rest
             foreach (var h in Escorts.Where(e => e.IsAlive()))
             {
-                var foe = foes.Where(m => CombatantUtil.Distance(h, m) <= 18 && grid.CheckLineOfSight(h.X, h.Y, m.X, m.Y)).OrderBy(m => CombatantUtil.Distance(h, m)).FirstOrDefault();
+                var foe = targets.Where(m => CombatantUtil.Distance(h, m) <= 18 && grid.CheckLineOfSight(h.X, h.Y, m.X, m.Y)).OrderBy(m => CombatantUtil.Distance(h, m)).FirstOrDefault();
                 if (foe == null) continue;
                 h.FaceToward(foe.X, foe.Y);
                 var w = h.EquippedWeapon;
-                if (w != null && !CombatRules.IsMelee(w) && !PlayerInLine(h, foe) && now >= (NextFire.TryGetValue(h, out var nf) ? nf : 0f)) { w.CurrentMagazine = System.Math.Max(w.CurrentMagazine, 2); NextFire[h] = now + Random.Range(0.14f, 0.3f); Gunplay.NpcShootOnce(h, w, foe, 0.6f); }
+                if (w != null && !CombatRules.IsMelee(w) && !PlayerInLine(h, foe)) Fire(h, w, foe, now);
                 foreach (var m in foes.Where(m => CombatantUtil.IsAdjacent(m, h)))                       // what reaches a soldier is stuck on him
                 {
                     RtAi.Pin(m, 0.5f);
                     if (now >= (NextMaul.TryGetValue(h, out var nm) ? nm : 0f)) { NextMaul[h] = now + 0.45f; Hear(Random.value < 0.5f ? "claw" : "hit_flesh", 0.8f); h.Hp -= System.Math.Max(40, m.Db?.AttackDamage ?? 60); if (h.Hp <= 0) { h.Hp = 0; Hear("shot_rifle", 0.5f); Say("A soldier goes down under them, still firing."); } }
                 }
             }
+        }
+
+        static readonly Dictionary<HumanEnemy, int> BurstLeft = new Dictionary<HumanEnemy, int>(); static readonly Dictionary<HumanEnemy, float> ReloadUntil = new Dictionary<HumanEnemy, float>();
+        /// <summary>One soldier's trigger, by his own gun (Yan: "uncapped fire-rate", "never reload", "even the pistol soldier was firing as a machinegun", "perfect aim"): a self-loader fires one round per
+        /// 0.4-0.9 s, an automatic fires 3-5 round bursts at its own rate and rests 1.2-2.4 s; every round leaves the magazine and an empty one costs the gun's reload time; the aim is rough (+2.5 spread).</summary>
+        static void Fire(HumanEnemy h, Weapon w, Mutant foe, float now)
+        {
+            if (ReloadUntil.TryGetValue(h, out var ru) && now < ru) return;
+            var hd = Gunplay.For(w);
+            if (w.CurrentMagazine <= 0) { ReloadUntil[h] = now + System.Math.Max(1.5f, hd.ReloadTime); w.CurrentMagazine = w.MagCapacity; BurstLeft[h] = 0; Hear("reload_mag", 0.6f); return; }
+            if (now < (NextFire.TryGetValue(h, out var nf) ? nf : 0f)) return;
+            int left = BurstLeft.TryGetValue(h, out var b) && b > 0 ? b : (hd.Auto ? Random.Range(3, 6) : 1);
+            w.CurrentMagazine--; left--; BurstLeft[h] = left;
+            NextFire[h] = left > 0 ? now + 60f / System.Math.Max(60f, hd.Rpm) : now + (hd.Auto ? Random.Range(1.2f, 2.4f) : Random.Range(0.4f, 0.9f));
+            Gunplay.NpcShootOnce(h, w, foe, 2.5f);
         }
 
         static bool PlayerInLine(HumanEnemy h, Mutant foe)

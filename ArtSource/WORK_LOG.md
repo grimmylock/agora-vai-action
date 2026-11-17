@@ -6212,3 +6212,12 @@ Yan: the soldiers formed a line he could not get past and he died in the crossfi
 - **The glow**: Yan: "i didn't mean a GLOW around the character, only the front of him should be illuminated in a cone by the flashlight, the rest should be dark". The tripled radius and the full-range look cone now only decide what the game treats as SEEN (`Vision.Sees/Shows`: enemies are drawn and targetable); what is drawn lit is as before (`Vision.Light(visual: true)`: the old radius, the flashlight cone, the day's look cone, lamps).
 - **The camera pumping while walking**: the camera eases out to fit every hostile that is shown; with the look cone seeing 30 tiles, enemies at its far edge flickered in and out as the cone swept. It now only fits hostiles within 14 tiles and eases back in slowly (1.5 tiles/s; out at 4).
 Not run in Unity.
+
+## Taken: the soldiers were machine-gunners, the Gaunt moonwalked, no siren, no red (2026-11-17, Yan)
+Yan: "the soldiers DESTROYED the horde", only 2 shooting, "their weapons never need to reload", "the gaunt died in like a second", "the gaunt was moonwalking", "the red lights and siren didn't trigger", "enemies have perfect aim", "uncapped fire-rate", "even the pistol soldier was firing as a machinegun nonstop".
+- **Soldiers' trigger** (`Tier2Story.Fire`): by the gun's own handling (`Gunplay.For`): a self-loader one round per 0.4-0.9 s; an automatic 3-5 round bursts at its rpm, then 1.2-2.4 s of rest; every round leaves the magazine, an empty one costs the gun's reload time; +2.5 spread on top of their rank's aim. The old code topped the magazine up every shot and fired every 0.14-0.3 s.
+- The soldiers no longer shoot the Elder (it was the scene's, and fell in a second); they still shoot the rest. Their strength against the horde is for Yan to tune now that they are slow: `Fire`, the post spread, the mauling damage in `SoldiersFight`.
+- **Moonwalk**: the Gaunt's sprite follows `Facing` and nothing set it while the story walked it; it faces its goal each step now.
+- **Siren**: `TacticalGridView` re-sets the zone's ambience every frame and overwrote the alarm; `Sfx.AmbientFor` now answers "amb_alarm" while `Tier2Story.AlarmOn` (step 4 in the maze).
+- **Red lights**: `RedLights` swapped the tiles and reset `LightMap`, but the picture's lamp field (`Lighting`) bakes the lights on its own and kept the white ones; `Lighting.Reset()` added. Neither was visible to the harness; unconfirmed until Yan runs it.
+Not run in Unity again.

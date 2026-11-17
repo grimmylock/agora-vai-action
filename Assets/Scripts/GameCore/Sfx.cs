@@ -168,6 +168,7 @@ namespace GameCore
             var theme = ZoneThemes.For(zoneId);
             // Yan (2026-11-17): "and this to the cave ambience" - the haunted-mine loop (ArtSource/audio/make_mine_ambience.py) is the cave bed; the old synthesized one stays as the fallback while the new file is
             // missing. The Hatch Tunnels (Tier 2 "Taken") are a concrete-themed dungeon but a cavern to walk through, so they get it too.
+            if (Tier2Story.AlarmOn) return "amb_alarm";
             string cave = Clips("amb_mine").Length > 0 ? "amb_mine" : "amb_cave";
             if (zoneId == Tier2Story.Maze) return cave;
             if (theme.Mass == "cliff" && ZoneLayoutRecipes.IsInterior(zoneId)) return cave;
