@@ -33,3 +33,14 @@ library's takes; the cuts kept in `ArtSource/audio/cc0/guns/`). Sounds not liste
 | [20 Sword Sound Effects (Attacks and Clashes)](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) | StarNinjas | `parry_0`, `parry_1`, `parry_perfect` |
 | [FPS Placeholder Sounds](https://opengameart.org/content/fps-placeholder-sounds) - **CC-BY 3.0** | Jack Menhorn | `hit_flesh_3` |
 | [Shotgun Shoot/Reload](https://opengameart.org/content/shotgun-shoot-reload) - **CC-BY 3.0** | Mike Koenig (via SoundBible) | `dryfire` |
+
+## Music and ambience (supplied by Yan, 2026-11-17)
+Both are YouTube uploads that Yan gave us as files. **The licence terms have not been read** (the titles say "Royalty Free" / "for study, chill, sleep"; no licence text came with the files): check the upload pages before the game ships.
+They are credited on the main menu's Credits screen (`MainMenuUI.CreditsText`).
+
+| Track | Author | Used for |
+|-|-|-|
+| "NO ESCAPE - Horror Terror Chase Music (Royalty Free)", YouTube id `ta7PPkwLZsg` (file name), 2025 | Daniel Herrera | `mus_no_escape.mp3`: the chase song in Tier 2 "Taken", from the end of the Gaunt's scream to the top of the ladder (`Tier2Story.ChaseTrack`). The file is the original mp3, audio untouched, cover art removed |
+| "AMBIENCE - Scary Haunted Mine - For study, chill, sleep", YouTube id `4h6vteozhq8` (file name), 2026 | Max "stallfish" Denton | `amb_mine.ogg`: the cave ambience (every cave interior, and the Hatch Tunnels). A 330 s seamless loop cut from the 10:26 recording and levelled to -27 LUFS by `ArtSource/audio/make_mine_ambience.py` |
+
+The old synthesized/CC0 cave bed (`amb_cave.wav`, JaggedStone's Loopable Dungeon Ambience) is kept as the fallback if `amb_mine` is missing.

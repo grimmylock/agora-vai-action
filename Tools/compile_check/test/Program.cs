@@ -3069,14 +3069,21 @@ static class Program {
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
       Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
+      Check(Sfx.MusicName == null, "taken: no chase song while the Gaunt's scene is still going");
       Run(22f);
       Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
+      Check(Sfx.MusicName == Tier2Story.ChaseTrack, $"taken: the chase song plays once the scream and the point are over ({Sfx.MusicName})");
       Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 0 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers are torn apart, then the horde comes for you");
       var lad2 = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = lad2.X; p.Y = lad2.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.5f);
       Check(Story.IsDone("taken") && TerrainMap.ZoneId == "scrapyard" && p.Inventory.Items.Any(i => i.Key == "RangerP8") && p.EquippedWeapon?.Db?.Name == "PSh-18 Pchela" && !MacroState.Current.StoryFlags.Any(f => f.StartsWith("box:")) && Story.JournalEntries.Any(j => j.Contains("Loading Dock")),
         $"taken: out the top, the box gives everything back, a journal entry ({TerrainMap.ZoneId}, main {p.EquippedWeapon?.Name})");
+      Check(Sfx.MusicName == null, "taken: the song stops at the top of the ladder");
       Run(5f); Check(Story.IsDone("taken") && Tier2Story.Step >= 99 || Story.IsDone("taken"), "taken: it happens once");
+      Sfx.Music("harness_track"); Check(Sfx.MusicName == "harness_track", "music: a track that was asked for is remembered even with no clip (silent, nothing breaks)"); Sfx.StopMusic(0f); Check(Sfx.MusicName == null, "music: stopped");
+      string caveBed = Sfx.AmbientFor("secret_cave");
+      Check(caveBed.StartsWith("amb_") && caveBed != "amb_hum" && caveBed != "amb_wind" && Sfx.AmbientFor(Tier2Story.Maze) == caveBed && Sfx.AmbientFor("secret_lab_alpha") == "amb_hum" && Sfx.AmbientFor("scrapyard") == "amb_wind",
+        $"ambience: the caves and the Hatch Tunnels share the cave bed ({caveBed}), a lab keeps its hum, the open map its wind");
     } finally { Rt.On = false; Tier2Story.Reset(); Story.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
   }
 

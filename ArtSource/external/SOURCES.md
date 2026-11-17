@@ -102,3 +102,9 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 
 ### G-7 Rail Prototype, second try (2026-11-15), supplied by Yan
 - A dark pixel-art rifle drawing Yan pasted into the chat ("scrap the railgun sprite, use this as a reference, add some glowing parts"; provenance unknown, drawing reference only, shown on a checkerboard); cut-out in `ArtSource/weapons/spritecook_pilot/batch14/G7RailPrototype_ref.png`. It replaces my rough sketch of the first G-7.
+
+## Added 2026-11-17 (music and ambience, supplied by Yan)
+| File | What | Author | Licence | Source | Class |
+|-|-|-|-|-|-|
+| `../../Assets/Resources/Audio/mus_no_escape.mp3` | "NO ESCAPE - Horror Terror Chase Music (Royalty Free)", 2:08 | Daniel Herrera (ID3 tags) | titled "Royalty Free"; the licence text was NOT seen by me - Yan to confirm on the upload page before release | YouTube video id `ta7PPkwLZsg` (from the file name) | to-use (the escape in Tier 2 "Taken") |
+| `../../Assets/Resources/Audio/amb_mine.ogg` (loop cut by `../audio/make_mine_ambience.py` from the 10:26 original, which is NOT in the repo) | "AMBIENCE - Scary Haunted Mine - For study, chill, sleep" | Max "stallfish" Denton (ID3 tags), 2026 | not seen by me - Yan to confirm on the upload page before release | YouTube video id `4h6vteozhq8` (from the file name) | to-use (the cave ambience) |

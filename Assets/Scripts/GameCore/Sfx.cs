@@ -1,6 +1,7 @@
 // Batch 30: sound. Clips are Resources/Audio/<name>.wav or <name>_0.._9 variants (one picked at
 // random), all synthesized by ArtSource/audio/sfx.py. 2D audio: a sound placed in the world is
-// panned left/right from the camera and fades with distance. One looping ambient bed per zone.
+// panned left/right from the camera and fades with distance. One looping ambient bed per zone, and one music
+// channel (Music/StopMusic: a track from Resources/Audio, fading in and out, ducking the ambient bed).
 // No clips = silent, nothing breaks.
 using System.Collections.Generic;
 using GameData;
@@ -10,16 +11,17 @@ namespace GameCore
 {
     public static class Sfx
     {
-        public static float Volume = 0.8f, AmbientVolume = 0.5f;
+        public static float Volume = 0.8f, AmbientVolume = 0.5f, MusicVolume = 0.55f, AmbientDuck = 0.7f;   // the music is mastered hot (about -11 LUFS): 0.55 keeps the gunfire on top; the ambient bed drops by AmbientDuck while it plays
         const int Voices = 48;   // Yan: "the sounds cut off before the echoes are done" - real gunshots ring for 1-3 s, a burst needs room
         static GameObject _go;
         static AudioSource[] _pool;
-        static AudioSource _amb;
+        static AudioSource _amb, _mus;
+        static string _musName; static float _musLevel, _musTarget, _musRate = 1f, _musGrace; static bool _musPaused;
         static int _next;
         static readonly Dictionary<string, AudioClip[]> _clips = new Dictionary<string, AudioClip[]>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetCaches() { _go = null; _pool = null; _amb = null; _clips.Clear(); }
+        static void ResetCaches() { _go = null; _pool = null; _amb = null; _mus = null; _musName = null; _musLevel = _musTarget = _musGrace = 0f; _musPaused = false; _clips.Clear(); }
 
         static bool Ensure()
         {
@@ -29,6 +31,8 @@ namespace GameCore
             _pool = new AudioSource[Voices];
             for (int i = 0; i < Voices; i++) { _pool[i] = _go.AddComponent<AudioSource>(); _pool[i].playOnAwake = false; }
             _amb = _go.AddComponent<AudioSource>(); _amb.loop = true; _amb.playOnAwake = false;
+            _mus = _go.AddComponent<AudioSource>(); _mus.playOnAwake = false; _mus.priority = 0;   // 0 = the engine's highest: a busy fight must never steal the music's voice
+            _go.AddComponent<MusicDriver>();
             return true;
         }
 
@@ -77,6 +81,55 @@ namespace GameCore
 
         public static void StopAmbient() { if (_amb != null) _amb.Stop(); }
 
+        // ---- music (RT sound 4, 2026-11-17: the escape in Tier 2 "Taken" has its own song)
+
+        /// <summary>What the game last asked the music channel to play (null when nothing, or when it ended or was stopped). Set even when the clip is missing, so the harness can check it.</summary>
+        public static string MusicName => _musName;
+
+        /// <summary>Background music: Resources/Audio/<name> (an .mp3 or .wav), on its own channel, one track at a time. It fades in over `fadeIn` seconds, the ambient bed ducks while it is up, it pauses
+        /// with the game's pause (ESC), and it ends by itself at the end of the track unless `loop`. Asking for the track that is already playing does nothing. No clip = silent.</summary>
+        public static void Music(string name, float fadeIn = 1f, bool loop = false)
+        {
+            if (name == null) { StopMusic(); return; }
+            if (_musName == name && _mus != null && (_mus.isPlaying || _musPaused)) return;
+            _musName = name;
+            var clips = Clips(name);
+            if (clips.Length == 0 || !Ensure()) return;
+            _mus.clip = clips[0]; _mus.loop = loop; _mus.volume = 0f; _musLevel = 0f; _musTarget = 1f; _musRate = 1f / Mathf.Max(0.05f, fadeIn); _musPaused = false; _musGrace = 0.75f;
+            _mus.Play();
+        }
+
+        /// <summary>Fade the music out over `fadeOut` seconds (0 = cut it now).</summary>
+        public static void StopMusic(float fadeOut = 1.5f)
+        {
+            _musName = null;
+            if (_mus == null) return;
+            if (fadeOut <= 0f || !_mus.isPlaying) { _mus.Stop(); _mus.clip = null; _musLevel = _musTarget = 0f; _musPaused = false; return; }
+            _musTarget = 0f; _musRate = 1f / fadeOut;
+        }
+
+        /// <summary>Load a clip's samples ahead of time, so its first Play does not hitch (a compressed music track is read from disk on first use).</summary>
+        public static void Preload(string name) { foreach (var c in Clips(name)) c.LoadAudioData(); }
+
+        sealed class MusicDriver : MonoBehaviour { void Update() { TickMusic(Time.unscaledDeltaTime); } }
+
+        static void TickMusic(float dt)
+        {
+            if (_mus == null) return;
+            if (_mus.clip != null)
+            {
+                bool paused = Time.timeScale <= 0f;                                       // ESC pauses the game: the song waits with it
+                if (paused && _mus.isPlaying) { _mus.Pause(); _musPaused = true; }
+                else if (!paused && _musPaused) { _mus.UnPause(); _musPaused = false; }
+                _musLevel = Mathf.MoveTowards(_musLevel, _musTarget, dt * _musRate);
+                _mus.volume = MusicVolume * Volume * _musLevel;
+                if (_musGrace > 0f) _musGrace -= dt;                                      // a clip that is still loading reads as "not playing" for a moment
+                bool ended = _musGrace <= 0f && !_mus.isPlaying && !_musPaused;
+                if (ended || (_musTarget <= 0f && _musLevel <= 0f)) { _mus.Stop(); _mus.clip = null; _musLevel = _musTarget = 0f; _musPaused = false; if (ended) _musName = null; }
+            }
+            if (_amb != null) _amb.volume = AmbientVolume * Volume * (1f - AmbientDuck * _musLevel);
+        }
+
         // ---- what plays for what
         public static string Shot(WeaponDef db, WeaponFeel feel)
         {
@@ -113,7 +166,11 @@ namespace GameCore
             if (zoneId == null) return "amb_wind";
             if (zoneId == "marshes") return "amb_marsh";
             var theme = ZoneThemes.For(zoneId);
-            if (theme.Mass == "cliff" && ZoneLayoutRecipes.IsInterior(zoneId)) return "amb_cave";
+            // Yan (2026-11-17): "and this to the cave ambience" - the haunted-mine loop (ArtSource/audio/make_mine_ambience.py) is the cave bed; the old synthesized one stays as the fallback while the new file is
+            // missing. The Hatch Tunnels (Tier 2 "Taken") are a concrete-themed dungeon but a cavern to walk through, so they get it too.
+            string cave = Clips("amb_mine").Length > 0 ? "amb_mine" : "amb_cave";
+            if (zoneId == Tier2Story.Maze) return cave;
+            if (theme.Mass == "cliff" && ZoneLayoutRecipes.IsInterior(zoneId)) return cave;
             if (ZoneLayoutRecipes.IsInterior(zoneId) || zoneId == "reactor_core") return "amb_hum";
             return "amb_wind";
         }

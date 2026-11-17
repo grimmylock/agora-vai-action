@@ -21,18 +21,19 @@ namespace GameCore
     public static class Tier2Story
     {
         public const string Mission = "taken", Maze = "taken_tunnels", Dock = "Loading Dock", Ladder = "Hatch Ladder", Door = "Lab Door";
+        public const string ChaseTrack = "mus_no_escape";   // Yan (2026-11-17): "add this song to the escape sequence, after the gaunt scene" (NO ESCAPE, Daniel Herrera; CREDITS_AUDIO.md)
         public const float ShotAfter = 240f;            // seconds in the maze before they lose patience (Yan, 2026-11-16: "7 minutes might be too much, we need them feeling nervous"; the route is ~200 tiles, a minute if you knew it)
 
         static float _mapSince = -1f, _stageAt = -1f, _descentAt = -1f, _hordeAt = -1f, _gameOverAt = -1f;
         static int _stage;                              // the grab's stage while step 1; the horde's soldiers lost so far while step 4
-        static bool _warned0, _warned1, _warned2, _released1, _released2;
+        static bool _warned0, _warned1, _warned2, _released1, _released2, _chaseMusic;
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
         static readonly List<(float at, List<Mutant> who)> Waves = new List<(float, List<Mutant>)>();   // the horde, released in waves (seconds after the alarm)
         static readonly float[] DeathTimes = { 4.5f, 5.8f, 7.1f, 8.4f, 9.8f };   // seconds after the Gaunt's scream
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -176,7 +177,7 @@ namespace GameCore
             ZoneTravel.EnterZone(Maze, "industrial_basin");
             var l = Mark(Ladder); int k = 0;
             foreach (var pl in Everyone) { if (l != null) Put(pl, l.X - 1 + k++ % 3, l.Y - 1); Rt.Knockdown(pl, 0f); }
-            SpawnEscorts();
+            SpawnEscorts(); Sfx.Preload(ChaseTrack);                                       // the song is read from disk now, not in the middle of the alarm
             _descentAt = Time.time; _warned0 = _warned1 = _warned2 = false;
             Story.SetObjective(Mission, "Find the hidden lab's door - the soldiers are watching the clock", Door);
             Story.Journal("The Garrison dragged us down a hatch under the Loading Dock into a maze, to find a door nobody has ever opened. They are not patient.");
@@ -312,6 +313,7 @@ namespace GameCore
             if (_gaunt == null || !_gaunt.IsAlive()) { if (_screamAt < 0f) _screamAt = now; }
             float ts = _screamAt < 0f ? -1f : now - _screamAt;
             if (ts < 0f) { GameOver(now); return; }                                         // the soldiers stand and stare at it until the scream is over
+            if (!_chaseMusic && ts >= Gaunt.CallTotal) { _chaseMusic = true; Sfx.Music(ChaseTrack, 1.5f); }   // the scream and the point are over: the horde is let go and the chase song starts (it ends at the ladder, or when you go down)
             // the soldiers charge down the corridor toward the noise and die one after another
             var east = new LandmarkInstance { Name = "charge", X = (bwl?.X ?? 70) - 12, Y = bwl?.Y ?? 9 };
             if (ts >= 2.6f) FollowPlayers(now, east, 0f, charge: true);
@@ -362,6 +364,7 @@ namespace GameCore
 
         static void LoseAndReload()
         {
+            Sfx.StopMusic(0.8f); _chaseMusic = false;
             foreach (var p in Everyone) { Rt.Knockdown(p, 5f); }
             Story.Fade(Color.black, 1f, 1.0f);
             _gameOverAt = Time.time + 1.6f;
@@ -379,6 +382,7 @@ namespace GameCore
         static void Out()
         {
             Story.Fade(Color.black, 1f, 0.6f);
+            Sfx.StopMusic(2.5f); _chaseMusic = false;
             Escorts.Clear(); Waves.Clear(); NextStep.Clear();
             EncounterState.Enemies.Clear();
             ZoneTravel.EnterZone("industrial_basin", Maze);

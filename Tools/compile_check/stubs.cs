@@ -8,8 +8,8 @@ namespace UnityEngine
     public class Component : Object { public GameObject gameObject; public Transform transform; public T GetComponent<T>() => default(T); public T AddComponent<T>() => default(T); public T GetComponentInChildren<T>() => default(T); }
     public class Behaviour : Component { public bool enabled; }
     public enum FindObjectsSortMode { None, InstanceID }
-    public class AudioClip : Object {}
-    public class AudioSource : Behaviour { public bool playOnAwake, loop, isPlaying; public AudioClip clip; public float volume, panStereo, pitch; public void Play() {} public void Stop() {} }
+    public class AudioClip : Object { public float length; public bool LoadAudioData() => true; }
+    public class AudioSource : Behaviour { public bool playOnAwake, loop, isPlaying; public AudioClip clip; public float volume, panStereo, pitch; public int priority; public void Play() {} public void Stop() {} public void Pause() {} public void UnPause() {} }
     public static class ColorUtility { public static bool TryParseHtmlString(string s, out Color c) { c = default(Color); return true; } }
     public enum FindObjectsInactive { Exclude, Include }
     public class CanvasGroup : Behaviour { public bool blocksRaycasts, interactable; public float alpha; }

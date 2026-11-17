@@ -124,6 +124,9 @@ namespace GameCore
         /// Keep in step with CREDITS_AUDIO.md.</summary>
         public const string CreditsText =
             "<b>Made by</b> Yan, with Claude.\n\n" +
+            "<b>Music and ambience</b>\n" +
+            "Daniel Herrera - NO ESCAPE (Horror Terror Chase Music)\n" +
+            "Max \"stallfish\" Denton - AMBIENCE | Scary Haunted Mine\n\n" +
             "<b>Sound - CC-BY 3.0</b> (creativecommons.org/licenses/by/3.0)\n" +
             "Jack Menhorn - FPS Placeholder Sounds (body impact)\n" +
             "Mike Koenig, via SoundBible - Shotgun Shoot/Reload (dry fire)\n\n" +
