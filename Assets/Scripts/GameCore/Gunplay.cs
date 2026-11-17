@@ -597,6 +597,18 @@ namespace GameCore
                 Shoot(shooter, w, dx, dy, h, spread + i * hd.Kick * 0.6f, false, i * 60f / System.Math.Max(60f, hd.Rpm));
         }
 
+        /// <summary>2026-11-17 (Yan: enemies should not waste rounds into walls and cover): can a round fired from (sx, sy) (tile space) reach `target` at chest or head height, i.e. is the first thing on the line the target?
+        /// Bodies other than the target are ignored here (AllyInLine handles friends).</summary>
+        public static bool ClearShotFrom(ICombatant shooter, float sx, float sy, ICombatant target)
+        {
+            var (tx, ty) = Ballistics.Pos(target); float dx = tx - sx, dy = ty - sy, len = (float)System.Math.Sqrt(dx * dx + dy * dy);
+            if (len < 0.5f) return true;
+            var one = new[] { target };
+            foreach (float h in new[] { 0.45f, 0.8f })
+                if (Ballistics.Trace(shooter, sx, sy, dx / len, dy / len, len + 0.5f, h, one).Unit == target) return true;
+            return false;
+        }
+
         /// <summary>RT batch 4: one trigger pull by an NPC fighting in real time (RtAi), extra = spread from moving or being pinned.</summary>
         public static void NpcShootOnce(ICombatant shooter, Weapon w, ICombatant target, float extra)
         {

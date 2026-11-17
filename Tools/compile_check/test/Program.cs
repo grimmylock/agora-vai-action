@@ -3586,7 +3586,7 @@ static class Program {
   // RTBAL=7: where do enemy shots really come from and where do they end? Squads of 4 spawn 38-46 tiles from a standing player on the real Tier 1 map (random open spots), already aware of him, and
   // fight with the real AI for 45 s of game time. Every round they fire at him is logged by distance: body (hit him), blocked (wall or cover) or air (flew past).
   static void FightRangeReport() {
-    var edges = new[] { 0, 10, 15, 20, 30, 40, 60 };
+    var edges = new[] { 0, 10, 15, 20, 30, 40, 60 }; RtAi.ClearCheck = Environment.GetEnvironmentVariable("CLEAR") != "0";
     foreach (var (rank, tier) in new[] { ("Experienced", 1), ("Veteran", 3) }) {
       var rows = new Dictionary<string, int[]>(); int trials = 0, downed = 0; var firstShot = new List<float>();
       for (int seed = 0; seed < 40; seed++) {
@@ -3604,7 +3604,7 @@ static class Program {
           if (!(sh is HumanEnemy)) return; var (sx2, sy2) = Ballistics.Pos(sh); var (tx2, ty2) = Ballistics.Pos(p); float d = (float)Math.Sqrt((sx2 - tx2) * (sx2 - tx2) + (sy2 - ty2) * (sy2 - ty2));
           int b = 0; for (int e = 0; e < edges.Length - 1; e++) if (d >= edges[e]) b = e;
           string key = CombatRules.Category(wp.Db); if (!rows.TryGetValue(key, out var arr)) rows[key] = arr = new int[(edges.Length - 1) * 3];
-          arr[b * 3 + (hit.Unit == p ? 0 : hit.Wall || hit.Cover ? 1 : 2)]++; if (firstAt < 0f) firstAt = tNow; };
+          arr[b * 3 + (hit.Unit == p ? 0 : (hit.Wall || hit.Cover) && hit.Dist < d - 1.2f ? 1 : 2)]++; if (firstAt < 0f) firstAt = tNow; };
         UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; EncounterState.InCombat = true; Contact.Spot(p); const float dt = 1f / 30f;
         for (; tNow < 45f && p.Hp > 0 && !Body.Down(p); tNow += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); Gunplay.Fly(dt); }
         Gunplay.Probe = null; trials++; if (p.Hp <= 0 || Body.Down(p)) downed++; if (firstAt >= 0f) firstShot.Add(firstAt);
@@ -3614,7 +3614,7 @@ static class Program {
       var all = new int[(edges.Length - 1) * 3]; foreach (var a in rows.Values) for (int i = 0; i < all.Length; i++) all[i] += a[i];
       foreach (var kv in rows.Concat(new[] { new KeyValuePair<string, int[]>("ALL", all) }))
       { var sb = new System.Text.StringBuilder($"  {kv.Key,-8}"); int tot = kv.Value.Sum();
-        for (int e = 0; e < edges.Length - 1; e++) { int n = kv.Value[e * 3] + kv.Value[e * 3 + 1] + kv.Value[e * 3 + 2]; sb.Append($" | {edges[e]}-{edges[e + 1]}t {(tot > 0 ? 100 * n / tot : 0)}% (body {(n > 0 ? 100 * kv.Value[e * 3] / n : 0)}/wall {(n > 0 ? 100 * kv.Value[e * 3 + 1] / n : 0)}/air {(n > 0 ? 100 * kv.Value[e * 3 + 2] / n : 0)})"); }
+        for (int e = 0; e < edges.Length - 1; e++) { int n = kv.Value[e * 3] + kv.Value[e * 3 + 1] + kv.Value[e * 3 + 2]; sb.Append($" | {edges[e]}-{edges[e + 1]}t {(tot > 0 ? 100 * n / tot : 0)}% (body {(n > 0 ? 100 * kv.Value[e * 3] / n : 0)}/blocked {(n > 0 ? 100 * kv.Value[e * 3 + 1] / n : 0)}/past {(n > 0 ? 100 * kv.Value[e * 3 + 2] / n : 0)})"); }
         Console.WriteLine(sb.ToString() + $" | {tot} rounds"); }
     }
   }

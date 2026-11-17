@@ -27,6 +27,7 @@ namespace GameCore
             public bool Flee, Chasing;
             public float NextStep, NextShot, ReloadUntil = -1f, PinnedUntil = -1f, MovedAt = -9f;
             public int BurstLeft;
+            public float ClearAt = -9f, MoveForShotAt = -9f; public bool Clear = true;   // the round's path to the target is open (re-traced every 0.25 s); when it is not he stops firing and looks for a tile with a clear line
             public float FarShotAt = -9f;                             // the last probing shot taken from outside his effective range while still closing in
             public bool Dry;                                          // out of rounds: closes in to swing
             public float ReadyAt = -1f, CanShootAt = -9f;             // 2026-11-17: when he is done reacting to a target he can finally shoot at (ReactionSeconds), and when he last could
@@ -148,6 +149,7 @@ namespace GameCore
         }
 
         /// <summary>The shooting half of a frame: his own gun's rules (bursts, rpm, magazine and reload time, jams, the fair-shot reach, a friend in the line). `pl` = the target as a Player (the fair-shot vision rules), null for a mutant.</summary>
+        public static bool ClearCheck = true;                          // the harness switches the path check off to compare (RTBAL=7, CLEAR=0)
         static void Shoot(HumanEnemy h, Mind s, ICombatant t, Player pl, object _)
         {
             float now = Time.time;
@@ -190,10 +192,36 @@ namespace GameCore
 
             // 2026-11-17 (Yan: "enemies try to move in the effective range before shooting too much, that way fights happen more inside the normal vision range (besides snipers)"): while he is still walking
             // closer (he has a goal he has not reached) and the target is past half his gun's reach, he only takes a probing shot every 3 s; snipers shoot from where they are.
+            if (pl != null && CombatRules.IsShotgun(w) && w.CurrentAmmoType != "Slug" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w)) { s.BurstLeft = 0; return; }   // buckshot is for inside half its reach
             if (pl != null && CombatRules.Category(w.Db) != "sniper" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w) && s.Goal.HasValue && (h.X, h.Y) != s.Goal.Value && !s.Flee)
             {
                 if (now < s.FarShotAt + 3f) { s.BurstLeft = 0; return; }
                 s.FarShotAt = now; s.BurstLeft = 1;
+            }
+
+            // 2026-11-17 (Yan, after RTBAL=7: ~65% of the rounds the raiders fired ended in walls and cover): the round's own path has to be open, not just the tile line of sight. Blocked: hold fire,
+            // and after a second try a tile within 4 of him from which the path is open (else a step toward the target), at most one new goal every 1.2 s.
+            if (pl != null && ClearCheck)
+            {
+                var (hx, hy) = Ballistics.Pos(h);
+                if (now >= s.ClearAt) { s.ClearAt = now + 0.25f; s.Clear = Gunplay.ClearShotFrom(h, hx, hy, t); }
+                if (!s.Clear)
+                {
+                    s.BurstLeft = 0;
+                    if (now >= s.MoveForShotAt && !Pinned(h))
+                    {
+                        s.MoveForShotAt = now + 1.2f; (int x, int y)? pick = null; float bestD = 1e9f;
+                        for (int ox = -4; ox <= 4 && pick == null; ox += 2) for (int oy = -4; oy <= 4; oy += 2)
+                        {
+                            int x = h.X + ox, y = h.Y + oy; if ((ox == 0 && oy == 0) || !TerrainMap.CanEnterTile(x, y) || TerrainMap.UnitAt(x, y) != null) continue;
+                            float d = CombatantUtil.Distance(h, t) - (float)System.Math.Sqrt((x - t.X) * (x - t.X) + (y - t.Y) * (y - t.Y));
+                            if (Gunplay.ClearShotFrom(h, x + 0.5f, y + 0.5f, t) && -d < bestD) { bestD = -d; pick = (x, y); }
+                        }
+                        if (pick == null) { int x = h.X + System.Math.Sign(t.X - h.X) * 3, y = h.Y + System.Math.Sign(t.Y - h.Y) * 3; if (TerrainMap.CanEnterTile(x, y)) pick = (x, y); }
+                        if (pick != null) s.Goal = pick;
+                    }
+                    return;
+                }
             }
 
             if (Gunplay.AllyInLine(h, t))                                  // a friend in the line of fire: hold, and step aside for a clear shot
