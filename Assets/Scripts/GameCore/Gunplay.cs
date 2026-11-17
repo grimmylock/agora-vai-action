@@ -161,7 +161,22 @@ namespace GameCore
                 if (CombatRules.IsShotgun(w)) { h.Pellets = 6; h.Choke = Choke.TryGetValue(w.Db.Name, out var c) ? c : 1.5f; }
             }
             if (ItemCondition.IsDamaged(w?.Condition ?? ItemCondition.Working)) h.Steady *= 1.4f;
+            if (w != null && w.Upgrades.Contains("Calibrated")) h.Steady *= 0.9f;                     // a calibrated barrel groups tighter (it was +1 to hit)
+            if (w?.Owner is Player pl) PerkTune(h, CombatRules.Category(w.Db), pl);
             return h;
+        }
+
+        /// <summary>The gun perks in real time (2026-11-17: they only existed in the 2d10 roll, so in real time they did nothing): each one tunes the
+        /// handling of the gun its player holds. Marksman's Focus steadies a sniper rifle, Recoil Control and Bullet Hose tame the kick of rifles and SMGs,
+        /// Shredder steadies a machine gun, Point-Blank Execution tightens a sidearm fired from the hip. (High-Velocity Impact, Breacher and Staggering
+        /// Blast act on the hit: Resolve.)</summary>
+        static void PerkTune(Handling h, string cat, Player pl)
+        {
+            if (cat == "sniper" && CombatantUtil.HasPerk(pl, "MarksmansFocus")) h.Steady *= 0.8f;
+            if (cat == "assault" && CombatantUtil.HasPerk(pl, "RecoilControl")) h.Kick *= 0.7f;
+            if (cat == "smg" && CombatantUtil.HasPerk(pl, "BulletHose")) h.Kick *= 0.7f;
+            if (cat == "heavy" && CombatantUtil.HasPerk(pl, "Shredder")) { h.Steady *= 0.75f; h.Kick *= 0.85f; }
+            if (cat == "sidearm" && CombatantUtil.HasPerk(pl, "PointBlankExecution")) h.Hip *= 0.75f;
         }
 
         /// <summary>The live state of one shooter's aim: how steady it is and how much kick it still carries.</summary>
@@ -374,6 +389,16 @@ namespace GameCore
                 if (shooter is Player) raw *= CombatRules.PlayerDamage;
                 raw *= CombatRules.Lethality;
                 float ignore = w.Db?.IgnorePhysDRPercent ?? 0f;
+                if (shooter is Player pk)
+                {
+                    string cat = CombatRules.Category(w.Db);
+                    if (cat == "sniper" && hit.Dist >= 12f && CombatantUtil.HasPerk(pk, "HighVelocityImpact")) ignore = 1f - (1f - ignore) * 0.8f;   // High-Velocity Impact
+                    if (cat == "shotgun" && hit.Dist <= 4f)
+                    {
+                        if (CombatantUtil.HasPerk(pk, "Breacher")) raw *= 1.25f;                                                                       // Breacher
+                        if (CombatantUtil.HasPerk(pk, "StaggeringBlast") && first && target is Mutant reeling) RtAi.Pin(reeling, 1.0f);                  // Staggering Blast
+                    }
+                }
                 if (shooter is Player sp && sp.ArtifactBypassPhysDR > 0) ignore = 1f - (1f - ignore) * (1f - sp.ArtifactBypassPhysDR);
                 float dr = hit.Part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(target)).dr : target.PhysDR * CombatRules.ArmorScale(target);   // RT batch 6: helmets
                 int dmg = CombatRules.PhysicalDamage(raw, w.CurrentAmmoType, dr, ignore);

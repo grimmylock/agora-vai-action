@@ -295,33 +295,17 @@ namespace GameCore
             var fx = CombatFx.Push("strike", this, target);
             fx.Psi = psi;
 
-            int ac = target.Ac;
-            if (psi)
-            {
-                var cover = CoverUtil.GetCover(this, target, null);
-                ac += cover.AcBonus;
-            }
-
-            if (Rt.On && target is Player diver && Rt.Of(diver).Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
-            var result = Rt.On ? new AttackRollResult { Hit = true, ChosenRoll = 0 }   // real time: no dice - in reach when it strikes = hit
-                : GameServices.RequireCombat().RollAttack(advantage ? "advantage" : "standard", (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);   // Batch 57: maimed claws
-            bool crit = result.ChosenRoll == CombatRules.Headshot;
-            if (!result.Hit && !crit)
-            {
-                GameLog.Write($"{Name} misses {who}.");
-                return;
-            }
-
-            float tierMult = Rt.On ? 1f : CombatRules.HitMultiplier(result.ChosenRoll, result.ChosenRoll + (int)AgilityMod + AttackBonus - (StatusEffects.Wound == "Arm" ? 2 : 0), ac);
-            float raw = AttackDamage * tierMult * DamageMult;
+            if (target is Player diver && Rt.Of(diver).Diving) { GameLog.Write($"You dive under {Name}'s strike."); return; }
+            // real time: no dice - in reach when it strikes = hit
+            float raw = AttackDamage * DamageMult;
             int damage = psi
                 ? CombatRules.AnomalousDamage(raw, target.AnomDR)
                 : CombatRules.PhysicalDamage(raw, "Standard", target.PhysDR, Db?.ArmorPierce ?? 0f);
             int hpBefore = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - damage);
             fx.Hit = true; LastHit = true; fx.Killed = !target.IsAlive(); fx.Overkill = damage - hpBefore;
-            GameLog.Write($"{Name} hits {who} for {damage} {(psi ? "psi " : "")}damage{(crit ? " (headshot!)" : "")}. {who} HP is now {target.Hp}.");
-            if (!psi) CombatRules.CheckWound(target, 0, CombatRules.HitWounds(tierMult, null));   // Batch 60
+            GameLog.Write($"{Name} hits {who} for {damage} {(psi ? "psi " : "")}damage. {who} HP is now {target.Hp}.");
+            if (!psi) CombatRules.CheckWound(target, 0, CombatRules.HitWounds(1f, null));   // Batch 60
 
             if (target.IsAlive())
             {

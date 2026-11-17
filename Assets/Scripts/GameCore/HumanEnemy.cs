@@ -255,7 +255,7 @@ namespace GameCore
             else if (EquippedWeapon.IsLoaded && FindBarrelNear(target, out int bx, out int by))
             {
                 GameLog.Write($"{Name} shoots at the barrel next to {target.Name}!");
-                EquippedWeapon.FireAtTile(bx, by, "Single", D20Mod);
+                EquippedWeapon.FireAtTile(bx, by, "Single");
             }
             else if (EquippedWeapon.IsLoaded)
             {
@@ -265,7 +265,7 @@ namespace GameCore
                 bool melee = CombatRules.IsMelee(EquippedWeapon);
                 ++Attacks;
                 GameLog.Write($"{Name} {(burst ? "opens up with a burst from" : "fires")} {EquippedWeapon.Name} at {(target is Player ? "Player" : target.Name)}!");
-                EquippedWeapon.Fire(target, burst ? "Burst" : "Single", D20Mod);
+                EquippedWeapon.Fire(target, burst ? "Burst" : "Single");
             }
             else if (!EquippedWeapon.IsLoaded)
             {

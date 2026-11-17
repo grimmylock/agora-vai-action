@@ -447,7 +447,6 @@ namespace GameCore
                 if (Sneaking) statuses.Add("Sneaking");
                 if (StatusEffects.Wound != null) statuses.Add($"{StatusEffects.Wound} wound");
                 if (StatusEffects.Suppressed) statuses.Add("Suppressed");
-                if (StatusEffects.AimBonus > 0) statuses.Add($"Aiming +{StatusEffects.AimBonus}");
                 if (ActivePerks.Count > 0) statuses.Add($"Perks: {string.Join(", ", ActivePerks)}");
                 return statuses.Count > 0 ? string.Join(", ", statuses) : "Healthy";
             }
@@ -493,7 +492,6 @@ namespace GameCore
             ApplyCarryEffects();
             MovedThisTurn = false;
             if (!EncounterState.InCombat) AdrenalineUsed = BracedUsed = false;
-            StatusEffects.AimBonus = 0;
             StatusEffects.Suppressed = false;
             TerrainMap.TickSmoke();
             if (EncounterState.InCombat) WorldEvents.TickSurge();   // exploring, TurnLoop.TickAwareness counts tiles instead

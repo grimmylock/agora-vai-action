@@ -152,17 +152,6 @@ namespace GameCore
                 if (o != dead && !IsOut(o) && (CombatantUtil.Distance(o, dead) <= 4 || grid.CheckLineOfSight(o.X, o.Y, dead.X, dead.Y))) Shake(o, $"sees {dead.Name} go down");
         }
 
-        /// <summary>Batch 57: a head-shot kill. Squadmates within 8 tiles are shaken, seen or not; anyone who
-        /// was already shaken before the shot breaks.</summary>
-        public static void Execution(HumanEnemy dead, List<HumanEnemy> shakenBefore, Player player)
-        {
-            foreach (var o in Squad(dead).ToList())
-            {
-                if (o == dead || IsOut(o) || CombatantUtil.Distance(o, dead) > 8) continue;
-                if (shakenBefore.Contains(o)) Break(o, player);
-                else Shake(o, $"hears {dead.Name} drop from a head shot");
-            }
-        }
 
         public static void Shake(HumanEnemy h, string why)
         {
@@ -269,15 +258,6 @@ namespace GameCore
                 {
                     shaken.Morale = "Steady";
                     GameLog.Write($"{h.Name} rallies {shaken.Name} - steady again.");
-                }
-                if (!h.StatusEffects.Suppressed)
-                {
-                    var ally = Squad(h).Where(o => o != h && !IsOut(o)).OrderBy(o => CombatantUtil.Distance(o, player)).FirstOrDefault();
-                    if (ally != null && ally.StatusEffects.AimBonus == 0)
-                    {
-                        ally.StatusEffects.AimBonus = 2;
-                        GameLog.Write($"{h.Name} commands {ally.Name}: +2 on their next shot.");
-                    }
                 }
             }
 

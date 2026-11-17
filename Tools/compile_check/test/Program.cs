@@ -637,9 +637,9 @@ static class Program {
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.9f) == 8, "DR cap 75%");
     Check(CombatRules.PhysicalDamage(30, "Standard", 0.5f, 0.2f) == 18, "ignore 20%");
     var vk74 = W("assault", "VK74"); var vk103 = W("assault", "VK103"); var gnat = W("smg", "CorvanGnatPDW"); var pl74 = W("heavy", "PL74");
-    Check(CombatRules.CanBurst(vk74) && CombatRules.BurstPenalty(vk74) == -2 && CombatRules.BurstRounds(vk74) == 3 && CombatRules.BurstMultiplier(vk74) == 2f, "VK-74 burst");
-    Check(CombatRules.BurstPenalty(gnat) == -1 && CombatRules.BurstRounds(gnat) == 5, "SMG burst");
-    Check(CombatRules.BurstRounds(pl74) == 10 && CombatRules.BurstMultiplier(pl74) == 3f, "heavy burst");
+    Check(CombatRules.CanBurst(vk74) && CombatRules.BurstRounds(vk74) == 3, "VK-74 burst");
+    Check(CombatRules.BurstRounds(gnat) == 5, "SMG burst");
+    Check(CombatRules.BurstRounds(pl74) == 10, "heavy burst");
     Check(!CombatRules.CanBurst(W("sidearm", "PSh18Pchela")), "pistol can't burst");
     // 2026-11-16 (Yan): no jam chance anywhere
     Check(typeof(CombatRules).GetMethod("Jams") == null && typeof(CombatRules).GetMethod("JamChance") == null && typeof(CombatRules).GetMethod("RollJam") == null, "jams are gone from the rules");
@@ -650,7 +650,6 @@ static class Program {
     { int lo = 99, hi = 0, mid = 0; for (int i = 0; i < 2000; i++) { int r = DiceRoller.Roll2D10().Chosen; lo = Math.Min(lo, r); hi = Math.Max(hi, r); if (r >= 9 && r <= 13) mid++; }
       Check(lo >= 2 && hi <= 20 && mid > 700, $"2d10 rolls 2-20 and bunch in the middle ({lo}-{hi}, {mid}/2000 in 9-13)"); }
     Check(CombatRules.RankAc("Rookie") == 10 && CombatRules.RankAc("Expert") == 12, "rank AC");
-    Check(CombatRules.TraitToHit(W("shotgun", "RangerP8"), false, 3) == 2, "shotgun close +2");
     // mutant claws vs armor: 200 dmg Veil Prowler vs 40% armor = 120 (HP x10, real-time fork)
     var veil = new Mutant("v", 1, 1, MutantDatabase.Get("tier2", "VeilProwler"));
     var man = new HumanEnemy("m", 2, 1, "Raiders", "Rookie", null, ArmorDatabase.Tiers["tier1"].Values.First());
@@ -3379,6 +3378,14 @@ static class Program {
       Check(wins >= bd.minWins && wins <= bd.maxWins && lost >= bd.minLost && lost <= bd.maxLost,
         $"rt balance: {name}: {wins}/{N} won, {(wins > 0 ? tk / wins : 0):0.0} s to win, {lost} HP lost on average (bands {bd.minWins}-{bd.maxWins} wins, {bd.minLost}-{bd.maxLost} HP; assault rifle {gun})");
     }
+    // the gun perks work in real time (they used to live only in the 2d10 roll): each tunes the handling of its gun
+    { var pp = Arena(out int ax, out int ay); pp.ActivePerks.Clear();
+      float Steady(string cat, string key) { pp.EquipWeapon(cat, key); return Gunplay.For(pp.EquippedWeapon).Steady; }
+      float Kick(string cat, string key) { pp.EquipWeapon(cat, key); return Gunplay.For(pp.EquippedWeapon).Kick; }
+      float s0 = Steady("sniper", "M91Trekhlineyka"), k0 = Kick("assault", "VK74"), m0 = Kick("smg", "CorvanHornet45"), h0 = Steady("heavy", "RL44");
+      pp.ActivePerks.AddRange(new[] { "MarksmansFocus", "RecoilControl", "BulletHose", "Shredder" });
+      Check(Steady("sniper", "M91Trekhlineyka") < s0 * 0.9f && Kick("assault", "VK74") < k0 * 0.9f && Kick("smg", "CorvanHornet45") < m0 * 0.9f && Steady("heavy", "RL44") < h0 * 0.9f,
+        "RT perks: Marksman's Focus, Recoil Control, Bullet Hose and Shredder tune the gun they belong to"); }
   }
 
   static void RtChecks() {
@@ -4063,12 +4070,6 @@ static class Program {
       }
       // Batch 73: Tier 1 Raider gangs are at most 3
       for (int i = 0; i < 5; i++) { var sq = SquadManager.CreateOfflineSquad("perimeter", "Raiders", 6); Check(sq == null || sq.Members.Count <= SquadManager.MaxStarterGang, "Tier 1 gang of " + sq?.Members.Count); if (sq != null) MacroState.Current.OfflineSquads.Remove(sq); }
-      // Batch 76: snipers cost 3 AP a shot and get +1 (scoped)
-      { var sn = W("sniper", "M91Trekhlineyka"); var ar = W("assault", "VK74");
-        sn.RangeTiles = RangeUtil.ParseRangeToTiles(sn.Db.Range); int rec = sn.Db.HighRecoil ? -1 : 0;
-        // Batch 80: +1 only beyond half its range, -2 within 5 tiles
-        Check(CombatRules.TraitToHit(sn, false, sn.RangeTiles) - rec == 1 && CombatRules.TraitToHit(sn, false, sn.RangeTiles / 2) - rec == 0
-          && CombatRules.TraitToHit(sn, false, 3) - rec == -2, $"sniper scope: far {CombatRules.TraitToHit(sn, false, sn.RangeTiles)}, mid {CombatRules.TraitToHit(sn, false, sn.RangeTiles / 2)}, close {CombatRules.TraitToHit(sn, false, 3)}"); }
       // Batch 80: two weapon slots - Y swaps; a pistol or blade is free, anything else 1 AP; a sniper pairs only with small ones
       { p = Arena(out px, out py); EncounterState.InCombat = true;
         p.EquipWeapon("sniper", "M91Trekhlineyka"); p.StowSecondary();
@@ -4085,12 +4086,6 @@ static class Program {
         p.EquipWeaponFromInventory(Item("sniper", "M91Trekhlineyka").Id);
         Check(p.EquippedWeaponCategory == "sniper" && p.SecondaryCategory == null && p.Inventory.Items.Any(i => i.Key == "VK74"), "equipping a sniper sends the rifle back to the pack");
         EncounterState.InCombat = false; }
-      // Batch 78: a blade kill on someone unaware starts no fight; pistols +1 inside their range; Gunslinger -1
-      { p = Arena(out px, out py);
-        var victim = new HumanEnemy("Victim", px + 1, py, "Raiders", "Rookie", null, null) { Hp = 1 };
-        EncounterState.Enemies.Add(victim);
-        var pist = W("sidearm", "PSh18Pchela"); pist.RangeTiles = 8;
-        Check(CombatRules.TraitToHit(pist, false, 8) == 1 && CombatRules.TraitToHit(pist, false, 9) == 0, "pistol +1 inside its range only"); }
       // Batch 78: squad sizes - Garrison duos in Tier 2, 4-6 from Tier 4, Raiders 4-6 from Tier 2
       { bool ok = true; for (int i = 0; i < 30; i++) { ok &= SquadManager.HumanSquadSize("Garrison", 2) == 2; int b4 = SquadManager.HumanSquadSize("Contractors", 4); ok &= b4 >= 4 && b4 <= 6; int r3 = SquadManager.HumanSquadSize("Raiders", 3); ok &= r3 >= 4 && r3 <= 6; int c3 = SquadManager.HumanSquadSize("Contractors", 3); ok &= c3 >= 4 && c3 <= 6; /* Batch 80: Tier 3 4-6 */ int r2 = SquadManager.HumanSquadSize("Raiders", 2); ok &= r2 >= 3 && r2 <= 4; }
         Check(ok, "squad sizes by tier"); }
@@ -4242,7 +4237,7 @@ static class Program {
     int before = ShopSystem.GetBuyPrice(item); pl.TakePerk("Haggler"); int after = ShopSystem.GetBuyPrice(item);
     Check(after < before, $"haggler {before}->{after}");
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
-    Check(PerkDatabase.All.Count == 24, "perk count (37 less the 13 perks that only worked with turns, AP or MP) " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 23, "perk count (37 less the 14 perks that only worked with turns, AP, MP or the 2d10 roll) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80
@@ -4263,17 +4258,6 @@ static class Program {
     // Batch 57: aimed shots - L cycles the part, +1 AP, single shots only, effects on a clean hit or better
     { var ap = Player.Current; ap.StowOffhand(); ap.EquippedWeapon.Reload(); ap.EquippedWeapon.IsJammed = false;
       var t = new HumanEnemy("T", 0, 0, "Raiders", "Rookie", WeaponDatabase.Categories["assault"]["VK74"], ga);   // a gun to drop (a random loadout can be a knife)
-      CombatRules.ApplyAimed(t, "Legs", 0.85f); Check(t.StatusEffects.Wound == null, "a graze on a limb does no wound");
-      int mp = t.TurnMp(); CombatRules.ApplyAimed(t, "Legs", 1.2f); Check(t.StatusEffects.Wound == "Leg" && t.StatusEffects.Prone && t.TurnMp() == Math.Max(1, mp - 2), "a vital leg shot hobbles and drops them");
-      CombatRules.ApplyAimed(t, "Arms", 1.2f); Check(t.StatusEffects.Wound == "Arm" && t.GunDropped && CombatRules.AttackerPenalty(t) <= -2, "a vital arm shot maims and disarms");
-      CombatRules.ApplyAimed(t, "Torso", 1f); Check(t.StatusEffects.Bleeding, "a body shot bleeds");
-      var cond = t.ArmorCondition; CombatRules.ApplyAimed(t, "Armor", 1f); Check(t.EquippedArmor == null || t.ArmorCondition != cond, "an armor shot breaks their armor a step");
-      var sq = new HumanEnemy("Sq1", dummy.X + 1, dummy.Y + 1, "Raiders", "Rookie", gw, ga); var sq2 = new HumanEnemy("Sq2", dummy.X + 2, dummy.Y + 2, "Raiders", "Rookie", gw, ga); sq2.Morale = "Shaken"; sq.IsAggroed = sq2.IsAggroed = dummy.IsAggroed;
-      EncounterState.Enemies.Add(sq); EncounterState.Enemies.Add(sq2); dummy.Hp = 0;
-      EnemyAI.Execution(dummy, new System.Collections.Generic.List<HumanEnemy> { sq2 }, ap);
-      Check(sq.Morale == "Shaken" && (sq2.IsFleeing() || sq2.Morale == "Surrendered"), $"a head-shot kill shakes the squad and breaks the shaken ({sq.Morale}, {sq2.Morale})");
-      var bomb = new HumanEnemy("Bomb", sq.X, sq.Y + 3, "Raiders", "Veteran", gw, ga); bomb.Hp = 100; EncounterState.Enemies.Add(bomb); int f0 = bomb.Frags;
-      CombatRules.CookOff(bomb, ap); Check(f0 == 1 && bomb.Frags == 0 && bomb.Hp < 100, $"a pouch shot sets off their grenade on them (hp {bomb.Hp})");
       // Batch 61: a cloaked ambusher with no short way to you used to circle forever; now it walks the long way in
       { var me = Player.Current; me.Hp = me.MaxHp = 5000; int cx = me.X, cy = me.Y;
         for (int y = cy - 12; y <= cy + 12; y++) for (int x = cx - 4; x <= cx + 10; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
@@ -4322,7 +4306,7 @@ static class Program {
         var grid = GameServices.RequireGrid(); float c0; EncounterState.InCombat = true; me.Sneaking = false; c0 = grid.GetMoveCost(me, me.X + 1, me.Y);
         me.Sneaking = true; Check(grid.GetMoveCost(me, me.X + 1, me.Y) == c0 * 2, "sneaking in a fight costs double MP");
         me.Sneaking = false; EncounterState.InCombat = false; }
-      Check(CombatRules.TierUp(0.85f) == 1f && CombatRules.TierUp(1f) == 1.2f && CombatRules.TierUp(1.2f) == 1.5f, "head shots land a tier higher"); }
+      }
     GameLog.Target = null;
     // every perk survives a few real fights (exercises the hooks for exceptions)
     var log = new ConsoleLog(); GameLog.Target = log;
@@ -5136,8 +5120,8 @@ static class Program {
     CombatFx.Pending.Clear();
     e.Hp = e.MaxHp; p.EquippedWeapon.IsJammed = false; p.EquippedWeapon.CurrentMagazine = p.EquippedWeapon.MagCapacity;
     int hp = e.Hp; p.EquippedWeapon.Fire(e, "Single");
-    var shot = CombatFx.Pending.LastOrDefault(x => x.Kind == "shot");
-    Check(shot != null && shot.Actor == p && shot.Target == e && shot.Rounds == 1 && shot.Hit == (e.Hp < hp), $"shot recorded (hit {shot?.Hit}, hp {hp}->{e.Hp})");
+    var shot = CombatFx.Pending.FirstOrDefault(x => x.Kind == "shot");
+    Check(shot != null && shot.Actor == p && shot.Target == e && shot.Rounds == 1, "shot recorded");
     p.EquippedWeapon.Reload();
     Check(CombatFx.Pending.Any(x => x.Kind == "reload" && x.Actor == p), "reload recorded");
     for (int i = 0; i < 100; i++) CombatFx.Push("shot", p, e);
@@ -5147,7 +5131,7 @@ static class Program {
     FxEvent killShot = null;
     for (int i = 0; i < 80 && killShot == null; i++) {
       e.Hp = 1; p.EquippedWeapon.IsJammed = false; p.EquippedWeapon.CurrentMagazine = p.EquippedWeapon.MagCapacity;
-      CombatFx.Pending.Clear(); p.EquippedWeapon.Fire(e, "Single");
+      CombatFx.Pending.Clear(); p.EquippedWeapon.Fire(e, "Single"); Gunplay.LandAll();
       killShot = CombatFx.Pending.FirstOrDefault(x => x.Kind == "shot" && x.Hit);
     }
     Check(killShot != null && killShot.Killed && killShot.Overkill > 0, $"killing shot flagged (overkill {killShot?.Overkill})");

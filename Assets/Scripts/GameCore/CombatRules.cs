@@ -92,42 +92,8 @@ namespace GameCore
             switch (Category(w?.Db)) { case "smg": return 5; case "heavy": return 10; default: return 3; }
         }
 
-        public static float BurstMultiplier(Weapon w)
-        {
-            switch (Category(w?.Db)) { case "smg": return 2.4f; case "heavy": return 3.0f; default: return 2.0f; }
-        }
 
-        public static int BurstPenalty(Weapon w)
-        {
-            string name = w?.Db?.Name;
-            if (name == "VK-74") return -2;
-            if (name == "Corvan Battle Rifle") return -4;
-            return Category(w?.Db) == "smg" ? -1 : -3;
-        }
 
-        /// <summary>Weapon-specific to-hit modifiers (file 01 traits) for one attack.</summary>
-        public static int TraitToHit(Weapon w, bool burst, int distance)
-        {
-            if (w?.Db == null) return 0;
-            int mod = 0;
-            if (Category(w.Db) == "sniper")   // Batch 80 (Yan): the scope helps far out, hurts up close
-            {
-                if (distance > w.RangeTiles / 2) mod += 1;
-                if (distance <= 5) mod -= 2;
-            }
-            if (Category(w.Db) == "sidearm" && distance <= w.RangeTiles) mod += 1;   // Batch 78 (Yan): pistols handle well inside their range   // Batch 76 (Yan): "+1 to hit in the weapon class because they're scoped"
-            if (w.Db.HighRecoil) mod -= 1;
-            if (IsShotgun(w) && distance <= 4) mod += 2;
-            switch (w.Db.Name)
-            {
-                case "TR-30": if (!burst) mod += 1; break;
-                case "BR-86 Bulldog": if (distance >= 10) mod += 1; break;
-                case "VK-74 Obelisk":
-                case "Corvan Bullpup":
-                case "PL-74P Polovets Zulu": mod += 1; break;
-            }
-            return mod;
-        }
 
         /// <summary>Does this kept die jam the weapon?</summary>
         public const int Headshot = 20;
@@ -135,58 +101,6 @@ namespace GameCore
         /// <summary>Batch 56 hit tiers: damage multiplier for a hit, from the kept 2d10 and the total vs AC.</summary>
         public static float HitMultiplier(int die, int total, int ac) =>
             die == Headshot ? 1.5f : total - ac <= 3 ? 0.85f : total - ac <= 6 ? 1f : 1.2f;
-
-        // Batch 57: aimed shots (L to pick, +1 AP, single shots only). Penalty to hit, then on a clean hit or better:
-        // Legs = Leg wound (-2 MP; a vital hit also knocks them down), Arms = Arm wound (-2 to hit; a vital hit
-        // knocks the gun out of their hands, 2 AP to pick up), Torso = Bleeding, Head = one hit tier higher and
-        // -1 AP next turn (a head-shot kill shakes the squad, and breaks anyone already shaken), Armor = one
-        // Condition step off their armor (a mutant's hide loses a quarter of its Phys-DR), Pouch = the grenade
-        // on their belt goes off (only on someone carrying one).
-        public static readonly string[] AimedParts = { "Legs", "Arms", "Torso", "Head", "Armor", "Pouch" };
-        public static int AimedPenalty(string part) => part == "Legs" || part == "Arms" ? -2 : part == "Torso" || part == "Armor" ? -1 : part == "Pouch" ? -4 : part == "Head" ? -5 : 0;
-        public static float TierUp(float mult) => mult < 1f ? 1f : mult == 1f ? 1.2f : 1.5f;
-
-        public static void ApplyAimed(ICombatant target, string part, float mult)
-        {
-            if (part == null || mult < 1f || !target.IsAlive()) return;
-            string who = target is Player ? "Player" : target.Name;
-            switch (part)
-            {
-                case "Legs":
-                    target.StatusEffects.Wound = "Leg";
-                    if (mult > 1f) target.StatusEffects.Prone = true;
-                    GameLog.Write($"Leg shot: {who} is hobbled (-2 MP){(mult > 1f ? " and goes down" : "")}.");
-                    break;
-                case "Arms":
-                    target.StatusEffects.Wound = "Arm";
-                    bool disarm = mult > 1f && target is HumanEnemy armed && armed.EquippedWeapon != null && !IsMelee(armed.EquippedWeapon);
-                    if (disarm) ((HumanEnemy)target).GunDropped = true;
-                    GameLog.Write($"Arm shot: {who} is maimed (-2 to hit){(disarm ? " and drops their gun" : "")}.");
-                    break;
-                case "Armor":
-                    if (target is HumanEnemy worn && worn.EquippedArmor != null) { worn.WearArmor(); GameLog.Write($"Armor shot: {who}'s armor cracks ({worn.ArmorCondition})."); }
-                    else if (!(target is HumanEnemy) && target.PhysDR > 0) { target.PhysDR *= 0.75f; GameLog.Write($"Armor shot: {who}'s hide cracks (Phys-DR {target.PhysDR:P0})."); }
-                    break;
-                case "Torso":
-                    target.StatusEffects.Bleeding = true;
-                    GameLog.Write($"Body shot: {who} is bleeding.");
-                    break;
-                case "Head":
-                    GameLog.Write($"Head shot: {who} is dazed.");
-                    break;
-            }
-        }
-
-        /// <summary>Pouch shot: the grenade on their belt goes off where they stand (alive or not).</summary>
-        public static void CookOff(ICombatant target, ICombatant shooter)
-        {
-            if (!(target is HumanEnemy h) || h.Frags <= 0) return;
-            h.Frags--;
-            GameLog.Write($"Pouch shot: the grenade on {h.Name}'s belt goes off!");
-            Explosions.Blast(h.X, h.Y, Explosions.ThrowRadius, 400, shooter, "cooked-off grenade");
-        }
-
-        public static string HitName(float mult) => mult >= 1.5f ? "Headshot!" : mult > 1f ? "Vital hit" : mult < 1f ? "Graze" : "Clean hit";
 
         // 2026-11-16 (Yan: "remove jam chance from the game completely, it ruins automatic weapons"): there is no jam roll any more - guns wear (Condition) but never jam.
 
@@ -247,16 +161,6 @@ namespace GameCore
             else if (target is HumanEnemy h) h.WearArmor();
         }
 
-        /// <summary>To-hit penalty from the attacker's own state (Arm wound, Suppressed, Shaken).</summary>
-        public static int AttackerPenalty(ICombatant attacker)
-        {
-            if (attacker?.StatusEffects == null) return 0;
-            int mod = 0;
-            if (attacker.StatusEffects.Wound == "Arm") mod -= 2;
-            if (attacker.StatusEffects.Suppressed) mod -= 2;
-            if (attacker is HumanEnemy h && h.Morale == "Shaken") mod -= 2;
-            return mod;
-        }
 
         /// <summary>Rank modifier from file 04 (Rookie -1 ... Legend +3).</summary>
         public static int RankMod(string rank) =>

@@ -312,7 +312,6 @@ namespace GameCore
             if (p.StatusEffects.Prone) st.Add(("PRONE", Yellow));
             if (p.StatusEffects.Suppressed) st.Add(("PINNED", Yellow));
             if (p.StatusEffects.Wound != null) st.Add(("WOUND", Red));
-            if (p.StatusEffects.AimBonus > 0) st.Add(("AIMING", Cyan));
             for (int i = 0; i < _chips.Count; i++)
             {
                 bool on = i < st.Count;

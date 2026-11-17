@@ -8,27 +8,11 @@ namespace GameCore
 {
     public static class TurnLoop
     {
-        /// <summary>New: resolved once, the instant an NPC's morale actually breaks (see
-        /// CheckMorale's doc comment - "parting shot, drop-and-run"). First a free parting shot if
-        /// the player still has a loaded ranged weapon in range (no AP cost - the NPC is turning
-        /// to run, not standing still to trade), then - if they're still alive after that - a
-        /// chance they drop their weapon and any loose gear in the panic (their worn armor stays
+        /// <summary>Resolved once, the instant an NPC's morale actually breaks ("drop-and-run"): a chance they drop their weapon and any loose gear in the panic (their worn armor stays
         /// on their back; they're still alive and running, not a corpse - that's the
         /// includeWornArmor:false HumanLootSystem already exposes for exactly this case).</summary>
         public static void ResolveFleeReactions(HumanEnemy npc, Player player)
         {
-            var weapon = player.EquippedWeapon;
-            bool isRanged = weapon?.Db != null && !string.IsNullOrEmpty(weapon.Db.AmmoType);
-            int range = weapon != null ? weapon.MaxReach : 1;
-
-            if (weapon != null && weapon.IsLoaded && isRanged && CombatantUtil.Distance(player, npc) <= range)
-            {
-                GameLog.Write($"{npc.Name} breaks and runs - free parting shot!");
-                weapon.Fire(npc, "Single", (int)player.AgilityMod + CombatRules.RankMod(player.Rank));
-            }
-
-            if (!npc.IsAlive()) return; // the parting shot may have finished them
-
             // Batch 48: no d20. They throw down what slows them: a heavy weapon, an empty one, or everything if they're
             // badly hurt. It lands on the ground where they stood (walk over it to pick it up), not in your pack.
             var w = npc.EquippedWeapon;
@@ -40,15 +24,11 @@ namespace GameCore
             }
         }
 
-        /// <summary>Vision/aggro check + idle wander for one enemy - no AP/MP refresh, no combat
-        /// resolution. Shared by PlayerEndTurn's full round and by TickAwareness's lighter
-        /// per-tile check.</summary>
+        /// <summary>The distance inside which an enemy may spot you whether or not you can see it (see CheckVisionAndWander).</summary>
         public const int MutualSpotExempt = 3;
         static readonly System.Collections.Generic.HashSet<Mutant> Unaware = new System.Collections.Generic.HashSet<Mutant>();   // squads you've been told about (once each)
 
-        /// <summary>MP an NPC gets for one walking step out of a fight: a diagonal through a bush or a door costs 3 since
-        /// Batch 102 (it was 2, and walkers froze in brush and marsh).</summary>
-
+        /// <summary>Vision/aggro check + idle wander for one enemy (no combat): run by the world round and once per explored tile.</summary>
         private static void CheckVisionAndWander(Mutant enemy, Player player, IGridService grid)
         {
             if (Shakedown.Approaching(enemy)) return;   // Batch 73: walking over to ask for the toll (Shakedown.Tick moves them)

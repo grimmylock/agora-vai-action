@@ -18,17 +18,16 @@ namespace GameData
 
         public static readonly Dictionary<string, PerkDef> All = new Dictionary<string, PerkDef>
         {
-            ["MarksmansFocus"] = P("Sniper", "Marksman's Focus", "+2 to attack rolls with a sniper rifle."),
+            ["MarksmansFocus"] = P("Sniper", "Marksman's Focus", "Sniper rifles settle 20% steadier."),
             ["HighVelocityImpact"] = P("Sniper", "High-Velocity Impact", "Sniper shots at 12+ tiles ignore an extra 20% of Phys-DR."),
-            ["RecoilControl"] = P("Assault", "Recoil Control", "No burst penalty with assault rifles."),
-            ["BulletHose"] = P("SMG", "Bullet Hose", "SMG bursts have no penalty within 4 tiles."),
+            ["RecoilControl"] = P("Assault", "Recoil Control", "Assault rifles kick 30% less."),
+            ["BulletHose"] = P("SMG", "Bullet Hose", "SMGs kick 30% less."),
             ["Entrenched"] = P("Heavy", "Entrenched", "+20% Phys-DR on turns you didn't move."),
-            ["Shredder"] = P("Heavy", "Shredder", "Heavy bursts roll with advantage but use double ammo."),
-            ["Breacher"] = P("Shotgun", "Breacher", "+4 shotgun damage within 4 tiles."),
-            ["BuckshotSpread"] = P("Shotgun", "Buckshot Spread", "A shotgun roll can also hit one enemy next to your target."),
+            ["Shredder"] = P("Heavy", "Shredder", "Machine guns are steadier (-25% spread, -15% kick)."),
+            ["Breacher"] = P("Shotgun", "Breacher", "+25% shotgun damage within 4 tiles."),
             ["StaggeringBlast"] = P("Shotgun", "Staggering Blast", "Shotgun hits within 4 tiles stagger the target for a second."),
             ["Gunslinger"] = new PerkDef { Group = "Sidearm", Name = "Gunslinger", Requires = "PointBlankExecution", Description = "Needs Point-Blank Execution. Two sidearms (Off-hand button in the pack): single shots fire both, 2 AP, -1 each; reload both for +1 AP. Not with Double Tap." },   // Batch 80 (Yan)
-            ["PointBlankExecution"] = P("Sidearm", "Point-Blank Execution", "Adjacent sidearm shots ignore cover and get +2 to hit."),
+            ["PointBlankExecution"] = P("Sidearm", "Point-Blank Execution", "Sidearms fired from the hip spread 25% less."),
             ["CombatMedic"] = P("Survival", "Combat Medic", "Medkits and stims heal +10 HP."),
             ["QuickHands"] = P("Survival", "Quick Hands", "Reload 40% faster."),
             ["AdrenalineSurge"] = P("Survival", "Adrenaline Surge", "First time you drop below 30 HP in a fight: +20 temp HP."),

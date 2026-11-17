@@ -11,6 +11,5 @@ namespace GameCore
         // New (file 00 firefight rules)
         public string Wound;          // null, "Arm", "Leg", "Torso", "Head" - one at a time, a Bandage treats it
         public bool Suppressed;       // -2 to attack rolls on your next turn
-        public int AimBonus;          // banked by the Aim action, spent on the next attack this turn
     }
 }
