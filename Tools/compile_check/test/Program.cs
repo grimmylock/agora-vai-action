@@ -4204,17 +4204,6 @@ static class Program {
       MacroState.Current.OfflineSquads.Add(new OfflineSquad { ZoneId = MacroState.Current.CurrentZoneId, Faction = "Garrison", Members = new System.Collections.Generic.List<Mutant> { sentry } });
       Shakedown.TestPick = Shakedown.Pay; Check(!Shakedown.TryStart(sentry, p), "only Raiders shake you down"); Shakedown.TestPick = -1;
 
-      // the action bar: every entry answers without throwing, exploring and fighting
-      p = Arena(out px, out py);
-      foreach (var fight in new[] { false, true }) {
-        if (fight) { var e = new HumanEnemy("F", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(e); EncounterState.InCombat = true; }
-        var vis = CombatActions.Visible(p);
-        Check(vis.Count >= 4 && vis.Count <= 15, $"{vis.Count} buttons ({(fight ? "fight" : "exploring")})");
-        Check(fight == vis.Any(a => a.Id == "hunker") && fight != vis.Any(a => a.Id == "rest"), "fight shows combat actions, exploring the walking ones");
-        foreach (var a in CombatActions.All) { a.Show(p); a.Ap(p); a.On(p); CombatActions.WhyNot(a, p); Check(!string.IsNullOrEmpty(a.Name) && !string.IsNullOrEmpty(a.Desc) && a.Run != null, "action entry complete: " + a.Id); }
-      }
-      Check(!CombatActions.Press("hunker", p), "no hunkering in the open");
-      Check(CombatActions.FireTarget(p) != null && CombatActions.Press("fire", p), "the fire button shoots the enemy in sight");
     } catch (Exception e) { Check(false, "Batch 72 checks threw: " + e); }
     TestingGround.Session = _sessionShake; Shakedown.TestPick = -1;
     GameLog.Target = null;

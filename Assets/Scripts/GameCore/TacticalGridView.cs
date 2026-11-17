@@ -472,7 +472,7 @@ namespace GameCore
             var m = MouseWorld();
             int x = 0, y = 0;
             bool show = m.HasValue && _root != null && GameState.Current.CurrentTurn == Turn.Player && player.IsAlive()
-                && player.ArmedThrowable == null && player.ArmedAction == null && !HudView.TargetingOpen
+                && player.ArmedThrowable == null && player.ArmedAction == null
                 && !(UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
                 && WorldToGrid(m.Value, out x, out y) && (x != player.X || y != player.Y) && TerrainMap.CanEnterTile(x, y)
                 && !EncounterState.Enemies.Exists(e => e.IsAlive() && e.X == x && e.Y == y && Vision.Shows(e));   // hovering an enemy is a shot, not a walk

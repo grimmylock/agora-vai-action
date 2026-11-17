@@ -133,7 +133,6 @@ namespace GameCore
                     // it was on offer. One line when you first see a squad that hasn't seen you.
                     foreach (var o in EncounterState.Enemies.OfType<HumanEnemy>()) if (o.FactionName == hh.FactionName && CombatantUtil.Distance(o, enemy) <= 12) Unaware.Add(o);
                     GameLog.Write($"{hh.FactionName} ahead. They haven't seen you - shoot first for a surprise round, or sneak (N) round them.");
-                    PlayerController.StopWalk();   // the route stops here: walking on would walk into their sight
                 }
                 float sight = Contact.IdleSight(enemy, player);
                 bool sees = mutual && distToPlayer <= sight && !EnemyAI.FriendlyToPlayer(enemy) && grid.CheckLineOfSight(enemy.X, enemy.Y, player.X, player.Y);

@@ -39,11 +39,10 @@ namespace GameCore
         }
 
         Transform _canvas;
-        GameObject _root, _target, _endTurn;
+        GameObject _root, _target;
         TextMeshProUGUI _tgtHint;
         TextMeshProUGUI _zone, _zoneSub, _turn, _targetName, _targetState, _hpNum, _ac, _wName, _wMag, _wCap, _wAmmo, _hint;
-        readonly List<Image> _hpSeg = new List<Image>(), _tgtSeg = new List<Image>(), _ap = new List<Image>(), _mp = new List<Image>();
-        TextMeshProUGUI _apL, _mpL;   // hidden in real time
+        readonly List<Image> _hpSeg = new List<Image>(), _tgtSeg = new List<Image>();
         readonly List<(GameObject go, TextMeshProUGUI t, Image edge)> _chips = new List<(GameObject, TextMeshProUGUI, Image)>();
         readonly List<(TextMeshProUGUI t, Image edge)> _wChips = new List<(TextMeshProUGUI, Image)>();
         readonly List<TextMeshProUGUI> _belt = new List<TextMeshProUGUI>(), _arts = new List<TextMeshProUGUI>();
@@ -164,10 +163,6 @@ namespace GameCore
             _hpNum = Txt(pc, "HPN", new Vector2(452, -10), new Vector2(60, 24), "", true, 16, Cream);
             _ac = Txt(pc, "AC", new Vector2(128, -46), new Vector2(120, 22), "", true, 14, Cream);
             for (int i = 0; i < 3; i++) { var ch = Chip(pc, new Vector2(232 + i * 96, -44), 92); _chips.Add(ch); ch.Item1.SetActive(false); }
-            _apL = Txt(pc, "APL", new Vector2(128, -82), new Vector2(40, 20), "AP", true, 14, Dim);
-            _ap.AddRange(Segments(pc, new Vector2(168, -84), 6, 16, 16, 8));
-            _mpL = Txt(pc, "MPL", new Vector2(320, -82), new Vector2(40, 20), "MP", true, 14, Dim);
-            _mp.AddRange(Segments(pc, new Vector2(360, -84), 6, 16, 16, 8));
             _food = Meter(pc, new Vector2(12, -132), "FOOD", Yellow);
             _water = Meter(pc, new Vector2(184, -132), "WATER", Cyan);
             _rest = Meter(pc, new Vector2(356, -132), "REST", Purple);
@@ -197,18 +192,11 @@ namespace GameCore
                 _arts.Add(Txt(s.transform, "T", new Vector2(2, -6), new Vector2(46, 36), "", false, 11, Cyan, TextAlignmentOptions.Center));
             }
 
-            // end turn + key strip
-            var et = Img(root, "EndTurn", new Vector2(1, 0), new Vector2(-20, 210), new Vector2(240, 44), Edge);
-            Img(et.transform, "In", new Vector2(0, 1), new Vector2(2, -2), new Vector2(236, 40), Fill);
-            Txt(et.transform, "T", new Vector2(0, -11), new Vector2(240, 24), "SPACE  END TURN", true, 15, Yellow, TextAlignmentOptions.Center);
-            et.raycastTarget = true;
-            et.gameObject.AddComponent<Button>().onClick.AddListener(() => { if (GameState.Current.CurrentTurn == Turn.Player && !GameState.Current.ModalOpen) TurnLoop.PlayerEndTurn(); });
-            _endTurn = et.gameObject;
+            // key strip
             _hint = Txt(root, "Keys", new Vector2(0, 0), new Vector2(900, 20), "I GEAR    J QUESTS    P CHARACTER    M ZONE    F1 CONTROLS", true, 12, Dim, TextAlignmentOptions.Center);
             var hr = _hint.rectTransform; hr.anchorMin = hr.anchorMax = hr.pivot = new Vector2(0.5f, 0); hr.anchoredPosition = new Vector2(0, 8);
-            BuildActionBar(root);   // Batch 72
-            BuildTargeting(root);   // Batch 77
-            _tgtHint = Txt(tc, "Hint", new Vector2(14, -58), new Vector2(362, 18), "CLICK TO TARGET    TAB EXAMINE", true, 10, Dim, TextAlignmentOptions.TopRight);
+            BuildExamine(root);     // Batch 77
+            _tgtHint = Txt(tc, "Hint", new Vector2(14, -58), new Vector2(362, 18), "TAB EXAMINE", true, 10, Dim, TextAlignmentOptions.TopRight);
         }
 
         /// <summary>Old debug panels off; the log moves above the player card without a background.</summary>
@@ -295,15 +283,13 @@ namespace GameCore
                 _paused.outlineWidth = 0.25f; _paused.outlineColor = new Color32(0, 0, 0, 255);
             }
             _paused.gameObject.SetActive(Rt.On && Rt.Paused && !GameState.Current.ModalOpen);
-            _endTurn.SetActive(!Rt.On && !exploring && GameState.Current.CurrentTurn == Turn.Player);
 
             UpdateTarget(p);
-            UpdateActionBar(p);   // Batch 72
             UpdatePrompts(p);     // Batch 123
             UpdateBarks();        // Batch 129
             UpdateNumbers();      // the testing ground's damage numbers
             UpdateBoss();         // Boss 1: the name card, his health bar
-            UpdateTargeting(p);   // Batch 77
+            UpdateExamine(p);     // Batch 77
 
             // player card
             _portrait.sprite = UnitSprites.For(p);
@@ -336,12 +322,6 @@ namespace GameCore
                 _chips[i].go.SetActive(on);
                 if (on) { _chips[i].t.text = st[i].Item1; _chips[i].t.color = st[i].Item2; _chips[i].edge.color = st[i].Item2; }
             }
-            Pips(_ap, p.Ap, p.MaxAp, Yellow);
-            Pips(_mp, (int)p.Mp, p.MaxMp, Cyan);
-            // real time has no turns: AP and MP mean nothing (Yan: "it also keeps updating the MP values but we got rid of that")
-            _apL.gameObject.SetActive(!Rt.On); _mpL.gameObject.SetActive(!Rt.On);
-            foreach (var seg in _ap) seg.gameObject.SetActive(!Rt.On);
-            foreach (var seg in _mp) seg.gameObject.SetActive(!Rt.On);
             Meter(_food, p.Hunger / 10f); Meter(_water, p.Thirst / 10f); Meter(_rest, p.Tiredness / 10f);
 
             // weapon card
@@ -415,15 +395,6 @@ namespace GameCore
             float n = Mathf.Clamp01(f) * seg.Count;
             for (int i = 0; i < seg.Count; i++)
                 seg[i].color = i + 1 <= n ? c : i < n ? Color.Lerp(Empty, c, 0.45f) : Empty;
-        }
-
-        static void Pips(List<Image> pips, int have, int max, Color c)
-        {
-            for (int i = 0; i < pips.Count; i++)
-            {
-                pips[i].gameObject.SetActive(i < max);
-                pips[i].color = i < have ? c : Empty;
-            }
         }
 
         static void Meter(Image bar, float f)
