@@ -37,7 +37,7 @@ namespace GameData
             ["IronStomach"] = P("Survival", "Iron Stomach", "Food and water restore double."),
             ["AnomalyWhisperer"] = P("Survival", "Anomaly Whisperer", "+2 to anomaly avoidance."),
             ["Scavenger"] = P("Survival", "Scavenger", "Loot counts are rolled twice, keep the higher."),
-            ["IronWill"] = P("Survival", "Iron Will", "Temporary HP lasts 8 turns."),
+            ["IronWill"] = P("Survival", "Iron Will", "Temporary HP lasts about 48 seconds."),
             ["ArtifactHandler"] = P("Survival", "Artifact Handler", "Artifact Anom-DR penalties are halved."),
             ["Haggler"] = P("Survival", "Haggler", "Buy 15% cheaper, sell 15% higher."),
             ["Tumbler"] = P("Survival", "Tumbler", "After a dive you're back on your feet faster (0.35 s prone instead of 0.6)."),   // real-time fork

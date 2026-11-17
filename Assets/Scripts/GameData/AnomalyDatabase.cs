@@ -6,7 +6,6 @@ namespace GameData
     public class AnomalyEffects
     {
         public bool Burn;
-        public int? ApDrain;
         public bool ToxicBleed;
         public bool Prone;
         public bool Radiation;
@@ -36,8 +35,7 @@ namespace GameData
             ["Livewire"] = new AnomalyDef
             {
                 Name = "Livewire", Dc = 14, Damage = 600, AnomalyType = "Livewire", DamageKind = "Anom",
-                Effects = new AnomalyEffects { ApDrain = 2 },
-                Description = "Livewire anomaly that drains AP on failure.",
+                Description = "Livewire anomaly that shocks on failure.",
             },
             ["AcidBloom"] = new AnomalyDef
             {

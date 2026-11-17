@@ -21,9 +21,8 @@ namespace GameData
         public float? IgnorePhysDRPercent;
         public bool HighRecoil;
         public bool BurstCapable;
-        public int? BurstFireApCost;
         public string ActionType;      // e.g. "Break" for break-action shotguns
-        public int? ReloadApCost;
+        public int? ReloadExtra;
         public bool MagFed;
         public bool InnateSuppressor;
         public string[] PreAttached;
@@ -64,7 +63,7 @@ namespace GameData
                 ["BlackHarrier"] = new WeaponDef { Name = "Black Harrier", BaseDamage = 220, AmmoType = ".357 Mag", MagCapacity = 9, Range = "25cm", WeightKg = 1.2f, Tier = 3, HighRecoil = true },
                 ["Corvan57"] = new WeaponDef { Name = "Corvan 5.7", BaseDamage = 170, AmmoType = "5.7x28mm", MagCapacity = 20, Range = "30cm", WeightKg = 0.7f, Tier = 4, IgnorePhysDRPercent = 0.1f },
                 ["SperlingS96"] = new WeaponDef { Name = "Sperling S-96", BaseDamage = 190, AmmoType = "9x19mm", MagCapacity = 10, Range = "30cm", WeightKg = 1.2f, Tier = 4 },   // 2026-11-13 (Yan: sidearm, tier 4, balanced between fire rate and damage): a long-barrelled 10-round semi-auto, 9x19 like the Walden P9; damage between the Corvan 5.7 (170) and the Rinaldi (200), 330 rpm (about 1045 damage a second, level with the other tier 4 sidearms), slow clip reload
-                ["RinaldiR6"] = new WeaponDef { Name = "Rinaldi R6", BaseDamage = 200, AmmoType = ".357 Mag", CylinderCapacity = 6, Range = "30cm", WeightKg = 0.9f, Tier = 4, BurstCapable = true, BurstFireApCost = 3 },
+                ["RinaldiR6"] = new WeaponDef { Name = "Rinaldi R6", BaseDamage = 200, AmmoType = ".357 Mag", CylinderCapacity = 6, Range = "30cm", WeightKg = 0.9f, Tier = 4, BurstCapable = true },
                 ["SteppeEagle"] = new WeaponDef { Name = "Steppe Eagle", BaseDamage = 250, AmmoType = ".44 Mag", MagCapacity = 8, Range = "25cm", WeightKg = 2f, Tier = 4, HighRecoil = true },
                 ["RK12Kuvalda"] = new WeaponDef { Name = "RK-12 Kuvalda", BaseDamage = 340, AmmoType = "12.7x55mm", CylinderCapacity = 5, Range = "30cm", WeightKg = 2.2f, Tier = 5, IgnorePhysDRPercent = 0.2f },
             },
@@ -85,7 +84,7 @@ namespace GameData
                 ["Karusel5"] = new WeaponDef { Name = "Karusel-5", BaseDamage = 290, AmmoType = "12g", CylinderCapacity = 5, Range = "15cm", WeightKg = 3.1f, Tier = 3 },   // 2026-11-15 (Yan: "new one, shotgun revolver"): a carbine with a five-shot cylinder - quicker than a pump between shots, slower to reload (round by round, the revolver way), a little less damage per trigger pull
                 ["BayouPump"] = new WeaponDef { Name = "Bayou Pump", BaseDamage = 320, AmmoType = "12g", MagCapacity = 8, Range = "15cm", WeightKg = 3.4f, Tier = 3 },
                 ["Sever34"] = new WeaponDef { Name = "Sever-34 O/U", BaseDamage = 340, AmmoType = "12g", MagCapacity = 2, Range = "20cm", WeightKg = 3.2f, Tier = 3, ActionType = "Break" },
-                ["Tambour12"] = new WeaponDef { Name = "Tambour-12", BaseDamage = 320, AmmoType = "12g", CylinderCapacity = 12, Range = "15cm", WeightKg = 4.2f, Tier = 4, ReloadApCost = 2 },
+                ["Tambour12"] = new WeaponDef { Name = "Tambour-12", BaseDamage = 320, AmmoType = "12g", CylinderCapacity = 12, Range = "15cm", WeightKg = 4.2f, Tier = 4, ReloadExtra = 2 },
                 ["SP14Warden"] = new WeaponDef { Name = "SP-14 Warden", BaseDamage = 330, AmmoType = "12g", MagCapacity = 8, Range = "15cm", WeightKg = 4.4f, Tier = 4, BurstCapable = true },
                 ["Sayan12"] = new WeaponDef { Name = "Sayan-12", BaseDamage = 320, AmmoType = "12g", MagCapacity = 10, Range = "15cm", WeightKg = 3.6f, Tier = 4, MagFed = true },
                 ["Kaban12"] = new WeaponDef { Name = "Kaban-12", BaseDamage = 330, AmmoType = "12g", MagCapacity = 10, Range = "20cm", WeightKg = 4.5f, Tier = 4, MagFed = true },
@@ -102,7 +101,7 @@ namespace GameData
                 ["VK103"] = new WeaponDef { Name = "VK-103", BaseDamage = 260, AmmoType = "7.62x39mm", MagCapacity = 30, Range = "45cm", WeightKg = 3.6f, Tier = 3 },
                 ["BR86Bulldog"] = new WeaponDef { Name = "BR-86 Bulldog", BaseDamage = 270, AmmoType = "5.56x45mm", MagCapacity = 30, Range = "45cm", WeightKg = 4.4f, Tier = 4 },
                 ["VK74Obelisk"] = new WeaponDef { Name = "VK-74 Obelisk", BaseDamage = 250, AmmoType = "5.45x39mm", MagCapacity = 30, Range = "45cm", WeightKg = 3.6f, Tier = 4, PreAttached = new[] { "Laser", "Red Dot" } },
-                ["NA94Yenisei"] = new WeaponDef { Name = "NA-94 Yenisei", BaseDamage = 220, AmmoType = "5.45x39mm", MagCapacity = 30, Range = "45cm", WeightKg = 3.9f, Tier = 4, BurstFireApCost = 2 },
+                ["NA94Yenisei"] = new WeaponDef { Name = "NA-94 Yenisei", BaseDamage = 220, AmmoType = "5.45x39mm", MagCapacity = 30, Range = "45cm", WeightKg = 3.9f, Tier = 4 },
                 ["CorvanBullpup"] = new WeaponDef { Name = "Corvan Bullpup", BaseDamage = 330, AmmoType = "5.56x45mm", MagCapacity = 30, Range = "50cm", WeightKg = 3.6f, Tier = 5 },
                 ["CorvanBattleRifle"] = new WeaponDef { Name = "Corvan Battle Rifle", BaseDamage = 300, AmmoType = "7.62x51mm", MagCapacity = 20, Range = "50cm", WeightKg = 4.4f, Tier = 4 },
             },

@@ -152,7 +152,7 @@ namespace GameCore
             if (db.InnateSuppressor) { f.Flash = 0; f.Tracer = 0.35f; f.Shake *= 0.5f; }
 
             int cap = db.MagCapacity ?? db.CylinderCapacity ?? 1;
-            float extra = 0.4f * (db.ReloadApCost ?? 0);
+            float extra = 0.4f * (db.ReloadExtra ?? 0);
             if (db.CylinderCapacity.HasValue) { f.Reload = "cylinder"; f.ReloadTime = 0.5f + 0.12f * cap + extra; f.Casing = null; }
             else if (db.ActionType == "Break") { f.Reload = "break"; f.ReloadTime = 0.8f + extra; f.Casing = null; }
             else if (cat == "shotgun" && !db.MagFed) { f.Reload = "tube"; f.ReloadTime = 0.4f + 0.15f * cap + extra; f.Casing = "shell"; }

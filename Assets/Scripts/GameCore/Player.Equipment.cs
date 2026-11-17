@@ -381,11 +381,7 @@ namespace GameCore
             if (def.HealingTemp.HasValue && def.HealingTemp.Value > 0)
             {
                 ApplyTemporaryHP(def.HealingTemp.Value + medic);
-                GameLog.Write($"Gained {def.HealingTemp.Value + medic} temporary HP for {TempHPDuration} turns.");
-            }
-            if (def.MpRestore.HasValue && def.MpRestore.Value > 0)
-            {
-                GameLog.Write($"Restored {def.MpRestore.Value} MP.");
+                GameLog.Write($"Gained {def.HealingTemp.Value + medic} temporary HP for about {TempHPDuration * (int)Rt.RoundSeconds} seconds.");
             }
             if (def.CureBleeding)
             {
