@@ -3336,42 +3336,51 @@ static class Program {
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_balance.txt", sb.ToString());
   }
 
-  // Real-combat weapon test (RTBAL=2): the bot shoots a pinned human in a real armor of tier 1-5 (the tier's median Phys-DR armor, head protection included) through the real player
-  // code (steady-up, bloom, recoil, reload), holding the trigger like a player would. Result: seconds to kill 1000 HP, and the share of rounds that did damage.
-  static (float ttk, int hitPct) RtGunVsArmor(string cat, string key, int dist, int tier, int seed) {
-    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Random.InitState(seed);
+  // Real-combat weapon test (RTBAL=2): per gun, distance and armor tier, the average damage a fired round does to a standing human in a real armor of that tier (the tier's median
+  // Phys-DR armor, helmet included), measured by firing hundreds of real rounds through Gunplay.Shoot / Ballistics / Resolve with the player's own steady-up, kick and bloom
+  // (steadied aim, holding the trigger on automatics, tapping at 4 a second on the rest). Then seconds to kill 1000 HP with magazines and reloads counted.
+  static (float dmgPerRound, int hitPct, float rate) RtRoundMC(string cat, string key, int dist, int tier, bool auto, bool burst, int seed) {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Random.InitState(seed);
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 3; x <= px + 45; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
-    p.EquipWeapon(cat, key); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); p.EquippedWeapon.ReserveAmmo["Standard"] = 99999;
+    p.EquipWeapon(cat, key); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); var w = p.EquippedWeapon; var hd = Gunplay.For(w);
     var armors = ArmorDatabase.Tiers["tier" + tier].Values.OrderBy(a => a.PhysDR).ToList(); var armor = armors[armors.Count / 2];
-    var d = new HumanEnemy("Dummy", px + dist, py, "Raiders", "Rookie", null, armor) { IsAggroed = true }; d.MaxHp = d.Hp = 1000; EncounterState.Enemies.Add(d); Rt.SetOffset(d, 0f, 0f);
-    RtAi.Pin(d, 99999f); EncounterState.InCombat = true; Contact.Spot(p);
-    UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; UnityEngine.Time.timeScale = 1f;
-    var w = p.EquippedWeapon; int fired = 0, landed = 0, prevMag = w.CurrentMagazine, prevHp = d.Hp;
-    const float dt = 1f / 30f; float t = 0f;
-    for (; t < 60f && d.Hp > 0; t += dt) {
-      UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
-      RtAi.Pin(d, 99999f); bool dry = w.CurrentMagazine <= 0; var (tx, ty) = Ballistics.Pos(d);
-      Rt.PlayerTick(p, new Rt.Input { Aim = true, Fire = !dry, FireDown = !dry && ((int)(t / dt) % 2 == 0), Reload = dry, Mouse = (tx, ty + 0.44f - AimShare(p, d) * Ballistics.BodyTiles) });
-      Rt.WorldTick(p); Rt.Glide(dt); if (p.Hp < p.MaxHp) p.Hp = p.MaxHp;
-      if (w.CurrentMagazine < prevMag) fired += prevMag - w.CurrentMagazine; prevMag = w.CurrentMagazine;
-      if (d.Hp < prevHp) landed++; prevHp = d.Hp;
+    var d = new HumanEnemy("Dummy", px + dist, py, "Raiders", "Rookie", null, armor) { IsAggroed = true }; d.MaxHp = d.Hp = 1000000; EncounterState.Enemies.Add(d); Rt.SetOffset(d, 0f, 0f);
+    var aim = Gunplay.AimOf(p); aim.Steady = 1f; aim.Bloom = 0f; float interval = auto ? 60f / hd.Rpm : Math.Max(60f / hd.Rpm, 0.25f); const float BurstRest = 0.35f;
+    float share = AimShare(p, d); var (tx, ty) = Ballistics.Pos(d); var (sx, sy) = Ballistics.Pos(p);
+    int n = 400, hits = 0; long dmg = 0;
+    for (int i = 0; i < n; i++) {
+      float spread = Gunplay.Spread(hd, aim, 0, false);
+      float ddx = tx - sx, ddy = ty + 0.44f - share * Ballistics.BodyTiles - sy; float len = (float)Math.Sqrt(ddx * ddx + ddy * ddy);
+      int hp0 = d.Hp; Gunplay.Shoot(p, w, (tx - sx) / (float)Math.Sqrt((tx - sx) * (tx - sx) + 0.0001f), 0f, share, spread, false); Gunplay.LandAll();
+      if (d.Hp < hp0) { hits++; dmg += hp0 - d.Hp; } d.Hp = d.MaxHp;
+      aim.Bloom = Math.Min(Gunplay.PlayerMaxBloom, aim.Bloom + hd.Kick); aim.Bloom = Math.Max(0f, aim.Bloom - hd.Recover * interval);
+      if (burst && i % 3 == 2) aim.Bloom = Math.Max(0f, aim.Bloom - hd.Recover * BurstRest);   // a pause between bursts: the kick settles
     }
-    bool dead = d.Hp <= 0; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false;
-    return (dead ? t : 99f, fired == 0 ? 0 : Math.Min(100, landed * 100 / fired));
+    EncounterState.Enemies.Clear(); Rt.On = false;
+    float rate = burst ? 3f / (2f * interval + BurstRest) : 1f / interval;
+    return ((float)dmg / n, hits * 100 / n, rate);
   }
 
   static void WeaponVsArmorReport() {
-    var sb = new System.Text.StringBuilder(); sb.AppendLine("gun | cat | " + string.Join(" | ", new[] { 12, 30 }.SelectMany(dd => Enumerable.Range(1, 5).Select(tt => $"{dd}t vs T{tt}"))) + " | hit% 12t T1");
+    var sb = new System.Text.StringBuilder(); sb.AppendLine("gun | cat | " + string.Join(" | ", new[] { 6, 15, 30 }.SelectMany(dd => Enumerable.Range(1, 5).Select(tt => $"{dd}t T{tt}"))) + " | hit% 6t | hit% 15t | hit% 30t | style");
     foreach (var cat in new[] { "sidearm", "smg", "assault", "shotgun", "sniper", "heavy" })
       foreach (var kv in WeaponDatabase.Categories[cat]) {
-        var cells = new List<string>(); int h1 = 0;
-        foreach (int dd in new[] { 12, 30 }) for (int tt = 1; tt <= 5; tt++) {
-          var l = new List<float>(); for (int i = 0; i < 5; i++) { var r = RtGunVsArmor(cat, kv.Key, dd, tt, 300 + i); l.Add(r.ttk); if (dd == 12 && tt == 1 && i == 2) h1 = r.hitPct; }
-          l.Sort(); cells.Add(l[2] >= 99f ? "-" : l[2].ToString("0.0")); }
-        sb.AppendLine($"{kv.Value.Name} | {cat} | {string.Join(" | ", cells)} | {h1}");
+        var w0 = W(cat, kv.Key); var hd = Gunplay.For(w0); bool auto = hd.Auto;
+        var cells = new List<string>(); var hit = new int[3]; var style = new HashSet<string>();
+        int di = 0;
+        foreach (int dd in new[] { 6, 15, 30 }) { for (int tt = 1; tt <= 5; tt++) {
+          float best = 1e9f; string how = "";
+          foreach (bool burst in auto ? new[] { false, true } : new[] { false }) {
+            var r = RtRoundMC(cat, kv.Key, dd, tt, auto, burst, 7); if (tt == 1 && (best == 1e9f || true)) { }
+            float roundsNeeded = r.dmgPerRound <= 0.01f ? 1e9f : 1000f / r.dmgPerRound; float secs = roundsNeeded / r.rate + (float)Math.Floor(roundsNeeded / w0.MagCapacity) * hd.ReloadTime;
+            if (secs < best) { best = secs; how = burst ? "burst" : "hold"; if (tt == 1) hit[di] = r.hitPct; } }
+          style.Add(how); cells.Add(best > 60f ? "-" : best.ToString("0.0")); }
+          di++; }
+        sb.AppendLine($"{kv.Value.Name} | {cat} | {string.Join(" | ", cells)} | {hit[0]} | {hit[1]} | {hit[2]} | {(auto ? string.Join("/", style) : "tap")}");
       }
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_vs_armor.txt", sb.ToString());
   }
+
   static string RtDuelNote = "";
   // where a player would put the crosshair: the first height (share of a standing human) at which a round along the line actually meets the target
   static float AimShare(Player p, Mutant tgt) {
