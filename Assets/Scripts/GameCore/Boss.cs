@@ -146,7 +146,6 @@ namespace GameCore
                 if (dist > 1 && now >= f.NextStep)
                 {
                     f.NextStep = now + f.Def.StepSeconds * speed;
-                    h.Mp = System.Math.Max(h.Mp, TurnLoop.WalkMp);
                     h.MoveToward(p.X, p.Y);
                 }
                 if (now < f.NextMoveAt) return;

@@ -287,8 +287,8 @@ namespace GameCore
             if (target is Mutant hitMutant && !(target is HumanEnemy)) hitMutant.DamageTakenThisRound += damage;
             if (isShotgun && distance <= 4 && target.IsAlive() && CombatantUtil.HasPerk(attacker, "StaggeringBlast"))
             {
-                target.StatusEffects.PendingMpDrain = 2;
-                GameLog.Write($"Staggering Blast: {target.Name} reels (-2 MP next turn).");
+                if (target is Mutant reeling) RtAi.Pin(reeling, 1.0f);   // real time: it loses a second (it used to lose 2 MP next turn)
+                GameLog.Write($"Staggering Blast: {target.Name} reels.");
             }
             if (isShotgun && attacker is Player && CombatantUtil.HasPerk(attacker, "BuckshotSpread"))
                 BuckshotSpread(attacker, target, die + totalMod, raw, ignore);

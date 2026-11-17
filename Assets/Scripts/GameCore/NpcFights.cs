@@ -19,7 +19,6 @@ namespace GameCore
             var foe = Foe(u, grid);
             if (foe == null) return false;
             u.PatrolTarget = null;
-            u.Mp = System.Math.Max(u.Mp, TurnLoop.WalkMp);   // the same small top-up the wander gets
             var h = u as HumanEnemy;
             int range = h?.EquippedWeapon != null && h.EquippedWeapon.RangeTiles > 0 ? h.EquippedWeapon.RangeTiles : 1;
             bool canHit = CombatantUtil.Distance(u, foe) <= range && grid.CheckLineOfSight(u.X, u.Y, foe.X, foe.Y);

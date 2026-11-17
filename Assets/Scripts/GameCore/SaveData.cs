@@ -42,7 +42,7 @@ namespace GameCore
         public int X, Y, WorldX, WorldY;
         public int PermHP, TempHP, TempHPDuration;
         public bool Bleeding, ToxicBleed, Irradiated, Prone;
-        public float Mp;   // Batch 102: float MP
+           // Batch 102: float MP
 
         public int StatS, StatA, StatI, StatP;
 

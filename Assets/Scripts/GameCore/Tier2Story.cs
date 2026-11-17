@@ -359,13 +359,13 @@ namespace GameCore
             { Vision.SpotAt = (sx, sy); Vision.Spotlight = _gaunt; Story.CamLock = (_gaunt.X + 0.5f, _gaunt.Y + 0.5f); Story.CamHalf = 7f; Story.CamRate = 3f; Story.Letterbox = true; Story.CutsceneUntil = Time.time + 0.4f; Story.LookAt = (_gaunt.X, _gaunt.Y); }
             else if (Vision.Spotlight != null && Vision.Spotlight == _gaunt) { Vision.Spotlight = null; Story.CineEnd(); }
             foreach (var e in Escorts) if (e.IsAlive()) e.IsAggroed = false;
-            { int i = 0; foreach (var h in Escorts) { if (t >= 1.4f && i < Posts.Count && h.IsAlive() && (h.X, h.Y) != Posts[i] && now >= (NextStep.TryGetValue(h, out var at0) ? at0 : 0f)) { NextStep[h] = now + 0.25f; h.Mp = System.Math.Max(h.Mp, TurnLoop.WalkMp); h.MoveToward(Posts[i].x, Posts[i].y); } i++; } }
+            { int i = 0; foreach (var h in Escorts) { if (t >= 1.4f && i < Posts.Count && h.IsAlive() && (h.X, h.Y) != Posts[i] && now >= (NextStep.TryGetValue(h, out var at0) ? at0 : 0f)) { NextStep[h] = now + 0.25f; h.MoveToward(Posts[i].x, Posts[i].y); } i++; } }
             if (_gaunt != null && _gaunt.IsAlive() && _screamAt < 0f && t >= GauntAt)
             {
                 if (!_gauntWalking) { _gauntWalking = true; Say("Something tall is walking out of the dark."); }
                 if (now >= _gauntStep)
                 {
-                    _gauntStep = now + 0.25f; _gaunt.Mp = System.Math.Max(_gaunt.Mp, TurnLoop.WalkMp);
+                    _gauntStep = now + 0.25f;
                     if (System.Math.Abs(_gaunt.X - sx) > 1 || System.Math.Abs(_gaunt.Y - sy) > 1) { _gaunt.FaceToward(sx, sy); _gaunt.PatrolTarget = (sx, sy); _gaunt.MoveToward(sx, sy); }   // (it moonwalked: an unaggroed mutant is drawn turned toward its PatrolTarget, not its Facing)
                 }
                 bool arrived = System.Math.Abs(_gaunt.X - sx) <= 1 && System.Math.Abs(_gaunt.Y - sy) <= 2;
@@ -439,7 +439,6 @@ namespace GameCore
                     if (CombatantUtil.Distance(near, h) <= 3f) continue;                 // close enough: the rifle stays on them
                     tx = near.X; ty = near.Y;
                 }
-                h.Mp = System.Math.Max(h.Mp, TurnLoop.WalkMp);
                 h.MoveToward(tx, ty);
             }
         }

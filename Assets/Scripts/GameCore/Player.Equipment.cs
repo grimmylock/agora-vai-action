@@ -100,7 +100,6 @@ namespace GameCore
             if (EquippedWeapon != null && EquippedWeapon.Db != null && EquippedWeapon.Db.MaxMpWhileHeld.HasValue && !CombatantUtil.HasPerk(this, "WalkingTank"))
                 MaxMp = System.Math.Min(MaxMp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
 
-            if (Mp > MaxMp + RushBonus) Mp = MaxMp + RushBonus;   // Batch 76: ApplyCarryEffects settles the Bull Rush MP
 
             GameLog.Write($"Equipped armor: {db.Name}. Phys-DR {PhysDR}, Anom-DR {AnomDR}, Max MP {MaxMp}.");
             ApplyArmorModsForPlayer();
@@ -341,7 +340,6 @@ namespace GameCore
                 maxMp = System.Math.Min(maxMp, EquippedWeapon.Db.MaxMpWhileHeld.Value);
 
             MaxMp = maxMp;
-            if (Mp > MaxMp + RushBonus) Mp = MaxMp + RushBonus;   // Batch 76: ApplyCarryEffects settles the Bull Rush MP
         }
 
         /// <summary>Ported from useConsumable(itemId).</summary>
@@ -387,7 +385,6 @@ namespace GameCore
             }
             if (def.MpRestore.HasValue && def.MpRestore.Value > 0)
             {
-                Mp = System.Math.Min(MaxMp, Mp + def.MpRestore.Value);
                 GameLog.Write($"Restored {def.MpRestore.Value} MP.");
             }
             if (def.CureBleeding)

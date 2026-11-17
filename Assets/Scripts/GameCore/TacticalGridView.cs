@@ -385,13 +385,6 @@ namespace GameCore
             UpdateFades();
 
             if (Rt.On) { Reticle(player); return; }   // real-time fork: no move range, no path dots; a crosshair instead
-            if (GameState.Current.CurrentTurn == Turn.Player
-                && (player.X != _highlightX || player.Y != _highlightY || player.Mp != _highlightMp))
-            {
-                RecomputeReachableHighlight(player);
-                _highlightX = player.X; _highlightY = player.Y; _highlightMp = player.Mp;
-            }
-            UpdatePathPreview(player);
         }
 
         // Real-time fork: four ticks round the mouse, as far apart as the round can stray at that distance (one spread),
@@ -467,50 +460,6 @@ namespace GameCore
         private readonly List<SpriteRenderer> _pathDots = new List<SpriteRenderer>();
         private (int x, int y, int px, int py, float mp, bool fight) _pathKey = (int.MinValue, 0, 0, 0, 0, false);
         static readonly Color PathGreen = new Color(0.45f, 0.95f, 0.45f, 0.9f), PathRed = new Color(1f, 0.32f, 0.28f, 0.9f), PathPale = new Color(0.9f, 0.9f, 0.8f, 0.45f);
-        private void UpdatePathPreview(Player player)
-        {
-            var m = MouseWorld();
-            int x = 0, y = 0;
-            bool show = m.HasValue && _root != null && GameState.Current.CurrentTurn == Turn.Player && player.IsAlive()
-                && player.ArmedThrowable == null
-                && !(UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                && WorldToGrid(m.Value, out x, out y) && (x != player.X || y != player.Y) && TerrainMap.CanEnterTile(x, y)
-                && !EncounterState.Enemies.Exists(e => e.IsAlive() && e.X == x && e.Y == y && Vision.Shows(e));   // hovering an enemy is a shot, not a walk
-            bool fight = EncounterState.InCombat;
-            var key = (show ? x : int.MinValue, y, player.X, player.Y, player.Mp, fight);
-            if (key == _pathKey) return;
-            _pathKey = key;
-            int used = 0;
-            if (show)
-            {
-                var grid = GameServices.Grid;
-                var path = grid?.FindPath(player.X, player.Y, x, y, player);
-                if (path != null && path.Count > 1)
-                {
-                    float spent = 0f, step = 4f / TerrainArt.Px;          // a 2 px dot every 4 px
-                    var prev = _playerMarker != null ? _playerMarker.transform.position : GridToWorld(player.X, player.Y);
-                    prev.y -= 5f / TerrainArt.Px;                          // from the feet, not the chest
-                    for (int i = 1; i < path.Count; i++)
-                    {
-                        spent += grid.StepCost(player, path[i - 1].x, path[i - 1].y, path[i].x, path[i].y);
-                        var col = !fight ? PathPale : spent <= player.Mp + 0.001f ? PathGreen : PathRed;
-                        var next = GridToWorld(path[i].x, path[i].y); next.y -= 5f / TerrainArt.Px;
-                        if (i == path.Count - 1) { next.x += Mathf.Clamp(m.Value.x - next.x, -0.3f, 0.3f); next.y += Mathf.Clamp(m.Value.y - (next.y + 5f / TerrainArt.Px), -0.3f, 0.3f); }   // ends where you'd stop
-                        float len = Mathf.Sqrt((next.x - prev.x) * (next.x - prev.x) + (next.y - prev.y) * (next.y - prev.y));
-                        for (float t = step; t <= len + 0.001f; t += step)
-                        {
-                            if (used == _pathDots.Count) _pathDots.Add(CreateMarker("PathDot", Color.white, 2f / TerrainArt.Px, 2, _root.transform));
-                            var d = _pathDots[used++];
-                            d.gameObject.SetActive(true); d.color = col;
-                            var at = new Vector3(prev.x + (next.x - prev.x) * t / len, prev.y + (next.y - prev.y) * t / len, 0f);
-                            d.transform.position = new Vector3(Mathf.Round(at.x * TerrainArt.Px) / TerrainArt.Px, Mathf.Round(at.y * TerrainArt.Px) / TerrainArt.Px, 0f);
-                        }
-                        prev = next;
-                    }
-                }
-            }
-            for (int i = used; i < _pathDots.Count; i++) if (_pathDots[i] != null) _pathDots[i].gameObject.SetActive(false);
-        }
 
         /// <summary>The sun moved (or the weather cleared / clouded over): re-bake the ground off the main thread.</summary>
         private void BakeTick()
@@ -874,35 +823,6 @@ namespace GameCore
             return up;
         }
 
-        /// <summary>Tints tiles reachable within the player's current MP, XCOM-style, so clicking to
-        /// move isn't a guess. ponytail: plain BFS relaxation, not a real priority-queue Dijkstra —
-        /// fine at this grid size (<=800 cells, move costs of 1-2); upgrade if costs get more varied.</summary>
-        private void RecomputeReachableHighlight(Player player)
-        {
-            var grid = GameServices.Grid;
-            if (grid == null || _root == null) return;
-
-            var costSoFar = new Dictionary<(int x, int y), float> { [(player.X, player.Y)] = 0 };
-            var frontier = new Queue<(int x, int y)>();
-            frontier.Enqueue((player.X, player.Y));
-
-            while (frontier.Count > 0)
-            {
-                var current = frontier.Dequeue();
-                float currentCost = costSoFar[current];
-                foreach (var next in TerrainMap.GetAdjacentCoords(current.x, current.y))
-                {
-                    if (!grid.CanEnterTile(next.x, next.y)) continue;
-                    float cost = currentCost + grid.StepCost(player, current.x, current.y, next.x, next.y);
-                    if (cost > player.Mp) continue;
-                    if (costSoFar.TryGetValue(next, out var existing) && existing <= cost) continue;
-                    costSoFar[next] = cost;
-                    frontier.Enqueue(next);
-                }
-            }
-
-            DrawReach(costSoFar.Keys, player.X, player.Y);
-        }
 
         /// <summary>Y-sort key for something whose sprite is centred at world y (feet at its bottom edge):
         /// the lower on screen, the later it draws. Matches WorldArt.Standing.Sort.</summary>

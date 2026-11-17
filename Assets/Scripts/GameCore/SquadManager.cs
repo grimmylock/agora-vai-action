@@ -1110,7 +1110,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             public int Y;
             public int Hp;
             public int MaxHp;
-            public float Mp;
             public int Ac;
             public int AttackDamage;
             public bool IsAggroed;
@@ -1175,7 +1174,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                                 Y = m.Y,
                                 Hp = m.Hp,
                                 MaxHp = m.MaxHp,
-                                Mp = m.Mp,
                                 Ac = m.Ac,
                                 AttackDamage = m.AttackDamage,
                                 IsAggroed = m.IsAggroed,
@@ -1257,7 +1255,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                             var he = new HumanEnemy(string.IsNullOrEmpty(pm.Name) ? pm.Faction + " Operative" : pm.Name, pm.X, pm.Y, pm.Faction ?? ps.Faction, pm.Rank ?? "Rookie", wdb, adb);
                             he.Hp = pm.Hp; he.Card = pm.Card; he.Xp = pm.Xp;
                             he.Named = pm.Named; he.ApRounds = pm.ApRounds; he.ArmRolled = true; if (he.ApRounds) he.LoadApRounds(); if (he.Named) he.BossPerks();   // Batch 80
-                            he.Mp = pm.Mp;
                             he.IsAggroed = pm.IsAggroed;
                             // ponytail: the disk format (PersistedMember) never serialized
                             // Inventory/Ru in the first place - a fresh roll on reload is the
@@ -1272,7 +1269,6 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                             MutantDef mdb = FindMutantDefByName(pm.DbName ?? pm.Name);
                             var m = EncounterGeneration.CreateMutantFromDb(mdb, pm.X, pm.Y);
                             m.Hp = pm.Hp;
-                            m.Mp = pm.Mp;
                             m.IsAggroed = pm.IsAggroed;
                             squad.Members.Add(m);
                         }

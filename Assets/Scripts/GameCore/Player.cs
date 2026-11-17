@@ -53,7 +53,6 @@ namespace GameCore
         public int TempHPDuration = 0;
         public StatusEffects StatusEffects { get; } = new StatusEffects();
 
-        public float Mp { get; set; } = 4;
         public int MaxMp { get; set; } = 4;
 
         public StatBlock Stats = new StatBlock();
@@ -250,10 +249,8 @@ namespace GameCore
             // Batch 78 (Yan): any blade in hand is +2 MP; Bull Rush then doubles that
             bool blade = EquippedWeapon != null && CombatRules.IsMelee(EquippedWeapon);
             int rush = blade ? 2 + (CombatantUtil.HasPerk(this, "BullRush") ? MaxMp + 2 : 0) : 0;
-            if (rush < RushBonus) Mp = System.Math.Max(0, Mp - (RushBonus - rush));
             RushBonus = rush;
             MaxMp += rush;
-            if (Mp > MaxMp) Mp = MaxMp;
         }
 
         /// <summary>Batch 76: the part of MaxMp that Bull Rush adds right now.</summary>
@@ -495,7 +492,6 @@ namespace GameCore
             if (!GameServices.RequireGrid().AttemptMove(this, newX, newY))
                 return;
 
-            if (!Rt.On) GameLog.Write($"Player moved to ({X}, {Y}), MP remaining: {Mp}.");   // (real time has no MP: Yan, 2026-11-17, "why is there an MP cost being displayed everytime i walk")
         }
 
 
@@ -505,12 +501,9 @@ namespace GameCore
         public void StartTurn()
         {
             ApplyCarryEffects();
-            Mp = MaxMp;
-            if (StatusEffects.HalfMpNextTurn) { Mp = MaxMp / 2f; StatusEffects.HalfMpNextTurn = false; GameLog.Write($"Still reeling from the boulder: {Mp:0.#} MP this turn."); }
             MovedThisTurn = HitAndRunUsed = RunAndGunUsed = ParryHeld = false;
             MeleeAttacksThisTurn = SidearmShotsThisTurn = 0;
             if (!EncounterState.InCombat) AdrenalineUsed = BracedUsed = false;
-            if (CombatantUtil.HasPerk(this, "TacticalReposition")) Mp += 1;
         }
 
         /// <summary>End of the player's turn: an unused Aim is lost, Suppression wears off.</summary>

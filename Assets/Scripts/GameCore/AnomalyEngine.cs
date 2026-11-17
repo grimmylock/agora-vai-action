@@ -219,9 +219,6 @@ namespace GameCore
             bool isPlayer = unit is Player;
             string label = isPlayer ? "Player" : unit.Name;
 
-            if (isPlayer && CombatantUtil.HasPerk(unit, "Sprinter"))
-                unit.Mp += 2;   // file 05: +2 MP per turn
-
 
             // New: NPCs and mutants bleed too (wounds, serrated blades, Prowler claws) - this
             // used to only ever tick for the player.

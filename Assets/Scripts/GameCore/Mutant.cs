@@ -26,8 +26,10 @@ namespace GameCore
         public bool Unkillable;
         public float PhysDR { get; set; }
         public float AnomDR { get; set; }
-        public float Mp { get; set; }
         public int MaxMp { get; set; } // not set by the original Mutant ctor (defaults to 0); HumanEnemy sets it via armor
+        /// <summary>How many tiles it may cover in one think (squad wandering, tile choice, a Leap): the def's Mp stat as a movement
+        /// range, minus 2 with a leg wound. (Real time has no movement points: walking is paced by RtAi.Speed.)</summary>
+        public virtual float Reach { get { float r = Db?.Mp ?? 4; if (StatusEffects.Wound == "Leg") r = System.Math.Max(1, r - 2); return r; } }
         public int Ac { get; set; }
         public int AttackDamage;
 
@@ -127,7 +129,6 @@ namespace GameCore
             Hp = MaxHp;
             PhysDR = db?.PhysDR ?? 0f;
             AnomDR = db?.AnomDR ?? 0f;
-            Mp = db?.Mp ?? 4;
             Ac = db?.Ac ?? 10;
             AttackDamage = db?.AttackDamage ?? 6;
             _agilityMod = db?.AgilityMod ?? 0;
@@ -175,22 +176,19 @@ namespace GameCore
         /// </summary>
         public virtual bool MoveToward(int targetX, int targetY)
         {
-            if (Mp <= 0) return false;
-
             var grid = GameServices.RequireGrid();
             var path = grid.FindPath(X, Y, targetX, targetY, this);
 
             if (path.Count > 1)
             {
                 var nextStep = path[1];
-                float cost = grid.GetMoveCost(this, nextStep.x, nextStep.y);
-                if (Mp >= cost && grid.AttemptMove(this, nextStep.x, nextStep.y))
+                if (grid.AttemptMove(this, nextStep.x, nextStep.y))
                     return true;
                 // Batch 126: a squadmate in the way (out of a fight): trade places with it
-                if (Mp >= cost && !EncounterState.InCombat && Pathfinding.SquadLeader(this) && TerrainMap.UnitAt(nextStep.x, nextStep.y, this) is Mutant mate
+                if (!EncounterState.InCombat && Pathfinding.SquadLeader(this) && TerrainMap.UnitAt(nextStep.x, nextStep.y, this) is Mutant mate
                     && MacroState.Current.OfflineSquads.Any(q => q.Members.Contains(this) && q.Members.Contains(mate)))
                 {
-                    mate.X = X; mate.Y = Y; X = nextStep.x; Y = nextStep.y; Mp -= cost;
+                    mate.X = X; mate.Y = Y; X = nextStep.x; Y = nextStep.y;
                     return true;
                 }
             }
@@ -213,8 +211,6 @@ namespace GameCore
         /// <summary>Ported from moveAwayFrom(target). Returns whether a step was actually taken.</summary>
         public virtual bool MoveAwayFrom(ICombatant target)
         {
-            if (Mp <= 0) return false;
-
             int dx = System.Math.Sign(X - target.X);
             if (dx == 0) dx = Random.value < 0.5f ? -1 : 1;
             int dy = System.Math.Sign(Y - target.Y);
@@ -226,7 +222,6 @@ namespace GameCore
             if (!GameServices.RequireGrid().AttemptMove(this, newX, newY))
                 return false;
 
-            if (!Rt.On) GameLog.Write($"{Name} retreats to ({X}, {Y}). MP remaining: {Mp}.");
             return true;
         }
 

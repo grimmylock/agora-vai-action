@@ -38,6 +38,7 @@ namespace GameCore
 
         /// <summary>MP for a turn (file 04): armor MP (4 unarmored), +1 at Expert or higher, heavy
         /// weapons cap at 2, a Leg wound costs 2 (minimum 1).</summary>
+        public override float Reach => TurnMp();
         public int TurnMp()
         {
             int mp = (EquippedArmor != null && EquippedArmor.Mp > 0 ? EquippedArmor.Mp : 4)
@@ -66,7 +67,6 @@ namespace GameCore
                 ? rd
                 : new RankDef { Ap = 4, Mp = 4, D20Mod = 0, MoraleHPPercent = 50 };
 
-            Mp = RankData.Mp;
             D20Mod = RankData.D20Mod;
             MoraleHPPercent = RankData.MoraleHPPercent > 0 ? RankData.MoraleHPPercent : 50;
 
@@ -192,7 +192,7 @@ namespace GameCore
             EquippedArmor = db;
             PhysDR = db.PhysDR;
             AnomDR = db.AnomDR;
-            MaxMp = db.Mp > 0 ? db.Mp : (Mp > 0 ? (int)Mp : 4);
+            MaxMp = db.Mp > 0 ? db.Mp : 4;
         }
 
         /// <summary>Ported from isFleeing() override.</summary>
@@ -201,8 +201,6 @@ namespace GameCore
         /// <summary>Ported from moveAwayFrom(target) override. Returns whether a step was actually taken.</summary>
         public override bool MoveAwayFrom(ICombatant target)
         {
-            if (Mp <= 0) return false;
-
             int dx = System.Math.Sign(X - target.X);
             if (dx == 0) dx = Random.value < 0.5f ? -1 : 1;
             int dy = System.Math.Sign(Y - target.Y);
@@ -214,7 +212,6 @@ namespace GameCore
             if (!GameServices.RequireGrid().AttemptMove(this, newX, newY))
                 return false;
 
-            if (!Rt.On) GameLog.Write($"{Name} flees to ({X}, {Y}). MP remaining: {Mp}.");
             return true;
         }
 
@@ -272,7 +269,7 @@ namespace GameCore
                 if (melee && CombatantUtil.HasPerk(this, "BladeDancer") && Cuts >= 3) return;
                 if (!burst && cat == "sidearm") SidearmShots++;
                 if (melee) Cuts++;
-                if (++Attacks == 1 && CombatantUtil.HasPerk(this, "HitAndRun")) Mp += 2;
+                ++Attacks;
                 GameLog.Write($"{Name} {(burst ? "opens up with a burst from" : "fires")} {EquippedWeapon.Name} at {(target is Player ? "Player" : target.Name)}!");
                 EquippedWeapon.Fire(target, burst ? "Burst" : "Single", D20Mod);
             }

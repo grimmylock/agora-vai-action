@@ -60,11 +60,6 @@ namespace GameCore
 
             float cost = GetMoveCost(unit, newX, newY);
             if (float.IsInfinity(cost)) return false;   // a diagonal through a wall corner
-            if (unit.Mp < cost)
-            {
-                GameLog.Write($"{unitLabel} cannot move: not enough MP to enter tile.");
-                return false;
-            }
 
             if (TerrainMap.GetTile(newX, newY).Type == TileType.Door)
             {
@@ -77,7 +72,6 @@ namespace GameCore
             unit.X = newX;
             unit.Y = newY;
             CombatFx.Step(unit, newX, newY);
-            unit.Mp -= cost;
             if (unit is Player mover) mover.MovedThisTurn = true;
 
             GameServices.AnomalyTrigger?.TriggerAnomalyIfPresent(unit);

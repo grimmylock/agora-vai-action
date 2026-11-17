@@ -111,7 +111,6 @@ namespace GameCore
 
         /// <summary>MP an NPC gets for one walking step out of a fight: a diagonal through a bush or a door costs 3 since
         /// Batch 102 (it was 2, and walkers froze in brush and marsh).</summary>
-        public const float WalkMp = 6f;   // Batch 125: enough for any one step - the dearest is a diagonal climb through brush, (2 + 2 high) x 1.5 (a Blind Maw stood stuck at a bank, retrying every minute)
 
         private static void CheckVisionAndWander(Mutant enemy, Player player, IGridService grid)
         {
@@ -196,7 +195,6 @@ namespace GameCore
 
             // Ambient wander gets its own small top-up rather than relying on the combat Mp pool,
             // which only ever gets refreshed for enemies that reach the aggroed combat branch.
-            enemy.Mp = System.Math.Max(enemy.Mp, WalkMp);   // enough for a bush or a door; still one step
             if (enemy.PatrolTarget != null && CombatantUtil.Distance(enemy, enemy.PatrolTarget.Value.x, enemy.PatrolTarget.Value.y) > 0
                 && !enemy.MoveToward(enemy.PatrolTarget.Value.x, enemy.PatrolTarget.Value.y)) enemy.PatrolTarget = null;   // one tile a minute at most
             if (exitTo != null && CombatantUtil.Distance(enemy, exitTo.Value.x, exitTo.Value.y) <= 1) SquadManager.StepOut(enemy);

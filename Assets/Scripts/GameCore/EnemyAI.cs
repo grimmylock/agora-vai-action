@@ -238,20 +238,10 @@ namespace GameCore
             }
         }
 
-        private static void DrainMp(Mutant u)
-        {
-            if (u.StatusEffects.PendingMpDrain <= 0) return;
-            u.Mp = System.Math.Max(0, u.Mp - u.StatusEffects.PendingMpDrain);
-            GameLog.Write($"{u.Name} is still reeling: -{u.StatusEffects.PendingMpDrain} MP.");
-            u.StatusEffects.PendingMpDrain = 0;
-        }
-
         private static void HumanTurn(HumanEnemy h, Player player)
         {
             var grid = GameServices.RequireGrid();
-            h.Mp = h.TurnMp();
             h.NewTurn();   // Batch 86: per-turn perk counters
-            DrainMp(h);
             AnomalyEngine.ProcessTurnStart(h);
             if (!h.IsAlive()) return;
 
@@ -345,7 +335,7 @@ namespace GameCore
                 {
                     if (!grid.CanEnterTile(n.x, n.y) || TerrainMap.UnitAt(n.x, n.y, u) != null) continue;
                     float nc = cost[c] + grid.StepCost(u, c.x, c.y, n.x, n.y);
-                    if (nc > u.Mp) continue;
+                    if (nc > u.Reach) continue;
                     if (cost.TryGetValue(n, out var old) && old <= nc) continue;
                     cost[n] = nc;
                     q.Enqueue(n);
@@ -413,7 +403,7 @@ namespace GameCore
         {
             if (Rt.On) { RtAi.GoTo(u, dest); return; }   // RT batch 5: walked step by step in real time
             int guard = 0;
-            while ((u.X, u.Y) != dest && u.Mp > 0 && u.IsAlive() && guard++ < 20)
+            while ((u.X, u.Y) != dest && u.IsAlive() && guard++ < 20)
                 if (!u.MoveToward(dest.x, dest.y)) break;
         }
 
@@ -422,9 +412,6 @@ namespace GameCore
         private static void MutantTurn(Mutant m, Player player)
         {
             var grid = GameServices.RequireGrid();
-            m.Mp = m.Db?.Mp ?? 4;
-            if (m.StatusEffects.Wound == "Leg") m.Mp = System.Math.Max(1, m.Mp - 2);   // Batch 57: aimed leg shots
-            DrainMp(m);
             AnomalyEngine.ProcessTurnStart(m);
             if (!m.IsAlive()) return;
             m.CheckPanic();
@@ -447,7 +434,7 @@ namespace GameCore
             // Dread Prowler: circles at 3-5, then Leap Attack (2 AP + all MP) from up to MP tiles.
             if (m.Db != null && m.Db.Leap && m.StatusEffects.Wound != "Leg")   // Batch 57: a hobbled Prowler can't leap
             {
-                if (dist >= 2 && dist <= m.Mp && LeapAttack(m, player)) { m.StalkRounds = 0; return; }
+                if (dist >= 2 && dist <= m.Reach && LeapAttack(m, player)) { m.StalkRounds = 0; return; }
                 // Batch 61: circling only works if a leap line opens up; behind a wall or up a ledge it never does
                 if (m.StalkRounds++ < 2) Circle(m, player, 3, 5);
                 else Approach(m, player.X, player.Y, false);
@@ -493,7 +480,7 @@ namespace GameCore
             // ambushers slip away and re-cloak if they can get 4+ tiles from everyone
             if (m.ActiveCamouflage && m.IsAlive() && !m.IsFleeing())
             {
-                while (m.Mp > 0 && CombatantUtil.Distance(m, player) < 4 && m.MoveAwayFrom(player)) { }
+                for (int away = 0; away < m.Reach && CombatantUtil.Distance(m, player) < 4 && m.MoveAwayFrom(player); away++) { }
                 if (CombatantUtil.Distance(m, player) >= 4 && !m.IsCloaked)
                 {
                     m.IsCloaked = true;
@@ -524,11 +511,7 @@ namespace GameCore
         {
             if (CombatantUtil.IsAdjacent(m, tx, ty)) return;
             var adj = BestAdjacent(m, new Probe(tx, ty), packMate);
-            if (Rt.On) { RtAi.Chase(m); return; }   // RT batch 5: runs at you, re-aiming every step
-            if (adj.HasValue) { WalkTo(m, adj.Value); return; }
-            int guard = 0;
-            while (m.Mp > 0 && !CombatantUtil.IsAdjacent(m, tx, ty) && guard++ < 20)
-                if (!m.MoveToward(tx, ty)) break;
+            RtAi.Chase(m);   // RT batch 5: runs at you, re-aiming every step
         }
 
         /// <summary>Moves to a reachable tile between min and max tiles from the target, keeping LoS.</summary>
@@ -557,7 +540,6 @@ namespace GameCore
                 .OrderBy(p => CombatantUtil.Distance(m, p.x, p.y)).Cast<(int x, int y)?>().FirstOrDefault();
             if (!spot.HasValue) return false;
             GameLog.Write($"{m.Name} crouches low... and LEAPS!");
-            m.Mp = 0;
             m.X = spot.Value.x;
             m.Y = spot.Value.y;
             // Telegraph & dodge (file 04): with an AP to spare, the player throws themselves aside.
@@ -590,8 +572,7 @@ namespace GameCore
             if (total < player.Ac) { GameLog.Write("The boulder smashes down beside you."); return; }
             int dmg = CombatRules.PhysicalDamage(BoulderDamage, "Standard", player.PhysDR);
             player.Hp = System.Math.Max(0, player.Hp - dmg);
-            player.StatusEffects.HalfMpNextTurn = true;
-            GameLog.Write($"The boulder hits you for {dmg}. You'll be reeling: half MP next turn.");
+            GameLog.Write($"The boulder hits you for {dmg}.");
             CombatRules.CheckWound(player, dmg, false);
         }
 

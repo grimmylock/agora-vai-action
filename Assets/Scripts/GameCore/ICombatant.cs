@@ -12,7 +12,6 @@ namespace GameCore
         string Name { get; }
         int X { get; set; }
         int Y { get; set; }
-        float Mp { get; set; }   // Batch 102: float - a diagonal step costs 1.5
         int MaxMp { get; set; }
         float PhysDR { get; set; }
         float AnomDR { get; set; }

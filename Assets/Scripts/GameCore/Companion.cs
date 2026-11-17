@@ -72,7 +72,6 @@ namespace GameCore
             var c = Current;
             if (c == null || !c.IsAlive()) return;
             c.IsAggroed = false;
-            c.Mp = System.Math.Max(c.Mp, TurnLoop.WalkMp);
             var foe = EncounterState.InCombat
                 ? EncounterState.Enemies.Where(o => o != c && o.IsAlive() && o.IsAggroed && !(o is HumanEnemy h && EnemyAI.IsOut(h))
                         && CombatantUtil.Distance(c, o) <= c.VisionRange * 2 && grid.CheckLineOfSight(c.X, c.Y, o.X, o.Y))

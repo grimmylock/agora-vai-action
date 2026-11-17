@@ -63,7 +63,6 @@ namespace GameCore
             if (now >= s.NextStep)
             {
                 s.NextStep = now + 1f / Speed(m) * (m.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
-                m.Mp = System.Math.Max(m.Mp, TurnLoop.WalkMp);
                 int stance = s.Chasing && !s.Flee ? MutantAttack.Stance(m, p, now) : 2;      // a canine in a pack keeps its own distance (MutantAttack.Stance)
                 if (s.Flee) m.MoveAwayFrom(p);
                 else if (stance == 1) m.MoveToward(p.X, p.Y);
@@ -122,7 +121,6 @@ namespace GameCore
             if (now >= s.NextStep && !Pinned(h))
             {
                 s.NextStep = now + StepSeconds * (h.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
-                h.Mp = System.Math.Max(h.Mp, TurnLoop.WalkMp);
                 bool moved = false;
                 int bx = h.X, by = h.Y;
                 if (s.Flee) h.MoveAwayFrom(p);

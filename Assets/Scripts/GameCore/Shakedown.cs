@@ -84,7 +84,6 @@ namespace GameCore
             foreach (var m in gang)
                 for (int step = 0; step < 2 && CombatantUtil.Distance(m, p) > (m == boss ? 2 : 3); step++)
                 {
-                    m.Mp = System.Math.Max(m.Mp, TurnLoop.WalkMp);
                     if (!m.MoveToward(p)) break;
                 }
         }
@@ -146,7 +145,6 @@ namespace GameCore
                     Fight(gang, p);
                     EncounterState.Surprised = true;   // Batch 69: they lose their first turn
                     if (Rt.On) foreach (var m in gang) RtAi.Hold(m, SurpriseSeconds);   // RT 7z: in real time "a turn" was never applied - they fired at once
-                    p.Mp = System.Math.Max(p.Mp, p.MaxMp);
                     GameLog.Write($"You go for your gun before {boss.Name} finishes the sentence!{(Rt.On ? "" : " They lose their first turn.")}");
                     break;
             }

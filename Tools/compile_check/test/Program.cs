@@ -359,7 +359,7 @@ static class Program {
     { // Batch 102: diagonals cost 1.5, never cut a wall corner, and an open-ground route is a straight line
       var g = GameServices.Grid; int bx = 60, by = 60;
       for (int y = by - 1; y <= by + 6; y++) for (int x = bx - 1; x <= bx + 12; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
-      var d = new HumanEnemy("d", bx, by, "Raiders", "Rookie", null, null) { Mp = 4 };
+      var d = new HumanEnemy("d", bx, by, "Raiders", "Rookie", null, null);
       Check(Math.Abs(g.GetMoveCost(d, bx + 1, by + 1) - 1.5f) < 0.01f, "a diagonal step costs 1.5 MP");
       TerrainMap.SetTileType(bx + 1, by, TileType.Solid);
       Check(float.IsInfinity(g.GetMoveCost(d, bx + 1, by + 1)) && !g.AttemptMove(d, bx + 1, by + 1), "no diagonal past a wall corner");
@@ -415,7 +415,7 @@ static class Program {
     // door: blocks LoS while closed, opens on entry
     TerrainMap.SetTileType(cx + 1, cy, TileType.Door);
     Check(!GameServices.Grid.CheckLineOfSight(cx, cy, cx + 2, cy), "closed door should block LoS");
-    var walker = new HumanEnemy("w", cx, cy, "Raiders", "Rookie", null, null) { Mp = 4 };
+    var walker = new HumanEnemy("w", cx, cy, "Raiders", "Rookie", null, null);
     Check(GameServices.Grid.AttemptMove(walker, cx + 1, cy) && TerrainMap.GetTile(cx + 1, cy).Type == TileType.DoorOpen, "door opens on entry");
     Check(GameServices.Grid.CheckLineOfSight(cx, cy, cx + 2, cy), "open door shouldn't block LoS");
     // barrel blast: hurts both men in range, wrecks light cover, chips hard cover, chains
@@ -3385,7 +3385,7 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
     // Yan's first real-time playtest: sprinting made enemies zoom - each tile you crossed also ticked the world
     { float h0 = MacroState.Current.Hour; EncounterState.InCombat = true;
-      for (int i = 0; i < 6; i++) { p.Mp = 99; PlayerController.StepFree(p, i < 3 ? 1 : -1, 0); }
+      for (int i = 0; i < 6; i++) { PlayerController.StepFree(p, i < 3 ? 1 : -1, 0); }
       Check(MacroState.Current.Hour == h0 && p.X == px, $"real time: walking doesn't tick the world (hour {h0} -> {MacroState.Current.Hour})");
       EncounterState.InCombat = false; }
     // "i can walk right through cover like the sandbags": low cover stops you; Space at it vaults you over
@@ -3449,7 +3449,7 @@ static class Program {
       // "if enemies are nearby they can loot it, so the player needs to kill them to get them back"
       EncounterState.Enemies.Clear();
       var scav = new HumanEnemy("Scav", qx + 4, qy, "Raiders", "Rookie", null, null); EncounterState.Enemies.Add(scav);
-      for (int k = 0; k < 12 && Death.Packs.Count > 0; k++) { Death.TickPacks(); if (scav.PatrolTarget.HasValue) { scav.Mp = 9; scav.MoveToward(scav.PatrolTarget.Value.x, scav.PatrolTarget.Value.y); } }
+      for (int k = 0; k < 12 && Death.Packs.Count > 0; k++) { Death.TickPacks(); if (scav.PatrolTarget.HasValue) { scav.MoveToward(scav.PatrolTarget.Value.x, scav.PatrolTarget.Value.y); } }
       Check(Death.Packs.Count == 0 && scav.Inventory.Items.Count >= packBefore / 2 && !TerrainMap.GroundItems.Any(g => g.X == qx && g.Y == qy && g.Item.Id.StartsWith("junk")),
         $"co-op: a Raider nearby walks over and pockets the dropped gear ({scav.Inventory.Items.Count} items on him)");
       EncounterState.Enemies.Clear();
@@ -4051,16 +4051,14 @@ static class Program {
         EncounterState.Enemies.Add(brute); EncounterState.InCombat = true;
         int threw = -1; var bl = new ListLog(); var oldLog = GameLog.Target; GameLog.Target = bl;
         for (int turn = 1; turn <= 4 && threw < 0; turn++) {
-          brute.X = px + 8; brute.Y = py; brute.Mp = 0;   // pinned in place: it can't reach you
+          brute.X = px + 8; brute.Y = py;   // pinned in place: it can't reach you
           int before = bl.L.Count; EnemyAI.TakeTurn(brute, p);
           if (bl.L.Skip(before).Any(l => l.Contains("HURLS"))) threw = turn;
         }
         Check(threw == 4, $"the boulder comes on the 4th turn without reaching you (turn {threw})");
-        p.Hp = p.MaxHp; p.StatusEffects.HalfMpNextTurn = false;
-        int hits = 0; for (int i = 0; i < 40; i++) { p.StatusEffects.HalfMpNextTurn = false; EnemyAI.ThrowBoulder(brute, p); if (p.StatusEffects.HalfMpNextTurn) hits++; p.Hp = p.MaxHp; }
+        p.Hp = p.MaxHp;
+        int hits = 0; for (int i = 0; i < 40; i++) { EnemyAI.ThrowBoulder(brute, p); if (p.Hp < p.MaxHp) hits++; p.Hp = p.MaxHp; }
         Check(hits > 5 && hits < 40, $"boulders hit sometimes ({hits}/40)");
-        p.StatusEffects.HalfMpNextTurn = true; p.StartTurn();
-        Check(System.Math.Abs(p.Mp - p.MaxMp / 2f) < 0.01f && !p.StatusEffects.HalfMpNextTurn, $"a hit: half MP next turn ({p.Mp}/{p.MaxMp})");
         GameLog.Target = oldLog; EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
       }
       // Batch 73: Tier 1 Raider gangs are at most 3
@@ -4086,20 +4084,6 @@ static class Program {
         Check(p.EquippedWeaponCategory == "sidearm" && p.SecondaryCategory == "assault", "rifle + pistol swap");
         p.EquipWeaponFromInventory(Item("sniper", "M91Trekhlineyka").Id);
         Check(p.EquippedWeaponCategory == "sniper" && p.SecondaryCategory == null && p.Inventory.Items.Any(i => i.Key == "VK74"), "equipping a sniper sends the rifle back to the pack");
-        EncounterState.InCombat = false; }
-      // Batch 76: Bull Rush doubles MP with a blade; swapping to a gun mid-turn takes the extra back off what's left
-      { p = Arena(out px, out py); EncounterState.InCombat = true;
-        p.ActivePerks.Add("BullRush"); p.EquipWeapon("sidearm", "PSh18Pchela"); p.StartTurn(); int baseMp = p.MaxMp;
-        p.EquipWeapon("melee", "HuntingKnife"); p.StartTurn();
-        float full = p.Mp, extra = full - baseMp;
-        Check(full == 2 * (baseMp + 2) && p.RushBonus == extra, $"blade +2 MP, Bull Rush doubles it ({baseMp} -> {full})");
-        p.Mp -= 3;                                            // walked 3 tiles
-        p.EquipWeapon("sidearm", "PSh18Pchela");
-        Check(p.Mp == Math.Max(0, full - 3 - extra) && p.RushBonus == 0, $"swapping to a gun mid-turn loses the extra MP ({p.Mp}, expected {full - 3 - extra})");
-        float left = p.Mp; p.EquipWeapon("melee", "HuntingKnife");
-        Check(p.Mp == left, "swapping back to the knife mid-turn gives nothing until next turn");
-        p.StartTurn(); Check(p.Mp == full, "next turn with the knife: doubled again");
-        p.ActivePerks.Remove("BullRush"); p.StartTurn(); Check(p.MaxMp == baseMp + 2, "a blade alone is +2 MP");
         EncounterState.InCombat = false; }
       // Batch 78: a blade kill on someone unaware starts no fight; pistols +1 inside their range; Gunslinger -1
       { p = Arena(out px, out py);
@@ -4299,7 +4283,10 @@ static class Program {
         for (int y = cy - 8; y <= cy + 8; y++) TerrainMap.SetTileType(cx + 3, y, TileType.Solid);
         EncounterState.Enemies.RemoveAll(e => e != null);
         var stalker = new Mutant("Stalker", cx + 5, cy, MutantDatabase.Get("tier3", "Gaunt")); stalker.IsAggroed = true; stalker.IsCloaked = true; EncounterState.Enemies.Add(stalker);
-        bool reached = false; for (int i = 0; i < 10 && !reached; i++) { Contact.Spot(me); EnemyAI.TakeTurn(stalker, me); reached = me.Hp < 5000 || CombatantUtil.Distance(stalker, me) <= 1; }
+        // real time: it walks the long way round through RtAi (A* in MoveToward), 40 game seconds at 30 fps
+        Rt.On = true; Rt.Reset(); Rt.SetOffset(me, 0f, 0f); Rt.SetOffset(stalker, 0f, 0f); UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; EncounterState.InCombat = true;
+        bool reached = false; for (int fr = 0; fr < 1200 && !reached; fr++) { const float dt = 1f / 30f; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Contact.Spot(me); Rt.WorldTick(me); Rt.Glide(dt); reached = me.Hp < 5000 || CombatantUtil.Distance(stalker, me) <= 1; }
+        Rt.On = false; EncounterState.InCombat = false;
         Check(reached, $"a cloaked prowler behind a wall walks the long way round and strikes (at {stalker.X},{stalker.Y}, you {cx},{cy})");
         EncounterState.Enemies.Remove(stalker); me.MaxHp = 100; me.Hp = 100; }
       // Batch 62: out of sight, hunters search where you were; Raiders give up after 3 rounds, Garrison after 8; 15+ tiles and 3 rounds unseen breaks contact
@@ -4951,7 +4938,7 @@ static class Program {
     // Batch 42: no tabletop spawn rolls - walking around a zone only ever meets its A-Life squads
     var squadMembers = MacroState.Current.OfflineSquads.SelectMany(q => q.Members).ToHashSet();
     var p = Player.Current; EncounterState.InCombat = false;
-    for (int i = 0; i < 200; i++) { GameState.Current.CurrentTurn = Turn.Player; EncounterState.InCombat = false; p.Mp = 9; int x0 = p.X; p.Move(i / 20 % 2 == 0 ? 1 : -1, 0); if (p.X == x0) p.Move(0, 1); TurnLoop.TickAwareness(); }
+    for (int i = 0; i < 200; i++) { GameState.Current.CurrentTurn = Turn.Player; EncounterState.InCombat = false; int x0 = p.X; p.Move(i / 20 % 2 == 0 ? 1 : -1, 0); if (p.X == x0) p.Move(0, 1); TurnLoop.TickAwareness(); }
     Check(EncounterState.Enemies.All(e => squadMembers.Contains(e)), "every enemy on the map belongs to an A-Life squad");
     GameLog.Target = null;
   }
