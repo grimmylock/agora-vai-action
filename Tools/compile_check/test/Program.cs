@@ -3576,6 +3576,9 @@ static class Program {
       var sw = System.Diagnostics.Stopwatch.StartNew(); int n = 0;
       for (int rep = 0; rep < 3; rep++) foreach (var (x, y) in spots) { pv.X = x; pv.Y = y; Vision.Reset(); Vision.Update(pv, 0); n++; }
       sw.Stop();
+      { int[] cnt = new int[4]; long tot = 0; foreach (var (x, y) in spots) { pv.X = x; pv.Y = y; Vision.Reset(); Vision.Update(pv, 0);
+          for (int yy = y - 50; yy <= y + 50; yy++) for (int xx = x - 50; xx <= x + 50; xx++) { if (xx < 0 || yy < 0 || xx >= TerrainMap.Width || yy >= TerrainMap.Height || !Vision.Sees(xx, yy)) continue; double d = Math.Sqrt((xx - x) * (xx - x) + (yy - y) * (yy - y)); if (d > 50) continue; if (!TerrainMap.CanEnterTile(xx, yy)) continue; tot++; if (d > 10) cnt[0]++; if (d > 15) cnt[1]++; if (d > 30) cnt[2]++; if (d > 40) cnt[3]++; } }
+        Console.WriteLine($"VISBENCH open ground in line of sight (of all standable cells seen within 50 tiles) {zid}: beyond 10 tiles {100.0 * cnt[0] / tot:F0}%, beyond 15 {100.0 * cnt[1] / tot:F0}%, beyond 30 {100.0 * cnt[2] / tot:F0}%, beyond 40 {100.0 * cnt[3] / tot:F0}% ({tot / spots.Count} cells per spot)"); }
       Console.WriteLine($"VISBENCH MaxRadius {Vision.MaxRadius} {zid} {TerrainMap.Width}x{TerrainMap.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms per Vision.Update ({n} calls)");
     }
   }
