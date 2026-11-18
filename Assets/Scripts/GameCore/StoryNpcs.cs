@@ -31,6 +31,12 @@ namespace GameCore
             new Def { Name = "The Scrap King", Suit = "The Scrap King",  Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Raiders", Dx = 1, Dy = 1, When = () => true },
             new Def { Name = "Voss", Suit = "Voss",  Landmark = "Roundhouse", Zone = "scavengers_hub", Look = "Contractors", Dx = 2, Dy = 1, When = () => true },
             new Def { Name = "Quill", Fixed = "Contractor Light",  Landmark = "Signal Tower", Zone = "scavengers_hub", Look = "Contractors", Dx = 1, Dy = 2, When = () => Story.Step("leak") == 2 },
+            // Tier 4 (Story 8)
+            new Def { Name = "Commander Miro", Landmark = "Command Post", Zone = "vanguard_barracks", Look = "Liberators", Fixed = "Liberator Guard Suit II", Dx = 2, Dy = 1, When = () => true },
+            new Def { Name = "Tolik Brodsky", Landmark = "The Barrier", Zone = "vanguard_barracks", Look = "Liberators", Fixed = "Liberator Exoskeleton", Dx = 3, Dy = 2, When = () => Story.Step("barrier") < 2 || Story.IsDone("barrier") },
+            new Def { Name = "Commander Dovbush", Landmark = "Sentinel Firebase", Zone = "vanguard_barracks", Look = "Sentinels", Fixed = "Sentinel Armored Suit", Dx = 1, Dy = 1, When = () => !(Story.Step("summit") >= 3) },
+            new Def { Name = "Commander Dovbush", Landmark = "Command Post", Zone = "vanguard_barracks", Look = "Sentinels", Fixed = "Sentinel Armored Suit", Dx = -2, Dy = 1, When = () => Story.Step("summit") >= 3 },
+            new Def { Name = "Hunter", Landmark = "Motor Pool", Zone = "vanguard_barracks", Look = "Wanderers", Fixed = "Wanderer Field Armor", Dx = 1, Dy = 1, When = () => true },
             new Def { Name = "Lev Marchuk", Suit = "Lev Marchuk",  Landmark = "The Rusty Anchor", Zone = "scavengers_hub", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
             new Def { Name = "Dr. Priya Osei", Suit = "Dr. Priya Osei",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 0, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
             new Def { Name = "Emil Rask", Suit = "Emil Rask",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 2, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },

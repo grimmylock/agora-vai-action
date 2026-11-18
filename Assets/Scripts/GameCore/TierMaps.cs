@@ -1082,6 +1082,7 @@ namespace GameCore
             c.Building(146, 123, 18, 8, "concrete", Concrete, (154, 130), (155, 130));
             for (int x = 144; x < 166; x += 2) c.Put(x, 132, HardCover, "sandbags");
             c.Landmark("Command Post", 155, 126);
+            c.Landmark("The Barrier", 155, 119);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
             // Barracks Row
             c.Stamp("Barracks Row", 127, 136, 3, "wall", Floor, 0, "lockers");
             c.Landmark("Barracks Row", 155, 146);

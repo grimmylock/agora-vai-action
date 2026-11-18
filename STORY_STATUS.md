@@ -24,7 +24,7 @@ Everything below passes the harness (`Tools/compile_check`, `Tier1StoryChecks`, 
 | Trail north: Radio Repeater, Husks with Tier 2 gear, robed figures | built |
 | Escort: snipers at Sniper's Lip, Raider toll at the road cut, Hub arrival | built; new landmark "Road Cut Checkpoint" |
 | Brute's return (Yefim's rematch request, +1500 Ru) | built; not checked in the harness |
-| Maze / Crusher Row (SCRAPKING-2/3), the rest of Black Valley | still the generic quartermaster arcs |
+| Crusher Row (the Garrison is the backer) and Rooke at the Maze (SCRAPKING-2/3) | built (6d); the rest of Black Valley is still generic |
 
 ## Tier 3 (Tier3Story.cs)
 | Beat | State |
@@ -35,8 +35,18 @@ Everything below passes the harness (`Tools/compile_check`, `Tier1StoryChecks`, 
 | Voss and the Contractors' leak hunt (Quill at the Signal Tower, the ledger, the snipers were paid by "those") | built (polish, 7b) |
 | Osei as an alternative pills source | built (E at the House while Lev's job is open) |
 
-## Tiers 4-7
-Outline only (`STORY_OUTLINE_T4_T7.md`): the Barrier and the Preacher, the Array and the Array Commander, the Siege Ward and the portal, the Descent and the Mind. The ending ("those" lose the leash, the mutants are awake, the world hardens) is in `STORY.md`; the Tier 7 "how you leave" choice is still open.
+## Tier 4 (Tier4Story.cs, Preacher.cs) - built 2026-11-18
+| Beat | State |
+|-|-|
+| Liberators' call (Miro), Tolik, wait for dawn | built (talk points + units; new landmark "The Barrier") |
+| The Siege: four Obelisk waves + the Preacher (pulse every 7 s, dive through it), eight mutants wait behind the line and leave when he falls | built; win rate NOT measured |
+| The core: intact or cracked (an explosion on the Preacher cracks it); keep / destroy / sell to the Garrison (flags `core_kept`, `core_destroyed`, `core_sold_garrison`) | built |
+| The Apex (Old Crimson, 6x health) and the Hunter | built |
+| The Summit (Dovbush and Miro, a truce) | built (flag `truce_sentinels_liberators`) |
+| Tolik fights beside you; a vision-swim effect and art for the Preacher's wave | not built |
+
+## Tiers 5-7
+Outline only (`STORY_OUTLINE_T4_T7.md`): the Array and the Array Commander, the Siege Ward and the portal, the Descent and the Mind. The ending ("those" lose the leash, the mutants are awake, the world hardens) is in `STORY.md`; the Tier 7 "how you leave" choice is still open.
 
 ## Cross-cutting gaps
 1. **Nothing was played.** Unity first: Console red, then the Brute chase, a Husk, one night defence, the robed sprite, the escorts.

@@ -101,7 +101,7 @@ namespace GameCore
                 float raw = damage * mult;
                 int dealt = (int)combat.CalculateDamage(raw, "Standard", v.PhysDR, 0f);
                 v.Hp = System.Math.Max(0, v.Hp - dealt);
-                Boss.OnDamaged(v);
+                Boss.OnDamaged(v); Preacher.OnBlast(v);   // Tier 4: a blast on the Preacher cracks his core
                 string who = v is Player ? "Player" : v.Name;
                 GameLog.Write($"{who} is caught in the {label} - {dealt} damage.");
                 if (v.IsAlive()) { if (v is Player kp) Rt.Knockdown(kp, KnockSeconds); else v.StatusEffects.Prone = true; }   // thrown to the ground

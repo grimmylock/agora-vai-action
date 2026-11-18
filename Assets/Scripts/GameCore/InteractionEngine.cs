@@ -14,7 +14,7 @@ namespace GameCore
             if (unit is Player finisher && Boss.TryFinish(finisher)) return;              // Boss 1: E next to a broken boss
             if (unit is Player breaker && Boss.TryBreakWall(breaker)) return;            // Boss 1: the Visor's cracked wall
             if (unit is Player tester && TestingGround.TryInteract(tester)) return;
-            if (unit is Player teller && (Tier1Story.TryInteract(teller) || Tier2Jobs.TryInteract(teller) || Tier3Story.TryInteract(teller))) return;          // Story 4: a mission's conversation (before the bonfire's camp)
+            if (unit is Player teller && (Tier1Story.TryInteract(teller) || Tier2Jobs.TryInteract(teller) || Tier3Story.TryInteract(teller) || Tier4Story.TryInteract(teller))) return;          // Story 4: a mission's conversation (before the bonfire's camp)
             if (unit is Player camper && Death.TryCamp(camper)) return;                  // E at a bonfire: make camp   // the testing ground's crate and terminal
             if (GameState.Current.CurrentTurn != Turn.Player)
             {

@@ -84,6 +84,7 @@ static class Program {
     StorySystemsChecks();
     Tier1StoryChecks();
     Tier3StoryChecks();
+    Tier4StoryChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
@@ -2478,6 +2479,48 @@ static class Program {
   }
 
   // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
+  static void Tier4StoryChecks() {   // Story 8: Tier 4 - the Barrier, the Apex, the Summit
+    var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false; Companion.Current = null; Preacher.Reset(); Tier4Story.Reset();
+    var marks = new[] { ("Command Post", 20, 100), ("The Barrier", 100, 120), ("Sentinel Firebase", 20, 140), ("Motor Pool", 40, 100), ("Deadfall Clearing", 60, 60) }.Select(m => new LandmarkInstance { Name = m.Item1, X = m.Item2, Y = m.Item3 }).ToList();
+    foreach (var m in marks) TerrainMap.Landmarks.Add(m);
+    void At(string n, int dy = 1) { var l = marks.First(x => x.Name == n); p.X = l.X; p.Y = l.Y + dy; }
+    int Alive(string mission) => MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission).SelectMany(q => q.Members).Count(m => m.IsAlive());
+    try {
+      Tier4Story.ZoneOverride = MacroMapDatabase.MapOf("vanguard_barracks"); Story.Set("tier3_reveal"); UnityEngine.Time.time = 70000f;
+      At("Command Post"); Tier4Story.TryInteract(p);
+      Check(Story.Step("barrier") == 1, "Story 8: Miro: the Obelisk are massing, organised");
+      At("The Barrier"); Tier4Story.TryInteract(p);
+      Check(Story.Step("barrier") == 2 && MacroState.Current.Hour == 5f && Alive("siege_def") == 4 && Alive("siege_listeners") == 8, "Story 8: Tolik: dawn, four defenders, eight mutants wait behind the line");
+      for (int i = 0; i < 4; i++) { UnityEngine.Time.time += 60f; Tier4Story.TickRt(0.1f); }
+      Check(Alive("siege_w0") == 6 && Alive("siege_w1") == 5 && Alive("siege_w2") == 3 && Alive("siege_w3") == 4 && Preacher.Current != null && Preacher.Current.IsAlive(), "Story 8: four waves (6, 5, 3, and four with the Preacher)");
+      // the Preacher's pulse: a player in range is hurt, a diving one isn't
+      var pr = Preacher.Current; p.X = pr.X + 3; p.Y = pr.Y; p.Hp = p.MaxHp; Rt.On = true;
+      UnityEngine.Time.time += 20f; Preacher.Tick(0.1f); UnityEngine.Time.time += 2f; Preacher.Tick(0.1f);
+      Check(p.Hp < p.MaxHp, "Story 8: the Preacher's pulse hurts a player within nine tiles");
+      p.Hp = p.MaxHp; Preacher.Tick(0.1f); UnityEngine.Time.time += 20f; Preacher.Tick(0.1f); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 1f; UnityEngine.Time.time += 2f; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 0.5f; Preacher.Tick(0.1f);
+      Check(p.Hp == p.MaxHp, "Story 8: mid-dive it passes over you");
+      int ru = p.Ru; foreach (var m in MacroState.Current.OfflineSquads.Where(q => q.QuestId != null && q.QuestId.StartsWith("story:siege_w")).SelectMany(q => q.Members)) m.Hp = 0;
+      pr.Hp = 0; Preacher.Tick(0.1f); Tier4Story.TickRt(0.1f);
+      Check(p.Inventory.Items.Any(i => i.Id == "story_core") && Story.IsDone("barrier") && Story.Has("core_intact") && p.Ru == ru + 1500, "Story 8: the Preacher falls: an intact core, the mutants leave, Miro pays");
+      Check(!EncounterState.Enemies.Any(e => !(e is HumanEnemy) && e.IsAlive() && MacroState.Current.OfflineSquads.Any(q => q.QuestId == "story:siege_listeners" && q.Members.Contains(e))), "Story 8: the listening mutants are gone");
+      // the Apex
+      At("Motor Pool"); Tier4Story.TryInteract(p);
+      Check(Story.Step("apex") == 1 && Alive("apex") == 1 && MacroState.Current.OfflineSquads.First(q => q.QuestId == "story:apex").Members[0].MaxHp >= 600, "Story 8: the Hunter: Old Crimson lairs at the Deadfall Clearing");
+      foreach (var m in MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:apex").SelectMany(q => q.Members)) m.Hp = 0;
+      Tier4Story.Tick();
+      Check(Story.Step("apex") == 3 && p.Inventory.Items.Any(i => i.Id == "story_trophy"), "Story 8: the giant dead: its trophy");
+      ru = p.Ru; Tier4Story.TryInteract(p);
+      Check(Story.IsDone("apex") && p.Ru == ru + 1200, "Story 8: the Hunter pays for the trophy");
+      // the Summit
+      At("Command Post"); Tier4Story.TryInteract(p);
+      Check(Story.Step("summit") == 1, "Story 8: after the siege Miro wants Dovbush at a table");
+      At("Sentinel Firebase"); Tier4Story.TryInteract(p);
+      Check(Story.Step("summit") == 3, "Story 8: Dovbush agrees to one meeting");
+      ru = p.Ru; At("Command Post"); Tier4Story.TryInteract(p);
+      Check(Story.IsDone("summit") && Story.Has("truce_sentinels_liberators") && p.Ru == ru + 800, "Story 8: the Summit: a truce, not a day longer");
+    } finally { Tier4Story.ZoneOverride = null; foreach (var m in marks) TerrainMap.Landmarks.Remove(m); EncounterState.Enemies.RemoveAll(e => e.Faction == "Obelisk" || e.Faction == "Liberators" || e.Name == "The Preacher"); Preacher.Reset(); Tier4Story.Reset(); MacroState.Current.StoryFlags.Clear(); }
+  }
+
   static void Tier3StoryChecks() {   // Story 7a: Tier 3 - Lev, the lake, the Sub-Station, the pills
     var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false; Companion.Current = null;
     var marks = new[] { ("The Rusty Anchor", 20, 20), ("Hub Bunkhouse", 40, 20), ("Sub-Station House", 100, 100), ("Breaker Room", 116, 100), ("The Flats", 70, 100), ("Tower Line", 100, 70), ("Passenger Lounge", 30, 150), ("Roundhouse", 150, 150), ("Signal Tower", 170, 150), ("Mutant Den", 30, 30) }
