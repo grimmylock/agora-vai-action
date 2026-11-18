@@ -61,6 +61,7 @@ static class Program {
     MutantParryChecks();
     GrenadeChecks();
     SquadFightChecks();
+    PlayerThrowChecks();
     RescueChecks();
     SaveSlotChecks();
     NetChecks();
@@ -3717,6 +3718,33 @@ static class Program {
     Check(shots > 10 && total1 < total0 && A.Members.Any(m => m.IsAlive()) != B.Members.Any(m => m.IsAlive()) | t >= 90f, $"squad fight: two hostile squads shoot each other in real time ({shots} rounds, HP {total0} -> {total1}, over after {t:0} s, A alive {A.Members.Count(m => m.IsAlive())}, B alive {B.Members.Count(m => m.IsAlive())})");
     Check(!p.StatusEffects.Bleeding && p.Hp > 0, "squad fight: and you are left alone");
     EncounterState.Enemies.Clear(); MacroState.Current.OfflineSquads.Clear(); NpcFights.Reset(); Rt.On = false; Rt.Reset();
+  }
+  // 2026-11-18: the player throws grenades, flashbangs and smokes (T takes one out, left click throws, right click puts it away)
+  static void PlayerThrowChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); p.HealPermanent(5000); EncounterState.Enemies.Clear(); Rt.SetOffset(p, 0f, 0f); UnityEngine.Time.time = 1200f; UnityEngine.Time.deltaTime = 0.02f;
+    for (int y = py - 8; y <= py + 8; y++) for (int x = px - 8; x <= px + 20; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    foreach (var (id, nm, q) in new[] { ("fragGrenade", "Frag Grenade", 2), ("flashbang", "Flashbang", 1), ("smokeGrenade", "Smoke Grenade", 1) }) p.AddItem(new InventoryItem { Id = id, Name = nm, Type = "consumable", Qty = q, WeightKg = 0.4f });
+    int Count(string id) => p.Inventory.Items.Where(it => it.Id == id).Sum(it => it.Qty);
+    var enemy = new HumanEnemy("Target", px + 9, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; Rt.SetOffset(enemy, 0f, 0f); EncounterState.Enemies.Add(enemy); enemy.Hp = enemy.MaxHp = 5000;
+    Rt.PlayerTick(p, new Rt.Input { Throw = true });
+    Check(p.ArmedThrowable == "fragGrenade", "throw: T takes out the frag grenade first");
+    Rt.PlayerTick(p, new Rt.Input { FireDown = true, Mouse = (px + 9.5f, py + 0.5f) });
+    Check(Count("fragGrenade") == 1 && Explosions.InFlight == 1, $"throw: left click throws it ({Count("fragGrenade")} left, {Explosions.InFlight} in the air)");
+    for (int f = 0; f < 200 && Explosions.InFlight > 0; f++) { UnityEngine.Time.time += 0.02f; Explosions.Tick(); }
+    Check(enemy.Hp < enemy.MaxHp, $"throw: it goes off where the cursor was and hurts him ({enemy.MaxHp - enemy.Hp} damage)");
+    UnityEngine.Time.time += 2f; Rt.PlayerTick(p, new Rt.Input { Throw = true });
+    Check(p.ArmedThrowable == "flashbang", "throw: T again moves on to the flashbang");
+    Rt.PlayerTick(p, new Rt.Input { Fire2Down = true });
+    Check(p.ArmedThrowable == null && Count("flashbang") == 1, "throw: right click puts it away without throwing");
+    // far cursor: it lands within 14 tiles; a wall stops it short
+    Rt.PlayerTick(p, new Rt.Input { Throw = true }); Rt.PlayerTick(p, new Rt.Input { Throw = true }); Check(p.ArmedThrowable == "flashbang" || p.ArmedThrowable == "fragGrenade", "throw: armed again");
+    p.ArmedThrowable = "smokeGrenade"; TerrainMap.SetTileType(px + 4, py, TileType.Solid); UnityEngine.Time.time += 2f;
+    Rt.PlayerTick(p, new Rt.Input { FireDown = true, Mouse = (px + 18.5f, py + 0.5f) });
+    Check(Count("smokeGrenade") == 0 && p.ArmedThrowable == null, "throw: a smoke can leaves the hand and it is spent");
+    Check(p.StatusEffects != null, "throw: (sanity)");
+    p.ArmedThrowable = null; Rt.PlayerTick(p, new Rt.Input { Throw = true }); p.Inventory.Items.RemoveAll(it => it.Type == "consumable"); p.ArmedThrowable = null; Rt.PlayerTick(p, new Rt.Input { Throw = true });
+    Check(p.ArmedThrowable == null, "throw: nothing to throw, nothing taken out");
+    EncounterState.Enemies.Clear(); Explosions.Reset(); Rt.On = false; Rt.Reset();
   }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();

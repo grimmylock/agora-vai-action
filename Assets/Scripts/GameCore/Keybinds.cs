@@ -8,13 +8,13 @@ namespace GameCore
 {
     public static class Keybinds
     {
-        public static Key Parry = Load("parry", Key.F), Search = Load("search", Key.G), Slow = Load("slow", Key.V);   // RT 9: bullet time
+        public static Key Parry = Load("parry", Key.F), Search = Load("search", Key.G), Slow = Load("slow", Key.V), Throw = Load("throw", Key.T);   // RT 9: bullet time
 
         static Key Load(string name, Key fallback) => (Key)PlayerPrefs.GetInt("key_" + name, (int)fallback);
 
         public static void Set(string name, Key key)
         {
-            if (name == "parry") Parry = key; else if (name == "slow") Slow = key; else Search = key;
+            if (name == "parry") Parry = key; else if (name == "slow") Slow = key; else if (name == "throw") Throw = key; else Search = key;
             PlayerPrefs.SetInt("key_" + name, (int)key); PlayerPrefs.Save();
         }
 

@@ -350,7 +350,7 @@ namespace GameCore
             if (def.Throwable != null)
             {
                 ArmedThrowable = itemId;
-                GameLog.Write($"{def.Name} ready - click a tile within 8 to throw it (right-click to put it away).");
+                GameLog.Write(Rt.On ? $"{def.Name} ready - left click to throw it (up to {Rt.ThrowRange:0} tiles), right click to put it away." : $"{def.Name} ready - click a tile within 8 to throw it (right-click to put it away).");
                 return;
             }
             if (Rt.On && !Rt.Applying) { Rt.BeginUse(this, def); return; }   // real-time fork: it takes a few seconds (Rt.UseSeconds)

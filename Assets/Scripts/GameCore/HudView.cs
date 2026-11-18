@@ -269,7 +269,8 @@ namespace GameCore
 
             // real time (2026-11-17: the "YOUR TURN / ENEMY TURN" labels of the turn-based game are gone): fighting or not, your stamina and Focus
             string turn = (Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : (EncounterState.InCombat ? "<color=#c8443a>FIGHT</color>" : "<color=#62b25a>EXPLORING</color>"))
-                + $"   STAMINA {Mathf.RoundToInt(Rt.Me.Stamina)}   FOCUS {Mathf.FloorToInt(Rt.Me.Focus)}" + (Rt.SlowMo ? "   <color=#62c0e0>BULLET TIME</color>" : "") + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "");
+                + $"   STAMINA {Mathf.RoundToInt(Rt.Me.Stamina)}   FOCUS {Mathf.FloorToInt(Rt.Me.Focus)}" + (Rt.SlowMo ? "   <color=#62c0e0>BULLET TIME</color>" : "") + (m.SurgeRounds > 0 ? $"   <color=#c8443a>SURGE IN {m.SurgeRounds}</color>" : "")
+                + (Player.Current?.ArmedThrowable != null && GameData.ConsumableDatabase.All.TryGetValue(Player.Current.ArmedThrowable, out var armed) ? $"   <color=#e0c050>{armed.Name.ToUpperInvariant()} READY - LMB THROW, RMB CANCEL, T NEXT</color>" : "");
             if (Survival.On) turn = $"<color=#e0c050>{Survival.Status()}</color>   " + turn;   // Survival: the wave line
             _turn.text = turn;
             // a paused game says so in the middle of the screen, not only in the top line

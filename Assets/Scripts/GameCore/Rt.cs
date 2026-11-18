@@ -110,6 +110,7 @@ namespace GameCore
             public (float x, float y)? AimAt;                         // RT 7z: where this player's crosshair is (tile space) - friends' guns point there
             public bool ReloadOffhand;                                // RT 7z-c: R was pressed while the right-hand gun reloaded: the left one is next
             public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
+            public float ThrowReadyAt;                                // a grenade can leave the hand again at this time
             public float ParryAt = -99f, ParryReady;                  // Boss 1: when the parry key went down, when it can again
             public float GrabAt = -99f;                               // Boss 3: when the parry key last went down, weapon or not (the eel's bite is parried bare-handed)
             public bool Diving => DiveUntil >= 0f;
@@ -131,6 +132,7 @@ namespace GameCore
             public bool Sneak, Sprint, Aim, Fire, FireDown, Jump, Reload, Use;   // held / held / held / held / pressed / pressed / pressed / held (E)
             public bool Fire2Down;                                    // RT 7z-c: right mouse pressed - a Gunslinger's left-hand gun
             public bool Parry;                                        // Boss 1: the parry key pressed (F by default, Keybinds)
+            public bool Throw;                                        // 2026-11-18: the throw key pressed (T by default, Keybinds): take out a grenade / the next kind / put it away
             public bool BulletTime;                                   // RT 9: the bullet-time key pressed (V by default, Keybinds)
             public (float x, float y)? Mouse;                         // the crosshair, tile space
         }
@@ -141,7 +143,7 @@ namespace GameCore
             Sneak = k.leftCtrlKey.isPressed, Sprint = k.leftShiftKey.isPressed, Jump = k.spaceKey.wasPressedThisFrame, Reload = k.rKey.wasPressedThisFrame, Use = k.eKey.isPressed,
             Aim = m != null && m.rightButton.isPressed, Fire = m != null && m.leftButton.isPressed, FireDown = m != null && m.leftButton.wasPressedThisFrame,
             Fire2Down = m != null && m.rightButton.wasPressedThisFrame,
-            Parry = Keybinds.Pressed(k, Keybinds.Parry),
+            Parry = Keybinds.Pressed(k, Keybinds.Parry), Throw = Keybinds.Pressed(k, Keybinds.Throw),
             BulletTime = Keybinds.Pressed(k, Keybinds.Slow),
             Mode = k.xKey.wasPressedThisFrame,
             Mouse = MouseTile(m),
@@ -318,6 +320,7 @@ namespace GameCore
             float dt = Time.deltaTime;
             var s = Of(p); ShoveTick(p, s);
             if (i.Parry) Parry.Press(p);                                                       // Boss 1
+            TickThrow(p, s, ref i);                                                            // grenades, flashbangs and smokes: T takes one out, left click throws it
 
             // ---- reviving: hold E over a downed friend (Yan: "downed players can be revived by holding E over them for a few seconds") ----
             bool down = Body.Down(p);
@@ -418,6 +421,45 @@ namespace GameCore
                 s.Look = new Vector3((mw.Value.x - px) * reach, -(mw.Value.y - py) * reach, 0f);
                 s.PullEdge = PullEdgeOf(w);
             }
+        }
+
+        // ---- thrown grenades (2026-11-18, Yan: "let the player throw grenades, flashbangs and smokes too") ----
+        public const float ThrowRange = 14f, ThrowCooldown = 0.8f;
+        static readonly string[] Throwables = { "fragGrenade", "flashbang", "smokeGrenade" };
+        static int Have(Player p, string id) => p.Inventory.Items.Where(it => it.Id == id && it.Type == "consumable").Sum(it => it.Qty);
+
+        /// <summary>T: take out the first grenade kind you carry (frag, flashbang, smoke), the next kind on a second press, nothing after the last. While one is out the left button throws it at the cursor (at most ThrowRange tiles,
+        /// stopping short of a wall) instead of firing; the right button or a dive puts it away. The throw itself is Explosions.Throw: it flies, then the fuse. Co-op: per player, from the Input packet.</summary>
+        static void TickThrow(Player p, State s, ref Input i)
+        {
+            if (i.Throw)
+            {
+                int at = p.ArmedThrowable == null ? -1 : System.Array.IndexOf(Throwables, p.ArmedThrowable), next = -1;
+                for (int k = at + 1; k < Throwables.Length; k++) if (Have(p, Throwables[k]) > 0) { next = k; break; }
+                if (next < 0) { if (p.ArmedThrowable != null) GameLog.Write("You put the grenade away."); else GameLog.Write("You have nothing to throw."); p.ArmedThrowable = null; }
+                else { p.ArmedThrowable = Throwables[next]; GameLog.Write($"{GameData.ConsumableDatabase.All[p.ArmedThrowable].Name} ready - left click to throw, right click to put it away, T for the next kind."); }
+            }
+            if (p.ArmedThrowable == null) return;
+            if (Body.Down(p) || s.Diving || Have(p, p.ArmedThrowable) <= 0) { p.ArmedThrowable = null; return; }
+            if (i.Fire2Down) { p.ArmedThrowable = null; GameLog.Write("You put the grenade away."); i.Fire2Down = false; i.Aim = false; return; }
+            bool go = i.FireDown && i.Mouse.HasValue && Time.time >= s.ThrowReadyAt && s.UsingId == null;
+            i.FireDown = false; i.Fire = false;                                                // no shooting with a grenade in the hand
+            if (!go) return;
+            var def = GameData.ConsumableDatabase.All[p.ArmedThrowable];
+            var (px, py) = Ballistics.Pos(p); float dx = i.Mouse.Value.x - px, dy = i.Mouse.Value.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
+            if (len < 0.5f) { dx = 1f; dy = 0f; len = 0.5f; }
+            float reach = Mathf.Min(len, ThrowRange), ux = dx / len, uy = dy / len, at2 = 0f;
+            for (float t = 0.25f; t <= reach; t += 0.25f)                                       // it stops short of a wall
+            {
+                int tx = Mathf.FloorToInt(px + ux * t), ty = Mathf.FloorToInt(py + uy * t);
+                if (TerrainMap.BlocksSight(tx, ty)) break;
+                at2 = t;
+            }
+            int lx = Mathf.Clamp(Mathf.FloorToInt(px + ux * at2), 0, TerrainMap.Width - 1), ly = Mathf.Clamp(Mathf.FloorToInt(py + uy * at2), 0, TerrainMap.Height - 1);
+            if (!p.RemoveItem(def.Id, 1)) { p.ArmedThrowable = null; return; }
+            s.ThrowReadyAt = Time.time + ThrowCooldown;
+            Explosions.Throw(p, def, lx, ly);
+            if (Have(p, def.Id) <= 0) p.ArmedThrowable = null;
         }
 
         /// <summary>2026-11-17 (Yan: pull the camera toward the cursor like Zero Sievert, the pull based on the gun's max range so nobody tries to shoot what is out of range): how far from the player the edge of the view may reach
