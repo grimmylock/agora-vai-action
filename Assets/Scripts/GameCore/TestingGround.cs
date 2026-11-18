@@ -137,6 +137,8 @@ namespace GameCore
             keys.Add("depths_staff"); keys.Add("depths_fuse"); keys.Add("depths_power"); if (level == 2) keys.Add("depths_drain1");        // the way down is open; level 2's pump needs level 1's (its own water stays deep)
             MacroState.Current.CurrentZoneId = zone; ZoneTravel.EnterZone(zone);
             EncounterState.Enemies.RemoveAll(e => !EelBoss.Is(e)); EncounterState.InCombat = false;
+            var up = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Stairs Up");                 // 2026-11-18 (Yan: "the player spawns in the water ... and is unable to move"): EnterZone had no way in to use here, so you landed on the old map's coordinates; stand on the level's own way in
+            if (up != null) { var (ux, uy) = TerrainMap.FindNearestEnterable(up.X, up.Y + 1); p.X = ux; p.Y = uy; Rt.SetOffset(p, 0f, 0f); }
             GameLog.Write($"[TESTING GROUND] Sub-Station Depths, level {level}: deep water and the eel, which hunts you across the catwalks. Run the pump to drain it. Main menu > Testing Ground to come back.");
         }
 

@@ -14,7 +14,7 @@ namespace GameCore
         readonly List<SpriteRenderer> _eelBolt = new List<SpriteRenderer>(); float _stormUntil;
         readonly List<SpriteRenderer> _eelBody = new List<SpriteRenderer>(), _eelShadow = new List<SpriteRenderer>(), _eelZones = new List<SpriteRenderer>(), _eelFoam = new List<SpriteRenderer>();
         SpriteRenderer _eelHead;
-        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.08f; const int EelShadowLen = 40;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and only its first 10 tiles show
+        const float EelHalfThick = 1.1f, EelDipH = 0.9f, EelSolidZ = 0.08f; const int EelShadowLen = EelSump.N;   // under EelSolidZ the body is a shadow in the water (the flood surge's swim: z 0.05), and the whole length shows (2026-11-18, Yan: "the shadow is also too short": it used to stop after the first 10 tiles)
         static readonly Color EelChar = new Color(0.36f, 0.31f, 0.3f, 1f);                             // scorched hide
         static readonly Color EelShade = new Color(0.02f, 0.08f, 0.09f, 0.55f);                      // the body's half thickness in tiles, for thinning the inside of a tight bend
         const bool EelTelegraphs = false;                    // Yan, 2026-11-06: "remove the red telegraphs for now, they look pretty bad" - the zones are still computed (EelBoss.Fight.Zones), just not drawn
@@ -321,10 +321,12 @@ namespace GameCore
                         pos += new Vector3(back.x, back.y, 0f) * shift;
                     }
                     float zs = Mathf.Lerp(s.Z[i], s.Z[i + 1], u); bool shade = zs <= EelSolidZ; if (shade && (i >= EelShadowLen || s.Z[0] > EelSolidZ + 0.2f)) continue;     // the shadow shows only while the head is down in the water (the swim)
+                    if (shade) { var wt = TerrainMap.GetTile(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(-pos.y)); if (wt == null || wt.Type != TileType.Difficult) continue; }   // 2026-11-18 (Yan: "the eel shadow goes above the character and platforms"): a shadow in the WATER only: over a catwalk or the floor the body is under it, not seen
                     if (!shade) sy *= Mathf.SmoothStep(0.15f, 1f, Mathf.Lerp(dh[i], dh[i + 1], u) / EelDipH);
                     if (s.Lump >= 0f) { float lz = (i + u - s.Lump) / 3.5f; sy *= 1f + 0.5f * Mathf.Exp(-lz * lz); }                  // the swallowed body travelling down its neck: a bulge       // where the body goes under the water it narrows to a rounded end instead of ending in a flat cut: judged by the distance along the body to the waterline, NOT by height (the dash glides at z 0.45 and was pinched all along: 2026-11-06)
                     var sr = Pooled(_eelBody, n++, "EelBody", 2); if (sr == null) continue;
-                    sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : EelSump.Stunned(f) ? new Color(0.78f, 0.82f, 0.95f, 1f) : chg > 0.01f && ((i * 13 + Mathf.FloorToInt(Time.time * 24f) * 7) % 11) < chg * 5f ? new Color(0.7f, 0.93f, 1f, 1f) : Color.Lerp(Color.white, EelChar, scorch * (0.45f + 0.55f * ((i * 37 + kq * 11) % 7) / 6f));       // cold flicker where the electricity passes sr.sortingOrder = baseOrder + (NN - i) * EelSub - kq;
+                    sr.sprite = sl[i * EelSub + kq]; sr.flipX = left; sr.color = shade ? EelShade : EelSump.Stunned(f) ? new Color(0.78f, 0.82f, 0.95f, 1f) : chg > 0.01f && ((i * 13 + Mathf.FloorToInt(Time.time * 24f) * 7) % 11) < chg * 5f ? new Color(0.7f, 0.93f, 1f, 1f) : Color.Lerp(Color.white, EelChar, scorch * (0.45f + 0.55f * ((i * 37 + kq * 11) % 7) / 6f));       // cold flicker where the electricity passes
+                    sr.sortingOrder = shade ? 1 : baseOrder + (NN - i) * EelSub - kq;   // (this order was swallowed by the comment above: the body sat at 2, under everything). A shadow in the water is under the characters and the platforms; the raised body is over the world
                     if (strainShake > 0f) pos += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f) * strainShake;                          // the whole body shakes with the strain
                     sr.transform.position = pos; sr.transform.rotation = Quaternion.Euler(0f, 0f, rot);
                     sr.transform.localScale = new Vector3(Mathf.Clamp(seg / EelSub * 1.5f / (EelSliceW / EelPpu), 1f, 6f), sy, 1f);   // on screen the samples drift apart where the body climbs: stretch the slice to still touch the next one (1.5 x the step)
