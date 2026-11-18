@@ -10,6 +10,8 @@ HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import squad_scene as S
 import taken_stills as T
 random.seed(11)
+RAISE = len(sys.argv) > 2 and sys.argv[2] == 'raised'   # the WHAT-IF: the barrier and the catwalk on a raised steel deck (not built)
+RH = 14
 CX, APEX, R, X0, X1, END = 156, 106, 35, 128, 184, 120
 def arc_y(x): return round(APEX + R - math.sqrt(R * R - (x - CX) ** 2))
 cols = {}
@@ -44,6 +46,25 @@ for x in range(X0, X1 + 1):
                 D.line(pts, fill=(34, 30, 28, 230), width=2)
             if rnd.random() < 0.6: D.ellipse((x0 + 2, y0 + 4, x0 + 30, y0 + 22), fill=(30, 26, 24, 90))     # scorch
 sc.alpha_composite(d_over)
+if RAISE:
+    base = sc.copy(); stairs = (148, 149, 156, 163, 164)
+    for x in range(X0, X1 + 1):
+        lo, hi = cols[x]; ty0, ty1 = lo, hi + 3
+        x0 = int((x - (VX - TW / 2)) * 32); y0 = int((ty0 - (VY - TH / 2)) * 32); y1 = int((ty1 - (VY - TH / 2)) * 32)
+        if x0 < 0 or x0 + 32 > sc.width or y1 > sc.height: continue
+        sh = Image.new('RGBA', (32, 20), (0, 0, 0, 0)); ImageDraw.Draw(sh).rectangle((0, 0, 32, 20), fill=(8, 8, 10, 0))
+        for k in range(14): sc.alpha_composite(Image.new('RGBA', (32, 1), (6, 6, 8, int(110 * (1 - k / 14)))), (x0, y1 + k))      # the deck's shadow on the ground
+        sc.alpha_composite(base.crop((x0, y0, x0 + 32, y1)), (x0, y0 - RH))                                                         # the deck and the barrier, lifted
+        fd = ImageDraw.Draw(sc, 'RGBA'); fy = y1 - RH
+        for k in range(RH):                                                                                                         # the deck's front face
+            t = k / (RH - 1); c = (int(104 - 58 * t), int(108 - 60 * t), int(116 - 62 * t), 255); fd.line((x0, fy + k, x0 + 31, fy + k), fill=c)
+        fd.line((x0, fy, x0 + 31, fy), fill=(176, 180, 186, 255))
+        for rx in (x0 + 5, x0 + 26): fd.rectangle((rx, fy + 4, rx + 1, fy + 5), fill=(30, 32, 36, 255))
+        if x in stairs:                                                                                                              # steps down to the yard
+            for k in range(3): fd.rectangle((x0 + 3, fy + RH - 5 * (k + 1) + 1, x0 + 28, fy + RH - 5 * k), fill=(120 - 18 * k, 124 - 18 * k, 130 - 18 * k, 255)); fd.line((x0 + 3, fy + RH - 5 * (k + 1) + 1, x0 + 28, fy + RH - 5 * (k + 1) + 1), fill=(190, 194, 200, 255))
+        else:                                                                                                                        # a railing along the deck's south edge
+            fd.line((x0, fy - 9, x0 + 31, fy - 9), fill=(170, 170, 164, 210), width=1); fd.line((x0, fy - 4, x0 + 31, fy - 4), fill=(150, 150, 146, 200), width=1)
+            for rx in (x0 + 1, x0 + 30): fd.rectangle((rx, fy - 10, rx + 1, fy), fill=(120, 120, 116, 235))
 S.shadow  # (kept for the import's sake)
 # ---- units
 ARM_LIB = [98, 101, 96, 91]; ARM_OBE = [124, 127, 131, 124, 134]; WEAPONS = [('BR86Bulldog', 'assault'), ('Corvan57', 'assault'), ('BlackHarrier', 'smg'), ('BayouPump', 'shotgun'), ('VK74', 'assault')]
@@ -87,7 +108,7 @@ ImageDraw.Draw(sc).ellipse((pre[0] - 5, pre[1] - 30, pre[0] + 5, pre[1] - 21), f
 # defenders on the catwalk's front row
 lib_x = [140, 143, 146, 149, 152, 158, 161, 164, 167, 170]
 for i, x in enumerate(lib_x):
-    y = cols[x][1] + 1; f = foot(x, y); a = ARM_LIB[i % 4]; w, cat = WEAPONS[(i + 1) % len(WEAPONS)]
+    y = cols[x][1] + 1; f = foot(x, y); f = (f[0], f[1] - (RH if RAISE else 0)); a = ARM_LIB[i % 4]; w, cat = WEAPONS[(i + 1) % len(WEAPONS)]
     tx, ty = foes[i % len(foes)]; ang = aim(x, y, tx, ty)
     units.append((y, lambda sc_=sc, f=f, a=a, w=w, cat=cat, ang=ang, i=i: (S.shadow(sc_, f), S.soldier(sc_, f, a, w, cat, ang, None, shoot=(i % 2 == 0)))))
 for _, fn in sorted(units, key=lambda u: u[0]): fn()
@@ -119,6 +140,6 @@ W = 560; bx = (sc.width - W) // 2; H = ImageDraw.Draw(sc, 'RGBA')
 H.rectangle((bx, 16, bx + W, 32), fill=(150, 120, 80, 255)); H.rectangle((bx + 2, 18, bx + W - 2, 30), fill=(20, 18, 18, 255))
 frac = 0.61; H.rectangle((bx + 2, 18, bx + 2 + int((W - 4) * 0.74), 30), fill=(242, 217, 153, 255)); H.rectangle((bx + 2, 18, bx + 2 + int((W - 4) * frac), 30), fill=(208, 160, 64, 255))
 txt = 'THE BARRIER  61%    HORDE  48 / 90'; f = T.font(18); tw = H.textlength(txt, font=f); H.text(((sc.width - tw) / 2 + 1, 37), txt, fill=(0, 0, 0, 255), font=f); H.text(((sc.width - tw) / 2, 36), txt, fill=(236, 226, 200, 255), font=f)
-T.caption(sc, 'Barrier siege: a still made from the game sprites and the real map render (not a Unity capture)')
+T.caption(sc, 'WHAT-IF (not built): the catwalk and barrier on a raised steel deck, with railings and steps. A composite, not a Unity capture' if RAISE else 'Barrier siege: a still made from the game sprites and the real map render (not a Unity capture)')
 sc = sc.resize((int(sc.width * 1.5), int(sc.height * 1.5)), Image.NEAREST)
 out = sys.argv[1] if len(sys.argv) > 1 else 'barrier_battle.png'; sc.convert('RGB').save(out); print(out, sc.size)
