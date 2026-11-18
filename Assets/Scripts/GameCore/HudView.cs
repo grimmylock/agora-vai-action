@@ -196,6 +196,7 @@ namespace GameCore
             _hint = Txt(root, "Keys", new Vector2(0, 0), new Vector2(900, 20), "I GEAR    J QUESTS    P CHARACTER    M ZONE    F1 CONTROLS", true, 12, Dim, TextAlignmentOptions.Center);
             var hr = _hint.rectTransform; hr.anchorMin = hr.anchorMax = hr.pivot = new Vector2(0.5f, 0); hr.anchoredPosition = new Vector2(0, 8);
             BuildExamine(root);     // Batch 77
+            BuildRE4(root);         // 2026-11-18: the survival-horror HUD (HudView.RE4.cs), over the old cards, which it hides
             _tgtHint = Txt(tc, "Hint", new Vector2(14, -58), new Vector2(362, 18), "TAB EXAMINE", true, 10, Dim, TextAlignmentOptions.TopRight);
         }
 
@@ -354,6 +355,7 @@ namespace GameCore
                 string id = i < p.ArtifactSlots.Length ? p.ArtifactSlots[i] : null;
                 _arts[i].text = i >= slots ? "<color=#3a3e41>X</color>" : id != null && GameData.ArtifactDatabase.All.TryGetValue(id, out var a) ? Short(a.Name) : "";
             }
+            UpdateRE4(p);       // 2026-11-18: the survival-horror HUD copies from all of the above (HudView.RE4.cs)
         }
 
         void UpdateTarget(Player p)

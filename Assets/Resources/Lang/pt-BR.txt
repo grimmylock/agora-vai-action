@@ -739,3 +739,11 @@ The Gaunt screams.	O Gaunt grita.
 A wild Gaunt crawls out of the dark at its call.	Um Gaunt selvagem rasteja para fora da escuridão ao seu chamado.
 {} wild Gaunts crawl out of the dark at its call.	{1} Gaunts selvagens rastejam para fora da escuridão ao seu chamado.
 The Gaunt falls. Everything it was driving stops, and shudders.	O Gaunt cai. Tudo que ele conduzia para e estremece.
+# ---- the survival-horror HUD ----
+FINE	BEM
+CAUTION	ATENÇÃO
+DANGER	PERIGO
+DYING	MORRENDO
+HUNGRY	COM FOME
+THIRSTY	COM SEDE
+TIRED	CANSADO
