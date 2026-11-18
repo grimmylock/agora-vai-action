@@ -3806,6 +3806,8 @@ static class Program {
     Check(Loc.Text("<color=#e0c050>PAUSED - ESC</color>") == "<color=#e0c050>PAUSADO - ESC</color>", "pt-BR: UI text keeps its rich-text tags");
     Check(Loc.Text("Basic Stim\nHostile") != null && Loc.Text("Basic Stim\n").Length > 0, "pt-BR: multi-line text");
     Check(Loc.Text("BLEEDING\nPRONE") == "SANGRANDO\nNO CHÃO", $"pt-BR: line by line ({Loc.Text("BLEEDING\nPRONE")})");
+    Check(Loc.T("Sit up. Hands where I can see them.") == "Sente. Mãos onde eu possa ver." && Loc.T("Garrison Sergeant") == "Sargento da Garrison", "pt-BR: the sergeant's first words and name");
+    Check(Loc.T("The Gaunt screams and points. 12 creatures turn on you.") == "O Gaunt grita e aponta. 12 criaturas se voltam contra você." && Loc.T("Draught from the do nordeste. And the floor - old concrete. Someone kept this route up. Follow it.").StartsWith("Uma corrente de ar vem do nordeste."), "pt-BR: the Gaunt's scream and the draught (a pattern with a number, a pattern with a direction)");
     Check(Loc.T("A line that is not in the table.") == "A line that is not in the table.", "pt-BR: a missing line stays English");
     Check(Loc.T("  New Game  ") == "  Novo Jogo  ", "pt-BR: surrounding spaces are kept");
     Check(Loc.Count > 500, $"pt-BR: the table has {Loc.Count} lines ({Loc.PatternCount} patterns)");

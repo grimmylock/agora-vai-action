@@ -227,7 +227,7 @@ namespace GameCore
         {
             var d = Mark(Door); var p = Everyone.Where(x => x.IsAlive()).OrderBy(x => DistTo(x, Door)).FirstOrDefault(); if (d == null || p == null) return "ahead";
             float dx = d.X - p.X, dy = d.Y - p.Y; string ns = dy < -6 ? "north" : dy > 6 ? "south" : "", ew = dx > 6 ? "east" : dx < -6 ? "west" : "";
-            return ns + (ns != "" && ew != "" ? "-" : "") + ew is string r && r != "" ? r : "close by";
+            return Loc.T(ns + (ns != "" && ew != "" ? "-" : "") + ew is string r && r != "" ? r : "close by");   // pt-BR: "do norte", "de perto" (the Portuguese line reads "vem {1}")
         }
 
         static void Descent(float now)

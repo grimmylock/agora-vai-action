@@ -672,3 +672,70 @@ DUSK => ANOITECER
 HP => PV
 Ru => Ru
 RU => RU
+# ---- Tier 2, "Taken" (the Garrison, the maze, the Gaunt) ----
+Garrison Sergeant	Sargento da Garrison
+Garrison Soldier	Soldado da Garrison
+A flashbang bounces off the road. White. Nothing but white and a ringing that swallows everything.	Uma granada de luz quica na estrada. Branco. Nada além de branco e um zumbido que engole tudo.
+Boots. Fists. A rifle butt across the back of the head.	Botas. Punhos. Uma coronhada na nuca.
+Somebody is laughing. Somebody says: "Enough. Bag them."	Alguém está rindo. Alguém diz: "Chega. Encapuzem eles."
+You come to on concrete. A hatch stands open in the floor, and a Garrison squad stands round it.	Você acorda sobre o concreto. Uma escotilha aberta no chão, e um esquadrão da Garrison em volta dela.
+Sit up. Hands where I can see them.	Sente. Mãos onde eu possa ver.
+You came up this road with something that points at a place that is not on our maps. We have been looking for a way into it for two years.	Você subiu esta estrada com algo que aponta para um lugar que não está nos nossos mapas. Procuramos um jeito de entrar lá há dois anos.
+So. What is down there?	Então. O que tem lá embaixo?
+I don't know.	Não sei.
+A lab. Old research, I think.	Um laboratório. Pesquisa antiga, acho.
+Nothing you'd want.	Nada que você iria querer.
+Then you'll show us.	Então você vai nos mostrar.
+A lab. Good. Then you know the way.	Um laboratório. Ótimo. Então você conhece o caminho.
+That's for us to decide. Show us.	Isso cabe a nós decidir. Mostre.
+Everything that shoots goes in the box. You can keep the knife and the armour - we are not animals. And a bandage, in case you need one.	Tudo que atira vai para a caixa. Pode ficar com a faca e a armadura - não somos animais. E uma atadura, caso precise.
+Move. You go first, and you go where I tell you to stop.	Andem. Você vai na frente, e para onde eu mandar parar.
+They take everything that shoots and drop it in a steel box. Then the rifle barrels point you down.	Eles pegam tudo que atira e jogam numa caixa de aço. Então os canos dos fuzis apontam para baixo.
+Show us the way. And don't take too long - my patience is running thin.	Mostre o caminho. E não demore - minha paciência está acabando.
+Find the hidden lab's door - the soldiers are watching the clock	Ache a porta do laboratório escondido - os soldados estão de olho no relógio
+The Garrison dragged us down a hatch under the Loading Dock into a maze, to find a door nobody has ever opened. They are not patient.	A Garrison nos arrastou por uma escotilha sob a Doca de Carga até um labirinto, para achar uma porta que ninguém nunca abriu. Eles não têm paciência.
+Don't stop. Don't look back at me. Walk.	Não pare. Não olhe para mim. Ande.
+Faster. Or I decide you don't know the way.	Mais rápido. Ou eu decido que você não conhece o caminho.
+Draught from the {}. And the floor - old concrete. Someone kept this route up. Follow it.	Uma corrente de ar vem {1}. E o piso - concreto velho. Alguém manteve esta rota. Siga-a.
+The sergeant's rifle clicks off safe.	O fuzil do sargento destrava com um clique.
+A flat crack.	Um estalo seco.
+There. That's the door. Go on - the card.	Ali. Aquela é a porta. Vá - o cartão.
+E at the door: run the passcard through the lock.	E na porta: passe o cartão de acesso na fechadura.
+That's it. The lock. Card - now.	É isso. A fechadura. O cartão - agora.
+You run the passcard through the reader.	Você passa o cartão no leitor.
+The reader blinks once. A flat buzz.	O leitor pisca uma vez. Um zumbido seco.
+Why isn't it opening? Again!	Por que não abre? De novo!
+The lights go red. Sirens start up all down the corridor.	As luzes ficam vermelhas. Sirenes soam por todo o corredor.
+At the far end of the corridor the wall bursts outward. Something answers from the dark behind it. Many somethings.	No fim do corredor, a parede explode para fora. Algo responde da escuridão atrás dela. Muitos algos.
+RUN - back to the hatch ladder	CORRA - de volta à escada da escotilha
+WHAT'S THAT?! ASSUME DEFENSIVE POSITIONS!	O QUE É ISSO?! POSIÇÕES DEFENSIVAS!
+Something tall is walking out of the dark.	Algo alto está saindo da escuridão.
+It opens its jaw wider than a jaw should open and screams. Then it lifts one long arm and points at the soldiers.	Ele abre a mandíbula mais do que uma mandíbula deveria abrir e grita. Então ergue um braço longo e aponta para os soldados.
+Everything that was feeding turns its head toward the corridor and comes.	Tudo que estava se alimentando vira a cabeça para o corredor e vem.
+More. Dozens more, coming up out of the dark tunnel.	Mais. Dezenas de outros, subindo do túnel escuro.
+A soldier goes down under them, still firing.	Um soldado cai sob eles, ainda atirando.
+Everything goes dark.	Tudo escurece.
+The Garrison took us under the Loading Dock to open a door they could not. Whatever it hides, the mutants in that corridor answered the alarm in hundreds. Worth coming back with better gear.	A Garrison nos levou para baixo da Doca de Carga para abrir uma porta que eles não conseguiram. Seja o que ela esconda, os mutantes naquele corredor atenderam ao alarme às centenas. Vale voltar com equipamento melhor.
+You haul yourself up the ladder. The Garrison camp is empty. Behind you, the hatch breathes warm air. In the steel box beside it: everything you own that shoots.	Você se iça pela escada. O acampamento da Garrison está vazio. Atrás de você, a escotilha respira ar quente. Na caixa de aço ao lado: tudo que você tem que atira.
+Loading Dock	Doca de Carga
+Hatch Ladder	Escada da Escotilha
+Lab Door	Porta do Laboratório
+Broken Wall	Parede Quebrada
+north	do norte
+south	do sul
+east	do leste
+west	do oeste
+north-east	do nordeste
+north-west	do noroeste
+south-east	do sudeste
+south-west	do sudoeste
+close by	de perto
+Elder Gaunt	Gaunt Ancião
+The Gaunt screams and points. {} creatures turn on you.	O Gaunt grita e aponta. {1} criaturas se voltam contra você.
+The Gaunt screams and points. {} creatures turn on your friend.	O Gaunt grita e aponta. {1} criaturas se voltam contra seu amigo.
+The Gaunt screams and points. 1 creature turns on you.	O Gaunt grita e aponta. 1 criatura se volta contra você.
+The Gaunt screams and points. 1 creature turns on your friend.	O Gaunt grita e aponta. 1 criatura se volta contra seu amigo.
+The Gaunt screams.	O Gaunt grita.
+A wild Gaunt crawls out of the dark at its call.	Um Gaunt selvagem rasteja para fora da escuridão ao seu chamado.
+{} wild Gaunts crawl out of the dark at its call.	{1} Gaunts selvagens rastejam para fora da escuridão ao seu chamado.
+The Gaunt falls. Everything it was driving stops, and shudders.	O Gaunt cai. Tudo que ele conduzia para e estremece.
