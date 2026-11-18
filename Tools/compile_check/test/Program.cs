@@ -3023,7 +3023,7 @@ static class Program {
       Run(5f); Check(Tier2Story.Step == 3 && Story.CamLock.HasValue && Story.Letterbox, "taken: the door scene: the camera on the lock, bars, the alarm not yet");
       Run(3f);
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
-      Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 30, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats) is waiting beyond the broken wall (step {Tier2Story.Step})");
+      Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 10 && rats <= 20 && EncounterState.Enemies.Count(e => e is Mutant gm && gm.Db?.Name == Gaunt.Name) == 2, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats, two small Gaunts, mostly dogs) is waiting beyond the broken wall (step {Tier2Story.Step})");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
       Check(Sfx.MusicName == null, "taken: no chase song while the Gaunt's scene is still going");
       Check(EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).OfType<Mutant>().All(m => Tier2Story.Holds(m)), "taken: the horde and the Gaunt wait in the dark, held by the story, until they are let go");

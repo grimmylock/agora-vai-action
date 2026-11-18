@@ -322,7 +322,7 @@ namespace GameCore
         static void Wave(float at, int x, int y, params (string key, int n)[] kinds)
         {
             var who = new List<Mutant>(); var spots = Around(x, y, kinds.Sum(k => k.n)); int i = 0;
-            foreach (var (key, n) in kinds) for (int k = 0; k < n && i < spots.Count; k++, i++) who.Add(Spawn("tier1", key, spots[i].x, spots[i].y));
+            foreach (var (key, n) in kinds) for (int k = 0; k < n && i < spots.Count; k++, i++) { var tk = key.Split(':'); who.Add(tk.Length == 2 ? Spawn(tk[0], tk[1], spots[i].x, spots[i].y) : Spawn("tier1", key, spots[i].x, spots[i].y)); }   // "tier2:VeilProwler" names a tier, a bare key is tier 1
             Waves.Add((at, who));
         }
 
@@ -331,11 +331,12 @@ namespace GameCore
         {
             Waves.Clear();
             var bw = Mark("Broken Wall"); var nest = Mark("Nest"); if (bw == null || nest == null) return;
-            // 2026-11-18 (Yan: two frontline soldiers held the whole horde): about 60 now and the waves close together, so the soldiers get no time to clear one before the next is on them
-            Wave(2.6f, bw.X + 4, bw.Y, ("PallidProwler", 6), ("BlindMaw", 6));                // seconds after the Gaunt's scream
-            Wave(3.4f, nest.X, nest.Y - 10, ("Swarm", 14));
-            Wave(4.4f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 5));
-            Wave(5.4f, nest.X, nest.Y + 2, ("Swarm", 12), ("PallidProwler", 6));
+            // 2026-11-18 (Yan: two frontline soldiers held the whole horde; "give the elder gaunt 15k HP, make the horde less swarms and more of the other mutant dogs, and 2 little gaunts"): about 55, four waves close together
+            // - mostly the dogs (Pallid, Blind Maw, Veil, two Dread Prowlers), twelve rats, two small Gaunts among the third wave (the Elder keeps its 15,000 HP and walks out first)
+            Wave(2.6f, bw.X + 4, bw.Y, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));                // seconds after the Gaunt's scream
+            Wave(3.4f, nest.X, nest.Y - 10, ("BlindMaw", 6), ("PallidProwler", 6));
+            Wave(4.4f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
+            Wave(5.4f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
             { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
