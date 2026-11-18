@@ -9,7 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); DIR = os.path.join(HERE, ".."
 def main():
     n = 0
     for f in sorted(os.listdir(DIR)):
-        if not (f.startswith("armor_") and f.endswith(".png")) or f.endswith("_x2.png"): continue
+        if not (f.startswith("armor_") and f.endswith(".png")) or "_x2" in f: continue   # only the 16 px sources; never re-double a doubled file (or its junk chains)
         im = Image.open(os.path.join(DIR, f)).convert("RGBA")
         im.resize((im.width * 2, im.height * 2), Image.NEAREST).save(os.path.join(DIR, f[:-4] + "_x2.png")); n += 1
     print(n, "files doubled into", os.path.normpath(DIR))
