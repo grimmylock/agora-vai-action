@@ -747,3 +747,30 @@ DYING	MORRENDO
 HUNGRY	COM FOME
 THIRSTY	COM SEDE
 TIRED	CANSADO
+# ---- the attaché case ----
+CASE	MALETA
+CHARACTER	PERSONAGEM
+QUESTS	MISSÕES
+MAP	MAPA
+SORT	ORGANIZAR
+EQUIP	EQUIPAR
+SECOND	SECUNDÁRIA
+WEAR	VESTIR
+USE	USAR
+BELT	CINTO
+FIT	INSTALAR
+DROP	LARGAR
+sidearm	pistola
+submachine gun	submetralhadora
+assault rifle	fuzil de assalto
+shotgun	espingarda
+sniper rifle	fuzil de precisão
+heavy weapon	arma pesada
+melee	corpo a corpo
+{} · tier {}	{1} · nível {2}
+{} · magazine {}	{1} · carregador {2}
+armor {}% · anomaly {}% · belt {} · mods {}	armadura {1}% · anomalia {2}% · cinto {3} · mods {4}
+A bigger bag: more room in the case.	Uma mochila maior: mais espaço na maleta.
+Wear it on the belt: it works while it hangs there.	Use no cinto: ele funciona enquanto estiver pendurado ali.
+Drag it onto the weapon's slot to fit it.	Arraste-o sobre o espaço da arma para instalá-lo.
+Shows the anomalies near you.	Mostra as anomalias perto de você.

@@ -33,7 +33,7 @@ namespace GameCore
             else
             {
                 _beside = false; if (_lootBox != null) Destroy(_lootBox); _lootBox = null; _lootRect = null;
-                if (PackOpen) { PackOpen = false; PackClosedFrame = Time.frameCount; DropDrag(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; }
+                if (PackOpen) { PackOpen = false; PackClosedFrame = Time.frameCount; DropDrag(); KillDim(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; }
             }
         }
 
@@ -44,7 +44,7 @@ namespace GameCore
             PackOpen = !PackOpen;
             GameState.Current.ModalOpen = PackOpen;
             if (PackOpen) { Pack.Settle(Player.Current); _packStamp = null; }
-            else { PackClosedFrame = Time.frameCount; DropDrag(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; }   // the whole box (Yan: "it stays a grey screen")
+            else { PackClosedFrame = Time.frameCount; DropDrag(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; KillDim(); }   // the whole box (Yan: "it stays a grey screen")
         }
 
         void UpdatePack()
@@ -138,6 +138,7 @@ namespace GameCore
         void BuildPack(Player p)
         {
             if (_packBox != null) Destroy(_packBox);
+            EnsureDim();
             var bag = Pack.Bag(p);
             float bw = bag.Cols * Cell, bh = bag.Rows * Cell, W = bw + 48f + 420f, H = Mathf.Max(bh + 48f + 150f, 560f);
             _pack = Box(_root.transform, "Pack", new Vector2(_beside ? 0.3f : 0.5f, 0.5f), Vector2.zero, new Vector2(W, H));   // centred (left of the loot panel while looting) (Rect's pivot is its anchor)
@@ -177,6 +178,7 @@ namespace GameCore
             _packInfo.enableWordWrapping = true;
             _packHint = Txt(_pack, "Hint", new Vector2(rx, -H + 84), new Vector2(400, 80), "DRAG to move, onto a slot to equip, out of a slot to unequip    R turn\nRIGHT-CLICK use / equip / unequip    X drop    sights: onto the gun slot, C / V off    I close", true, 11, Dim);
             _packHint.enableWordWrapping = true;
+            try { DecorateCase(p, W, H, bw); } catch (System.Exception e) { Debug.LogException(e); }   // the look is a layer: if it fails the grid still works
         }
 
         static InventoryItem AsItem(Weapon w) => new InventoryItem { Type = "weapon", Name = w.Name, Category = CombatRules.Category(w.Db), Key = WeaponArt.Identify(w.Db).key };
@@ -267,6 +269,7 @@ namespace GameCore
         void HandlePackMouse(Player p, Keyboard k)
         {
             var m = Mouse.current; if (m == null) return;
+            if (HandleContext(m)) return;                                                  // a context menu is open: it has the mouse
             var screen = m.position.ReadValue();
             var c = CellAt(_bagRect, screen);
             var bag = Pack.Bag(p);
@@ -275,7 +278,7 @@ namespace GameCore
             bool inLoot = lc.HasValue && lc.Value.x >= 0 && lc.Value.y >= 0 && lc.Value.x < Pack.BodyCols && lc.Value.y < LootRows();
             var hover = _drag ?? (inLoot ? BodyItemAt(lc) : ItemAt(p, inBag ? c : (-1, -1)));
             _packInfo.text = hover == null ? $"{p.Inventory.Items.Sum(i => i.WeightKg * System.Math.Max(1, i.Qty)):0.0} kg carried"
-                : $"<b>{hover.Name}</b>{(hover.Qty > 1 ? $"  x{hover.Qty}" : "")}\n{hover.WeightKg * System.Math.Max(1, hover.Qty):0.0} kg    {Pack.Size(hover).w}x{Pack.Size(hover).h}" + (string.IsNullOrEmpty(hover.Condition) ? "" : "\n" + hover.Condition);
+                : $"<b>{hover.Name}</b>{(hover.Qty > 1 ? $"  x{hover.Qty}" : "")}\n{hover.WeightKg * System.Math.Max(1, hover.Qty):0.0} kg    {Pack.Size(hover).w}x{Pack.Size(hover).h}" + (string.IsNullOrEmpty(hover.Condition) ? "" : "\n" + hover.Condition) + (Describe(hover) is string dsc && dsc != "" ? "\n\n<color=#9a9f94>" + Loc.Text(dsc) + "</color>" : "");
 
             if (_drag != null)
             {
@@ -332,7 +335,7 @@ namespace GameCore
                 StartDrag(hover, onBody ? (inLoot ? lc.Value.x - hover.GridX : 0) : hover.GridX >= 0 && inBag ? c.Value.x - hover.GridX : 0, onBody ? (inLoot ? lc.Value.y - hover.GridY : 0) : hover.GridX >= 0 && inBag ? c.Value.y - hover.GridY : 0);
                 _dragBody = onBody;
             }
-            else if (m.rightButton.wasPressedThisFrame) { if (onBody) LootTake(p, hover, null, hover.Rot); else Act(p, hover); }
+            else if (m.rightButton.wasPressedThisFrame) { if (onBody) LootTake(p, hover, null, hover.Rot); else OpenContext(p, hover, screen); }
             else if (!onBody && k != null && k.xKey.wasPressedThisFrame) { p.DropItem(hover.Id, System.Math.Max(1, hover.Qty)); _packStamp = null; }
         }
 
