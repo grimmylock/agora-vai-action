@@ -14,11 +14,13 @@ namespace GameCore
     public static class UnitSprites
     {
         private const int Cell = 16;
+        // 2026-11-18 Husks (ArtSource/make_husks.py): the same suits, desaturated, hunched, grey-eyed and wounded
+        private static Dictionary<string, Sprite> _hArmor, _hWalkA, _hWalkB, _hBack, _hBackWalkA, _hBackWalkB;
         private static Dictionary<string, Sprite> _armor, _mutants, _walkA, _walkB, _back, _backWalkA, _backWalkB;
         // Batch 29: the project enters Play mode without a domain reload, so statics survive between
         // runs while the sprites/textures they point at are destroyed - clear the caches each run.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCaches() { _hd = null; _vat = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; _poses.Clear(); }
+        private static void ResetCaches() { _hd = null; _vat = null; _armor = _mutants = _walkA = _walkB = _back = _backWalkA = _backWalkB = null; _hArmor = _hWalkA = _hWalkB = _hBack = _hBackWalkA = _hBackWalkB = null; _poses.Clear(); }
 
         // Melee 3 (Yan: "the body doesn't use any of the new animation frames during swings"): the swing poses of every suit
         // (ArtSource/make_poses.py atlas): armor_pose_<key> / armor_back_pose_<key>, laid out like the armor atlases, plus a unique
@@ -30,6 +32,7 @@ namespace GameCore
         {
             if (key == null) return null;
             Load();
+            if (Husk.Is(unit)) return null;                                          // a Husk keeps its hunched stand: no clean-suit pose frames
             var armor = unit is Player p ? p.EquippedArmor : unit is HumanEnemy h ? h.EquippedArmor : null;
             string set = (away ? "armor_back_pose_" : "armor_pose_") + key;
             if (!_poses.TryGetValue(set, out var d)) _poses[set] = d = Slice("Sprites/" + set, SpriteAtlasIndex.Armor);
@@ -49,7 +52,8 @@ namespace GameCore
         {
             Load();
             var armor = unit is Player p ? p.EquippedArmor : unit is HumanEnemy h ? h.EquippedArmor : null;
-            return armor != null && _back.TryGetValue(armor.Name, out var s) ? s : null;
+            var back = Husk.Is(unit) && _hBack.Count > 0 ? _hBack : _back;
+            return armor != null && back.TryGetValue(armor.Name, out var s) ? s : null;
         }
 
 
@@ -75,7 +79,9 @@ namespace GameCore
             switch (unit)
             {
                 case Player p: return ForArmor(p.EquippedArmor);
-                case HumanEnemy h: return ForArmor(h.EquippedArmor);
+                case HumanEnemy h:
+                    if (Husk.Is(h) && h.EquippedArmor != null && _hArmor.TryGetValue(h.EquippedArmor.Name, out var hs)) return hs;
+                    return ForArmor(h.EquippedArmor);
                 case Mutant m:
                     string name = m.Db?.Name ?? m.Name;
                     var hd = HD(name);
@@ -206,7 +212,8 @@ namespace GameCore
         {
             Load();
             var armor = unit is Player p ? p.EquippedArmor : unit is HumanEnemy h ? h.EquippedArmor : null;
-            var set = away ? (frame == 0 ? _backWalkA : _backWalkB) : frame == 0 ? _walkA : _walkB;
+            bool hk = Husk.Is(unit) && _hWalkA.Count > 0;
+            var set = away ? (frame == 0 ? (hk ? _hBackWalkA : _backWalkA) : (hk ? _hBackWalkB : _backWalkB)) : frame == 0 ? (hk ? _hWalkA : _walkA) : (hk ? _hWalkB : _walkB);
             return armor != null && set.TryGetValue(armor.Name, out var s) ? s : null;
         }
 
@@ -219,15 +226,17 @@ namespace GameCore
             _back = Slice("Sprites/armor_back_atlas", SpriteAtlasIndex.Armor);
             _backWalkA = Slice("Sprites/armor_back_walk_a", SpriteAtlasIndex.Armor);
             _backWalkB = Slice("Sprites/armor_back_walk_b", SpriteAtlasIndex.Armor);
+            _hWalkA = Slice("Sprites/husk_walk_a", SpriteAtlasIndex.Armor); _hWalkB = Slice("Sprites/husk_walk_b", SpriteAtlasIndex.Armor); _hArmor = Slice("Sprites/husk_atlas", SpriteAtlasIndex.Armor);
+            _hBack = Slice("Sprites/husk_back_atlas", SpriteAtlasIndex.Armor); _hBackWalkA = Slice("Sprites/husk_back_walk_a", SpriteAtlasIndex.Armor); _hBackWalkB = Slice("Sprites/husk_back_walk_b", SpriteAtlasIndex.Armor);
             _mutants = Slice("Sprites/mutant_atlas", SpriteAtlasIndex.Mutants);
             foreach (var name in UniqueSuits) Unique(name);
         }
 
         /// <summary>Boss 1: one-of-a-kind suits outside the faction atlases (ArtSource/make_unique_armor.py): a 96x16 strip -
         /// front, walk a, walk b, back, back walk a, back walk b - added under the suit's name like an atlas cell.</summary>
-        public static readonly string[] UniqueSuits = { "Black Visor Suit" };
+        public static readonly string[] UniqueSuits = { "Black Visor Suit", "Grey Robe" };
         public static readonly Dictionary<string, (string cuff, string glove)> UniqueGloves = new Dictionary<string, (string, string)>
-            { ["Black Visor Suit"] = ("#1f2226", "#2a2c30") };
+            { ["Black Visor Suit"] = ("#1f2226", "#2a2c30"), ["Grey Robe"] = ("#4f555c", "#aab0ae") };
 
         static void Unique(string name)
         {

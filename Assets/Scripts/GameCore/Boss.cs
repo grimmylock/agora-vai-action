@@ -257,6 +257,7 @@ namespace GameCore
         /// <summary>After any damage (Gunplay.Resolve, Melee.Strike): a boss at 0 doesn't die, he breaks.</summary>
         public static void OnDamaged(ICombatant u)
         {
+            GreyRobes.OnDamaged(u);                                        // Tier 1: "those" never die: the smoke goes up
             BrainBoss.OnDamaged(u);                                        // Boss 2: cracks, and no death at 0
             EelBoss.OnDamaged(u);                                          // Boss 3: wounds at 75/50/25%, the vomit at 0
             var f = Of(u);

@@ -75,6 +75,7 @@ namespace GameData
             ["Player"] = new HashSet<string> { "Raiders", "Outcasts", "Wanderers", "Prospectors", "Garrison", "Sentinels", "Liberators", "Contractors", "Obelisk", "Cartel", "IZC", "Mutant", "Surveyors" },
             // Batch 40: Yan: "mutants should also be hostile to everyone (minus one faction)" - Obelisk, both ways
             ["Mutant"] = new HashSet<string> { "Player", "Raiders", "Outcasts", "Wanderers", "Prospectors", "Garrison", "Sentinels", "Liberators", "Contractors", "Cartel", "IZC", "Surveyors" },
+            ["Husks"] = new HashSet<string> { "Player", "Raiders", "Outcasts", "Wanderers", "Prospectors", "Garrison", "Sentinels", "Liberators", "Contractors", "Obelisk", "Cartel", "IZC", "Surveyors" },   // 2026-11-18: Husk.cs
             ["Raiders"] = new HashSet<string> { "Player", "Mutant", "Garrison", "Sentinels", "Liberators", "Contractors", "Obelisk" },
             ["Outcasts"] = new HashSet<string> { "Player", "Mutant", "Garrison", "Sentinels", "Liberators" },
             ["Wanderers"] = new HashSet<string> { "Player", "Mutant", "Raiders", "Garrison" },

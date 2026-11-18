@@ -2536,7 +2536,8 @@ static class Program {
         Check(Story.Step("culvert") == 2 && MacroState.Current.DiscoveredHiddenNodes.Contains(Tier1Story.CaveZone), "Story 5: the canister job opens the cave's hidden way");
         EncounterState.Enemies.Clear(); Tier1Story.ZoneOverride = Tier1Story.CaveZone; Tier1Story.OnEnterZone(Tier1Story.CaveZone);
         var brute = EncounterState.Enemies.FirstOrDefault(e => e.Name == "Blight Brute");
-        Check(brute != null && !brute.IsAggroed, "Story 5: the Brute sleeps in the Mutant Den");
+        Check(brute != null && !brute.IsAggroed && brute.MaxHp == 10000 && brute.Hp == 10000, "Story 5: the Brute (10,000 HP) sleeps in the Mutant Den");
+        Check(TerrainMap.InteractiveObjects.Any(o => o.Name == "The Brute's Hoard"), "Story 5: a Tier 3 hoard lies at the back of the lair");
         UnityEngine.Time.time = 1000f; p.X = 30; p.Y = 31; Tier1Story.TryInteract(p);
         Check(Story.Step("culvert") == 3 && p.Inventory.Items.Any(i => i.Id == "story_canister") && Story.InCutscene && !brute.IsAggroed, "Story 5: the canister, the cutscene, the Brute still standing");
         UnityEngine.Time.time = 1004f; Tier1Story.Tick();
@@ -2546,6 +2547,49 @@ static class Program {
         At(Tier1Story.Medic); Tier1Story.TryInteract(p);
         Check(Story.IsDone("culvert") && Story.Has("husks_known") && !p.Inventory.Items.Any(i => i.Id == "story_canister"), "Story 5: Pavel opens it: the Husks are known");
       } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
+    }
+    // Story 5b: "those"
+    { GreyRobes.Reset(); EncounterState.Enemies.RemoveAll(e => GreyRobes.Is(e)); UnityEngine.Time.time = 9000f;
+      GreyRobes.Place(p.X + 20, p.Y, 2, false);
+      var rb = EncounterState.Enemies.Where(e => GreyRobes.Is(e)).ToList();
+      Check(GreyRobes.Present && rb.Count == 2 && !FactionDatabase.AreHostile("Those", "Player") && !FactionDatabase.AreHostile("Those", "Husks"), "Story 5b: two robed figures, hostile to nobody");
+      rb[0].Hp = 0; Check(rb[0].IsAlive(), "Story 5b: they can't be killed");
+      rb[0].Hp = rb[0].MaxHp;
+      EncounterState.Enemies.RemoveAll(e => GreyRobes.Is(e)); GreyRobes.Reset(); GreyRobes.Place(p.X + 4, p.Y, 2, false);
+      UnityEngine.Time.time += 1f; GreyRobes.Tick(0.05f); UnityEngine.Time.time += 10f; GreyRobes.Tick(0.05f);
+      Check(!GreyRobes.Present && !EncounterState.Enemies.Any(e => GreyRobes.Is(e)), "Story 5b: come close and they turn away and are gone");
+      GreyRobes.Place(p.X + 20, p.Y, 2, false); var hit = EncounterState.Enemies.First(e => GreyRobes.Is(e)); hit.Hp -= 10; Boss.OnDamaged(hit);
+      Check(!GreyRobes.Present, "Story 5b: shot at, the smoke goes up and they are gone");
+      GreyRobes.Place(p.X + 20, p.Y, 2, true); UnityEngine.Time.time += 1f; GreyRobes.Tick(0.05f); UnityEngine.Time.time += 60f; GreyRobes.Tick(0.05f);
+      Check(GreyRobes.Present, "Story 5b: the ones watching Pavel's walk stay until released"); GreyRobes.Release(); UnityEngine.Time.time += 10f; GreyRobes.Tick(0.05f);
+      Check(!GreyRobes.Present, "Story 5b: then they go"); GreyRobes.Reset();
+    }
+    // Story 5b: a Husk closes in, slowly, whatever it holds
+    { Rt.On = true; var (hx, hy) = TerrainMap.FindNearestEnterable(p.X + 14, p.Y); var (nx, ny) = TerrainMap.FindNearestEnterable(p.X + 14, p.Y + 6);
+      var hu = Husk.Make(1); hu.X = hx; hu.Y = hy; hu.IsAggroed = true; var nm = new HumanEnemy("Raider", nx, ny, "Raiders", "Rookie", null, null) { IsAggroed = true };
+      EncounterState.Enemies.Add(hu); EncounterState.Enemies.Add(nm); int d0 = CombatantUtil.Distance(hu, p), n0 = CombatantUtil.Distance(nm, p);
+      p.Hp = p.MaxHp; UnityEngine.Time.time = 30000f;
+      for (int f = 0; f < 150; f++) { UnityEngine.Time.time += 0.1f; RtAi.Tick(hu, p); RtAi.Tick(nm, p); p.Hp = p.MaxHp; }
+      int d1 = CombatantUtil.Distance(hu, p), n1 = CombatantUtil.Distance(nm, p);
+      Check(d1 < d0 && d0 - d1 > 0, $"Story 5b: a Husk walks at you ({d0} -> {d1} tiles in 15 s)");
+      EncounterState.Enemies.Remove(hu); EncounterState.Enemies.Remove(nm); }
+    // Story 5b: the Husks and the night defence
+    { var hk = Husk.Make(1);
+      Check(Husk.Is(hk) && hk.Faction == "Husks" && FactionDatabase.AreHostile("Husks", "Player") && FactionDatabase.AreHostile("Husks", "Wanderers") && !FactionDatabase.AreHostile("Husks", "Mutant"),
+        "Story 5b: a Husk is a stalker of its own faction, hostile to people and you, not to mutants");
+      int sz = Husk.Pack(2).Count; Check(sz >= 4 && sz <= 8, $"Story 5b: a pack is 4 to 8 ({sz})");
+      Story.Set("husks_known"); Story.SetStep("culvert", Story.Done); MacroState.Current.Hour = 14f; At(Tier1Story.Yefim); Tier1Story.Tick();
+      Check(Story.Step("defense") == 0, "Story 5b: no night defence by day");
+      UnityEngine.Time.time = 20000f; MacroState.Current.Hour = 20f; Tier1Story.Tick();
+      Check(Story.Step("defense") == 1 && Story.Objectives.Any(o => o.mission == "defense"), "Story 5b: at dusk in the village the night begins");
+      for (int w = 0; w < 4; w++) { UnityEngine.Time.time += 75f; Tier1Story.TickRt(0.05f); }
+      int husks = EncounterState.Enemies.Count(e => Husk.Is(e) && e.IsAlive());
+      Check(husks == 4 + 5 + 6 + 8, $"Story 5b: four waves of 4, 5, 6 and 8 Husks ({husks})");
+      int ru5 = p.Ru;
+      foreach (var e in EncounterState.Enemies.Where(e => Husk.Is(e)).ToList()) e.Hp = 0;
+      Tier1Story.TickRt(0.05f);
+      Check(Story.IsDone("defense") && Story.Has("tier1_done") && p.Ru == ru5 + 900 && MacroState.Current.Hour == 6f, "Story 5b: the last Husk falls: dawn, the pay, Tier 1 done");
+      EncounterState.Enemies.RemoveAll(e => Husk.Is(e));
     }
     MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Remove("flooded_bunker");
   }

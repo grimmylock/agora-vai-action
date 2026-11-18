@@ -579,6 +579,7 @@ namespace GameCore
             var hd = For(w);
             float spread = hd.Steady * (2.6f - 0.25f * r) + 0.8f + (shooter.StatusEffects?.Suppressed == true ? 2.5f : 0f);
             if (shooter.StatusEffects?.Wound == "Arm") spread += 1.5f;
+            if (Husk.Is(shooter)) { spread += Husk.AimSpread; h = 0.45f; }   // Husks: very bad accuracy
             if (Body.Concussed(shooter)) spread += 2f;
             return (h, spread);
         }

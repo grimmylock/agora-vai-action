@@ -21,6 +21,23 @@ namespace GameCore
         static string Zone => ZoneOverride ?? TerrainMap.ZoneId;
         static Mutant _brute; static bool _wake; static float _wakeAt;
 
+        public const int BruteHp = 10000;
+
+        /// <summary>The free floor tile farthest from the cave mouth within 6 tiles of the den: the back of the lair.</summary>
+        static (int x, int y) HoardSpot(LandmarkInstance den)
+        {
+            var mouth = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == CaveMouth);
+            (int x, int y) best = TerrainMap.FindNearestEnterable(den.X, den.Y - 2); int bd = -1;
+            for (int dy = -6; dy <= 6; dy++) for (int dx = -6; dx <= 6; dx++)
+            {
+                int x = den.X + dx, y = den.Y + dy;
+                if (!TerrainMap.CanEnterTile(x, y) || System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) < 2) continue;
+                int d = mouth == null ? -dy : System.Math.Abs(x - mouth.X) + System.Math.Abs(y - mouth.Y);
+                if (d > bd) { bd = d; best = (x, y); }
+            }
+            return best;
+        }
+
         static bool PavelWithYou => Companion.Alive && Companion.Current.Name == "Pavel";
 
         static bool TryInteractPavel(Player p)
@@ -101,10 +118,17 @@ namespace GameCore
         public static void OnEnterZone(string zoneId)
         {
             _brute = null; _wake = false;
-            if (zoneId != CaveZone || Story.Step("culvert") < 2 || Story.Step("culvert") > 3) return;
+            if (zoneId != CaveZone) return;
             var den = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == Den); if (den == null) return;
+            if (!TerrainMap.InteractiveObjects.Any(o => o.Name == "The Brute's Hoard"))   // a bag of Tier 3 loot at the back of the lair, past where it sleeps
+            {
+                var (hx, hy) = HoardSpot(den);
+                Stashes.Hoard(hx, hy, "The Brute's Hoard", 3, "Scraps and gear dragged back here by something big. Worth the trip.");
+            }
+            if (Story.Step("culvert") < 2 || Story.Step("culvert") > 3) return;
             var (x, y) = TerrainMap.FindNearestEnterable(den.X, den.Y + 1);
             _brute = EncounterGeneration.CreateMutantFromDb(MutantDatabase.Tiers["tier4"]["BlightBrute"], x, y);
+            _brute.MaxHp = _brute.Hp = BruteHp;   // Yan: 10k HP - kill it if you can
             _brute.IsAggroed = false;
             EncounterState.Enemies.Add(_brute);
             Story.Radio("Pavel", "You're in? Good. It's further than you think. I was... I was panicking.");
@@ -137,13 +161,26 @@ namespace GameCore
                 Story.SetStep("engineer", 1);
                 Story.SetObjective("engineer", "Pavel is down. Go back to the Flooded Bunker for him", "Flooded Bunker");
                 GameLog.Event("[ALERT] Pavel is gone. Somewhere in the bunker the barricade is shut again.");
-                Story.Set("pavel_lost");
+                Story.Set("pavel_lost"); GreyRobes.Release();
+            }
+            // the walk back: "those" stop and watch from a distance, and at the lamps' edge they stand a while, then go
+            if (Story.Step("engineer") == 2 && OnTier1 && PavelWithYou && !Story.Has("robes_watched") && Player.Current != null && !GreyRobes.Present)
+            {
+                var pl = Player.Current; var yf = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == Yefim);
+                if (yf != null && System.Math.Max(System.Math.Abs(pl.X - yf.X), System.Math.Abs(pl.Y - yf.Y)) > 30)
+                {
+                    Story.Set("robes_watched");
+                    GreyRobes.Place(pl.X + (yf.X < pl.X ? -20 : 20), pl.Y + 6, 2, true);
+                    GameLog.Event("The robed figures stop and watch. They don't come closer.");
+                    Story.Radio("Pavel", "That's them. Don't let them see me. Please.");
+                }
             }
             // he's home: the village's lamps
             if (Story.Step("engineer") == 2 && OnTier1 && PavelWithYou && Story.AnyNear(Yefim, 8))
             {
                 Story.Talk("Yefim", new[] { "Who is this? ...Never mind. Inside. Medic! Now!", "(Pavel, to you:) Thank you. I mean it. They'll know where I am now. But at least there's a fence." });
                 Companion.Dismiss();
+                if (GreyRobes.Present) { GameLog.Event("The robed figures stop at the edge of the guards' lamps. They stand there a long time. Then they're gone."); GreyRobes.Release(); }
                 Story.Finish("engineer");
                 Story.SetStep("culvert", 1);
                 Story.SetObjective("culvert", "Talk to Pavel at the Medic's House", Medic);

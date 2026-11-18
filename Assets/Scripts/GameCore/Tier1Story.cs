@@ -280,6 +280,8 @@ namespace GameCore
             if (Story.Step("fence") == 1 && Cleared("fence")) { Story.SetStep("fence", 2); Story.SetObjective("fence", "Tell Yefim what you found (or look closer at the fence first)", Yefim); }
             if (Story.Step("raiders") == 1 && Cleared("raiders")) { Story.SetStep("raiders", 2); Story.SetObjective("raiders", "Tell Stas the camp is clear", Stas); }
             if (Story.Step("key") == 2 && Cleared("key")) { Story.SetStep("key", 3); Story.SetObjective("key", "Back to the Headman", Headman); }
+            TickDefenceStart();
+            GreyRobes.TickSight(Player.Current);
             float h = MacroState.Current.Hour;
             if (Story.Step("burst") == 0 && Story.IsDone("fence") && Story.IsDone("raiders") && (h >= 21f || h < 5f))
             {

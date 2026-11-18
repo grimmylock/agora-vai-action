@@ -123,13 +123,15 @@ namespace GameCore
             var s = Of(h);
             float now = Time.time;
             if (s.PinnedUntil >= 0f && now >= s.PinnedUntil) { s.PinnedUntil = -1f; h.StatusEffects.Suppressed = false; }
+            bool husk = Husk.Is(h);
+            if (husk) { h.Morale = "Steady"; s.Flee = false; s.Goal = (p.X, p.Y); }   // Husks never break and always close in, whatever they hold
             if (h.Morale == "Surrendered" || h.StatusEffects.Prone) return;
             if (Melee.Busy(h)) return;                                             // RT 7a: wrenching a blade out of himself
 
             // ---- walking ----
             if (now >= s.NextStep && !Pinned(h))
             {
-                s.NextStep = now + StepSeconds * (h.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
+                s.NextStep = now + StepSeconds * (h.StatusEffects.Wound == "Leg" ? 1.7f : 1f) * (husk ? Husk.StepMul : 1f);
                 bool moved = false;
                 int bx = h.X, by = h.Y;
                 if (s.Flee) h.MoveAwayFrom(p);

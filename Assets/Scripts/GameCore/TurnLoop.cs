@@ -181,7 +181,7 @@ namespace GameCore
                 return;
             }
             if (EncounterState.FightRounds < System.Math.Max(EncounterState.NextCall, 3 * System.Math.Max(1, EncounterState.FightStartCount))) return;
-            var side = es.OfType<HumanEnemy>().Where(h => !EnemyAI.IsOut(h) && h.IsAggroed && h.Morale == "Steady").GroupBy(h => h.FactionName).OrderByDescending(g => g.Count()).FirstOrDefault();
+            var side = es.OfType<HumanEnemy>().Where(h => !Husk.Is(h) && !EnemyAI.IsOut(h) && h.IsAggroed && h.Morale == "Steady").GroupBy(h => h.FactionName).OrderByDescending(g => g.Count()).FirstOrDefault();
             if (side == null) return;
             var lead = EnemyAI.Leader(side.First());
             EncounterState.Caller = lead != null && lead.Morale == "Steady" ? lead : side.First();

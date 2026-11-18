@@ -138,7 +138,7 @@ namespace GameCore
             var wdb = npc.EquippedWeapon?.Db;
             if (wdb == null) return;
 
-            string condition = RollCondition();
+            string condition = Husk.Is(npc) ? ItemCondition.Broken : RollCondition();
             int mag = UnityEngine.Random.Range(1, 5) + 1; // 1d4+1
 
             var (cat, key) = FindWeaponCategoryKey(wdb);
@@ -176,7 +176,7 @@ namespace GameCore
                 Price = Economy.Mid(Economy.WeaponBand(wdb)),
                 Category = cat,
                 Key = key,
-                Condition = RollCondition(),
+                Condition = Husk.Is(npc) ? ItemCondition.Broken : RollCondition(),
             });
             // file 08: it holds 1d4+1 rounds of its standard ammo
             if (!string.IsNullOrEmpty(wdb.AmmoType))
@@ -201,7 +201,7 @@ namespace GameCore
                 Price = Economy.Mid(Economy.ArmorBand(adb, ParseTier(cat))),
                 Category = cat,
                 Key = key,
-                Condition = RollCondition(),
+                Condition = Husk.Is(npc) ? ItemCondition.Broken : RollCondition(),
             });
         }
 

@@ -25,6 +25,13 @@ namespace GameCore
 
         static InteractiveReward Rich(int tier) => new InteractiveReward { Ru = 120 * tier, Loot = new LootItem { Id = "richStash", Name = "Stash", Qty = 1, Type = "loot" } };
 
+        /// <summary>2026-11-18: a story hoard - a bag of `tier` loot at (x, y) on the loaded map (the Blight Brute's, Story 5b). Returns null if the tile is taken.</summary>
+        public static InteractiveObjectInstance Hoard(int x, int y, string name, int tier, string desc)
+        {
+            if (TerrainMap.InteractiveObjects.Any(o => o.X == x && o.Y == y)) return null;
+            return Put(x, y, "stash_duffel", name, Rich(tier), desc);
+        }
+
         static bool BuiltWall(int x, int y)
         {
             if (x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height) return false;
