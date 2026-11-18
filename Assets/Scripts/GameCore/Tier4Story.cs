@@ -27,8 +27,8 @@ namespace GameCore
         static float _siegeAt = -1f;
         static readonly List<Mutant> Defenders = new List<Mutant>(), Fanatics = new List<Mutant>(), Listeners = new List<Mutant>();
 
+        static bool _test;                                                           // started from the Testing Ground
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static bool _test;
         public static void Reset() { _test = false; _siegeAt = -1f; _spawned = 0; _beat = 0; _gunners = false; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); Barrier.Reset(); }
 
         public static bool TryInteract(Player p)
