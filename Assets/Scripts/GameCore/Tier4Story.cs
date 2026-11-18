@@ -28,7 +28,7 @@ namespace GameCore
         static readonly List<Mutant> Defenders = new List<Mutant>(), Fanatics = new List<Mutant>(), Listeners = new List<Mutant>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _siegeAt = -1f; _spawned = 0; _beat = 0; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); Barrier.Reset(); }
+        public static void Reset() { _siegeAt = -1f; _spawned = 0; _beat = 0; _gunners = false; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); Barrier.Reset(); }
 
         public static bool TryInteract(Player p)
         {
@@ -105,31 +105,40 @@ namespace GameCore
             Story.Fade(Color.black, 0f, 0.1f);
             Story.SetStep("barrier", 2); Story.SetObjective("barrier", "Hold the Barrier", BarrierName);
             Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); GameData_Reset();
-            _siegeAt = Time.time; _spawned = 0; _beat = 0; _nextBatch = Time.time + 12f; Preacher.Reset(); GameLog.Event("Dawn. The Obelisk are coming out of the Crimson Woods. Hold the wall.");
+            _siegeAt = Time.time; _spawned = 0; _beat = 0; _gunners = false; _nextBatch = Time.time + 12f; Preacher.Reset(); GameLog.Event("Dawn. The Obelisk are coming out of the Crimson Woods. Hold the wall.");
             var def = new List<Mutant>();
             for (int i = 0; i < DefenderCount; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Liberators", "Experienced", 4, i == 0); def.Add(new HumanEnemy("Liberator", 0, 0, "Liberators", "Experienced", w, a)); }
             PlaceNear("siege_def", bl.X, bl.Y, "Liberators", def);
             int dx = 0;
-            foreach (var m in def) { var (fx, fy) = TerrainMap.FindNearestEnterable(Barrier.X0 + 20 + dx * 4 + (Barrier.X1 - Barrier.X0) / 4, Barrier.Y + 1, 3); m.X = fx; m.Y = fy; m.IsAggroed = false; dx++; }
+            foreach (var m in def) { int cx = Barrier.X0 + 10 + dx * 6; var (fx, fy) = TerrainMap.FindNearestEnterable(cx, Barrier.StepY(cx), 3); m.X = fx; m.Y = fy; m.IsAggroed = false; dx++; }   // along the catwalk's front row
             Defenders.AddRange(def);
             // eight mutants gather behind the fanatics and wait (the outline: they are listening)
             var lis = new List<Mutant>();
             for (int i = 0; i < 8; i++) { var d = EncounterGeneration.PickRandomMutantByTier(4, 4) ?? EncounterGeneration.PickRandomMutantByTier(1, 5); lis.Add(EncounterGeneration.CreateMutantFromDb(d, 0, 0)); }
-            PlaceNear("siege_listeners", bl.X, Barrier.Y - 46, "Mutant", lis); Listeners.AddRange(lis);
+            PlaceNear("siege_listeners", Barrier.CX, Barrier.ApexY - 46, "Mutant", lis); Listeners.AddRange(lis);
             Story.Radio("Miro", "Here they come! Everyone to the wall!");
         }
 
         static void GameData_Reset() { Barrier.Horde.Clear(); }
 
+        static bool _gunners;
         static void Feed()
         {
-            int x = Random.Range(Barrier.X0 + 4, Barrier.X1 - 3), y = Barrier.Y - 40;
-            List<Mutant> pack; string tag = "siege_h" + _spawned;
+            int x = Random.Range(Barrier.X0 + 4, Barrier.X1 - 3), y = Barrier.ApexY - 40;
+            string tag = "siege_h" + _spawned;
             if (_beat == 0 && _spawned >= 30) { _beat = 1; GameLog.Event("They're on the right - grenades!"); }
-            if (_beat == 1 && _spawned >= 55) { _beat = 2; GameLog.Event("Machine gun in the trees!"); }
-            bool nest = _beat == 2 && _spawned < 61;
-            pack = nest ? Obelisk(Batch, "Professional") : Obelisk(Batch, _beat >= 1 && Random.value < 0.4f ? "Experienced" : "Experienced", _beat >= 1 && _spawned % 3 == 0 ? 2 : 0);
-            if (_beat == 2 && _spawned >= 75) { _beat = 3; SpawnPreacher(x, y); }
+            if (_beat == 1 && _spawned >= 55) { _beat = 2; }
+            if (_beat == 2 && !_gunners)                                                    // a machine-gunner squad moves up (Professionals with belt-fed guns)
+            {
+                _gunners = true; GameLog.Event("A machine-gun squad is moving up through the trees!");
+                var gun = WeaponDatabase.Categories.ContainsKey("heavy") ? WeaponDatabase.Categories["heavy"].Values.FirstOrDefault() : null;
+                var gs = new List<Mutant>();
+                for (int i = 0; i < 3; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Obelisk", "Professional", 4, i == 0); gs.Add(new HumanEnemy("Machine Gunner", 0, 0, "Obelisk", "Professional", gun ?? w, a)); }
+                PlaceNear("siege_gunners", x, y, "Obelisk", gs);
+                foreach (var m in gs) { m.IsAggroed = true; Fanatics.Add(m); Barrier.Horde.Add(m); }
+            }
+            var pack = Obelisk(Batch, "Experienced", _beat >= 1 && _spawned % 3 == 0 ? 2 : 0);
+            if (_beat == 2 && _spawned >= 75) { _beat = 3; SpawnPreacher(x, y); pack = Obelisk(Batch, "Professional"); }
             PlaceNear(tag, x, y, "Obelisk", pack);
             foreach (var m in pack) { m.IsAggroed = true; Fanatics.Add(m); Barrier.Horde.Add(m); }
             _spawned += Batch;
@@ -139,6 +148,9 @@ namespace GameCore
         {
             var pr = Preacher.Spawn(x, y - 4); var (px, py) = TerrainMap.FindNearestEnterable(x, y - 4, 8); pr.X = px; pr.Y = py;
             Barrier.Horde.Add(pr);
+            var husks = Husk.Pack(4, 10);                                                    // his escort: plenty of Husks (the leash is in his hands)
+            PlaceNear("siege_husks", x, y - 2, Husk.Faction, husks);
+            foreach (var m in husks) { m.IsAggroed = true; Fanatics.Add(m); Barrier.Horde.Add(m); }
             GameLog.Event("Through the smoke: a tall figure in Obelisk white, a glowing violet sphere strapped to his back, arms raised."); Banter.Say(pr, "Be still. Be quiet. Be one.", 2);
         }
 

@@ -117,6 +117,7 @@ namespace GameCore
             for (int y = cy - radius; y <= cy + radius; y++)
                 for (int x = cx - radius; x <= cx + radius; x++)
                 {
+                    if (Barrier.IsWall(x, y)) { TerrainMap.DamageTile(x, y, Mathf.Max(1, Mathf.RoundToInt(damage * Barrier.BlastWear)), attacker); continue; }   // the Barrier takes a share of the blast
                     var t = TerrainMap.GetTile(x, y);
                     int max = TileRules.MaxIntegrity(t);
                     if (max <= 0) continue;

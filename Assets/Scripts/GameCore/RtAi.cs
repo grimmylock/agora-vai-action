@@ -124,7 +124,7 @@ namespace GameCore
             float now = Time.time;
             if (s.PinnedUntil >= 0f && now >= s.PinnedUntil) { s.PinnedUntil = -1f; h.StatusEffects.Suppressed = false; }
             bool husk = Husk.Is(h);
-            if (husk) { h.Morale = "Steady"; s.Flee = false; s.Goal = (p.X, p.Y); }   // Husks never break and always close in, whatever they hold
+            if (husk) { h.Morale = "Steady"; s.Flee = false; if (!Barrier.Controls(h)) s.Goal = (p.X, p.Y); }   // (the Barrier's wall sends the horde to it first)   // Husks never break and always close in, whatever they hold
             if (h.Morale == "Surrendered" || h.StatusEffects.Prone) return;
             if (Melee.Busy(h)) return;                                             // RT 7a: wrenching a blade out of himself
 

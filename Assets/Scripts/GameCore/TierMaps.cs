@@ -1082,10 +1082,10 @@ namespace GameCore
             c.Building(146, 123, 18, 8, "concrete", Concrete, (154, 130), (155, 130));
             for (int x = 144; x < 166; x += 2) c.Put(x, 132, HardCover, "sandbags");
             c.Landmark("Command Post", 155, 126);
-            // Story 8b: the Barrier: a concrete wall across the compound's north side (Barrier.cs), a steel catwalk two tiles deep behind it
-            c.Rect(Barrier.X0, Barrier.Y, Barrier.X1 - Barrier.X0 + 1, 1, Solid, 0, "concrete");
-            c.Rect(Barrier.X0, Barrier.Y + 1, Barrier.X1 - Barrier.X0 + 1, 2, Empty, 0); c.Paint(Barrier.X0, Barrier.Y + 1, Barrier.X1 - Barrier.X0 + 1, 2, Grate);
-            c.Landmark("The Barrier", 155, 119);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
+            // Story 8b: the Barrier (Barrier.cs): an arc of concrete bowing out to the north, the compound's firing step (a steel catwalk two tiles deep) just inside it
+            foreach (var (bx, by) in Barrier.Cells) c.Put(bx, by, Solid, "concrete");
+            for (int bx = Barrier.X0; bx <= Barrier.X1; bx++) { int bot = Barrier.BottomY(bx); c.Rect(bx, bot + 1, 1, 2, Empty, 0); c.Paint(bx, bot + 1, 1, 2, Grate); }
+            c.Landmark("The Barrier", Barrier.CX, Barrier.StepY(Barrier.CX) + 1);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
             // Barracks Row
             c.Stamp("Barracks Row", 127, 136, 3, "wall", Floor, 0, "lockers");
             c.Landmark("Barracks Row", 155, 146);
