@@ -14,7 +14,7 @@ namespace GameCore
 {
     public static class Tier2Jobs
     {
-        public const string King = "Scrap King's Nest", Dock = "Loading Dock", Fort = "Tire Fort", Tag = "story_dogtag";
+        public const string Runner = "The Cutting", Bridge = "Chokepoint Bridge", King = "Scrap King's Nest", Dock = "Loading Dock", Fort = "Tire Fort", Tag = "story_dogtag";
         static string Map2 => MacroMapDatabase.MapOf("scrapyard");
         public static string ZoneOverride;   // harness: pretend to be on the Tier 2 map
         static bool OnTier2 => (ZoneOverride ?? TerrainMap.ZoneId) == Map2;
@@ -23,6 +23,8 @@ namespace GameCore
 
         public static bool TryInteract(Player p)
         {
+            if (TerrainMap.ZoneId == "perimeter" && Story.Step("runner") == 1 && Story.Near(p, Runner, 3)) { TalkRunner(); return true; }
+            if (OnTier2 && Story.Step("bridge") == 1) { var sg = Sergeant(); if (sg != null && CombatantUtil.Distance(p, sg) <= 3) { TalkBridge(sg, p); return true; } }
             if (OnTier2 && Story.Near(p, King, 3) && TalkKing()) return true;
             if (OnTier2 && (Story.Step("bogdan") == 1 || Story.Step("bogdan") == 2)) { var b = Bogdan(); if (b != null && CombatantUtil.Distance(p, b) <= 3) { TalkBogdan(b, p); return true; } }
             return false;
@@ -85,6 +87,58 @@ namespace GameCore
             return false;
         }
 
+        // ---------------- the Runner's patron ----------------
+
+        static void TalkRunner()
+        {
+            Story.Talk("The Runner", new[] { "You know who I really work for? The Scrap King. Every crate I move, he takes half. Every road I find, he owns.",
+                "I want out. I want my own routes, my own name. But the King doesn't let people out." }, new[] { "I'll help you get free.", "I work for the King." }, i =>
+                {
+                    if (i == 0)
+                    {
+                        Story.Talk("The Runner", new[] { "Then watch your back. The King's men will come. Thank you." });
+                        foreach (var pl in Player.All) { pl.AdjustReputation("Raiders", -3 * Player.RepPoint); pl.AdjustReputation("Wanderers", Player.RepPoint); }
+                        SquadManager.SendQuestSquad(new[] { "Raiders" }, "smugglers_run", "story:kingmen");
+                        Story.Set("runner_free"); Tier1Story.Pay(600, "the Runner's freedom");
+                        Story.Journal("The Runner is free of the Scrap King. The King's men will be looking for you.");
+                    }
+                    else
+                    {
+                        Story.Talk("The Runner", new[] { "...I thought so. Fine. My routes are his. The tunnel stays open for you, at least." });
+                        foreach (var pl in Player.All) pl.AdjustReputation("Raiders", Player.RepPoint);
+                        Story.Set("runner_king"); Tier1Story.Pay(500, "the King's routes");
+                        Story.Journal("The Runner's routes now belong to the Scrap King. The tunnel stays open for you.");
+                    }
+                    CompleteArc("smugglers_run", 3); Story.Finish("runner");
+                });
+        }
+
+        // ---------------- the Liberators at the Bridge ----------------
+
+        static HumanEnemy Sergeant() => EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => e.Name == "Liberator Sergeant" && e.IsAlive());
+
+        static bool HighTech(InventoryItem i) => i.Type == "detector" || i.Type == "attachment" || (i.Name ?? "").Contains("Radio") || (i.Name ?? "").Contains("PDA");
+
+        static void TalkBridge(HumanEnemy sg, Player p)
+        {
+            bool convoy = p.CompletedQuestIds.Contains("T2-03");
+            var answers = new List<string> { "We're just passing.", "We'll take another crossing.", p.Ru >= 300 ? "(Pay 300 Ru)" : "(Pay - you can't afford it)" };
+            if (convoy) answers.Add("We kept your convoy alive.");
+            Story.Talk("Liberator Sergeant", new[] { "Halt. Bags open, all of you. We're free people here - free to search you, too.", "Anything with a blinking light, we keep. Anything that looks like it came from a lab, we really keep." }, answers.ToArray(), i =>
+            {
+                if (i == 0)
+                {
+                    var take = p.Inventory.Items.Where(HighTech).ToList();
+                    foreach (var it in take) { p.Inventory.Items.Remove(it); sg.Inventory.Items.Add(it); }
+                    GameLog.Event(take.Count == 0 ? "They go through your bags and find nothing they want." : $"They keep {take.Count} thing{(take.Count == 1 ? "" : "s")} with a blinking light. The Sergeant has them now.");
+                    Story.Set("bridge_passed"); Story.SetStep("bridge", 2);
+                }
+                else if (i == 1) { Story.Talk("Liberator Sergeant", new[] { "The Ford's slow and the Rail Bridge is a scramble. Your funeral. Go." }); Story.SetStep("bridge", 2); }
+                else if (i == 2 && p.Ru >= 300) { p.Ru -= 300; Story.Talk("Liberator Sergeant", new[] { "Freedom has a price. Today it's this one." }); Story.SetStep("bridge", 2); Story.Set("bridge_passed"); }
+                else if (i == 3) { Story.Talk("Liberator Sergeant", new[] { "...You did. Go on through. Don't make me regret it." }); Story.SetStep("bridge", 2); Story.Set("bridge_passed"); }
+            });
+        }
+
         // ---------------- every game minute ----------------
 
         public static void Tick()
@@ -94,7 +148,20 @@ namespace GameCore
             // clear squads
             if (Story.Step("kingcall") == 1 && Tier1Story.Cleared("dock")) { Story.SetStep("kingcall", 2); Story.SetObjective("kingcall", "Tell the Scrap King the Dock is clear", King); }
             if (Story.Step("bogdan") >= 1 && Story.Step("bogdan") <= 2 && Tier1Story.Cleared("bogdan")) { Story.SetStep("bogdan", 3); Story.SetObjective("bogdan", "Tell Yefim about Bogdan", Tier1Story.Yefim); }
+            // the Liberators remember a fight at the Bridge
+            if (Story.Step("bridge") >= 1 && !Story.Has("bridge_fought") && MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:bridge").SelectMany(q => q.Members).Any(m => !m.IsAlive()))
+            { Story.Set("bridge_fought"); GameLog.Event("The Liberators will remember this."); foreach (var pl in Player.All) pl.AdjustReputation("Liberators", -3 * Player.RepPoint); }
+            // the Runner's patron: once the Runner's ambush job is done and the King's too, the Runner wants a word at the Cutting
+            if (Story.Step("runner") == 0 && Story.IsDone("kingcall") && Player.All.Any(pl => pl.NpcArcStage.TryGetValue("smugglers_run", out var rs) && rs >= 3))
+            { Story.SetStep("runner", 1); Story.SetObjective("runner", "The Runner wants a word. Find him at the Cutting", Runner); Story.Journal("The Runner's Patron: the Runner wants to talk about who he really works for."); }
             if (!OnTier2 || EncounterState.InCombat || ChoiceUI.IsOpen) return;
+            if (Story.Step("bridge") == 0 && Story.IsDone("taken"))
+            {
+                Story.SetStep("bridge", 1);
+                var libs = new List<Mutant>();
+                for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Liberators", "Experienced", 2, i == 0); libs.Add(new HumanEnemy(i == 0 ? "Liberator Sergeant" : "Liberator", 0, 0, "Liberators", "Experienced", w, a)); }
+                Tier1Story.Place("bridge", Bridge, "Liberators", libs);
+            }
             int tdone = Story.Step("taken_day"); if (tdone == 0) return;
             if (Story.Step("kingcall") == 0 && MacroState.Current.Day >= tdone + 1) StartKing();
             else if (Story.Step("bogdan") == 0 && Story.IsDone("kingcall") && Player.All.Any(p => p.NpcArcStage.TryGetValue("bonfire_village", out var st) && st >= 3)) StartBogdan();

@@ -6478,3 +6478,11 @@ Yan: "ok, start tier 2". "Taken" was already built; this adds the jobs that foll
 - `Tier1Story`'s Place/Cleared/Pay/Give/Holder are now `internal`; Yefim's hand-in is checked first in `Tier1Story.TryInteract`.
 - Check: `Tier1StoryChecks` plays both (the harness's default answer is "Fight", the tag branch is set up by hand). Harness green. Not run in Unity. A hostile gang that sees you first fights you before you can talk (the shakedown is Tier 1 only).
 - Next (6b): the Runner's patron (Runner 3), the Liberators at the Bridge, then Pavel's trail north and the escort finale.
+
+## Story 6b (2026-11-18): Tier 2 - the Runner's patron and the Liberators at the Bridge
+
+Yan: "continue". Added to `GameCore/Tier2Jobs.cs` (STORY_DIALOGUE.md "The Runner's Patron", "The Liberators at the Bridge"):
+- **The Runner's patron:** once the King's job is done and the Runner's arc has reached stage 3, the Runner wants a word (objective at The Cutting, Tier 1 map). Free him: +600 Ru, Raiders reputation -3 points, Wanderers +1, a real Raider squad is sent to Smuggler's Run (`SquadManager.SendQuestSquad`), flag `runner_free`. Side with the King: +500 Ru, Raiders +1, flag `runner_king`. Either way RUNNER-3 is hidden from the quartermaster list and the arc moves on (`NpcArcStage`).
+- **The Liberators at the Bridge:** the first time you're on the Tier 2 map after "Taken", four Liberators (a Sergeant) are put down at the Chokepoint Bridge. E by the Sergeant: just pass (anything Type detector/attachment or named Radio/PDA is taken from your pack and is now in the Sergeant's inventory - kill him to get it back), take another crossing (nothing happens; the Ford and the Rail Bridge are just the other roads), pay 300 Ru, or (after T2-03, the convoy job) go through free. If any of them dies: "The Liberators will remember this." and Liberators reputation -3 points. ponytail: the Liberators are a talk point, not a gate: nothing physically stops you crossing, and a fight just happens.
+- Checks added to `Tier1StoryChecks` (the bridge, the confiscation, the Runner). Harness green; not run in Unity. Husk movement check now resets the player to the arena start.
+- Next (6c): Pavel's trail north (the radio, the Radio Repeater, robed figures, Husks with better gear) and the escort finale to the Scavenger's Hub (Sniper's Lip, the road-cut checkpoint).

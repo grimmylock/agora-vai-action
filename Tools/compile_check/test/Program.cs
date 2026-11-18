@@ -2549,7 +2549,7 @@ static class Program {
       } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
     }
     // Story 6a: the Scrap King's call and Bogdan
-    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 } };
+    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 }, new LandmarkInstance { Name = Tier2Jobs.Bridge, X = 100, Y = 100 } };
       foreach (var m in marks) TerrainMap.Landmarks.Add(m);
       try {
         Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false;
@@ -2571,6 +2571,15 @@ static class Program {
         Check(Story.IsDone("bogdan") && p.Ru == ruy + 700 && p.NpcArcStage["bonfire_village"] == 4, "Story 6a: Yefim pays for Bogdan and the arc is closed");
         Story.SetStep("bogdan", 4); Tier1Story.Give(Tier2Jobs.Tag, "Dog Tag"); ruy = p.Ru; Tier1Story.TryInteract(p);
         Check(Story.IsDone("bogdan") && p.Ru == ruy + 900 && !p.Inventory.Items.Any(i => i.Id == Tier2Jobs.Tag), "Story 6a: the dog tag brought home pays more");
+        Check(Story.Step("bridge") == 1 && Alive("bridge") == 4, "Story 6a: Liberators hold the Chokepoint Bridge (four, a sergeant)");
+        var sgt = EncounterState.Enemies.OfType<HumanEnemy>().First(e => e.Name == "Liberator Sergeant"); p.X = sgt.X; p.Y = sgt.Y + 1;
+        p.AddItem(new InventoryItem { Id = "t_scanner", Name = "Anomaly Scanner", Type = "detector", Qty = 1, WeightKg = 0.5f });
+        Tier2Jobs.TryInteract(p);
+        Check(Story.Step("bridge") == 2 && !p.Inventory.Items.Any(i => i.Id == "t_scanner") && sgt.Inventory.Items.Any(i => i.Id == "t_scanner"), "Story 6a: 'just passing': the sergeant keeps anything with a blinking light");
+        p.NpcArcStage["smugglers_run"] = 3; Tier2Jobs.Tick();
+        Check(Story.Step("runner") == 1, "Story 6a: the Runner wants a word once the King's job and the ambush job are done");
+        At(Tier2Jobs.Runner); int rep0 = p.Reputation.TryGetValue("Raiders", out var rr) ? rr : 0; ruy = p.Ru; Tier2Jobs.TryInteract(p);
+        Check(Story.IsDone("runner") && Story.Has("runner_free") && p.Ru == ruy + 600 && (p.Reputation.TryGetValue("Raiders", out var rr2) ? rr2 : 0) < rep0 && p.NpcArcStage["smugglers_run"] == 4, "Story 6a: free the Runner: paid, the King turns on you, the arc moves on");
       } finally { Tier2Jobs.ZoneOverride = null; foreach (var m in marks) TerrainMap.Landmarks.Remove(m); EncounterState.Enemies.RemoveAll(e => e is HumanEnemy h && h.FactionName == "Raiders" && !e.IsAlive()); MacroState.Current.StoryFlags.Clear(); }
     }
     // Story 5b: "those"
@@ -2590,7 +2599,7 @@ static class Program {
       Check(!GreyRobes.Present, "Story 5b: then they go"); GreyRobes.Reset();
     }
     // Story 5b: a Husk closes in, slowly, whatever it holds
-    { Rt.On = true; var (hx, hy) = TerrainMap.FindNearestEnterable(p.X + 14, p.Y); var (nx, ny) = TerrainMap.FindNearestEnterable(p.X + 14, p.Y + 6);
+    { Rt.On = true; p.X = px; p.Y = py; var (hx, hy) = TerrainMap.FindNearestEnterable(p.X + 14, p.Y); var (nx, ny) = TerrainMap.FindNearestEnterable(p.X + 14, p.Y + 6);
       var hu = Husk.Make(1); hu.X = hx; hu.Y = hy; hu.IsAggroed = true; var nm = new HumanEnemy("Raider", nx, ny, "Raiders", "Rookie", null, null) { IsAggroed = true };
       EncounterState.Enemies.Add(hu); EncounterState.Enemies.Add(nm); int d0 = CombatantUtil.Distance(hu, p), n0 = CombatantUtil.Distance(nm, p);
       p.Hp = p.MaxHp; UnityEngine.Time.time = 30000f;
