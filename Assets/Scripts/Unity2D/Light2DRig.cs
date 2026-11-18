@@ -16,8 +16,8 @@ namespace GameCore
         static void Boot() { var go = new GameObject("Light2DRig"); DontDestroyOnLoad(go); go.AddComponent<Light2DRig>(); }
 
         Light2D _global, _flash; readonly List<Light2D> _points = new List<Light2D>(); readonly List<float> _flicker = new List<float>(), _base = new List<float>();
-        readonly Dictionary<SpriteRenderer, Material> _orig = new Dictionary<SpriteRenderer, Material>();
-        Material _lit; float _scanAt, _lightsAt; object _lastList;
+        readonly Dictionary<SpriteRenderer, UnityEngine.Material> _orig = new Dictionary<SpriteRenderer, UnityEngine.Material>();
+        UnityEngine.Material _lit; float _scanAt, _lightsAt; object _lastList;
 
         void Update()
         {
@@ -27,7 +27,7 @@ namespace GameCore
             {
                 var sh = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
                 if (sh == null) { Lighting2D.Status = "(no Sprite-Lit-Default shader found: is the URP 2D renderer on?)"; Lighting2D.On = false; GameLog.Write("[DEV] 2D lights: " + Lighting2D.Status); return; }
-                _lit = new Material(sh);
+                _lit = new UnityEngine.Material(sh);
             }
             var look = Atmosphere.Look(); var p = Player.Current;
             if (_global == null) { _global = Make("GlobalLight", Light2D.LightType.Global); }
