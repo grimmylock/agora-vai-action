@@ -59,11 +59,7 @@ namespace GameCore
 
         // Stagger (file 04): 40%+ of max HP lost in one player turn costs a non-berserk mutant
         // its next turn. Counted by Weapon.Fire / Explosions, checked and reset by TurnLoop.
-        public int DamageTakenThisRound;
-        public int ChaseTurns;         // Batch 130: Blight Brute turns started without reaching you (the 4th throws a boulder)
-        public bool SlamUsed;          // Blight Brute's Ground Slam is once per encounter
         public bool NoParry;           // set by MutantAttack.Strike for what cannot be parried (a spit, a thrown rock, a charge's body-slam); everything else a mutant does in melee can be (Parry.Try)
-        public bool LeapAdvantage;     // set for the duration of a Dread Prowler's Leap Attack
 
         protected float _agilityMod;
         public float ThroatLacerationChance;
@@ -278,7 +274,7 @@ namespace GameCore
             if (ActiveCamouflage) IsCloaked = false; // attacking breaks Cloak
 
             bool psi = Db != null && (Db.PsiBlast || Db.NeuralOverload);
-            bool advantage = PackTactics || LeapAdvantage;
+            bool advantage = PackTactics;
             string who = target is Player ? "Player" : target.Name;
             GameLog.Write($"{Name} {(psi ? "lashes out with a psi blast at" : "attacks")} {who}{(advantage ? " with Pack Tactics" : "")}.");
             var fx = CombatFx.Push("strike", this, target);

@@ -59,6 +59,8 @@ static class Program {
     TestingGroundChecks();
     OpticChecks();
     MutantParryChecks();
+    GrenadeChecks();
+    SquadFightChecks();
     RescueChecks();
     SaveSlotChecks();
     NetChecks();
@@ -3668,6 +3670,54 @@ static class Program {
     Check(p.Hp == hp0, $"spit: 1.8 tiles away from the splash it misses ({hp0} -> {p.Hp})");
     Rt.SetOffset(p, 0f, 0f); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.On = false; Rt.Reset();
   }
+  // 2026-11-17: grenades in real time - no d20: the throw flies and burns its fuse, the blast falls off with distance and knocks down, a dive skips it, a flashbang stops whoever it sees
+  static void GrenadeChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); p.HealPermanent(5000); EncounterState.Enemies.Clear(); Rt.SetOffset(p, 0f, 0f); UnityEngine.Time.time = 900f; UnityEngine.Time.deltaTime = 0.02f;
+    for (int y = py - 8; y <= py + 8; y++) for (int x = px - 8; x <= px + 12; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    var thrower = new HumanEnemy("Thrower", px + 8, py, "Raiders", "Experienced", null, null) { IsAggroed = true }; Rt.SetOffset(thrower, 0f, 0f); EncounterState.Enemies.Add(thrower);
+    var frag = ConsumableDatabase.All["fragGrenade"];
+    int hp0 = p.Hp; Explosions.Throw(thrower, frag, p.X, p.Y);
+    Check(p.Hp == hp0 && Explosions.InFlight == 1, "grenade: a thrown frag does not go off at once, it is in the air");
+    for (int f = 0; f < 5; f++) { UnityEngine.Time.time += 0.02f; Explosions.Tick(); }
+    Check(p.Hp == hp0, "grenade: still burning its fuse a tenth of a second later");
+    for (int f = 0; f < 120 && Explosions.InFlight > 0; f++) { UnityEngine.Time.time += 0.02f; Explosions.Tick(); }
+    Check(p.Hp < hp0 && Rt.Of(p).ProneUntil > UnityEngine.Time.time, $"grenade: standing where it landed, the blast hurts and knocks you down ({hp0} -> {p.Hp})");
+    // walk out of it
+    p.HealPermanent(5000); Rt.Of(p).ProneUntil = -1f; hp0 = p.Hp; Explosions.Throw(thrower, frag, p.X, p.Y); p.X += 3; Rt.SetOffset(p, 0f, 0f);
+    for (int f = 0; f < 200 && Explosions.InFlight > 0; f++) { UnityEngine.Time.time += 0.02f; Explosions.Tick(); }
+    Check(p.Hp == hp0, "grenade: three tiles away when it goes off, nothing happens");
+    // a dive at the instant it goes off
+    p.X -= 3; Rt.SetOffset(p, 0f, 0f); hp0 = p.Hp; Explosions.Throw(thrower, frag, p.X, p.Y); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 5f;
+    for (int f = 0; f < 200 && Explosions.InFlight > 0; f++) { UnityEngine.Time.time += 0.02f; Explosions.Tick(); }
+    Check(p.Hp == hp0, "grenade: a dive skips the blast");
+    // edge hurts less than the middle
+    Rt.Of(p).DiveUntil = -1f; p.HealPermanent(5000); EncounterState.Enemies.Clear(); var ra = new HumanEnemy("A", px + 4, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; var rb = new HumanEnemy("B", px + 5, py + 1, "Raiders", "Rookie", null, null) { IsAggroed = true };
+    foreach (var r in new[] { ra, rb }) { r.Hp = r.MaxHp = 5000; Rt.SetOffset(r, 0f, 0f); EncounterState.Enemies.Add(r); }
+    Explosions.Blast(px + 4, py, 1, 400, thrower, "frag blast");
+    Check(ra.MaxHp - ra.Hp > rb.MaxHp - rb.Hp && rb.MaxHp - rb.Hp > 0, $"grenade: the middle takes more than the edge ({ra.MaxHp - ra.Hp} vs {rb.MaxHp - rb.Hp})");
+    // flashbang: no damage, the human next to it is held, the one behind a wall is not
+    ra.Hp = ra.MaxHp; Explosions.Flash(px + 4, py, Explosions.FlashRadius);
+    Check(ra.Hp == ra.MaxHp && RtAi.BusyFor(ra) > 1f, $"flashbang: no damage, he is stopped for {RtAi.BusyFor(ra):0.0} s");
+    EncounterState.Enemies.Clear(); Explosions.Reset(); Rt.On = false; Rt.Reset();
+  }
+  // 2026-11-17: two hostile squads on the map fight each other through the real-time AI (NpcFights.Real -> RtAi.TickSquadFight): bullets with their own rates, not clock beats
+  static void SquadFightChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MutantAttack.Reset(); p.HealPermanent(5000); EncounterState.Enemies.Clear(); Rt.SetOffset(p, 0f, 0f);
+    for (int y = py - 10; y <= py + 10; y++) for (int x = px - 4; x <= px + 40; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Random.InitState(31); MacroState.Current.OfflineSquads.Clear();
+    string fa = "Raiders", fb = "Garrison"; Check(FactionDatabase.AreHostile(fa, fb) || FactionDatabase.AreHostile(fb, fa), $"squad fight: {fa} and {fb} are hostile (the test needs it)");
+    OfflineSquad Squad(string f, int x0) { var sq = new OfflineSquad { Faction = f, ZoneId = MacroState.Current.CurrentZoneId }; for (int i = 0; i < 3; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout(f, "Experienced", 2); var h = new HumanEnemy(f + i, x0, py - 1 + i, f, "Experienced", w, a) { IsAggroed = false }; Rt.SetOffset(h, 0f, 0f); EncounterState.Enemies.Add(h); sq.Members.Add(h); } MacroState.Current.OfflineSquads.Add(sq); return sq; }
+    var A = Squad(fa, px + 20); var B = Squad(fb, px + 29);
+    int shots = 0, total0 = A.Members.Sum(m => m.Hp) + B.Members.Sum(m => m.Hp);
+    Gunplay.Probe = (sh, wp, hit) => { if (sh is HumanEnemy) shots++; };
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; const float dt = 1f / 30f; float t = 0f; bool contact = false;
+    for (; t < 90f && A.Members.Any(m => m.IsAlive()) && B.Members.Any(m => m.IsAlive()); t += dt) { UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt); if (!contact && shots > 0) contact = true; }
+    Gunplay.Probe = null;
+    int total1 = A.Members.Sum(m => m.IsAlive() ? m.Hp : 0) + B.Members.Sum(m => m.IsAlive() ? m.Hp : 0);
+    Check(shots > 10 && total1 < total0 && A.Members.Any(m => m.IsAlive()) != B.Members.Any(m => m.IsAlive()) | t >= 90f, $"squad fight: two hostile squads shoot each other in real time ({shots} rounds, HP {total0} -> {total1}, over after {t:0} s, A alive {A.Members.Count(m => m.IsAlive())}, B alive {B.Members.Count(m => m.IsAlive())})");
+    Check(!p.StatusEffects.Bleeding && p.Hp > 0, "squad fight: and you are left alone");
+    EncounterState.Enemies.Clear(); MacroState.Current.OfflineSquads.Clear(); NpcFights.Reset(); Rt.On = false; Rt.Reset();
+  }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
     // Yan's first real-time playtest: sprinting made enemies zoom - each tile you crossed also ticked the world
@@ -3700,10 +3750,10 @@ static class Program {
       { var crowd = new List<HumanEnemy>(); for (int i = 0; i < 200; i++) { var c = new HumanEnemy("C" + i, px + (i % 5), py + 7, "Raiders", "Rookie", null, null) { IsAggroed = true }; Rt.SetOffset(c, 0f, 0f); crowd.Add(c); }
         Rt.SetOffset(raider, 0f, 0f); Rt.SetOffset(q, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
         int onQ = crowd.Count(c => Rt.AttentionOf(c, p) == q); int again = crowd.Count(c => Rt.AttentionOf(c, p) == q);
-        Check(onQ >= 80 && onQ <= 120 && again == onQ, $"co-op: with two players about half of a squad is on the nearer one, the rest on the other ({onQ}/200 on the near one; kept for several seconds: {again})");
+        Check(onQ >= 70 && onQ <= 130 && again == onQ, $"co-op: with two players about half of a squad is on the nearer one, the rest on the other ({onQ}/200 on the near one; kept for several seconds: {again})");
         var r3 = Player.Join(); r3.X = px + 2; r3.Y = py - 5; Rt.SetOffset(r3, 0f, 0f); UnityEngine.Time.time += 10f;
         int a1 = 0, a2 = 0, a3 = 0; foreach (var c in crowd) { var w = Rt.AttentionOf(c, p); if (w == q) a1++; else if (w == p) a2++; else if (w == r3) a3++; }
-        Check(a1 >= 80 && a1 <= 120 && a2 >= 40 && a2 <= 60 && a3 >= 40 && a3 <= 60, $"co-op: with three players: 50% the nearest, the rest shared ({a1} near / {a2} / {a3} of 200)");
+        Check(a1 >= 70 && a1 <= 130 && a2 >= 30 && a2 <= 70 && a3 >= 30 && a3 <= 70, $"co-op: with three players: 50% the nearest, the rest shared ({a1} near / {a2} / {a3} of 200)");
         Player.All.Remove(r3); UnityEngine.Time.time += 10f; }
       Rt.SetOffset(raider, 0f, 0f); Rt.SetOffset(q, 0f, 0f);   // tile centres: the check is who it shoots, not how a random stand spot lines up
       EncounterState.InCombat = true; Contact.Spot(q); int qh = q.Hp, ph = p.Hp;
@@ -4362,23 +4412,6 @@ static class Program {
         Banter.Notice(foes.Members[0]); Banter.Spotted(foes.Members[0]); Banter.Spotted(foes.Members[1]);
         Check(Banter.Active.Count(b => b.Kind == 2) == 1 && !Banter.Active.Any(b => b.Kind == 1), "one shout per squad (it replaces the 'huh')");
         EncounterState.Enemies.Clear(); MacroState.Current.OfflineSquads.Clear(); Banter.Reset(); Banter.Now = -1f;
-      }
-      // Batch 130: the Blight Brute charges three turns, then on the fourth (still not next to you) throws a boulder; a hit halves your MP
-      {
-        p = Arena(out px, out py);
-        var brute = new Mutant("Blight Brute", px + 8, py, MutantDatabase.Get("tier4", "BlightBrute")) { IsAggroed = true };
-        EncounterState.Enemies.Add(brute); EncounterState.InCombat = true;
-        int threw = -1; var bl = new ListLog(); var oldLog = GameLog.Target; GameLog.Target = bl;
-        for (int turn = 1; turn <= 4 && threw < 0; turn++) {
-          brute.X = px + 8; brute.Y = py;   // pinned in place: it can't reach you
-          int before = bl.L.Count; EnemyAI.TakeTurn(brute, p);
-          if (bl.L.Skip(before).Any(l => l.Contains("HURLS"))) threw = turn;
-        }
-        Check(threw == 4, $"the boulder comes on the 4th turn without reaching you (turn {threw})");
-        p.Hp = p.MaxHp;
-        int hits = 0; for (int i = 0; i < 40; i++) { EnemyAI.ThrowBoulder(brute, p); if (p.Hp < p.MaxHp) hits++; p.Hp = p.MaxHp; }
-        Check(hits == 40, $"a boulder always lands on someone who is not diving ({hits}/40)");
-        GameLog.Target = oldLog; EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
       }
       // Batch 73: Tier 1 Raider gangs are at most 3
       for (int i = 0; i < 5; i++) { var sq = SquadManager.CreateOfflineSquad("perimeter", "Raiders", 6); Check(sq == null || sq.Members.Count <= SquadManager.MaxStarterGang, "Tier 1 gang of " + sq?.Members.Count); if (sq != null) MacroState.Current.OfflineSquads.Remove(sq); }

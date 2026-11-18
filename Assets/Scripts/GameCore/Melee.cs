@@ -274,7 +274,7 @@ namespace GameCore
             if (fx != null) { fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before; }   // the view plays blood, the fall, gibs
             GameLog.Write($"{(by is Player ? "You hit" : by.Name + " hits")} {(target is Player ? "you" : target.Name)} in the {(part ?? "body").ToLowerInvariant()} for {dmg}.");
             TestingGround.Note(target, dmg, part ?? "Torso");
-            if (target is Mutant tm && !TestingGround.IsDummy(tm)) { tm.IsAggroed = true; if (!(target is HumanEnemy)) tm.DamageTakenThisRound += dmg; }
+            if (target is Mutant tm && !TestingGround.IsDummy(tm)) { tm.IsAggroed = true; }
             if (by is Player && target is HumanEnemy he && !TestingGround.IsDummy(he)) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
             if (target.IsAlive())
             {

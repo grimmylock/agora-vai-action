@@ -151,6 +151,43 @@ namespace GameCore
             Shoot(h, s, foe, null, null);
         }
 
+        /// <summary>2026-11-17 (Yan: squads fighting each other run through the real-time AI): one frame of a human squad member fighting a hostile squad member (NpcFights.Foe). Same rules as fighting you: he closes to 60% of his
+        /// gun's effective range (a sniper stays where he is), walks to a tile with a clear path when his is blocked, shoots with his own rate, reaction time, magazine and the effective-range gate.</summary>
+        public static void TickSquadFight(HumanEnemy h, Mutant foe)
+        {
+            var s = Of(h); float now = Time.time;
+            if (s.PinnedUntil >= 0f && now >= s.PinnedUntil) { s.PinnedUntil = -1f; h.StatusEffects.Suppressed = false; }
+            if (h.Morale == "Surrendered" || h.StatusEffects.Prone || Melee.Busy(h)) return;
+            var w = h.EquippedWeapon; int dist = CombatantUtil.Distance(h, foe);
+            float want = w == null || CombatRules.IsMelee(w) || s.Dry ? 1f : CombatRules.Category(w.Db) == "sniper" ? Gunplay.For(w).Reach * 0.5f : Gunplay.EffectiveRange(w) * 0.6f;
+            if (now >= s.NextStep && !Pinned(h))
+            {
+                s.NextStep = now + StepSeconds * (h.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
+                var (hx, hy) = Ballistics.Pos(h); bool blocked = w != null && !CombatRules.IsMelee(w) && dist <= Gunplay.For(w).Reach && !Gunplay.ClearShotFrom(h, hx, hy, foe);
+                bool moved = false; int bx = h.X, by = h.Y;
+                if (!CombatantUtil.IsAdjacent(h, foe) && (dist > want || blocked)) h.MoveToward(foe.X, foe.Y);
+                moved = h.X != bx || h.Y != by;
+                if (moved) { s.MovedAt = now; s.Goal = (foe.X, foe.Y); } else s.Goal = null;
+                if (moved && Rt.Ledge(h.X, h.Y)) s.NextStep += StepSeconds;
+            }
+            Shoot(h, s, foe, null, null);
+        }
+
+        /// <summary>A mutant fighting a hostile squad member (not you): walks at its own speed and strikes in reach on the same cooldown it uses against you.</summary>
+        public static void TickMutantSquadFight(Mutant m, ICombatant foe)
+        {
+            var s = Of(m); float now = Time.time;
+            if (m.StatusEffects.Prone || Gaunt.Busy(m)) return;
+            if (now >= s.NextStep)
+            {
+                s.NextStep = now + 1f / Speed(m) * (m.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
+                if (!CombatantUtil.IsAdjacent(m, foe) && !m.IsInEngageRange(foe)) m.MoveToward(foe.X, foe.Y);
+            }
+            if (now < s.NextShot || !foe.IsAlive() || !m.IsInEngageRange(foe)) return;
+            s.NextShot = now + (Ballistics.MutantSize(m) >= 2f ? 1.6f : 1.0f) * Random.Range(0.85f, 1.2f);
+            m.Attack(foe);
+        }
+
         /// <summary>The shooting half of a frame: his own gun's rules (bursts, rpm, magazine and reload time, jams, the fair-shot reach, a friend in the line). `pl` = the target as a Player (the fair-shot vision rules), null for a mutant.</summary>
         public static bool ClearCheck = true;                          // the harness switches the path check off to compare (RTBAL=7, CLEAR=0)
         static void Shoot(HumanEnemy h, Mind s, ICombatant t, Player pl, object _)
@@ -166,7 +203,7 @@ namespace GameCore
             if (s.Flee || now < s.NextShot || (pl != null && Body.Down(pl)) || !t.IsAlive()) return;
             var grid = GameServices.Grid;
             if (grid == null) return;
-            if (s.Dry && pl != null) s.Goal = (t.X, t.Y);
+            if (s.Dry) s.Goal = (t.X, t.Y);
             if (w == null || CombatRules.IsMelee(w) || s.Dry)
             {
                 if (CombatantUtil.IsAdjacent(h, t))
@@ -195,8 +232,8 @@ namespace GameCore
 
             // 2026-11-17 (Yan: "enemies try to move in the effective range before shooting too much, that way fights happen more inside the normal vision range (besides snipers)"): while he is still walking
             // closer (he has a goal he has not reached) and the target is past half his gun's reach, he only takes a probing shot every 3 s; snipers shoot from where they are.
-            if (pl != null && CombatRules.IsShotgun(w) && w.CurrentAmmoType != "Slug" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w)) { s.BurstLeft = 0; return; }   // buckshot is for inside half its reach
-            if (pl != null && CombatRules.Category(w.Db) != "sniper" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w) && s.Goal.HasValue && (h.X, h.Y) != s.Goal.Value && !s.Flee)
+            if (CombatRules.IsShotgun(w) && w.CurrentAmmoType != "Slug" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w)) { s.BurstLeft = 0; return; }   // buckshot is for inside half its reach
+            if (CombatRules.Category(w.Db) != "sniper" && CombatantUtil.Distance(h, t) > Gunplay.EffectiveRange(w) && s.Goal.HasValue && (h.X, h.Y) != s.Goal.Value && !s.Flee)
             {
                 if (now < s.FarShotAt + 3f) { s.BurstLeft = 0; return; }
                 s.FarShotAt = now; s.BurstLeft = 1;
@@ -204,7 +241,7 @@ namespace GameCore
 
             // 2026-11-17 (Yan, after RTBAL=7: ~65% of the rounds the raiders fired ended in walls and cover): the round's own path has to be open, not just the tile line of sight. Blocked: hold fire,
             // and after a second try a tile within 4 of him from which the path is open (else a step toward the target), at most one new goal every 1.2 s.
-            if (pl != null && ClearCheck)
+            if (ClearCheck)
             {
                 var (hx, hy) = Ballistics.Pos(h);
                 if (now >= s.ClearAt) { s.ClearAt = now + 0.25f; s.Clear = Gunplay.ClearShotFrom(h, hx, hy, t); }

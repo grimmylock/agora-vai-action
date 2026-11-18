@@ -376,11 +376,6 @@ namespace GameCore
             if (!m.IsAlive()) return;
             m.CheckPanic();
 
-            // Stagger: 40%+ of max HP lost since its last turn costs a non-berserk mutant this turn.
-            bool staggered = m.Db?.Behavior != "berserk" && m.DamageTakenThisRound * 10 >= m.MaxHp * 4;
-            m.DamageTakenThisRound = 0;
-            if (staggered) { GameLog.Write($"{m.Name} is staggered and loses its turn."); return; }
-
             if (m.IsFleeing())
             {
                 RtAi.Flee(m); return;   // RT batch 5
@@ -390,36 +385,6 @@ namespace GameCore
 
             int dist = CombatantUtil.Distance(m, player);
             string behavior = m.Db?.Behavior ?? "pack";
-
-            // 2026-11-17 (Yan: fix the leftovers): in real time a mutant with attack strips (MutantAttack) pounces, slams and throws on its own cooldowns - the old turn-based leap (an instant teleport and a d20 dodge), the
-            // boulder every third turn and the once-a-fight slam with its d20 stay for the turn-based game only.
-            bool strips = Rt.On && MutantAttack.Has(m);
-            // Dread Prowler: circles at 3-5, then Leap Attack (2 AP + all MP) from up to MP tiles.
-            if (!strips && m.Db != null && m.Db.Leap && m.StatusEffects.Wound != "Leg")   // Batch 57: a hobbled Prowler can't leap
-            {
-                if (dist >= 2 && dist <= m.Reach && LeapAttack(m, player)) { m.StalkRounds = 0; return; }
-                // Batch 61: circling only works if a leap line opens up; behind a wall or up a ledge it never does
-                if (m.StalkRounds++ < 2) Circle(m, player, 3, 5);
-                else Approach(m, player.X, player.Y, false);
-                return;
-            }
-
-            // Batch 130 (Yan: "if he can't reach the player in 3 turns he throws a boulder he rips of the ground, if the player is hit it
-            // loses half his mp next turn"): three turns of charging without reaching you, and the fourth it throws instead.
-            if (!strips && m.Db != null && m.Db.GroundSlam)
-            {
-                if (CombatantUtil.IsAdjacent(m, player)) m.ChaseTurns = 0;
-                else if (m.ChaseTurns >= BoulderAfterTurns && dist <= BoulderRange && grid.CheckLineOfSight(m.X, m.Y, player.X, player.Y))
-                { ThrowBoulder(m, player); m.ChaseTurns = 0; return; }
-                else m.ChaseTurns++;
-            }
-
-            // Blight Brute: Ground Slam once per encounter when it gets someone adjacent.
-            if (!strips && m.Db != null && m.Db.GroundSlam && !m.SlamUsed)
-            {
-                Approach(m, player.X, player.Y, packMate: false);
-                if (CombatantUtil.IsAdjacent(m, player)) { GroundSlam(m, player); return; }
-            }
 
             switch (behavior)
             {
@@ -493,69 +458,6 @@ namespace GameCore
                 if (s > bestScore) { bestScore = s; best = t; }
             }
             WalkTo(m, best);
-        }
-
-        private static bool LeapAttack(Mutant m, Player player)
-        {
-            var spot = TerrainMap.GetAdjacentCoords(player.X, player.Y)
-                .Where(p => TerrainMap.CanEnterTile(p.x, p.y) && TerrainMap.UnitAt(p.x, p.y, m) == null
-                    && GameServices.RequireGrid().CheckLineOfSight(m.X, m.Y, p.x, p.y))
-                .OrderBy(p => CombatantUtil.Distance(m, p.x, p.y)).Cast<(int x, int y)?>().FirstOrDefault();
-            if (!spot.HasValue) return false;
-            GameLog.Write($"{m.Name} crouches low... and LEAPS!");
-            m.X = spot.Value.x;
-            m.Y = spot.Value.y;
-            // Telegraph & dodge (file 04): with an AP to spare, the player throws themselves aside.
-            {
-                int roll = Random.Range(1, 21) + (int)player.AgilityMod;
-                if (roll >= m.MutantCheckDC)
-                {
-                    GameLog.Write($"You dive aside (Agility {roll} vs {m.MutantCheckDC}) - the leap misses, and you'll have the advantage on it.");
-                    player.HasLeapDodgeAdvantage = true;
-                    return true;
-                }
-                GameLog.Write($"You try to dodge (Agility {roll} vs {m.MutantCheckDC}) - too slow.");
-            }
-            m.LeapAdvantage = true;
-            m.Attack(player);
-            m.LeapAdvantage = false;
-            return true;
-        }
-
-        public const int BoulderAfterTurns = 3, BoulderRange = 10, BoulderDamage = 250;
-
-        /// <summary>Batch 130: the Blight Brute rips a boulder out of the ground and hurls it. Real time: no dice - it lands unless you
-        /// are diving (it arcs over cover); a hit does 25.</summary>
-        public static void ThrowBoulder(Mutant m, Player player)
-        {
-            m.FaceToward(player.X, player.Y);
-            GameLog.Write($"{m.Name} rips a boulder out of the ground and HURLS it!");
-            Sfx.Play("hit_concrete", null, 1f, 0.06f, 0.55f);   // a deep crunch: the concrete hit pitched way down
-            if (Rt.Untouchable(player)) { GameLog.Write("The boulder smashes down where you were."); return; }
-            int dmg = CombatRules.PhysicalDamage(BoulderDamage, "Standard", player.PhysDR);
-            player.Hp = System.Math.Max(0, player.Hp - dmg);
-            GameLog.Write($"The boulder hits you for {dmg}.");
-            CombatRules.CheckWound(player, dmg, false);
-        }
-
-        private static void GroundSlam(Mutant m, Player player)
-        {
-            m.SlamUsed = true;
-            GameLog.Write($"{m.Name} rears up and SLAMS the ground!");
-            var victims = new List<ICombatant> { player };
-            victims.AddRange(EncounterState.Enemies.OfType<HumanEnemy>().Where(e => e.IsAlive()));
-            foreach (var v in victims)
-            {
-                if (!CombatantUtil.IsAdjacent(m, v) || !v.IsAlive()) continue;
-                int dmg = CombatRules.PhysicalDamage(300, "Standard", v.PhysDR);
-                v.Hp = System.Math.Max(0, v.Hp - dmg);
-                int roll = Random.Range(1, 21) + (int)v.AgilityMod;
-                string who = v is Player ? "Player" : v.Name;
-                GameLog.Write($"{who} takes {dmg} from the slam.");
-                if (roll < 13) { v.StatusEffects.Prone = true; GameLog.Write($"{who} is knocked prone (Agility {roll} vs 13)."); }
-                CombatRules.CheckWound(v, dmg, false);
-                if (!v.IsAlive() && v is HumanEnemy) Weapon.OnTargetKilled(m, v);
-            }
         }
 
         /// <summary>Just a coordinate that looks like a unit, for helpers that take one.</summary>

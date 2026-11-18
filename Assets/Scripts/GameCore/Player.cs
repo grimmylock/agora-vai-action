@@ -86,7 +86,6 @@ namespace GameCore
         /// ponytail: doesn't actually expire "this round" if the player never fires again this
         /// combat - it just carries over. Small enough to live with rather than adding a
         /// round-counter to clear it.</summary>
-        public bool HasLeapDodgeAdvantage;
 
         /// <summary>Per-faction standing, keyed by FactionDatabase's normalized faction names.
         /// Missing entries default to 0 (Neutral) via GetRepLevel - nothing needs to pre-populate

@@ -186,7 +186,7 @@ namespace GameCore
 
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
-        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Attention.Clear(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); BrainBoss.Reset(); _round = 0f; }
+        public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Attention.Clear(); Explosions.Reset(); NpcFights.Reset(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); BrainBoss.Reset(); _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the
         /// rules (Player.Move: doors, anomalies, exits), so the tile underneath always matches where the body is.</summary>
@@ -750,13 +750,14 @@ namespace GameCore
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
             Gaunt.Tick();                                                          // the Gaunt: its call, and the ones it drove when it falls
             Gunplay.Fly(Time.deltaTime);                                           // RT 8: bullets fly
+            Explosions.Tick();                                                     // thrown grenades: in the air, then the fuse
             foreach (var e in EncounterState.Enemies.ToList())
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
                 if (Boss.Of(e) is Boss.Fight bf) { Boss.Tick(bf, TargetOf(e, local)); continue; }   // Boss 1: a boss runs his own moves
                 if (BrainBoss.Is(e) || EelBoss.Is(e)) continue;                  // Boss 2/3: their own Tick runs them
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
-                if (!fighting) { NextTurn.Remove(e); continue; }
+                if (!fighting) { NextTurn.Remove(e); if (!e.IsAggroed && !Companion.Is(e) && !TestingGround.IsDummy(e) && NpcFights.Real(e, grid)) { } continue; }   // squads fighting each other (NpcFights.Real) run here every frame
                 p = Companion.Is(e) ? local : AttentionOf(e, local);             // co-op: half the enemies fight the player nearest them, the rest are shared among the others (AttentionOf)
                 if (e is HumanEnemy rh && !Companion.Is(e)) RtAi.Tick(rh, p);   // RT batch 4: walks and shoots every frame; thinks below
                 else if (!(e is HumanEnemy)) RtAi.TickMutant(e, p);              // RT batch 5: mutants too
