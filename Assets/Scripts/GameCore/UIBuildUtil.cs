@@ -40,6 +40,8 @@ namespace GameCore
             text.fontSize = fontSize;
             text.color = color;
             text.alignment = align;
+            var f = HudView.BodyFont; if (f != null) text.font = f;        // 2026-11-18: the game's pixel font on every panel, not TextMeshPro's default
+            text.raycastTarget = false;
             return text;
         }
 
@@ -54,11 +56,13 @@ namespace GameCore
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             var img = go.AddComponent<Image>();
-            img.color = new Color(0.25f, 0.25f, 0.25f, 1f);
+            img.color = new Color(0.5f, 0.4f, 0.23f, 1f);                                      // 2026-11-18: a brass edge round a dark inset, as the case and the merchant screens
             var btn = go.AddComponent<Button>();
             btn.onClick.AddListener(() => { Sfx.Play("ui_click"); onClick(); });
-
-            CreateText(go.transform, "Label", Vector2.zero, Vector2.one, label, 16, Color.white, TextAlignmentOptions.Center);
+            var inset = CreatePanel(go.transform, "Inset", Vector2.zero, Vector2.one, new Color(0.1f, 0.085f, 0.07f, 1f));
+            var ir = inset.GetComponent<RectTransform>(); ir.offsetMin = new Vector2(2, 2); ir.offsetMax = new Vector2(-2, -2); inset.GetComponent<Image>().raycastTarget = false;
+            var lab = CreateText(go.transform, "Label", Vector2.zero, Vector2.one, label, 16, new Color(0.92f, 0.9f, 0.84f), TextAlignmentOptions.Center);
+            var tf = HudView.TitleFont; if (tf != null) lab.font = tf; lab.characterSpacing = 2;
             return btn;
         }
 

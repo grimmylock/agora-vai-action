@@ -789,3 +789,9 @@ A Wanderer walks with you, holds fire while you sneak and fights beside you.	Um 
 A bigger bag: +{} kg and more room in the case.	Uma mochila maior: +{1} kg e mais espaço na maleta.
 < {} / {} >   (wheel)	< {1} / {2} >   (roda)
 {} kg   {}x{}	{1} kg   {2}x{3}
+# ---- the pause menu ----
+RESUME	CONTINUAR
+SAVE	SALVAR
+HUD STYLE	ESTILO DA HUD
+MAIN MENU	MENU PRINCIPAL
+UP / DOWN   ENTER   ESC RESUME	CIMA / BAIXO   ENTER   ESC CONTINUAR
