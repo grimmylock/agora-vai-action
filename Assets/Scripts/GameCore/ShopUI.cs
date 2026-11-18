@@ -286,7 +286,7 @@ namespace GameCore
             var k = Keyboard.current; var m = Mouse.current;
             if (k != null)
             {
-                if (k.escapeKey.wasPressedThisFrame || k.bKey.wasPressedThisFrame) { Close(); return; }
+                if (k.escapeKey.wasPressedThisFrame) { Close(); return; }   // (not B: PlayerController reads B after this and would open it again)
                 var tabs = Tabs(); int ti = tabs.IndexOf(_tab);
                 if (k.qKey.wasPressedThisFrame) { _tab = tabs[(ti + tabs.Count - 1) % tabs.Count]; _page = 0; _sel = 0; Rebuild(); return; }
                 if (k.eKey.wasPressedThisFrame) { _tab = tabs[(ti + 1) % tabs.Count]; _page = 0; _sel = 0; Rebuild(); return; }
