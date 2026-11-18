@@ -84,7 +84,8 @@ namespace GameCore
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
                 var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);
-                if (EelBoss.TryExamine(player) || Tier2Story.TryUseDoor(player) || Radiant.TryTalk(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
+                if (Emplacement.TryInteract(player)) { }                                                                                                  // the Barrier's tower gun: E climbs up or down before anything else can take the press (a corpse or an item beside the nook used to eat it)
+                else if (EelBoss.TryExamine(player) || Tier2Story.TryUseDoor(player) || Radiant.TryTalk(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
                 else if (corpse != null) { if (!Boss.TryWake(player, corpse)) CorpseLootUI.Open(corpse); }   // Boss 1: the Visor's body
                 else if (ground.Count > 0)
                 {

@@ -27,8 +27,8 @@ namespace GameCore
         /// <summary>One standing sprite: its pivot (ground contact) in map pixels, y down.</summary>
         public struct Standing
         {
-            public Spr Spr; public int X, Y; public int CellX, CellY; public bool Fades;
-            public int Sort => SortBase + Y;
+            public Spr Spr; public int X, Y; public int CellX, CellY; public bool Fades; public int SortOff;   // SortOff: draws as if its foot were that many px higher (flat things you walk on: units stand over them)
+            public int Sort => SortBase + Y + SortOff;
             public int Left => X - Spr.PvX / Spr.S;
             public int Top => Y - Spr.PvY / Spr.S;
         }
@@ -438,6 +438,7 @@ namespace GameCore
                 Spr = s, CellX = x, CellY = y, Fades = wall || s.Tall,
                 X = x * Px + 8 + ox,
                 Y = wall ? y * Px + Px - 1 : y * Px + 13 + oy,
+                SortOff = l == "deck_steps" || l == "deck_face" || l == "deck_rail" ? -13 : 0,   // the Barrier's steps, skirt and rail are flat: you walk over them, never behind them
             };
             return true;
         }
