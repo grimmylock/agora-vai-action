@@ -386,8 +386,41 @@ namespace GameCore
         // Real-time fork: four ticks round the mouse, as far apart as the round can stray at that distance (one spread),
         // so steadying the aim visibly closes them. Red while reloading or empty; the centre dot turns red over a body.
         private readonly List<SpriteRenderer> _reticle = new List<SpriteRenderer>(), _laser = new List<SpriteRenderer>();
+        // 2026-11-18: with a grenade in the hand, a ring at the landing tile as big as the blast (frag red, flashbang yellow, smoke grey), a dot in the middle and a thin line from you
+        private SpriteRenderer _throwRing, _throwDot, _throwLine; private static Sprite _ringSprite;
+        private static Sprite RingSprite()
+        {
+            if (_ringSprite != null) return _ringSprite;
+            const int N = 64; var tex = new Texture2D(N, N) { filterMode = FilterMode.Point }; var clear = new Color(0, 0, 0, 0);
+            for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) { float d = Mathf.Sqrt((x - N / 2f + 0.5f) * (x - N / 2f + 0.5f) + (y - N / 2f + 0.5f) * (y - N / 2f + 0.5f)) / (N / 2f); tex.SetPixel(x, y, d <= 1f && d >= 0.93f ? Color.white : d < 0.93f ? new Color(1, 1, 1, 0.12f) : clear); }
+            tex.Apply(); return _ringSprite = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), N / 2f, 0, SpriteMeshType.FullRect);   // two world units across: scale = the radius in tiles
+        }
+        private void ThrowPreview(Player player)
+        {
+            if (_throwRing == null)
+            {
+                _throwRing = CreateMarker("ThrowRing", Color.white, 1f, WorldArt.SortTop, _root.transform, RingSprite());
+                _throwDot = CreateMarker("ThrowDot", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite());
+                _throwLine = CreateMarker("ThrowLine", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite());
+            }
+            var mt = Rt.MouseTile(UnityEngine.InputSystem.Mouse.current);
+            bool show = mt.HasValue && player.IsAlive() && player.ArmedThrowable != null && GameData.ConsumableDatabase.All.TryGetValue(player.ArmedThrowable, out _);
+            _throwRing.gameObject.SetActive(show); _throwDot.gameObject.SetActive(show); _throwLine.gameObject.SetActive(show);
+            if (!show) return;
+            var (lx, ly) = Rt.ThrowLanding(player, mt.Value); var def = GameData.ConsumableDatabase.All[player.ArmedThrowable];
+            float radius = def.Throwable == "flash" ? Explosions.FlashRadius : Explosions.ThrowRadius + 0.5f;
+            var col = def.Throwable == "frag" ? new Color(1f, 0.3f, 0.2f) : def.Throwable == "flash" ? new Color(1f, 0.9f, 0.3f) : new Color(0.75f, 0.78f, 0.8f);
+            var to = new Vector3(lx + 0.5f, -(ly + 0.5f), 0f); var (px, py) = Ballistics.Pos(player); var from = new Vector3(px, -py, 0f);
+            _throwRing.transform.position = to; _throwRing.transform.localScale = new Vector3(radius, radius, 1f); _throwRing.color = new Color(col.r, col.g, col.b, 0.8f);
+            _throwDot.transform.position = to; _throwDot.transform.localScale = new Vector3(4f / 16f, 4f / 16f, 1f); _throwDot.color = col;
+            var d = to - from; float len = Mathf.Sqrt(d.x * d.x + d.y * d.y);
+            _throwLine.transform.position = (from + to) * 0.5f; _throwLine.transform.localScale = new Vector3(Mathf.Max(0.01f, len), 1f / 24f, 1f);
+            _throwLine.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg); _throwLine.color = new Color(col.r, col.g, col.b, 0.35f);
+        }
+
         private void Reticle(Player player)
         {
+            ThrowPreview(player);
             while (_reticle.Count < 6)
                 _reticle.Add(CreateMarker("Reticle", Color.white, 1f / 16f, WorldArt.SortTop, _root.transform, GetWhiteSprite()));
             var mt = Rt.MouseTile(UnityEngine.InputSystem.Mouse.current);

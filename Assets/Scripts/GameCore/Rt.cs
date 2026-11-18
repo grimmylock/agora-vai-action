@@ -428,6 +428,21 @@ namespace GameCore
         static readonly string[] Throwables = { "fragGrenade", "flashbang", "smokeGrenade" };
         static int Have(Player p, string id) => p.Inventory.Items.Where(it => it.Id == id && it.Type == "consumable").Sum(it => it.Qty);
 
+        /// <summary>Where a grenade thrown at the cursor lands: along the line from the player, at most ThrowRange tiles, stopping short of a wall (the preview circle in TacticalGridView uses the same).</summary>
+        public static (int x, int y) ThrowLanding(Player p, (float x, float y) mouse)
+        {
+            var (px, py) = Ballistics.Pos(p); float dx = mouse.x - px, dy = mouse.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
+            if (len < 0.5f) { dx = 1f; dy = 0f; len = 0.5f; }
+            float reach = Mathf.Min(len, ThrowRange), ux = dx / len, uy = dy / len, at = 0f;
+            for (float t = 0.25f; t <= reach; t += 0.25f)                                       // it stops short of a wall
+            {
+                int tx = Mathf.FloorToInt(px + ux * t), ty = Mathf.FloorToInt(py + uy * t);
+                if (TerrainMap.BlocksSight(tx, ty)) break;
+                at = t;
+            }
+            return (Mathf.Clamp(Mathf.FloorToInt(px + ux * at), 0, TerrainMap.Width - 1), Mathf.Clamp(Mathf.FloorToInt(py + uy * at), 0, TerrainMap.Height - 1));
+        }
+
         /// <summary>T: take out the first grenade kind you carry (frag, flashbang, smoke), the next kind on a second press, nothing after the last. While one is out the left button throws it at the cursor (at most ThrowRange tiles,
         /// stopping short of a wall) instead of firing; the right button or a dive puts it away. The throw itself is Explosions.Throw: it flies, then the fuse. Co-op: per player, from the Input packet.</summary>
         static void TickThrow(Player p, State s, ref Input i)
@@ -446,16 +461,7 @@ namespace GameCore
             i.FireDown = false; i.Fire = false;                                                // no shooting with a grenade in the hand
             if (!go) return;
             var def = GameData.ConsumableDatabase.All[p.ArmedThrowable];
-            var (px, py) = Ballistics.Pos(p); float dx = i.Mouse.Value.x - px, dy = i.Mouse.Value.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
-            if (len < 0.5f) { dx = 1f; dy = 0f; len = 0.5f; }
-            float reach = Mathf.Min(len, ThrowRange), ux = dx / len, uy = dy / len, at2 = 0f;
-            for (float t = 0.25f; t <= reach; t += 0.25f)                                       // it stops short of a wall
-            {
-                int tx = Mathf.FloorToInt(px + ux * t), ty = Mathf.FloorToInt(py + uy * t);
-                if (TerrainMap.BlocksSight(tx, ty)) break;
-                at2 = t;
-            }
-            int lx = Mathf.Clamp(Mathf.FloorToInt(px + ux * at2), 0, TerrainMap.Width - 1), ly = Mathf.Clamp(Mathf.FloorToInt(py + uy * at2), 0, TerrainMap.Height - 1);
+            var (lx, ly) = ThrowLanding(p, i.Mouse.Value);
             if (!p.RemoveItem(def.Id, 1)) { p.ArmedThrowable = null; return; }
             s.ThrowReadyAt = Time.time + ThrowCooldown;
             Explosions.Throw(p, def, lx, ly);
