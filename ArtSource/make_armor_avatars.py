@@ -167,7 +167,7 @@ def build(name, anom, belt, L=None, back=False):
         "H": H, "h": shade(H, 1.35), "S": S, "s": shade(S, 1.35), "D": L.get("D", shade(S, 0.7)),
         "P": L.get("P", shade(S, 1.2)), "p": shade(L.get("P", shade(S, 1.2)), 1.4),
         "E": E, "e": shade(E, 1.25), "v": shade(E, 1.3), "u": shade(E, 0.55), "V": "#1c1f22", "J": "#7a7f84", "W": "#2a3a40", "w": "#9fb8c0",
-        "A": L.get("A", "#3b2a1e"), "F": "#c8916a", "f": "#9e6e4f", "N": L.get("N", H),
+        "A": L.get("A", "#3b2a1e"), "F": L.get("F", "#c8916a"), "f": L.get("f", "#9e6e4f"), "N": L.get("N", H),   # 2026-11-18: skin per look (make_npc_looks.py)
         "n": shade(L.get("N", H), 1.9),   # knit highlight on the balaclava
     }
     rows = mirror((HEADS_BACK if back else HEADS)[L["head"]] + BODIES[L["body"]])

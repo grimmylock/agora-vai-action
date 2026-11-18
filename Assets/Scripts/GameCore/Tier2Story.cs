@@ -164,7 +164,7 @@ namespace GameCore
         static HumanEnemy NewSoldier(int x, int y, bool leader)
         {
             var (w, a) = EncounterGeneration.PickFactionLoadout("Garrison", leader ? "Professional" : "Experienced", 2, isLeader: leader);
-            var h = new HumanEnemy(leader ? "Garrison Sergeant" : "Garrison Soldier", x, y, "Garrison", leader ? "Professional" : "Experienced", w, a) { IsAggroed = false };
+            var h = new HumanEnemy(leader ? "Garrison Sergeant" : "Garrison Soldier", x, y, "Garrison", leader ? "Professional" : "Experienced", w, leader ? StoryNpcs.Fixed("Garrison Field Uniform") ?? a : a) { IsAggroed = false };   // the Sergeant always wears the same suit
             var (fx, fy) = TerrainMap.FindNearestEnterable(x, y); h.X = fx; h.Y = fy;
             return h;
         }

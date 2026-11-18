@@ -14,28 +14,40 @@ namespace GameCore
     {
         public const string Faction = "Folk";
 
-        class Def { public string Name, Landmark, Zone, Look; public int Dx, Dy; public System.Func<bool> When; }
+        class Def { public string Name, Landmark, Zone, Look, Suit, Fixed; public int Dx, Dy; public System.Func<bool> When; }
         static string P(string zone) => MacroMapDatabase.MapOf(zone);
         static bool PavelFree => !Tier1Story.PavelWithYou;
         static readonly List<Def> Defs = new List<Def>
         {
-            new Def { Name = "Yefim", Landmark = "The Bonfire Camp", Zone = "perimeter", Look = "Wanderers", Dx = 2, Dy = 0, When = () => true },
-            new Def { Name = "Stas", Landmark = "Bunkhouse", Zone = "perimeter", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
-            new Def { Name = "Headman Petro", Landmark = "Headman's House", Zone = "perimeter", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
-            new Def { Name = "The Runner", Landmark = "The Cutting", Zone = "perimeter", Look = "Wanderers", Dx = 2, Dy = 1, When = () => Story.Step("runner") >= 1 || Story.IsDone("runner") },
+            new Def { Name = "Yefim", Suit = "Yefim",  Landmark = "The Bonfire Camp", Zone = "perimeter", Look = "Wanderers", Dx = 2, Dy = 0, When = () => true },
+            new Def { Name = "Stas", Fixed = "Wanderer Canvas Jacket",  Landmark = "Bunkhouse", Zone = "perimeter", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
+            new Def { Name = "Headman Petro", Fixed = "Wanderer Padded Coat",  Landmark = "Headman's House", Zone = "perimeter", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
+            new Def { Name = "The Runner", Suit = "The Runner",  Landmark = "The Cutting", Zone = "perimeter", Look = "Wanderers", Dx = 2, Dy = 1, When = () => Story.Step("runner") >= 1 || Story.IsDone("runner") },
             // Pavel: the bunker, then the Medic's House, then the Hub's bunkhouse, then the Sub-Station
-            new Def { Name = "Pavel", Landmark = "Command Room", Zone = "flooded_bunker", Look = "Surveyors", Dx = 1, Dy = 1, When = () => Story.Step("engineer") == 1 && PavelFree },
-            new Def { Name = "Pavel", Landmark = "Medic's House", Zone = "perimeter", Look = "Surveyors", Dx = 1, Dy = 2, When = () => Story.IsDone("engineer") && Story.Step("escort") < 2 && !Story.IsDone("escort") && PavelFree },
-            new Def { Name = "Pavel", Landmark = "Hub Bunkhouse", Zone = "scavengers_hub", Look = "Surveyors", Dx = 1, Dy = 1, When = () => Story.IsDone("escort") && Story.Step("lake") == 0 && PavelFree },
-            new Def { Name = "Pavel", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 3, Dy = 1, When = () => Story.Has("tier3_reveal") && PavelFree },
-            new Def { Name = "The Scrap King", Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Raiders", Dx = 1, Dy = 1, When = () => true },
-            new Def { Name = "Voss", Landmark = "Roundhouse", Zone = "scavengers_hub", Look = "Contractors", Dx = 2, Dy = 1, When = () => true },
-            new Def { Name = "Quill", Landmark = "Signal Tower", Zone = "scavengers_hub", Look = "Contractors", Dx = 1, Dy = 2, When = () => Story.Step("leak") == 2 },
-            new Def { Name = "Lev Marchuk", Landmark = "The Rusty Anchor", Zone = "scavengers_hub", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
-            new Def { Name = "Dr. Priya Osei", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 0, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
-            new Def { Name = "Emil Rask", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 2, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
-            new Def { Name = "Konrad Hale", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = -2, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
+            new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Command Room", Zone = "flooded_bunker", Look = "Surveyors", Dx = 1, Dy = 1, When = () => Story.Step("engineer") == 1 && PavelFree },
+            new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Medic's House", Zone = "perimeter", Look = "Surveyors", Dx = 1, Dy = 2, When = () => Story.IsDone("engineer") && Story.Step("escort") < 2 && !Story.IsDone("escort") && PavelFree },
+            new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Hub Bunkhouse", Zone = "scavengers_hub", Look = "Surveyors", Dx = 1, Dy = 1, When = () => Story.IsDone("escort") && Story.Step("lake") == 0 && PavelFree },
+            new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 3, Dy = 1, When = () => Story.Has("tier3_reveal") && PavelFree },
+            new Def { Name = "The Scrap King", Suit = "The Scrap King",  Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Raiders", Dx = 1, Dy = 1, When = () => true },
+            new Def { Name = "Voss", Suit = "Voss",  Landmark = "Roundhouse", Zone = "scavengers_hub", Look = "Contractors", Dx = 2, Dy = 1, When = () => true },
+            new Def { Name = "Quill", Fixed = "Contractor Light",  Landmark = "Signal Tower", Zone = "scavengers_hub", Look = "Contractors", Dx = 1, Dy = 2, When = () => Story.Step("leak") == 2 },
+            new Def { Name = "Lev Marchuk", Suit = "Lev Marchuk",  Landmark = "The Rusty Anchor", Zone = "scavengers_hub", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
+            new Def { Name = "Dr. Priya Osei", Suit = "Dr. Priya Osei",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 0, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
+            new Def { Name = "Emil Rask", Suit = "Emil Rask",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 2, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
+            new Def { Name = "Konrad Hale", Suit = "Konrad Hale",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = -2, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
         };
+
+        // ---- looks (Yan, 2026-11-18): the people of the story have a unique suit sprite each (ArtSource/make_npc_looks.py; UnitSprites.UniqueSuits); the minor ones wear a fixed suit of the game's own ----
+        static readonly Dictionary<string, ArmorDef> Suits = new Dictionary<string, ArmorDef>();
+        /// <summary>A unique look as an armour (the stats are a light suit's; the name picks the sprite).</summary>
+        public static ArmorDef SuitOf(string name, float phys = 0.2f)
+        {
+            if (!Suits.TryGetValue(name, out var a)) Suits[name] = a = new ArmorDef { Name = name, PhysDR = phys, AnomDR = 0.1f, BeltSlots = 2, ModSlots = 0, Mp = 4, WeightKg = 4f };
+            return a;
+        }
+        /// <summary>One of the game's own suits by name (null if there is none).</summary>
+        public static ArmorDef Fixed(string name) => ArmorDatabase.Tiers.Values.Select(t => t.Values.FirstOrDefault(x => x.Name == name)).FirstOrDefault(x => x != null);
+        static ArmorDef ArmorOf(Def d) => d.Suit != null ? SuitOf(d.Suit) : (d.Fixed != null ? Fixed(d.Fixed) : null) ?? EncounterGeneration.PickFactionLoadout(d.Look, "Experienced", 1).Item2;
 
         static readonly Dictionary<Def, HumanEnemy> Live = new Dictionary<Def, HumanEnemy>();
         public static string ZoneOverride;   // harness
@@ -71,7 +83,7 @@ namespace GameCore
                 var l = TerrainMap.Landmarks.FirstOrDefault(x => x.Name == d.Landmark); if (l == null) continue;
                 var (x2, y2) = TerrainMap.FindNearestEnterable(l.X + d.Dx, l.Y + d.Dy, 4);
                 if (EncounterState.Enemies.Any(e => e.IsAlive() && e.X == x2 && e.Y == y2) || Player.All.Any(p => p.X == x2 && p.Y == y2)) continue;
-                var (w, a) = EncounterGeneration.PickFactionLoadout(d.Look, "Experienced", 1);
+                var a = ArmorOf(d);
                 var h = new HumanEnemy(d.Name, x2, y2, Faction, "Experienced", null, a) { IsAggroed = false, Unkillable = true };
                 h.MaxHp = h.Hp = 300; h.Morale = "Steady";
                 EncounterState.Enemies.Add(h); Live[d] = h;

@@ -2614,6 +2614,9 @@ static class Program {
       StoryNpcs.OnEnterZone();
       var ye = StoryNpcs.Find("Yefim"); var hm = StoryNpcs.Find("Headman Petro");
       Check(ye != null && hm != null && StoryNpcs.Holds(ye) && StoryNpcs.Find("Yefim (radio)") == null && StoryNpcs.Find("Pavel") == null, "NPC units: Yefim and the Headman stand in the village, radio voices have no unit, Pavel isn't there yet");
+      Check(ye.EquippedArmor != null && ye.EquippedArmor.Name == "Yefim" && UnitSprites.UniqueSuits.Contains("Yefim") && hm.EquippedArmor != null && hm.EquippedArmor.Name == "Wanderer Padded Coat", "NPC looks: Yefim has his own suit, the Headman a fixed one of the game's");
+      Check(new[] { "Wanderer Canvas Jacket", "Wanderer Padded Coat", "Contractor Light", "Liberator Guard Suit", "Garrison Field Uniform" }.All(n => StoryNpcs.Fixed(n) != null)
+        && new[] { "Yefim", "Pavel", "Lev Marchuk", "Dr. Priya Osei", "The Scrap King", "Voss", "Emil Rask", "Konrad Hale", "The Runner", "Bogdan" }.All(n => UnitSprites.UniqueSuits.Contains(n) && UnitSprites.UniqueGloves.ContainsKey(n)), "NPC looks: every fixed suit exists and every unique look is registered with its gloves");
       Story.Finish("engineer"); StoryNpcs.Tick();
       Check(StoryNpcs.Find("Pavel") != null, "NPC units: Pavel is at the Medic's House once he's home");
       ye.Hp = 0; Check(ye.IsAlive() && !FactionDatabase.AreHostile(ye.Faction, "Player"), "NPC units: they can't be killed and are hostile to nobody");
@@ -5486,7 +5489,7 @@ static class Program {
     // interrogation gives up a real squad of theirs
     var elsewhere = OffMap(here);
     m.OfflineSquads.RemoveAll(q => q.Faction == "Raiders" && q.ZoneId != here.Id);   // also frees Raider cards (Batch 52)
-    var theirs = SquadManager.CreateOfflineSquad(elsewhere, "Raiders", 2);
+    var theirs = SquadManager.CreateOfflineSquad(elsewhere, "Raiders", 2); theirs.Job = "hold";   // 2026-11-18: held in place (a squad that wandered off mid-check made it depend on the dice order)
     p.Stats.I = 100;
     EnemyAI.Interrogate(close, p);
     Check(m.Rumors.Any(r => r.Contains(MacroMapDatabase.Find(elsewhere).Name) && r.EndsWith("(true)")) || log.L.Any(l => l.Contains("way into")), "a prisoner gives up where their people are");

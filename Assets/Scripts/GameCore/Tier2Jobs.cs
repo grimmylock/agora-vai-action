@@ -161,7 +161,7 @@ namespace GameCore
             {
                 Story.SetStep("bridge", 1);
                 var libs = new List<Mutant>();
-                for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Liberators", "Experienced", 2, i == 0); libs.Add(new HumanEnemy(i == 0 ? "Liberator Sergeant" : "Liberator", 0, 0, "Liberators", "Experienced", w, a)); }
+                for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Liberators", "Experienced", 2, i == 0); libs.Add(new HumanEnemy(i == 0 ? "Liberator Sergeant" : "Liberator", 0, 0, "Liberators", "Experienced", w, i == 0 ? StoryNpcs.Fixed("Liberator Guard Suit") ?? a : a)); }
                 Tier1Story.Place("bridge", Bridge, "Liberators", libs);
             }
             int tdone = Story.Step("taken_day"); if (tdone == 0) return;
@@ -197,7 +197,7 @@ namespace GameCore
             for (int i = 0; i < 5; i++)
             {
                 var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", i == 0 ? "Expert" : "Experienced", 2, i == 0);
-                list.Add(new HumanEnemy(i == 0 ? "Bogdan" : "Bogdan's Raider", 0, 0, "Raiders", i == 0 ? "Expert" : "Experienced", w, a));
+                list.Add(new HumanEnemy(i == 0 ? "Bogdan" : "Bogdan's Raider", 0, 0, "Raiders", i == 0 ? "Expert" : "Experienced", w, i == 0 ? StoryNpcs.SuitOf("Bogdan", 0.45f) : a));   // Bogdan has his own look (make_npc_looks.py)
             }
             Tier1Story.Place("bogdan", Fort, "Raiders", list);
         }
