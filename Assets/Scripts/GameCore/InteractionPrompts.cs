@@ -38,6 +38,7 @@ namespace GameCore
             }
             var talker = Radiant.NearFriend(p);
             if (talker != null && Radiant.Known(talker)) Add(talker.X, talker.Y, "E", "Talk to " + talker.Name);
+            var em = Emplacement.Prompt(p); if (em.HasValue) Add(em.Value.x, em.Value.y, "E", em.Value.label);
             // F: an anomaly you can comb for an artifact
             var an = AnomalyEngine.SearchableNear(p);
             if (an != null) Add(an.X, an.Y, "F", "Search the " + an.DisplayName);

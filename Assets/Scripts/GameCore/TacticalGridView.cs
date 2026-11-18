@@ -799,6 +799,7 @@ namespace GameCore
             bool known = _motion.Known(u);
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
             marker.transform.position = _motion.Place(u, logical);
+            float gl = Emplacement.LiftOf(u); if (gl > 0f) marker.transform.position += new Vector3(0f, gl, 0f);   // up on the Barrier's watchtower
             if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }
             bool held = u is Player hp && EelSump.Gripping(hp) && CombatFxView.EelStand.HasValue;                // Boss 3: held in the jaws: drawn AT the mouth, over the eel (it hid him)
             if (held)                                                                                          // he is NOT moved: he stays where he parried and strains - shoved back a little by the eel, shaking with each press
@@ -808,7 +809,7 @@ namespace GameCore
             }   // Boss 3: carried by the tail, thrown, hurled
             var group = marker.GetComponent<UnityEngine.Rendering.SortingGroup>();
             bool carried = EelBoss.Current != null && ReferenceEquals(EelBoss.Current.Body, u) && EelSump.SpineOf(EelBoss.Current) is EelSump.State cs && cs.CarryBody;   // the crewman hanging from the eel's jaws: over the head
-            if (group != null) group.sortingOrder = held || carried ? 31990 : SortAt(marker.transform.position.y);
+            if (group != null) group.sortingOrder = held || carried || gl > 0f ? 31990 : SortAt(marker.transform.position.y);
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
             if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);

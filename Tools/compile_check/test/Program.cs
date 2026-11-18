@@ -2510,6 +2510,22 @@ static class Program {
       int worn = Barrier.Cells.Sum(c => TerrainMap.GetTile(c.x, c.y).Damage);
       Check(worn >= 500 && worn <= 700, $"Barrier: one fanatic at its foot tears off {Barrier.BreachWear} HP a second ({worn} in 10 s)");
       Check(Barrier.Outside(brute) && !Barrier.Outside(step), "Barrier: outside and inside are told apart");
+      // the watchtowers' machine guns
+      Emplacement.Reset(); var tcs = Barrier.TowerCols();
+      Check(tcs.Length == 2 && tcs[0] < Barrier.CX && tcs[1] > Barrier.CX && Barrier.BottomY(tcs[0] - 1) == Barrier.BottomY(tcs[0] + 1), $"Barrier: two watchtower sites on flat stretches of the arc (x {string.Join(", ", tcs)})");
+      var tg = Emplacement.Guns[0]; var own = p.EquippedWeapon; p.X = tg.Tx; p.Y = tg.StepsY; p.Hp = p.MaxHp;
+      Emplacement.TryInteract(p);
+      Check(Emplacement.IsMounted(p) && p.X == tg.Tx && p.Y == tg.NookY && p.EquippedWeapon != null && p.EquippedWeapon.Db != null && p.EquippedWeapon.Db.MagCapacity == Emplacement.Belt && Emplacement.LiftOf(p) > 0f, "Machine gun: E at the tower's steps: you are in the nook with a 200-round belt gun, drawn up on the platform");
+      p.EquippedWeapon.CurrentMagazine = 0; float box0 = tg.Box; Emplacement.Tick(0.1f);
+      Check(p.EquippedWeapon.CurrentMagazine == Emplacement.Belt && tg.Box < box0, "Machine gun: the belt swaps by itself from the tower's box");
+      Check(Emplacement.GunOf(p) == tg && Emplacement.Guns[1].By == null, "Machine gun: one gunner to a gun");
+      Emplacement.TryInteract(p);
+      Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own && p.Y != tg.NookY, "Machine gun: E again: down the steps, your own gun back");
+      p.X = tg.Tx; p.Y = tg.StepsY; Emplacement.TryInteract(p); Emplacement.ReleaseAll();
+      Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own, "Machine gun: a save puts the gunner off first (never saved holding it)");
+      p.X = tg.Tx; p.Y = tg.StepsY; Emplacement.TryInteract(p); p.Hp = 0; Emplacement.Tick(0.1f); p.Hp = p.MaxHp;
+      Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own, "Machine gun: a gunner who dies comes off");
+      Emplacement.Reset();
       EncounterState.Enemies.Remove(brute);
     } finally { foreach (var (x, y, t) in saved) { var tt = TerrainMap.GetTile(x, y); tt.Type = t.Type; tt.Look = t.Look; tt.Damage = t.Damage; } Barrier.ZoneOverride = null; Barrier.Reset(); }
   }

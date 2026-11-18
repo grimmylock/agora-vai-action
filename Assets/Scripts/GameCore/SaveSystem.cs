@@ -127,6 +127,7 @@ namespace GameCore
 
         public static bool Save()
         {
+            Emplacement.ReleaseAll();   // nobody is ever saved holding the tower's gun
             var player = Player.Current;
             if (player == null)
             {

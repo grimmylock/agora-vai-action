@@ -338,6 +338,7 @@ namespace GameCore
             else s.Reviving = 0f;
 
             // ---- moving ----
+            if (Emplacement.IsMounted(p)) { i.X = i.Y = 0f; i.Jump = false; i.Sprint = false; }   // on the Barrier's machine gun: you stay put
             float ix = i.X, iy = i.Y;
             if (i.Mouse.HasValue) s.AimAt = i.Mouse;
             p.Sneaking = down || i.Sneak;
@@ -796,6 +797,7 @@ namespace GameCore
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
+            Emplacement.Tick(Time.deltaTime);                                      // Tier 4: the Barrier's machine guns
             Tier4Story.TickRt(Time.deltaTime);                                     // Tier 4: the siege of the Barrier
             Preacher.Tick(Time.deltaTime);                                         // Tier 4: the Preacher's pulse
             StoryBarks.Tick();                                                     // the story's people and Pavel's small talk

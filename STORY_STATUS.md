@@ -39,7 +39,7 @@ Everything below passes the harness (`Tools/compile_check`, `Tier1StoryChecks`, 
 | Beat | State |
 |-|-|
 | Liberators' call (Miro), Tolik, wait for dawn | built (talk points + units; new landmark "The Barrier") |
-| The Barrier itself (Barrier.cs): a concrete wall of high cover with 120 HP a tile (57 tiles), a steel catwalk behind it, an HP bar on the HUD; the horde tears at it and goes through gaps | built (8b); tripod machine guns not yet |
+| The Barrier itself (Barrier.cs): an arc of low concrete blocks (high cover, 3,000 HP a tile), a steel catwalk deck behind it with a face, railing and steps, an HP bar on the HUD; the horde tears at it and goes through gaps; two concrete watchtowers with usable machine guns (Emplacement.cs: E at the steps, belt-fed, never lootable) | built (8b-8f); not run in Unity |
 | The Siege: a horde of 90 fanatics fed in at 20-30 alive at once, beats at 30 / 55 / 75 (grenades, a machine-gun nest, the Preacher), the Preacher (pulse every 7 s, dive through it), eight mutants wait behind the line and leave when he falls | built; win rate NOT measured |
 | The core: intact or cracked (an explosion on the Preacher cracks it); keep / destroy / sell to the Garrison (flags `core_kept`, `core_destroyed`, `core_sold_garrison`) | built |
 | The Apex (Old Crimson, 6x health) and the Hunter | built |

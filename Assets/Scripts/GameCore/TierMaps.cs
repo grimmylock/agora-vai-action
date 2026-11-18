@@ -1086,15 +1086,24 @@ namespace GameCore
             foreach (var (bx, by) in Barrier.Cells) c.Put(bx, by, Solid, "jersey");
             for (int bx = Barrier.X0; bx <= Barrier.X1; bx++) { int bot = Barrier.BottomY(bx); c.Rect(bx, bot + 1, 1, 2, Empty, 0); c.Paint(bx, bot + 1, 1, 2, Grate); }
             // the deck's face and railing along its south edge, steps down in four places (props_barrier.py)
-            var stairCols = new System.Collections.Generic.HashSet<int> { 140, 141, 150, 151, 161, 162, 171, 172 };
+            var towers = Barrier.TowerCols();
             for (int bx = Barrier.X0; bx <= Barrier.X1; bx++)
             {
                 int bot = Barrier.BottomY(bx);
-                if (stairCols.Contains(bx)) c.Deco(bx, bot + 3, "deck_steps");
-                else { c.Deco(bx, bot + 3, "deck_face"); c.Deco(bx, bot + 2, "deck_rail"); }
+                bool towerStep = System.Array.IndexOf(towers, bx) >= 0, towerBody = System.Array.Exists(towers, tc => System.Math.Abs(tc - bx) <= 1);
+                if (Barrier.StairCols.Contains(bx) || towerStep) c.Deco(bx, bot + 3, "deck_steps");
+                else { c.Deco(bx, bot + 3, "deck_face"); if (!towerBody) c.Deco(bx, bot + 2, "deck_rail"); }
+            }
+            foreach (int tc in towers)                                                  // a concrete watchtower: a 3x2 block on the deck with one open tile, the gun nook, behind the barrier (Emplacement.cs)
+            {
+                int bot = Barrier.BottomY(tc);
+                for (int dx = -1; dx <= 1; dx++) c.Put(tc + dx, bot + 2, Solid, "part");
+                c.Put(tc - 1, bot + 1, Solid, "part").Put(tc + 1, bot + 1, Solid, "part");
+                c.Put(tc, bot + 1, Empty);
+                c.Put(tc, bot + 2, Solid, "tower_conc");                                // the one tile that draws the prop
             }
             for (int ty = 88; ty <= 119; ty++) for (int tx = 129; tx <= 183; tx++)       // clear the trees, brush and logs of the field in front of the barrier and the yard behind it
-                if (!Barrier.Cells.Contains((tx, ty)) && c.Get(tx, ty) != Empty) c.Put(tx, ty, Empty);
+                if (!Barrier.Cells.Contains((tx, ty)) && c.Get(tx, ty) != Empty && c.LookAt(tx, ty) != "part" && c.LookAt(tx, ty) != "tower_conc") c.Put(tx, ty, Empty);
             c.Keep(124, 86, 66, 38);                                                    // no trees or clutter round the barrier (the dresser leaves it as authored)
             c.Landmark("The Barrier", Barrier.CX, Barrier.StepY(Barrier.CX) + 1);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
             // Barracks Row

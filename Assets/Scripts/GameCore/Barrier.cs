@@ -54,6 +54,10 @@ namespace GameCore
         /// <summary>The catwalk's front row (right behind the wall: the firing step) at a column.</summary>
         public static int StepY(int x) => BottomY(x) + 1;
 
+        /// <summary>The columns of the two watchtowers (their middle columns): flat stretches of the arc near x 145 and 166, clear of the steps (TierMaps).</summary>
+        public static int[] TowerCols() { var r = new List<int>(); foreach (int target in new[] { 145, 166 }) for (int d = 0; d <= 4; d++) foreach (int tx in new[] { target + d, target - d }) if (r.Count < (target == 145 ? 1 : 2) && BottomY(tx - 1) == BottomY(tx) && BottomY(tx) == BottomY(tx + 1) && !StairCols.Contains(tx - 1) && !StairCols.Contains(tx) && !StairCols.Contains(tx + 1)) r.Add(tx); return r.ToArray(); }
+        public static readonly HashSet<int> StairCols = new HashSet<int> { 140, 141, 150, 151, 161, 162, 171, 172 };
+
         /// <summary>Is (x, y) a standing piece of the wall? (A broken tile is rubble and not.)</summary>
         public static bool IsWall(int x, int y) => On && x >= X0 && x <= X1 && Cells.Contains((x, y)) && TerrainMap.GetTile(x, y).Type == TileType.Solid;
 

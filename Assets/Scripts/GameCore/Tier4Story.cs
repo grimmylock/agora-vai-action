@@ -32,6 +32,7 @@ namespace GameCore
 
         public static bool TryInteract(Player p)
         {
+            if (Emplacement.TryInteract(p)) return true;                       // the Barrier's machine guns
             if (!OnTier4) return false;
             if (Story.Near(p, Command, 3) && TalkCommand()) return true;
             if (Story.Step("barrier") == 1 && Story.Near(p, BarrierName, 4)) { TalkTolik(); return true; }
