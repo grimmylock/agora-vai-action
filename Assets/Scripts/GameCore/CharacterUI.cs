@@ -84,6 +84,7 @@ namespace GameCore
             _panel = UIBuildUtil.CreatePanel(canvas.transform, "CharacterPanel", full ? Vector2.zero : new Vector2(0.1f, 0.06f),
                 full ? Vector2.one : new Vector2(0.9f, 0.94f), new Color(0.06f, 0.06f, 0.05f, 0.98f));
             _panel.transform.SetAsLastSibling();
+            if (_mode == "sheet") UIBuildUtil.Dress(_panel, "CHARACTER", Close);   // 2026-11-18: the case look and the tab row (not on the creation and perk screens)
             if (_mode == "create") BuildCreation();
             else if (_mode == "perk") BuildPerkPick();
             else BuildSheet();

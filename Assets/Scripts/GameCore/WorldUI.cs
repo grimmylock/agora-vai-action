@@ -26,6 +26,7 @@ namespace GameCore
                 if (canvas == null) return;
                 _panel = UIBuildUtil.CreatePanel(canvas.transform, "WorldPanel", new Vector2(0.15f, 0.1f), new Vector2(0.85f, 0.9f),
                     new Color(0.08f, 0.08f, 0.08f, 0.95f));
+                UIBuildUtil.Dress(_panel, "MAP", Close);   // 2026-11-18: the case look and the tab row
                 UIBuildUtil.CreateButton(_panel.transform, "CloseButton", new Vector2(0.86f, 0.92f), new Vector2(0.98f, 0.99f), "Close", Close);
                 _body = UIBuildUtil.CreateText(_panel.transform, "Body", new Vector2(0.03f, 0.03f), new Vector2(0.97f, 0.91f),
                     "", 15, Color.white, TextAlignmentOptions.TopLeft);

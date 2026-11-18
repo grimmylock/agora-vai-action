@@ -58,6 +58,9 @@ namespace GameCore
             if (_packInfo != null) { var ir = _packInfo.rectTransform; ir.sizeDelta = new Vector2(400f, Mathf.Max(120f, H - 346f - 130f)); _packInfo.enableWordWrapping = true; }
         }
 
+        /// <summary>The CASE tab of the other screens: opens the pack screen (if it is not open already).</summary>
+        public static void OpenCase() { if (Instance != null && !PackOpen) Instance.TogglePack(); }
+
         void CloseCaseFor() { if (_beside) { CorpseLootUI.CloseIfOpen(); return; } if (PackOpen) TogglePack(); }
 
         // ---- descriptions ----

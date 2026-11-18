@@ -18,7 +18,7 @@ namespace GameCore
     public partial class HudView : MonoBehaviour
     {
         // palette (mockup)
-        internal static readonly Color Fill = C("15171a", .94f), Edge = C("3a3e41"), Lip = C("2b2f33");
+        internal static readonly Color Fill = C("120f0c", .95f), Edge = C("66543a"), Lip = C("2e2415");   // 2026-11-18: the case palette (dark leather, brass) on every panel built from these (dialogue, examine, boss bars, prompts, the old cards)
         internal static readonly Color Cream = C("e6dcc0"), Dim = C("7d7a70"), Yellow = C("e8c547"), Red = C("c8443a"),
             Cyan = C("4fb6c9"), Purple = C("9d7bd8"), Green = C("62b25a"), Empty = C("2a2c2e");
 

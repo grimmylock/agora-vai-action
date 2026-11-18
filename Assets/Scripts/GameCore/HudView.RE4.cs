@@ -26,7 +26,7 @@ namespace GameCore
         readonly List<TextMeshProUGUI> _rSlot = new List<TextMeshProUGUI>(); readonly List<Image> _rSlotBack = new List<Image>();
         float _rGhostV = 1f, _shown = 1f; float _ammoStampAt = -9f, _hpStampAt = -9f; string _ammoStamp; int _rLastHp = -1; float _gaugeA = 1f, _ammoA = 1f, _quickA = 1f;
         static Sprite _sRing, _sDisc, _sSoft, _sVig;
-        Image _rVig; readonly List<(string text, float until)> _toasts = new List<(string, float)>(); readonly List<TextMeshProUGUI> _rToast = new List<TextMeshProUGUI>();
+        TextMeshProUGUI _rSecond; Image _rVig; readonly List<(string text, float until)> _toasts = new List<(string, float)>(); readonly List<TextMeshProUGUI> _rToast = new List<TextMeshProUGUI>();
 
         // ---- generated sprites (a ring that a filled Image can sweep, a disc to mask the portrait, a soft dark patch behind the clusters) ----
         static Sprite MakeSprite(System.Func<float, float, float> alphaAt, int n = 128)
@@ -106,6 +106,7 @@ namespace GameCore
             _rWeapon = Img(a, "Weapon", BR, new Vector2(0, 118), new Vector2(260, 110), new Color(1, 1, 1, 0.9f)); _rWeapon.preserveAspect = true;
             _rLoad = T2(a, "Load", BR, new Vector2(0, 92), new Vector2(500, 20), "", true, 12, Dim, TextAlignmentOptions.BottomRight);
             _rReserve = T2(a, "Reserve", BR, new Vector2(0, 14), new Vector2(130, 48), "", false, 34, Dim, TextAlignmentOptions.BottomRight);
+            _rSecond = T2(a, "Second", BR, new Vector2(0, -34), new Vector2(500, 20), "", true, 11, Dim, TextAlignmentOptions.BottomRight);
             _rMag = T2(a, "Mag", BR, new Vector2(-124, 6), new Vector2(230, 90), "", false, 88, Bone, TextAlignmentOptions.BottomRight);
 
             // ---- quick slots, a diamond left of the ammo ----
@@ -187,6 +188,7 @@ namespace GameCore
             string mode = w == null || melee ? "" : Rt.On ? Gunplay.ModeLabel(w, Rt.Of(p).FireMode) : "";
             string cond = w == null ? "" : w.IsJammed ? "JAMMED" : (w.Condition ?? ItemCondition.Working).ToUpperInvariant();
             _rLoad.text = Loc.Text(w == null || melee ? "" : (Ammo.LoadName(w).ToUpperInvariant() + (mode != "" ? "  ·  " + mode : "") + (cond != "" && cond != "WORKING" ? "  ·  " + cond : "")));
+            _rSecond.text = p.SecondaryWeapon != null ? "Y  " + p.SecondaryWeapon.Name.ToUpperInvariant() : "";
             string stamp = mag + "|" + res + "|" + (w?.Name ?? ""); if (stamp != _ammoStamp) { _ammoStamp = stamp; _ammoStampAt = Time.unscaledTime; }
 
             // ---- quick slots ----
