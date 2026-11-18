@@ -795,3 +795,22 @@ SAVE	SALVAR
 HUD STYLE	ESTILO DA HUD
 MAIN MENU	MENU PRINCIPAL
 UP / DOWN   ENTER   ESC RESUME	CIMA / BAIXO   ENTER   ESC CONTINUAR
+Read the job board	Ler o quadro de trabalhos
+JOB BOARD	QUADRO DE TRABALHOS
+Notes pinned up by the fire.	Bilhetes presos perto da fogueira.
+Leave them	Deixar para lá
+The board is bare.	O quadro está vazio.
+Take it	Aceitar
+Not now	Agora não
+A note on the board	Um bilhete no quadro
+Thin out the {}	Reduzir a população de {1}
+Something is breeding in the {}	Algo está se reproduzindo em {1}
+Clear the {} of mutants	Livre {1} de mutantes
+The {} is no place to walk	{1} não é lugar para andar
+A bad man in the {}	Um homem mau em {1}
+Settle a debt in the {}	Acerte uma dívida em {1}
+Remove a problem in the {}	Resolva um problema em {1}
+Find and kill the gang boss in {}.	Ache e mate o chefe do bando em {1}.
+Kill {} mutants in {}.	Mate {1} mutantes em {2}.
+{} has nothing for you.	{1} não tem nada para você.
+Talk to {}	Falar com {1}

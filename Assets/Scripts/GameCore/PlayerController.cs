@@ -12,7 +12,7 @@ namespace GameCore
 {
     public class PlayerController : MonoBehaviour
     {
-        private void Awake() { Rt.On = true; Rt.Reset(); Time.timeScale = 1f; }   // real-time fork: the game runs on the clock (Rt.cs); the harness stays turn-based
+        private void Awake() { Radiant.Init(); Rt.On = true; Rt.Reset(); Time.timeScale = 1f; }   // real-time fork: the game runs on the clock (Rt.cs); the harness stays turn-based
 
         private void Update()
         {
@@ -84,7 +84,7 @@ namespace GameCore
             {
                 var corpse = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => !e.IsAlive() && CombatantUtil.Distance(player, e) <= 1);
                 var ground = TerrainMap.GetGroundItemsAt(player.X, player.Y);
-                if (EelBoss.TryExamine(player) || Tier2Story.TryUseDoor(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
+                if (EelBoss.TryExamine(player) || Tier2Story.TryUseDoor(player) || Radiant.TryTalk(player)) { }                                             // Boss 3: the crewman on the slab: examine him (the introduction) instead of looting
                 else if (corpse != null) { if (!Boss.TryWake(player, corpse)) CorpseLootUI.Open(corpse); }   // Boss 1: the Visor's body
                 else if (ground.Count > 0)
                 {

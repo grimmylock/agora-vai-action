@@ -103,7 +103,17 @@ namespace GameCore
                 UIBuildUtil.CreateButton(row.transform, "AcceptBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f),
                     "Accept", () => { QuestSystem.AcceptQuest(q.Id); Rebuild(); });
             }
-            if (available.Count == 0)
+            // 2026-11-18: the PDA - jobs of the people near you (Radiant.cs)
+            foreach (var (rj, dist) in Radiant.Nearby(player).Take(4))
+            {
+                var row = UIBuildUtil.CreateRow(_availableList, $"Near_{rj.Id}", RowHeight * 2.2f, new Color(0.9f, 0.8f, 0.4f, 0.07f));
+                UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f),
+                    $"PDA: {rj.GiverName}{(dist > 0 ? $" ({dist} tiles)" : "")}\n{rj.Hook}\n{rj.Line} {rj.Ru} RU", 11, Color.white, TextAlignmentOptions.Left);
+                var capture = rj;
+                UIBuildUtil.CreateButton(row.transform, "AcceptBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f),
+                    "Accept", () => { Radiant.Take(capture); Rebuild(); });
+            }
+            if (available.Count == 0 && Radiant.Nearby(player).Count == 0)
             {
                 var emptyRow = UIBuildUtil.CreateRow(_availableList, "AvailEmpty", RowHeight, Color.clear);
                 UIBuildUtil.CreateText(emptyRow.transform, "Label", Vector2.zero, Vector2.one,

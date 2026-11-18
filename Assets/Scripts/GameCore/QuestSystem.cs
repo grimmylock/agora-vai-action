@@ -133,16 +133,19 @@ namespace GameCore
             }
 
             var aqNew = new ActiveQuest { QuestId = questId, ZoneId = zoneId, DisplayText = q.ObjectiveText, Objectives = objectives,
-                Complication = Random.Range(1, 7), AcceptedDay = MacroState.Current.Day };
+                Complication = q.Radiant ? 0 : Random.Range(1, 7), AcceptedDay = MacroState.Current.Day };
             if (aqNew.Complication == 3)   // Not as described: a second target
                 foreach (var o in objectives.Where(o => o.Kind == "Kill")) o.NeededCount += 1;
             player.ActiveQuests.Add(aqNew);
             // accepted where the job is (or for an already-found hidden node): set it up now
             foreach (var o in objectives.Where(o => o.Kind == "SkillCheck" && o.HiddenNodeId != null && MacroState.Current.DiscoveredHiddenNodes.Contains(o.HiddenNodeId))) o.Done = true;
             GameLog.Event($"Quest accepted: {q.Hook}");
-            GameLog.Event($"  Complication (d6 = {aqNew.Complication}): {ComplicationText(aqNew.Complication)}");
-            var (g, alt) = Sides(q, zoneId);
-            GameLog.Event($"  Two ways to finish: turn in to the {g}, or take it to the {alt} instead.");
+            if (!q.Radiant)
+            {
+                GameLog.Event($"  Complication (d6 = {aqNew.Complication}): {ComplicationText(aqNew.Complication)}");
+                var (g, alt) = Sides(q, zoneId);
+                GameLog.Event($"  Two ways to finish: turn in to the {g}, or take it to the {alt} instead.");
+            }
             if (objectives.Any(o => o.Kind == "Kill" || o.Kind == "ClearZone")) SpawnTargets(aqNew, MacroMapDatabase.Find(zoneId));   // Batch 44: they're out there now
             if (aqNew.Complication == 2) SendRival(aqNew);
             if (aqNew.AllDone) CompleteQuest(player, aqNew);
@@ -390,6 +393,7 @@ namespace GameCore
             var q = QuestDatabase.Find(aq.QuestId);
             if (q == null) return;
 
+            if (q.Radiant) { player.NoteQuestDone(q); Radiant.Pay(player, q); return; }   // 2026-11-18: a radiant job pays what it said and can come again
             int reward = ComputeQuestReward(q);
             if (aq.Complication == 5 && MacroState.Current.Day - aq.AcceptedDay > 2)
             {

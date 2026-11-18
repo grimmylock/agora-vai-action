@@ -164,7 +164,7 @@ namespace GameCore
                     GoalBoxes = macro.GoalBoxes.Select(kv => new StringIntPair { Key = kv.Key, Value = kv.Value }).ToList(),
                     CompletedGoals = new List<string>(macro.CompletedGoals), DeckCooling = new List<string>(macro.DeckCooling),
                     NamedNpcs = new List<string>(macro.NamedNpcs),
-                    Rumors = new List<string>(macro.Rumors),
+                    Rumors = new List<string>(macro.Rumors), Radiant = new List<RadiantJob>(macro.Radiant), RadiantSeq = macro.RadiantSeq,
                     WorldNews = new List<string>(macro.WorldNews),
                     StoryFlags = new List<string>(macro.StoryFlags), Sponsor = macro.Sponsor, Ending = macro.Ending,
                     SurgeRounds = macro.SurgeRounds, SurgeZoneId = macro.SurgeZoneId, Hour = macro.Hour, Weather = macro.Weather, LastRumorDay = macro.LastRumorDay,
@@ -243,6 +243,7 @@ namespace GameCore
             macro.DeckCooling = dm.DeckCooling ?? new List<string>(); FactionDeck.Reset();
             macro.NamedNpcs = dm.NamedNpcs ?? new List<string>();
             macro.Rumors = dm.Rumors ?? new List<string>();
+            macro.Radiant = dm.Radiant ?? new List<RadiantJob>(); macro.RadiantSeq = dm.RadiantSeq;
             macro.WorldNews = dm.WorldNews ?? new List<string>();
             macro.StoryFlags = dm.StoryFlags ?? new List<string>();
             macro.Sponsor = dm.Sponsor;

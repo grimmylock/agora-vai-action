@@ -75,6 +75,7 @@ static class Program {
     NetBrainChecks();
     TakenChecks();
     TakenTestingGroundChecks();
+    RadiantChecks();
     GauntChecks();
     GunfeelChecks();
     DiveChecks();
@@ -3047,6 +3048,25 @@ static class Program {
       Check(caveBed.StartsWith("amb_") && caveBed != "amb_hum" && caveBed != "amb_wind" && Sfx.AmbientFor(Tier2Story.Maze) == caveBed && Sfx.AmbientFor("secret_lab_alpha") == "amb_hum" && Sfx.AmbientFor("scrapyard") == "amb_wind",
         $"ambience: the caves and the Hatch Tunnels share the cave bed ({caveBed}), a lab keeps its hum, the open map its wind");
     } finally { Rt.On = false; Tier2Story.Reset(); Story.Reset(); EncounterState.Enemies.Clear(); GameState.Current.CurrentTurn = Turn.Player; }
+  }
+
+  static void RadiantChecks() {   // 2026-11-18: radiant (repeatable) jobs
+    Radiant.Init();
+    var m = MacroState.Current; var p = Player.Current; if (p == null) return;
+    m.Radiant.Clear();
+    var zid = "bonfire_village"; var j = Radiant.Make("board", "board:" + zid, "A note", "Wanderers", zid);
+    Check(j != null && j.Ru >= 20 && MacroState.Current.Radiant.Count == 1 && QuestDatabase.Find(j.Id)?.Radiant == true, "radiant: a job is made, stored and found through QuestDatabase.Find");
+    Check(j != null && !MacroMapDatabase.Find(j.ZoneId).IsSafeZone && MacroMapDatabase.SameMap(j.ZoneId, zid), "radiant: its targets are in a danger region of the same map");
+    int ru = p.Ru; int done = p.CompletedQuestIds.Count;
+    Check(Radiant.Take(j) && j.Taken && p.ActiveQuests.Any(a => a.QuestId == j.Id), "radiant: accepting it makes an active quest");
+    p.ActiveQuests.RemoveAll(a => a.QuestId == j.Id); j.Taken = false;
+    var q = QuestDatabase.Find(j.Id); Radiant.Pay(p, q);
+    Check(p.Ru == ru + j.Ru && p.CompletedQuestIds.Count == done && !m.Radiant.Contains(j), "radiant: it pays its fixed amount, is not marked completed, and leaves the list");
+    var again = Radiant.Board(zid);
+    Check(again.Count >= 1 && again.Count <= Radiant.BoardSlots, $"radiant: the board refills ({again.Count} notes)");
+    m.Day += 5; Radiant.Expire();
+    Check(m.Radiant.All(x => x.ExpiresDay >= m.Day), "radiant: old notes expire");
+    m.Radiant.Clear();
   }
 
   static void TakenTestingGroundChecks() {   // 2026-11-16: the Testing Ground's "Tier 2: Taken" button (Yan: "a button that takes us directly to the cutscene where we're kidnapped and the mission starts")

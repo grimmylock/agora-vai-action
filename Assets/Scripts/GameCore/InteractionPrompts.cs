@@ -33,8 +33,11 @@ namespace GameCore
                 if (l.Name == GarrisonRaid.Armory && GarrisonRaid.InBase(p)) Add(l.X, l.Y, "E", "Armory");
                 if (TestingGround.Here && l.Name == TestingGround.Armory) Add(l.X, l.Y, "E", "Armory: any gear");
                 if (TestingGround.Here && l.Name == TestingGround.Spawner) Add(l.X, l.Y, "E", "Spawn enemies");
+                if (l.Name == "Job Board") Add(l.X, l.Y, "E", "Read the job board");
                 if (l.Name == G7Lab.Machine && MacroState.Current.CurrentZoneId == G7Lab.Zone) Add(l.X, l.Y, "E", "Feed the synthesizer");
             }
+            var talker = Radiant.NearFriend(p);
+            if (talker != null && Radiant.Known(talker)) Add(talker.X, talker.Y, "E", "Talk to " + talker.Name);
             // F: an anomaly you can comb for an artifact
             var an = AnomalyEngine.SearchableNear(p);
             if (an != null) Add(an.X, an.Y, "F", "Search the " + an.DisplayName);

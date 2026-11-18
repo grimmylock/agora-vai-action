@@ -104,6 +104,7 @@ namespace GameCore
         public List<string> DeckCooling = new List<string>();
         public List<string> NamedNpcs = new List<string>();
         public List<string> Rumors = new List<string>();
+        public List<RadiantJob> Radiant = new List<RadiantJob>(); public int RadiantSeq;
         public List<string> WorldNews = new List<string>();      // Batch 38
         // file 09 main story
         public List<string> StoryFlags = new List<string>();

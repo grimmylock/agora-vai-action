@@ -125,6 +125,8 @@ namespace GameCore
         public List<string> DeckCooling = new List<string>();   // Batch 52: "faction|rank|hoursLeft" - a dead unit's card, not back in the deck yet
         public List<string> NamedNpcs = new List<string>();
         public List<string> Rumors = new List<string>();
+        public List<RadiantJob> Radiant = new List<RadiantJob>();   // 2026-11-18: Radiant.cs
+        public int RadiantSeq;
         // Batch 38: what the A-Life tick really did, newest first: "day|kind|zoneId|text" (kind F = a squad wiped out, M = a squad moved)
         public List<string> WorldNews = new List<string>();
         public Dictionary<string, int> KillsToday = new Dictionary<string, int>();

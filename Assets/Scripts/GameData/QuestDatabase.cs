@@ -53,6 +53,11 @@ namespace GameData
         public int Stage;
         public string Faction;              // reputation nudged +5 here on stage completion
         public bool FriendlyGate;           // must already be Friendly with Faction to see this stage at all
+        // 2026-11-18 radiant jobs (GameCore/Radiant.cs): made at play time, repeatable, paid a fixed amount stored on the job
+        public bool Radiant;
+        public int RewardRu, RepReward;     // RepReward in reputation points (Player.RepPoint units)
+        public string GearKey;              // a ShopDatabase item id, sometimes, from traders
+        public string GiverName;
     }
 
     public static class QuestDatabase
@@ -220,6 +225,8 @@ namespace GameData
                 npcId: "antenna_grid", stage: 3, faction: "Obelisk"),
         };
 
-        public static QuestDef Find(string id) => All.FirstOrDefault(q => q.Id == id);
+        /// <summary>Radiant jobs are not in `All`: Radiant.cs answers for their ids ("rad:..").</summary>
+        public static System.Func<string, QuestDef> Dynamic;
+        public static QuestDef Find(string id) => All.FirstOrDefault(q => q.Id == id) ?? Dynamic?.Invoke(id);
     }
 }
