@@ -288,6 +288,7 @@ namespace GameCore
             UpdatePrompts(p);     // Batch 123
             UpdateBarks();        // Batch 129
             UpdateNumbers();      // the testing ground's damage numbers
+            UpdateSiege();        // Tier 4: the Barrier's bar
             UpdateBoss();         // Boss 1: the name card, his health bar
             UpdateExamine(p);     // Batch 77
 

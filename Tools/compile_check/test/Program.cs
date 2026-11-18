@@ -85,6 +85,7 @@ static class Program {
     Tier1StoryChecks();
     Tier3StoryChecks();
     Tier4StoryChecks();
+    BarrierChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
@@ -2479,6 +2480,36 @@ static class Program {
   }
 
   // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
+  static void BarrierChecks() {   // Story 8b: the Barrier - high cover with hit points, breached by the horde
+    var p = Arena(out int px, out int py); Barrier.Reset(); Barrier.ZoneOverride = MacroMapDatabase.MapOf("vanguard_barracks");
+    var saved = new System.Collections.Generic.List<(int x, TerrainTile t)>();
+    try {
+      for (int x = Barrier.X0; x <= Barrier.X1; x++) { saved.Add((x, TerrainMap.GetTile(x, Barrier.Y).Clone())); var t = TerrainMap.GetTile(x, Barrier.Y); t.Type = TileType.Solid; t.Look = "concrete"; t.Damage = 0; }
+      Check(Barrier.IsWall(150, Barrier.Y) && Barrier.Fraction > 0.999f && Barrier.Gaps == 0 && TerrainMap.CoverAcAt(150, Barrier.Y) == 3 && !TerrainMap.BlocksSight(150, Barrier.Y), "Barrier: a concrete wall of high cover you can see and shoot through");
+      var foe = new HumanEnemy("Fanatic", 150, Barrier.Y - 6, "Obelisk", "Experienced", null, null); var me = new HumanEnemy("Liberator", 150, Barrier.Y + 4, "Liberators", "Experienced", null, null); var step = new HumanEnemy("Liberator", 150, Barrier.Y + 1, "Liberators", "Experienced", null, null);
+      var bodies = new ICombatant[] { foe, me, step };
+      var (fx, fy) = Ballistics.Pos(foe); var (mx, my) = Ballistics.Pos(me); var (sx, sy) = Ballistics.Pos(step);
+      float L(float ax, float ay, float bx, float by) => (float)Math.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+      var h1 = Ballistics.Trace(foe, fx, fy, (mx - fx) / L(fx, fy, mx, my), (my - fy) / L(fx, fy, mx, my), 20f, 0.8f, new ICombatant[] { me });
+      Check(h1.Cover && h1.Unit == null, "Barrier: a head-height round from the field stops in the wall");
+      var h2 = Ballistics.Trace(step, sx, sy, (fx - sx) / L(sx, sy, fx, fy), (fy - sy) / L(sx, sy, fx, fy), 20f, 0.8f, new ICombatant[] { foe });
+      Check(!h2.Cover && h2.Unit == foe, "Barrier: from the catwalk's front row you fire over it");
+      var h3 = Ballistics.Trace(me, mx, my, (fx - mx) / L(mx, my, fx, fy), (fy - my) / L(mx, my, fx, fy), 20f, 0.8f, new ICombatant[] { foe });
+      Check(h3.Cover, "Barrier: from three tiles back your own round hits the wall (step up to the front row)");
+      // the wall wears down and the horde tears at it
+      for (int i = 0; i < Barrier.WallHp - 1; i++) TerrainMap.DamageTile(150, Barrier.Y, 1, null);
+      Check(Barrier.IsWall(150, Barrier.Y) && Barrier.HpAt(150, Barrier.Y) == 1 && Barrier.Fraction < 1f, "Barrier: 119 hits and the tile still stands with 1 hit point");
+      TerrainMap.DamageTile(150, Barrier.Y, 1, null);
+      Check(!Barrier.IsWall(150, Barrier.Y) && Barrier.Gaps == 1 && TerrainMap.GetTile(150, Barrier.Y).Type == TileType.Difficult, "Barrier: the 120th breaks it to rubble: a gap");
+      var brute = new HumanEnemy("Fanatic", 130, Barrier.Y - 1, "Obelisk", "Experienced", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(brute); Barrier.Horde.Add(brute);
+      var g0 = TerrainMap.GetTile(150, Barrier.Y); g0.Type = TileType.Solid; g0.Look = "concrete"; g0.Damage = 0;   // the gap mended: with a gap open they walk to it instead
+      Check(Barrier.Gaps == 0, "Barrier: mended");
+      brute.X = 130; brute.Y = Barrier.Y - 1; for (int i = 0; i < 100; i++) Barrier.Tick(0.1f);
+      Check(TerrainMap.GetTile(130, Barrier.Y).Damage >= 25 && TerrainMap.GetTile(130, Barrier.Y).Damage <= 40, $"Barrier: a fanatic at the foot of the wall tears off about {Barrier.BreachWear} HP a second ({TerrainMap.GetTile(130, Barrier.Y).Damage} in 10 s)");
+      EncounterState.Enemies.Remove(brute);
+    } finally { foreach (var (x, t) in saved) { var tt = TerrainMap.GetTile(x, Barrier.Y); tt.Type = t.Type; tt.Look = t.Look; tt.Damage = t.Damage; } Barrier.ZoneOverride = null; Barrier.Reset(); }
+  }
+
   static void Tier4StoryChecks() {   // Story 8: Tier 4 - the Barrier, the Apex, the Summit
     var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false; Companion.Current = null; Preacher.Reset(); Tier4Story.Reset();
     var marks = new[] { ("Command Post", 20, 100), ("The Barrier", 100, 120), ("Sentinel Firebase", 20, 140), ("Motor Pool", 40, 100), ("Deadfall Clearing", 60, 60) }.Select(m => new LandmarkInstance { Name = m.Item1, X = m.Item2, Y = m.Item3 }).ToList();
@@ -2490,17 +2521,32 @@ static class Program {
       At("Command Post"); Tier4Story.TryInteract(p);
       Check(Story.Step("barrier") == 1, "Story 8: Miro: the Obelisk are massing, organised");
       At("The Barrier"); Tier4Story.TryInteract(p);
-      Check(Story.Step("barrier") == 2 && MacroState.Current.Hour == 5f && Alive("siege_def") == 4 && Alive("siege_listeners") == 8, "Story 8: Tolik: dawn, four defenders, eight mutants wait behind the line");
-      for (int i = 0; i < 4; i++) { UnityEngine.Time.time += 60f; Tier4Story.TickRt(0.1f); }
-      Check(Alive("siege_w0") == 6 && Alive("siege_w1") == 5 && Alive("siege_w2") == 3 && Alive("siege_w3") == 4 && Preacher.Current != null && Preacher.Current.IsAlive(), "Story 8: four waves (6, 5, 3, and four with the Preacher)");
-      // the Preacher's pulse: a player in range is hurt, a diving one isn't
+      Check(Story.Step("barrier") == 2 && MacroState.Current.Hour == 5f && Alive("siege_def") == 8 && Alive("siege_listeners") == 8, "Story 8b: Tolik: dawn, eight defenders on the catwalk, eight mutants wait behind the line");
+      // the horde: fed at a pressure (at most ~20-30 alive at once), 90 in all, then the Preacher
+      int maxLive = 0, ticks = 0; var fan = new System.Collections.Generic.List<Mutant>();
+      while (ticks++ < 400)
+      {
+        UnityEngine.Time.time += 6f; Tier4Story.TickRt(0.1f);
+        var live = EncounterState.Enemies.Where(e => e.Faction == "Obelisk" && e.IsAlive() && e.Name == "Fanatic").ToList(); maxLive = Math.Max(maxLive, live.Count);
+        if (Preacher.Current != null && Preacher.Current.IsAlive() && live.Count > 0) break;
+        foreach (var e in live.Take(3)) e.Hp = 0;                // the defenders kill a few every pulse
+      }
+      int total = MacroState.Current.OfflineSquads.Where(q => q.QuestId != null && q.QuestId.StartsWith("story:siege_h")).SelectMany(q => q.Members).Count();
+      Check(total >= 76 && maxLive <= 34 && maxLive >= 20 && Preacher.Current != null, $"Story 8b: a horde of {total} so far, never more than {maxLive} alive at once, the Preacher among them");
+      Check(Barrier.Horde.Count > 10, "Story 8b: the horde is marked to breach the wall");
       var pr = Preacher.Current; p.X = pr.X + 3; p.Y = pr.Y; p.Hp = p.MaxHp; Rt.On = true;
       UnityEngine.Time.time += 20f; Preacher.Tick(0.1f); UnityEngine.Time.time += 2f; Preacher.Tick(0.1f);
       Check(p.Hp < p.MaxHp, "Story 8: the Preacher's pulse hurts a player within nine tiles");
       p.Hp = p.MaxHp; Preacher.Tick(0.1f); UnityEngine.Time.time += 20f; Preacher.Tick(0.1f); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 1f; UnityEngine.Time.time += 2f; Rt.Of(p).DiveUntil = UnityEngine.Time.time + 0.5f; Preacher.Tick(0.1f);
       Check(p.Hp == p.MaxHp, "Story 8: mid-dive it passes over you");
-      int ru = p.Ru; foreach (var m in MacroState.Current.OfflineSquads.Where(q => q.QuestId != null && q.QuestId.StartsWith("story:siege_w")).SelectMany(q => q.Members)) m.Hp = 0;
-      pr.Hp = 0; Preacher.Tick(0.1f); Tier4Story.TickRt(0.1f);
+      // finish the horde (the rest of the 90)
+      for (int i = 0; i < 100 && !(Preacher.Dead); i++)
+      {
+        UnityEngine.Time.time += 6f; Tier4Story.TickRt(0.1f);
+        foreach (var e in EncounterState.Enemies.Where(e => e.Faction == "Obelisk" && e.IsAlive() && e.Name == "Fanatic").ToList()) e.Hp = 0;
+        if (i == 30) { pr.Hp = 0; Preacher.Tick(0.1f); }
+      }
+      int ru = p.Ru; for (int i = 0; i < 100 && Story.Step("barrier") == 2; i++) { UnityEngine.Time.time += 6f; Tier4Story.TickRt(0.1f); foreach (var e in EncounterState.Enemies.Where(e => e.Faction == "Obelisk" && e.IsAlive()).ToList()) e.Hp = 0; }
       Check(p.Inventory.Items.Any(i => i.Id == "story_core") && Story.IsDone("barrier") && Story.Has("core_intact") && p.Ru == ru + 1500, "Story 8: the Preacher falls: an intact core, the mutants leave, Miro pays");
       Check(!EncounterState.Enemies.Any(e => !(e is HumanEnemy) && e.IsAlive() && MacroState.Current.OfflineSquads.Any(q => q.QuestId == "story:siege_listeners" && q.Members.Contains(e))), "Story 8: the listening mutants are gone");
       // the Apex

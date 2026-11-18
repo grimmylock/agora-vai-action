@@ -20,7 +20,8 @@ namespace GameCore
         public const float BodyTiles = 1.0f;                // a standing human, in tiles (feet to crown): the 32 px armour sprite is exactly a tile tall (2026-11-14; was 0.82, from the old 16 px sprite with two empty rows)
         public const float FeetBelow = 0.5f;                // a unit's feet (the sprite's bottom row) sit this far under its tile position (was 0.44)
         public const float LowCover = 0.55f;                // a low wall / sandbags / a tipped desk: waist high
-        public const float LightCover = 0.42f;              // brush, a fence, debris
+        public const float LightCover = 0.42f;
+        public const float HighCover = 0.95f;               // the Barrier (Barrier.cs): a standing head is under it; fire over it only from the tile behind              // brush, a fence, debris
         public const float HeadHalf = 0.13f, TorsoHalf = 0.21f, ArmFrom = 0.12f, LegsHalf = 0.17f;   // half-widths, tiles
 
         public class Hit
@@ -138,7 +139,7 @@ namespace GameCore
                 }
                 int ac = TerrainMap.CoverAcAt(tx, ty);
                 if (ac <= 0 || shooter != null && System.Math.Abs(tx - shooter.X) <= 1 && System.Math.Abs(ty - shooter.Y) <= 1) continue;   // open ground, or cover right next to the shooter: fired over
-                float top = ac >= 2 ? LowCover : LightCover;
+                float top = ac >= 3 ? HighCover : ac >= 2 ? LowCover : LightCover;
                 if (h > top) continue;                       // over it
                 hit.CoverX = tx; hit.CoverY = ty;
                 if (Materials.Pierced(Materials.At(tx, ty)) && hit.Through > 0.3f) { hit.Through *= Materials.ThroughDamage; continue; }

@@ -140,7 +140,7 @@ namespace GameCore
         public static bool BlocksSight(int x, int y)
         {
             var t = GetTile(x, y);
-            if (t.Type == TileType.Solid && t.Look == "window") return Smoke.ContainsKey((x, y));   // Batch 32: you can see (and shoot) through windows
+            if (t.Type == TileType.Solid && (t.Look == "window" || Barrier.IsWall(x, y))) return Smoke.ContainsKey((x, y));   // Batch 32: you can see (and shoot) through windows
             return TileRules.BlocksSight(t.Type) || Smoke.ContainsKey((x, y));
         }
 
@@ -163,6 +163,7 @@ namespace GameCore
         public static int CoverAcAt(int x, int y)
         {
             var t = GetTile(x, y);
+            if (Barrier.IsWall(x, y)) return 3;                                                     // the Barrier: high cover
             return t.Type == TileType.Solid && t.Look == "window" ? 2 : TileRules.CoverAc(t.Type);   // a window frame is hard cover
         }
 
@@ -206,13 +207,14 @@ namespace GameCore
         public static bool DamageTile(int x, int y, int amount, ICombatant attacker = null)
         {
             var t = GetTile(x, y);
-            int max = TileRules.MaxIntegrity(t);
+            bool wall = Barrier.IsWall(x, y);
+            int max = wall ? Barrier.WallHp : TileRules.MaxIntegrity(t);
             if (max <= 0 || amount <= 0 || x < 0 || x >= Width || y < 0 || y >= Height) return false;
             t.Damage += amount;
             DirtyTiles.Add((x, y));
             if (t.Damage < max)
             {
-                GameLog.Write($"Cover at ({x}, {y}) takes a hit ({max - t.Damage}/{max} left).");
+                if (!wall) GameLog.Write($"Cover at ({x}, {y}) takes a hit ({max - t.Damage}/{max} left).");
                 return false;
             }
 
@@ -231,7 +233,7 @@ namespace GameCore
                     break;
                 default:
                     SetTileType(x, y, TileType.Difficult, "rubble");
-                    GameLog.Write($"The cover at ({x}, {y}) is shot to rubble.");
+                    GameLog.Write(wall ? "A piece of the Barrier gives way." : $"The cover at ({x}, {y}) is shot to rubble.");
                     break;
             }
             return true;

@@ -176,7 +176,7 @@ namespace GameCore
             int ground = _groundCell[i], obj = _objCell[i];
             Color32 flat = FlatColor(tile);
             int crack = -1;
-            int max = TileRules.MaxIntegrity(tile);
+            int max = Barrier.IsWall(x, y) ? Barrier.WallHp : TileRules.MaxIntegrity(tile);
             if (tile.Damage > 0 && max > 0 && _looks.TryGetValue("fx_crack", out var cracks))
                 crack = cracks[tile.Damage * 2 >= max ? cracks.Count - 1 : 0];
 

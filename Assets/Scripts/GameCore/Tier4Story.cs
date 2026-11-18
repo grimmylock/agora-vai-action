@@ -19,22 +19,22 @@ namespace GameCore
 {
     public static class Tier4Story
     {
-        public const string Command = "Command Post", Barrier = "The Barrier", Firebase = "Sentinel Firebase", Pool = "Motor Pool", Deadfall = "Deadfall Clearing", Trophy = "story_trophy";
+        public const string Command = "Command Post", BarrierName = "The Barrier", Firebase = "Sentinel Firebase", Pool = "Motor Pool", Deadfall = "Deadfall Clearing", Trophy = "story_trophy";
         public static string ZoneOverride;
         static string Map4 => MacroMapDatabase.MapOf("vanguard_barracks");
         static bool OnTier4 => (ZoneOverride ?? TerrainMap.ZoneId) == Map4;
 
-        static float _siegeAt = -1f; static int _wave; static readonly float[] WaveAt = { 10f, 55f, 105f, 160f };
+        static float _siegeAt = -1f;
         static readonly List<Mutant> Defenders = new List<Mutant>(), Fanatics = new List<Mutant>(), Listeners = new List<Mutant>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _siegeAt = -1f; _wave = 0; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); }
+        public static void Reset() { _siegeAt = -1f; _spawned = 0; _beat = 0; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); Barrier.Reset(); }
 
         public static bool TryInteract(Player p)
         {
             if (!OnTier4) return false;
             if (Story.Near(p, Command, 3) && TalkCommand()) return true;
-            if (Story.Step("barrier") == 1 && Story.Near(p, Barrier, 4)) { TalkTolik(); return true; }
+            if (Story.Step("barrier") == 1 && Story.Near(p, BarrierName, 4)) { TalkTolik(); return true; }
             if (Story.Near(p, Pool, 3) && TalkHunter()) return true;
             if (Story.Step("summit") == 1 && Story.Near(p, Firebase, 3)) { TalkDovbush(); return true; }
             if (Story.Step("summit") == 3 && Story.Near(p, Command, 4)) { Summit(); return true; }
@@ -51,7 +51,7 @@ namespace GameCore
                 bool fought = Story.Has("bridge_fought");
                 Story.Talk("Commander Miro", new[] { "The Obelisk are massing in the Crimson Woods. More than I've ever seen. And they're organised - since when are fanatics organised?",
                     "They'll hit our barrier at dawn. I need every gun. Even yours." + (fought ? " Even after the bridge. Help us hold, and we'll call that forgotten." : " Help us hold." ) });
-                Story.SetStep("barrier", 1); Story.SetObjective("barrier", "Join Tolik at the Barrier and hold until dawn", Barrier);
+                Story.SetStep("barrier", 1); Story.SetObjective("barrier", "Join Tolik at the Barrier and hold until dawn", BarrierName);
                 Story.Journal("The Barrier: the Obelisk are massing, organised, and will hit the Liberators' barrier at dawn.");
                 return true;
             }
@@ -72,6 +72,16 @@ namespace GameCore
         }
 
         // ---------------- the Siege ----------------
+        // A horde (Total fanatics) fed in at a pressure: LiveTarget alive at once (growing), a batch of four whenever the count is under it, from the Crimson Woods 40 tiles north of the wall. They walk to
+        // the Barrier (Barrier.Tick) and tear at it; the defenders (eight Liberators) hold the catwalk. Story beats by how many have come: the line (0), grenade men (30), a machine-gun nest of
+        // Professionals (55), the Preacher with guards (75). The siege ends when all of them are down, the Preacher too. It is lost if the wall is gone and every defender is dead.
+
+        public const int Total = 90, DefenderCount = 8, Batch = 4;
+        public const float BatchGap = 5f, TargetStart = 20f, TargetEnd = 30f, RampSeconds = 360f;
+        static int _spawned, _beat; static float _nextBatch;
+        /// <summary>The siege is on (the HUD's bar), and how many of the horde are down.</summary>
+        public static bool SiegeOn => Story.Step("barrier") == 2 && _siegeAt >= 0f;
+        public static int HordeDown => Mathf.Min(Total, Fanatics.Count(f => !f.IsAlive()));
 
         static void PlaceNear(string mission, int x, int y, string faction, List<Mutant> members)
         {
@@ -89,66 +99,75 @@ namespace GameCore
 
         static void BeginSiege()
         {
-            var bl = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == Barrier); if (bl == null) return;
+            var bl = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == BarrierName); if (bl == null) return;
             SaveSystem.Save();
             MacroState.Current.Hour = 5f;
             Story.Fade(Color.black, 0f, 0.1f);
-            Story.SetStep("barrier", 2); Story.SetObjective("barrier", "Hold the Barrier", Barrier);
-            Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); _wave = 0; _siegeAt = Time.time; Preacher.Reset();
+            Story.SetStep("barrier", 2); Story.SetObjective("barrier", "Hold the Barrier", BarrierName);
+            Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); GameData_Reset();
+            _siegeAt = Time.time; _spawned = 0; _beat = 0; _nextBatch = Time.time + 12f; Preacher.Reset(); GameLog.Event("Dawn. The Obelisk are coming out of the Crimson Woods. Hold the wall.");
             var def = new List<Mutant>();
-            for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Liberators", "Experienced", 4, i == 0); def.Add(new HumanEnemy("Liberator", 0, 0, "Liberators", "Experienced", w, a)); }
-            PlaceNear("siege_def", bl.X, bl.Y + 1, "Liberators", def); Defenders.AddRange(def);
-            foreach (var m in def) { m.IsAggroed = false; }
+            for (int i = 0; i < DefenderCount; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Liberators", "Experienced", 4, i == 0); def.Add(new HumanEnemy("Liberator", 0, 0, "Liberators", "Experienced", w, a)); }
+            PlaceNear("siege_def", bl.X, bl.Y, "Liberators", def);
+            int dx = 0;
+            foreach (var m in def) { var (fx, fy) = TerrainMap.FindNearestEnterable(Barrier.X0 + 20 + dx * 4 + (Barrier.X1 - Barrier.X0) / 4, Barrier.Y + 1, 3); m.X = fx; m.Y = fy; m.IsAggroed = false; dx++; }
+            Defenders.AddRange(def);
             // eight mutants gather behind the fanatics and wait (the outline: they are listening)
             var lis = new List<Mutant>();
             for (int i = 0; i < 8; i++) { var d = EncounterGeneration.PickRandomMutantByTier(4, 4) ?? EncounterGeneration.PickRandomMutantByTier(1, 5); lis.Add(EncounterGeneration.CreateMutantFromDb(d, 0, 0)); }
-            PlaceNear("siege_listeners", bl.X, bl.Y - 42, "Mutant", lis); Listeners.AddRange(lis);
-            Story.Radio("Miro", "Here they come! Everyone to the line!");
+            PlaceNear("siege_listeners", bl.X, Barrier.Y - 46, "Mutant", lis); Listeners.AddRange(lis);
+            Story.Radio("Miro", "Here they come! Everyone to the wall!");
         }
 
-        static void ReleaseWave(int i)
+        static void GameData_Reset() { Barrier.Horde.Clear(); }
+
+        static void Feed()
         {
-            var bl = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == Barrier); if (bl == null) return;
-            List<Mutant> pack; int ex, ey;
-            switch (i)
-            {
-                case 0: pack = Obelisk(6, "Experienced"); ex = bl.X; ey = bl.Y - 34; GameLog.Event("Obelisk on the north road! A whole line of them."); break;
-                case 1: pack = Obelisk(5, "Experienced", 2); ex = bl.X + 30; ey = bl.Y - 12; GameLog.Event("They're on the right - grenades!"); break;
-                case 2: pack = Obelisk(3, "Professional"); ex = bl.X - 8; ey = bl.Y - 28; GameLog.Event("Machine gun in the trees!"); break;
-                default:
-                    pack = Obelisk(4, "Professional"); ex = bl.X; ey = bl.Y - 38; PlaceNear("siege_w3", ex, ey, "Obelisk", pack);
-                    var pr = Preacher.Spawn(ex, ey - 4); var (px, py) = TerrainMap.FindNearestEnterable(ex, ey - 4, 8); pr.X = px; pr.Y = py;
-                    GameLog.Event("Through the smoke: a tall figure in Obelisk white, a glowing violet sphere strapped to his back, arms raised."); Banter.Say(pr, "Be still. Be quiet. Be one.", 2);
-                    foreach (var m in pack) { m.IsAggroed = true; Fanatics.Add(m); }
-                    return;
-            }
-            PlaceNear("siege_w" + i, ex, ey, "Obelisk", pack);
-            foreach (var m in pack) { m.IsAggroed = true; Fanatics.Add(m); }
+            int x = Random.Range(Barrier.X0 + 4, Barrier.X1 - 3), y = Barrier.Y - 40;
+            List<Mutant> pack; string tag = "siege_h" + _spawned;
+            if (_beat == 0 && _spawned >= 30) { _beat = 1; GameLog.Event("They're on the right - grenades!"); }
+            if (_beat == 1 && _spawned >= 55) { _beat = 2; GameLog.Event("Machine gun in the trees!"); }
+            bool nest = _beat == 2 && _spawned < 61;
+            pack = nest ? Obelisk(Batch, "Professional") : Obelisk(Batch, _beat >= 1 && Random.value < 0.4f ? "Experienced" : "Experienced", _beat >= 1 && _spawned % 3 == 0 ? 2 : 0);
+            if (_beat == 2 && _spawned >= 75) { _beat = 3; SpawnPreacher(x, y); }
+            PlaceNear(tag, x, y, "Obelisk", pack);
+            foreach (var m in pack) { m.IsAggroed = true; Fanatics.Add(m); Barrier.Horde.Add(m); }
+            _spawned += Batch;
+        }
+
+        static void SpawnPreacher(int x, int y)
+        {
+            var pr = Preacher.Spawn(x, y - 4); var (px, py) = TerrainMap.FindNearestEnterable(x, y - 4, 8); pr.X = px; pr.Y = py;
+            Barrier.Horde.Add(pr);
+            GameLog.Event("Through the smoke: a tall figure in Obelisk white, a glowing violet sphere strapped to his back, arms raised."); Banter.Say(pr, "Be still. Be quiet. Be one.", 2);
         }
 
         public static void TickRt(float dt)
         {
             if (Net.Mode == Net.Role.Client || Story.Step("barrier") != 2 || _siegeAt < 0f) return;
-            float t = Time.time - _siegeAt;
-            if (_wave < WaveAt.Length && t >= WaveAt[_wave]) { ReleaseWave(_wave); _wave++; }
+            float now = Time.time, t = now - _siegeAt;
+            Barrier.Tick(dt);
+            int alive = Fanatics.Count(f => f.IsAlive());
+            float target = Mathf.Lerp(TargetStart, TargetEnd, Mathf.Clamp01(t / RampSeconds));
+            if (_spawned < Total && now >= _nextBatch && alive < target) { Feed(); _nextBatch = now + BatchGap; }
             foreach (var m in Fanatics) if (m.IsAlive()) m.IsAggroed = true;
             foreach (var m in Listeners) if (m.IsAlive()) m.IsAggroed = false;      // they wait, listening
-            foreach (var m in Defenders.OfType<HumanEnemy>()) if (m.IsAlive() && Fanatics.Any(f => f.IsAlive() && CombatantUtil.Distance(m, f) < 30)) m.IsAggroed = true;
-            if (Defenders.Count > 0 && Defenders.All(d => !d.IsAlive())) { Lose(); return; }
-            if (_wave >= WaveAt.Length && Preacher.Dead && Fanatics.All(f => !f.IsAlive())) Win();
+            foreach (var m in Defenders.OfType<HumanEnemy>()) if (m.IsAlive() && Fanatics.Any(f => f.IsAlive() && CombatantUtil.Distance(m, f) < 34)) m.IsAggroed = true;
+            if (Defenders.Count > 0 && Defenders.All(d => !d.IsAlive()) && Barrier.Fraction <= 0f) { Lose(); return; }
+            if (_spawned >= Total && Preacher.Dead && Fanatics.All(f => !f.IsAlive())) Win();
         }
 
         static void Lose()
         {
             Story.SetStep("barrier", 1); _siegeAt = -1f;
-            GameLog.Event("[ALERT] The line breaks. The Liberators are overrun.");
+            GameLog.Event("[ALERT] The wall is down and the line is overrun.");
             Story.Fade(Color.black, 1f, 0.6f);
-            if (!SaveSystem.Load()) { Story.Fade(Color.black, 0f, 0.6f); foreach (var m in Fanatics) EncounterState.Enemies.Remove(m); Fanatics.Clear(); }
+            if (!SaveSystem.Load()) { Story.Fade(Color.black, 0f, 0.6f); foreach (var m in Fanatics) EncounterState.Enemies.Remove(m); Fanatics.Clear(); Barrier.Horde.Clear(); }
         }
 
         static void Win()
         {
-            _siegeAt = -1f;
+            _siegeAt = -1f; Barrier.Horde.Clear();
             foreach (var m in Listeners.Where(m => m.IsAlive()).ToList()) EncounterState.Enemies.Remove(m);
             GameLog.Event("Behind the fallen line the waiting mutants turn together and go - not scattering in panic: leaving, the way a crowd leaves when a song stops. They will regroup farther in.");
             if (Story.Has("tier3_reveal")) Story.Radio("Osei", "Every mutant on that ridge facing the same way. For hours. Listening. I want to know to what.");
