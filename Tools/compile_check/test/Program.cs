@@ -2583,6 +2583,15 @@ static class Program {
         Check(Story.IsDone("culvert") && Story.Has("husks_known") && !p.Inventory.Items.Any(i => i.Id == "story_canister"), "Story 5: Pavel opens it: the Husks are known");
       } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
     }
+    // Polish: roaming Husk packs in the A-Life
+    { MacroState.Current.StoryFlags.Clear(); int before = MacroState.Current.OfflineSquads.Count(q => q.Faction == Husk.Faction);
+      for (int i = 0; i < 40; i++) SquadManager.TickHour();
+      Check(MacroState.Current.OfflineSquads.Count(q => q.Faction == Husk.Faction) == before, "Husk packs: none before the canister is read");
+      Story.Set("husks_known"); for (int i = 0; i < 300; i++) SquadManager.TickHour();
+      int packs = MacroState.Current.OfflineSquads.Count(q => q.Faction == Husk.Faction && q.Members.Any(m => m.IsAlive()));
+      Check(packs >= 1 && packs <= Husk.MaxPacks, $"Husk packs: after the canister they roam, at most {Husk.MaxPacks} ({packs})");
+      Check(MacroState.Current.OfflineSquads.Where(q => q.Faction == Husk.Faction).All(q => { var z = MacroState.Current.OfflineSquads.Count > 0 ? MacroMapDatabase.Find(q.ZoneId) : null; return z != null && !z.IsSafeZone; }), "Husk packs: never in a Safe Zone");
+      MacroState.Current.OfflineSquads.RemoveAll(q => q.Faction == Husk.Faction); EncounterState.Enemies.RemoveAll(e => Husk.Is(e)); MacroState.Current.StoryFlags.Clear(); }
     // Polish: the story's people as units
     { MacroState.Current.StoryFlags.Clear(); StoryNpcs.Reset(); EncounterState.Enemies.RemoveAll(e => e.Faction == StoryNpcs.Faction);
       StoryNpcs.OnEnterZone();

@@ -654,7 +654,7 @@ namespace GameCore
             GameLog.Quiet = true;     // ponytail: hourly news goes to the Console until it reaches the player as radio chatter and rumors
             try
             {
-                TickSquadMigration(here); Refill(here); ResolveOffscreenSquadConflicts(here); FactionDeck.Tick();
+                TickSquadMigration(here); Refill(here); ResolveOffscreenSquadConflicts(here); FactionDeck.Tick(); Husk.Roam(here);
                 Checkpoints.Garrison();   // Batch 126: a wiped-out checkpoint is taken up again after a while
                 if (here != null) { DepartLive(here); UpdateLiveRegions(here); }
                 foreach (var s in MacroState.Current.OfflineSquads.Where(s => s.LeavingFor != null && !OnMap(s.ZoneId, here)).ToList()) Leave(s);   // you left before they did
@@ -673,6 +673,7 @@ namespace GameCore
         static bool CanEnter(string zoneId, string faction)
         {
             var z = MacroMapDatabase.Find(zoneId);
+            if (faction == Husk.Faction) return z != null && !z.IsSafeZone && !z.IsDungeon;   // Husks walk anywhere that isn't a Safe Zone
             return z != null && (WorldEvents.Factions(z).Count == 0 || WorldEvents.Factions(z).Contains(faction));
         }
 

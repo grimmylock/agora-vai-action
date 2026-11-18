@@ -38,7 +38,7 @@ namespace GameCore
 
         public static void Say(Mutant who, string text, int kind = 0, float delay = 0f)
         {
-            if (who == null || string.IsNullOrEmpty(text)) return;
+            if (who == null || string.IsNullOrEmpty(text) || Husk.Is(who)) return;   // Husks don't talk
             Active.RemoveAll(b => b.Who == who && b.Start <= T + delay);
             float start = T + delay;
             Active.Add(new Bark { Who = who, Text = text, Start = start, Until = start + LineSeconds + text.Length * 0.03f, Kind = kind });

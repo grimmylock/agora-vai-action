@@ -28,6 +28,27 @@ namespace GameCore
             return h;
         }
 
+        public const int MaxPacks = 4;
+        public const float PackChancePerHour = 0.10f;
+
+        /// <summary>Hourly (SquadManager.TickHour): once the canister has been read (flag husks_known) the transmitter's work shows up in every tier: now and then a pack of Husks
+        /// appears in a wild region off your map (never a Safe Zone, a dungeon or an interior), of the tier you are in or one above, and wanders between regions like any squad (they
+        /// may walk anywhere that isn't a Safe Zone). At most MaxPacks at once in the world. They are the story's, not a faction's: no deck, no home, no post.</summary>
+        public static void Roam(string hereMap)
+        {
+            if (!Story.Has("husks_known") || Survival.On) return;
+            var m = MacroState.Current;
+            if (m.OfflineSquads.Count(s => s.Faction == Faction && s.Members.Any(x => x.IsAlive())) >= MaxPacks || UnityEngine.Random.value > PackChancePerHour) return;
+            int tier = MacroMapDatabase.Find(m.CurrentZoneId)?.Tier ?? 1;
+            var zones = MacroMapDatabase.Zones.Where(z => !z.IsSafeZone && !z.IsDungeon && z.AllowedFactions.Count > 0 && !ZoneLayoutRecipes.IsInterior(z.Id)
+                && z.Tier <= tier + 1 && (hereMap == null || !SquadManager.OnMap(z.Id, hereMap))).ToList();
+            if (zones.Count == 0) return;
+            var zone = zones[UnityEngine.Random.Range(0, zones.Count)];
+            var pack = Pack(zone.Tier);
+            m.OfflineSquads.Add(new OfflineSquad { ZoneId = zone.Id, Faction = Faction, Members = pack, PersistFullState = true, IsHostileToPlayer = true, LastUpdatedTick = m.WorldTickCounter });
+            WorldEvents.News('M', zone.Id, $"Something is walking the roads of {zone.Name}: pale people in a pack, dragging their feet.");
+        }
+
         /// <summary>A pack of `n` (4 to 8 when you pass nothing).</summary>
         public static List<Mutant> Pack(int tier, int n = -1)
         {
