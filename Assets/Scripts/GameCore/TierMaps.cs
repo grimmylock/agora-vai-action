@@ -1085,6 +1085,17 @@ namespace GameCore
             // Story 8b: the Barrier (Barrier.cs): an arc of concrete bowing out to the north, the compound's firing step (a steel catwalk two tiles deep) just inside it
             foreach (var (bx, by) in Barrier.Cells) c.Put(bx, by, Solid, "jersey");
             for (int bx = Barrier.X0; bx <= Barrier.X1; bx++) { int bot = Barrier.BottomY(bx); c.Rect(bx, bot + 1, 1, 2, Empty, 0); c.Paint(bx, bot + 1, 1, 2, Grate); }
+            // the deck's face and railing along its south edge, steps down in four places (props_barrier.py)
+            var stairCols = new System.Collections.Generic.HashSet<int> { 140, 141, 150, 151, 161, 162, 171, 172 };
+            for (int bx = Barrier.X0; bx <= Barrier.X1; bx++)
+            {
+                int bot = Barrier.BottomY(bx);
+                if (stairCols.Contains(bx)) c.Deco(bx, bot + 3, "deck_steps");
+                else { c.Deco(bx, bot + 3, "deck_face"); c.Deco(bx, bot + 2, "deck_rail"); }
+            }
+            for (int ty = 88; ty <= 119; ty++) for (int tx = 129; tx <= 183; tx++)       // clear the trees, brush and logs of the field in front of the barrier and the yard behind it
+                if (!Barrier.Cells.Contains((tx, ty)) && c.Get(tx, ty) != Empty) c.Put(tx, ty, Empty);
+            c.Keep(124, 86, 66, 38);                                                    // no trees or clutter round the barrier (the dresser leaves it as authored)
             c.Landmark("The Barrier", Barrier.CX, Barrier.StepY(Barrier.CX) + 1);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
             // Barracks Row
             c.Stamp("Barracks Row", 127, 136, 3, "wall", Floor, 0, "lockers");
