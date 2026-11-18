@@ -55,10 +55,15 @@ namespace GameCore
         public static int StepY(int x) => BottomY(x) + 1;
 
         /// <summary>The columns of the two watchtowers (their middle columns): flat stretches of the arc near x 145 and 166, clear of the steps (TierMaps).</summary>
-        public static int[] TowerCols() { var r = new List<int>(); foreach (int target in new[] { 145, 166 }) for (int d = 0; d <= 4; d++) foreach (int tx in new[] { target + d, target - d }) if (r.Count < (target == 145 ? 1 : 2) && BottomY(tx - 1) == BottomY(tx) && BottomY(tx) == BottomY(tx + 1) && !StairCols.Contains(tx - 1) && !StairCols.Contains(tx) && !StairCols.Contains(tx + 1)) r.Add(tx); return r.ToArray(); }
+        public static int[] TowerCols() { var r = new List<int>(); foreach (int target in new[] { 145, 166 }) for (int d = 0; d <= 4; d++) foreach (int tx in new[] { target + d, target - d }) if (r.Count < (target == 145 ? 1 : 2) && Enumerable.Range(tx - 2, 5).All(c => !StairCols.Contains(c))) r.Add(tx); return r.ToArray(); }
+        /// <summary>A watchtower's top row (its window wall): the first row south of the deck under all five of its columns. The tower is a real concrete building (5 wide, 3 deep: windows on the north, a door on the south, three tiles inside), so the roof rules of any building apply to it.</summary>
+        public static int TowerTop(int tc) => Enumerable.Range(tc - 2, 5).Max(BottomY) + 3;
         public static readonly HashSet<int> StairCols = new HashSet<int> { 140, 141, 150, 151, 161, 162, 171, 172 };
 
         /// <summary>Is (x, y) a standing piece of the wall? (A broken tile is rubble and not.)</summary>
+        /// <summary>The Barrier's wall or a watchtower's: the tough structures (rounds and blasts are scaled down against them).</summary>
+        public static bool Sturdy(int x, int y) => IsWall(x, y) || Emplacement.TowerAt(x, y) != null;
+
         public static bool IsWall(int x, int y) => On && x >= X0 && x <= X1 && Cells.Contains((x, y)) && TerrainMap.GetTile(x, y).Type == TileType.Solid;
 
         public static int HpAt(int x, int y) => IsWall(x, y) ? System.Math.Max(0, WallHp - TerrainMap.GetTile(x, y).Damage) : 0;
@@ -82,7 +87,18 @@ namespace GameCore
             var walls = gaps.Count == Cells.Count ? new List<(int x, int y)>() : Cells.Where(c => IsWall(c.x, c.y)).ToList();
             foreach (var m in Horde)
             {
-                if (!m.IsAggroed || !Outside(m)) continue;                        // inside: its own AI hunts you
+                if (m.IsAggroed && !Outside(m))                                    // inside: its own AI hunts you - and whoever stands at a watchtower's wall tears at it too
+                {
+                    for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
+                        if (Emplacement.TowerAt(m.X + dx, m.Y + dy) != null && TerrainMap.GetTile(m.X + dx, m.Y + dy).Type == TileType.Solid)
+                        {
+                            int tk = (m.X + dx) * 1000 + m.Y + dy; float ta = (_wear.TryGetValue(tk, out var tc0) ? tc0 : 0f) + BreachWear * dt; int tw = Mathf.FloorToInt(ta);
+                            if (tw > 0) { ta -= tw; TerrainMap.DamageTile(m.X + dx, m.Y + dy, tw, m); }
+                            _wear[tk] = ta; dx = dy = 2;
+                        }
+                    continue;
+                }
+                if (!m.IsAggroed) continue;
                 if (gaps.Count > 0)                                                  // a gap: the nearest one
                 {
                     var g = gaps.OrderBy(c => (c.x - m.X) * (c.x - m.X) + (c.y - m.Y) * (c.y - m.Y)).First();

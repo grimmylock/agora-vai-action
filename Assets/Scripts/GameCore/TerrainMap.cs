@@ -206,6 +206,7 @@ namespace GameCore
         /// an explosion kills.</summary>
         public static bool DamageTile(int x, int y, int amount, ICombatant attacker = null)
         {
+            if (Emplacement.Hurt(x, y, amount)) return false;                          // a Barrier watchtower: its hit points are shared by all its walls
             var t = GetTile(x, y);
             bool wall = Barrier.IsWall(x, y);
             int max = wall ? Barrier.WallHp : TileRules.MaxIntegrity(t);

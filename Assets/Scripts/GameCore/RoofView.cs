@@ -512,6 +512,17 @@ namespace GameCore
             }
         }
 
+        /// <summary>The building over (x, y) is gone (a watchtower crumbled): its roof stops being drawn for good.</summary>
+        public static void Drop(int x, int y)
+        {
+            if (IdMap == null || x < 0 || y < 0 || x >= _w || y >= _h) return;
+            int id = IdMap[y * _w + x]; if (id < 0 || id >= Buildings.Count) return;
+            var b = Buildings[id];
+            for (int i = 0; i < b.Cell.Length; i++) if (b.Cell[i]) IdMap[(b.Y0 + i / b.W) * _w + b.X0 + i % b.W] = -1;
+            b.Cell = new bool[b.Cell.Length]; b.Alpha = 0f;
+            if (b.Sr != null) b.Sr.enabled = false;
+        }
+
         /// <summary>Per frame: fade the roof the player is under; cut away what the player can see into.</summary>
         public void Tick(Player p)
         {

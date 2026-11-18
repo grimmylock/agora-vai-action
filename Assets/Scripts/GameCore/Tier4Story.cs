@@ -28,7 +28,8 @@ namespace GameCore
         static readonly List<Mutant> Defenders = new List<Mutant>(), Fanatics = new List<Mutant>(), Listeners = new List<Mutant>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _siegeAt = -1f; _spawned = 0; _beat = 0; _gunners = false; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); Barrier.Reset(); }
+        static bool _test;
+        public static void Reset() { _test = false; _siegeAt = -1f; _spawned = 0; _beat = 0; _gunners = false; Defenders.Clear(); Fanatics.Clear(); Listeners.Clear(); Barrier.Reset(); }
 
         public static bool TryInteract(Player p)
         {
@@ -98,10 +99,25 @@ namespace GameCore
             return list;
         }
 
-        static void BeginSiege()
+        /// <summary>Testing Ground (Yan, 2026-11-18: a "barrier defense" section like the "Taken" one): the Vanguard Barracks map, the story at "ready to hold", you in the yard behind the Barrier, the dawn siege starting now.
+        /// Press it again to start over (the wall is mended, the towers stand again).</summary>
+        public static void StartForTest()
+        {
+            Reset(); _test = true; Emplacement.Reset(); Preacher.Reset();
+            foreach (var f in new[] { "barrier_held", "core_intact", "core_cracked", "core_kept", "core_destroyed", "core_sold_garrison" }) Story.Clear(f);
+            Story.SetStep("barrier", 1);
+            MacroState.Current.CurrentZoneId = "vanguard_barracks"; ZoneTravel.EnterZone("vanguard_barracks");
+            EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+            int k = 0;
+            foreach (var pl in Player.All) { var (x, y) = TerrainMap.FindNearestEnterable(Barrier.CX - 2 + k, Barrier.StepY(Barrier.CX) + 4, 4); pl.X = x; pl.Y = y; Rt.SetOffset(pl, 0f, 0f); Rt.Knockdown(pl, 0f); k++; }
+            BeginSiege(false);
+            GameLog.Write("[TESTING GROUND] Tier 4, the Barrier: the siege has started. The towers' machine guns are in the yard behind the wall (E to man one). Main menu > Testing Ground to come back; the entry again starts over.");
+        }
+
+        static void BeginSiege(bool save = true)
         {
             var bl = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == BarrierName); if (bl == null) return;
-            SaveSystem.Save();
+            if (save) SaveSystem.Save();
             MacroState.Current.Hour = 5f;
             Story.Fade(Color.black, 0f, 0.1f);
             Story.SetStep("barrier", 2); Story.SetObjective("barrier", "Hold the Barrier", BarrierName);
@@ -174,6 +190,7 @@ namespace GameCore
         {
             Story.SetStep("barrier", 1); _siegeAt = -1f;
             GameLog.Event("[ALERT] The wall is down and the line is overrun.");
+            if (_test) { StartForTest(); return; }                                          // the Testing Ground: straight back to the start
             Story.Fade(Color.black, 1f, 0.6f);
             if (!SaveSystem.Load()) { Story.Fade(Color.black, 0f, 0.6f); foreach (var m in Fanatics) EncounterState.Enemies.Remove(m); Fanatics.Clear(); Barrier.Horde.Clear(); }
         }

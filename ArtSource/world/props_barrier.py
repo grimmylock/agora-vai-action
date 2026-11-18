@@ -105,5 +105,41 @@ def tower_conc(seed):
     for _ in range(18): px(im, r.randrange(2, 50), r.randrange(40, 100), c[1] if r.random() < .6 else c[4])
     return finish(im, (W // 2, 101), shadow=(50, 9, 0, -2), tall=True)
 
-NEW = {"deck_face": deck_face, "deck_rail": deck_rail, "deck_steps": deck_steps, "tower_conc": tower_conc}
+
+def tower_ruin(seed):
+    """The Barrier's watchtower after it has crumbled (Emplacement.Collapse): a low heap of broken concrete where it stood, one corner of the north wall with a window hole still up, bent rebar,
+    chunks of slab, scorch and dust, and the tripod gun twisted under it. 5 tiles wide (80 px), the heap about 2 tiles deep."""
+    c = P["concrete"]; s = P["steel"]; ru = P["rust"]; W, H = 80, 46; im = blank(W, H); d = ImageDraw.Draw(im); r = rng(seed)
+    def blk(x, y, w, h, hi=3):                                                                   # a broken chunk: lit top edge, mid face, dark underside
+        d.rectangle([x, y, x + w - 1, y + h - 1], fill=c[2]); d.line([x, y, x + w - 1, y], fill=c[hi]); d.line([x, y + h - 1, x + w - 1, y + h - 1], fill=c[0]); d.line([x + w - 1, y, x + w - 1, y + h - 1], fill=c[1])
+    # the heap: rows of chunks, bigger at the back (north, top of the picture), spilling forward
+    for row, (y0, n, lo, hi) in enumerate(((22, 11, 6, 11), (29, 12, 5, 9), (35, 13, 4, 8), (40, 14, 3, 6))):
+        for _ in range(n):
+            w = r.randint(lo, hi); h = r.randint(3, 5 if row < 2 else 4)
+            blk(r.randint(6, W - 6 - w), y0 + r.randint(-2, 2), w, h, 3 if r.random() < .6 else 4)
+    # one corner of the wall still standing at the back left, with the hole of a window in it
+    x0, y0, w, h = 8, 3, 22, 24
+    d.rectangle([x0, y0 + 5, x0 + w - 1, y0 + h - 1], fill=c[2]); d.line([x0, y0 + 5, x0 + w - 1, y0 + 5], fill=c[3])
+    d.polygon([(x0, y0 + 5), (x0, y0 + 1), (x0 + 6, y0 + 3), (x0 + 11, y0), (x0 + 15, y0 + 4), (x0 + w - 1, y0 + 2), (x0 + w - 1, y0 + 5)], fill=c[3])      # a jagged top where it broke
+    d.line([x0, y0 + 5, x0, y0 + h - 1], fill=c[4]); d.line([x0 + w - 1, y0 + 5, x0 + w - 1, y0 + h - 1], fill=c[0])
+    d.rectangle([x0 + 7, y0 + 9, x0 + 14, y0 + 15], fill=c[0]); d.line([x0 + 7, y0 + 9, x0 + 14, y0 + 9], fill=c[1])                                       # the window hole
+    for k in range(0, w, 6): d.line([x0 + k, y0 + 6, x0 + k, y0 + h - 2], fill=c[1])                                                                         # the board marks of the formwork
+    # bent rebar sticking out of the breaks
+    for _ in range(9):
+        x = r.randrange(6, W - 6); y = r.randrange(14, 38); l = r.randint(4, 9); lean = r.choice((-1, 0, 1))
+        for k in range(l): px(im, x + (lean * k) // 3, y - k, ru[1 + k % 3] if k % 4 else s[2])
+    # the tripod gun, bent, in the middle of the heap
+    for k in range(9): px(im, 46 + k, 31 - k // 2, s[1]); px(im, 46 + k, 32 - k // 2, s[2])
+    for k in range(6): px(im, 50 + k // 2, 32 + k, s[1]); px(im, 56 - k // 2, 32 + k, s[1])
+    d.rectangle([54, 24, 63, 26], fill=s[2]); d.line([54, 24, 63, 24], fill=s[3]); d.rectangle([60, 21, 64, 23], fill=ru[1])
+    # scorch and dust
+    for _ in range(140):
+        x, y = r.randrange(4, W - 4), r.randrange(20, 44)
+        if im.getpixel((x, y))[3]: px(im, x, y, (c[0] if r.random() < .5 else c[1]))
+    for _ in range(60):
+        x, y = r.randrange(2, W - 2), r.randrange(38, 45); px(im, x, y, c[4])
+    for _ in range(40): px(im, r.randrange(2, W - 2), r.randrange(42, 46), P["moss"][r.randint(0, 1)])
+    return finish(im, (W // 2, H - 2), shadow=(70, 6, 0, 0), tall=False)
+
+NEW = {"deck_face": deck_face, "deck_rail": deck_rail, "deck_steps": deck_steps, "tower_conc": tower_conc, "tower_ruin": tower_ruin}
 VARIANTS = {"deck_face": 3}

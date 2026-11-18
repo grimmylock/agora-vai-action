@@ -484,7 +484,7 @@ namespace GameCore
             {
                 fx.CoverX = hit.CoverX; fx.CoverY = hit.CoverY; fx.CoverMat = Materials.At(hit.CoverX, hit.CoverY);
                 fx.CoverHit = hit.Cover || hit.Wall; fx.Through = hit.Through < 1f;
-                if (hit.Cover || hit.Through < 1f) TerrainMap.DamageTile(hit.CoverX, hit.CoverY, Barrier.IsWall(hit.CoverX, hit.CoverY) ? UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(RoundDamage(w, "Torso", hit.Dist, pellets) * Barrier.RoundWear)) : 1, shooter);
+                if (hit.Cover || hit.Through < 1f) TerrainMap.DamageTile(hit.CoverX, hit.CoverY, Barrier.Sturdy(hit.CoverX, hit.CoverY) ? UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(RoundDamage(w, "Torso", hit.Dist, pellets) * Barrier.RoundWear)) : 1, shooter);
             }
             var target = hit.Unit;
             if (target != null && (Boss.Deflects(target) || Tier2Story.ShieldsElder(shooter, target)))   // Boss 1: he swats it away unless he's staggered; "Taken": the Elder Gaunt shrugs off the soldiers' rounds

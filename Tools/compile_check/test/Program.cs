@@ -2512,10 +2512,14 @@ static class Program {
       Check(Barrier.Outside(brute) && !Barrier.Outside(step), "Barrier: outside and inside are told apart");
       // the watchtowers' machine guns
       Emplacement.Reset(); var tcs = Barrier.TowerCols();
-      Check(tcs.Length == 2 && tcs[0] < Barrier.CX && tcs[1] > Barrier.CX && Barrier.BottomY(tcs[0] - 1) == Barrier.BottomY(tcs[0] + 1), $"Barrier: two watchtower sites on flat stretches of the arc (x {string.Join(", ", tcs)})");
+      Check(tcs.Length == 2 && tcs[0] < Barrier.CX && tcs[1] > Barrier.CX && Enumerable.Range(tcs[0] - 2, 5).All(c => !Barrier.StairCols.Contains(c)), $"Barrier: two watchtower sites clear of the stairs (x {string.Join(", ", tcs)})");
+      foreach (var gg in Emplacement.Guns)                                                                  // the map's tower buildings, stamped on the test arena (TierMaps does this on the real map)
+        for (int ty = gg.Top; ty <= gg.Top + 2; ty++) for (int tx = gg.Tx - 2; tx <= gg.Tx + 2; tx++) { var tt = TerrainMap.GetTile(tx, ty); bool wall = tx == gg.Tx - 2 || tx == gg.Tx + 2 || ty == gg.Top || ty == gg.Top + 2;
+          tt.Damage = 0; tt.Type = !wall ? TileType.Empty : ty == gg.Top + 2 && tx == gg.Tx ? TileType.Door : TileType.Solid; tt.Look = !wall ? null : ty == gg.Top && Math.Abs(tx - gg.Tx) <= 1 ? "window" : ty == gg.Top + 2 && tx == gg.Tx ? "metal" : "concrete"; }
       var tg = Emplacement.Guns[0]; var own = p.EquippedWeapon; p.X = tg.Tx; p.Y = tg.StepsY; p.Hp = p.MaxHp;
+      Check(TerrainMap.GetTile(tg.Tx, tg.NookY).Type == TileType.Empty && TerrainMap.GetTile(tg.Tx, tg.Top).Look == "window" && TerrainMap.GetTile(tg.Tx, tg.StepsY).Type == TileType.Door && TerrainMap.GetTile(tg.Tx - 2, tg.NookY).Look == "concrete", "Barrier: a tower is a small concrete building: windows north, the nook inside, a door south");
       Emplacement.TryInteract(p);
-      Check(Emplacement.IsMounted(p) && p.X == tg.Tx && p.Y == tg.NookY && p.EquippedWeapon != null && p.EquippedWeapon.Db != null && p.EquippedWeapon.Db.MagCapacity == Emplacement.Belt && Emplacement.LiftOf(p) > 0f, "Machine gun: E at the tower's steps: you are in the nook with a 200-round belt gun, drawn up on the platform");
+      Check(Emplacement.IsMounted(p) && p.X == tg.Tx && p.Y == tg.NookY && p.EquippedWeapon != null && p.EquippedWeapon.Db != null && p.EquippedWeapon.Db.MagCapacity == Emplacement.Belt, "Machine gun: E in the tower's door: you are at the gun inside with a 200-round belt gun");
       { var tfoe = new HumanEnemy("Fanatic", tg.Tx, Barrier.TopY(tg.Tx) - 6, "Obelisk", "Experienced", null, null); var (gx, gy) = Ballistics.Pos(p); var (ex, ey) = Ballistics.Pos(tfoe); float gl = (float)Math.Sqrt((ex - gx) * (ex - gx) + (ey - gy) * (ey - gy));
         var th = Ballistics.Trace(p, gx, gy, (ex - gx) / gl, (ey - gy) / gl, 40f, 0.8f, new ICombatant[] { tfoe });
         Check(!th.Cover && th.Unit == tfoe, "Machine gun: from the tower the rounds go over the barrier from any distance"); }
@@ -2523,11 +2527,18 @@ static class Program {
       Check(p.EquippedWeapon.CurrentMagazine == Emplacement.Belt && tg.Box < box0, "Machine gun: the belt swaps by itself from the tower's box");
       Check(Emplacement.GunOf(p) == tg && Emplacement.Guns[1].By == null, "Machine gun: one gunner to a gun");
       Emplacement.TryInteract(p);
-      Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own && p.Y != tg.NookY, "Machine gun: E again: down the steps, your own gun back");
+      Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own && p.X != tg.Tx, "Machine gun: E again: you let go, your own gun back");
       p.X = tg.Tx; p.Y = tg.StepsY; Emplacement.TryInteract(p); Emplacement.ReleaseAll();
       Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own, "Machine gun: a save puts the gunner off first (never saved holding it)");
       p.X = tg.Tx; p.Y = tg.StepsY; Emplacement.TryInteract(p); p.Hp = 0; Emplacement.Tick(0.1f); p.Hp = p.MaxHp;
       Check(!Emplacement.IsMounted(p) && p.EquippedWeapon == own, "Machine gun: a gunner who dies comes off");
+      // a tower has hit points like the wall; at 0 it crumbles and throws anyone inside out for 750
+      p.X = tg.Tx; p.Y = tg.StepsY; Emplacement.TryInteract(p); p.Hp = p.MaxHp; int hp0 = p.PermHP, tmp0 = p.TempHP;
+      TerrainMap.DamageTile(tg.Tx - 2, tg.NookY, 1000);
+      Check(tg.Hp == Emplacement.TowerHp - 1000 && TerrainMap.GetTile(tg.Tx - 2, tg.NookY).Type == TileType.Solid && !tg.Down, "Tower: hits on any of its walls come off one shared pool, it stands while it has some");
+      TerrainMap.DamageTile(tg.Tx, tg.Top, Emplacement.TowerHp);
+      Check(tg.Down && TerrainMap.GetTile(tg.Tx - 2, tg.NookY).Type == TileType.Difficult && TerrainMap.GetTile(tg.Tx, tg.Top + 2).Look == "tower_ruin" && !Emplacement.IsMounted(p) && p.EquippedWeapon == own && (p.Y > tg.Top + 2 || p.X < tg.Tx - 2 || p.X > tg.Tx + 2), "Tower: at 0 it crumbles into rubble and the gunner is thrown out with his own gun back");
+      Check(p.PermHP + p.TempHP < hp0 + tmp0, "Tower: the gunner takes the collapse damage"); p.Hp = p.MaxHp;
       Emplacement.Reset();
       EncounterState.Enemies.Remove(brute);
     } finally { foreach (var (x, y, t) in saved) { var tt = TerrainMap.GetTile(x, y); tt.Type = t.Type; tt.Look = t.Look; tt.Damage = t.Damage; } Barrier.ZoneOverride = null; Barrier.Reset(); }

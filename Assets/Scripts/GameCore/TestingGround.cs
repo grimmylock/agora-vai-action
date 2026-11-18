@@ -170,6 +170,7 @@ namespace GameCore
             var s = Rt.Of(p); s.DiveUntil = -1f; s.ProneUntil = -1f; s.Stamina = Rt.StaminaMax; s.Slow = false; Rt.SetSlow(false);
             GameState.Current.CurrentTurn = Turn.Player;
             if (Tier2Story.InProgress && (TerrainMap.ZoneId == Tier2Story.Maze || TerrainMap.ZoneId == "scrapyard")) { TakenMission(p); return; }   // died in the mission: straight back to the grab
+            if (Tier4Story.SiegeOn) { Tier4Story.StartForTest(); return; }                               // died in the siege: straight back to the dawn
             if (TerrainMap.ZoneId == BrainBoss.Lab) { BrainFight(p); return; }
             if (TerrainMap.ZoneId == LabLocks.Depths3) { EelFight(p); return; }
             if (!Here) { MacroState.Current.CurrentZoneId = Zone; ZoneTravel.EnterZone(Zone); }
