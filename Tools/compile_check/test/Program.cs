@@ -83,6 +83,7 @@ static class Program {
     RoundChecks();
     StorySystemsChecks();
     Tier1StoryChecks();
+    Tier3StoryChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
     // every faction line resolves to real armor, and every armor has a sprite
@@ -2477,6 +2478,40 @@ static class Program {
   }
 
   // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
+  static void Tier3StoryChecks() {   // Story 7a: Tier 3 - Lev, the lake, the Sub-Station, the pills
+    var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false; Companion.Current = null;
+    var marks = new[] { ("The Rusty Anchor", 20, 20), ("Hub Bunkhouse", 40, 20), ("Sub-Station House", 100, 100), ("Breaker Room", 116, 100), ("The Flats", 70, 100), ("Tower Line", 100, 70), ("Passenger Lounge", 30, 150) }
+      .Select(m => new LandmarkInstance { Name = m.Item1, X = m.Item2, Y = m.Item3 }).ToList();
+    foreach (var m in marks) TerrainMap.Landmarks.Add(m);
+    void At(string n, int dy = 1) { var l = marks.First(x => x.Name == n); p.X = l.X; p.Y = l.Y + dy; }
+    try {
+      Tier3Story.ZoneOverride = MacroMapDatabase.MapOf("scavengers_hub");
+      At("The Rusty Anchor"); Tier3Story.TryInteract(p);
+      Check(Story.Step("lev") == 1 && Story.JournalEntries.Any(j => j.Contains("Lev Marchuk")), "Story 7a: Lev at the Rusty Anchor");
+      Story.Set("tier2_done"); At("Hub Bunkhouse"); Tier3Story.TryInteract(p);
+      Check(Story.Step("lake") == 1 && Tier1Story.PavelWithYou, "Story 7a: Pavel walks with you from the Hub");
+      p.X = 100 + 40; p.Y = 100; Tier3Story.Tick();
+      p.X = 100 + 20; p.Y = 100; Tier3Story.Tick();
+      Check(Story.Step("lake") == 2 && Story.Has("osei_radio"), "Story 7a: near the Sub-Station: Osei's radio, the lockdown");
+      int k0 = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive());
+      Check(MacroState.Current.OfflineSquads.Count(q => q.QuestId != null && q.QuestId.StartsWith("story:lockdown")) == 2, "Story 7a: two packs come out of the Flats and the Tower Line");
+      At("Breaker Room"); Tier3Story.TryInteract(p);
+      Check(Story.Step("lake") == 3, "Story 7a: the breaker cuts the turrets, the door opens");
+      int ru = p.Ru; At("Sub-Station House", 2); Tier3Story.TryInteract(p);
+      Check(Story.IsDone("lake") && Story.Has("tier3_reveal") && !Companion.Alive && p.Ru == ru + 1000, "Story 7a: the Reveal: Pavel stays with Osei");
+      Tier3Story.TryInteract(p);
+      Check(Story.Has("spikes_known"), "Story 7a: Osei's spikes (the harness picks the first answer)");
+      At("The Rusty Anchor"); Tier3Story.TryInteract(p);
+      Check(Story.Step("pills") == 1, "Story 7a: after the lake, Lev asks for his pills");
+      Tier3Story.OnEnterZone(Tier3Story.Ferry);
+      Check(TerrainMap.GroundItems.Any(g => g.Item.Id == "story_pills"), "Story 7a: the medical crate lies on the Stranded Ferry");
+      p.AddItem(new InventoryItem { Id = "story_pills", Name = "Medical Crate", Type = "key", Qty = 1 }); Tier3Story.Tick();
+      Check(Story.Step("pills") == 2, "Story 7a: the crate in your pack: back to Lev");
+      ru = p.Ru; At("The Rusty Anchor"); Tier3Story.TryInteract(p);
+      Check(Story.IsDone("pills") && Story.Has("lev_confessed") && p.Ru == ru + 800, "Story 7a: the Confession");
+    } finally { Tier3Story.ZoneOverride = null; foreach (var m in marks) TerrainMap.Landmarks.Remove(m); TerrainMap.GroundItems.RemoveAll(g => g.Item.Id == "story_pills"); Companion.Current = null; MacroState.Current.StoryFlags.Clear(); }
+  }
+
   static void Tier1StoryChecks() {
     var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear();
     Check(TerrainMap.ZoneId == "perimeter", $"Story 4: the arena is the Tier 1 map ({TerrainMap.ZoneId})");

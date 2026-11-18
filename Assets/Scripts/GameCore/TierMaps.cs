@@ -839,6 +839,7 @@ namespace GameCore
             c.Clear(38, 68, 36, 24, Concrete, false);
             c.Stamp("Sub-Station House", 40, 70, 4, "concrete", Concrete, 0, "debris");
             c.Landmark("Sub-Station House", 56, 82);
+            c.Landmark("Breaker Room", 72, 80);   // Story 7a: the lockdown's breakers, the apron's east edge
             for (int x = 38; x < 74; x++) if (x % 5 != 0) c.Deco(x, 93, x % 4 == 1 ? "pipepost" : "pipe");
             // the Drainage Sump: a concrete pit with a hatch (Sub-Station Depths)
             c.RectHeight(58, 98, 8, 8, -2); c.Paint(58, 98, 8, 8, Concrete);
