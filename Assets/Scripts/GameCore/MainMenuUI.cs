@@ -145,9 +145,6 @@ namespace GameCore
             var fr = fill.GetComponent<RectTransform>(); fr.offsetMin = new Vector2(2, 2); fr.offsetMax = new Vector2(-2, -2);
             Text(fill.transform, "CreditsTitle", new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.96f), "CREDITS", true, 22, HudView.Yellow);
             Text(fill.transform, "CreditsText", new Vector2(0.06f, 0.14f), new Vector2(0.94f, 0.86f), CreditsText, false, 15, HudView.Cream, TextAlignmentOptions.TopLeft);
-            // 2026-11-18: the language (Loc.cs, Unity2D/LocHook.cs): one button, cycles English / Português (Brasil)
-            var lang = UIBuildUtil.CreateButton(fill.transform, "LanguageButton", new Vector2(0.56f, 0.88f), new Vector2(0.94f, 0.96f), "Language / Idioma: " + Loc.Label(Loc.Lang), () => Loc.Cycle());
-            _langLabel = lang.GetComponentInChildren<TextMeshProUGUI>();
             var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.11f), "Back", () => _creditsPanel.SetActive(false));
             back.GetComponent<Image>().color = HudView.Lip;
             _creditsPanel.SetActive(false);
@@ -169,6 +166,9 @@ namespace GameCore
                 var b = UIBuildUtil.CreateButton(fill.transform, "Bind_" + name, new Vector2(x0, 0.13f), new Vector2(x0 + 0.28f, 0.2f), "", () => _rebinding = name);
                 _binds.Add((name, b.GetComponentInChildren<TextMeshProUGUI>()));
             }
+            // 2026-11-18: the language (Loc.cs, Unity2D/LocHook.cs): one button, cycles English / Português (Brasil)
+            var lang = UIBuildUtil.CreateButton(fill.transform, "LanguageButton", new Vector2(0.56f, 0.88f), new Vector2(0.94f, 0.96f), "Language / Idioma: " + Loc.Label(Loc.Lang), () => Loc.Cycle());
+            _langLabel = lang.GetComponentInChildren<TextMeshProUGUI>();
             var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.11f), "Back", () => _optionsPanel.SetActive(false));
             back.GetComponent<Image>().color = HudView.Lip;
 
