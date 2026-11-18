@@ -29,6 +29,7 @@ namespace GameCore
         /// <summary>A plain story flag ("fence_inspected").</summary>
         public static bool Has(string flag) => Flags.Contains("f:" + flag);
         public static void Set(string flag) { if (!Has(flag)) Flags.Add("f:" + flag); }
+        public static void Clear(string flag) => Flags.Remove("f:" + flag);
 
         /// <summary>A mission's step: 0 = not started; each mission numbers its own steps; Done = finished.</summary>
         public static int Step(string mission) => int.TryParse(Get($"m:{mission}="), out int s) ? s : 0;

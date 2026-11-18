@@ -71,7 +71,7 @@ namespace GameCore
         /// stage requires it. There's no job board/dialogue system, so "the Quartermaster whose
         /// shop you're standing next to" is this game's stand-in for a quest-giving NPC.</summary>
         /// <summary>2026-11-18: storyline jobs the main story hands out itself (Tier2Jobs.cs), so the quartermaster's list skips them.</summary>
-        public static readonly HashSet<string> StoryJobs = new HashSet<string> { "SCRAPKING-1", "YEFIM-3", "RUNNER-3" };
+        public static readonly HashSet<string> StoryJobs = new HashSet<string> { "SCRAPKING-1", "SCRAPKING-2", "SCRAPKING-3", "YEFIM-3", "RUNNER-3" };
 
         public static List<QuestDef> AvailableInZone(string zoneId)
         {

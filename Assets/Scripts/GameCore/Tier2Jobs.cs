@@ -27,6 +27,12 @@ namespace GameCore
             if (TerrainMap.ZoneId == "perimeter" && Story.Step("runner") == 1 && Story.Near(p, Runner, 3)) { TalkRunner(); return true; }
             if (OnTier2 && Story.Step("bridge") == 1) { var sg = Sergeant(); if (sg != null && CombatantUtil.Distance(p, sg) <= 3) { TalkBridge(sg, p); return true; } }
             if (OnTier2 && Story.Near(p, King, 3) && TalkKing()) return true;
+            if (OnTier2 && (Story.Step("rooke") == 1 || Story.Step("rooke") == 2)) { var rk = EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => e.Name == "Rooke" && e.IsAlive()); if (rk != null && CombatantUtil.Distance(p, rk) <= 3) { TalkRooke(rk); return true; } }
+            if (OnTier2 && Story.Step("crusher") == 2 && Story.Near(p, "Crusher Row", 4))
+            {
+                Story.Talk("Crusher Row", new[] { "In the crew boss's coat: a pay note, creased from folding. Sealed with a Garrison stamp." });
+                Story.SetStep("crusher", 3); Story.SetObjective("crusher", "Show the Scrap King the note", King); return true;
+            }
             if (OnTier2 && (Story.Step("bogdan") == 1 || Story.Step("bogdan") == 2)) { var b = Bogdan(); if (b != null && CombatantUtil.Distance(p, b) <= 3) { TalkBogdan(b, p); return true; } }
             return false;
         }
@@ -35,6 +41,7 @@ namespace GameCore
 
         static bool TalkKing()
         {
+            if (Story.IsDone("kingcall") && TalkKingJobs()) return true;
             if (Story.Step("kingcall") != 2) return false;
             Story.Talk("The Scrap King", new[] { "The Dock is mine again. You're the first thing that came out of the Basin useful.", "Here. Don't spend it all in one place. It's the only place there is." });
             Tier1Story.Pay(900, "the Loading Dock");
@@ -43,6 +50,66 @@ namespace GameCore
             Story.Journal("The Scrap King: the Loading Dock is his again; he'll want more.");
             Story.Finish("kingcall");
             return true;
+        }
+
+        // ---------------- the King's other jobs: Crusher Row (the backer) and Rooke at the Maze ----------------
+        // "crusher": 1 go (a rival scavenger crew of four at Crusher Row, and a Husk pack that came with them), 2 clear (E at Crusher Row: a Garrison-sealed pay note), 3 tell the King.
+        // "rooke": 1 go (Rooke, Expert, and five enforcers at the Maze); E by Rooke: fight, or take his better offer (side with him); killed: tell the King. SCRAPKING-2 and -3 of the quartermaster arc.
+
+        static bool TalkKingJobs()
+        {
+            int c = Story.Step("crusher"), r = Story.Step("rooke");
+            if (c == 3)
+            {
+                Story.Talk("The Scrap King", new[] { "A note sealed with a Garrison stamp. Pay for a crew to bleed my yard. The Garrison. Of course.", "They don't want the Dock. They want the Basin quiet and everyone in it hungry. Someone is feeding them money - and orders." });
+                Tier1Story.Pay(1000, "Crusher Row"); CompleteArc("scrapyard", 2); Story.Set("king_garrison_backer");
+                Story.Journal("Crusher Row: the rival crew was paid by the Garrison. Someone above them gives the orders.");
+                Story.Finish("crusher"); return true;
+            }
+            if (c == 0)
+            {
+                Story.Talk("The Scrap King", new[] { "A rival crew moved into Crusher Row. Scavengers, they say. Scavengers don't pay for good rifles. Find out who does." });
+                Story.SetStep("crusher", 1); Story.SetObjective("crusher", "Find out who backs the crew in Crusher Row", "Crusher Row");
+                Story.Journal("Crusher Row: someone is backing a rival crew on the Scrap King's yard.");
+                var crew = new List<Mutant>();
+                for (int i = 0; i < 4; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", "Experienced", 2, i == 0); crew.Add(new HumanEnemy(i == 0 ? "Crew Boss" : "Rival Scavenger", 0, 0, "Raiders", "Experienced", w, a)); }
+                Tier1Story.Place("crusher", "Crusher Row", "Raiders", crew);
+                if (Story.Has("husks_known")) Tier1Story.Place("crusher_husks", "Crusher Pit", Husk.Faction, Husk.Pack(2, 4));   // the pit is where they wander in from
+                return true;
+            }
+            if (r == 3 || r == 4)
+            {
+                Story.Talk("The Scrap King", new[] { r == 3 ? "Rooke's dead? Good. A yard has room for one king." : "...You took Rooke's money. I won't forget it. Don't come to my Nest again." });
+                if (r == 3) { Tier1Story.Pay(1500, "Rooke"); foreach (var pl in Player.All) pl.AdjustReputation("Raiders", Player.RepPoint); }
+                CompleteArc("scrapyard", 3); Story.Journal(r == 3 ? "The Maze: Rooke is dead. The Scrap King holds the yard." : "The Maze: you sided with Rooke. The King is hostile now.");
+                Story.Finish("rooke"); return true;
+            }
+            if (c >= 1 && c <= 2 || r == 1 || r == 2) { Story.Talk("The Scrap King", new[] { "Well? Go on." }); return true; }
+            if (Story.IsDone("crusher") && r == 0)
+            {
+                Story.Talk("The Scrap King", new[] { "Rooke. He runs the Maze with six guns and a grudge. I want him gone. Kill him, or I'll find someone who will." });
+                Story.SetStep("rooke", 1); Story.SetObjective("rooke", "Deal with Rooke and his enforcers at the Maze", "The Maze");
+                Story.Journal("The Maze: the Scrap King wants Rooke and his enforcers dead.");
+                var gang = new List<Mutant>();
+                for (int i = 0; i < 6; i++) { var (w, a) = EncounterGeneration.PickFactionLoadout("Raiders", i == 0 ? "Expert" : "Experienced", 2, i == 0); gang.Add(new HumanEnemy(i == 0 ? "Rooke" : "Rooke's Enforcer", 0, 0, "Raiders", i == 0 ? "Expert" : "Experienced", w, a)); }
+                Tier1Story.Place("rooke", "The Maze", "Raiders", gang);
+                return true;
+            }
+            return false;
+        }
+
+        static void TalkRooke(HumanEnemy b)
+        {
+            Story.Talk("Rooke", new[] { "The King's dog. Sit. Whatever he's paying you, I'll double it. He's old, he's slow, and he's been wrong about the Basin since the day he climbed his heap." }, new[] { "(Fight)", "...Double? Let's talk." }, i =>
+            {
+                if (i == 0) { Story.SetStep("rooke", 2); return; }
+                Story.Talk("Rooke", new[] { "Smart. Here - half now. Tell him the Maze took you in." });
+                Tier1Story.Pay(1500, "Rooke's offer"); foreach (var pl in Player.All) pl.AdjustReputation("Raiders", -2 * Player.RepPoint);
+                int until = (int)((MacroState.Current.Day * 24f + MacroState.Current.Hour) * 60f) + 3 * 24 * 60;
+                var sq = Shakedown.SquadOf(b); if (sq != null) { sq.TruceUntil = until; foreach (var m in sq.Members) m.IsAggroed = false; }
+                Story.Set("rooke_sided"); Story.SetStep("rooke", 4); Story.SetObjective("rooke", "Take the news to the Scrap King", King);
+            });
+            if (Story.Step("rooke") == 1) Story.SetStep("rooke", 2);
         }
 
         // ---------------- Bogdan ----------------
@@ -148,6 +215,8 @@ namespace GameCore
             Tier2Escort.Tick();
             if (Story.IsDone("taken") && Story.Step("taken_day") == 0) Story.SetStep("taken_day", MacroState.Current.Day);
             // clear squads
+            if (Story.Step("crusher") == 1 && Tier1Story.Cleared("crusher")) { Story.SetStep("crusher", 2); Story.SetObjective("crusher", "Search Crusher Row for who is paying them", "Crusher Row"); }
+            if (Story.Step("rooke") >= 1 && Story.Step("rooke") <= 2 && Tier1Story.Cleared("rooke")) { Story.SetStep("rooke", 3); Story.SetObjective("rooke", "Tell the Scrap King Rooke is dead", King); }
             if (Story.Step("kingcall") == 1 && Tier1Story.Cleared("dock")) { Story.SetStep("kingcall", 2); Story.SetObjective("kingcall", "Tell the Scrap King the Dock is clear", King); }
             if (Story.Step("bogdan") >= 1 && Story.Step("bogdan") <= 2 && Tier1Story.Cleared("bogdan")) { Story.SetStep("bogdan", 3); Story.SetObjective("bogdan", "Tell Yefim about Bogdan", Tier1Story.Yefim); }
             // the Liberators remember a fight at the Bridge

@@ -2624,7 +2624,7 @@ static class Program {
       Check(StoryNpcs.Find("Pavel") == null, "NPC units: Pavel leaves the Medic's House when he walks with you");
       Companion.Current = null; EncounterState.Enemies.RemoveAll(e => e.Faction == StoryNpcs.Faction); StoryNpcs.Reset(); MacroState.Current.StoryFlags.Clear(); }
     // Story 6a: the Scrap King's call and Bogdan
-    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 }, new LandmarkInstance { Name = Tier2Jobs.Bridge, X = 100, Y = 100 }, new LandmarkInstance { Name = Tier2Escort.Repeater, X = 120, Y = 120 }, new LandmarkInstance { Name = Tier2Escort.Lip, X = 140, Y = 140 }, new LandmarkInstance { Name = Tier2Escort.Cut, X = 160, Y = 160 } };
+    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 }, new LandmarkInstance { Name = Tier2Jobs.Bridge, X = 100, Y = 100 }, new LandmarkInstance { Name = Tier2Escort.Repeater, X = 120, Y = 120 }, new LandmarkInstance { Name = Tier2Escort.Lip, X = 140, Y = 140 }, new LandmarkInstance { Name = Tier2Escort.Cut, X = 160, Y = 160 }, new LandmarkInstance { Name = "Crusher Row", X = 180, Y = 40 }, new LandmarkInstance { Name = "Crusher Pit", X = 190, Y = 40 }, new LandmarkInstance { Name = "The Maze", X = 40, Y = 180 } };
       foreach (var m in marks) TerrainMap.Landmarks.Add(m);
       try {
         Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false;
@@ -2636,6 +2636,17 @@ static class Program {
         Check(Story.Step("kingcall") == 2, "Story 6a: the Dock cleared: back to the King");
         int ruk = p.Ru; p.X = 80; p.Y = 81; Tier2Jobs.TryInteract(p);
         Check(Story.IsDone("kingcall") && p.Ru == ruk + 900 && p.NpcArcStage["scrapyard"] == 2 && !QuestSystem.AvailableInZone("scrapyard").Any(q => q.Id == "SCRAPKING-1"), "Story 6a: the King pays, and the arc moves on");
+        Story.Set("husks_known"); p.X = 80; p.Y = 81; Tier2Jobs.TryInteract(p);
+        Check(Story.Step("crusher") == 1 && Alive("crusher") == 4 && Alive("crusher_husks") == 4, "Story 6d: the King's second job: a rival crew in Crusher Row, and a Husk pack in the Pit");
+        Kill("crusher"); Tier2Jobs.Tick(); p.X = 180; p.Y = 41; Tier2Jobs.TryInteract(p);
+        Check(Story.Step("crusher") == 3, "Story 6d: the crew down: a Garrison-sealed pay note");
+        p.X = 80; p.Y = 81; ruk = p.Ru; Tier2Jobs.TryInteract(p);
+        Check(Story.IsDone("crusher") && Story.Has("king_garrison_backer") && p.Ru == ruk + 1000 && p.NpcArcStage["scrapyard"] == 3, "Story 6d: the King: the Garrison is the backer");
+        Tier2Jobs.TryInteract(p);
+        Check(Story.Step("rooke") == 1 && Alive("rooke") == 6, "Story 6d: Rooke and five enforcers at the Maze");
+        Kill("rooke"); Tier2Jobs.Tick(); ruk = p.Ru; Tier2Jobs.TryInteract(p);
+        Check(Story.IsDone("rooke") && p.Ru == ruk + 1500 && p.NpcArcStage["scrapyard"] == 4 && !QuestSystem.AvailableInZone("scrapyard").Any(q => q.Id.StartsWith("SCRAPKING")), "Story 6d: Rooke dead: the King pays, the arc is closed");
+        EncounterState.Enemies.RemoveAll(e => Husk.Is(e)); Story.Clear("husks_known");
         p.NpcArcStage["bonfire_village"] = 3; Tier2Jobs.Tick();
         Check(Story.Step("bogdan") == 1 && Alive("bogdan") == 5, "Story 6a: once the keepsake is home, Yefim calls: Bogdan and four at the Tire Fort");
         var bog = EncounterState.Enemies.OfType<HumanEnemy>().First(e => e.Name == "Bogdan"); p.X = bog.X; p.Y = bog.Y + 1; Tier2Jobs.TryInteract(p);
