@@ -117,10 +117,49 @@ namespace GameCore
             DrawLight(c, vw, vh, l);
         }
 
+        // ---- the sight mask, soft (2026-11-18, Yan: "the wall hiding feature also goes over monsters and npcs, also it looks way too hard ... a gradual reveal instead of black squares") ----
+        // What Vision says is seen is a yes or no per cell; drawn straight it was hard-edged squares, and it covered units that the game itself shows. Now each cell has an EASED value (`_seen`, 0..1, about a
+        // tenth of a second to follow the target: a corner reveals and hides gradually), the overlay reads it bilinearly (soft edges inside a tile), and every unit the game shows (Vision.Shows) reveals the
+        // cells round it so nothing standing there is blacked out.
+        float[] _seen; int _sw, _sh; object _seenTiles; float _seenAt = -1f, _lastDraw = -9f; bool _easing; readonly HashSet<int> _reveal = new HashSet<int>(); int _unitHash;
+        float SeenCell(int x, int y) => x < 0 || y < 0 || x >= _sw || y >= _sh || _seen == null ? 0f : _seen[y * _sw + x];
+        float SeenAt(float gx, float gy)
+        {
+            int x0 = Mathf.FloorToInt(gx), y0 = Mathf.FloorToInt(gy); float fx = gx - x0, fy = gy - y0;
+            return (SeenCell(x0, y0) * (1f - fx) + SeenCell(x0 + 1, y0) * fx) * (1f - fy) + (SeenCell(x0, y0 + 1) * (1f - fx) + SeenCell(x0 + 1, y0 + 1) * fx) * fy;
+        }
+        /// <summary>Every frame (cheap): which cells the shown units stand in, and a hash of them for the redraw key.</summary>
+        void GatherReveal()
+        {
+            _reveal.Clear(); int h = 17; int W = TerrainMap.Width;
+            void Add(int x, int y) { h = h * 31 + x * 7 + y; for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) _reveal.Add((y + dy) * W + x + dx); }
+            foreach (var p in Player.All) if (p != null && p.IsAlive()) Add(p.X, p.Y);
+            foreach (var e in EncounterState.Enemies) if (e != null && e.IsAlive() && Vision.Shows(e)) Add(e.X, e.Y);
+            _unitHash = h;
+        }
+        /// <summary>Eases the cells under the drawn area toward what Vision says now (or 1 under a shown unit).</summary>
+        void UpdateSeen(float left, float top, int tw, int th, int ppt)
+        {
+            int W = TerrainMap.Width, H = TerrainMap.Height; bool fresh = false;
+            if (_seen == null || _sw != W || _sh != H || !ReferenceEquals(_seenTiles, TerrainMap.Tiles)) { _seen = new float[W * H]; _sw = W; _sh = H; _seenTiles = TerrainMap.Tiles; fresh = true; }
+            float dt = fresh ? 1f : Mathf.Clamp(Time.time - _seenAt, 0f, 0.1f); _seenAt = Time.time; float k = 1f - Mathf.Exp(-dt * 10f); bool easing = false;
+            int cx0 = Mathf.Max(0, Mathf.FloorToInt(left) - 1), cx1 = Mathf.Min(W - 1, Mathf.CeilToInt(left + tw / (float)ppt) + 1), cy0 = Mathf.Max(0, Mathf.FloorToInt(-top) - 1), cy1 = Mathf.Min(H - 1, Mathf.CeilToInt(-top + th / (float)ppt) + 1);
+            for (int y = cy0; y <= cy1; y++)
+                for (int x = cx0; x <= cx1; x++)
+                {
+                    float target = _backdrop || Vision.InSight(x, y) || RoofView.Covered(x, y) || RoofView.Covered(x, y + 1) || _reveal.Contains(y * W + x) ? 1f : 0f;
+                    int i = y * W + x; float v = _seen[i], nv = v + (target - v) * k;
+                    if (Mathf.Abs(target - nv) < 0.01f) nv = target; else easing = true;
+                    _seen[i] = nv;
+                }
+            _easing = easing;
+        }
+
         /// <summary>Darkness outside your light and outside your line of sight, two texels per tile - or, with Lighting v2 and a lamp in
         /// view, eight, with the lamps' own light and shadows merged in (DrawLightFine).</summary>
         void DrawLight(Vector3 c, float vw, float vh, AtmosphereLook l)
         {
+            GatherReveal();
             if (!Lighting2D.On && Lighting.Enabled && !Lighting.Failed && (l.Night > 0.02f || _fineHold > 0))
             {
                 try { var swo = System.Diagnostics.Stopwatch.StartNew(); long k0 = _fineKey; bool done = DrawLightFine(c, vw, vh, l); if (done && _fineKey != k0) { Lighting.OverlayMs += swo.Elapsed.TotalMilliseconds; Lighting.OverlayN++; } Lighting.Report(); if (done) return; }
@@ -129,8 +168,8 @@ namespace GameCore
             int tw = Mathf.CeilToInt(vw) * TexelsPerTile + 6, th = Mathf.CeilToInt(vh) * TexelsPerTile + 6;
             float cLeft = Mathf.Floor((c.x - vw / 2f) * TexelsPerTile) / TexelsPerTile - 1.5f, cTop = Mathf.Ceil((c.y + vh / 2f) * TexelsPerTile) / TexelsPerTile + 1.5f;
             long ckey = OverlayKey(cLeft, cTop, tw, th, l, TexelsPerTile);
-            if (ckey == _coarseKey && _lightTex != null && _ppu == TexelsPerTile) return;   // unchanged since the last draw (the sprite keeps its texture)
-            _coarseKey = ckey; _fineKey = long.MinValue;
+            if (_lightTex != null && _ppu == TexelsPerTile && (ckey == _coarseKey || Time.time - _lastDraw < 0.04f)) return;   // unchanged since the last draw, or drawn a moment ago (at most 25 a second)
+            _coarseKey = ckey; _fineKey = long.MinValue; _lastDraw = Time.time;
             if (_lightTex == null || tw != _tw || th != _th || _ppu != TexelsPerTile)
             {
                 _tw = tw; _th = th; _ppu = TexelsPerTile;
@@ -142,6 +181,7 @@ namespace GameCore
             float left = Mathf.Floor((c.x - vw / 2f) * TexelsPerTile) / TexelsPerTile - 1.5f;
             float top = Mathf.Ceil((c.y + vh / 2f) * TexelsPerTile) / TexelsPerTile + 1.5f;
             _light.transform.position = new Vector3(left, top, 0f);
+            UpdateSeen(left, top, tw, th, TexelsPerTile);
             // in daytime fog what you can't see fades into grey mist, not into darkness
             float mist = Mathf.Clamp01(l.Fog * (1f - l.Night * 2f));
             var night = new Color32((byte)(5 + 145 * mist), (byte)(7 + 149 * mist), (byte)(13 + 137 * mist), 255);
@@ -154,15 +194,15 @@ namespace GameCore
                     float wx = left + (i + 0.5f) / TexelsPerTile, wy = top - (j + 0.5f) / TexelsPerTile;
                     float gx = wx - 0.5f, gy = -wy - 0.5f;
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
-                    bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);   // a roof is seen from outside
-                    float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : Mathf.Max(sight ? Vision.Light(gx, gy, true, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
-                    if (Lighting2D.On && !_backdrop) lit = sight ? 1f : 0f;               // the 2D lights test (F6): Unity's lights darken and light the world; this overlay is only the sight mask
+                    float sight = _backdrop ? 1f : SeenAt(gx, gy);                       // 0..1, eased and bilinear (a roof is seen from outside, a shown unit reveals its cells)
+                    float lit = _backdrop ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : Mathf.Max(sight > 0.001f ? sight * Vision.Light(gx, gy, true, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
+                    if (Lighting2D.On && !_backdrop) lit = sight;               // the 2D lights test (F6): Unity's lights darken and light the world; this overlay is only the sight mask
                     float unseen = _backdrop ? 0f : UnseenK() * (1f - lit);               // unseen is dimmed in the open, hidden underground (Yan, 2026-11-17)
                     float dark = (Lighting2D.On ? 0f : l.Night) * (1f - lit);              // night: unlit is black
                     float a = 1f - (1f - unseen) * (1f - dark);
                     var col = night;
                     // Batch 92: a lamp's pool is tinted (warm work light, red emergency light) where the dark would be
-                    float lamp = !Lighting2D.On && sight && l.Night > 0.3f ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : 0f;
+                    float lamp = !Lighting2D.On && sight > 0.5f && l.Night > 0.3f ? LightMap.At(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy)) : 0f;
                     if (lamp > 0.02f)
                     {
                         var t = LightMap.Tint(Mathf.RoundToInt(gx), Mathf.RoundToInt(gy));
@@ -192,7 +232,7 @@ namespace GameCore
             int tw = Mathf.CeilToInt(vw) * Coarse + 6, th = Mathf.CeilToInt(vh) * Coarse + 6;
             float left = Mathf.Floor((c.x - vw / 2f) * Coarse) / Coarse - 1.5f, top = Mathf.Ceil((c.y + vh / 2f) * Coarse) / Coarse + 1.5f;
             long key = OverlayKey(left, top, tw, th, l, FineT);
-            if (key == _fineKey && _lightTex != null && _ppu == FineT && _fineHold > 0) return true;   // nothing that shows has changed: the texture on the sprite is still right
+            if (_lightTex != null && _ppu == FineT && _fineHold > 0 && (key == _fineKey || Time.time - _lastDraw < 0.04f)) return true;   // nothing that shows has changed, or drawn a moment ago (at most 25 a second): the texture on the sprite is still right
             int gx0 = Mathf.RoundToInt(left * WorldArt.Px), gy0 = Mathf.RoundToInt(-top * WorldArt.Px), rw = tw * (WorldArt.Px / Coarse), rh = th * (WorldArt.Px / Coarse);
             bool lamps = Lighting.Field(gx0, gy0, rw, rh, WorldArt.Px / FineT, Time.time, out var lr, out var lg, out var lb);
             if (!lamps && l.Night <= 0.02f) { _fineHold = 0; return false; }      // day and no lamp in view: the cheap overlay
@@ -206,7 +246,8 @@ namespace GameCore
                 _light.sprite = Sprite.Create(_lightTex, new Rect(0, 0, fw, fh), new Vector2(0f, 1f), FineT);
             }
             if (_cLit == null || _cLit.Length < tw * th) { _cLit = new float[tw * th]; _cSight = new float[tw * th]; }
-            _light.transform.position = new Vector3(left, top, 0f);
+            _light.transform.position = new Vector3(left, top, 0f); _lastDraw = Time.time;
+            UpdateSeen(left, top, tw, th, Coarse);
             float mist = Mathf.Clamp01(l.Fog * (1f - l.Night * 2f));
             var night = new Color32((byte)(5 + 145 * mist), (byte)(7 + 149 * mist), (byte)(13 + 137 * mist), 255);
             // 1. the coarse part, as before: line of sight and your own light (the placed lamps are the field's now)
@@ -215,9 +256,9 @@ namespace GameCore
                 {
                     float wx = left + (i + 0.5f) / Coarse, wy = top - (j + 0.5f) / Coarse, gx = wx - 0.5f, gy = -wy - 0.5f;
                     int cx = Mathf.FloorToInt(wx), cy = Mathf.FloorToInt(-wy);
-                    bool sight = _backdrop || Vision.InSight(cx, cy) || RoofView.Covered(cx, cy) || RoofView.Covered(cx, cy + 1);
-                    _cSight[j * tw + i] = sight ? 1f : 0f;
-                    _cLit[j * tw + i] = _backdrop ? 0f : Mathf.Max(sight ? Vision.Light(gx, gy, false, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
+                    float sight = _backdrop ? 1f : SeenAt(gx, gy);
+                    _cSight[j * tw + i] = sight;
+                    _cLit[j * tw + i] = _backdrop ? 0f : Mathf.Max(sight > 0.001f ? sight * Vision.Light(gx, gy, false, true) : 0f, Vision.GlowAt(gx, gy));   // a glow (the eel) shows even where your line of sight does not reach
                 }
             // 2. the fine part: each texel looks its coarse neighbours up (bilinear) and adds the lamp field
             for (int j = 0; j < fh; j++)
@@ -244,6 +285,7 @@ namespace GameCore
         {
             long k = Mathf.RoundToInt(left * 8f) * 1000003L + Mathf.RoundToInt(top * 8f);
             k = k * 31 + tw; k = k * 31 + th; k = k * 31 + Vision.Version; k = k * 31 + (int)(Time.time * 6f); k = k * 31 + Mathf.RoundToInt(l.Night * 200f); k = k * 31 + Mathf.RoundToInt(l.Fog * 100f);
+            k = k * 31 + _unitHash; if (_easing) k = k * 31 + Time.frameCount / 2;   // units moving, a reveal still easing: a new key every other frame (the 25 a second cap above)
             return k * 31 + texels * 2 + (_backdrop ? 1 : 0) + (Lighting2D.On ? 64 : 0);
         }
 
