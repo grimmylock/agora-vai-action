@@ -198,7 +198,7 @@ namespace GameCore
         }
 
         /// <summary>The icon for an item: a weapon's detailed sprite, a suit from armor_icon_atlas, else Sprites/Items/icon_*.</summary>
-        static Sprite Icon(InventoryItem it)
+        internal static Sprite Icon(InventoryItem it)
         {
             string id = (it.Id ?? "").Split('~')[0];
             string key = it.Type == "weapon" ? "w:" + it.Key : it.Type == "armor" ? "a:" + it.Name : it.Type + ":" + id;

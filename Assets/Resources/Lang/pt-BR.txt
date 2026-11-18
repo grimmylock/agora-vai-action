@@ -774,3 +774,18 @@ A bigger bag: more room in the case.	Uma mochila maior: mais espaço na maleta.
 Wear it on the belt: it works while it hangs there.	Use no cinto: ele funciona enquanto estiver pendurado ali.
 Drag it onto the weapon's slot to fit it.	Arraste-o sobre o espaço da arma para instalá-lo.
 Shows the anomalies near you.	Mostra as anomalias perto de você.
+# ---- the merchant screen ----
+PURCHASE	COMPRAR
+LEAVE	SAIR
+Tier {}	Nível {1}
+Q / E  TAB	Q / E  ABA
+UP / DOWN  PICK	CIMA / BAIXO  ESCOLHER
+ENTER  DO    ESC  LEAVE	ENTER  FAZER    ESC  SAIR
+Nothing here.	Nada aqui.
+The technician brings it back to Working.	O técnico devolve o equipamento ao estado Funcionando.
+A Wanderer walks with you, holds fire while you sneak and fights beside you.	Um Andarilho te acompanha, segura o fogo enquanto você se esgueira e luta ao seu lado.
+{} rounds, {} to a box	Munição {1}, {2} por caixa
+{} rounds	Munição {1}
+A bigger bag: +{} kg and more room in the case.	Uma mochila maior: +{1} kg e mais espaço na maleta.
+< {} / {} >   (wheel)	< {1} / {2} >   (roda)
+{} kg   {}x{}	{1} kg   {2}x{3}

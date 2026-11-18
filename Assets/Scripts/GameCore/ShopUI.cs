@@ -1,64 +1,48 @@
-// New: ShopSystem.cs (BuyItem/ModifyAmmo) already existed, but nothing ever opened it - no
-// in-zone way to actually trade at Scavenger's Hub, the one Safe Zone. Opens on B while standing
-// in a zone with ZoneDef.IsSafeZone true (the only existing "friendly/tradeable" flag on zone
-// data - ponytail: this means "Safe Zone = has a shop" rather than a separate per-outpost shop
-// flag; add one if you want vendors that aren't Safe Zones). Built at runtime under the existing
-// Canvas, same convention as RuntimeGameLog/DeathScreen - no scene wiring required. Added
-// automatically by GameBootstrap.
+// The trader (B in a Safe Zone, at a quartermaster, or at a wandering trader). 2026-11-18 (Yan: "something similar to Resident Evil 4"): rebuilt as the merchant screen of RE4 - a dim room, a dark-leather panel with a brass rim, the trader's
+// name and your RU at the top, TABS down the left (BUY / SELL / REPAIR / UPGRADE / HIRE, only the ones this trader does), the list in the middle (a row each: name, price; the selected one lit, what you cannot afford in red; the wheel turns
+// the page), and on the right the PREVIEW of the selected thing - its picture, what it is, its weight and price - and one big button to do it. Keys: Up / Down pick, Enter does, Q / E change tab, wheel pages, Esc or B leaves.
+// The trading rules are unchanged (ShopSystem / Upgrades / Companion / Economy / RolledStockSystem): this only decides what is shown and calls them. The old list-in-a-panel version is kept in git (before 2026-11-18).
+// Added to the scene by GameBootstrap, built at runtime under the Canvas. Unity-only drawing, never run when written.
+using System.Collections.Generic;
 using System.Linq;
 using GameData;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace GameCore
 {
     public class ShopUI : MonoBehaviour
     {
-        // ponytail: fixed-height list, no ScrollRect - both lists are capped instead (see
-        // MaxBuyRowsShown/MaxSellRowsShown + the "+N more" rows below). Add a real ScrollRect if
-        // you want every tier-appropriate item visible at once instead of a capped preview.
-        private const int MaxBuyRowsShown = 20;
-        private const int MaxSellRowsShown = 12;
-        private const float RowHeight = 30f;
-
+        private const int RowsPerPage = 13;
+        private const float RowH = 46f;
         private static ShopUI _instance;
 
-        private GameObject _panel;
-        private Transform _buyList;
-        private Transform _sellList;
-        private TextMeshProUGUI _ruText;
+        private GameObject _dim, _box;
         private bool _open;
-        // New: which zone's trader is currently open, so Rebuild() can cap the buy list to what
-        // that outpost actually stocks (see the Rebuild() filter below).
         private ZoneDef _currentZone;
-        // New: set when the open trader is a named Quartermaster (QuartermasterDatabase) rather
-        // than a blanket Safe Zone bazaar - null for both the old Safe Zone case and a Wandering
-        // Trader, which Rebuild() tells apart via MacroState.Current.WanderingTraderZoneId instead.
         private QuartermasterDef _currentQuartermaster;
+        enum Tab { Buy, Sell, Repair, Upgrade, Hire }
+        Tab _tab; int _page, _sel;
+        class Row { public string Label, Price, Desc, DoLabel; public InventoryItem Preview; public System.Action Do; public bool Header, Afford = true; }
+        readonly List<Row> _rows = new List<Row>();
+        readonly List<(RectTransform rect, Image img, int index)> _rowViews = new List<(RectTransform, Image, int)>();
+
+        static readonly Color Brass = new Color(0.55f, 0.43f, 0.24f), BrassDim = new Color(0.32f, 0.26f, 0.16f), Leather = new Color(0.075f, 0.062f, 0.052f, 0.98f), Ink = new Color(0.04f, 0.035f, 0.03f, 1f);
+        static readonly Color Bone = new Color(0.92f, 0.9f, 0.84f), Dimc = new Color(0.62f, 0.6f, 0.54f), Gold = new Color(0.93f, 0.78f, 0.28f), Bad = new Color(0.9f, 0.3f, 0.25f);
 
         private void Awake() => _instance = this;
 
-        /// <summary>Called from PlayerController's B keybind - static so PlayerController doesn't
-        /// need to hold a reference to the component GameBootstrap added.</summary>
+        /// <summary>Called from PlayerController's B keybind - static so PlayerController doesn't need to hold a reference to the component GameBootstrap added.</summary>
         public static void Toggle() => _instance?.ToggleInternal();
 
-        /// <summary>New: used to gate on zone.IsSafeZone alone (one flag meaning both "no hostile
-        /// spawns" and "has a shop"). Named Quartermasters (QuartermasterDatabase) and Wandering
-        /// Traders (MacroState.Current.WanderingTraderZoneId) are separate, reputation/roll-gated
-        /// trade sources layered on top - IsSafeZone still governs combat spawning by itself
-        /// (unchanged), it just isn't the only way into a shop anymore.</summary>
+        /// <summary>Safe Zone = has a shop; a named Quartermaster (QuartermasterDatabase) trades by reputation; a Wandering Trader is a roll-gated stand-in (MacroState.Current.WanderingTraderZoneId).</summary>
         private void ToggleInternal()
         {
             if (_open) { Close(); return; }
-
             var zone = MacroMapDatabase.Find(MacroState.Current.CurrentZoneId);
-            if (zone == null)
-            {
-                GameLog.Write("No shop here.");
-                return;
-            }
-
+            if (zone == null) { GameLog.Write("No shop here."); return; }
             var qm = QuartermasterDatabase.Find(zone.Id);
             if (qm != null)
             {
@@ -70,254 +54,266 @@ namespace GameCore
                         : $"{qm.Name} won't trade with you - your reputation with the {qm.Faction} isn't good enough.");
                     return;
                 }
-                _currentZone = zone;
-                _currentQuartermaster = qm;
-                Open();
-                return;
+                _currentZone = zone; _currentQuartermaster = qm; Open(); return;
             }
-
-            if (MacroState.Current.WanderingTraderZoneId == zone.Id || zone.IsSafeZone)
-            {
-                _currentZone = zone;
-                _currentQuartermaster = null;
-                Open();
-                return;
-            }
-
+            if (MacroState.Current.WanderingTraderZoneId == zone.Id || zone.IsSafeZone) { _currentZone = zone; _currentQuartermaster = null; Open(); return; }
             GameLog.Write("No shop here.");
         }
 
         private void Open()
         {
-            BuildPanelIfNeeded();
-            if (_panel == null) return; // no Canvas in the scene - already warned in BuildPanelIfNeeded
-
-            _open = true;
-            GameState.Current.ModalOpen = true;
-            _panel.SetActive(true);
+            var canvas = FindAnyObjectByType<Canvas>();
+            if (canvas == null) { Debug.LogWarning("ShopUI: no Canvas found in the scene - can't show the shop panel."); return; }
+            _open = true; GameState.Current.ModalOpen = true; _tab = Tab.Buy; _page = 0; _sel = 0;
+            _dim = Px(canvas.transform, "ShopDim", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, new Color(0, 0, 0, 0.66f)).gameObject;
+            var dr = (RectTransform)_dim.transform; dr.anchorMin = Vector2.zero; dr.anchorMax = Vector2.one; dr.sizeDelta = Vector2.zero; _dim.GetComponent<Image>().raycastTarget = true;
             Rebuild();
         }
 
         private void Close()
         {
-            _open = false;
-            GameState.Current.ModalOpen = false;
-            if (_panel != null) _panel.SetActive(false);
+            _open = false; GameState.Current.ModalOpen = false;
+            HudView.PackClosedFrame = Time.frameCount;                      // the Esc that closed it does not also pause
+            if (_box != null) Destroy(_box); if (_dim != null) Destroy(_dim); _box = _dim = null;
         }
 
-        private void BuildPanelIfNeeded()
+        // ---------------------------------------------------------------- what is on offer
+        private (int tier, string name) Trader()
         {
-            if (_panel != null) return;
-
-            var canvas = FindAnyObjectByType<Canvas>();
-            if (canvas == null)
-            {
-                Debug.LogWarning("ShopUI: no Canvas found in the scene - can't show the shop panel.");
-                return;
-            }
-
-            _panel = UIBuildUtil.CreatePanel(canvas.transform, "ShopPanel", new Vector2(0.15f, 0.1f), new Vector2(0.85f, 0.9f),
-                new Color(0.08f, 0.08f, 0.08f, 0.95f));
-
-            _ruText = UIBuildUtil.CreateText(_panel.transform, "RuText", new Vector2(0.02f, 0.92f), new Vector2(0.4f, 0.99f),
-                "", 20, Color.white, TextAlignmentOptions.Left);
-            UIBuildUtil.CreateButton(_panel.transform, "CloseButton", new Vector2(0.86f, 0.92f), new Vector2(0.98f, 0.99f),
-                "Close", Close);
-            UIBuildUtil.CreateText(_panel.transform, "BuyHeader", new Vector2(0.02f, 0.85f), new Vector2(0.48f, 0.91f),
-                "BUY", 18, Color.white, TextAlignmentOptions.Left);
-            UIBuildUtil.CreateText(_panel.transform, "SellHeader", new Vector2(0.52f, 0.85f), new Vector2(0.98f, 0.91f),
-                "SELL", 18, Color.white, TextAlignmentOptions.Left);
-
-            _buyList = CreateList(_panel.transform, "BuyList", new Vector2(0.02f, 0.02f), new Vector2(0.48f, 0.84f));
-            _sellList = CreateList(_panel.transform, "SellList", new Vector2(0.52f, 0.02f), new Vector2(0.98f, 0.84f));
+            if (_currentQuartermaster != null) return (_currentQuartermaster.MaxTier, _currentQuartermaster.Name);
+            if (_currentZone != null && MacroState.Current.WanderingTraderZoneId == _currentZone.Id) return (MacroState.Current.WanderingTraderTier, "Wandering Trader");
+            return (_currentZone?.Tier ?? 1, _currentZone?.Name ?? "Trader");
         }
 
-        private static Transform CreateList(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
+        List<Tab> Tabs()
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            var layout = go.AddComponent<VerticalLayoutGroup>();
-            layout.childForceExpandHeight = false;
-            layout.childForceExpandWidth = true;
-            layout.spacing = 3;
-            return go.transform;
+            var t = new List<Tab> { Tab.Buy, Tab.Sell };
+            if (ShopSystem.TechnicianHere()) t.Add(Tab.Repair);
+            if (Upgrades.TechnicianHere()) t.Add(Tab.Upgrade);
+            if (_currentQuartermaster?.Faction == "Wanderers") t.Add(Tab.Hire);
+            return t;
         }
 
-        /// <summary>Batch 69: Wanderer traders can send someone with you (Companion).</summary>
-        private void AddHireRow(Player player)
+        static InventoryItem AsItem(ShopItemDef d) => new InventoryItem { Id = d.Id, Name = d.Name, Type = d.Type, Category = d.Category, Key = d.Key, Qty = 1, WeightKg = d.WeightKg };
+
+        void BuildRows(Player player)
         {
-            var row = UIBuildUtil.CreateRow(_buyList, "Hire", RowHeight, new Color(0.45f, 1f, 0.55f, 0.10f));
-            bool has = Companion.Alive;
-            string label = has ? $"{Companion.Current.Name} walks with you ({Companion.Current.Hp} HP)" : $"Hire a Wanderer to walk with you - {Companion.HireCost} RU";
-            UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f), label, 14, Color.white, TextAlignmentOptions.Left);
-            UIBuildUtil.CreateButton(row.transform, "HireBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f), has ? "Dismiss" : "Hire",
-                () => { if (has) Companion.Dismiss(); else Companion.Hire(player); Rebuild(); });
-        }
-
-        private void AddRepairRow(string label, System.Action repair)
-        {
-            var row = UIBuildUtil.CreateRow(_sellList, "Repair", RowHeight, new Color(0.3f, 0.6f, 0.9f, 0.10f));
-            UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f), label, 13, Color.white, TextAlignmentOptions.Left);
-            UIBuildUtil.CreateButton(row.transform, "RepairBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f), "Repair", () => { repair(); Rebuild(); });
-        }
-
-        /// <summary>Rebuilds both lists from scratch - simplest correct way to keep Ru/quantities in
-        /// sync after every buy/sell, and cheap enough at this list size (rebuild-on-action, not
-        /// every frame, unlike TacticalGridView's per-frame marker sync which has to track
-        /// mid-combat movement).</summary>
-        private void Rebuild()
-        {
-            var player = Player.Current;
-            int traderTier;
-            string traderName;
-            if (_currentQuartermaster != null)
+            _rows.Clear();
+            var (traderTier, _) = Trader();
+            if (_tab == Tab.Buy)
             {
-                traderTier = _currentQuartermaster.MaxTier;
-                traderName = _currentQuartermaster.Name;
-            }
-            else if (_currentZone != null && MacroState.Current.WanderingTraderZoneId == _currentZone.Id)
-            {
-                traderTier = MacroState.Current.WanderingTraderTier;
-                traderName = "Wandering Trader";
-            }
-            else
-            {
-                traderTier = _currentZone?.Tier ?? 1;
-                traderName = _currentZone?.Name ?? "Trader";
-            }
-            _ruText.text = $"{traderName} (Tier {traderTier}) — RU: {player.Ru}";
-
-            foreach (Transform child in _buyList) Destroy(child.gameObject);
-            if (_currentQuartermaster?.Faction == "Wanderers") AddHireRow(player);   // Batch 69
-            // New: every weapon/armor piece used to be buyable at the one and only shop regardless
-            // of its own tier - a Tier 1 outpost selling Tier 5 rifles on day one, which is why
-            // tiers/traders existed in ZoneDef in the first place but were never actually enforced
-            // anywhere. A trader now only stocks weapons/armor at or below its own zone's tier;
-            // untiered items (consumables/ammo/backpacks) are assumed to be sold everywhere.
-            // ~90 total items across ShopDatabase means even a tier-capped list can badly overflow
-            // this fixed-height panel - capped the same way the sell list already was.
-            // File 05: Layer 1 is the fixed baseline every trader carries; weapons, armor, artifacts
-            // and the rest are this trader's rolled stock below (file 07).
-            var stock = ShopDatabase.Items.Where(i => i.Baseline).ToList();
-            stock.AddRange(ShopSystem.AmmoStock(player, traderTier));      // 2026-11-17: ammo by caliber, for the guns you carry
-            foreach (var item in stock.Take(MaxBuyRowsShown))
-            {
-                var row = UIBuildUtil.CreateRow(_buyList, $"Buy_{item.Id}", RowHeight, new Color(1f, 1f, 1f, 0.05f));
-                string label = item.Type == "ammo" ? AmmoLabel(item, player) : item.Name;
-                UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f),
-                    $"{label} - {ShopSystem.GetBuyPrice(item)} RU", 14, Color.white, TextAlignmentOptions.Left);
-                UIBuildUtil.CreateButton(row.transform, "BuyBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f),
-                    "Buy", () => { ShopSystem.BuyItem(item.Id); Rebuild(); });
-            }
-            if (stock.Count > MaxBuyRowsShown)
-            {
-                var moreRow = UIBuildUtil.CreateRow(_buyList, "BuyMore", RowHeight, Color.clear);
-                UIBuildUtil.CreateText(moreRow.transform, "Label", Vector2.zero, Vector2.one,
-                    $"+{stock.Count - MaxBuyRowsShown} more not shown", 12, new Color(0.7f, 0.7f, 0.7f), TextAlignmentOptions.Left);
-            }
-
-            // New: Layer 2 of the two-layer shop system (RolledStockSystem.cs) - a handful of
-            // one-off special items rolled per zone-with-a-trader, cached in
-            // MacroState.Current.RolledShopStock keyed by zone id. These never make it into
-            // ShopDatabase (freshly generated ids - see RolledStockSystem.RollOne), so they buy
-            // through ShopSystem.BuyRolledItem rather than the by-id BuyItem the flat catalog above
-            // uses, and disappear from the list once bought (one-off, not restocked until the next
-            // zone entry re-rolls them).
-            var zoneId = _currentZone?.Id;
-            if (!string.IsNullOrEmpty(zoneId) && !MacroState.Current.RolledShopStock.ContainsKey(zoneId))
-            {
-                bool wandering = _currentQuartermaster == null && !_currentZone.IsSafeZone;
-                var fresh = Economy.RollTraderStock(traderTier, wandering);
-                // file 10: a caravan in town brings 2 extra rolled items
-                if (MacroState.Current.CaravanZoneId == zoneId) fresh.AddRange(Economy.RollTraderStock(traderTier, true).Take(2));
-                MacroState.Current.RolledShopStock[zoneId] = fresh;
-            }
-            var special = !string.IsNullOrEmpty(zoneId) && MacroState.Current.RolledShopStock.TryGetValue(zoneId, out var rolled)
-                ? rolled : null;
-            if (special != null && special.Count > 0)
-            {
-                var header = UIBuildUtil.CreateRow(_buyList, "SpecialHeader", RowHeight, Color.clear);
-                UIBuildUtil.CreateText(header.transform, "Label", Vector2.zero, Vector2.one,
-                    $"-- Today's stock (Day {MacroState.Current.Day}) --", 13, new Color(0.9f, 0.75f, 0.3f), TextAlignmentOptions.Left);
-                foreach (var item in special)
+                var stock = ShopDatabase.Items.Where(i => i.Baseline).ToList();
+                stock.AddRange(ShopSystem.AmmoStock(player, traderTier));                      // ammo by caliber, for the guns you carry
+                foreach (var item in stock)
                 {
-                    var row = UIBuildUtil.CreateRow(_buyList, $"Special_{item.Id}", RowHeight, new Color(0.9f, 0.75f, 0.3f, 0.08f));
-                    UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f),
-                        $"{(item.Type == "ammo" ? AmmoLabel(item, player) : item.Name)} - {ShopSystem.GetBuyPrice(item)} RU", 14, Color.white, TextAlignmentOptions.Left);
-                    UIBuildUtil.CreateButton(row.transform, "BuyBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f),
-                        "Buy", () => { ShopSystem.BuyRolledItem(zoneId, item); Rebuild(); });
+                    var it = item; int price = ShopSystem.GetBuyPrice(it);
+                    _rows.Add(new Row { Label = it.Type == "ammo" ? AmmoLabel(it, player) : it.Name, Price = price + " RU", Afford = player.Ru >= price, Preview = AsItem(it), DoLabel = "PURCHASE", Desc = Describe(AsItem(it), it), Do = () => ShopSystem.BuyItem(it.Id) });
+                }
+                // the rolled one-off stock of this trader (RolledStockSystem), gone once bought
+                var zoneId = _currentZone?.Id;
+                if (!string.IsNullOrEmpty(zoneId) && !MacroState.Current.RolledShopStock.ContainsKey(zoneId))
+                {
+                    bool wandering = _currentQuartermaster == null && !_currentZone.IsSafeZone;
+                    var fresh = Economy.RollTraderStock(traderTier, wandering);
+                    if (MacroState.Current.CaravanZoneId == zoneId) fresh.AddRange(Economy.RollTraderStock(traderTier, true).Take(2));
+                    MacroState.Current.RolledShopStock[zoneId] = fresh;
+                }
+                var special = !string.IsNullOrEmpty(zoneId) && MacroState.Current.RolledShopStock.TryGetValue(zoneId, out var rolled) ? rolled : null;
+                if (special != null && special.Count > 0)
+                {
+                    _rows.Add(new Row { Header = true, Label = $"-- Today's stock (Day {MacroState.Current.Day}) --" });
+                    foreach (var item in special)
+                    {
+                        var it = item; int price = ShopSystem.GetBuyPrice(it);
+                        _rows.Add(new Row { Label = it.Type == "ammo" ? AmmoLabel(it, player) : it.Name, Price = price + " RU", Afford = player.Ru >= price, Preview = AsItem(it), DoLabel = "PURCHASE", Desc = Describe(AsItem(it), it), Do = () => ShopSystem.BuyRolledItem(zoneId, it) });
+                    }
                 }
             }
-
-            foreach (Transform child in _sellList) Destroy(child.gameObject);
-
-            // Technician (Hub Repair Yard / faction quartermasters): repair to Working (file 08 §5).
-            if (ShopSystem.TechnicianHere())
+            else if (_tab == Tab.Sell)
             {
-                if (player.EquippedWeapon != null && player.EquippedWeapon.Condition != ItemCondition.Working)
-                    AddRepairRow($"Repair {player.EquippedWeapon.Name} ({player.EquippedWeapon.Condition})", () => ShopSystem.RepairEquipped(true));
-                if (player.EquippedArmor != null && player.EquippedArmorCondition != ItemCondition.Working)
-                    AddRepairRow($"Repair {player.EquippedArmor.Name} ({player.EquippedArmorCondition})", () => ShopSystem.RepairEquipped(false));
-                foreach (var damaged in player.Inventory.Items.Where(i => (i.Type == "weapon" || i.Type == "armor") && Economy.ConditionSteps(i.Condition) > 0).Take(4).ToList())
-                    AddRepairRow($"Repair {damaged.Name} ({damaged.Condition}) - {Economy.RepairCost(damaged)} RU", () => ShopSystem.Repair(damaged));
+                foreach (var item in player.Inventory.Items.ToList())
+                {
+                    var it = item;
+                    string cond = (it.Type == "weapon" || it.Type == "armor") && !string.IsNullOrEmpty(it.Condition) && it.Condition != ItemCondition.Working ? $" ({it.Condition})" : "";
+                    _rows.Add(new Row { Label = $"{it.Name}{cond}" + (it.Qty > 1 ? $"  x{it.Qty}" : ""), Price = ShopSystem.GetSellValuePerUnit(it) + " RU", Preview = it, DoLabel = "SELL", Desc = HudView.Describe(it), Do = () => ShopSystem.SellItem(it.Id, 1) });
+                }
             }
-
-            // Repair Yard upgrades (file 08 §5): up to 3 per equipped weapon / armor, paid in Mutant Parts + RU.
-            if (Upgrades.TechnicianHere())
+            else if (_tab == Tab.Repair)
+            {
+                void Add(string label, string price, InventoryItem prev, System.Action go) => _rows.Add(new Row { Label = label, Price = price, Preview = prev, DoLabel = "REPAIR", Do = go, Desc = "The technician brings it back to Working." });
+                if (player.EquippedWeapon != null && player.EquippedWeapon.Condition != ItemCondition.Working) Add($"Repair {player.EquippedWeapon.Name} ({player.EquippedWeapon.Condition})", "", null, () => ShopSystem.RepairEquipped(true));
+                if (player.EquippedArmor != null && player.EquippedArmorCondition != ItemCondition.Working) Add($"Repair {player.EquippedArmor.Name} ({player.EquippedArmorCondition})", "", null, () => ShopSystem.RepairEquipped(false));
+                foreach (var damaged in player.Inventory.Items.Where(i => (i.Type == "weapon" || i.Type == "armor") && Economy.ConditionSteps(i.Condition) > 0).Take(8).ToList())
+                { var d = damaged; Add($"Repair {d.Name} ({d.Condition})", Economy.RepairCost(d) + " RU", d, () => ShopSystem.Repair(d)); }
+            }
+            else if (_tab == Tab.Upgrade)
             {
                 foreach (bool forWeapon in new[] { true, false })
                 {
-                    var eq = ShopSystem.EquippedAsItem(forWeapon);
-                    if (eq == null) continue;
-                    var have = forWeapon ? player.EquippedWeapon.Upgrades : player.EquippedArmorUpgrades;
-                    if (have.Count >= 3) continue;
+                    var eq = ShopSystem.EquippedAsItem(forWeapon); if (eq == null) continue;
+                    var have = forWeapon ? player.EquippedWeapon.Upgrades : player.EquippedArmorUpgrades; if (have.Count >= 3) continue;
                     foreach (var kv in forWeapon ? Upgrades.Weapon : Upgrades.Armor)
                     {
                         if (have.Contains(kv.Key)) continue;
                         if (forWeapon && kv.Key == "Extended Mag" && CombatRules.IsMelee(player.EquippedWeapon)) continue;
-                        string up = kv.Key;
-                        var row = UIBuildUtil.CreateRow(_sellList, "Upgrade", RowHeight, new Color(0.9f, 0.6f, 0.2f, 0.10f));
-                        UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f),
-                            $"{eq.Name}: {up} ({kv.Value}) - {Upgrades.CostText(player, eq, have.Count + 1)}", 12, Color.white, TextAlignmentOptions.Left);
-                        UIBuildUtil.CreateButton(row.transform, "UpgradeBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f),
-                            "Upgrade", () => { Upgrades.Buy(player, forWeapon, up); Rebuild(); });
+                        string up = kv.Key; bool fw = forWeapon;
+                        _rows.Add(new Row { Label = $"{eq.Name}: {up}", Price = Upgrades.CostText(player, eq, have.Count + 1), Preview = eq, DoLabel = "UPGRADE", Desc = kv.Value, Do = () => Upgrades.Buy(player, fw, up) });
                     }
                 }
             }
-
-            var items = player.Inventory.Items;
-            foreach (var item in items.Take(MaxSellRowsShown))
+            else if (_tab == Tab.Hire)
             {
-                // New: same condition-suffix convention CorpseLootUI/InventoryUI already use -
-                // Working is the implied default (no suffix), Dirty/Damaged shown so a sell price
-                // that's taken a condition cut (see ShopSystem.GetSellValuePerUnit) isn't a mystery.
-                string condSuffix = (item.Type == "weapon" || item.Type == "armor") && !string.IsNullOrEmpty(item.Condition) && item.Condition != ItemCondition.Working
-                    ? $" ({item.Condition})" : "";
-                var row = UIBuildUtil.CreateRow(_sellList, $"Sell_{item.Id}", RowHeight, new Color(1f, 1f, 1f, 0.05f));
-                UIBuildUtil.CreateText(row.transform, "Label", new Vector2(0.02f, 0f), new Vector2(0.68f, 1f),
-                    $"{item.Name}{condSuffix} x{item.Qty} - {ShopSystem.GetSellValuePerUnit(item)} RU", 14, Color.white, TextAlignmentOptions.Left);
-                UIBuildUtil.CreateButton(row.transform, "SellBtn", new Vector2(0.7f, 0.1f), new Vector2(0.98f, 0.9f),
-                    "Sell", () => { ShopSystem.SellItem(item.Id, 1); Rebuild(); });
+                bool has = Companion.Alive;
+                _rows.Add(new Row { Label = has ? $"{Companion.Current.Name} walks with you ({Companion.Current.Hp} HP)" : "Hire a Wanderer to walk with you", Price = has ? "" : Companion.HireCost + " RU", Afford = has || player.Ru >= Companion.HireCost, DoLabel = has ? "DISMISS" : "HIRE",
+                    Desc = "A Wanderer walks with you, holds fire while you sneak and fights beside you.", Do = () => { if (has) Companion.Dismiss(); else Companion.Hire(player); } });
             }
-            if (items.Count > MaxSellRowsShown)
+            if (_sel >= _rows.Count) _sel = Mathf.Max(0, _rows.Count - 1);
+            if (_rows.Count > 0 && _rows[_sel].Header) _sel = Mathf.Min(_rows.Count - 1, _sel + 1);
+        }
+
+        static string Describe(InventoryItem prev, ShopItemDef def)
+        {
+            string d = HudView.Describe(prev);
+            if (def.Type == "ammo") d = (def.AmmoType ?? "Standard") + " rounds" + (def.Rounds.HasValue ? $", {def.Rounds} to a box" : "");
+            if (def.Type == "backpack" && def.CapacityBonus.HasValue) d = $"A bigger bag: +{def.CapacityBonus} kg and more room in the case.";
+            return d;
+        }
+
+        static string AmmoLabel(ShopItemDef item, Player player)
+        {
+            string key = ShopSystem.AmmoKey(item);
+            if (key == null) return $"{item.Name} (draw a gun first)";
+            return $"{Ammo.Label(key)} x{item.Rounds ?? ShopSystem.RoundsPerBox(player.EquippedWeapon)}";
+        }
+
+        // ---------------------------------------------------------------- drawing
+        static Image Px(Transform parent, string name, Vector2 anchor, Vector2 pos, Vector2 size, Color c)
+        {
+            var go = new GameObject(name, typeof(RectTransform)); go.transform.SetParent(parent, false);
+            var r = go.GetComponent<RectTransform>(); r.anchorMin = r.anchorMax = r.pivot = anchor; r.anchoredPosition = pos; r.sizeDelta = size;
+            var im = go.AddComponent<Image>(); im.color = c; im.raycastTarget = false; return im;
+        }
+        static TextMeshProUGUI Lbl(Transform parent, string name, Vector2 pos, Vector2 size, string s, bool title, float px, Color c, TextAlignmentOptions align)
+        {
+            var t = Px(parent, name, new Vector2(0, 1), pos, size, Color.clear).gameObject.AddComponent<TextMeshProUGUI>();
+            var f = title ? HudView.TitleFont : HudView.BodyFont; if (f != null) t.font = f;
+            t.text = s; t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false; t.enableWordWrapping = false; if (title) t.characterSpacing = 4;
+            return t;
+        }
+        Button Clickable(Image im, System.Action act) { im.raycastTarget = true; var b = im.gameObject.AddComponent<Button>(); b.onClick.AddListener(() => { Sfx.Play("ui_click"); act(); }); return b; }
+
+        private void Rebuild()
+        {
+            if (!_open) return;
+            var player = Player.Current; if (player == null) return;
+            var tabs = Tabs(); if (!tabs.Contains(_tab)) _tab = Tab.Buy;
+            BuildRows(player);
+            if (_box != null) Destroy(_box);
+            var canvas = FindAnyObjectByType<Canvas>(); if (canvas == null) return;
+            float W = 1500f, H = 840f;
+            var edge = Px(canvas.transform, "Shop", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(W, H), Brass); _box = edge.gameObject;
+            var box = Px(edge.transform, "Fill", new Vector2(0, 1), new Vector2(3, -3), new Vector2(W - 6, H - 6), Leather).transform;
+            // header
+            var (tier, name) = Trader();
+            Lbl(box, "Name", new Vector2(32, -22), new Vector2(800, 40), name.ToUpperInvariant(), true, 28, Bone, TextAlignmentOptions.TopLeft);
+            Px(box, "Rule", new Vector2(0, 1), new Vector2(32, -66), new Vector2(150, 2), Gold);
+            Lbl(box, "Tier", new Vector2(32, -74), new Vector2(500, 22), $"Tier {tier}", true, 12, Dimc, TextAlignmentOptions.TopLeft);
+            Lbl(box, "Ru", new Vector2(W - 6 - 32 - 420, -20), new Vector2(420, 50), $"{player.Ru}", false, 42, Gold, TextAlignmentOptions.TopRight);
+            Lbl(box, "RuL", new Vector2(W - 6 - 32 - 420, -70), new Vector2(420, 20), "RU", true, 12, Dimc, TextAlignmentOptions.TopRight);
+            // tabs
+            float ty = -120f;
+            foreach (var t in tabs)
             {
-                var moreRow = UIBuildUtil.CreateRow(_sellList, "SellMore", RowHeight, Color.clear);
-                UIBuildUtil.CreateText(moreRow.transform, "Label", Vector2.zero, Vector2.one,
-                    $"+{items.Count - MaxSellRowsShown} more not shown", 12, new Color(0.7f, 0.7f, 0.7f), TextAlignmentOptions.Left);
+                bool active = t == _tab; var tab = t;
+                var b = Px(box, "Tab", new Vector2(0, 1), new Vector2(24, ty), new Vector2(200, 56), active ? Brass : BrassDim);
+                var inn = Px(b.transform, "In", new Vector2(0, 1), new Vector2(2, -2), new Vector2(196, 52), active ? new Color(0.16f, 0.125f, 0.085f, 1f) : Ink);
+                Lbl(inn.transform, "T", new Vector2(0, -14), new Vector2(196, 26), TabName(t), true, 16, active ? Bone : Dimc, TextAlignmentOptions.Center);
+                Clickable(b, () => { _tab = tab; _page = 0; _sel = 0; Rebuild(); });
+                ty -= 62f;
+            }
+            Lbl(box, "Keys", new Vector2(24, -H + 6 + 40), new Vector2(240, 36), "Q / E  TAB\nUP / DOWN  PICK\nENTER  DO    ESC  LEAVE", true, 10, Dimc, TextAlignmentOptions.TopLeft);
+            // list
+            int pages = Mathf.Max(1, Mathf.CeilToInt(_rows.Count / (float)RowsPerPage)); _page = Mathf.Clamp(_page, 0, pages - 1);
+            if (_rows.Count > 0) _page = Mathf.Clamp(_sel / RowsPerPage, 0, pages - 1) == _page ? _page : Mathf.Clamp(_sel / RowsPerPage, 0, pages - 1);
+            _rowViews.Clear();
+            float lx = 252f, ly = -120f, lw = 760f;
+            Px(box, "ListBack", new Vector2(0, 1), new Vector2(lx - 6, ly + 6), new Vector2(lw + 12, RowsPerPage * RowH + 12), Ink);
+            if (_rows.Count == 0) Lbl(box, "Empty", new Vector2(lx + 12, ly - 14), new Vector2(lw, 30), "Nothing here.", false, 18, Dimc, TextAlignmentOptions.TopLeft);
+            for (int i = _page * RowsPerPage, n = 0; i < _rows.Count && n < RowsPerPage; i++, n++)
+            {
+                var r = _rows[i]; int idx = i; float y = ly - n * RowH;
+                var row = Px(box, "Row", new Vector2(0, 1), new Vector2(lx, y), new Vector2(lw, RowH - 4), r.Header ? Color.clear : new Color(1, 1, 1, 0.04f));
+                _rowViews.Add((row.rectTransform, row, i));
+                if (r.Header) { Lbl(row.transform, "L", new Vector2(12, -12), new Vector2(lw - 24, 24), r.Label, true, 13, Gold, TextAlignmentOptions.TopLeft); continue; }
+                Lbl(row.transform, "L", new Vector2(14, -10), new Vector2(lw - 200, 28), r.Label, false, 19, r.Afford || _tab == Tab.Sell ? Bone : Dimc, TextAlignmentOptions.TopLeft);
+                Lbl(row.transform, "P", new Vector2(lw - 190, -10), new Vector2(176, 28), r.Price ?? "", false, 19, r.Afford ? Gold : Bad, TextAlignmentOptions.TopRight);
+                Clickable(row, () => { _sel = idx; Rebuild(); });
+            }
+            Lbl(box, "Page", new Vector2(lx, ly - RowsPerPage * RowH - 12), new Vector2(lw, 20), pages > 1 ? $"< {_page + 1} / {pages} >   (wheel)" : "", true, 11, Dimc, TextAlignmentOptions.TopRight);
+            // preview
+            float px = 1042f, pw = W - 6 - 32 - px;
+            Px(box, "PrevBack", new Vector2(0, 1), new Vector2(px, -120 + 6), new Vector2(pw, H - 6 - 120 - 36), Ink);
+            if (_rows.Count > 0 && !_rows[_sel].Header)
+            {
+                var r = _rows[_sel];
+                var plate = Px(box, "Plate", new Vector2(0, 1), new Vector2(px + 20, -140), new Vector2(pw - 40, 170), new Color(0.12f, 0.1f, 0.08f, 1f));
+                if (r.Preview != null) { var ic = Px(plate.transform, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(pw - 80, 150), Color.white); ic.sprite = HudView.Icon(r.Preview); ic.preserveAspect = true; if (ic.sprite == null) ic.color = Color.clear; }
+                Lbl(box, "PName", new Vector2(px + 20, -330), new Vector2(pw - 40, 60), (r.Preview?.Name ?? r.Label).ToUpperInvariant(), true, 20, Bone, TextAlignmentOptions.TopLeft).enableWordWrapping = true;
+                Lbl(box, "PDesc", new Vector2(px + 20, -396), new Vector2(pw - 40, 220), r.Desc ?? "", false, 17, Dimc, TextAlignmentOptions.TopLeft).enableWordWrapping = true;
+                if (r.Preview != null && r.Preview.WeightKg > 0f) Lbl(box, "PW", new Vector2(px + 20, -H + 6 + 170), new Vector2(pw - 40, 22), $"{r.Preview.WeightKg:0.0} kg   {Pack.Size(r.Preview).w}x{Pack.Size(r.Preview).h}", true, 11, Dimc, TextAlignmentOptions.TopLeft);
+                var go = Px(box, "Do", new Vector2(0, 1), new Vector2(px + 20, -H + 6 + 120), new Vector2(pw - 40, 62), r.Afford ? Brass : BrassDim);
+                var goIn = Px(go.transform, "In", new Vector2(0, 1), new Vector2(2, -2), new Vector2(pw - 44, 58), r.Afford ? new Color(0.2f, 0.155f, 0.09f, 1f) : Ink);
+                Lbl(goIn.transform, "T", new Vector2(0, -16), new Vector2(pw - 44, 28), $"{r.DoLabel}" + (string.IsNullOrEmpty(r.Price) ? "" : "   " + r.Price), true, 17, r.Afford ? Bone : Dimc, TextAlignmentOptions.Center);
+                Clickable(go, DoSelected);
+            }
+            Px(box, "CloseEdge", new Vector2(0, 1), new Vector2(px + 20, -H + 6 + 60), new Vector2(pw - 40, 44), BrassDim);
+            var closeBtn = Px(box, "CloseHit", new Vector2(0, 1), new Vector2(px + 22, -H + 6 + 58), new Vector2(pw - 44, 40), new Color(0.06f, 0.05f, 0.04f, 1f));
+            Lbl(closeBtn.transform, "T", new Vector2(0, -10), new Vector2(pw - 40, 24), "LEAVE", true, 14, Dimc, TextAlignmentOptions.Center);
+            Clickable(closeBtn, Close);
+        }
+
+        static string TabName(Tab t) => t == Tab.Buy ? "BUY" : t == Tab.Sell ? "SELL" : t == Tab.Repair ? "REPAIR" : t == Tab.Upgrade ? "UPGRADE" : "HIRE";
+
+        void DoSelected()
+        {
+            if (_rows.Count == 0 || _rows[_sel].Header || _rows[_sel].Do == null) return;
+            _rows[_sel].Do(); Rebuild();
+        }
+
+        private void Update()
+        {
+            if (!_open) return;
+            var k = Keyboard.current; var m = Mouse.current;
+            if (k != null)
+            {
+                if (k.escapeKey.wasPressedThisFrame || k.bKey.wasPressedThisFrame) { Close(); return; }
+                var tabs = Tabs(); int ti = tabs.IndexOf(_tab);
+                if (k.qKey.wasPressedThisFrame) { _tab = tabs[(ti + tabs.Count - 1) % tabs.Count]; _page = 0; _sel = 0; Rebuild(); return; }
+                if (k.eKey.wasPressedThisFrame) { _tab = tabs[(ti + 1) % tabs.Count]; _page = 0; _sel = 0; Rebuild(); return; }
+                if (k.downArrowKey.wasPressedThisFrame) { Step(1); return; }
+                if (k.upArrowKey.wasPressedThisFrame) { Step(-1); return; }
+                if (k.enterKey.wasPressedThisFrame) { DoSelected(); return; }
+            }
+            if (m != null)
+            {
+                float wheel = m.scroll.ReadValue().y;
+                if (wheel != 0f) { int pages = Mathf.Max(1, Mathf.CeilToInt(_rows.Count / (float)RowsPerPage)); int np = Mathf.Clamp(_page + (wheel > 0f ? -1 : 1), 0, pages - 1); if (np != _page) { _sel = Mathf.Min(_rows.Count - 1, np * RowsPerPage); Rebuild(); return; } }
+                var at = m.position.ReadValue();
+                foreach (var (rect, img, index) in _rowViews)
+                {
+                    if (rect == null || img == null || _rows[index].Header) continue;
+                    bool sel = index == _sel, hot = RectTransformUtility.RectangleContainsScreenPoint(rect, at, null);
+                    img.color = sel ? new Color(Brass.r, Brass.g, Brass.b, 0.55f) : hot ? new Color(1f, 1f, 1f, 0.11f) : new Color(1f, 1f, 1f, 0.04f);
+                }
             }
         }
 
-    /// <summary>"5.45x39mm Armor-Piercing x30", and a warning when an old generic box is for another caliber than your gun's.</summary>
-    static string AmmoLabel(ShopItemDef item, Player player)
-    {
-        string key = ShopSystem.AmmoKey(item);
-        if (key == null) return $"{item.Name} (draw a gun first)";
-        return $"{Ammo.Label(key)} x{item.Rounds ?? ShopSystem.RoundsPerBox(player.EquippedWeapon)}";
-    }
+        void Step(int d)
+        {
+            if (_rows.Count == 0) return;
+            int i = _sel;
+            do { i = (i + d + _rows.Count) % _rows.Count; } while (_rows[i].Header && i != _sel);
+            _sel = i; Rebuild();
+        }
     }
 }
