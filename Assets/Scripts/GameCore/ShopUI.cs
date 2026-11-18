@@ -197,7 +197,7 @@ namespace GameCore
         {
             var t = Px(parent, name, new Vector2(0, 1), pos, size, Color.clear).gameObject.AddComponent<TextMeshProUGUI>();
             var f = title ? HudView.TitleFont : HudView.BodyFont; if (f != null) t.font = f;
-            t.text = s; t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false; t.enableWordWrapping = false; if (title) t.characterSpacing = 4;
+            t.text = Loc.Text(s); t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false; t.enableWordWrapping = false; if (title) t.characterSpacing = 4;
             return t;
         }
         Button Clickable(Image im, System.Action act) { im.raycastTarget = true; var b = im.gameObject.AddComponent<Button>(); b.onClick.AddListener(() => { Sfx.Play("ui_click"); act(); }); return b; }

@@ -36,7 +36,7 @@ namespace GameCore
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             var text = go.AddComponent<TextMeshProUGUI>();
-            text.text = content;
+            text.text = Loc.Text(content);                                  // translated at birth: no frame in English
             text.fontSize = fontSize;
             text.color = color;
             text.alignment = align;

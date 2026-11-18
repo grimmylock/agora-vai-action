@@ -85,12 +85,17 @@ namespace GameCore
             return (lead > 0 ? original.Substring(0, lead) : "") + translated + (trail > 0 ? original.Substring(original.Length - trail) : "");
         }
 
+        // what each UI translation came from, so a label that was created already in Portuguese can still go back to English (LocHook)
+        static readonly Dictionary<string, string> _back = new Dictionary<string, string>();
+        public static string Original(string shown) => shown != null && _back.TryGetValue(shown, out var o) ? o : shown;
+        static string Note(string result, string source) { if (result != source) { if (_back.Count > 20000) _back.Clear(); _back[result] = source; } return result; }
+
         static readonly Regex Splitter = new Regex("(<[^>]*>|\\n| {3,})", RegexOptions.Compiled);
         /// <summary>UI text: the whole string, else piece by piece between rich-text tags and line breaks.</summary>
         public static string Text(string s)
         {
             if (!Pt || string.IsNullOrEmpty(s)) return s;
-            string whole = T(s); if (!ReferenceEquals(whole, s) && whole != s) return whole;
+            string whole = T(s); if (!ReferenceEquals(whole, s) && whole != s) return Note(whole, s);
             if (s.IndexOf('<') < 0 && s.IndexOf('\n') < 0 && s.IndexOf("   ", StringComparison.Ordinal) < 0) { Miss(s); return s; }
             var parts = Splitter.Split(s); var sb = new StringBuilder(); bool changed = false;
             foreach (var p in parts)
@@ -98,7 +103,7 @@ namespace GameCore
                 if (p.Length == 0 || p[0] == '<' || p == "\n" || p.Trim().Length == 0) { sb.Append(p); continue; }
                 string t = T(p); if (t != p) changed = true; else Miss(p); sb.Append(t);
             }
-            return changed ? sb.ToString() : s;
+            return changed ? Note(sb.ToString(), s) : s;
         }
     }
 }

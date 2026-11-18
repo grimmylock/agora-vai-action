@@ -101,7 +101,7 @@ namespace GameCore
             var t = Rect(parent, name, new Vector2(0, 1), pos, size).gameObject.AddComponent<TextMeshProUGUI>();
             var f = title ? _title : _body;
             if (f != null) t.font = f;
-            t.text = s; t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false;
+            t.text = Loc.Text(s); t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false;   // translated at birth: no frame in English
             t.enableWordWrapping = false;
             if (title) t.characterSpacing = 6;
             return t;

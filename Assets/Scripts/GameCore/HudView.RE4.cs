@@ -44,7 +44,7 @@ namespace GameCore
         {
             var t = Rect(parent, name, anchor, pos, size).gameObject.AddComponent<TextMeshProUGUI>();
             var f = title ? _title : _body; if (f != null) t.font = f;
-            t.text = s; t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false; t.enableWordWrapping = false;
+            t.text = Loc.Text(s); t.fontSize = px; t.color = c; t.alignment = align; t.raycastTarget = false; t.enableWordWrapping = false;
             t.outlineWidth = 0.22f; t.outlineColor = new Color32(0, 0, 0, 255);                   // legible on any ground without a panel
             if (title) t.characterSpacing = 4;
             return t;

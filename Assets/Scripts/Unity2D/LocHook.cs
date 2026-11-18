@@ -2,7 +2,7 @@
 //   - loads Resources/Lang/<language>.txt, remembers the choice (PlayerPrefs "lang"), and starts in it;
 //   - every frame, in LateUpdate (after the game wrote its English, before anything is drawn), passes every label whose text changed through Loc.Text - so no screen needs its own code;
 //   - remembers each label's English, so a language change (Options) redoes everything on screen at once.
-// Labels are found by a scan every 0.25 s (a brand new label can show English for up to a quarter of a second); the ones that change every frame (the HUD) are cheap: only a changed string is looked up.
+// Labels are found by a scan every third frame, and the common ways to make a label (HudView.Txt, UIBuildUtil.CreateText, the shop and HUD helpers) translate it at birth, so a label should never be seen in English; the ones that change every frame (the HUD) are cheap: only a changed string is looked up.
 // English mode costs nothing (the scan and the loop do not run).
 using System.Collections.Generic;
 using TMPro;
@@ -65,14 +65,14 @@ namespace GameCore
         void Scan()
         {
             foreach (var t in FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (t != null && !_seen.ContainsKey(t)) _seen[t] = new Seen { src = t.text, shown = t.text };
+                if (t != null && !_seen.ContainsKey(t)) { string cur = t.text; _seen[t] = new Seen { src = Loc.Original(cur), shown = cur }; }   // (Original: a label made already in Portuguese remembers its English)
         }
 
         void LateUpdate()
         {
             WriteMissed();
             if (!Loc.Pt && _seen.Count == 0) return;                          // English and nothing remembered: nothing to do
-            if (Time.unscaledTime >= _scanAt) { _scanAt = Time.unscaledTime + 0.25f; Scan(); }
+            if (Time.frameCount % 3 == 0) Scan();                              // a label made without Loc.Text shows English for at most three frames
             _dead.Clear();
             foreach (var kv in _seen)
             {
