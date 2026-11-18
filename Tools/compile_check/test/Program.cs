@@ -62,6 +62,7 @@ static class Program {
     GrenadeChecks();
     SquadFightChecks();
     PlayerThrowChecks();
+    BodyGridChecks();
     RescueChecks();
     SaveSlotChecks();
     NetChecks();
@@ -3745,6 +3746,20 @@ static class Program {
     p.ArmedThrowable = null; Rt.PlayerTick(p, new Rt.Input { Throw = true }); p.Inventory.Items.RemoveAll(it => it.Type == "consumable"); p.ArmedThrowable = null; Rt.PlayerTick(p, new Rt.Input { Throw = true });
     Check(p.ArmedThrowable == null, "throw: nothing to throw, nothing taken out");
     EncounterState.Enemies.Clear(); Explosions.Reset(); Rt.On = false; Rt.Reset();
+  }
+  // 2026-11-18: the looting grid - a body's things lie in an 8-wide grid, nothing overlaps, nothing is lost, a drag moves a thing only to free space
+  static void BodyGridChecks() {
+    var items = new List<InventoryItem> {
+      new InventoryItem { Id = "rifle", Type = "weapon", Category = "assault", Key = "VK74", Name = "rifle", Qty = 1 }, new InventoryItem { Id = "sniper", Type = "weapon", Category = "sniper", Key = "M91Trekhlineyka", Name = "sniper", Qty = 1 },
+      new InventoryItem { Id = "suit", Type = "armor", Name = "suit", Qty = 1 }, new InventoryItem { Id = "kit", Type = "consumable", Name = "Medkit", Qty = 2 }, new InventoryItem { Id = "pill", Type = "consumable", Name = "pill", Qty = 3 } };
+    int rows = Pack.BodyRows(items); var left = Pack.LayOut(items, rows);
+    bool overlap = false; for (int a = 0; a < items.Count; a++) for (int b = a + 1; b < items.Count; b++) { var (aw, ah) = Pack.Footprint(items[a]); var (bw, bh) = Pack.Footprint(items[b]); if (items[a].GridX < items[b].GridX + bw && items[b].GridX < items[a].GridX + aw && items[a].GridY < items[b].GridY + bh && items[b].GridY < items[a].GridY + ah) overlap = true; }
+    Check(left.Count == 0 && !overlap && items.All(i => i.GridX >= 0 && i.GridX < Pack.BodyCols && i.GridY < rows), $"body grid: five things fit in {Pack.BodyCols}x{rows} with no overlap and none lost");
+    var kit = items.First(i => i.Id == "kit"); bool moved = Pack.MoveIn(Pack.BodyCols, rows, items, kit, 7, rows - 1, false);
+    Check(moved && kit.GridX == 7 && kit.GridY == rows - 1, "body grid: a drag onto a free cell moves the thing there");
+    var suit = items.First(i => i.Id == "suit"); int sx = suit.GridX, sy = suit.GridY;
+    Check(!Pack.MoveIn(Pack.BodyCols, rows, items, suit, 7, rows - 1, false) && suit.GridX == sx && suit.GridY == sy, "body grid: a drag onto an occupied or out-of-grid spot is refused and the thing stays");
+    Check(Pack.BodyRows(new List<InventoryItem>()) >= 4 && Pack.BodyRows(Enumerable.Range(0, 40).Select(i => new InventoryItem { Id = "x" + i, Type = "armor", Name = "x", Qty = 1 })) <= 12, "body grid: an empty body has room to put something on, a huge one stops at 12 rows");
   }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();

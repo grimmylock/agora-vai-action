@@ -20,6 +20,7 @@ namespace GameCore
         public static int PackClosedFrame = -1;          // the ESC that closed it doesn't also pause (PlayerController)
         const float Cell = 56f;
         RectTransform _pack, _bagRect, _outRect; GameObject _packBox; readonly RectTransform[] _slots = new RectTransform[4]; TextMeshProUGUI _packInfo, _packHint;
+        HumanEnemy _loot; RectTransform _lootRect; GameObject _lootBox; bool _dragBody;   // the body being looted (CorpseLootUI), its grid, its box; _dragBody: the item in the hand lies on the body
         string _packStamp; bool _beside;   // _beside: the pack is open next to a loot panel (CorpseLootUI), on the left
         InventoryItem _drag; bool _dragRot; int _dragDx, _dragDy; Image _dragImg;
         static readonly Dictionary<string, Sprite> Icons = new Dictionary<string, Sprite>();
@@ -31,7 +32,7 @@ namespace GameCore
             if (on) { if (!PackOpen) { PackOpen = true; Pack.Settle(Player.Current); } _beside = true; _packStamp = null; }
             else
             {
-                _beside = false;
+                _beside = false; if (_lootBox != null) Destroy(_lootBox); _lootBox = null; _lootRect = null;
                 if (PackOpen) { PackOpen = false; PackClosedFrame = Time.frameCount; DropDrag(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; }
             }
         }
@@ -52,13 +53,87 @@ namespace GameCore
             if (k != null && k.iKey.wasPressedThisFrame && (PackOpen || !GameState.Current.ModalOpen)) { TogglePack(); return; }
             if (!PackOpen || p == null) return;
             if (k != null && k.escapeKey.wasPressedThisFrame) { TogglePack(); return; }
-            string stamp = Stamp(p);
-            if (stamp != _packStamp) { _packStamp = stamp; BuildPack(p); }
+            string stamp = Stamp(p) + (_loot != null ? "|L" + LootStamp() : "");
+            if (stamp != _packStamp) { _packStamp = stamp; BuildPack(p); if (_loot != null) BuildLoot(); }
             HandlePackMouse(p, k);
         }
 
         static string Stamp(Player p) => (p.Inventory.Backpack ?? "") + "|" + p.EquippedWeapon?.Name + "|" + p.SecondaryWeapon?.Name + "|" + p.EquippedArmor?.Name + "|"
             + string.Join(";", p.Inventory.Items.Select(i => $"{i.Id}:{i.Qty}:{i.GridX}:{i.GridY}:{i.Rot}"));
+
+        // ---- looting a body (2026-11-18, Yan: "add drag from the body's list into the grid, also add the grid as the looting screen for the enemies stuff") ----
+        // The body's things lie in a grid of their own (Pack.LayOut, 8 wide) to the right of your bag; drag from it into your bag (a free spot of your choice), from your bag onto it, or around inside it;
+        // right-click on one takes it; below the grid: the body's RU and rounds (Take), TAKE ALL, CLOSE. Opened by CorpseLootUI.
+        public void LootStart(HumanEnemy c) { _loot = c; Pack.LayOut(c.Inventory.Items, Pack.BodyRows(c.Inventory.Items)); PackForLoot(true); }
+        public void LootStop() { _loot = null; _dragBody = false; PackForLoot(false); }
+        int LootRows() => Pack.BodyRows(_loot.Inventory.Items);
+        string LootStamp() => _loot.Ru + "|" + string.Join(";", _loot.Inventory.AmmoReserve.Select(kv => kv.Key + kv.Value)) + "|" + string.Join(";", _loot.Inventory.Items.Select(i => $"{i.Id}:{i.Qty}:{i.GridX}:{i.GridY}:{i.Rot}"));
+
+        void LootTakeAll(Player p)
+        {
+            foreach (var it in _loot.Inventory.Items.ToList()) p.AddItem(it);
+            _loot.Inventory.Items.Clear();
+            foreach (var kv in _loot.Inventory.AmmoReserve.ToList()) Ammo.Add(p.Inventory, Ammo.Normalize(p, kv.Key), kv.Value);
+            _loot.Inventory.AmmoReserve.Clear();
+            if (_loot.Ru > 0) { p.Ru += _loot.Ru; _loot.Ru = 0; }
+            GameLog.Write($"Looted everything from {_loot.Name}'s body.");
+            _packStamp = null;
+        }
+
+        /// <summary>One thing from the body into your pack: at the cell you dropped it on if that is free there, else the first free spot (what doesn't fit waits on the strip under the bag).</summary>
+        void LootTake(Player p, InventoryItem it, (int x, int y)? cell, bool rot)
+        {
+            _loot.Inventory.Items.Remove(it);
+            var before = p.Inventory.Items.ToList();
+            p.AddItem(it);
+            var added = p.Inventory.Items.FirstOrDefault(i => !before.Contains(i));      // null: it joined a stack (or went to the ammo stash)
+            if (added != null && cell.HasValue) Pack.Move(p, added, cell.Value.x, cell.Value.y, rot);
+            _packStamp = null;
+        }
+
+        /// <summary>One thing from your bag onto the body, at the dropped cell if free there, else the first free spot; no room: it stays with you.</summary>
+        bool LootPut(Player p, InventoryItem it, (int x, int y)? cell, bool rot)
+        {
+            int rows = LootRows(); var items = _loot.Inventory.Items;
+            it.Rot = rot; var (w, h) = Pack.Footprint(it);
+            bool spot = cell.HasValue && Pack.FreeIn(Pack.BodyCols, rows, items, null, cell.Value.x, cell.Value.y, w, h);
+            if (!p.RemoveItem(it.Id, System.Math.Max(1, it.Qty))) return false;
+            items.Add(it);
+            if (spot) { it.GridX = cell.Value.x; it.GridY = cell.Value.y; }
+            else if (!Pack.PlaceIn(Pack.BodyCols, rows, items, it)) { items.Remove(it); p.AddItem(it); GameLog.Write("There is no room on the body."); return false; }
+            _packStamp = null; return true;
+        }
+
+        void BuildLoot()
+        {
+            if (_lootBox != null) Destroy(_lootBox);
+            if (_loot == null) return;
+            int cols = Pack.BodyCols, rows = LootRows(); float bw = cols * Cell, bh = rows * Cell;
+            var ammo = _loot.Inventory.AmmoReserve.Where(kv => kv.Value > 0).ToList(); int extra = (_loot.Ru > 0 ? 1 : 0) + ammo.Count;
+            float W = bw + 48f, H = 48f + bh + 24f + extra * 34f + 56f;
+            var box = Box(_root.transform, "Loot", new Vector2(0.82f, 0.5f), Vector2.zero, new Vector2(W, H));
+            _lootBox = box.parent.gameObject;
+            Txt(box, "Title", new Vector2(18, -12), new Vector2(W - 36, 30), (_loot.Name + "'S BODY").ToUpperInvariant(), true, 20, Cream);
+            Color cloth = new Color(0.24f, 0.21f, 0.19f);
+            var rim = Img(box, "Body", new Vector2(0, 1), new Vector2(18, -48), new Vector2(bw + 12, bh + 12), cloth * 0.55f);
+            var inner = Img(rim.transform, "Inside", new Vector2(0, 1), new Vector2(6, -6), new Vector2(bw, bh), cloth);
+            _lootRect = inner.rectTransform;
+            for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++)
+                Img(inner.transform, "Cell", new Vector2(0, 1), new Vector2(x * Cell + 2, -y * Cell - 2), new Vector2(Cell - 4, Cell - 4), new Color(cloth.r * 0.82f, cloth.g * 0.82f, cloth.b * 0.82f, 1f));
+            foreach (var it in _loot.Inventory.Items.Where(i => i.GridX >= 0)) ItemImage(inner.transform, it, it.GridX * Cell, -it.GridY * Cell, it.Rot);
+            float y0 = -48f - bh - 24f;
+            var p = Player.Current;
+            if (_loot.Ru > 0) { Txt(box, "Ru", new Vector2(18, y0 - 4), new Vector2(300, 24), $"{_loot.Ru} RU", false, 15, Cream); Btn(box, "TakeRu", new Vector2(W - 118, y0), new Vector2(100, 28), "TAKE", 13, () => { p.Ru += _loot.Ru; _loot.Ru = 0; _packStamp = null; }); y0 -= 34f; }
+            foreach (var kv in ammo)
+            {
+                string type = kv.Key;
+                Txt(box, "Ammo", new Vector2(18, y0 - 4), new Vector2(300, 24), $"{Ammo.Label(Ammo.Normalize(p, type))} x{kv.Value}", false, 15, Cream);
+                Btn(box, "TakeAmmo", new Vector2(W - 118, y0), new Vector2(100, 28), "TAKE", 13, () => { Ammo.Add(p.Inventory, Ammo.Normalize(p, type), _loot.Inventory.AmmoReserve[type]); _loot.Inventory.AmmoReserve[type] = 0; _packStamp = null; });
+                y0 -= 34f;
+            }
+            Btn(box, "TakeAll", new Vector2(18, -H + 46), new Vector2(150, 32), "TAKE ALL", 14, () => LootTakeAll(p));
+            Btn(box, "Close", new Vector2(W - 168, -H + 46), new Vector2(150, 32), "CLOSE", 14, () => CorpseLootUI.CloseIfOpen());
+        }
 
         void BuildPack(Player p)
         {
@@ -178,6 +253,17 @@ namespace GameCore
             return null;
         }
 
+        InventoryItem BodyItemAt((int x, int y)? c)
+        {
+            if (_loot == null || !c.HasValue) return null;
+            foreach (var it in _loot.Inventory.Items.Where(i => i.GridX >= 0))
+            {
+                var (w, h) = Pack.Footprint(it);
+                if (c.Value.x >= it.GridX && c.Value.x < it.GridX + w && c.Value.y >= it.GridY && c.Value.y < it.GridY + h) return it;
+            }
+            return null;
+        }
+
         void HandlePackMouse(Player p, Keyboard k)
         {
             var m = Mouse.current; if (m == null) return;
@@ -185,7 +271,9 @@ namespace GameCore
             var c = CellAt(_bagRect, screen);
             var bag = Pack.Bag(p);
             bool inBag = c.HasValue && c.Value.x >= 0 && c.Value.y >= 0 && c.Value.x < bag.Cols && c.Value.y < bag.Rows;
-            var hover = _drag ?? ItemAt(p, inBag ? c : (-1, -1));
+            var lc = _loot != null ? CellAt(_lootRect, screen) : null;
+            bool inLoot = lc.HasValue && lc.Value.x >= 0 && lc.Value.y >= 0 && lc.Value.x < Pack.BodyCols && lc.Value.y < LootRows();
+            var hover = _drag ?? (inLoot ? BodyItemAt(lc) : ItemAt(p, inBag ? c : (-1, -1)));
             _packInfo.text = hover == null ? $"{p.Inventory.Items.Sum(i => i.WeightKg * System.Math.Max(1, i.Qty)):0.0} kg carried"
                 : $"<b>{hover.Name}</b>{(hover.Qty > 1 ? $"  x{hover.Qty}" : "")}\n{hover.WeightKg * System.Math.Max(1, hover.Qty):0.0} kg    {Pack.Size(hover).w}x{Pack.Size(hover).h}" + (string.IsNullOrEmpty(hover.Condition) ? "" : "\n" + hover.Condition);
 
@@ -197,6 +285,17 @@ namespace GameCore
                     RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)_root.transform, screen, null, out var lp);
                     _dragImg.rectTransform.parent.localPosition = new Vector3(lp.x, lp.y, 0f);
                     _dragImg.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _dragRot ? 90f : 0f);
+                }
+                if (m.leftButton.wasReleasedThisFrame && _loot != null && (_dragBody || (inLoot && _dragSlot < 0 && SlotAt(screen) < 0)))
+                {
+                    // looting: from the body into your bag, around the body, or from your bag onto the body
+                    if (_dragBody)
+                    {
+                        if (inBag) LootTake(p, _drag, (c.Value.x - _dragDx, c.Value.y - _dragDy), _dragRot);
+                        else if (inLoot) Pack.MoveIn(Pack.BodyCols, LootRows(), _loot.Inventory.Items, _drag, lc.Value.x - _dragDx, lc.Value.y - _dragDy, _dragRot);
+                    }
+                    else LootPut(p, _drag, inLoot ? (lc.Value.x - _dragDx, lc.Value.y - _dragDy) : ((int, int)?)null, _dragRot);
+                    DropDrag(); _packStamp = null; return;
                 }
                 if (m.leftButton.wasReleasedThisFrame)
                 {
@@ -227,10 +326,14 @@ namespace GameCore
                 return;
             }
             if (hover == null) return;
+            bool onBody = _loot != null && _loot.Inventory.Items.Contains(hover);
             if (m.leftButton.wasPressedThisFrame)
-                StartDrag(hover, hover.GridX >= 0 && inBag ? c.Value.x - hover.GridX : 0, hover.GridX >= 0 && inBag ? c.Value.y - hover.GridY : 0);
-            else if (m.rightButton.wasPressedThisFrame) Act(p, hover);
-            else if (k != null && k.xKey.wasPressedThisFrame) { p.DropItem(hover.Id, System.Math.Max(1, hover.Qty)); _packStamp = null; }
+            {
+                StartDrag(hover, onBody ? (inLoot ? lc.Value.x - hover.GridX : 0) : hover.GridX >= 0 && inBag ? c.Value.x - hover.GridX : 0, onBody ? (inLoot ? lc.Value.y - hover.GridY : 0) : hover.GridX >= 0 && inBag ? c.Value.y - hover.GridY : 0);
+                _dragBody = onBody;
+            }
+            else if (m.rightButton.wasPressedThisFrame) { if (onBody) LootTake(p, hover, null, hover.Rot); else Act(p, hover); }
+            else if (!onBody && k != null && k.xKey.wasPressedThisFrame) { p.DropItem(hover.Id, System.Math.Max(1, hover.Qty)); _packStamp = null; }
         }
 
         int _dragSlot = -1;
@@ -243,7 +346,7 @@ namespace GameCore
             _dragImg = Img(holder, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(w * Cell - 8, h * Cell - 8), new Color(1f, 1f, 1f, 0.85f));
             Center(_dragImg.rectTransform); _dragImg.sprite = Icon(it); _dragImg.preserveAspect = true;
         }
-        void DropDrag() { _drag = null; _dragSlot = -1; if (_dragImg != null) Destroy(_dragImg.transform.parent.gameObject); _dragImg = null; }
+        void DropDrag() { _drag = null; _dragBody = false; _dragSlot = -1; if (_dragImg != null) Destroy(_dragImg.transform.parent.gameObject); _dragImg = null; }
 
         /// <summary>Which equipped slot (0 weapon, 1 second, 2 armor, 3 backpack) the mouse is over, or -1.</summary>
         int SlotAt(Vector2 screen)
