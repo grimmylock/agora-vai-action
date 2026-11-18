@@ -472,7 +472,7 @@ namespace GameCore
         /// toward the cursor, in tiles = the gun's reach (a scope stretches it, Optics.PullMul), never past what the player can see (Vision.MaxRadius). Melee and fists: a short pull.</summary>
         public static float PullEdgeOf(Weapon w)
         {
-            if (w?.Db == null || CombatRules.IsMelee(w)) return 12f;
+            if (w?.Db == null || CombatRules.IsMelee(w)) return Vision.MaxRadius;   // 2026-11-18: was 12, which with a view 12 tiles wide to each side cancelled the pull sideways with a melee weapon (Yan: it snapped back to the centre); a blade has no range to limit the view by
             return System.Math.Min(Gunplay.For(w).Reach * Optics.PullMul(w), Vision.MaxRadius);
         }
 

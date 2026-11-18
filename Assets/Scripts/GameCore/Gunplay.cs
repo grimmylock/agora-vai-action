@@ -354,8 +354,10 @@ namespace GameCore
         };
 
         /// <summary>How many bodies a round of this gun can go through (1 = it stops in the first), by the load in the chamber.</summary>
+        public static bool NoPierceForReport;                  // the harness (RTBAL=9) switches penetration off to see how much of a result it explains; nothing in the game sets it
         public static (int targets, float mul) PierceOf(Weapon w)
         {
+            if (NoPierceForReport) return (1, 1f);
             if (w?.Db != null && w.CurrentAmmoType == "Slug" && CombatRules.IsShotgun(w)) return (2, 0.75f);          // a slug passes through 2 bodies
             if (w?.Db == null || !Pierce.TryGetValue(w.Db.Name, out var p)) return (1, 1f);
             return (w.CurrentAmmoType == "ArmorPiercing" ? p.ap : p.targets, p.mul);
@@ -485,7 +487,7 @@ namespace GameCore
                 if (hit.Cover || hit.Through < 1f) TerrainMap.DamageTile(hit.CoverX, hit.CoverY, pellets > 1 ? 1 : 1, shooter);
             }
             var target = hit.Unit;
-            if (target != null && Boss.Deflects(target))                               // Boss 1: he swats it away unless he's staggered
+            if (target != null && (Boss.Deflects(target) || Tier2Story.ShieldsElder(shooter, target)))   // Boss 1: he swats it away unless he's staggered; "Taken": the Elder Gaunt shrugs off the soldiers' rounds
             {
                 fx.Kind = "deflect"; fx.Target = target; fx.Landed = false;
                 CombatFx.Add(fx);

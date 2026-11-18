@@ -35,7 +35,7 @@ namespace GameCore
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); Supplied.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -129,6 +129,10 @@ namespace GameCore
 
         /// <summary>The Garrison squad that holds you: while the story runs them (the base, the maze, the horde) they take no part in the game's own awareness - no "!", no "Intruder! Engage!", no FIGHT,
         /// no sitting down - because TurnLoop.CheckVisionAndWander would alert them to you every game minute and KeepDocile can only undo the aggro, not the shouting.</summary>
+        /// <summary>2026-11-18 (Yan: "the 2 frontline soldiers ... even killed the gaunt without being touched"): in the horde scene the Elder Gaunt is the scene's, not a target - rounds from the soldiers glance off it (the players have no guns here).
+        /// What the soldiers can do is thin the horde; the Elder is what makes you run.</summary>
+        public static bool ShieldsElder(ICombatant shooter, ICombatant target) => shooter is HumanEnemy && target is Mutant m && Gaunt.IsElder(m) && Step == 4 && !Story.IsDone(Mission) && !TestingGround.Here;
+
         public static bool Holds(ICombatant u) => Step >= 2 && !Story.IsDone(Mission)
             && (u is HumanEnemy h ? Escorts.Contains(h) : u is Mutant m && !m.IsAggroed && (m == _gaunt || Waves.Any(w => w.who.Contains(m))));   // (the horde and the Gaunt wait in the dark, unaggroed, until Alarm lets them go)
 
@@ -327,10 +331,11 @@ namespace GameCore
         {
             Waves.Clear();
             var bw = Mark("Broken Wall"); var nest = Mark("Nest"); if (bw == null || nest == null) return;
-            Wave(2.6f, bw.X + 4, bw.Y, ("PallidProwler", 4), ("BlindMaw", 4));                // seconds after the Gaunt's scream
-            Wave(4.1f, nest.X, nest.Y - 10, ("Swarm", 12));
-            Wave(6.6f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 3));
-            Wave(9.6f, nest.X, nest.Y + 2, ("Swarm", 10), ("PallidProwler", 4));
+            // 2026-11-18 (Yan: two frontline soldiers held the whole horde): about 60 now and the waves close together, so the soldiers get no time to clear one before the next is on them
+            Wave(2.6f, bw.X + 4, bw.Y, ("PallidProwler", 6), ("BlindMaw", 6));                // seconds after the Gaunt's scream
+            Wave(3.4f, nest.X, nest.Y - 10, ("Swarm", 14));
+            Wave(4.4f, nest.X, nest.Y - 4, ("Swarm", 12), ("BlindMaw", 5));
+            Wave(5.4f, nest.X, nest.Y + 2, ("Swarm", 12), ("PallidProwler", 6));
             { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
@@ -388,6 +393,7 @@ namespace GameCore
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
         }
 
+        const float SoldierMags = 2.0f; static readonly HashSet<HumanEnemy> Supplied = new HashSet<HumanEnemy>();
         static readonly Dictionary<HumanEnemy, float> NextMaul = new Dictionary<HumanEnemy, float>();
         static void SoldiersFight(float now, float ts)
         {
@@ -402,14 +408,12 @@ namespace GameCore
                 var w = h.EquippedWeapon;
                 if (w != null && !CombatRules.IsMelee(w) && !PlayerInLine(h, foe))
                 {
-                    if (w.CurrentMagazine <= 0 && w.ReserveAmmo.Values.Sum() < w.MagCapacity) w.ReserveAmmo["Standard"] = w.MagCapacity * 3;   // the Garrison came loaded: they reload by the gun's own rules (RtAi.Shoot: bursts, rpm, reload time), they just never run dry in this corridor
+                    if (!Supplied.Contains(h)) { Supplied.Add(h); w.CurrentMagazine = w.MagCapacity; w.ReserveAmmo["Standard"] = (int)(w.MagCapacity * (SoldierMags - 1f)); }   // 2026-11-18: they come with a fixed supply (one loaded magazine and SoldierMags - 1 more), not an endless one: the horde outlasts them   // the Garrison came loaded: they reload by the gun's own rules (RtAi.Shoot: bursts, rpm, reload time), they just never run dry in this corridor
                     RtAi.TickFoe(h, foe);
                 }
-                foreach (var m in foes.Where(m => CombatantUtil.IsAdjacent(m, h)))                       // what reaches a soldier is stuck on him
-                {
-                    RtAi.Pin(m, 0.5f);
-                    if (now >= (NextMaul.TryGetValue(h, out var nm) ? nm : 0f)) { NextMaul[h] = now + 0.45f; Hear(Random.value < 0.5f ? "claw" : "hit_flesh", 0.8f); h.Hp -= System.Math.Max(40, m.Db?.AttackDamage ?? 60); if (h.Hp <= 0) { h.Hp = 0; Hear("shot_rifle", 0.5f); Say("A soldier goes down under them, still firing."); } }
-                }
+                var onHim = foes.Where(m => CombatantUtil.IsAdjacent(m, h)).Take(6).ToList();           // what reaches a soldier is stuck on him - and every one of them tears at him (2026-11-18: it used to be one maul at a time however many)
+                foreach (var m in onHim) RtAi.Pin(m, 0.5f);
+                if (onHim.Count > 0 && now >= (NextMaul.TryGetValue(h, out var nm) ? nm : 0f)) { NextMaul[h] = now + 0.45f; Hear(Random.value < 0.5f ? "claw" : "hit_flesh", 0.8f); h.Hp -= onHim.Sum(m => System.Math.Max(40, m.Db?.AttackDamage ?? 60)); if (h.Hp <= 0) { h.Hp = 0; Hear("shot_rifle", 0.5f); Say("A soldier goes down under them, still firing."); } }
             }
         }
 

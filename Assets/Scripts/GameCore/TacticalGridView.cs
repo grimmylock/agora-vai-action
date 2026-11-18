@@ -1049,7 +1049,7 @@ namespace GameCore
                 {
                     float hh = cam.orthographicSize, hw = hh * cam.aspect, dx = Mathf.Abs(_lookAhead.x) / len, dy = Mathf.Abs(_lookAhead.y) / len;
                     float extent = 1f / Mathf.Max(Mathf.Max(dx / hw, dy / hh), 1e-4f);
-                    float cap = Mathf.Max(0f, Rt.Me.PullEdge - extent);
+                    float cap = Mathf.Max(4f, Rt.Me.PullEdge - extent);   // never less than 4 tiles of pull, whatever the gun (sideways the half-view is wider than a short reach)
                     if (len > cap) _lookAhead = new Vector3(_lookAhead.x * cap / len, _lookAhead.y * cap / len, 0f);
                 }
             }

@@ -56,6 +56,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "9") TakenSim();
     TestingGroundChecks();
     OpticChecks();
     MutantParryChecks();
@@ -3760,6 +3761,35 @@ static class Program {
     var suit = items.First(i => i.Id == "suit"); int sx = suit.GridX, sy = suit.GridY;
     Check(!Pack.MoveIn(Pack.BodyCols, rows, items, suit, 7, rows - 1, false) && suit.GridX == sx && suit.GridY == sy, "body grid: a drag onto an occupied or out-of-grid spot is refused and the thing stays");
     Check(Pack.BodyRows(new List<InventoryItem>()) >= 4 && Pack.BodyRows(Enumerable.Range(0, 40).Select(i => new InventoryItem { Id = "x" + i, Type = "armor", Name = "x", Qty = 1 })) <= 12, "body grid: an empty body has room to put something on, a huge one stops at 12 rows");
+  }
+  // RTBAL=9: the horde scene of "Taken" (Tier2Story) with the real AI: five Garrison soldiers hold the corridor against ~45 mutants and the Elder Gaunt, you stand at the door and do nothing. Per seed (loadouts and dice differ):
+  // soldiers alive, horde alive and the Elder's HP every 10 s, plus how many soldiers' rounds hit through a body (penetration).
+  static void TakenSim() {
+    int seeds = int.TryParse(Environment.GetEnvironmentVariable("SEEDS"), out var sn) ? sn : 6; bool noPierce = Environment.GetEnvironmentVariable("NOPIERCE") == "1"; Gunplay.NoPierceForReport = noPierce;
+    for (int seed = 1; seed <= seeds; seed++) {
+      UnityEngine.Random.InitState(seed * 97);
+      GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true; Rt.Reset(); Tier2Story.Reset(); Story.Reset(); MacroState.Current.StoryFlags.Clear(); var p = Player.Current; Body.Reset();
+      MacroState.Current.CurrentZoneId = "scrapyard"; TerrainMap.BuildTerrainForZone("scrapyard"); EncounterState.Enemies.Clear();
+      p.EquipWeapon("sidearm", "PSh18Pchela"); var gate = TerrainMap.Landmarks.First(l => l.Name == "Gatehouse"); p.X = gate.X; p.Y = gate.Y + 1; Rt.SetOffset(p, 0f, 0f);
+      const float dt = 1f / 30f; UnityEngine.Time.time = 90000f; UnityEngine.Time.unscaledTime = 90000f;
+      void Run(float sec) { for (float t = 0f; t < sec; t += dt) { UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.deltaTime = dt; Tier2Story.Tick(dt); } }
+      Run(0.2f); Run(6.9f); p.Reputation["Garrison"] = -3 * Player.RepPoint; Run(3f); Run(3f); Run(1f);
+      var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); p.X = door.X; p.Y = door.Y; Rt.SetOffset(p, 0f, 0f); Run(0.2f);
+      if (!Tier2Story.TryUseDoor(p)) { Console.WriteLine($"TAKENSIM seed {seed}: the door did not start"); continue; }
+      Run(5f); Run(3f); Run(2.4f);
+      var gear = string.Join("/", EncounterState.Enemies.OfType<HumanEnemy>().Where(h => h.FactionName == "Garrison").Select(h => h.EquippedWeapon?.Name ?? "-"));
+      var line = new System.Text.StringBuilder(); int shotsFired = 0; Gunplay.Probe = (sh, wp, hit) => { if (sh is HumanEnemy) shotsFired++; };
+      p.HealPermanent(100000);
+      for (float t = 0f; t < 70f; t += dt) {
+        UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt; p.Hp = p.MaxHp; Body.Reset(); Rt.PlayerTick(p, default); Rt.WorldTick(p); Rt.Glide(dt);
+        if (((int)(t / dt)) % 300 == 0) { var sold = EncounterState.Enemies.OfType<HumanEnemy>().Where(h => h.IsAlive()).ToList(); int horde = EncounterState.Enemies.Count(e => e is Mutant m && !(e is HumanEnemy) && !Gaunt.IsElder(m) && e.IsAlive()); var el = EncounterState.Enemies.OfType<Mutant>().FirstOrDefault(m => Gaunt.IsElder(m));
+          line.Append($" [{t:0}s step {Tier2Story.Step} zone {TerrainMap.ZoneId} sold {sold.Count} horde {horde} elder {(el == null ? "-" : el.IsAlive() ? el.Hp + "/" + el.MaxHp : "dead")}]"); }
+      }
+      Gunplay.Probe = null;
+      Console.WriteLine($"TAKENSIM seed {seed} guns {gear}: rounds {shotsFired}{line}");
+      EncounterState.Enemies.Clear(); Rt.On = false; Rt.Reset();
+    }
+    Gunplay.NoPierceForReport = false;
   }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
