@@ -3362,11 +3362,13 @@ static class Program {
       Run(5f); Check(Tier2Story.Step == 3 && Story.CamLock.HasValue && Story.Letterbox, "taken: the door scene: the camera on the lock, bars, the alarm not yet");
       Run(3f);
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
-      Check(Tier2Story.Step == 4 && horde >= 45 && rats >= 10 && rats <= 20 && EncounterState.Enemies.Count(e => e is Mutant gm && gm.Db?.Name == Gaunt.Name) == 2, $"taken: the passcard fails - the alarm, a horde of {horde} ({rats} rats, two small Gaunts, mostly dogs) is waiting beyond the broken wall (step {Tier2Story.Step})");
+      Check(Tier2Story.Step == 4 && horde <= 1 && rats == 0 && EncounterState.Enemies.Count(e => e is Mutant gm && gm.Db?.Name == Gaunt.Name) == 0, $"taken: the passcard fails - the alarm; the horde is NOT in the world yet ({horde} mutants: just the Elder Gaunt in the dark; step {Tier2Story.Step})");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
       Check(Sfx.MusicName == null, "taken: no chase song while the Gaunt's scene is still going");
       Check(EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).OfType<Mutant>().All(m => Tier2Story.Holds(m)), "taken: the horde and the Gaunt wait in the dark, held by the story, until they are let go");
       Run(22f);
+      { int out_ = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy)); int rats2 = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
+        Check(out_ >= 40 && rats2 >= 10, $"taken: the Gaunt called: the horde came out running ({out_} mutants, {rats2} rats)"); }
       Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
       Check(Sfx.MusicName == Tier2Story.ChaseTrack, $"taken: the chase song plays once the scream and the point are over ({Sfx.MusicName})");
       Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 5 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers hold the corridor (nothing has reached them yet) and the whole horde is loose");

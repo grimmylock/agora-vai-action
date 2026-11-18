@@ -30,12 +30,13 @@ namespace GameCore
         const float GauntAt = 4.4f;                       // seconds after the alarm: the sergeant has the camera until then, then the Gaunt
         static float _doorAt = -1f; static int _doorStage; static readonly List<(int x, int y)> Posts = new List<(int, int)>();
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
+        static readonly HashSet<int> _wavesOut = new HashSet<int>();
         static readonly List<(float at, List<Mutant> who)> Waves = new List<(float, List<Mutant>)>();   // the horde, released in waves (seconds after the alarm)
         static readonly float[] DeathTimes = { 4.5f, 5.8f, 7.1f, 8.4f, 9.8f };   // seconds after the Gaunt's scream
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); NextStep.Clear(); Supplied.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); _wavesOut.Clear(); NextStep.Clear(); Supplied.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
@@ -283,7 +284,7 @@ namespace GameCore
             Hear("explosion", 0.8f);
             RedLights();
             Posts.Clear(); var dm = Mark(Door); int dx = dm?.X ?? 40;
-            foreach (var (ox, oy) in new[] { (4, 6), (7, 11), (10, 6), (13, 11), (16, 6) }) Posts.Add(TerrainMap.FindNearestEnterable(dx + ox, oy));   // east of you, on the corridor's edges: the middle stays open for you to run west
+            foreach (var oy in new[] { 6, 7, 8, 9, 10 }) Posts.Add(TerrainMap.FindNearestEnterable(dx + 10, oy));   // 2026-11-18 (Yan: "form a line instead of posting up by the walls"): one firing line across the corridor east of you, shoulder to shoulder; the bottom row stays open for you to run west
             Say("At the far end of the corridor the wall bursts outward. Something answers from the dark behind it. Many somethings.");
             SpawnHorde();
             Story.SetObjective(Mission, "RUN - back to the hatch ladder", Ladder);
@@ -300,13 +301,13 @@ namespace GameCore
         static Mutant Spawn(string tier, string key, int x, int y)
         {
             var def = MutantDatabase.Tiers[tier][key]; var (fx, fy) = TerrainMap.FindNearestEnterable(x, y);
-            var m = EncounterGeneration.CreateMutantFromDb(def, fx, fy); m.IsAggroed = false; EncounterState.Enemies.Add(m); return m;
+            var m = EncounterGeneration.CreateMutantFromDb(def, fx, fy); m.IsAggroed = false; return m;   // 2026-11-18 (Yan: "the entire horde is visible during the gaunt scream"): NOT in the world until the Gaunt calls them (Alarm adds them to EncounterState.Enemies, running)
         }
 
         /// <summary>`n` free tiles in a spiral round (x, y): where a wave stands before it is let go.</summary>
-        static List<(int x, int y)> Around(int x, int y, int n)
+        static List<(int x, int y)> Around(int x, int y, int n, List<Mutant> pending = null)
         {
-            var spots = new List<(int, int)>(); var taken = new HashSet<(int, int)>(EncounterState.Enemies.Select(e => (e.X, e.Y)));
+            var spots = new List<(int, int)>(); var taken = new HashSet<(int, int)>(EncounterState.Enemies.Select(e => (e.X, e.Y)).Concat(Waves.SelectMany(w => w.who).Concat(pending ?? new List<Mutant>()).Select(e => (e.X, e.Y))));
             for (int r = 0; r <= 12 && spots.Count < n; r++)
                 for (int dy = -r; dy <= r && spots.Count < n; dy++)
                     for (int dx = -r; dx <= r && spots.Count < n; dx++)
@@ -321,7 +322,7 @@ namespace GameCore
 
         static void Wave(float at, int x, int y, params (string key, int n)[] kinds)
         {
-            var who = new List<Mutant>(); var spots = Around(x, y, kinds.Sum(k => k.n)); int i = 0;
+            var who = new List<Mutant>(); var spots = Around(x, y, kinds.Sum(k => k.n), who); int i = 0;
             foreach (var (key, n) in kinds) for (int k = 0; k < n && i < spots.Count; k++, i++) { var tk = key.Split(':'); who.Add(tk.Length == 2 ? Spawn(tk[0], tk[1], spots[i].x, spots[i].y) : Spawn("tier1", key, spots[i].x, spots[i].y)); }   // "tier2:VeilProwler" names a tier, a bare key is tier 1
             Waves.Add((at, who));
         }
@@ -329,14 +330,15 @@ namespace GameCore
         /// <summary>Yan (2026-11-16): "the horde feels kinda small" - now about 45: the soldiers' killers at the broken wall, then three waves out of the dark tunnel (rats in dozens, Maws and Prowlers among them).</summary>
         static void SpawnHorde()
         {
-            Waves.Clear();
+            Waves.Clear(); _wavesOut.Clear();
             var bw = Mark("Broken Wall"); var nest = Mark("Nest"); if (bw == null || nest == null) return;
             // 2026-11-18 (Yan: two frontline soldiers held the whole horde; "give the elder gaunt 15k HP, make the horde less swarms and more of the other mutant dogs, and 2 little gaunts"): about 55, four waves close together
             // - mostly the dogs (Pallid, Blind Maw, Veil, two Dread Prowlers), twelve rats, two small Gaunts among the third wave (the Elder keeps its 15,000 HP and walks out first)
-            Wave(2.6f, bw.X + 4, bw.Y, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));                // seconds after the Gaunt's scream
-            Wave(3.4f, nest.X, nest.Y - 10, ("BlindMaw", 6), ("PallidProwler", 6));
-            Wave(4.4f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
-            Wave(5.4f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
+            // 2026-11-18 (Yan: hidden until the Gaunt calls them, then already running during the scene): out of the world until the call lands (ScreamFor 1.2 s into the scream), then each wave appears in the dark of the tunnel and runs - all four inside the scream's 2.6 s
+            Wave(Gaunt.ScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));          // seconds after the scream begins
+            Wave(Gaunt.ScreamFor + 0.35f, nest.X, nest.Y - 8, ("BlindMaw", 6), ("PallidProwler", 6));
+            Wave(Gaunt.ScreamFor + 0.7f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
+            Wave(Gaunt.ScreamFor + 1.05f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
             { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
@@ -388,7 +390,7 @@ namespace GameCore
             // Yan (2026-11-17): "the soldiers didn't shoot the mutants or hold their ground, they just kinda died without being touched": they hold the corridor and fight for real (real bullets at the nearest
             // mutant they can see; whatever reaches them is pinned on them and mauls them), so the horde has to chew through five rifles before it gets to you.
             SoldiersFight(now, ts);
-            foreach (var w in Waves) if (ts >= w.at && w.who.Any(m => m.IsAlive() && !m.IsAggroed)) { foreach (var m in w.who.Where(m => m.IsAlive())) m.IsAggroed = true; if (w.at <= 2.7f) Say("Everything that was feeding turns its head toward the corridor and comes."); else if (w.at <= 4.2f) Say("More. Dozens more, coming up out of the dark tunnel."); }
+            for (int wi = 0; wi < Waves.Count; wi++) { var w = Waves[wi]; if (ts < w.at || !_wavesOut.Add(wi)) continue; foreach (var m in w.who) { if (!EncounterState.Enemies.Contains(m)) EncounterState.Enemies.Add(m); m.IsAggroed = true; } if (wi == 0) Say("Everything that was feeding turns its head toward the corridor and comes."); else if (wi == 1) Say("More. Dozens more, coming up out of the dark tunnel."); }   // the call lands: they appear out of the dark already running
             if (_gaunt != null && _gaunt.IsAlive() && ts >= 4f) _gaunt.IsAggroed = true;      // it joins the hunt: from here the game's Gaunt (its call, its drive) takes over
             if (GameOver(now)) return;
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
