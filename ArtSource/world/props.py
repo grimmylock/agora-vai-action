@@ -1170,3 +1170,9 @@ try:
     PROPS.update(_x2.ALL); VARIANTS.update(_x2.ALL_VARIANTS)
 except ImportError:
     pass
+# 2026-11-18: the Barrier's deck and watchtowers (props_barrier.py)
+try:
+    import props_barrier as _pb
+    PROPS.update(_pb.NEW); VARIANTS.update(_pb.VARIANTS)
+except ImportError:
+    pass

@@ -15,9 +15,10 @@ def cell(atlas, idx):
 GRIPS = {'assault': (12.5, 10, 22, 8.5), 'smg': (10.5, 10.5, 20, 9.5), 'shotgun': (9.5, 8.5, 14, 9), 'sidearm': (10.5, 11.5, None, None), 'sniper': (14.5, 10, 19.5, 7.5)}
 REACH = {'sidearm': 4, 'melee': 4, 'smg': 3.5}
 def rnd(v): return math.floor(v + 0.5)
+MIN_SIDE = 2.5   # HeldPoseMath.MinSide (2026-11-18); 0 = the old pose
 def compute(cat, ang, g):
     a = math.radians(ang); c, s = math.cos(a), math.sin(a); left = c < -1e-4; reach = REACH.get(cat, 3)
-    r = rnd(8 + reach * abs(c)); gx = 13 - r if left else r; gy = min(rnd(9.5 - reach * s), 10)
+    r = rnd(8 + max(reach * abs(c), MIN_SIDE)); gx = 13 - r if left else r; gy = min(rnd(9.5 - reach * s), 10)
     dx, dy, px, py = c, -s, s, c
     if left: px, py = -px, -py
     if g[2] is None: ax = ay = 1

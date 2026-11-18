@@ -53,6 +53,7 @@ namespace GameCore
         /// <param name="angleDeg">aim angle, counter-clockwise from "right" (Unity/screen convention)</param>
         /// <param name="gripX">weapon-sprite pixel (32x16, half-size pixels) where the main hand closes</param>
         /// <param name="supportX">NaN = no support point (pistols cup the grip hand, melee is one-handed)</param>
+        public const float MinSide = 2.5f;   // px the gripping hand stays out from the body's centre line, even aiming straight up or down
         public static HeldPose Compute(string category, float angleDeg, float gripX, float gripY, float supportX, float supportY)
         {
             float a = angleDeg * Mathf.Deg2Rad, c = Mathf.Cos(a), s = Mathf.Sin(a);
@@ -60,7 +61,7 @@ namespace GameCore
             float reach = Reach(category);
             var p = new HeldPose { AimLeft = left };
             // the hand is 3x2 with its cuff on the body side; aiming left mirrors it (x -> 15 - x)
-            float right = Mathf.Round(ChestX + reach * Mathf.Abs(c));
+            float right = Mathf.Round(ChestX + Mathf.Max(reach * Mathf.Abs(c), MinSide));   // 2026-11-18 (Yan: aiming straight up or down the gun covers the body): never closer to the chest line than MinSide, so the hand and the gun stay beside the body
             p.GripX = left ? 13f - right : right;
             p.GripY = Mathf.Min(Mathf.Round(ChestY - reach * s), WaistTopRow);
             // gun-local axes in sprite pixels (y down): along the barrel, and "below the gun"
