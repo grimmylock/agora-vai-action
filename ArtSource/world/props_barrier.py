@@ -45,11 +45,13 @@ def deck_steps(seed):
         for x in range(16): _px(im, x, y, SHADOW + (a,))
     return Prop(im, (8, 13), None, False)
 
-def tower_conc(seed):
+def tower_conc(seed, inside=False):
     """A concrete guard tower on four piers, drawn to sit beside props.watchtower (the timber one: same size, same 3/4 view, same outline): refs/watchtower (the prison guard tower: a wide
     platform on a column; the square towers) and refs/bld_bunker (board-marked concrete, stains, rebar). Four heavy piers with two ring beams and steel cross-bracing, a zig-zag steel stair,
     a concrete platform with a notched parapet, a flat roof slab on posts, and under it the gun: a tripod machine gun behind a shield with an ammo box and a floodlight. 3 tiles wide, ~6 tall;
-    the map gives it a 3x2 footprint with one open tile (the gun nook) behind the barrier (Emplacement.cs)."""
+    the map gives it a 3x2 footprint with one open tile (the gun nook) behind the barrier (Emplacement.cs).
+    Two views of the same tower (same size, same pivot; WorldArt picks per viewer): from OUTSIDE the cabin is a solid concrete box (front wall with a dark firing slit, flat roof, nothing of the gun to see);
+    INSIDE (you are up on it, Emplacement) the roof and front wall are cut away like a building's roof, and you see the platform, the tripod gun and the ammo box."""
     c = P["concrete"]; s = P["steel"]; ru = P["rust"]; W, H = 52, 104; im = blank(W, H); d = ImageDraw.Draw(im); r = rng(seed)
     def line(x0, y0, x1, y1, col, t=1): d.line([x0, y0, x1, y1], fill=col, width=t)
     def box(x0, y0, x1, y1, lit, mid, dark):                                                       # a pier or a beam: lit left edge, shaded right edge
@@ -83,18 +85,27 @@ def tower_conc(seed):
     d.rectangle([1, 40, 50, 48], fill=c[2]); d.rectangle([1, 40, 3, 48], fill=c[3]); d.rectangle([48, 40, 50, 48], fill=c[1])
     for x in range(2, 50, 9): d.rectangle([x, 36, x + 5, 39], fill=c[3]); line(x, 36, x + 5, 36, c[4]); line(x + 5, 37, x + 5, 39, c[1])   # the merlons
     for x in range(8, 46, 9): d.rectangle([x + 1, 43, x + 5, 45], fill=c[0])                       # firing slits
-    # the roof: a flat slab on four posts, its top lit, a floodlight on a bracket
-    for x0 in (4, 46): box(x0, 12, x0 + 1, 36, s[3], s[2], s[0])
-    for x0 in (14, 36): box(x0, 16, x0 + 1, 36, s[2], s[1], s[0])
-    d.rectangle([5, 17, 46, 35], fill=c[0]); d.rectangle([5, 17, 46, 22], fill=c[1])                # the shadow under the roof: the back wall's inner face
-    d.rectangle([2, 6, 49, 11], fill=c[4]); d.rectangle([2, 6, 49, 8], fill=c[4]); line(2, 6, 49, 6, c[4]); d.rectangle([1, 12, 50, 16], fill=c[2]); line(1, 12, 50, 12, c[3]); line(1, 16, 50, 16, c[0])
-    for x in range(4, 48, 7): line(x, 8, x + 3, 8, c[3])                                            # roof board marks
-    line(46, 17, 46, 20, s[3]); d.rectangle([44, 20, 48, 22], fill=s[1]); line(44, 20, 48, 20, s[4]); px(im, 46, 23, hx("#e8d890"))   # the lamp
-    # the machine gun: a tripod, the body, a long barrel, a shield plate and the ammo box
-    line(24, 36, 19, 30, s[1]); line(28, 36, 33, 30, s[1]); line(26, 36, 26, 28, s[2])
-    d.rectangle([17, 24, 33, 28], fill=s[2]); d.rectangle([17, 24, 33, 25], fill=s[4]); d.rectangle([33, 25, 46, 26], fill=s[1]); line(33, 25, 46, 25, s[3]); d.rectangle([14, 25, 16, 27], fill=s[1])
-    d.rectangle([20, 29, 24, 33], fill=P["olive"][2]); line(20, 29, 24, 29, P["olive"][4])
-    line(31, 20, 31, 31, s[3]); line(32, 20, 32, 31, s[4]); line(33, 21, 33, 30, s[2])            # the shield
+    if not inside:
+        # OUTSIDE: a solid cabin - the front wall, the slit, the flat roof on top; the gun is hidden
+        d.rectangle([2, 12, 49, 36], fill=c[2]); d.rectangle([2, 12, 4, 36], fill=c[3]); d.rectangle([47, 12, 49, 36], fill=c[1])
+        for x in range(8, 46, 9): line(x, 14, x, 35, c[1])                                           # formwork seams
+        d.rectangle([8, 22, 43, 27], fill=c[0]); line(8, 22, 43, 22, c[1]); line(8, 28, 43, 28, c[4])  # the firing slit, a lit sill
+        d.rectangle([2, 6, 49, 11], fill=c[4]); line(2, 6, 49, 6, c[4]); d.rectangle([1, 12, 50, 14], fill=c[3]); line(1, 14, 50, 14, c[0])
+        for x in range(4, 48, 7): line(x, 8, x + 3, 8, c[3])                                          # roof board marks
+        line(46, 7, 46, 9, s[3]); px(im, 46, 10, hx("#e8d890"))                                      # the lamp on the roof edge
+    else:
+        # INSIDE: no roof, no front wall - the back wall, the floor, the gun
+        d.rectangle([5, 12, 46, 16], fill=c[1])                                                  # open to the sky: the back wall's top edge
+        d.rectangle([5, 31, 46, 36], fill=c[3])                                                      # the lit floor
+        # the roof: a flat slab on four posts, its top lit, a floodlight on a bracket
+        for x0 in (4, 46): box(x0, 12, x0 + 1, 36, s[3], s[2], s[0])
+        for x0 in (14, 36): box(x0, 16, x0 + 1, 36, s[2], s[1], s[0])
+        d.rectangle([5, 17, 46, 35], fill=c[0]); d.rectangle([5, 17, 46, 22], fill=c[1])                # the shadow under the roof: the back wall's inner face
+        # the machine gun: a tripod, the body, a long barrel, a shield plate and the ammo box
+        line(24, 36, 19, 30, s[1]); line(28, 36, 33, 30, s[1]); line(26, 36, 26, 28, s[2])
+        d.rectangle([17, 24, 33, 28], fill=s[2]); d.rectangle([17, 24, 33, 25], fill=s[4]); d.rectangle([33, 25, 46, 26], fill=s[1]); line(33, 25, 46, 25, s[3]); d.rectangle([14, 25, 16, 27], fill=s[1])
+        d.rectangle([20, 29, 24, 33], fill=P["olive"][2]); line(20, 29, 24, 29, P["olive"][4])
+        line(31, 20, 31, 31, s[3]); line(32, 20, 32, 31, s[4]); line(33, 21, 33, 30, s[2])            # the shield
     # weathering: rain streaks down from every edge, moss at the footings, rust and chips with rebar, a stain from the roof
     for _ in range(16):
         x = r.randrange(3, 49); y0 = r.choice((16, 54, 70, 92)); col = c[1] if y0 < 60 else c[2]
@@ -141,5 +152,5 @@ def tower_ruin(seed):
     for _ in range(40): px(im, r.randrange(2, W - 2), r.randrange(42, 46), P["moss"][r.randint(0, 1)])
     return finish(im, (W // 2, H - 2), shadow=(70, 6, 0, 0), tall=False)
 
-NEW = {"deck_face": deck_face, "deck_rail": deck_rail, "deck_steps": deck_steps, "tower_conc": tower_conc, "tower_ruin": tower_ruin}
+NEW = {"deck_face": deck_face, "deck_rail": deck_rail, "deck_steps": deck_steps, "tower_conc": tower_conc, "tower_conc_open": lambda seed: tower_conc(seed, True), "tower_ruin": tower_ruin}
 VARIANTS = {"deck_face": 3}

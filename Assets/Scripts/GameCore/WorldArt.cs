@@ -411,6 +411,7 @@ namespace GameCore
             {
                 string rl = RunLook(x, y, l);
                 s = Pick("p_" + rl, H01(x, y, 3)) ?? Pick("p_" + l, H01(x, y, 3));
+                if (l == "tower_conc" && Emplacement.ViewerUp(x, y)) s = Pick("p_tower_conc_open", H01(x, y, 3)) ?? s;   // the Barrier's watchtower seen from up on it: no roof, no front wall (Emplacement.ViewerUp)
                 if (l == "machine")                                                 // 2026-11-11: a lathe is nearly two tiles wide and maps place machines as blocks of adjacent tiles: a west-east run draws ONE lathe per pair of tiles, centred on the pair (the old way drew one per tile, overlapping)
                 {
                     int k = 0; while (x - k - 1 >= 0 && _look[y * _w + x - k - 1] == "machine") k++;

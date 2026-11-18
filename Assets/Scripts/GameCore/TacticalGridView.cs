@@ -813,6 +813,7 @@ namespace GameCore
             bool up = u.IsAlive() || _fx.DeathPending(u);
             ApplyUnitArt(marker, u, up, fallback);
             if (u is Player ew && EelSump.UnderWater(ew)) marker.color = new Color(1f, 1f, 1f, 0f);
+            if (u is Player tp && Emplacement.Elevated(tp) && Emplacement.GunOf(tp) != Emplacement.GunOf(Player.Current)) marker.color = new Color(1f, 1f, 1f, 0f);   // inside the solid tower cabin: only the one up on it sees him
             if (held) marker.transform.rotation = Quaternion.Euler(0f, 0f, 80f);   // lying in the jaws, held between the teeth (not standing up over the head)   // Boss 3: pulled under the water in the tail's grip
             var aim = AimPoint(u, marker);
             if (aim.HasValue) _away[marker] = UnitSprites.Away(marker.transform.position, aim.Value);   // no mouse: keep the last

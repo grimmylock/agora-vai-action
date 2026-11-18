@@ -63,6 +63,10 @@ namespace GameCore
             }
         }
 
+        /// <summary>The tower prop at (x, y) is the one the LOCAL player is up on: it is drawn with the cabin cut away (like a building's roof); everyone else sees the solid box.</summary>
+        public static bool ViewerUp(int x, int y) { var me = Player.Current; var g = me == null ? null : GunOf(me); return g != null && g.Tx == x && g.NookY + 1 == y; }
+        static void Redraw(Gun g) => TerrainMap.DirtyTiles.Add((g.Tx, g.NookY + 1));                    // the prop's tile: its art swaps with who is up on it
+
         /// <summary>Up on a tower: rounds go over cover and over friends.</summary>
         public static bool Elevated(ICombatant u) => u is Player p && IsMounted(p);
 
@@ -88,7 +92,7 @@ namespace GameCore
             var db = WeaponDatabase.Get("heavy", Key); if (db == null) return false;
             var w = new Weapon(db.Name, db.BaseDamage, Belt, "Standard", new Dictionary<string, int> { ["Standard"] = 0, ["HollowPoint"] = 0, ["ArmorPiercing"] = 0 }) { Owner = p, Db = db, RangeTiles = RangeUtil.ParseRangeToTiles(db.Range) };
             Mounted[p] = new Held { G = g, Saved = p.EquippedWeapon, LastMag = Belt, Cat = p.EquippedWeaponCategory, WKey = p.EquippedWeaponKey };
-            g.By = p; g.Box -= Belt; p.EquippedWeapon = w;
+            g.By = p; g.Box -= Belt; p.EquippedWeapon = w; Redraw(g);
             p.X = g.Tx; p.Y = g.NookY; Rt.SetOffset(p, 0f, 0f);
             GameLog.Write("You climb up and take the machine gun. E to leave it.");
             return true;
@@ -97,7 +101,7 @@ namespace GameCore
         public static void Dismount(Player p)
         {
             if (!Mounted.TryGetValue(p, out var h)) return;
-            Mounted.Remove(p); h.G.By = null;
+            Mounted.Remove(p); h.G.By = null; Redraw(h.G);
             p.EquippedWeapon = h.Saved; p.EquippedWeaponCategory = h.Cat; p.EquippedWeaponKey = h.WKey;
             var (x, y) = TerrainMap.FindNearestEnterable(h.G.Tx, h.G.StepsY, 3); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
             GameLog.Write("You climb back down.");
