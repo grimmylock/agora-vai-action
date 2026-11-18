@@ -523,6 +523,19 @@ namespace GameCore
             if (b.Sr != null) b.Sr.enabled = false;
         }
 
+        /// <summary>Is any living player north of this building, under the screen area its lifted roof covers (so the roof is drawn over them)?</summary>
+        static bool Behind(Building b)
+        {
+            float top = b.Y0 - 1 - b.Lift / (float)TerrainArt.Px, bottom = top + b.H + 2;       // the roof's rows on screen, in tiles (y down)
+            foreach (var u in Player.All)
+            {
+                if (!u.IsAlive() || u.X < b.X0 - 1 || u.X > b.X1 + 1 || u.Y > b.Y1) continue;   // in front of (or level with) the south wall: drawn over the roof already
+                float feet = u.Y + 0.9f, head = feet - 1.6f;
+                if (feet > top && head < bottom) return true;
+            }
+            return false;
+        }
+
         /// <summary>Per frame: fade the roof the player is under; cut away what the player can see into.</summary>
         public void Tick(Player p)
         {
@@ -530,7 +543,7 @@ namespace GameCore
             int inside = p.X >= 0 && p.Y >= 0 && p.X < _w && p.Y < _h ? IdMap[p.Y * _w + p.X] : -1;
             foreach (var b in Buildings)
             {
-                float target = b.Id == inside ? 0f : 1f;
+                float target = b.Id == inside ? 0f : Behind(b) ? 0.55f : 1f;   // 2026-11-18 (Yan: "these walls block vision completely ... when you're behind a building"): a roof drawn over a player standing behind its building goes see-through
                 if (b.Alpha != target) { b.Alpha = Mathf.MoveTowards(b.Alpha, target, Time.deltaTime * 4f); b.Sr.color = new Color(1f, 1f, 1f, b.Alpha); }
             }
             if (Vision.Version == _seenVersion && inside == _lastInside) return;
