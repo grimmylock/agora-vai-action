@@ -25,7 +25,8 @@ namespace GameCore
         Image _rRing, _rGhost, _rPortrait, _rWeapon, _rStamina, _rFocus; TextMeshProUGUI _rCond, _rHp, _rStatus, _rNeed, _rMag, _rReserve, _rLoad, _rWName, _rLoc, _rSub, _rAlert, _rArts;
         readonly List<TextMeshProUGUI> _rSlot = new List<TextMeshProUGUI>(); readonly List<Image> _rSlotBack = new List<Image>();
         float _rGhostV = 1f, _shown = 1f; float _ammoStampAt = -9f, _hpStampAt = -9f; string _ammoStamp; int _rLastHp = -1; float _gaugeA = 1f, _ammoA = 1f, _quickA = 1f;
-        static Sprite _sRing, _sDisc, _sSoft;
+        static Sprite _sRing, _sDisc, _sSoft, _sVig;
+        Image _rVig; readonly List<(string text, float until)> _toasts = new List<(string, float)>(); readonly List<TextMeshProUGUI> _rToast = new List<TextMeshProUGUI>();
 
         // ---- generated sprites (a ring that a filled Image can sweep, a disc to mask the portrait, a soft dark patch behind the clusters) ----
         static Sprite MakeSprite(System.Func<float, float, float> alphaAt, int n = 128)
@@ -36,6 +37,7 @@ namespace GameCore
         }
         static Sprite RingSpr() => _sRing ?? (_sRing = MakeSprite((u, v) => { float d = Mathf.Sqrt(u * u + v * v); float edge = 0.02f; return Mathf.Clamp01((d - 0.86f) / edge) * Mathf.Clamp01((1f - d) / edge); }, 256));
         static Sprite DiscSpr() => _sDisc ?? (_sDisc = MakeSprite((u, v) => { float d = Mathf.Sqrt(u * u + v * v); return Mathf.Clamp01((1f - d) / 0.03f); }, 128));
+        static Sprite VigSpr() => _sVig ?? (_sVig = MakeSprite((u, v) => { float d = Mathf.Sqrt(u * u + v * v) / 1.25f; return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((d - 0.55f) / 0.5f)); }, 64));
         static Sprite SoftSpr() => _sSoft ?? (_sSoft = MakeSprite((u, v) => { float d = Mathf.Sqrt(u * u + v * v); return Mathf.Clamp01(1f - d) * Mathf.Clamp01(1f - d) * 0.9f; }, 64));
 
         TextMeshProUGUI T2(Transform parent, string name, Vector2 anchor, Vector2 pos, Vector2 size, string s, bool title, float px, Color c, TextAlignmentOptions align)
@@ -75,6 +77,10 @@ namespace GameCore
             _re4Root = Rect(root, "Re4", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero).gameObject;
             var rr = (RectTransform)_re4Root.transform; rr.anchorMin = Vector2.zero; rr.anchorMax = Vector2.one; rr.sizeDelta = Vector2.zero; rr.SetAsFirstSibling();
             var A = Vector2.zero; var BR = new Vector2(1, 0); var TL = new Vector2(0, 1);
+            // the red edge of RE4 when you are in danger (a screen-wide ring of colour that pulses), and the pick-up toasts on the right
+            _rVig = Img(_re4Root.transform, "Vignette", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, new Color(0.8f, 0.08f, 0.05f, 0f)); _rVig.sprite = VigSpr(); { var vr = _rVig.rectTransform; vr.anchorMin = Vector2.zero; vr.anchorMax = Vector2.one; vr.sizeDelta = Vector2.zero; }
+            for (int i = 0; i < 4; i++) _rToast.Add(T2(_re4Root.transform, "Toast" + i, BR, new Vector2(-56, 372 + i * 30), new Vector2(620, 28), "", false, 19, Bone, TextAlignmentOptions.BottomRight));
+            GameLog.Observer = OnLogLine;
 
             // ---- condition cluster, bottom left ----
             var g = Rect(_re4Root.transform, "Gauge", A, new Vector2(56, 52), new Vector2(520, 190)); _gGauge = g.gameObject.AddComponent<CanvasGroup>();
@@ -129,6 +135,16 @@ namespace GameCore
             var im = Img(parent, name, Vector2.zero, pos, new Vector2(size, size), c); im.sprite = RingSpr();
             im.type = Image.Type.Filled; im.fillMethod = Image.FillMethod.Radial360; im.fillOrigin = (int)Image.Origin360.Top; im.fillClockwise = true; im.fillAmount = 1f;
             return im;
+        }
+
+        /// <summary>The lines that are about getting something become toasts, right side, for a few seconds (RE4's "picked up" lines).</summary>
+        void OnLogLine(string english, string shown, bool ev)
+        {
+            if (english == null) return;
+            string e = english.TrimStart();
+            bool pickup = e.StartsWith("+") || e.StartsWith("Gained ") || e.StartsWith("Bought ") || e.StartsWith("Sold ") || e.StartsWith("Recovered ") || e.StartsWith("Looted ") || e.StartsWith("Equipped ") || e.StartsWith("Perk gained") || e.StartsWith("Quest accepted") || e.StartsWith("Quest complete") || e.StartsWith("[RANK UP]") || e.StartsWith("[MILESTONE]") || e.StartsWith("Game saved") || e.StartsWith("Restored ") || e.StartsWith("[ARTIFACT]") || e.StartsWith("Fitted ") || e.StartsWith("Dropped ");
+            if (!pickup) return;
+            _toasts.Insert(0, (shown.Trim(), Time.unscaledTime + 4.5f)); if (_toasts.Count > 4) _toasts.RemoveAt(4);
         }
 
         void UpdateRE4(Player p)
@@ -192,6 +208,14 @@ namespace GameCore
             bool calm = !combat && hpf >= 0.995f && st.Count == 0 && need.Count == 0 && Rt.Me.Stamina >= Rt.StaminaMax - 1f && Time.unscaledTime - _hpStampAt > 3.5f && !Rt.SlowMo;
             bool shooting = combat || Rt.Me.Aiming || dry || Time.unscaledTime - _ammoStampAt < 4f || Rt.Me.UsingId != null || GameState.Current.ModalOpen;
             float tg = calm ? 0.22f : 1f, ta = w == null || melee ? (combat ? 0.8f : 0.0f) : shooting ? 1f : 0.28f, tq = combat || hpf < 0.7f || p.ArmedThrowable != null || st.Count > 0 ? 1f : 0.4f;
+            // the danger edge and the toasts
+            float vig = down ? 0.5f + 0.2f * Mathf.Sin(Time.unscaledTime * 7f) : hpf < 0.34f ? (0.28f + 0.14f * Mathf.Sin(Time.unscaledTime * 4f)) * (1f - hpf / 0.34f * 0.5f) : 0f;
+            _rVig.color = new Color(0.8f, 0.08f, 0.05f, vig);
+            for (int i = 0; i < _rToast.Count; i++)
+            {
+                if (i < _toasts.Count && Time.unscaledTime < _toasts[i].until) { _rToast[i].text = _toasts[i].text; float left = _toasts[i].until - Time.unscaledTime; _rToast[i].color = new Color(Bone.r, Bone.g, Bone.b, Mathf.Clamp01(left / 0.7f)); }
+                else if (_rToast[i].text != "") _rToast[i].text = "";
+            }
             _gaugeA = Mathf.MoveTowards(_gaugeA, tg, dt * 3f); _ammoA = Mathf.MoveTowards(_ammoA, ta, dt * 3f); _quickA = Mathf.MoveTowards(_quickA, tq, dt * 3f);
             _gGauge.alpha = _gaugeA; _gAmmo.alpha = _ammoA; _gQuick.alpha = _quickA;
         }

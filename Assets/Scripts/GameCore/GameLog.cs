@@ -28,13 +28,17 @@ namespace GameCore
         public static IGameLogTarget Target;
         /// <summary>Batch 36: while true, lines go to the Console only (the hourly A-Life tick).</summary>
         public static bool Quiet;
+        /// <summary>(English line, the line as shown, is it an event): the new HUD turns the pick-up lines into toasts (HudView.RE4.cs).</summary>
+        public static System.Action<string, string, bool> Observer;
 
         /// <summary>Direct port of log(message) in script.js.</summary>
         public static void Write(string message)
         {
             NetWorld.TapLog(message);                                        // co-op: the host's lines reach the friends
             bool ev = IsEvent(message); if (message.StartsWith(EventMark, System.StringComparison.Ordinal)) message = message.Substring(EventMark.Length);   // (decided on the English, before the translation changes the tag)
-            if (Loc.Pt) { string tr = Loc.T(message); if (tr == message) Loc.Miss(message); message = tr; }                                // pt-BR: the log in Portuguese (a line with no entry stays English)
+            string english = message;
+            if (Loc.Pt) { string tr = Loc.T(message); if (tr == message) Loc.Miss(message); message = tr; }
+            Observer?.Invoke(english, message, ev);                                // pt-BR: the log in Portuguese (a line with no entry stays English)
             if (Target != null && !Quiet)
             {
                 if (Target is IGameLogEvents t) t.Append(message, ev); else Target.AppendLine(message);
