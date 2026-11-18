@@ -106,9 +106,7 @@ namespace GameCore
             if (Story.Step("escort") != 2) return;
             if (!Pav)   // Pavel is down
             {
-                GameLog.Event("[ALERT] Pavel is dead. The road north was too much for him.");
-                Story.Fade(Color.black, 1f, 0.6f);
-                if (!SaveSystem.Load()) { Story.SetStep("escort", 1); Story.SetObjective("escort", "Pavel is waiting at the Medic's House: take him north", Tier1Story.Medic); Story.Fade(Color.black, 0f, 0.6f); }
+                Tier1Story.PavelLost("The road north was too much for him.", () => { Story.SetStep("escort", 1); Story.SetObjective("escort", "Pavel is waiting at the Medic's House: take him north", Tier1Story.Medic); });
                 return;
             }
             if (Tier2Jobs.OnTier2)

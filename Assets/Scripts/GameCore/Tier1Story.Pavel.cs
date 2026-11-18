@@ -38,6 +38,17 @@ namespace GameCore
             return best;
         }
 
+        /// <summary>Pavel died on one of his three walks (the bunker, north, the lake): the same rule everywhere - the auto-save made when he joined is loaded (STORY.md: "retry from a
+        /// save"); with no save to go back to the mission goes back to its start. `reset` runs then.</summary>
+        internal static void PavelLost(string where, System.Action reset)
+        {
+            GameLog.Event($"[ALERT] Pavel is dead. {where}");
+            Story.Set("pavel_lost");
+            GreyRobes.Release();
+            Story.Fade(UnityEngine.Color.black, 1f, 0.6f);
+            if (!SaveSystem.Load()) { reset(); Story.Fade(UnityEngine.Color.black, 0f, 0.6f); }
+        }
+
         internal static bool PavelWithYou => Companion.Alive && Companion.Current.Name == "Pavel";
 
         static bool TryInteractPavel(Player p)
@@ -64,6 +75,7 @@ namespace GameCore
                         new[] { "Can you walk?", "What's in it?" }, j =>
                         {
                             Story.Talk("Pavel", new[] { j == 0 ? "Badly. I'll keep up. I'll have to." : "Later. Please. When there are walls between us and the marsh, I'll tell you everything. Some of it." });
+                            SaveSystem.Save();                                    // what is loaded if he dies on the way
                             Companion.JoinStory(p, "Pavel", 60);
                             Story.SetStep("engineer", 2);
                             Story.SetObjective("engineer", "Get Pavel back to Bonfire Village alive", Yefim);
@@ -167,10 +179,11 @@ namespace GameCore
             // Pavel walking with you died: back to the bunker (see the header)
             if (Story.Step("engineer") == 2 && !PavelWithYou)
             {
-                Story.SetStep("engineer", 1);
-                Story.SetObjective("engineer", "Pavel is down. Go back to the Flooded Bunker for him", "Flooded Bunker");
-                GameLog.Event("[ALERT] Pavel is gone. Somewhere in the bunker the barricade is shut again.");
-                Story.Set("pavel_lost"); GreyRobes.Release();
+                PavelLost("The bunker's barricade is shut again.", () =>
+                {
+                    Story.SetStep("engineer", 1);
+                    Story.SetObjective("engineer", "Pavel is down. Go back to the Flooded Bunker for him", "Flooded Bunker");
+                });
             }
             // the walk back: "those" stop and watch from a distance, and at the lamps' edge they stand a while, then go
             if (Story.Step("engineer") == 2 && OnTier1 && PavelWithYou && !Story.Has("robes_watched") && Player.Current != null && !GreyRobes.Present)

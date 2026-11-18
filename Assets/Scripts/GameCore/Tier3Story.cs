@@ -29,6 +29,8 @@ namespace GameCore
             if (OnTier3 && Story.Near(p, Bunk, 3) && TalkPavelHub(p)) return true;
             if (OnTier3 && Story.Step("lake") == 2 && Story.Near(p, Breaker, 3)) { CutTurrets(); return true; }
             if (OnTier3 && Story.Near(p, House, 4) && TalkHouse()) return true;
+            if (OnTier3 && Story.Near(p, "Roundhouse", 4) && TalkVoss()) return true;
+            if (OnTier3 && Story.Step("leak") == 2 && Story.Near(p, "Signal Tower", 4)) { TalkQuill(); return true; }
             return false;
         }
 
@@ -115,9 +117,17 @@ namespace GameCore
             }
             if (Story.IsDone("lake"))
             {
-                Story.Talk("Sub-Station", new[] { "Osei, Rask and Hale are at their stations." }, new[] { "Ask Osei about the lake", "Konrad Hale", "Emil Rask", "(Leave)" }, i =>
+                bool pillsAsk = Story.Step("pills") == 1 && Tier1Story.Holder(Crate) == null;
+                var ans = new List<string> { "Ask Osei about the lake", "Konrad Hale", "Emil Rask", "(Leave)" };
+                if (pillsAsk) ans.Add("Ask Osei about Lev's pills");
+                Story.Talk("Sub-Station", new[] { "Osei, Rask and Hale are at their stations." }, ans.ToArray(), i =>
                 {
-                    if (i == 0)
+                    if (i == 4)
+                    {
+                        Story.Talk("Dr. Priya Osei", new[] { "Lev's tremor. I had a box, once. One left. You brought me an engineer I can finally use; take it, and tell him it's from me.", "(She gives you a small box.)" });
+                        Player.Current.AddItem(new InventoryItem { Id = Crate, Name = "Medical Crate", Type = "key", Qty = 1, WeightKg = 1f, Price = 0 });
+                    }
+                    else if (i == 0)
                     {
                         Story.Talk("Dr. Priya Osei", new[] { "The researcher who died in the Depths - his station was measuring spikes from deeper underground. Bedrock doesn't spike.", "Something under the lake is drawing power. A lot of it. I want to know what.",
                             "They come at regular intervals. Almost like a pulse. I've been calling it interference." });
@@ -129,6 +139,51 @@ namespace GameCore
                 return true;
             }
             return false;
+        }
+
+        // ---------------- the leak (Voss and the Contractors) ----------------
+        // Someone on Voss's payroll sold a patrol route: the Contractor snipers on Sniper's Lip (Tier 2) were paid by "those". Quill, a deserter, is at the Signal Tower with a robed figure.
+
+        static bool TalkVoss()
+        {
+            int s = Story.Step("leak");
+            if (s == 3 && Tier1Story.Holder("story_ledger") is Player h)
+            {
+                h.RemoveItem("story_ledger", 1);
+                bool spared = Story.Has("quill_spared");
+                Story.Talk("Voss", new[] { "A ledger. Payments, dates, a drop at the Signal Tower - and a name for the payer I can't pronounce, because it isn't a name.",
+                    spared ? "You let him walk? ...Fine. A man who talks gets to leave. That's the one rule I respect." : "You brought him in alive. He'll sing for me too. Good.",
+                    "Whoever paid my snipers wanted a skinny engineer dead. That's not a contract. That's a hunt. The Contractors don't work for people like that. Not any more." });
+                Tier1Story.Pay(1000, "the leak"); foreach (var pl in Player.All) pl.AdjustReputation("Contractors", (spared ? 1 : 2) * Player.RepPoint);
+                Story.Journal("The Leak: \"those\" paid the Contractor snipers who hunted Pavel. Voss has the ledger.");
+                Story.Finish("leak"); Story.Set("those_paid_snipers"); return true;
+            }
+            if (s == 0 && Story.Has("tier3_reveal"))
+            {
+                Story.Talk("Voss", new[] { "Contractors don't ask who pays. Mostly. Lately someone's paying my people to look the other way - and to shoot where they're told.",
+                    "A sniper team on the north rim was paid by somebody who isn't on my books. One of mine sold the patrol schedule. I want to know who bought it." }, new[] { "I'll find out.", "Not my fight." }, i =>
+                {
+                    if (i == 1) return;
+                    Story.SetStep("leak", 1); Story.SetObjective("leak", "Find who paid the snipers: the Signal Tower", "Signal Tower");
+                    Story.Journal("The Leak: Voss wants to know who bought his patrol schedule. A trail leads to the Signal Tower.");
+                });
+                return true;
+            }
+            if (s == 1 || s == 2) { Story.Talk("Voss", new[] { "The Signal Tower. Quiet, high, nobody looks at it. Go and look at it." }); return true; }
+            return false;
+        }
+
+        static void TalkQuill()
+        {
+            var q = StoryNpcs.Find("Quill");
+            Story.Talk("Quill", new[] { "Don't. I'm - I'm just a man with a radio. They told me they'd leave me alone.", "A grey one comes, always at dusk. Pays in clean notes. Tells me where your people will be. Never says why.",
+                "They said the skinny engineer was a thief. That the Zone would be quieter without him. I didn't ask more. I didn't want to know." }, new[] { "Give me the ledger. You can go.", "Give me the ledger. You're coming with me." }, i =>
+                {
+                    if (i == 0) Story.Set("quill_spared");
+                    Tier1Story.Give("story_ledger", "Payment Ledger");
+                    Story.SetStep("leak", 3); Story.SetObjective("leak", "Take the ledger to Voss at the Roundhouse", "Roundhouse");
+                    if (q != null && i == 0) q.FaceToward(q.X + 5, q.Y);
+                });
         }
 
         // ---------------- the lake ----------------
@@ -161,14 +216,22 @@ namespace GameCore
         public static void Tick()
         {
             var p = Player.Current; if (p == null || Net.Mode == Net.Role.Client) return;
+            if (Story.Step("leak") == 1 && OnTier3)
+            {
+                var st = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Signal Tower");
+                if (st != null && System.Math.Max(System.Math.Abs(p.X - st.X), System.Math.Abs(p.Y - st.Y)) < 25)
+                {
+                    Story.SetStep("leak", 2); GreyRobes.Place(st.X + 3, st.Y + 3, 1, false);
+                    GameLog.Event("A robed figure stands at the foot of the Signal Tower, talking to a man in Contractor colours. It turns away as you come.");
+                    Story.SetObjective("leak", "Question the Contractor at the Signal Tower", "Signal Tower"); StoryNpcs.Tick();
+                }
+            }
             if (Story.Step("pills") == 1 && Tier1Story.Holder(Crate) != null) { Story.SetStep("pills", 2); Story.SetObjective("pills", "Take the medical crate to Lev", Anchor); }
             int s = Story.Step("lake");
             if (s < 1 || s >= 3 || Story.IsDone("lake")) return;
             if (!Pav)   // Pavel is down: the auto-save, or ask him again
             {
-                GameLog.Event("[ALERT] Pavel is dead. The lakebed was too much for him.");
-                Story.Fade(Color.black, 1f, 0.6f);
-                if (!SaveSystem.Load()) { Story.SetStep("lake", 0); Story.SetObjective("lake", null); Story.Fade(Color.black, 0f, 0.6f); }
+                Tier1Story.PavelLost("The lakebed was too much for him.", () => { Story.SetStep("lake", 0); Story.SetObjective("lake", null); });
                 return;
             }
             if (!OnTier3) return;

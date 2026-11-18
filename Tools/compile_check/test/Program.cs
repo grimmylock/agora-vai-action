@@ -2480,7 +2480,7 @@ static class Program {
   // Story 4: Tier 1's first missions, played start to finish with the harness's default answers (the first one)
   static void Tier3StoryChecks() {   // Story 7a: Tier 3 - Lev, the lake, the Sub-Station, the pills
     var p = Arena(out int px, out int py); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false; Companion.Current = null;
-    var marks = new[] { ("The Rusty Anchor", 20, 20), ("Hub Bunkhouse", 40, 20), ("Sub-Station House", 100, 100), ("Breaker Room", 116, 100), ("The Flats", 70, 100), ("Tower Line", 100, 70), ("Passenger Lounge", 30, 150) }
+    var marks = new[] { ("The Rusty Anchor", 20, 20), ("Hub Bunkhouse", 40, 20), ("Sub-Station House", 100, 100), ("Breaker Room", 116, 100), ("The Flats", 70, 100), ("Tower Line", 100, 70), ("Passenger Lounge", 30, 150), ("Roundhouse", 150, 150), ("Signal Tower", 170, 150), ("Mutant Den", 30, 30) }
       .Select(m => new LandmarkInstance { Name = m.Item1, X = m.Item2, Y = m.Item3 }).ToList();
     foreach (var m in marks) TerrainMap.Landmarks.Add(m);
     void At(string n, int dy = 1) { var l = marks.First(x => x.Name == n); p.X = l.X; p.Y = l.Y + dy; }
@@ -2509,6 +2509,23 @@ static class Program {
       Check(Story.Step("pills") == 2, "Story 7a: the crate in your pack: back to Lev");
       ru = p.Ru; At("The Rusty Anchor"); Tier3Story.TryInteract(p);
       Check(Story.IsDone("pills") && Story.Has("lev_confessed") && p.Ru == ru + 800, "Story 7a: the Confession");
+      // the leak
+      At("Roundhouse"); Tier3Story.TryInteract(p);
+      Check(Story.Step("leak") == 1, "Story 7b: after the Reveal, Voss asks who bought his patrol schedule");
+      At("Signal Tower", 10); Tier3Story.Tick();
+      Check(Story.Step("leak") == 2 && GreyRobes.Present, "Story 7b: at the Signal Tower a robed figure leaves a Contractor behind");
+      GreyRobes.Reset(); EncounterState.Enemies.RemoveAll(e => GreyRobes.Is(e));
+      At("Signal Tower"); Tier3Story.TryInteract(p);
+      Check(Story.Step("leak") == 3 && Story.Has("quill_spared") && p.Inventory.Items.Any(i => i.Id == "story_ledger"), "Story 7b: Quill's ledger (the harness lets him go)");
+      ru = p.Ru; At("Roundhouse"); Tier3Story.TryInteract(p);
+      Check(Story.IsDone("leak") && Story.Has("those_paid_snipers") && p.Ru == ru + 1000, "Story 7b: Voss: \"those\" paid the snipers");
+      // the Brute's return (Yefim's rematch)
+      Story.SetStep("brute2", 1); Tier1Story.OnEnterZone(Tier1Story.CaveZone);
+      var br = EncounterState.Enemies.FirstOrDefault(e => e.Name == "Blight Brute");
+      Check(br != null && br.MaxHp == 10000 && !br.IsAggroed, "Story 7b: the rematch: the Brute sleeps in the Den again");
+      br.Hp = 0; br.Unkillable = false; br.Hp = 0; ru = p.Ru; Tier1Story.Tick();
+      Check(Story.IsDone("brute2") && p.Ru == ru + 1500, "Story 7b: the Brute dead: Yefim pays");
+      EncounterState.Enemies.RemoveAll(e => e.Name == "Blight Brute");
     } finally { Tier3Story.ZoneOverride = null; foreach (var m in marks) TerrainMap.Landmarks.Remove(m); TerrainMap.GroundItems.RemoveAll(g => g.Item.Id == "story_pills"); Companion.Current = null; MacroState.Current.StoryFlags.Clear(); }
   }
 

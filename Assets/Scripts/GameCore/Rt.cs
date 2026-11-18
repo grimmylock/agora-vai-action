@@ -796,6 +796,7 @@ namespace GameCore
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
+            StoryBarks.Tick();                                                     // the story's people and Pavel's small talk
             GreyRobes.Tick(Time.deltaTime);                                        // Tier 1: "those" on the marsh roads
             Tier1Story.TickRt(Time.deltaTime);                                     // Tier 1: the night defence of Bonfire Village
             Gaunt.Tick();                                                          // the Gaunt: its call, and the ones it drove when it falls

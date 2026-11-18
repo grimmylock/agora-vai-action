@@ -90,6 +90,7 @@ namespace GameCore
         static (string, string) Exchange(string voice, string faction)
         {
             var pool = new List<(string, string)>(Talk[voice]);
+            pool.AddRange(StoryBarks.Pool(voice));   // 2026-11-18: what the story has made people talk about
             float h = MacroState.Current.Hour;
             if (h >= 21f || h < 5f) pool.AddRange(Night);
             if (Atmosphere.Look().Rain > 0f) pool.AddRange(Rain);

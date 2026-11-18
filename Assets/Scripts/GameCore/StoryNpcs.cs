@@ -29,6 +29,8 @@ namespace GameCore
             new Def { Name = "Pavel", Landmark = "Hub Bunkhouse", Zone = "scavengers_hub", Look = "Surveyors", Dx = 1, Dy = 1, When = () => Story.IsDone("escort") && Story.Step("lake") == 0 && PavelFree },
             new Def { Name = "Pavel", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 3, Dy = 1, When = () => Story.Has("tier3_reveal") && PavelFree },
             new Def { Name = "The Scrap King", Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Raiders", Dx = 1, Dy = 1, When = () => true },
+            new Def { Name = "Voss", Landmark = "Roundhouse", Zone = "scavengers_hub", Look = "Contractors", Dx = 2, Dy = 1, When = () => true },
+            new Def { Name = "Quill", Landmark = "Signal Tower", Zone = "scavengers_hub", Look = "Contractors", Dx = 1, Dy = 2, When = () => Story.Step("leak") == 2 },
             new Def { Name = "Lev Marchuk", Landmark = "The Rusty Anchor", Zone = "scavengers_hub", Look = "Wanderers", Dx = 1, Dy = 1, When = () => true },
             new Def { Name = "Dr. Priya Osei", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 0, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
             new Def { Name = "Emil Rask", Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 2, Dy = 2, When = () => Story.Step("lake") == 3 || Story.IsDone("lake") },
