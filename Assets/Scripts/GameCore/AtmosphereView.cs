@@ -127,6 +127,10 @@ namespace GameCore
                 catch (System.Exception e) { Lighting.Fail(e); }
             }
             int tw = Mathf.CeilToInt(vw) * TexelsPerTile + 6, th = Mathf.CeilToInt(vh) * TexelsPerTile + 6;
+            float cLeft = Mathf.Floor((c.x - vw / 2f) * TexelsPerTile) / TexelsPerTile - 1.5f, cTop = Mathf.Ceil((c.y + vh / 2f) * TexelsPerTile) / TexelsPerTile + 1.5f;
+            long ckey = OverlayKey(cLeft, cTop, tw, th, l, TexelsPerTile);
+            if (ckey == _coarseKey && _lightTex != null && _ppu == TexelsPerTile) return;   // unchanged since the last draw (the sprite keeps its texture)
+            _coarseKey = ckey; _fineKey = long.MinValue;
             if (_lightTex == null || tw != _tw || th != _th || _ppu != TexelsPerTile)
             {
                 _tw = tw; _th = th; _ppu = TexelsPerTile;
@@ -173,7 +177,9 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ Lighting v2
-        const int FineTexels = 8, Coarse = TexelsPerTile, Ratio = FineTexels / Coarse;   // 8 texels a tile for the lamp field, the vision work stays at 2
+        const int FineTexels = 8, FineTexelsWide = 4, Coarse = TexelsPerTile;   // 8 texels a tile for the lamp field (4 when the view is big: the cost goes with the AREA, 2026-11-18 Yan: the Gaunt cave ran very badly), the vision work stays at 2
+        const float WideView = 600f;                                                // tiles in view above which the fine field drops to 4 a tile
+        long _fineKey = long.MinValue, _coarseKey = long.MinValue;                  // what the overlay was last drawn for: it is only redrawn when one of these changes (position in texels, size, Vision.Version, the hour's darkness, fog, 12 times a second for the lamps' flicker)
         int _ppu = TexelsPerTile, _fineHold;
         float[] _cLit, _cSight; Color32[] _fpx;
 
@@ -182,19 +188,22 @@ namespace GameCore
         /// False (the caller draws the old overlay) when no placed light reaches the view and it's day.</summary>
         bool DrawLightFine(Vector3 c, float vw, float vh, AtmosphereLook l)
         {
+            int FineT = vw * vh > WideView ? FineTexelsWide : FineTexels, Ratio = FineT / Coarse;
             int tw = Mathf.CeilToInt(vw) * Coarse + 6, th = Mathf.CeilToInt(vh) * Coarse + 6;
             float left = Mathf.Floor((c.x - vw / 2f) * Coarse) / Coarse - 1.5f, top = Mathf.Ceil((c.y + vh / 2f) * Coarse) / Coarse + 1.5f;
+            long key = OverlayKey(left, top, tw, th, l, FineT);
+            if (key == _fineKey && _lightTex != null && _ppu == FineT && _fineHold > 0) return true;   // nothing that shows has changed: the texture on the sprite is still right
             int gx0 = Mathf.RoundToInt(left * WorldArt.Px), gy0 = Mathf.RoundToInt(-top * WorldArt.Px), rw = tw * (WorldArt.Px / Coarse), rh = th * (WorldArt.Px / Coarse);
-            bool lamps = Lighting.Field(gx0, gy0, rw, rh, WorldArt.Px / FineTexels, Time.time, out var lr, out var lg, out var lb);
+            bool lamps = Lighting.Field(gx0, gy0, rw, rh, WorldArt.Px / FineT, Time.time, out var lr, out var lg, out var lb);
             if (!lamps && l.Night <= 0.02f) { _fineHold = 0; return false; }      // day and no lamp in view: the cheap overlay
             _fineHold = lamps ? 60 : _fineHold - 1;                              // stay fine a second after the last lamp leaves (no flicker between the two)
             int fw = tw * Ratio, fh = th * Ratio;
-            if (_lightTex == null || fw != _tw || fh != _th || _ppu != FineTexels)
+            if (_lightTex == null || fw != _tw || fh != _th || _ppu != FineT)
             {
-                _tw = fw; _th = fh; _ppu = FineTexels;
+                _tw = fw; _th = fh; _ppu = FineT;
                 _lightTex = new Texture2D(fw, fh, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
                 _fpx = new Color32[fw * fh];
-                _light.sprite = Sprite.Create(_lightTex, new Rect(0, 0, fw, fh), new Vector2(0f, 1f), FineTexels);
+                _light.sprite = Sprite.Create(_lightTex, new Rect(0, 0, fw, fh), new Vector2(0f, 1f), FineT);
             }
             if (_cLit == null || _cLit.Length < tw * th) { _cLit = new float[tw * th]; _cSight = new float[tw * th]; }
             _light.transform.position = new Vector3(left, top, 0f);
@@ -226,7 +235,16 @@ namespace GameCore
             }
             _lightTex.SetPixels32(_fpx);
             _lightTex.Apply();
+            _fineKey = key; _coarseKey = long.MinValue;
             return true;
+        }
+
+        /// <summary>A cheap fingerprint of everything the overlay depends on: where the view sits (in texels), its size, what Vision says is seen, the hour's darkness, fog, and the time in 1/12 s (the lamps flicker).</summary>
+        long OverlayKey(float left, float top, int tw, int th, AtmosphereLook l, int texels)
+        {
+            long k = Mathf.RoundToInt(left * 8f) * 1000003L + Mathf.RoundToInt(top * 8f);
+            k = k * 31 + tw; k = k * 31 + th; k = k * 31 + Vision.Version; k = k * 31 + (int)(Time.time * 12f); k = k * 31 + Mathf.RoundToInt(l.Night * 200f); k = k * 31 + Mathf.RoundToInt(l.Fog * 100f);
+            return k * 31 + texels * 2 + (_backdrop ? 1 : 0) + (Lighting2D.On ? 64 : 0);
         }
 
         static float LightingShoulder(float v) => WorldArt.ShoulderOf(v);
