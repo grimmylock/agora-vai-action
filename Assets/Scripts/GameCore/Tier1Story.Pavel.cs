@@ -38,7 +38,7 @@ namespace GameCore
             return best;
         }
 
-        static bool PavelWithYou => Companion.Alive && Companion.Current.Name == "Pavel";
+        internal static bool PavelWithYou => Companion.Alive && Companion.Current.Name == "Pavel";
 
         static bool TryInteractPavel(Player p)
         {
@@ -119,20 +119,24 @@ namespace GameCore
         {
             _brute = null; _wake = false;
             if (zoneId != CaveZone) return;
+            bool quest = Story.Step("culvert") >= 2 && Story.Step("culvert") <= 3, rematch = Story.Step("brute2") == 1;
             var den = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == Den); if (den == null) return;
             if (!TerrainMap.InteractiveObjects.Any(o => o.Name == "The Brute's Hoard"))   // a bag of Tier 3 loot at the back of the lair, past where it sleeps
             {
                 var (hx, hy) = HoardSpot(den);
                 Stashes.Hoard(hx, hy, "The Brute's Hoard", 3, "Scraps and gear dragged back here by something big. Worth the trip.");
             }
-            if (Story.Step("culvert") < 2 || Story.Step("culvert") > 3) return;
+            if (!quest && !rematch) return;
             var (x, y) = TerrainMap.FindNearestEnterable(den.X, den.Y + 1);
             _brute = EncounterGeneration.CreateMutantFromDb(MutantDatabase.Tiers["tier4"]["BlightBrute"], x, y);
             _brute.MaxHp = _brute.Hp = BruteHp;   // Yan: 10k HP - kill it if you can
             _brute.IsAggroed = false;
             EncounterState.Enemies.Add(_brute);
-            Story.Radio("Pavel", "You're in? Good. It's further than you think. I was... I was panicking.");
-            Story.Radio("Pavel", "There's a pool, and past it a shelf of rock. I wedged it behind the rocks. You should see it.");
+            if (quest)
+            {
+                Story.Radio("Pavel", "You're in? Good. It's further than you think. I was... I was panicking.");
+                Story.Radio("Pavel", "There's a pool, and past it a shelf of rock. I wedged it behind the rocks. You should see it.");
+            }
         }
 
         static void TakeCanister(Player p)
@@ -154,6 +158,11 @@ namespace GameCore
 
         static void TickPavel()
         {
+            if (Story.Step("brute2") == 1 && _brute != null && !_brute.IsAlive())   // Yefim's rematch: it's down
+            {
+                Story.Finish("brute2"); Pay(1500, "the Blight Brute"); Story.Journal("The Blight Brute of the Rust Culvert is dead. Yefim's hunters can use the road again.");
+                Story.Talk("Yefim (radio)", new[] { "The road's open again. My hunters are already out. I owe you." });
+            }
             if (_wake && UnityEngine.Time.time >= _wakeAt) { _wake = false; if (_brute != null && _brute.IsAlive()) _brute.IsAggroed = true; }
             // Pavel walking with you died: back to the bunker (see the header)
             if (Story.Step("engineer") == 2 && !PavelWithYou)

@@ -17,12 +17,13 @@ namespace GameCore
         public const string Runner = "The Cutting", Bridge = "Chokepoint Bridge", King = "Scrap King's Nest", Dock = "Loading Dock", Fort = "Tire Fort", Tag = "story_dogtag";
         static string Map2 => MacroMapDatabase.MapOf("scrapyard");
         public static string ZoneOverride;   // harness: pretend to be on the Tier 2 map
-        static bool OnTier2 => (ZoneOverride ?? TerrainMap.ZoneId) == Map2;
+        internal static bool OnTier2 => (ZoneOverride ?? TerrainMap.ZoneId) == Map2;
 
-        static void CompleteArc(string npcId, int stage) { foreach (var p in Player.All) if (!p.NpcArcStage.TryGetValue(npcId, out var s) || s <= stage) p.NpcArcStage[npcId] = stage + 1; }
+        internal static void CompleteArc(string npcId, int stage) { foreach (var p in Player.All) if (!p.NpcArcStage.TryGetValue(npcId, out var s) || s <= stage) p.NpcArcStage[npcId] = stage + 1; }
 
         public static bool TryInteract(Player p)
         {
+            if (Tier2Escort.TryInteract(p)) return true;
             if (TerrainMap.ZoneId == "perimeter" && Story.Step("runner") == 1 && Story.Near(p, Runner, 3)) { TalkRunner(); return true; }
             if (OnTier2 && Story.Step("bridge") == 1) { var sg = Sergeant(); if (sg != null && CombatantUtil.Distance(p, sg) <= 3) { TalkBridge(sg, p); return true; } }
             if (OnTier2 && Story.Near(p, King, 3) && TalkKing()) return true;
@@ -144,6 +145,7 @@ namespace GameCore
         public static void Tick()
         {
             if (Net.Mode == Net.Role.Client || Player.Current == null) return;
+            Tier2Escort.Tick();
             if (Story.IsDone("taken") && Story.Step("taken_day") == 0) Story.SetStep("taken_day", MacroState.Current.Day);
             // clear squads
             if (Story.Step("kingcall") == 1 && Tier1Story.Cleared("dock")) { Story.SetStep("kingcall", 2); Story.SetObjective("kingcall", "Tell the Scrap King the Dock is clear", King); }

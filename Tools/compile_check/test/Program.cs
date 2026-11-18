@@ -2549,7 +2549,7 @@ static class Program {
       } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
     }
     // Story 6a: the Scrap King's call and Bogdan
-    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 }, new LandmarkInstance { Name = Tier2Jobs.Bridge, X = 100, Y = 100 } };
+    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 }, new LandmarkInstance { Name = Tier2Jobs.Bridge, X = 100, Y = 100 }, new LandmarkInstance { Name = Tier2Escort.Repeater, X = 120, Y = 120 }, new LandmarkInstance { Name = Tier2Escort.Lip, X = 140, Y = 140 }, new LandmarkInstance { Name = Tier2Escort.Cut, X = 160, Y = 160 } };
       foreach (var m in marks) TerrainMap.Landmarks.Add(m);
       try {
         Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false;
@@ -2580,6 +2580,26 @@ static class Program {
         Check(Story.Step("runner") == 1, "Story 6a: the Runner wants a word once the King's job and the ambush job are done");
         At(Tier2Jobs.Runner); int rep0 = p.Reputation.TryGetValue("Raiders", out var rr) ? rr : 0; ruy = p.Ru; Tier2Jobs.TryInteract(p);
         Check(Story.IsDone("runner") && Story.Has("runner_free") && p.Ru == ruy + 600 && (p.Reputation.TryGetValue("Raiders", out var rr2) ? rr2 : 0) < rep0 && p.NpcArcStage["smugglers_run"] == 4, "Story 6a: free the Runner: paid, the King turns on you, the arc moves on");
+        // 6c: the trail and the escort
+        Tier2Jobs.Tick();
+        Check(Story.Step("trail") == 1 && Alive("repeater") == 5, "Story 6c: Pavel's radio: five Husks hold the Radio Repeater");
+        Kill("repeater"); Tier2Jobs.Tick();
+        Check(Story.Step("trail") == 2, "Story 6c: the Repeater cleared: examine it");
+        p.X = 120; p.Y = 121; ruy = p.Ru; Tier2Jobs.TryInteract(p);
+        Check(Story.IsDone("trail") && p.Ru == ruy + 600 && GreyRobes.Present, "Story 6c: the broadcast is the canister's signal; robed figures on the valley road");
+        GreyRobes.Reset(); EncounterState.Enemies.RemoveAll(e => GreyRobes.Is(e));
+        Tier2Jobs.Tick();
+        Check(Story.Step("escort") == 1, "Story 6c: trail done and the bridge dealt with: Pavel is waiting");
+        At(Tier1Story.Medic); Tier2Jobs.TryInteract(p);
+        Check(Story.Step("escort") == 2 && Tier1Story.PavelWithYou, "Story 6c: Pavel walks with you");
+        p.X = 140; p.Y = 141; Tier2Jobs.Tick();
+        Check(Alive("snipers") == 2 && Story.Has("snipers_placed"), "Story 6c: two Contractor snipers on the Lip");
+        p.X = 160; p.Y = 161; Tier2Jobs.Tick();
+        var cp = EncounterState.Enemies.OfType<HumanEnemy>().First(e => e.Name == "Checkpoint Raider"); p.X = cp.X; p.Y = cp.Y + 1; ruy = p.Ru; p.Ru = System.Math.Max(p.Ru, 400); ruy = p.Ru; Tier2Jobs.TryInteract(p);
+        Check(Story.Has("cut_passed") && p.Ru == ruy - 400, "Story 6c: the road cut: the toll paid, the skinny one goes too");
+        Tier2Jobs.ZoneOverride = null; Tier1Story.ZoneOverride = MacroMapDatabase.MapOf("scavengers_hub"); ruy = p.Ru; Tier2Jobs.Tick(); Tier1Story.ZoneOverride = null;
+        Check(Story.IsDone("escort") && Story.Has("tier2_done") && Story.Step("brute2") == 1 && p.Ru == ruy + 1200 && !Companion.Alive, "Story 6c: the Hub: Pavel safe, Yefim asks for the Brute");
+        Companion.Current = null;
       } finally { Tier2Jobs.ZoneOverride = null; foreach (var m in marks) TerrainMap.Landmarks.Remove(m); EncounterState.Enemies.RemoveAll(e => e is HumanEnemy h && h.FactionName == "Raiders" && !e.IsAlive()); MacroState.Current.StoryFlags.Clear(); }
     }
     // Story 5b: "those"

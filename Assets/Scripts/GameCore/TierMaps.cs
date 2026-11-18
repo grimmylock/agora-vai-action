@@ -573,6 +573,7 @@ namespace GameCore
             Sandbags(c, 116, 4, 8, 4, 0); c.Put(118, 5, ScatterCover, "crate");
             c.Clear(95, 0, 11, 14, Gravel); c.RectHeight(95, 0, 11, 14, 0);   // Batch 125: the cut is down at the valley's level (it was left 5 high on the rock - the road to the Hub couldn't be walked)
             c.Exit("scavengers_hub", 100, 0);
+            c.Landmark("Road Cut Checkpoint", 100, 9);   // Story 6c: the Raiders' toll on the road up to the Hub
             // the radio repeater on the rim
             c.Put(176, 5, Solid, "antenna").Put(177, 6, ScatterCover, "crate");
             c.Landmark("Radio Repeater", 176, 7);
