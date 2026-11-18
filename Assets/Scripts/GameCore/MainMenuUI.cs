@@ -145,6 +145,9 @@ namespace GameCore
             var fr = fill.GetComponent<RectTransform>(); fr.offsetMin = new Vector2(2, 2); fr.offsetMax = new Vector2(-2, -2);
             Text(fill.transform, "CreditsTitle", new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.96f), "CREDITS", true, 22, HudView.Yellow);
             Text(fill.transform, "CreditsText", new Vector2(0.06f, 0.14f), new Vector2(0.94f, 0.86f), CreditsText, false, 15, HudView.Cream, TextAlignmentOptions.TopLeft);
+            // 2026-11-18: the language (Loc.cs, Unity2D/LocHook.cs): one button, cycles English / Português (Brasil)
+            var lang = UIBuildUtil.CreateButton(fill.transform, "LanguageButton", new Vector2(0.56f, 0.88f), new Vector2(0.94f, 0.96f), "Language / Idioma: " + Loc.Label(Loc.Lang), () => Loc.Cycle());
+            _langLabel = lang.GetComponentInChildren<TextMeshProUGUI>();
             var back = UIBuildUtil.CreateButton(fill.transform, "BackButton", new Vector2(0.38f, 0.03f), new Vector2(0.62f, 0.11f), "Back", () => _creditsPanel.SetActive(false));
             back.GetComponent<Image>().color = HudView.Lip;
             _creditsPanel.SetActive(false);
@@ -172,7 +175,7 @@ namespace GameCore
             _optionsPanel.SetActive(false);
         }
 
-        string _rebinding;
+        string _rebinding; TextMeshProUGUI _langLabel;
         readonly System.Collections.Generic.List<(string name, TextMeshProUGUI label)> _binds = new System.Collections.Generic.List<(string, TextMeshProUGUI)>();
 
         private void Update()
@@ -183,6 +186,7 @@ namespace GameCore
                 var key = Keybinds.AnyPressed(Keyboard.current);
                 if (key != Key.None) { if (key != Key.Escape) Keybinds.Set(_rebinding, key); _rebinding = null; }
             }
+            if (_langLabel != null) { string want = "Language / Idioma: " + Loc.Label(Loc.Lang); if (_langLabel.text != want) _langLabel.text = want; }
             foreach (var (name, label) in _binds)
                 if (label != null) label.text = _rebinding == name ? $"{name.ToUpperInvariant()}: press a key..." : $"{(name == "slow" ? "BULLET TIME" : name.ToUpperInvariant())}: {(name == "parry" ? Keybinds.Parry : name == "slow" ? Keybinds.Slow : Keybinds.Search)}";
             if (_log == null) _log = GameObject.Find("CombatLogBackground");

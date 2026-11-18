@@ -27,6 +27,7 @@ namespace GameCore
             "F: parry (melee weapon in hand)\n" +
             "G: search anomaly / area / quest (F/G: Options)\n" +
             "Q: switch ammo   U: flashlight\n" +
+            "T: take out a grenade (left click throws)\n" +
             "Z: rest (safe zone/campfire)   B: shop\n" +
             "J: quests  M: the Zone  P: character  I: pack\n" +
             "Mouse wheel: zoom   ESC: pause\n" +

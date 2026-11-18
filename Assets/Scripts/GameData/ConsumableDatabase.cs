@@ -42,9 +42,9 @@ namespace GameData
             ["bandage"] = new ConsumableDef { Id = "bandage", Name = "Bandage", CureBleeding = true, Description = "Stops bleeding." },
             ["radBlockPill"] = new ConsumableDef { Id = "radBlockPill", Name = "Rad-Block Pill", CureRadiation = true, Description = "Purges radiation status." },
             ["mre"] = new ConsumableDef { Id = "mre", Name = "MRE", IsTravelRation = true, HealingPermanent = 100, HungerRestore = 4, ThirstRestore = 1, Description = "Restores 100 permanent HP, 4 hunger, and 1 thirst." },
-            ["fragGrenade"] = new ConsumableDef { Id = "fragGrenade", Name = "Frag Grenade", Throwable = "frag", Price = 250, Description = "400 damage to everyone in a 3x3 blast (Agility DC 13 halves it but knocks you prone). Wrecks light cover." },
+            ["fragGrenade"] = new ConsumableDef { Id = "fragGrenade", Name = "Frag Grenade", Throwable = "frag", Price = 250, Description = "400 damage at the centre of a 3x3 blast, half at the edge; everyone caught is knocked down. Wrecks light cover. It flies, then burns a short fuse: run or dive." },
             ["smokeGrenade"] = new ConsumableDef { Id = "smokeGrenade", Name = "Smoke Grenade", Throwable = "smoke", Price = 150, Description = "Blocks line of sight through a 3x3 area for about 12 seconds." },
-            ["flashbang"] = new ConsumableDef { Id = "flashbang", Name = "Flashbang", Throwable = "flash", Price = 200, Description = "Everyone in the 3x3 blast: Agility DC 13 or be blinded." },
+            ["flashbang"] = new ConsumableDef { Id = "flashbang", Name = "Flashbang", Throwable = "flash", Price = 200, Description = "Everyone within 4 tiles who can see it is blinded for 3 seconds (no damage)." },
             ["fieldRepairKit"] = new ConsumableDef { Id = "fieldRepairKit", Name = "Field Repair Kit", RepairKit = true, Price = 300, Description = "Out of combat: +1 Condition step to your weapon (or armor), never above Dirty." },
             ["energyDrink"] = new ConsumableDef { Id = "energyDrink", Name = "Energy Drink", HealingTemp = 100, Description = "Restores 100 temporary HP." },
         };

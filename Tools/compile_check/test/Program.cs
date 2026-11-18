@@ -64,6 +64,7 @@ static class Program {
     SquadFightChecks();
     PlayerThrowChecks();
     BodyGridChecks();
+    LocChecks();
     RescueChecks();
     SaveSlotChecks();
     NetChecks();
@@ -3790,6 +3791,28 @@ static class Program {
       EncounterState.Enemies.Clear(); Rt.On = false; Rt.Reset();
     }
     Gunplay.NoPierceForReport = false;
+  }
+  // 2026-11-18: the pt-BR translation (Loc.cs, Assets/Resources/Lang/pt-BR.txt)
+  static void LocChecks() {
+    string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../../Assets/Resources/Lang/pt-BR.txt"));
+    if (!System.IO.File.Exists(path)) { foreach (var cand in new[] { "/home/user/agora-vai-action/Assets/Resources/Lang/pt-BR.txt", "../../Assets/Resources/Lang/pt-BR.txt", "Assets/Resources/Lang/pt-BR.txt" }) if (System.IO.File.Exists(cand)) { path = cand; break; } }
+    Check(System.IO.File.Exists(path), "pt-BR: the table file exists");
+    string table = System.IO.File.ReadAllText(path); Loc.Lang = Loc.English; Loc.LoadTable(table);
+    Check(Loc.T("New Game") == "New Game", "pt-BR: English mode leaves text alone");
+    Loc.Lang = Loc.Portuguese;
+    Check(Loc.T("New Game") == "Novo Jogo" && Loc.T("NEW GAME") == "NOVO JOGO" && Loc.T("new game") == "Novo Jogo", "pt-BR: exact lines, an ALL-CAPS source gives an ALL-CAPS translation");
+    Check(Loc.T("Looted everything from Raider 3's body.") == "Você saqueou tudo do corpo de Raider 3.", $"pt-BR: a pattern line puts the captured piece back ({Loc.T("Looted everything from Raider 3's body.")})");
+    Check(Loc.T("Perfect parry (2/3).") == "Aparo perfeito (2/3).", "pt-BR: numbers inside a pattern");
+    Check(Loc.Text("<color=#e0c050>PAUSED - ESC</color>") == "<color=#e0c050>PAUSADO - ESC</color>", "pt-BR: UI text keeps its rich-text tags");
+    Check(Loc.Text("Basic Stim\nHostile") != null && Loc.Text("Basic Stim\n").Length > 0, "pt-BR: multi-line text");
+    Check(Loc.Text("BLEEDING\nPRONE") == "SANGRANDO\nNO CHÃO", $"pt-BR: line by line ({Loc.Text("BLEEDING\nPRONE")})");
+    Check(Loc.T("A line that is not in the table.") == "A line that is not in the table.", "pt-BR: a missing line stays English");
+    Check(Loc.T("  New Game  ") == "  Novo Jogo  ", "pt-BR: surrounding spaces are kept");
+    Check(Loc.Count > 500, $"pt-BR: the table has {Loc.Count} lines ({Loc.PatternCount} patterns)");
+    // every pattern's Portuguese side uses only placeholders its English side has
+    bool placeholdersOk = true; foreach (var line in table.Split('\n')) { if (line.Length == 0 || line[0] == '#') continue; int tab = line.IndexOf('\t'); if (tab < 0) continue; string en = line.Substring(0, tab), pt = line.Substring(tab + 1); int n = System.Text.RegularExpressions.Regex.Matches(en, "\\{\\}").Count; foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(pt, "\\{(\\d)\\}")) if (int.Parse(m.Groups[1].Value) > n || int.Parse(m.Groups[1].Value) < 1) placeholdersOk = false; if (n > 0 && !pt.Contains("{1}") && n == 1 && pt.Length > 0) placeholdersOk = placeholdersOk && true; }
+    Check(placeholdersOk, "pt-BR: every {N} on a Portuguese side exists on its English side");
+    Loc.Lang = Loc.English; Loc.LoadTable(null);
   }
   static void RtChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();

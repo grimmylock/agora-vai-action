@@ -1,0 +1,674 @@
+# ---- menu ----
+New Game	Novo Jogo
+Continue	Continuar
+Load Game	Carregar Jogo
+Testing Ground	Campo de Testes
+Survival	Sobrevivência
+Options	Opções
+Credits	Créditos
+Quit	Sair
+Back	Voltar
+CONTROLS	CONTROLES
+CHARACTERS	PERSONAGENS
+CREDITS	CRÉDITOS
+Load	Carregar
+Delete	Excluir
+Sure?	Tem certeza?
+None	Nenhum
+No characters yet.	Nenhum personagem ainda.
+i don't mind	tanto faz
+Made by	Feito por
+Yan, with Claude.	Yan, com o Claude.
+Music and ambience	Música e ambiência
+Sound - CC-BY 3.0	Som - CC-BY 3.0
+Sound - CC0, with thanks	Som - CC0, com agradecimentos
+Effects	Efeitos
+- pixelfx by Patch and Hugo Duprez (MIT)	- pixelfx por Patch e Hugo Duprez (MIT)
+Fonts	Fontes
+- Silkscreen, Pixelify Sans (SIL Open Font License)	- Silkscreen, Pixelify Sans (Licença SIL Open Font)
+All found on OpenGameArt.org. Sounds trimmed, levelled and layered for this game.	Tudo encontrado em OpenGameArt.org. Sons cortados, nivelados e combinados para este jogo.
+Language	Idioma
+Language: {}	Idioma: {1}
+customizable in options	personalizável nas opções
+{}: press a key...	{1}: aperte uma tecla...
+BULLET TIME	TEMPO-BALA
+# ---- HUD ----
+I GEAR    J QUESTS    P CHARACTER    M ZONE    F1 CONTROLS	I EQUIPAMENTO    J MISSÕES    P PERSONAGEM    M ZONA    F1 CONTROLES
+TAB EXAMINE	TAB EXAMINAR
+PAUSED - ESC	PAUSADO - ESC
+PAUSED	PAUSADO
+ESC to resume	ESC para continuar
+FIGHT	COMBATE
+EXPLORING	EXPLORANDO
+STAMINA {}   FOCUS {}	VIGOR {1}   FOCO {2}
+SURGE IN {}	SURTO EM {1}
+{} READY - LMB THROW, RMB CANCEL, T NEXT	{1} PRONTA - CLIQUE ESQ. ARREMESSA, CLIQUE DIR. CANCELA, T PRÓXIMA
+DAY {}  {}	DIA {1}  {2}
+DAY {}  {}  {}	DIA {1}  {2}  {3}
+UNDERGROUND	SUBTERRÂNEO
+INDOORS	INTERIOR
+DOWN {}s	CAÍDO {1}s
+broken	quebrado
+fractured	fraturado
+CONCUSSED	ATORDOADO
+USING {}s	USANDO {1}s
+REVIVING {}s	REANIMANDO {1}s
+BLEEDING	SANGRANDO
+TOXIC	TÓXICO
+RAD	RAD
+PRONE	NO CHÃO
+PINNED	ENCURRALADO
+WOUND	FERIDA
+UNARMED	DESARMADO
+JAMMED	TRAVADA
+BROKEN	QUEBRADA
+WORKING	FUNCIONANDO
+SINGLE	TIRO ÚNICO
+Standard	Padrão
+{}\n+{} SPARE	{1}\n+{2} RESERVA
+SPARE	RESERVA
+TIER {}	NÍVEL {1}
+FRIENDLY	AMIGÁVEL
+HOSTILE	HOSTIL
+UNAWARE	DESATENTO
+FOOD	COMIDA
+WATER	ÁGUA
+REST	SONO
+BELT	CINTO
+PARRY!	APARADO!
+DEFEATED	DERROTADO
+EXECUTE - E	EXECUTAR - E
+STAGGERED	CAMBALEANTE
+OPEN	ABERTO
+GUARD {}/{}	GUARDA {1}/{2}
+MASH  PARRY  TO  SHUT  ITS  JAWS!	APERTE  APARAR  PARA  FECHAR  SUAS  MANDÍBULAS!
+THE DROWNER	O AFOGADOR
+CLOSE  ESC	FECHAR  ESC
+# ---- pack and loot ----
+POCKETS	BOLSOS
+EQUIPPED	EQUIPADO
+WEAPON	ARMA
+SECOND	SECUNDÁRIA
+ARMOR	ARMADURA
+BACKPACK	MOCHILA
+TAKE	PEGAR
+TAKE ALL	PEGAR TUDO
+CLOSE	FECHAR
+{}'S BODY	CORPO DE {1}
+DOESN'T FIT - MAKE ROOM, OR X TO DROP	NÃO CABE - ABRA ESPAÇO, OU X PARA LARGAR
+DRAG to move, onto a slot to equip, out of a slot to unequip    R turn	ARRASTE para mover, sobre um espaço para equipar, para fora para desequipar    R girar
+RIGHT-CLICK use / equip / unequip    X drop    sights: onto the gun slot, C / V off    I close	CLIQUE DIREITO usar / equipar / desequipar    X largar    miras: sobre o espaço da arma, C / V tira    I fecha
+{} kg carried	{1} kg carregados
+\nC takes the sight off, V the laser	\nC tira a mira, V o laser
+Looted everything from {}'s body.	Você saqueou tudo do corpo de {1}.
+There is no room on the body.	Não há espaço no corpo.
+The {} doesn't go there.	{1} não vai aí.
+Put another suit on to take this one off (drag it onto ARMOR).	Vista outra armadura para tirar esta (arraste-a sobre ARMADURA).
+Put another pack on to swap (drag it onto BACKPACK).	Use outra mochila para trocar (arraste-a sobre MOCHILA).
+# ---- shop / character / quests ----
+BUY	COMPRAR
+SELL	VENDER
+Buy	Comprar
+Sell	Vender
+Repair	Consertar
+Upgrade	Melhorar
+Hire	Contratar
+Dismiss	Dispensar
+No shop here.	Não há loja aqui.
+Wandering Trader	Comerciante Andarilho
+{} (Tier {}) — RU: {}	{1} (Nível {2}) — RU: {3}
+-- Today's stock (Day {}) --	-- Estoque de hoje (Dia {1}) --
++{} more not shown	+{1} não exibidos
+{} isn't interested in trading right now.	{1} não quer negociar agora.
+{} won't trade with you - your reputation with the {} isn't good enough.	{1} não negocia com você - sua reputação com {2} não é boa o bastante.
+Hire a Wanderer to walk with you - {} RU	Contrate um Andarilho para te acompanhar - {1} RU
+{} walks with you ({} HP)	{1} anda com você ({2} PV)
+Repair {} ({})	Consertar {1} ({2})
+Repair {} ({}) - {} RU	Consertar {1} ({2}) - {3} RU
+(draw a gun first)	(saque uma arma primeiro)
+Strength	Força
+Perception	Percepção
+Agility	Agilidade
+Intelligence	Inteligência
+doors, heavy objects	portas, objetos pesados
+ambushes, anomalies, searching	emboscadas, anomalias, busca
+attacks, anomaly avoidance	ataques, evitar anomalias
+electronics, terminals, lore	eletrônicos, terminais, história
+Loadout	Equipamento inicial
+Starting perk	Vantagem inicial
+Into the Zone	Entrar na Zona
+Pick a perk	Escolha uma vantagem
+Name your character...	Dê um nome ao personagem...
+Pick one	Escolha uma
+Take it	Pegar
+Later (P)	Depois (P)
+Scavenger	Catador
+Ex-Military	Ex-Militar
+Freelance Trader	Comerciante Autônomo
+NEW SCAVENGER	NOVO CATADOR
+REPUTATION	REPUTAÇÃO
+(-3 Hostile, +3 Friendly)	(-3 Hostil, +3 Amigável)
+Hostile	Hostil
+Friendly	Amigável
+Neutral	Neutro
+PERKS	VANTAGENS
+Click a perk to read it.	Clique em uma vantagem para lê-la.
+Pick perk ({})	Escolher vantagem ({1})
+Stats - {} point(s) left	Atributos - {1} ponto(s) restante(s)
+NEXT RANK: {}	PRÓXIMO POSTO: {1}
+AVAILABLE HERE	DISPONÍVEL AQUI
+ACTIVE QUESTS	MISSÕES ATIVAS
+Accept	Aceitar
+Nothing on offer here right now.	Nada disponível aqui agora.
+No active quests.	Nenhuma missão ativa.
+STORY	HISTÓRIA
+Search the zone (F points the way)	Vasculhe a zona (F indica o caminho)
+Zone cleared	Zona limpa
+Clear all hostiles in-zone	Elimine todos os hostis na zona
+Done	Feito
+Pending	Pendente
+Kills {}/{}	Abates {1}/{2}
+Investigated	Investigado
+Progress: {}	Progresso: {1}
+YOU DIED	VOCÊ MORREU
+# ranks, factions words
+Rookie	Novato
+Experienced	Experiente
+Professional	Profissional
+Veteran	Veterano
+Expert	Especialista
+Master	Mestre
+Legend	Lenda
+# ---- items ----
+Basic Medkit	Kit Médico Básico
+Military Medkit	Kit Médico Militar
+Scientific Medkit	Kit Médico Científico
+Basic Stim	Estimulante Básico
+Military Stim	Estimulante Militar
+Scientific Stim	Estimulante Científico
+Splint	Tala
+Bandage	Atadura
+Rad-Block Pill	Pílula Anti-Rad
+MRE	Ração de Campo
+Frag Grenade	Granada de Fragmentação
+Smoke Grenade	Granada de Fumaça
+Flashbang	Granada de Luz
+Field Repair Kit	Kit de Reparo de Campo
+Energy Drink	Energético
+Restores 200 permanent HP.	Restaura 200 PV permanentes.
+Restores 400 permanent HP.	Restaura 400 PV permanentes.
+Restores 600 permanent HP.	Restaura 600 PV permanentes.
+Grants {} temporary HP for about 24 seconds.	Concede {1} PV temporários por cerca de 24 segundos.
+Sets a broken or fractured arm or leg (legs first).	Imobiliza um braço ou perna quebrado ou fraturado (pernas primeiro).
+Stops bleeding.	Estanca o sangramento.
+Purges radiation status.	Elimina a radiação.
+Restores 100 permanent HP, 4 hunger, and 1 thirst.	Restaura 100 PV permanentes, 4 de fome e 1 de sede.
+400 damage at the centre of a 3x3 blast, half at the edge; everyone caught is knocked down. Wrecks light cover. It flies, then burns a short fuse: run or dive.	400 de dano no centro de uma explosão 3x3, metade na borda; todos os atingidos caem. Destrói cobertura leve. Ela voa e depois queima um pavio curto: corra ou mergulhe.
+Blocks line of sight through a 3x3 area for about 12 seconds.	Bloqueia a linha de visão numa área 3x3 por cerca de 12 segundos.
+Everyone within 4 tiles who can see it is blinded for 3 seconds (no damage).	Todos a até 4 tiles que a vejam ficam cegos por 3 segundos (sem dano).
+Out of combat: +1 Condition step to your weapon (or armor), never above Dirty.	Fora de combate: +1 nível de condição na arma (ou armadura), nunca acima de Suja.
+Restores 100 temporary HP.	Restaura 100 PV temporários.
+Working	Funcionando
+Dirty	Suja
+Damaged	Danificada
+Small Canvas Sack (+10kg)	Saco de Lona Pequeno (+10kg)
+Tourist Frame (+50kg)	Armação de Turista (+50kg)
+# ---- controls and tutorials ----
+Explore freely: click a tile to move, click an enemy to fire. Green markers are exits to connected zones - walk onto one to cross over.	Explore livremente: clique num tile para andar, clique num inimigo para atirar. Marcadores verdes são saídas para zonas conectadas - ande até um para atravessar.
+E interacts with a nearby object, F searches the area for hidden routes, R reloads, B opens the shop in a Safe Zone.	E interage com um objeto próximo, F vasculha a área atrás de rotas escondidas, R recarrega, B abre a loja numa Zona Segura.
+F5 saves your game, F9 loads your last save.	F5 salva o jogo, F9 carrega o último save.
+# ---- the log: combat and body ----
+{} takes {} radiation damage from the pocket.	{1} sofre {2} de dano de radiação do bolsão.
+{} takes {} anomaly damage.	{1} sofre {2} de dano de anomalia.
+{} is shocked by a Livewire failure.	{1} leva um choque de uma falha de Fio Vivo.
+Toxic Bleed has been inflicted and will deal 50 HP every 6 seconds until treated.	Sangramento Tóxico aplicado: 50 PV a cada 6 segundos até ser tratado.
+{} is now prone and is knocked down.	{1} foi derrubado e está no chão.
+You comb the {} field.	Você vasculha o campo de {1}.
+Nothing in this one. Fields fill up again after a Surge.	Nada neste. Os campos se enchem de novo depois de um Surto.
+[ARTIFACT] You pull a {} out of the anomaly! (worth ~{} RU)	[ARTEFATO] Você tira {1} da anomalia! (vale ~{2} RU)
+The air ahead shimmers wrong. You stop.	O ar à frente cintila de um jeito errado. Você para.
+The detector chirps - there's something worth searching in there.	O detector apita - há algo que vale a pena vasculhar ali.
+{} bleeds for {} HP.	{1} sangra {2} PV.
+The bleeding stops on its own.	O sangramento para sozinho.
+Bleeding deals 50 HP damage.	O sangramento causa 50 de dano.
+Toxic Bleed deals 50 HP damage.	O Sangramento Tóxico causa 50 de dano.
+Temporary HP has expired.	Os PV temporários acabaram.
+Artifact passive regenerates {} HP.	O artefato regenera {1} PV.
+[SURVIVAL WARNING] You are critically low on {}	[AVISO DE SOBREVIVÊNCIA] Você está com {1} criticamente baixo
+Survival depletion deals {} HP damage.	A privação causa {1} de dano.
+{}: fractured {}.	{1}: {2} fraturado.
+[DOWN] You're down and bleeding out. Crawl to cover, use a stim to get up.	[CAÍDO] Você está caído e sangrando. Rasteje até uma cobertura, use um estimulante para levantar.
+You drag yourself back up.	Você se arrasta de volta para cima.
+You splint your {}.	Você imobiliza {1}.
+DODGED!	ESQUIVOU!
+{} drops to one knee. E next to him: execute.	{1} cai de joelhos. E ao lado dele: executar.
+You execute {}. Your Focus surges.	Você executa {1}. Seu Foco dispara.
+Behind the visor, a red light comes on.	Atrás da viseira, uma luz vermelha se acende.
+A smoke grenade hisses out of nowhere. When it clears, the body is gone.	Uma granada de fumaça chia do nada. Quando a fumaça baixa, o corpo sumiu.
+{} takes an ARM wound: -2 to attack rolls until bandaged.	{1} sofre um ferimento no BRAÇO: mira pior até ser enfaixado.
+{} takes a LEG wound: a limp until bandaged.	{1} sofre um ferimento na PERNA: manca até ser enfaixado.
+{} takes a TORSO wound and is bleeding.	{1} sofre um ferimento no TRONCO e está sangrando.
+{} takes a HEAD wound.	{1} sofre um ferimento na CABEÇA.
+{} is already walking with you.	{1} já está andando com você.
+Hiring a Wanderer costs {} RU.	Contratar um Andarilho custa {1} RU.
+{} heads back to camp.	{1} volta para o acampamento.
+[ALERT] {} is down. Your partner is gone.	[ALERTA] {1} caiu. Seu parceiro se foi.
+{} gives up the hunt.	{1} desiste da caçada.
+[ALERT] You've broken contact. They're still out there, watching.	[ALERTA] Você rompeu o contato. Eles ainda estão lá fora, observando.
+A squadmate is dead. Get them back on their feet once the fighting's over (hold E over them).	Um colega de equipe morreu. Levante-o quando a luta acabar (segure E sobre ele).
+Your squadmate gasps back to life.	Seu colega volta à vida com um arquejo.
+[SQUAD WIPED] The Zone takes its toll. You come to by the camp fire.	[EQUIPE ELIMINADA] A Zona cobra seu preço. Você acorda junto à fogueira do acampamento.
+[YOU WERE SAVED] Someone found you and dragged you back to the camp fire.	[VOCÊ FOI SALVO] Alguém te achou e te arrastou de volta à fogueira.
+There is a note pinned to your jacket: "{}"	Há um bilhete preso na sua jaqueta: "{1}"
+You find a medkit and a bandage beside you. {}	Você encontra um kit médico e uma atadura ao seu lado. {1}
+You make camp by the fire. If the whole squad falls, this is where you'll wake.	Você faz acampamento junto ao fogo. Se a equipe toda cair, é aqui que você vai acordar.
+{} goes through the gear you left behind and pockets it.	{1} revira o equipamento que você deixou para trás e o guarda.
+You lean on {}: {} vs DC 12.	Você pressiona {1}: {2} contra CD 12.
+{} gives you nothing but a sullen stare.	{1} não te dá nada além de um olhar emburrado.
+"I'm all that's left of us." {} has nothing more to give.	"Só sobrei eu de nós." {1} não tem mais nada a oferecer.
+You wave {} off. They don't wait for you to change your mind.	Você dispensa {1}. Ele não espera você mudar de ideia.
+{} {} and is SHAKEN (falls back).	{1} {2} e fica ABALADO (recua).
+{} ({} {}) BREAKS and runs!	{1} ({2} {3}) CEDE e foge!
+{} ({} {}) throws down their weapon and SURRENDERS. Click them to take their gear.	{1} ({2} {3}) larga a arma e SE RENDE. Clique para pegar o equipamento.
+{} gets back up.	{1} se levanta.
+{} rallies {} - steady again.	{1} reúne {2} - firme de novo.
+{} shimmers and vanishes again.	{1} cintila e some de novo.
+Thick smoke blocks sight through the area.	Fumaça densa bloqueia a visão na área.
+{} is blinded by the flash.	{1} é cegado pelo clarão.
+{} is caught in the {} - {} damage.	{1} é pego pela {2} - {3} de dano.
+{} throws the {}.	{1} arremessa {2}.
+{} throw the {}.	{1} arremessa {2}.
+You throw the {}.	Você arremessa {1}.
+The synthesizer's hopper is empty. It needs an artifact to work with.	O funil do sintetizador está vazio. Ele precisa de um artefato para trabalhar.
+Not with bullets flying.	Não com balas voando.
+The round pings off {}	O tiro ricocheteia em {1}
+{} hits {} in the {} for {}.	{1} acerta {2} em {3}: {4}.
+{} scrambles to pick up their {}	{1} se atrapalha para pegar {2}
+{} is too far to shoot.	{1} está longe demais para atirar.
+{} clears a jam.	{1} destrava a arma.
+{} reloads their weapon.	{1} recarrega a arma.
+{} drops their {} ({}, {} rounds still loaded).	{1} larga {2} ({3}, {4} munições ainda carregadas).
+You can't interact right now.	Você não pode interagir agora.
+No interactive object nearby to interact with.	Nenhum objeto interativo por perto.
+{} successfully interacted with.	{1} - interação bem-sucedida.
+Gained {} RU.	Ganhou {1} RU.
+Recovered loot: {}.	Saque recuperado: {1}.
+A new path has been opened.	Um novo caminho foi aberto.
+{} interaction failed.	Falha na interação com {1}.
+The lock shrieks an alarm.	A fechadura dispara um alarme estridente.
+Metal clangs as it holds.	O metal retine, mas aguenta.
+A charged swing (x{}).	Um golpe carregado (x{1}).
+You wind up the {}...	Você arma o golpe com {1}...
+{} wrenches the {} out.	{1} arranca {2}.
+You pull the {} out.	Você puxa {1} para fora.
+{} panics and tries to fall back!	{1} entra em pânico e tenta recuar!
+You dive under {}'s strike.	Você mergulha por baixo do golpe de {1}.
+{} hits {} for {} {}	{1} acerta {2}: {3} {4}
+{} is slashed open and starts bleeding.	{1} é rasgado e começa a sangrar.
+The bite festers: {} suffers Toxic Bleed.	A mordida infecciona: {1} sofre Sangramento Tóxico.
+{} fades back into cover after the strike.	{1} some de volta na cobertura depois do golpe.
+The acid burns: you suffer Toxic Bleed.	O ácido queima: você sofre Sangramento Tóxico.
+The boulder crashes into you!	A pedra se choca contra você!
+{} knocks you down!	{1} derruba você!
+{}'s jaws tear you open: you are bleeding.	As mandíbulas de {1} te dilaceram: você está sangrando.
+{} drops a Mutant Part worth {} RU.	{1} solta uma Parte de Mutante que vale {2} RU.
+Something glints in its den: {} RU.	Algo brilha na toca: {1} RU.
+In its den you find: {}.	Na toca você encontra: {1}.
+Co-op: hosting. Join code: {}	Co-op: hospedando. Código de entrada: {1}
+Co-op: joined the host's game.	Co-op: você entrou no jogo do anfitrião.
+Co-op: a friend joined.	Co-op: um amigo entrou.
+Co-op: a friend left.	Co-op: um amigo saiu.
+The {} doesn't fit the {}.	{1} não serve em {2}.
+{} fitted to the {}.	{1} instalado em {2}.
+{} taken off the {}.	{1} removido de {2}.
+Perfect parry ({}/{}).	Aparo perfeito ({1}/{2}).
+Blocked.	Bloqueado.
+PERFECT PARRY - he's open!	APARO PERFEITO - ele está aberto!
+Perfect parry!	Aparo perfeito!
+ADRENALINE SURGE! +20 temporary HP.	SURTO DE ADRENALINA! +20 PV temporários.
+That belt slot is already empty.	Esse espaço do cinto já está vazio.
+Unequipped {} from belt slot {}.	{1} removido do espaço {2} do cinto.
+Equipped {} to belt slot {}.	{1} equipado no espaço {2} do cinto.
+Your current armor does not have enough belt slots unlocked.	Sua armadura atual não tem espaços de cinto suficientes.
+Equipped weapon: {} (range {} tiles).	Arma equipada: {1} (alcance {2} tiles).
+Equipped armor: {}. Phys-DR {}, Anom-DR {}{}	Armadura equipada: {1}. RF {2}, RA {3}{4}
+You don't own that weapon.	Você não possui essa arma.
+Your {} goes back in the pack: a sniper rifle only pairs with a pistol or a blade.	{1} volta para a mochila: um fuzil de precisão só combina com pistola ou lâmina.
+With a sniper rifle, only a pistol or a blade fits as the second weapon.	Com um fuzil de precisão, só uma pistola ou lâmina serve como arma secundária.
+Second weapon: {}. Swap with Y.	Arma secundária: {1}. Troque com Y.
+No second weapon (Second in the pack).	Sem arma secundária (Secundária na mochila).
+You draw your {}.	Você saca {1}.
+You don't own that armor.	Você não possui essa armadura.
+{} doesn't fit the new armor - back in your pack.	{1} não serve na nova armadura - de volta à mochila.
+Equipped detector: {}.	Detector equipado: {1}.
+No {} available to use.	Nenhum(a) {1} disponível para usar.
+You're down - only a stim gets you up.	Você está caído - só um estimulante te levanta.
+Restored {} permanent HP.	Restaurou {1} PV permanentes.
+Gained {} temporary HP for about {} seconds.	Ganhou {1} PV temporários por cerca de {2} segundos.
+You bandage your {} wound.	Você enfaixa o ferimento em {1}.
+Bleeding has been stopped.	O sangramento foi estancado.
+No bleeding to treat.	Nenhum sangramento para tratar.
+Nothing broken to splint.	Nada quebrado para imobilizar.
+Irradiation has been removed.	A irradiação foi removida.
+No radiation to treat.	Nenhuma radiação para tratar.
+Restored {} hunger.	Restaurou {1} de fome.
+Restored {} thirst.	Restaurou {1} de sede.
++{} XP: {}.	+{1} XP: {2}.
+-{} XP.	-{1} XP.
+[MILESTONE] {}: +{} XP.	[MARCO] {1}: +{2} XP.
+[RANK UP] You are now {}.	[NOVO POSTO] Você agora é {1}.
+You can pick a new perk (P).	Você pode escolher uma nova vantagem (P).
+You've cleared {}.	Você limpou {1}.
+[DUNGEON CLEARED] {} ({} so far).	[MASMORRA LIMPA] {1} ({2} até agora).
+That was the end of their story.	Esse foi o fim da história deles.
+You need the Gunslinger perk to fight two-handed.	Você precisa da vantagem Pistoleiro para lutar com duas armas.
+Off hand: {}. Left mouse fires the right-hand gun, right mouse the left.	Mão esquerda: {1}. Botão esquerdo do mouse atira com a arma da direita, o direito com a da esquerda.
+Perk gained: {} - {}	Vantagem obtida: {1} - {2}
+Reputation with the {} is now {} ({}).	Sua reputação com {1} agora é {2} ({3}).
+No room in your pack for the {} - make room or drop something (I).	Sem espaço na mochila para {1} - abra espaço ou largue algo (I).
+Dropped {} x{} on the ground.	Largou {1} x{2} no chão.
+You can't move right now.	Você não pode se mover agora.
+You stand up from prone.	Você se levanta do chão.
+Nothing to load.	Nada para carregar.
+Loading {}.	Carregando {1}.
+You have no other ammo type to load.	Você não tem outro tipo de munição para carregar.
+Your armor has no mod slots.	Sua armadura não tem espaços de modificação.
+Fitted {} to your {}.	{1} instalado em {2}.
+You shoulder the {}.	Você apoia {1} no ombro.
+No time for repairs mid-fight.	Sem tempo para reparos no meio da luta.
+You patch up your {}: now {}.	Você remenda {1}: agora {2}.
+Nothing a field kit can fix - a kit never gets gear above Dirty. See a technician.	Nada que um kit de campo conserte - um kit nunca leva o equipamento acima de Suja. Procure um técnico.
+You can't reload right now.	Você não pode recarregar agora.
+It won't budge: something's in the way.	Não se mexe: algo está no caminho.
+Quest accepted: {}	Missão aceita: {1}
+[QUEST] You found what you were looking for: "{}".	[MISSÃO] Você achou o que procurava: "{1}".
+[QUEST] Nothing here. What you're after is somewhere else in this zone.	[MISSÃO] Nada aqui. O que você procura está em outro lugar desta zona.
+[QUEST] You took too long - the pay is halved.	[MISSÃO] Você demorou demais - o pagamento caiu pela metade.
+Quest complete: {} (+{} RU, +{} reputation with the {})	Missão cumprida: {1} (+{2} RU, +{3} de reputação com {4})
+[RUMOR] {}	[BOATO] {1}
+You get your friend back on their feet.	Você coloca seu amigo de pé.
+You bled out.	Você sangrou até a morte.
+You stop to shoot.	Você para para atirar.
+You put the grenade away.	Você guarda a granada.
+You have nothing to throw.	Você não tem nada para arremessar.
+{} ready - left click to throw, right click to put it away, T for the next kind.	{1} pronta - clique esquerdo arremessa, direito guarda, T para o próximo tipo.
+Loading...	Carregando...
+Too winded to dive.	Sem fôlego para mergulhar.
+Not enough Focus for bullet time ({}/{}).	Foco insuficiente para o tempo-bala ({1}/{2}).
+Already busy.	Já está ocupado.
+Using {}...	Usando {1}...
+Nothing to save yet.	Nada para salvar ainda.
+Survival runs aren't saved.	Partidas de Sobrevivência não são salvas.
+Cannot save while dead.	Não é possível salvar morto.
+Game saved.	Jogo salvo.
+Save failed - see the console for details.	Falha ao salvar - veja o console.
+No save file found.	Nenhum save encontrado.
+Game loaded.	Jogo carregado.
+[ALERT] Someone shouts at you: "Hey! Stay right there!" {} Raiders are walking over.	[ALERTA] Alguém grita com você: "Ei! Fique aí mesmo!" {1} Saqueadores estão vindo.
+{}'s gang gives up on you.	O bando de {1} desiste de você.
+"Wrong answer." {}'s gang opens fire!	"Resposta errada." O bando de {1} abre fogo!
+That gang leaves you alone for a day.	Esse bando te deixa em paz por um dia.
+Draw the gun you want rounds for first.	Saque primeiro a arma para a qual quer munição.
+Not enough RU to buy {}	RU insuficiente para comprar {1}
+Bought {} {}.	Comprou {1} {2}.
+Bought {} and added to inventory.	Comprou {1} e guardou no inventário.
+Equipped backpack: {}. Capacity +{}kg.	Mochila equipada: {1}. Capacidade +{2}kg.
+Repairing {} costs {} RU - not enough.	Consertar {1} custa {2} RU - insuficiente.
+The technician fixes up your {} for {} RU. Good as new.	O técnico conserta {1} por {2} RU. Novo em folha.
+Nobody will buy the {} - and you shouldn't sell it.	Ninguém compra {1} - e você não deveria vendê-lo.
+Sold {}x {} for {} RU.	Vendeu {1}x {2} por {3} RU.
+{} attempts {} check: {} -> {}	{1} tenta teste de {2}: {3} -> {4}
+[SQUAD] A {} force takes position in {}.	[ESQUADRÃO] Uma força de {1} toma posição em {2}.
+[RADIO] A {} squad in {} answers: they're on their way.	[RÁDIO] Um esquadrão de {1} em {2} responde: estão a caminho.
+[ZONE EVENT] A caravan has pulled into {} - extra stock today.	[EVENTO DA ZONA] Uma caravana chegou a {1} - estoque extra hoje.
+[MOVEMENT] {} squad moves on into {}.	[MOVIMENTO] O esquadrão de {1} segue para {2}.
+[MOVEMENT] {} comes in from {}.	[MOVIMENTO] {1} chega vindo de {2}.
+[MOVEMENT] {} squad leaves {} for {}.	[MOVIMENTO] O esquadrão de {1} sai de {2} rumo a {3}.
+[OFFSCREEN WAR] {} and {} clash in {}.	[GUERRA À DISTÂNCIA] {1} e {2} se enfrentam em {3}.
+[OFFSCREEN WAR] {} squad has been destroyed.	[GUERRA À DISTÂNCIA] O esquadrão de {1} foi destruído.
+[OFFSCREEN WAR] Salvage left behind in {}.	[GUERRA À DISTÂNCIA] Despojos deixados em {1}.
+{} ahead. They haven't seen you - shoot first for a surprise round, or sneak (N) round them.	{1} à frente. Eles não viram você - atire primeiro para um tiro surpresa, ou contorne furtivamente (N).
+[ALERT] {} has spotted the Player!	[ALERTA] {1} avistou o Jogador!
+{}'s call for help is cut off.	O pedido de ajuda de {1} é cortado.
+[ALERT] {} is yelling into the radio for backup!	[ALERTA] {1} está gritando no rádio por reforços!
+Player has fallen. Combat ends.	O jogador caiu. O combate termina.
+All hostiles down. Area secured.	Todos os hostis abatidos. Área segura.
+{} is broken and can't fire until it's repaired.	{1} está quebrada e não atira até ser consertada.
+{} is jammed and cannot fire.	{1} está travada e não consegue atirar.
+{} magazine is already full.	O carregador de {1} já está cheio.
+No {} left to reload.	Não resta {1} para recarregar.
+{} reloaded {} rounds ({} from stash). Magazine is now {}/{}.	{1} recarregou {2} munições ({3} da reserva). Carregador agora {4}/{5}.
+{} is not jammed.	{1} não está travada.
+{} jam is cleared.	{1} foi destravada.
+Time passes on the road.	O tempo passa na estrada.
+You can't rest with enemies around.	Você não consegue descansar com inimigos por perto.
+Nowhere safe to sleep here. Rest in a Safe Zone or by a campfire.	Nenhum lugar seguro para dormir aqui. Descanse numa Zona Segura ou junto a uma fogueira.
+You sleep through the night and wake up patched up.	Você dorme a noite toda e acorda recuperado.
+=== Day {} ===	=== Dia {1} ===
+[ZONE EVENT] Radio chatter: mutants are migrating through {}.	[EVENTO DA ZONA] Conversa no rádio: mutantes estão migrando por {1}.
+[SURGE] The sky turns red and sirens wail. 3 rounds to get indoors, underground or into a Safe Zone!	[SURTO] O céu fica vermelho e sirenes soam. 3 rodadas para entrar num prédio, descer ao subsolo ou chegar a uma Zona Segura!
+[SURGE] The wave passes overhead. You're safe in here.	[SURTO] A onda passa por cima. Aqui você está seguro.
+[SURGE] Caught in the open! {} anomalous damage and you're Irradiated.	[SURTO] Pego a céu aberto! {1} de dano anômalo e você está Irradiado.
+A rifle barrel in your back. Not now.	Um cano de fuzil nas suas costas. Agora não.
+{} is on this map - walk there.	{1} está neste mapa - vá andando.
+The way into {} is locked fast. Somebody round here must have the key.	A entrada para {1} está trancada. Alguém por aqui deve ter a chave.
+Used a travel ration to ease the journey.	Usou uma ração de viagem para facilitar o caminho.
+[SURVIVAL] One more crossing like that and you'll be running on empty - eat, drink or rest (Z) first.	[SOBREVIVÊNCIA] Mais uma travessia assim e você estará no limite - coma, beba ou descanse (Z) antes.
+Nothing here. If there's a hidden way, it's somewhere else in this zone.	Nada aqui. Se há um caminho escondido, está em outro lugar desta zona.
+You discover a hidden path to {}!	Você descobre um caminho escondido para {1}!
+The ground to the {} looks disturbed - something's over there.	O chão a {1} parece remexido - há algo lá.
+Cover at ({}, {}) takes a hit ({}/{} left).	A cobertura em ({1}, {2}) é atingida ({3}/{4} restantes).
+The door at ({}, {}) is blown off its hinges.	A porta em ({1}, {2}) é arrancada das dobradiças.
+The barrel at ({}, {}) explodes!	O barril em ({1}, {2}) explode!
+The cover at ({}, {}) is shot to rubble.	A cobertura em ({1}, {2}) vira entulho a tiros.
+{} throws down their gear to run faster!	{1} larga o equipamento para correr mais rápido!
+[SURVIVAL] The boss is down. Tier {}: the waves get harder.	[SOBREVIVÊNCIA] O chefe caiu. Nível {1}: as ondas ficam mais difíceis.
+[SURVIVAL] Wave {}: {} mutants.	[SOBREVIVÊNCIA] Onda {1}: {2} mutantes.
+{} opens a door.	{1} abre uma porta.
+The Gaunt screams.	O Gaunt grita.
+Something in the vat opens its eyes.	Algo na cuba abre os olhos.
+The air bends toward the vat.	O ar se curva em direção à cuba.
+It heaves the body up onto the slab.	Ele joga o corpo sobre a laje.
+The wave drags you into the pool...	A onda te arrasta para dentro da piscina...
+The water swells under the platform.	A água incha sob a plataforma.
+It bursts out and coils round the platform!	Ele irrompe e se enrosca na plataforma!
+The coils crackle with current.	As espirais estalam de eletricidade.
+# ---- banter ----
+huh?	hã?
+...You hear that?	...Ouviu isso?
+Hold on.	Peraí.
+Something moved.	Algo se mexeu.
+Who's there?	Quem está aí?
+SOMEONE'S HERE!	TEM ALGUÉM AQUI!
+Fresh meat!	Carne fresca!
+Over there! Get 'em!	Ali! Peguem eles!
+We got a visitor!	Temos visita!
+Look alive, we got company!	Atenção, temos companhia!
+CONTACT!	CONTATO!
+Hostile spotted!	Hostil avistado!
+Movement! Weapons up!	Movimento! Armas em punho!
+Contact front!	Contato à frente!
+Intruder! Engage!	Intruso! Atacar!
+AN UNBELIEVER!	UM INFIEL!
+The Pillar shows us a sinner!	O Pilar nos mostra um pecador!
+Cleanse it!	Purifiquem!
+Trespasser on holy ground!	Invasor em terra sagrada!
+Heads up, we're not alone!	Atenção, não estamos sozinhos!
+Over there!	Ali!
+Watch it, someone's coming!	Cuidado, vem alguém!
+Heh. Our friend.	Heh. Nosso amigo.
+You again? Good.	Você de novo? Ótimo.
+Easy, it's one of ours.	Calma, é um dos nossos.
+Brought us anything?	Trouxe alguma coisa pra nós?
+Carry on.	Continue.
+Good to see you.	Bom te ver.
+Stay sharp out there.	Fique esperto lá fora.
+Friendly. Let them through.	Amigo. Deixem passar.
+Walk in its light.	Ande em sua luz.
+The Pillar knows you.	O Pilar conhece você.
+Peace, faithful one.	Paz, fiel.
+Hey.	Ei.
+Hey there.	Oi, você.
+Good to see a friendly face.	Bom ver um rosto amigo.
+Stay safe out there.	Se cuide lá fora.
+Hey, hunter.	Ei, caçador.
+Keep walking.	Continue andando.
+What are you looking at?	O que você está olhando?
+Don't get ideas.	Nem pense nisso.
+Move along.	Circulando.
+Keep moving.	Continue andando.
+Eyes front, civilian.	Olhe pra frente, civil.
+Don't loiter.	Sem ficar à toa.
+Hands where we can see them.	Mãos onde a gente possa ver.
+You are watched.	Você está sendo observado.
+Watch yourself, rookie.	Se cuida, novato.
+Mind the road.	Cuidado com a estrada.
+Evening.	Boa noite.
+You see the boots on that last one?	Viu as botas daquele último?
+Too small. Story of my life.	Pequena demais. A história da minha vida.
+How much for the rifle?	Quanto pelo fuzil?
+More than you've got.	Mais do que você tem.
+Boss says we move at dawn.	O chefe diz que saímos ao amanhecer.
+Boss says a lot of things.	O chefe diz muita coisa.
+Who ate the last can?	Quem comeu a última lata?
+...Rats. Big rats.	...Ratos. Ratos grandes.
+I'm telling you, the toll's too low.	Eu te digo, o pedágio tá baixo demais.
+Then you go ask them nicer.	Então vai lá pedir com mais jeito.
+Heard there's a stash by the culvert.	Ouvi dizer que tem um esconderijo perto do bueiro.
+Heard that last week too.	Ouvi isso semana passada também.
+Quiet day.	Dia calmo.
+Don't jinx it.	Não dê azar.
+My knee's been off since the rain.	Meu joelho tá ruim desde a chuva.
+Your knee's been off since you were born.	Seu joelho tá ruim desde que você nasceu.
+If the Sentinels come through here...	Se os Sentinelas passarem por aqui...
+Then we run. Like always.	Aí a gente corre. Como sempre.
+Gimme a smoke.	Me dá um cigarro.
+Buy your own.	Compre o seu.
+Ever think about leaving?	Já pensou em ir embora?
+Every morning. Then I wake up.	Toda manhã. Aí eu acordo.
+That rookie had a nice watch.	Aquele novato tinha um relógio bonito.
+Had.	Tinha.
+Radio check.	Teste de rádio.
+Static. Same as always.	Chiado. Igual sempre.
+How long till relief?	Quanto falta pra rendição?
+Six hours. Stop asking.	Seis horas. Para de perguntar.
+Sector's quiet.	Setor tranquilo.
+Sector's never quiet.	Setor nunca é tranquilo.
+You clean your weapon?	Limpou sua arma?
+Twice. Still sticky.	Duas vezes. Ainda grudenta.
+Command wants a report by dusk.	O comando quer um relatório até o anoitecer.
+Command wants a lot of things.	O comando quer muita coisa.
+Those tracks back there, fresh?	Aquelas pegadas lá atrás, são recentes?
+Fresh enough. Keep your eyes open.	Recentes o bastante. Olho aberto.
+I signed up for six months.	Me alistei por seis meses.
+We all did.	Todos nós.
+Rations again.	Ração de novo.
+Beats what the scavengers eat.	Melhor do que o que os catadores comem.
+Did you hear the old tower last night?	Ouviu a torre velha ontem à noite?
+That wasn't the tower.	Aquilo não era a torre.
+Keep it tight, people.	Firmes, pessoal.
+Copy.	Entendido.
+Any word from the second team?	Alguma notícia da segunda equipe?
+Nothing since noon.	Nada desde o meio-dia.
+Boots are falling apart.	As botas estão se desmanchando.
+File a request. In triplicate.	Faça um requerimento. Em três vias.
+Do you hear it singing?	Você ouve ele cantar?
+Always. Louder at night.	Sempre. Mais alto à noite.
+The pulse came early today.	O pulso veio cedo hoje.
+Then we are close.	Então estamos perto.
+A brother walked into the light.	Um irmão entrou na luz.
+He did not come back. Good.	Ele não voltou. Bom.
+The others call us mad.	Os outros nos chamam de loucos.
+The others are afraid.	Os outros têm medo.
+Keep the prayer steady.	Mantenha a prece firme.
+It is steady.	Está firme.
+The ground is warm here.	O chão é quente aqui.
+Blessed.	Abençoado.
+Got any bread?	Tem pão?
+Got a bolt. Want a bolt?	Tenho um parafuso. Quer um parafuso?
+How's the leg?	Como está a perna?
+Still attached.	Ainda colada.
+Saw a light out by the marsh last night.	Vi uma luz no pântano ontem à noite.
+Then don't go to the marsh.	Então não vá ao pântano.
+Yefim's raising prices again.	O Yefim tá subindo os preços de novo.
+Yefim's always raising prices.	O Yefim sempre sobe os preços.
+One more haul and I'm out.	Mais uma carga e eu saio.
+That's what you said last spring.	Foi o que você disse na primavera passada.
+Heard a guy found a whole crate of filters.	Ouvi falar de um cara que achou uma caixa inteira de filtros.
+Heard a guy. Sure.	Ouvi falar de um cara. Sei.
+My counter's been clicking all day.	Meu contador tá clicando o dia todo.
+Then stop standing on that spot.	Então para de ficar parado nesse ponto.
+Remember when the road was safe?	Lembra quando a estrada era segura?
+No. Neither do you.	Não. Você também não.
+You smell that?	Sentiu esse cheiro?
+Wet dog. Hope it's a dog.	Cachorro molhado. Espero que seja um cachorro.
+Let's rest a bit.	Vamos descansar um pouco.
+We've been resting an hour.	Estamos descansando faz uma hora.
+Think anyone ever leaves this place?	Será que alguém sai deste lugar?
+Sure. In a bag.	Claro. Num saco.
+Nice day for it.	Dia bom pra isso.
+For what?	Pra quê?
+Cold one tonight.	Noite fria.
+Keep the fire small.	Mantenha o fogo pequeno.
+Can't see a thing.	Não enxergo nada.
+Good. Neither can they.	Ótimo. Eles também não.
+Your watch.	Seu turno.
+It's always my watch.	É sempre o meu turno.
+This rain won't quit.	Essa chuva não para.
+Keeps the dogs in their holes, at least.	Pelo menos mantém os cães nas tocas.
+Everything I own is wet.	Tudo que tenho está molhado.
+Everything you own is stolen.	Tudo que você tem é roubado.
+I'm out!	Acabou a munição!
+Reloading!	Recarregando!
+Jammed!	Travou!
+Grenade!	Granada!
+Pinned!	Encurralado!
+Flanking!	Flanqueando!
+# ---- shakedown ----
+ROAD TOLL	PEDÁGIO
+Pay the toll ({} Ru)	Pagar o pedágio ({1} Ru)
+Refuse (they open fire)	Recusar (eles abrem fogo)
+Shoot first (they're slow to react)	Atirar primeiro (eles reagem devagar)
+Shake you down first	Eles te revistam primeiro
+You have {} Ru.	Você tem {1} Ru.
+{} counts the {} Ru and waves you on. "Pleasure doing business."	{1} conta os {2} Ru e te manda seguir. "Um prazer fazer negócio."
+{} takes your {} and grins. "Good choice."	{1} pega {2} e sorri. "Boa escolha."
+{}{} stop in front of you, guns up. A shakedown.	{1}{2} param na sua frente, armas em punho. Um achaque.
+# ---- controls panel ----
+--- CONTROLS (real-time) ---	--- CONTROLES (tempo real) ---
+WASD: move   Shift: sprint   Ctrl: crouch	WASD: mover   Shift: correr   Ctrl: agachar
+Space: dive (stamina, nothing hits you mid-air)	Espaço: mergulho (vigor, nada te acerta no ar)
+V: bullet time on/off (drains Focus)	V: tempo-bala liga/desliga (gasta Foco)
+Right mouse: aim (steadier, look further)	Botão direito: mirar (mais firme, enxerga mais longe)
+Left mouse: fire (hold for automatics)	Botão esquerdo: atirar (segure nas automáticas)
+Crosshair height on a body = where you hit	Altura da mira no corpo = onde você acerta
+R: reload   Y: swap weapon	R: recarregar   Y: trocar de arma
+E: interact / loot body / pick up	E: interagir / saquear corpo / pegar
+F: parry (melee weapon in hand)	F: aparar (arma corpo a corpo na mão)
+G: search anomaly / area / quest (F/G: Options)	G: vasculhar anomalia / área / missão (F/G: Opções)
+Q: switch ammo   U: flashlight	Q: trocar munição   U: lanterna
+T: take out a grenade (left click throws)	T: sacar granada (clique esquerdo arremessa)
+Z: rest (safe zone/campfire)   B: shop	Z: descansar (zona segura/fogueira)   B: loja
+J: quests  M: the Zone  P: character  I: pack	J: missões  M: a Zona  P: personagem  I: mochila
+Mouse wheel: zoom   ESC: pause	Roda do mouse: zoom   ESC: pausa
+F5: save / F9: load	F5: salvar / F9: carregar
+# ---- the status line, piece by piece (Loc.Text splits on three or more spaces) ----
+DAY {} => DIA {1}
+TIER {} => NÍVEL {1}
+SAFE ZONE => ZONA SEGURA
+CLEAR => LIMPO
+OVERCAST => NUBLADO
+FOG => NEBLINA
+RAIN => CHUVA
+STORM => TEMPESTADE
+STAMINA {} => VIGOR {1}
+FOCUS {} => FOCO {1}
+USING {}s => USANDO {1}s
+Using => Usando
+DAY => DIA
+NIGHT => NOITE
+DAWN => AMANHECER
+DUSK => ANOITECER
+HP => PV
+Ru => Ru
+RU => RU

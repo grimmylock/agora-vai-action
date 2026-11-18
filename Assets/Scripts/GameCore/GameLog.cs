@@ -33,7 +33,8 @@ namespace GameCore
         public static void Write(string message)
         {
             NetWorld.TapLog(message);                                        // co-op: the host's lines reach the friends
-            bool ev = IsEvent(message); if (message.StartsWith(EventMark, System.StringComparison.Ordinal)) message = message.Substring(EventMark.Length);
+            bool ev = IsEvent(message); if (message.StartsWith(EventMark, System.StringComparison.Ordinal)) message = message.Substring(EventMark.Length);   // (decided on the English, before the translation changes the tag)
+            if (Loc.Pt) { string tr = Loc.T(message); if (tr == message) Loc.Miss(message); message = tr; }                                // pt-BR: the log in Portuguese (a line with no entry stays English)
             if (Target != null && !Quiet)
             {
                 if (Target is IGameLogEvents t) t.Append(message, ev); else Target.AppendLine(message);
