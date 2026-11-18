@@ -123,7 +123,7 @@ namespace GameCore
         {
             if (!Lighting2D.On && Lighting.Enabled && !Lighting.Failed && (l.Night > 0.02f || _fineHold > 0))
             {
-                try { if (DrawLightFine(c, vw, vh, l)) return; }
+                try { var swo = System.Diagnostics.Stopwatch.StartNew(); long k0 = _fineKey; bool done = DrawLightFine(c, vw, vh, l); if (done && _fineKey != k0) { Lighting.OverlayMs += swo.Elapsed.TotalMilliseconds; Lighting.OverlayN++; } Lighting.Report(); if (done) return; }
                 catch (System.Exception e) { Lighting.Fail(e); }
             }
             int tw = Mathf.CeilToInt(vw) * TexelsPerTile + 6, th = Mathf.CeilToInt(vh) * TexelsPerTile + 6;
@@ -177,7 +177,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ Lighting v2
-        const int FineTexels = 8, FineTexelsWide = 4, Coarse = TexelsPerTile;   // 8 texels a tile for the lamp field (4 when the view is big: the cost goes with the AREA, 2026-11-18 Yan: the Gaunt cave ran very badly), the vision work stays at 2
+        const int FineTexels = 4, FineTexelsWide = 2, Coarse = TexelsPerTile;   // 8 texels a tile for the lamp field (4 when the view is big: the cost goes with the AREA, 2026-11-18 Yan: the Gaunt cave ran very badly), the vision work stays at 2
         const float WideView = 600f;                                                // tiles in view above which the fine field drops to 4 a tile
         long _fineKey = long.MinValue, _coarseKey = long.MinValue;                  // what the overlay was last drawn for: it is only redrawn when one of these changes (position in texels, size, Vision.Version, the hour's darkness, fog, 12 times a second for the lamps' flicker)
         int _ppu = TexelsPerTile, _fineHold;
@@ -239,11 +239,11 @@ namespace GameCore
             return true;
         }
 
-        /// <summary>A cheap fingerprint of everything the overlay depends on: where the view sits (in texels), its size, what Vision says is seen, the hour's darkness, fog, and the time in 1/12 s (the lamps flicker).</summary>
+        /// <summary>A cheap fingerprint of everything the overlay depends on: where the view sits (in texels), its size, what Vision says is seen, the hour's darkness, fog, and the time in 1/6 s (the lamps flicker).</summary>
         long OverlayKey(float left, float top, int tw, int th, AtmosphereLook l, int texels)
         {
             long k = Mathf.RoundToInt(left * 8f) * 1000003L + Mathf.RoundToInt(top * 8f);
-            k = k * 31 + tw; k = k * 31 + th; k = k * 31 + Vision.Version; k = k * 31 + (int)(Time.time * 12f); k = k * 31 + Mathf.RoundToInt(l.Night * 200f); k = k * 31 + Mathf.RoundToInt(l.Fog * 100f);
+            k = k * 31 + tw; k = k * 31 + th; k = k * 31 + Vision.Version; k = k * 31 + (int)(Time.time * 6f); k = k * 31 + Mathf.RoundToInt(l.Night * 200f); k = k * 31 + Mathf.RoundToInt(l.Fog * 100f);
             return k * 31 + texels * 2 + (_backdrop ? 1 : 0) + (Lighting2D.On ? 64 : 0);
         }
 

@@ -33,21 +33,33 @@ namespace GameCore
         }
 
         static List<WorldArt.PointLight> _lights;
-        static WorldArt.LightBake[] _bakes;
+        static WorldArt.LightBake[] _bakes; static float[] _bakedAt; static bool[] _stale;   // 2026-11-18: a light whose surroundings changed keeps its old bake for RebakeEvery seconds, then looks again (one bake a frame at most)
+        const float RebakeEvery = 2.5f;
+        // Editor only (2026-11-18): what the lighting costs, logged to the Console every 5 s while the fine overlay runs - "[light] ..." lines Yan can copy back when it is still slow
+        public static double OverlayMs, BakeMs, AddMs; public static int OverlayN, BakeN, LampN; static float _reportAt;
+        public static void Report()
+        {
+#if UNITY_EDITOR
+            if (Time.realtimeSinceStartup < _reportAt) return; _reportAt = Time.realtimeSinceStartup + 5f;
+            if (OverlayN + BakeN == 0) return;
+            Debug.Log($"[light] last 5 s: overlay redrawn {OverlayN}x, {(OverlayN > 0 ? OverlayMs / OverlayN : 0):0.0} ms each ({OverlayMs:0} ms total), of which the lamp field {(OverlayN > 0 ? AddMs / OverlayN : 0):0.0} ms each ({LampN / System.Math.Max(1, OverlayN)} lamps in view); {BakeN} lamp bakes, {(BakeN > 0 ? BakeMs / BakeN : 0):0.0} ms each");
+            OverlayMs = BakeMs = AddMs = 0; OverlayN = BakeN = LampN = 0;
+#endif
+        }
         static string _zone; static int _gen = -1;
         static float[] _lr, _lg, _lb;
 
         public static bool Active => _lights != null;
         /// <summary>The map's placed lights (the 2D lights test turns each into a Light2D).</summary>
         public static IReadOnlyList<WorldArt.PointLight> Placed() => Ensure() ? (IReadOnlyList<WorldArt.PointLight>)_lights : System.Array.Empty<WorldArt.PointLight>();
-        public static void Reset() { _lights = null; _bakes = null; _zone = null; }
+        public static void Reset() { _lights = null; _bakes = null; _bakedAt = null; _stale = null; _zone = null; }
 
         static bool Ensure()
         {
             if (!WorldArt.Ready || TerrainMap.Tiles == null) return false;
             if (_lights != null && _zone == TerrainMap.ZoneId && _gen == WorldArt.Generation) return true;
             _lights = WorldArt.PlacedLights(0, 0, TerrainMap.Width - 1, TerrainMap.Height - 1);
-            _bakes = new WorldArt.LightBake[_lights.Count];
+            _bakes = new WorldArt.LightBake[_lights.Count]; _bakedAt = new float[_lights.Count]; _stale = new bool[_lights.Count];
             _zone = TerrainMap.ZoneId; _gen = WorldArt.Generation;
             return true;
         }
@@ -59,7 +71,7 @@ namespace GameCore
             for (int i = 0; i < _lights.Count; i++)
             {
                 var l = _lights[i];
-                if (_bakes[i] != null && System.Math.Abs(l.X / WorldArt.Px - cx) <= l.R / WorldArt.Px + 3f && System.Math.Abs(l.Y / WorldArt.Px - cy) <= l.R / WorldArt.Px + 5f) _bakes[i] = null;
+                if (_bakes[i] != null && System.Math.Abs(l.X / WorldArt.Px - cx) <= l.R / WorldArt.Px + 3f && System.Math.Abs(l.Y / WorldArt.Px - cy) <= l.R / WorldArt.Px + 5f) _stale[i] = true;   // (was: dropped at once, so a firefight that chipped cover rebaked the lamps every frame)
             }
         }
 
@@ -76,9 +88,9 @@ namespace GameCore
             {
                 var l = _lights[i];
                 if (l.X + l.R < gx0 || l.X - l.R > gx0 + rw || l.Y + l.R < gy0 || l.Y - l.R - l.H > gy0 + rh) continue;   // out of view (the head hangs above the foot)
-                if (_bakes[i] == null) { if (baked++ >= 1) continue; _bakes[i] = WorldArt.BakeLight(l); }
+                if (_bakes[i] == null || _stale[i] && Time.time - _bakedAt[i] > RebakeEvery) { if (baked++ >= 1) { if (_bakes[i] == null) continue; } else { var sw0 = System.Diagnostics.Stopwatch.StartNew(); _bakes[i] = WorldArt.BakeLight(l); _bakedAt[i] = Time.time; _stale[i] = false; BakeMs += sw0.Elapsed.TotalMilliseconds; BakeN++; } }
                 if (!any) { System.Array.Clear(_lr, 0, n); System.Array.Clear(_lg, 0, n); System.Array.Clear(_lb, 0, n); any = true; }
-                WorldArt.AddLight(_bakes[i], time, _lr, _lg, _lb, gx0, gy0, rw, rh, step);
+                var sw1 = System.Diagnostics.Stopwatch.StartNew(); WorldArt.AddLight(_bakes[i], time, _lr, _lg, _lb, gx0, gy0, rw, rh, step); AddMs += sw1.Elapsed.TotalMilliseconds; LampN++;
             }
             if (any) { lr = _lr; lg = _lg; lb = _lb; }
             return any;
