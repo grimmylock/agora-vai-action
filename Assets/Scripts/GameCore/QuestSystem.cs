@@ -70,6 +70,9 @@ namespace GameCore
         /// the one that's next in sequence for that Quartermaster, gated on Friendly rep if the
         /// stage requires it. There's no job board/dialogue system, so "the Quartermaster whose
         /// shop you're standing next to" is this game's stand-in for a quest-giving NPC.</summary>
+        /// <summary>2026-11-18: storyline jobs the main story hands out itself (Tier2Jobs.cs), so the quartermaster's list skips them.</summary>
+        public static readonly HashSet<string> StoryJobs = new HashSet<string> { "SCRAPKING-1", "YEFIM-3" };
+
         public static List<QuestDef> AvailableInZone(string zoneId)
         {
             var player = Player.Current;
@@ -92,7 +95,7 @@ namespace GameCore
             {
                 int nextStage = player.NpcArcStage.TryGetValue(zoneId, out var s) ? s : 1;
                 var stageDef = QuestDatabase.All.FirstOrDefault(q => q.NpcId == zoneId && q.Stage == nextStage);
-                if (stageDef != null && !player.ActiveQuests.Any(a => a.QuestId == stageDef.Id)
+                if (stageDef != null && !StoryJobs.Contains(stageDef.Id) && !player.ActiveQuests.Any(a => a.QuestId == stageDef.Id)
                     && (!stageDef.FriendlyGate || player.GetRepLevel(stageDef.Faction) == "Friendly"))
                     result.Add(stageDef);
             }

@@ -31,7 +31,7 @@ namespace GameCore
 
         // ---------------- the squads a mission puts down ----------------
 
-        static void Place(string mission, string landmark, string faction, List<Mutant> members)
+        internal static void Place(string mission, string landmark, string faction, List<Mutant> members)
         {
             var l = TerrainMap.Landmarks.FirstOrDefault(x => x.Name == landmark);
             if (l == null) return;
@@ -64,22 +64,22 @@ namespace GameCore
         }
 
         /// <summary>Has the mission's squad been put down, and is everyone in it dead?</summary>
-        static bool Cleared(string mission)
+        internal static bool Cleared(string mission)
         {
             var qs = MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:" + mission).ToList();
             return !qs.SelectMany(q => q.Members).Any(m => m.IsAlive());
         }
 
-        static void Pay(int ru, string why)
+        internal static void Pay(int ru, string why)
         {
             foreach (var p in Player.All) p.Ru += ru;
             GameLog.Event($"+{ru} Ru ({why}).");
         }
 
-        static void Give(string id, string name) =>
+        internal static void Give(string id, string name) =>
             Player.Current.AddItem(new InventoryItem { Id = id, Name = name, Type = "key", Qty = 1, WeightKg = 0.5f, Price = 0 });
 
-        static Player Holder(string id) => Player.All.FirstOrDefault(p => p.Inventory.Items.Any(i => i.Id == id));
+        internal static Player Holder(string id) => Player.All.FirstOrDefault(p => p.Inventory.Items.Any(i => i.Id == id));
 
         // ---------------- E next to someone ----------------
 
@@ -88,6 +88,7 @@ namespace GameCore
         {
             if (TryInteractPavel(p)) return true;   // Story 5: the bunker, the cave, Pavel in the village
             if (!OnTier1) return false;
+            if (Story.Near(p, Yefim, 3) && Tier2Jobs.TalkYefim(p)) return true;   // Story 6: Bogdan's hand-in
             if (Story.Near(p, Yefim, 3)) return TalkYefim();
             if (Story.Near(p, Stas, 2)) return TalkStas();
             if (Story.Near(p, Headman, 2)) return TalkHeadman(p);

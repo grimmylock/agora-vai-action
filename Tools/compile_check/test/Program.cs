@@ -2548,6 +2548,31 @@ static class Program {
         Check(Story.IsDone("culvert") && Story.Has("husks_known") && !p.Inventory.Items.Any(i => i.Id == "story_canister"), "Story 5: Pavel opens it: the Husks are known");
       } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
     }
+    // Story 6a: the Scrap King's call and Bogdan
+    { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 } };
+      foreach (var m in marks) TerrainMap.Landmarks.Add(m);
+      try {
+        Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); MacroState.Current.StoryFlags.Clear(); EncounterState.InCombat = false;
+        Story.Finish("taken"); Tier2Jobs.Tick();
+        Check(Story.Step("taken_day") == MacroState.Current.Day && Story.Step("kingcall") == 0, "Story 6a: after Taken, the Scrap King waits a day");
+        MacroState.Current.Day += 1; Tier2Jobs.Tick();
+        Check(Story.Step("kingcall") == 1 && Alive("dock") == 5, "Story 6a: next day he calls: five rivals at the Loading Dock");
+        Kill("dock"); Tier2Jobs.Tick();
+        Check(Story.Step("kingcall") == 2, "Story 6a: the Dock cleared: back to the King");
+        int ruk = p.Ru; p.X = 80; p.Y = 81; Tier2Jobs.TryInteract(p);
+        Check(Story.IsDone("kingcall") && p.Ru == ruk + 900 && p.NpcArcStage["scrapyard"] == 2 && !QuestSystem.AvailableInZone("scrapyard").Any(q => q.Id == "SCRAPKING-1"), "Story 6a: the King pays, and the arc moves on");
+        p.NpcArcStage["bonfire_village"] = 3; Tier2Jobs.Tick();
+        Check(Story.Step("bogdan") == 1 && Alive("bogdan") == 5, "Story 6a: once the keepsake is home, Yefim calls: Bogdan and four at the Tire Fort");
+        var bog = EncounterState.Enemies.OfType<HumanEnemy>().First(e => e.Name == "Bogdan"); p.X = bog.X; p.Y = bog.Y + 1; Tier2Jobs.TryInteract(p);
+        Check(Story.Step("bogdan") == 2, "Story 6a: E by Bogdan: the talk (the harness picks 'Fight')");
+        Kill("bogdan"); Tier2Jobs.Tick();
+        Check(Story.Step("bogdan") == 3, "Story 6a: all dead: tell Yefim");
+        Tier1Story.ZoneOverride = null; int ruy = p.Ru; At(Tier1Story.Yefim); Tier1Story.TryInteract(p);
+        Check(Story.IsDone("bogdan") && p.Ru == ruy + 700 && p.NpcArcStage["bonfire_village"] == 4, "Story 6a: Yefim pays for Bogdan and the arc is closed");
+        Story.SetStep("bogdan", 4); Tier1Story.Give(Tier2Jobs.Tag, "Dog Tag"); ruy = p.Ru; Tier1Story.TryInteract(p);
+        Check(Story.IsDone("bogdan") && p.Ru == ruy + 900 && !p.Inventory.Items.Any(i => i.Id == Tier2Jobs.Tag), "Story 6a: the dog tag brought home pays more");
+      } finally { Tier2Jobs.ZoneOverride = null; foreach (var m in marks) TerrainMap.Landmarks.Remove(m); EncounterState.Enemies.RemoveAll(e => e is HumanEnemy h && h.FactionName == "Raiders" && !e.IsAlive()); MacroState.Current.StoryFlags.Clear(); }
+    }
     // Story 5b: "those"
     { GreyRobes.Reset(); EncounterState.Enemies.RemoveAll(e => GreyRobes.Is(e)); UnityEngine.Time.time = 9000f;
       GreyRobes.Place(p.X + 20, p.Y, 2, false);
