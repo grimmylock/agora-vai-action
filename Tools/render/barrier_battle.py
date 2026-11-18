@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A still of the Barrier siege (Yan, 2026-11-18: "can you generate a 'it would look like this with the battle in progress' still"): the real map render of the Vanguard Barracks (Tools/render/render.sh
 vanguard_barracks) with the game's own armour, Husk, weapon and effect sprites placed on it where Tier4Story/Barrier.cs would put them: the Liberators on the catwalk's front row, the Obelisk horde
-outside, Husks at the foot of the wall tearing at it, the Preacher with his violet core and a pulse, a gap in the wall, grenade blasts, tracers, the HUD bar. NOT a Unity capture: no lighting, camera,
+outside, Husks at the foot of the wall tearing at it, the Preacher with his violet core and a pulse, a gap in the barrier, grenade blasts, tracers, the HUD bar. NOT a Unity capture: no lighting, camera,
 shadows beyond a flat one, UI beyond the bar; the cracks, rubble and dust are painted here.
     python3 Tools/render/barrier_battle.py out.png"""
 import sys, os, math, random
@@ -30,19 +30,19 @@ for x in range(X0, X1 + 1):
     lo, hi = cols[x]
     for y in range(lo, hi + 1):
         x0, y0, x1, y1 = tile_rect(x, y)
-        if x in GAP and y == lo:
-            D.rectangle((x0 - 2, y0 - 6, x1 + 2, y1 + 34), fill=(70, 64, 56, 255))                     # the gap: the wall's body gone
-            for _ in range(26):
-                rx, ry = rnd.randint(x0, x1), rnd.randint(y0 - 4, y1 + 30); s = rnd.randint(3, 9); c = rnd.choice([(110, 104, 96), (140, 134, 126), (84, 78, 70), (160, 152, 140)])
+        if x in GAP and y == hi:
+            D.rectangle((x0 - 2, y0 - 2, x1 + 2, y1 + 2), fill=(74, 68, 58, 255))                     # the gap: the block gone
+            for _ in range(18):
+                rx, ry = rnd.randint(x0, x1), rnd.randint(y0 - 2, y1 + 4); s = rnd.randint(3, 9); c = rnd.choice([(110, 104, 96), (140, 134, 126), (84, 78, 70), (160, 152, 140)])
                 D.polygon([(rx, ry), (rx + s, ry + 1), (rx + s - 2, ry + s - 2), (rx - 1, ry + s - 1)], fill=c + (255,))
             continue
         if dmg[x] > 0.35 and rnd.random() < dmg[x]:
             for _ in range(int(2 + dmg[x] * 4)):                                                           # cracks
-                cx_, cy_ = rnd.randint(x0 + 3, x1 - 3), rnd.randint(y0, y1 + 20)
+                cx_, cy_ = rnd.randint(x0 + 3, x1 - 3), rnd.randint(y0 + 2, y1 - 6)
                 pts = [(cx_, cy_)]
-                for k in range(rnd.randint(3, 6)): pts.append((pts[-1][0] + rnd.randint(-5, 5), pts[-1][1] + rnd.randint(3, 8)))
+                for k in range(rnd.randint(3, 6)): pts.append((pts[-1][0] + rnd.randint(-4, 4), pts[-1][1] + rnd.randint(1, 4)))
                 D.line(pts, fill=(34, 30, 28, 230), width=2)
-            if rnd.random() < 0.6: D.ellipse((x0 + 4, y0 + 8, x0 + 26, y0 + 28), fill=(30, 26, 24, 90))     # scorch
+            if rnd.random() < 0.6: D.ellipse((x0 + 2, y0 + 4, x0 + 30, y0 + 22), fill=(30, 26, 24, 90))     # scorch
 sc.alpha_composite(d_over)
 S.shadow  # (kept for the import's sake)
 # ---- units
@@ -66,7 +66,7 @@ for i, (x, y) in enumerate(foes):
 # husks at the foot of the wall, tearing at it
 hx = [149, 151, 153, 156, 158, 160, 162, 164]
 for i, x in enumerate(hx):
-    y = cols[x][0] - 3; f = foot(x, y); idx = [124, 31, 98, 127, 40, 124, 56, 31][i]
+    y = cols[x][0] - 1; f = foot(x, y); idx = [124, 31, 98, 127, 40, 124, 56, 31][i]
     units.append((y, lambda sc_=sc, f=f, idx=idx, i=i: husk(sc_, f, idx, i % 2 == 1)))
 # a few more Husks behind them
 for i, (x, y) in enumerate([(148, 98), (153, 99), (160, 98), (164, 100), (167, 102), (145, 102)]):

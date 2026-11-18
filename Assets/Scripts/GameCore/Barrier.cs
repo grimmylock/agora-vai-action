@@ -1,5 +1,5 @@
 // The Barrier (Yan, 2026-11-18: "we want a defendable point with high cover, the barrier itself needs an HP bar ... walls with hp the enemies will break and advance ... walls with
-// catwalks you can walk on and take cover/return fire"). A fortified wall on the Vanguard Barracks' north side (TierMaps.Tier4: Solid concrete along y = Y from X0 to X1, a steel
+// catwalks you can walk on and take cover/return fire"). A fortified wall on the Vanguard Barracks' north side (TierMaps.Tier4: Solid tiles drawn as low concrete jersey barriers along an arc, a steel
 // catwalk two tiles deep behind it, the Liberators' firing step). Rules, in code:
 // - Each wall tile is "high cover" (TerrainMap.CoverAcAt = 3, Ballistics.HighCover): a round below a standing head's height stops in it; you can see through it and fire over it from the tile
 //   right behind it (the shooter-next-to-cover rule, Ballistics.Trace) - so the catwalk's front row is the firing step. It cannot be walked through or vaulted (Solid).
