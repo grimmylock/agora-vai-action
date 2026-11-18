@@ -2583,6 +2583,17 @@ static class Program {
         Check(Story.IsDone("culvert") && Story.Has("husks_known") && !p.Inventory.Items.Any(i => i.Id == "story_canister"), "Story 5: Pavel opens it: the Husks are known");
       } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
     }
+    // Polish: the story's people as units
+    { MacroState.Current.StoryFlags.Clear(); StoryNpcs.Reset(); EncounterState.Enemies.RemoveAll(e => e.Faction == StoryNpcs.Faction);
+      StoryNpcs.OnEnterZone();
+      var ye = StoryNpcs.Find("Yefim"); var hm = StoryNpcs.Find("Headman Petro");
+      Check(ye != null && hm != null && StoryNpcs.Holds(ye) && StoryNpcs.Find("Yefim (radio)") == null && StoryNpcs.Find("Pavel") == null, "NPC units: Yefim and the Headman stand in the village, radio voices have no unit, Pavel isn't there yet");
+      Story.Finish("engineer"); StoryNpcs.Tick();
+      Check(StoryNpcs.Find("Pavel") != null, "NPC units: Pavel is at the Medic's House once he's home");
+      ye.Hp = 0; Check(ye.IsAlive() && !FactionDatabase.AreHostile(ye.Faction, "Player"), "NPC units: they can't be killed and are hostile to nobody");
+      Story.SetStep("escort", 2); Companion.JoinStory(p, "Pavel", 100); StoryNpcs.Tick();
+      Check(StoryNpcs.Find("Pavel") == null, "NPC units: Pavel leaves the Medic's House when he walks with you");
+      Companion.Current = null; EncounterState.Enemies.RemoveAll(e => e.Faction == StoryNpcs.Faction); StoryNpcs.Reset(); MacroState.Current.StoryFlags.Clear(); }
     // Story 6a: the Scrap King's call and Bogdan
     { var marks = new[] { new LandmarkInstance { Name = Tier2Jobs.Dock, X = 40, Y = 40 }, new LandmarkInstance { Name = Tier2Jobs.Fort, X = 60, Y = 60 }, new LandmarkInstance { Name = Tier2Jobs.King, X = 80, Y = 80 }, new LandmarkInstance { Name = Tier2Jobs.Bridge, X = 100, Y = 100 }, new LandmarkInstance { Name = Tier2Escort.Repeater, X = 120, Y = 120 }, new LandmarkInstance { Name = Tier2Escort.Lip, X = 140, Y = 140 }, new LandmarkInstance { Name = Tier2Escort.Cut, X = 160, Y = 160 } };
       foreach (var m in marks) TerrainMap.Landmarks.Add(m);

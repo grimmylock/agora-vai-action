@@ -302,7 +302,8 @@ namespace GameCore
             BrainBoss.OnEnterZone(zone?.Id);   // Boss 2: the vat in Lab Alpha
             EelBoss.OnEnterZone(zone?.Id);   // Boss 3: the eel in the Sump
             Tier1Story.OnEnterZone(zone?.Id);
-            Tier3Story.OnEnterZone(zone?.Id);   // Story 7: the pills crate on the Stranded Ferry   // Story 5: the Brute in the Rust Culvert
+            Tier3Story.OnEnterZone(zone?.Id);
+            StoryNpcs.OnEnterZone();   // the story's people as units   // Story 7: the pills crate on the Stranded Ferry   // Story 5: the Brute in the Rust Culvert
             if (zone == null || zone.IsSafeZone) return;
             bool guardian = zone.Id == "siege_catacombs" && !Has("lucifer") && !Has("named:siege_catacombs");
             int tier = _originalTiers != null && _originalTiers.TryGetValue(zone.Id, out var t) ? t : zone.Tier;

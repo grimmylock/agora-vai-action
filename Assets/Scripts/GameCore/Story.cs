@@ -87,6 +87,7 @@ namespace GameCore
         /// and `then` gets the answer picked. `who` is the name on the panel; `unit` is them on the map, if they're there.</summary>
         public static void Talk(string who, string[] lines, string[] answers = null, Action<int> then = null, ICombatant unit = null)
         {
+            unit = unit ?? StoryNpcs.Find(who);   // the person on the map, if the story put him there
             void Line(int i)
             {
                 bool last = i == lines.Length - 1;

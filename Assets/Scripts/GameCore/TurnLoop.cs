@@ -32,7 +32,7 @@ namespace GameCore
         private static void CheckVisionAndWander(Mutant enemy, Player player, IGridService grid)
         {
             if (Shakedown.Approaching(enemy)) return;   // Batch 73: walking over to ask for the toll (Shakedown.Tick moves them)
-            if (Tier2Story.Holds(enemy)) return;        // 2026-11-17: the Garrison squad of "Taken" is run by the story: no spotting you, no shouting, no wandering off
+            if (Tier2Story.Holds(enemy) || StoryNpcs.Holds(enemy)) return;        // 2026-11-17: the Garrison squad of "Taken" is run by the story: no spotting you, no shouting, no wandering off
             if (!enemy.IsAggroed)
             {
                 int distToPlayer = CombatantUtil.Distance(enemy, player);
@@ -131,7 +131,7 @@ namespace GameCore
             var grid = GameServices.Grid;
             if (player == null || grid == null) return;
             Stashes.Tick();   // Batch 126
-            Tier1Story.Tick(); Tier2Jobs.Tick(); Tier3Story.Tick();   // Story 4: jobs that finish on their own, the distress loop
+            Tier1Story.Tick(); Tier2Jobs.Tick(); Tier3Story.Tick(); StoryNpcs.Tick();   // Story 4: jobs that finish on their own, the distress loop
             Banter.Tick(player);   // Batch 129: squads you can see talk, friends say hi: stashes move every 7 days; a locked chest's key finds a carrier
 
             foreach (var enemy in EncounterState.Enemies.ToList())
