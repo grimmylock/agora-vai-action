@@ -1,10 +1,12 @@
 // The Barrier's two concrete watchtowers and their machine guns (Yan, 2026-11-18: "2 raised concrete watchtowers with the machineguns" ... "heavy machineguns on tripods (not lootable, only usable)").
-// Each tower (Barrier.TowerCols) is a small concrete building in the yard right behind the deck (TierMaps: windows on the north wall, a door on the south, three tiles inside), so the ordinary building roof rules apply
-// (RoofView): from outside you see its slab roof, step in and the roof comes off and you see the inside. The gun stands on the middle inside tile (the nook).
-//  - E inside the tower (or in its doorway, next to the gun): you take the gun. Your legs are locked (no walking, sprinting or diving), your own gun is put away and a belt-fed machine gun (a Corvan LMG, 200-round belt) is in your hands;
-//    mouse aims, left click fires like any gun, out through the windows. A tower gun is high above the wall, so the wall never stops your rounds (Ballistics.Trace).
+// Each tower (Barrier.TowerCols) stands in the yard right behind the deck: a 3x2 block of "part" tiles under the tall tower prop (the platform with its roof and tripod gun is the top of the picture); the gun nook is the block's north-middle tile.
+//  - E on the steps at the tower's foot (its south face): you climb up. You stand in the nook, drawn up on the platform (Lift) over the tower art, your legs are locked (no walking, sprinting or diving), your own gun is put away and
+//    a belt-fed machine gun (a Corvan LMG, 200-round belt) is in your hands; mouse aims, left click fires like any gun.
+//  - HEIGHT (Yan, 2026-11-18: "it looks like I'll be shooting my friendlies ... a height system?"): the gunner is high up, so his rounds fly over everything between him and the target: the Barrier wall and all other cover,
+//    and the friendly Liberators on the catwalk (Ballistics.Trace, `Emplacement.Elevated`). He hits hostile bodies only.
 //  - The belt swaps by itself when it runs dry (no reload) from the tower's box: 900 rounds, refilled 12 a second while nobody is on it. The gun is part of the tower: not an item, never lootable.
-//  - E again, going down, dying, or leaving the map: you step off and your own gun comes back. A save puts everyone off first (Save -> ReleaseAll): nobody is ever saved holding it.
+//  - E again, going down, dying, or leaving the map: you climb down. A save puts everyone off first (Save -> ReleaseAll).
+//  - HIT POINTS: the tower's 6 tiles share one pool (TowerHp). At 0 it crumbles (Collapse): anyone on it takes 750 and is thrown off, the "tower_ruin" heap stays.
 //  - Co-op: one gunner per tower, any player can man either.
 // ponytail: no tripod sprite for the gun in your hands (you hold a normal LMG), no mount animation, the tower has no hit points (the wall in front is what gets shot), NPCs don't use the guns.
 using System.Collections.Generic;
@@ -16,10 +18,10 @@ namespace GameCore
 {
     public static class Emplacement
     {
-        public const int Belt = 200; public const float Stock = 900f, Refill = 12f, Lift = 0f;
+        public const int Belt = 200; public const float Stock = 900f, Refill = 12f, Lift = 2.5f;
         public const string Key = "CorvanLMG";
         public const int TowerHp = 6000; public const int CollapseDamage = 750;
-        public class Gun { public int Tx, NookY, StepsY; public float Box = Stock; public Player By; public int Hp = TowerHp; public bool Down; public int Top => NookY - 1; }
+        public class Gun { public int Tx, NookY, StepsY; public float Box = Stock; public Player By; public int Hp = TowerHp; public bool Down; public int Top => NookY; }
         class Held { public Gun G; public Weapon Saved; public int LastMag; public string Cat, WKey; }
         static readonly Dictionary<Player, Held> Mounted = new Dictionary<Player, Held>();
         static List<Gun> _guns;
@@ -27,10 +29,10 @@ namespace GameCore
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Reset() { Mounted.Clear(); _guns = null; }
 
-        public static List<Gun> Guns => _guns ?? (_guns = Barrier.TowerCols().Select(tx => new Gun { Tx = tx, NookY = Barrier.TowerTop(tx) + 1, StepsY = Barrier.TowerTop(tx) + 2 }).ToList());
+        public static List<Gun> Guns => _guns ?? (_guns = Barrier.TowerCols().Select(tx => new Gun { Tx = tx, NookY = Barrier.BottomY(tx) + 3, StepsY = Barrier.BottomY(tx) + 5 }).ToList());
 
         /// <summary>The standing tower whose walls (5x3 tiles, windows and door included) cover this tile, or null.</summary>
-        public static Gun TowerAt(int x, int y) { if (!Barrier.On) return null; foreach (var g in Guns) if (!g.Down && x >= g.Tx - 2 && x <= g.Tx + 2 && y >= g.Top && y <= g.Top + 2) return g; return null; }
+        public static Gun TowerAt(int x, int y) { if (!Barrier.On) return null; foreach (var g in Guns) if (!g.Down && x >= g.Tx - 1 && x <= g.Tx + 1 && y >= g.Top && y <= g.Top + 1) return g; return null; }
 
         /// <summary>A hit on any tile of a tower (TerrainMap.DamageTile): it all goes to the tower's hit points, true if it took it. At 0 the tower crumbles (Collapse).</summary>
         public static bool Hurt(int x, int y, int amount)
@@ -38,7 +40,7 @@ namespace GameCore
             var g = TowerAt(x, y); if (g == null || amount <= 0) return false;
             g.Hp = System.Math.Max(0, g.Hp - amount);
             int dmg = Mathf.RoundToInt(Barrier.WallHp * 0.95f * (1f - g.Hp / (float)TowerHp));                                 // the cracks on its walls follow its hit points
-            for (int ty = g.Top; ty <= g.Top + 2; ty++) for (int tx = g.Tx - 2; tx <= g.Tx + 2; tx++) { var t = TerrainMap.GetTile(tx, ty); if (t.Type == TileType.Solid) { t.Damage = dmg; TerrainMap.DirtyTiles.Add((tx, ty)); } }
+            for (int ty = g.Top; ty <= g.Top + 1; ty++) for (int tx = g.Tx - 1; tx <= g.Tx + 1; tx++) { var t = TerrainMap.GetTile(tx, ty); if (t.Type == TileType.Solid) { t.Damage = dmg; TerrainMap.DirtyTiles.Add((tx, ty)); } }
             if (g.Hp <= 0) Collapse(g);
             return true;
         }
@@ -48,26 +50,28 @@ namespace GameCore
         public static void Collapse(Gun g)
         {
             if (g.Down) return; g.Down = true; g.By = null;
-            var inside = Player.All.Where(p => p.X >= g.Tx - 2 && p.X <= g.Tx + 2 && p.Y >= g.Top && p.Y <= g.Top + 2).ToList();
+            var inside = Player.All.Where(p => p.X >= g.Tx - 1 && p.X <= g.Tx + 1 && p.Y >= g.Top && p.Y <= g.Top + 1).ToList();
             foreach (var p in inside.Where(IsMounted)) { var h = Mounted[p]; Mounted.Remove(p); p.EquippedWeapon = h.Saved; p.EquippedWeaponCategory = h.Cat; p.EquippedWeaponKey = h.WKey; }
-            for (int ty = g.Top; ty <= g.Top + 2; ty++) for (int tx = g.Tx - 2; tx <= g.Tx + 2; tx++) TerrainMap.SetTileType(tx, ty, TileType.Difficult, tx == g.Tx && ty == g.Top + 2 ? "tower_ruin" : "part");
-            RoofView.Drop(g.Tx, g.Top + 1);
-            Sfx.Play("door_break", TacticalGridView.GridToWorld(g.Tx, g.Top + 1));
+            for (int ty = g.Top; ty <= g.Top + 1; ty++) for (int tx = g.Tx - 1; tx <= g.Tx + 1; tx++) TerrainMap.SetTileType(tx, ty, TileType.Difficult, tx == g.Tx && ty == g.Top + 1 ? "tower_ruin" : "part");
+                        Sfx.Play("door_break", TacticalGridView.GridToWorld(g.Tx, g.Top + 1));
             GameLog.Event("A Barrier watchtower collapses in a cloud of dust!");
             foreach (var p in inside)
             {
-                var (x, y) = TerrainMap.FindNearestEnterable(g.Tx + (p.X >= g.Tx ? 1 : -1) * 2, g.Top + 4, 3); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
+                var (x, y) = TerrainMap.FindNearestEnterable(g.Tx + (p.X >= g.Tx ? 1 : -1) * 2, g.Top + 3, 3); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
                 p.TakeDamage(CollapseDamage); Rt.Knockdown(p, 2f);
                 GameLog.Write($"The collapsing tower throws you out for {CollapseDamage} damage!");
             }
         }
+
+        /// <summary>Up on a tower: rounds go over cover and over friends.</summary>
+        public static bool Elevated(ICombatant u) => u is Player p && IsMounted(p);
 
         public static bool IsMounted(Player p) => p != null && Mounted.ContainsKey(p);
         public static Gun GunOf(Player p) => Mounted.TryGetValue(p, out var h) ? h.G : null;
         /// <summary>How far up (tiles) a gunner is drawn (0 for anyone else).</summary>
         public static float LiftOf(ICombatant u) => u is Player p && IsMounted(p) ? Lift : 0f;
 
-        static Gun Near(Player p) => Barrier.On ? Guns.FirstOrDefault(g => !g.Down && g.By == null && System.Math.Abs(p.X - g.Tx) <= 1 && (p.Y == g.NookY || p.Y == g.StepsY)) : null;
+        static Gun Near(Player p) => Barrier.On ? Guns.FirstOrDefault(g => !g.Down && g.By == null && System.Math.Abs(p.X - g.Tx) <= 1 && System.Math.Abs(p.Y - g.StepsY) <= 1) : null;
 
         /// <summary>The E prompt: leave the gun, or climb to one.</summary>
         public static (int x, int y, string label)? Prompt(Player p)
@@ -86,7 +90,7 @@ namespace GameCore
             Mounted[p] = new Held { G = g, Saved = p.EquippedWeapon, LastMag = Belt, Cat = p.EquippedWeaponCategory, WKey = p.EquippedWeaponKey };
             g.By = p; g.Box -= Belt; p.EquippedWeapon = w;
             p.X = g.Tx; p.Y = g.NookY; Rt.SetOffset(p, 0f, 0f);
-            GameLog.Write("You take the machine gun. E to leave it.");
+            GameLog.Write("You climb up and take the machine gun. E to leave it.");
             return true;
         }
 
@@ -95,8 +99,8 @@ namespace GameCore
             if (!Mounted.TryGetValue(p, out var h)) return;
             Mounted.Remove(p); h.G.By = null;
             p.EquippedWeapon = h.Saved; p.EquippedWeaponCategory = h.Cat; p.EquippedWeaponKey = h.WKey;
-            var (x, y) = TerrainMap.FindNearestEnterable(h.G.Tx + 1, h.G.NookY, 2); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
-            GameLog.Write("You let go of the machine gun.");
+            var (x, y) = TerrainMap.FindNearestEnterable(h.G.Tx, h.G.StepsY, 3); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f);
+            GameLog.Write("You climb back down.");
         }
 
         /// <summary>Everyone off (a save, a new map).</summary>

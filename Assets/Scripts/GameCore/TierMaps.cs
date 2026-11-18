@@ -941,7 +941,7 @@ namespace GameCore
         // (north and east: the red forest, the Obelisk Shrine, the Sentinel firebase on the road north, Deadfall Clearing,
         // Sinkhole Grove over the Deep Caverns, and the old summer camp with its bomb shelter). Exits: Dried Lake (x 40)
         // and the Rail-Yards (x 160) south, the Quarry Basin north (x 100).
-        static bool InTower(int[] towers, int x, int y) { foreach (int tc in towers) { int top = Barrier.TowerTop(tc); if (x >= tc - 2 && x <= tc + 2 && y >= top && y <= top + 2) return true; } return false; }
+        static bool InTower(int[] towers, int x, int y) { foreach (int tc in towers) { int bot = Barrier.BottomY(tc); if (x >= tc - 1 && x <= tc + 1 && y >= bot + 3 && y <= bot + 4) return true; } return false; }
         public static MapLayout Tier4()
         {
             var c = new TerrainCanvas(Size, Size, TerrainCanvas.Seed("tier4"));
@@ -1091,15 +1091,15 @@ namespace GameCore
             for (int bx = Barrier.X0; bx <= Barrier.X1; bx++)
             {
                 int bot = Barrier.BottomY(bx);
-                bool towerBody = System.Array.Exists(towers, tc => System.Math.Abs(tc - bx) <= 2);
+                bool towerBody = System.Array.Exists(towers, tc => System.Math.Abs(tc - bx) <= 1);
                 if (Barrier.StairCols.Contains(bx)) c.Deco(bx, bot + 3, "deck_steps");
                 else { if (!towerBody) c.Deco(bx, bot + 3, "deck_face"); c.Deco(bx, bot + 2, "deck_rail"); }
             }
-            foreach (int tc in towers)                                                  // a concrete watchtower in the yard behind the deck, a real small building (RoofView gives it its roof): windows north, a door south, three tiles inside
+            foreach (int tc in towers)                                                  // a tall concrete watchtower in the yard right behind the deck: a 3x2 block of footprint, its north-middle tile the gun nook (Emplacement.cs)
             {
-                int top = Barrier.TowerTop(tc);
-                c.Building(tc - 2, top, 5, 3, "concrete", Concrete, (tc, top + 2));
-                for (int dx = -1; dx <= 1; dx++) c.Put(tc + dx, top, Solid, "window");  // the firing windows, facing the field over the Barrier
+                int bot = Barrier.BottomY(tc);
+                for (int dx = -1; dx <= 1; dx++) { c.Put(tc + dx, bot + 3, Solid, "part"); c.Put(tc + dx, bot + 4, Solid, "part"); c.Paint(tc + dx, bot + 3, 1, 2, Concrete); }
+                c.Put(tc, bot + 4, Solid, "tower_conc");                                // the one tile that draws the prop
             }
             for (int ty = 88; ty <= 119; ty++) for (int tx = 129; tx <= 183; tx++)       // clear the trees, brush and logs of the field in front of the barrier and the yard behind it
                 if (!Barrier.Cells.Contains((tx, ty)) && c.Get(tx, ty) != Empty && !InTower(towers, tx, ty)) c.Put(tx, ty, Empty);

@@ -110,6 +110,7 @@ namespace GameCore
             foreach (var u in bodies)
             {
                 if (u == null || u == shooter || !u.IsAlive()) continue;
+                if (u is Mutant fm && Emplacement.Elevated(shooter) && EnemyAI.FriendlyToPlayer(fm)) continue;   // from a tower the round flies over your own side
                 var (ux, uy) = Pos(u);
                 float rx = ux - x0, ry = uy - y0;
                 float t = rx * dx + ry * dy;                 // along the line
@@ -137,7 +138,7 @@ namespace GameCore
                     if (TerrainMap.CoverAcAt(tx, ty) > 0 && h > LowCover) continue;   // a window frame: over the sill
                     stop = t; hit.Wall = true; hit.CoverX = tx; hit.CoverY = ty; break;
                 }
-                if (shooter is Player gp && Barrier.IsWall(tx, ty) && Emplacement.IsMounted(gp)) continue;   // a tower gun fires from high above the Barrier
+                if (Emplacement.Elevated(shooter)) continue;                                  // a tower gun fires from high above the Barrier and every other cover
                 int ac = TerrainMap.CoverAcAt(tx, ty);
                 if (ac <= 0 || shooter != null && System.Math.Abs(tx - shooter.X) <= 1 && System.Math.Abs(ty - shooter.Y) <= 1) continue;   // open ground, or cover right next to the shooter: fired over
                 float top = ac >= 3 ? HighCover : ac >= 2 ? LowCover : LightCover;

@@ -55,9 +55,7 @@ namespace GameCore
         public static int StepY(int x) => BottomY(x) + 1;
 
         /// <summary>The columns of the two watchtowers (their middle columns): flat stretches of the arc near x 145 and 166, clear of the steps (TierMaps).</summary>
-        public static int[] TowerCols() { var r = new List<int>(); foreach (int target in new[] { 145, 166 }) for (int d = 0; d <= 4; d++) foreach (int tx in new[] { target + d, target - d }) if (r.Count < (target == 145 ? 1 : 2) && Enumerable.Range(tx - 2, 5).All(c => !StairCols.Contains(c))) r.Add(tx); return r.ToArray(); }
-        /// <summary>A watchtower's top row (its window wall): the first row south of the deck under all five of its columns. The tower is a real concrete building (5 wide, 3 deep: windows on the north, a door on the south, three tiles inside), so the roof rules of any building apply to it.</summary>
-        public static int TowerTop(int tc) => Enumerable.Range(tc - 2, 5).Max(BottomY) + 3;
+        public static int[] TowerCols() { var r = new List<int>(); foreach (int target in new[] { 145, 166 }) for (int d = 0; d <= 4; d++) foreach (int tx in new[] { target + d, target - d }) if (r.Count < (target == 145 ? 1 : 2) && BottomY(tx - 1) == BottomY(tx) && BottomY(tx) == BottomY(tx + 1) && !StairCols.Contains(tx - 1) && !StairCols.Contains(tx) && !StairCols.Contains(tx + 1)) r.Add(tx); return r.ToArray(); }
         public static readonly HashSet<int> StairCols = new HashSet<int> { 140, 141, 150, 151, 161, 162, 171, 172 };
 
         /// <summary>Is (x, y) a standing piece of the wall? (A broken tile is rubble and not.)</summary>
