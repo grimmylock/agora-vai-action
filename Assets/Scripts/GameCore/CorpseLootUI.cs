@@ -18,6 +18,8 @@ namespace GameCore
         private const float RowHeight = 30f;
 
         private static CorpseLootUI _instance;
+        public static bool IsOpen => _instance != null && _instance._open;
+        public static void CloseIfOpen() { if (IsOpen) _instance.Close(); }
 
         private GameObject _panel;
         private Transform _list;
@@ -41,6 +43,7 @@ namespace GameCore
             _open = true;
             GameState.Current.ModalOpen = true;
             _panel.SetActive(true);
+            HudView.Instance?.PackForLoot(true);   // your own pack beside it
             Rebuild();
         }
 
@@ -50,6 +53,7 @@ namespace GameCore
             _corpse = null;
             GameState.Current.ModalOpen = false;
             if (_panel != null) _panel.SetActive(false);
+            HudView.Instance?.PackForLoot(false);
         }
 
         private void BuildPanelIfNeeded()
@@ -63,7 +67,7 @@ namespace GameCore
                 return;
             }
 
-            _panel = UIBuildUtil.CreatePanel(canvas.transform, "CorpseLootPanel", new Vector2(0.3f, 0.2f), new Vector2(0.7f, 0.8f),
+            _panel = UIBuildUtil.CreatePanel(canvas.transform, "CorpseLootPanel", new Vector2(0.63f, 0.2f), new Vector2(0.98f, 0.8f),   // right side: your pack is on the left
                 new Color(0.08f, 0.08f, 0.08f, 0.95f));
 
             _headerText = UIBuildUtil.CreateText(_panel.transform, "HeaderText", new Vector2(0.02f, 0.9f), new Vector2(0.7f, 0.99f),
@@ -125,7 +129,7 @@ namespace GameCore
             if (_corpse == null) { Close(); return; }
             var player = Player.Current;
 
-            _headerText.text = $"{_corpse.Name}'s Body — RU: {_corpse.Ru}";
+            _headerText.text = $"{_corpse.Name}'s Body — RU: {_corpse.Ru}   (yours: {player?.Ru ?? 0})";
 
             foreach (Transform child in _list) Destroy(child.gameObject);
 

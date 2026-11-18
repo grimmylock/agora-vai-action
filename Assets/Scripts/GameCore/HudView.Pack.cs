@@ -20,12 +20,26 @@ namespace GameCore
         public static int PackClosedFrame = -1;          // the ESC that closed it doesn't also pause (PlayerController)
         const float Cell = 56f;
         RectTransform _pack, _bagRect, _outRect; GameObject _packBox; readonly RectTransform[] _slots = new RectTransform[4]; TextMeshProUGUI _packInfo, _packHint;
-        string _packStamp;
+        string _packStamp; bool _beside;   // _beside: the pack is open next to a loot panel (CorpseLootUI), on the left
         InventoryItem _drag; bool _dragRot; int _dragDx, _dragDy; Image _dragImg;
         static readonly Dictionary<string, Sprite> Icons = new Dictionary<string, Sprite>();
 
+        /// <summary>2026-11-18 (Yan: "add the player inventory screen when looting npcs"): looting a body opens your pack screen on the left beside the loot panel, so you see what fits before you take it (CorpseLootUI).
+        /// I or ESC closes both. Takes go through Player.AddItem (Pack.Place), the pack redraws itself.</summary>
+        public void PackForLoot(bool on)
+        {
+            if (on) { if (!PackOpen) { PackOpen = true; Pack.Settle(Player.Current); } _beside = true; _packStamp = null; }
+            else
+            {
+                _beside = false;
+                if (PackOpen) { PackOpen = false; PackClosedFrame = Time.frameCount; DropDrag(); if (_packBox != null) Destroy(_packBox); _packBox = null; _pack = null; }
+            }
+        }
+
         void TogglePack()
         {
+            if (_beside) { CorpseLootUI.CloseIfOpen(); return; }   // looting: the loot panel closes the pack with it
+
             PackOpen = !PackOpen;
             GameState.Current.ModalOpen = PackOpen;
             if (PackOpen) { Pack.Settle(Player.Current); _packStamp = null; }
@@ -51,7 +65,7 @@ namespace GameCore
             if (_packBox != null) Destroy(_packBox);
             var bag = Pack.Bag(p);
             float bw = bag.Cols * Cell, bh = bag.Rows * Cell, W = bw + 48f + 420f, H = Mathf.Max(bh + 48f + 150f, 560f);
-            _pack = Box(_root.transform, "Pack", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(W, H));   // centred (Rect's pivot is its anchor)
+            _pack = Box(_root.transform, "Pack", new Vector2(_beside ? 0.3f : 0.5f, 0.5f), Vector2.zero, new Vector2(W, H));   // centred (left of the loot panel while looting) (Rect's pivot is its anchor)
             _packBox = _pack.parent.gameObject;
             Txt(_pack, "Title", new Vector2(18, -12), new Vector2(600, 30), (bag.Id == "none" ? "POCKETS" : bag.Name.Split('(')[0].Trim().ToUpperInvariant()), true, 20, Cream);
             // the bag: its cloth, a darker seam round the opening, the cells sewn in
