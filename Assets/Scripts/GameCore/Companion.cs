@@ -33,6 +33,16 @@ namespace GameCore
             GameLog.Write($"{Current.Name} ({rank}, {Current.EquippedWeapon?.Name ?? "bare hands"}) shoulders a pack: \"Lead the way.\"");
         }
 
+        /// <summary>A story character joins you as your partner (Pavel, Story 5). Replaces a hired partner.</summary>
+        public static void JoinStory(Player p, string name, int hpPercent)
+        {
+            if (Alive && Current.Name == name) return;
+            if (Alive) Dismiss();
+            var (w, a) = EncounterGeneration.PickFactionLoadout("Wanderers", "Rookie", 1);
+            Spawn(name, "Rookie", w, a, -1, p);
+            Current.Hp = System.Math.Max(1, Current.MaxHp * hpPercent / 100);
+        }
+
         public static void Dismiss()
         {
             if (Current == null) return;

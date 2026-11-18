@@ -2520,6 +2520,33 @@ static class Program {
     Kill("key"); Tier1Story.TryInteract(p);
     Check(Story.IsDone("key") && MacroState.Current.Keys.Contains("flooded_bunker") && Story.Objectives.Any(o => o.mission == "engineer" && o.landmark == "Flooded Bunker"),
       "Story 4: the key, and the bunker is next");
+    // Story 5: Pavel - the bunker, the way home, the culvert, the reveal
+    { var cmd = new LandmarkInstance { Name = Tier1Story.Command, X = 20, Y = 20 }; var den = new LandmarkInstance { Name = Tier1Story.Den, X = 30, Y = 30 };
+      TerrainMap.Landmarks.Add(cmd); TerrainMap.Landmarks.Add(den);
+      try {
+        Tier1Story.ZoneOverride = Tier1Story.BunkerZone; p.X = 20; p.Y = 21;
+        Tier1Story.TryInteract(p);
+        Check(Story.Step("engineer") == 2 && Companion.Alive && Companion.Current.Name == "Pavel" && Companion.Current.Hp < Companion.Current.MaxHp, "Story 5: Pavel joins you in the bunker, wounded");
+        Companion.Current.Hp = 0; Tier1Story.Tick();
+        Check(Story.Step("engineer") == 1 && Story.Has("pavel_lost"), "Story 5: if Pavel dies the bunker has him again (no soft lock)");
+        Tier1Story.TryInteract(p);
+        Tier1Story.ZoneOverride = null; At(Tier1Story.Yefim); Tier1Story.Tick();
+        Check(Story.IsDone("engineer") && Story.Step("culvert") == 1 && !Companion.Alive, "Story 5: Pavel at the village lamps: Yefim takes him in, the engineer job is done");
+        At(Tier1Story.Medic); Tier1Story.TryInteract(p);
+        Check(Story.Step("culvert") == 2 && MacroState.Current.DiscoveredHiddenNodes.Contains(Tier1Story.CaveZone), "Story 5: the canister job opens the cave's hidden way");
+        EncounterState.Enemies.Clear(); Tier1Story.ZoneOverride = Tier1Story.CaveZone; Tier1Story.OnEnterZone(Tier1Story.CaveZone);
+        var brute = EncounterState.Enemies.FirstOrDefault(e => e.Name == "Blight Brute");
+        Check(brute != null && !brute.IsAggroed, "Story 5: the Brute sleeps in the Mutant Den");
+        UnityEngine.Time.time = 1000f; p.X = 30; p.Y = 31; Tier1Story.TryInteract(p);
+        Check(Story.Step("culvert") == 3 && p.Inventory.Items.Any(i => i.Id == "story_canister") && Story.InCutscene && !brute.IsAggroed, "Story 5: the canister, the cutscene, the Brute still standing");
+        UnityEngine.Time.time = 1004f; Tier1Story.Tick();
+        Check(brute.IsAggroed, "Story 5: then it hunts you");
+        Tier1Story.ZoneOverride = null; Tier1Story.Tick();
+        Check(Story.Step("culvert") == 4, "Story 5: out through the pipe: it can't follow, bring the canister back");
+        At(Tier1Story.Medic); Tier1Story.TryInteract(p);
+        Check(Story.IsDone("culvert") && Story.Has("husks_known") && !p.Inventory.Items.Any(i => i.Id == "story_canister"), "Story 5: Pavel opens it: the Husks are known");
+      } finally { Tier1Story.ZoneOverride = null; TerrainMap.Landmarks.Remove(cmd); TerrainMap.Landmarks.Remove(den); Companion.Current = null; }
+    }
     MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Remove("flooded_bunker");
   }
 

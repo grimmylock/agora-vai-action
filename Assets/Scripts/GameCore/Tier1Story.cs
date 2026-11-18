@@ -15,7 +15,7 @@ using GameData;
 
 namespace GameCore
 {
-    public static class Tier1Story
+    public static partial class Tier1Story
     {
         public const string Yefim = "The Bonfire Camp", Stas = "Bunkhouse", Headman = "Headman's House", Fence = "Watchtower 3";
         const string Pack = "story_courier_pack", Note = "story_p_note";
@@ -27,7 +27,7 @@ namespace GameCore
         static string SpotFor(string key) => Story.Spot(key, (TerrainMap.Landmarks ?? new List<LandmarkInstance>())
             .Where(l => TerrainMap.RegionAt(l.X, l.Y) == "bonfire_village" || l.Name.EndsWith("Checkpoint")).Select(l => l.Name).Concat(Used).ToArray());
 
-        static bool OnTier1 => TerrainMap.ZoneId == "perimeter";
+        static bool OnTier1 => Zone == "perimeter";
 
         // ---------------- the squads a mission puts down ----------------
 
@@ -86,6 +86,7 @@ namespace GameCore
         /// <summary>E pressed: a mission's conversation or action here? True if the story took the key press.</summary>
         public static bool TryInteract(Player p)
         {
+            if (TryInteractPavel(p)) return true;   // Story 5: the bunker, the cave, Pavel in the village
             if (!OnTier1) return false;
             if (Story.Near(p, Yefim, 3)) return TalkYefim();
             if (Story.Near(p, Stas, 2)) return TalkStas();
@@ -273,6 +274,7 @@ namespace GameCore
         /// <summary>TurnLoop.TickAwareness: jobs that finish on their own (a squad wiped out), and the distress loop at night.</summary>
         public static void Tick()
         {
+            TickPavel();
             if (!OnTier1) return;
             if (Story.Step("intro") == 0) { Story.SetStep("intro", 1); Story.SetObjective("intro", "Talk to Yefim by the fire", Yefim); }
             if (Story.Step("fence") == 1 && Cleared("fence")) { Story.SetStep("fence", 2); Story.SetObjective("fence", "Tell Yefim what you found (or look closer at the fence first)", Yefim); }

@@ -6451,3 +6451,11 @@ Yan's rules: jobs from the physical board, from traders and from random friendly
 - `QuestSystem`: radiant jobs skip the complication and the two-way turn-in, pay `Radiant.Pay`, are not added to `CompletedQuestIds`.
 - UI: PDA rows ("PDA: name (n tiles)") in the quest panel's AVAILABLE list, E prompt "Talk to ..." / "Read the job board", `Radiant.TryTalk` in the E handler. pt-BR lines added.
 - Not done: Retrieve/Investigate templates (need hidden nodes), more boards in other safe zones (only the Bonfire Village board exists), co-op acceptance by remote players. Harness: `RadiantChecks`. Not run in Unity.
+
+## Story 5 (2026-11-18): Tier 1 part 2a - Pavel
+
+Yan approved the Tiers 4-7 outline (`STORY_OUTLINE_T4_T7.md`; the ending idea is in `STORY.md`) and said "start with tier 1". Tier 1 up to the Headman's key was already built (Story 4); this adds what comes after, in `GameCore/Tier1Story.Pavel.cs` (Tier1Story is now partial):
+- **The Engineer:** E at the Flooded Bunker's Command Room: the dialogue from STORY_DIALOGUE.md, then Pavel walks with you as a story partner (`Companion.JoinStory`, 60% health; replaces a hired partner). Back at Bonfire Village's lamps (8 tiles from the fire) Yefim takes him in. If Pavel dies on the way the step goes back to the bunker (STORY.md said "retry from a save"; this avoids a soft lock).
+- **The Culvert:** Pavel (Medic's House) sends you for the canister; the cave's hidden way opens (`DiscoveredHiddenNodes` gets `secret_cave`). A Blight Brute sleeps at the Mutant Den (spawned on entering the cave, `Tier1Story.OnEnterZone`); taking the canister starts a cutscene (the camera on the Brute, Pavel on the radio), then it hunts you; out through the cave mouth it can't follow. Back at the Medic's House Pavel opens the canister: the reveal, flag `husks_known`.
+- Check: `Tier1StoryChecks` plays the whole chain (bunker, Pavel's death, village, cave, canister, reveal). Harness green.
+- Not done (Story 5b): the Grey Robes (units that watch, leave, smoke when shot), the Husks (faction, units, sprites, roaming in every tier), the night defence of Bonfire Village and the road north. The people are still talk points, not units. The chase's feel (Brute speed against yours) is untuned and none of this was run in Unity. Not translated to pt-BR yet (Yan: translate the story at the end).
