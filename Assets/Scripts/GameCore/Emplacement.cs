@@ -1,7 +1,7 @@
 // The Barrier's two concrete watchtowers and their machine guns (Yan, 2026-11-18: "2 raised concrete watchtowers with the machineguns" ... "heavy machineguns on tripods (not lootable, only usable)").
-// Each tower (Barrier.TowerCols; the map puts a 3x2 block of "part" tiles with the tower prop on the deck, and ONE open tile in it, the gun nook, right behind the barrier) has a gun:
+// Each tower (Barrier.TowerCols; the map puts a 3x2 block of "part" tiles with the tower prop in the yard right behind the deck - NOT on the catwalk - and the gun nook is its north-middle tile) has a gun:
 //  - E on the steps under the tower (its south face): you climb in. You stand in the nook (it can be reached no other way), your legs are locked (no walking, sprinting or diving), your own gun is put away
-//    and a belt-fed machine gun (a Corvan LMG, 200-round belt) is in your hands; mouse aims, left click fires like any gun. You fire over the barrier from the nook (the shooter-next-to-cover rule).
+//    and a belt-fed machine gun (a Corvan LMG, 200-round belt) is in your hands; mouse aims, left click fires like any gun. You fire over the barrier from the nook: a tower gun is high above it, so the wall never stops your rounds (Ballistics.Trace).
 //  - The belt swaps by itself when it runs dry (no reload) from the tower's box: 900 rounds, refilled 12 a second while nobody is on it. The gun is part of the tower: not an item, never lootable.
 //  - E again, going down, dying, or leaving the map: you step out onto the steps and your own gun comes back. A save puts everyone off first (Save -> ReleaseAll): nobody is ever saved holding it.
 //  - Co-op: one gunner per tower, any player can man either.
@@ -26,7 +26,7 @@ namespace GameCore
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Reset() { Mounted.Clear(); _guns = null; }
 
-        public static List<Gun> Guns => _guns ?? (_guns = Barrier.TowerCols().Select(tx => new Gun { Tx = tx, NookY = Barrier.BottomY(tx) + 1, StepsY = Barrier.BottomY(tx) + 3 }).ToList());
+        public static List<Gun> Guns => _guns ?? (_guns = Barrier.TowerCols().Select(tx => new Gun { Tx = tx, NookY = Barrier.BottomY(tx) + 3, StepsY = Barrier.BottomY(tx) + 5 }).ToList());
 
         public static bool IsMounted(Player p) => p != null && Mounted.ContainsKey(p);
         public static Gun GunOf(Player p) => Mounted.TryGetValue(p, out var h) ? h.G : null;

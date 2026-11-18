@@ -2516,6 +2516,9 @@ static class Program {
       var tg = Emplacement.Guns[0]; var own = p.EquippedWeapon; p.X = tg.Tx; p.Y = tg.StepsY; p.Hp = p.MaxHp;
       Emplacement.TryInteract(p);
       Check(Emplacement.IsMounted(p) && p.X == tg.Tx && p.Y == tg.NookY && p.EquippedWeapon != null && p.EquippedWeapon.Db != null && p.EquippedWeapon.Db.MagCapacity == Emplacement.Belt && Emplacement.LiftOf(p) > 0f, "Machine gun: E at the tower's steps: you are in the nook with a 200-round belt gun, drawn up on the platform");
+      { var tfoe = new HumanEnemy("Fanatic", tg.Tx, Barrier.TopY(tg.Tx) - 6, "Obelisk", "Experienced", null, null); var (gx, gy) = Ballistics.Pos(p); var (ex, ey) = Ballistics.Pos(tfoe); float gl = (float)Math.Sqrt((ex - gx) * (ex - gx) + (ey - gy) * (ey - gy));
+        var th = Ballistics.Trace(p, gx, gy, (ex - gx) / gl, (ey - gy) / gl, 40f, 0.8f, new ICombatant[] { tfoe });
+        Check(!th.Cover && th.Unit == tfoe, "Machine gun: from the tower the rounds go over the barrier from any distance"); }
       p.EquippedWeapon.CurrentMagazine = 0; float box0 = tg.Box; Emplacement.Tick(0.1f);
       Check(p.EquippedWeapon.CurrentMagazine == Emplacement.Belt && tg.Box < box0, "Machine gun: the belt swaps by itself from the tower's box");
       Check(Emplacement.GunOf(p) == tg && Emplacement.Guns[1].By == null, "Machine gun: one gunner to a gun");
