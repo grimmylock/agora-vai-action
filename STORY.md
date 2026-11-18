@@ -317,3 +317,11 @@ Decided (Yan, 2026-10-29):
 ## Tier 4+
 
 Not written yet.
+
+## The ending (Yan, 2026-11-18, idea - details open)
+
+- **"Those" are a third party**, not a faction. They control parts of other factions (Garrison, Obelisk, the scientists / Surveyors) through political deals and insiders.
+- **The truth** (like Days Gone's true ending): the mutants (maybe the psychic, brain kind) have evolved until they are conscious, and are spreading the Zone's influence over the whole world. **The player can't stop it** (for now); something to give hope at the end is still to be found.
+- **Reaching the ending changes the world:** every zone is Tier 5 at least; mutants get stronger and bolder (they attack anything that moves, not only fights they like); faction squads stop roaming and hold their bases, with a few high-tier squads still roaming for supplies. Bases are well defended, not under constant attack: instead a **"defend this base" mission** where a base calls you on the PDA, and THEN the hordes come. (Post-game like Dragon's Dogma's Unmoored World.)
+- Labs and dungeons open new paths: deeper levels and secrets.
+- Rule 6 stays: the harder world is the promise; rewards must scale with it.
