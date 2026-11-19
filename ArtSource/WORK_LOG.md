@@ -6778,3 +6778,7 @@ Yan: "dungeons have some kind of unique thing ... a puzzle, a final reward, a co
 ## Batch 9p - Tier 2 landmarks, the plain ones (2026-11-19)
 Yan: "Tier 2 landmarks". Six places that had nothing got a paper each (now 20 papers, EN + pt-BR) and a small scene in `TierMaps.Tier2Scenes`: Gatehouse (gate log: three silent walk-ins from the north), Mine Adit (chalk board: 11 lamps in, 9 out), Smokestack (spotter: lights from the Dock hatch, forty paces apart), Rail Bridge Camp (toll ledger: Garrison trucks north at night, three out for one back), Wreck Line (scout: dogs won't come near since the beat; the King wants a third), Scrapper's Shack (dogs fed first and growing). Story places (Road Cut, Repeater, Sniper's Lip, Chokepoint, Loading Dock, Nest, Maze, Tire Fort, Kennels, Crusher Row, Truck Stop) left alone.
 Harness passed. Not run in Unity or rendered; scene tiles are placed by coordinate and may overlap existing props.
+
+## Batch 9q - Tier 2 scenes rendered + concepts for the last three mutants (2026-11-19)
+- Rendered the Tier 2 scenes (`maps/renders/tier2_landmarks_scenes.png`): the decals are small and faint at map scale; the landmarks read, the story decals mostly do not. Not changed.
+- Concepts for Swarm (Rot Crawler), Mind Weaver, Void Weaver: see `ArtSource/MUTANT_CONCEPTS.md`, `make_concepts_remaining.py`, `ArtSource/mutants_anim/concepts_new/`. Not in the game; waiting on Yan for the sprite makers.

@@ -13,3 +13,15 @@ Open questions for Yan: keep "Rot Swarm" as a name for the crawlers? (the swarm 
 
 
 **Update 2026-11-09 (second pass):** sprites redrawn with volume shading (`pxart.py`) and animated from their joints (`humanoid_anims.py`): run/crawl/float, bite or cast, pounce for the melee ones (Alpha Prowler, Rot Crawler), psi blast (Mind Weaver) and neural overload (Void Weaver). GIFs in `ArtSource/mutants_anim/humanoid/`. The Husks (STORY.md) still have no sprite or unit.
+
+
+## Concepts for the last three without an updated sprite (2026-11-19)
+Yan: "create concepts for the mutants that do not have updated sprites yet, like you did with the gaunt ... i'll come back later and we'll run them through the sprite makers". Remaining after the HD set (Blind Maw, Pallid/Veil/Dread Prowler, Blight Brute, Gaunt, Elder): **Swarm (Rot Crawler), Mind Weaver, Void Weaver** (the Alpha Prowler became the Gaunt). Hand-built with `pxart.py` by `ArtSource/make_concepts_remaining.py` (not generated, NOT in the game), files in `ArtSource/mutants_anim/concepts_new/` (`*_concept.png`, `concepts_sheet.png`). They replace the 2026-11-09 first-pass drawings, which were too cartoonish next to the Gaunt.
+
+| Mutant | Concept | Reads as | Tells to animate |
+|-|-|-|-|
+| **Rot Crawler** (Swarm, T1) | A person eaten from inside by a bloom: dragging barrel body, spine arched under tiers of bright bracket fungus, belly split with a few ribs, forearms too long, a human skull with the jaw unhinged and one spore-lit eye. 77x42. | One of many, low, wet, something that used to be a man; the yellow-green is a cheap fast read in a pack. | Scuttle with the fungus bobbing, jaw snap, spore puff on death. |
+| **Mind Weaver** (T3, psi) | A floating seer: long narrow skull, eyes sewn shut with thread, a stitched mouth, the crown opened into bone petals round a lit bare brain; long fingers weaving a lattice of violet thread; no legs, a fall of thread strands under a torn shroud. 60x98. | It "sees by the threads"; the lattice between its hands is the telegraph for its psi attack. | Hover sway, threads lashing out to the target, brain pulse. |
+| **Void Weaver** (T5, ranged/cloak) | A tall figure in layered torn robes, a pointed hood with a small blank mask set deep in it and one vertical slit of light, six-fingered hands, cracks of violet light down the cloth, a broken halo of shards turning round the head, hem fraying into motes. 57x132. | Silhouette: needle hood + flare + halo; the shards are the tell. | Drift, shards converging for the neural overload, robe cracks flaring. |
+
+Rough points (say if you want them changed before the sprite makers): the Void Weaver's robe is still a little blocky; the Mind Weaver's skin is flat grey; the Rot Crawler's hind legs are thin sticks. Old names kept (Swarm, Mind Weaver, Void Weaver); no cloaked variants drawn yet.
