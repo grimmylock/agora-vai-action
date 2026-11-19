@@ -26,6 +26,9 @@ namespace GameCore
             return (-1, -1);
         }
 
+        /// <summary>For Tools/render (ANNEX=1): puts down what the Annex holds without running the story.</summary>
+        internal static void PlaceForRender() { _annexPlaced = false; PlaceAnnex(); }
+
         static void PlaceAnnex()
         {
             int extra = Mathf.Max(0, Player.All.Count - 1);

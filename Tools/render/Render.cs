@@ -41,6 +41,12 @@ static class RenderMain {
       TerrainMap.BuildTerrainForZone(id);
       if (Environment.GetEnvironmentVariable("STASHES") == "1")   // Batch 124: where the stashes are
         foreach (var o in TerrainMap.InteractiveObjects) Console.WriteLine($"stash {o.X},{o.Y} {TerrainMap.GetTile(o.X, o.Y).Look} {o.Name}");
+      var annexLines = new System.Collections.Generic.List<string>();
+      if (Environment.GetEnvironmentVariable("ANNEX") == "1" && id == "loading_annex") {   // 2026-11-19: what the Annex holds (papers, bags, mutants) as markers: O x y kind name / M x y name
+        EncounterState.Enemies.Clear(); Tier3Annex.PlaceForRender();
+        foreach (var o in TerrainMap.InteractiveObjects) annexLines.Add($"O\t{o.X}\t{o.Y}\t{(o.Lock == "doc" ? "doc" : "bag")}\t{o.Name}\t{TerrainMap.GetTile(o.X, o.Y).Look}");
+        foreach (var m in EncounterState.Enemies.OfType<Mutant>()) annexLines.Add($"M\t{m.X}\t{m.Y}\t-\t{m.Name}");
+      }
       Vision.Reset();
       int xs = Environment.GetEnvironmentVariable("RENDER_X2") == "1" && WorldArt.Ready ? 2 : 1;   // RENDER_X2=1: 32 px per tile, double-density sprites at full resolution
       var px = WorldArt.Ready ? (xs == 2 ? WorldArt.ComposePreviewX2(id) : WorldArt.ComposePreview(id)) : TerrainArt.Compose(id);
@@ -106,6 +112,7 @@ static class RenderMain {
       var sb = new System.Text.StringBuilder();
       if (MapLayoutDatabase.All.TryGetValue(id, out var lay) && lay.Anchors != null) foreach (var kv in lay.Anchors) sb.AppendLine($"A\t{kv.Value.x}\t{kv.Value.y}\t{kv.Key}");
       foreach (var e in TerrainMap.Exits) sb.AppendLine($"E\t{e.X}\t{e.Y}\t{e.TargetZoneId}");
+      foreach (var l in annexLines) sb.AppendLine(l);
       System.IO.File.WriteAllText($"{art}/labels_{id}.txt", sb.ToString());
       Console.WriteLine($"{id}: {TerrainMap.Width}x{TerrainMap.Height} in {sw.ElapsedMilliseconds} ms");
       if (Environment.GetEnvironmentVariable("DUMPAT") is string da) {
