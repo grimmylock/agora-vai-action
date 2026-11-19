@@ -98,6 +98,7 @@ namespace GameCore
             public bool Slow;                                         // RT 9: this player has bullet time on (its own key, drains Focus)
             public float Stamina = StaminaMax, StaminaRest, Focus, DiveUntil = -1f, ProneUntil = -1f, PinnedUntil = -1f, DiveX, DiveY;
             public float VaultFrom = -1f, VaultLen, VaultX, VaultY, VaultDist, UseDone, UseFrom;
+            public float ScreenReach = Vision.MaxRadius;              // 2026-11-19 (Yan: "enemies are still shooting a lot at me from veeeeery far away, I had to zoom all the way out"): how far this player's SCREEN shows (half the view's width plus how far the camera looks ahead); nobody fair-shoots from past it
             public float LookReach = Vision.MaxRadius;                // how far this player sees where they look (Vision, for fair shots)
             public int FireMode, BurstLeft;                           // 0 auto, 1 3-round burst, 2 semi (Gunplay.HasModes guns only); the rounds of the burst still to fire
             public bool Aiming;

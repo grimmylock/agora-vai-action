@@ -229,7 +229,7 @@ namespace GameCore
             // a fair shot (Yan: "i can't see past a certain range but enemies keep shooting me ... Enemies also see me through walls"):
             // only from as far as you could see him if you looked (Vision.LookReach), and the line of sight has to hold both ways -
             // a tile line traced from him to you can slip past a corner that the line from you to him doesn't
-            if (pl != null ? (CombatantUtil.Distance(h, t) > System.Math.Min(hd.Reach, Rt.Of(pl).LookReach) || !Contact.Mutual(h, pl) || !Contact.Knows(h, pl))
+            if (pl != null ? (CombatantUtil.Distance(h, t) > System.Math.Min(hd.Reach, System.Math.Min(Rt.Of(pl).LookReach, Rt.Of(pl).ScreenReach)) || !Contact.Mutual(h, pl) || !Contact.Knows(h, pl))
                 : (CombatantUtil.Distance(h, t) > hd.Reach || !grid.CheckLineOfSight(h.X, h.Y, t.X, t.Y))) { s.BurstLeft = 0; return; }   // the story's soldiers shoot mutants: plain line of sight
 
             // 2026-11-17 (Yan: "enemies try to move in the effective range before shooting too much, that way fights happen more inside the normal vision range (besides snipers)"): while he is still walking

@@ -213,6 +213,7 @@ namespace GameCore
             if (Rt.On) lookReach *= Optics.LookMul(player.EquippedWeapon, Rt.Me.Aiming);   // 2026-11-16: aiming through a scope gives some of dusk/rain/fog back (Vision caps it at MaxRadius)   // real time: the look cone (Vision.LookReach)
             Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
             Rt.Me.LookReach = Vision.LookReach;                                  // co-op: fair shots read each player's own reach
+            { var vc = Camera.main; if (vc != null && _playerMarker != null) { var cp = vc.transform.position; var pm = _playerMarker.transform.position; Rt.Me.ScreenReach = vc.orthographicSize * vc.aspect + Mathf.Sqrt((cp.x - pm.x) * (cp.x - pm.x) + (cp.y - pm.y) * (cp.y - pm.y)) + 2f; } }   // what the screen shows, in tiles (zoomed out: more)
             _roofs?.Tick(player);
             _atmo?.Tick(player, look);
             ColorGrade.Apply(look);
