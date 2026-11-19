@@ -8,7 +8,7 @@ Yan: every gun individually, not one global knob; a 1-against-1 where every roun
 
 | gun | class | tier | rate | vsHuman | rounds to kill (same-tier armor) | all-hits kill time s | steady deg | kick | hit% 6t | hit% 15t | hit% 30t |
 |-|-|-|-|-|-|-|-|-|-|-|-|
-| PSh-18 Pchela | sidearm | 1 | 1.00 | 0.870 | 9 | 3.8 | 1.40 | 2.2 | 100 | 79 | 43 |
+| PSh-18 Pchela | sidearm | 1 | 1.00 | 1.500 (was 0.870, 2026-11-19) | 5 | 2.2 | 1.40 | 2.2 | 100 | 79 | 43 |
 | Walden P9 | sidearm | 2 | 1.00 | 0.693 | 11 | 2.5 | 1.10 | 2.2 | 100 | 91 | 55 |
 | Halden .45 Service | sidearm | 2 | 1.00 | 0.830 | 8 | 3.1 | 1.00 | 3.0 | 100 | 90 | 58 |
 | Halden Service Revolver | sidearm | 1 | 1.00 | 1.117 | 5 | 1.6 | 1.00 | 3.2 | 100 | 90 | 58 |

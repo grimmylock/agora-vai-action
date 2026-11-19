@@ -3802,6 +3802,8 @@ static class Program {
       for (int i = 0; i < 200; i++) { UnityEngine.Random.InitState(100 + i); var (w, a) = EncounterGeneration.PickFactionLoadout(fac, i % 2 == 0 ? "Rookie" : "Experienced", 1, i % 10 == 0); float pd = a?.PhysDR ?? 0f; int dmg = Math.Max(1, CombatRules.PhysicalDamage(torso, ld, pd, w0.Db.IgnorePhysDRPercent ?? 0f)); need.Add((int)Math.Ceiling(1000f / dmg)); dr.Add(pd); }
       need.Sort(); Console.WriteLine($"STARTER vs {fac} (tier 1 loadouts): rounds to kill, all torso hits: median {need[100]}, 10th pct {need[20]}, 90th pct {need[180]}; mean armor PhysDR {dr.Average():0.00}");
     }
+    { var cnt = new Dictionary<string, int>(); int tot = 0; foreach (var fac in new[] { "Raiders", "Wanderers", "Liberators", "Obelisk", "Garrison", "Outcasts", "Contractors", "Cartel" }) for (int i = 0; i < 200; i++) { UnityEngine.Random.InitState(500 + i); var (w, a) = EncounterGeneration.PickFactionLoadout(fac, i % 2 == 0 ? "Rookie" : "Experienced", 1, false); string n = w?.Name ?? "none"; cnt[n] = cnt.TryGetValue(n, out var c) ? c + 1 : 1; tot++; }
+      Console.WriteLine("STARTER tier-1 enemy weapons (1600 loadouts, 8 factions, rookies/experienced): " + string.Join(", ", cnt.OrderByDescending(k => k.Value).Take(8).Select(k => $"{k.Key} {k.Value * 100 / tot}%")) + $"; PSh-18 Pchela {(cnt.TryGetValue("PSh-18 Pchela", out var pc) ? pc : 0) * 100 / tot}%"); }
     var q = Arena(out _, out _); Console.WriteLine($"STARTER kit: mag {w0.CurrentMagazine}/{w0.MagCapacity}, torso damage per round before armor {torso:0}, enemy HP {new HumanEnemy("x", 0, 0, "Raiders", "Rookie", null, null).MaxHp}");
   }
 
