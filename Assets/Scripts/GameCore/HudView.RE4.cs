@@ -84,13 +84,13 @@ namespace GameCore
 
             // ---- condition cluster, bottom left ----
             var g = Rect(_re4Root.transform, "Gauge", A, new Vector2(56, 52), new Vector2(520, 190)); _gGauge = g.gameObject.AddComponent<CanvasGroup>();
-            var soft = Img(g, "Soft", A, new Vector2(-120, -100), new Vector2(880, 400), new Color(0, 0, 0, 0.55f)); soft.sprite = SoftSpr();
-            var back = Img(g, "RingBack", A, new Vector2(0, 8), new Vector2(172, 172), new Color(0.04f, 0.045f, 0.05f, 0.82f)); back.sprite = DiscSpr();
+            var soft = Img(g, "Soft", A, new Vector2(-120, -100), new Vector2(880, 400), new Color(0, 0, 0, 0f)); soft.sprite = SoftSpr();
+            var back = Img(g, "RingBack", A, new Vector2(0, 8), new Vector2(172, 172), new Color(0.04f, 0.045f, 0.05f, 0f)); back.sprite = DiscSpr();
             var track = Img(g, "RingTrack", A, new Vector2(0, 8), new Vector2(172, 172), new Color(1, 1, 1, 0.12f)); track.sprite = RingSpr();
             _rGhost = RingFill(g, "RingGhost", new Vector2(0, 8), 172, new Color(1, 1, 1, 0.65f));
             _rRing = RingFill(g, "Ring", new Vector2(0, 8), 172, Fine);
             var mask = Img(g, "PortraitMask", A, new Vector2(16, 24), new Vector2(140, 140), Color.white); mask.sprite = DiscSpr(); var mk = mask.gameObject.AddComponent<Mask>(); mk.showMaskGraphic = false;
-            var pbg = Img(mask.transform, "Back", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140, 140), new Color(0.06f, 0.065f, 0.07f, 1f)); Center(pbg.rectTransform);
+            var pbg = Img(mask.transform, "Back", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140, 140), new Color(0.06f, 0.065f, 0.07f, 0f)); Center(pbg.rectTransform);
             _rPortrait = Img(mask.transform, "Portrait", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(150, 150), Color.white); _rPortrait.preserveAspect = true; Center(_rPortrait.rectTransform);
             _rCond = T2(g, "Cond", A, new Vector2(196, 128), new Vector2(300, 28), "", true, 20, Fine, TextAlignmentOptions.BottomLeft);
             _rHp = T2(g, "Hp", A, new Vector2(196, 66), new Vector2(300, 60), "", false, 54, Bone, TextAlignmentOptions.BottomLeft);
@@ -101,7 +101,7 @@ namespace GameCore
 
             // ---- ammo, bottom right ----
             var a = Rect(_re4Root.transform, "Ammo", BR, new Vector2(-56, 52), new Vector2(520, 270)); _gAmmo = a.gameObject.AddComponent<CanvasGroup>();
-            var soft2 = Img(a, "Soft", BR, new Vector2(120, -100), new Vector2(880, 520), new Color(0, 0, 0, 0.55f)); soft2.sprite = SoftSpr();
+            var soft2 = Img(a, "Soft", BR, new Vector2(120, -100), new Vector2(880, 520), new Color(0, 0, 0, 0f)); soft2.sprite = SoftSpr();
             _rWName = T2(a, "WName", BR, new Vector2(0, 232), new Vector2(500, 26), "", true, 18, Bone, TextAlignmentOptions.BottomRight);
             _rWeapon = Img(a, "Weapon", BR, new Vector2(0, 118), new Vector2(260, 110), new Color(1, 1, 1, 0.9f)); _rWeapon.preserveAspect = true;
             _rLoad = T2(a, "Load", BR, new Vector2(0, 92), new Vector2(500, 20), "", true, 12, Dim, TextAlignmentOptions.BottomRight);
@@ -115,9 +115,9 @@ namespace GameCore
             for (int i = 0; i < 4; i++)
             {
                 var c = new Vector2(95, 95) + offs[i];
-                var s = Img(q, "Slot" + i, A, c - new Vector2(30, 30), new Vector2(60, 60), new Color(0.03f, 0.035f, 0.04f, 0.78f)); _rSlotBack.Add(s);
-                Img(s.transform, "EdgeT", TL, Vector2.zero, new Vector2(60, 1), new Color(1, 1, 1, 0.25f)); Img(s.transform, "EdgeB", A, Vector2.zero, new Vector2(60, 1), new Color(1, 1, 1, 0.25f));
-                Img(s.transform, "EdgeL", A, Vector2.zero, new Vector2(1, 60), new Color(1, 1, 1, 0.25f)); Img(s.transform, "EdgeR", A, new Vector2(59, 0), new Vector2(1, 60), new Color(1, 1, 1, 0.25f));
+                var s = Img(q, "Slot" + i, A, c - new Vector2(30, 30), new Vector2(60, 60), new Color(0, 0, 0, 0f)); _rSlotBack.Add(s);
+                Img(s.transform, "EdgeT", TL, Vector2.zero, new Vector2(60, 1), new Color(1, 1, 1, 0f)); Img(s.transform, "EdgeB", A, Vector2.zero, new Vector2(60, 1), new Color(1, 1, 1, 0f));
+                Img(s.transform, "EdgeL", A, Vector2.zero, new Vector2(1, 60), new Color(1, 1, 1, 0f)); Img(s.transform, "EdgeR", A, new Vector2(59, 0), new Vector2(1, 60), new Color(1, 1, 1, 0f));
                 T2(s.transform, "K", TL, new Vector2(4, -2), new Vector2(16, 14), (i + 1).ToString(), true, 10, Dim, TextAlignmentOptions.TopLeft);
                 _rSlot.Add(T2(s.transform, "T", A, new Vector2(0, 6), new Vector2(60, 46), "", false, 12, Bone, TextAlignmentOptions.Center));
             }
@@ -192,7 +192,7 @@ namespace GameCore
             string stamp = mag + "|" + res + "|" + (w?.Name ?? ""); if (stamp != _ammoStamp) { _ammoStamp = stamp; _ammoStampAt = Time.unscaledTime; }
 
             // ---- quick slots ----
-            for (int i = 0; i < 4; i++) { _rSlot[i].text = _belt.Count > i ? _belt[i].text : ""; _rSlotBack[i].color = !string.IsNullOrEmpty(_rSlot[i].text) ? new Color(0.06f, 0.07f, 0.06f, 0.88f) : new Color(0.03f, 0.035f, 0.04f, 0.6f); }
+            for (int i = 0; i < 4; i++) { _rSlot[i].text = _belt.Count > i ? _belt[i].text : ""; _rSlotBack[i].color = Color.clear; }
             var arts = new List<string>(); foreach (var t in _arts) if (t != null && !string.IsNullOrEmpty(t.text) && !t.text.Contains("X</color>")) arts.Add(t.text);
             _rArts.text = string.Join(" ", arts);
 

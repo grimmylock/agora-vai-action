@@ -33,7 +33,7 @@ namespace GameCore
                 backgroundRect.offsetMin = new Vector2(16, 16);
                 backgroundRect.offsetMax = new Vector2(-8, -8);
                 var backgroundImage = backgroundGo.AddComponent<Image>();
-                backgroundImage.color = new Color(0f, 0f, 0f, 0.6f);
+                backgroundImage.color = new Color(0f, 0f, 0f, 0f);   // 2026-11-19 (Yan: "remove the black boxes around the on screen HUD"): no box; the text carries its own outline
                 backgroundImage.raycastTarget = false;
                 // Without a mask, TextMeshProUGUI doesn't clip to its RectTransform - once the log
                 // filled up with 16 lines it overflowed way past this panel and sprawled across the
@@ -53,7 +53,7 @@ namespace GameCore
                 _text.fontSize = 12;
                 _text.color = Color.white;
                 _text.alignment = TextAlignmentOptions.BottomLeft;
-                _text.raycastTarget = false;
+                _text.raycastTarget = false; _text.outlineWidth = 0.22f; _text.outlineColor = new Color32(0, 0, 0, 255);
             }
 
             GameLog.Target = this;
