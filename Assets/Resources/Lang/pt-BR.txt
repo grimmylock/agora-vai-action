@@ -941,3 +941,13 @@ The door is locked. The reader blinks blue and wants a card - not the one the Ga
 The door is locked. A keypad beside it blinks red: ENTER CODE.	A porta está trancada. Um teclado ao lado pisca em vermelho: INSIRA O CÓDIGO.
 The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED.	A porta está trancada. Um leitor de cartão pisca em azul: CRACHÁ DE FUNCIONÁRIO NECESSÁRIO.
 JOURNAL	DIÁRIO
+
+# ---- Boss 4: Spool, the Scrap King's exile (Dog Kennels, Tier 2) ----
+THE SCRAP KING'S EXILE	O EXILADO DO REI DA SUCATA
+He tears the rag off the grip. The wire is bare now, and so is he.	Ele arranca o trapo do cabo. O arame está exposto agora, e ele também.
+Behind the kennel fence a man sits on an upturned crate, a bat across his knees. Barbed wire is wound round the barrel, rag over the grip.	Atrás da cerca do canil, um homem está sentado num caixote virado, com um taco sobre os joelhos. Arame farpado enrolado no corpo do taco, um trapo sobre o cabo.
+The King sent you. He always sends someone.	O Rei mandou vocês. Ele sempre manda alguém.
+Spool: the Scrap King's exile held the Dog Kennels with a barbed wire bat. He is down. The bat is yours.	Spool: o exilado do Rei da Sucata dominava o Canil com um taco de arame farpado. Ele caiu. O taco é seu.
+Spool kneels in the dirt, and does not get up again. The bat is still wet. Take it from his hands.	Spool se ajoelha na terra e não se levanta mais. O taco ainda está molhado. Tire-o das mãos dele.
+OVERHEAD!	DE CIMA!
+WIRE RUSH!	INVESTIDA DE ARAME!

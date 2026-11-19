@@ -105,6 +105,13 @@ namespace GameCore
             Boss.WakeVisor(p, x, y);
         }
 
+        /// <summary>Boss 4: Spool's duel on the range - him 5 tiles in front of you, the bat in his hands (F parries).</summary>
+        public static void SpoolDuel(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 5, p.Y);
+            SpoolBoss.Spawn(x, y, false);
+        }
+
         /// <summary>Boss 2 (Yan: "add a 'go to brain boss' button in the testing ground, if you just spawn him there the fight wont work"):
         /// the brain needs its own room - the lab's breakable cover, the walls that stop its orbs and beams, the pulse's reach - so this
         /// takes you to Secret Lab Alpha with your range kit: the vat fresh (even if it escaped before), the lab's other occupants

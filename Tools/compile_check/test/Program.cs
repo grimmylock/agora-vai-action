@@ -94,6 +94,7 @@ static class Program {
     AimAssistChecks();
     AnnexQuestChecks();
     ElderClipChecks();
+    SpoolChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -2707,6 +2708,31 @@ static class Program {
       for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.05f; if (GameCore.MutantAttack.Update(e, p, UnityEngine.Time.time, ref next) && GameCore.MutantAttack.KindOf(e) == "combo4") played = true; }
       Check(played && p.Hp < p.MaxHp, $"Elder: the 4-hit combo plays next to a player and hurts (hp {p.Hp}/{p.MaxHp})");
     } finally { Rt.On = false; EncounterState.Enemies.Clear(); GameCore.GauntBoss.Reset(); }
+  }
+
+  static void SpoolChecks() {   // 2026-11-19: Boss 4, Spool in the Dog Kennels (Tier 2)
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 90000f; UnityEngine.Time.unscaledTime = 90000f;
+    try {
+      Check(Boss.Spool.Hp == 3600 && Boss.Spool.Moves.Count(m => m.Danger) == 2 && Boss.Spool.Moves.Any(m => m.Phase2Only) && Boss.Spool.Faction == "Outcasts" && !Boss.Spool.Vanishes, "Spool: 3600 HP, two red moves, phase 2 moves, an Outcast who keeps his body");
+      var f = Boss.Spawn(Boss.Spool, px + 2, py); var h = f.Unit;
+      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Raider Stitched Coat" && h.Unkillable && h.MaxHp == 3600, "Spool: spawns with the bat and a raider coat, holds at 1 HP until executed");
+      Boss.Fights.Clear(); EncounterState.Enemies.Clear();
+      // the lair wakes him when you come within range of the Dog Kennels, once
+      Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 6, Y = py, Description = "" });
+      SpoolBoss.Tick(0.1f); Check(Boss.Fights.Count(x => x.Def == Boss.Spool) == 1 && EncounterState.Enemies.Any(e => e.Name == "Spool"), "Spool: coming near the Dog Kennels wakes him");
+      SpoolBoss.Tick(0.1f); Check(Boss.Fights.Count(x => x.Def == Boss.Spool) == 1, "Spool: only one of him at a time");
+      var fs = Boss.Fights.First(x => x.Def == Boss.Spool); EncounterState.Enemies.Remove(fs.Unit); SpoolBoss.Tick(0.1f);
+      Check(Boss.Fights.Count(x => x.Def == Boss.Spool) == 1 && Boss.Fights.First(x => x.Def == Boss.Spool) != fs, "Spool: if you leave and come back the fight starts again");
+      // he fights: he picks a move next to you, the glint comes before the hit
+      fs = Boss.Fights.First(x => x.Def == Boss.Spool); fs.Unit.X = p.X + 1; fs.Unit.Y = p.Y; Rt.SetOffset(fs.Unit, 0f, 0f); fs.NextMoveAt = UnityEngine.Time.time; bool began = false;
+      for (int i = 0; i < 300 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(fs, p); began = fs.Doing != null; }
+      Check(began && fs.Doing.Name != "Wire rush" && fs.Doing.Name != "Spin", $"Spool: phase 1 picks Swing, Backswing or Overhead ({fs.Doing?.Name})");
+      // the break and the execution: the flag, the journal, the bat is on the body
+      fs.Unit.Hp = 1; Boss.OnDamaged(fs.Unit); Check(fs.Broken, "Spool: at the break he drops to a knee");
+      p.X = fs.Unit.X - 1; p.Y = fs.Unit.Y; Check(Boss.TryFinish(p) && Story.Has(SpoolBoss.Done) && fs.Unit.EquippedWeapon?.Db?.Name == "Barbed Wire Bat", "Spool: the execution sets spool_done and he still holds the bat to loot");
+      Boss.Looted(fs.Unit); UnityEngine.Time.time += 10f; Boss.TickAll(); Check(EncounterState.Enemies.Contains(fs.Unit), "Spool: his body stays (no smoke grenade)");
+      Tier2Jobs.ZoneOverride = null; SpoolBoss.Tick(0.1f); Check(Boss.Fights.Count(x => x.Def == Boss.Spool && !x.Finished) == 0, "Spool: he does not come back once he is done");
+    } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

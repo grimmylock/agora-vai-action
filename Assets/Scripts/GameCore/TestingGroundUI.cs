@@ -62,6 +62,7 @@ namespace GameCore
             }
             else if (_tab == 3)
             {
+                list.Add(("<color=#ff5a3a>BOSS</color> Spool - barbed wire bat duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.SpoolDuel(p)) }));   // Boss 4
                 list.Add(("<color=#ff5a3a>BOSS</color> The Visor - hatchet duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.VisorDuel(p)) }));   // Boss 1
                 list.Add(("<color=#ff5a3a>BOSS</color> The Specimen - brain in the vat (goes to its lab)", new (string, System.Action)[] { ("Go", () => { Close(); TestingGround.BrainFight(p); }) }));   // Boss 2
                 list.Add(("<color=#ff5a3a>BOSS</color> The Drowner, platform form - Depths levels 1 and 2", new (string, System.Action)[] { ("Level 1", () => { Close(); TestingGround.EelPlatformFight(p, 1); }), ("Level 2", () => { Close(); TestingGround.EelPlatformFight(p, 2); }) }));

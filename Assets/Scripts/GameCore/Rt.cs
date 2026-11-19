@@ -822,6 +822,7 @@ namespace GameCore
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
+            SpoolBoss.Tick(Time.deltaTime);                                        // Boss 4: Spool in the Dog Kennels
             Tier3Annex.TickRt(Time.deltaTime);                                     // Tier 3 beat 4 "The Door Under the Dock"
             Emplacement.Tick(Time.deltaTime);                                      // Tier 4: the Barrier's machine guns
             Tier4Story.TickRt(Time.deltaTime);                                     // Tier 4: the siege of the Barrier

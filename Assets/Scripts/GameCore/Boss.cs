@@ -41,6 +41,7 @@ namespace GameCore
         public class Def
         {
             public string Name, Title, Weapon, Armor;
+            public string Faction = "Contractors", Rank = "Legend", DoneFlag; public bool Vanishes = true;      // 2026-11-19 (Spool): who he fights for, the story flag his execution sets, whether a smoke grenade takes his body
             public int Hp;
             public float StepSeconds = 0.35f, Recover = 1.0f;
             public float Pace = 0.5f;          // Visor 4: his swings play at this speed - the strike starts ChopTime/Pace before the hit
@@ -81,11 +82,11 @@ namespace GameCore
         // it; take the hatchet and he gets up - a nod to a certain unkillable courier, no names from that game. He draws a knife.
         /// <summary>Yan: "a black suit with a red visor and a gas mask" (ArtSource/make_unique_armor.py) - his alone, not in any loot table.</summary>
         public static readonly ArmorDef BlackVisorSuit = new ArmorDef { Name = "Black Visor Suit", PhysDR = 0.6f, AnomDR = 0.3f, BeltSlots = 2, ModSlots = 2, Mp = 4, WeightKg = 14f };
-        static ArmorDef SuitOf(Def def) => def.Armor == BlackVisorSuit.Name ? BlackVisorSuit : ArmorDatabase.Get("tier5", def.Armor) ?? ArmorDatabase.Get("tier4", def.Armor);
+        static ArmorDef SuitOf(Def def) { if (def.Armor == BlackVisorSuit.Name) return BlackVisorSuit; foreach (var t in new[] { "tier5", "tier4", "tier3", "tier2", "tier1" }) { var a = ArmorDatabase.Get(t, def.Armor); if (a != null) return a; } return null; }
 
         public static readonly Def Visor = new Def
         {
-            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 4800,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
+            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 4800, DoneFlag = "visor_done",   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = new[]
             {
@@ -100,12 +101,28 @@ namespace GameCore
             },
         };
 
+        // Boss 4 (Yan, 2026-11-19: "put him in tier 2", "start building the boss similar to how the visor works"): the outcast Raider with the Barbed Wire Bat, in the Dog Kennels' fenced yard (SpoolBoss.cs).
+        // The same fight as the Visor on a slower, heavier weapon: long wind-ups, big openings after each move, a two-handed bat that bleeds and concusses.
+        public static readonly Def Spool = new Def
+        {
+            Name = "Spool", Title = "THE SCRAP KING'S EXILE", Weapon = "BarbedWireBat", Armor = "RaiderStitchedCoat", Hp = 3600, Faction = "Outcasts", Rank = "Veteran", DoneFlag = "spool_done", Vanishes = false,
+            StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He tears the rag off the grip. The wire is bare now, and so is he.",
+            Moves = new[]
+            {
+                new Move { Name = "Swing", Wind = 0.9f, Weight = 3, Mult = 0.9f, Open = 1.4f },
+                new Move { Name = "Backswing", Wind = 0.8f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Open = 1.7f },
+                new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Mult = 1.5f, Weight = 1, Open = 2.3f },
+                new Move { Name = "Wire rush", Wind = 0.9f, Danger = true, Lunge = 4f, Mult = 1.1f, Weight = 2, Phase2Only = true, Open = 2.0f },
+                new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Open = 1.8f },
+            },
+        };
+
         /// <summary>Put a boss on the map at (x, y) and start the fight.</summary>
         public static Fight Spawn(Def def, int x, int y)
         {
             var w = WeaponDatabase.Categories["melee"].TryGetValue(def.Weapon, out var wd) ? wd : null;
             var a = SuitOf(def);
-            var h = new HumanEnemy(def.Name, x, y, "Contractors", "Legend", w, a) { IsAggroed = true, MaxHp = def.Hp, Hp = def.Hp, Unkillable = true };
+            var h = new HumanEnemy(def.Name, x, y, def.Faction, def.Rank, w, a) { IsAggroed = true, MaxHp = def.Hp, Hp = def.Hp, Unkillable = true };
             EncounterState.Enemies.Add(h); EncounterState.InCombat = true;
             var f = new Fight { Def = def, Unit = h, Started = Time.time, NextMoveAt = Time.time + 1.2f };
             Fights.Add(f);
@@ -286,7 +303,8 @@ namespace GameCore
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");
             Rt.AddFocus(p, Rt.FocusMax);                                           // Yan: "executing gives slow-mo energy" - Focus full
             GameLog.Event($"You execute {f.Def.Name}. Your Focus surges.");
-            if (f.Def == Visor) Story.Set("visor_done");
+            if (f.Def.DoneFlag != null) Story.Set(f.Def.DoneFlag);
+            if (f.Def == Spool) SpoolBoss.Defeated(p, f.Unit);
             return true;
         }
 
@@ -360,7 +378,7 @@ namespace GameCore
                 _slowUntil = -1f;
                 if (!Rt.Paused) Time.timeScale = Rt.SlowMo ? Rt.SlowScale : 1f;
             }
-            foreach (var f in Fights.Where(f => f.Finished && !f.Gone && f.LootedAt >= 0f && Time.time - f.LootedAt >= SmokeAfter).ToList())
+            foreach (var f in Fights.Where(f => f.Finished && !f.Gone && f.Def.Vanishes && f.LootedAt >= 0f && Time.time - f.LootedAt >= SmokeAfter).ToList())
             {
                 f.Gone = true;
                 CombatFx.Push("smoke", f.Unit, null, null).Now = true;
