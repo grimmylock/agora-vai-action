@@ -45,7 +45,7 @@ namespace GameCore
         public static InteractiveObjectInstance Hoard(int x, int y, string name, int tier, string desc)
         {
             if (TerrainMap.InteractiveObjects.Any(o => o.X == x && o.Y == y)) return null;
-            return Put(x, y, "stash_duffel", name, Rich(tier), desc);
+            return Put(x, y, "stash_duffel", name, new InteractiveReward { Ru = 120 * tier, Loot = new LootItem { Id = "hoardStash", Name = "Stash", Qty = 1, Type = "loot" } }, desc);   // (hand-placed: the old 4-7 rolls, weapons allowed)
         }
 
         static bool BuiltWall(int x, int y)

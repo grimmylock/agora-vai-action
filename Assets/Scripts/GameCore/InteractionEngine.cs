@@ -53,7 +53,8 @@ namespace GameCore
                         // container has good loot" flavor object in the game gave nothing actually
                         // good. Roll a real weapon or armor piece instead, scaled to the current
                         // zone's tier.
-                        if (obj.Reward.Loot.Id == "richStash") { GrantHighTierLoot(p2); GrantContainerLoot(p2); }   // Batch 126
+                        if (obj.Reward.Loot.Id == "richStash" || obj.Reward.Loot.Id == "containerRolls") GrantStashLoot(p2);   // 2026-11-19: random stashes: 2-4 rolls, at most one weapon, a weapon in about 15% of stashes
+                        else if (obj.Reward.Loot.Id == "hoardStash") { GrantHighTierLoot(p2); GrantContainerLoot(p2); }   // hand-placed story hoards keep the old, richer roll (Batch 126)
                         else if (obj.Reward.Loot.Id == "highTierLoot")
                             GrantHighTierLoot(p2);
                         else if (obj.Reward.Loot.Id == "containerRolls")
@@ -100,6 +101,22 @@ namespace GameCore
         /// to any tier of that type if none match (e.g. a Tier 1 zone still has *some* weapon to
         /// give, even if nothing is exactly tier 0-1).</summary>
         /// <summary>Footlocker / stash / container: 3-6 rolls on the zone's table (file 07).</summary>
+        /// <summary>Yan, 2026-11-19: "make stashes 2 to 4 items max, cap weapons at 1, make them only roll in about 15% of stashes (random generated ones, not the handpicked ones)": a random stash is 2-4 rolls on the zone's table (Scavenger: the better of two draws); a weapon (melee included) may come up in only 15% of stashes, and then only once - every other weapon roll is re-rolled.</summary>
+        private static void GrantStashLoot(Player p)
+        {
+            int tier = MacroMapDatabase.Find(MacroState.Current.CurrentZoneId)?.Tier ?? 1;
+            int rolls = Random.Range(2, 5);
+            if (CombatantUtil.HasPerk(p, "Scavenger")) rolls = System.Math.Max(rolls, Random.Range(2, 5));
+            bool weaponAllowed = Random.value < 0.15f;
+            for (int i = 0; i < rolls; i++)
+            {
+                LootRoll r = Economy.Roll(tier, trader: false);
+                for (int tries = 0; tries < 20 && r.Type == "weapon" && !weaponAllowed; tries++) r = Economy.Roll(tier, trader: false);
+                if (r.Type == "weapon") weaponAllowed = false;            // the one weapon is taken
+                GrantRoll(p, r);
+            }
+        }
+
         private static void GrantContainerLoot(Player p)
         {
             int tier = MacroMapDatabase.Find(MacroState.Current.CurrentZoneId)?.Tier ?? 1;
