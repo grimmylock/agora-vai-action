@@ -62,7 +62,7 @@ namespace GameCore
         // ---------------- the journal ----------------
 
         /// <summary>Add a journal entry once (the same text twice is one entry).</summary>
-        public static void Journal(string text) { if (!Flags.Contains("j:" + text)) { Flags.Add("j:" + text); GameLog.Write("[JOURNAL] " + text); } }
+        public static void Journal(string text) { if (!Flags.Contains("j:" + text)) { Flags.Add("j:" + text); GameLog.Write("[" + Loc.T("JOURNAL") + "] " + Loc.T(text)); } }   // (2026-11-19: the entry and its tag go through the language table)
         public static IEnumerable<string> JournalEntries => Flags.Where(f => f.StartsWith("j:")).Select(f => f.Substring(2));
 
         // ---------------- per-world spots ----------------

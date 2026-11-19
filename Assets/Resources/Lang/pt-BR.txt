@@ -814,3 +814,130 @@ Find and kill the gang boss in {}.	Ache e mate o chefe do bando em {1}.
 Kill {} mutants in {}.	Mate {1} mutantes em {2}.
 {} has nothing for you.	{1} não tem nada para você.
 Talk to {}	Falar com {1}
+
+# ---- Tier 3 beat 4, "The Door Under the Dock" (Osei, the Elder Gaunt boss, the Loading Annex and its papers) ----
+The Door Under the Dock	A Porta Sob a Doca
+Wait. Before you go north. Sit down - you will want to hear this.	Espere. Antes de ir para o norte. Sente - você vai querer ouvir isto.
+Under the Loading Dock, the Garrison took you to a door and an alarm went off, and you said the mutants answered it in hundreds. Describe what screamed.	Sob a Doca de Carga, a Garrison levou vocês até uma porta e um alarme disparou, e vocês disseram que os mutantes responderam aos montes. Descrevam o que gritou.
+...That is the pulse. I have been logging spikes under the lake for a month, and they come with the rhythm of that scream. One signal. I thought it was interference. It is a call.	...Esse é o pulso. Faz um mês que registro picos sob o lago, e eles vêm no ritmo desse grito. Um único sinal. Achei que fosse interferência. É um chamado.
+A core alone is a key without a lock. To build the counter-signal I need to see how that call is SHAPED - the calibration of the leash. The only place it can be written down is behind that door. The Garrison sealed a lab there and never had the real card: whatever screamed has it.	Um núcleo sozinho é uma chave sem fechadura. Para construir o contra-sinal preciso ver como esse chamado é MOLDADO - a calibração da coleira. O único lugar onde isso pode estar escrito é atrás daquela porta. A Garrison lacrou um laboratório ali e nunca teve o cartão de verdade: quem gritou está com ele.
+Pavel: Last time they took your guns and shoved you in front of that door. This time you carry everything you own. Everything.	Pavel: Da última vez eles tomaram suas armas e empurraram vocês diante daquela porta. Desta vez levem tudo o que têm. Tudo.
+Konrad Hale: (clears his throat) I found what I could. Grenades, stims, armor-piercing rounds. Do not make me regret the paperwork.	Konrad Hale: (pigarreia) Consegui o que pude. Granadas, estimulantes, munição perfurante. Não me façam me arrepender da papelada.
+We'll go.	Nós vamos.
+What are we walking into?	No que vamos nos meter?
+A tunnel full of what answered, a corridor you know, and at the end of it a horde again. This time it is a fight and not a funeral: dig in, use the corridor, make them come to you.	Um túnel cheio do que respondeu, um corredor que vocês conhecem e, no fim dele, uma horda de novo. Desta vez é uma luta e não um funeral: entrincheirem-se, usem o corredor, façam eles virem até vocês.
+And whatever screams. It stood in the dark and pointed. I do not think it is only an animal.	E o que quer que grite. Ficou parado no escuro e apontou. Não acho que seja só um animal.
+The hatch under the Loading Dock, in the Industrial Basin. Take everything.	A escotilha sob a Doca de Carga, na Bacia Industrial. Levem tudo.
+Hold the corridor, then the cavern past the broken wall. Whatever screams is at the far end.	Segurem o corredor, depois a caverna além da parede quebrada. O que grita está no fundo.
+The Annex: read everything. The vault code is in two halves, in two places, and the calibration table is in the vault.	O Anexo: leiam tudo. O código do cofre está em duas metades, em dois lugares, e a tabela de calibração está no cofre.
+The card and the door. Then the files - the calibration is what I need. Bring me anything with numbers on it.	O cartão e a porta. Depois os arquivos - a calibração é o que eu preciso. Tragam qualquer coisa com números.
+Go down the hatch under the Loading Dock (Industrial Basin)	Desça pela escotilha sob a Doca de Carga (Bacia Industrial)
+The Door Under the Dock: Osei needs the calibration of the leash. It is behind the Garrison's lab door under the Loading Dock, and whatever screamed there has the real card.	A Porta Sob a Doca: Osei precisa da calibração da coleira. Ela está atrás da porta do laboratório da Garrison sob a Doca de Carga, e o que gritou ali está com o cartão de verdade.
+Osei's supply case: grenades, stims, medkits and armor-piercing rounds.	A caixa de suprimentos da Osei: granadas, estimulantes, kits médicos e munição perfurante.
+The reader buzzes red. The lights go red down the whole corridor and the siren starts.	O leitor zumbe em vermelho. As luzes ficam vermelhas por todo o corredor e a sirene começa.
+Hold the corridor	Segurem o corredor
+Fight through the tunnels to the lab door	Abram caminho pelos túneis até a porta do laboratório
+Search the Annex for the Gaunt's files	Procurem no Anexo os arquivos do Gaunt
+The Annex: a lab cut into the rock under the Dock. Somewhere in it is the calibration Osei needs.	O Anexo: um laboratório escavado na rocha sob a Doca. Em algum lugar dele está a calibração de que a Osei precisa.
+It opens its jaw wider than a jaw should open and screams. Then it lifts one long arm and points down the corridor - at you.	Abre a mandíbula mais do que uma mandíbula deveria abrir e grita. Então ergue um longo braço e aponta corredor adentro - para você.
+More. Dozens more, up out of the dark tunnel.	Mais. Dezenas a mais, subindo do túnel escuro.
+The Elder turns and goes back into the dark. The horde does not.	O Ancião dá meia-volta e some de novo no escuro. A horda, não.
+...Is that all of them? Listen. Something is still breathing in the dark, past the broken wall.	...Foram todos? Escutem. Algo ainda respira no escuro, além da parede quebrada.
+Go into the cavern past the broken wall - whatever screams waits at the far end	Entrem na caverna além da parede quebrada - o que grita espera no fundo
+At the far end of the cavern, on a heap of arranged bones, the Elder stands up.	No fundo da caverna, sobre um monte de ossos arrumados, o Ancião se levanta.
+Annex Keycard	Cartão-chave do Anexo
+It kneels, and the scream cuts off mid-breath. Every mutant in the cavern drops, then scatters. Round its neck, on a chain: a white card, and a steel plate stamped G-1.	Ele se ajoelha e o grito se corta no meio do fôlego. Todo mutante na caverna cai e depois se dispersa. No pescoço, numa corrente: um cartão branco e uma placa de aço gravada G-1.
+The Elder wore a plate stamped G-1 and carried the lab's real card. Whatever it was, someone made it - one of "those", an early experiment.	O Ancião usava uma placa gravada G-1 e levava o cartão de verdade do laboratório. Fosse o que fosse, alguém o fez - um dos "aqueles", um experimento antigo.
+Take the card and open the lab door	Peguem o cartão e abram a porta do laboratório
+Plate: G-1	Placa: G-1
+Staff Duffel	Mochila da Equipe
+A duffel under the intake benches, packed in a hurry and never collected.	Uma mochila sob os bancos da triagem, feita às pressas e nunca recolhida.
+Somebody's things, left in a cell when the door was last closed.	Pertences de alguém, deixados numa cela quando a porta foi fechada pela última vez.
+Hidden under a cot: the guards' own stash.	Escondido sob um catre: o esconderijo dos próprios guardas.
+Technicians' Locker Bag	Bolsa do Armário dos Técnicos
+A duffel of spare parts, tools and one forgotten ration case.	Uma mochila de peças sobressalentes, ferramentas e uma caixa de ração esquecida.
+The Handler's Case	A Maleta do Supervisor
+A locked-looking case under the desk. It was not locked.	Uma maleta com cara de trancada sob a mesa. Não estava trancada.
+Vault Stores	Suprimentos do Cofre
+Shelves of sealed crates: the Garrison's old research budget, in goods.	Prateleiras de caixotes lacrados: o antigo orçamento de pesquisa da Garrison, em mercadorias.
+Search the desk	Revistar a mesa
+Search the locker	Revistar o armário
+Search the console	Revistar o console
+Search the cabinet	Revistar o gabinete
+Intake Ledger	Livro de Triagem
+A ledger in the top drawer, one page folded down.	Um livro-razão na gaveta de cima, uma página dobrada.
+Cell Plate and Note	Placa da Cela e Bilhete
+A note pushed in behind the guards' coats.	Um bilhete enfiado atrás dos casacos dos guardas.
+The Handler's Diary	O Diário do Supervisor
+A black-covered diary at the back of the drawer.	Um diário de capa preta no fundo da gaveta.
+Transmitter Log	Registro do Transmissor
+A log sheet clipped inside the console's hatch.	Uma folha de registro presa dentro da escotilha do console.
+Calibration Table	Tabela de Calibração
+A grey folder, stamped CALIBRATION. The only thing on the middle shelf.	Uma pasta cinza, carimbada CALIBRAÇÃO. A única coisa na prateleira do meio.
+Two halves make the code: {}. The vault's keypad will take it.	Duas metades formam o código: {1}. O teclado do cofre vai aceitá-lo.
+The Annex vault code is {}: half from the cell block, half from the Handler's diary.	O código do cofre do Anexo é {1}: metade do bloco de celas, metade do diário do Supervisor.
+ANNEX INTAKE. Entries in a clerk's hand, one a night, for a year. Most lines are crossed out in a different ink: TRANSFERRED, TRANSFERRED, TRANSFERRED.	TRIAGEM DO ANEXO. Registros na letra de um escrivão, um por noite, durante um ano. A maioria das linhas está riscada com outra tinta: TRANSFERIDO, TRANSFERIDO, TRANSFERIDO.
+G-1. Adult male. Volunteer. ORLOV, Matthias, 41. Former line technician, Loading Dock. Signed himself in. 'The pay is the pay.' Medical: sound. Voice: strong - a baritone. Remarks: this is the one the Handler asked for by name.	G-1. Homem adulto. Voluntário. ORLOV, Matthias, 41. Ex-técnico de linha, Doca de Carga. Apresentou-se por conta própria. 'O pagamento é o pagamento.' Saúde: boa. Voz: forte - um barítono. Observações: este é o que o Supervisor pediu pelo nome.
+Below it, later, in another pen: G-1 is no longer fit for general intake. Move to Cell 6 for the duration of the programme. Do not use his name on the door.	Abaixo, mais tarde, com outra caneta: G-1 não está mais apto à triagem geral. Transferir para a Cela 6 pela duração do programa. Não usar o nome dele na porta.
+The Annex intake ledger: G-1 was Matthias Orlov, a loading-dock technician who volunteered. They called it a programme.	O livro de triagem do Anexo: G-1 era Matthias Orlov, um técnico da doca de carga que se voluntariou. Chamavam aquilo de programa.
+CELL 6	CELA 6
+A steel plate on the last door: G-1. A strip of tape under it, the pen pressed hard: 'ORLOV. he can still hear us.' Inside, the floor is scratched in long parallel lines.	Uma placa de aço na última porta: G-1. Uma tira de fita abaixo, escrita com a caneta apertada: 'ORLOV. ele ainda consegue nos ouvir.' Lá dentro, o chão está riscado em longas linhas paralelas.
+A second note, folded small and pushed under the plate: 'Vault - first two numbers: 4 8. Handler has the rest. If the cards stop working, it is because I stopped paying for the power. - R.'	Um segundo bilhete, dobrado pequeno e enfiado sob a placa: 'Cofre - os dois primeiros números: 4 8. O Supervisor tem o resto. Se os cartões pararem de funcionar, é porque parei de pagar pela energia. - R.'
+Cell 6 held G-1 (Orlov). A guard's note gives the first half of the vault code: 4 8.	A Cela 6 abrigava G-1 (Orlov). O bilhete de um guarda dá a primeira metade do código do cofre: 4 8.
+THE HANDLER'S DIARY - 1	O DIÁRIO DO SUPERVISOR - 1
+Day 3. The surgeon is good and says little. They have reworked the throat. The call is not a sound, he says; it is a carrier. A thing the others can hear and answer. Orlov wakes up and tries to speak and it comes out wrong. Everyone in the corridor stops.	Dia 3. O cirurgião é bom e fala pouco. Refizeram a garganta. O chamado não é um som, diz ele; é uma portadora. Algo que os outros conseguem ouvir e responder. Orlov acorda e tenta falar e sai errado. Todos no corredor param.
+Day 9. First test, to the dogs in the yard. The first to answer was the one we named Bell. It came across the yard in a straight line and sat at his door. It did not want food. It wanted to be told what to do.	Dia 9. Primeiro teste, nos cães do pátio. O primeiro a responder foi o que chamamos de Sino. Atravessou o pátio em linha reta e sentou diante da porta dele. Não queria comida. Queria que lhe dissessem o que fazer.
+Day 31. He no longer answers to his name. When the call goes out, the cavern answers - I have heard them from here, in the walls, like weather. Those people say it is working. I wrote 'working' in the log. I do not know what else to write.	Dia 31. Ele não atende mais pelo nome. Quando o chamado sai, a caverna responde - já os ouvi daqui, nas paredes, como o tempo. Aquela gente diz que está funcionando. Escrevi 'funcionando' no registro. Não sei o que mais escrever.
+Day 52. The new design arrives from upstream: a sphere, no throat, no man. 'A better amplifier than a throat.' They call the old one a prototype. They will not need him. I was told to code the vault for the last time. 1 7. If you find this, I was never here.	Dia 52. O novo projeto chega de cima: uma esfera, sem garganta, sem homem. 'Um amplificador melhor que uma garganta.' Chamam o antigo de protótipo. Não vão mais precisar dele. Mandaram-me codificar o cofre pela última vez. 1 7. Se você encontrar isto, eu nunca estive aqui.
+(Written large on the last page, not in his hand: 'G-1 WAS THE PROTOTYPE.')	(Escrito em letras grandes na última página, não com a letra dele: 'G-1 ERA O PROTÓTIPO.')
+The Handler's diary: the Elder Gaunt was the prototype of the leash. They rebuilt a man's throat so the pack would answer it, tested it on the dogs, then designed a sphere to replace him. The vault code's second half: 1 7.	O diário do Supervisor: o Elder Gaunt foi o protótipo da coleira. Refizeram a garganta de um homem para que a matilha lhe respondesse, testaram nos cães e depois projetaram uma esfera para substituí-lo. A segunda metade do código do cofre: 1 7.
+Bench log, the last sheet. Test 41: carrier from G-1's cell, relayed through the old transmitter, answered at 1.4 km. Test 42: carrier from the sphere prototype, same relay. Answered at 6 km. Test 43: same, two spheres.	Registro de bancada, a última folha. Teste 41: portadora da cela de G-1, retransmitida pelo transmissor antigo, respondida a 1,4 km. Teste 42: portadora do protótipo da esfera, mesma retransmissão. Respondida a 6 km. Teste 43: igual, duas esferas.
+Remarks: 'The sphere does not tire, does not sleep, does not remember. It is a better amplifier than a throat. Request authority to move the programme to the Barrier.'	Observações: 'A esfera não cansa, não dorme, não lembra. É um amplificador melhor que uma garganta. Solicito autorização para transferir o programa para a Barreira.'
+Annex transmitter log: the first spheres worked at six kilometres. They asked to move the programme to the Barrier.	Registro do transmissor do Anexo: as primeiras esferas funcionaram a seis quilômetros. Pediram para transferir o programa para a Barreira.
+You already carry the folder.	Você já está com a pasta.
+The shape of the call, drawn as a table: frequency against response. Columns of numbers, a tidy hand. At the bottom, in a margin note:	A forma do chamado, desenhada como uma tabela: frequência contra resposta. Colunas de números, uma letra caprichada. No rodapé, numa nota de margem:
+'It cannot be cut, only drowned.'	'Não pode ser cortado, só afogado.'
+Take the calibration table to Dr. Osei (Sub-Station House)	Leve a tabela de calibração à Dra. Osei (Sub-Station House)
+The calibration table: the call cannot be cut, only drowned - exactly what Osei's counter-signal does. Take it to her.	A tabela de calibração: o chamado não pode ser cortado, só afogado - exatamente o que o contra-sinal da Osei faz. Leve-a até ela.
+'It cannot be cut, only drowned.' ...Yes. That is the counter-signal. I was building a scissors for a rope that was never there.	'Não pode ser cortado, só afogado.' ...Sim. Esse é o contra-sinal. Eu estava construindo uma tesoura para uma corda que nunca existiu.
+A prototype. A man. Pavel will want to know that part, and the Garrison thread: whoever the Handler answered to paid for this long before the Barrier. Crusher Row's pay notes carry the same name.	Um protótipo. Um homem. O Pavel vai querer saber dessa parte, e do fio da Garrison: quem quer que o Supervisor atendesse pagava por isso muito antes da Barreira. As notas de pagamento da Crusher Row trazem o mesmo nome.
+One more thing. The pulses under the lake changed shape the hour the Elder fell. Something out there noticed. Go north - and take the file, I made a copy. Here is what I promised.	Mais uma coisa. Os pulsos sob o lago mudaram de forma na hora em que o Ancião caiu. Algo lá fora percebeu. Vão para o norte - e levem o arquivo, fiz uma cópia. Aqui está o que prometi.
+The Door Under the Dock: the calibration table is with Osei. The leash was built with a person, Orlov, and then replaced by a device. The pulses under the lake changed when the Elder fell.	A Porta Sob a Doca: a tabela de calibração está com a Osei. A coleira foi construída com uma pessoa, Orlov, e depois substituída por um aparelho. Os pulsos sob o lago mudaram quando o Ancião caiu.
+THE ELDER GAUNT	O ELDER GAUNT
+THE ELDER CALLS - KILL THE HORDE	O ANCIÃO CHAMA - MATEM A HORDA
+SCREAM - TAKE COVER	GRITO - PROTEJAM-SE
+SLAM!	PANCADA!
+ENRAGED	ENFURECIDO
+PHASE 2	FASE 2
+The Elder throws back its head. Something in it breaks. It is faster now - and it is not going to call again: it is going to hunt.	O Ancião joga a cabeça para trás. Algo nele se quebra. Agora está mais rápido - e não vai chamar de novo: vai caçar.
+The call fades. The Elder turns its head toward you.	O chamado se dissipa. O Ancião vira a cabeça na sua direção.
+The Elder plants itself and draws a breath.	O Ancião finca os pés e puxa o ar.
+The Elder raises both fists over its head.	O Ancião ergue os dois punhos acima da cabeça.
+The shriek rips through the line for {} damage and throws your aim.	O guincho atravessa a linha e causa {1} de dano e desorienta sua mira.
+The scream hits you like a wall: you stagger and lose your aim.	O grito te atinge como uma parede: você cambaleia e perde a mira.
+A boulder bursts under the scream.	Um pedregulho explode sob o grito.
+{} boulders burst under the scream.	{1} pedregulhos explodem sob o grito.
+The slam catches you for {} damage.	A pancada te atinge com {1} de dano.
+The Elder points. Out of the dark mouths of the cavern, north and south, something comes running - and the Elder goes still, breathing, listening.	O Ancião aponta. Das bocas escuras da caverna, ao norte e ao sul, algo vem correndo - e o Ancião fica imóvel, respirando, escutando.
+It points again. This time the whole cavern answers, and the Elder stands in the middle of it, breathing.	Aponta de novo. Desta vez a caverna inteira responde, e o Ancião fica no meio dela, respirando.
+The scream cuts off mid-breath. Everything it was driving drops, shudders, and scatters into the dark.	O grito se corta no meio do fôlego. Tudo o que ele conduzia cai, estremece e se dispersa no escuro.
+The ladder up from the Garrison's dig under the Loading Dock.	A escada que sobe da escavação da Garrison sob a Doca de Carga.
+A steel door in the corridor wall, an electronic lock beside it.	Uma porta de aço na parede do corredor, com uma fechadura eletrônica ao lado.
+The corridor's east wall has burst outward. Behind the rubble a tunnel runs down into the dark, and warm air breathes out of it.	A parede leste do corredor estourou para fora. Atrás dos escombros um túnel desce para o escuro, e um ar quente sopra dele.
+Where the corridor ends. The air is warm and smells of meat.	Onde o corredor termina. O ar é quente e cheira a carne.
+The cavern past the nest, opened out into a ring of broken pillars: whatever screams in the dark stands here.	A caverna além do ninho, aberta num círculo de pilares quebrados: o que grita no escuro está aqui.
+A narrow tunnel running off north from the cavern. Something has worn the floor smooth.	Um túnel estreito que sai para o norte da caverna. Algo gastou o chão até deixá-lo liso.
+A narrow tunnel running off south from the cavern. Something has worn the floor smooth.	Um túnel estreito que sai para o sul da caverna. Algo gastou o chão até deixá-lo liso.
+A pocket at the cavern's far end. The bones are arranged.	Um nicho no fundo da caverna. Os ossos estão arrumados.
+Behind the lab door: a short concrete corridor and a freight bay, crates stencilled with a Garrison mark.	Atrás da porta do laboratório: um curto corredor de concreto e uma baia de carga, caixotes estampados com a marca da Garrison.
+A freight lift at the bay's end, its gate chained open. It goes down.	Um elevador de carga no fim da baia, com o portão preso aberto por correntes. Ele desce.
+The freight lift up to the tunnels, its gate chained open.	O elevador de carga que sobe para os túneis, com o portão preso aberto por correntes.
+A steel desk and a ledger, the pages stuck together.	Uma mesa de aço e um livro-razão, as páginas coladas umas nas outras.
+A central aisle between six cells. Four doors stand open.	Um corredor central entre seis celas. Quatro portas estão abertas.
+A plain office with a locked cabinet, a swivel chair, and a coat on a hook.	Um escritório simples com um gabinete trancado, uma cadeira giratória e um casaco num cabide.
+A bank of consoles round an old transmitter, still warm.	Uma fileira de consoles em volta de um transmissor antigo, ainda quente.
+A small vault behind a keypad door.	Um cofre pequeno atrás de uma porta com teclado.
+The door is locked. The reader blinks blue and wants a card - not the one the Garrison put in your hand: a real one, from whoever answers that scream.	A porta está trancada. O leitor pisca em azul e quer um cartão - não o que a Garrison pôs na sua mão: um de verdade, de quem atende àquele grito.
+The door is locked. A keypad beside it blinks red: ENTER CODE.	A porta está trancada. Um teclado ao lado pisca em vermelho: INSIRA O CÓDIGO.
+The door is locked. A card reader blinks blue: STAFF BADGE REQUIRED.	A porta está trancada. Um leitor de cartão pisca em azul: CRACHÁ DE FUNCIONÁRIO NECESSÁRIO.
+JOURNAL	DIÁRIO
