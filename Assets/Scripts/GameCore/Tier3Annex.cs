@@ -28,7 +28,7 @@ namespace GameCore
         static Mutant _elder; static float _sceneAt = -1f, _screamAt = -1f, _gauntStep, _retreatAt = -1f; static bool _spawnedPacks, _walking;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { Packs.Clear(); Waves.Clear(); _out.Clear(); _elder = null; _sceneAt = _screamAt = _retreatAt = -1f; _spawnedPacks = _walking = false; }
+        public static void Reset() { GauntBoss.Reset(); Packs.Clear(); Waves.Clear(); _out.Clear(); _elder = null; _sceneAt = _screamAt = _retreatAt = -1f; _spawnedPacks = _walking = false; }
 
         /// <summary>The story holds the Elder while the door scene runs (no spotting you, no wandering).</summary>
         public static bool Holds(ICombatant u) => u != null && u == _elder && _sceneAt >= 0f && Step == 3;
@@ -82,7 +82,7 @@ namespace GameCore
 
         // ------------------------------------------------------------------ the tunnels, the door, the Elder
 
-        static Mutant Make(string spec, int x, int y)
+        internal static Mutant Make(string spec, int x, int y)
         {
             var tk = spec.Split(':'); string tier = tk.Length == 2 ? tk[0] : "tier1", key = tk.Length == 2 ? tk[1] : spec;
             var def = MutantDatabase.Tiers[tier][key]; var (fx, fy) = TerrainMap.FindNearestEnterable(x, y);
@@ -159,6 +159,7 @@ namespace GameCore
             float now = Time.time; int s = Step;
             if (InTunnels)
             {
+                GauntBoss.Tick(dt);
                 if (s == 1) { Story.SetStep(Mission, 2); s = 2; Story.SetObjective(Mission, "Fight through the tunnels to the lab door", Door); }
                 if (s == 2 && !_spawnedPacks) PlacePacks();
                 if (s == 3) TickScene(now);
@@ -233,7 +234,7 @@ namespace GameCore
                     var d = Mark(Dais) ?? a; var (ex, ey) = TerrainMap.FindNearestEnterable(d.X, d.Y); _elder.X = ex; _elder.Y = ey; Rt.SetOffset(_elder, 0f, 0f);
                     EncounterState.Enemies.Add(_elder); GameLog.Event("At the far end of the cavern, on a heap of arranged bones, the Elder stands up.");
                 }
-                _elder.IsAggroed = true;
+                _elder.IsAggroed = true; GauntBoss.Begin(_elder);
             }
             if (_elder != null && !_elder.IsAlive() && Step == 4) ElderDown();
         }

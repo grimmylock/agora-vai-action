@@ -2643,6 +2643,22 @@ static class Program {
       var arena = TerrainMap.Landmarks.First(l => l.Name == "Gaunt Arena"); p.X = arena.X - 10; p.Y = arena.Y; Tier3Annex.TickRt(0.1f);
       var elder = EncounterState.Enemies.OfType<Mutant>().FirstOrDefault(Gaunt.IsElder);
       Check(elder != null && elder.IsAggroed && elder.Hp == elder.MaxHp, $"Annex: near the arena the Elder stands up at its dais, full health, aggroed (elder {(elder == null ? "none" : elder.Hp + "/" + elder.MaxHp + " aggro " + elder.IsAggroed)}; step {Tier3Annex.Step})");
+      // the boss module (batch 3): phases, the seal, the waves, the enrage
+      if (elder != null) {
+        Check(GauntBoss.Owns(elder) && GauntBoss.Phase == 0, "GauntBoss: the cavern Elder is run by the boss module, phase 1");
+        p.X = elder.X - 8; p.Y = elder.Y; int e0 = EncounterState.Enemies.Count; elder.Hp = (int)(elder.MaxHp * 0.74f); GauntBoss.Tick(0.1f);
+        int w1 = EncounterState.Enemies.Count - e0; int hp1 = elder.Hp;
+        Check(GauntBoss.Phase == 1 && w1 >= 20 && GauntBoss.Shielded(elder), $"GauntBoss: at 75% the first wave comes ({w1}) and the Elder is sealed");
+        GauntBoss.Tick(0.1f); Check(elder.Hp >= hp1, "GauntBoss: sealed, it cannot lose more health");
+        foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => m != elder).ToList()) m.Hp = 0;
+        UnityEngine.Time.time += 1f; GauntBoss.Tick(0.1f); Check(!GauntBoss.Shielded(elder), "GauntBoss: the wave is dead: the seal breaks");
+        EncounterState.Enemies.RemoveAll(m => m != elder && !m.IsAlive()); int e1 = EncounterState.Enemies.Count; elder.Hp = (int)(elder.MaxHp * 0.39f); GauntBoss.Tick(0.1f);
+        Check(GauntBoss.Phase == 2 && EncounterState.Enemies.Count - e1 >= 30 && GauntBoss.Shielded(elder), $"GauntBoss: at 40% the bigger wave ({EncounterState.Enemies.Count - e1}), the Elder enraged and sealed");
+        foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => m != elder).ToList()) m.Hp = 0; UnityEngine.Time.time += 1f; GauntBoss.Tick(0.1f);
+        p.Hp = p.MaxHp; p.X = elder.X + 2; p.Y = elder.Y; for (int i = 0; i < 60; i++) { UnityEngine.Time.time += 0.25f; GauntBoss.Tick(0.25f); }
+        Check(p.Hp < p.MaxHp, "GauntBoss: the enraged slam hurts a player who stands next to it");
+        p.Hp = p.MaxHp;
+      }
       if (elder != null) elder.Hp = 0;
       Tier3Annex.TickRt(0.1f);
       Check(Tier3Annex.Step == 5 && TerrainMap.GetGroundItemsAt(elder.X, elder.Y).Any(g => g.Item.Id == Tier3Annex.Card) && Story.Has("gaunt_was_those"), "Annex: the Elder dies: it drops the card and the G-1 plate, and it was one of those");

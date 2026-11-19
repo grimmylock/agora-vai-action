@@ -53,9 +53,19 @@ namespace GameCore
             _cine = Mathf.MoveTowards(_cine, Story.Letterbox ? 1f : 0f, Time.unscaledDeltaTime * 2.2f); float bh = Screen.height * 0.115f * _cine * _cine * (3f - 2f * _cine);
             _cineTop.gameObject.SetActive(bh > 0.5f); _cineBot.gameObject.SetActive(bh > 0.5f); _cineTop.rectTransform.sizeDelta = new Vector2(0f, bh); _cineBot.rectTransform.sizeDelta = new Vector2(0f, bh);
             var f = Boss.Current; var ef = EelBoss.Current; bool eel = f == null && ef != null && !ef.Gone && ef.Started && ef.Sump != null && ef.Stage != "intro";       // Boss 3: the eel in the Sump uses the same bar
-            bool on = (f != null || eel) && !GameState.Current.ModalOpen;
+            var gb = f == null && !eel ? GauntBoss.Current : null;                                                                                                  // Tier 3: the Elder Gaunt in its cavern
+            bool on = (f != null || eel || gb != null) && !GameState.Current.ModalOpen;
             _bossBar.gameObject.SetActive(on); _bossName.gameObject.SetActive(on); _bossState.gameObject.SetActive(on);
-            if (on && f == null)
+            if (on && gb != null)
+            {
+                float hp = GauntBoss.Fraction;
+                _ghost = Mathf.Max(hp, Mathf.MoveTowards(_ghost, hp, Time.unscaledDeltaTime * 0.35f));
+                _bossFill.rectTransform.sizeDelta = new Vector2((BossW - 4f) * hp, 10f); _bossGhost.rectTransform.sizeDelta = new Vector2((BossW - 4f) * _ghost, 10f);
+                _bossFill.color = GauntBoss.Phase >= 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)) : C("b8302a");
+                _bossName.text = "THE ELDER GAUNT" + (GauntBoss.Phase >= 2 ? "  <color=#ff5a3a>III</color>" : GauntBoss.Phase == 1 ? "  <color=#ff5a3a>II</color>" : "");
+                _bossState.text = GauntBoss.Label; _bossState.color = Yellow;
+            }
+            else if (on && f == null)
             {
                 float hp = Mathf.Clamp01(ef.Unit.Hp / (float)EelBoss.MaxHp);
                 _ghost = Mathf.Max(hp, Mathf.MoveTowards(_ghost, hp, Time.unscaledDeltaTime * 0.35f));

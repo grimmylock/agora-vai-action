@@ -79,6 +79,9 @@ namespace GameCore
         public static bool IsDriven(Mutant m) => Driven.TryGetValue(m, out var d) && Time.time < d.until;
 
         /// <summary>Hold a pose for `seconds` (the cutscene's scripted scream and point).</summary>
+        /// <summary>A mutant is driven (hurried, aimed at `target`) for `seconds` - the boss module hurries its waves and itself.</summary>
+        public static void Haste(Mutant m, float seconds, float factor, Player target) => Driven[m] = (Time.time + seconds, target, factor);
+
         public static void ForcePose(Mutant m, string pose, float seconds) { var s = Of(m); if (s.Pose != pose || Time.time >= s.PoseUntil) s.PoseAt = Time.time; s.Pose = pose; s.PoseUntil = Time.time + seconds; }
         static State Of(Mutant m) { if (!States.TryGetValue(m, out var s)) States[m] = s = new State(); return s; }
 
@@ -150,7 +153,7 @@ namespace GameCore
                     if (s.WasAlive) { s.WasAlive = false; s.DiedAt = now; Falter(); }
                     continue;
                 }
-                if (!g.IsAggroed || now < s.NextCall || Net.Mode == Net.Role.Client) continue;
+                if (!g.IsAggroed || now < s.NextCall || Net.Mode == Net.Role.Client || GauntBoss.Owns(g)) continue;   // (the boss fight scripts the Elder's moves)
                 var p = Rt.TargetOf(g, Player.Current);
                 if (p == null || !p.IsAlive() || CombatantUtil.Distance(g, p) > Kit(g).range) continue;
                 var grid = GameServices.Grid;
