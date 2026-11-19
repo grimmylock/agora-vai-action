@@ -1,0 +1,145 @@
+{
+ "note": "frames named by run: E=combo2 (claw, claw), F=combo3 run F (lunge/shriek), A=slam run A (138x130, pasted at 6,12 on the 200x150 canvas)",
+ "sequence": [
+  {
+   "frame": "E0",
+   "pad_at_6_12": false,
+   "ms": 100
+  },
+  {
+   "frame": "E1",
+   "pad_at_6_12": false,
+   "ms": 120
+  },
+  {
+   "frame": "E2",
+   "pad_at_6_12": false,
+   "ms": 140
+  },
+  {
+   "frame": "E3",
+   "pad_at_6_12": false,
+   "ms": 140
+  },
+  {
+   "frame": "E4",
+   "pad_at_6_12": false,
+   "ms": 60
+  },
+  {
+   "frame": "E5",
+   "pad_at_6_12": false,
+   "ms": 90
+  },
+  {
+   "frame": "E6",
+   "pad_at_6_12": false,
+   "ms": 120
+  },
+  {
+   "frame": "E7",
+   "pad_at_6_12": false,
+   "ms": 140
+  },
+  {
+   "frame": "E8",
+   "pad_at_6_12": false,
+   "ms": 60
+  },
+  {
+   "frame": "E9",
+   "pad_at_6_12": false,
+   "ms": 90
+  },
+  {
+   "frame": "E10",
+   "pad_at_6_12": false,
+   "ms": 110
+  },
+  {
+   "frame": "E11",
+   "pad_at_6_12": false,
+   "ms": 70
+  },
+  {
+   "frame": "E12",
+   "pad_at_6_12": false,
+   "ms": 70
+  },
+  {
+   "frame": "F8",
+   "pad_at_6_12": false,
+   "ms": 110
+  },
+  {
+   "frame": "F9",
+   "pad_at_6_12": false,
+   "ms": 60
+  },
+  {
+   "frame": "F10",
+   "pad_at_6_12": false,
+   "ms": 90
+  },
+  {
+   "frame": "F11",
+   "pad_at_6_12": false,
+   "ms": 110
+  },
+  {
+   "frame": "F12",
+   "pad_at_6_12": false,
+   "ms": 120
+  },
+  {
+   "frame": "F14",
+   "pad_at_6_12": false,
+   "ms": 90
+  },
+  {
+   "frame": "F16",
+   "pad_at_6_12": false,
+   "ms": 90
+  },
+  {
+   "frame": "A1",
+   "pad_at_6_12": true,
+   "ms": 110
+  },
+  {
+   "frame": "A2",
+   "pad_at_6_12": true,
+   "ms": 140
+  },
+  {
+   "frame": "A3",
+   "pad_at_6_12": true,
+   "ms": 150
+  },
+  {
+   "frame": "A4",
+   "pad_at_6_12": true,
+   "ms": 90
+  },
+  {
+   "frame": "A5",
+   "pad_at_6_12": true,
+   "ms": 60
+  },
+  {
+   "frame": "A6",
+   "pad_at_6_12": true,
+   "ms": 70
+  },
+  {
+   "frame": "A7",
+   "pad_at_6_12": true,
+   "ms": 220
+  },
+  {
+   "frame": "A8",
+   "pad_at_6_12": true,
+   "ms": 300
+  }
+ ]
+}
