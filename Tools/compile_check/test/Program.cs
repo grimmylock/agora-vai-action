@@ -3882,7 +3882,7 @@ static class Program {
   // no spread, no misses). Rate: automatics at their rpm, everything else at most 4 shots a second (a clicking finger). Sustained DPS counts the reloads; TTK is for a 1000 HP standing human.
   static void DpsVsSameTierReport() {
     var sb = new System.Text.StringBuilder("gun | cat | tier | dmg/round after armor | shots/s | DPS (no reload) | sustained DPS | mag | seconds to kill 1000 HP | AP: dmg/round | AP: sustained DPS | AP: seconds to kill (tier 3+ only)\n");
-    var med = new Dictionary<int, float>(); foreach (var kv in ArmorDatabase.Tiers) { var l = kv.Value.Values.Select(a => a.PhysDR).OrderBy(x => x).ToList(); med[int.Parse(kv.Key.Replace("tier", ""))] = l[l.Count / 2]; }
+    var med = new Dictionary<int, float>(); float armorScale = float.TryParse(Environment.GetEnvironmentVariable("ARMORSCALE"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var asc) ? asc : 1f; foreach (var kv in ArmorDatabase.Tiers) { var l = kv.Value.Values.Select(a => a.PhysDR).OrderBy(x => x).ToList(); med[int.Parse(kv.Key.Replace("tier", ""))] = l[l.Count / 2] * armorScale; }   // ARMORSCALE=0.5: what if every suit's reduction were halved?
     var rows = new List<(int tier, string cat, string line, float sus)>();
     foreach (var cat in new[] { "sidearm", "smg", "assault", "shotgun", "sniper", "heavy" })
       foreach (var kv in WeaponDatabase.Categories[cat]) {
