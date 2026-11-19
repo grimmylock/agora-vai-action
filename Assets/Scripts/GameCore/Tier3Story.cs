@@ -115,6 +115,7 @@ namespace GameCore
                 Story.Finish("lake"); Story.Set("tier3_reveal");
                 return true;
             }
+            if (Story.IsDone("lake") && Tier3Annex.TalkOsei()) return true;                // 2026-11-19: Osei's ask about the lab door (Tier3Annex.cs)
             if (Story.IsDone("lake"))
             {
                 bool pillsAsk = Story.Step("pills") == 1 && Tier1Story.Holder(Crate) == null;

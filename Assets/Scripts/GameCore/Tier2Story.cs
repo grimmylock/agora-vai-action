@@ -291,7 +291,7 @@ namespace GameCore
         }
 
         /// <summary>Yan (2026-11-16): the corridor is white-lit; when the card fails the ceiling lights turn to red hazard lights (their tiles change look, the light map and the lighting bake follow) and the siren starts.</summary>
-        static void RedLights()
+        internal static void RedLights()
         {
             for (int y = 6; y <= 11; y++) for (int x = 6; x <= 80; x++) if (TerrainMap.GetTile(x, y)?.Look == "light") TerrainMap.SetTileType(x, y, TileType.Empty, "redlight");
             LightMap.Reset(); Lighting.Reset();                                              // (the picture's lamp field keeps its own bake of the lights: it must collect them again)

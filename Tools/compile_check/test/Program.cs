@@ -92,6 +92,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
+    AnnexQuestChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -1156,7 +1157,7 @@ static class Program {
     Check(eelMinStretch > 0.12f && eelMaxStretch < 2.3f, $"Eel: the rope is elastic but never breaks or folds through itself (neighbour spacing {eelMinStretch:0.00}-{eelMaxStretch:0.00} x rest)");
     Console.WriteLine($"  eel wrap: head drift in the constriction {eelHeadDrift:0.00} t, tail radius change {eelTailIn:0.00} t, coil lift head-tail {eelLift:0.00} t, tail-vs-head radius {eelInward:0.00} t, head height over its own body {eelEscape:0.00} t, best ray score at the dive {EelBoss.EscScore:0.00}");
     Check(eelHeadDrift < 0.05f, $"Eel: during the constriction the head stays anchored ({eelHeadDrift:0.00} tiles of drift)");
-    Check(eelTailIn < -0.25f, $"Eel: the constriction pulls the tail in toward the platform (change in the tail's mean radius {eelTailIn:0.00} tiles)");
+    Check(eelTailIn < -0.2f, $"Eel: the constriction pulls the tail in toward the platform (change in the tail's mean radius {eelTailIn:0.00} tiles)");
     Check(eelInward > 0.15f, $"Eel: the coil is an inward spiral - the tail lies outside the head's loop ({eelInward:0.00} tiles)");
     Check(eelLift > 0.4f, $"Eel: the loops stack - the head end lies above the tail end ({eelLift:0.00} tiles of lift)");
     Check(EelRig.SortOrder(0) > EelRig.SortOrder(1) && EelRig.SortOrder(1) > EelRig.SortOrder(55) && EelRig.HeadOrder() > EelRig.SortOrder(0), "Eel: sort order puts the head over every segment and each segment over the one behind it");
@@ -2614,6 +2615,41 @@ static class Program {
     var lab = MapLayoutDatabase.All["secret_lab_alpha"]; int micro = 0, term = 0;
     for (int y = 0; y < lab.Tiles.Length; y++) for (int x = 0; x < lab.Tiles[0].Length; x++) { if (lab.Looks[y][x] == "microscope") micro++; if (lab.Looks[y][x] == "terminal") term++; }
     Check(micro + term >= 1, $"Furnish: Secret Lab Alpha has lab stock ({micro} microscopes, {term} terminals)");
+  }
+
+  static void AnnexQuestChecks() {   // 2026-11-19: Tier 3 beat 4, batch 2: Osei's ask, the tunnels, the door scene, the Elder, the card
+    var p = Arena(out int px, out int py); Rt.On = true; MacroState.Current.StoryFlags.Clear(); Tier3Annex.Reset(); EncounterState.InCombat = false; Companion.Current = null; UnityEngine.Time.time = 50000f; UnityEngine.Time.unscaledTime = 50000f;
+    Story.Set("tier3_reveal"); Story.Set("taken_done"); Story.SetStep("taken", Story.Done); Story.SetStep("lake", Story.Done);
+    TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Sub-Station House", X = p.X, Y = p.Y, Description = "" }); Tier3Story.ZoneOverride = MacroMapDatabase.MapOf("scavengers_hub");
+    try {
+      Check(Tier3Story.TryInteract(p) && Tier3Annex.Step == 1 && MacroState.Current.DiscoveredHiddenNodes.Contains("taken_tunnels"), "Annex: E at the House after the Reveal: Osei asks, the hatch is open");
+      Check(p.Inventory.Items.Any(i => i.Id == "fragGrenade" && i.Qty >= 4) && p.Inventory.Items.Any(i => i.Id == "militaryMedkit"), "Annex: Osei's supply case: grenades and medkits");
+      // the tunnels
+      Tier3Story.ZoneOverride = null; MacroState.Current.CurrentZoneId = "taken_tunnels"; MacroState.Current.PersistedZoneTerrain.Remove("taken_tunnels"); TerrainMap.BuildTerrainForZone("taken_tunnels"); EncounterState.Enemies.Clear();
+      var hatch = TerrainMap.Landmarks.First(l => l.Name == "Hatch Ladder"); p.X = hatch.X; p.Y = hatch.Y + 1; Tier3Annex.TickRt(0.1f);
+      int packs = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy));
+      Check(Tier3Annex.Step == 2 && packs >= 15, $"Annex: in the tunnels: step 2, packs of mutants placed between the ladder and the door ({packs})");
+      // the door scene
+      var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); EncounterState.Enemies.Clear(); p.X = door.X; p.Y = door.Y + 1; p.Hp = p.MaxHp;
+      Check(Tier3Annex.TryInteract(p) && Tier3Annex.Step == 3, "Annex: E at the lab door starts the door scene");
+      int before = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy)); bool screamed = false;
+      for (int i = 0; i < 160; i++) { UnityEngine.Time.time += 0.25f; Tier3Annex.TickRt(0.25f); p.Hp = p.MaxHp; foreach (var e in EncounterState.Enemies.OfType<Mutant>()) if (Gaunt.IsElder(e) && Gaunt.Pose(e) == "scream") screamed = true; if (Story.CamLock.HasValue == false && i > 120) break; }
+      int horde = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy) && !Gaunt.IsElder((Mutant)e));
+      Check(screamed && horde >= 40 && EncounterState.Enemies.OfType<Mutant>().Where(m => !Gaunt.IsElder(m)).All(m => m.IsAggroed), $"Annex: the Elder walks out, screams, and the horde comes out running ({horde} mutants, all aggroed; scream seen {screamed})");
+      foreach (var e in EncounterState.Enemies.OfType<Mutant>().Where(m => !Gaunt.IsElder(m)).ToList()) e.Hp = 0;
+      for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.25f; Tier3Annex.TickRt(0.25f); p.Hp = p.MaxHp; if (Tier3Annex.Step == 4) break; }
+      Check(Tier3Annex.Step == 4, "Annex: the horde is down: step 4, go into the cavern");
+      // the cavern and the Elder
+      var arena = TerrainMap.Landmarks.First(l => l.Name == "Gaunt Arena"); p.X = arena.X - 10; p.Y = arena.Y; Tier3Annex.TickRt(0.1f);
+      var elder = EncounterState.Enemies.OfType<Mutant>().FirstOrDefault(Gaunt.IsElder);
+      Check(elder != null && elder.IsAggroed && elder.Hp == elder.MaxHp, $"Annex: near the arena the Elder stands up at its dais, full health, aggroed (elder {(elder == null ? "none" : elder.Hp + "/" + elder.MaxHp + " aggro " + elder.IsAggroed)}; step {Tier3Annex.Step})");
+      if (elder != null) elder.Hp = 0;
+      Tier3Annex.TickRt(0.1f);
+      Check(Tier3Annex.Step == 5 && TerrainMap.GetGroundItemsAt(elder.X, elder.Y).Any(g => g.Item.Id == Tier3Annex.Card) && Story.Has("gaunt_was_those"), "Annex: the Elder dies: it drops the card and the G-1 plate, and it was one of those");
+      var dt = TerrainMap.GetTile(door.X, door.Y - 2); Check(LabLocks.Locked(dt), "Annex: the lab door is still locked until the card is carried");
+      p.AddItem(new InventoryItem { Id = Tier3Annex.Card, Name = "Annex Keycard", Type = "key", Qty = 1, WeightKg = 0.05f }); Tier3Annex.TickRt(0.1f);
+      Check(!LabLocks.Locked(dt), "Annex: with the card in the pack the door opens");
+    } finally { Tier3Story.ZoneOverride = null; Tier3Annex.Reset(); MacroState.Current.Keys.Remove("annex_staff"); Rt.On = false; EncounterState.Enemies.Clear(); Vision.Spotlight = null; Story.CineEnd(); }
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

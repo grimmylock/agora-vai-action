@@ -281,7 +281,7 @@ namespace GameCore
         /// new game and load, before re-applying the current ending.</summary>
         public static void ResetWorld()
         {
-            Story.Reset(); Tier2Story.Reset();
+            Story.Reset(); Tier2Story.Reset(); Tier3Annex.Reset();
             if (_originalTiers == null) _originalTiers = MacroMapDatabase.Zones.ToDictionary(z => z.Id, z => z.Tier);
             foreach (var z in MacroMapDatabase.Zones) z.Tier = _originalTiers[z.Id];
         }
