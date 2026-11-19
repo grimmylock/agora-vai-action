@@ -423,7 +423,7 @@ namespace GameCore
                 if (r.Wait > 0f) { r.Wait -= dt; continue; }
                 float step = System.Math.Min(r.Speed * dt, r.Range - r.Gone);
                 float h = r.H + r.Up * (r.Gone + step * 0.5f) / Ballistics.BodyTiles;
-                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, r.Hurt == null ? Targets(r.Shooter) : Targets(r.Shooter).Where(u => !r.Hurt.Contains(u)), r.AtEel);
+                var hit = Ballistics.Trace(r.Shooter, r.X, r.Y, r.Dx, r.Dy, step, h, r.Hurt == null ? Targets(r.Shooter) : Targets(r.Shooter).Where(u => !r.Hurt.Contains(u)), r.AtEel, r.Pellets > 1 ? 0f : -1f);   // (buckshot pellets get no padding: the spread of the load is its own accuracy)
                 r.Through *= hit.Through;
                 if (hit.CoverX >= 0) { r.CoverX = hit.CoverX; r.CoverY = hit.CoverY; }
                 r.X = hit.EndX; r.Y = hit.EndY; r.Gone += hit.Dist;

@@ -22,6 +22,7 @@ namespace GameCore
         public const float LowCover = 0.55f;                // a low wall / sandbags / a tipped desk: waist high
         public const float LightCover = 0.42f;
         public const float HighCover = 0.95f;               // the Barrier (Barrier.cs): a standing head is under it; fire over it only from the tile behind              // brush, a fence, debris
+        public const float PlayerHitPad = 0.14f;            // tiles added to every body's half-width for the PLAYER's rounds
         public const float HeadHalf = 0.13f, TorsoHalf = 0.21f, ArmFrom = 0.12f, LegsHalf = 0.17f;   // half-widths, tiles
 
         public class Hit
@@ -102,7 +103,7 @@ namespace GameCore
 
         /// <summary>Trace one round from (x0, y0) along the unit direction (dx, dy) for up to `range` tiles at height h.
         /// The first body, wall or blocking cover on the way ends it.</summary>
-        public static Hit Trace(ICombatant shooter, float x0, float y0, float dx, float dy, float range, float h, IEnumerable<ICombatant> bodies, bool atEel = false)
+        public static Hit Trace(ICombatant shooter, float x0, float y0, float dx, float dy, float range, float h, IEnumerable<ICombatant> bodies, bool atEel = false, float pad = -1f)
         {
             var hit = new Hit();
             // the nearest body the line passes close enough to, at this height
@@ -117,6 +118,7 @@ namespace GameCore
                 if (t <= 0.05f || t > range || t >= bestT) continue;
                 float side = rx * dy - ry * dx;              // signed distance off the line (+ = the round passes on its right)
                 float half = HalfWidth(u, h, dx, dy, out string part);
+                if (shooter is Player && half > 0f) half += pad < 0f ? PlayerHitPad : pad;                                 // 2026-11-19 (Yan: "if the bullet goes through the enemy sprite it hits at least 80% of the time"): the hit shape is the sprite's own silhouette, so a round a hair outside its edge flew "through" the picture. The player's rounds get a little padding all round
                 if (half <= 0f || System.Math.Abs(side) > half) continue;
                 if (part == "Torso" && System.Math.Abs(side) > ArmFrom) part = "Arm";
                 best = u; bestT = t; bestPart = part; bestSide = side;

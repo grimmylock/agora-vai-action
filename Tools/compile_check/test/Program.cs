@@ -87,6 +87,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
+    AimProbe();
     BarrierChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
@@ -3757,6 +3758,26 @@ static class Program {
     EncounterState.Enemies.Clear(); Rt.On = false;
     float rate = burst ? 3f / (2f * interval + BurstRest) : 1f / interval;
     return ((float)dmg / n, hits * 100 / n, rate);
+  }
+
+  static void AimProbe() {   // AIMPROBE=1: the pistol's hit rate on a standing rookie, steady and from the hip, at close ranges
+    foreach (float steady in new[] { 1f, 0.25f }) foreach (int dist in new[] { 2, 4, 8, 15 }) {
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Random.InitState(7);
+      for (int y = py - 6; y <= py + 6; y++) for (int x = px - 3; x <= px + 45; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+      p.EquipWeapon("sidearm", "PSh18Pchela"); Rt.SetOffset(p, 0f, 0f); var w = p.EquippedWeapon; var hd = Gunplay.For(w);
+      var d = new HumanEnemy("Dummy", px + dist, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; d.MaxHp = d.Hp = 1000000; EncounterState.Enemies.Add(d); Rt.SetOffset(d, 0f, 0f);
+      var aim = Gunplay.AimOf(p); aim.Steady = steady; aim.Bloom = 0f; var (tx, ty) = Ballistics.Pos(d); var (sx, sy) = Ballistics.Pos(p);
+      int n = 600, hits = 0, head = 0;
+      for (int i = 0; i < n; i++) {
+        float spread = Gunplay.Spread(hd, aim, 0, false); int hp0 = d.Hp;
+        float h = 0.55f; Gunplay.Shoot(p, w, 1f, 0f, h, spread, false); Gunplay.LandAll();
+        if (d.Hp < hp0) hits++; d.Hp = d.MaxHp;
+        aim.Bloom = Math.Min(Gunplay.PlayerMaxBloom, aim.Bloom + hd.Kick); aim.Bloom = Math.Max(0f, aim.Bloom - hd.Recover * 0.4f);
+      }
+      if (steady < 0.5f && dist <= 8) Check(hits * 100 / n >= 80, $"Aim: the pistol from the hip hits a standing rookie at the chest at least 80% of the time at {dist} tiles ({hits * 100 / n}%)");
+      if (Environment.GetEnvironmentVariable("AIMPROBE") != null) Console.WriteLine($"AIMPROBE pistol steady {steady:0.00} at {dist} tiles: {hits * 100 / n}% of rounds hit a standing rookie aimed at the chest (spread {Gunplay.Spread(hd, aim, 0, false):0.0} deg)");
+      EncounterState.Enemies.Clear(); Rt.On = false;
+    }
   }
 
   static void WeaponVsArmorReport() {
