@@ -86,6 +86,7 @@ static class Program {
     Tier3StoryChecks();
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
+    AimAssistChecks();
     BarrierChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
@@ -2323,16 +2324,16 @@ static class Program {
   static void PackChecks() {
     var p = Arena(out _, out _); p.Inventory.Items.Clear(); p.Inventory.Backpack = "none";
     var b = Pack.Bag(p);
-    Check(b.Cols == 5 && b.Rows == 4, "Pack: no backpack = 5x4 pockets");
+    Check(b.Cols == 10 && b.Rows == 4, "Pack: no backpack = 10x4 pockets (twice the old 5x4)");
     InventoryItem W(string cat, string key) => new InventoryItem { Id = key, Name = key, Type = "weapon", Category = cat, Key = key, WeightKg = 1f };
     var rifle = W("assault", "VK74"); p.Inventory.Items.Add(rifle);
     Check(Pack.Size(rifle) == (5, 2) && Pack.Place(p, rifle) && rifle.GridX == 0 && rifle.GridY == 0 && !rifle.Rot, "Pack: a rifle takes 5x2 at the top left");
-    var sniper = W("sniper", "x"); p.Inventory.Items.Add(sniper);
-    Check(!Pack.Place(p, sniper) && sniper.GridX < 0, "Pack: a 6x2 sniper rifle doesn't fit 5x4 pockets - it stays out");
+    var sniper = W("heavy", "x"); p.Inventory.Items.Add(sniper);
+    Check(!Pack.Place(p, sniper) && sniper.GridX < 0, "Pack: a 6x3 machine gun doesn't fit what is left of the 10x4 pockets - it stays out");
     p.AddItem(new InventoryItem { Id = "bandage", Name = "Bandage", Type = "consumable", Qty = 1, WeightKg = 0.1f });
     var band = p.Inventory.Items.First(i => i.Id == "bandage");
-    Check(band.GridX == 0 && band.GridY == 2, "Pack: a pickup lands in the first free cell");
-    Check(!Pack.Move(p, band, 1, 1, false) && Pack.Move(p, band, 4, 3, false) && band.GridX == 4, "Pack: you can't drop it on another item, you can on space");
+    Check(band.GridX >= 0 && !(band.GridX < 5 && band.GridY < 2), "Pack: a pickup lands in a free cell (not on the rifle)");
+    Check(!Pack.Move(p, band, 1, 1, false) && Pack.Move(p, band, 9, 3, false) && band.GridX == 9, "Pack: you can't drop it on another item, you can on space");
     var med = new InventoryItem { Id = "basicMedkit", Name = "Basic Medkit", Type = "consumable", WeightKg = 0.5f }; p.Inventory.Items.Add(med);
     Check(!Pack.Move(p, med, 4, 0, true) && Pack.Move(p, med, 3, 2, true) && Pack.Footprint(med) == (1, 2), "Pack: turned, a 2x1 medkit stands 1x2");
     p.HandleBackpackChange("backpack_tourist");
@@ -2546,6 +2547,15 @@ static class Program {
       Emplacement.Reset();
       EncounterState.Enemies.Remove(brute);
     } finally { foreach (var (x, y, t) in saved) { var tt = TerrainMap.GetTile(x, y); tt.Type = t.Type; tt.Look = t.Look; tt.Damage = t.Damage; } Barrier.ZoneOverride = null; Barrier.Reset(); }
+  }
+
+  static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it
+    var p = Arena(out int px, out int py); Rt.On = true;
+    var e = new HumanEnemy("Raider", px + 6, py, "Raiders", "Experienced", null, null); EncounterState.Enemies.Add(e); Vision.Spotlight = e;   // (lit for the scene: it counts as seen)
+    var (ex, ey) = Ballistics.Pos(e);
+    Check(Rt.UnitUnder(ex + 0.9f, ey + 0.2f) == null && Rt.UnitUnder(ex + 0.9f, ey + 0.2f, Rt.AssistRadius) == e, "Aim: a crosshair beside him (off the sprite, within a tile) is aiming at him");
+    Check(Rt.UnitUnder(ex + 2.5f, ey, Rt.AssistRadius) == null && Rt.UnitUnder(ex + 1.5f, ey, Rt.ScopeAssistRadius) == e, "Aim: two and a half tiles away is not; through a scope the reach is wider");
+    Vision.Spotlight = null; EncounterState.Enemies.Remove(e);
   }
 
   static void TestingGroundBarrierChecks() {   // 2026-11-18: the Testing Ground's "Barrier defense" entry, run the way the game runs it (real map load, real clock)

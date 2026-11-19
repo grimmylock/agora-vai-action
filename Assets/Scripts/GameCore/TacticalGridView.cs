@@ -440,7 +440,7 @@ namespace GameCore
             var c = new Vector3(mx, -my, 0f);
             Vector3[] at = { c + new Vector3(gap, 0f, 0f), c + new Vector3(-gap, 0f, 0f), c + new Vector3(0f, gap, 0f), c + new Vector3(0f, -gap, 0f), c };
             Vector3[] size = { new Vector3(3f, 1f, 1f), new Vector3(3f, 1f, 1f), new Vector3(1f, 3f, 1f), new Vector3(1f, 3f, 1f), Vector3.one };
-            var over = Rt.UnitUnder(mx, my);
+            var over = Rt.UnitUnder(mx, my, Rt.AssistFor(w));                           // (the crosshair goes red on a body, or near enough that a shot would count as aimed at it)
             bool redDot = Optics.OpticOf(w)?.Kind == "dot";                              // a red-dot sight: the centre dot is red and a little bigger
             if (redDot) size[4] = new Vector3(1.6f, 1.6f, 1f);
             for (int i = 0; i < 5; i++)

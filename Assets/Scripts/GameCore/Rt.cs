@@ -566,10 +566,11 @@ namespace GameCore
             var (px, py) = Ballistics.Pos(p);
             float dx = at.x - px, dy = at.y - py, len = Mathf.Sqrt(dx * dx + dy * dy);
             if (len < 0.05f) return;
-            var over = UnitUnder(at.x, at.y);
+            var over = UnitUnder(at.x, at.y); bool assisted = false;
+            if (over == null) { over = UnitUnder(at.x, at.y, AssistFor(w)); assisted = over != null; }   // not on a sprite, but in his direction: that is him
             bool atEel = EelSump.BodyUnder(at.x, at.y, out var eelU, out float eelX, out float eelY);   // Boss 3: the crosshair is over some part of the eel's body: aim at that part's spot on the ground
             if (atEel) over = eelU;
-            float h = atEel ? 0.45f : Ballistics.AimHeight(over, at.y);
+            float h = atEel ? 0.45f : assisted ? 0.55f : Ballistics.AimHeight(over, at.y);   // (an assisted aim takes the chest)
             int mx = Mathf.FloorToInt(at.x), my = Mathf.FloorToInt(at.y);
             if (over == null && TerrainMap.CoverAcAt(mx, my) > 0 && !TerrainMap.BlocksSight(mx, my)) h = 0.3f;   // a barrel, sandbags, a desk: shoot the thing itself
             // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
@@ -752,6 +753,28 @@ namespace GameCore
         }
 
         /// <summary>The living unit whose sprite the point (tile space) is over, if any - the nearest one.</summary>
+        /// <summary>2026-11-19 (Yan: "the crosshair needs to be in the general direction of the enemy for it to count as aiming at him, putting the mouse directly over the enemy sprite is very hard, should matter when aiming through scopes"):
+        /// how far (tiles) from a body's middle the crosshair still counts as aiming at it when it is not over the sprite itself: wider through a scope, where the picture is magnified and the cursor travels far.</summary>
+        public const float AssistRadius = 1.0f, ScopeAssistRadius = 1.8f;
+        public static float AssistFor(Weapon w) => Optics.Scoped(w) ? ScopeAssistRadius : AssistRadius;
+
+        /// <summary>The body the crosshair is on - or, with `assist` > 0 and nothing under it, the nearest living, visible body whose middle is within `assist` tiles (a big body: that much plus a third of its height).</summary>
+        public static ICombatant UnitUnder(float x, float y, float assist)
+        {
+            var hit = UnitUnder(x, y); if (hit != null || assist <= 0f) return hit;
+            ICombatant best = null; float bd = float.MaxValue;
+            foreach (var u in Gunplay.Bodies())
+            {
+                if (u is Player || !u.IsAlive() || EelBoss.Is(u) || !Vision.Shows(u)) continue;
+                var (ux, uy) = Ballistics.Pos(u);
+                float tall = u is Mutant mm && !(u is HumanEnemy) ? Ballistics.MutantHeight(mm) : Ballistics.BodyTiles;
+                float cy = uy + Ballistics.FeetBelow - 0.5f * tall;                                   // the middle of the body, not its feet
+                float d = Mathf.Sqrt((x - ux) * (x - ux) + (y - cy) * (y - cy));
+                if (d <= assist + 0.33f * (tall - 1f) && d < bd) { bd = d; best = u; }
+            }
+            return best;
+        }
+
         public static ICombatant UnitUnder(float x, float y)
         {
             ICombatant best = null; float bd = 9f;
