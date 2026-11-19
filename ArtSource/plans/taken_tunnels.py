@@ -7,7 +7,7 @@ north with a steel lab door (the badge-reader door, '1') in the middle of its no
 Legend: # rock, . rough floor, , concrete floor, + a timber prop, h a block, ? a wreck, E the hatch ladder, F the lab door's spot, B the broken wall, H the nest, 1 the badge-reader door."""
 import random, os, math, sys
 from collections import deque
-W, H = 96, 58
+W, H = 96, 58   # (the plan is 150 wide since 2026-11-19: the arena)
 def build(seed):
     rnd = random.Random(seed); g = [['#'] * W for _ in range(H)]
     def put(x, y, c):
@@ -91,6 +91,40 @@ def build(seed):
                 if g[yy][xx] == '.': g[yy][xx] = ','
         cur = par[cur]
     rows = [''.join(r) for r in g]
+    # --- 2026-11-19 (Tier 3 beat 4 "The Door Under the Dock", STORY_GAUNT_LAB.md): the plan grows EAST into the Elder Gaunt's arena (the nest's cavern, enlarged for the boss fight), and NORTH behind the lab
+    # door into a short concrete corridor with a decontamination gate and a loading bay whose freight lift ('L') is the way down to the Annex. A separate random stream, drawn after everything else, so the
+    # Taken part of the map (seed 926) is untouched: the first 96 columns and the rows below y = 5 are exactly as they were.
+    W2 = 150
+    for r_ in g: r_.extend(['#'] * (W2 - len(r_)))
+    r2 = random.Random(seed * 31 + 7)
+    def put2(x, y, c):
+        if 1 <= x < W2 - 1 and 1 <= y < H - 1: g[y][x] = c
+    def disc2(cx, cy, r, c='.'):
+        for y in range(int(cy - r) - 1, int(cy + r) + 2):
+            for x in range(int(cx - r) - 1, int(cx + r) + 2):
+                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r: put2(x, y, c)
+    def blob2(cx, cy, r, c='.'):
+        disc2(cx, cy, r, c)
+        for _ in range(6):
+            a = r2.random() * 6.283; d = r * r2.uniform(0.5, 0.85); disc2(cx + math.cos(a) * d, cy + math.sin(a) * d, r * r2.uniform(0.4, 0.65), c)
+    def path2(a, b, width, c='.'):
+        steps = int(math.hypot(b[0] - a[0], b[1] - a[1]) * 2) + 1
+        for s_ in range(steps + 1):
+            t = s_ / steps; disc2(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, width / 2 + r2.choice((0, 0, 0.3)), c)
+    path2((90, 30), (108, 30), 6)                                               # the nest's east side opens on the arena
+    blob2(126, 30, 14); blob2(126, 30, 11)
+    for (lx, ly, lr) in ((112, 18, 6), (112, 42, 6), (138, 19, 6), (138, 41, 6), (141, 30, 6)): blob2(lx, ly, lr)
+    path2((126, 17), (120, 9), 4); blob2(120, 6, 4)                              # a side tunnel north: a wave comes out of it
+    path2((126, 43), (120, 51), 4); blob2(120, 53, 4)                            # ... and one south
+    path2((141, 30), (146, 30), 4)                                               # the dais: a pocket at the east end, where the Elder waits
+    pillars = []
+    for k in range(10):                                                          # broken stone pillars: cover (the scream shatters them in phase 2)
+        a = k * 6.283 / 10 + 0.3; px_, py_ = int(126 + math.cos(a) * 8.5), int(30 + math.sin(a) * 7.5)
+        if g[py_][px_] == '.': g[py_][px_] = 'h'; pillars.append((px_, py_))
+    for (px_, py_) in ((118, 26), (134, 34), (130, 22), (122, 38), (116, 33), (136, 27)):
+        if g[py_][px_] == '.': g[py_][px_] = 'h'
+    g[30][126] = 'A'; g[9][120] = 'J'; g[51][120] = 'K'; g[30][145] = 'X'
+    rows = [''.join(r_) for r_ in g]
     route.reverse(); trail = []                                            # a blood trail to follow (Yan: "in the cavern only flashlights and a blood splatter trail"): a smear every 3rd tile, a splat every 12th, drifting off the centre line
     for i, (x, y) in enumerate(route):
         if i % 3 == 0 and i > 6 and rows[y][x] in ',.': trail.append((x + rnd.choice((-1, 0, 0, 1)), y + rnd.choice((-1, 0, 0, 1)), 2 if i % 12 == 0 else 1))
@@ -111,6 +145,23 @@ def build(seed):
             n2 = (x + dx, y + dy)
             if 0 <= n2[0] < W and 0 <= n2[1] < H and walk(rows[n2[1]][n2[0]]) and n2 not in seen and n2 not in blocked: seen.add(n2); q.append(n2)
     reach_nest = any((x, y) in seen for x in range(81, 95) for y in range(6, 36))
+    # --- behind the lab door (2026-11-19): ten rows are added at the TOP of the plan (everything moves down by SHIFT; the blood trail with it) and the annex corridor, a decontamination gate and the loading
+    # bay are carved there. (Walls are drawn tall: a corridor squeezed behind the old north wall would have been hidden by it; the bay is 7 rows tall for the same reason.)
+    SHIFT = 10
+    g = [['#'] * W2 for _ in range(SHIFT)] + g
+    def put3(x, y, c):
+        if 1 <= x < W2 - 1 and 1 <= y < len(g) - 1: g[y][x] = c
+    for y in range(9, 15):                                                     # the corridor north from the door (the door is at (40, 15) now)
+        for x in range(39, 42): put3(x, y, ',')
+    for x in range(39, 42): put3(x, 11, '!')                                    # the decontamination gate
+    for y in range(2, 9):                                                      # the loading bay: 23 x 7
+        for x in range(30, 53): put3(x, y, ',')
+    for (x, y) in ((32, 3), (33, 3), (34, 3), (49, 3), (50, 3), (51, 3), (32, 7), (33, 7), (50, 7), (51, 7), (44, 5), (45, 5), (36, 5)): put3(x, y, 'h')
+    for (x, y) in ((36, 4), (46, 4), (36, 7), (46, 7), (40, 13), (40, 10)): put3(x, y, 'i')
+    put3(41, 3, 'L'); put3(40, 6, 'M'); put3(40, 13, ',')
+    put3(40, 10, 'i')
+    rows = [''.join(r_) for r_ in g]
+    trail = [(x, y + SHIFT, k) for (x, y, k) in trail]
     build.trail = trail
     return rows, dist.get(goal), len(dist), reach_nest
 if __name__ == '__main__':
@@ -128,9 +179,11 @@ if __name__ == '__main__':
         /// <summary>The underground under the Loading Dock: 'E' the hatch ladder (the way back up), 'F' the lab door's spot, 'B' the broken wall, 'H' the nest. Entered by the story (Tier2Story), not by an exit.</summary>
         public static MapLayout TakenTunnels()
         {
-            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Hatch Ladder", "industrial_basin"), ['F'] = ("Lab Door", null), ['B'] = ("Broken Wall", null), ['H'] = ("Nest", null) };
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Hatch Ladder", "industrial_basin"), ['F'] = ("Lab Door", null), ['B'] = ("Broken Wall", null), ['H'] = ("Nest", null), ['A'] = ("Gaunt Arena", null), ['J'] = ("Arena North Mouth", null), ['K'] = ("Arena South Mouth", null), ['X'] = ("Gaunt Dais", null), ['M'] = ("Loading Bay", null), ['L'] = ("Freight Lift", "loading_annex") };
             var m = FloorPlan("taken_tunnels", TakenPlan, "cliff", CaveFloor, marks, null);
             for (int i = 0; i + 2 < TakenTrail.Length; i += 3) if (m.Looks != null && TakenTrail[i + 1] < m.Looks.Length && m.Looks[TakenTrail[i + 1]][TakenTrail[i]] == null) m.Looks[TakenTrail[i + 1]][TakenTrail[i]] = TakenTrail[i + 2] == 2 ? "blood" : "bloodtrail";
+            if (m.Looks != null && m.Tiles != null)                                         // behind the lab door: concrete walls, not cave rock (the corridor, the decontamination gate and the bay; only the walls of that block)
+                for (int yy = 1; yy <= 15; yy++) for (int xx = 28; xx <= 54; xx++) if (m.Tiles[yy][xx] == "Solid") m.Looks[yy][xx] = "concrete";
             return m;
         }
     }

@@ -92,6 +92,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
+    AnnexDoorChecks();
     StoryLandmarkChecks();
     OldNumbersChecks();
     AimProbe(); HeightProbe();
@@ -275,7 +276,7 @@ static class Program {
     }
     // every dungeon: a small map of its own, pinned exit back up, interior (no sky), and its entrance is on the surface
     foreach (var d in MacroMapDatabase.Zones.Where(z => z.IsDungeon)) {
-      Check(MapLayoutDatabase.All.TryGetValue(d.Id, out var dl) && dl.FullSize && dl.Tiles.Length <= 60, $"{d.Id} is a small full-size map");
+      Check(MapLayoutDatabase.All.TryGetValue(d.Id, out var dl) && dl.FullSize && dl.Tiles.Length <= 70, $"{d.Id} is a small full-size map");   // (70: the Hatch Tunnels got ten rows for the Annex corridor and bay, 2026-11-19)
       Check(ZoneLayoutRecipes.IsInterior(d.Id), $"{d.Id} is underground");
       foreach (var up in d.ConnectedZones) Check(MapLayoutDatabase.All[d.Id].Anchors.ContainsKey("exit:" + up), $"{d.Id}: the way back up to {up} is pinned");
     }
@@ -2574,6 +2575,17 @@ static class Program {
       MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone);
       Check(TerrainMap.Landmarks.Any(l => l.Name == name), $"Story: the landmark \"{name}\" exists on the {zone} map (a landmark the story looks for must be listed in LandmarkDatabase, not only anchored)");
     }
+  }
+
+  static void AnnexDoorChecks() {   // 2026-11-19: the lab door of "Taken" is a real lock now (the Elder's card opens it); nothing behind it was built before
+    MacroState.Current.CurrentZoneId = "taken_tunnels"; MacroState.Current.PersistedZoneTerrain.Remove("taken_tunnels"); MacroState.Current.Keys.Remove(LabLocks.Key("staff")); TerrainMap.BuildTerrainForZone("taken_tunnels");
+    var ld = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); var dt = TerrainMap.GetTile(ld.X, ld.Y - 2);
+    Check(dt.Type == TileType.Door && dt.Look == "door_badge" && LabLocks.Locked(dt) && !TerrainMap.CanEnterTile(ld.X, ld.Y - 2), "Annex: the lab door is locked without the Elder's card (it used to open onto solid rock)");
+    var bay = TerrainMap.Landmarks.First(l => l.Name == "Loading Bay"); var lift = TerrainMap.Exits.First(e => e.TargetZoneId == "loading_annex");
+    Check(bay.Y <= 8 && lift.Y <= 8 && TerrainMap.GetTile(ld.X, ld.Y - 4).Type == TileType.Empty && TerrainMap.GetTile(ld.X, ld.Y - 6).Type == TileType.Door, "Annex: behind the door: a corridor, the loading bay and the freight lift's exit");
+    var arena = TerrainMap.Landmarks.First(l => l.Name == "Gaunt Arena"); int open = 0; for (int y = arena.Y - 18; y <= arena.Y + 18; y++) for (int x = arena.X - 22; x <= arena.X + 22; x++) if (TerrainMap.CanEnterTile(x, y)) open++;
+    Check(open >= 1100, $"Annex: the Gaunt's arena is big enough for a boss fight ({open} walkable tiles within 22x18 of its centre)");
+    MacroState.Current.Keys.Add(LabLocks.Key("staff")); Check(!LabLocks.Locked(dt), "Annex: with the card the door is open"); MacroState.Current.Keys.Remove(LabLocks.Key("staff"));
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

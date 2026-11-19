@@ -350,6 +350,21 @@ namespace GameData
                 L("Lab Door", "A steel door in the corridor wall, an electronic lock beside it."),
                 L("Broken Wall", "The corridor's east wall has burst outward. Behind the rubble a tunnel runs down into the dark, and warm air breathes out of it."),
                 L("Nest", "Where the corridor ends. The air is warm and smells of meat."),
+                L("Gaunt Arena", "The cavern past the nest, opened out into a ring of broken pillars: whatever screams in the dark stands here."),   // 2026-11-19: Tier 3 beat 4 (STORY_GAUNT_LAB.md)
+                L("Arena North Mouth", "A narrow tunnel running off north from the cavern. Something has worn the floor smooth."),
+                L("Arena South Mouth", "A narrow tunnel running off south from the cavern. Something has worn the floor smooth."),
+                L("Gaunt Dais", "A pocket at the cavern's far end. The bones are arranged."),
+                L("Loading Bay", "Behind the lab door: a short concrete corridor and a freight bay, crates stencilled with a Garrison mark."),
+                L("Freight Lift", "A freight lift at the bay's end, its gate chained open. It goes down."),
+            },
+            ["loading_annex"] = new List<LandmarkDef>
+            {
+                L("Freight Lift", "The freight lift up to the tunnels, its gate chained open."),
+                L("Intake Desk", "A steel desk and a ledger, the pages stuck together."),
+                L("Cell Block", "A central aisle between six cells. Four doors stand open."),
+                L("Handler's Office", "A plain office with a locked cabinet, a swivel chair, and a coat on a hook."),
+                L("Control Room", "A bank of consoles round an old transmitter, still warm."),
+                L("Vault", "A small vault behind a keypad door."),
             },
             ["crusher_pit"] = new List<LandmarkDef>
             {

@@ -25,7 +25,7 @@ namespace GameCore
         /// <summary>A key-giving object in a plan: its name, look, the key kind it gives, the kind it needs, what it says.</summary>
         class Thing { public string Name, Look, Kind, Needs, Desc, Says; public int Ru; }
 
-        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege", ["lattice_foundry_lower"] = "foundry", ["secret_lab_gamma"] = "gamma", ["secret_lab_beta"] = "beta" };
+        static readonly Dictionary<string, string> Prefix = new Dictionary<string, string> { ["secret_lab_alpha"] = "alpha", ["taken_tunnels"] = "annex", ["loading_annex"] = "annex", [Depths] = "depths", [Depths1] = "depths", [Depths2] = "depths", [Depths3] = "depths", ["pumping_basement"] = "pump", ["secret_cave"] = "cave", ["smugglers_tunnel"] = "smug", ["chapel_crypt"] = "crypt", ["valley_mine"] = "mine", ["crusher_pit"] = "crusher", ["flooded_bunker"] = "bunker", ["stranded_ferry"] = "ferry", ["camp_shelter"] = "shelter", ["drydock_tunnels"] = "dock", ["hospital_morgue"] = "morgue", ["maintenance_tunnels"] = "mtun", ["underground_bunker"] = "ubunk", ["deep_caverns"] = "cavern", ["underground_labyrinth"] = "maze", ["siege_catacombs"] = "siege", ["lattice_foundry_lower"] = "foundry", ["secret_lab_gamma"] = "gamma", ["secret_lab_beta"] = "beta" };
 
         /// <summary>Which drain key a map's deep water answers to. The Depths' flooded levels each drain with their own pump; the station's
         /// basin only empties when the last level is drained (the eel boss, ACTION_DESIGN "Dodge bosses"). Any other map: "drain".</summary>
@@ -305,6 +305,7 @@ namespace GameCore
         {
             ["siege_catacombs:irongate"] = "An iron gate, older than the war. The sexton will have kept its key close to the bones he tended.",
             ["siege_catacombs:sealslab"] = "The crypt's slab, a dial of four rings sunk in it. The burial roll would have the numbers.",
+            ["taken_tunnels:door_badge"] = "The door is locked. The reader blinks blue and wants a card - not the one the Garrison put in your hand: a real one, from whoever answers that scream.",
             ["drydock_tunnels:irongate"] = "A sluice gate, wound shut. The wheel's handle is gone from its square; whoever worked the sluices will have hung it up in their chamber.",
         };
 
@@ -408,7 +409,8 @@ foreach (var kv in LockKinds) if (Has(Key(kv.Value))) { Relight(kv.Key); Thrown(
         public static IEnumerable<string> KeysOf(string zone) =>
             !Prefix.ContainsKey(zone ?? "") ? Enumerable.Empty<string>()
             : (Things.TryGetValue(zone, out var d) ? d.Values.Select(v => KeyIn(zone, v.Kind)) : Enumerable.Empty<string>())
-              .Concat(new[] { KeyIn(zone, "power"), KeyIn(zone, WaterKind(zone)) }).Distinct();   // keys found on another level count too
+              .Concat(new[] { KeyIn(zone, "power"), KeyIn(zone, WaterKind(zone)) })
+              .Concat(zone == "taken_tunnels" || zone == "loading_annex" ? new[] { KeyIn(zone, "staff"), KeyIn(zone, "code") } : new string[0]).Distinct();   // keys found on another level count too; the Annex's card (the Elder drops it) and the vault code
 
         /// <summary>The plan letters of a dungeon's key objects, as stash names for FloorPlan (null if it has none).</summary>
         public static Dictionary<char, string> StashesOf(string zone) =>
