@@ -212,7 +212,8 @@ namespace GameCore
             float tg = calm ? 0.22f : 1f, ta = w == null || melee ? (combat ? 0.8f : 0.0f) : shooting ? 1f : 0.28f, tq = combat || hpf < 0.7f || p.ArmedThrowable != null || st.Count > 0 ? 1f : 0.4f;
             // the danger edge and the toasts
             float vig = down ? 0.5f + 0.2f * Mathf.Sin(Time.unscaledTime * 7f) : hpf < 0.34f ? (0.28f + 0.14f * Mathf.Sin(Time.unscaledTime * 4f)) * (1f - hpf / 0.34f * 0.5f) : 0f;
-            _rVig.color = new Color(0.8f, 0.08f, 0.05f, vig);
+            if (!p.IsAlive() || Rt.On && Rt.Me != null && Rt.Me.Dead) vig = 0f;                   // 2026-11-19 (Yan: "after dying the screen still has the overlay"): no danger edge for the dead, and it is recomputed from scratch every frame
+            _rVig.color = new Color(0.8f, 0.08f, 0.05f, Mathf.Clamp01(vig));
             for (int i = 0; i < _rToast.Count; i++)
             {
                 if (i < _toasts.Count && Time.unscaledTime < _toasts[i].until) { _rToast[i].text = _toasts[i].text; float left = _toasts[i].until - Time.unscaledTime; _rToast[i].color = new Color(Bone.r, Bone.g, Bone.b, Mathf.Clamp01(left / 0.7f)); }

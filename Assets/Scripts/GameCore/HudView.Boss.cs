@@ -149,8 +149,9 @@ namespace GameCore
         void UpdateHurt()
         {
             var p = Player.Current;
-            if (p == null) { _lastHp = -1; return; }
-            if (p != _hurtOf) { _hurtOf = p; _lastHp = p.Hp; }
+            if (p == null) { _lastHp = -1; if (_hurtEdge != null) _hurtEdge.gameObject.SetActive(false); return; }
+            if (HurtAt > Time.unscaledTime + 0.5f) { HurtAt = -99f; HurtK = 0f; }   // 2026-11-19: a flash stamped by an earlier play session (the clock restarted, the static did not) would hold the red edge on for good
+            if (p != _hurtOf) { _hurtOf = p; _lastHp = p.Hp; HurtAt = -99f; HurtK = 0f; }   // a new character: no flash left over from the last one
             if (p.Hp < _lastHp && _lastHp > 0)
             {
                 float k = Mathf.Clamp((_lastHp - p.Hp) / (float)Mathf.Max(1, p.MaxHp) * 6f, 0.3f, 1f);   // a sixth of your health or more: the full flash
@@ -159,7 +160,7 @@ namespace GameCore
             _lastHp = p.Hp;
             if (_hurtEdge == null) _hurtEdge = EdgeImage("HurtEdge", 0.62f, 1.12f);
             float a = Mathf.Clamp01(1f - (Time.unscaledTime - HurtAt) / HurtFade) * HurtK;
-            _hurtEdge.gameObject.SetActive(a > 0.01f);
+            _hurtEdge.gameObject.SetActive(a > 0.01f && p.IsAlive());
             if (a > 0.01f) _hurtEdge.color = new Color(0.78f, 0.04f, 0.03f, 0.7f * a);
         }
 
