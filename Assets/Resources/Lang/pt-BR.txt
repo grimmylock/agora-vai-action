@@ -1046,3 +1046,13 @@ The Exile: the King believes Spool is dead. He paid and let you keep the bat. Sp
 Go back to Spool at the Dog Kennels	Volte ao Spool no Dog Kennels
 KING OF THE HEAP	REI DO MONTE
 He throws the crown down. "Then you can have the whole yard."	Ele joga a coroa no chão. "Então vocês podem ficar com o pátio inteiro."
+He is mine. You keep the rest off my back.	Ele é meu. Vocês mantêm o resto longe das minhas costas.
+Spool. I should have buried you myself.	Spool. Eu devia ter te enterrado eu mesmo.
+SPOOL AND THE SCRAP KING	SPOOL E O REI DA SUCATA
+HOLD OFF THE WAVES	SEGUREM AS ONDAS
+Hold off the King's loyal Raiders while Spool fights the King	Segurem os Raiders leais ao Rei enquanto Spool enfrenta o Rei
+The Crown: the Nest split. Spool faces the King one on one; you hold off the King's loyal Raiders until it is over.	A Coroa: o Ninho se rachou. Spool enfrenta o Rei um contra um; você segura os Raiders leais ao Rei até acabar.
+The last of the loyal Raiders falls. Behind you, Spool's bat comes round with all the wire in it, and the Scrap King goes down on a knee in his own yard.	O último dos Raiders leais cai. Atrás de você, o taco do Spool gira com todo o arame nele, e o Rei da Sucata cai de joelhos no próprio pátio.
+That is for the yard.	Isso é pelo pátio.
+Take the Scrap King's crown	Tome a coroa do Rei da Sucata
+(On a knee in his own yard, the hammer out of reach, Spool's bat at his neck.) Take it. It was only ever scrap and nerve. ...Put it on, then. See how heavy it is.	(De joelhos no próprio pátio, o martelo fora de alcance, o taco do Spool no pescoço.) Pegue. Sempre foi só sucata e nervo. ...Ponha, então. Veja como é pesada.

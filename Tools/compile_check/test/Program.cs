@@ -2764,7 +2764,7 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); CrownJob.Reset(); Companion.Current = null; EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.OfflineSquads.Clear();
     UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
     try {
-      Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard");
+      Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); StoryNpcs.ZoneOverride = "scrapyard";
       TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Scrap King's Nest", X = p.X, Y = p.Y, Description = "" });
       TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 40, Y = py, Description = "" });
       TerrainMap.Landmarks.Add(new LandmarkInstance { Name = CrownJob.Cart, X = px + 80, Y = py, Description = "" });
@@ -2781,16 +2781,15 @@ static class Program {
       p.X = px + 42; p.Y = py; Check(CrownJob.TryInteract(p) && CrownJob.Step == 4 && Companion.Current != null && Companion.Current.Name == "Spool", "Crown: Spool walks with you (the Companion slot) to the Nest");
       p.X = px; p.Y = py; EncounterState.Enemies.RemoveAll(e => e != Companion.Current);
       Check(CrownJob.TryInteract(p) && CrownJob.Step == 5 && EncounterState.Enemies.Count(e => e.Faction == "Raiders" && e.IsAlive()) == 3 && !p.Inventory.Items.Any(i => i.Id == CrownJob.Manifest), "Crown: the manifest at the Nest: half turn, the first wave of three comes");
-      int waves = 1; for (int g = 0; g < 8 && CrownJob.Step == 5; g++) { foreach (var e in EncounterState.Enemies.Where(e => e.Faction == "Raiders").ToList()) e.Hp = 0; UnityEngine.Time.time += 5f; CrownJob.Tick(0.1f); if (EncounterState.Enemies.Any(e => e.Faction == "Raiders" && e.Name != "The Scrap King" && e.IsAlive())) waves++; }
-      var kf = Boss.Fights.FirstOrDefault(x => x.Def == Boss.King);
-      Check(waves == 3 && CrownJob.Step == 6 && kf != null && kf.Unit.MaxHp == 5000, $"Crown: three waves ({waves}), then the King himself");
-      kf.Unit.Hp = 1; Boss.OnDamaged(kf.Unit); p.X = kf.Unit.X - 1; p.Y = kf.Unit.Y;
-      Check(Boss.TryFinish(p) && Story.Has("king_exiled") && Story.IsDone("crown") && !EncounterState.Enemies.Contains(kf.Unit), "Crown: he breaks, you take the crown, he is exiled for good");
-      Check(p.ActivePerks.Contains(CrownJob.PerkKey) && p.Inventory.Items.Any(i => i.Key == "BarbwireCoat") && QuartermasterDatabase.Find("scrapyard").Name == "Spool", "Crown: the Crown of Scrap perk, the coat, and Spool keeps the Nest and the trade");
+      Check(StoryNpcs.Find("The Scrap King") != null && StoryNpcs.Find("Spool") != null && Companion.Current == null, "Crown: during the waves Spool and the King stand at the Nest as held units (the duel), Spool is no longer the Companion");
+      int waves = 1; for (int g = 0; g < 8 && CrownJob.Step == 5; g++) { foreach (var e in EncounterState.Enemies.Where(e => e.Faction == "Raiders").ToList()) e.Hp = 0; UnityEngine.Time.time += 5f; CrownJob.Tick(0.1f); if (EncounterState.Enemies.Any(e => e.Faction == "Raiders" && e.IsAlive())) waves++; }
+      Check(waves == 3 && CrownJob.Step == 6 && !Boss.Fights.Any(x => x.Def == Boss.King), $"Crown: three waves ({waves}); then Spool wins the duel, the King is on a knee (no boss fight for you)");
+      Check(CrownJob.TryInteract(p) && Story.Has("king_exiled") && Story.IsDone("crown") && StoryNpcs.Find("The Scrap King") == null, "Crown: you take the crown, he is exiled for good");
+      Check(p.ActivePerks.Contains(CrownJob.PerkKey) && p.Inventory.Items.Any(i => i.Key == "BarbwireCoat") && QuartermasterDatabase.Find("scrapyard").Name == "Spool" && StoryNpcs.Find("Spool") != null, "Crown: the Crown of Scrap perk, the coat, and Spool keeps the Nest and the trade");
       // the perk: a tenth of the melee damage taken goes back
       var foe = new HumanEnemy("Raider", px + 3, py + 3, "Raiders", "Experienced", WeaponDatabase.Categories["melee"]["Hatchet"], null); EncounterState.Enemies.Add(foe); int h0 = foe.Hp; CrownJob.Reprisal(foe, p, 500);
       Check(h0 - foe.Hp == 50, $"Crown of Scrap: 500 melee damage taken, 50 dealt back ({h0 - foe.Hp})");
-    } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); CrownJob.Reset(); Companion.Current = null; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; MacroState.Current.OfflineSquads.Clear(); }
+    } finally { Tier2Jobs.ZoneOverride = null; StoryNpcs.ZoneOverride = null; StoryNpcs.Reset(); Rt.On = false; Boss.Reset(); CrownJob.Reset(); Companion.Current = null; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; MacroState.Current.OfflineSquads.Clear(); }
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

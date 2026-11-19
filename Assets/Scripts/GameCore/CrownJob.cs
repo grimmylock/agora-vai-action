@@ -3,8 +3,8 @@
 // you get a unique perk (reflects 10 % of melee damage back at the attacker); you keep the bat and Spool gives the coat."
 //  - Who gives it: Spool, at the Dog Kennels, either after you showed the King the bat as proof of death (`spool` step 4), or - if you sided with Rooke, so the King is already your enemy - straight away.
 //  - `crown` steps: 1 the tithe cart (a Garrison escort at the Truck Stop: kill it, E at the Truck Stop for the manifest), 2 take the manifest to Spool, 3 Spool walks with you (the Companion slot) to the Nest,
-//    4 E at the King: the scene (half his men turn, the rest do not), the waves (three, smaller for the turned men and again if Rooke is with you), 5 the waves are dead: the King himself (Boss.King),
-//    6 he breaks: E: take the crown. Done: `king_exiled`, the perk, Spool at the Nest as the Tier 2 trader (QuartermasterDatabase), the bat and the coat are yours.
+//    4 E at the King: the scene (half his men turn, the rest do not), 5 the waves (three, smaller for the turned men and again if Rooke is with you) while SPOOL DUELS THE KING (Yan: "we hold off the waves, Spool
+//    duels the king himself, he wins after we kill all the waves"; scripted clashes between the two held units), 6 the last wave is dead: Spool's bat comes round, the King goes down on a knee: E: take the crown. Done: `king_exiled`, the perk, Spool at the Nest as the Tier 2 trader (QuartermasterDatabase), the bat and the coat are yours.
 // ponytail: the turned men and Rooke's men are not units that fight (the live map's AI fights the player only; one Companion slot, Spool's): they make the waves smaller and the log says so.
 using System.Collections.Generic;
 using System.Linq;
@@ -47,6 +47,7 @@ namespace GameCore
             if (!OnTier2 || Net.Mode == Net.Role.Client) return false;
             if (Story.IsDone(Mission)) return false;
             if (Step == 4 && Story.Near(p, Nest, 5) && Story.Has("crown_walk")) return TalkKing(p);
+            if (Step == 6 && Story.Near(p, Nest, 5)) { OfferCrown(p); return true; }
             if (!Story.Near(p, Kennels, 5) || !SpoolFriend) return false;
             int s = Step;
             if (s == 0) { Begin(); return true; }
@@ -123,9 +124,9 @@ namespace GameCore
             GameLog.Event(rooke ? "Rooke's men come in through the gate and take the wall. \"Half of you. The rest, lay down.\" The rest do not."
                                 : "Half the Nest turns on him. The other half does not. \"Get them!\" he roars. \"All of them!\"");
             Story.SetStep(Mission, 5); _wave = 0; _waveAt = Time.time + 2f;
-            Story.SetObjective(Mission, "Hold the Nest against the King's loyal Raiders", Nest);
-            Story.Journal("The Crown: the Nest split. The King sends his loyal Raiders at you in waves.");
-            StoryNpcs.Tick();
+            Story.SetObjective(Mission, "Hold off the King's loyal Raiders while Spool fights the King", Nest);
+            Story.Journal("The Crown: the Nest split. Spool faces the King one on one; you hold off the King's loyal Raiders until it is over.");
+            Companion.Dismiss(); StoryNpcs.Tick(); SetupDuel();
             NextWave();
             return true;
         }
@@ -148,29 +149,60 @@ namespace GameCore
             GameLog.Event(_wave == 1 ? "The first of the King's loyal Raiders come at you." : _wave == 2 ? "More of them. The Nest empties of its loyalists." : "The last wave, with the King's champion at its head.");
         }
 
-        /// <summary>Every frame (Rt.WorldTick): the waves, then the King.</summary>
+        // ------------------------------------------------------------------ the duel (scripted: the live AI fights the player only)
+
+        static HumanEnemy KingUnit => StoryNpcs.Find("The Scrap King");
+        static HumanEnemy SpoolUnit => StoryNpcs.Find("Spool");
+        static float _clashAt; static int _clash;
+
+        static void SetupDuel()
+        {
+            var k = KingUnit; var sp = SpoolUnit;
+            if (WeaponDatabase.Categories["melee"].TryGetValue("Sledgehammer", out var sw) && k != null) k.EquipWeaponFromDb(sw);
+            if (WeaponDatabase.Categories["melee"].TryGetValue("BarbedWireBat", out var bw) && sp != null) sp.EquipWeaponFromDb(bw);
+            if (k != null && sp != null) { k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y); Banter.Say(sp, "He is mine. You keep the rest off my back.", 1, 0.5f); Banter.Say(k, "Spool. I should have buried you myself.", 1, 3.5f); }
+            Boss.NameCard("SPOOL AND THE SCRAP KING", "HOLD OFF THE WAVES");
+            _clashAt = Time.time + 2.5f; _clash = 0;
+        }
+
+        /// <summary>The two held units trade blows (the real swing animation, a glint where the weapons meet): it never hurts either, it is the duel the waves buy time for.</summary>
+        static void Clash()
+        {
+            var k = KingUnit; var sp = SpoolUnit; if (k == null || sp == null) return;
+            var (a, b) = _clash++ % 2 == 0 ? (k, sp) : (sp, k);
+            RtAi.Hold(k, 3f); RtAi.Hold(sp, 3f); k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y);
+            var anim = CombatFx.Push("melee", a, b, a.EquippedWeapon); if (anim != null) anim.Now = true;
+            var g = CombatFx.Push("glint", b, null, b.EquippedWeapon); if (g != null) g.Now = true;
+        }
+
+        /// <summary>Every frame (Rt.WorldTick): the waves and the duel, then Spool's last blow.</summary>
         public static void Tick(float dt)
         {
             if (Step != 5 || !OnTier2 || Net.Mode == Net.Role.Client) return;
+            if (Time.time >= _clashAt) { Clash(); _clashAt = Time.time + 2.4f; }
             if (_wave_.Count > 0 && _wave_.Any(h => h.IsAlive())) return;
             if (_wave < WaveSizes.Length) { if (Time.time >= _waveAt) { NextWave(); _waveAt = Time.time + 4f; } return; }
-            var n = Mark(Nest); if (n == null) return;
-            var (kx, ky) = TerrainMap.FindNearestEnterable(n.X, n.Y + 2);
-            var f = Boss.Spawn(Boss.King, kx, ky); f.NextMoveAt = Time.time + 2f;
-            Banter.Say(f.Unit, "Then you can have the whole yard!", 1, 0.3f);
+            var k = KingUnit; var sp = SpoolUnit;
+            if (k != null && sp != null)
+            {
+                var anim = CombatFx.Push("melee", sp, k, sp.EquippedWeapon); if (anim != null) anim.Now = true;
+                var st = CombatFx.Push("stagger", k, null, null); if (st != null) st.Now = true;
+                Boss.HitStop(0.35f);
+            }
+            GameLog.Event("The last of the loyal Raiders falls. Behind you, Spool's bat comes round with all the wire in it, and the Scrap King goes down on a knee in his own yard.");
+            Banter.Say(SpoolUnit, "That is for the yard.", 1, 0.4f);
             Story.SetStep(Mission, 6); _wave_.Clear();
-            Story.SetObjective(Mission, "Beat the Scrap King and take his crown", Nest);
+            Story.SetObjective(Mission, "Take the Scrap King's crown", Nest);
         }
 
-        /// <summary>The King is on a knee (Boss.TryFinish): take the crown, and he is gone for good.</summary>
-        public static void OfferCrown(Player p, Boss.Fight f)
+        /// <summary>The King is on a knee (E at the Nest): take the crown, and he is gone for good.</summary>
+        public static void OfferCrown(Player p)
         {
-            Story.Talk("The Scrap King", new[] { "(On a knee in his own yard, the hammer out of reach.) Take it. It was only ever scrap and nerve. ...Put it on, then. See how heavy it is." }, new[] { "(Take the crown. He goes, and does not come back.)" }, _ => Exile(p, f), f.Unit);
+            Story.Talk("The Scrap King", new[] { "(On a knee in his own yard, the hammer out of reach, Spool's bat at his neck.) Take it. It was only ever scrap and nerve. ...Put it on, then. See how heavy it is." }, new[] { "(Take the crown. He goes, and does not come back.)" }, _ => Exile(p), KingUnit);
         }
 
-        internal static void Exile(Player p, Boss.Fight f)
+        internal static void Exile(Player p)
         {
-            f.Finished = true; f.Gone = true; EncounterState.Enemies.Remove(f.Unit);
             Story.Set("king_exiled"); Story.Set("king_done"); Story.Finish(Mission);
             GameLog.Event("The Scrap King takes the road south on foot, with nothing, and the yard watches him go. He will not be back.");
             foreach (var pl in Player.All) { pl.TakePerk(PerkKey); }

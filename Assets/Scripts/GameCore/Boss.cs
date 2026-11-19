@@ -309,7 +309,6 @@ namespace GameCore
             var f = BrokenNear(p);
             if (f == null) return false;
             if (f.Def == Spool && Story.Step("spool") == 1) { SpoolBoss.Offer(p, f); return true; }   // the Scrap King's job: finish him, or hear him out
-            if (f.Def == King) { CrownJob.OfferCrown(p, f); return true; }                          // the Crown: take it, and he is exiled
             return FinishNow(p, f);
         }
 
