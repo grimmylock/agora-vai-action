@@ -3,10 +3,10 @@
 // and these scripted moves replace it:
 //  Phase 1 (100-75 %): the SCREAM every 14 s when it sees you within 13 tiles: a cone in front of it; whoever is in it staggers - dropped to the ground for a second (half that with the Tumbler perk, Quick Hands
 //    gets the rifle up again faster) and their aim is blown (spread and bloom at the maximum).
-//  At 75 %: it POINTS - the first wave (about 20, 5 more per extra player) comes out of the arena's north and south mouths, running (driven, faster); the Elder is SEALED behind a rockfall (damage cannot take it below
+//  At 75 %: it POINTS - the first wave (about 20, 5 more per extra player) comes out of the arena's north and south mouths, running (driven, faster); the Elder is held still behind its horde (damage cannot take it below
 //    the HP it had) until the wave is down to a quarter, or 30 s.
 //  Phase 2 (75-40 %): faster scream (10 s), and the scream SHATTERS the boulders in its cone (cover to rubble).
-//  At 40 %: the second, bigger wave (about 30, 7 more per extra player) and the same seal; the Elder ENRAGES: a quarter faster for good, no more screams or calls; it hunts - and every 9 s, when you are within 4.5 tiles,
+//  At 40 %: the second, bigger wave (about 30, 7 more per extra player) and the same hold; the Elder ENRAGES: a quarter faster for good, no more screams or calls; it hunts - and every 9 s, when you are within 4.5 tiles,
 //    it raises both fists (a second's warning) and SLAMS: a ring of 3.8 tiles, 200 damage, knocks you down (a dive clears it).
 //  Death: the call cuts off - every mutant in the cavern is held for three seconds and then loses its target (it scatters).
 // Co-op: the cone and the ring hit every player; waves scale with their number. Host-side like every enemy (clients do not see the poses yet).
@@ -31,7 +31,7 @@ namespace GameCore
         public static bool Shielded(ICombatant t) => _shield && t != null && t == Current;
         public static int Phase => _phase;
         public static float Fraction => Current == null ? 0f : Mathf.Clamp01(Current.Hp / (float)Mathf.Max(1, Current.MaxHp));
-        public static string Label => Current == null ? "" : _shield ? "SEALED BEHIND THE ROCKFALL - KILL THE HORDE" : _slamAt >= 0f ? "SLAM!" : _screamAt >= 0f ? "SCREAM - TAKE COVER" : _phase >= 2 ? "ENRAGED" : _phase == 1 ? "PHASE 2" : "";
+        public static string Label => Current == null ? "" : _shield ? "THE ELDER CALLS - KILL THE HORDE" : _slamAt >= 0f ? "SLAM!" : _screamAt >= 0f ? "SCREAM - TAKE COVER" : _phase >= 2 ? "ENRAGED" : _phase == 1 ? "PHASE 2" : "";
 
         /// <summary>Slam telegraph for the view: 0..1 across the one-second warning, or -1 when none (the ring on the ground grows to its full size as the fists come down).</summary>
         public static float SlamWarn => Current != null && _slamAt >= 0f ? Mathf.Clamp01(1f - (_slamAt - Time.time) / 1.0f) : -1f;
@@ -47,7 +47,7 @@ namespace GameCore
         {
             if (Current == elder) return;
             Current = elder; _slamHitAt = -9f; _phase = 0; _shield = false; _screamAt = _slamAt = -1f; Wave.Clear();
-            float now = Time.time; _nextScream = now + 6f; _nextSlam = now + 9f;
+            float now = Time.time; _nextScream = now + 6f; _nextSlam = now + 9f; _nextShriek = now + 4f; _shriekAt = -1f;
         }
 
         public static void Tick(float dt)
@@ -61,8 +61,8 @@ namespace GameCore
             if (_shield)
             {
                 int alive = Wave.Count(m => m.IsAlive());
-                if (alive <= Mathf.Max(2, _waveSize / 4) || now >= _shieldUntil) { _shield = false; GameLog.Event("The rockfall gives: the Elder tears itself loose."); }
-                else { if (e.Hp < _shieldHp) e.Hp = _shieldHp; RtAi.Pin(e, 0.4f); RtAi.Hold(e, 0.4f); }
+                if (alive <= Mathf.Max(2, _waveSize / 4) || now >= _shieldUntil) { _shield = false; GameLog.Event("The call fades. The Elder turns its head toward you."); }
+                else { if (e.Hp < _shieldHp) e.Hp = _shieldHp; RtAi.Pin(e, 0.4f); RtAi.Hold(e, 0.4f); ShriekTick(e, target, now); }   // it stands and breathes behind its horde - and now and then lets out a ranged shriek
             }
             if (_phase < 2 && _screamAt < 0f && !_shield && now >= _nextScream && target != null && target.IsAlive() && CombatantUtil.Distance(e, target) <= ScreamRange
                 && (GameServices.Grid == null || GameServices.Grid.CheckLineOfSight(e.X, e.Y, target.X, target.Y)))
@@ -74,6 +74,30 @@ namespace GameCore
             if (_phase >= 2 && _slamAt < 0f && !_shield && now >= _nextSlam && Player.All.Any(p => p.IsAlive() && CombatantUtil.Distance(e, p) <= SlamNear))
             { _slamAt = now + 1.0f; _nextSlam = now + 9f; RtAi.Hold(e, 1.0f); GameLog.Event("The Elder raises both fists over its head."); }
             if (_slamAt >= 0f && now >= _slamAt) { _slamAt = -1f; _slamHitAt = Time.time; Slam(e); }
+        }
+
+        // The Shriek (Yan, 2026-11-19: "during the horde summon phase it could just kinda stand there breathing, maybe it does the ranged scream every few seconds while we fight the summoned horde"):
+        // while the horde lives, every ~6 s it lunges its neck and a narrow sound wave goes out up to 14 tiles - a short warning pose, then 60 damage and a blown aim to every player in the line (a dive clears it).
+        static float _shriekAt = -1f, _nextShriek; public const float ShriekRange = 14f, ShriekCone = 28f; public const int ShriekDamage = 60;
+        static void ShriekTick(Mutant e, Player target, float now)
+        {
+            if (_shriekAt < 0f && now >= _nextShriek && target != null && target.IsAlive() && CombatantUtil.Distance(e, target) <= ShriekRange
+                && (GameServices.Grid == null || GameServices.Grid.CheckLineOfSight(e.X, e.Y, target.X, target.Y)))
+            { Gaunt.ForcePose(e, "scream", 0.9f); _shriekAt = now + 0.6f; _nextShriek = now + 6f; _shriekDx = target.X - e.X; _shriekDy = target.Y - e.Y; }
+            if (_shriekAt >= 0f && now >= _shriekAt) { _shriekAt = -1f; Shriek(e); }
+        }
+        static float _shriekDx, _shriekDy;
+        static void Shriek(Mutant e)
+        {
+            CombatFx.PxAt("thunderclap", e.X, e.Y);
+            float l = Mathf.Max(0.01f, Mathf.Sqrt(_shriekDx * _shriekDx + _shriekDy * _shriekDy)), dx = _shriekDx / l, dy = _shriekDy / l;
+            foreach (var p in Player.All.Where(p => p.IsAlive()))
+            {
+                float px = p.X - e.X, py = p.Y - e.Y, d = Mathf.Sqrt(px * px + py * py);
+                if (d > ShriekRange || d < 0.01f || (px * dx + py * dy) / d < Mathf.Cos(ShriekCone * 0.5f * Mathf.Deg2Rad) || Rt.Untouchable(p)) continue;
+                var aim = Gunplay.AimOf(p); aim.Steady = 0f; aim.Bloom = Gunplay.PlayerMaxBloom; p.TakeDamage(ShriekDamage);
+                GameLog.Write($"The shriek rips through the line for {ShriekDamage} damage and throws your aim.");
+            }
         }
 
         static void Scream(Mutant e, Player target)
@@ -131,9 +155,9 @@ namespace GameCore
                 if (target != null) Gaunt.Haste(m, 14f, 1.3f, target); k2++;
             }
             _waveSize = Wave.Count; _shield = true; _shieldHp = e.Hp; _shieldUntil = Time.time + 30f; _waveStart = Time.time;
-            GameLog.Event(n == 1 ? "The Elder points. Out of the dark mouths of the cavern, north and south, something comes running - and a slab of the ceiling drops between you and it."
-                                 : "It points again. This time the whole cavern answers. The ceiling comes down in front of it once more.");
-            Sfx.Play("explosion", TacticalGridView.GridToWorld(e.X, e.Y), 0.6f, 0.05f, 0.4f);
+            GameLog.Event(n == 1 ? "The Elder points. Out of the dark mouths of the cavern, north and south, something comes running - and the Elder goes still, breathing, listening."
+                                 : "It points again. This time the whole cavern answers, and the Elder stands in the middle of it, breathing.");
+            Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(e.X, e.Y), 0.8f, 0.03f, 1f);
         }
 
         /// <summary>The call cuts off for good: every mutant in the cavern is held for three seconds and then loses its target.</summary>
