@@ -2814,6 +2814,8 @@ static class Program {
       string place = Tier2Poi.Radiate(m, "industrial_basin"); Check(place != null && m.All(x => x.X >= 0 && x.Y >= 0), "Tier2Poi: radiant targets get a named place in their region");
       Check(Tier2Poi.Radiate(m, "bonfire_village") == null, "Tier2Poi: no radiant place off the Tier 2 map");
     } finally { TerrainMap.InteractiveObjects.RemoveAll(o => o.Lock == "doc"); }
+    Check(DungeonLairs.LandmarksOf("valley_mine").Contains("Flooded Drift") && DungeonLairs.TierPlusOf("crusher_pit", "Oil Sump") == 1, "Tier2Poi: both Tier 2 dungeons have a tier-higher lair");
+    Check(DungeonLairs.LandmarksOf("valley_mine").All(n => TierDungeons.ValleyMine().Anchors.ContainsKey(n)) && DungeonLairs.LandmarksOf("crusher_pit").All(n => TierDungeons.CrusherPit().Anchors.ContainsKey(n)), "Tier2Poi: the lair landmarks exist in the plans");
   }
 
   static void CrownChecks() {   // 2026-11-19: Spool spared, the proof, "The Crown": the tithe cart, the Nest, the waves, the King, the exile

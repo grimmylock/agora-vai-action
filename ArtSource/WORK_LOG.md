@@ -6769,3 +6769,8 @@ Yan: "Go tier 2, but they do not need unique bosses in every dungeon, some can b
 - **Radiant targets**: `QuestSystem.SpawnTargets` on the Tier 2 map sends targets to a random crew-free place in the job's region (Chemical Dump, Substation, Crane Cab, Hanged Man's Tree, Burnt Tank, Hunter's Shack, Ford, Rusted Bus) and the log says where.
 - **Visual storytelling**: `TierMaps.Tier2Scenes` (decals + a few props at each place). Render: `maps/renders/tier2_scenes.png` (subtle at some spots, e.g. Workers' Flats).
 - Harness: ALL CHECKS PASSED (new `Tier2PoiChecks`, pt-BR paper check). **Not run in Unity.** Not checked: whether crew spots collide with existing buildings, how offline radiant squads place when the map isn't loaded (positions set before placing; PositionSquadsInZone keeps valid ones), dungeon papers in the Crusher Pit/Valley Mine, crew strength, all the guessed numbers.
+
+## Batch 9o - Tier 2 dungeons without bosses (2026-11-19)
+Yan: "dungeons have some kind of unique thing ... a puzzle, a final reward, a cool encounter, maybe a random one tier higher mutant ('wow what was that')".
+- Valley Mine and Crusher Pit keep their lock-and-key plans (pry bar; badge/fuse/breaker/blast door). Added: a tier-higher lair each (`DungeonLairs`: Flooded Drift, Oil Sump; one unaware mutant once per world), a Raider crew squatting in Ram Hall (`Tier2Poi.Squatters`, once per world), a heard beat (the mine's wall hums a note and the north answers; the pit's rams cycle on an 11 s beat; one log line + journal each), and a final hoard (Miners' Savings, Strongroom Wages; `Stashes.Hoard`).
+- Harness: ALL CHECKS PASSED (lair landmarks exist in the plans). Not run in Unity; not checked: squatter/lair positions, whether the hoard tiles are reachable, balance.

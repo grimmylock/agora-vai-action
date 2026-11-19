@@ -1118,3 +1118,13 @@ FOREMAN'S LOGBOOK	LIVRO DO CAPATAZ
 Rams 1 to 4 run on the hour. Rams 3 and 4 stopped on their own at 02:00 and started again on a beat I did not set. Eleven seconds.	Os êmbolos 1 a 4 funcionam de hora em hora. Os 3 e 4 pararam sozinhos às 02:00 e recomeçaram num ritmo que eu não marquei. Onze segundos.
 I locked the cage. The crew went down the ladder to see. Nobody came back up. Whoever finds this: the vault is sealed because I sealed it, and the money is the least of what is down there.	Tranquei a gaiola. A equipe desceu a escada para ver. Ninguém voltou a subir. Quem encontrar isto: o cofre está lacrado porque eu o lacrei, e o dinheiro é o de menos que há lá embaixo.
 The Crusher Pit: the foreman's logbook records rams 3 and 4 restarting by themselves on an eleven-second beat, and a crew that went down the ladder and never came up.	O Poço dos Britadores: o livro do capataz registra os êmbolos 3 e 4 recomeçando sozinhos num ritmo de onze segundos, e uma equipe que desceu a escada e nunca mais subiu.
+
+# ---- Tier 2 dungeons ----
+[MINE] The wall is warm. One long note comes through the rock, low enough to feel in your teeth. Then, from very far north, another answers it.	[MINA] A parede está quente. Uma nota longa atravessa a rocha, tão grave que dá para sentir nos dentes. Então, de muito longe ao norte, outra responde.
+The Valley Mine: the rock hums one note and something far to the north hums back. The miners' diary was right.	A Mina do Vale: a rocha zumbe uma nota e algo muito ao norte zumbe de volta. O diário dos mineiros estava certo.
+[PIT] Somewhere below a ram cycles: a long groan, a slam. You count. Eleven seconds, and again. Nobody set that.	[POÇO] Em algum lugar abaixo um êmbolo gira: um gemido longo, uma pancada. Você conta. Onze segundos, e de novo. Ninguém programou isso.
+The Crusher Pit: the rams still cycle by themselves on an eleven-second beat.	O Poço dos Britadores: os êmbolos ainda funcionam sozinhos num ritmo de onze segundos.
+Miners' Savings	Economias dos Mineiros
+A biscuit tin of wages and a sock of cartridges under the last bunk. Whoever slept here is not coming back for them.	Uma lata de biscoitos com salários e uma meia de cartuchos sob o último beliche. Quem dormia aqui não vai voltar para buscá-los.
+Strongroom Wages	Salários do Cofre
+Wage boxes stacked to the ceiling, untouched since the night the rams changed their beat.	Caixas de salário empilhadas até o teto, intocadas desde a noite em que os êmbolos mudaram o ritmo.

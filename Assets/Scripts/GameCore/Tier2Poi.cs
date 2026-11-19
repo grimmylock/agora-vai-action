@@ -59,9 +59,55 @@ namespace GameCore
         {
             if (Net.Mode == Net.Role.Client || Player.Current == null) return;
             string z = TerrainMap.ZoneId; if (!On(z)) return;
+            DungeonTick(z);
             if (TerrainMap.InteractiveObjects.Any(o => o.Lock == "doc" && DocTexts.ContainsKey(o.Opens ?? ""))) return;
             PlaceDocs(z);
             if (z == MacroMapDatabase.MapOf("scrapyard") && !Story.Has("poi_crews")) { Story.Set("poi_crews"); PlaceCrews(); }
+        }
+
+        // ---- the two Tier 2 dungeons (no boss: a crew, a tier-higher thing in the water (DungeonLairs), a beat you hear, a hoard at the end)
+
+        static void DungeonTick(string z)
+        {
+            var p = Player.Current; if (p == null) return;
+            if (z == "valley_mine")
+            {
+                if (!Story.Has("mine_hoard")) { var l = Mark("Miners' Rest"); if (l != null) { Story.Set("mine_hoard"); var (x, y) = TerrainMap.FindNearestEnterable(l.X + 2, l.Y + 1); Stashes.Hoard(x, y, "Miners' Savings", 3, "A biscuit tin of wages and a sock of cartridges under the last bunk. Whoever slept here is not coming back for them."); } }
+                if (!Story.Has("mine_sang") && Story.Near(p, "Miners' Rest", 6))
+                {
+                    Story.Set("mine_sang");
+                    GameLog.Event("[MINE] The wall is warm. One long note comes through the rock, low enough to feel in your teeth. Then, from very far north, another answers it.");
+                    Story.Journal("The Valley Mine: the rock hums one note and something far to the north hums back. The miners' diary was right.");
+                }
+            }
+            else if (z == "crusher_pit")
+            {
+                if (!Story.Has("pit_hoard")) { var l = Mark("Pay Vault"); if (l != null) { Story.Set("pit_hoard"); var (x, y) = TerrainMap.FindNearestEnterable(l.X + 1, l.Y + 1); Stashes.Hoard(x, y, "Strongroom Wages", 4, "Wage boxes stacked to the ceiling, untouched since the night the rams changed their beat."); } }
+                if (!Story.Has("pit_crew")) { var l = Mark("Ram Hall"); if (l != null) { Story.Set("pit_crew"); Squatters(l, "Raiders", 4); } }
+                if (!Story.Has("pit_beat") && Story.Near(p, "Ram Hall", 8))
+                {
+                    Story.Set("pit_beat");
+                    GameLog.Event("[PIT] Somewhere below a ram cycles: a long groan, a slam. You count. Eleven seconds, and again. Nobody set that.");
+                    Story.Journal("The Crusher Pit: the rams still cycle by themselves on an eleven-second beat.");
+                }
+            }
+        }
+
+        /// <summary>A crew that moved into a dungeon: an offline squad holding the landmark, out of sight until you walk in (once per world).</summary>
+        static void Squatters(LandmarkInstance l, string faction, int n)
+        {
+            var sq = SquadManager.CreateOfflineSquad(TerrainMap.ZoneId, faction, 1); if (sq == null) return;
+            var list = new List<Mutant>();
+            for (int i = 0; i < n; i++)
+            {
+                var (w, a) = EncounterGeneration.PickFactionLoadout(faction, i == 0 ? "Professional" : "Experienced", 2, isLeader: i == 0);
+                var h = new HumanEnemy(faction.TrimEnd('s'), 0, 0, faction, i == 0 ? "Professional" : "Experienced", w, a);
+                HumanLootSystem.RollSpawnStash(h, 2); h.IsAggroed = false; list.Add(h);
+            }
+            Around(list, l.X, l.Y);
+            foreach (var m in list) { var (x, y) = TerrainMap.FindNearestEnterable(m.X, m.Y); m.X = x; m.Y = y; }
+            sq.Members.Clear(); sq.Members.AddRange(list); sq.Job = "hold"; sq.PersistFullState = true;
+            EncounterState.Enemies.AddRange(list);
         }
 
         static LandmarkInstance Mark(string n) => (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).FirstOrDefault(l => l.Name == n);

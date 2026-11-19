@@ -18,6 +18,8 @@ namespace GameCore
             new Lair { Zone = "secret_cave", Landmark = "Dark Niche South", TierPlus = 0 },
             new Lair { Zone = "secret_cave", Landmark = "Dark Niche East", TierPlus = 0 },
             new Lair { Zone = "secret_cave", Landmark = "Mutant Den", TierPlus = 1 },
+            new Lair { Zone = "valley_mine", Landmark = "Flooded Drift", TierPlus = 1 },   // 2026-11-19 (Yan: "a random one tier higher mutant ... 'wow what was that'"): what swims in the drift
+            new Lair { Zone = "crusher_pit", Landmark = "Oil Sump", TierPlus = 1 },        // and what nests in the sump
         };
 
         static string Flag(Lair l) => "lair:" + l.Zone + ":" + l.Landmark;
