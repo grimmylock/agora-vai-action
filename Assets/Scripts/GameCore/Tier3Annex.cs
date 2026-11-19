@@ -259,6 +259,15 @@ namespace GameCore
         // ------------------------------------------------------------------ Testing Ground
 
         /// <summary>The Testing Ground's entry: stage 0 the tunnels (the hatch), 1 the corridor at the lab door, 2 the cavern after the horde. Everything the story needs is set.</summary>
+        /// <summary>Testing Ground "BOSS The Elder Gaunt": straight into the arena, the Elder up at its dais and aggroed (the fight begins as you land), optionally part-way through (phases/waves follow its health).</summary>
+        public static void StartBossTest(float hpFraction = 1f)
+        {
+            StartForTest(2); var d = Mark(Dais) ?? Mark(Arena); if (d == null || _elder == null) return;
+            int k = 0; foreach (var p in Player.All) { var (x, y) = TerrainMap.FindNearestEnterable(d.X - 12 + k % 3, d.Y + k / 3); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f); k++; }
+            _elder.Hp = Mathf.Max(2, (int)(_elder.MaxHp * hpFraction)); TickCavern();
+            GameLog.Write("[TESTING GROUND] The Elder Gaunt: the arena" + (hpFraction < 1f ? $", from {(int)(hpFraction * 100)}% health" : "") + ". Main menu > Testing Ground to come back.");
+        }
+
         public static void StartForTest(int stage)
         {
             Reset(); var f = MacroState.Current.StoryFlags;
