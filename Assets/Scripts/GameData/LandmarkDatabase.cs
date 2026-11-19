@@ -109,6 +109,7 @@ namespace GameData
             },
             ["black_valley"] = new List<LandmarkDef>
             {
+                L("Road Cut Checkpoint", "A cutting where the road to the Hub runs between two banks: the Raiders keep a toll post here."),   // 2026-11-19: Story 6c anchored it in the map but never listed it, so the toll beat never found it (Tier2Escort.Cut)
                 L("Old Mine Works", "The pithead, the headframe and the spoil heaps of the valley's coal mine. The adit into the rim is still open."),
                 L("Mine Adit", "The mine's entrance, cut into the north rim, ore rails running into the dark."),
                 L("The Ford", "The one place the gulley can be waded, in full view of both banks."),
@@ -147,6 +148,7 @@ namespace GameData
             },
             ["dried_lake"] = new List<LandmarkDef>
             {
+                L("Breaker Room", "A concrete shed on the apron's east edge with the Sub-Station's breakers: cut the turrets here."),   // 2026-11-19: anchored by Story 7a but never listed, so "cut the turrets" could not be found (Tier3Story.Breaker)
                 L("Stranded Ferry", "The lake ferry, beached on the lakebed when the water went. Its car-deck door hangs open."),
                 L("Lakeside Camp", "Holiday cabins and a lodge on the old west shore, the lake a kilometre off now."),
                 L("Lifeguard Tower", "The lifeguard's chair on stilts, staring at a beach with no water."),

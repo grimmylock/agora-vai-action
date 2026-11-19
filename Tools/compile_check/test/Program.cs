@@ -61,6 +61,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "10") DpsVsSameTierReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "11") StarterKillProbe();
     if (Environment.GetEnvironmentVariable("RTBAL") == "12") LoadedBuildsReport();
+    if (Environment.GetEnvironmentVariable("LMDUMP") != null) LandmarkDump();
     TestingGroundChecks();
     OpticChecks();
     MutantParryChecks();
@@ -91,6 +92,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
+    StoryLandmarkChecks();
     OldNumbersChecks();
     AimProbe(); HeightProbe();
     BarrierChecks();
@@ -2567,6 +2569,13 @@ static class Program {
     Check(GameData.PerkDatabase.All["AdrenalineSurge"].Description.Contains("300") && GameData.ArtifactDatabase.All["lucifer"].Description.Contains("-250") && GameCore.Upgrades.Weapon["Reinforced"].Contains("30"), "perk, artifact and upgrade texts speak the 1000-HP scale");
   }
 
+  static void StoryLandmarkChecks() {   // a landmark the story looks for must be LISTED in LandmarkDatabase, not only anchored in the map (the Barrier's siege and two Tier 2-3 beats could not find theirs)
+    foreach (var (zone, name) in new[] { ("black_valley", "Road Cut Checkpoint"), ("dried_lake", "Breaker Room"), ("vanguard_barracks", "The Barrier"), ("vanguard_barracks", "Command Post") }) {
+      MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone);
+      Check(TerrainMap.Landmarks.Any(l => l.Name == name), $"Story: the landmark \"{name}\" exists on the {zone} map (a landmark the story looks for must be listed in LandmarkDatabase, not only anchored)");
+    }
+  }
+
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it
     var p = Arena(out int px, out int py); Rt.On = true;
     var e = new HumanEnemy("Raider", px + 6, py, "Raiders", "Experienced", null, null); EncounterState.Enemies.Add(e); Vision.Spotlight = e;   // (lit for the scene: it counts as seen)
@@ -3854,6 +3863,14 @@ static class Program {
         Console.WriteLine($"BUILD {name} vs {n} {rank} (tier {tier} loadouts, 9 tiles): won {wins}/{N}, {(wins > 0 ? tk / wins : 0):0.0} s to win, {lost / N} HP lost on average");
       }
     }
+  }
+
+  // LMDUMP=1: every landmark name that really exists on every map (what TerrainMap.SpawnLandmarks makes), to check the names the story code looks for.
+  static void LandmarkDump() {
+    var all = new SortedSet<string>();
+    foreach (var zid in GameData.MacroMapDatabase.Zones.Select(z => z.Id).ToList()) { try { MacroState.Current.CurrentZoneId = zid; TerrainMap.BuildTerrainForZone(zid); foreach (var l in TerrainMap.Landmarks) all.Add(l.Name); } catch (Exception e) { Console.WriteLine("LMERR " + zid + " " + e.Message); } }
+    TerrainMap.BuildTerrainForZone("scrapyard"); Console.WriteLine($"LMREGION scrapyard map {TerrainMap.ZoneId}: (100,9) is in {TerrainMap.RegionAt(100, 9)}; scavengers_hub map {GameData.MacroMapDatabase.MapOf("scavengers_hub")}");
+    System.IO.File.WriteAllLines("/tmp/landmarks.txt", all); Console.WriteLine("LMDUMP " + all.Count + " names");
   }
 
   static void StarterKillProbe() {   // RTBAL=11: how many starter-pistol rounds does a survival wave-1 enemy take (all rounds hit the torso), and what the kit holds
