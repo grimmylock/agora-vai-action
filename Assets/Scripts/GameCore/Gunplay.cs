@@ -42,7 +42,7 @@ namespace GameCore
         // (80% of his HP) or head pool (50%) is gone (Body.cs), so "kill" means 800 torso damage after armor.
         public static readonly Dictionary<string, (float rate, float vsHuman)> Tune = new Dictionary<string, (float rate, float vsHuman)>
         {
-            ["PSh-18 Pchela"] = (1.00f, 1.10f),   // 2026-11-19: 0.87 -> 1.10 (3.8 s -> 3.0 all-hits, the middle of its tier-1 peers; 1.50 made it the best tier 1-2 pistol, Yan)
+            ["PSh-18 Pchela"] = (1.00f, 0.87f),   // 2026-11-19: back to its tuned row (Yan: no unique bump; it gets the global 1.15 like every gun)
             ["Walden P9"] = (1.00f, 0.693f),
             ["Halden .45 Service"] = (1.00f, 0.83f),
             ["Halden Service Revolver"] = (1.00f, 1.117f),
