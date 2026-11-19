@@ -563,6 +563,14 @@ namespace GameCore
             D("bones", (176, 28), (178, 27), (180, 27), (182, 27), (184, 28), (176, 33), (184, 33)); c.Put(183, 31, ScatterCover, "crate");
             // Rusted Bus: the survey party's camp, papers on the ground
             D("papers", (146, 182), (147, 183), (150, 182)); c.Put(145, 181, ScatterCover, "crate"); D("bones", (151, 184));
+            // Gatehouse: the barrier left up; Mine Adit: the lamps by the mouth; Smokestack: a nest of spent cases facing the Dock; Rail Bridge Camp: the toll box and a cold fire;
+            // Wreck Line: scouts' leavings, no dog bones anywhere; Scrapper's Shack: sorted heaps by size, the dogs' bowls
+            c.Put(52, 188, ScatterCover, "sandbags"); c.Put(48, 188, ScatterCover, "sandbags"); D("grime", (49, 191), (51, 191)); D("papers", (50, 192));
+            D("oil", (38, 13), (41, 14)); c.Put(42, 11, ScatterCover, "crate"); D("bones", (39, 15));
+            D("scorch", (7, 118), (9, 118)); D("papers", (8, 119)); c.Put(6, 117, ScatterCover, "sandbags");
+            D("scorch", (161, 55)); D("grime", (159, 55), (160, 56)); c.Put(158, 54, ScatterCover, "crate");
+            D("grime", (58, 66), (62, 66)); c.Put(59, 63, ScatterCover, "crate");
+            c.Put(177, 188, ScatterCover, "rustbarrel"); c.Put(179, 188, ScatterCover, "rustbarrel"); D("bones", (174, 188), (173, 187), (176, 190), (175, 190));
             // Crane Cab: the watcher's view of the dock, a lamp-black ring of cigarette ends
             D("grime", (29, 187), (31, 187), (30, 188));
         }

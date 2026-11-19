@@ -2801,7 +2801,7 @@ static class Program {
   static void Tier2PoiChecks() {   // 2026-11-19: Tier 2 points of interest: the papers, the crews, the radiant spots
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.OfflineSquads.Clear();
     TerrainMap.InteractiveObjects.RemoveAll(o => o.Lock == "doc");
-    Check(Tier2Poi.DocTexts.Count == 14, "Tier2Poi: 14 papers");
+    Check(Tier2Poi.DocTexts.Count == 20, "Tier2Poi: 20 papers");
     foreach (var kv in Tier2Poi.DocTexts) Check(kv.Value.pages.Length >= 1 && !string.IsNullOrEmpty(kv.Value.title) && !string.IsNullOrEmpty(kv.Value.journal), "Tier2Poi: paper " + kv.Key + " has title, pages, journal");
     try {
       TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Rusted Bus", X = px + 3, Y = py, Description = "" });

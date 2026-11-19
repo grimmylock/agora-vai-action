@@ -1128,3 +1128,28 @@ Miners' Savings	Economias dos Mineiros
 A biscuit tin of wages and a sock of cartridges under the last bunk. Whoever slept here is not coming back for them.	Uma lata de biscoitos com salários e uma meia de cartuchos sob o último beliche. Quem dormia aqui não vai voltar para buscá-los.
 Strongroom Wages	Salários do Cofre
 Wage boxes stacked to the ceiling, untouched since the night the rams changed their beat.	Caixas de salário empilhadas até o teto, intocadas desde a noite em que os êmbolos mudaram o ritmo.
+
+# ---- Tier 2 points of interest: the papers (ArtSource/story/tier2_poi_docs.py) ----
+GATEHOUSE LOG	REGISTRO DA GUARITA
+Vehicles in: 14. Vehicles out: 9. Walk-ins: none. Signed, Pavlo.	Veículos entrando: 14. Saindo: 9. A pé: nenhum. Assinado, Pavlo.
+Three people came up the road from the north at 04:20. No papers, no bags, no answers. Asked their names. They looked at the floor as if listening. I let them through. I do not know why I let them through.	Três pessoas vieram pela estrada do norte às 04:20. Sem documentos, sem malas, sem respostas. Perguntei os nomes. Olharam para o chão como quem escuta. Deixei passar. Não sei por que deixei passar.
+The Gatehouse: the gate log notes three silent people walking in from the north at dawn, and a guard who let them through without knowing why.	A Guarita: o registro do portão anota três pessoas silenciosas vindas do norte ao amanhecer, e um guarda que as deixou passar sem saber por quê.
+CHALK BOARD AT THE ADIT	QUADRO DE GIZ NA ENTRADA DA MINA
+Lamps out: 11. Lamps back: 9. Under it, in a different hand: Two lamps still burning in the drift. We can see them from the mouth.	Lâmpadas que saíram: 11. Lâmpadas que voltaram: 9. Embaixo, em outra letra: Duas lâmpadas ainda acesas na galeria. Dá para vê-las da entrada.
+The Mine Adit: the shift board says eleven lamps went in and nine came out. Two are still burning in the drift.	A Entrada da Mina: o quadro de turnos diz que onze lâmpadas entraram e nove saíram. Duas ainda estão acesas na galeria.
+SPOTTER'S NOTEBOOK	CADERNO DO OBSERVADOR
+Contract: observe the Dock road, do not engage. Paid up front, which is the first thing that bothered me.	Contrato: observar a estrada da Doca, não engajar. Pago adiantado, o que foi a primeira coisa que me incomodou.
+03:00 every night: a line of lights comes up out of the Loading Dock hatch and walks south. Not torches. They do not swing. I counted forty paces between each light, exactly forty. I stopped counting on the sixth night because I started to count in time with them.	03:00 toda noite: uma fila de luzes sobe da escotilha da Doca de Carga e vai para o sul. Não são tochas. Não balançam. Contei quarenta passos entre cada luz, exatamente quarenta. Parei de contar na sexta noite porque comecei a contar no ritmo deles.
+The Smokestack: a paid spotter watched lights climb out of the Loading Dock hatch every night, forty paces apart, and stopped counting when he began to count in time with them.	A Chaminé: um observador pago viu luzes subirem da escotilha da Doca de Carga toda noite, a quarenta passos umas das outras, e parou de contar quando começou a contar no ritmo delas.
+TOLL LEDGER	LIVRO DE PEDÁGIO
+Rail bridge toll: 5 Ru a head, 20 a cart. Garrison trucks pay triple to cross after dark and ask us not to look in the back.	Pedágio da ponte ferroviária: 5 Ru por pessoa, 20 por carroça. Os caminhões da Garrison pagam o triplo para cruzar depois de escurecer e pedem que não olhemos a caçamba.
+Three trucks north for every one back, and the ones back are lighter. Nobody here is brave enough to say what that means.	Três caminhões para o norte para cada um que volta, e os que voltam estão mais leves. Ninguém aqui tem coragem de dizer o que isso significa.
+The Rail Bridge Camp: the Prospectors' toll ledger shows Garrison trucks paying triple to cross at night, three going north for every one coming back lighter.	O Acampamento da Ponte Ferroviária: o livro de pedágio dos Prospectors mostra caminhões da Garrison pagando o triplo para cruzar à noite, três indo ao norte para cada um que volta mais leve.
+SCOUT'S SCRAWL	RABISCO DO BATEDOR
+Wreck Line is ours till the Nest says different. Good spot: the dogs will not come within a hundred paces since the beat started. Nobody has explained why that is good for us and bad for the dogs.	A Linha de Destroços é nossa até o Ninho dizer o contrário. Bom lugar: os cães não chegam a cem passos desde que a batida começou. Ninguém explicou por que isso é bom para nós e ruim para os cães.
+Under it: Tithe is up again. The King wants a third now.	Embaixo: O dízimo subiu de novo. O Rei quer um terço agora.
+The Wreck Line: Raider scouts note the dogs won't come near since 'the beat' began, and that the King now wants a third.	A Linha de Destroços: batedores Raiders anotam que os cães não chegam perto desde que 'a batida' começou, e que o Rei agora quer um terço.
+SCRAPPER'S TALLY	CONTAGEM DO SUCATEIRO
+Brass 4 kg. Copper 11. Wire, a good coil. Sold to the Nest at the Nest's price, which is half. Ask for more and the dogs get fed first.	Latão 4 kg. Cobre 11. Fio, uma boa bobina. Vendido ao Ninho pelo preço do Ninho, que é metade. Se pedir mais, os cães comem primeiro.
+They feed the dogs first every day now. The dogs get bigger. I do not think it is the food.	Agora eles alimentam os cães primeiro todo dia. Os cães estão maiores. Acho que não é a comida.
+The Scrapper's Shack: a scrapper sells to the Nest at half price, and notes that the Kennels' dogs are fed first and keep getting bigger.	A Cabana do Sucateiro: um sucateiro vende ao Ninho pela metade do preço e anota que os cães do Canil são alimentados primeiro e não param de crescer.

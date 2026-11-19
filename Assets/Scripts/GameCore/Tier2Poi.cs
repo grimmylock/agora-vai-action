@@ -25,6 +25,12 @@ namespace GameCore
             ("Hanged Man's Tree", new[] { "crate", "barrel" }, "Read the board", "The Placard", "A board nailed to the trunk, scratched over.", "placard"),
             ("Overturned Lorry", new[] { "crate", "locker" }, "Search the cab", "Waybill", "A waybill stuck to the dashboard with something dark.", "waybill"),
             ("Hunter's Shack", new[] { "desk", "locker", "lockers", "crate" }, "Search the table", "Hunter's Log", "A small notebook under a rifle cleaning kit.", "hunterlog"),
+            ("Gatehouse", new[] { "desk", "desk_n", "desk_s", "locker", "crate" }, "Search the guard's desk", "Gatehouse Log", "A log book held open with a stapler.", "gatelog"),
+            ("Mine Adit", new[] { "crate", "locker", "barrel" }, "Read the shift board", "Chalk Board at the Adit", "A slate shift board by the mouth, chalk dust still on the ledge.", "chalk"),
+            ("Smokestack", new[] { "crate", "locker", "barrel" }, "Search the sniper's nest", "Spotter's Notebook", "A notebook in an ammo tin, the pages numbered by night.", "spotter"),
+            ("Rail Bridge Camp", new[] { "desk", "crate", "locker", "barrel" }, "Search the toll box", "Toll Ledger", "A ledger in the toll box under the till.", "toll"),
+            ("The Wreck Line", new[] { "crate", "locker", "barrel" }, "Search the lookout", "Scout's Scrawl", "A page torn from a notebook, weighted with a spent case.", "scrawl"),
+            ("Scrapper's Shack", new[] { "crate", "desk", "locker", "barrel" }, "Search the sorting bench", "Scrapper's Tally", "A tally on the back of a wage slip.", "scraptally"),
             ("Old Mine Works", new[] { "desk", "locker", "lockers", "crate" }, "Search the shift hut", "Miner's Diary", "A diary in a tin, left where the shift lamps hang.", "minediary"),
         };
         static readonly Dictionary<string, (string mark, string[] looks, string what, string name, string desc, string id)> DungeonPapers = new Dictionary<string, (string, string[], string, string, string, string)>
