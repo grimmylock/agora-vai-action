@@ -41,6 +41,7 @@ namespace GameCore
 
         static bool TalkKing()
         {
+            if (Story.Step("crown") >= 4 && !Story.IsDone("crown")) return false;                       // "The Crown": the scene at the Nest is CrownJob's
             if (Story.IsDone("kingcall") && TalkKingJobs()) return true;
             if (Story.Step("kingcall") != 2) return false;
             Story.Talk("The Scrap King", new[] { "The Dock is mine again. You're the first thing that came out of the Basin useful.", "Here. Don't spend it all in one place. It's the only place there is." });
@@ -86,6 +87,8 @@ namespace GameCore
             }
             int sp = Story.Step("spool");                                     // Story 9 (2026-11-19): "The Exile" - Spool at the Dog Kennels (SpoolBoss.cs)
             if (sp == 2) { TalkSpoolDone(); return true; }
+            if (sp == 3) { TalkSpoolProof(); return true; }
+            if (sp == 4) { Story.Talk("The Scrap King", new[] { "Spool is dead and the Dog Kennels are quiet. What else do you want from me?" }); return true; }
             if (sp == 1) { Story.Talk("The Scrap King", new[] { "The Dog Kennels, south-east, where the fence is. He will be on the crate with the bat. Don't talk to him for long." }); return true; }
             if (c >= 1 && c <= 2 || r == 1 || r == 2) { Story.Talk("The Scrap King", new[] { "Well? Go on." }); return true; }
             if (Story.IsDone("crusher") && r == 0)
@@ -118,25 +121,31 @@ namespace GameCore
         static void TalkSpoolDone()
         {
             if (!(Tier1Story.Holder(SpoolBoss.Ledger) is Player h)) { Story.Talk("The Scrap King", new[] { "You have nothing for me? Then he is not dead, or you are a liar. Go and look again." }); return; }
-            Story.Talk("The Scrap King", new[] { "Well. Is he dead? ...Good. And the papers?" }, new[] { "Here. All of it.", "He had nothing on him." }, i => SpoolOutcome(h, i));
+            Story.Talk("The Scrap King", new[] { "Well. Is he dead? ...Good. And the papers?" }, null, _ => SpoolOutcome(h));
         }
 
-        internal static void SpoolOutcome(Player h, int i)
+        /// <summary>You killed Spool and carry his ledger: the King takes it (Yan: no option to keep it) and burns it.</summary>
+        internal static void SpoolOutcome(Player h)
         {
-            if (i == 0)
-            {
-                h.RemoveItem(SpoolBoss.Ledger, 1);
-                Story.Talk("The Scrap King", new[] { "(He reads one line, folds it, and feeds it to the stove.) Sick dogs bite. You did the right thing. Do not repeat what you read.", "Twelve hundred. It's more than the bat was worth." });
-                Tier1Story.Pay(1200, "Spool"); foreach (var pl in Player.All) pl.AdjustReputation("Raiders", Player.RepPoint);
-                Story.Set("spool_ledger_given"); Story.Journal("The Exile: you gave the King Spool's ledger and he burned it. He paid well, and he knows you read it.");
-            }
-            else
-            {
-                Story.Talk("The Scrap King", new[] { "...Nothing. In that coat. Of course. (A long look.) Six hundred, then. For the walk." });
-                Tier1Story.Pay(600, "Spool");
-                Story.Set("spool_ledger_kept"); Story.Journal("The Exile: you kept Spool's ledger. The King sold the Garrison the hatch under the Loading Dock, and he suspects you know. The ledger is worth something to the right people.");
-            }
+            h.RemoveItem(SpoolBoss.Ledger, 1);
+            Story.Talk("The Scrap King", new[] { "(He reads one line, folds it, and feeds it to the stove.) Sick dogs bite. You did the right thing. Do not repeat what you read.", "Twelve hundred. It's more than the bat was worth." });
+            Tier1Story.Pay(1200, "Spool"); foreach (var pl in Player.All) pl.AdjustReputation("Raiders", Player.RepPoint);
+            Story.Set("spool_ledger_given"); Story.Journal("The Exile: you gave the King Spool's ledger and he burned it. He paid well, and he knows you read it.");
             CompleteArc("scrapyard", 4); Story.Finish("spool");
+        }
+
+        /// <summary>You spared Spool and show the King his bat as proof of death (Yan, 2026-11-19): he pays, and you keep the bat.</summary>
+        static void TalkSpoolProof()
+        {
+            var h = Player.All.FirstOrDefault(pl => pl.Inventory.Items.Any(i => i.Key == "BarbedWireBat") || pl.EquippedWeapon?.Db?.Name == "Barbed Wire Bat");
+            if (h == null) { Story.Talk("The Scrap King", new[] { "Dead, you say. Where is the proof? Spool never put that bat down." }); return; }
+            Story.Talk("The Scrap King", new[] { "That is his bat. I would know the wire anywhere. ...Dead, then. Keep it, I have no use for a stick. Six hundred, and I do not ask where."}, null, _ =>
+            {
+                Tier1Story.Pay(600, "Spool"); foreach (var pl in Player.All) pl.AdjustReputation("Raiders", Player.RepPoint);
+                Story.Set("spool_proof_shown"); Story.SetStep("spool", 4);
+                Story.SetObjective("spool", "Go back to Spool at the Dog Kennels", SpoolBoss.Lair);
+                Story.Journal("The Exile: the King believes Spool is dead. He paid and let you keep the bat. Spool is waiting at the Dog Kennels.");
+            });
         }
 
         static void TalkRooke(HumanEnemy b)

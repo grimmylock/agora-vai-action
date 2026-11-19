@@ -3,6 +3,7 @@
 // phase 2 at half health, the finisher) on a slower, heavier weapon, so every move is a long wind-up and a long opening. He fights as an Outcast, keeps his body (no smoke grenade) and drops the Barbed Wire Bat
 // (a Tier 4 bat that bleeds) and his coat; `spool_done` is set by the execution. Co-op: he fights the nearest player. Host-side only (the networking does not carry boss fights yet).
 using System.Linq;
+using GameData;
 using UnityEngine;
 
 namespace GameCore
@@ -15,7 +16,7 @@ namespace GameCore
         public static void Tick(float dt)
         {
             if (Story.Step("spool") == 1 && Tier1Story.Holder(Ledger) != null && Net.Mode != Net.Role.Client) ReadLedger();      // picked up off the body (anywhere)
-            if (!Tier2Jobs.OnTier2 || Net.Mode == Net.Role.Client || Story.Has(Done) || Player.Current == null) return;
+            if (!Tier2Jobs.OnTier2 || Net.Mode == Net.Role.Client || Story.Has(Done) || Story.Has("spool_spared") || Story.Has("rooke_sided") || Player.Current == null) return;       // (a spared Spool is a friend; with the King your enemy he is one too)
             Boss.Fights.RemoveAll(f => f.Def == Boss.Spool && !f.Finished && !EncounterState.Enemies.Contains(f.Unit));          // you left and came back: he starts again
             if (Boss.Fights.Any(f => f.Def == Boss.Spool && !f.Gone)) return;
             var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == Lair); if (l == null) return;
@@ -50,6 +51,29 @@ namespace GameCore
             Story.Set("doc_kennel"); Story.Journal("The Kennel Ledger: the Scrap King pays the Garrison a tenth of every cart for a quiet road, and sold them the hatch under the Loading Dock. Spool said so, and was put out for it.");
         }
         const string King2 = "Scrap King's Nest";
+
+        /// <summary>At the break, when the King sent you (Boss.TryFinish): finish him, or hear him out (Yan, 2026-11-19: "let him live and team up").</summary>
+        public static void Offer(Player p, Boss.Fight f)
+        {
+            Story.Talk("Spool", new[] { "(On one knee, the bat across his thigh. He laughs, and it costs him.) Go on. It is what he sent you for.", "Or sit down in the dirt with me and let me tell you what he did not." },
+                new[] { "(Finish him.)", "Hear him out." }, i => { if (i == 0) Boss.FinishNow(p, f); else Spare(p, f); }, f.Unit);
+        }
+
+        /// <summary>He lives: the bat is the proof of death, the King is to be fooled, and the ledger stays with Spool.</summary>
+        internal static void Spare(Player p, Boss.Fight f)
+        {
+            f.Finished = true; f.Gone = true; EncounterState.Enemies.Remove(f.Unit);
+            Story.Talk("Spool", new[] { "I kept his books. Every tenth crate out of the Basin rides to the Gatehouse on a Garrison wagon with his crown on it, and nobody on that road is robbed. That is the King's peace. I said so. He called it exile.",
+                "And the hatch under the Loading Dock - the one the Garrison dragged you down: he sold them that too. 'We told them where.' That is in his own hand.",
+                "Take the bat. Show it to him. Tell him I am dead. A man who thinks he has won stops watching his back.",
+                "When he is counting his coins, come and find me at the Kennels. I will have a way to make his own men look at him." });
+            var d = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "BarbedWireBat");
+            if (d != null) { var it = TestingGround.ItemOf(d); it.Condition = ItemCondition.Working; p.AddItem(it); }
+            Story.Set("spool_spared"); Story.Set("doc_kennel");
+            Story.SetStep("spool", 3); Story.SetObjective("spool", "Show the Scrap King the bat as proof of Spool's death", King2);
+            Story.Journal("The Exile: you let Spool live. He gave you the bat as proof of death and told you what the King hides: a tenth of every cart goes to the Garrison, and the King sold them the hatch under the Loading Dock. Show the King the bat; Spool will be at the Kennels.");
+            GameLog.Event("Spool pushes himself up, takes the wire-wrapped bat by the barrel, and puts it in your hands. \"Proof,\" he says.");
+        }
 
         /// <summary>His execution (Boss.TryFinish): what the Dog Kennels were hiding, and the bat.</summary>
         public static void Defeated(Player p, HumanEnemy h)

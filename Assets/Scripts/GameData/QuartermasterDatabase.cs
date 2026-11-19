@@ -47,7 +47,9 @@ namespace GameData
             // buyable at Tier 3" hole the tier/trader system was built to close in the first place.
         };
 
-        public static QuartermasterDef Find(string zoneId) => All.FirstOrDefault(q => q.ZoneId == zoneId);
+        static readonly QuartermasterDef SpoolsNest = new QuartermasterDef { ZoneId = "scrapyard", Name = "Spool", Faction = "Raiders", AccessLevel = "Neutral", MaxTier = 2, Landmark = "Scrap King's Nest" };
+        /// <summary>2026-11-19: after "The Crown" the King is exiled and Spool keeps the Nest and the Tier 2 trade (CrownJob.cs).</summary>
+        public static QuartermasterDef Find(string zoneId) => zoneId == "scrapyard" && GameCore.Story.Has("king_exiled") ? SpoolsNest : All.FirstOrDefault(q => q.ZoneId == zoneId);
 
         /// <summary>True if a player at the given reputation level ("Hostile"/"Neutral"/"Friendly",
         /// see Player.GetRepLevel) can trade with this Quartermaster. "Open" and independent (no

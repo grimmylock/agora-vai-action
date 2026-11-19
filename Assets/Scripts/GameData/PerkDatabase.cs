@@ -38,6 +38,7 @@ namespace GameData
             ["IronWill"] = P("Survival", "Iron Will", "Temporary HP lasts about 48 seconds."),
             ["ArtifactHandler"] = P("Survival", "Artifact Handler", "Artifact Anom-DR penalties are halved."),
             ["Haggler"] = P("Survival", "Haggler", "Buy 15% cheaper, sell 15% higher."),
+            ["CrownOfScrap"] = P("Story", "Crown of Scrap", "The Scrap King's crown: a tenth of the melee damage you take is dealt back to whoever hit you."),   // 2026-11-19: the reward of "The Crown" (CrownJob.cs); not in the perk list you buy from
             ["Tumbler"] = P("Survival", "Tumbler", "After a dive you're back on your feet faster (0.35 s prone instead of 0.6)."),   // real-time fork
             ["ColdBlood"] = P("Survival", "Cold Blood", "Rounds that just miss you fill twice the Focus."),   // real-time fork
         };

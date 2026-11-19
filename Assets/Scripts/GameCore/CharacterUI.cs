@@ -210,7 +210,7 @@ namespace GameCore
         /// selected one underneath.</summary>
         private void PerkGrid(Transform t, Vector2 min, Vector2 max, List<string> owned)
         {
-            var perks = PerkDatabase.All.ToList();
+            var perks = PerkDatabase.All.Where(kv => kv.Value.Group != "Story").ToList();      // story rewards are given, not bought
             int cols = 3, rows = (perks.Count + cols - 1) / cols;
             float descH = 0.1f;
             float w = (max.x - min.x) / cols, h = (max.y - min.y - descH) / rows;

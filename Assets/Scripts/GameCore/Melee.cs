@@ -274,6 +274,7 @@ namespace GameCore
             int dmg = CombatRules.PhysicalDamage(raw, "Standard", dr, w.Db?.IgnorePhysDRPercent ?? 0f);
             int before = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - dmg);
+            if (target is Player rp) CrownJob.Reprisal(by, rp, dmg);                      // the Crown of Scrap: a tenth of it goes back
             Boss.OnDamaged(target);                                                       // Boss 1: a boss at 0 breaks, he doesn't die
             if (fx != null) { fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before; }   // the view plays blood, the fall, gibs
             GameLog.Write($"{(by is Player ? "You hit" : by.Name + " hits")} {(target is Player ? "you" : target.Name)} in the {(part ?? "body").ToLowerInvariant()} for {dmg}.");

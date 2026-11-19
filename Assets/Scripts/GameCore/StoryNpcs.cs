@@ -28,7 +28,9 @@ namespace GameCore
             new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Medic's House", Zone = "perimeter", Look = "Surveyors", Dx = 1, Dy = 2, When = () => Story.IsDone("engineer") && Story.Step("escort") < 2 && !Story.IsDone("escort") && PavelFree },
             new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Hub Bunkhouse", Zone = "scavengers_hub", Look = "Surveyors", Dx = 1, Dy = 1, When = () => Story.IsDone("escort") && Story.Step("lake") == 0 && PavelFree },
             new Def { Name = "Pavel", Suit = "Pavel",  Landmark = "Sub-Station House", Zone = "scavengers_hub", Look = "Surveyors", Dx = 3, Dy = 1, When = () => Story.Has("tier3_reveal") && PavelFree },
-            new Def { Name = "The Scrap King", Suit = "The Scrap King",  Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Raiders", Dx = 1, Dy = 1, When = () => true },
+            new Def { Name = "The Scrap King", Suit = "The Scrap King",  Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Raiders", Dx = 1, Dy = 1, When = () => !Story.Has("king_exiled") && Story.Step("crown") < 5 },
+            new Def { Name = "Spool", Suit = "Barbwire Coat",  Landmark = "Dog Kennels", Zone = "scrapyard", Look = "Outcasts", Dx = 1, Dy = 1, When = () => (Story.Has("spool_spared") || Story.Has("rooke_sided") && Story.Step("spool") == 0) && Story.Step("crown") < 3 && !Story.IsDone("crown") },   // the ally at the Kennels (CrownJob.cs)
+            new Def { Name = "Spool", Suit = "Barbwire Coat",  Landmark = "Scrap King's Nest", Zone = "scrapyard", Look = "Outcasts", Dx = 1, Dy = 1, When = () => Story.Has("king_exiled") },   // he keeps the Nest and the trade
             new Def { Name = "Voss", Suit = "Voss",  Landmark = "Roundhouse", Zone = "scavengers_hub", Look = "Contractors", Dx = 2, Dy = 1, When = () => true },
             new Def { Name = "Quill", Fixed = "Contractor Light",  Landmark = "Signal Tower", Zone = "scavengers_hub", Look = "Contractors", Dx = 1, Dy = 2, When = () => Story.Step("leak") == 2 },
             // Tier 4 (Story 8)

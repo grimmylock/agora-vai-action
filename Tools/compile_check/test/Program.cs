@@ -97,6 +97,7 @@ static class Program {
     ElderClipChecks();
     SpoolChecks();
     SpoolStoryChecks();
+    CrownChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -2754,12 +2755,42 @@ static class Program {
       fs.Unit.Hp = 1; Boss.OnDamaged(fs.Unit); p.X = fs.Unit.X - 1; p.Y = fs.Unit.Y; Check(Boss.TryFinish(p) && fs.Unit.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger), "Exile: the ledger is sewn into his coat");
       p.AddItem(new InventoryItem { Id = SpoolBoss.Ledger, Name = "Kennel Ledger", Type = "key", Qty = 1, WeightKg = 0.1f }); SpoolBoss.Tick(0.1f);
       Check(Story.Step("spool") == 2 && Story.Has("doc_kennel"), "Exile: picking the ledger up reads it and points you back to the King");
-      p.X = px; p.Y = py; int ru0 = p.Ru; Tier2Jobs.SpoolOutcome(p, 0);
-      Check(Story.IsDone("spool") && Story.Has("spool_ledger_given") && !p.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger) && p.Ru == ru0 + 1200, "Exile: handing it over: the ledger burns, 1200 Ru");
-      // the other ending, from the same point
-      Story.SetStep("spool", 2); Story.Clear("spool_ledger_given"); p.AddItem(new InventoryItem { Id = SpoolBoss.Ledger, Name = "Kennel Ledger", Type = "key", Qty = 1, WeightKg = 0.1f }); ru0 = p.Ru; Tier2Jobs.SpoolOutcome(p, 1);
-      Check(Story.IsDone("spool") && Story.Has("spool_ledger_kept") && p.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger) && p.Ru == ru0 + 600, "Exile: 'he had nothing': 600 Ru and you keep the ledger");
+      p.X = px; p.Y = py; int ru0 = p.Ru; Tier2Jobs.SpoolOutcome(p);
+      Check(Story.IsDone("spool") && Story.Has("spool_ledger_given") && !p.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger) && p.Ru == ru0 + 1200, "Exile: handing it over: the ledger burns, 1200 Ru (no option to keep it)");
     } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
+  }
+
+  static void CrownChecks() {   // 2026-11-19: Spool spared, the proof, "The Crown": the tithe cart, the Nest, the waves, the King, the exile
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); CrownJob.Reset(); Companion.Current = null; EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.OfflineSquads.Clear();
+    UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
+    try {
+      Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard");
+      TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Scrap King's Nest", X = p.X, Y = p.Y, Description = "" });
+      TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 40, Y = py, Description = "" });
+      TerrainMap.Landmarks.Add(new LandmarkInstance { Name = CrownJob.Cart, X = px + 80, Y = py, Description = "" });
+      Story.SetStep("kingcall", Story.Done); Story.SetStep("crusher", Story.Done); Story.SetStep("rooke", Story.Done); Story.SetStep("spool", 1);
+      p.X = px + 42; p.Y = py; SpoolBoss.Tick(0.1f); var fs = Boss.Fights.First(x => x.Def == Boss.Spool); fs.Unit.Hp = 1; Boss.OnDamaged(fs.Unit);
+      SpoolBoss.Spare(p, fs);
+      Check(Story.Has("spool_spared") && Story.Step("spool") == 3 && p.Inventory.Items.Any(i => i.Key == "BarbedWireBat") && !EncounterState.Enemies.Contains(fs.Unit) && !fs.Unit.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger), "Crown: sparing Spool: the bat is the proof, he is off the map, the ledger stays with him");
+      SpoolBoss.Tick(0.1f); Check(!Boss.Fights.Any(x => x.Def == Boss.Spool && !x.Gone), "Crown: a spared Spool does not fight again");
+      p.X = px; p.Y = py; int ru0 = p.Ru; Check(Tier2Jobs.TryInteract(p) && Story.Step("spool") == 4 && p.Ru == ru0 + 600, "Crown: the King sees the bat, pays 600 and lets you keep it");
+      p.X = px + 42; p.Y = py; Check(CrownJob.TryInteract(p) && CrownJob.Step == 1 && Story.IsDone("spool"), "Crown: Spool, at the Kennels, gives the plan: the tithe cart");
+      p.X = px + 80; p.Y = py; Check(!CrownJob.TryTruckStop(p), "Crown: the cart's escort still stands: no manifest yet");
+      foreach (var m in MacroState.Current.OfflineSquads.Where(q => q.QuestId == "story:tithe").SelectMany(q => q.Members)) m.Hp = 0;
+      Check(CrownJob.TryTruckStop(p) && CrownJob.Step == 2 && p.Inventory.Items.Any(i => i.Id == CrownJob.Manifest), "Crown: the escort is down: the manifest");
+      p.X = px + 42; p.Y = py; Check(CrownJob.TryInteract(p) && CrownJob.Step == 4 && Companion.Current != null && Companion.Current.Name == "Spool", "Crown: Spool walks with you (the Companion slot) to the Nest");
+      p.X = px; p.Y = py; EncounterState.Enemies.RemoveAll(e => e != Companion.Current);
+      Check(CrownJob.TryInteract(p) && CrownJob.Step == 5 && EncounterState.Enemies.Count(e => e.Faction == "Raiders" && e.IsAlive()) == 3 && !p.Inventory.Items.Any(i => i.Id == CrownJob.Manifest), "Crown: the manifest at the Nest: half turn, the first wave of three comes");
+      int waves = 1; for (int g = 0; g < 8 && CrownJob.Step == 5; g++) { foreach (var e in EncounterState.Enemies.Where(e => e.Faction == "Raiders").ToList()) e.Hp = 0; UnityEngine.Time.time += 5f; CrownJob.Tick(0.1f); if (EncounterState.Enemies.Any(e => e.Faction == "Raiders" && e.Name != "The Scrap King" && e.IsAlive())) waves++; }
+      var kf = Boss.Fights.FirstOrDefault(x => x.Def == Boss.King);
+      Check(waves == 3 && CrownJob.Step == 6 && kf != null && kf.Unit.MaxHp == 5000, $"Crown: three waves ({waves}), then the King himself");
+      kf.Unit.Hp = 1; Boss.OnDamaged(kf.Unit); p.X = kf.Unit.X - 1; p.Y = kf.Unit.Y;
+      Check(Boss.TryFinish(p) && Story.Has("king_exiled") && Story.IsDone("crown") && !EncounterState.Enemies.Contains(kf.Unit), "Crown: he breaks, you take the crown, he is exiled for good");
+      Check(p.ActivePerks.Contains(CrownJob.PerkKey) && p.Inventory.Items.Any(i => i.Key == "BarbwireCoat") && QuartermasterDatabase.Find("scrapyard").Name == "Spool", "Crown: the Crown of Scrap perk, the coat, and Spool keeps the Nest and the trade");
+      // the perk: a tenth of the melee damage taken goes back
+      var foe = new HumanEnemy("Raider", px + 3, py + 3, "Raiders", "Experienced", WeaponDatabase.Categories["melee"]["Hatchet"], null); EncounterState.Enemies.Add(foe); int h0 = foe.Hp; CrownJob.Reprisal(foe, p, 500);
+      Check(h0 - foe.Hp == 50, $"Crown of Scrap: 500 melee damage taken, 50 dealt back ({h0 - foe.Hp})");
+    } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); CrownJob.Reset(); Companion.Current = null; EncounterState.Enemies.Clear(); EncounterState.InCombat = false; MacroState.Current.OfflineSquads.Clear(); }
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it
@@ -5403,7 +5434,7 @@ static class Program {
     int before = ShopSystem.GetBuyPrice(item); pl.TakePerk("Haggler"); int after = ShopSystem.GetBuyPrice(item);
     Check(after < before, $"haggler {before}->{after}");
     pl.EquipWeapon("heavy", WeaponDatabase.Categories["heavy"].Keys.First());
-    Check(PerkDatabase.All.Count == 22, "perk count (37 less the 15 perks that only worked with turns, AP, MP or the 2d10 roll) " + PerkDatabase.All.Count);
+    Check(PerkDatabase.All.Count == 23, "perk count (37 less the 15 perks that only worked with turns, AP, MP or the 2d10 roll, plus the story's Crown of Scrap) " + PerkDatabase.All.Count);
     // Gunslinger: two PMms, one action fires both
     GameBootstrap.StartNewGame(new CharacterSpec { Perk = "Gunslinger" });
     Check(!CombatantUtil.HasPerk(Player.Current, "Gunslinger"), "gunslinger needs point-blank first");   // Batch 80

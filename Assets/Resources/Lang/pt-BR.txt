@@ -983,3 +983,66 @@ The last page: 'Every tenth crate goes up the road to the Gatehouse, and nobody 
 Under it, in another pen: 'The Garrison asked for the hatch under the Loading Dock. We told them where. - the Crown.'	Embaixo, com outra caneta: 'A Garrison pediu a escotilha sob a Doca de Carga. Dissemos onde ficava. - a Coroa.'
 The Kennel Ledger: the Scrap King pays the Garrison a tenth of every cart for a quiet road, and sold them the hatch under the Loading Dock. Spool said so, and was put out for it.	O Livro-razão do Canil: o Rei da Sucata paga à Garrison um décimo de cada carroça por uma estrada tranquila, e vendeu a eles a escotilha sob a Doca de Carga. Spool disse isso e foi expulso por isso.
 Spool: the Scrap King's exile held the Dog Kennels with a barbed wire bat. He is down. The bat and his coat are yours.	Spool: o exilado do Rei da Sucata dominava o Canil com um taco de arame farpado. Ele caiu. O taco e o casaco dele são seus.
+
+# ---- Tier 2 "The Crown" (Spool spared, the tithe cart, the Nest, the Scrap King's fall) ----
+The crown bites back: {} damage to {}.	A coroa morde de volta: {1} de dano em {2}.
+The cart stops at the Truck Stop. Garrison soldiers, a sergeant, a manifest in his pack with the crown and the stamp on it. Bring me that page.	A carroça para no Truck Stop. Soldados da Garrison, um sargento, um manifesto na mochila dele com a coroa e o carimbo. Traga-me essa página.
+You have the page? No? Then the cart is still out there.	Está com a página? Não? Então a carroça ainda está por aí.
+I am behind you. Go to the Nest.	Estou atrás de você. Vá ao Ninho.
+The bat is in your hands and the King thinks I am in the ground. Good. Now the hard part: a ledger is a page, and nobody on the yard will turn on a page.	O taco está nas suas mãos e o Rei acha que estou debaixo da terra. Ótimo. Agora a parte difícil: um livro-razão é uma página, e ninguém no pátio vai se voltar contra uma página.
+They will turn on a cart. Once a week a tenth of the King's crates goes to the Gatehouse on a Garrison wagon, and the wagon stops at the Truck Stop. There is a manifest in the sergeant's pack: the crown, and beside it the Garrison's stamp.	Eles se voltam contra uma carroça. Uma vez por semana um décimo das caixas do Rei vai para a Gatehouse numa carroça da Garrison, e a carroça para no Truck Stop. Há um manifesto na mochila do sargento: a coroa e, ao lado, o carimbo da Garrison.
+Take it. Then I walk beside you into his Nest and we let his own men read it.	Pegue-o. Depois eu entro com você no Ninho dele e deixamos os próprios homens dele lerem.
+The King's hounds put you out too, I hear. Rooke's coin, was it? Good. Then you will want him gone as badly as I do.	Ouvi dizer que os cães do Rei puseram você para fora também. Foi o dinheiro do Rooke? Ótimo. Então você vai querer ele fora tanto quanto eu.
+A ledger is a page, and nobody on the yard will turn on a page. They will turn on a cart. Once a week a tenth of his crates goes to the Gatehouse on a Garrison wagon, and the wagon stops at the Truck Stop. There is a manifest in the sergeant's pack: the crown, and beside it the Garrison's stamp.	Um livro-razão é uma página, e ninguém no pátio vai se voltar contra uma página. Eles se voltam contra uma carroça. Uma vez por semana um décimo das caixas dele vai para a Gatehouse numa carroça da Garrison, e a carroça para no Truck Stop. Há um manifesto na mochila do sargento: a coroa e, ao lado, o carimbo da Garrison.
+Take the tithe manifest from the Garrison cart at the Truck Stop	Pegue o manifesto do tributo na carroça da Garrison no Truck Stop
+The Crown: Spool wants proof the Raiders will believe - the tithe manifest from the Garrison wagon at the Truck Stop - and then the King's own men read it at the Nest.	A Coroa: Spool quer uma prova em que os Raiders acreditem - o manifesto do tributo da carroça da Garrison no Truck Stop - e depois os próprios homens do Rei o leem no Ninho.
+Tithe Sergeant	Sargento do Tributo
+Tithe Escort	Escolta do Tributo
+In the sergeant's pack, under the ration tins: a manifest. A column of crates, each with the Scrap King's crown, each with a Garrison stamp beside it. A tenth of everything, every week.	Na mochila do sargento, sob as latas de ração: um manifesto. Uma coluna de caixas, cada uma com a coroa do Rei da Sucata e, ao lado, um carimbo da Garrison. Um décimo de tudo, toda semana.
+Tithe Manifest	Manifesto do Tributo
+Take the manifest to Spool at the Dog Kennels	Leve o manifesto ao Spool no Dog Kennels
+The Crown: you have the tithe manifest. Take it to Spool.	A Coroa: você tem o manifesto do tributo. Leve-o ao Spool.
+That is the page. Come on. I will be a step behind you, and when his men look at it, you do the talking. I will do the rest.	Essa é a página. Vamos. Fico um passo atrás de você, e quando os homens dele a virem, você fala. Eu faço o resto.
+Show the manifest to the Scrap King at his Nest	Mostre o manifesto ao Rei da Sucata no Ninho dele
+The Crown: Spool walks with you to the Nest.	A Coroa: Spool vai com você até o Ninho.
+You again. I have nothing to say to someone with empty hands.	Você de novo. Não tenho nada a dizer a quem vem de mãos vazias.
+Spool's friend. I was told you had killed him. I see the dead walk now. What is that you are waving at me?	O amigo do Spool. Me disseram que você o matou. Agora vejo os mortos andarem. O que é isso que você está agitando na minha cara?
+(You hold up the manifest. The crown, and beside it the Garrison's stamp, a column of crates, a tenth of everything.)	(Você ergue o manifesto. A coroa e, ao lado, o carimbo da Garrison, uma coluna de caixas, um décimo de tudo.)
+Spool: Read it aloud, anyone. Every tenth crate, every week. The King's peace. You all paid it with your own backs.	Spool: Leiam em voz alta, qualquer um. Toda décima caixa, toda semana. A paz do Rei. Todos vocês pagaram por ela com as próprias costas.
+Half the men in the yard look at the page. They look at him. Some put their rifles down. Some do not.	Metade dos homens no pátio olha a página. Olham para ele. Alguns baixam os fuzis. Outros não.
+Rooke's men come in through the gate and take the wall. "Half of you. The rest, lay down." The rest do not.	Os homens do Rooke entram pelo portão e tomam o muro. "Metade de vocês. O resto, larguem as armas." O resto não larga.
+Half the Nest turns on him. The other half does not. "Get them!" he roars. "All of them!"	Metade do Ninho se vira contra ele. A outra metade não. "Peguem eles!", ruge. "Todos!"
+Hold the Nest against the King's loyal Raiders	Defendam o Ninho contra os Raiders leais ao Rei
+The Crown: the Nest split. The King sends his loyal Raiders at you in waves.	A Coroa: o Ninho se rachou. O Rei manda seus Raiders leais contra vocês em ondas.
+The King's Champion	O Campeão do Rei
+Loyal Raider	Raider Leal
+The first of the King's loyal Raiders come at you.	Os primeiros Raiders leais ao Rei vêm para cima de você.
+More of them. The Nest empties of its loyalists.	Mais deles. O Ninho esvazia de seus leais.
+The last wave, with the King's champion at its head.	A última onda, com o campeão do Rei à frente.
+Then you can have the whole yard!	Então vocês podem ficar com o pátio inteiro!
+Beat the Scrap King and take his crown	Derrote o Rei da Sucata e tome a coroa dele
+(On a knee in his own yard, the hammer out of reach.) Take it. It was only ever scrap and nerve. ...Put it on, then. See how heavy it is.	(De joelhos no próprio pátio, o martelo fora de alcance.) Pegue. Sempre foi só sucata e nervo. ...Ponha, então. Veja como é pesada.
+(Take the crown. He goes, and does not come back.)	(Pegar a coroa. Ele vai embora e não volta.)
+The Scrap King takes the road south on foot, with nothing, and the yard watches him go. He will not be back.	O Rei da Sucata segue a estrada para o sul a pé, sem nada, e o pátio o vê partir. Ele não vai voltar.
+The Crown: the Scrap King is exiled. Spool holds the Nest and keeps the trade. You took the crown of scrap: a tenth of the melee damage you take goes back to whoever dealt it.	A Coroa: o Rei da Sucata foi exilado. Spool domina o Ninho e fica com o comércio. Você tomou a coroa de sucata: um décimo do dano corpo a corpo que você sofre volta para quem o causou.
+(He turns the crown over in his hands once, and gives it to you.) Keep it. I want the yard, not the hat.	(Ele vira a coroa nas mãos uma vez e a entrega a você.) Fique com ela. Quero o pátio, não o chapéu.
+The Nest is mine now, and the trade with it. Raiders will still sell to you. I will be fairer than he was, or at least quieter.	O Ninho é meu agora, e o comércio com ele. Os Raiders ainda vão vender a você. Serei mais justo que ele, ou pelo menos mais quieto.
+The bat is yours, and so is the coat. Wear the wire.	O taco é seu, e o casaco também. Vista o arame.
+(On one knee, the bat across his thigh. He laughs, and it costs him.) Go on. It is what he sent you for.	(De joelhos, o taco sobre a coxa. Ele ri, e isso lhe custa.) Vá em frente. É para isso que ele mandou você.
+Or sit down in the dirt with me and let me tell you what he did not.	Ou sente na terra comigo e deixe eu te contar o que ele não contou.
+(Finish him.)	(Acabar com ele.)
+Hear him out.	Ouvi-lo.
+I kept his books. Every tenth crate out of the Basin rides to the Gatehouse on a Garrison wagon with his crown on it, and nobody on that road is robbed. That is the King's peace. I said so. He called it exile.	Eu guardava os livros dele. Toda décima caixa que sai da Bacia vai para a Gatehouse numa carroça da Garrison com a coroa dele, e ninguém nessa estrada é roubado. Essa é a paz do Rei. Eu disse isso. Ele chamou de exílio.
+And the hatch under the Loading Dock - the one the Garrison dragged you down: he sold them that too. 'We told them where.' That is in his own hand.	E a escotilha sob a Doca de Carga - aquela por onde a Garrison arrastou vocês: ele vendeu isso a eles também. 'Dissemos onde ficava.' Está na letra dele.
+Take the bat. Show it to him. Tell him I am dead. A man who thinks he has won stops watching his back.	Pegue o taco. Mostre a ele. Diga que estou morto. Um homem que acha que venceu para de vigiar as costas.
+When he is counting his coins, come and find me at the Kennels. I will have a way to make his own men look at him.	Quando ele estiver contando as moedas, venha me achar no Canil. Vou ter um jeito de fazer os próprios homens dele o encararem.
+Show the Scrap King the bat as proof of Spool's death	Mostre ao Rei da Sucata o taco como prova da morte do Spool
+The Exile: you let Spool live. He gave you the bat as proof of death and told you what the King hides: a tenth of every cart goes to the Garrison, and the King sold them the hatch under the Loading Dock. Show the King the bat; Spool will be at the Kennels.	O Exilado: você deixou Spool viver. Ele lhe deu o taco como prova de morte e contou o que o Rei esconde: um décimo de cada carroça vai para a Garrison, e o Rei vendeu a eles a escotilha sob a Doca de Carga. Mostre o taco ao Rei; Spool estará no Canil.
+Spool pushes himself up, takes the wire-wrapped bat by the barrel, and puts it in your hands. "Proof," he says.	Spool se levanta, pega o taco enrolado em arame pelo corpo e o põe nas suas mãos. "Prova", diz.
+That is his bat. I would know the wire anywhere. ...Dead, then. Keep it, I have no use for a stick. Six hundred, and I do not ask where.	Esse é o taco dele. Eu reconheceria o arame em qualquer lugar. ...Morto, então. Fique com ele, não tenho uso para um pau. Seiscentos, e não pergunto onde.
+Dead, you say. Where is the proof? Spool never put that bat down.	Morto, você diz. Cadê a prova? O Spool nunca largou aquele taco.
+Spool is dead and the Dog Kennels are quiet. What else do you want from me?	O Spool está morto e o Canil está quieto. O que mais você quer de mim?
+The Exile: the King believes Spool is dead. He paid and let you keep the bat. Spool is waiting at the Dog Kennels.	O Exilado: o Rei acredita que Spool está morto. Pagou e deixou você ficar com o taco. Spool espera no Dog Kennels.
+Go back to Spool at the Dog Kennels	Volte ao Spool no Dog Kennels
+KING OF THE HEAP	REI DO MONTE
+He throws the crown down. "Then you can have the whole yard."	Ele joga a coroa no chão. "Então vocês podem ficar com o pátio inteiro."

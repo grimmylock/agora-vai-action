@@ -112,6 +112,13 @@ namespace GameCore
             SpoolBoss.Spawn(x, y, false);
         }
 
+        /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>
+        public static void KingDuel(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 5, p.Y);
+            var f = Boss.Spawn(Boss.King, x, y); f.NextMoveAt = UnityEngine.Time.time + 1.6f;
+        }
+
         /// <summary>Boss 2 (Yan: "add a 'go to brain boss' button in the testing ground, if you just spawn him there the fight wont work"):
         /// the brain needs its own room - the lab's breakable cover, the walls that stop its orbs and beams, the pulse's reach - so this
         /// takes you to Secret Lab Alpha with your range kit: the vat fresh (even if it escaped before), the lab's other occupants

@@ -289,6 +289,7 @@ namespace GameCore
                 : CombatRules.PhysicalDamage(raw, "Standard", target.PhysDR, Db?.ArmorPierce ?? 0f);
             int hpBefore = target.Hp;
             target.Hp = System.Math.Max(0, target.Hp - damage);
+            if (!psi && target is Player cp) CrownJob.Reprisal(this, cp, damage);          // the Crown of Scrap: a tenth of a bite or claw goes back
             fx.Hit = true; LastHit = true; fx.Killed = !target.IsAlive(); fx.Overkill = damage - hpBefore;
             GameLog.Write($"{Name} hits {who} for {damage} {(psi ? "psi " : "")}damage. {who} HP is now {target.Hp}.");
             if (!psi) CombatRules.CheckWound(target, 0, CombatRules.HitWounds(1f, null));   // Batch 60

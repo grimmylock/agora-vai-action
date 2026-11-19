@@ -82,7 +82,7 @@ namespace GameCore
         // it; take the hatchet and he gets up - a nod to a certain unkillable courier, no names from that game. He draws a knife.
         /// <summary>Yan: "a black suit with a red visor and a gas mask" (ArtSource/make_unique_armor.py) - his alone, not in any loot table.</summary>
         public static readonly ArmorDef BlackVisorSuit = new ArmorDef { Name = "Black Visor Suit", PhysDR = 0.6f, AnomDR = 0.3f, BeltSlots = 2, ModSlots = 2, Mp = 4, WeightKg = 14f };
-        static ArmorDef SuitOf(Def def) { if (def.Armor == BlackVisorSuit.Name) return BlackVisorSuit; foreach (var t in new[] { "tier5", "tier4", "tier3", "tier2", "tier1" }) { var a = ArmorDatabase.Get(t, def.Armor); if (a != null) return a; } return null; }
+        static ArmorDef SuitOf(Def def) { if (def.Armor == BlackVisorSuit.Name) return BlackVisorSuit; if (def.Armor == "The Scrap King") return StoryNpcs.SuitOf("The Scrap King", 0.4f); foreach (var t in new[] { "tier5", "tier4", "tier3", "tier2", "tier1" }) { var a = ArmorDatabase.Get(t, def.Armor); if (a != null) return a; } return null; }
 
         public static readonly Def Visor = new Def
         {
@@ -114,6 +114,21 @@ namespace GameCore
                 new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Mult = 1.5f, Weight = 1, Poses = new[] { 0 }, Open = 2.3f },
                 new Move { Name = "Wire rush", Wind = 0.9f, Danger = true, Lunge = 4f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
                 new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.8f },
+            },
+        };
+
+        // Boss 5: the Scrap King himself (CrownJob.cs, "The Crown"): the Tier 2 finale. A sledgehammer, a crown of scrap, the Nest's yard.
+        public static readonly Def King = new Def
+        {
+            Name = "The Scrap King", Title = "KING OF THE HEAP", Weapon = "Sledgehammer", Armor = "The Scrap King", Hp = 5000, Faction = "Raiders", Rank = "Expert", DoneFlag = "king_done", Vanishes = false,
+            StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He throws the crown down. \"Then you can have the whole yard.\"",
+            Moves = new[]
+            {
+                new Move { Name = "Smash", Wind = 1.0f, Weight = 3, Mult = 0.8f, Poses = new[] { 0 }, Open = 1.5f },
+                new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.6f, Mult = 0.55f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.8f },
+                new Move { Name = "Crush", Wind = 1.2f, Danger = true, Mult = 1.4f, Weight = 1, Poses = new[] { 0 }, Open = 2.4f },
+                new Move { Name = "Charge", Wind = 0.9f, Danger = true, Lunge = 5f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
+                new Move { Name = "Rubble", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.9f },
             },
         };
 
@@ -293,6 +308,14 @@ namespace GameCore
         {
             var f = BrokenNear(p);
             if (f == null) return false;
+            if (f.Def == Spool && Story.Step("spool") == 1) { SpoolBoss.Offer(p, f); return true; }   // the Scrap King's job: finish him, or hear him out
+            if (f.Def == King) { CrownJob.OfferCrown(p, f); return true; }                          // the Crown: take it, and he is exiled
+            return FinishNow(p, f);
+        }
+
+        /// <summary>The finisher itself (slow motion, the camera on you both): `TryFinish` calls it, or a choice made in a dialogue.</summary>
+        internal static bool FinishNow(Player p, Fight f)
+        {
             f.Finished = true;
             var (x, y) = Ballistics.Pos(f.Unit);
             Story.Cutscene(x, y, 1.6f);
