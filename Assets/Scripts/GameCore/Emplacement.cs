@@ -20,7 +20,7 @@ namespace GameCore
     {
         public const int Belt = 200; public const float Stock = 900f, Refill = 12f, Lift = 2.5f;
         public const string Key = "CorvanLMG";
-        public const int TowerHp = 6000; public const int CollapseDamage = 750;
+        public const float SteadyMul = 0.25f; public const int TowerHp = 6000; public const int CollapseDamage = 750;
         public class Gun { public int Tx, NookY, StepsY; public float Box = Stock; public Player By; public int Hp = TowerHp; public bool Down; public int Top => NookY; }
         class Held { public Gun G; public Weapon Saved; public int LastMag; public string Cat, WKey; }
         static readonly Dictionary<Player, Held> Mounted = new Dictionary<Player, Held>();

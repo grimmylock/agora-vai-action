@@ -587,8 +587,9 @@ namespace GameCore
             spread += (2.5f * Body.ArmsHurt(p) + (Body.Concussed(p) ? 2f : 0f)) * Gunplay.PlayerSpread;
             if (!Of(p).Diving && (p.StatusEffects.Suppressed || Time.time < Of(p).PinnedUntil)) spread += 2f * Gunplay.PlayerSpread;   // RT 8 (Yan): no pinning mid-dive
             if (p.Gunslinging) spread *= GunslingerSpread;                                  // RT 7z-c: a gun in each hand
+            bool tower = Emplacement.Elevated(p); if (tower) spread *= Emplacement.SteadyMul;   // 2026-11-19 (Yan: "the height system makes the shots miss too much"): a gun on a tower's mount does not sway like one in your hands
             Gunplay.AimAtEel = atEel; try { Gunplay.Shoot(p, w, dx / len, dy / len, h, spread, ambush); } finally { Gunplay.AimAtEel = false; Gunplay.AimUp = 0f; }
-            aim.Bloom = System.Math.Min(Gunplay.PlayerMaxBloom, aim.Bloom + hd.Kick);   // RT 6d: kick tops out (task #36: lower for the player)
+            if (!tower) aim.Bloom = System.Math.Min(Gunplay.PlayerMaxBloom, aim.Bloom + hd.Kick);   // (a mounted gun does not bloom)   // RT 6d: kick tops out (task #36: lower for the player)
             if (EncounterState.Enemies.Any(e => e.IsAlive() && e.IsAggroed)) EncounterState.InCombat = true;
             TurnLoop.CheckCombatEnd();
         }

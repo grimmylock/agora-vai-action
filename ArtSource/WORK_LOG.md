@@ -6637,3 +6637,7 @@ Yan: "The concrete Watch Towers do not look good, they dont match the rest of th
 
 ### Batch 8t (2026-11-19): no black boxes behind the HUD
 - Yan: "remove the black boxes around the on screen HUD". The log panel's black 60% rectangle (`RuntimeGameLog`), the new HUD's soft dark panels under the gauge and the ammo block, the dark disc behind the ring, the portrait's dark backing and the quick slots' dark squares with their outlines are all fully transparent now (kept as objects, alpha 0). The log text got an outline instead (like the HUD texts), so it reads on any ground. Harness: ALL CHECKS PASSED. Not checked in Unity (legibility over bright ground, rain, snow).
+
+### Batch 8u (2026-11-19): the tower gun misses too much
+- Yan: "the height system makes the shots miss too much and it's frustrating".
+- Reading the code, the height rules themselves (`Ballistics.Trace`: over cover and over friends) cannot make a round miss; what does is the gun: the Corvan LMG on the mount shot with a hand-held gun's spread and bloom (it grows with every round of a long burst). A gun on a tower's mount is steady: `Rt.cs` multiplies a mounted gunner's spread by `Emplacement.SteadyMul` (0.25) and adds no bloom. This is my best reading, not measured; if it still misses, tell me whether it is at long range, on moving targets, or in bursts, and whether the tracers visibly leave the barrel toward the crosshair (the gun is drawn 2.5 tiles up on the platform, the round leaves the nook tile). Harness: ALL CHECKS PASSED (no check on the spread). Not checked in Unity.
