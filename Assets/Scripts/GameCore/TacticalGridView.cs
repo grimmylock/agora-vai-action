@@ -744,7 +744,7 @@ namespace GameCore
         // ---- Poses (Yan: "keep all of them, wire them into the game"): the body's frame when no swing asks for one ----
         readonly Dictionary<SpriteRenderer, (Vector3 pos, float since)> _still = new Dictionary<SpriteRenderer, (Vector3, float)>();
         readonly Dictionary<SpriteRenderer, (string pose, float at)> _posed = new Dictionary<SpriteRenderer, (string, float)>();
-        const float SitAfter = 8f, NpcSitAfter = 10f, HalfFrame = 0.12f;
+        const float SitAfter = 20f, NpcSitAfter = 25f, HalfFrame = 0.12f;
 
         /// <summary>Downed: lying. Sneaking: crouched on the move, kneeling when still. Aiming with cover right beside you (between
         /// you and where you aim): leaning out of it to that side. Out of a fight and still for a while - you, or a calm NPC -
