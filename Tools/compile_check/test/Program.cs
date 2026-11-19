@@ -92,6 +92,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
+    FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
     OldNumbersChecks();
@@ -2582,10 +2583,37 @@ static class Program {
     var ld = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); var dt = TerrainMap.GetTile(ld.X, ld.Y - 2);
     Check(dt.Type == TileType.Door && dt.Look == "door_badge" && LabLocks.Locked(dt) && !TerrainMap.CanEnterTile(ld.X, ld.Y - 2), "Annex: the lab door is locked without the Elder's card (it used to open onto solid rock)");
     var bay = TerrainMap.Landmarks.First(l => l.Name == "Loading Bay"); var lift = TerrainMap.Exits.First(e => e.TargetZoneId == "loading_annex");
-    Check(bay.Y <= 8 && lift.Y <= 8 && TerrainMap.GetTile(ld.X, ld.Y - 4).Type == TileType.Empty && TerrainMap.GetTile(ld.X, ld.Y - 6).Type == TileType.Door, "Annex: behind the door: a corridor, the loading bay and the freight lift's exit");
+    Check(bay.Y <= 8 && lift.Y <= 8 && TerrainMap.CanEnterTile(ld.X, ld.Y - 4) && TerrainMap.CanEnterTile(ld.X, ld.Y - 10), $"Annex: behind the door: a corridor, the loading bay and the freight lift's exit (door {ld.X},{ld.Y - 2}; bay {bay.X},{bay.Y}; lift {lift.X},{lift.Y}; t1 {TerrainMap.GetTile(ld.X, ld.Y - 4).Type}; t2 {TerrainMap.GetTile(ld.X, ld.Y - 10).Type})");
     var arena = TerrainMap.Landmarks.First(l => l.Name == "Gaunt Arena"); int open = 0; for (int y = arena.Y - 18; y <= arena.Y + 18; y++) for (int x = arena.X - 22; x <= arena.X + 22; x++) if (TerrainMap.CanEnterTile(x, y)) open++;
     Check(open >= 1100, $"Annex: the Gaunt's arena is big enough for a boss fight ({open} walkable tiles within 22x18 of its centre)");
     MacroState.Current.Keys.Add(LabLocks.Key("staff")); Check(!LabLocks.Locked(dt), "Annex: with the card the door is open"); MacroState.Current.Keys.Remove(LabLocks.Key("staff"));
+  }
+
+  static void FurnishChecks() {   // 2026-11-19: furniture stands against walls; labs have lab stock
+    var wb = new HashSet<string> { "desk", "desk_n", "desk_s", "desk_e", "desk_w", "lockers", "cabinet", "armchair", "terminal", "fridge_lab", "console" };
+    int total = 0, touching = 0, floating = 0; string worst = "";
+    var perMap = new Dictionary<string, int>();
+    foreach (var kv in MapLayoutDatabase.All) {
+      var m = kv.Value; if (m.Tiles == null || m.Looks == null) continue; int h = m.Tiles.Length, w = m.Tiles[0].Length, fl = 0;
+      bool Wall(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && m.Tiles[y][x] == "Solid";
+      for (int y = 1; y < h - 1; y++) for (int x = 1; x < w - 1; x++) {
+        if (m.Looks[y][x] == null || !wb.Contains(m.Looks[y][x]) || (m.Tiles[y][x] != "HardCover" && m.Tiles[y][x] != "ScatterCover")) continue;
+        total++; if (Wall(x - 1, y) || Wall(x + 1, y) || Wall(x, y - 1) || Wall(x, y + 1)) touching++; else { floating++; fl++; }
+      }
+      perMap[kv.Key] = fl;
+    }
+    foreach (var kv in perMap.OrderByDescending(k => k.Value).Take(3)) worst += $"{kv.Key} {kv.Value}, ";
+    { var byLook = new Dictionary<string, int>(); foreach (var kv in MapLayoutDatabase.All) { var m = kv.Value; if (m.Tiles == null || m.Looks == null) continue; int h = m.Tiles.Length, w = m.Tiles[0].Length; bool Wl(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && m.Tiles[y][x] == "Solid";
+        for (int y = 1; y < h - 1; y++) for (int x = 1; x < w - 1; x++) { if (m.Looks[y][x] == null || !wb.Contains(m.Looks[y][x]) || (m.Tiles[y][x] != "HardCover" && m.Tiles[y][x] != "ScatterCover")) continue; if (!(Wl(x - 1, y) || Wl(x + 1, y) || Wl(x, y - 1) || Wl(x, y + 1))) byLook[m.Looks[y][x]] = (byLook.TryGetValue(m.Looks[y][x], out var c0) ? c0 : 0) + 1; } }
+      if (Environment.GetEnvironmentVariable("AIMPROBE") != null) Console.WriteLine("FURNISH free by look: " + string.Join(", ", byLook.Select(k => k.Key + " " + k.Value))); }
+    Console.WriteLine($"FURNISH {total} wall-bound pieces, {floating} still standing free ({worst.TrimEnd(' ', ',')})");
+    int deskTotal = 0, deskFree = 0;
+    foreach (var kv in MapLayoutDatabase.All) { var m = kv.Value; if (m.Tiles == null || m.Looks == null) continue; int h = m.Tiles.Length, w = m.Tiles[0].Length; bool Wl(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && m.Tiles[y][x] == "Solid";
+      for (int y = 1; y < h - 1; y++) for (int x = 1; x < w - 1; x++) { var l = m.Looks[y][x]; if (l == null || !(l.StartsWith("desk") || l == "terminal" || l == "console" || l == "armchair") || (m.Tiles[y][x] != "HardCover" && m.Tiles[y][x] != "ScatterCover")) continue; deskTotal++; if (!(Wl(x - 1, y) || Wl(x + 1, y) || Wl(x, y - 1) || Wl(x, y + 1))) deskFree++; } }
+    Check(deskTotal > 50 && deskFree * 100 <= deskTotal * 20, $"Furnish: desks, computers, consoles and armchairs stand against a wall ({deskFree} of {deskTotal} still free; the rest of the wall-bound pieces: {floating} of {total}, mostly stamped locker banks)");
+    var lab = MapLayoutDatabase.All["secret_lab_alpha"]; int micro = 0, term = 0;
+    for (int y = 0; y < lab.Tiles.Length; y++) for (int x = 0; x < lab.Tiles[0].Length; x++) { if (lab.Looks[y][x] == "microscope") micro++; if (lab.Looks[y][x] == "terminal") term++; }
+    Check(micro + term >= 1, $"Furnish: Secret Lab Alpha has lab stock ({micro} microscopes, {term} terminals)");
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

@@ -11,44 +11,58 @@ def room(x0, y0, x1, y1, c=','):
     for y in range(y0, y1 + 1):
         for x in range(x0, x1 + 1): g[y][x] = c
 def put(x, y, c): g[y][x] = c
+# Furniture rule (Yan, 2026-11-19: "most desks and everything is just put in the middle of rooms, it makes no sense", "the labs need more lab stuff"): everything stands against a wall; lab stock (microscope, terminal,
+# centrifuge, cold storage: props_lab.py) comes through `overlay`, applied by LoadingAnnex() because the plan alphabet has no letters left. Doors and landmarks stay clear.
+overlay = []                                                                  # (x, y, 'H' hard / 'S' scatter cover, look)
+def ov(x, y, kind, look): overlay.append((x, y, kind, look))
 # 1 the lift lobby and the decontamination corridor
 room(4, 30, 14, 38); put(6, 34, 'E'); put(15, 34, '!')
-for (x, y) in ((5, 31), (6, 31), (13, 37), (12, 37), (5, 37)): put(x, y, 'c')
-put(9, 32, 'i'); put(9, 36, 'i')
+for (x, y) in ((4, 31), (5, 31), (4, 32), (4, 37), (4, 38), (5, 38), (13, 38), (14, 38)): put(x, y, 'c')
+put(14, 31, 'b'); put(14, 37, 'b')
+ov(14, 32, 'S', 'terminal'); ov(9, 30, 'H', 'cabinet')
+put(9, 33, 'i'); put(9, 36, 'i')
 room(16, 33, 22, 35); put(19, 33, 'D'); put(19, 34, 'D'); put(19, 35, 'D'); put(17, 34, 'i'); put(21, 34, 'i')
 # 2 the intake hall
-room(23, 28, 38, 40); put(30, 34, 'I')
-for x in (25, 27, 29): put(x, 31, 'd')
-for x in (32, 34, 36): put(x, 31, 'd')
-for x in (24, 25, 26): put(x, 39, 'l')
-for x in (35, 36, 37): put(x, 39, 'f')
-put(28, 36, 'x'); put(33, 37, 'x'); put(26, 30, 'i'); put(35, 30, 'i'); put(26, 38, 'i'); put(35, 38, 'i')
+room(23, 28, 38, 40); put(31, 29, 'I')
+ov(25, 28, 'S', 'terminal'); ov(26, 28, 'S', 'desk'); ov(33, 28, 'S', 'desk'); ov(34, 28, 'S', 'terminal')
+for y in (31, 32, 33): ov(38, y, 'S', 'armchair')
+for y in (29, 30, 31, 37, 38, 39): ov(23, y, 'H', 'lockers')                      # (nothing stands against a SOUTH wall: its tall face hides it)
+for y in (36, 37, 38, 39): ov(38, y, 'H', 'cabinet')
+put(29, 38, 'x'); put(33, 36, 'x'); put(26, 30, 'i'); put(35, 30, 'i'); put(26, 38, 'i'); put(35, 38, 'i')
 put(30, 27, 'D'); put(39, 34, '!')
-# 3 the cell block (north of the intake hall): a central aisle with six cells
+# 3 the cell block
 room(28, 14, 33, 26); put(30, 20, 'C')
 for ys in (15, 19, 23):
     room(24, ys, 26, ys + 2); put(27, ys + 1, 'D')
-    if ys != 19: room(35, ys, 37, ys + 2); put(34, ys + 1, 'D')               # (the middle east slot is the way out to the control room)
+    if ys != 19: room(35, ys, 37, ys + 2); put(34, ys + 1, 'D')
 for y in (17, 23): put(30, y, 'i')
+put(25, 15, 'x'); put(24, 23, 't'); put(36, 15, 't'); put(37, 25, 'x')
+ov(24, 19, 'H', 'lockers'); ov(37, 23, 'H', 'lockers')
 put(30, 26, ',')
-put(34, 20, '!')                                                              # the east door of the aisle, to the control room's corridor
+put(34, 20, '!')
 room(35, 20, 41, 20); put(42, 20, '!')
-# 4 the control room (north-east)
+# 4 the control room and lab bay
 room(43, 14, 57, 26); put(50, 20, 'T')
-for x in (45, 47, 49, 51, 53, 55): put(x, 15, 'o')
-for x in (46, 49, 52, 55): put(x, 24, 'm')
-put(44, 20, 'j'); put(56, 20, 'j'); put(47, 18, 'q'); put(53, 22, 'q'); put(47, 20, 'i'); put(53, 20, 'i'); put(50, 16, 'i')
-# 5 the Handler's office and the vault (east)
+for x in (45, 47, 49, 51, 53, 55): ov(x, 14, 'H', 'console')
+for y in (17, 21): ov(43, y, 'S', 'terminal')
+for y in (15, 19, 23): ov(43, y, 'S', 'microscope')
+ov(43, 25, 'H', 'centrifuge')
+for y in (15, 17, 19): ov(57, y, 'H', 'machine')
+for y in (21, 23, 25): ov(57, y, 'H', 'fridge_lab')
+for (x, y) in ((47, 24), (53, 22)): put(x, y, 'q')
+put(47, 20, 'i'); put(53, 20, 'i'); put(50, 17, 'i')
+# 5 the Handler's office and the vault
 room(42, 30, 53, 38); put(41, 34, 'D'); room(40, 34, 40, 34); put(48, 34, 'O')
-for x in (43, 44, 45): put(x, 31, 'f')
-for x in (50, 51, 52): put(x, 31, 'd')
-put(43, 37, 'l'); put(44, 37, 'l'); put(52, 37, 'c'); put(47, 32, 'i'); put(47, 36, 'i')
-put(54, 34, '{')                                                              # the vault's keypad door (the code is in two documents)
-room(55, 30, 61, 38); put(59, 34, 'V')
-for x in (56, 57, 58): put(x, 31, 'l')
-for x in (60, 61): put(x, 31, 'f')
-put(56, 37, 'f'); put(57, 37, 'f'); put(60, 37, 'a'); put(58, 34, 'i')
-# the corridor from the intake hall's east door (39,34) to the office door (41,34); the north door (30,27) to the aisle
+ov(47, 30, 'S', 'desk'); ov(48, 30, 'S', 'terminal'); ov(49, 30, 'S', 'desk')
+for y in (31, 32, 33): ov(53, y, 'H', 'cabinet')
+for y in (31, 32, 36, 37): ov(42, y, 'H', 'lockers')
+put(52, 38, 'c'); put(51, 38, 'c'); put(47, 36, 'i'); put(47, 32, 'i')
+put(54, 34, '{')
+room(55, 30, 61, 38); put(58, 34, 'V')
+for x in (56, 57, 58, 59): ov(x, 30, 'H', 'lockers')
+ov(61, 31, 'H', 'cabinet'); ov(61, 32, 'H', 'cabinet'); ov(61, 36, 'H', 'fridge_lab'); ov(61, 37, 'H', 'fridge_lab')
+for y in (31, 32, 36, 37): ov(55, y, 'H', 'cabinet')
+put(58, 36, 'i')
 put(40, 34, ',')
 rows = [''.join(r) for r in g]
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Assets', 'Scripts', 'GameCore', 'TierDungeons.AnnexPlan.cs')
@@ -56,13 +70,18 @@ with open(out, 'w') as f:
     f.write('// GENERATED by ArtSource/plans/loading_annex.py - the Loading Annex (Tier 3 beat 4 "The Door Under the Dock"): a small concrete lab behind the freight lift.\n')
     f.write('using System.Collections.Generic;\nusing GameData;\nusing static GameCore.GroundType;\n\nnamespace GameCore\n{\n    public static partial class TierDungeons\n    {\n        public static readonly string[] AnnexPlan =\n        {\n')
     for r in rows: f.write('            "%s",\n' % r)
+    f.write('        };\n\n        /// <summary>Furniture and lab stock along the walls (the plan alphabet has no letters left): x, y, hard cover?, look.</summary>\n        static readonly (int, int, bool, string)[] AnnexStock =\n        {\n')
+    for (x, y, k, l) in overlay: f.write('            (%d, %d, %s, "%s"),\n' % (x, y, 'true' if k == 'H' else 'false', l))
     f.write('''        };
 
         /// <summary>The lab under the Loading Dock: 'E' the freight lift (the way back up to the tunnels), 'I' the intake desk, 'C' the cell block, 'O' the Handler's office, 'T' the control room, 'V' the vault (a keypad door).</summary>
         public static MapLayout LoadingAnnex()
         {
             var marks = new Dictionary<char, (string, string)> { ['E'] = ("Freight Lift", "taken_tunnels"), ['I'] = ("Intake Desk", null), ['C'] = ("Cell Block", null), ['O'] = ("Handler's Office", null), ['T'] = ("Control Room", null), ['V'] = ("Vault", null) };
-            return FloorPlan("loading_annex", AnnexPlan, "concrete", LabTile, marks, null);
+            var m = FloorPlan("loading_annex", AnnexPlan, "concrete", LabTile, marks, null);
+            if (m.Looks == null) { m.Looks = new string[m.Tiles.Length][]; for (int y = 0; y < m.Tiles.Length; y++) m.Looks[y] = new string[m.Tiles[0].Length]; }
+            foreach (var (x, y, hard, look) in AnnexStock) { if (m.Tiles[y][x] != "Empty" || m.Looks[y][x] != null) continue; m.Tiles[y][x] = hard ? "HardCover" : "ScatterCover"; m.Looks[y][x] = look; }
+            return m;
         }
     }
 }

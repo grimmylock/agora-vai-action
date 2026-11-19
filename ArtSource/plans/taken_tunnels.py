@@ -117,12 +117,13 @@ def build(seed):
     path2((126, 17), (120, 9), 4); blob2(120, 6, 4)                              # a side tunnel north: a wave comes out of it
     path2((126, 43), (120, 51), 4); blob2(120, 53, 4)                            # ... and one south
     path2((141, 30), (146, 30), 4)                                               # the dais: a pocket at the east end, where the Elder waits
-    pillars = []
-    for k in range(10):                                                          # broken stone pillars: cover (the scream shatters them in phase 2)
-        a = k * 6.283 / 10 + 0.3; px_, py_ = int(126 + math.cos(a) * 8.5), int(30 + math.sin(a) * 7.5)
-        if g[py_][px_] == '.': g[py_][px_] = 'h'; pillars.append((px_, py_))
-    for (px_, py_) in ((118, 26), (134, 34), (130, 22), (122, 38), (116, 33), (136, 27)):
-        if g[py_][px_] == '.': g[py_][px_] = 'h'
+    for k in range(9):                                                           # large boulders: cover (Yan: "maybe large boulders to use as cover?"). Single boulder tiles ('k') in clumps of two or three, ringed round the centre
+        a = k * 6.283 / 9 + 0.35; px_, py_ = int(126 + math.cos(a) * 8.5), int(30 + math.sin(a) * 7.5)
+        for (dx_, dy_) in ((0, 0), (1, 0), (0, 1))[:r2.choice((2, 3, 3))]:
+            if g[py_ + dy_][px_ + dx_] == '.': g[py_ + dy_][px_ + dx_] = 'k'
+    for (px_, py_) in ((118, 26), (134, 34), (130, 22), (122, 38), (116, 33), (136, 27), (128, 36), (121, 21)):
+        for (dx_, dy_) in ((0, 0), (1, 0), (1, 1))[:r2.choice((1, 2, 2))]:
+            if g[py_ + dy_][px_ + dx_] == '.': g[py_ + dy_][px_ + dx_] = 'k'
     g[30][126] = 'A'; g[9][120] = 'J'; g[51][120] = 'K'; g[30][145] = 'X'
     rows = [''.join(r_) for r_ in g]
     route.reverse(); trail = []                                            # a blood trail to follow (Yan: "in the cavern only flashlights and a blood splatter trail"): a smear every 3rd tile, a splat every 12th, drifting off the centre line
@@ -151,15 +152,14 @@ def build(seed):
     g = [['#'] * W2 for _ in range(SHIFT)] + g
     def put3(x, y, c):
         if 1 <= x < W2 - 1 and 1 <= y < len(g) - 1: g[y][x] = c
-    for y in range(9, 15):                                                     # the corridor north from the door (the door is at (40, 15) now)
+    for y in range(7, 15):                                                     # the corridor north from the door (the door is at (40, 15) now): 3 wide, 8 long
         for x in range(39, 42): put3(x, y, ',')
-    for x in range(39, 42): put3(x, 11, '!')                                    # the decontamination gate
-    for y in range(2, 9):                                                      # the loading bay: 23 x 7
-        for x in range(30, 53): put3(x, y, ',')
-    for (x, y) in ((32, 3), (33, 3), (34, 3), (49, 3), (50, 3), (51, 3), (32, 7), (33, 7), (50, 7), (51, 7), (44, 5), (45, 5), (36, 5)): put3(x, y, 'h')
-    for (x, y) in ((36, 4), (46, 4), (36, 7), (46, 7), (40, 13), (40, 10)): put3(x, y, 'i')
-    put3(41, 3, 'L'); put3(40, 6, 'M'); put3(40, 13, ',')
-    put3(40, 10, 'i')
+    for y in range(2, 7):                                                      # a compact loading zone: 11 x 5, a lift platform at the far end
+        for x in range(35, 46): put3(x, y, ',')
+    for (x, y) in ((36, 3), (37, 3), (36, 4), (44, 3), (44, 4), (43, 6)): put3(x, y, 'c')   # crates along the walls
+    for (x, y) in ((35, 6), (45, 6)): put3(x, y, 'b')                          # barrels
+    for (x, y) in ((40, 10), (40, 4)): put3(x, y, 'i')
+    put3(40, 2, 'L'); put3(40, 5, 'M')
     rows = [''.join(r_) for r_ in g]
     trail = [(x, y + SHIFT, k) for (x, y, k) in trail]
     build.trail = trail
@@ -182,8 +182,8 @@ if __name__ == '__main__':
             var marks = new Dictionary<char, (string, string)> { ['E'] = ("Hatch Ladder", "industrial_basin"), ['F'] = ("Lab Door", null), ['B'] = ("Broken Wall", null), ['H'] = ("Nest", null), ['A'] = ("Gaunt Arena", null), ['J'] = ("Arena North Mouth", null), ['K'] = ("Arena South Mouth", null), ['X'] = ("Gaunt Dais", null), ['M'] = ("Loading Bay", null), ['L'] = ("Freight Lift", "loading_annex") };
             var m = FloorPlan("taken_tunnels", TakenPlan, "cliff", CaveFloor, marks, null);
             for (int i = 0; i + 2 < TakenTrail.Length; i += 3) if (m.Looks != null && TakenTrail[i + 1] < m.Looks.Length && m.Looks[TakenTrail[i + 1]][TakenTrail[i]] == null) m.Looks[TakenTrail[i + 1]][TakenTrail[i]] = TakenTrail[i + 2] == 2 ? "blood" : "bloodtrail";
-            if (m.Looks != null && m.Tiles != null)                                         // behind the lab door: concrete walls, not cave rock (the corridor, the decontamination gate and the bay; only the walls of that block)
-                for (int yy = 1; yy <= 15; yy++) for (int xx = 28; xx <= 54; xx++) if (m.Tiles[yy][xx] == "Solid") m.Looks[yy][xx] = "concrete";
+            if (m.Looks != null && m.Tiles != null)                                         // behind the lab door: concrete walls, not cave rock (only the walls that touch the corridor and the loading zone; the rock behind stays rock)
+                for (int yy = 1; yy <= 15; yy++) for (int xx = 33; xx <= 47; xx++) if (m.Tiles[yy][xx] == "Solid" && (m.Tiles[yy - 1][xx] != "Solid" || m.Tiles[yy + 1][xx] != "Solid" || m.Tiles[yy][xx - 1] != "Solid" || m.Tiles[yy][xx + 1] != "Solid")) m.Looks[yy][xx] = "concrete";
             return m;
         }
     }

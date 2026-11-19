@@ -35,7 +35,7 @@ namespace GameCore
             {
                 // tier maps and dungeons are authored at their final size (TierMaps.cs): no upscale pass
                 var src = kv.Value.FullSize ? kv.Value : MapUpscaler.Upscale(kv.Value, kv.Key, IsInterior(kv.Key) ? MapUpscaler.InteriorScale : MapUpscaler.Scale);
-                big[kv.Key] = Grit.Apply(CoverWrap.Wrap(MapDresser.Dress(BuildingCarver.Carve(src, kv.Key), kv.Key), kv.Key), kv.Key, IsInterior(kv.Key));   // Batch 72: cover that wraps; 92: grit
+                big[kv.Key] = Furnish.Apply(Grit.Apply(CoverWrap.Wrap(MapDresser.Dress(BuildingCarver.Carve(src, kv.Key), kv.Key), kv.Key), kv.Key, IsInterior(kv.Key)), kv.Key);   // Batch 72: cover that wraps; 92: grit
             }
             return big;
         }

@@ -1176,3 +1176,9 @@ try:
     PROPS.update(_pb.NEW); VARIANTS.update(_pb.VARIANTS)
 except ImportError:
     pass
+# 2026-11-19: lab furniture (props_lab.py)
+try:
+    import props_lab as _pl
+    PROPS.update(_pl.NEW); VARIANTS.update(_pl.VARIANTS)
+except ImportError:
+    pass
