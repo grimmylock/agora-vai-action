@@ -20,6 +20,7 @@ namespace GameData
 
         // Thermal
         public bool? BleedNegate;
+        public float? BleedDamageMult;   // 2026-11-19: Clot and Scab Stone were flavour only; now they cut the damage of a bleed tick
 
         // Electrical
         public int? MpBonus;
@@ -51,8 +52,8 @@ namespace GameData
             ["lanternSeed"] = new ArtifactDef { Name = "Lantern Seed", Type = "Chemical", Tier = 5, AnomPenalty = -0.25f, HpRegen = 50, WeightKg = 0.5f, Description = "+50 HP Auto-Regeneration every 6 seconds" },
 
             // Thermal (Bleeding Control)
-            ["clot"] = new ArtifactDef { Name = "Clot", Type = "Thermal", Tier = 1, AnomPenalty = -0.05f, BleedNegate = false, WeightKg = 0.5f, Description = "Mitigates minor bleed effects" },
-            ["scabStone"] = new ArtifactDef { Name = "Scab Stone", Type = "Thermal", Tier = 2, AnomPenalty = -0.10f, BleedNegate = false, WeightKg = 0.5f, Description = "Reduces bleed damage" },
+            ["clot"] = new ArtifactDef { Name = "Clot", Type = "Thermal", Tier = 1, AnomPenalty = -0.05f, BleedNegate = false, BleedDamageMult = 0.7f, WeightKg = 0.5f, Description = "Bleeding hurts 30% less" },
+            ["scabStone"] = new ArtifactDef { Name = "Scab Stone", Type = "Thermal", Tier = 2, AnomPenalty = -0.10f, BleedNegate = false, BleedDamageMult = 0.5f, WeightKg = 0.5f, Description = "Bleeding hurts 50% less" },
             ["rosary"] = new ArtifactDef { Name = "Rosary", Type = "Thermal", Tier = 4, AnomPenalty = -0.20f, BleedNegate = true, WeightKg = 0.5f, Description = "Negates bleeding damage entirely" },
 
             // Electrical (MP & Avoidance)
@@ -61,9 +62,9 @@ namespace GameData
             ["frostLattice"] = new ArtifactDef { Name = "Frost Lattice", Type = "Electrical", Tier = 5, AnomPenalty = -0.25f, MpBonus = 2, AnomalyAvoidanceBonus = 2, WeightKg = 0.5f, Description = "+10% move speed and +2 Anomaly Avoidance" },
 
             // Tier 6 Legendaries
-            ["heartOfTheWound"] = new ArtifactDef { Name = "Heart of the Wound", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, HpRegen = 100, ImmuneBleed = true, WeightKg = 0.8f, Description = "Heals 100 HP/turn, immune to bleed" },
+            ["heartOfTheWound"] = new ArtifactDef { Name = "Heart of the Wound", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, HpRegen = 100, ImmuneBleed = true, WeightKg = 0.8f, Description = "+100 HP Auto-Regeneration every 6 seconds, immune to bleed" },
             ["theLodestone"] = new ArtifactDef { Name = "The Lodestone", Type = "Legendary", Tier = 6, AnomPenalty = -0.30f, PassAllAnomalies = true, WeightKg = 0.8f, Description = "Pass all Anomaly Avoidance checks automatically" },
-            ["lucifer"] = new ArtifactDef { Name = "Lucifer", Type = "Legendary", Tier = 6, AnomPenalty = -0.40f, PhysDRBonus = 0.10f, AnomDRBonus = 0.10f, MaxHpPenalty = 250, WeightKg = 0.8f, Description = "+10% Phys/Anom-DR, Max HP -25" },
+            ["lucifer"] = new ArtifactDef { Name = "Lucifer", Type = "Legendary", Tier = 6, AnomPenalty = -0.40f, PhysDRBonus = 0.10f, AnomDRBonus = 0.10f, MaxHpPenalty = 250, WeightKg = 0.8f, Description = "+10% Phys/Anom-DR, Max HP -250" },
             ["theBlackStar"] = new ArtifactDef { Name = "The Black Star (Awakened)", Type = "Legendary", Tier = 6, AnomPenalty = -0.35f, BypassPhysDR = 0.30f, CarryWeightBonus = -10, WeightKg = 0.8f, Description = "Bypasses 30% Phys-DR, Carry -10kg" },
         };
     }

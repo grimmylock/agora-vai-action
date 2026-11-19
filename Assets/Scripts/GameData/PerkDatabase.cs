@@ -27,9 +27,9 @@ namespace GameData
             ["StaggeringBlast"] = P("Shotgun", "Staggering Blast", "Shotgun hits within 4 tiles stagger the target for a second."),
             ["Gunslinger"] = new PerkDef { Group = "Sidearm", Name = "Gunslinger", Requires = "PointBlankExecution", Description = "Needs Point-Blank Execution. Two sidearms (Off-hand button in the pack): one trigger per hand (left and right mouse button), each gun with its own aim, kick and reload." },   // Batch 80 (Yan)
             ["PointBlankExecution"] = P("Sidearm", "Point-Blank Execution", "Sidearms fired from the hip spread 25% less."),
-            ["CombatMedic"] = P("Survival", "Combat Medic", "Medkits and stims heal +10 HP."),
+            ["CombatMedic"] = P("Survival", "Combat Medic", "Medkits and stims heal +100 HP."),
             ["QuickHands"] = P("Survival", "Quick Hands", "Reload 40% faster."),
-            ["AdrenalineSurge"] = P("Survival", "Adrenaline Surge", "First time you drop below 30 HP in a fight: +20 temp HP."),
+            ["AdrenalineSurge"] = P("Survival", "Adrenaline Surge", "First time you drop below 300 HP in a fight: +200 temp HP (about 24 seconds)."),
             ["Vault"] = P("Survival", "Vault", "Vaulting cover is 30% faster."),
             ["PackMule"] = P("Survival", "Pack Mule", "Base carry capacity 50 kg."),
             ["IronStomach"] = P("Survival", "Iron Stomach", "Food and water restore double."),

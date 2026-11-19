@@ -13,7 +13,7 @@ namespace GameCore
             p.AdrenalineUsed = true;
             p.TempHP += 200;
             p.TempHPDuration = System.Math.Max(p.TempHPDuration, 4);
-            GameLog.Write("ADRENALINE SURGE! +20 temporary HP.");
+            GameLog.Write("ADRENALINE SURGE! +200 temporary HP.");
         }
     }
 }

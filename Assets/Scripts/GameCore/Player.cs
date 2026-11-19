@@ -169,6 +169,7 @@ namespace GameCore
         public float ArtifactPhysDRBonus;
         public float ArtifactAnomDRBonus;
         public float ArtifactBypassPhysDR;
+        public float ArtifactBleedMult = 1f;   // product of the worn Clot / Scab Stone
 
         public Player() : this(true) { }
 
@@ -240,7 +241,7 @@ namespace GameCore
             float anomalyAvoidanceAdd = 0;
             float physDRBonusAdd = 0;
             float anomDRBonusAdd = 0;
-            float bypassPhysDRAdd = 0;
+            float bypassPhysDRAdd = 0, bleedMult = 1f;
             ArtifactAutoPassAnomalies = false;
             bool hasArtifactHandlerPerk = CombatantUtil.HasPerk(this, "ArtifactHandler");
             MaxHp = 1000 + BonusMaxHp;   // was never reset: taking Lucifer off left you at -25 Max HP for good
@@ -273,6 +274,7 @@ namespace GameCore
                 if (art.PhysDRBonus.HasValue) physDRBonusAdd += art.PhysDRBonus.Value;
                 if (art.AnomDRBonus.HasValue) anomDRBonusAdd += art.AnomDRBonus.Value;
                 if (art.BypassPhysDR.HasValue) bypassPhysDRAdd += art.BypassPhysDR.Value;
+                if (art.BleedDamageMult.HasValue) bleedMult *= art.BleedDamageMult.Value;
             }
 
             if (PermHP > MaxHp) PermHP = MaxHp;   // Lucifer's -25 Max HP has to actually cost HP
@@ -283,7 +285,7 @@ namespace GameCore
             ArtifactAvoidanceBonus = anomalyAvoidanceAdd;
             ArtifactPhysDRBonus = physDRBonusAdd;
             ArtifactAnomDRBonus = anomDRBonusAdd;
-            ArtifactBypassPhysDR = bypassPhysDRAdd;
+            ArtifactBypassPhysDR = bypassPhysDRAdd; ArtifactBleedMult = bleedMult;
 
             // PhysDR/AnomDR are otherwise owned by ApplyArmorModsForPlayer (recomputed from scratch
             // on every armor change) - route through it here too so the artifact bonus isn't wiped

@@ -90,6 +90,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
+    OldNumbersChecks();
     AimProbe(); HeightProbe();
     BarrierChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
@@ -2552,6 +2553,17 @@ static class Program {
       Emplacement.Reset();
       EncounterState.Enemies.Remove(brute);
     } finally { foreach (var (x, y, t) in saved) { var tt = TerrainMap.GetTile(x, y); tt.Type = t.Type; tt.Look = t.Look; tt.Damage = t.Damage; } Barrier.ZoneOverride = null; Barrier.Reset(); }
+  }
+
+  static void OldNumbersChecks() {   // 2026-11-19: perks and artifacts that still spoke the old 100-HP scale
+    var p = Arena(out _, out _); p.Inventory.Items.Clear();
+    p.ActivePerks.Add("CombatMedic"); p.PermHP = 100; p.TempHP = 0; int before = p.PermHP; Rt.On = false;
+    p.AddItem(new InventoryItem { Id = "basicMedkit", Name = "Basic Medkit", Type = "consumable", Qty = 1, WeightKg = 0.5f }); p.UseConsumable("basicMedkit");
+    Check(p.PermHP - before == 300, $"Combat Medic: a basic medkit heals 200 + 100 (healed {p.PermHP - before})");
+    p.ActivePerks.Clear(); p.ArtifactSlots[0] = "scabStone"; p.ApplyArtifactStatBonuses();
+    Check(Math.Abs(p.ArtifactBleedMult - 0.5f) < 0.01f, $"Scab Stone halves a bleed tick ({p.ArtifactBleedMult})");
+    p.ArtifactSlots[0] = null; p.ApplyArtifactStatBonuses(); Check(p.ArtifactBleedMult == 1f, "no bleed artifact: a bleed tick is whole");
+    Check(GameData.PerkDatabase.All["AdrenalineSurge"].Description.Contains("300") && GameData.ArtifactDatabase.All["lucifer"].Description.Contains("-250") && GameCore.Upgrades.Weapon["Reinforced"].Contains("30"), "perk, artifact and upgrade texts speak the 1000-HP scale");
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

@@ -355,7 +355,7 @@ namespace GameCore
             }
             if (Rt.On && !Rt.Applying) { Rt.BeginUse(this, def); return; }   // real-time fork: it takes a few seconds (Rt.UseSeconds)
             if (Body.Down(this) && !(def.HealingTemp > 0)) { GameLog.Write("You're down - only a stim gets you up."); return; }
-            int medic = CombatantUtil.HasPerk(this, "CombatMedic") ? 10 : 0;
+            int medic = CombatantUtil.HasPerk(this, "CombatMedic") ? 100 : 0;   // 2026-11-19: was 10 (the old 100 HP scale; a basic medkit heals 200 now)
             if (def.HealingPermanent.HasValue && def.HealingPermanent.Value > 0)
             {
                 HealPermanent(def.HealingPermanent.Value + medic);

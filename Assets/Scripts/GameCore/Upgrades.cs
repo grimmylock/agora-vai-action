@@ -11,8 +11,8 @@ namespace GameCore
     {
         public static readonly Dictionary<string, string> Weapon = new Dictionary<string, string>
         {
-            ["Calibrated"] = "+1 to hit",
-            ["Reinforced"] = "+3 base damage",
+            ["Calibrated"] = "groups 10% tighter",
+            ["Reinforced"] = "+30 base damage",
             ["Extended Mag"] = "+50% magazine",
             ["Hardened"] = "(retired: weapons no longer jam)",
         };

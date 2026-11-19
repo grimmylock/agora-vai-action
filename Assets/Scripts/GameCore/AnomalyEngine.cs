@@ -238,12 +238,12 @@ namespace GameCore
                 if (player.StatusEffects.Bleeding && player.BleedImmune) { player.StatusEffects.Bleeding = false; GameLog.Write("The bleeding stops on its own."); }   // Batch 90: Rosary / Heart of the Wound
                 if (player.StatusEffects.Bleeding)
                 {
-                    player.TakeDamage(50);
-                    GameLog.Write("Bleeding deals 50 HP damage.");
+                    player.TakeDamage(System.Math.Max(1, (int)(50 * player.ArtifactBleedMult)));
+                    GameLog.Write($"Bleeding deals {System.Math.Max(1, (int)(50 * player.ArtifactBleedMult))} HP damage.");
                 }
                 if (player.StatusEffects.ToxicBleed)
                 {
-                    player.TakeDamage(50);
+                    player.TakeDamage(System.Math.Max(1, (int)(50 * player.ArtifactBleedMult)));
                     GameLog.Write("Toxic Bleed deals 50 HP damage.");
                 }
                 if (player.TempHPDuration > 0)
@@ -277,7 +277,7 @@ namespace GameCore
                     // ponytail: flat rate, not scaled by how deep into the negative a stat is
                     // (they're clamped at 0 anyway, see Player.Move/TravelToSector).
                     player.TakeDamage(depletedStats.Count * 10);
-                    GameLog.Write($"Survival depletion deals {depletedStats.Count} HP damage.");
+                    GameLog.Write($"Survival depletion deals {depletedStats.Count * 10} HP damage.");   // (the log said the old-scale number)
                 }
             }
         }
