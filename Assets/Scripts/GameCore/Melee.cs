@@ -230,6 +230,9 @@ namespace GameCore
             return inside[0].u;
         }
 
+        /// <summary>One landed hit of `by` on `target` (not through the player-only Swing): the impact fx, the body part, the damage and wounds. For scripted duels between two NPCs (CrownJob).</summary>
+        internal static void HitUnit(ICombatant by, Weapon w, ICombatant target, float mult) { var (px, py) = Ballistics.Pos(by); Land(by, w, target, px, py, 0.45f, 1.8f, mult); }
+
         static void Land(ICombatant by, Weapon w, ICombatant best, float px, float py, float h, float reach, float mult, string forcePart = null)
         {
             var fx = CombatFx.Push("impact", by, best, w); fx.Now = true;                       // blood, the flash, the knock-back

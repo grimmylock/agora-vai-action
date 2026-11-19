@@ -1366,11 +1366,11 @@ static class Program {
     string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
     var gk = WeaponArt.GripOf("melee", "Sledgehammer"); var gs = WeaponArt.GripOf("melee", "BarbedWireBat"); var uk = UnitSprites.UniqueGloves["The Scrap King"]; var us = UnitSprites.UniqueGloves["Barbwire Coat"];
     var sb = new System.Text.StringBuilder("{\"origin\":[" + px + "," + py + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"gs\":[" + string.Join(",", gs.Select(F)) + "],\"ck\":[\"" + uk.cuff + "\",\"" + uk.glove + "\"],\"cs\":[\"" + us.cuff + "\",\"" + us.glove + "\"],\"frames\":[");
-    float real = 1f / 30f, finishAt = 30000f + 19.5f; bool finished = false; int lastClash = 0; int N = 30 * 25;
-    CrownJob.DuelStart(UnityEngine.Time.time + 1.5f);
+    float real = 1f / 30f, finishAt = 30000f + 19.5f; bool finished = false; int lastClash = 0, lastHits = 0; int N = 30 * 25;
+    CrownJob.DuelStart(k, sp, px + 1, py, UnityEngine.Time.time);
     for (int i = 0; i < N; i++) {
       UnityEngine.Time.time += real; UnityEngine.Time.deltaTime = real; UnityEngine.Time.unscaledTime += real; float now = UnityEngine.Time.time; CombatFx.Pending.Clear();
-      k.X = px; k.Y = py; sp.X = px + 3; sp.Y = py;
+      CrownJob.DuelWaves(now - 30000f < 7f ? 0 : now - 30000f < 13f ? 1 : 2);
       if (!finished && now >= finishAt) { CrownJob.DuelFinish(k, sp, now); finished = true; } else if (!finished) CrownJob.DuelTick(k, sp, now);
       var (kx, ky) = Ballistics.Pos(k); var (sx, sy) = Ballistics.Pos(sp);
       HeldFrame H(HumanEnemy u, ICombatant o, string key, float[] g) {
@@ -1378,12 +1378,13 @@ static class Program {
         return HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey ?? key, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));
       }
       var fk = H(k, sp, "Sledgehammer", gk); var fs = H(sp, k, "BarbedWireBat", gs);
-      string ev = CrownJob.Clashes > lastClash ? "[[\"clash\"," + (CrownJob.LastByKing ? 1 : 0) + "]]" : "[]"; lastClash = CrownJob.Clashes;
+      Rt.Glide(real);
+      string ev = CrownJob.Clashes > lastClash ? (CrownJob.Hits > lastHits ? "[[\"hit\"," + (CrownJob.LastByKing ? 1 : 0) + "]]" : "[[\"block\"," + (CrownJob.LastByKing ? 1 : 0) + "]]") : "[]"; lastClash = CrownJob.Clashes; lastHits = CrownJob.Hits;
       if (i == (int)((finishAt - 30000f) / real) ) ev = "[[\"finish\",0]]";
       sb.Append((i > 0 ? "," : "") + "{\"t\":" + F(i * real) + ",\"k\":[" + F(kx) + "," + F(ky) + "," + Fr(fk) + "],\"s\":[" + F(sx) + "," + F(sy) + "," + Fr(fs) + "],\"ev\":" + ev + "}");
     }
     sb.Append("],\"finish\":" + F(finishAt - 30000f) + ",\"clashes\":" + CrownJob.Clashes + "}");
-    File.WriteAllText(path, sb.ToString()); Console.WriteLine($"crown duel -> {path}: {CrownJob.Clashes} clashes");
+    File.WriteAllText(path, sb.ToString()); Console.WriteLine($"crown duel -> {path}: {CrownJob.Clashes} swings, {CrownJob.Hits} hits, {CrownJob.Blocks} parried, King hp {k.Hp}, Spool hp {sp.Hp}");
     Rt.On = false; Boss.Reset(); Melee.Reset(); CrownJob.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
   }
 

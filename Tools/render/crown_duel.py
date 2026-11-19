@@ -4,7 +4,7 @@ one frame every 1/30 s). Drawn with the game's sprites on the Scrapyard render a
 turning with each swing, the free hand, sparks where the weapons meet, a screen shake, and captions for what the waves are doing offscreen. ponytail: the kneel is drawn as a lowered, tilted body (the unique suits have no pose strips);
 the effects follow CombatFxView's recipes loosely; the waves are only a caption (you are fighting them).
   python3 Tools/render/crown_duel.py duel.json out_dir  -> crown_duel.gif, crown_duel_sheet.png"""
-import json, math, os, random, sys
+import json, math, os, random, subprocess, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
 
 R = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,7 +14,10 @@ F = d["frames"]; ox, oy = d["origin"]
 NX, NY = 186, 108                                       # the Scrap King's Nest on the Scrapyard map (TierMaps.cs)
 Z = 5; X0, Y0, W, H = NX - 2.5, NY - 3.0, 9.0, 5.0
 world = Image.open(os.path.join(R, "Tools/render/_render/scrapyard.png")).convert("RGBA")
-BG = world.crop((int(X0 * 16), int(Y0 * 16), int((X0 + W) * 16), int((Y0 + H) * 16))).resize((int(W * 16 * Z), int(H * 16 * Z)), Image.NEAREST)
+def ground():
+    return world.crop((int(round(X0 * 16)), int(round(Y0 * 16)), int(round(X0 * 16)) + int(W * 16), int(round(Y0 * 16)) + int(H * 16))).resize((int(W * 16 * Z), int(H * 16 * Z)), Image.NEAREST)
+CAM_EASE = 0.1                                          # the view follows the two of them, as the game camera follows you
+cam = [None, None]
 def hexc(h, a=255): v = int(h.lstrip("#"), 16); return ((v >> 16) & 255, (v >> 8) & 255, v & 255, a)
 def font(n, s): return ImageFont.truetype(os.path.join(FONTS, n), s)
 CAP, SMALL, TITLE = font("PixelifySans-SemiBold.ttf", 28), font("PixelifySans-SemiBold.ttf", 20), font("Silkscreen-Bold.ttf", 26)
@@ -22,7 +25,7 @@ def cell(name): return Image.open(os.path.join(SPR, name)).convert("RGBA").crop(
 KB, SB = cell("armor_unique_the_scrap_king.png"), cell("armor_unique_barbwire_coat.png")
 HAMMER = Image.open(os.path.join(SPR, "Weapons/weapon_Sledgehammer.png")).convert("RGBA"); BAT = Image.open(os.path.join(SPR, "Weapons/weapon_BarbedWireBat.png")).convert("RGBA")
 def fx(n, k=3): im = Image.open(os.path.join(SPR, f"Fx/{n}.png")).convert("RGBA"); w = im.width // k; return [im.crop((i * w, 0, i * w + w, im.height)) for i in range(k)]
-SPARK = fx("fx_hit_spark")
+SPARK, BLOOD = fx("fx_hit_spark"), fx("fx_hit_blood")
 def glove(cuff, gl, big=True):
     g = hexc(gl); lit = tuple(min(255, int(v * 1.45)) for v in g[:3]) + (255,); dark = tuple(int(v * 0.65) for v in g[:3]) + (255,)
     rows = [".KKK.", "KcllK", "KcgdK", ".KKK."] if big else [".KK.", "KcgK", ".KK."]
@@ -83,15 +86,25 @@ def waves_bar(t):
     return 0 if t < 7 else 1 if t < 13 else 2 if t < FIN - 0.1 else 3
 
 def draw(i):
+    global X0, Y0
     f = F[i]; t = f["t"]
-    c = BG.copy(); dd = ImageDraw.Draw(c)
+    mx_ = (f["k"][0] + f["s"][0]) / 2 - ox + NX; my_ = (f["k"][1] + f["s"][1]) / 2 - oy + NY
+    if cam[0] is None: cam[0], cam[1] = mx_, my_
+    cam[0] += (mx_ - cam[0]) * CAM_EASE; cam[1] += (my_ - cam[1]) * CAM_EASE
+    X0, Y0 = cam[0] - W / 2, cam[1] - H / 2 + 0.3
+    c = ground(); dd = ImageDraw.Draw(c)
     kx, ky, kfr = f["k"][0], f["k"][1], f["k"][2]; sx, sy, sfr = f["s"][0], f["s"][1], f["s"][2]
     P = lambda x, y: ((x - ox + NX - X0) * 16 * Z, (y - oy + NY - Y0) * 16 * Z)
     (KX, KY), (SX, SY) = P(kx, ky), P(sx, sy)
     for e in f["ev"]:
-        if e[0] == "clash":
+        if e[0] == "block":
             mx, my = (KX + SX) / 2, (KY + SY) / 2 - 7 * Z
-            puff(mx, my, SPARK, (255, 236, 180), 0.3, 3.2, t); burst(mx, my, (255, 236, 180), 20, 240, 0.4, t, i)
+            puff(mx, my, SPARK, (255, 236, 180), 0.3, 3.2, t); burst(mx, my, (255, 236, 180), 18, 240, 0.4, t, i)
+            shake[:] = [t, 0.06]
+        elif e[0] == "hit":
+            X, Y = (SX, SY) if e[1] else (KX, KY)                                            # the defender: Spool when the King struck
+            puff(X, Y - 4 * Z, BLOOD, (180, 30, 40), 0.22, 2.4, t); burst(X, Y - 4 * Z, (150, 20, 28), 10, 170, 0.35, t, i)
+            mx, my = (KX + SX) / 2, (KY + SY) / 2 - 7 * Z; puff(mx, my, SPARK, (255, 236, 180), 0.2, 2.2, t)
             shake[:] = [t, 0.10]; hurt["s" if e[1] else "k"] = t
         elif e[0] == "finish":
             puff(KX, KY - 8 * Z, SPARK, (255, 255, 255), 0.5, 5.0, t); burst(KX, KY - 8 * Z, (255, 225, 160), 40, 320, 0.6, t, i + 7)
@@ -127,17 +140,23 @@ def draw(i):
     dd.text((c.width - 90, c.height - 36), f"{t:4.1f} s", font=SMALL, fill=(200, 200, 200))
     return c
 
-frames = []; sheet = []; hold = {}
+frames = []; sheet = []; hold = {}; tmp = tempfile.mkdtemp()
 want = {0}
 for i, f in enumerate(F):
     for e in f["ev"]:
-        if e[0] == "clash" and len([w for w in want if w > 30]) < 3: want.add(i - 8); want.add(i + 2)      # a wind-up, and the hit
+        if e[0] in ("hit", "block") and len([w for w in want if w > 30]) < 5 and i > 60 * (len([w for w in want if w > 30]) + 1) // 2 + 20: want.add(i - 6); want.add(i + 1)      # a wind-up, and the hit
         if e[0] == "finish": want.update({i - 3, i + 4, i + 40})
 for i in range(len(F)):
     if stopped_until[0] > i and i % 1 == 0: pass
     im = draw(i).convert("RGB"); im = im.resize((im.width * 2 // 2, im.height * 2 // 2), Image.NEAREST)
-    if i % 3 == 0: frames.append(im.resize((im.width * 5 // 9, im.height * 5 // 9), Image.LANCZOS).convert("P", palette=Image.ADAPTIVE, colors=96))
+    im.save(os.path.join(tmp, f"{i:05d}.png"))
+    if i % 3 == 0: frames.append(im.resize((im.width * 4 // 9, im.height * 4 // 9), Image.LANCZOS).convert("P", palette=Image.ADAPTIVE, colors=64))
     if i in want: sheet.append(im)
+try:
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "30", "-i", os.path.join(tmp, "%05d.png"), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", os.path.join(out, "crown_duel.mp4")], check=True)
+except Exception as e: print("no mp4:", e)
+for fn in os.listdir(tmp): os.remove(os.path.join(tmp, fn))
+os.rmdir(tmp)
 frames[0].save(os.path.join(out, "crown_duel.gif"), save_all=True, append_images=frames[1:], duration=100, loop=0, optimize=True)
 cw, ch = sheet[0].width // 2, sheet[0].height // 2; cols = 2; rows = (len(sheet) + 1) // 2
 s = Image.new("RGB", (cols * cw + 24, rows * ch + 8 * (rows + 1)), (24, 26, 28))

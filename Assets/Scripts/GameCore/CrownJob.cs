@@ -162,48 +162,114 @@ namespace GameCore
             if (WeaponDatabase.Categories["melee"].TryGetValue("BarbedWireBat", out var bw) && sp != null) sp.EquipWeaponFromDb(bw);
             if (k != null && sp != null) { k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y); Banter.Say(sp, "He is mine. You keep the rest off my back.", 1, 0.5f); Banter.Say(k, "Spool. I should have buried you myself.", 1, 3.5f); }
             Boss.NameCard("SPOOL AND THE SCRAP KING", "HOLD OFF THE WAVES");
-            _clashAt = Time.time + 2.5f; _clash = 0; _atk = null; _hitAt = -1f;
+            var n = Mark(Nest); DuelStart(k, sp, n?.X ?? (k?.X ?? 0), n?.Y ?? (k?.Y ?? 0), Time.time);
         }
 
-        // The two held units trade blows with the boss framework's own beats (Boss.Tick): a wind-up held for a second, the swing starting ChopTime/Pace before the hit, the hit with a glint where the weapons meet.
-        // It never hurts either: it is the duel the waves buy time for. Alternating: the King's hammer, Spool's bat.
-        public static int Clashes; public static bool LastByKing;
-        static HumanEnemy _atk, _dfn; static float _hitAt = -1f; static bool _swinging;
-        const float DuelWind = 1.0f, DuelPace = 0.5f;
+        // The duel (Yan, 2026-11-19: "faster; they can be hitting each other, the king using the normal sledge moveset and Spool his boss moveset, two units with technically infinite hp, moving around like actual NPCs fighting"):
+        // two scripted duelists run the boss framework's beats on each other - a move from their own Boss.Def (the King's Smash/Sweep/Crush, Spool's Swing/Backswing/Overhead, phase 2 from the second wave), a wind-up,
+        // the glint, the swing, the hit through Melee.HitUnit - or a parry (the guard pose, sparks) about 4 times in 10; between moves they close in, back off, sidestep inside the Nest. Hp 1,000,000 each: the hits are real, the fight never ends by itself.
+        public static int Hits, Blocks, Clashes; public static bool LastByKing;
+        class Duelist
+        {
+            public HumanEnemy U; public Boss.Def Def; public Boss.Move Doing; public int HitsLeft; public float StrikeAt, NextMoveAt, NextStep, OpenUntil, GlintDue = -1f; public bool Swinging;
+        }
+        static Duelist _dk, _ds; static int _cx, _cy; static bool _p2; static readonly System.Random Rng = new System.Random(7);
+        const float DuelSpeed = 0.6f, DuelPace = 0.75f, BlockChance = 0.4f, ArenaR = 4f;
+
+        static Duelist Mk(HumanEnemy u, Boss.Def def, float now) => new Duelist { U = u, Def = def, NextMoveAt = now + 0.4f };
+
+        /// <summary>The duel starts: the arena is the tiles within a few of (cx, cy); both have all the health there is.</summary>
+        internal static void DuelStart(HumanEnemy k, HumanEnemy sp, int cx, int cy, float now)
+        {
+            _cx = cx; _cy = cy; _p2 = false; Hits = Blocks = Clashes = 0;
+            if (k != null) { k.MaxHp = k.Hp = 1000000; _dk = Mk(k, Boss.King, now + 0.8f); }
+            if (sp != null) { sp.MaxHp = sp.Hp = 1000000; _ds = Mk(sp, Boss.Spool, now + 0.2f); }
+        }
+        internal static void DuelWaves(int w) { _wave = w; }          // the preview: which wave the player is on (phase 2 moves from the second)
+
+        static bool Free(HumanEnemy u, int x, int y) => TerrainMap.CanEnterTile(x, y) && TerrainMap.UnitAt(x, y, u) == null && !Player.All.Any(p => p.X == x && p.Y == y)
+            && Mathf.Max(Mathf.Abs(x - _cx), Mathf.Abs(y - _cy)) <= ArenaR;
+
+        /// <summary>One tile toward (away from, sideways to) the foe, inside the arena.</summary>
+        static void StepBy(HumanEnemy u, HumanEnemy foe, int mode)
+        {
+            int best = -1; float bs = mode == 0 ? 1e9f : -1e9f; int bx = u.X, by = u.Y;
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx == 0 && dy == 0) continue; int x = u.X + dx, y = u.Y + dy; if (!Free(u, x, y)) continue;
+                float d = Mathf.Sqrt((x - foe.X) * (x - foe.X) + (y - foe.Y) * (y - foe.Y)); float score = mode == 0 ? d : mode == 1 ? d : -Mathf.Abs(d - Mathf.Sqrt((u.X - foe.X) * (u.X - foe.X) + (u.Y - foe.Y) * (u.Y - foe.Y)));
+                if (mode == 0 ? score < bs : score > bs) { bs = score; bx = x; by = y; best = 1; }
+            }
+            if (best > 0) { u.X = bx; u.Y = by; }
+        }
+
+        static void StepInTo(HumanEnemy u, HumanEnemy foe, float gap)
+        {
+            var (hx, hy) = Ballistics.Pos(u); var (px, py) = Ballistics.Pos(foe);
+            float dx = hx - px, dy = hy - py, d = Mathf.Sqrt(dx * dx + dy * dy); if (d <= gap + 0.05f || d < 0.01f) return;
+            float tx = px + dx / d * gap, ty = py + dy / d * gap; int x = Mathf.FloorToInt(tx), y = Mathf.FloorToInt(ty);
+            if (!(x == foe.X && y == foe.Y) && Free(u, x, y)) { u.X = x; u.Y = y; Rt.SetOffset(u, tx - x - 0.5f, ty - y - 0.5f); }
+        }
+
+        static void Run(Duelist d, Duelist o, float now)
+        {
+            var u = d.U; var foe = o.U; if (u == null || foe == null || !u.IsAlive()) return;
+            var mc = Melee.ChargeOf(u); mc.PoseKey = null; mc.Pace = DuelPace;
+            u.FaceToward(foe.X, foe.Y);
+            if (d.Doing != null && mc.SwingFrom >= 0f && !d.Swinging && now >= d.StrikeAt - HeldPoseMath.ChopTime / DuelPace)
+            { float held = now - mc.SwingFrom; mc.SwingFrom = -1f; mc.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp) / DuelPace; d.Swinging = true; }
+            if (d.Doing != null && d.GlintDue >= 0f && now >= d.GlintDue) { d.GlintDue = -1f; var g = CombatFx.Push("glint", u, null, u.EquippedWeapon); if (g != null) { g.Now = true; g.Psi = d.Doing.Danger; } }
+            int dist = CombatantUtil.Distance(u, foe);
+            if (d.Doing == null)
+            {
+                if (now < d.OpenUntil) return;
+                if (now >= d.NextStep)
+                {
+                    d.NextStep = now + d.Def.StepSeconds * DuelSpeed * 1.2f;
+                    if (dist > 1) StepBy(u, foe, 0);
+                    else if (Rng.NextDouble() < 0.25 && now >= d.NextMoveAt) StepBy(u, foe, 2);       // a sidestep
+                }
+                if (now < d.NextMoveAt) return;
+                var opts = d.Def.Moves.Where(m => (!m.Phase2Only || _p2) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= 1)).ToList();
+                if (opts.Count == 0) { if (dist > 1) StepBy(u, foe, 0); return; }
+                int roll = Rng.Next(0, opts.Sum(m => m.Weight)); Boss.Move pick = opts[0];
+                foreach (var m in opts) { if (roll < m.Weight) { pick = m; break; } roll -= m.Weight; }
+                d.Doing = pick; d.HitsLeft = pick.Hits; d.StrikeAt = now + pick.Wind * DuelSpeed; d.GlintDue = Mathf.Max(now, d.StrikeAt - Boss.GlintLead * DuelSpeed); d.Swinging = false;
+                mc.Move = pick.Poses[(pick.Hits - d.HitsLeft) % pick.Poses.Length]; mc.From = -1f; mc.SwingFrom = now; mc.Red = pick.Danger;
+                return;
+            }
+            if (now < d.StrikeAt) return;
+            // the hit lands: a lunge rushes in first; the foe parries or takes it
+            if (d.Doing.Lunge > 0f) StepInTo(u, foe, 0.8f); else StepInTo(u, foe, 0.9f);
+            Clashes++; LastByKing = d == _dk;
+            if (Rng.NextDouble() < BlockChance && !d.Doing.Danger)
+            {
+                Blocks++; Melee.ChargeOf(foe).GuardAt = now; var sp = CombatFx.Push("glint", foe, null, foe.EquippedWeapon); if (sp != null) sp.Now = true;
+                var an = CombatFx.Push("melee", u, foe, u.EquippedWeapon); if (an != null) an.Now = true;
+            }
+            else { Hits++; if (u.EquippedWeapon != null) Melee.HitUnit(u, u.EquippedWeapon, foe, d.Doing.Mult); }
+            d.Swinging = false;
+            if (--d.HitsLeft > 0) { d.StrikeAt = now + d.Doing.Gap * DuelSpeed; d.GlintDue = Mathf.Max(now, d.StrikeAt - Boss.GlintLead * DuelSpeed); mc.Move = d.Doing.Poses[(d.Doing.Hits - d.HitsLeft) % d.Doing.Poses.Length]; mc.From = mc.Since(now); mc.SwingFrom = now; return; }
+            d.OpenUntil = now + d.Doing.Open * DuelSpeed * 0.7f; d.Doing = null; d.NextMoveAt = d.OpenUntil + 0.2f * (float)(0.8 + 0.5 * Rng.NextDouble());
+            if (Rng.NextDouble() < 0.35) { for (int s = 0; s < 2; s++) StepBy(u, foe, 1); }          // back off a little
+        }
 
         /// <summary>One step of the duel at time `now` (the Tick, and the harness's preview).</summary>
         internal static void DuelTick(HumanEnemy k, HumanEnemy sp, float now)
         {
             if (k == null || sp == null) return;
-            RtAi.Hold(k, 0.4f); RtAi.Hold(sp, 0.4f);                                   // they stand their ground
-            if (_atk == null)
-            {
-                if (now < _clashAt) return;
-                (_atk, _dfn) = _clash++ % 2 == 0 ? (k, sp) : (sp, k);
-                k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y);
-                var mc = Melee.ChargeOf(_atk); mc.PoseKey = null; mc.Pace = DuelPace; mc.Move = _clash % 3; mc.From = -1f; mc.SwingFrom = now; mc.Red = false;
-                _hitAt = now + DuelWind; _swinging = false; return;
-            }
-            var ch = Melee.ChargeOf(_atk);
-            if (!_swinging && now >= _hitAt - HeldPoseMath.ChopTime / DuelPace)
-            { float held = now - ch.SwingFrom; ch.SwingFrom = -1f; ch.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp) / DuelPace; _swinging = true; }
-            if (now >= _hitAt)
-            {
-                LastByKing = _atk == k; Clashes++;
-                var anim = CombatFx.Push("melee", _atk, _dfn, _atk.EquippedWeapon); if (anim != null) anim.Now = true;
-                var g = CombatFx.Push("glint", _dfn, null, _dfn.EquippedWeapon); if (g != null) g.Now = true;
-                _atk = null; _hitAt = -1f; _clashAt = now + 1.4f;
-            }
+            if (_dk == null || _dk.U != k || _ds == null || _ds.U != sp) DuelStart(k, sp, k.X - 1, k.Y, now);
+            _p2 = _wave >= 2;
+            Run(_dk, _ds, now); Run(_ds, _dk, now);
         }
-
-        /// <summary>For the preview: the first clash is due at `at`.</summary>
-        internal static void DuelStart(float at) { _clashAt = at; _clash = 0; _atk = null; _hitAt = -1f; Clashes = 0; }
 
         /// <summary>Spool's last blow: the King's guard breaks (the kneel pose) and his weapon sinks for good.</summary>
         internal static void DuelFinish(HumanEnemy k, HumanEnemy sp, float now)
         {
-            _atk = null; _hitAt = -1f;
+            _dk = _ds = null;
             if (k == null || sp == null) return;
+            k.MaxHp = k.Hp = 300; sp.MaxHp = sp.Hp = 300;
+            StepInTo(sp, k, 0.9f); sp.FaceToward(k.X, k.Y); k.FaceToward(sp.X, sp.Y);
             var m = Melee.ChargeOf(sp); m.PoseKey = null; m.Pace = DuelPace; m.Move = 2; m.From = -1f; m.SwingFrom = -1f; m.SwungAt = now;
             var kc = Melee.ChargeOf(k); kc.BrokenAt = now; kc.OpenFrom = now + 0.25f; kc.OpenUntil = now + 3600f;
             var anim = CombatFx.Push("melee", sp, k, sp.EquippedWeapon); if (anim != null) anim.Now = true;
