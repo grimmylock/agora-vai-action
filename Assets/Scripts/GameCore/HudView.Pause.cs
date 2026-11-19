@@ -17,7 +17,7 @@ namespace GameCore
         /// <summary>Every frame: show the menu while the game is paused (and no panel is up), hide it otherwise. True while it is showing (the old middle-of-the-screen word then stays hidden).</summary>
         bool UpdatePauseMenu(Player p)
         {
-            bool want = _re4Ok && Rt.On && Rt.Paused && !GameState.Current.ModalOpen;
+            bool want = Rt.On && Rt.Paused && !GameState.Current.ModalOpen;   // 2026-11-18 (Yan, on the classic HUD: "it doesn't have any options in the pause menu"): the menu is for BOTH HUD styles - it is where HUD STYLE switches back
             if (!want) { if (_pauseUI != null) { Destroy(_pauseUI); _pauseUI = null; _pauseViews.Clear(); } return false; }
             if (_pauseUI == null) { try { BuildPauseMenu(); } catch (System.Exception e) { Debug.LogException(e); if (_pauseUI != null) Destroy(_pauseUI); _pauseUI = null; return false; } }
             var k = Keyboard.current; var m = Mouse.current;

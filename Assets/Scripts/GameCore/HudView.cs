@@ -281,7 +281,7 @@ namespace GameCore
                 Pin(_paused.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f));
                 _paused.outlineWidth = 0.25f; _paused.outlineColor = new Color32(0, 0, 0, 255);
             }
-            bool pauseMenu = UpdatePauseMenu(p);                                     // 2026-11-18: the RE4-style pause menu (HudView.Pause.cs) when the new HUD is on
+            bool pauseMenu = UpdatePauseMenu(p);                                     // 2026-11-18: the pause menu (HudView.Pause.cs), on either HUD style
             _paused.gameObject.SetActive(Rt.On && Rt.Paused && !GameState.Current.ModalOpen && !pauseMenu);
 
             UpdateTarget(p);
