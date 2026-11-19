@@ -25,7 +25,7 @@ namespace GameCore
         public static float NextAt = -1f, WaveStarted = -1f;
         public static bool BossWave;
         public static readonly List<Mutant> Live = new List<Mutant>();
-        public const float Breather = 15f, MaxWave = 60f;
+        public const float Breather = 15f, MaxWave = 150f;   // 2026-11-19 (Yan: "I can barely kill the first wave before the second one comes"): was 60 s; a wave you have not cleared waits up to 2.5 minutes
         public const int FirstWave = 5, PerWave = 3, BossEvery = 5, MaxTier = 6;
         static readonly string[] Maps = { "perimeter", "scrapyard", "scavengers_hub", "vanguard_barracks", "quarry_basin", "abandoned_city" };
         static readonly string[] HumanFactions = { "Raiders", "Garrison", "Outcasts", "Contractors", "Cartel", "Liberators", "Obelisk" };
@@ -76,7 +76,7 @@ namespace GameCore
                 BossWave = false; WaveStarted = -1f; NextAt = now + Breather;
             }
             else if (!BossWave && Live.Count == 0 && WaveStarted >= 0f && NextAt < 0f) NextAt = now + Breather;   // cleared: a breather
-            if (!BossWave && WaveStarted >= 0f && now - WaveStarted >= MaxWave && (NextAt < 0f || NextAt > WaveStarted + MaxWave)) NextAt = WaveStarted + MaxWave;   // a minute at most
+            if (!BossWave && WaveStarted >= 0f && now - WaveStarted >= MaxWave && (NextAt < 0f || NextAt > WaveStarted + MaxWave)) NextAt = WaveStarted + MaxWave;   // two and a half minutes at most
             if (NextAt >= 0f && now >= NextAt) StartWave(p);
         }
 

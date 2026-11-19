@@ -107,6 +107,7 @@ namespace GameCore
                 Move = combo ? Move + 1 : 0; From = combo ? now - SwungAt : -1f;
             }
         }
+        public const float PlayerReachSlack = 0.35f, PlayerArcSlack = 35f, PlayerBodyHalf = 0.4f;   // the player's swings only (NPC and boss swings stay as authored: parry timing)
         public const float ComboGap = 0.4f;                    // click again within this of the last swing ending: the next move
         static readonly Dictionary<ICombatant, Charge> Charges = new Dictionary<ICombatant, Charge>();
         public static Charge ChargeOf(ICombatant u) { if (!Charges.TryGetValue(u, out var c)) Charges[u] = c = new Charge(); return c; }
@@ -213,8 +214,11 @@ namespace GameCore
                 if (EelBoss.Is(u)) continue;                                                  // the eel is its whole body, below
                 var (ux, uy) = Ballistics.Pos(u);
                 float ex = ux - px, ey = uy - py, d = Mathf.Sqrt(ex * ex + ey * ey);
-                if (d > sh.reach || d < 0.01f) continue;
-                if ((ex * dx + ey * dy) / d < Mathf.Cos(sh.arc * 0.5f * Mathf.Deg2Rad)) continue;   // outside the arc
+                float slack = by is Player ? PlayerReachSlack : 0f;                           // 2026-11-19 (Yan: "melee ... attacks barely land"): YOUR swing counts the reach to the enemy's edge, not its middle, and forgives a little aim (the swing flies where you pointed when you started it; they keep moving)
+                if (d > sh.reach + slack || d < 0.01f) continue;
+                float fwd = ex * dx + ey * dy;
+                bool inArc = fwd / d >= Mathf.Cos((sh.arc + (by is Player ? PlayerArcSlack : 0f)) * 0.5f * Mathf.Deg2Rad);
+                if (!inArc && !(by is Player && fwd > 0f && Mathf.Abs(ex * dy - ey * dx) < PlayerBodyHalf)) continue;   // outside the arc (and not a body whose width crosses the swing's line)
                 inside.Add((u, d));
             }
             ICombatant eelU = null; string eelPart = null;                                     // Eel: any part of the body that is out of the water can be cut (not only the base unit in the pool's centre)

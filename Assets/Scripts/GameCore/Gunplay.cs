@@ -385,12 +385,13 @@ namespace GameCore
 
         /// <summary>One trigger pull: rounds leave the muzzle, scattered by `spread` degrees sideways and up/down, at aim
         /// height h. Ammo, jams and the fire rate are the caller's (PlayerShoot / NpcShoot). RT 8: they fly (Fly), nothing lands yet.</summary>
+        public const float PlayerVertical = 0.35f;
         public static List<Round> Shoot(ICombatant shooter, Weapon w, float dx, float dy, float h, float spread, bool ambush, float delay = 0f)
         {
             var rounds = new List<Round>();
             var hd = For(w);
             var (x0, y0) = Ballistics.Pos(shooter);
-            float aimSide = Gauss() * spread, aimUp = Gauss() * spread;
+            float aimSide = Gauss() * spread, aimUp = Gauss() * spread * (shooter is Player ? PlayerVertical : 1f);   // 2026-11-19 (Yan: "the height system makes the shots miss too much"): a round's height drifts by tan(angle) x distance, so the same spread that is a small sideways error is a whole body of height error at range (over the head, into the dirt): the player's vertical scatter is a third of the sideways one
             for (int p = 0; p < hd.Pellets; p++)
             {
                 float side = (aimSide + Gauss() * hd.Choke) * 0.0174533f, up = (aimUp + Gauss() * hd.Choke) * 0.0174533f;

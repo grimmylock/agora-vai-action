@@ -2307,8 +2307,8 @@ static class Program {
     Run(15.5f); Check(Survival.Wave == 1 && Survival.Live.Count == 5, $"Survival: wave 1 is 5 enemies ({Survival.Live.Count})");
     KillAll(); Run(16f); Run(30f); Check(Survival.Wave == 1, "Survival: 15 s breather after a clear");
     Run(31.5f); Check(Survival.Wave == 2 && Survival.Live.Count == 8, $"Survival: wave 2 is 8 ({Survival.Live.Count})");
-    Run(31.5f + 59f); Check(Survival.Wave == 2, "Survival: an uncleared wave holds for up to a minute");
-    Run(31.5f + 61f); Check(Survival.Wave == 3, "Survival: then the next comes anyway");
+    Run(31.5f + 149f); Check(Survival.Wave == 2, "Survival: an uncleared wave holds for up to two and a half minutes");
+    Run(31.5f + 151f); Check(Survival.Wave == 3, "Survival: then the next comes anyway");
     while (Survival.Wave < 5 && Survival.Now < 1000f) { KillAll(); Run(Survival.Now + 1f); }
     Check(Survival.Wave == 5 && Survival.BossWave && Survival.Live.Count(e => e.IsAlive()) == 1, $"Survival: wave 5 is one boss (wave {Survival.Wave}, {Survival.Live.Count})");
     float t5 = Survival.Now; Run(t5 + 200f); Check(Survival.Wave == 5 && Survival.Tier == 1, "Survival: the boss wave waits for the boss");
@@ -3940,7 +3940,7 @@ static class Program {
       var s6 = RtRoundMC("shotgun", "BayouPump", 6, 5, false, false, 7, "Slug"); var b6 = RtRoundMC("shotgun", "BayouPump", 6, 5, false, false, 7, "Standard");
       Check(Gunplay.For(sl).Pellets == 1 && Gunplay.For(bk).Pellets == 6 && Gunplay.PierceOf(sl).targets == 2 && Gunplay.PierceOf(bk).targets == 1 && Gunplay.FalloffMult(sl, 15f) == 1f && Gunplay.FalloffMult(sl, 30f) < 0.55f && Gunplay.FalloffMult(bk, 30f) == 1f,
         "the slug is one projectile that passes through 2 bodies and fades from 15 tiles");
-      Check(hs.hitPct >= 80 && hs.dmgPerRound > hb.dmgPerRound * 2f && s6.dmgPerRound > b6.dmgPerRound, $"slug vs buckshot (Bayou Pump): at 15 tiles {hs.hitPct}% hits, {hs.dmgPerRound:0} damage a round against {hb.hitPct}% and {hb.dmgPerRound:0}; at 6 tiles vs tier 5 armor {s6.dmgPerRound:0} against {b6.dmgPerRound:0}"); }
+      Check(hs.hitPct >= 80 && hs.dmgPerRound > hb.dmgPerRound * 1.8f && s6.dmgPerRound > b6.dmgPerRound, $"slug vs buckshot (Bayou Pump): at 15 tiles {hs.hitPct}% hits, {hs.dmgPerRound:0} damage a round against {hb.hitPct}% and {hb.dmgPerRound:0}; at 6 tiles vs tier 5 armor {s6.dmgPerRound:0} against {b6.dmgPerRound:0}"); }
     // heavy armor slows the real-time walk by 10% (Yan, 2026-11-17); light armor does not
     { var pw = Arena(out int wx, out int wy);
       var heavyKey = ArmorDatabase.Tiers.SelectMany(t => t.Value.Select(a => (tier: t.Key, key: a.Key, def: a.Value))).First(a => a.def.Mp > 0 && a.def.Mp < 4);

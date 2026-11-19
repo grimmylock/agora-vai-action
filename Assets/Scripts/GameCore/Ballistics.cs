@@ -163,7 +163,7 @@ namespace GameCore
             if (over == null) return 0.45f;                  // nothing under the crosshair: chest height
             var (_, uy) = Pos(over);
             float feet = uy + FeetBelow;                     // the sprite's feet are its bottom row, half a tile under its middle
-            return System.Math.Max(0.02f, System.Math.Min(1.1f, (feet - mouseTileY) / BodyTiles));
+            return System.Math.Max(0.05f, System.Math.Min(0.96f, (feet - mouseTileY) / BodyTiles));   // 2026-11-19: over a body the round stays inside it (a crosshair on the crown or the soles of the sprite used to fly over / into the ground)
         }
     }
 }
