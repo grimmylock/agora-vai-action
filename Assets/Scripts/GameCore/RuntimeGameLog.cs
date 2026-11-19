@@ -33,7 +33,7 @@ namespace GameCore
                 backgroundRect.offsetMin = new Vector2(16, 16);
                 backgroundRect.offsetMax = new Vector2(-8, -8);
                 var backgroundImage = backgroundGo.AddComponent<Image>();
-                backgroundImage.color = new Color(0f, 0f, 0f, 0f);   // 2026-11-19 (Yan: "remove the black boxes around the on screen HUD"): no box; the text carries its own outline
+                backgroundImage.color = new Color(0f, 0f, 0f, 0f);   // 2026-11-19 (Yan: "remove the black boxes around the on screen HUD"): no box; plain white text (an outline on this small font turned the lines into blotches: the "symbols" Yan saw)
                 backgroundImage.raycastTarget = false;
                 // Without a mask, TextMeshProUGUI doesn't clip to its RectTransform - once the log
                 // filled up with 16 lines it overflowed way past this panel and sprawled across the
@@ -53,11 +53,13 @@ namespace GameCore
                 _text.fontSize = 12;
                 _text.color = Color.white;
                 _text.alignment = TextAlignmentOptions.BottomLeft;
-                _text.raycastTarget = false; _text.outlineWidth = 0.22f; _text.outlineColor = new Color32(0, 0, 0, 255);
+                _text.raycastTarget = false;
             }
 
             GameLog.Target = this;
         }
+
+        private void Update() { if (_text != null) _text.enabled = !(Rt.On && Rt.Paused); }   // 2026-11-19: not over the pause menu (the lines ran through its words)
 
         public void Append(string message, bool isEvent)
         {
