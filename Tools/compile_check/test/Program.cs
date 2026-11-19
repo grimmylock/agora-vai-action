@@ -57,6 +57,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "9") TakenSim();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "10") DpsVsSameTierReport();
     TestingGroundChecks();
     OpticChecks();
     MutantParryChecks();
@@ -3860,6 +3861,25 @@ static class Program {
         sb.AppendLine($"{db.Name} | {cat} | {db.Tier} | {(ap == null ? "-" : ap.Name)} | {(ap == null ? "-" : ap.DrMult.ToString("0.00"))} | {(ap == null ? "-" : ap.Damage.ToString("0.00"))} | {string.Join(" | ", cells)} | {a1:0.0} | {(a2 < 0 ? "no AP" : a2.ToString("0.0"))}");
       }
     Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/weapon_ap.txt", sb.ToString());
+  }
+
+  // RTBAL=10 (Yan, 2026-11-19: "test the dps on the weapons vs a same tier armor hitting all body shots"): every gun with its standard load against the MEDIAN armor of its own tier, every round a torso hit at 3 tiles (no fall-off,
+  // no spread, no misses). Rate: automatics at their rpm, everything else at most 4 shots a second (a clicking finger). Sustained DPS counts the reloads; TTK is for a 1000 HP standing human.
+  static void DpsVsSameTierReport() {
+    var sb = new System.Text.StringBuilder("gun | cat | tier | dmg/round after armor | shots/s | DPS (no reload) | sustained DPS | mag | seconds to kill 1000 HP\n");
+    var med = new Dictionary<int, float>(); foreach (var kv in ArmorDatabase.Tiers) { var l = kv.Value.Values.Select(a => a.PhysDR).OrderBy(x => x).ToList(); med[int.Parse(kv.Key.Replace("tier", ""))] = l[l.Count / 2]; }
+    var rows = new List<(int tier, string cat, string line, float sus)>();
+    foreach (var cat in new[] { "sidearm", "smg", "assault", "shotgun", "sniper", "heavy" })
+      foreach (var kv in WeaponDatabase.Categories[cat]) {
+        var db = kv.Value; var w0 = W(cat, kv.Key); var hd = Gunplay.For(w0); var ld = AmmoDatabase.Load(db, "Standard"); if (ld == null || !med.ContainsKey(db.Tier)) continue;
+        int pel = hd.Pellets > 1 ? hd.Pellets : 1; float torso = Gunplay.RoundDamage(w0, "Torso", 3f, pel) * pel * Gunplay.TuneMult(w0, true);
+        int dmg = CombatRules.PhysicalDamage(torso, ld, med[db.Tier], db.IgnorePhysDRPercent ?? 0f); if (dmg <= 0) dmg = 1;
+        float rate = hd.Auto || cat == "smg" || cat == "heavy" ? hd.Rpm / 60f : Math.Min(hd.Rpm / 60f, 4f); int mag = w0.MagCapacity; int rounds = (int)Math.Ceiling(1000f / dmg);
+        float ttk = (rounds - 1) / rate + ((rounds - 1) / Math.Max(1, mag)) * hd.ReloadTime; float perMag = mag / rate + hd.ReloadTime; float sus = dmg * mag / perMag;
+        rows.Add((db.Tier, cat, $"{db.Name} | {cat} | {db.Tier} | {dmg} | {rate:0.0} | {dmg * rate:0} | {sus:0} | {mag} | {ttk:0.0}", sus));
+      }
+    foreach (var r in rows.OrderBy(r => r.tier).ThenBy(r => r.cat).ThenByDescending(r => r.sus)) sb.AppendLine(r.line);
+    Console.WriteLine(sb.ToString()); System.IO.File.WriteAllText("/tmp/dps_same_tier.txt", sb.ToString());
   }
 
   // Shotgun slug vs buckshot (RTBAL=6): seconds to kill 1000 HP in tier 1-5 armor at 6, 15 and 30 tiles.
