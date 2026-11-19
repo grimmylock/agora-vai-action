@@ -87,7 +87,7 @@ static class Program {
     Tier4StoryChecks();
     TestingGroundBarrierChecks();
     AimAssistChecks();
-    AimProbe();
+    AimProbe(); HeightProbe();
     BarrierChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
@@ -3778,6 +3778,17 @@ static class Program {
       if (Environment.GetEnvironmentVariable("AIMPROBE") != null) Console.WriteLine($"AIMPROBE pistol steady {steady:0.00} at {dist} tiles: {hits * 100 / n}% of rounds hit a standing rookie aimed at the chest (spread {Gunplay.Spread(hd, aim, 0, false):0.0} deg)");
       EncounterState.Enemies.Clear(); Rt.On = false;
     }
+  }
+
+  static void HeightProbe() {   // the round's height across a standing rookie's sprite, no spread: does every height on the sprite hit?
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 3; x <= px + 45; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    p.EquipWeapon("sidearm", "PSh18Pchela"); Rt.SetOffset(p, 0f, 0f); var w = p.EquippedWeapon;
+    var d = new HumanEnemy("Dummy", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; d.MaxHp = d.Hp = 1000000; EncounterState.Enemies.Add(d); Rt.SetOffset(d, 0f, 0f);
+    var sb = new System.Text.StringBuilder("HEIGHTPROBE ");
+    foreach (float h in new[] { 0.05f, 0.15f, 0.3f, 0.5f, 0.7f, 0.85f, 0.96f }) { int hp0 = d.Hp; Gunplay.Shoot(p, w, 1f, 0f, h, 0f, false); Gunplay.LandAll(); sb.Append($"h{h:0.00}:{(d.Hp < hp0 ? "hit" : "MISS")} "); d.Hp = d.MaxHp; }
+    if (Environment.GetEnvironmentVariable("AIMPROBE") != null) Console.WriteLine(sb.ToString());
+    EncounterState.Enemies.Clear(); Rt.On = false;
   }
 
   static void WeaponVsArmorReport() {
