@@ -93,6 +93,7 @@ static class Program {
     TestingGroundBarrierChecks();
     AimAssistChecks();
     AnnexQuestChecks();
+    ElderClipChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -2677,6 +2678,26 @@ static class Program {
         Check(Tier3Story.TryInteract(p) && !p.Inventory.Items.Any(i => i.Id == Tier3Annex.Files) && Story.Has("annex_files"), "Annex: Osei takes the table and the story moves on");
       }
     } finally { Tier3Story.ZoneOverride = null; Tier3Annex.Reset(); MacroState.Current.Keys.Remove("annex_staff"); Rt.On = false; EncounterState.Enemies.Clear(); Vision.Spotlight = null; Story.CineEnd(); }
+  }
+
+  static void ElderClipChecks() {   // 2026-11-19: the Elder's Pixel Lab clips: the table, the combos by phase, the hits
+    bool ok = true; string why = "";
+    foreach (var kv in GameCore.ElderClips.All) { var c = kv.Value; bool good = c.Step.Length == c.Ms.Length && c.Step.All(i => i >= 0 && i < c.Cells) && c.TotalMs == c.Ms.Sum() && c.Contacts.All(x => x >= 0 && x < c.TotalMs) && c.Contacts.Zip(c.Contacts.Skip(1), (a, b) => b > a).All(b => b); if (!good) { ok = false; why += kv.Key + " "; } }
+    Check(ok && GameCore.ElderClips.All.Count == 11, "ElderClips: every clip's steps, timings and hit times are consistent " + why);
+    Check(GameCore.ElderClips.Get("combo2").Contacts.Length == 2 && GameCore.ElderClips.Get("combo3").Contacts.Length == 3 && GameCore.ElderClips.Get("combo4").Contacts.Length == 4 && GameCore.ElderClips.Get("scream").TotalMs == 2600, "ElderClips: 2, 3 and 4 hit combos, the scream is the same 2.6 s");
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 80000f; EncounterState.Enemies.Clear();
+    try {
+      var e = new Mutant(GameCore.Gaunt.ElderName, px + 1, py, GameCore.Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(e);
+      GameCore.GauntBoss.Reset(); GameCore.GauntBoss.Begin(e);
+      Check(GameCore.GauntBoss.ComboKind(e) == "combo2" && GameCore.Gaunt.Busy(e), "Elder: phase 1 fights in 2-hit combos, and it stands up first (rise pose)");
+      e.Hp = (int)(e.MaxHp * 0.7f); GameCore.GauntBoss.Tick(0.1f); Check(GameCore.GauntBoss.ComboKind(e) == "combo3", "Elder: below 75 % it fights in 3-hit combos");
+      foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => m != e).ToList()) m.Hp = 0; UnityEngine.Time.time += 40f; GameCore.GauntBoss.Tick(0.1f);
+      e.Hp = (int)(e.MaxHp * 0.35f); GameCore.GauntBoss.Tick(0.1f); Check(GameCore.GauntBoss.ComboKind(e) == "combo4" && GameCore.Gaunt.Pose(e) == "roar", "Elder: below 40 % it roars and fights in 4-hit combos");
+      foreach (var m in EncounterState.Enemies.OfType<Mutant>().Where(m => m != e).ToList()) m.Hp = 0; UnityEngine.Time.time += 40f; GameCore.GauntBoss.Tick(0.1f);
+      p.X = e.X - 1; p.Y = e.Y; p.Hp = p.MaxHp; float next = 0f; bool played = false; float t0 = UnityEngine.Time.time;
+      for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.05f; if (GameCore.MutantAttack.Update(e, p, UnityEngine.Time.time, ref next) && GameCore.MutantAttack.KindOf(e) == "combo4") played = true; }
+      Check(played && p.Hp < p.MaxHp, $"Elder: the 4-hit combo plays next to a player and hurts (hp {p.Hp}/{p.MaxHp})");
+    } finally { Rt.On = false; EncounterState.Enemies.Clear(); GameCore.GauntBoss.Reset(); }
   }
 
   static void AimAssistChecks() {   // 2026-11-19: the crosshair near a body counts as aiming at it

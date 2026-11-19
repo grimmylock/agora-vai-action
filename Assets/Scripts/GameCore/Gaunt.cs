@@ -16,7 +16,7 @@ namespace GameCore
         /// <summary>Forest zones: the wild Gaunt lives there (SquadManager gives a mutant pack a Gaunt now and then); nowhere else it is not rolled.</summary>
         public static readonly string[] Woods = { "crimson_woods", "black_valley", "camp_shelter" };
         public static bool IsElder(Mutant m) => m?.Db?.Name == ElderName;
-        public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
+        public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f, ElderWalkFrameSeconds = 0.11f, ElderRunFrameSeconds = 0.085f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
         public const float ArtScale = 32f / 43f;                    // Yan, 2026-11-17: "reduce the gaunt size by 25% ... they barely fit the screen": both Gaunts are drawn at this fraction of their art (HitProfiles are cut at 43 px a tile to match)
         public const float ScreamFor = 1.2f, CallTotal = 2.6f;      // the arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal
         // the wild Gaunt calls a smaller, shorter drive; the Elder drives a whole horde (range tiles, drive seconds, speed factor, seconds between calls)
@@ -36,11 +36,12 @@ namespace GameCore
         // the call animation (SpriteCook, one strip, scream + point; 8 pictures, 2.6 s): frame durations in ms - breath, head back, the scream held, the arm snaps out (the call lands on frame 5), held, relax
         static readonly int[] ScreamMs = { 200, 260, 300, 380, 380, 420, 380, 280 };
         /// <summary>True while it is mid-call: it stands and screams, it does not walk or strike (RtAi.TickMutant).</summary>
-        public static bool Busy(Mutant m) => Is(m) && m.IsAlive() && Pose(m) == "scream";
+        public static bool Busy(Mutant m) => Is(m) && m.IsAlive() && (IsElder(m) ? Pose(m) != null : Pose(m) == "scream");   // the Elder stands for every pose it plays (scream, roar, rise, slam, shriek)
         /// <summary>The picture for the pose it is in right now, or null (the standing sprite / the walk / the attack take over).</summary>
         public static Sprite Frame(Mutant m)
         {
             if (!(Pose(m) is string p) || !States.TryGetValue(m, out var s)) return null;
+            if (IsElder(m)) return ElderClips.Sprite(p, (Time.time - s.PoseAt) * 1000f);                     // the Elder's own clips (ElderClips): scream, roar, rise, slam, shriek
             var frames = UnitSprites.GauntAnim(m.Db.Name, "scream", ScreamMs.Length); if (frames == null) return null;
             float t = (Time.time - s.PoseAt) * 1000f; int i = 0; float acc = 0f;
             for (; i < ScreamMs.Length - 1; i++) { if (t < acc + ScreamMs[i]) break; acc += ScreamMs[i]; }
@@ -52,6 +53,7 @@ namespace GameCore
         public static Sprite Idle(Mutant m)
         {
             if (!Is(m) || !m.IsAlive()) return null;
+            if (IsElder(m)) return ElderClips.Sprite("idle", Time.time * 1000f + (m.X * 7 + m.Y * 3) * 170f);   // out of step with its neighbours
             var frames = UnitSprites.GauntAnim(m.Db.Name, "idle", 8); if (frames == null) return null;
             return frames[(int)(Time.time / 0.16f + (m.X * 7 + m.Y * 3)) % frames.Length];     // out of step with its neighbours
         }
@@ -59,6 +61,7 @@ namespace GameCore
         public static float DeathTilt(Mutant m)
         {
             if (!Is(m)) return 0f; if (m.IsAlive()) return 0f;
+            if (IsElder(m) && ElderClips.Has("death")) return 0f;                                           // it has its own fall (kneel, slump)
             var s = Of(m); if (s.DiedAt < 0f) s.DiedAt = Time.time;
             float u = Mathf.Clamp01((Time.time - s.DiedAt) / 0.8f); return 84f * u * u * (3f - 2f * u);
         }
@@ -66,6 +69,7 @@ namespace GameCore
         public static Sprite DeathFrame(Mutant m)
         {
             var s = Of(m); if (s.DiedAt < 0f) s.DiedAt = Time.time;
+            if (IsElder(m) && ElderClips.Has("death")) return ElderClips.Sprite("death", (Time.time - s.DiedAt) * 1000f);
             var frames = UnitSprites.GauntAnim(m.Db.Name, "death", 8); if (frames == null) return null;
             float t = (Time.time - s.DiedAt) * 1000f; int i = 0; float acc = 0f;
             for (; i < frames.Length - 1; i++) { if (t < acc + DeathMs[i]) break; acc += DeathMs[i]; }

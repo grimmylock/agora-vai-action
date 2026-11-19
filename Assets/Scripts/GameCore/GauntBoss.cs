@@ -38,16 +38,21 @@ namespace GameCore
         /// <summary>The Elder's lean in degrees for the slam, drawn by code (no strip): rears back during the warning, then snaps forward and settles in a quarter second.</summary>
         public static float SlamLean(Mutant m)
         {
-            if (!Owns(m)) return 0f; float w = SlamWarn; if (w >= 0f) return -16f * w * w;
+            if (!Owns(m) || ElderClips.Has("slam")) return 0f; float w = SlamWarn; if (w >= 0f) return -16f * w * w;
             float u = (Time.time - _slamHitAt) / 0.3f; return u >= 0f && u < 1f ? 14f * (1f - u) * (1f - u) : 0f;
         }
         public static bool Enraged(Mutant m) => Owns(m) && _phase >= 2;
+
+        /// <summary>Which combo the Elder plays next to you: 2 hits, then 3 below 75 % health, then 4 (claw, claw, lunge, slam) below 40 %.</summary>
+        public static string ComboKind(Mutant m) => !Owns(m) ? "combo2" : _phase >= 2 ? "combo4" : _phase == 1 ? "combo3" : "combo2";
+        public static void SlamAt(Mutant e) => Slam(e);
 
         public static void Begin(Mutant elder)
         {
             if (Current == elder) return;
             Current = elder; _slamHitAt = -9f; _phase = 0; _shield = false; _screamAt = _slamAt = -1f; Wave.Clear();
-            float now = Time.time; _nextScream = now + 6f; _nextSlam = now + 9f; _nextShriek = now + 4f; _shriekAt = -1f;
+            float now = Time.time; _nextScream = now + ElderClips.Seconds("rise") + 0.4f; _nextSlam = now + 9f; _nextShriek = now + 4f; _shriekAt = -1f;
+            if (ElderClips.Get("rise") != null) { Gaunt.ForcePose(elder, "rise", ElderClips.Seconds("rise")); RtAi.Hold(elder, ElderClips.Seconds("rise")); }       // it stands up from its bone pile, then screams
         }
 
         public static void Tick(float dt)
@@ -57,7 +62,7 @@ namespace GameCore
             if (Net.Mode == Net.Role.Client) return;
             float now = Time.time; float hpf = Fraction; var target = Rt.TargetOf(e, Player.Current);
             if (_phase < 1 && hpf <= 0.75f) { _phase = 1; StartWave(1, target); }
-            else if (_phase < 2 && hpf <= 0.40f) { _phase = 2; StartWave(2, target); Gaunt.Haste(e, 99999f, 1.25f, target); GameLog.Event("The Elder throws back its head. Something in it breaks. It is faster now - and it is not going to call again: it is going to hunt."); }
+            else if (_phase < 2 && hpf <= 0.40f) { _phase = 2; StartWave(2, target); Gaunt.Haste(e, 99999f, 1.25f, target); if (ElderClips.Get("roar") != null) { Gaunt.ForcePose(e, "roar", ElderClips.Seconds("roar")); _nextShriek = now + ElderClips.Seconds("roar") + 1f; } GameLog.Event("The Elder throws back its head. Something in it breaks. It is faster now - and it is not going to call again: it is going to hunt."); }
             if (_shield)
             {
                 int alive = Wave.Count(m => m.IsAlive());
@@ -72,7 +77,7 @@ namespace GameCore
             }
             if (_screamAt >= 0f && now >= _screamAt) { _screamAt = -1f; Scream(e, target); }
             if (_phase >= 2 && _slamAt < 0f && !_shield && now >= _nextSlam && Player.All.Any(p => p.IsAlive() && CombatantUtil.Distance(e, p) <= SlamNear))
-            { _slamAt = now + 1.0f; _nextSlam = now + 9f; RtAi.Hold(e, 1.0f); GameLog.Event("The Elder raises both fists over its head."); }
+            { _slamAt = now + 1.0f; _nextSlam = now + 9f; RtAi.Hold(e, 1.0f); if (ElderClips.Get("slam") != null) Gaunt.ForcePose(e, "slam", ElderClips.Seconds("slam")); GameLog.Event("The Elder raises both fists over its head."); }
             if (_slamAt >= 0f && now >= _slamAt) { _slamAt = -1f; _slamHitAt = Time.time; Slam(e); }
         }
 
@@ -83,7 +88,7 @@ namespace GameCore
         {
             if (_shriekAt < 0f && now >= _nextShriek && target != null && target.IsAlive() && CombatantUtil.Distance(e, target) <= ShriekRange
                 && (GameServices.Grid == null || GameServices.Grid.CheckLineOfSight(e.X, e.Y, target.X, target.Y)))
-            { Gaunt.ForcePose(e, "scream", 0.9f); _shriekAt = now + 0.6f; _nextShriek = now + 6f; _shriekDx = target.X - e.X; _shriekDy = target.Y - e.Y; }
+            { Gaunt.ForcePose(e, ElderClips.Get("shriek") != null ? "shriek" : "scream", ElderClips.Get("shriek") != null ? ElderClips.Seconds("shriek") : 0.9f); _shriekAt = now + 0.55f; _nextShriek = now + 6f; _shriekDx = target.X - e.X; _shriekDy = target.Y - e.Y; }
             if (_shriekAt >= 0f && now >= _shriekAt) { _shriekAt = -1f; Shriek(e); }
         }
         static float _shriekDx, _shriekDy;

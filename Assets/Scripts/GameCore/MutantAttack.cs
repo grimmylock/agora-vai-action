@@ -35,7 +35,7 @@ namespace GameCore
 
         class State
         {
-            public string Kind; public float Start; public bool Hit, Launched;
+            public string Kind; public float Start; public bool Hit, Launched; public int Hits;
             public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f; public bool ThrowFaceLeft;
             public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Mirror; public float DisengageUntil; public float NextCharge, ChargeRunStart = -1f, ChargeDx, ChargeDy, ChargeX0, ChargeY0, ChargeDist, ChargeLast, ChargeEnd = -1f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
@@ -46,7 +46,8 @@ namespace GameCore
         public static void Reset() { States.Clear(); Fade.Clear(); }
 
         public static bool Has(Mutant m) => m != null && !(m is HumanEnemy) && m.Db != null && MutantAttackData.Table.ContainsKey(m.Db.Name);
-        public static AttackAnim Anim(string mutant, string kind) => mutant != null && MutantAttackData.Table.TryGetValue(mutant, out var t) && t.TryGetValue(kind, out var a) ? a : null;
+        public static AttackAnim Anim(string mutant, string kind) => RegisterElder() && mutant != null && MutantAttackData.Table.TryGetValue(mutant, out var t) && t.TryGetValue(kind, out var a) ? a : null;
+        static bool RegisterElder() { ElderClips.Register(); return true; }
         public static bool Playing(Mutant m) => m != null && States.TryGetValue(m, out var s) && s.Kind != null;
         public static string KindOf(Mutant m) => m != null && States.TryGetValue(m, out var s) ? s.Kind : null;
 
@@ -103,6 +104,7 @@ namespace GameCore
                 if (now < nextShot) return false;
                 nextShot = now + BiteCooldown(m, Random.value);
                 if (rules.SlamCd > 0f && now >= st.NextSlam) { st.NextSlam = now + rules.SlamCd; st.DustStart = -99f; Begin(m, st, "slam", now); return true; }
+                if (Gaunt.IsElder(m) && ElderClips.Get(GauntBoss.ComboKind(m)) != null) { string ck = GauntBoss.ComboKind(m); Begin(m, st, ck, now); nextShot = now + Anim(m.Db.Name, ck).TotalMs / 1000f + 1.0f; return true; }   // the Elder fights in combos (2, 3, then 4 hits as its health drops), then a breath
                 Begin(m, st, rules.MeleeB != null && Random.value < BiteBShare ? rules.MeleeB : rules.MeleeA, now); return true;
             }
             var grid = GameServices.RequireGrid(); bool los = grid != null && grid.CheckLineOfSight(m.X, m.Y, p.X, p.Y);
@@ -136,7 +138,7 @@ namespace GameCore
 
         static void Begin(Mutant m, State st, string kind, float now)
         {
-            st.Kind = kind; st.Start = now; st.Hit = false; st.Launched = false; st.Recloak = false;
+            st.Kind = kind; st.Start = now; st.Hit = false; st.Launched = false; st.Recloak = false; st.Hits = 0;
             if (m.ActiveCamouflage && m.IsCloaked) m.IsCloaked = false;                      // the Veil shows itself as it strikes (the dissolve plays out in the view)
         }
 
@@ -155,7 +157,8 @@ namespace GameCore
                 }
                 if (st.Launched) { float k = 1f - TravelAt(a.Ms, a.Travel, tMs); Rt.SetSlide(m, (st.FromX - st.ToX) * k, (st.FromY - st.ToY) * k); }
             }
-            if (!st.Hit && tMs >= a.ContactMs) { st.Hit = true; Contact(m, p, st, now); }
+            if (a is ElderClips.ComboAnim ca) { while (st.Hits < ca.Contacts.Length && tMs >= ca.Contacts[st.Hits]) { ComboHit(m, p, ca, st.Hits); st.Hits++; } }
+            else if (!st.Hit && tMs >= a.ContactMs) { st.Hit = true; Contact(m, p, st, now); }
             bool ranged = st.Kind == "spit" || st.Kind == "throw";
             if (ranged && st.SpitArrive > 0f && !st.SpitDone && now >= st.SpitArrive) { st.SpitDone = true; st.SplatStart = now; if (st.Kind == "throw") BoulderLands(m, st); else SpitLands(m, p, st); }
             if (tMs >= a.TotalMs && (!ranged || st.SpitDone || st.SpitArrive < 0f))
@@ -254,6 +257,15 @@ namespace GameCore
                         if (TerrainMap.CanEnterTile(x, y) && TerrainMap.UnitAt(x, y, m) == null) { gx = x; gy = y; return true; }
                     }
             return false;
+        }
+
+        public const float ComboHitShare = 0.7f;
+        /// <summary>One strike of the Elder's combo: a claw (or the lunge) for 70 % of its blow at whoever is next to it, and the last hit of the 4-hit combo is the slam (the ring of GauntBoss.Slam).</summary>
+        static void ComboHit(Mutant m, Player p, ElderClips.ComboAnim ca, int i)
+        {
+            if (ca.SlamLast && i == ca.Contacts.Length - 1) { GauntBoss.SlamAt(m); return; }
+            if (p == null || !p.IsAlive() || !CombatantUtil.IsAdjacent(m, p) || Body.Down(p)) return;     // the target stepped away: the swipe finds nothing
+            Strike(m, p, ComboHitShare, false);
         }
 
         static void Contact(Mutant m, Player p, State st, float now)
