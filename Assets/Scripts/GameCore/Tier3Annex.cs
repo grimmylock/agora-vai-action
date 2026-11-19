@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace GameCore
 {
-    public static class Tier3Annex
+    public static partial class Tier3Annex
     {
         public const string Mission = "annex", Zone = "taken_tunnels", Door = "Lab Door", Arena = "Gaunt Arena", Dais = "Gaunt Dais", Broken = "Broken Wall", Nest = "Nest", Card = "story_annex_card", Plate = "story_gaunt_plate";
         public static int Step => Story.Step(Mission);
@@ -28,7 +28,7 @@ namespace GameCore
         static Mutant _elder; static float _sceneAt = -1f, _screamAt = -1f, _gauntStep, _retreatAt = -1f; static bool _spawnedPacks, _walking;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { GauntBoss.Reset(); Packs.Clear(); Waves.Clear(); _out.Clear(); _elder = null; _sceneAt = _screamAt = _retreatAt = -1f; _spawnedPacks = _walking = false; }
+        public static void Reset() { GauntBoss.Reset(); Annexers.Clear(); _annexPlaced = false; Packs.Clear(); Waves.Clear(); _out.Clear(); _elder = null; _sceneAt = _screamAt = _retreatAt = -1f; _spawnedPacks = _walking = false; }
 
         /// <summary>The story holds the Elder while the door scene runs (no spotting you, no wandering).</summary>
         public static bool Holds(ICombatant u) => u != null && u == _elder && _sceneAt >= 0f && Step == 3;
@@ -56,7 +56,8 @@ namespace GameCore
                 });
                 return true;
             }
-            if (s >= 1 && s <= 5) { Story.Talk("Dr. Priya Osei", new[] { s <= 2 ? "The hatch under the Loading Dock, in the Industrial Basin. Take everything." : s == 3 || s == 4 ? "Hold the corridor, then the cavern past the broken wall. Whatever screams is at the far end." : "The card and the door. Then the files - the calibration is what I need. Bring me anything with numbers on it." }); return true; }
+            if (s == 6 && AnnexHandIn()) return true;
+            if (s >= 1 && s <= 6) { Story.Talk("Dr. Priya Osei", new[] { s <= 2 ? "The hatch under the Loading Dock, in the Industrial Basin. Take everything." : s == 3 || s == 4 ? "Hold the corridor, then the cavern past the broken wall. Whatever screams is at the far end." : s == 6 ? "The Annex: read everything. The vault code is in two halves, in two places, and the calibration table is in the vault." : "The card and the door. Then the files - the calibration is what I need. Bring me anything with numbers on it." }); return true; }
             return false;
         }
 
@@ -157,6 +158,7 @@ namespace GameCore
         {
             if (Net.Mode == Net.Role.Client || Player.Current == null || Step < 1 || Story.IsDone(Mission)) return;
             float now = Time.time; int s = Step;
+            if (TerrainMap.ZoneId == AnnexZone && s >= 5) TickAnnex();
             if (InTunnels)
             {
                 GauntBoss.Tick(dt);
@@ -271,6 +273,7 @@ namespace GameCore
         public static void StartForTest(int stage)
         {
             Reset(); var f = MacroState.Current.StoryFlags;
+            if (stage == 3) { Story.Set("tier3_reveal"); Story.Set("taken_done"); Story.SetStep("taken", Story.Done); Story.SetStep(Mission, 5); Story.Clear("doc_cell"); Story.Clear("doc_diary"); MacroState.Current.CurrentZoneId = AnnexZone; ZoneTravel.EnterZone(AnnexZone); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; var lift = Mark("Freight Lift"); foreach (var p in Player.All) { if (lift != null) { var (x, y) = TerrainMap.FindNearestEnterable(lift.X + 1, lift.Y); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f); } Supply(p); } GameLog.Write("[TESTING GROUND] The Loading Annex: the lab behind the door (read the papers, find the vault code, take the table to Osei)."); return; }
             Story.Set("tier3_reveal"); Story.Set("taken_done"); Story.SetStep("taken", Story.Done); Story.Clear("gaunt_was_those"); MacroState.Current.Keys.Remove("annex_staff");
             Story.SetStep(Mission, stage == 0 ? 1 : stage == 1 ? 2 : 4);
             MacroState.Current.CurrentZoneId = Zone; ZoneTravel.EnterZone(Zone);

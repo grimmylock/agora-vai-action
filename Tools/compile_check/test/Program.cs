@@ -2665,6 +2665,17 @@ static class Program {
       var dt = TerrainMap.GetTile(door.X, door.Y - 2); Check(LabLocks.Locked(dt), "Annex: the lab door is still locked until the card is carried");
       p.AddItem(new InventoryItem { Id = Tier3Annex.Card, Name = "Annex Keycard", Type = "key", Qty = 1, WeightKg = 0.05f }); Tier3Annex.TickRt(0.1f);
       Check(!LabLocks.Locked(dt), "Annex: with the card in the pack the door opens");
+      { // batch 4: inside the Annex
+        MacroState.Current.CurrentZoneId = "loading_annex"; MacroState.Current.PersistedZoneTerrain.Remove("loading_annex"); TerrainMap.BuildTerrainForZone("loading_annex"); EncounterState.Enemies.Clear();
+        var lift = TerrainMap.Landmarks.First(l => l.Name == "Freight Lift"); p.X = lift.X + 1; p.Y = lift.Y; Tier3Annex.TickRt(0.1f); Tier3Annex.TickRt(0.1f);
+        int docs = TerrainMap.InteractiveObjects.Count(o => o.Lock == "doc"), bags = TerrainMap.InteractiveObjects.Count(o => o.Lock == null && o.Name != null && o.Reward != null), muts = EncounterState.Enemies.Count(e => e is Mutant);
+        Check(Tier3Annex.Step == 6 && docs == 5 && bags >= 5 && muts >= 9, $"Annex: inside: step 6, {docs} papers, {bags} loot bags, {muts} mutants");
+        Tier3Annex.ReadDoc("cell"); Check(!MacroState.Current.Keys.Contains(LabLocks.Key("code")), "Annex: one half of the vault code opens nothing");
+        Tier3Annex.ReadDoc("diary"); Check(MacroState.Current.Keys.Contains(LabLocks.Key("code")) && Story.Has("annex_discovery"), "Annex: both halves: the vault key, and the discovery is in the journal");
+        Tier3Annex.ReadDoc("calib"); Check(p.Inventory.Items.Any(i => i.Id == Tier3Annex.Files), "Annex: reading the table in the vault puts it in the pack");
+        int ru0 = p.Ru; Tier3Story.ZoneOverride = MacroMapDatabase.MapOf("scavengers_hub"); TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Sub-Station House", X = p.X, Y = p.Y, Description = "" });
+        Check(Tier3Story.TryInteract(p) && !p.Inventory.Items.Any(i => i.Id == Tier3Annex.Files) && Story.Has("annex_files"), "Annex: Osei takes the table and the story moves on");
+      }
     } finally { Tier3Story.ZoneOverride = null; Tier3Annex.Reset(); MacroState.Current.Keys.Remove("annex_staff"); Rt.On = false; EncounterState.Enemies.Clear(); Vision.Spotlight = null; Story.CineEnd(); }
   }
 

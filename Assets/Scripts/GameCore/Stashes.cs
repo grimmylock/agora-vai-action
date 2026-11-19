@@ -25,6 +25,13 @@ namespace GameCore
 
         static InteractiveReward Rich(int tier) => new InteractiveReward { Ru = 120 * tier, Loot = new LootItem { Id = "richStash", Name = "Stash", Qty = 1, Type = "loot" } };
 
+        /// <summary>2026-11-19: a document (Tier 3 Annex): a paper on the floor that E reads in the dialogue panel (Tier3Annex.ReadDoc).</summary>
+        public static InteractiveObjectInstance Paper(int x, int y, string name, string desc, string docId)
+        {
+            if (TerrainMap.InteractiveObjects.Any(o => o.X == x && o.Y == y)) return null;
+            var o = Put(x, y, "papers", name, null, desc, "doc"); o.Opens = docId; return o;
+        }
+
         /// <summary>2026-11-18: a story hoard - a bag of `tier` loot at (x, y) on the loaded map (the Blight Brute's, Story 5b). Returns null if the tile is taken.</summary>
         public static InteractiveObjectInstance Hoard(int x, int y, string name, int tier, string desc)
         {
@@ -166,6 +173,7 @@ namespace GameCore
         public static bool Blocked(InteractiveObjectInstance o)
         {
             var keys = MacroState.Current.Keys;
+            if (o.Lock == "doc") { Tier3Annex.ReadDoc(o.Opens); return true; }
             if (o.Requires != null && !keys.Contains(o.Requires)) { GameLog.Write($"{o.Name}: {o.Description}"); return true; }   // Boss 2: the generator needs its fuse
             if (EelBoss.BlocksPump(o.GrantsKey)) return true;                                                                   // Boss 3: the last pump, with the eel still in its pool
             if (o.Lock == "note")
