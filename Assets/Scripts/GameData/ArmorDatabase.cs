@@ -40,6 +40,7 @@ namespace GameData
                 ["MarshReconSuit"] = new ArmorDef { Name = "Marsh Recon Suit", PhysDR = 0.2f, AnomDR = 0.3f, BeltSlots = 3, ModSlots = 2, Mp = 4 },
                 ["ContractorLight"] = new ArmorDef { Name = "Contractor Light", PhysDR = 0.2f, AnomDR = 0.15f, BeltSlots = 2, ModSlots = 2, Mp = 4 },
                 ["DaybreakSuit"] = new ArmorDef { Name = "Daybreak Suit", PhysDR = 0.25f, AnomDR = 0.25f, BeltSlots = 2, ModSlots = 2, Mp = 4 },
+                ["BarbwireCoat"] = new ArmorDef { Name = "Barbwire Coat", PhysDR = 0.4f, AnomDR = 0.15f, BeltSlots = 2, ModSlots = 3, Mp = 4, WeightKg = 6f },   // 2026-11-19: Spool's own (Boss 4), not in any loot table; it drops with the Barbed Wire Bat
                 ["RaiderStitchedCoat"] = new ArmorDef { Name = "Raider Stitched Coat", PhysDR = 0.25f, AnomDR = 0.15f, BeltSlots = 1, ModSlots = 2, Mp = 4 },
                 ["SentinelServiceSuit"] = new ArmorDef { Name = "Sentinel Service Suit", PhysDR = 0.3f, AnomDR = 0.1f, BeltSlots = 1, ModSlots = 2, Mp = 4 },
                 ["HazardRubberSuit"] = new ArmorDef { Name = "Hazard Rubber Suit", PhysDR = 0.25f, AnomDR = 0.5f, BeltSlots = 1, ModSlots = 1, Mp = 3, Note = "Gas Hood" },
@@ -81,6 +82,9 @@ namespace GameData
         };
 
         /// <summary>Mirrors JS's ARMOR_DB[tier][key] lookup pattern. Returns null if not found.</summary>
+        /// <summary>2026-11-19: armour that is in the table (so it can be looted, worn and priced) but is in no shop and no random loadout: a boss's own.</summary>
+        public static readonly System.Collections.Generic.HashSet<string> Unique = new System.Collections.Generic.HashSet<string> { "BarbwireCoat" };
+
         public static ArmorDef Get(string tier, string key)
         {
             if (Tiers.TryGetValue(tier, out var group) && group.TryGetValue(key, out var armor))

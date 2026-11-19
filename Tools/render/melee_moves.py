@@ -21,7 +21,9 @@ def main(src, out):
     def posed(key):                                                  # Melee 3: the swing's body frame
         if not key: return body
         if "body" in d:
-            strip = Image.open(os.path.join(SPR, d["body"][:-4] + "_poses.png")).convert("RGBA"); i = PKEYS.index(key)
+            pf = os.path.join(SPR, d["body"][:-4] + "_poses.png")
+            if not os.path.exists(pf): return body                      # a unique suit with no pose strip (Spool's coat): the front cell
+            strip = Image.open(pf).convert("RGBA"); i = PKEYS.index(key)
             return strip.crop((i * 16, 0, i * 16 + 16, 16)).resize((16 * S, 16 * S), Image.NEAREST)
         im = Image.open(os.path.join(SPR, f"armor_pose_{key}.png")).convert("RGBA")
         return im.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)

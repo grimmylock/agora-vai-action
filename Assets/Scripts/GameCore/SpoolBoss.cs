@@ -40,7 +40,7 @@ namespace GameCore
         /// <summary>His execution (Boss.TryFinish): what the Dog Kennels were hiding, and the bat.</summary>
         public static void Defeated(Player p, HumanEnemy h)
         {
-            Story.Journal("Spool: the Scrap King's exile held the Dog Kennels with a barbed wire bat. He is down. The bat is yours.");
+            Story.Journal("Spool: the Scrap King's exile held the Dog Kennels with a barbed wire bat. He is down. The bat and his coat are yours.");
             GameLog.Event("Spool kneels in the dirt, and does not get up again. The bat is still wet. Take it from his hands.");
         }
     }

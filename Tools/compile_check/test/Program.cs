@@ -114,7 +114,7 @@ static class Program {
       }
     var allNames = ArmorDatabase.Tiers.Values.SelectMany(d => d.Values).Select(a => a.Name).ToHashSet();
     foreach (var n in SpriteAtlasIndex.Armor) Check(allNames.Contains(n), $"atlas name not an armor: {n}");
-    Check(ArmorDatabase.Tiers.Values.Sum(d => d.Count) == 180, "armor count " + ArmorDatabase.Tiers.Values.Sum(d => d.Count));
+    Check(ArmorDatabase.Tiers.Values.Sum(d => d.Count) == 181, "armor count (180 + Spool's Barbwire Coat) " + ArmorDatabase.Tiers.Values.Sum(d => d.Count));
     foreach (var t in MutantDatabase.Tiers.Values) foreach (var m in t.Values) Check(SpriteAtlasIndex.Mutants.Contains(m.Name), "no mutant sprite " + m.Name);
     Check(ShopDatabase.Items.Count(i => i.FactionIssue) == 143, "faction issue in shop list " + ShopDatabase.Items.Count(i => i.FactionIssue));
     // loadouts: every human faction, rank and zone tier gets weapon + armor; categories vary
@@ -1374,12 +1374,12 @@ static class Program {
         if (i > 15 && f.Doing == null && i > 30 * 3 && !Boss.Open(v)) break;
         var c = Melee.ChargeOf(v); var (vx, vy) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
         float aw = UnityEngine.Mathf.Atan2(-(my - vy), mx - vx) * UnityEngine.Mathf.Rad2Deg;
-        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));
+        var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey ?? (spool ? wkey : null), c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));   // (the game passes the weapon's key when the boss has no pose set of his own: Spool's bat is the Heavy style, two hands)
         sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\"]"));
       }
       f.Doing = null;
     }
-    if (spool) { int ai = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); sb.Append("]}],\"armor\":[" + Math.Max(0, ai) + ",\"" + (ai >= 0 ? SpriteAtlasIndex.ArmorCuff[ai] : "#5a4a36") + "\",\"" + (ai >= 0 ? SpriteAtlasIndex.ArmorGlove[ai] : "#3d4148") + "\"]}"); }
+    if (spool) { var ug = UnitSprites.UniqueGloves["Barbwire Coat"]; sb.Append("]}],\"armor\":[0,\"" + ug.cuff + "\",\"" + ug.glove + "\"],\"body\":\"armor_unique_barbwire_coat.png\"}"); }
     else sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
     File.WriteAllText(path, sb.ToString()); Console.WriteLine((spool ? "spool" : "visor") + " moves -> " + path);
     Rt.On = false; Boss.Reset(); Melee.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
@@ -2718,7 +2718,7 @@ static class Program {
     try {
       Check(Boss.Spool.Hp == 3600 && Boss.Spool.Moves.Count(m => m.Danger) == 2 && Boss.Spool.Moves.Any(m => m.Phase2Only) && Boss.Spool.Faction == "Outcasts" && !Boss.Spool.Vanishes, "Spool: 3600 HP, two red moves, phase 2 moves, an Outcast who keeps his body");
       var f = Boss.Spawn(Boss.Spool, px + 2, py); var h = f.Unit;
-      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Raider Stitched Coat" && h.Unkillable && h.MaxHp == 3600, "Spool: spawns with the bat and a raider coat, holds at 1 HP until executed");
+      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Barbwire Coat" && h.Unkillable && h.MaxHp == 3600, "Spool: spawns with the bat and his barbwire coat, holds at 1 HP until executed");
       Boss.Fights.Clear(); EncounterState.Enemies.Clear();
       // the lair wakes him when you come within range of the Dog Kennels, once
       Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 6, Y = py, Description = "" });
@@ -2733,6 +2733,8 @@ static class Program {
       // the break and the execution: the flag, the journal, the bat is on the body
       fs.Unit.Hp = 1; Boss.OnDamaged(fs.Unit); Check(fs.Broken, "Spool: at the break he drops to a knee");
       p.X = fs.Unit.X - 1; p.Y = fs.Unit.Y; Check(Boss.TryFinish(p) && Story.Has(SpoolBoss.Done) && fs.Unit.EquippedWeapon?.Db?.Name == "Barbed Wire Bat", "Spool: the execution sets spool_done and he still holds the bat to loot");
+      Check(fs.Unit.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Barbed Wire Bat" && i.Condition == ItemCondition.Working) && fs.Unit.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Barbwire Coat" && i.Condition == ItemCondition.Working && i.Key == "BarbwireCoat"), "Spool: the bat and the Barbwire Coat are in his pack on the body, both in working order");
+      Check(!ShopDatabase.Items.Any(i => i.Name == "Barbwire Coat") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 5)?.Name == "Barbwire Coat"), "Spool: his coat is in no shop and no random loadout");
       Boss.Looted(fs.Unit); UnityEngine.Time.time += 10f; Boss.TickAll(); Check(EncounterState.Enemies.Contains(fs.Unit), "Spool: his body stays (no smoke grenade)");
       Tier2Jobs.ZoneOverride = null; SpoolBoss.Tick(0.1f); Check(Boss.Fights.Count(x => x.Def == Boss.Spool && !x.Finished) == 0, "Spool: he does not come back once he is done");
     } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }

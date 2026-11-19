@@ -104,6 +104,7 @@ namespace GameData
                 int tierNum = int.Parse(tierEntry.Key.Replace("tier", ""));
                 foreach (var armorEntry in tierEntry.Value)
                 {
+                    if (GameData.ArmorDatabase.Unique.Contains(armorEntry.Key)) continue;     // a boss's own armour is in no shop
                     var def = armorEntry.Value;
                     list.Add(new ShopItemDef
                     {

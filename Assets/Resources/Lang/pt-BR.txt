@@ -951,3 +951,4 @@ Spool: the Scrap King's exile held the Dog Kennels with a barbed wire bat. He is
 Spool kneels in the dirt, and does not get up again. The bat is still wet. Take it from his hands.	Spool se ajoelha na terra e não se levanta mais. O taco ainda está molhado. Tire-o das mãos dele.
 OVERHEAD!	DE CIMA!
 WIRE RUSH!	INVESTIDA DE ARAME!
+Barbwire Coat	Casaco de Arame Farpado

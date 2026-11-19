@@ -87,7 +87,7 @@ namespace GameCore
                 int tier = ParseTierKey(tierKey);
                 if (tier < minTier || tier > maxTier) continue;
                 foreach (var kvp in ArmorDatabase.Tiers[tierKey])
-                    if (includeFactionIssue || !FactionArmorDatabase.IsFactionIssue(kvp.Key))
+                    if (!ArmorDatabase.Unique.Contains(kvp.Key) && (includeFactionIssue || !FactionArmorDatabase.IsFactionIssue(kvp.Key)))
                         pool.Add(kvp.Value);
             }
             return pool.Count == 0 ? null : pool[Random.Range(0, pool.Count)];

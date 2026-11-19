@@ -105,7 +105,7 @@ namespace GameCore
         // The same fight as the Visor on a slower, heavier weapon: long wind-ups, big openings after each move, a two-handed bat that bleeds and concusses.
         public static readonly Def Spool = new Def
         {
-            Name = "Spool", Title = "THE SCRAP KING'S EXILE", Weapon = "BarbedWireBat", Armor = "RaiderStitchedCoat", Hp = 3600, Faction = "Outcasts", Rank = "Veteran", DoneFlag = "spool_done", Vanishes = false,
+            Name = "Spool", Title = "THE SCRAP KING'S EXILE", Weapon = "BarbedWireBat", Armor = "BarbwireCoat", Hp = 3600, Faction = "Outcasts", Rank = "Veteran", DoneFlag = "spool_done", Vanishes = false,
             StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He tears the rag off the grip. The wire is bare now, and so is he.",
             Moves = new[]
             {
@@ -298,6 +298,7 @@ namespace GameCore
             Story.Cutscene(x, y, 1.6f);
             HitStop(0.45f);
             var fx = CombatFx.Push("finisher", p, f.Unit, p.EquippedWeapon); fx.Now = true; fx.Hit = true; fx.Killed = true;
+            if (f.Def == Spool) HumanLootSystem.StashWornGear(f.Unit, ItemCondition.Working);   // before the death hook rolls his loot: the bat and the coat, in good order
             f.Unit.Unkillable = false; f.Unit.Hp = 0;
             Weapon.OnTargetKilled(p, f.Unit);
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");

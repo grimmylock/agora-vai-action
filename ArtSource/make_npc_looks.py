@@ -22,6 +22,7 @@ HEADS = {
   "peakcap":   (["......KK", "....KHHH", "...KHhhh", "..KHHHHH", "....KFeF", "....KFFf", ".....KFF"], ["......KK", "....KHHH", "...KHhhh", "..KHHHHH", "....KAAA", "....KAAA", ".....KAA"]),   # a peaked cap, a wide brim
   "hoodgoggles":(["......KK", ".....KHh", "....KHhh", "....KVwV", "....KFeF", "....KNNN", ".....KNN"], ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KNNN", ".....KNN"]),   # a hood, goggles on the brow, a scarf over the mouth
   "mohawk":    (["......KA", ".....KFA", "....KFFA", "....KFFF", "....KFeF", "....KFFf", ".....KFF"], ["......KA", ".....KFA", "....KFFA", "....KFFA", "....KFFA", "....KFFf", ".....Kff"]),   # shaved sides, a crest
+  "ragmask":   (["......KK", "....KHHH", "...KHhhh", "...KHJHH", "....KFeF", "....KNNN", ".....KNN"], ["......KK", "....KHHH", "...KHhhh", "...KHJHH", "...KHHHH", "....KNNN", ".....KNN"]),   # a grey rag wound round the head with a strand of barbed wire, a red scarf over the mouth (Spool)
   "shaggy":    (["......KK", ".....KAA", "....KAAA", "....KAFF", "....KFeF", "....KFAA", ".....KAA"], ["......KK", ".....KAA", "....KAAA", "....KAAA", "....KAAA", "....KAAA", ".....KAA"]),   # unkempt hair and stubble
 }
 for k, (f, b) in HEADS.items(): av.HEADS[k] = f; av.HEADS_BACK[k] = b
@@ -38,10 +39,11 @@ LOOKS = {
   "Emil Rask":     dict(head="sidepart", body="jacket", S="#aab8c4", D="#3e4650", A="#6a4a2e", E=DARK, arm="#3a7a9a"),                                         # neat hair, a clean pale lab jacket
   "Konrad Hale":   dict(head="peakcap", body="jacket", H="#2a3450", S="#586038", D="#3a3a2a", A="#4a3a2a", E=DARK, arm="#3a7a9a"),                              # a peaked cap, an olive supply jacket
   "The Runner":    dict(head="hoodgoggles", body="jacket", H="#6b6a3a", S="#4a3a2a", D="#2e2a26", N="#a83a2a", E=DARK),                                       # hood, goggles, a red scarf
+  "Barbwire Coat": dict(head="ragmask", body="heavy", H="#8a8478", S="#46372c", P="#7a5a38", D="#2a2018", N="#a83a2a", J="#b8bcc0", E=DARK, F="#b8845e", f="#8e6244", arm="#b8bcc0"),   # Spool's: a patched leather coat, wire round the shoulders
   "Bogdan":        dict(head="mohawk", body="vest", S="#1c1c1e", P="#8a3a2a", D="#2a2a2a", A="#a02020", E=DARK, F="#c0866a", arm="#b02a2a"),                    # a Raider warlord: a red crest, black leather, rust plates
 }
 MARKS = {   # extra pixels (front only): scars, a bandage, a stubble line
-  "Pavel":       [(5, 12, "#d8d4c8"), (5, 13, "#d8d4c8"), (5, 13, "#b0504a")],                                   # a bandage on the thigh (a soaked one)
+  "Barbwire Coat": [(3, 8, "#b8bcc0"), (5, 9, "#b8bcc0"), (7, 8, "#b8bcc0"), (9, 9, "#b8bcc0"), (11, 8, "#b8bcc0"), (4, 11, "#8e949a"), (6, 12, "#b8bcc0"), (10, 11, "#8e949a")],   # barbed wire wound round the shoulders and chest  "Pavel":       [(5, 12, "#d8d4c8"), (5, 13, "#d8d4c8"), (5, 13, "#b0504a")],                                   # a bandage on the thigh (a soaked one)
   "Voss":        [(9, 5, "#a8685a"), (9, 6, "#a8685a")],                                                         # a scar down the cheek
   "Bogdan":      [(6, 4, "#a8685a"), (6, 5, "#a8685a"), (10, 5, "#a8685a")],                                     # scars
   "Lev Marchuk": [(7, 6, "#6a5a4a"), (8, 6, "#6a5a4a")],                                                         # stubble at the chin

@@ -160,7 +160,7 @@ namespace GameCore
 
         /// <summary>New (Batch 10): the death-path twin of GrantWeaponDrop - rolls condition on
         /// the worn weapon and drops it into the corpse's own stash instead of the player's.</summary>
-        private static void AddWeaponToStash(HumanEnemy npc)
+        private static void AddWeaponToStash(HumanEnemy npc, string condition = null)
         {
             var wdb = npc.EquippedWeapon?.Db;
             if (wdb == null) return;
@@ -176,7 +176,7 @@ namespace GameCore
                 Price = Economy.Mid(Economy.WeaponBand(wdb)),
                 Category = cat,
                 Key = key,
-                Condition = Husk.Is(npc) ? ItemCondition.Broken : RollCondition(),
+                Condition = condition ?? (Husk.Is(npc) ? ItemCondition.Broken : RollCondition()),
             });
             // file 08: it holds 1d4+1 rounds of its standard ammo
             if (!string.IsNullOrEmpty(wdb.AmmoType))
@@ -185,7 +185,15 @@ namespace GameCore
 
         /// <summary>New (Batch 10): the death-path twin of the old GrantArmorDrop - rolls
         /// condition on the worn armor and drops it into the corpse's own stash.</summary>
-        private static void AddArmorToStash(HumanEnemy npc)
+        /// <summary>A boss's body: his worn weapon and armour go into his pack at once, in good condition (Spool: "drop together with the bat"), and the corpse is then finished with.</summary>
+        public static void StashWornGear(HumanEnemy npc, string condition)
+        {
+            if (npc == null || npc.CorpseLootFinalized) return;
+            npc.CorpseLootFinalized = true; npc.LootGranted = true;
+            AddWeaponToStash(npc, condition); AddArmorToStash(npc, condition);
+        }
+
+        private static void AddArmorToStash(HumanEnemy npc, string condition = null)
         {
             var adb = npc.EquippedArmor;
             if (adb == null) return;
@@ -201,7 +209,7 @@ namespace GameCore
                 Price = Economy.Mid(Economy.ArmorBand(adb, ParseTier(cat))),
                 Category = cat,
                 Key = key,
-                Condition = Husk.Is(npc) ? ItemCondition.Broken : RollCondition(),
+                Condition = condition ?? (Husk.Is(npc) ? ItemCondition.Broken : RollCondition()),
             });
         }
 
