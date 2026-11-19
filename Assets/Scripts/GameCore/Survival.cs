@@ -56,6 +56,16 @@ namespace GameCore
                 GameLog.Write($"[SURVIVAL] {l.Name}. The first wave comes in {Breather:0} s.");
             }
             NextAt = T + Breather;
+            Supply(p, StartAmmo, "You start with a full pouch of ammunition.");
+        }
+
+        /// <summary>2026-11-19 (Yan: "it takes more ammo to kill the initial 5 enemies than we even start with"): the starter pistol needs 12-14 torso hits per enemy (measured: StarterKillProbe, RTBAL=11), the kit held 8 + 30.
+        /// You now start with `StartAmmo` rounds in reserve and every cleared wave resupplies `WaveAmmo` more of what your gun fires.</summary>
+        public const int StartAmmo = 150, WaveAmmo = 60;
+        static void Supply(Player p, int rounds, string say)
+        {
+            var w = p?.EquippedWeapon; if (w?.Db == null || CombatRules.IsMelee(w)) return;
+            Ammo.Add(p.Inventory, Ammo.Key(w.Db, "Standard"), rounds); GameLog.Write("[SURVIVAL] " + say);
         }
 
         public static void Stop() { On = false; Live.Clear(); NextAt = -1f; }
@@ -75,7 +85,7 @@ namespace GameCore
                 GameLog.Write($"[SURVIVAL] The boss is down. Tier {Tier}: the waves get harder.");
                 BossWave = false; WaveStarted = -1f; NextAt = now + Breather;
             }
-            else if (!BossWave && Live.Count == 0 && WaveStarted >= 0f && NextAt < 0f) NextAt = now + Breather;   // cleared: a breather
+            else if (!BossWave && Live.Count == 0 && WaveStarted >= 0f && NextAt < 0f) { NextAt = now + Breather; Supply(p, WaveAmmo, $"Wave {Wave} cleared. A supply drop lands beside you: {WaveAmmo} rounds."); }   // cleared: a breather, and ammunition
             if (!BossWave && WaveStarted >= 0f && now - WaveStarted >= MaxWave && (NextAt < 0f || NextAt > WaveStarted + MaxWave)) NextAt = WaveStarted + MaxWave;   // two and a half minutes at most
             if (NextAt >= 0f && now >= NextAt) StartWave(p);
         }

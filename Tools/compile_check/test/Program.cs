@@ -58,6 +58,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "9") TakenSim();
     if (Environment.GetEnvironmentVariable("RTBAL") == "10") DpsVsSameTierReport();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "11") StarterKillProbe();
     TestingGroundChecks();
     OpticChecks();
     MutantParryChecks();
@@ -2306,6 +2307,7 @@ static class Program {
     Survival.Now = 0f; Survival.Begin(p); p.X = px; p.Y = py;
     void Run(float until) { while (Survival.Now < until) { Survival.Now += 0.25f; Survival.Tick(p); } }
     void KillAll() { foreach (var e in Survival.Live) e.Hp = 0; }
+    { var sp = Player.Current; Check(Ammo.Get(sp.Inventory, Ammo.Key(sp.EquippedWeapon.Db, "Standard")) >= Survival.StartAmmo, "Survival: the run starts with plenty of reserve ammunition (the starter pistol needs 12-14 hits per enemy)"); }
     Run(14.5f); Check(Survival.Wave == 0, "Survival: nothing for the first 15 s");
     Run(15.5f); Check(Survival.Wave == 1 && Survival.Live.Count == 5, $"Survival: wave 1 is 5 enemies ({Survival.Live.Count})");
     KillAll(); Run(16f); Run(30f); Check(Survival.Wave == 1, "Survival: 15 s breather after a clear");
@@ -3790,6 +3792,17 @@ static class Program {
     foreach (float h in new[] { 0.05f, 0.15f, 0.3f, 0.5f, 0.7f, 0.85f, 0.96f }) { int hp0 = d.Hp; Gunplay.Shoot(p, w, 1f, 0f, h, 0f, false); Gunplay.LandAll(); sb.Append($"h{h:0.00}:{(d.Hp < hp0 ? "hit" : "MISS")} "); d.Hp = d.MaxHp; }
     if (Environment.GetEnvironmentVariable("AIMPROBE") != null) Console.WriteLine(sb.ToString());
     EncounterState.Enemies.Clear(); Rt.On = false;
+  }
+
+  static void StarterKillProbe() {   // RTBAL=11: how many starter-pistol rounds does a survival wave-1 enemy take (all rounds hit the torso), and what the kit holds
+    var p = Arena(out _, out _); p.EquipWeapon("sidearm", "PSh18Pchela"); var w0 = p.EquippedWeapon; var hd = Gunplay.For(w0); var ld = AmmoDatabase.Load(w0.Db, "Standard"); int pel = 1;
+    float torso = Gunplay.RoundDamage(w0, "Torso", 3f, pel) * pel * Gunplay.TuneMult(w0, true);
+    foreach (var fac in new[] { "Raiders", "Wanderers", "Liberators", "Obelisk" }) {
+      var need = new List<int>(); var dr = new List<float>();
+      for (int i = 0; i < 200; i++) { UnityEngine.Random.InitState(100 + i); var (w, a) = EncounterGeneration.PickFactionLoadout(fac, i % 2 == 0 ? "Rookie" : "Experienced", 1, i % 10 == 0); float pd = a?.PhysDR ?? 0f; int dmg = Math.Max(1, CombatRules.PhysicalDamage(torso, ld, pd, w0.Db.IgnorePhysDRPercent ?? 0f)); need.Add((int)Math.Ceiling(1000f / dmg)); dr.Add(pd); }
+      need.Sort(); Console.WriteLine($"STARTER vs {fac} (tier 1 loadouts): rounds to kill, all torso hits: median {need[100]}, 10th pct {need[20]}, 90th pct {need[180]}; mean armor PhysDR {dr.Average():0.00}");
+    }
+    var q = Arena(out _, out _); Console.WriteLine($"STARTER kit: mag {w0.CurrentMagazine}/{w0.MagCapacity}, torso damage per round before armor {torso:0}, enemy HP {new HumanEnemy("x", 0, 0, "Raiders", "Rookie", null, null).MaxHp}");
   }
 
   static void WeaponVsArmorReport() {
