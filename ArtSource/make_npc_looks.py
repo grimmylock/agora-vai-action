@@ -39,12 +39,17 @@ LOOKS = {
   "Emil Rask":     dict(head="sidepart", body="jacket", S="#aab8c4", D="#3e4650", A="#6a4a2e", E=DARK, arm="#3a7a9a"),                                         # neat hair, a clean pale lab jacket
   "Konrad Hale":   dict(head="peakcap", body="jacket", H="#2a3450", S="#586038", D="#3a3a2a", A="#4a3a2a", E=DARK, arm="#3a7a9a"),                              # a peaked cap, an olive supply jacket
   "The Runner":    dict(head="hoodgoggles", body="jacket", H="#6b6a3a", S="#4a3a2a", D="#2e2a26", N="#a83a2a", E=DARK),                                       # hood, goggles, a red scarf
-  "Barbwire Coat": dict(head="ragmask", body="heavy", H="#8a8478", S="#46372c", P="#7a5a38", D="#2a2018", N="#a83a2a", J="#b8bcc0", E=DARK, F="#b8845e", f="#8e6244", arm="#b8bcc0"),   # Spool's: a patched leather coat, wire round the shoulders
+  "Barbwire Coat": dict(head="ragmask", body="heavy", H="#8a8478", S="#46372c", P="#7a5a38", D="#2a2018", N="#a83a2a", J="#8a8478", E=DARK, F="#b8845e", f="#8e6244", arm="#46372c"),   # Spool's: a patched leather coat, wire round the shoulders
   "Bogdan":        dict(head="mohawk", body="vest", S="#1c1c1e", P="#8a3a2a", D="#2a2a2a", A="#a02020", E=DARK, F="#c0866a", arm="#b02a2a"),                    # a Raider warlord: a red crest, black leather, rust plates
 }
+# Spool's barbed wire (Yan, 2026-11-19: "his coat doesn't read as barbed wire"): at 16 px a strand reads as a steel line with small bright crosses (the barbs) at every third pixel, so the coat carries two coils across the chest,
+# a band round the rag and spikes at the shoulders. The same on the back; the walk cells copy them.
+_W1, _W2, _B = "#8d949a", "#5f666c", "#f2f4f5"
+def _wline(y, x0, x1, flip=0): return [(x, y, _W1 if (x + flip) % 2 == 0 else _W2) for x in range(x0, x1 + 1)]
+def _wbarbs(y, xs, up=True, down=True): return [(x, yy, _B) for x in xs for yy, ok in ((y - 1, up), (y + 1, down)) if ok]
+WIRE = (_wline(8, 4, 11) + _wbarbs(8, [5, 8, 11]) + _wline(10, 4, 11, 1) + _wbarbs(10, [6, 9]) + [(3, 6, _B), (12, 6, _B)] + _wline(3, 4, 11) + [(5, 2, _B), (8, 2, _W2), (10, 2, _B)])
 MARKS = {   # extra pixels (front only): scars, a bandage, a stubble line
-  "Barbwire Coat": [(3, 8, "#b8bcc0"), (5, 9, "#b8bcc0"), (7, 8, "#b8bcc0"), (9, 9, "#b8bcc0"), (11, 8, "#b8bcc0"), (4, 11, "#8e949a"), (6, 12, "#b8bcc0"), (10, 11, "#8e949a")],   # barbed wire wound round the shoulders and chest  "Pavel":       [(5, 12, "#d8d4c8"), (5, 13, "#d8d4c8"), (5, 13, "#b0504a")],                                   # a bandage on the thigh (a soaked one)
-  "Voss":        [(9, 5, "#a8685a"), (9, 6, "#a8685a")],                                                         # a scar down the cheek
+  "Barbwire Coat": WIRE + [(3, 8, _W1), (12, 8, _W2)],  "Voss":        [(9, 5, "#a8685a"), (9, 6, "#a8685a")],                                                         # a scar down the cheek
   "Bogdan":      [(6, 4, "#a8685a"), (6, 5, "#a8685a"), (10, 5, "#a8685a")],                                     # scars
   "Lev Marchuk": [(7, 6, "#6a5a4a"), (8, 6, "#6a5a4a")],                                                         # stubble at the chin
 }
@@ -52,6 +57,9 @@ def strip(name, L):
     f = av.build(name, 0.2, 2, L); b = av.build(name, 0.2, 2, L, back=True)
     px = f.load()
     for x, y, c in MARKS.get(name, []): px[x, y] = av.hexc(c)
+    if name == "Barbwire Coat":
+        pb = b.load()
+        for x, y, c in WIRE: pb[x, y] = av.hexc(c)
     cells = [f, f.copy(), f.copy(), b, b.copy(), b.copy()]
     for base, a, bb in ((0, 1, 2), (3, 4, 5)):
         top = wa.leg_top(cells[base].load(), 0, 0)
