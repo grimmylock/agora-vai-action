@@ -402,7 +402,7 @@ namespace GameCore
                 if (l == "window" || l == "metaldoor") s = Get($"w_{HostMaterial(x, y)}_{WallKey(x, y)}_{l}");   // metaldoor on a Solid: a sealed blast door
                 else if (Mass.Contains(l)) s = Get($"w_{l}_{MassMask(x, y)}_{(int)(H01(x, y, 9) * 3) % 3}");
                 else s = (Ruined(x, y, l) ? Get($"w_{l}_{WallKey(x, y)}_ruin") : null)
-                         ?? (t.Damage == 0 && x % 2 == 0 && H01(x, y, 44) < 0.75f ? Get($"w_{l}_{WallKey(x, y)}_uwin") : null)   // Batch 119: upper windows in a rhythm
+                         ?? (!_interior && t.Damage == 0 && x % 2 == 0 && H01(x, y, 44) < 0.75f ? Get($"w_{l}_{WallKey(x, y)}_uwin") : null)   // Batch 119: upper windows in a rhythm
                          ?? (t.Damage == 0 && H01(x, y, 43) < 0.4f ? Get($"w_{l}_{WallKey(x, y)}_worn") : null)   // Batch 98: weathered
                          ?? Get($"w_{l}_{WallKey(x, y)}_{(t.Damage > 0 ? "crack" : "0")}") ?? Get($"w_{l}_{WallKey(x, y)}_0");
                 wall = true;

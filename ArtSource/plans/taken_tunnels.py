@@ -152,14 +152,21 @@ def build(seed):
     g = [['#'] * W2 for _ in range(SHIFT)] + g
     def put3(x, y, c):
         if 1 <= x < W2 - 1 and 1 <= y < len(g) - 1: g[y][x] = c
-    for y in range(7, 15):                                                     # the corridor north from the door (the door is at (40, 15) now): 3 wide, 8 long
+    # CARVED, not built (Yan, 2026-11-19: "it's a lab inside a cave, not a whole building, it was carved into the cave walls"): rock walls (the plan's own wall look), a concrete slab floor, a steel door set in the rock.
+    for y in range(7, 15):                                                     # the service tunnel north from the door (the door is at (40, 15) now): 3 wide, with a few rough bites out of its walls
         for x in range(39, 42): put3(x, y, ',')
-    for y in range(2, 7):                                                      # a compact loading zone: 11 x 5, a lift platform at the far end
-        for x in range(35, 46): put3(x, y, ',')
-    for (x, y) in ((36, 3), (37, 3), (36, 4), (44, 3), (44, 4), (43, 6)): put3(x, y, 'c')   # crates along the walls
-    for (x, y) in ((35, 6), (45, 6)): put3(x, y, 'b')                          # barrels
-    for (x, y) in ((40, 10), (40, 4)): put3(x, y, 'i')
-    put3(40, 2, 'L'); put3(40, 5, 'M')
+    for y in (8, 10, 12):
+        put3(38 if r2.random() < 0.5 else 42, y, ',') if r2.random() < 0.7 else None
+    for y in range(2, 9):                                                      # the loading chamber: a hand-cut room, 15 x 7 with ragged corners, a lift niche in its north wall
+        for x in range(33, 48): put3(x, y, ',')
+    for (x, y) in ((33, 2), (34, 2), (33, 3), (47, 2), (46, 2), (47, 3), (33, 8), (47, 8), (34, 8), (46, 8)): put3(x, y, '#')   # corners left as rock
+    for (x, y) in ((33, 5), (47, 4), (47, 6), (33, 6)): put3(x, y, '#') if r2.random() < 0.5 else None
+    for (x, y) in ((39, 1), (40, 1), (41, 1)): put3(x, y, ',')                  # the lift niche
+    for (x, y) in ((35, 3), (36, 3), (35, 4), (45, 3), (45, 4), (44, 3)): put3(x, y, 'c')   # crates against the walls (the north wall and the corners)
+    for (x, y) in ((34, 7), (46, 7)): put3(x, y, 'b')                          # barrels
+    put3(37, 3, '+'); put3(43, 3, '+')                                         # rock-bolted timber props holding the roof
+    for (x, y) in ((40, 10), (40, 5)): put3(x, y, 'i')
+    put3(40, 1, 'L'); put3(40, 5, 'M')
     rows = [''.join(r_) for r_ in g]
     trail = [(x, y + SHIFT, k) for (x, y, k) in trail]
     build.trail = trail
@@ -182,8 +189,6 @@ if __name__ == '__main__':
             var marks = new Dictionary<char, (string, string)> { ['E'] = ("Hatch Ladder", "industrial_basin"), ['F'] = ("Lab Door", null), ['B'] = ("Broken Wall", null), ['H'] = ("Nest", null), ['A'] = ("Gaunt Arena", null), ['J'] = ("Arena North Mouth", null), ['K'] = ("Arena South Mouth", null), ['X'] = ("Gaunt Dais", null), ['M'] = ("Loading Bay", null), ['L'] = ("Freight Lift", "loading_annex") };
             var m = FloorPlan("taken_tunnels", TakenPlan, "cliff", CaveFloor, marks, null);
             for (int i = 0; i + 2 < TakenTrail.Length; i += 3) if (m.Looks != null && TakenTrail[i + 1] < m.Looks.Length && m.Looks[TakenTrail[i + 1]][TakenTrail[i]] == null) m.Looks[TakenTrail[i + 1]][TakenTrail[i]] = TakenTrail[i + 2] == 2 ? "blood" : "bloodtrail";
-            if (m.Looks != null && m.Tiles != null)                                         // behind the lab door: concrete walls, not cave rock (only the walls that touch the corridor and the loading zone; the rock behind stays rock)
-                for (int yy = 1; yy <= 15; yy++) for (int xx = 33; xx <= 47; xx++) if (m.Tiles[yy][xx] == "Solid" && (m.Tiles[yy - 1][xx] != "Solid" || m.Tiles[yy + 1][xx] != "Solid" || m.Tiles[yy][xx - 1] != "Solid" || m.Tiles[yy][xx + 1] != "Solid")) m.Looks[yy][xx] = "concrete";
             return m;
         }
     }

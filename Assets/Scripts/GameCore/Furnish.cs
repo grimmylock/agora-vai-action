@@ -11,7 +11,8 @@ namespace GameCore
 {
     public static class Furnish
     {
-        static readonly HashSet<string> WallBound = new HashSet<string> { "desk", "desk_n", "desk_s", "desk_e", "desk_w", "lockers", "cabinet", "armchair", "terminal", "fridge_lab", "console" };
+        static readonly HashSet<string> WallBound = new HashSet<string> { "desk", "desk_n", "desk_s", "desk_e", "desk_w", "lockers", "cabinet", "armchair", "terminal", "fridge_lab", "console", "machine" };
+        static readonly HashSet<string> SideViews = new HashSet<string> { "desk", "desk_n", "desk_s", "desk_e", "desk_w", "lockers", "cabinet" };   // pieces that have a side sprite (WorldArt.SideFacing): the others only stand against a NORTH wall, front to the room (2026-11-19, Yan: chairs and vending machines against the east wall facing south)
         static readonly HashSet<string> WallLooks = new HashSet<string> { "wall", "plaster", "concrete", "plank", "metal", "hull", "window", "metaldoor", "cliff", "pillar" };
 
         static float H(int x, int y, int zone, int k) { unchecked { int h = x * 73856093 ^ y * 19349663 ^ zone * 83492791 ^ k * 2654435; h ^= h >> 13; h *= 1274126177; h ^= h >> 16; return (h & 0xffff) / 65536f; } }
@@ -37,8 +38,7 @@ namespace GameCore
             var keep = new HashSet<(int, int)>(); if (m.Anchors != null) foreach (var a in m.Anchors.Values) for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) keep.Add((a.x + dx, a.y + dy));
             bool Wall(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && m.Tiles[y][x] == "Solid" && (m.Looks[y][x] == null || WallLooks.Contains(m.Looks[y][x]));
             bool Door(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && (m.Tiles[y][x] == "Door" || m.Tiles[y][x] == "DoorOpen");
-            bool Touches(int x, int y) => Wall(x - 1, y) || Wall(x + 1, y) || Wall(x, y - 1) || Wall(x, y + 1);
-            bool TouchesSide(int x, int y) => Wall(x - 1, y) || Wall(x + 1, y) || Wall(x, y - 1);   // a spot against a wall that is not only a south wall (its tall face would hide the piece)
+                        bool OkFor(int x, int y, string look) => SideViews.Contains(look) ? Wall(x - 1, y) || Wall(x + 1, y) || Wall(x, y - 1) : Wall(x, y - 1);   // a spot against a wall the piece can face away from (never only a south wall: its tall face would hide the piece)
             bool NearDoor(int x, int y) { for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) if (Door(x + dx, y + dy)) return true; return false; }
             bool Free(int x, int y) => x > 0 && y > 0 && x < w - 1 && y < h - 1 && m.Tiles[y][x] == "Empty" && m.Looks[y][x] == null;
             bool Corridor(int x, int y) => Wall(x - 1, y) && Wall(x + 1, y) || Wall(x, y - 1) && Wall(x, y + 1);
@@ -47,11 +47,11 @@ namespace GameCore
             for (int y = 1; y < h - 1; y++) for (int x = 1; x < w - 1; x++) if (Cover(x, y) && m.Looks[y][x] != null && WallBound.Contains(m.Looks[y][x])) order.Add((x, y));
             foreach (var (x, y) in order)
             {
-                if (Touches(x, y) || keep.Contains((x, y))) continue;
+                if (OkFor(x, y, m.Looks[y][x]) || keep.Contains((x, y))) continue;
                 (int x, int y) best = (-1, -1); int bd = int.MaxValue;
                 for (int dy = -9; dy <= 9; dy++) for (int dx = -9; dx <= 9; dx++)
                 {
-                    int nx = x + dx, ny = y + dy, d = dx * dx + dy * dy; if (d >= bd || !Free(nx, ny) || !TouchesSide(nx, ny) || NearDoor(nx, ny) || keep.Contains((nx, ny)) || Corridor(nx, ny) || Open(nx, ny) < 5) continue;
+                    int nx = x + dx, ny = y + dy, d = dx * dx + dy * dy; if (d >= bd || !Free(nx, ny) || !OkFor(nx, ny, m.Looks[y][x]) || NearDoor(nx, ny) || keep.Contains((nx, ny)) || Corridor(nx, ny) || Open(nx, ny) < 5) continue;
                     if (m.Grounds != null && m.Grounds[ny][nx] != m.Grounds[y][x]) continue;                      // the same kind of floor (a desk does not go from the lab into the mud)
                     bool crowd = false; for (int ey = -1; ey <= 1 && !crowd; ey++) for (int ex = -1; ex <= 1; ex++) if ((ex != 0 || ey != 0) && Cover(nx + ex, ny + ey) && m.Looks[ny + ey][nx + ex] != m.Looks[y][x]) { crowd = true; break; }   // (a bank of lockers or cabinets side by side is fine)
                     if (crowd) continue;
