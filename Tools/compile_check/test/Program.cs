@@ -60,6 +60,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "9") TakenSim();
     if (Environment.GetEnvironmentVariable("RTBAL") == "10") DpsVsSameTierReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "11") StarterKillProbe();
+    if (Environment.GetEnvironmentVariable("RTBAL") == "12") LoadedBuildsReport();
     TestingGroundChecks();
     OpticChecks();
     MutantParryChecks();
@@ -3805,6 +3806,54 @@ static class Program {
     foreach (float h in new[] { 0.05f, 0.15f, 0.3f, 0.5f, 0.7f, 0.85f, 0.96f }) { int hp0 = d.Hp; Gunplay.Shoot(p, w, 1f, 0f, h, 0f, false); Gunplay.LandAll(); sb.Append($"h{h:0.00}:{(d.Hp < hp0 ? "hit" : "MISS")} "); d.Hp = d.MaxHp; }
     if (Environment.GetEnvironmentVariable("AIMPROBE") != null) Console.WriteLine(sb.ToString());
     EncounterState.Enemies.Clear(); Rt.On = false;
+  }
+
+  // RTBAL=12 (Yan, 2026-11-19: "make a few mid-to-endgame builds and run them a few times to see the overall balance"): a bot player (stands still, perfect aim, holds the trigger; the same bot as the "rt balance" checks) with a full build
+  // - gun, the best suit of its tier, armor-piercing rounds, perks, artifacts - against groups of real faction loadouts of the same tier, N seeds each. Compare with the plain tier-1 starter bot in the checks.
+  static string KeyByName(string cat, string name) => WeaponDatabase.Categories[cat].First(kv => kv.Value.Name == name).Key;
+  static (bool won, float secs, int hpLeft) RtDuelBuild(Action<Player> setup, Func<int, int, List<Mutant>> spawn, float limit = 60f) {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
+    for (int y = py - 9; y <= py + 9; y++) for (int x = px - 4; x <= px + 22; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);
+    setup(p); p.ApplyArtifactStatBonuses(); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); var w = p.EquippedWeapon;
+    UnityEngine.Time.time = 20000f; UnityEngine.Time.unscaledTime = 20000f; UnityEngine.Time.timeScale = 1f;
+    var foes = spawn(px, py); foreach (var f in foes) { EncounterState.Enemies.Add(f); f.IsAggroed = true; Rt.SetOffset(f, 0f, 0f); }
+    EncounterState.InCombat = true; Contact.Spot(p); var dbgLog = new ListLog(); var oldTarget = GameLog.Target; GameLog.Target = dbgLog;
+    const float dt = 1f / 30f; float t = 0f;
+    for (; t < limit; t += dt) {
+      UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.time += dt; UnityEngine.Time.unscaledTime += dt;
+      var live = foes.Where(f => f.IsAlive() && EncounterState.Enemies.Contains(f)).ToList(); if (live.Count == 0 || Body.Down(p) || !p.IsAlive()) break;
+      var tgt = live.OrderBy(f => CombatantUtil.Distance(p, f)).First(); var (tx, ty) = Ballistics.Pos(tgt);
+      bool needReload = w != null && w.CurrentMagazine <= 0; if (needReload) Ammo.Add(p.Inventory, Ammo.Key(w.Db, w.CurrentAmmoType), 999);
+      Rt.PlayerTick(p, new Rt.Input { Mouse = (tx, ty + 0.44f - AimShare(p, tgt) * Ballistics.BodyTiles), Aim = true, Fire = !needReload, FireDown = !needReload && ((int)(t / dt) % 2 == 0), Reload = needReload });
+      Rt.WorldTick(p); Rt.Glide(dt);
+    }
+    GameLog.Target = oldTarget;
+    bool won = foes.All(f => !f.IsAlive() || !EncounterState.Enemies.Contains(f)) && p.IsAlive() && !Body.Down(p); int left = p.Hp;
+    EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Rt.On = false; UnityEngine.Time.timeScale = 1f;
+    return (won, t, left);
+  }
+  static void LoadedBuildsReport() {
+    string BestArmor(int tier) => ArmorDatabase.Tiers["tier" + tier].OrderByDescending(kv => kv.Value.PhysDR).First().Key;
+    Action<Player> Build(string cat, string gun, int tier, string[] perks, string[] arts) => p => {
+      p.EquipArmor("tier" + tier, BestArmor(tier)); p.EquipWeapon(cat, KeyByName(cat, gun)); var w = p.EquippedWeapon; w.CurrentAmmoType = "ArmorPiercing"; w.CurrentMagazine = w.MagCapacity;
+      foreach (var k in perks) p.ActivePerks.Add(k); for (int i = 0; i < arts.Length; i++) p.ArtifactSlots[i] = arts[i]; Ammo.Add(p.Inventory, Ammo.Key(w.Db, "ArmorPiercing"), 999); };
+    var builds = new List<(string name, int tier, Action<Player> setup)> {
+      ("MID  Rifleman: TS-9 Tishina, best T3 suit, AP, Recoil Control + Quick Hands, Heartspark + Clot", 3, Build("assault", "TS-9 Tishina", 3, new[] { "RecoilControl", "QuickHands" }, new[] { "heartspark", "clot" })),
+      ("MID  Gunner: Sayan-12 shotgun, best T4 suit, AP, Breacher + Quick Hands, Fiery Rouge", 4, Build("shotgun", "Sayan-12", 4, new[] { "Breacher", "QuickHands" }, new[] { "fieryRouge" })),
+      ("MID  Sidearm: Steppe Eagle, best T4 suit, AP, Point-Blank Execution, Heartspark", 4, Build("sidearm", "Steppe Eagle", 4, new[] { "PointBlankExecution" }, new[] { "heartspark" })),
+      ("END  Bullpup: Corvan Bullpup, best T5 suit, AP, Recoil Control + Quick Hands, Lucifer + Heart of the Wound", 5, Build("assault", "Corvan Bullpup", 5, new[] { "RecoilControl", "QuickHands" }, new[] { "lucifer", "heartOfTheWound" })),
+      ("END  Machine gun: PL-74P Polovets Zulu, best T5 suit, AP, Shredder, Heart of the Wound + Black Star", 5, Build("heavy", "PL-74P Polovets Zulu", 5, new[] { "Shredder" }, new[] { "heartOfTheWound", "theBlackStar" })),
+      ("END  Sniper: Halden AM-50 Sledge, best T5 suit, AP, High-Velocity Impact, Lucifer", 5, Build("sniper", "Halden AM-50 Sledge", 5, new[] { "HighVelocityImpact" }, new[] { "lucifer" })),
+    };
+    var enemyKinds = new[] { ("Obelisk", "Garrison") };
+    foreach (var (name, tier, setup) in builds) {
+      foreach (var (n, rank) in tier == 3 ? new[] { (4, "Professional"), (6, "Professional") } : tier == 4 ? new[] { (4, "Veteran"), (6, "Professional") } : new[] { (4, "Veteran"), (6, "Master") }) {
+        Func<int, int, List<Mutant>> mk = (x, y) => Enumerable.Range(0, n).Select(i => { var (w, a) = EncounterGeneration.PickFactionLoadout(i % 2 == 0 ? "Obelisk" : "Garrison", rank, tier, i == 0); var h = new HumanEnemy("Foe" + i, x + 9, y - n + i * 2, i % 2 == 0 ? "Obelisk" : "Garrison", rank, w, a); return (Mutant)h; }).ToList();
+        int wins = 0; float tk = 0f; long lost = 0; const int N = 8;
+        for (int i = 0; i < N; i++) { UnityEngine.Random.InitState(2000 + i); var r = RtDuelBuild(setup, mk); lost += 1000 - Math.Min(1000, Math.Max(0, r.hpLeft)); if (r.won) { wins++; tk += r.secs; } }
+        Console.WriteLine($"BUILD {name} vs {n} {rank} (tier {tier} loadouts, 9 tiles): won {wins}/{N}, {(wins > 0 ? tk / wins : 0):0.0} s to win, {lost / N} HP lost on average");
+      }
+    }
   }
 
   static void StarterKillProbe() {   // RTBAL=11: how many starter-pistol rounds does a survival wave-1 enemy take (all rounds hit the torso), and what the kit holds

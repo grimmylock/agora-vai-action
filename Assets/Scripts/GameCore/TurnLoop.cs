@@ -160,7 +160,7 @@ namespace GameCore
 
         private static int _exploreTiles;
         /// <summary>Exploring has no turns: this many tiles count as one round for upkeep (bleeding, healing over time, smoke) and the Surge.</summary>
-        public const int ExploreRoundTiles = 4;
+        public const int ExploreRoundTiles = 25;   // 2026-11-19 (Yan: the 6-second effects "only in combat"): in real time a "tile" here is a game minute (1/4.2 s), so 4 made an exploring round ~0.95 s - bleeding, regeneration artifacts and the hunger tax ticked six times faster out of a fight than in one. 25 minutes = 6 s, the same round as Rt.RoundSeconds
 
         /// <summary>Batch 59: a fight that drags on gets the enemy on the radio. After 3 rounds per enemy it started
         /// with, the leader of the biggest human squad still fighting calls for help; if they're still up and in the
