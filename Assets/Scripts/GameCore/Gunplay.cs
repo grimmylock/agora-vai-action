@@ -103,7 +103,7 @@ namespace GameCore
 
         /// <summary>Damage multiplier of one gun against one kind of target (see Tune): humans take `vsHuman`, everything else 1 / rate.</summary>
         /// <summary>One knob for the pace of every fight against humans (both ways: you and the people who shoot you): 1 = as tuned (WEAPON_TUNING_RT.md). 2026-11-19: Yan asked what a global x1.3 would look like.</summary>
-        public static float HumanDamageMult = 1f;
+        public static float HumanDamageMult = 1.15f;   // 2026-11-19: Yan, "leave it with the 1.15 increase" (was 1.0 = as tuned in WEAPON_TUNING_RT.md)
         public static float TuneMult(Weapon w, bool humanTarget)
         {
             if (w?.Db == null || !Tune.TryGetValue(w.Db.Name, out var t)) return 1f;
