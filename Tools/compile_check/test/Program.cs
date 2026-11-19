@@ -47,6 +47,7 @@ static class Program {
     RaidChecks();
     RtChecks();
     RtBalanceChecks();
+    if (float.TryParse(Environment.GetEnvironmentVariable("HUMANMULT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var hmult)) Gunplay.HumanDamageMult = hmult;   // what if every gun did this much more to humans?
     if (Environment.GetEnvironmentVariable("RTBAL") == "1") WeaponBalanceReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "2") WeaponVsArmorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "3") GangKillReport();
