@@ -32,6 +32,15 @@ namespace GameCore
             var o = Put(x, y, "papers", name, null, desc, "doc"); o.Opens = docId; return o;
         }
 
+        /// <summary>A paper kept INSIDE a piece of furniture (a desk, locker, console): the object sits on the furniture's own tile, which keeps its look; E within a tile reads it.</summary>
+        public static InteractiveObjectInstance PaperIn(int x, int y, string name, string desc, string docId)
+        {
+            if (TerrainMap.InteractiveObjects.Any(o => o.X == x && o.Y == y)) return null;
+            var db = InteractiveObjectDatabase.All["Footlocker"];
+            var o = new InteractiveObjectInstance { X = x, Y = y, Name = name, Stat = db.Stat, Dc = db.Dc, Description = desc, Lock = "doc", Opens = docId, Rolled = true };
+            TerrainMap.InteractiveObjects.Add(o); return o;
+        }
+
         /// <summary>2026-11-18: a story hoard - a bag of `tier` loot at (x, y) on the loaded map (the Blight Brute's, Story 5b). Returns null if the tile is taken.</summary>
         public static InteractiveObjectInstance Hoard(int x, int y, string name, int tier, string desc)
         {

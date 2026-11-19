@@ -39,11 +39,11 @@ namespace GameCore
                 ("Vault", 0, 1, "Vault Stores", "Shelves of sealed crates: the Garrison's old research budget, in goods.") })
             { var (x, y) = Free(m, dx, dy); if (x >= 0) Stashes.Hoard(x, y, name, 4, desc); }
             // the papers
-            Doc("Intake Desk", 1, 0, "Intake Ledger", "A ledger on the desk, one page folded down.", "intake");
-            Doc("Cell Block", -2, 0, "Cell Plate and Note", "A taped note below the plate on the last cell door.", "cell");
-            Doc("Handler's Office", -1, 0, "The Handler's Diary", "A black-covered diary under a coat on the hook.", "diary");
-            Doc("Control Room", 1, 1, "Transmitter Log", "A log sheet clipped to the transmitter's frame.", "transmit");
-            Doc("Vault", 0, 0, "Calibration Table", "A grey folder, stamped CALIBRATION. The only thing on the middle shelf.", "calib");
+            Doc("Intake Desk", Desks, "Search the desk", "Intake Ledger", "A ledger in the top drawer, one page folded down.", "intake");
+            Doc("Cell Block", new[] { "lockers" }, "Search the locker", "Cell Plate and Note", "A note pushed in behind the guards' coats.", "cell");
+            Doc("Handler's Office", Desks, "Search the desk", "The Handler's Diary", "A black-covered diary at the back of the drawer.", "diary");
+            Doc("Control Room", new[] { "console", "terminal", "desk" }, "Search the console", "Transmitter Log", "A log sheet clipped inside the console's hatch.", "transmit");
+            Doc("Vault", new[] { "cabinet", "lockers" }, "Search the cabinet", "Calibration Table", "A grey folder, stamped CALIBRATION. The only thing on the middle shelf.", "calib", 4);
             // the ones that got out
             void Pack(string room, int dx, int dy, params string[] kinds)
             { int k = 0; foreach (var spec in kinds.Concat(Enumerable.Repeat(kinds[0], extra))) { var l = Mark(room); if (l == null) return; var m = Make(spec, l.X + dx + k % 3 * 2, l.Y + dy + k / 3 * 2); EncounterState.Enemies.Add(m); Annexers.Add(m); k++; } }
@@ -56,8 +56,21 @@ namespace GameCore
         }
         static readonly List<Mutant> Annexers = new List<Mutant>();
 
-        static void Doc(string mark, int dx, int dy, string name, string desc, string id)
-        { var (x, y) = Free(mark, dx, dy); if (x >= 0) Stashes.Paper(x, y, name, desc, id); }
+        /// <summary>Yan, 2026-11-19: "the papers should be inside a desk": the nearest piece of furniture of the right kind to the landmark holds the paper (the prompt says what to search); no such piece within 12 tiles: it lies on the floor.</summary>
+        static void Doc(string mark, string[] looks, string what, string name, string desc, string id, int r = 12)
+        {
+            var l = Mark(mark); if (l == null) return;
+            (int x, int y, float d) best = (-1, -1, 1e9f);
+            for (int y = l.Y - r; y <= l.Y + r; y++) for (int x = l.X - r; x <= l.X + r; x++)
+            {
+                if (x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height || !looks.Contains(TerrainMap.GetTile(x, y).Look ?? "")) continue;
+                if (TerrainMap.InteractiveObjects.Any(o => o.X == x && o.Y == y)) continue;
+                float d = (x - l.X) * (x - l.X) + (y - l.Y) * (y - l.Y); if (d < best.d) best = (x, y, d);
+            }
+            if (best.x >= 0 && Stashes.PaperIn(best.x, best.y, what, desc, id) != null) return;
+            var (fx, fy) = Free(mark, 1, 0); if (fx >= 0) Stashes.Paper(fx, fy, name, desc, id);
+        }
+        static readonly string[] Desks = { "desk", "desk_n", "desk_s", "desk_e", "desk_w" };
 
         static void TickAnnex()
         {
