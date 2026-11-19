@@ -84,6 +84,9 @@ namespace GameCore
                 CompleteArc("scrapyard", 3); Story.Journal(r == 3 ? "The Maze: Rooke is dead. The Scrap King holds the yard." : "The Maze: you sided with Rooke. The King is hostile now.");
                 Story.Finish("rooke"); return true;
             }
+            int sp = Story.Step("spool");                                     // Story 9 (2026-11-19): "The Exile" - Spool at the Dog Kennels (SpoolBoss.cs)
+            if (sp == 2) { TalkSpoolDone(); return true; }
+            if (sp == 1) { Story.Talk("The Scrap King", new[] { "The Dog Kennels, south-east, where the fence is. He will be on the crate with the bat. Don't talk to him for long." }); return true; }
             if (c >= 1 && c <= 2 || r == 1 || r == 2) { Story.Talk("The Scrap King", new[] { "Well? Go on." }); return true; }
             if (Story.IsDone("crusher") && r == 0)
             {
@@ -95,7 +98,45 @@ namespace GameCore
                 Tier1Story.Place("rooke", "The Maze", "Raiders", gang);
                 return true;
             }
+            if (Story.IsDone("rooke") && !Story.Has("rooke_sided") && sp == 0)
+            {
+                Story.Talk("The Scrap King", new[] { "Spool. You will have heard the name, or seen a caravan with its crates gone and its drivers laid out in the road.",
+                    "He was mine once. My enforcer, my dogs, my kennels. Now he sits in my kennels with a bat wrapped in wire and calls the yard his.",
+                    "Kill him. And bring me whatever he carries in that coat. Papers, mostly. A man like that keeps papers, and I would like them in my stove, not in a stranger's hands." },
+                    new[] { "I'll go.", "What did he do?" }, i =>
+                {
+                    if (i == 1) Story.Talk("The Scrap King", new[] { "He talked. He talked about me, to anyone who would sit still. I put him out of the Nest and he took the dogs with him. That is all." });
+                    Story.SetStep("spool", 1); Story.SetObjective("spool", "Deal with Spool at the Dog Kennels", SpoolBoss.Lair);
+                    Story.Journal("The Exile: the Scrap King wants his old enforcer Spool dead and his papers brought to him. Spool holds the Dog Kennels with a barbed wire bat.");
+                });
+                return true;
+            }
             return false;
+        }
+
+        /// <summary>E at the King with the Kennel Ledger (step 2): hand it over or say he had nothing.</summary>
+        static void TalkSpoolDone()
+        {
+            if (!(Tier1Story.Holder(SpoolBoss.Ledger) is Player h)) { Story.Talk("The Scrap King", new[] { "You have nothing for me? Then he is not dead, or you are a liar. Go and look again." }); return; }
+            Story.Talk("The Scrap King", new[] { "Well. Is he dead? ...Good. And the papers?" }, new[] { "Here. All of it.", "He had nothing on him." }, i => SpoolOutcome(h, i));
+        }
+
+        internal static void SpoolOutcome(Player h, int i)
+        {
+            if (i == 0)
+            {
+                h.RemoveItem(SpoolBoss.Ledger, 1);
+                Story.Talk("The Scrap King", new[] { "(He reads one line, folds it, and feeds it to the stove.) Sick dogs bite. You did the right thing. Do not repeat what you read.", "Twelve hundred. It's more than the bat was worth." });
+                Tier1Story.Pay(1200, "Spool"); foreach (var pl in Player.All) pl.AdjustReputation("Raiders", Player.RepPoint);
+                Story.Set("spool_ledger_given"); Story.Journal("The Exile: you gave the King Spool's ledger and he burned it. He paid well, and he knows you read it.");
+            }
+            else
+            {
+                Story.Talk("The Scrap King", new[] { "...Nothing. In that coat. Of course. (A long look.) Six hundred, then. For the walk." });
+                Tier1Story.Pay(600, "Spool");
+                Story.Set("spool_ledger_kept"); Story.Journal("The Exile: you kept Spool's ledger. The King sold the Garrison the hatch under the Loading Dock, and he suspects you know. The ledger is worth something to the right people.");
+            }
+            CompleteArc("scrapyard", 4); Story.Finish("spool");
         }
 
         static void TalkRooke(HumanEnemy b)

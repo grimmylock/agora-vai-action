@@ -25,7 +25,7 @@ Everything below passes the harness (`Tools/compile_check`, `Tier1StoryChecks`, 
 | Escort: snipers at Sniper's Lip, Raider toll at the road cut, Hub arrival | built; new landmark "Road Cut Checkpoint" |
 | Brute's return (Yefim's rematch request, +1500 Ru) | built; not checked in the harness |
 | Crusher Row (the Garrison is the backer) and Rooke at the Maze (SCRAPKING-2/3) | built (6d); the rest of Black Valley is still generic |
-| Spool, the Scrap King's exile (Boss 4: barbed wire bat duel in the Dog Kennels, Visor-style parries; drops the Tier 4 Barbed Wire Bat) | built 2026-11-19; no job or story hook yet; never run in Unity |
+| "The Exile": the King sends you after Spool (barbed wire bat duel in the Dog Kennels, Visor-style parries; his Barbwire Coat and the Tier 4 Barbed Wire Bat drop together), the Kennel Ledger (the King pays the Garrison a tenth of every cart and sold them the hatch under the Loading Dock), two endings: burn it for 1200 Ru, or say he had nothing (600 Ru) and keep it | built 2026-11-19; the kept ledger has no payoff yet (an idea: Voss or Pavel in Tier 3); never run in Unity |
 
 ## Tier 3 (Tier3Story.cs)
 | Beat | State |

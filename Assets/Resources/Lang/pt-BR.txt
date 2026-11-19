@@ -952,3 +952,34 @@ Spool kneels in the dirt, and does not get up again. The bat is still wet. Take 
 OVERHEAD!	DE CIMA!
 WIRE RUSH!	INVESTIDA DE ARAME!
 Barbwire Coat	Casaco de Arame Farpado
+
+# ---- Tier 2 job "The Exile" (Spool, the Kennel Ledger) ----
+Spool. You will have heard the name, or seen a caravan with its crates gone and its drivers laid out in the road.	Spool. Você deve ter ouvido o nome, ou visto uma caravana sem as caixas e com os condutores estirados na estrada.
+He was mine once. My enforcer, my dogs, my kennels. Now he sits in my kennels with a bat wrapped in wire and calls the yard his.	Ele já foi meu. Meu capanga, meus cães, meu canil. Agora está sentado no meu canil com um taco enrolado em arame e chama o pátio de dele.
+Kill him. And bring me whatever he carries in that coat. Papers, mostly. A man like that keeps papers, and I would like them in my stove, not in a stranger's hands.	Mate-o. E me traga o que ele carrega naquele casaco. Papéis, principalmente. Um homem assim guarda papéis, e eu os quero no meu fogão, não nas mãos de um estranho.
+I'll go.	Eu vou.
+What did he do?	O que ele fez?
+He talked. He talked about me, to anyone who would sit still. I put him out of the Nest and he took the dogs with him. That is all.	Ele falou. Falou de mim para qualquer um que ficasse parado. Eu o pus para fora do Ninho e ele levou os cães. Só isso.
+Deal with Spool at the Dog Kennels	Resolva a questão com o Spool no Canil
+The Exile: the Scrap King wants his old enforcer Spool dead and his papers brought to him. Spool holds the Dog Kennels with a barbed wire bat.	O Exilado: o Rei da Sucata quer seu antigo capanga Spool morto e os papéis dele trazidos a ele. Spool domina o Canil com um taco de arame farpado.
+The Dog Kennels, south-east, where the fence is. He will be on the crate with the bat. Don't talk to him for long.	O Canil, a sudeste, onde fica a cerca. Ele vai estar no caixote com o taco. Não converse muito com ele.
+You have nothing for me? Then he is not dead, or you are a liar. Go and look again.	Não tem nada para mim? Então ele não está morto, ou você é um mentiroso. Vá olhar de novo.
+Well. Is he dead? ...Good. And the papers?	Bem. Ele está morto? ...Ótimo. E os papéis?
+Here. All of it.	Aqui. Tudo.
+He had nothing on him.	Ele não tinha nada consigo.
+(He reads one line, folds it, and feeds it to the stove.) Sick dogs bite. You did the right thing. Do not repeat what you read.	(Ele lê uma linha, dobra e joga no fogão.) Cães doentes mordem. Você fez a coisa certa. Não repita o que leu.
+Twelve hundred. It's more than the bat was worth.	Mil e duzentos. É mais do que o taco valia.
+The Exile: you gave the King Spool's ledger and he burned it. He paid well, and he knows you read it.	O Exilado: você entregou ao Rei o livro-razão do Spool e ele o queimou. Pagou bem, e sabe que você o leu.
+...Nothing. In that coat. Of course. (A long look.) Six hundred, then. For the walk.	...Nada. Naquele casaco. Claro. (Um longo olhar.) Seiscentos, então. Pela caminhada.
+The Exile: you kept Spool's ledger. The King sold the Garrison the hatch under the Loading Dock, and he suspects you know. The ledger is worth something to the right people.	O Exilado: você ficou com o livro-razão do Spool. O Rei vendeu à Garrison a escotilha sob a Doca de Carga, e suspeita que você saiba. O livro vale algo para as pessoas certas.
+Did he tell you about the papers?	Ele te falou dos papéis?
+He did. Course he did.	Falou. Claro que falou.
+In the coat's lining, sewn flat: a folded ledger.	No forro do casaco, costurado rente: um livro-razão dobrado.
+Kennel Ledger	Livro-razão do Canil
+THE KENNEL LEDGER	O LIVRO-RAZÃO DO CANIL
+Take the Kennel Ledger to the Scrap King - or think about it first	Leve o Livro-razão do Canil ao Rei da Sucata - ou pense um pouco antes
+Spool's hand: columns of dates and crate counts, each line a cart out of the Basin, each with the King's crown and, beside it, a second stamp. A Garrison stamp.	A letra do Spool: colunas de datas e contagens de caixas, cada linha uma carroça saindo da Bacia, cada uma com a coroa do Rei e, ao lado, um segundo carimbo. Um carimbo da Garrison.
+The last page: 'Every tenth crate goes up the road to the Gatehouse, and nobody on that road is robbed. That is the King's peace. I said what it was. He called it exile. - S.'	A última página: 'Toda décima caixa sobe a estrada até a Gatehouse, e ninguém naquela estrada é roubado. Essa é a paz do Rei. Eu disse o que ela era. Ele chamou de exílio. - S.'
+Under it, in another pen: 'The Garrison asked for the hatch under the Loading Dock. We told them where. - the Crown.'	Embaixo, com outra caneta: 'A Garrison pediu a escotilha sob a Doca de Carga. Dissemos onde ficava. - a Coroa.'
+The Kennel Ledger: the Scrap King pays the Garrison a tenth of every cart for a quiet road, and sold them the hatch under the Loading Dock. Spool said so, and was put out for it.	O Livro-razão do Canil: o Rei da Sucata paga à Garrison um décimo de cada carroça por uma estrada tranquila, e vendeu a eles a escotilha sob a Doca de Carga. Spool disse isso e foi expulso por isso.
+Spool: the Scrap King's exile held the Dog Kennels with a barbed wire bat. He is down. The bat and his coat are yours.	Spool: o exilado do Rei da Sucata dominava o Canil com um taco de arame farpado. Ele caiu. O taco e o casaco dele são seus.

@@ -96,6 +96,7 @@ static class Program {
     AnnexQuestChecks();
     ElderClipChecks();
     SpoolChecks();
+    SpoolStoryChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -2737,6 +2738,27 @@ static class Program {
       Check(!ShopDatabase.Items.Any(i => i.Name == "Barbwire Coat") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 5)?.Name == "Barbwire Coat"), "Spool: his coat is in no shop and no random loadout");
       Boss.Looted(fs.Unit); UnityEngine.Time.time += 10f; Boss.TickAll(); Check(EncounterState.Enemies.Contains(fs.Unit), "Spool: his body stays (no smoke grenade)");
       Tier2Jobs.ZoneOverride = null; SpoolBoss.Tick(0.1f); Check(Boss.Fights.Count(x => x.Def == Boss.Spool && !x.Finished) == 0, "Spool: he does not come back once he is done");
+    } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
+  }
+
+  static void SpoolStoryChecks() {   // 2026-11-19: "The Exile": the King's job, the fight, the ledger, the two endings
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 95000f; UnityEngine.Time.unscaledTime = 95000f;
+    try {
+      Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Scrap King's Nest", X = p.X, Y = p.Y, Description = "" });
+      TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 40, Y = py, Description = "" });
+      Story.SetStep("kingcall", Story.Done); Story.SetStep("crusher", Story.Done); Story.SetStep("rooke", Story.Done);
+      Check(Tier2Jobs.TryInteract(p) && Story.Step("spool") == 1, "Exile: after Rooke, the King sends you after Spool");
+      Check(Tier2Jobs.TryInteract(p) && Story.Step("spool") == 1, "Exile: the King repeats where he is");
+      p.X = px + 42; p.Y = py; SpoolBoss.Tick(0.1f); var fs = Boss.Fights.FirstOrDefault(x => x.Def == Boss.Spool);
+      Check(fs != null, "Exile: the Kennels wake him");
+      fs.Unit.Hp = 1; Boss.OnDamaged(fs.Unit); p.X = fs.Unit.X - 1; p.Y = fs.Unit.Y; Check(Boss.TryFinish(p) && fs.Unit.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger), "Exile: the ledger is sewn into his coat");
+      p.AddItem(new InventoryItem { Id = SpoolBoss.Ledger, Name = "Kennel Ledger", Type = "key", Qty = 1, WeightKg = 0.1f }); SpoolBoss.Tick(0.1f);
+      Check(Story.Step("spool") == 2 && Story.Has("doc_kennel"), "Exile: picking the ledger up reads it and points you back to the King");
+      p.X = px; p.Y = py; int ru0 = p.Ru; Tier2Jobs.SpoolOutcome(p, 0);
+      Check(Story.IsDone("spool") && Story.Has("spool_ledger_given") && !p.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger) && p.Ru == ru0 + 1200, "Exile: handing it over: the ledger burns, 1200 Ru");
+      // the other ending, from the same point
+      Story.SetStep("spool", 2); Story.Clear("spool_ledger_given"); p.AddItem(new InventoryItem { Id = SpoolBoss.Ledger, Name = "Kennel Ledger", Type = "key", Qty = 1, WeightKg = 0.1f }); ru0 = p.Ru; Tier2Jobs.SpoolOutcome(p, 1);
+      Check(Story.IsDone("spool") && Story.Has("spool_ledger_kept") && p.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger) && p.Ru == ru0 + 600, "Exile: 'he had nothing': 600 Ru and you keep the ledger");
     } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
