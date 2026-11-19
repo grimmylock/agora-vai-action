@@ -396,8 +396,20 @@ namespace GameCore
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) { float d = Mathf.Sqrt((x - N / 2f + 0.5f) * (x - N / 2f + 0.5f) + (y - N / 2f + 0.5f) * (y - N / 2f + 0.5f)) / (N / 2f); tex.SetPixel(x, y, d <= 1f && d >= 0.93f ? Color.white : d < 0.93f ? new Color(1, 1, 1, 0.12f) : clear); }
             tex.Apply(); return _ringSprite = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), N / 2f, 0, SpriteMeshType.FullRect);   // two world units across: scale = the radius in tiles
         }
+        private SpriteRenderer _slamRing, _slamFill;
+        /// <summary>The Elder Gaunt's slam, 2026-11-19: a red ring on the ground at the full radius with a filling disc inside; white at the moment of the hit.</summary>
+        private void SlamTelegraph()
+        {
+            float w = GauntBoss.SlamWarn; var e = GauntBoss.Current;
+            if (_slamRing == null) { _slamRing = CreateMarker("SlamRing", Color.white, 1f, WorldArt.SortTop, _root.transform, RingSprite()); _slamFill = CreateMarker("SlamFill", Color.white, 1f, WorldArt.SortTop, _root.transform, RingSprite()); }
+            bool on = w >= 0f && e != null && e.IsAlive(); _slamRing.gameObject.SetActive(on); _slamFill.gameObject.SetActive(on); if (!on) return;
+            var (ex, ey) = Ballistics.Pos(e); var pos = new Vector3(ex, -ey, 0f); float pulse = 0.6f + 0.4f * Mathf.Sin(Time.time * 18f);
+            _slamRing.transform.position = pos; _slamRing.transform.localScale = new Vector3(GauntBoss.SlamRadius, GauntBoss.SlamRadius, 1f); _slamRing.color = new Color(1f, 0.2f, 0.14f, 0.5f + 0.4f * pulse);
+            _slamFill.transform.position = pos; float r = GauntBoss.SlamRadius * w; _slamFill.transform.localScale = new Vector3(r, r, 1f); _slamFill.color = new Color(1f, 0.2f, 0.14f, 0.35f);
+        }
         private void ThrowPreview(Player player)
         {
+            SlamTelegraph();
             if (_throwRing == null)
             {
                 _throwRing = CreateMarker("ThrowRing", Color.white, 1f, WorldArt.SortTop, _root.transform, RingSprite());
@@ -1130,7 +1142,7 @@ namespace GameCore
                 if (dis >= 0 && walkArt == null && hm.Db?.Name == "Veil Prowler") { var ds = UnitSprites.HDFx("veil_prowler_dissolve", 6, new Vector2(0.5f, 16f / 37f)); if (ds != null) marker.sprite = ds[dis]; }   // a pixel-noise dissolve on the stand pose
             }
             else marker.flipX = false;
-            if (unit is Mutant gx && Gaunt.Is(gx)) { float tilt = Gaunt.DeathTilt(gx); marker.transform.localRotation = Quaternion.Euler(0f, 0f, marker.flipX ? -tilt : tilt); }   // a dead Gaunt tips over backwards (no death strip: done in code)
+            if (unit is Mutant gx && Gaunt.Is(gx)) { float tilt = Gaunt.DeathTilt(gx); tilt += GauntBoss.SlamLean(gx); marker.transform.localRotation = Quaternion.Euler(0f, 0f, marker.flipX ? -tilt : tilt); if (GauntBoss.Enraged(gx)) live = Color.Lerp(live, new Color(1f, 0.55f, 0.5f, live.a), 0.5f); }   // a dead Gaunt tips over backwards (no death strip: done in code)
             marker.color = alive ? live : new Color(0.35f, 0.32f, 0.3f, 0.9f);
         }
 

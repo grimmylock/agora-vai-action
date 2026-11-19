@@ -21,7 +21,7 @@ namespace GameCore
         public static Mutant Current;                       // the Elder while the fight is on
         public const float ScreamRange = 13f, ScreamCone = 70f, SlamRadius = 3.8f, SlamNear = 4.5f;
         public const int SlamDamage = 200;
-        static int _phase; static bool _shield; static int _shieldHp; static float _shieldUntil, _nextScream, _nextSlam, _screamAt = -1f, _slamAt = -1f, _waveStart; static int _waveSize;
+        static float _slamHitAt = -9f, _slamFrom; static int _phase; static bool _shield; static int _shieldHp; static float _shieldUntil, _nextScream, _nextSlam, _screamAt = -1f, _slamAt = -1f, _waveStart; static int _waveSize;
         static readonly List<Mutant> Wave = new List<Mutant>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -33,10 +33,20 @@ namespace GameCore
         public static float Fraction => Current == null ? 0f : Mathf.Clamp01(Current.Hp / (float)Mathf.Max(1, Current.MaxHp));
         public static string Label => Current == null ? "" : _shield ? "SEALED BEHIND THE ROCKFALL - KILL THE HORDE" : _slamAt >= 0f ? "SLAM!" : _screamAt >= 0f ? "SCREAM - TAKE COVER" : _phase >= 2 ? "ENRAGED" : _phase == 1 ? "PHASE 2" : "";
 
+        /// <summary>Slam telegraph for the view: 0..1 across the one-second warning, or -1 when none (the ring on the ground grows to its full size as the fists come down).</summary>
+        public static float SlamWarn => Current != null && _slamAt >= 0f ? Mathf.Clamp01(1f - (_slamAt - Time.time) / 1.0f) : -1f;
+        /// <summary>The Elder's lean in degrees for the slam, drawn by code (no strip): rears back during the warning, then snaps forward and settles in a quarter second.</summary>
+        public static float SlamLean(Mutant m)
+        {
+            if (!Owns(m)) return 0f; float w = SlamWarn; if (w >= 0f) return -16f * w * w;
+            float u = (Time.time - _slamHitAt) / 0.3f; return u >= 0f && u < 1f ? 14f * (1f - u) * (1f - u) : 0f;
+        }
+        public static bool Enraged(Mutant m) => Owns(m) && _phase >= 2;
+
         public static void Begin(Mutant elder)
         {
             if (Current == elder) return;
-            Current = elder; _phase = 0; _shield = false; _screamAt = _slamAt = -1f; Wave.Clear();
+            Current = elder; _slamHitAt = -9f; _phase = 0; _shield = false; _screamAt = _slamAt = -1f; Wave.Clear();
             float now = Time.time; _nextScream = now + 6f; _nextSlam = now + 9f;
         }
 
@@ -63,7 +73,7 @@ namespace GameCore
             if (_screamAt >= 0f && now >= _screamAt) { _screamAt = -1f; Scream(e, target); }
             if (_phase >= 2 && _slamAt < 0f && !_shield && now >= _nextSlam && Player.All.Any(p => p.IsAlive() && CombatantUtil.Distance(e, p) <= SlamNear))
             { _slamAt = now + 1.0f; _nextSlam = now + 9f; RtAi.Hold(e, 1.0f); GameLog.Event("The Elder raises both fists over its head."); }
-            if (_slamAt >= 0f && now >= _slamAt) { _slamAt = -1f; Slam(e); }
+            if (_slamAt >= 0f && now >= _slamAt) { _slamAt = -1f; _slamHitAt = Time.time; Slam(e); }
         }
 
         static void Scream(Mutant e, Player target)
