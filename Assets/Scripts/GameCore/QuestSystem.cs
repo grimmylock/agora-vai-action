@@ -345,9 +345,10 @@ namespace GameCore
                     }
                 }
             }
+            string place = Tier2Poi.Radiate(humans, zone.Id) ?? null; string place2 = Tier2Poi.Radiate(mutants, zone.Id);   // 2026-11-19: on the Tier 2 map the targets sit at a real place, not a random tile
             if (humans.Count > 0) SquadManager.PlaceQuestSquad(zone.Id, faction, humans, aq.QuestId);
             if (mutants.Count > 0) SquadManager.PlaceQuestSquad(zone.Id, "Mutant", mutants, aq.QuestId);
-            if (humans.Count + mutants.Count > 0) GameLog.Event($"[QUEST] Your targets for \"{QuestDatabase.Find(aq.QuestId)?.Hook}\" are in {zone.Name}.");
+            if (humans.Count + mutants.Count > 0) GameLog.Event($"[QUEST] Your targets for \"{QuestDatabase.Find(aq.QuestId)?.Hook}\" are " + ((place ?? place2) != null ? $"at {place ?? place2}, in {zone.Name}." : $"in {zone.Name}."));
         }
 
         public static void OnEnterZone(string zoneId)

@@ -99,6 +99,7 @@ static class Program {
     SpoolChecks();
     SpoolStoryChecks();
     CrownChecks();
+    Tier2PoiChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -2797,6 +2798,24 @@ static class Program {
     } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
+  static void Tier2PoiChecks() {   // 2026-11-19: Tier 2 points of interest: the papers, the crews, the radiant spots
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.OfflineSquads.Clear();
+    TerrainMap.InteractiveObjects.RemoveAll(o => o.Lock == "doc");
+    Check(Tier2Poi.DocTexts.Count == 14, "Tier2Poi: 14 papers");
+    foreach (var kv in Tier2Poi.DocTexts) Check(kv.Value.pages.Length >= 1 && !string.IsNullOrEmpty(kv.Value.title) && !string.IsNullOrEmpty(kv.Value.journal), "Tier2Poi: paper " + kv.Key + " has title, pages, journal");
+    try {
+      TerrainMap.Landmarks.Add(new LandmarkInstance { Name = "Rusted Bus", X = px + 3, Y = py, Description = "" });
+      Tier2Poi.PlaceDocs(MacroMapDatabase.MapOf("scrapyard"));
+      var o = TerrainMap.InteractiveObjects.FirstOrDefault(x => x.Lock == "doc" && x.Opens == "bus");
+      Check(o != null, "Tier2Poi: the Rusted Bus's paper is placed near it");
+      Docs.Read("bus"); Check(Story.Has("doc_bus"), "Tier2Poi: reading a paper sets its flag and writes the journal");
+      Docs.Read("intake"); Check(Story.Has("doc_intake"), "Tier2Poi: Docs.Read still hands Annex papers to the Annex");
+      var m = Enumerable.Range(0, 3).Select(_ => EncounterGeneration.CreateMutantFromDb(MutantDatabase.Tiers["tier2"]["VeilProwler"], 0, 0)).ToList();
+      string place = Tier2Poi.Radiate(m, "industrial_basin"); Check(place != null && m.All(x => x.X >= 0 && x.Y >= 0), "Tier2Poi: radiant targets get a named place in their region");
+      Check(Tier2Poi.Radiate(m, "bonfire_village") == null, "Tier2Poi: no radiant place off the Tier 2 map");
+    } finally { TerrainMap.InteractiveObjects.RemoveAll(o => o.Lock == "doc"); }
+  }
+
   static void CrownChecks() {   // 2026-11-19: Spool spared, the proof, "The Crown": the tithe cart, the Nest, the waves, the King, the exile
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); CrownJob.Reset(); Companion.Current = null; EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.OfflineSquads.Clear();
     UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
@@ -4604,6 +4623,7 @@ static class Program {
     // every pattern's Portuguese side uses only placeholders its English side has
     bool placeholdersOk = true; foreach (var line in table.Split('\n')) { if (line.Length == 0 || line[0] == '#') continue; int tab = line.IndexOf('\t'); if (tab < 0) continue; string en = line.Substring(0, tab), pt = line.Substring(tab + 1); int n = System.Text.RegularExpressions.Regex.Matches(en, "\\{\\}").Count; foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(pt, "\\{(\\d)\\}")) if (int.Parse(m.Groups[1].Value) > n || int.Parse(m.Groups[1].Value) < 1) placeholdersOk = false; if (n > 0 && !pt.Contains("{1}") && n == 1 && pt.Length > 0) placeholdersOk = placeholdersOk && true; }
     Check(placeholdersOk, "pt-BR: every {N} on a Portuguese side exists on its English side");
+    foreach (var kv in Tier2Poi.DocTexts) { bool ok = Loc.Text(kv.Value.title) != kv.Value.title && Loc.Text(kv.Value.journal) != kv.Value.journal && kv.Value.pages.All(pg => Loc.Text(pg) != pg); Check(ok, "pt-BR: Tier 2 paper " + kv.Key + " is translated"); }
     Loc.Lang = Loc.English; Loc.LoadTable(null);
   }
   static void RtChecks() {

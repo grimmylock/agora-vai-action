@@ -534,6 +534,39 @@ namespace GameCore
             if (h > 0) { c.Rect(x - 1, y - 1, 3, 3, Empty, h, "platform"); c.Ramp(x, y + r + 1, 0, -1, r, 0, h, 1); }
         }
 
+        /// <summary>2026-11-19 (Yan: "visual story telling"): what happened at the Tier 2 places, told in decals and a few props (see ArtSource/story/tier2_poi_docs.py for the papers that go with them).</summary>
+        static void Tier2Scenes(TerrainCanvas c)
+        {
+            void D(string look, params (int x, int y)[] at) { foreach (var (x, y) in at) c.Deco(x, y, look); }
+            // Burnt Tank: the picket that walked off; ash, a sandbag ring, no bodies at the hatches
+            for (int i = -4; i <= 4; i += 2) c.Put(131 + i, 20, ScatterCover, "sandbags");
+            D("scorch", (129, 23), (130, 25), (133, 24), (132, 26), (128, 25)); D("bones", (134, 22), (127, 26));
+            // The Hanged Man's Tree: the drop, the bones, the crate that was empty
+            c.Put(77, 53, HardCover, "deadtree"); D("bones", (76, 55), (78, 55), (77, 56)); c.Put(80, 55, ScatterCover, "crate"); D("papers", (79, 56));
+            // The Overturned Lorry: spilled crates, a trail of blood leaving the road towards the den
+            c.Put(118, 73, ScatterCover, "crate"); c.Put(119, 77, ScatterCover, "crate"); c.Put(123, 72, ScatterCover, "crate");
+            for (int i = 0; i < 9; i++) c.Deco(122 + i, 75 + i / 2, "bloodtrail");
+            D("bones", (131, 79), (132, 79), (130, 80)); D("blood", (122, 74), (121, 75));
+            // The Ford: the road goes into the water and does not come out; a drowned truck
+            for (int x = 23; x <= 33; x++) c.Deco(x, 48, "puddle");
+            c.Put(27, 50, HardCover, "van"); D("puddle", (27, 51), (28, 51), (26, 51));
+            // Workers' Flats: forty identical notices, never delivered; a table still laid
+            D("papers", (79, 158), (80, 159), (84, 158), (85, 160), (81, 161), (83, 162)); D("grime", (82, 160), (82, 161));
+            // Chemical Dump: the drums marked G, in a neat row and one that is not
+            for (int i = 0; i < 6; i++) c.Put(12 + i * 2, 187, ScatterCover, "rustbarrel");
+            D("puddle", (13, 189), (14, 189), (20, 189)); D("grime", (15, 188), (17, 188), (19, 188)); D("bones", (21, 191));
+            // Substation: the transformer that hums; scorched ground and oil underneath
+            D("scorch", (88, 188), (92, 189), (90, 192)); D("oil", (89, 191), (91, 191), (90, 193));
+            // Central Plant and the boiler hall door: a night shift's boots
+            D("oil", (38, 116), (41, 117), (43, 113)); D("grime", (40, 117), (39, 112));
+            // Hunter's Shack: pelts and the dogs' bones round it, all arranged in a ring facing north
+            D("bones", (176, 28), (178, 27), (180, 27), (182, 27), (184, 28), (176, 33), (184, 33)); c.Put(183, 31, ScatterCover, "crate");
+            // Rusted Bus: the survey party's camp, papers on the ground
+            D("papers", (146, 182), (147, 183), (150, 182)); c.Put(145, 181, ScatterCover, "crate"); D("bones", (151, 184));
+            // Crane Cab: the watcher's view of the dock, a lamp-black ring of cigarette ends
+            D("grime", (29, 187), (31, 187), (30, 188));
+        }
+
         // 200x200. Black Valley (north: a ravine with a gulley across it - the Chokepoint Bridge, a ford and a broken
         // rail bridge are the only crossings - the old mine works, Sniper's Lip along the north rim, the way north to
         // the Scavenger's Hub), the Industrial Basin (south-west: the Central Plant, Silo Row, the Loading Dock over
@@ -737,6 +770,8 @@ namespace GameCore
             foreach (var (hx, hy, hr) in new[] { (108, 150, 3), (196, 96, 4), (138, 192, 3), (192, 176, 3), (106, 128, 3) })
                 ScrapHeap(c, hx, hy, hr);
             c.Exit("marshes", 166, 199).Exit("smugglers_run", 46, 199);
+
+            Tier2Scenes(c);   // 2026-11-19: visual storytelling round the points of interest (decals and a few props; the papers and crews are Tier2Poi)
 
             // ---- between the places
             Ruin(c, 60, 66, 8, 6); Ruin(c, 140, 28, 7, 6); Ruin(c, 86, 22, 8, 6, "plaster");
