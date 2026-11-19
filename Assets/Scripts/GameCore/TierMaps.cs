@@ -1093,7 +1093,7 @@ namespace GameCore
                 int bot = Barrier.BottomY(bx);
                 bool towerBody = System.Array.Exists(towers, tc => System.Math.Abs(tc - bx) <= 1);
                 if (Barrier.StairCols.Contains(bx)) c.Deco(bx, bot + 3, "deck_steps");
-                else { if (!towerBody) c.Deco(bx, bot + 3, "deck_face"); c.Deco(bx, bot + 2, "deck_rail"); }
+                else if (!towerBody) c.Put(bx, bot + 3, Solid, "deck_edge");               // 2026-11-18 (Yan: "I can walk over the railings"): the rail and skirt are ONE tile you cannot cross (see and shoot over it, TerrainMap); you leave the deck by the steps or a tower's door
             }
             foreach (int tc in towers)                                                  // a tall concrete watchtower in the yard right behind the deck: a 3x2 block of footprint, its north-middle tile the gun nook (Emplacement.cs)
             {
@@ -1102,7 +1102,7 @@ namespace GameCore
                 c.Put(tc, bot + 4, Solid, "tower_conc");                                // the one tile that draws the prop
             }
             for (int ty = 88; ty <= 119; ty++) for (int tx = 129; tx <= 183; tx++)       // clear the trees, brush and logs of the field in front of the barrier and the yard behind it
-                if (!Barrier.Cells.Contains((tx, ty)) && c.Get(tx, ty) != Empty && !InTower(towers, tx, ty)) c.Put(tx, ty, Empty);
+                if (!Barrier.Cells.Contains((tx, ty)) && c.Get(tx, ty) != Empty && !InTower(towers, tx, ty) && c.LookAt(tx, ty) != "deck_edge") c.Put(tx, ty, Empty);
             c.Keep(124, 86, 66, 38);                                                    // no trees or clutter round the barrier (the dresser leaves it as authored)
             c.Landmark("The Barrier", Barrier.CX, Barrier.StepY(Barrier.CX) + 1);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
             // Barracks Row

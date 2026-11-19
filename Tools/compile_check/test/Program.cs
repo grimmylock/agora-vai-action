@@ -85,6 +85,7 @@ static class Program {
     Tier1StoryChecks();
     Tier3StoryChecks();
     Tier4StoryChecks();
+    TestingGroundBarrierChecks();
     BarrierChecks();
     BossChecks(); MeleeMoveChecks(); PackChecks(); SurvivalChecks(); BrainChecks(); AlphaChecks(); DungeonRedoChecks(); MutantWalkChecks(); MutantAttackChecks(); DepthsChecks(); EelChecks();
     TtkProbe(args.Contains("ttk"));
@@ -2545,6 +2546,20 @@ static class Program {
       Emplacement.Reset();
       EncounterState.Enemies.Remove(brute);
     } finally { foreach (var (x, y, t) in saved) { var tt = TerrainMap.GetTile(x, y); tt.Type = t.Type; tt.Look = t.Look; tt.Damage = t.Damage; } Barrier.ZoneOverride = null; Barrier.Reset(); }
+  }
+
+  static void TestingGroundBarrierChecks() {   // 2026-11-18: the Testing Ground's "Barrier defense" entry, run the way the game runs it (real map load, real clock)
+    var p = Arena(out int px, out int py); Rt.On = true; Tier4Story.Reset(); Barrier.Reset(); UnityEngine.Time.time = 90000f;
+    Tier4Story.StartForTest();
+    Check(Story.Step("barrier") == 2 && Tier4Story.SiegeOn && Barrier.On && TerrainMap.ZoneId == MacroMapDatabase.MapOf("vanguard_barracks"), $"Testing Ground: Barrier defense: the map is loaded and the siege is on (zone {TerrainMap.ZoneId}, step {Story.Step("barrier")})");
+    Check(Math.Abs(p.X - Barrier.CX) <= 12 && p.Y > Barrier.ApexY, $"Testing Ground: Barrier defense: you stand in the yard behind the wall ({p.X},{p.Y})");
+    { int rx = 135, ry = Barrier.BottomY(rx) + 3, sx = Barrier.StairCols.First(); var rt = TerrainMap.GetTile(rx, ry);
+      Check(rt.Type == TileType.Solid && rt.Look == "deck_edge" && !TerrainMap.CanEnterTile(rx, ry) && !TerrainMap.BlocksSight(rx, ry) && TerrainMap.CanEnterTile(rx, ry - 1) && TerrainMap.CanEnterTile(sx, Barrier.BottomY(sx) + 3), "Barrier: the deck's railing cannot be crossed (but seen and shot over); the steps and the deck are open"); }
+    int firstSeen = -1;
+    for (int i = 0; i < 90; i++) { UnityEngine.Time.time += 1f; Tier4Story.TickRt(1f); if (firstSeen < 0 && EncounterState.Enemies.Any(e => e.Faction == "Obelisk" && e.IsAlive())) firstSeen = i; }
+    int fan = EncounterState.Enemies.Count(e => e.Faction == "Obelisk" && e.IsAlive()); var pos = EncounterState.Enemies.Where(e => e.Faction == "Obelisk" && e.IsAlive()).Select(e => e.Y).DefaultIfEmpty(-1).Average();
+    Check(fan >= 10 && firstSeen >= 0 && firstSeen <= 15, $"Testing Ground: Barrier defense: the horde is in the world within seconds ({fan} fanatics, first after {firstSeen} s, mean row {pos:0}, wall at {Barrier.ApexY})");
+    Tier4Story.Reset(); Barrier.Reset(); Story.SetStep("barrier", 0);
   }
 
   static void Tier4StoryChecks() {   // Story 8: Tier 4 - the Barrier, the Apex, the Summit

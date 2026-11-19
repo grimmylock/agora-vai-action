@@ -168,6 +168,7 @@ namespace GameData
                 L("Barracks Row", "Three long dormitory buildings, good for room-to-room fighting."),
                 L("Motor Pool", "A garage of stripped military vehicles - useful cover and a common ambush point."),
                 L("Command Post", "A sandbagged bunker at the compound's north end, usually held by whichever faction currently controls the barracks."),
+                L("The Barrier", "The Liberators' wall: a bowed arc of concrete on the compound's north side, a steel catwalk behind it and two machine-gun towers in the yard."),   // 2026-11-18: the siege's own place (Tier4Story.BarrierName). It was only an anchor in the map, so the game never spawned it and BeginSiege found nothing
             },
             ["ghost_town"] = new List<LandmarkDef>
             {

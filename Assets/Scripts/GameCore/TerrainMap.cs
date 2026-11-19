@@ -140,7 +140,7 @@ namespace GameCore
         public static bool BlocksSight(int x, int y)
         {
             var t = GetTile(x, y);
-            if (t.Type == TileType.Solid && (t.Look == "window" || Barrier.IsWall(x, y))) return Smoke.ContainsKey((x, y));   // Batch 32: you can see (and shoot) through windows
+            if (t.Type == TileType.Solid && (t.Look == "window" || t.Look == "deck_edge" || Barrier.IsWall(x, y))) return Smoke.ContainsKey((x, y));   // Batch 32: you can see (and shoot) through windows
             return TileRules.BlocksSight(t.Type) || Smoke.ContainsKey((x, y));
         }
 
@@ -164,7 +164,7 @@ namespace GameCore
         {
             var t = GetTile(x, y);
             if (Barrier.IsWall(x, y)) return 3;                                                     // the Barrier: high cover
-            return t.Type == TileType.Solid && t.Look == "window" ? 2 : TileRules.CoverAc(t.Type);   // a window frame is hard cover
+            return t.Type == TileType.Solid && (t.Look == "window" || t.Look == "deck_edge") ? 2 : TileRules.CoverAc(t.Type);   // a window frame is hard cover
         }
 
         /// <summary>Ported from canEnterTile(x, y). Closed doors are enterable - stepping in opens

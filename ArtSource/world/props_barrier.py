@@ -152,5 +152,12 @@ def tower_ruin(seed):
     for _ in range(40): px(im, r.randrange(2, W - 2), r.randrange(42, 46), P["moss"][r.randint(0, 1)])
     return finish(im, (W // 2, H - 2), shadow=(70, 6, 0, 0), tall=False)
 
-NEW = {"deck_face": deck_face, "deck_rail": deck_rail, "deck_steps": deck_steps, "tower_conc": tower_conc, "tower_conc_open": lambda seed: tower_conc(seed, True), "tower_ruin": tower_ruin}
-VARIANTS = {"deck_face": 3}
+def deck_edge(seed):
+    """The deck's south edge as ONE blocking tile (Yan, 2026-11-18: "I can walk over the railings"): the railing on top, the steel skirt under it - deck_rail (16x13) stacked on deck_face (16x16), the foot where the skirt's was.
+    The map puts it on the ground row just south of the deck (a Solid tile you can see and shoot over, TerrainMap); the rail overhangs the deck row above it."""
+    top = deck_rail(seed); bot = deck_face(seed)
+    im = blank(16, 29); im.alpha_composite(top.im, (0, 0)); im.alpha_composite(bot.im, (0, 13))
+    return Prop(im, (8, 26), None, False)
+
+NEW = {"deck_face": deck_face, "deck_rail": deck_rail, "deck_steps": deck_steps, "tower_conc": tower_conc, "tower_conc_open": lambda seed: tower_conc(seed, True), "tower_ruin": tower_ruin, "deck_edge": deck_edge}
+VARIANTS = {"deck_face": 3, "deck_edge": 3}
