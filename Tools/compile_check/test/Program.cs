@@ -11,6 +11,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "spoolmoves") { VisorMoves(args[1], true); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
@@ -1348,19 +1349,20 @@ static class Program {
 
   // Visor 2: the Visor's whole moveset, one move after another, through the real Boss.Begin / Boss.Tick (glint, held wind-up,
   // each hit's pose) against a player who just stands there (healed every frame) -> Tools/render/melee_moves.py
-  static void VisorMoves(string path) {
+  static void VisorMoves(string path, bool spool = false) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     EncounterState.Enemies.Clear();
-    var f = Boss.Spawn(Boss.Visor, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
-    var g = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
-    var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"SerratedTrenchKnife\",\"title\":\"The Visor\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
-    sb.Append(string.Join(",", Boss.Visor.Moves.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
+    var bd = spool ? Boss.Spool : Boss.Visor; string wkey = spool ? "BarbedWireBat" : "SerratedTrenchKnife";
+    var f = Boss.Spawn(bd, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+    var g = WeaponArt.GripOf("melee", wkey);
+    var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"" + wkey + "\",\"title\":\"" + bd.Name + "\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
+    sb.Append(string.Join(",", bd.Moves.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
     int k = 0;
-    for (int mi = 0; mi < Boss.Visor.Moves.Length; mi++) {
-      var m = Boss.Visor.Moves[mi];
+    for (int mi = 0; mi < bd.Moves.Length; mi++) {
+      var m = bd.Moves[mi];
       for (int i = 0; i < 30 * 6; i++) {
         float dt = 1f / 30f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.timeScale = 1f;
         float now = UnityEngine.Time.time;
@@ -1377,8 +1379,9 @@ static class Program {
       }
       f.Doing = null;
     }
-    sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
-    File.WriteAllText(path, sb.ToString()); Console.WriteLine("visor moves -> " + path);
+    if (spool) { int ai = Array.IndexOf(SpriteAtlasIndex.Armor, "Raider Stitched Coat"); sb.Append("]}],\"armor\":[" + Math.Max(0, ai) + ",\"" + (ai >= 0 ? SpriteAtlasIndex.ArmorCuff[ai] : "#5a4a36") + "\",\"" + (ai >= 0 ? SpriteAtlasIndex.ArmorGlove[ai] : "#3d4148") + "\"]}"); }
+    else sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
+    File.WriteAllText(path, sb.ToString()); Console.WriteLine((spool ? "spool" : "visor") + " moves -> " + path);
     Rt.On = false; Boss.Reset(); Melee.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
   }
 

@@ -109,11 +109,11 @@ namespace GameCore
             StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He tears the rag off the grip. The wire is bare now, and so is he.",
             Moves = new[]
             {
-                new Move { Name = "Swing", Wind = 0.9f, Weight = 3, Mult = 0.9f, Open = 1.4f },
-                new Move { Name = "Backswing", Wind = 0.8f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Open = 1.7f },
-                new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Mult = 1.5f, Weight = 1, Open = 2.3f },
-                new Move { Name = "Wire rush", Wind = 0.9f, Danger = true, Lunge = 4f, Mult = 1.1f, Weight = 2, Phase2Only = true, Open = 2.0f },
-                new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Open = 1.8f },
+                new Move { Name = "Swing", Wind = 0.9f, Weight = 3, Mult = 0.9f, Poses = new[] { 1 }, Open = 1.4f },
+                new Move { Name = "Backswing", Wind = 0.8f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f },
+                new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Mult = 1.5f, Weight = 1, Poses = new[] { 0 }, Open = 2.3f },
+                new Move { Name = "Wire rush", Wind = 0.9f, Danger = true, Lunge = 4f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
+                new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.8f },
             },
         };
 
