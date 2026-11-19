@@ -36,12 +36,13 @@ namespace GameCore
         // the call animation (SpriteCook, one strip, scream + point; 8 pictures, 2.6 s): frame durations in ms - breath, head back, the scream held, the arm snaps out (the call lands on frame 5), held, relax
         static readonly int[] ScreamMs = { 200, 260, 300, 380, 380, 420, 380, 280 };
         /// <summary>True while it is mid-call: it stands and screams, it does not walk or strike (RtAi.TickMutant).</summary>
-        public static bool Busy(Mutant m) => Is(m) && m.IsAlive() && (IsElder(m) ? Pose(m) != null : Pose(m) == "scream");   // the Elder stands for every pose it plays (scream, roar, rise, slam, shriek)
+        public static bool Busy(Mutant m) => Is(m) && m.IsAlive() && (IsElder(m) ? Pose(m) != null : Pose(m) == "scream" || Pose(m) == "rise");   // the Elder stands for every pose it plays (scream, roar, rise, slam, shriek)
         /// <summary>The picture for the pose it is in right now, or null (the standing sprite / the walk / the attack take over).</summary>
         public static Sprite Frame(Mutant m)
         {
             if (!(Pose(m) is string p) || !States.TryGetValue(m, out var s)) return null;
             if (IsElder(m)) return ElderClips.Sprite(p, (Time.time - s.PoseAt) * 1000f);                     // the Elder's own clips (ElderClips): scream, roar, rise, slam, shriek
+            if (p == "rise") return ElderClips.Sprite(Name, "rise", (Time.time - s.PoseAt) * 1000f);                // a small Gaunt climbing out of the ground
             var frames = UnitSprites.GauntAnim(m.Db.Name, "scream", ScreamMs.Length); if (frames == null) return null;
             float t = (Time.time - s.PoseAt) * 1000f; int i = 0; float acc = 0f;
             for (; i < ScreamMs.Length - 1; i++) { if (t < acc + ScreamMs[i]) break; acc += ScreamMs[i]; }
@@ -62,6 +63,7 @@ namespace GameCore
         {
             if (!Is(m)) return 0f; if (m.IsAlive()) return 0f;
             if (IsElder(m) && ElderClips.Has("death")) return 0f;                                           // it has its own fall (kneel, slump)
+            if (!IsElder(m) && ElderClips.Has(Name, "death")) return 0f;                                     // the small one crumbles into bones
             var s = Of(m); if (s.DiedAt < 0f) s.DiedAt = Time.time;
             float u = Mathf.Clamp01((Time.time - s.DiedAt) / 0.8f); return 84f * u * u * (3f - 2f * u);
         }
@@ -70,6 +72,7 @@ namespace GameCore
         {
             var s = Of(m); if (s.DiedAt < 0f) s.DiedAt = Time.time;
             if (IsElder(m) && ElderClips.Has("death")) return ElderClips.Sprite("death", (Time.time - s.DiedAt) * 1000f);
+            if (!IsElder(m) && ElderClips.Has(Name, "death")) return ElderClips.Sprite(Name, "death", (Time.time - s.DiedAt) * 1000f);
             var frames = UnitSprites.GauntAnim(m.Db.Name, "death", 8); if (frames == null) return null;
             float t = (Time.time - s.DiedAt) * 1000f; int i = 0; float acc = 0f;
             for (; i < frames.Length - 1; i++) { if (t < acc + DeathMs[i]) break; acc += DeathMs[i]; }
@@ -138,9 +141,16 @@ namespace GameCore
                 {
                     float a = (k * 2.399f + r) % 6.283f; int x = elder.X + Mathf.RoundToInt(Mathf.Cos(a) * r), y = elder.Y + Mathf.RoundToInt(Mathf.Sin(a) * r);
                     if (x < 1 || y < 1 || x >= TerrainMap.Width - 1 || y >= TerrainMap.Height - 1 || !TerrainMap.CanEnterTile(x, y) || TerrainMap.UnitAt(x, y, null) != null || CombatantUtil.Distance(target, new Mutant("probe", x, y, def)) < 3) continue;
-                    var w = new Mutant(Name, x, y, def) { IsAggroed = true }; EncounterState.Enemies.Add(w); Summoned.Add(w); Driven[w] = (Time.time + Kit(elder).drive, target, Kit(elder).haste); made++;
+                    var w = new Mutant(Name, x, y, def) { IsAggroed = true }; EncounterState.Enemies.Add(w); Summoned.Add(w); Rise(w); Driven[w] = (Time.time + Kit(elder).drive, target, Kit(elder).haste); made++;
                 }
             if (made > 0) GameLog.Write(made == 1 ? "A wild Gaunt crawls out of the dark at its call." : $"{made} wild Gaunts crawl out of the dark at its call.");
+        }
+
+        /// <summary>A small Gaunt claws its way up out of the ground (Yan, 2026-11-19: instead of popping in): the rise clip, standing still until it is up.</summary>
+        public static void Rise(Mutant w)
+        {
+            if (ElderClips.Get(Name, "rise") == null) return; float s = ElderClips.Seconds(Name, "rise");
+            ForcePose(w, "rise", s); RtAi.Hold(w, s);
         }
 
         /// <summary>Every frame (Rt.WorldTick): a Gaunt in a fight calls when it can; one that just died frees the ones it drove.</summary>

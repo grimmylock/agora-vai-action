@@ -2685,8 +2685,17 @@ static class Program {
     foreach (var kv in GameCore.ElderClips.All) { var c = kv.Value; bool good = c.Step.Length == c.Ms.Length && c.Step.All(i => i >= 0 && i < c.Cells) && c.TotalMs == c.Ms.Sum() && c.Contacts.All(x => x >= 0 && x < c.TotalMs) && c.Contacts.Zip(c.Contacts.Skip(1), (a, b) => b > a).All(b => b); if (!good) { ok = false; why += kv.Key + " "; } }
     Check(ok && GameCore.ElderClips.All.Count == 11, "ElderClips: every clip's steps, timings and hit times are consistent " + why);
     Check(GameCore.ElderClips.Get("combo2").Contacts.Length == 2 && GameCore.ElderClips.Get("combo3").Contacts.Length == 3 && GameCore.ElderClips.Get("combo4").Contacts.Length == 4 && GameCore.ElderClips.Get("scream").TotalMs == 2600, "ElderClips: 2, 3 and 4 hit combos, the scream is the same 2.6 s");
+    ok = true; why = "";
+    foreach (var kv in GameCore.ElderClips.Small) { var c = kv.Value; bool good = c.Step.Length == c.Ms.Length && c.Step.All(i => i >= 0 && i < c.Cells) && c.TotalMs == c.Ms.Sum() && c.Contacts.All(x => x >= 0 && x < c.TotalMs); if (!good) { ok = false; why += kv.Key + " "; } }
+    Check(ok && GameCore.ElderClips.Small.Count == 4 && GameCore.ElderClips.Get("Gaunt", "stab").Contacts.Length == 2 && GameCore.ElderClips.Get("Gaunt", "swipe").Contacts.Length == 2, "ElderClips: the small Gaunt's rise, stab, swipe and death are consistent " + why);
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); UnityEngine.Time.time = 80000f; EncounterState.Enemies.Clear();
     try {
+      var sg = new Mutant(GameCore.Gaunt.Name, px + 1, py, GameData.MutantDatabase.Get("tier3", GameCore.Gaunt.Name)) { IsAggroed = true }; EncounterState.Enemies.Add(sg);
+      GameCore.Gaunt.Rise(sg); Check(GameCore.Gaunt.Busy(sg) && GameCore.Gaunt.Pose(sg) == "rise", "Small Gaunt: a summoned Gaunt climbs out of the ground (rise pose, standing still)");
+      UnityEngine.Time.time += 3f; p.Hp = p.MaxHp; float nx = 0f; string kind = null;
+      for (int i = 0; i < 60; i++) { UnityEngine.Time.time += 0.05f; if (GameCore.MutantAttack.Update(sg, p, UnityEngine.Time.time, ref nx) && kind == null) kind = GameCore.MutantAttack.KindOf(sg); }
+      Check(kind == "stab" || kind == "swipe", "Small Gaunt: next to a player it plays the double stab or the swipe (" + kind + ")");
+      EncounterState.Enemies.Clear();
       var e = new Mutant(GameCore.Gaunt.ElderName, px + 1, py, GameCore.Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(e);
       GameCore.GauntBoss.Reset(); GameCore.GauntBoss.Begin(e);
       Check(GameCore.GauntBoss.ComboKind(e) == "combo2" && GameCore.Gaunt.Busy(e), "Elder: phase 1 fights in 2-hit combos, and it stands up first (rise pose)");

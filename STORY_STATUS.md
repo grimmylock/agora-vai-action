@@ -34,6 +34,7 @@ Everything below passes the harness (`Tools/compile_check`, `Tier1StoryChecks`, 
 | Osei's spikes ("a pulse"), Hale (supply racket), Rask (coffee) | built |
 | Voss and the Contractors' leak hunt (Quill at the Signal Tower, the ledger, the snipers were paid by "those") | built (polish, 7b) |
 | Osei as an alternative pills source | built (E at the House while Lev's job is open) |
+| **The Door Under the Dock** (Tier3Annex*.cs, GauntBoss.cs, ElderClips*.cs; design in STORY_GAUNT_LAB.md): Osei asks, supply case, the infested tunnels, the door fight, the Elder Gaunt boss (3 phases, 2/3/4-hit combos, scream, hordes, shriek, slam), the Loading Annex (6 loot bags, 5 papers inside desks/lockers/consoles, vault code in two halves, the calibration table), hand-in | built 2026-11-19; NEVER run in Unity; all numbers are guesses; Pixel Lab art for the Elder and the small Gaunts wired in (rise, combos, death) |
 
 ## Tier 4 (Tier4Story.cs, Preacher.cs) - built 2026-11-18
 | Beat | State |

@@ -104,6 +104,7 @@ namespace GameCore
                 if (now < nextShot) return false;
                 nextShot = now + BiteCooldown(m, Random.value);
                 if (rules.SlamCd > 0f && now >= st.NextSlam) { st.NextSlam = now + rules.SlamCd; st.DustStart = -99f; Begin(m, st, "slam", now); return true; }
+                if (m.Db.Name == Gaunt.Name && ElderClips.Get(Gaunt.Name, "stab") != null) { string sk = Random.value < 0.5f ? "stab" : "swipe"; Begin(m, st, sk, now); nextShot = now + Anim(m.Db.Name, sk).TotalMs / 1000f + 0.5f; return true; }   // the small Gaunt: a double stab or a claw swipe, then a breath
                 if (Gaunt.IsElder(m) && ElderClips.Get(GauntBoss.ComboKind(m)) != null) { string ck = GauntBoss.ComboKind(m); Begin(m, st, ck, now); nextShot = now + Anim(m.Db.Name, ck).TotalMs / 1000f + 1.0f; return true; }   // the Elder fights in combos (2, 3, then 4 hits as its health drops), then a breath
                 Begin(m, st, rules.MeleeB != null && Random.value < BiteBShare ? rules.MeleeB : rules.MeleeA, now); return true;
             }
@@ -389,7 +390,9 @@ namespace GameCore
                 if (st.ChargeRunStart < 0f || st.ChargeEnd >= 0f) { var rb = UnitSprites.HDAttack(name, "bite"); return st.ChargeEnd >= 0f ? null : rb != null ? rb[2] : null; }      // the rear-back before the run; stumbling shows the stand pose
                 var wf = UnitSprites.HDRun(name) ?? UnitSprites.HDWalk(name); return wf == null ? null : wf[Mathf.Max(0, Mathf.FloorToInt((now - st.ChargeRunStart) / (UnitSprites.HDRun(name) != null ? MutantWalk.RunFrameSeconds : MutantWalk.FrameSeconds * 0.5f))) % wf.Length];     // running: the gallop (the walk, twice as fast, where there is no gallop)
             }
-            var a = Anim(name, st.Kind); var frames = UnitSprites.HDAttack(name, st.Kind);
+            var a = Anim(name, st.Kind);
+            if (a is ElderClips.ComboAnim) return ElderClips.AttackSprite(name, st.Kind, (now - st.Start) * 1000f);                       // the Gaunts' combos: their own clips (ElderClips)
+            var frames = UnitSprites.HDAttack(name, st.Kind);
             if (a == null || frames == null) return null;
             return frames[Mathf.Clamp(FrameIndexAt(a.Ms, (now - st.Start) * 1000f), 0, frames.Length - 1)];
         }
