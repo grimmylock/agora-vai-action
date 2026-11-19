@@ -49,7 +49,7 @@ namespace GameData
                 ["Hammer"] = new WeaponDef { Name = "Hammer", BaseDamage = 330, Range = "Adjacent", WeightKg = 0.7f, Tier = 3 },
                 ["FireAxe"] = new WeaponDef { Name = "Fire Axe", BaseDamage = 450, Range = "Adjacent", WeightKg = 2.0f, Tier = 3, IgnorePhysDRPercent = 0.1f },
                 ["Sledgehammer"] = new WeaponDef { Name = "Sledgehammer", BaseDamage = 650, Range = "Adjacent", WeightKg = 4.0f, Tier = 4, IgnorePhysDRPercent = 0.2f },
-                ["BarbedWireBat"] = new WeaponDef { Name = "Barbed Wire Bat", BaseDamage = 480, Range = "Adjacent", WeightKg = 1.3f, Tier = 5 },
+                ["BarbedWireBat"] = new WeaponDef { Name = "Barbed Wire Bat", BaseDamage = 360, Range = "Adjacent", WeightKg = 1.2f, Tier = 4 },   // 2026-11-19 (Yan): a Tier 4 reward, a little better than the plain bat (310) and it bleeds; melee is not strong early because armour wins late
                 ["TacticalHatchet"] = new WeaponDef { Name = "Tactical Hatchet", BaseDamage = 420, Range = "Adjacent", WeightKg = 0.9f, Tier = 5, IgnorePhysDRPercent = 0.15f },   // RT 7a: one of a kind (a lab's secret room)
             },
             ["sidearm"] = new Dictionary<string, WeaponDef>

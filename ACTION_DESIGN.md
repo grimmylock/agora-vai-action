@@ -103,7 +103,7 @@ Melee's place: ambushes round corners, unseen camp massacres, parrying mutants -
 | Wooden Baseball Bat | 2 | blunt, two-handed | concussive |
 | Hammer | 3 | blunt, one-handed | faster swings, smaller reach, concussive |
 | Sledgehammer | 4 | blunt, two-handed | like the bat with more damage; breaks cover (not walls) |
-| Barbed Wire Bat | 5 (secret) | blunt, two-handed | bleeds and concusses; carried by a boss in a Tier 4 corner or dungeon, lore to settle (not regular Raider kit) |
+| Barbed Wire Bat | 4 (secret) | blunt, two-handed | 360 against the bat's 310, 1.2 kg; bleeds and concusses (Yan, 2026-11-19: "make it a tier 4 weapon, slightly higher stats than the normal bat and bleeding, it's fine to reward players sometimes with fun stuff, melee won't be that strong early because armor works better in late game"); carried by an outcast Raider boss (lore to settle; the Tier 2 idea is open), not regular Raider kit |
 
 **Melee slot (Yan, 2026-10-20, for the inventory/equipment UI):** a dedicated melee slot beside the two weapon slots, so everyone
 always has at least a knife (for parrying). A throwing build can still put more melee weapons in the weapon slots.
