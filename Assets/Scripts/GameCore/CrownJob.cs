@@ -162,33 +162,63 @@ namespace GameCore
             if (WeaponDatabase.Categories["melee"].TryGetValue("BarbedWireBat", out var bw) && sp != null) sp.EquipWeaponFromDb(bw);
             if (k != null && sp != null) { k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y); Banter.Say(sp, "He is mine. You keep the rest off my back.", 1, 0.5f); Banter.Say(k, "Spool. I should have buried you myself.", 1, 3.5f); }
             Boss.NameCard("SPOOL AND THE SCRAP KING", "HOLD OFF THE WAVES");
-            _clashAt = Time.time + 2.5f; _clash = 0;
+            _clashAt = Time.time + 2.5f; _clash = 0; _atk = null; _hitAt = -1f;
         }
 
-        /// <summary>The two held units trade blows (the real swing animation, a glint where the weapons meet): it never hurts either, it is the duel the waves buy time for.</summary>
-        static void Clash()
+        // The two held units trade blows with the boss framework's own beats (Boss.Tick): a wind-up held for a second, the swing starting ChopTime/Pace before the hit, the hit with a glint where the weapons meet.
+        // It never hurts either: it is the duel the waves buy time for. Alternating: the King's hammer, Spool's bat.
+        public static int Clashes; public static bool LastByKing;
+        static HumanEnemy _atk, _dfn; static float _hitAt = -1f; static bool _swinging;
+        const float DuelWind = 1.0f, DuelPace = 0.5f;
+
+        /// <summary>One step of the duel at time `now` (the Tick, and the harness's preview).</summary>
+        internal static void DuelTick(HumanEnemy k, HumanEnemy sp, float now)
         {
-            var k = KingUnit; var sp = SpoolUnit; if (k == null || sp == null) return;
-            var (a, b) = _clash++ % 2 == 0 ? (k, sp) : (sp, k);
-            RtAi.Hold(k, 3f); RtAi.Hold(sp, 3f); k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y);
-            var anim = CombatFx.Push("melee", a, b, a.EquippedWeapon); if (anim != null) anim.Now = true;
-            var g = CombatFx.Push("glint", b, null, b.EquippedWeapon); if (g != null) g.Now = true;
+            if (k == null || sp == null) return;
+            RtAi.Hold(k, 0.4f); RtAi.Hold(sp, 0.4f);                                   // they stand their ground
+            if (_atk == null)
+            {
+                if (now < _clashAt) return;
+                (_atk, _dfn) = _clash++ % 2 == 0 ? (k, sp) : (sp, k);
+                k.FaceToward(sp.X, sp.Y); sp.FaceToward(k.X, k.Y);
+                var mc = Melee.ChargeOf(_atk); mc.PoseKey = null; mc.Pace = DuelPace; mc.Move = _clash % 3; mc.From = -1f; mc.SwingFrom = now; mc.Red = false;
+                _hitAt = now + DuelWind; _swinging = false; return;
+            }
+            var ch = Melee.ChargeOf(_atk);
+            if (!_swinging && now >= _hitAt - HeldPoseMath.ChopTime / DuelPace)
+            { float held = now - ch.SwingFrom; ch.SwingFrom = -1f; ch.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp) / DuelPace; _swinging = true; }
+            if (now >= _hitAt)
+            {
+                LastByKing = _atk == k; Clashes++;
+                var anim = CombatFx.Push("melee", _atk, _dfn, _atk.EquippedWeapon); if (anim != null) anim.Now = true;
+                var g = CombatFx.Push("glint", _dfn, null, _dfn.EquippedWeapon); if (g != null) g.Now = true;
+                _atk = null; _hitAt = -1f; _clashAt = now + 1.4f;
+            }
+        }
+
+        /// <summary>For the preview: the first clash is due at `at`.</summary>
+        internal static void DuelStart(float at) { _clashAt = at; _clash = 0; _atk = null; _hitAt = -1f; Clashes = 0; }
+
+        /// <summary>Spool's last blow: the King's guard breaks (the kneel pose) and his weapon sinks for good.</summary>
+        internal static void DuelFinish(HumanEnemy k, HumanEnemy sp, float now)
+        {
+            _atk = null; _hitAt = -1f;
+            if (k == null || sp == null) return;
+            var m = Melee.ChargeOf(sp); m.PoseKey = null; m.Pace = DuelPace; m.Move = 2; m.From = -1f; m.SwingFrom = -1f; m.SwungAt = now;
+            var kc = Melee.ChargeOf(k); kc.BrokenAt = now; kc.OpenFrom = now + 0.25f; kc.OpenUntil = now + 3600f;
+            var anim = CombatFx.Push("melee", sp, k, sp.EquippedWeapon); if (anim != null) anim.Now = true;
+            var st = CombatFx.Push("stagger", k, null, null); if (st != null) st.Now = true;
         }
 
         /// <summary>Every frame (Rt.WorldTick): the waves and the duel, then Spool's last blow.</summary>
         public static void Tick(float dt)
         {
             if (Step != 5 || !OnTier2 || Net.Mode == Net.Role.Client) return;
-            if (Time.time >= _clashAt) { Clash(); _clashAt = Time.time + 2.4f; }
+            DuelTick(KingUnit, SpoolUnit, Time.time);
             if (_wave_.Count > 0 && _wave_.Any(h => h.IsAlive())) return;
             if (_wave < WaveSizes.Length) { if (Time.time >= _waveAt) { NextWave(); _waveAt = Time.time + 4f; } return; }
             var k = KingUnit; var sp = SpoolUnit;
-            if (k != null && sp != null)
-            {
-                var anim = CombatFx.Push("melee", sp, k, sp.EquippedWeapon); if (anim != null) anim.Now = true;
-                var st = CombatFx.Push("stagger", k, null, null); if (st != null) st.Now = true;
-                Boss.HitStop(0.35f);
-            }
+            DuelFinish(k, sp, Time.time); Boss.HitStop(0.35f);
             GameLog.Event("The last of the loyal Raiders falls. Behind you, Spool's bat comes round with all the wire in it, and the Scrap King goes down on a knee in his own yard.");
             Banter.Say(SpoolUnit, "That is for the yard.", 1, 0.4f);
             Story.SetStep(Mission, 6); _wave_.Clear();

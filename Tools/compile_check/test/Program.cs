@@ -12,6 +12,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "spoolmoves") { VisorMoves(args[1], true); return 0; }
+    if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
@@ -1351,6 +1352,41 @@ static class Program {
 
   // Visor 2: the Visor's whole moveset, one move after another, through the real Boss.Begin / Boss.Tick (glint, held wind-up,
   // each hit's pose) against a player who just stands there (healed every frame) -> Tools/render/melee_moves.py
+  // 2026-11-19 (Yan: "give me a preview of the duel, animations and all"): the Nest's duel through the real CrownJob.DuelTick / DuelFinish and the real held-weapon poses -> Tools/render/crown_duel.py
+  static void CrownDuelFrames(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset(); CrownJob.Reset();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f; Melee.Now = -1f;
+    EncounterState.Enemies.Clear(); Rt.SetOffset(p, 0f, 0f);
+    var k = new HumanEnemy("The Scrap King", px, py, "Folk", "Expert", WeaponDatabase.Categories["melee"]["Sledgehammer"], StoryNpcs.SuitOf("The Scrap King", 0.4f)) { IsAggroed = false, Unkillable = true };
+    var sp = new HumanEnemy("Spool", px + 3, py, "Folk", "Veteran", WeaponDatabase.Categories["melee"]["BarbedWireBat"], ArmorDatabase.Get("tier2", "BarbwireCoat")) { IsAggroed = false, Unkillable = true };
+    EncounterState.Enemies.Add(k); EncounterState.Enemies.Add(sp); Rt.SetOffset(k, 0f, 0f); Rt.SetOffset(sp, 0f, 0f);
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
+    var gk = WeaponArt.GripOf("melee", "Sledgehammer"); var gs = WeaponArt.GripOf("melee", "BarbedWireBat"); var uk = UnitSprites.UniqueGloves["The Scrap King"]; var us = UnitSprites.UniqueGloves["Barbwire Coat"];
+    var sb = new System.Text.StringBuilder("{\"origin\":[" + px + "," + py + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"gs\":[" + string.Join(",", gs.Select(F)) + "],\"ck\":[\"" + uk.cuff + "\",\"" + uk.glove + "\"],\"cs\":[\"" + us.cuff + "\",\"" + us.glove + "\"],\"frames\":[");
+    float real = 1f / 30f, finishAt = 30000f + 19.5f; bool finished = false; int lastClash = 0; int N = 30 * 25;
+    CrownJob.DuelStart(UnityEngine.Time.time + 1.5f);
+    for (int i = 0; i < N; i++) {
+      UnityEngine.Time.time += real; UnityEngine.Time.deltaTime = real; UnityEngine.Time.unscaledTime += real; float now = UnityEngine.Time.time; CombatFx.Pending.Clear();
+      k.X = px; k.Y = py; sp.X = px + 3; sp.Y = py;
+      if (!finished && now >= finishAt) { CrownJob.DuelFinish(k, sp, now); finished = true; } else if (!finished) CrownJob.DuelTick(k, sp, now);
+      var (kx, ky) = Ballistics.Pos(k); var (sx, sy) = Ballistics.Pos(sp);
+      HeldFrame H(HumanEnemy u, ICombatant o, string key, float[] g) {
+        var c = Melee.ChargeOf(u); var (ux, uy) = Ballistics.Pos(u); var (ox, oy) = Ballistics.Pos(o); float aw = UnityEngine.Mathf.Atan2(-(oy - uy), ox - ux) * UnityEngine.Mathf.Rad2Deg;
+        return HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey ?? key, c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));
+      }
+      var fk = H(k, sp, "Sledgehammer", gk); var fs = H(sp, k, "BarbedWireBat", gs);
+      string ev = CrownJob.Clashes > lastClash ? "[[\"clash\"," + (CrownJob.LastByKing ? 1 : 0) + "]]" : "[]"; lastClash = CrownJob.Clashes;
+      if (i == (int)((finishAt - 30000f) / real) ) ev = "[[\"finish\",0]]";
+      sb.Append((i > 0 ? "," : "") + "{\"t\":" + F(i * real) + ",\"k\":[" + F(kx) + "," + F(ky) + "," + Fr(fk) + "],\"s\":[" + F(sx) + "," + F(sy) + "," + Fr(fs) + "],\"ev\":" + ev + "}");
+    }
+    sb.Append("],\"finish\":" + F(finishAt - 30000f) + ",\"clashes\":" + CrownJob.Clashes + "}");
+    File.WriteAllText(path, sb.ToString()); Console.WriteLine($"crown duel -> {path}: {CrownJob.Clashes} clashes");
+    Rt.On = false; Boss.Reset(); Melee.Reset(); CrownJob.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+  }
+
   static void VisorMoves(string path, bool spool = false) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
