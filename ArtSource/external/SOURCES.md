@@ -120,3 +120,17 @@ Found by web search, then the OpenGameArt pages were read with curl (the allowli
 | 16x16 1-bit Church Interior Tile Set (bigindie), VisuStella, KR Holy Saints, Pixel Gothic Pack | various | paid or pay-what-you-want | pews, statues, windows | not usable (licence) |
 | Medieval Church Interior (OpenGameArt) | n/a | CC0 | 3D models | not useful |
 Architecture facts for layout (text only, Lumen Learning / Wikipedia "Cathedral floorplan"): a Latin-cross plan, the nave and two aisles separated by an arcade of pillars, a bay is the square unit between pillars and the nave is usually two bays wide, then a gallery/triforium and clerestory above; medieval naves had no pews (a parish-church addition), so pews are an artistic choice here.
+
+## Door references (2026-11-20; Yan: "search for big double door sprites and references, also other types like lab doors, dungeon doors, double doors, a lot of doors" and "we need variety")
+OpenGameArt pages read with curl; images downloaded to `reference/doors/` (not the zips). All of these are drawing references first.
+| Pack | Author | Licence (read on the page) | What it gives | Class |
+|-|-|-|-|-|
+| 4 Important Looking Doors 128x128, https://opengameart.org/content/4-important-looking-doors-128x128 -> `reference/doors/four_important_doors/` | not shown (a Doom-mod door set) | **CC0** | four big sci-fi door fronts: hazard-striped base, indicator panels, pipes, riveted steel, an orange industrial one | reference (big lab/bunker doors) |
+| Dungeon Door, https://opengameart.org/content/dungeon-door -> `reference/doors/dungeon_door/` | not shown | **CC0** | a 60x60 studded oak door in a stone frame, and a version with a crossed chain bar | reference or `to-be-altered` (dungeon door) |
+| Warped Top-Down Tech Lab Extension, https://opengameart.org/node/174482 -> `reference/doors/tech_lab/` | n64guy | **CC0** | blue-steel lab door frames, vertical doors, panels, consoles (top-down, 16 px) | reference (lab doors) |
+| Warped Top-Down Tech Lab, https://opengameart.org/content/warped-top-down-tech-lab | NohbdyAhtall | **CC0** | the base lab tileset (`tileset-export.png` is in `reference/doors/tech_lab/`, 2160x1584) | reference |
+| Spooky Castle Tileset, https://opengameart.org/content/spooky-castle-tileset -> `reference/doors/spooky_castle/` | cemkalyoncu | **CC0** | stone arches with a portcullis, a barred gate and an arched oak door with a ring pull; a crenellated tower | reference (gothic/dungeon arches) |
+| Tiny Top Down Pack, https://opengameart.org/content/tiny-top-down-pack | tir2 (Screaming Brain Studios) | **CC0** | 100 generic 32x32 dungeon tiles | not downloaded |
+| Castle Door, https://opengameart.org/content/castle-door | William.Thompsonj | **CC-BY 3.0** (credit required) | castle door sheet | not downloaded, Yan decides |
+| Heavy Slamdoor, LPC Animated (Castle) Doors, Top-down Dungeon Building Set | various | CC-BY / CC-BY-SA / GPL / CC BY 4.0 | animated doors | not CC0, not used |
+| Sci-Fi dungeon doors (cosephgames.itch.io, CC0 per snippet) | cosephgames | not read: the host `cosephgames.itch.io` is not on the allowlist (only `itch.io`) | 16x16 vertical/horizontal doors, 1 or 2 tiles wide, 4 frames | lead; allow the host to read it |

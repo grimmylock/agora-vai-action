@@ -1398,7 +1398,7 @@ namespace GameCore
             c.Put(114, 124, HardCover, "busstop").Put(146, 124, HardCover, "dumpster").Put(118, 144, ScatterCover, "trash");
             c.Landmark("Central Plaza", 130, 123);
             // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md). Two builds, one switch: PaintedCathedral = true is the painted set-piece prop (ArtSource/world/props_cathedral_exterior.py); false is the little castle built from the
-            // gothic wall tiles (Yan: "can't we build a little castle shaped thing with the gothic wall tiles"): a cross-shaped nave and transept with an apse, two detached front towers with pyramid roofs, stained windows on the south faces.
+            // gothic wall tiles (Yan: "can't we build a little castle shaped thing with the gothic wall tiles"): a cross-shaped nave and transept with an apse, stained windows on the south faces (the two detached front towers were dropped: "not needed").
             if (PaintedCathedral)
             {
             // (the painted build) as ONE set-piece prop (ArtSource/world/props_cathedral_exterior.py: twin spires, a gabled front with a rose window, a steep slate nave roof, a transept, a crossing spire, an apse), because the roof system only draws boxes.
@@ -1413,9 +1413,7 @@ namespace GameCore
                 c.Rect(126, 126, 12, 24, Solid, 0, "gothic");                       // the nave (front on row 149)
                 c.Rect(116, 134, 32, 8, Solid, 0, "gothic");                        // the transept
                 c.Rect(128, 122, 8, 4, Solid, 0, "gothic");                         // the apse
-                c.Rect(118, 143, 7, 7, Solid, 0, "gothic"); c.Rect(139, 143, 7, 7, Solid, 0, "gothic");   // the two front towers, a gap of one tile either side of the nave
                 foreach (var wx in new[] { 128, 134 }) c.Put(wx, 149, Solid, "window");                  // stained windows either side of the doors
-                foreach (var wx in new[] { 121, 142 }) c.Put(wx, 149, Solid, "window");                  // one in each tower
                 foreach (var wx in new[] { 118, 121, 124, 139, 142, 145 }) c.Put(wx, 141, Solid, "window");   // the transept arms
                 c.Put(131, 149, Door).Put(132, 149, Door);
                 c.Landmark("The Cathedral", 131, 152).Exit("abandoned_cathedral", 131, 149);
