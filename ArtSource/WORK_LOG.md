@@ -6854,3 +6854,4 @@ Yan: "give me the concept for that boss we talked about after this". `ArtSource/
 - 9ag fix 4 (Yan: 'the scythe is inverted?'): the blade now sweeps BACK over the snath like a reaper's scythe (it curved away before), edge on the inside; grip edge point moved to the blade's middle (21,3). Unchecked in game.
 - 9ag design (Yan: two-form Verger): scythe duel to 50%, then a werewolf-like beast still in his coat, Gaunt-style sprite with new animations. Written into BOSS_DESIGNS.md / BOSS_ROSTER.md; nothing built.
 - 9ag design: during the 50% change the Verger is hittable but takes 90% less damage (Yan).
+- 9ag: first beast concept (Verger form 2), `ArtSource/make_verger_beast.py` -> `mutants_anim/boss_concepts/verger_beast_concept.png`, `verger_beast_vs_gaunt.png`. Hand-built, rough (blocky paws, limb anatomy weaker than the Gaunt). Concept only, not in the game.
