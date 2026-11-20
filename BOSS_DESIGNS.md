@@ -18,3 +18,5 @@ Direction words (for the artist, never shown to players): wrongness over gore, o
 Specimen grown and Excavator each needed two passes (first: a flat pink disc with cartoon eyes, a clean toy digger). Honest state: concept quality; the Excavator's vent growths read a bit like mushrooms and the husk in its cab is hard to read at small size.
 
 **Husks in concepts use the real Husk sprites** (`Resources/Sprites/husk_atlas_x2.png`, front cells pasted 1:1 by `make_boss_concepts.husk_cell`): the Excavator's driver is cell 40, the Choir's column cells 3-47. Yan, 2026-11-20: the Husk already exists, so a reference must show it, otherwise the sprite maker invents a different one. The Choir (179x282): a stone bell tower with a lit brass bell and sound rings, and a dense column of Husks climbing it, every mouth open, joined mouth to mouth by red sinew.
+
+**The Choir is not an art job** (Yan, 2026-11-20): it is a bell tower built on the Abandoned City map plus waves of the existing Husk units, so the 18-Husk column concept above is only a mood reference. Needs: tower tiles/props, the bell as a targetable object, wave spawns (like the Barrier/Crown waves), no new sprites.
