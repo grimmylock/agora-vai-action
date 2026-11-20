@@ -7,10 +7,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import make_verger_beast_poses as bp
 import make_verger_beast_coat as ct
 from pxart import crop
-W, H = 190, 190
+W, H = 192, 190
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Assets", "Resources", "Sprites", "Mutants", "anim")
 def main():
-    frames = [crop(ct.beast(), 1), crop(bp.draw("change"), 1), crop(bp.draw("run"), 1), crop(bp.draw("attack"), 1)]
+    # the generated art (Yan's: ArtSource/mutants_anim/boss_concepts/ai/poses/<pose>.png, native size, transparent) wins over the hand-built concept poses; a missing pose falls back to the generated stand, so the style never mixes
+    AI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mutants_anim", "boss_concepts", "ai", "poses")
+    names = ["stand", "change", "run", "attack"]
+    if os.path.exists(os.path.join(AI, "stand.png")):
+        stand = Image.open(os.path.join(AI, "stand.png")).convert("RGBA")
+        frames = [Image.open(os.path.join(AI, n + ".png")).convert("RGBA") if os.path.exists(os.path.join(AI, n + ".png")) else stand for n in names]
+        frames = [crop(f, 0) if f.getbbox() else f for f in frames]
+        print("generated art:", [n for n in names if os.path.exists(os.path.join(AI, n + ".png"))], "(the rest use the stand)")
+    else:
+        frames = [crop(ct.beast(), 1), crop(bp.draw("change"), 1), crop(bp.draw("run"), 1), crop(bp.draw("attack"), 1)]
     strip = Image.new("RGBA", (W * len(frames), H), (0, 0, 0, 0))
     for i, f in enumerate(frames):
         assert f.width <= W and f.height <= H, (i, f.size)
