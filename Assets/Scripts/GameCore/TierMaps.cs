@@ -1395,11 +1395,10 @@ namespace GameCore
             c.Clear(110, 120, 40, 30, Concrete);
             c.Rect(124, 125, 4, 4, Solid, 1, "fountain");   // (2026-11-20: moved up to make room for the cathedral on the plaza's south side)
             // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md): a stone nave across the plaza's south side, a gabled front with tall windows and buttresses, the great doors on the north face; its inside is the dungeon zone `abandoned_cathedral`
-            c.Rect(114, 136, 34, 14, Solid, 0, "concrete");
-            for (int wx = 117; wx <= 144; wx += 4) c.Put(wx, 136, Solid, "window");
-            foreach (var bx in new[] { 114, 122, 138, 147 }) { c.Put(bx, 135, HardCover, "part"); }
-            c.Put(130, 136, Door, "metal").Put(131, 136, Door, "metal");
-            c.Landmark("The Cathedral", 131, 134).Exit("abandoned_cathedral", 131, 136);
+            c.Rect(114, 136, 34, 14, Solid, 0, "gothic");
+            for (int wx = 117; wx <= 144; wx += 4) if (wx < 129 || wx > 132) c.Put(wx, 149, Solid, "window");           // tall stained windows along the south face (the face the 3/4 view shows)
+            c.Put(130, 149, Door).Put(131, 149, Door);                                              // the great doors, south face
+            c.Landmark("The Cathedral", 131, 152).Exit("abandoned_cathedral", 131, 149);
             c.Put(114, 124, HardCover, "busstop").Put(146, 124, HardCover, "dumpster").Put(118, 144, ScatterCover, "trash");
             c.Landmark("Central Plaza", 130, 128);
             c.Rect(144, 145, 4, 3, Difficult, -1, "rubble");

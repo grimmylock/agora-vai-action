@@ -19,7 +19,7 @@ namespace GameCore
         public const int Scale = 3;             // overworld zones
         public const int InteriorScale = 2;     // hidden caves / labs / tunnels stay tighter
 
-        static readonly HashSet<string> BuiltWalls = new HashSet<string> { "wall", "plaster", "concrete", "window", "hull", "metal", "metaldoor", "plank" };
+        static readonly HashSet<string> BuiltWalls = new HashSet<string> { "wall", "plaster", "concrete", "gothic", "window", "hull", "metal", "metaldoor", "plank" };
         static readonly HashSet<string> NaturalMass = new HashSet<string> { "cliff", "foliage", "redfoliage", "junk" };
         static readonly HashSet<string> LineLooks = new HashSet<string> { "fence", "fence_v", "fence_torn", "sandbags", "jersey", "rail", "rail_v", "roadline", "trench", "barrierpole", "pipes" };
         static readonly HashSet<string> Trees = new HashSet<string> { "tree", "deadtree", "redtree" };

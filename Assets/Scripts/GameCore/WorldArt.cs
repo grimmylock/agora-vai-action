@@ -101,7 +101,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ classification
-        private static readonly HashSet<string> BuiltWall = new HashSet<string> { "wall", "plaster", "concrete", "hull", "metal", "plank", "container" };   // Batch 101: containers fill their rectangle like a wall block
+        private static readonly HashSet<string> BuiltWall = new HashSet<string> { "wall", "plaster", "concrete", "gothic", "hull", "metal", "plank", "container" };   // Batch 101: containers fill their rectangle like a wall block
         private static readonly HashSet<string> Mass = new HashSet<string> { "cliff", "foliage", "redfoliage", "junk" };
         private static readonly HashSet<string> Lines = new HashSet<string> { "rail", "rail_v", "roadline", "trench", "boardwalk" };
         public static bool IsDecal(string l) => l != null && Decal.Contains(l);   // Batch 103: props roll over decals
@@ -214,7 +214,7 @@ namespace GameCore
         /// <summary>Interior zones: a wall cell with wall all around - deep rock, drawn as darkness.</summary>
         /// <summary>Batch 98: underground, the inside of a thick wall between rooms - a plain concrete top, no wall piece.</summary>
         private static bool[] _slab;
-        private static readonly HashSet<string> SlabWall = new HashSet<string> { "concrete", "metal", "hull", "plaster" };   // built labs; brick-lined tunnels and rock stay dark
+        private static readonly HashSet<string> SlabWall = new HashSet<string> { "concrete", "gothic", "metal", "hull", "plaster" };   // built labs; brick-lined tunnels and rock stay dark
         private static bool Slab(int x, int y)
         {
             if (!_interior || Buried(x, y) || TerrainMap.Tiles[y, x]?.Type != TileType.Solid || !SlabWall.Contains(_look[y * _w + x] ?? "")) return false;
@@ -588,6 +588,7 @@ namespace GameCore
             int W = _w * Px, H = _h * Px;
             var tex = new Spr[GroundName.Length];
             for (int i = 0; i < tex.Length; i++) tex[i] = Get("g_" + GroundName[i]);
+            if (TerrainMap.ZoneId == "abandoned_cathedral") { var fl = Get("g_flagstone"); if (fl != null) tex[(int)GroundType.LabTile] = fl; }   // 2026-11-20: the cathedral's floor is a checker of flagstones (indoor logic stays LabTile's)
             int gx0 = x0 * Px, gy0 = y0 * Px, gx1 = (x1 + 1) * Px, gy1 = (y1 + 1) * Px;
 
             // 1. floors, warped borders, water banks, elevation tint - cell by cell, so per-cell facts are read once

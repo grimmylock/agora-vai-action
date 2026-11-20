@@ -210,6 +210,33 @@ def tex_cap(tex):
 def rock_cap(pal): return tex_cap(rock_tex(pal, 5))
 def leaf_cap(pal): return tex_cap(leaf_tex(pal, 7))
 
+
+# ---------------- 2026-11-20 the cathedral (MISSION_CHOIR.md): a cool dark ashlar wall with a pointed blind arch in every bay, a lit string course, a damp foot. P["gothic"] is its own ramp.
+P["gothic"] = ramp("#1c1e24", "#272a31", "#353941", "#474c56", "#5f6570")
+def gothic_face(pal):
+    def f(x, k, H, r):
+        cx = x - 7.5; ax = abs(cx)
+        stone = pal[2] if (x * 5 + k * 3) % 11 else pal[1]
+        course = 6; row = k // course; off = 5 if row % 2 else 0
+        if k % course == course - 1: return pal[0]                                      # mortar line between courses
+        if (x + off) % 10 == 9 and k % course != 0: return pal[0]                       # staggered joints
+        # the string courses: a lit moulding under the sill line and at the springing
+        if k in (H // 2 - 2,): return pal[4]
+        if k in (H // 2 - 1,): return pal[0]
+        # the blind arch: a recess between k=8 and the sill, a pointed head, jambs lit on the left
+        top, spring = 6, 15
+        if k >= top:
+            if k < spring: w = 5.5 * (1 - ((spring - k) / (spring - top)) ** 1.7)      # the pointed head narrows to the apex
+            else: w = 5.5
+            if k < H // 2 - 3 or k > H // 2 + 1:
+                if k < H - 6 and ax <= w:
+                    edge = ax > w - 1.1
+                    if edge: return pal[4] if cx < 0 else pal[0]
+                    return pal[0] if (k + x) % 7 else pal[1]                             # the dark recess, a little grain
+        if k > H - 7: return pal[1]                                                     # the plinth
+        return stone if r.random() > .06 else pal[3]
+    return f
+
 # name: (H, T, organic, cap(x,y,r)->c, face(x,k,H,r)->c, cap_edge_light)
 STOREY2 = 40  # Batch 119 (Yan: buildings "go with the concept"): brick, plaster and concrete buildings are two storeys, 20 px a floor
 STOREY = 28   # Batch 106: a built wall is one real storey (3 m; a 16 px person is 1.8 m). Was 18 (2 m). RoofView.Lift matches.
@@ -217,6 +244,7 @@ MATERIALS = {
     "wall":       (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(brick_face(P["brick"])), P["concrete"][4]),
     "plaster":    (STOREY2, 10, False, plain_cap([P["plaster"][3]], P["plaster"][2]), weather(plaster_face(P["plaster"], P["brick"])), P["plaster"][4]),
     "concrete":   (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(panel_face(P["concrete"])), P["concrete"][4]),
+    "gothic":     (STOREY2, 10, False, plain_cap([P["gothic"][3]], P["gothic"][2]), weather(gothic_face(P["gothic"])), P["gothic"][4]),
     "hull":       (STOREY, 10, False, plain_cap([P["steel"][3]], P["rust"][2]), corrugated_face(P["steel"]), P["steel"][4]),
     "metal":      (STOREY, 10, False, plain_cap([P["tin"][2]], P["rust"][2]), corrugated_face(P["tin"]), P["tin"][3]),
     "plank":      (STOREY, 10, False, plain_cap([P["wood"][3]], P["wood"][2]), weather(plank_face(P["wood"])), P["wood"][4]),
@@ -299,7 +327,27 @@ def build(mat, mask, variant=0, extra=None, corners=0):
     if extra in ("window", "uwin", "door", "metaldoor", "blastdoor") + LOCKS and fx and T < C and not ((mask & 5) == 5 and not (mask & 10)):
         ft = min(face_top[x] for x in fx)
         two = H >= 36                                                    # Batch 119: two storeys - the top half is the upper floor
-        if extra in ("window", "uwin"):
+        if extra in ("window", "uwin") and mat == "gothic":
+            # a tall pointed stained-glass window (the tracery idea from the CC0 Gothic Window Tileset by mokalux): leaded diamond panes in deep blue, ruby, amber and green, a rose of glass at the head, a stone sill, light glowing behind
+            GL = {0: hx("#2a56a8"), 1: hx("#b02a32"), 2: hx("#d8a032"), 3: hx("#2a8a4c"), 4: hx("#36a0ac"), 5: hx("#8a3a9c")}
+            LEAD = hx("#121317"); STN = P["gothic"]
+            k0, k1, spring = 3, H - 6, 13
+            for k in range(k0, k1):
+                w = 6.3 if k >= spring else 6.3 * (1 - ((spring - k) / (spring - k0)) ** 1.8)
+                for x in range(16):
+                    ax = abs(x - 7.5)
+                    if ax > w + 1.2: continue
+                    if ax > w: im[ft + k, x] = STN[4] if x < 8 else STN[0]; continue                # the stone reveal around the opening
+                    if k >= k1 - 1: im[ft + k, x] = STN[3]; continue
+                    cell = ((x + k) // 4, (x - k) // 4); lead = (x + k) % 4 == 0 or (x - k) % 4 == 0 or ax > w - 0.9 or abs(x - 7.5) < 0.6
+                    if lead: im[ft + k, x] = LEAD; continue
+                    col = GL[(cell[0] * 3 + cell[1] * 5 + (1 if k < spring else 0)) % 6 if k >= spring + 5 else (cell[0] + cell[1] * 2) % 6]
+                    glow = 1.18 if (x + k) % 5 == 0 else 1.0                                       # a little light coming through
+                    im[ft + k, x] = tuple(min(255, int(v * glow)) for v in col[:3]) + (255,)
+            for dx in (-1, 0, 1):                                                                    # the rose at the head
+                for dy in range(-1, 2): im[ft + 8 + dy, 7 + dx] = hx("#d8b0a0") if (dx, dy) == (0, 0) else hx("#c8584c")
+            for x in range(2, 14): im[ft + k1 - 1, x] = STN[4]; im[ft + k1, x] = STN[0]               # the sill
+        elif extra in ("window", "uwin"):
             for k0 in ([3] if extra == "uwin" else [3, H // 2 + 3]) if two else [2]:
                 boarded = r.random() < .5
                 for k in range(k0, k0 + 11):
@@ -489,7 +537,7 @@ def all_tiles():
                     for ex in ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on", "keypaddoor", "keypaddoor_on", "steamdoor", "steamdoor_on"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
                 if H >= 36: t[f"w_{mat}_{key}_uwin"] = build(mat, mask, 0, "uwin", cs)   # Batch 119: an upper-floor window on a plain wall
                 if mat in ("wall", "plaster", "plank"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
-                if mat in ("wall", "plaster", "plank", "concrete"):   # Batch 98: worn, for intact walls
+                if mat in ("wall", "plaster", "plank", "concrete", "gothic"):   # Batch 98: worn, for intact walls
                     t[f"w_{mat}_{key}_worn"] = wear(build(mat, mask, 0, None, cs), __import__("zlib").crc32(f"worn{mat}{key}".encode()), mat)
     return t
 

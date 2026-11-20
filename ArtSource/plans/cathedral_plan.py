@@ -19,20 +19,27 @@ for x in (24, 39): g[5][x] = '#'
 # --- pillar rows between the nave and the aisles (gaps between them so the aisles are reachable from the nave)
 for y in range(14, 44, 3):
     if 21 <= y <= 31: continue
-    g[y][19] = '+'; g[y][44] = '+'
+    g[y][19] = '6'; g[y][44] = '6'
 # --- crossing pillars (big ones) and the bell rope
-for (x, y) in ((23, 23), (40, 23), (23, 30), (40, 30)): g[y][x] = '+'
+for (x, y) in ((23, 23), (40, 23), (23, 30), (40, 30)): g[y][x] = '6'
 # --- pews: rows of desks either side of the centre aisle, the south half of the nave
 for y in range(35, 45, 2):
-    for x in list(range(22, 29)) + list(range(35, 42)): g[y][x] = 'd'
+    for (a, b) in ((22, 28), (35, 41)):
+        g[y][a] = '3'; g[y][b] = '5'
+        for x in range(a + 1, b): g[y][x] = '4'
 # --- choir stalls and the altar in the north
 for y in range(11, 18, 2):
-    for x in (21, 22, 41, 42): g[y][x] = 'd'
-for x in range(29, 35): g[5][x] = 'h'
-g[4][31] = 'h'; g[4][32] = 'h'
-for x in (27, 36): g[6][x] = 'h'
+    g[y][21] = '3'; g[y][22] = '5'; g[y][41] = '3'; g[y][42] = '5'
+for x in range(29, 35): g[5][x] = '7'
+g[5][27] = '8'; g[5][36] = '8'; g[7][28] = '8'; g[7][35] = '8'
+g[6][26] = '9'; g[6][37] = '9'
 # --- confessionals and side chapels in the aisles (hard cover)
-for (x, y) in ((14, 16), (15, 16), (14, 40), (15, 40), (48, 16), (49, 16), (48, 40), (49, 40)): g[y][x] = 'h'
+for (x, y) in ((14, 16), (14, 40), (49, 16), (49, 40)): g[y][x] = 'z'
+for (x, y) in ((15, 16), (15, 40), (48, 16), (48, 40)): g[y][x] = 'e'          # tombs against the aisle walls
+for (x, y) in ((7, 24), (7, 29), (56, 24), (56, 29)): g[y][x] = 'e'              # and in the transept ends
+for (x, y) in ((9, 22), (54, 22), (9, 31), (54, 31)): g[y][x] = '9'              # saints in the transept corners
+for (x, y) in ((29, 27), (34, 27)): g[y][x] = '8'                                # candelabra at the crossing, either side of the bell rope
+for (x, y) in ((26, 48), (37, 48)): g[y][x] = 'y'                                # fonts in the narthex
 # --- windows in the outer walls (Solid 'n'), each with a spawn landmark floor tile just inside
 wins = [(12, 17, 'F', 1), (12, 25, 'G', 1), (12, 33, 'H', 1), (12, 41, 'J', 1), (51, 17, 'K', -1), (51, 25, 'L', -1), (51, 33, 'M', -1), (51, 41, 'O', -1)]
 # the transepts' west/east ends are y22..31 from x5/x58, so the aisle windows at y 17..41 sit on x=12 and x=51 where the aisle is (13..19/44..50)

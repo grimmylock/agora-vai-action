@@ -134,9 +134,32 @@ def grate(seed):
             a[y, x] = c
     return Image.fromarray(a, "RGBA")
 
+def flagstone(seed):
+    """2026-11-20 the cathedral floor: a checker of large flags in two cool greys, dark grout, hairline cracks, wear in the middle of each flag, a few dark stains and chips (64x64, tiles)."""
+    r = rng(seed); n = fbm(S, S, seed, (16, 8, 4), (0.5, 0.3, 0.2)); n = (n - n.min()) / (n.max() - n.min() + 1e-6)
+    A = ramp("#3a3d44", "#454952", "#515662", "#60666f"); B = ramp("#2c2e35", "#363941", "#41454e", "#4d525c"); GR = hx("#16171a")
+    im = blank(S, S)
+    for y in range(S):
+        for x in range(S):
+            fx, fy = x // 16, y // 16; pal = A if (fx + fy) % 2 == 0 else B
+            v = n[y, x]; i = 0 if v < .25 else 1 if v < .55 else 2 if v < .85 else 3
+            if x % 16 == 0 or y % 16 == 0: c = GR
+            elif x % 16 == 1 or y % 16 == 1: c = pal[min(3, i + 1)]                  # the lit lip of the flag (top-left)
+            elif x % 16 == 15 or y % 16 == 15: c = pal[max(0, i - 1)]
+            else: c = pal[i]
+            im.putpixel((x, y), c)
+    for _ in range(7):                                                                    # hairline cracks
+        x, y = r.randrange(S), r.randrange(S)
+        for _k in range(r.randint(4, 10)):
+            px(im, x % S, y % S, GR); x += r.choice((-1, 0, 1)); y += r.choice((0, 1, 1))
+    for _ in range(5):                                                                    # dark stains
+        cx, cy = r.randrange(S), r.randrange(S)
+        for _k in range(r.randint(6, 14)): px(im, (cx + r.randint(-3, 3)) % S, (cy + r.randint(-3, 3)) % S, hx("#1a1b1f"))
+    return im
+
 GROUNDS = {
     "grass": grass, "darkgrass": darkgrass, "dirt": dirt, "mud": mud, "asphalt": asphalt, "concrete": concrete,
-    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate,
+    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate, "flagstone": flagstone,
 }
 
 # ---------------- decals (walkable decoration, baked into the ground layer)

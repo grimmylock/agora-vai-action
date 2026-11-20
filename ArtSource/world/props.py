@@ -1182,3 +1182,9 @@ try:
     PROPS.update(_pl.NEW); VARIANTS.update(_pl.VARIANTS)
 except ImportError:
     pass
+# 2026-11-20: the cathedral set (props_cathedral.py): pews, column, altar, candelabra, statue, font, confessional, tomb
+try:
+    import props_cathedral as _pc
+    PROPS.update(_pc.NEW); VARIANTS.update(_pc.VARIANTS)
+except ImportError:
+    pass

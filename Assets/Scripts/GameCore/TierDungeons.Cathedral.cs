@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using GameData;
 using static GameCore.GroundType;
+using static GameCore.TileType;
 
 namespace GameCore
 {
@@ -16,7 +17,28 @@ namespace GameCore
                 ['U'] = ("Crypt Niche", null), ['V'] = ("Roost", null),
                 ['F'] = ("Window 1", null), ['G'] = ("Window 2", null), ['H'] = ("Window 3", null), ['J'] = ("Window 4", null), ['K'] = ("Window 5", null), ['L'] = ("Window 6", null), ['M'] = ("Window 7", null), ['O'] = ("Window 8", null),
             };
-            return FloorPlan("abandoned_cathedral", CathedralPlan, "concrete", Concrete, marks, null);
+            // the cathedral's own legend (3 4 5 = the left end, middle and right end of a pew, 6 a column, 7 the altar, 8 a candelabra, 9 a statue, e a tomb, y a font, z a confessional) is stamped on top of the common plan
+            const string special = "3456789eyz";
+            var plain = new string[CathedralPlan.Length];
+            for (int i = 0; i < plain.Length; i++) { var cs = CathedralPlan[i].ToCharArray(); for (int j = 0; j < cs.Length; j++) if (special.IndexOf(cs[j]) >= 0) cs[j] = '.'; plain[i] = new string(cs); }
+            var c = new TerrainCanvas(CathedralPlan[0].Length, CathedralPlan.Length, TerrainCanvas.Seed("abandoned_cathedral"));
+            StampPlan(c, 0, 0, plain, "gothic", LabTile, marks, null);
+            for (int y = 0; y < CathedralPlan.Length; y++)
+                for (int x = 0; x < CathedralPlan[y].Length; x++)
+                    switch (CathedralPlan[y][x])
+                    {
+                        case '3': c.Put(x, y, ScatterCover, "pew_l"); break;
+                        case '4': c.Put(x, y, ScatterCover, "pew_m"); break;
+                        case '5': c.Put(x, y, ScatterCover, "pew_r"); break;
+                        case '6': c.Put(x, y, HardCover, "column"); break;
+                        case '7': c.Put(x, y, HardCover, "altar"); break;
+                        case '8': c.Put(x, y, ScatterCover, "candelabra"); break;
+                        case '9': c.Put(x, y, HardCover, "statue"); break;
+                        case 'e': c.Put(x, y, HardCover, "tomb"); break;
+                        case 'y': c.Put(x, y, ScatterCover, "font"); break;
+                        case 'z': c.Put(x, y, HardCover, "confessional"); break;
+                    }
+            return Finish(c, "gothic");
         }
     }
 }

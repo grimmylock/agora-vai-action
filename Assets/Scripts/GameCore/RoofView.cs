@@ -15,8 +15,8 @@ namespace GameCore
     {
         public const int Lift = 28;                       // wall face height in px of one storey (walls.py STOREY; Batch 106, was 18)
         public const int LiftTall = 40;                   // Batch 119: brick, plaster and concrete buildings are two storeys (walls.py STOREY2)
-        public static readonly System.Collections.Generic.HashSet<string> TwoStorey = new System.Collections.Generic.HashSet<string> { "wall", "plaster", "concrete" };
-        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "concrete", "plank", "metal", "hull", "window", "metaldoor" };
+        public static readonly System.Collections.Generic.HashSet<string> TwoStorey = new System.Collections.Generic.HashSet<string> { "wall", "plaster", "concrete", "gothic" };
+        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "concrete", "gothic", "plank", "metal", "hull", "window", "metaldoor" };
         static readonly HashSet<string> Tin = new HashSet<string> { "metal", "plank", "hull" };
 
         public enum Roof { Tar, Tin, Slab, Gable, Hip, Saw }
@@ -220,6 +220,7 @@ namespace GameCore
                 case "plaster":
                     if (span <= 10) { pitched = true; b.Mat = h < 0.35f ? Cover.TinGreen : h < 0.6f ? Cover.TinRed : Cover.Slate; }
                     break;
+                case "gothic": pitched = true; b.Mat = Cover.Slate; break;   // 2026-11-20: the cathedral: a slate gable over dark stone
                 case "concrete":
                     if (span <= 8 && b.W * b.H <= 72) b.Style = Roof.Slab;
                     else if (span >= 10 && b.W * b.H >= 150 && h < 0.4f) b.Style = Roof.Saw;   // a factory hall
@@ -251,6 +252,7 @@ namespace GameCore
             {
                 case "plank": return wx % 4 == 0 ? C("3f3126") : Hash(wx, 0, 70) < 0.5f ? C("5f4a37") : C("6a523d");
                 case "plaster": return Hash(wx, wy, 71) < 0.15f ? C("837c6c") : C("9a9282");
+                case "gothic": return Hash(wx, wy, 72) < 0.2f ? C("3a3e46") : C("4a4f58");
                 case "concrete": case "metal": case "hull": return Hash(wx, wy, 72) < 0.2f ? C("6a6c66") : C("7d7f78");
                 default:
                     bool mortar = wy % 3 == 0 || (wx + (wy / 3 % 2) * 3) % 6 == 0;
