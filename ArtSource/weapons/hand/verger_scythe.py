@@ -53,9 +53,15 @@ def build(W, H, haft_y, haft_th, haft_x1, wrap, ring_x, p0, p1, p2, w0, cap, nib
         for x in range(int(p0[0]) - 3, int(p0[0]) + 3):
             if 0 <= haft_y - 1 + t < H: g[haft_y - 1 + t][x] = ("4" if t == 0 else "3" if t < (haft_th + 2) // 2 else "2" if t < haft_th + 1 else "1")
     return ["".join(r) for r in g]
-MENU = build(62, 30, 22, 4, 56, (10, 27), 29, (56.5, 24), (57, 5), (36, 1.5), 8, 3, (28, 0, 4),
-             [(40, 4, "R"), (44, 5, "r"), (53, 12, "R"), (55, 18, "r")])
-HAND = build(30, 14, 10, 2, 27, (5, 12), 14, (27.5, 11), (28, 2), (15, 0.8), 4, 2, (13, 0, 2),
-             [(18, 1, "R"), (21, 2, "r")])
+def ctrl(p0, p2, f):
+    """the bezier's control point: f = 0 a straight blade, 1 the full hook (the corner above the base and level with the tip)"""
+    corner = (p0[0], p2[1]); mid = ((p0[0] + p2[0]) / 2, (p0[1] + p2[1]) / 2)
+    return (mid[0] + f * (corner[0] - mid[0]), mid[1] + f * (corner[1] - mid[1]))
+CURVE = 0.5          # 2026-11-20 (Yan: "a little bigger and less curved"): was a full hook (1.0); the blade is also about half as long again
+M0, M2 = (60.5, 30), (30, 2); H0, H2 = (29.5, 15.5), (16, 1.5)
+MENU = build(70, 36, 28, 4, 60, (10, 30), 33, M0, ctrl(M0, M2, CURVE), M2, 10, 3, (30, 0, 4),
+             [(34, 5, "R"), (38, 7, "r"), (54, 16, "R"), (57, 22, "r")])
+HAND = build(34, 18, 14, 2, 29, (5, 14), 16, H0, ctrl(H0, H2, CURVE), H2, 5.5, 2, (14, 0, 2),
+             [(18, 2, "R"), (22, 5, "r")])
 if __name__ == "__main__":
-    mp.paint(HAND, PAL, 32, 16).save(os.path.join(mp.WEAP, "weapon_VergerScythe.png")); mp.paint(MENU, PAL, 64, 32).save(os.path.join(mp.WEAP, "weapon_VergerScythe_hd.png"))
+    mp.paint(HAND, PAL, 36, 20).save(os.path.join(mp.WEAP, "weapon_VergerScythe.png")); mp.paint(MENU, PAL, 72, 40).save(os.path.join(mp.WEAP, "weapon_VergerScythe_hd.png"))

@@ -628,7 +628,7 @@ namespace GameCore
             ["Sledgehammer"] = new[] { 4.5f, 8f, float.NaN, float.NaN, 28f, 12.5f },
             ["WoodenBaseballBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["VergerClaws"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },   // 2026-11-20: bare claws, no weapon sprite: the grip only keeps the swing poses working
-            ["VergerScythe"] = new[] { 7f, 11f, float.NaN, float.NaN, 21f, 3f },   // 2026-11-20: the grip on the wrap of the low snath, the cutting point at the blade tip
+            ["VergerScythe"] = new[] { 7f, 15f, float.NaN, float.NaN, 24f, 6f },   // 2026-11-20: the grip on the wrap of the low snath, the cutting point mid-blade (a bigger, straighter blade: 36x20 sprite)
             ["BarbedWireBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 6.3f, 10.3f, float.NaN, float.NaN, 19.8f, 3.5f },
