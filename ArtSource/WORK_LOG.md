@@ -6840,3 +6840,6 @@ Yan: the two front towers "are not needed" (removed from the tile-built cathedra
 
 ## Batch 9ae - doors wired in, by place (2026-11-20)
 Yan: "Assign by place, wire them in". See MISSION_CHOIR.md "Doors". Harness: ALL CHECKS PASSED (the "Husk packs: never in a Safe Zone" check failed once and passed on re-run: it rolls dice). Not run in Unity.
+
+## Batch 9af - the Verger concept (2026-11-20)
+Yan: "give me the concept for that boss we talked about after this". `ArtSource/make_verger_concept.py`: two poses (guard, overhead wind-up), three passes (the first read as a cartoon: a bald face, a bucket mask, a ring for an axe head; the second slimmed the coat, hid the face in the hat's shadow and gave the axe a proper bearded head; the third fixed the chop pose). Concept quality, not in the game.
