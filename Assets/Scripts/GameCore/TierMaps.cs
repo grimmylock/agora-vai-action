@@ -1393,14 +1393,15 @@ namespace GameCore
             c.Landmark("Highrise Row", 107, 98);
             // the Central Plaza, its dead fountain, the subway entrance (Underground Bunker)
             c.Clear(110, 120, 40, 30, Concrete);
-            c.Rect(124, 125, 4, 4, Solid, 1, "fountain");   // (2026-11-20: moved up to make room for the cathedral on the plaza's south side)
-            // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md): a stone nave across the plaza's south side, a gabled front with tall windows and buttresses, the great doors on the north face; its inside is the dungeon zone `abandoned_cathedral`
-            c.Rect(114, 136, 34, 14, Solid, 0, "gothic");
-            for (int wx = 117; wx <= 144; wx += 4) if (wx < 129 || wx > 132) c.Put(wx, 149, Solid, "window");           // tall stained windows along the south face (the face the 3/4 view shows)
-            c.Put(130, 149, Door).Put(131, 149, Door);                                              // the great doors, south face
-            c.Landmark("The Cathedral", 131, 152).Exit("abandoned_cathedral", 131, 149);
+            c.Rect(122, 121, 4, 4, Solid, 1, "fountain");   // (2026-11-20: moved up to make room for the cathedral on the plaza's south side)
             c.Put(114, 124, HardCover, "busstop").Put(146, 124, HardCover, "dumpster").Put(118, 144, ScatterCover, "trash");
-            c.Landmark("Central Plaza", 130, 128);
+            c.Landmark("Central Plaza", 130, 123);
+            // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md): painted as ONE set-piece prop (ArtSource/world/props_cathedral_exterior.py: twin spires, a gabled front with a rose window, a steep slate nave roof, a transept, a crossing spire, an apse), because the roof system only draws boxes.
+            // The footprint (34 x 24, x 114..147, y 126..149) is solid for collision with a look that draws nothing; the prop hangs on the anchor tile in front of the door; the great doors (tiles 130, 131) are the way in.
+            c.Rect(114, 126, 34, 24, Solid, 0, "cathedral_mass");
+            c.Put(130, 149, Door).Put(131, 149, Door);
+            c.Put(131, 150, Empty, "cathedral");
+            c.Landmark("The Cathedral", 131, 153).Exit("abandoned_cathedral", 131, 149);
             c.Rect(144, 145, 4, 3, Difficult, -1, "rubble");
             c.Deco(146, 147, "hatch");
             c.Landmark("Subway Entrance", 146, 145).Exit("underground_bunker", 146, 147);
