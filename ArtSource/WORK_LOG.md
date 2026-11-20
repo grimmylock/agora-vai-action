@@ -6787,3 +6787,9 @@ Harness passed. Not run in Unity or rendered; scene tiles are placed by coordina
 - Yan liked the Rot Crawler and Mind Weaver concepts (the Void Weaver is parked: "we'll revisit"), and said the concepts are not game-quality sprites. Ran them through SpriteCook the way the Gaunt was (concept = design reference, Gaunt/Dread Prowler/Blight Brute = style references): `ArtSource/mutants_anim/concepts_new/spritecook/` (README, `compare_v1.png`). Rot Crawler 112x64 is game-ready in look and size; Mind Weaver came out 165x294 (too big for the game's scale).
 - Earlier the same day Pixel Lab loops were made from the CONCEPTS (crawl, hover; `concepts_new/pixellab/`, 2 of the trial's generations): superseded, redo from the SpriteCook sprites once Yan picks.
 - Credits: SpriteCook 14 left, Pixel Lab 17.05 generations. Nothing is in the game.
+
+## Batch 9s - Rot Crawler fixed, small hand-built Mind Weaver with 3 colourways (2026-11-20)
+- Yan: no money for SpriteCook credits; fix the Rot Crawler's limbs; the big SpriteCook Mind Weaver becomes a boss (own arena) and a small regular Tier 3 one is drawn by hand like the Gaunt; asked to see the brown tree creature (Pixel Lab bitforge try, shown, files not kept).
+- `ArtSource/fix_rot_crawler.py`: erased the far hind leg and the raised far arm (hand-placed polygons) and redrew the outline where the cut was: `concepts_new/spritecook/rot_crawler_sc_v1_fixed.png`, 101x64. Still 3.2 tiles wide (big for a swarm unit; the Dread Prowler is 2.3).
+- `ArtSource/make_mind_weaver_small.py`: the v2 concept drawing code run through a 0.68 scaling layer, 68x105 (3.3 tiles), three colourways: a grey/pink/violet, b sea-green/green/blue (the drowned one), c rust-pink/raw-red/rust (the flayed one). Looks like the concept (not SpriteCook quality); the thread net is heavy at this size.
+- The boss version (SpriteCook v1/v2, 163x294) and its arena are a design question put to Yan, not built.
