@@ -4,7 +4,7 @@ Keep the numbers in step with the C#. python3 Tools/render/hook_chain.py out_dir
 import os, sys
 from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__)); SPR = os.path.join(HERE, "..", "..", "Assets", "Resources", "Sprites")
-S = 8; PX = 1 / 16.0
+S = 8; PX = 1 / 16.0; SCALE = 0.5      # CombatFxView.ChainScale = 16 / WeaponArt.PixelsPerUnit (32): the sprites' pixels-per-unit, as for the weapons
 STEEL, DARK = (158, 173, 189), (41, 46, 51); BG = (52, 50, 44)
 def cell(path, i=0):
     im = Image.open(path).convert("RGBA"); return im.crop((i * 16, 0, i * 16 + 16, 16))
@@ -45,14 +45,14 @@ def render(hit, times, ground=0):
             def piece(img, pos, deg, flip):
                 """a sprite piece as CombatFxView.ChainPiece: scale.y = flip, then turned `deg` (counter-clockwise), centred on pos, slid toward his hands by k_t (vel = (a - pos) / 0.5)"""
                 x, y = pos[0] + (a[0] - pos[0]) * k_t, pos[1] + (a[1] - pos[1]) * k_t
-                im2 = img.resize((img.width * Z, img.height * Z), Image.NEAREST)
+                im2 = img.resize((max(1, round(img.width * Z * SCALE)), max(1, round(img.height * Z * SCALE))), Image.NEAREST)
                 if flip < 0: im2 = im2.transpose(Image.FLIP_TOP_BOTTOM)
                 im2 = im2.rotate(deg, expand=True, resample=Image.NEAREST)
                 al = im2.getchannel("A").point(lambda v: int(v * alpha)); im2.putalpha(al)
                 lay.alpha_composite(im2, (int(x * TILE - im2.width / 2), int(byc - y * TILE - im2.height / 2)))
             ang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])); flip = -1 if b[0] < a[0] else 1
-            hl = 0.75; eye = (b[0] - math.cos(math.radians(ang)) * hl, b[1] - math.sin(math.radians(ang)) * hl)
-            nl = max(3, round(((a[0] - eye[0]) ** 2 + (a[1] - eye[1]) ** 2) ** .5 / 0.3125))
+            hl = 0.75 * SCALE; eye = (b[0] - math.cos(math.radians(ang)) * hl, b[1] - math.sin(math.radians(ang)) * hl)
+            nl = max(3, round(((a[0] - eye[0]) ** 2 + (a[1] - eye[1]) ** 2) ** .5 / (0.3125 * SCALE)))
             for k in range(1, nl + 1):
                 u = k / nl; pos = (a[0] + (eye[0] - a[0]) * u, a[1] + (eye[1] - a[1]) * u - sag * 4 * u * (1 - u))
                 la = math.degrees(math.atan2((eye[1] - a[1]) - sag * 4 * (1 - 2 * u), eye[0] - a[0]))

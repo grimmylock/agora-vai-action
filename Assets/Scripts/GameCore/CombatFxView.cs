@@ -770,6 +770,7 @@ namespace GameCore
 
         // ---- Boss 1: the hype (glints, parries, staggers, the aura, the finisher, the smoke) ----
 
+        const float ChainScale = 16f / WeaponArt.PixelsPerUnit;       // 2026-11-20 (Yan: "too big, reduce the size only, not the drawing ... like we do the weapons"): the size is the sprites' pixels-per-unit, as for the weapons (32: half-size pixels next to the 16 px characters), so the drawing is untouched and the pixels stay square; the hook and links are half their old size
         static readonly Color ChainSteel = new Color(0.62f, 0.68f, 0.74f), ChainDark = new Color(0.16f, 0.18f, 0.2f);
         static readonly Color GlintWhite = new Color(1f, 1f, 0.92f), GlintRed = new Color(1f, 0.18f, 0.14f), Steel = new Color(1f, 0.93f, 0.7f);
 
@@ -808,10 +809,10 @@ namespace GameCore
                 {
                     var a = head - new Vector3(0f, 0.25f, 0f); var b = to + new Vector3(0f, 0.45f, 0f);
                     float len = Vector3.Distance(a, b); float sag = (e.Hit ? 0.06f : 0.24f) * Mathf.Min(1f, len / 2f);
-                    var linkArt = Strip("Sprites/Fx/fx_hook_links", 2, 16, new Vector2(0.5f, 0.5f)); var hookArt = Strip("Sprites/Fx/fx_hook_head", 1, 16, new Vector2(0.5f, 0.5f));
+                    var linkArt = Strip("Sprites/Fx/fx_hook_links", 2, WeaponArt.PixelsPerUnit, new Vector2(0.5f, 0.5f)); var hookArt = Strip("Sprites/Fx/fx_hook_head", 1, WeaponArt.PixelsPerUnit, new Vector2(0.5f, 0.5f));
                     float ang = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg, flip = b.x < a.x ? -1f : 1f;
-                    float hookLen = 0.75f; var tip = b; var eye = b - new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f) * hookLen;   // the hook's eye, one hook-length back along the line from where it bites
-                    int n = Mathf.Max(3, Mathf.RoundToInt(Vector3.Distance(a, eye) / 0.3125f));                                                                                                            // one link every 5 px (they interlock: a face-on one is 6 px long, an edge-on one 4)
+                    float hookLen = 0.75f * ChainScale; var tip = b; var eye = b - new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f) * hookLen;   // the hook's eye, one hook-length back along the line from where it bites
+                    int n = Mathf.Max(3, Mathf.RoundToInt(Vector3.Distance(a, eye) / (0.3125f * ChainScale)));                                                                                                            // one link every 5 px (they interlock: a face-on one is 6 px long, an edge-on one 4)
                     for (int k = 1; k <= n; k++)
                     {
                         float u = k / (float)n; var pos = Vector3.Lerp(a, eye, u) + new Vector3(0f, -sag * 4f * u * (1f - u), 0f);
