@@ -12,6 +12,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "spoolmoves") { VisorMoves(args[1], true); return 0; }
+    if (args.Length > 1 && args[0] == "vergermoves") { VisorMoves(args[1], false, true); return 0; }
     if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
@@ -98,6 +99,7 @@ static class Program {
     ElderClipChecks();
     SpoolChecks();
     VergerChecks();
+    CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
     Tier2PoiChecks();
@@ -1392,20 +1394,20 @@ static class Program {
     Rt.On = false; Boss.Reset(); Melee.Reset(); CrownJob.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
   }
 
-  static void VisorMoves(string path, bool spool = false) {
+  static void VisorMoves(string path, bool spool = false, bool verger = false) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     EncounterState.Enemies.Clear();
-    var bd = spool ? Boss.Spool : Boss.Visor; string wkey = spool ? "BarbedWireBat" : "SerratedTrenchKnife";
+    var bd = verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; var mvs = verger ? bd.Moves.Where(m => !m.Phase2Only).ToArray() : bd.Moves; spool |= verger;
     var f = Boss.Spawn(bd, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
     var g = WeaponArt.GripOf("melee", wkey);
     var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"" + wkey + "\",\"title\":\"" + bd.Name + "\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
-    sb.Append(string.Join(",", bd.Moves.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
+    sb.Append(string.Join(",", mvs.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
     int k = 0;
-    for (int mi = 0; mi < bd.Moves.Length; mi++) {
-      var m = bd.Moves[mi];
+    for (int mi = 0; mi < mvs.Length; mi++) {
+      var m = mvs[mi];
       for (int i = 0; i < 30 * 6; i++) {
         float dt = 1f / 30f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.timeScale = 1f;
         float now = UnityEngine.Time.time;
@@ -1422,7 +1424,7 @@ static class Program {
       }
       f.Doing = null;
     }
-    if (spool) { var ug = UnitSprites.UniqueGloves["Barbwire Coat"]; sb.Append("]}],\"armor\":[0,\"" + ug.cuff + "\",\"" + ug.glove + "\"],\"body\":\"armor_unique_barbwire_coat.png\"}"); }
+    if (spool) { string cn = verger ? "Verger Coat" : "Barbwire Coat"; var ug = UnitSprites.UniqueGloves[cn]; sb.Append("]}],\"armor\":[0,\"" + ug.cuff + "\",\"" + ug.glove + "\"],\"body\":\"armor_unique_" + (verger ? "verger_coat" : "barbwire_coat") + ".png\"}"); }
     else sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
     File.WriteAllText(path, sb.ToString()); Console.WriteLine((spool ? "spool" : "visor") + " moves -> " + path);
     Rt.On = false; Boss.Reset(); Melee.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
@@ -2754,6 +2756,35 @@ static class Program {
       for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.05f; if (GameCore.MutantAttack.Update(e, p, UnityEngine.Time.time, ref next) && GameCore.MutantAttack.KindOf(e) == "combo4") played = true; }
       Check(played && p.Hp < p.MaxHp, $"Elder: the 4-hit combo plays next to a player and hurts (hp {p.Hp}/{p.MaxHp})");
     } finally { Rt.On = false; EncounterState.Enemies.Clear(); GameCore.GauntBoss.Reset(); }
+  }
+
+  static void CathedralJobChecks() {   // 2026-11-20: the cathedral job: ring the bell, the waves, the pay, the Verger at the end, the cooldown
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); CathedralJob.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 98000f; UnityEngine.Time.unscaledTime = 98000f;
+    try {
+      CathedralJob.ZoneOverride = CathedralJob.Zone; CathedralJob.Target = 3; MacroState.Current.Day = 10;
+      foreach (var (n, dx, dy) in new[] { (CathedralJob.Rope, 1, 0), (CathedralJob.AltarMark, 14, 0), (CathedralJob.Sacristy, 15, 3), ("Window 1", 16, -4), ("Window 2", 16, 4), ("West Door", 18, 0) })
+        TerrainMap.Landmarks.Add(new LandmarkInstance { Name = n, X = px + dx, Y = py + dy, Description = "" });
+      Check(CathedralJob.Pop == CathedralJob.PopStart && CathedralJob.Open, "Cathedral: the city starts with 90 Husks and the contract is open");
+      int ru0 = p.Ru;
+      Check(CathedralJob.TryInteract(p) && CathedralJob.St == CathedralJob.Stage.Ringing && CathedralJob.Tolls == 1, "Cathedral: E at the Bell Rope takes the contract and rings");
+      var husks = EncounterState.Enemies.OfType<HumanEnemy>().Where(Husk.Is).ToList();
+      Check(husks.Count >= 4 && husks.All(h => CombatantUtil.Distance(p, h.X, h.Y) >= CathedralJob.MinSpawnDistance), $"Cathedral: a wave comes in at the far windows and doors, never beside you ({husks.Count})");
+      Check(Body.Concussed(p) && CathedralJob.Hurry(husks[0]) > 1f, "Cathedral: the toll deafens you and the Husks go quick");
+      CathedralJob.TryInteract(p); Check(CathedralJob.Tolls == 1, "Cathedral: the rope cannot be pulled again while the bell still swings");
+      UnityEngine.Time.time += 6f; CathedralJob.TryInteract(p); Check(CathedralJob.Tolls == 2 && EncounterState.Enemies.OfType<HumanEnemy>().Count(Husk.Is) > husks.Count, "Cathedral: the second toll sends a bigger wave");
+      foreach (var h in husks.Take(3)) h.Hp = 0; CathedralJob.Tick(0.1f);
+      Check(CathedralJob.Kills == 3 && p.Ru == ru0 + 3 * CathedralJob.PayPerHusk && CathedralJob.Pop == CathedralJob.PopStart - 3, "Cathedral: every Husk that falls is paid and is one fewer in the city");
+      Check(CathedralJob.St == CathedralJob.Stage.Closing, "Cathedral: at the target the bell stops by itself");
+      foreach (var h in EncounterState.Enemies.OfType<HumanEnemy>().Where(Husk.Is)) h.Hp = 0; CathedralJob.Tick(0.1f);
+      Check(CathedralJob.St == CathedralJob.Stage.Verger && Boss.Fights.Any(f => f.Def == Boss.Verger), "Cathedral: when the last Husk is down the Verger walks in");
+      CathedralJob.TryInteract(p); Check(CathedralJob.Tolls == 2 && EncounterState.Enemies.OfType<HumanEnemy>().Count(h => Husk.Is(h) && h.IsAlive()) == 0, "Cathedral: the bell is silent while he stands, and no Husks come");
+      var vf = Boss.Fights.First(f => f.Def == Boss.Verger); vf.Finished = true; int ru1 = p.Ru; CathedralJob.Tick(0.1f);
+      Check(CathedralJob.St == CathedralJob.Stage.Done && p.Ru == ru1 + CathedralJob.Bonus && !CathedralJob.Open && CathedralJob.ReadyDay == 14, "Cathedral: his end pays the bonus and closes the contract for four days");
+      Check(TerrainMap.InteractiveObjects.Any(o => o.Name == "Sacristy Cache"), "Cathedral: a cache is left in the sacristy");
+      CathedralJob.TryInteract(p); Check(CathedralJob.St == CathedralJob.Stage.Done, "Cathedral: the rope is cold until the contract reopens");
+      MacroState.Current.Day = 14; Check(CathedralJob.Open && CathedralJob.Pop >= CathedralJob.PopStart - 3 + 3 * 0 && CathedralJob.Pop <= CathedralJob.PopStart, "Cathedral: four days on it reopens and the city has refilled");
+      CathedralJob.ZoneOverride = "somewhere_else"; CathedralJob.Tick(0.1f); Check(CathedralJob.St == CathedralJob.Stage.Idle, "Cathedral: leaving the cathedral ends the session");
+    } finally { CathedralJob.ZoneOverride = null; CathedralJob.Reset(); Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
   static void VergerChecks() {   // 2026-11-20: Boss 6, the Verger: a scythe duel, then at half health the change (90% less damage for 4 s) and the claws

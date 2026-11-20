@@ -53,7 +53,7 @@ namespace GameCore
         /// <summary>RT batch 5: tiles a second. Mutants by their MP (hounds fast, the Brute slow); humans walk at 2.2.</summary>
         public static float Speed(Mutant m)
         {
-            float v = (m is HumanEnemy ? 2.2f : System.Math.Max(1.8f, System.Math.Min(5f, 0.6f * (m.Db?.Mp ?? 4)))) * Gaunt.Hurry(m);   // a mutant the Gaunt drives runs 35% faster
+            float v = (m is HumanEnemy ? 2.2f : System.Math.Max(1.8f, System.Math.Min(5f, 0.6f * (m.Db?.Mp ?? 4)))) * Gaunt.Hurry(m) * CathedralJob.Hurry(m);   // a mutant the Gaunt drives runs 35% faster
             if (m.Db?.Name == "Swarm") v = System.Math.Min(v, Rt.Sprint * 0.7f);        // Yan, 2026-11-17: "the rot swarm is waay too fast and can't be outrun": the rats are slower than a sprinting player (70%: 88% still caught Yan), driven or not
             return v;
         }

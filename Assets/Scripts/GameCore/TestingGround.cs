@@ -112,6 +112,9 @@ namespace GameCore
             SpoolBoss.Spawn(x, y, false);
         }
 
+        /// <summary>The cathedral job on a short contract (8 Husks, then the Verger).</summary>
+        public static void CathedralJobTest(Player p) => CathedralJob.StartTest(8);
+
         /// <summary>Boss 6: the Verger's duel on the range - him 6 tiles in front of you with the scythe, the change at half health (F parries).</summary>
         public static void VergerDuel(Player p)
         {

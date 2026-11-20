@@ -822,6 +822,7 @@ namespace GameCore
             BrainBoss.Tick(Time.deltaTime);                                        // Boss 2: the vat's orbs, props and pull
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
+            CathedralJob.Tick(Time.deltaTime);                                     // the cathedral job: the bell, the waves, the Verger at the end
             SpoolBoss.Tick(Time.deltaTime);                                        // Boss 4: Spool in the Dog Kennels
             // (ChoirBoss.Tick retired 2026-11-20: the Choir is the cathedral job now, MISSION_CHOIR.md)
             Tier2Poi.Tick();                                                      // Tier 2 points of interest: papers + crews

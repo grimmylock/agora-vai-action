@@ -11,6 +11,7 @@ namespace GameCore
         {
             if (unit is Player examiner && EelBoss.TryExamine(examiner)) return;          // Boss 3: E on the drowned crewman starts the eel's introduction
             if (unit is Player carder && Tier2Story.TryUseDoor(carder)) return;           // Tier 2 "Taken": E at the lab door
+            if (unit is Player ringer && CathedralJob.TryInteract(ringer)) return;      // the cathedral job: E at the Bell Rope
             if (unit is Player finisher && Boss.TryFinish(finisher)) return;              // Boss 1: E next to a broken boss
             if (unit is Player breaker && Boss.TryBreakWall(breaker)) return;            // Boss 1: the Visor's cracked wall
             if (unit is Player tester && TestingGround.TryInteract(tester)) return;
