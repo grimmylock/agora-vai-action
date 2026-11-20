@@ -6855,3 +6855,4 @@ Yan: "give me the concept for that boss we talked about after this". `ArtSource/
 - 9ag design (Yan: two-form Verger): scythe duel to 50%, then a werewolf-like beast still in his coat, Gaunt-style sprite with new animations. Written into BOSS_DESIGNS.md / BOSS_ROSTER.md; nothing built.
 - 9ag design: during the 50% change the Verger is hittable but takes 90% less damage (Yan).
 - 9ag: first beast concept (Verger form 2), `ArtSource/make_verger_beast.py` -> `mutants_anim/boss_concepts/verger_beast_concept.png`, `verger_beast_vs_gaunt.png`. Hand-built, rough (blocky paws, limb anatomy weaker than the Gaunt). Concept only, not in the game.
+- 9ag: beast concept v2 rebuilt on the Gaunt's method (`make_verger_beast.py`, Gaunt frame scaled 1.3x). Yan: a bad reference gives a bad sprite. Still weak (flat wedge head, thin torso, flat fur, blob coat): NOT to be used as a sprite-maker reference. Waiting on Yan: his own beast reference, or more hand passes part by part.
