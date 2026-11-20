@@ -14,6 +14,22 @@ def grain(d, x0, y0, x1, y1, col, r, n=14):
     for _ in range(n): x = r.randint(x0, x1); y = r.randint(y0, y1); d.point((x, y), fill=col)
 
 # ---------------------------------------------------------------- pews: dark wood, a high back, a seat, a plinth; one pew spans three tiles, ends carry a carved post
+def _outline_pew(im, left, right):
+    """the selective outline, but NOT on the sides that join the next pew tile (so a row reads as one bench); no side padding there either."""
+    import numpy as np
+    a = np.array(im).astype(np.int32); H, W = a.shape[:2]; al = a[..., 3] > 0; o = a.copy()
+    dirs = [(0, -1), (0, 1)] + ([(-1, 0)] if left else []) + ([(1, 0)] if right else [])
+    for y in range(H):
+        for x in range(W):
+            if al[y, x]: continue
+            best = None
+            for dx, dy in dirs:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < W and 0 <= ny < H and al[ny, nx]:
+                    c = a[ny, nx]; lum = c[0] + c[1] + c[2]
+                    if best is None or lum < best[0]: best = (lum, c)
+            if best is not None: c = best[1]; o[y, x] = (int(c[0] * 0.42) + 6, int(c[1] * 0.42) + 5, int(c[2] * 0.42) + 4, 255)
+    return Image.fromarray(o.astype(np.uint8), 'RGBA')
 def _pew(seed, end):
     r = rng(seed); im = blank(32, 36); d = ImageDraw.Draw(im); W = WOOD
     d.rectangle([0, 4, 31, 17], fill=W[2]); d.line([(0, 4), (31, 4)], fill=W[4]); d.line([(0, 17), (31, 17)], fill=W[0])         # the back rest, seen from the front of the row
@@ -26,7 +42,10 @@ def _pew(seed, end):
         x = 0 if end == 'l' else 28
         d.rectangle([x, 0, x + 3, 31], fill=W[3]); d.line([(x, 0), (x, 31)], fill=W[4]); d.line([(x + 3, 2), (x + 3, 31)], fill=W[0])
         d.ellipse([x - 1, -1, x + 4, 4], fill=W[4], outline=W[0])
-    return X2(im, (16, 34), (28, 5, 0, -1))
+    pad_l = 1 if end == 'l' else 0; pad_r = 1 if end == 'r' else 0
+    big = blank(im.width + pad_l + pad_r, im.height + 2); big.alpha_composite(im, (pad_l, 1))
+    big = _outline_pew(big, end == 'l', end == 'r')
+    p = Prop(big, (16 + pad_l, 35), (32, 5, 0, -1), False, scale=2); return p
 def pew_l(seed): return _pew(seed, 'l')
 def pew_m(seed): return _pew(seed, None)
 def pew_r(seed): return _pew(seed, 'r')
@@ -122,31 +141,23 @@ NEW = {"pew_l": pew_l, "pew_m": pew_m, "pew_r": pew_r, "column": column, "altar"
 VARIANTS = {k: 1 for k in NEW}
 
 if __name__ == "__main__":
-    # preview: a slice of the nave on a stone floor with a character for scale (3x): a row of pews, two columns, the altar, candelabra, statue, font, confessional, tomb
+    # preview: a slice of the nave on a stone floor with a character for scale; a TILE IS 16 MAP PX (32 sprite px), drawn at 4x
     import ground, os, sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    W_, H_ = 32 * 14, 32 * 9
+    T = 16; W_, H_ = T * 14, T * 9
     bg = blank(W_, H_); g = ground.GROUNDS["concrete"](3)
     for ty in range(0, H_, g.height):
         for tx in range(0, W_, g.width): bg.paste(g, (tx, ty))
+    big = bg.resize((W_ * 2, H_ * 2), Image.NEAREST)               # 1 map px = 2 sprite px
     items = []
-    def at(name, tx, ty): items.append((ty * 32 + 31, NEW[name](1000), tx * 32 + 16, ty * 32 + 32))
-    for i, nm in enumerate(['pew_l', 'pew_m', 'pew_m', 'pew_r']): at(nm, 1 + i, 6)
-    for i, nm in enumerate(['pew_l', 'pew_m', 'pew_m', 'pew_r']): at(nm, 1 + i, 4)
-    at('column', 6, 4); at('column', 10, 4); at('altar', 7, 2); at('altar', 8, 2); at('candelabra', 6, 2); at('candelabra', 9, 2); at('statue', 11, 3); at('font', 12, 5); at('confessional', 12, 7); at('tomb', 8, 7); at('statue', 3, 2)
-    def place(canvas, p, x, y):
-        s = p.scale
-        if p.shadow:
-            w, h, dx, dy = p.shadow; w, h, dx, dy = w * 1, h * 1, dx, dy
-            canvas.alpha_composite(shadow_ellipse(w, h), (int(x + dx - w / 2), int(y + dy - h / 2)))
-        im2 = p.im.resize((p.im.width // s * 1 if False else p.im.width, p.im.height), Image.NEAREST)
-        canvas.alpha_composite(p.im.resize((p.im.width // 2, p.im.height // 2), Image.NEAREST) if False else p.im, (int(x - p.pivot[0] / 2 * 1), int(y - p.pivot[1] / 2 * 1)))
-    # sprites are double density: draw each at half size in map pixels by scaling the whole canvas 2x afterwards instead
-    big = bg.resize((W_ * 2, H_ * 2), Image.NEAREST)
+    def at(name, tx, ty): items.append((ty * T + T - 1, NEW[name](1000), tx * T + T // 2, ty * T + T))
+    for r_ in (4, 6):
+        for i, nm in enumerate(['pew_l', 'pew_m', 'pew_m', 'pew_m', 'pew_r']): at(nm, 1 + i, r_)
+    at('column', 7, 4); at('column', 11, 4); at('altar', 8, 2); at('altar', 9, 2); at('candelabra', 7, 2); at('candelabra', 10, 2); at('statue', 12, 3); at('font', 12, 5); at('confessional', 12, 7); at('tomb', 8, 7); at('statue', 3, 2)
     for _, p, x, y in sorted(items, key=lambda t: t[0]):
         if p.shadow:
             w, h, dx, dy = p.shadow; w2, h2 = w * 2, h * 2
             big.alpha_composite(shadow_ellipse(w2, h2), (int(x * 2 + dx * 2 - w2 / 2), int(y * 2 + dy * 2 - h2 / 2)))
         big.alpha_composite(p.im, (int(x * 2 - p.pivot[0]), int(y * 2 - p.pivot[1])))
-    big = big.resize((big.width * 2, big.height * 2), Image.NEAREST)
+    big = big.resize((big.width * 3, big.height * 3), Image.NEAREST)
     big.convert('RGB').save('/tmp/cathedral_props_preview.png'); print(big.size)
