@@ -1201,3 +1201,43 @@ A small vestry off the apse: a cupboard of vestments, a locked cashbox, a rifle 
 A side chapel gone to a den: bones in the corners, scratch marks up the wall.	Uma capela lateral virada covil: ossos nos cantos, marcas de garras na parede.
 A chapel in the east aisle. Something has been sleeping here.	Uma capela na nave leste. Algo tem dormido aqui.
 A tall window, its glass long gone.	Uma janela alta, o vidro há muito perdido.
+
+# ---- Boss 6: the Verger, and the cathedral job (2026-11-20) ----
+The Verger	O Sacristão
+THE VERGER	O SACRISTÃO
+THE CATHEDRAL'S LAST HUNTER	O ÚLTIMO CAÇADOR DA CATEDRAL
+The Verger: THE CATHEDRAL'S LAST HUNTER	O Sacristão: O ÚLTIMO CAÇADOR DA CATEDRAL
+THE CHANGE	A MUDANÇA
+The coat splits at the seams. What stands up is not a man.	O casaco se rasga nas costuras. O que se levanta não é um homem.
+The hat falls. The mask splits. The scythe drops from hands that are not hands.	O chapéu cai. A máscara racha. A foice escorrega de mãos que já não são mãos.
+The Verger: The hat falls. The mask splits. The scythe drops from hands that are not hands.	O Sacristão: O chapéu cai. A máscara racha. A foice escorrega de mãos que já não são mãos.
+Forgive me.	Perdoe-me.
+I kept the bell. I kept the dead out. And you rang it.	Eu cuidei do sino. Mantive os mortos do lado de fora. E você o tocou.
+This is a church. You do not ring that bell in a church.	Isto é uma igreja. Não se toca aquele sino numa igreja.
+The bell goes quiet. From the altar end, a tall man in a long coat walks down the nave with a scythe over his shoulder, and does not hurry.	O sino se cala. Do lado do altar, um homem alto de casaco comprido desce a nave com uma foice no ombro, sem pressa.
+The Verger: the cathedral's last hunter kept the bell and the dead apart. He changed at the end, and he is down. His scythe and his coat are yours.	O Sacristão: o último caçador da catedral mantinha o sino e os mortos separados. No fim ele se transformou, e agora caiu. A foice e o casaco dele são seus.
+The beast shrinks into a man in a torn coat, and lies still. The scythe is in his pack.	A fera encolhe até virar um homem de casaco rasgado, e fica imóvel. A foice está na mochila dele.
+The hook catches you and drags you in.	O gancho te agarra e te arrasta para perto.
+HOOK!	GANCHO!
+POUNCE!	BOTE!
+MAUL!	DILACERAR!
+Verger's Scythe	Foice do Sacristão
+Beast Claws	Garras da Fera
+Verger Coat	Casaco do Sacristão
+Sacristy Cache	Esconderijo da Sacristia
+What the verger kept under the vestments: the contract's wages, a collection plate and a beast hunter's tools.	O que o sacristão guardava sob as vestes: o pagamento do contrato, um prato de coleta e as ferramentas de um caçador de feras.
+The rope hangs slack. The bell has stopped.	A corda pende frouxa. O sino parou.
+The rope is cold and still. Nothing has come back to the city yet (the contract opens again on day {}).	A corda está fria e parada. Nada voltou à cidade ainda (o contrato reabre no dia {1}).
+You pull the rope. The bell rings out over an empty city, and nothing answers.	Você puxa a corda. O sino ecoa sobre uma cidade vazia, e nada responde.
+The bell is still swinging.	O sino ainda está balançando.
+CONTRACTORS - HUSK CLEARANCE	CONTRATADOS - LIMPEZA DE HUSKS
+A notice nailed to the rope post, in a Contractor's block capitals: "HUSKS IN THE CITY: {} COUNTED. {} RU A HEAD. {} IN ONE SITTING AND THE COMPANY PAYS {} MORE. RING THE BELL. THEY COME TO IT. DO NOT STAND IN THE DOORWAYS."	Um aviso pregado no poste da corda, em maiúsculas de Contratado: "HUSKS NA CIDADE: {1} CONTADOS. {2} RU POR CABEÇA. {3} DE UMA VEZ E A COMPANHIA PAGA {4} A MAIS. TOQUE O SINO. ELES VÊM ATÉ ELE. NÃO FIQUE NAS PORTAS."
+Below it, in pencil: "The verger does not like the bell. He will come when it has rung enough. Do not be there when he does."	Embaixo, a lápis: "O sacristão não gosta do sino. Ele vem quando o sino tocou o bastante. Não esteja lá quando ele vier."
+The contract is taken. Ring the bell.	O contrato foi aceito. Toque o sino.
+The bell goes off over your head like a collapsing roof. The whole nave rings with it, and your ears give out. Somewhere in the walls, something starts to climb.	O sino explode sobre a sua cabeça como um telhado desabando. A nave inteira ressoa, e seus ouvidos cedem. Em algum lugar nas paredes, algo começa a escalar.
+Toll {}. The stone hums. Your ears are shut, and the Husks are quick.	Badalada {1}. A pedra vibra. Seus ouvidos estão tapados, e os Husks estão rápidos.
+Glass bursts down both walls. They come in over the sills and through the doors, heads tipped to the bell.	O vidro estoura nas duas paredes. Eles entram pelos peitoris e pelas portas, de cabeça inclinada para o sino.
+More of them, through the windows and the doors.	Mais deles, pelas janelas e pelas portas.
+{} Husks. The rope jerks out of your hand on its own, and the bell stops mid-swing. The silence is worse than the noise.	{1} Husks. A corda escapa da sua mão sozinha, e o sino para no meio do balanço. O silêncio é pior que o barulho.
+The company pays {} Ru for the clearance. The sacristy door is open.	A companhia paga {1} Ru pela limpeza. A porta da sacristia está aberta.
+The cathedral: the Contractors pay for every Husk the bell draws in, and the verger comes at the end of every run. He is down. The contract opens again in four days.	A catedral: os Contratados pagam por cada Husk que o sino atrai, e o sacristão vem no fim de toda rodada. Ele caiu. O contrato reabre em quatro dias.

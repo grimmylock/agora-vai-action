@@ -4739,6 +4739,10 @@ static class Program {
     // every pattern's Portuguese side uses only placeholders its English side has
     bool placeholdersOk = true; foreach (var line in table.Split('\n')) { if (line.Length == 0 || line[0] == '#') continue; int tab = line.IndexOf('\t'); if (tab < 0) continue; string en = line.Substring(0, tab), pt = line.Substring(tab + 1); int n = System.Text.RegularExpressions.Regex.Matches(en, "\\{\\}").Count; foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(pt, "\\{(\\d)\\}")) if (int.Parse(m.Groups[1].Value) > n || int.Parse(m.Groups[1].Value) < 1) placeholdersOk = false; if (n > 0 && !pt.Contains("{1}") && n == 1 && pt.Length > 0) placeholdersOk = placeholdersOk && true; }
     Check(placeholdersOk, "pt-BR: every {N} on a Portuguese side exists on its English side");
+    foreach (var line in new[] { "THE CATHEDRAL'S LAST HUNTER", "The hook catches you and drags you in.", "Verger's Scythe", "The bell is still swinging.", "The contract is taken. Ring the bell." }) Check(Loc.T(line) != line, "pt-BR: the Verger / cathedral job line is translated: " + line);
+    Check(Loc.T("Toll 3. The stone hums. Your ears are shut, and the Husks are quick.").StartsWith("Badalada 3."), "pt-BR: a cathedral pattern line takes its number");
+    Check(Loc.T("The company pays 1500 Ru for the clearance. The sacristy door is open.").Contains("1500"), "pt-BR: the bonus line keeps its amount");
+    Check(Loc.Text("A notice nailed to the rope post, in a Contractor's block capitals: \"HUSKS IN THE CITY: 90 COUNTED. 15 RU A HEAD. 40 IN ONE SITTING AND THE COMPANY PAYS 1500 MORE. RING THE BELL. THEY COME TO IT. DO NOT STAND IN THE DOORWAYS.\"").Contains("HUSKS NA CIDADE: 90"), "pt-BR: the contract notice is translated with its numbers");
     foreach (var kv in Tier2Poi.DocTexts) { bool ok = Loc.Text(kv.Value.title) != kv.Value.title && Loc.Text(kv.Value.journal) != kv.Value.journal && kv.Value.pages.All(pg => Loc.Text(pg) != pg); Check(ok, "pt-BR: Tier 2 paper " + kv.Key + " is translated"); }
     Loc.Lang = Loc.English; Loc.LoadTable(null);
   }
