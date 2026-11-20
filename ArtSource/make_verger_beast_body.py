@@ -9,12 +9,24 @@ import make_verger_beast as mb
 from make_verger_beast import FUR, FURD, BONE, DARK, strands
 import make_verger_beast_head as hd
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mutants_anim', 'boss_concepts')
-K = 1.5; OY = 14; S = (190, 200)
-def Y(pts): return [(x * K, (y + OY) * K) for x, y in pts]
+K = 1.5; OY = 14; S = (250, 210)
+import math
+POSE = dict(tilt=0.0, pivot=(34, 58), ox=0.0, oy=0.0, head_rot=0.0, jaw=16, scarf_rot=0.0)       # the pose: the trunk, head, coat and scarf lean by `tilt` round the pelvis, `ox/oy` slide everything, the head turns and the jaw opens
+LIMB = False                                                                          # True while the limbs are drawn: they are placed by hand and do not follow the tilt
+def tf(x, y, tilt=True):
+    p = POSE
+    if tilt and p['tilt']:
+        a = math.radians(p['tilt']); dx, dy = x - p['pivot'][0], y - p['pivot'][1]
+        x, y = p['pivot'][0] + dx * math.cos(a) - dy * math.sin(a), p['pivot'][1] + dx * math.sin(a) + dy * math.cos(a)
+    return x + p['ox'], y + p['oy']
+def XY(x, y, tilt=True):
+    a, c = tf(x, y, tilt and not LIMB); return int(round(a * K)), int(round((c + OY) * K))
+def Y(pts): return [((lambda q: (q[0] * K, (q[1] + OY) * K))(tf(x, y, not LIMB))) for x, y in pts]
 def wd(w): return [v * K for v in w]
 def T(m, pts, w): return m.tube(Y(pts), wd(w))
 def PL(m, pts): return m.poly(Y(pts))
-def E(m, cx, cy, rx, ry, rot=0): return m.ell(cx * K, (cy + OY) * K, rx * K, ry * K, rot)
+def E(m, cx, cy, rx, ry, rot=0):
+    x, y = tf(cx, cy, not LIMB); return m.ell(x * K, (y + OY) * K, rx * K, ry * K, rot + (0 if LIMB else POSE['tilt']))
 MUSC = ramp("#1a1413", "#2f2624", "#4a3d38", "#695850", "#8a7668")        # lit muscle under thin fur
 def trunk():
     L = []
@@ -45,9 +57,11 @@ def trunk():
     part(lambda m: PL(m, [(52, 24), (60, 18), (70, 20), (68, 30), (60, 34), (54, 32)]), FUR, fur=70, depth=2, tex=0.2, seed=25)
     return paint(S, L)
 def with_head(body):
-    h = hd.head(); ax, ay = 14, 40                                           # the head's neck anchor
-    nx, ny = int(66 * K) + 6, int((21 + OY) * K)                             # where the neck ends on the trunk
-    im = body.copy(); im.alpha_composite(h, (nx - ax, ny - ay)); return outline(im)
+    h = hd.head(POSE['jaw']); ax, ay = 14, 40                                # the head's neck anchor
+    pad = 30; big = Image.new("RGBA", (h.width + 2 * pad, h.height + 2 * pad), (0, 0, 0, 0)); big.alpha_composite(h, (pad, pad))
+    if POSE['head_rot']: big = big.rotate(-POSE['head_rot'], resample=Image.NEAREST, center=(ax + pad, ay + pad))      # clockwise positive
+    nx, ny = XY(66, 21); nx += 6                                             # where the neck ends on the trunk
+    im = body.copy(); im.alpha_composite(big, (nx - ax - pad, ny - ay - pad)); return outline(im)
 if __name__ == "__main__":
     b = trunk(); f = crop(with_head(b), 2); f.save(os.path.join(OUT, "verger_beast_body.png"))
     W = Image.new("RGBA", (f.width * 5 + 20, f.height * 5 + 20), (58, 58, 64, 255)); W.alpha_composite(f.resize((f.width * 5, f.height * 5), Image.NEAREST), (10, 10)); W.save(os.path.join(OUT, "verger_beast_body_5x.png")); print(f.size)

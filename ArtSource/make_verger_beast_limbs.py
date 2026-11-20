@@ -24,7 +24,7 @@ def limb(cols, haunch, leg, lw, paw, arm, aw, hand, near, seed):
     L.append(shade(cl, CLAW, depth=1.0))
     part(lambda m: T(m, arm, aw), cols, fur=150 if near else 80, tex=0.14, seed=s + 3, depth=3.4, bias=-0.05)                                      # the arm
     if near: part(lambda m: T(m, arm[:3], [aw[0] * 0.7, aw[1] * 0.7, aw[2] * 0.7]), MUSC, fur=20, depth=1.8, tex=0.1, seed=s + 4, gain=0.82)          # the lit muscle on the upper arm
-    if near: part(lambda m: PL(m, [(52, 58), (44, 62), (51, 67)]), FUR, fur=10, depth=1.2, seed=s + 6)                                                      # the elbow, a bony point
+    if near: part(lambda m: PL(m, [(arm[2][0], arm[2][1] - 4), (arm[2][0] - 8, arm[2][1]), (arm[2][0] - 1, arm[2][1] + 5)]), FUR, fur=10, depth=1.2, seed=s + 6)                                                      # the elbow, a bony point
     hx, hy = hand                                                                                                                               # the hand: a fur-backed palm, four long fingers, bone claws
     part(lambda m: (E(m, hx, hy, 4.8, 3.6), [T(m, [(hx + dx * 0.4, hy + 1), (hx + dx * 1.3, hy + 8 + (1.5 if i in (1, 2) else 0))], [2.8, 1.6]) for i, dx in enumerate((-3.6, -1.2, 1.2, 3.6))]), cols, fur=26, depth=1.6, tex=0.1, seed=s + 5)
     cl = Mask(S)
@@ -46,9 +46,15 @@ def tone(im):
         x1 = xs[-1]
         for x in xs[-9:]: a[y, x, :3] *= 1.0 + 0.016 * (9 - (x1 - x)); a[y, x, 0] *= 1.04
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
-def limbs_pair():
-    far = limb(FURD, (36, 62, 8.5, 8.5), [(34, 60), (41, 74), (34, 88), (38, 96)], [12, 8, 5, 4], (41, 97), [(56, 32), (65, 50), (60, 72), (69, 90)], [9, 6.4, 4.6, 3.8], (69, 92), False, 40)
-    near = limb(FUR, (38, 62, 10.5, 10), [(37, 58), (45, 72), (38, 86), (42, 96)], [15, 10, 6, 4.8], (45, 97.5), [(50, 30), (62, 44), (52, 62), (66, 82), (63, 94)], [11, 9, 6.4, 5.4, 4.6], (63, 95), True, 60)
+STAND = dict(far=dict(haunch=(36, 62, 8.5, 8.5), leg=[(34, 60), (41, 74), (34, 88), (38, 96)], paw=(41, 97), arm=[(56, 32), (65, 50), (60, 72), (69, 90)], hand=(69, 92)),
+             near=dict(haunch=(38, 62, 10.5, 10), leg=[(37, 58), (45, 72), (38, 86), (42, 96)], paw=(45, 97.5), arm=[(50, 30), (62, 44), (52, 62), (66, 82), (63, 94)], hand=(63, 95)))
+def limbs_pair(J=None):
+    J = J or STAND; bd.LIMB = True
+    try:
+        f, n = J['far'], J['near']
+        far = limb(FURD, f['haunch'], f['leg'], [12, 8, 5, 4], f['paw'], f['arm'], [9, 6.4, 4.6, 3.8], f['hand'], False, 40)
+        near = limb(FUR, n['haunch'], n['leg'], [15, 10, 6, 4.8], n['paw'], n['arm'], [11, 9, 6.4, 5.4, 4.6], n['hand'], True, 60)
+    finally: bd.LIMB = False
     return tone(far), tone(near)
 def beast_bare():
     far, near = limbs_pair(); im = Image.new("RGBA", S, (0, 0, 0, 0)); im.alpha_composite(far); im.alpha_composite(tone(bd.trunk())); im.alpha_composite(near)
