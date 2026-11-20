@@ -238,9 +238,139 @@ def ferryman():
     v = np.where(glow, 1.0, v); a_[:, :, :3] *= v[:, :, None]; hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
     return outline(crop(hm, 2))
 
+
+# ------------------------------------------------------------------ THE SPECIMEN, GROWN: the Lab Alpha brain after the vat, mobile and many-mouthed (round 1 art: a pink-brown brain, violet glowing eyes, green vat, red cables)
+def specimen_grown():
+    BRAIN = ramp("#2a1210", "#552520", "#80453c", "#a86a5c", "#d49a88")
+    EYE = ramp("#240c48", "#4e1e9a", "#7c40d8", "#b484ff", "#f2e6ff")
+    GLASS = ramp("#06140e", "#0c2c1c", "#14472f", "#22704a", "#4ea878")
+    CABLE = ramp("#2a0808", "#561212", "#8a2020", "#b83838", "#e07070")
+    FLESHY = ramp("#2e1816", "#5a302c", "#8a5448", "#b8806e", "#dcaa98")
+    S = (190, 170); L, part = mk(S); rnd = random.Random(9)
+    # the spinal legs: chains of vertebrae splaying out and down, tips probing the floor; far ones darker
+    legs = [((70, 92), [(40, 106), (22, 128), (14, 156)], 0), ((84, 100), [(66, 122), (58, 144), (52, 164)], 0), ((124, 100), [(142, 122), (150, 144), (156, 164)], 1), ((142, 90), [(166, 108), (178, 130), (180, 158)], 1), ((96, 104), [(92, 128), (96, 150), (104, 166)], 0), ((112, 104), [(120, 128), (118, 150), (122, 166)], 1)]
+    for (st, pts, near) in legs:
+        sp = Mask(S); chain = [st] + pts
+        for a, b in zip(chain, chain[1:]):
+            n = int(max(abs(b[0] - a[0]), abs(b[1] - a[1])) / 5) + 1
+            for i in range(n): u = i / n; w = 4.2 - 0.8 * (chain.index(a)); sp.ell(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, max(1.8, w), max(1.8, w))
+        L.append(shade(sp, BONE if near else ramp("#2a2519", "#4a4332", "#6e6650", "#948a70", "#b8ae92"), depth=1.6))
+        tp = Mask(S); tx, ty = pts[-1]; tp.ell(tx, ty, 3.4, 3.0); L.append(shade(tp, FLESHY, depth=1.4))
+    # the brain: huge, folded, the two hemispheres parted, a lab collar still clamped on the stalk, glass shards fused into the top
+    part(lambda m: m.ell(96, 64, 52, 40, 0).ell(70, 56, 28, 30, 10).ell(122, 56, 28, 30, -10), ramp("#1a0a09", "#2a1210", "#3d1c18", "#552520", "#6e3028"), tex=0.2, seed=3, depth=7.0)    # the dark body under the lobes: every crevice stays black
+    for k in range(70):                                                                                           # the folds: many overlapping lobes, each shaded on its own so the surface bulges and creases
+        ang = rnd.uniform(0, 2 * math.pi); rr = math.sqrt(rnd.random()); cx = 96 + math.cos(ang) * rr * 44; cy = 62 + math.sin(ang) * rr * 32
+        if abs(cx - 96) < 3: continue
+        lb = Mask(S); lb.ell(cx, cy, rnd.uniform(7, 13), rnd.uniform(5, 9), rnd.uniform(-60, 60)); L.append(shade(lb, BRAIN, depth=3.2, tex=0.16, seed=k, gain=1.05))
+    hm = paint(S, L)
+    for _ in range(60): px(hm, [(rnd.randint(58, 138), rnd.randint(34, 90))], rgb("#e8b8a8"))                       # wet highlights
+    fissure = Mask(S); fissure.tube([(96, 26), (98, 52), (94, 76)], [3, 3.4, 2.6]); hm.alpha_composite(shade(fissure, ramp("#100606", "#1a0a09", "#2a1210", "#3d1c18", "#552520"), depth=1.2))
+    # the eyes: three, violet, wrong sizes, the big one low on the left hemisphere, two small ones among the folds
+    for (ex, ey, r) in ((74, 70, 9), (112, 54, 5), (124, 76, 4)):
+        w = Mask(S); w.ell(ex, ey, r + 1.6, r + 1.2); hm.alpha_composite(shade(w, ramp("#1a0a08", "#2e1612", "#4a2420", "#6a3a32", "#8a5a50"), depth=1.6))
+        e = Mask(S); e.ell(ex, ey, r, r * 0.9); hm.alpha_composite(shade(e, EYE, depth=r * 0.6))
+        px(hm, [(ex - r * 0.3, ey - r * 0.3), (ex - r * 0.3 + 1, ey - r * 0.3)], rgb("#ffffff")); px(hm, [(ex, ey), (ex + 1, ey)], rgb("#10002a"))
+        for t in range(9):
+            b = t * 0.7 + ex; x, y = ex + math.cos(b) * (r + 1), ey + math.sin(b) * (r + 1)
+            for i in range(9): nx = x + math.cos(b) * 1.3 + rnd.uniform(-0.8, 0.8); ny = y + math.sin(b) * 1.3 + rnd.uniform(-0.8, 0.8); line(hm, x, y, nx, ny, CABLE[2] if i % 2 else CABLE[3]); x, y = nx, ny
+    # mouths on the nerve tips hanging from the underside: ringed with teeth, the lab's name card still stuck in the slime
+    for (mx, my, ang) in ((52, 100, 200), (140, 104, 330), (96, 112, 270)):
+        a = math.radians(ang); t = Mask(S); t.tube([(mx, my), (mx + math.cos(a) * 12, my + math.sin(a) * -10 + 12)], [6, 5]); hm.alpha_composite(shade(t, FLESHY, depth=2.0, tex=0.1, seed=mx))
+        cx, cy = mx + math.cos(a) * 12, my + math.sin(a) * -10 + 12
+        o = Mask(S); o.ell(cx, cy, 8, 6.6); hm.alpha_composite(shade(o, DARK, depth=1.4))
+        for k in range(14): b = k * math.pi / 7; px(hm, [(cx + math.cos(b) * 7.2, cy + math.sin(b) * 5.8), (cx + math.cos(b) * 6.0, cy + math.sin(b) * 4.8)], rgb("#e8e0cc"))
+        for k in range(3): line(hm, cx - 2 + k * 2, cy + 6, cx - 2 + k * 2, cy + 13 + k, FLESHY[3])
+    collar = Mask(S); collar.ell(96, 98, 14, 5); inner = Mask(S); inner.ell(96, 98, 8, 3); collar.cut(inner); hm.alpha_composite(shade(collar, ramp("#101214", "#22272b", "#3a4248", "#566068", "#7a8690"), depth=1.8))
+    card = Mask(S); card.poly([(108, 100), (120, 102), (119, 110), (107, 108)]); hm.alpha_composite(shade(card, ramp("#303028", "#58584a", "#8a8a78", "#b8b8a4", "#e0e0cc"), depth=1.0))
+    for k in range(3): px(hm, [(109 + k * 3, 104), (109 + k * 3, 105)], rgb("#303028"))
+    # shards of the vat glass fused into the top, green; cables still trailing from the crown back towards the vat
+    for (gx, gy, r, ang) in ((70, 26, 9, 20), (118, 22, 10, -25), (96, 12, 7, 5)):
+        g = Mask(S); g.poly([(gx - r * 0.4, gy + r), (gx - r * 0.2, gy - r), (gx + r * 0.5, gy - r * 0.7), (gx + r * 0.3, gy + r)]); hm.alpha_composite(shade(g, GLASS, depth=1.8))
+        line(hm, gx - r * 0.2, gy - r, gx + r * 0.3, gy + r * 0.9, GLASS[4])
+    for (x0, y0) in ((80, 24), (100, 20), (116, 26)):
+        x, y = x0, y0
+        for i in range(34): nx = x + rnd.uniform(-1.4, 0.4) - 0.6 + (0.3 if x0 > 100 else 0); ny = y - 1.4; line(hm, x, y, nx, ny, CABLE[2 + i % 2]); x, y = nx, ny
+    for i in range(40):                                                                                            # loose nerve strands hanging under the brain
+        x = 60 + rnd.uniform(0, 74); y = 92 + rnd.uniform(-2, 6); ln = rnd.uniform(8, 30)
+        for k in range(int(ln)): px(hm, [(x + 2 * math.sin(k * 0.4 + i), y + k)], FLESHY[rnd.choice((1, 2, 3))])
+    # white crackle across the brain where the current still runs
+    for (x0, y0) in ((60, 44), (130, 52), (92, 86)):
+        x, y = x0, y0
+        for i in range(7): nx = x + rnd.choice((-3, -2, 2, 3)); ny = y + rnd.randint(-2, 3); line(hm, x, y, nx, ny, rgb("#e8f0ff")); x, y = nx, ny
+    a_ = np.array(hm).astype(float); H_, W_ = a_.shape[:2]; yy, xx = np.mgrid[0:H_, 0:W_]
+    v = np.clip(1.0 - 0.45 * (((xx - W_ / 2) / (W_ / 2)) ** 2 + ((yy - H_ * 0.45) / (H_ * 0.6)) ** 2) ** 1.1, 0.5, 1.0); a_[:, :, :3] *= v[:, :, None]
+    hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
+    return outline(crop(hm, 2))
+
+# ------------------------------------------------------------------ THE EXCAVATOR: a mining rig with a husk grown into the cab, the bucket a jaw, hoses like veins
+def excavator():
+    RUST = ramp("#1c0e06", "#3e1e0a", "#683412", "#8e5220", "#b87c3c")
+    PAINT = ramp("#2e2808", "#524a10", "#7a6c1c", "#a08c30", "#c4b058")
+    IRON = ramp("#0a0b0c", "#181b1e", "#2c3236", "#48515a", "#6e7a84")
+    TRACK = ramp("#060606", "#121312", "#202220", "#323532", "#484c48")
+    HOSE = ramp("#2a0a08", "#561812", "#8a2c20", "#b84a38", "#e08a78")
+    GLASS = ramp("#0e1a16", "#1c3a30", "#2e5c4c", "#56907c", "#a8d8c4")
+    FLESH = ramp("#241816", "#4a2e2a", "#78504a", "#a47c70", "#cfa898")
+    S = (260, 160); L, part = mk(S); rnd = random.Random(2)
+    # crawler tracks: a long rounded body, road wheels, link teeth
+    part(lambda m: m.ell(80, 138, 62, 16).poly([(24, 130), (136, 130), (136, 150), (24, 150)]), TRACK, tex=0.1, seed=1, depth=4.0)
+    for wx in range(34, 130, 16): w = Mask(S); w.ell(wx, 140, 7.4, 7.4); L.append(shade(w, IRON, depth=2.4))
+    for bx in (30, 52, 96, 120):                                                                                        # bones and rags jammed in the tracks
+        b_ = Mask(S); b_.tube([(bx, 150), (bx + 6, 140), (bx + 2, 132)], [3, 2.6, 2]); L.append(shade(b_, BONE, depth=1.2))
+    tr = paint(S, [])
+    for x in range(22, 140, 4): px(tr, [(x, 124 + (1 if x % 8 else 0)), (x, 154)], TRACK[4])
+    L.append(tr)
+    # the house: a heavy rust-and-yellow box, peeling paint, the engine hump behind the cab
+    part(lambda m: m.poly([(30, 76), (118, 76), (126, 128), (24, 128)]), RUST, tex=0.24, seed=2, depth=5.0)
+    part(lambda m: m.poly([(34, 74), (62, 70), (66, 88), (34, 92)]), PAINT, tex=0.3, seed=3, depth=2.4)
+    for (fx, fy) in ((44, 100), (66, 108), (92, 112), (108, 98)):                                                      # vents burst open, flesh pushing out of them
+        v_ = Mask(S); v_.ell(fx, fy, 7, 5); L.append(shade(v_, DARK, depth=1.6)); f_ = Mask(S); f_.tube([(fx - 3, fy), (fx + 2, fy + 8), (fx - 1, fy + 14)], [5, 4, 2.6]); L.append(shade(f_, FLESH, depth=1.8, tex=0.15, seed=fx))
+    pl = paint(S, [])
+    for _ in range(80): px(pl, [(rnd.randint(30, 120), rnd.randint(78, 126))], rnd.choice([RUST[0], RUST[1], PAINT[1]]))
+    for yy in range(96, 126, 6): line(pl, 32, yy, 118, yy + 1, RUST[1])
+    L.append(pl)
+    # the cab: a cage with a wet window; the husk behind it is grown into the seat, flesh climbing the frame
+    part(lambda m: m.poly([(84, 40), (122, 40), (124, 82), (82, 82)]), IRON, depth=2.4)
+    part(lambda m: m.poly([(88, 46), (118, 46), (119, 78), (87, 78)]), GLASS, depth=4.0, gain=1.1)
+    hm = paint(S, L)
+    hd = Mask(S); hd.ell(104, 60, 9, 11); hm.alpha_composite(shade(hd, ramp("#1a1c1a", "#34383a", "#5a6062", "#8c9496", "#c0c8c8"), depth=3.0))      # the husk's grey face
+    for (ex, ey) in ((100, 58), (108, 58)): px(hm, [(ex, ey), (ex + 1, ey)], rgb("#04100a"))
+    px(hm, [(x, 66) for x in range(101, 108)], rgb("#04100a")); px(hm, [(104, y) for y in range(60, 66)], rgb("#10201a"))
+    for (x0, y0) in ((86, 80), (96, 82), (112, 80), (120, 78)):                                                                                     # flesh creeping up the cab frame
+        x, y = x0, y0
+        for i in range(14): nx = x + rnd.uniform(-1, 1); ny = y - rnd.uniform(0.8, 1.6); px(hm, [(nx, ny), (nx + 1, ny)], FLESH[rnd.choice((2, 3, 3, 4))]); x, y = nx, ny
+    for (hx_, hy_, fl) in ((92, 66, 1), (116, 68, -1)):                                                              # the husk's hands pressed flat on the glass, fingers spread
+        hh = Mask(S); hh.ell(hx_, hy_, 4.4, 5); hm.alpha_composite(shade(hh, ramp("#1a1c1a", "#34383a", "#5a6062", "#8c9496", "#c0c8c8"), depth=1.6))
+        for k in range(5): a_ = math.radians(-80 + k * 22); line(hm, hx_, hy_, hx_ + math.cos(a_) * 7 * fl, hy_ + math.sin(a_) * 7, rgb("#a8b0b0"))
+    for k in range(5): line(hm, 90 + k * 6, 48, 89 + k * 6, 76, GLASS[1])                                                                           # condensation running down the inside
+    # the boom and arm: two heavy beams, hoses along them like veins, a hard hat still on the boom
+    arm = Mask(S); arm.tube([(118, 66), (140, 38), (162, 20)], [20, 18, 16]); hm.alpha_composite(shade(arm, RUST, tex=0.3, seed=5, depth=4.0))
+    arm2 = Mask(S); arm2.tube([(160, 20), (196, 40), (232, 64)], [15, 13, 11]); hm.alpha_composite(shade(arm2, RUST, tex=0.3, seed=6, depth=3.6))
+    for (a0, b0, a1, b1) in ((126, 80, 150, 40), (166, 28, 214, 66)):                                                 # hydraulic cylinders: steel pistons beside the beams
+        cy_ = Mask(S); cy_.tube([(a0, b0), (a1, b1)], [5, 5]); hm.alpha_composite(shade(cy_, IRON, depth=1.6))
+    pj = Mask(S); pj.ell(162, 20, 6, 6); hm.alpha_composite(shade(pj, IRON, depth=2.0))
+    for (x0, y0, x1, y1) in ((124, 60, 158, 22), (130, 66, 164, 28), (162, 22, 228, 60), (160, 30, 226, 68)):
+        n = int(max(abs(x1 - x0), abs(y1 - y0))); 
+        for i in range(n + 1): u = i / n; x = x0 + (x1 - x0) * u; y = y0 + (y1 - y0) * u + 2 * math.sin(u * 14); px(hm, [(x, y)], HOSE[2 + (i // 3) % 2])
+    hat = Mask(S); hat.ell(150, 30, 7, 4); hm.alpha_composite(shade(hat, PAINT, depth=1.6))
+    # the bucket: a jaw, upper and lower, open, teeth along both, the hinge at the arm tip, drool of hydraulic oil
+    up = Mask(S); up.poly([(224, 52), (252, 48), (256, 70), (240, 74), (226, 70)]); hm.alpha_composite(shade(up, IRON, tex=0.1, seed=7, depth=2.6))
+    lo = Mask(S); lo.poly([(226, 76), (252, 84), (254, 112), (236, 106), (224, 90)]); hm.alpha_composite(shade(lo, IRON, tex=0.1, seed=8, depth=2.6))
+    inn = Mask(S); inn.poly([(228, 72), (252, 72), (250, 84), (230, 82)]); hm.alpha_composite(shade(inn, DARK, depth=1.2))
+    for x in range(226, 256, 4): hm.alpha_composite(shade((lambda m: (m.poly([(x, 70), (x + 4, 70), (x + 2, 79)]), m)[1])(Mask(S)), ramp("#3a3730", "#6a665a", "#9a9482", "#c8c2ac", "#eee8d4"), depth=1.0)); hm.alpha_composite(shade((lambda m: (m.poly([(x + 2, 86), (x + 6, 86), (x + 4, 77)]), m)[1])(Mask(S)), ramp("#3a3730", "#6a665a", "#9a9482", "#c8c2ac", "#eee8d4"), depth=1.0))
+    for x in (240, 246): line(hm, x, 112, x - 1, 128 + (x % 3), HOSE[3])
+    # exhaust stack and steam, rust streaks, oil stains
+    stk = Mask(S); stk.tube([(46, 76), (46, 52)], [6, 6]); hm.alpha_composite(shade(stk, IRON, depth=1.6))
+    for k in range(10): px(hm, [(46 + rnd.uniform(-3, 3) + k * 0.5, 50 - k * 2.6)], rnd.choice([(150, 150, 150, 110), (110, 110, 110, 90)]))
+    for _ in range(30): x = rnd.randint(30, 120); y = rnd.randint(80, 126); line(hm, x, y, x, y + rnd.randint(4, 10), RUST[0])
+    a_ = np.array(hm).astype(float); H_, W_ = a_.shape[:2]; yy, xx = np.mgrid[0:H_, 0:W_]
+    v = np.clip(1.0 - 0.4 * (((xx - W_ / 2) / (W_ / 2)) ** 2 + ((yy - H_ * 0.55) / (H_ * 0.6)) ** 2) ** 1.1, 0.55, 1.0); a_[:, :, :3] *= v[:, :, None]
+    hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
+    return outline(crop(hm, 2))
+
 if __name__ == '__main__':
-    items = [('singer', 'THE SINGER (T2)', singer()), ('orderly', 'THE ORDERLY (T6)', orderly()), ('mother_hollow', 'MOTHER HOLLOW (T1)', mother_hollow()), ('ferryman', 'THE FERRYMAN (T3)', ferryman())]
-    K = 3; pad = 40
+    items = [('singer', 'THE SINGER (T2)', singer()), ('orderly', 'THE ORDERLY (T6)', orderly()), ('mother_hollow', 'MOTHER HOLLOW (T1)', mother_hollow()), ('ferryman', 'THE FERRYMAN (T3)', ferryman()), ('specimen_grown', 'THE SPECIMEN, GROWN (T4)', specimen_grown()), ('excavator', 'THE EXCAVATOR (T5)', excavator())]
+    K = 2; pad = 40
     W = sum(im.width * K for _, _, im in items) + pad * 3; H = max(im.height for _, _, im in items) * K + pad * 2
     sh = Image.new('RGBA', (W, H), (22, 20, 24, 255)); x = pad; d = ImageDraw.Draw(sh)
     for k, label, im in items:

@@ -13,4 +13,6 @@ Direction words (for the artist, never shown to players): wrongness over gore, o
 | **The Mind** (T7, final) | No body: a foundry hall that has become a face | the transmitters like teeth, the lift cable like a tongue | the walls breathe on the 11 s beat | cold violet | the hall exhales |
 
 ## Concepts drawn so far
-- The Singer, The Orderly, Mother Hollow, The Ferryman (`ArtSource/mutants_anim/boss_concepts/*_concept.png`, sheet `boss_concepts_sheet.png`, script `ArtSource/make_boss_concepts.py`). The rest are briefs only. Mother Hollow needed a second pass (first: a flat bean body, bright purple button sacs, a small head); the Ferryman worked first time (the pale face pressed against the lantern glass).
+- The Singer, The Orderly, Mother Hollow, The Ferryman, The Specimen grown, The Excavator (`ArtSource/mutants_anim/boss_concepts/*_concept.png`, sheet `boss_concepts_sheet.png`, script `ArtSource/make_boss_concepts.py`). The rest are briefs only. Mother Hollow needed a second pass (first: a flat bean body, bright purple button sacs, a small head); the Ferryman worked first time (the pale face pressed against the lantern glass).
+
+Specimen grown and Excavator each needed two passes (first: a flat pink disc with cartoon eyes, a clean toy digger). Honest state: concept quality; the Excavator's vent growths read a bit like mushrooms and the husk in its cab is hard to read at small size.
