@@ -1365,6 +1365,7 @@ namespace GameCore
         // trench lines across it, the Bell Tower over the Siege Catacombs, the field hospital ruins, the hospital and its
         // morgue; the way north to the Reactor Core) and the Anomalous Epicenter (west: the crater, The Wound, the
         // scattered relics - a dead end). Exits: the Antenna Grid south (x 150), the Reactor Core north (x 130).
+        const bool PaintedCathedral = false;   // see the cathedral block in Tier6
         public static MapLayout Tier6()
         {
             var c = new TerrainCanvas(Size, Size, TerrainCanvas.Seed("tier6"));
@@ -1396,12 +1397,29 @@ namespace GameCore
             c.Rect(122, 121, 4, 4, Solid, 1, "fountain");   // (2026-11-20: moved up to make room for the cathedral on the plaza's south side)
             c.Put(114, 124, HardCover, "busstop").Put(146, 124, HardCover, "dumpster").Put(118, 144, ScatterCover, "trash");
             c.Landmark("Central Plaza", 130, 123);
-            // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md): painted as ONE set-piece prop (ArtSource/world/props_cathedral_exterior.py: twin spires, a gabled front with a rose window, a steep slate nave roof, a transept, a crossing spire, an apse), because the roof system only draws boxes.
+            // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md). Two builds, one switch: PaintedCathedral = true is the painted set-piece prop (ArtSource/world/props_cathedral_exterior.py); false is the little castle built from the
+            // gothic wall tiles (Yan: "can't we build a little castle shaped thing with the gothic wall tiles"): a cross-shaped nave and transept with an apse, two detached front towers with pyramid roofs, stained windows on the south faces.
+            if (PaintedCathedral)
+            {
+            // (the painted build) as ONE set-piece prop (ArtSource/world/props_cathedral_exterior.py: twin spires, a gabled front with a rose window, a steep slate nave roof, a transept, a crossing spire, an apse), because the roof system only draws boxes.
             // The footprint (34 x 24, x 114..147, y 126..149) is solid for collision with a look that draws nothing; the prop hangs on the anchor tile in front of the door; the great doors (tiles 130, 131) are the way in.
-            c.Rect(114, 126, 34, 24, Solid, 0, "cathedral_mass");
-            c.Put(130, 149, Door).Put(131, 149, Door);
-            c.Put(131, 150, Empty, "cathedral");
-            c.Landmark("The Cathedral", 131, 153).Exit("abandoned_cathedral", 131, 149);
+                c.Rect(114, 126, 34, 24, Solid, 0, "cathedral_mass");
+                c.Put(130, 149, Door).Put(131, 149, Door);
+                c.Put(131, 150, Empty, "cathedral");
+                c.Landmark("The Cathedral", 131, 153).Exit("abandoned_cathedral", 131, 149);
+            }
+            else
+            {
+                c.Rect(126, 126, 12, 24, Solid, 0, "gothic");                       // the nave (front on row 149)
+                c.Rect(116, 134, 32, 8, Solid, 0, "gothic");                        // the transept
+                c.Rect(128, 122, 8, 4, Solid, 0, "gothic");                         // the apse
+                c.Rect(118, 143, 7, 7, Solid, 0, "gothic"); c.Rect(139, 143, 7, 7, Solid, 0, "gothic");   // the two front towers, a gap of one tile either side of the nave
+                foreach (var wx in new[] { 128, 134 }) c.Put(wx, 149, Solid, "window");                  // stained windows either side of the doors
+                foreach (var wx in new[] { 121, 142 }) c.Put(wx, 149, Solid, "window");                  // one in each tower
+                foreach (var wx in new[] { 118, 121, 124, 139, 142, 145 }) c.Put(wx, 141, Solid, "window");   // the transept arms
+                c.Put(131, 149, Door).Put(132, 149, Door);
+                c.Landmark("The Cathedral", 131, 152).Exit("abandoned_cathedral", 131, 149);
+            }
             c.Rect(144, 145, 4, 3, Difficult, -1, "rubble");
             c.Deco(146, 147, "hatch");
             c.Landmark("Subway Entrance", 146, 145).Exit("underground_bunker", 146, 147);

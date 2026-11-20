@@ -20,7 +20,7 @@ namespace GameCore
         static readonly HashSet<string> Tin = new HashSet<string> { "metal", "plank", "hull" };
 
         public enum Roof { Tar, Tin, Slab, Gable, Hip, Saw }
-        public enum Cover { Tile, Slate, TinGreen, TinRed, TinBare, Felt }
+        public enum Cover { Tile, Slate, TinGreen, TinRed, TinBare, Felt , Gothic }
 
         public sealed class Building
         {
@@ -220,7 +220,7 @@ namespace GameCore
                 case "plaster":
                     if (span <= 10) { pitched = true; b.Mat = h < 0.35f ? Cover.TinGreen : h < 0.6f ? Cover.TinRed : Cover.Slate; }
                     break;
-                case "gothic": pitched = true; b.Mat = Cover.Slate; break;   // 2026-11-20: the cathedral: a slate gable over dark stone
+                case "gothic": pitched = true; b.Mat = Cover.Gothic; if (span <= 8) { b.Style = Roof.Hip; b.RidgeNS = b.Front == 1 || b.Front == 2; return; } break;   // 2026-11-20: the cathedral: a slate gable over dark stone; a small square tower gets a hip (pyramid) roof
                 case "concrete":
                     if (span <= 8 && b.W * b.H <= 72) b.Style = Roof.Slab;
                     else if (span >= 10 && b.W * b.H >= 150 && h < 0.4f) b.Style = Roof.Saw;   // a factory hall
@@ -237,6 +237,7 @@ namespace GameCore
         {
             [Cover.Tile] = new[] { C("4a281f"), C("67372a"), C("7e4433"), C("94553f") },
             [Cover.Slate] = new[] { C("4f514c"), C("666862"), C("7b7d76"), C("8f9088") },
+            [Cover.Gothic] = new[] { C("182224"), C("233134"), C("30434a"), C("40585f") },        // 2026-11-20: the cathedral's dark patina slate
             [Cover.TinGreen] = new[] { C("2f3a2c"), C("3e4c3a"), C("4e5f48"), C("617359") },
             [Cover.TinRed] = new[] { C("3e2520"), C("55322a"), C("6a4033"), C("7d4e3e") },
             [Cover.TinBare] = new[] { C("3b4245"), C("525c5e"), C("6b7675"), C("88928d") },

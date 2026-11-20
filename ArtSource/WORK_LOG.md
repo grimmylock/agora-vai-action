@@ -6831,3 +6831,6 @@ Yan: "Yes, build the windows, wall and floor". Gothic wall material + stained wi
 
 ## Batch 9ab - the cathedral exterior as a set-piece (2026-11-20)
 Yan: "it's starting to look good, but it still doesn't have that gothic cathedral style building ... we need shape" (a photo of Cologne). Painted exterior prop + footprint on the plaza, see MISSION_CHOIR.md "The cathedral's shape". Three passes: the first was a grey slab (wrong depth order, no contrast), the second fixed the order and the value/colour contrast, the third made the spires taller and slimmer and cleared the rose window from the portal. Harness: ALL CHECKS PASSED. Not run in Unity: a 1168x1444 prop at scale 2 is the biggest sprite in the atlas (view cost, the fade/occlusion of a tall prop on units behind it, sorting against units at the door). The doors request is separate.
+
+## Batch 9ac - the tile-built cathedral (2026-11-20)
+Yan: "can't we build a little castle shaped thing with the gothic wall tiles from number 2?" Built from gothic wall tiles: cross-shaped body + apse + two front towers (see MISSION_CHOIR.md "The tile-built cathedral"); the painted prop stays as `PaintedCathedral = true`. Harness: ALL CHECKS PASSED. Not run in Unity.
