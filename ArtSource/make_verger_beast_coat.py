@@ -34,14 +34,26 @@ def coat_layers(wrist=(62, 77)):
     cuff.append(cloth(lambda m: PL(m, [(47, 25), (53, 17), (60, 15), (68, 18), (66, 27), (62, 24), (58, 30), (54, 25), (51, 31)]), COATD, 39, depth=2.0))
     # the scarf: flung back off the neck, two torn tails
     import math
-    def tail(x0, y0, x1, wid, sag, phase, seed, drop):
-        n = 14; pts = [(x0 + (x1 - x0) * i / n, y0 + sag * (i / n) ** 1.5 * 10 + 3.2 * math.sin(i * 0.9 + phase) + drop * (i / n)) for i in range(n + 1)]
-        ws = [wid * (1 - 0.65 * (i / n)) + 1 for i in range(n + 1)]
-        a = math.radians(bd.POSE['scarf_rot']); sx, sy = (bd.tf(58, 24, True)[0] - bd.tf(58, 24, False)[0], bd.tf(58, 24, True)[1] - bd.tf(58, 24, False)[1])   # the scarf hangs from the tilted neck but flies by the wind, not with the trunk
-        pts = [(x0 + (x - x0) * math.cos(a) - (y - y0) * math.sin(a) + sx, y0 + (x - x0) * math.sin(a) + (y - y0) * math.cos(a) + sy) for x, y in pts]
-        bd.LIMB = True; m = Mask(S); T(m, pts, ws); bd.LIMB = False; return shade(m, RED, depth=2.0, tex=0.2, seed=seed), pts
-    t1, p1 = tail(57, 23, 16, 6.2, 0.2, 0.0, 40, 3); cuff.append(t1)
-    t2, p2 = tail(56, 22, 30, 3.8, 0.0, 2.4, 41, -3); cuff.append(t2)
+    def ribbon(x0, y0, x1, wid, amp, phase, seed, rise, fork):
+        """a scarf tail: a flat ribbon on a wavy line, wide at the neck and narrowing, the end cut in a swallow-tail; it hangs from the tilted neck but flies by the wind (scarf_rot), not with the trunk"""
+        n = 18; cl = []
+        for i in range(n + 1):
+            t = i / n; cl.append((x0 + (x1 - x0) * t, y0 + rise * t + amp * math.sin(t * 5.2 + phase) * (0.3 + t)))
+        a = math.radians(bd.POSE['scarf_rot']); sx = bd.tf(58, 24, True)[0] - bd.tf(58, 24, False)[0]; sy = bd.tf(58, 24, True)[1] - bd.tf(58, 24, False)[1]
+        cl = [(x0 + (x - x0) * math.cos(a) - (y - y0) * math.sin(a) + sx, y0 + (x - x0) * math.sin(a) + (y - y0) * math.cos(a) + sy) for x, y in cl]
+        top, bot = [], []
+        for i, (x, y) in enumerate(cl):
+            xa, ya = cl[max(0, i - 1)]; xb, yb = cl[min(n, i + 1)]; dx, dy = xb - xa, yb - ya; d = math.hypot(dx, dy) or 1; nx, ny = -dy / d, dx / d
+            w = wid * (1 - 0.55 * i / n) / 2 + 0.5
+            top.append((x + nx * w, y + ny * w)); bot.append((x - nx * w, y - ny * w))
+        # swallow-tail: the last point splits into two prongs
+        xe, ye = cl[-1]; xa, ya = cl[-2]; dx, dy = xe - xa, ye - ya; d = math.hypot(dx, dy) or 1
+        notch = (xe - dx / d * fork, ye - dy / d * fork)
+        poly = top + [(xe + top[-1][0] - xe + 0, ye + top[-1][1] - ye + 0), notch, (bot[-1][0], bot[-1][1])] + bot[::-1]
+        bd.LIMB = True; m = Mask(S); bd.PL(m, poly); bd.LIMB = False
+        return shade(m, RED, depth=1.7, tex=0.16, seed=seed, bias=0.05), cl
+    t1, p1 = ribbon(57, 23, 14, 7.0, 1.6, 0.0, 40, 2, 3.0); cuff.append(t1)
+    t2, p2 = ribbon(56, 25, 28, 5.0, 1.4, 2.2, 41, 6, 2.5); cuff.append(t2)
     global SCARF; SCARF = (p1, p2)
     return back, front, cuff
 def beast(J=None):
@@ -52,8 +64,8 @@ def beast(J=None):
     im.alpha_composite(near)
     for l in cuff: im.alpha_composite(l)
     for pts in SCARF:                                                                                                                           # folds: dark creases across the cloth and lit edges
-        for i in range(3, len(pts) - 1, 3):
-            bd.LIMB = True; x0, y0 = bd.XY(*pts[i]); bd.LIMB = False; px(im, [(x0, y0 - 2 + k) for k in range(0, 5)], RED[1]); px(im, [(x0 + 1, y0 - 2 + k) for k in range(0, 3)], RED[4])
+        for i in range(4, len(pts) - 2, 4):
+            bd.LIMB = True; x0, y0 = bd.XY(*pts[i]); bd.LIMB = False; px(im, [(x0 + k, y0 - 2 + k) for k in range(0, 4)], RED[1]); px(im, [(x0 + k + 1, y0 - 2 + k) for k in range(0, 3)], RED[4])
     # hand-placed detail: the clasp and vials on the belt, buttons, seams down the tail, blood in the hem
     for (x, col) in ((30, RED[3]), (35, RED[2]), (40, RED[3]), (45, RED[2])):
         yy0 = 52 + (x - 27) * 0.39 + 2.2; x0, y0 = bd.XY(x, yy0); px(im, [(x0, y0 + k) for k in range(4)], col); px(im, [(x0, y0 - 1)], BRASS[3])

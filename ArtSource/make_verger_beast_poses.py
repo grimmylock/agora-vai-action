@@ -13,7 +13,7 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mutants_anim', '
 def H(h, w, **kw): return dict(haunch=h, **kw)
 POSES = {
   # galloping, all fours, mid-stride, airborne: the body nearly level, the head up and forward, the hind legs thrown back, the forelegs reaching, the coat and scarf streaming behind
-  'run': dict(pose=dict(tilt=58, pivot=(34, 58), ox=22, oy=-4, head_rot=-34, jaw=20, scarf_rot=10),
+  'run': dict(pose=dict(tilt=58, pivot=(34, 58), ox=22, oy=-4, head_rot=-34, jaw=20, scarf_rot=6),
     J=dict(far=dict(haunch=(34, 62, 8.5, 8.5), leg=[(34, 60), (24, 72), (14, 78), (5, 90)], paw=(7, 92), arm=[(60, 52), (72, 60), (84, 68), (94, 80)], hand=(94, 82)),
            near=dict(haunch=(36, 62, 10.5, 10), leg=[(37, 58), (51, 68), (41, 80), (49, 93)], paw=(52, 94), arm=[(62, 54), (64, 68), (58, 82), (62, 94)], hand=(62, 95)))),
   # the swipe: reared up and leaning in, the head thrust forward with the jaw wide, the near arm swung high and across, the far arm cocked back, the legs braced
@@ -24,12 +24,15 @@ POSES = {
 def draw(name):
     P = POSES[name]; bd.POSE.update(dict(tilt=0.0, pivot=(34, 58), ox=0.0, oy=0.0, head_rot=0.0, jaw=16)); bd.POSE.update(P['pose'])
     im = ct.beast(P['J'])
-    if name == 'attack':                                                                    # the swing's trail: pale arcs sweeping down to the claws, brightest at the hand
-        for k, (r0, ww) in enumerate(((30, 3), (25, 2), (20, 2))):
-            n = 24
-            for i in range(n):
-                t = i / n; ang = np.radians(-78 + 76 * t); x = 82 + r0 * np.cos(ang); y = 90 + r0 * np.sin(ang)
-                for dd in range(ww): px(im, [(int(round((x + bd.POSE['ox']) * bd.K)) + dd, int(round((y + 14) * bd.K)) + dd // 2)], BONE[4 if t > 0.55 else 3 if t > 0.3 else 2])
+    if name == 'attack':                                                                    # the swing: three crescent slashes, thin at the start and thick and white at the claws, each in three bands of brightness
+        bd.LIMB = True
+        for r0, w0, sweep in ((30, 4.2, 78), (25, 3.4, 70), (20, 2.6, 62)):
+            n = 28; ang = lambda t: np.radians(-80 + sweep * t)
+            for lo, hi, col in ((0.0, 0.45, BONE[1]), (0.4, 0.75, BONE[3]), (0.7, 1.0, rgb("#fffaf0"))):
+                outer = [(82 + (r0 + w0 * t) * np.cos(ang(t)), 90 + (r0 + w0 * t) * np.sin(ang(t))) for t in np.linspace(lo, hi, n)]
+                inner = [(82 + (r0 - 0.4) * np.cos(ang(t)), 90 + (r0 - 0.4) * np.sin(ang(t))) for t in np.linspace(hi, lo, n)]
+                m = Mask(bd.S); bd.PL(m, outer + inner); im.alpha_composite(shade(m, [col] * 5, depth=0.5, rim=False))
+        bd.LIMB = False
     bd.POSE.update(dict(tilt=0.0, ox=0.0, oy=0.0, head_rot=0.0, jaw=16)); return im
 if __name__ == "__main__":
     cells = {}
