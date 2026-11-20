@@ -804,18 +804,24 @@ namespace GameCore
                     Sfx.Play(e.Hit ? "parry_perfect" : "parry", mid, 1f, e.Hit ? 0f : 0.08f);
                     Shake(e.Hit ? 0.22f : 0.07f);
                     break;
-                case "hookchain":  // 2026-11-20 (the Verger's Hook): a chain from his hands to you, drawn as links (alternating flat and edge-on, 3 px apart, a sag that goes slack when it misses and taut when it catches), a hook head at the end; the links slide back into his hands
+                case "hookchain":  // 2026-11-20 (the Verger's Hook): an iron gaff hook on a chain of interlocking links (ArtSource/make_hook_fx.py: Fx/fx_hook_head.png, Fx/fx_hook_links.png), laid along the line from his hands to you, turned to the line with the hook's curl always below; a sag that goes slack when it misses and taut when it catches; everything slides back toward his hands over half a second
                 {
                     var a = head - new Vector3(0f, 0.25f, 0f); var b = to + new Vector3(0f, 0.45f, 0f);
-                    float len = Vector3.Distance(a, b); int n = Mathf.Max(4, Mathf.RoundToInt(len / 0.19f)); float sag = (e.Hit ? 0.06f : 0.24f) * Mathf.Min(1f, len / 2f);
+                    float len = Vector3.Distance(a, b); float sag = (e.Hit ? 0.06f : 0.24f) * Mathf.Min(1f, len / 2f);
+                    var linkArt = Strip("Sprites/Fx/fx_hook_links", 2, 16, new Vector2(0.5f, 0.5f)); var hookArt = Strip("Sprites/Fx/fx_hook_head", 1, 16, new Vector2(0.5f, 0.5f));
+                    float ang = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg, flip = b.x < a.x ? -1f : 1f;
+                    float hookLen = 0.75f; var tip = b; var eye = b - new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f) * hookLen;   // the hook's eye, one hook-length back along the line from where it bites
+                    int n = Mathf.Max(3, Mathf.RoundToInt(Vector3.Distance(a, eye) / 0.3125f));                                                                                                            // one link every 5 px (they interlock: a face-on one is 6 px long, an edge-on one 4)
                     for (int k = 1; k <= n; k++)
                     {
-                        float u = k / (float)n; var pos = Vector3.Lerp(a, b, u) + new Vector3(0f, -sag * 4f * u * (1f - u), 0f);
-                        bool flat = k % 2 == 0;
-                        Bit(pos, flat ? ChainSteel : ChainDark, flat ? 3 : 2, flat ? 2 : 3, (a - pos) / 0.5f, 0f, 0.5f, 12);     // each link slides back toward his hands over half a second
+                        float u = k / (float)n; var pos = Vector3.Lerp(a, eye, u) + new Vector3(0f, -sag * 4f * u * (1f - u), 0f);
+                        float la = Mathf.Atan2((eye.y - a.y) - sag * 4f * (1f - 2f * u), eye.x - a.x) * Mathf.Rad2Deg;                    // each link follows the sagging line
+                        if (linkArt != null) ChainPiece(linkArt[k % 2], pos, la, 1f, (a - pos) / 0.5f, 0.5f, k % 2 == 0 ? 12 : 13);
+                        else { bool flat = k % 2 == 0; Bit(pos, flat ? ChainSteel : ChainDark, flat ? 3 : 2, flat ? 2 : 3, (a - pos) / 0.5f, 0f, 0.5f, 12); }
                     }
-                    var hv = (a - b) / 0.5f;                                                                                   // the hook head: a shank, a curve down and a barb, with a dark bite behind it
-                    Bit(b, ChainSteel, 5, 2, hv, 0f, 0.5f, 13); Bit(b + new Vector3(0.1250f, -0.1250f, 0f), ChainSteel, 2, 3, hv, 0f, 0.5f, 13); Bit(b + new Vector3(0.0625f, -0.2500f, 0f), ChainSteel, 2, 1, hv, 0f, 0.5f, 13); Bit(b + new Vector3(0.0625f, -0.0625f, 0f), ChainDark, 2, 2, hv, 0f, 0.5f, 12);
+                    var hc = (eye + tip) * 0.5f;
+                    if (hookArt != null) ChainPiece(hookArt[0], hc, ang, flip, (a - hc) / 0.5f, 0.5f, 14);                         // the hook, point first, the curl below the line
+                    else { Bit(tip, ChainSteel, 5, 2, (a - tip) / 0.5f, 0f, 0.5f, 13); Bit(tip + new Vector3(0.125f, -0.125f, 0f), ChainSteel, 2, 3, (a - tip) / 0.5f, 0f, 0.5f, 13); }
                     if (e.Hit) { Burst(b, Steel, 14, 2.6f, 0.35f); Burst(b, Color.white, 6, 3.6f, 0.25f, 2); Shake(0.12f); Sfx.Play("hook_catch", to, 1f, 0.03f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.8f, 0.03f); }
                     else Sfx.Play("hook_throw", from, 0.9f, 0.04f);
                     break;
@@ -884,6 +890,14 @@ namespace GameCore
         }
 
         /// <summary>A small solid chunk (casing, shell, dropped magazine) in weapon pixels that flies and falls.</summary>
+        /// <summary>2026-11-20: a sprite piece of the hook's chain, turned to `deg` (flipY -1 keeps a curl below the line when it points left), sliding at `vel` and fading over `life`.</summary>
+        private void ChainPiece(Sprite spr, Vector3 at, float deg, float flipY, Vector3 vel, float life, int order)
+        {
+            var sr = NewSprite("Chain", spr, Color.white, _root, order);
+            sr.transform.position = at; sr.transform.rotation = Quaternion.Euler(0f, 0f, deg); sr.transform.localScale = new Vector3(1f, flipY, 1f);
+            _live.Add(new Particle { Sr = sr, Born = Time.time, Life = life, Vel = vel, Gravity = 0f, Fade = true });
+        }
+
         private void Bit(Vector3 at, Color col, int w, int h, Vector3 vel, float gravity, float life, int order)
         {
             var sr = NewSprite("Bit", White(), col, _root, order);

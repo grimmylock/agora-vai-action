@@ -40,14 +40,24 @@ def render(hit, times, ground=0):
         k_t = t / 0.5; alpha = max(0.0, 1 - k_t)
         if alpha > 0:
             lay = Image.new("RGBA", im.size, (0, 0, 0, 0)); dl = ImageDraw.Draw(lay)
-            def bit(pos, col, w, h):
-                x, y = pos[0] + (a[0] - pos[0]) * k_t, pos[1] + (a[1] - pos[1]) * k_t            # vel = (a - pos) / 0.5 over t seconds
-                cx, cy = x * TILE, byc - y * TILE; hw, hh = w * Z / 2, h * Z / 2
-                dl.rectangle((cx - hw, cy - hh, cx + hw - 1, cy + hh - 1), fill=col + (int(255 * alpha),))
-            for k in range(1, n + 1):
-                u = k / n; pos = (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - sag * 4 * u * (1 - u)); flat = k % 2 == 0
-                bit(pos, STEEL if flat else DARK, 3 if flat else 2, 2 if flat else 3)
-            bit((b[0] + 0.0625, b[1] - 0.0625), DARK, 2, 2); bit(b, STEEL, 5, 2); bit((b[0] + 0.125, b[1] - 0.125), STEEL, 2, 3); bit((b[0] + 0.0625, b[1] - 0.25), STEEL, 2, 1)
+            import math
+            LINKS = Image.open(os.path.join(SPR, "Fx", "fx_hook_links.png")).convert("RGBA"); HOOK = Image.open(os.path.join(SPR, "Fx", "fx_hook_head.png")).convert("RGBA")
+            def piece(img, pos, deg, flip):
+                """a sprite piece as CombatFxView.ChainPiece: scale.y = flip, then turned `deg` (counter-clockwise), centred on pos, slid toward his hands by k_t (vel = (a - pos) / 0.5)"""
+                x, y = pos[0] + (a[0] - pos[0]) * k_t, pos[1] + (a[1] - pos[1]) * k_t
+                im2 = img.resize((img.width * Z, img.height * Z), Image.NEAREST)
+                if flip < 0: im2 = im2.transpose(Image.FLIP_TOP_BOTTOM)
+                im2 = im2.rotate(deg, expand=True, resample=Image.NEAREST)
+                al = im2.getchannel("A").point(lambda v: int(v * alpha)); im2.putalpha(al)
+                lay.alpha_composite(im2, (int(x * TILE - im2.width / 2), int(byc - y * TILE - im2.height / 2)))
+            ang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])); flip = -1 if b[0] < a[0] else 1
+            hl = 0.75; eye = (b[0] - math.cos(math.radians(ang)) * hl, b[1] - math.sin(math.radians(ang)) * hl)
+            nl = max(3, round(((a[0] - eye[0]) ** 2 + (a[1] - eye[1]) ** 2) ** .5 / 0.3125))
+            for k in range(1, nl + 1):
+                u = k / nl; pos = (a[0] + (eye[0] - a[0]) * u, a[1] + (eye[1] - a[1]) * u - sag * 4 * u * (1 - u))
+                la = math.degrees(math.atan2((eye[1] - a[1]) - sag * 4 * (1 - 2 * u), eye[0] - a[0]))
+                frame_ = LINKS.crop(((k % 2) * 8, 0, (k % 2) * 8 + 8, 8)); piece(frame_, pos, la, 1)
+            piece(HOOK, ((eye[0] + b[0]) / 2, (eye[1] + b[1]) / 2), ang, flip)
             if hit and t < 0.15:                                                              # the catch: sparks
                 import random; random.seed(int(t * 1000))
                 for _ in range(14):
