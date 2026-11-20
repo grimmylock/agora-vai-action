@@ -285,7 +285,7 @@ namespace GameCore
             Parry.Unparryable = m.Danger; int hp0 = p.Hp;
             try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, m.Mult); }
             finally { Parry.Unparryable = false; }
-            if (m.Drag > 0f && p.Hp < hp0) DragIn(h, p, m.Drag);
+            if (m.Drag > 0f) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
         }
 
         public const float HookGap = 2.0f, DragStop = 0.9f;
@@ -296,7 +296,7 @@ namespace GameCore
             float dx = hx - px, dy = hy - py, d = Mathf.Sqrt(dx * dx + dy * dy); float pull = Mathf.Min(maxTiles, d - DragStop);
             if (pull < 0.15f || d < 0.01f) return;
             Rt.Shove(p, dx / d * pull, dy / d * pull, 0.3f); Rt.Knockdown(p, 0.5f);
-            GameLog.Write("The hook catches you and drags you in."); Sfx.Play("boss_sting", null, 0.5f, 0f, 1.4f);
+            GameLog.Write("The hook catches you and drags you in.");   // (the chain's sounds and its drawing are the view's: CombatFxView "hookchain")
         }
 
         /// <summary>Close in to `gap` tiles from p before a hit lands - you stand anywhere inside a tile, so "the next tile" can still

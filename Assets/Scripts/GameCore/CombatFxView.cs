@@ -387,7 +387,7 @@ namespace GameCore
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
             if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
-            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge")
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
                 BossFx(e, from, to);
@@ -770,6 +770,7 @@ namespace GameCore
 
         // ---- Boss 1: the hype (glints, parries, staggers, the aura, the finisher, the smoke) ----
 
+        static readonly Color ChainSteel = new Color(0.62f, 0.68f, 0.74f), ChainDark = new Color(0.16f, 0.18f, 0.2f);
         static readonly Color GlintWhite = new Color(1f, 1f, 0.92f), GlintRed = new Color(1f, 0.18f, 0.14f), Steel = new Color(1f, 0.93f, 0.7f);
 
         /// <summary>Sparks or chips flying out of a point in every direction.</summary>
@@ -803,6 +804,22 @@ namespace GameCore
                     Sfx.Play(e.Hit ? "parry_perfect" : "parry", mid, 1f, e.Hit ? 0f : 0.08f);
                     Shake(e.Hit ? 0.22f : 0.07f);
                     break;
+                case "hookchain":  // 2026-11-20 (the Verger's Hook): a chain from his hands to you, drawn as links (alternating flat and edge-on, 3 px apart, a sag that goes slack when it misses and taut when it catches), a hook head at the end; the links slide back into his hands
+                {
+                    var a = head - new Vector3(0f, 0.25f, 0f); var b = to + new Vector3(0f, 0.45f, 0f);
+                    float len = Vector3.Distance(a, b); int n = Mathf.Max(4, Mathf.RoundToInt(len / 0.19f)); float sag = (e.Hit ? 0.06f : 0.24f) * Mathf.Min(1f, len / 2f);
+                    for (int k = 1; k <= n; k++)
+                    {
+                        float u = k / (float)n; var pos = Vector3.Lerp(a, b, u) + new Vector3(0f, -sag * 4f * u * (1f - u), 0f);
+                        bool flat = k % 2 == 0;
+                        Bit(pos, flat ? ChainSteel : ChainDark, flat ? 3 : 2, flat ? 2 : 3, (a - pos) / 0.5f, 0f, 0.5f, 12);     // each link slides back toward his hands over half a second
+                    }
+                    var hv = (a - b) / 0.5f;                                                                                   // the hook head: a shank, a curve down and a barb, with a dark bite behind it
+                    Bit(b, ChainSteel, 5, 2, hv, 0f, 0.5f, 13); Bit(b + new Vector3(0.1250f, -0.1250f, 0f), ChainSteel, 2, 3, hv, 0f, 0.5f, 13); Bit(b + new Vector3(0.0625f, -0.2500f, 0f), ChainSteel, 2, 1, hv, 0f, 0.5f, 13); Bit(b + new Vector3(0.0625f, -0.0625f, 0f), ChainDark, 2, 2, hv, 0f, 0.5f, 12);
+                    if (e.Hit) { Burst(b, Steel, 14, 2.6f, 0.35f); Burst(b, Color.white, 6, 3.6f, 0.25f, 2); Shake(0.12f); Sfx.Play("hook_catch", to, 1f, 0.03f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.8f, 0.03f); }
+                    else Sfx.Play("hook_throw", from, 0.9f, 0.04f);
+                    break;
+                }
                 case "stagger":    // reeling: a ring of sparks, a dull clank
                     Burst(head, Steel, 12, 2.2f, 0.4f);
                     Sfx.Play("hit_hard", from, 0.9f);

@@ -2805,6 +2805,7 @@ static class Program {
       Boss.Begin(f, hook, UnityEngine.Time.time, 1f); bool dragged = false; var (bx0, by0) = Ballistics.Pos(p);
       for (int i = 0; i < 200 && !dragged; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); var sh = Rt.Of(p); dragged = sh.ShoveFrom >= 0f; }
       var sp = Rt.Of(p); Check(dragged && p.Hp < p.MaxHp, $"Verger: the Hook that cuts drags you toward him (shove {sp.ShoveX:0.0},{sp.ShoveY:0.0}, hp {p.Hp}/{p.MaxHp})");
+      Check(CombatFx.Pending.Any(e => e.Kind == "hookchain" && e.Hit && e.Actor == h && e.Target == p), "Verger: a caught Hook sends the chain event (the view draws it and plays its sounds)");
       Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger: the drag is a real pull, not a teleport");
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       // half health: the change
