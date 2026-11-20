@@ -13,6 +13,8 @@ Direction words (for the artist, never shown to players): wrongness over gore, o
 | **The Mind** (T7, final) | No body: a foundry hall that has become a face | the transmitters like teeth, the lift cable like a tongue | the walls breathe on the 11 s beat | cold violet | the hall exhales |
 
 ## Concepts drawn so far
-- The Singer, The Orderly, Mother Hollow, The Ferryman, The Specimen grown, The Excavator (`ArtSource/mutants_anim/boss_concepts/*_concept.png`, sheet `boss_concepts_sheet.png`, script `ArtSource/make_boss_concepts.py`). The rest are briefs only. Mother Hollow needed a second pass (first: a flat bean body, bright purple button sacs, a small head); the Ferryman worked first time (the pale face pressed against the lantern glass).
+- The Singer, The Orderly, Mother Hollow, The Ferryman, The Specimen grown, The Excavator, The Choir (`ArtSource/mutants_anim/boss_concepts/*_concept.png`, sheet `boss_concepts_sheet.png`, script `ArtSource/make_boss_concepts.py`). The rest are briefs only. Mother Hollow needed a second pass (first: a flat bean body, bright purple button sacs, a small head); the Ferryman worked first time (the pale face pressed against the lantern glass).
 
 Specimen grown and Excavator each needed two passes (first: a flat pink disc with cartoon eyes, a clean toy digger). Honest state: concept quality; the Excavator's vent growths read a bit like mushrooms and the husk in its cab is hard to read at small size.
+
+**Husks in concepts use the real Husk sprites** (`Resources/Sprites/husk_atlas_x2.png`, front cells pasted 1:1 by `make_boss_concepts.husk_cell`): the Excavator's driver is cell 40, the Choir's column cells 3-47. Yan, 2026-11-20: the Husk already exists, so a reference must show it, otherwise the sprite maker invents a different one. The Choir (179x282): a stone bell tower with a lit brass bell and sound rings, and a dense column of Husks climbing it, every mouth open, joined mouth to mouth by red sinew.

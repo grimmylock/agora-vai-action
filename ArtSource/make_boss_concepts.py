@@ -7,6 +7,13 @@ from pxart import *
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mutants_anim', 'boss_concepts'); os.makedirs(OUT, exist_ok=True)
 BONE = ramp("#3a3328", "#6a604a", "#9c9378", "#c9c1a4", "#ebe4cb")
 DARK = ramp("#080405", "#170a0b", "#28100f", "#3f1819", "#5a2324")
+
+HUSKS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Assets', 'Resources', 'Sprites', 'husk_atlas_x2.png')
+def husk_cell(i):
+    """The real Husk sprite (front view, 32 px cell, index i in husk_atlas_x2.png), pasted at 1:1 - never resampled, so the concept carries the true Husk look for the sprite makers."""
+    im = Image.open(HUSKS).convert('RGBA'); cols = im.width // 32
+    return im.crop(((i % cols) * 32, (i // cols) * 32, (i % cols) * 32 + 32, (i // cols) * 32 + 32))
+
 def mk(S):
     L = []
     def part(build, cols, **kw): m = Mask(S); build(m); L.append(shade(m, cols, **kw)); return m
@@ -332,12 +339,8 @@ def excavator():
     part(lambda m: m.poly([(84, 40), (122, 40), (124, 82), (82, 82)]), IRON, depth=2.4)
     part(lambda m: m.poly([(88, 46), (118, 46), (119, 78), (87, 78)]), GLASS, depth=4.0, gain=1.1)
     hm = paint(S, L)
-    hd = Mask(S); hd.ell(104, 60, 9, 11); hm.alpha_composite(shade(hd, ramp("#1a1c1a", "#34383a", "#5a6062", "#8c9496", "#c0c8c8"), depth=3.0))      # the husk's grey face
-    for (ex, ey) in ((100, 58), (108, 58)): px(hm, [(ex, ey), (ex + 1, ey)], rgb("#04100a"))
-    px(hm, [(x, 66) for x in range(101, 108)], rgb("#04100a")); px(hm, [(104, y) for y in range(60, 66)], rgb("#10201a"))
-    for (hx_, hy_, fl) in ((92, 66, 1), (116, 68, -1)):                                                              # the husk's hands pressed flat on the glass, fingers spread
-        hh = Mask(S); hh.ell(hx_, hy_, 4.4, 5); hm.alpha_composite(shade(hh, ramp("#1a1c1a", "#34383a", "#5a6062", "#8c9496", "#c0c8c8"), depth=1.6))
-        for k in range(5): a_ = math.radians(-80 + k * 22); line(hm, hx_, hy_, hx_ + math.cos(a_) * 7 * fl, hy_ + math.sin(a_) * 7, rgb("#a8b0b0"))
+    hm.alpha_composite(husk_cell(40), (88, 46))                                                                                       # the real Husk, 1:1, in the driver's seat behind the glass
+    gl_ = Image.new('RGBA', S, (0, 0, 0, 0)); ImageDraw.Draw(gl_).rectangle([88, 46, 118, 78], fill=(60, 120, 100, 70)); hm.alpha_composite(gl_)               # the wet, tinted glass over him
     for k in range(5): line(hm, 90 + k * 6, 48, 89 + k * 6, 76, GLASS[1])                                                                           # condensation running down the inside
     # the boom and arm: two heavy beams, hoses along them like veins, a hard hat still on the boom
     arm = Mask(S); arm.tube([(118, 66), (140, 38), (162, 20)], [20, 18, 16]); hm.alpha_composite(shade(arm, RUST, tex=0.3, seed=5, depth=4.0))
@@ -365,8 +368,51 @@ def excavator():
     hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
     return outline(crop(hm, 2))
 
+
+# ------------------------------------------------------------------ THE CHOIR: a bell tower with a column of Husks climbing it, every mouth open on the same note (the Husks are the REAL Husk sprites, pasted 1:1)
+def choir():
+    STONE = ramp("#0e0e11", "#1c1c21", "#2c2c33", "#43434c", "#5e5e68")
+    STONE_D = ramp("#08080a", "#101013", "#18181c", "#242429", "#33333a")
+    BRASS = ramp("#2a1c08", "#5a3c10", "#946a1c", "#cc9a34", "#f4d06a")
+    ROPE = ramp("#241c10", "#4a3a20", "#7a6238", "#a8884e", "#d0b06a")
+    CORD = ramp("#2a0a0a", "#561414", "#8a2424", "#b64040", "#e07878")
+    S = (200, 300); L, part = mk(S); rnd = random.Random(21)
+    # the tower: a tall square stone shaft, a belfry with an open arch, a pitched roof, cracks and moss
+    part(lambda m: m.poly([(52, 70), (148, 70), (152, 298), (48, 298)]), STONE, tex=0.26, seed=1, depth=6.0)
+    part(lambda m: m.poly([(44, 70), (156, 70), (146, 60), (100, 20), (54, 60)]), STONE_D, tex=0.2, seed=2, depth=4.0)       # the roof
+    part(lambda m: m.poly([(70, 82), (130, 82), (130, 130), (112, 142), (88, 142), (70, 130)]), ramp("#020203", "#06060a", "#0c0c12", "#14141c", "#1e1e28"), depth=2.0)    # the belfry arch, dark
+    hm = paint(S, L)
+    for y in range(150, 296, 14): line(hm, 52, y, 148, y + 1, STONE_D[1])                                                       # course lines
+    for _ in range(60): x = rnd.randint(52, 148); y = rnd.randint(150, 296); line(hm, x, y, x + rnd.choice((-1, 0, 1)), y + rnd.randint(3, 9), STONE_D[0])
+    # the bell: brass, hung in the arch, a rope down, the clapper swinging
+    bl = Mask(S); bl.poly([(84, 138), (116, 138), (122, 116), (116, 96), (100, 90), (84, 96), (78, 116)]); hm.alpha_composite(shade(bl, BRASS, tex=0.1, seed=3, depth=4.4))
+    bt = Mask(S); bt.tube([(100, 140), (100, 152)], [6, 6]); hm.alpha_composite(shade(bt, IRON if 'IRON' in globals() else BRASS, depth=1.2)); cl_ = Mask(S); cl_.ell(100, 154, 4, 4); hm.alpha_composite(shade(cl_, BRASS, depth=1.6))
+    line(hm, 100, 90, 100, 82, ROPE[3])
+    # the Husks: real sprites, a staggered column climbing the front, heads thrown back, mouths open (a black oval painted over the lower face)
+    idx = [40, 33, 44, 36, 16, 31, 39, 47, 35, 22, 13, 28, 41, 8, 17, 45, 3, 26]
+    ys = [266 - k * 15 for k in range(18)]
+    prev_x = 84
+    for k, (i, y) in enumerate(zip(idx, ys)):
+        x = 84 + int(14 * math.sin(k * 1.3)) + rnd.randint(-4, 4)
+        cell = husk_cell(i); hm.alpha_composite(cell, (x, y))
+        prev_x_ = x
+        mo = Mask(S); mo.ell(x + 16, y + 9, 3.4, 4.4); hm.alpha_composite(shade(mo, ramp("#020202", "#080404", "#140808", "#241010", "#3a1818"), depth=1.2))     # the open mouth
+        for t in range(3): px(hm, [(x + 14 + t * 2, y + 6)], rgb("#cfc8b4"))
+        prev_x = prev_x_                                                         # a row of teeth along the top
+        if k > 0:                                                                                                                      # sinew from this mouth to the head below: fused mouth to mouth
+            px_y0 = y + 12; px_y1 = ys[k - 1] + 6; ox = prev_x
+            for (dx0, dx1) in ((15, 14), (17, 18), (16, 16)): line(hm, x + dx0, px_y0, ox + dx1, px_y1, CORD[2 + (dx0 % 2)])
+    # the note: arcs of sound leaving the belfry, brass-coloured, and a few cracked chunks of masonry in the air
+    for r, a in ((34, 90), (46, 70), (58, 50)):
+        for t in range(-60, 61, 3):
+            ang = math.radians(t); px(hm, [(100 + math.cos(ang) * r * 1.5, 116 + math.sin(ang) * r)], (*BRASS[3][:3], a * 2 if a * 2 < 255 else 255)); px(hm, [(100 - math.cos(ang) * r * 1.5, 116 + math.sin(ang) * r)], (*BRASS[3][:3], a * 2 if a * 2 < 255 else 255))
+    a_ = np.array(hm).astype(float); H_, W_ = a_.shape[:2]; yy, xx = np.mgrid[0:H_, 0:W_]
+    v = np.clip(1.0 - 0.5 * (((xx - W_ / 2) / (W_ / 2)) ** 2 + ((yy - H_ * 0.5) / (H_ * 0.6)) ** 2) ** 1.1, 0.5, 1.0); a_[:, :, :3] *= v[:, :, None]
+    hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
+    return outline(crop(hm, 2))
+
 if __name__ == '__main__':
-    items = [('singer', 'THE SINGER (T2)', singer()), ('orderly', 'THE ORDERLY (T6)', orderly()), ('mother_hollow', 'MOTHER HOLLOW (T1)', mother_hollow()), ('ferryman', 'THE FERRYMAN (T3)', ferryman()), ('specimen_grown', 'THE SPECIMEN, GROWN (T4)', specimen_grown()), ('excavator', 'THE EXCAVATOR (T5)', excavator())]
+    items = [('singer', 'THE SINGER (T2)', singer()), ('orderly', 'THE ORDERLY (T6)', orderly()), ('mother_hollow', 'MOTHER HOLLOW (T1)', mother_hollow()), ('ferryman', 'THE FERRYMAN (T3)', ferryman()), ('specimen_grown', 'THE SPECIMEN, GROWN (T4)', specimen_grown()), ('excavator', 'THE EXCAVATOR (T5)', excavator()), ('choir', 'THE CHOIR (T6)', choir())]
     K = 2; pad = 40
     W = sum(im.width * K for _, _, im in items) + pad * 3; H = max(im.height for _, _, im in items) * K + pad * 2
     sh = Image.new('RGBA', (W, H), (22, 20, 24, 255)); x = pad; d = ImageDraw.Draw(sh)
