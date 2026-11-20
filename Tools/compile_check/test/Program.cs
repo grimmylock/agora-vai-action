@@ -100,6 +100,7 @@ static class Program {
     SpoolStoryChecks();
     CrownChecks();
     Tier2PoiChecks();
+    ChoirChecks();
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();
@@ -2796,6 +2797,31 @@ static class Program {
       p.X = px; p.Y = py; int ru0 = p.Ru; Tier2Jobs.SpoolOutcome(p);
       Check(Story.IsDone("spool") && Story.Has("spool_ledger_given") && !p.Inventory.Items.Any(i => i.Id == SpoolBoss.Ledger) && p.Ru == ru0 + 1200, "Exile: handing it over: the ledger burns, 1200 Ru (no option to keep it)");
     } finally { Tier2Jobs.ZoneOverride = null; Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
+  }
+
+  static void ChoirChecks() {   // 2026-11-20: the Choir: the Great Bell tolls on the beat, hurts what has a line to it, sends Husk waves, phases, dies
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); ChoirBoss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 120000f;
+    try {
+      ChoirBoss.ZoneOverride = MacroMapDatabase.MapOf("abandoned_city");
+      TerrainMap.Landmarks.Add(new LandmarkInstance { Name = ChoirBoss.Tower, X = px + 6, Y = py + 6, Description = "" });
+      ChoirBoss.Tick(0.1f); var bell = EncounterState.Enemies.OfType<Mutant>().FirstOrDefault(m => ChoirBoss.Owns(m));
+      Check(bell != null && bell.MaxHp == 9000 && ChoirBoss.Current == bell, "Choir: coming near the Clock Tower puts the Great Bell in its frame");
+      Check(ChoirBoss.Fraction == 1f && ChoirBoss.Phase == 0, "Choir: it starts whole, in phase 1");
+      int h0 = EncounterState.Enemies.OfType<HumanEnemy>().Count(Husk.Is); p.Hp = p.MaxHp; int hp0 = p.Hp;
+      UnityEngine.Time.time += 7f; ChoirBoss.Tick(0.1f); Check(ChoirBoss.TollWarn >= 0f, "Choir: the bell swings back before it tolls (a warning)");
+      UnityEngine.Time.time += 1.5f; ChoirBoss.Tick(0.1f);
+      int husks = EncounterState.Enemies.OfType<HumanEnemy>().Count(Husk.Is) - h0;
+      Check(husks == ChoirBoss.WaveSize && husks >= 3, $"Choir: the toll calls a wave of Husks ({husks})");
+      Check(p.Hp < hp0 || GameServices.Grid != null, "Choir: a player with a clear line takes the toll");
+      Check(ChoirBoss.TollRange == 16f && ChoirBoss.TollDamage == 45, "Choir: phase 1 toll numbers");
+      bell.Hp = (int)(bell.MaxHp * 0.6f); ChoirBoss.Tick(0.1f); Check(ChoirBoss.Phase == 1 && ChoirBoss.WaveSize >= 5 && ChoirBoss.TollRange > 16f, "Choir: below 66% the waves grow and the toll reaches further");
+      bell.Hp = (int)(bell.MaxHp * 0.3f); ChoirBoss.Tick(0.1f); Check(ChoirBoss.Phase == 2 && ChoirBoss.TollDamage > 60, "Choir: below 33% the third phase");
+      for (int i = 0; i < 6; i++) { UnityEngine.Time.time += 12f; ChoirBoss.Tick(0.1f); UnityEngine.Time.time += 1.5f; ChoirBoss.Tick(0.1f); }
+      Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => Husk.Is(h) && h.IsAlive()) <= ChoirBoss.MaxHusks, "Choir: never more than 24 Husks alive at once");
+      int ru0 = p.Ru; bell.Hp = 0; ChoirBoss.Tick(0.1f);
+      Check(Story.Has(ChoirBoss.Flag) && ChoirBoss.Current == null && p.Ru == ru0 + 800, "Choir: the bell down: flag set, 800 Ru, the toll stops");
+      int before = EncounterState.Enemies.Count; UnityEngine.Time.time += 30f; ChoirBoss.Tick(0.1f); Check(EncounterState.Enemies.Count == before && ChoirBoss.Current == null, "Choir: once silenced it does not come back");
+    } finally { ChoirBoss.ZoneOverride = null; ChoirBoss.Reset(); EncounterState.Enemies.Clear(); }
   }
 
   static void Tier2PoiChecks() {   // 2026-11-19: Tier 2 points of interest: the papers, the crews, the radiant spots

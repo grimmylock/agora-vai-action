@@ -823,6 +823,7 @@ namespace GameCore
             EelBoss.Tick(Time.deltaTime);                                          // Boss 3: the eel
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
             SpoolBoss.Tick(Time.deltaTime);                                        // Boss 4: Spool in the Dog Kennels
+            ChoirBoss.Tick(Time.deltaTime);                                       // Tier 6: the Choir's bell in the Abandoned City
             Tier2Poi.Tick();                                                      // Tier 2 points of interest: papers + crews
             CrownJob.Tick(Time.deltaTime);                                         // Tier 2 "The Crown": the waves at the Nest, then the King
             Tier3Annex.TickRt(Time.deltaTime);                                     // Tier 3 beat 4 "The Door Under the Dock"

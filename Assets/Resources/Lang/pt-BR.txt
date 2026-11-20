@@ -1153,3 +1153,22 @@ SCRAPPER'S TALLY	CONTAGEM DO SUCATEIRO
 Brass 4 kg. Copper 11. Wire, a good coil. Sold to the Nest at the Nest's price, which is half. Ask for more and the dogs get fed first.	Latão 4 kg. Cobre 11. Fio, uma boa bobina. Vendido ao Ninho pelo preço do Ninho, que é metade. Se pedir mais, os cães comem primeiro.
 They feed the dogs first every day now. The dogs get bigger. I do not think it is the food.	Agora eles alimentam os cães primeiro todo dia. Os cães estão maiores. Acho que não é a comida.
 The Scrapper's Shack: a scrapper sells to the Nest at half price, and notes that the Kennels' dogs are fed first and keep getting bigger.	A Cabana do Sucateiro: um sucateiro vende ao Ninho pela metade do preço e anota que os cães do Canil são alimentados primeiro e não param de crescer.
+
+# ---- The Choir (ChoirBoss.cs) ----
+The Great Bell	O Grande Sino
+THE GREAT BELL	O GRANDE SINO
+IT HAS NOT RUNG YET	AINDA NÃO TOCOU
+THE BELL SWINGS - BREAK THE LINE OF SIGHT OR DIVE	O SINO BALANÇA - QUEBRE A LINHA DE VISÃO OU MERGULHE
+THE CHOIR ANSWERS - WAVE {}	O CORO RESPONDE - ONDA {1}
+Somewhere above the square a bell takes its first swing. Every window in the street turns toward you.	Em algum lugar acima da praça um sino dá sua primeira badalada. Todas as janelas da rua se voltam para você.
+The bell swings back on its yoke.	O sino balança para trás no seu jugo.
+The toll rings through you for {} damage.	A badalada atravessa você causando {1} de dano.
+They come out of the streets in a line, dragging their feet, heads tipped toward the bell.	Eles saem das ruas em fila, arrastando os pés, com a cabeça inclinada para o sino.
+More of them. Every one of them has its mouth open.	Mais deles. Todos estão de boca aberta.
+The bell cracks along its lip, and the note that comes out is lower. Something in the streets answers louder.	O sino racha ao longo da borda, e a nota que sai é mais grave. Algo nas ruas responde mais alto.
+The bell is splitting. It will not stop ringing.	O sino está se partindo. Ele não vai parar de tocar.
+The bell hits the flagstones and rings once, flat and dead. Every Husk in the square stops where it stands, mouth still open, and does not move again.	O sino atinge as lajes e toca uma vez, seco e morto. Todo Husk na praça para onde está, de boca ainda aberta, e não se mexe mais.
+The bell hits the flagstones and rings once, flat and dead. The square goes quiet.	O sino atinge as lajes e toca uma vez, seco e morto. A praça fica em silêncio.
+Belfry Cache	Esconderijo do Campanário
+What the bell-ringers kept under the frame: wages, a collection plate and a good rifle.	O que os sineiros guardavam sob a armação: salários, um prato de coleta e um bom fuzil.
+The Clock Tower: a great bell was ringing the Husks out of the streets on the eleven-second beat. It is down. They stand where they are.	A Torre do Relógio: um grande sino chamava os Husks das ruas no ritmo de onze segundos. Ele caiu. Eles ficam onde estão.

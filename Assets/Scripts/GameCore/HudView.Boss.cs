@@ -54,7 +54,8 @@ namespace GameCore
             _cineTop.gameObject.SetActive(bh > 0.5f); _cineBot.gameObject.SetActive(bh > 0.5f); _cineTop.rectTransform.sizeDelta = new Vector2(0f, bh); _cineBot.rectTransform.sizeDelta = new Vector2(0f, bh);
             var f = Boss.Current; var ef = EelBoss.Current; bool eel = f == null && ef != null && !ef.Gone && ef.Started && ef.Sump != null && ef.Stage != "intro";       // Boss 3: the eel in the Sump uses the same bar
             var gb = f == null && !eel ? GauntBoss.Current : null;                                                                                                  // Tier 3: the Elder Gaunt in its cavern
-            bool on = (f != null || eel || gb != null) && !GameState.Current.ModalOpen;
+            var cb = f == null && !eel && gb == null ? ChoirBoss.Current : null;                                                                                    // Tier 6: the Choir's Great Bell
+            bool on = (f != null || eel || gb != null || cb != null) && !GameState.Current.ModalOpen;
             _bossBar.gameObject.SetActive(on); _bossName.gameObject.SetActive(on); _bossState.gameObject.SetActive(on);
             if (on && gb != null)
             {
@@ -64,6 +65,15 @@ namespace GameCore
                 _bossFill.color = GauntBoss.Phase >= 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)) : C("b8302a");
                 _bossName.text = "THE ELDER GAUNT" + (GauntBoss.Phase >= 2 ? "  <color=#ff5a3a>III</color>" : GauntBoss.Phase == 1 ? "  <color=#ff5a3a>II</color>" : "");
                 _bossState.text = GauntBoss.Label; _bossState.color = Yellow;
+            }
+            else if (on && cb != null)
+            {
+                float hp = ChoirBoss.Fraction;
+                _ghost = Mathf.Max(hp, Mathf.MoveTowards(_ghost, hp, Time.unscaledDeltaTime * 0.35f));
+                _bossFill.rectTransform.sizeDelta = new Vector2((BossW - 4f) * hp, 10f); _bossGhost.rectTransform.sizeDelta = new Vector2((BossW - 4f) * _ghost, 10f);
+                _bossFill.color = ChoirBoss.Phase >= 2 ? Color.Lerp(C("b8302a"), C("ff5a3a"), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)) : C("b8302a");
+                _bossName.text = "THE GREAT BELL" + (ChoirBoss.Phase >= 2 ? "  <color=#ff5a3a>III</color>" : ChoirBoss.Phase == 1 ? "  <color=#ff5a3a>II</color>" : "");
+                _bossState.text = ChoirBoss.Label; _bossState.color = Yellow;
             }
             else if (on && f == null)
             {

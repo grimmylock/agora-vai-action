@@ -1425,6 +1425,9 @@ namespace GameCore
             // city small finds: the burned tram, the clock tower perch, the dead scout, the cart barricade, the evac buses
             for (int i = -2; i <= 2; i++) c.Put(124 + i, 114, HardCover, i == 0 ? "bus" : "part");
             c.Landmark("Burned Tram", 124, 116);
+            // 2026-11-20 the Choir (ChoirBoss.cs): a cleared plaza round the tower (kept off the blocks at 140,88 and 160,120), five stone pillars to break the toll's line of sight; the Great Bell stands just north of the tower
+            c.Clear(140, 108, 32, 12, Asphalt, false);
+            foreach (var (qx, qy) in new[] { (148, 110), (164, 110), (146, 118), (168, 115), (154, 122) }) { c.Put(qx, qy, HardCover, "part"); c.Put(qx, qy + 1, HardCover, "part"); }
             Tower(c, 156, 112, 6);
             c.Stash("Clock Tower", 157, 113);
             c.Landmark("Clock Tower", 156, 116);
