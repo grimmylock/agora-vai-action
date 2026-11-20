@@ -2808,9 +2808,12 @@ static class Program {
       Check(CombatFx.Pending.Any(e => e.Kind == "hookchain" && e.Hit && e.Actor == h && e.Target == p), "Verger: a caught Hook sends the chain event (the view draws it and plays its sounds)");
       Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger: the drag is a real pull, not a teleport");
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
+      foreach (var m in Boss.Verger.Moves.Where(m => m.Clip != null)) Check(VergerBoss.Clips.ContainsKey(m.Clip) && VergerBoss.Clips[m.Clip].Ms.Length == VergerBoss.Clips[m.Clip].Frames && VergerBoss.Clips[m.Clip].Hit < VergerBoss.Clips[m.Clip].Frames, "Verger: the beast's move " + m.Name + " has a well-formed clip (" + m.Clip + ")");
+      Check(Boss.Verger.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.Verger.Moves.Count(m => m.Phase2Only) == 4, "Verger: the beast has four moves (Rake, Smash, Charge, Sweep), each with an animation clip");
       // half health: the change
       f.Doing = null; f.OpenUntil = -1f; h.Hp = Boss.Verger.Hp / 2 - 10; UnityEngine.Time.time += 5f; Boss.Tick(f, p);
       Check(f.Phase == 2 && f.Beast && f.ChangeUntil > UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Beast Claws", "Verger: at half health he changes and takes up the claws");
+      Check(f.Clip == "roar" && System.Math.Abs(f.ClipT0 - UnityEngine.Time.time) < 0.2f, "Verger: the change plays the roar clip from its start");
       Check(System.Math.Abs(Boss.DamageScale(h) - 0.1f) < 0.001f && !Boss.Deflects(h), "Verger: mid-change he is hittable at a tenth of the damage");
       Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe" && i.Condition == ItemCondition.Working), "Verger: the scythe went into his pack at the change");
       Check(f.Doing == null && UnityEngine.Time.time < f.NextMoveAt, "Verger: he does nothing while he changes"); f.NextMoveAt = UnityEngine.Time.time;
@@ -2819,6 +2822,7 @@ static class Program {
       f.NextMoveAt = UnityEngine.Time.time; began = false; h.Hp = Boss.Verger.Hp / 2 - 10; f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f);
       for (int i = 0; i < 600 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
       Check(began && f.Doing.Phase2Only, $"Verger: form 2 fights with the claws' moves ({f.Doing?.Name})");
+      Check(f.Doing.Clip != null && f.Clip == f.Doing.Clip && System.Math.Abs(f.ClipT0 + VergerBoss.Clips[f.Clip].PreHitSeconds - f.StrikeAt) < 0.01f, "Verger: the move's clip is timed so its hit frame lands on the strike");
       h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
       Check(VergerBoss.IsBeast(h), "Verger: after the change he is drawn as the beast");
       p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");

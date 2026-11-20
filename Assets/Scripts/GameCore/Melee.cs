@@ -33,7 +33,7 @@ namespace GameCore
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
             ["Verger's Scythe"] = new Stats { Swing = 0.9f, Reach = 2.1f, ThrowSpeed = 9f, ThrowRange = 6f, Blade = true, Bleeds = true, TwoHanded = true, WindUp = 1f },   // 2026-11-20: a war scythe: the longest reach in the game, it cuts and bleeds
-            ["Beast Claws"] = new Stats { Swing = 0.4f, Reach = 1.7f, Blade = true, Bleeds = true },
+            ["Beast Claws"] = new Stats { Swing = 0.6f, Reach = 1.9f, Blade = true, Bleeds = true },   // the brawler form: long arms, heavy blows (Heavy style: slam, wide sweep, rising)
             ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
         };
         // RT 7v (Yan): no blade = concussive and never sticks; from 1 kg a weapon takes both hands (the bats, the fire axe, the sledge) (a throw winds up for a second)

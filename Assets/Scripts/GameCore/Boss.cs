@@ -31,6 +31,7 @@ namespace GameCore
             public int Hits = 1;           // a combo: each hit has its own glint
             public float Gap = 0.4f;       // between a combo's hits
             public float Lunge;            // > 0: he closes this far in one rush before the hit
+            public string Clip;            // 2026-11-20 (the Verger's beast): which animation clip plays for this move (VergerBoss.Clips)
             public float Drag;             // 2026-11-20 (the Verger's Hook): > 0: he does not rush in, he stops at the blade's tip and, if it cuts you, drags you up to this many tiles toward him
             public float Mult = 1f;        // x the weapon's damage
             public int Weight = 1;         // how often he picks it
@@ -64,6 +65,7 @@ namespace GameCore
             public float Started;
             public int Parries; public float LastParryAt = -99f;
             public float GlintDue = -1f;
+            public string Clip; public float ClipT0;   // the animation clip playing (VergerBoss.Clips) and when it started
             public float StruckAt = -99f;      // when his last hit landed (the beast's attack frame)
             public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
@@ -153,11 +155,11 @@ namespace GameCore
                 new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f, Phase1Only = true },
                 new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 0 }, Open = 1.2f, Phase1Only = true },
                 new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Poses = new[] { 1, 1, 2 }, Open = 1.8f, Phase1Only = true },
-                // form 2: the claws
-                new Move { Name = "Rake", Wind = 0.45f, Hits = 3, Gap = 0.32f, Mult = 0.55f, Weight = 3, Poses = new[] { 1, 2, 1 }, Open = 1.0f, Phase2Only = true },
-                new Move { Name = "Pounce", Wind = 0.8f, Danger = true, Lunge = 6f, Mult = 1.4f, Weight = 2, Poses = new[] { 0 }, Open = 1.8f, Phase2Only = true },
-                new Move { Name = "Maul", Wind = 0.9f, Danger = true, Mult = 1.7f, Weight = 1, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true },
-                new Move { Name = "Frenzy", Wind = 0.55f, Hits = 5, Gap = 0.26f, Mult = 0.45f, Weight = 2, Poses = new[] { 1, 2, 1, 2, 0 }, Open = 1.6f, Phase2Only = true },
+                // form 2: the brawler (Heavy style: 0 slam, 1 wide sweep, 2 rising): slow, heavy, long openings
+                new Move { Name = "Rake", Wind = 0.7f, Hits = 2, Gap = 0.5f, Mult = 0.7f, Weight = 3, Poses = new[] { 1, 2 }, Open = 1.3f, Phase2Only = true, Clip = "rake" },
+                new Move { Name = "Smash", Wind = 1.2f, Danger = true, Mult = 1.9f, Weight = 2, Poses = new[] { 0 }, Open = 2.4f, Phase2Only = true, Clip = "slam" },
+                new Move { Name = "Charge", Wind = 1.0f, Danger = true, Lunge = 7f, Mult = 1.5f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true, Clip = "charge" },
+                new Move { Name = "Sweep", Wind = 0.9f, Mult = 1.2f, Weight = 2, Poses = new[] { 1 }, Open = 1.8f, Phase2Only = true, Clip = "sweep" },
             },
         };
 
@@ -200,7 +202,7 @@ namespace GameCore
                 CombatFx.Push("aura", h, null, h.EquippedWeapon).Now = true;
                 HitStop(0.3f);
             }
-            float speed = f.Phase == 2 ? 0.8f : 1f;
+            float speed = f.Beast ? 1.1f : f.Phase == 2 ? 0.8f : 1f;     // the Verger's beast is a slow brawler (1.1: his waits and openings are a tenth longer); every other boss's phase 2 is quicker
             int dist = CombatantUtil.Distance(h, p);
 
             if (f.Doing == null)
@@ -230,7 +232,7 @@ namespace GameCore
         static void BeginChange(Fight f, float now)
         {
             var h = f.Unit; var c = f.Def.Change;
-            f.Phase = 2; f.Beast = true; f.Doing = null; f.OpenUntil = -1f; f.ChangeUntil = now + c.Seconds; f.NextMoveAt = f.ChangeUntil + 0.6f;
+            f.Phase = 2; f.Beast = true; f.Doing = null; f.OpenUntil = -1f; f.ChangeUntil = now + c.Seconds; VergerBoss.StartClip(f, "roar", now + VergerBoss.Clips["roar"].PreHitSeconds); f.NextMoveAt = f.ChangeUntil + 0.6f;
             HumanLootSystem.StashWeaponNow(h, ItemCondition.Working);                           // the weapon he held drops into his pack: it is yours when he falls
             if (WeaponDatabase.Categories["melee"].TryGetValue(c.Weapon, out var wd)) h.EquipWeaponFromDb(wd);
             Splash(c.Splash ?? "THE CHANGE", c.Line ?? f.Def.Phase2Line);
@@ -256,6 +258,7 @@ namespace GameCore
         {
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
             f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
+            if (m.Clip != null) VergerBoss.StartClip(f, m.Clip, f.StrikeAt);                 // the beast's animation, timed so its hit frame lands on the strike
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
 
@@ -336,7 +339,7 @@ namespace GameCore
             f.LastParryAt = Time.time;
             if (++f.Parries < f.Def.ParriesToStagger) return false;
             f.Parries = 0;
-            f.StaggerUntil = Time.time + seconds; f.Doing = null; f.NextMoveAt = f.StaggerUntil + 0.3f; f.OpenUntil = -1f;
+            f.Clip = null; f.StaggerUntil = Time.time + seconds; f.Doing = null; f.NextMoveAt = f.StaggerUntil + 0.3f; f.OpenUntil = -1f;
             CombatFx.Push("stagger", u, null, null).Now = true;
             return true;
         }

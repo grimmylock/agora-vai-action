@@ -51,7 +51,7 @@ namespace GameData
                 ["Hammer"] = new WeaponDef { Name = "Hammer", BaseDamage = 330, Range = "Adjacent", WeightKg = 0.7f, Tier = 3 },
                 ["FireAxe"] = new WeaponDef { Name = "Fire Axe", BaseDamage = 450, Range = "Adjacent", WeightKg = 2.0f, Tier = 3, IgnorePhysDRPercent = 0.1f },
                 ["Sledgehammer"] = new WeaponDef { Name = "Sledgehammer", BaseDamage = 650, Range = "Adjacent", WeightKg = 4.0f, Tier = 4, IgnorePhysDRPercent = 0.2f },
-                ["VergerClaws"] = new WeaponDef { Name = "Beast Claws", BaseDamage = 520, Range = "Adjacent", WeightKg = 0.6f, Tier = 6 },   // 2026-11-20: the Verger's second form (BOSS_DESIGNS.md); not a pick-up, never in a loot table
+                ["VergerClaws"] = new WeaponDef { Name = "Beast Claws", BaseDamage = 600, Range = "Adjacent", WeightKg = 2.0f, Tier = 6 },   // 2026-11-20: the Verger's second form (BOSS_DESIGNS.md); not a pick-up, never in a loot table
                 ["VergerScythe"] = new WeaponDef { Name = "Verger's Scythe", BaseDamage = 560, Range = "Adjacent", WeightKg = 3.4f, Tier = 6, IgnorePhysDRPercent = 0.2f },   // 2026-11-20: the Verger's own (BOSS_ROSTER #14): a long war scythe, two-handed; drops with him, in no loot table
                 ["BarbedWireBat"] = new WeaponDef { Name = "Barbed Wire Bat", BaseDamage = 360, Range = "Adjacent", WeightKg = 1.2f, Tier = 4 },   // 2026-11-19 (Yan): a Tier 4 reward, a little better than the plain bat (310) and it bleeds; melee is not strong early because armour wins late
                 ["TacticalHatchet"] = new WeaponDef { Name = "Tactical Hatchet", BaseDamage = 420, Range = "Adjacent", WeightKg = 0.9f, Tier = 5, IgnorePhysDRPercent = 0.15f },   // RT 7a: one of a kind (a lab's secret room)
