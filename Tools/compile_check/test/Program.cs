@@ -2820,7 +2820,9 @@ static class Program {
       for (int i = 0; i < 600 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
       Check(began && f.Doing.Phase2Only, $"Verger: form 2 fights with the claws' moves ({f.Doing?.Name})");
       h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
+      Check(VergerBoss.IsBeast(h), "Verger: after the change he is drawn as the beast");
       p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");
+      Check(!VergerBoss.IsBeast(h), "Verger: the execution turns him back into the man (his corpse)");
       Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe") && h.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Verger Coat" && i.Condition == ItemCondition.Working) && !h.Inventory.Items.Any(i => i.Name == "Beast Claws"), "Verger: the scythe and the coat are on the body, the claws are not loot");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }

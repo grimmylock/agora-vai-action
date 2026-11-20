@@ -387,7 +387,7 @@ namespace GameCore
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
             if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
-            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain")
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "glassburst")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
                 BossFx(e, from, to);
@@ -825,6 +825,18 @@ namespace GameCore
                     else { Bit(tip, ChainSteel, 5, 2, (a - tip) / 0.5f, 0f, 0.5f, 13); Bit(tip + new Vector3(0.125f, -0.125f, 0f), ChainSteel, 2, 3, (a - tip) / 0.5f, 0f, 0.5f, 13); }
                     if (e.Hit) { Burst(b, Steel, 14, 2.6f, 0.35f); Burst(b, Color.white, 6, 3.6f, 0.25f, 2); Shake(0.12f); Sfx.Play("hook_catch", to, 1f, 0.03f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.8f, 0.03f); }
                     else Sfx.Play("hook_throw", from, 0.9f, 0.04f);
+                    break;
+                }
+                case "glassburst": // 2026-11-20 (the cathedral job): a stained-glass window bursts inward as the Husks climb in: coloured shards (ruby, amber, blue, green and plain glass) thrown into the nave, falling, and the crash
+                {
+                    var cols = new[] { new Color(0.72f, 0.1f, 0.16f), new Color(0.92f, 0.62f, 0.16f), new Color(0.2f, 0.36f, 0.78f), new Color(0.2f, 0.56f, 0.36f), new Color(0.86f, 0.92f, 1f) };
+                    for (int k = 0; k < 22; k++)
+                    {
+                        float a2 = Random.Range(-0.35f, 0.35f) + (Random.value < 0.5f ? 1.57f : -1.57f), sp = Random.Range(0.8f, 3.2f);
+                        Bit(from + new Vector3(Random.Range(-0.35f, 0.35f), Random.Range(-0.1f, 0.5f), 0f), cols[Random.Range(0, cols.Length)], Random.Range(1, 3), Random.Range(1, 4), new Vector3(Mathf.Cos(a2) * sp * 0.5f, Mathf.Abs(Mathf.Sin(a2)) * sp + 0.8f, 0f), 7f, Random.Range(0.6f, 1.1f), 10);
+                    }
+                    Burst(from, new Color(0.86f, 0.92f, 1f), 10, 2.4f, 0.4f);
+                    Sfx.Play("door_break", from, 0.7f, 0.1f); Shake(0.06f);
                     break;
                 }
                 case "stagger":    // reeling: a ring of sparks, a dull clank

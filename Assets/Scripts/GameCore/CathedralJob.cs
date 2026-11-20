@@ -96,7 +96,7 @@ namespace GameCore
                 var h = Husk.Make(6, heavy); h.X = x; h.Y = y; h.IsAggroed = true; Rt.SetOffset(h, 0f, 0f);
                 RtAi.Hold(h, e.Name.StartsWith("Window") ? 1.1f : 0.3f);                         // a beat on the sill: the climb in
                 EncounterState.Enemies.Add(h); Husks.Add(h);
-                if (e.Name.StartsWith("Window")) Sfx.Play("door_break", TacticalGridView.GridToWorld(e.X, e.Y), 0.7f, 0.1f);
+                if (e.Name.StartsWith("Window") && (i % 3 == 0)) { var gb = CombatFx.Push("glassburst", null, null); gb.Now = true; gb.FromX = e.X; gb.FromY = e.Y; }      // the glass bursts inward (the view draws the shards and plays the sound)
             }
             GameLog.Event(Tolls == 1 ? "Glass bursts down both walls. They come in over the sills and through the doors, heads tipped to the bell." : "More of them, through the windows and the doors.");
         }

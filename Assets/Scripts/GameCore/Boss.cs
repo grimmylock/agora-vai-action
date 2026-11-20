@@ -64,6 +64,7 @@ namespace GameCore
             public float Started;
             public int Parries; public float LastParryAt = -99f;
             public float GlintDue = -1f;
+            public float StruckAt = -99f;      // when his last hit landed (the beast's attack frame)
             public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
@@ -276,6 +277,7 @@ namespace GameCore
         static void Land(Fight f, Player p)
         {
             var h = f.Unit; var m = f.Doing;
+            f.StruckAt = Time.time;
             StepIn(h, p, m.Drag > 0f ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
@@ -382,6 +384,7 @@ namespace GameCore
             var fx = CombatFx.Push("finisher", p, f.Unit, p.EquippedWeapon); fx.Now = true; fx.Hit = true; fx.Killed = true;
             if (f.Def.Change != null) HumanLootSystem.StashArmorOnly(f.Unit, ItemCondition.Working);   // the Verger: his coat (the scythe went into his pack at the change)
             else if (f.Def == Spool) HumanLootSystem.StashWornGear(f.Unit, ItemCondition.Working);   // before the death hook rolls his loot: the bat and the coat, in good order
+            f.Beast = false;                                                        // the Verger: the beast shrinks back into the man (his corpse is the man in the torn coat)
             f.Unit.Unkillable = false; f.Unit.Hp = 0;
             Weapon.OnTargetKilled(p, f.Unit);
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");
