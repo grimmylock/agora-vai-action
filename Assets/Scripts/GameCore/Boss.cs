@@ -33,7 +33,7 @@ namespace GameCore
             public float Lunge;            // > 0: he closes this far in one rush before the hit
             public float Mult = 1f;        // x the weapon's damage
             public int Weight = 1;         // how often he picks it
-            public bool Phase2Only;
+            public bool Phase2Only, Phase1Only;     // 2026-11-20 (the Verger): a two-form boss has moves for only one form
             public int[] Poses = { 0 };
             public float Open = 1f;        // Visor 5: after it he stops to get his breath - still, knife low, bullets land - this long (x phase speed)    // Visor 2: his pose for each hit (HeldPoseMath's Visor moves), in order, wrapping
         }
@@ -48,7 +48,10 @@ namespace GameCore
             public int ParriesToStagger = 3;  // Yan: "make it so he needs 3 parries to get stunned"
             public Move[] Moves;
             public string Phase2Line;
+            public Transform Change;       // 2026-11-20 (the Verger, BOSS_DESIGNS.md): at half health he changes (a window, a new weapon) instead of just flaring
         }
+        /// <summary>The half-health change: he is hittable but takes (1 - Reduction) of the damage for `Seconds`, does nothing meanwhile, then fights on with `Weapon` (a melee db key).</summary>
+        public class Transform { public string Weapon, Splash, Line; public float Seconds = 4f, Reduction = 0.9f; public string[] Barks; }
 
         public class Fight
         {
@@ -60,6 +63,7 @@ namespace GameCore
             public float Started;
             public int Parries; public float LastParryAt = -99f;
             public float GlintDue = -1f;
+            public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
         public const float GuardRecovers = 8f, GlintLead = 0.4f;
@@ -132,6 +136,29 @@ namespace GameCore
             },
         };
 
+        // Boss 6 (Yan, 2026-11-20: "he starts as a sprite swinging his scythe, similar to visor and other melee fights, but at 50% he transforms into a beast", VergerBoss.cs, BOSS_DESIGNS.md): the cathedral's last verger.
+        // Form 1 is the Visor's duel on a war scythe (the longest reach in the game, it cuts and bleeds); at half health he changes (Def.Change: 90% damage reduction while he does) and fights on with claws.
+        // His second form has NO sprite yet: until it is made he fights on in the human body, with the claws' moves.
+        public static readonly Def Verger = new Def
+        {
+            Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 7000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false,
+            StepSeconds = 0.33f, Recover = 1.0f, Phase2Line = "The coat splits at the seams. What stands up is not a man.",
+            Change = new Transform { Weapon = "VergerClaws", Seconds = 4f, Reduction = 0.9f, Splash = "THE CHANGE", Line = "The hat falls. The mask splits. The scythe drops from hands that are not hands.", Barks = new[] { "Forgive me.", "I kept the bell. I kept the dead out. And you rang it." } },
+            Moves = new[]
+            {
+                // form 1: the scythe (poses: 0 slam = the overhead cut, 1 wide sweep, 2 rising swing)
+                new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, Poses = new[] { 0 }, Open = 1.4f, Phase1Only = true },
+                new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f, Phase1Only = true },
+                new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Mult = 1.2f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase1Only = true },
+                new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Poses = new[] { 1, 1, 2 }, Open = 1.8f, Phase1Only = true },
+                // form 2: the claws
+                new Move { Name = "Rake", Wind = 0.45f, Hits = 3, Gap = 0.32f, Mult = 0.55f, Weight = 3, Poses = new[] { 1, 2, 1 }, Open = 1.0f, Phase2Only = true },
+                new Move { Name = "Pounce", Wind = 0.8f, Danger = true, Lunge = 6f, Mult = 1.4f, Weight = 2, Poses = new[] { 0 }, Open = 1.8f, Phase2Only = true },
+                new Move { Name = "Maul", Wind = 0.9f, Danger = true, Mult = 1.7f, Weight = 1, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true },
+                new Move { Name = "Frenzy", Wind = 0.55f, Hits = 5, Gap = 0.26f, Mult = 0.45f, Weight = 2, Poses = new[] { 1, 2, 1, 2, 0 }, Open = 1.6f, Phase2Only = true },
+            },
+        };
+
         /// <summary>Put a boss on the map at (x, y) and start the fight.</summary>
         public static Fight Spawn(Def def, int x, int y)
         {
@@ -161,6 +188,8 @@ namespace GameCore
             if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
             if (now < f.StaggerUntil) return;
+            if (now < f.ChangeUntil) return;                                                  // mid-change: he does nothing, and takes a tenth
+            if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2 && f.Def.Change != null) { BeginChange(f, now); return; }
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2)
             {
                 f.Phase = 2; f.Doing = null; f.NextMoveAt = now + 1.4f;
@@ -181,7 +210,7 @@ namespace GameCore
                     h.MoveToward(p.X, p.Y);
                 }
                 if (now < f.NextMoveAt) return;
-                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= 1)).ToList();
+                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= 1)).ToList();
                 if (options.Count == 0) return;
                 int roll = Random.Range(0, options.Sum(m => m.Weight));
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
@@ -194,6 +223,24 @@ namespace GameCore
             OpenUp(f, f.Doing.Open * speed, now);
             f.Doing = null; f.NextMoveAt = f.OpenUntil + 0.3f * Random.Range(0.8f, 1.3f);
         }
+
+        /// <summary>2026-11-20: the half-health change (Def.Change): the scythe goes into his pack, the claws come out, the camera finds him, and for a few seconds he is hittable at a tenth of the damage.</summary>
+        static void BeginChange(Fight f, float now)
+        {
+            var h = f.Unit; var c = f.Def.Change;
+            f.Phase = 2; f.Beast = true; f.Doing = null; f.OpenUntil = -1f; f.ChangeUntil = now + c.Seconds; f.NextMoveAt = f.ChangeUntil + 0.6f;
+            HumanLootSystem.StashWeaponNow(h, ItemCondition.Working);                           // the weapon he held drops into his pack: it is yours when he falls
+            if (WeaponDatabase.Categories["melee"].TryGetValue(c.Weapon, out var wd)) h.EquipWeaponFromDb(wd);
+            Splash(c.Splash ?? "THE CHANGE", c.Line ?? f.Def.Phase2Line);
+            Sfx.Play("boss_sting", null, 0.8f, 0f, 0.7f);
+            CombatFx.Push("aura", h, null, h.EquippedWeapon).Now = true;
+            var (x, y) = Ballistics.Pos(h); Story.Cutscene(x, y, c.Seconds * 0.8f);
+            HitStop(0.5f);
+            if (c.Barks != null) for (int i = 0; i < c.Barks.Length; i++) Banter.Say(h, c.Barks[i], 1, 0.3f + i * 1.6f);
+            GameLog.Event($"{f.Def.Name}: {c.Line ?? f.Def.Phase2Line}");
+        }
+        /// <summary>2026-11-20: the damage multiplier a boss takes right now (Melee.Strike and Gunplay.Resolve): a tenth while he changes.</summary>
+        public static float DamageScale(ICombatant u) => Of(u) is Fight f && f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f;
 
         /// <summary>Visor 5: the window after a move - he stands, knife low, breathing; bullets get through (Deflects).</summary>
         static void OpenUp(Fight f, float seconds, float now)
@@ -284,7 +331,7 @@ namespace GameCore
         public static bool Staggered(ICombatant u) => Of(u) is Fight f && Time.time < f.StaggerUntil;
 
         /// <summary>Rounds glance off him unless he's staggered (or already broken).</summary>
-        public static bool Deflects(ICombatant u) => Of(u) is Fight f && !f.Broken && !f.Finished && Time.time >= f.StaggerUntil && Time.time >= f.OpenUntil;
+        public static bool Deflects(ICombatant u) => Of(u) is Fight f && !f.Broken && !f.Finished && Time.time >= f.StaggerUntil && Time.time >= f.OpenUntil && Time.time >= f.ChangeUntil;      // (mid-change rounds land, at a tenth)
 
         /// <summary>After any damage (Gunplay.Resolve, Melee.Strike): a boss at 0 doesn't die, he breaks.</summary>
         public static void OnDamaged(ICombatant u)
@@ -320,7 +367,8 @@ namespace GameCore
             Story.Cutscene(x, y, 1.6f);
             HitStop(0.45f);
             var fx = CombatFx.Push("finisher", p, f.Unit, p.EquippedWeapon); fx.Now = true; fx.Hit = true; fx.Killed = true;
-            if (f.Def == Spool) HumanLootSystem.StashWornGear(f.Unit, ItemCondition.Working);   // before the death hook rolls his loot: the bat and the coat, in good order
+            if (f.Def.Change != null) HumanLootSystem.StashArmorOnly(f.Unit, ItemCondition.Working);   // the Verger: his coat (the scythe went into his pack at the change)
+            else if (f.Def == Spool) HumanLootSystem.StashWornGear(f.Unit, ItemCondition.Working);   // before the death hook rolls his loot: the bat and the coat, in good order
             f.Unit.Unkillable = false; f.Unit.Hp = 0;
             Weapon.OnTargetKilled(p, f.Unit);
             Splash(f.Def.Name.ToUpperInvariant(), "DEFEATED");
@@ -328,6 +376,7 @@ namespace GameCore
             GameLog.Event($"You execute {f.Def.Name}. Your Focus surges.");
             if (f.Def.DoneFlag != null) Story.Set(f.Def.DoneFlag);
             if (f.Def == Spool) SpoolBoss.Defeated(p, f.Unit);
+            if (f.Def == Verger) VergerBoss.Defeated(p, f.Unit);
             return true;
         }
 

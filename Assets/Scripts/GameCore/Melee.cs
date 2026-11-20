@@ -32,6 +32,8 @@ namespace GameCore
         // per weapon (by name); the rest get stats from their weight: the smaller, the faster it swings and flies
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
+            ["Verger's Scythe"] = new Stats { Swing = 0.9f, Reach = 2.1f, ThrowSpeed = 9f, ThrowRange = 6f, Blade = true, Bleeds = true, TwoHanded = true, WindUp = 1f },   // 2026-11-20: a war scythe: the longest reach in the game, it cuts and bleeds
+            ["Beast Claws"] = new Stats { Swing = 0.4f, Reach = 1.7f, Blade = true, Bleeds = true },
             ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
         };
         // RT 7v (Yan): no blade = concussive and never sticks; from 1 kg a weapon takes both hands (the bats, the fire axe, the sledge) (a throw winds up for a second)
@@ -272,7 +274,7 @@ namespace GameCore
             if (EelSump.IsEelHead(target, part)) raw *= EelSump.HeadBonus;                // the eel's head takes extra, as for guns
             if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
             if (by is Player) raw *= CombatRules.PlayerDamage;
-            raw *= CombatRules.Lethality;
+            raw *= CombatRules.Lethality * Boss.DamageScale(target);                       // 2026-11-20: the Verger takes a tenth while he changes
             float dr = part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(target)).dr : target.PhysDR * CombatRules.ArmorScale(target);
             int dmg = CombatRules.PhysicalDamage(raw, "Standard", dr, w.Db?.IgnorePhysDRPercent ?? 0f);
             int before = target.Hp;

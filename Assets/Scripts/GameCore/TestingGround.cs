@@ -112,6 +112,13 @@ namespace GameCore
             SpoolBoss.Spawn(x, y, false);
         }
 
+        /// <summary>Boss 6: the Verger's duel on the range - him 6 tiles in front of you with the scythe, the change at half health (F parries).</summary>
+        public static void VergerDuel(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 6, p.Y);
+            VergerBoss.Spawn(x, y, false);
+        }
+
         /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>
         public static void KingDuel(Player p)
         {

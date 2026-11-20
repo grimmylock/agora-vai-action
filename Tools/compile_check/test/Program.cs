@@ -97,6 +97,7 @@ static class Program {
     AnnexQuestChecks();
     ElderClipChecks();
     SpoolChecks();
+    VergerChecks();
     SpoolStoryChecks();
     CrownChecks();
     Tier2PoiChecks();
@@ -2753,6 +2754,35 @@ static class Program {
       for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.05f; if (GameCore.MutantAttack.Update(e, p, UnityEngine.Time.time, ref next) && GameCore.MutantAttack.KindOf(e) == "combo4") played = true; }
       Check(played && p.Hp < p.MaxHp, $"Elder: the 4-hit combo plays next to a player and hurts (hp {p.Hp}/{p.MaxHp})");
     } finally { Rt.On = false; EncounterState.Enemies.Clear(); GameCore.GauntBoss.Reset(); }
+  }
+
+  static void VergerChecks() {   // 2026-11-20: Boss 6, the Verger: a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
+    try {
+      Check(Boss.Verger.Hp == 7000 && Boss.Verger.Change != null && Boss.Verger.Moves.Any(m => m.Phase1Only) && Boss.Verger.Moves.Any(m => m.Phase2Only) && Boss.Verger.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.Verger.Vanishes, "Verger: 7000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
+      var f = Boss.Spawn(Boss.Verger, px + 2, py); var h = f.Unit;
+      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 7000, "Verger: spawns with the scythe and the coat, holds at 1 HP until executed");
+      Check(Melee.For(h.EquippedWeapon).Reach >= 2f && Melee.For(h.EquippedWeapon).Blade && Melee.For(h.EquippedWeapon).Bleeds, "Verger: the scythe is the longest reach and it cuts and bleeds");
+      Check(!ShopDatabase.Items.Any(i => i.Name == "Verger Coat" || i.Name == "Verger's Scythe") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 6)?.Name == "Verger Coat"), "Verger: his coat and scythe are in no shop and no random loadout");
+      f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f); f.NextMoveAt = UnityEngine.Time.time; bool began = false;
+      for (int i = 0; i < 300 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
+      Check(began && f.Doing.Phase1Only, $"Verger: form 1 picks scythe moves ({f.Doing?.Name})");
+      Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h), "Verger: before the change rounds glance off him and he takes full damage");
+      // half health: the change
+      f.Doing = null; f.OpenUntil = -1f; h.Hp = Boss.Verger.Hp / 2 - 10; UnityEngine.Time.time += 5f; Boss.Tick(f, p);
+      Check(f.Phase == 2 && f.Beast && f.ChangeUntil > UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Beast Claws", "Verger: at half health he changes and takes up the claws");
+      Check(System.Math.Abs(Boss.DamageScale(h) - 0.1f) < 0.001f && !Boss.Deflects(h), "Verger: mid-change he is hittable at a tenth of the damage");
+      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe" && i.Condition == ItemCondition.Working), "Verger: the scythe went into his pack at the change");
+      Check(f.Doing == null && UnityEngine.Time.time < f.NextMoveAt, "Verger: he does nothing while he changes"); f.NextMoveAt = UnityEngine.Time.time;
+      for (int i = 0; i < 40; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); } Check(f.Doing == null, "Verger: still nothing while the window is open");
+      UnityEngine.Time.time = f.ChangeUntil + 0.1f; Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h) == (UnityEngine.Time.time >= f.OpenUntil), "Verger: the window closes: full damage again");
+      f.NextMoveAt = UnityEngine.Time.time; began = false; h.Hp = Boss.Verger.Hp / 2 - 10; f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f);
+      for (int i = 0; i < 600 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
+      Check(began && f.Doing.Phase2Only, $"Verger: form 2 fights with the claws' moves ({f.Doing?.Name})");
+      h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
+      p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");
+      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe") && h.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Verger Coat" && i.Condition == ItemCondition.Working) && !h.Inventory.Items.Any(i => i.Name == "Beast Claws"), "Verger: the scythe and the coat are on the body, the claws are not loot");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
   static void SpoolChecks() {   // 2026-11-19: Boss 4, Spool in the Dog Kennels (Tier 2)

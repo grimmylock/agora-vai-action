@@ -193,6 +193,15 @@ namespace GameCore
             AddWeaponToStash(npc, condition); AddArmorToStash(npc, condition);
         }
 
+        /// <summary>2026-11-20 (the Verger): the weapon in his hands goes into his pack now (he is about to swap it for his claws), in good condition.</summary>
+        public static void StashWeaponNow(HumanEnemy npc, string condition) { if (npc != null) AddWeaponToStash(npc, condition); }
+        /// <summary>2026-11-20 (the Verger): at the execution only his coat goes into the pack (the scythe was stashed at the change; claws are not loot).</summary>
+        public static void StashArmorOnly(HumanEnemy npc, string condition)
+        {
+            if (npc == null || npc.CorpseLootFinalized) return;
+            npc.CorpseLootFinalized = true; npc.LootGranted = true; AddArmorToStash(npc, condition);
+        }
+
         private static void AddArmorToStash(HumanEnemy npc, string condition = null)
         {
             var adb = npc.EquippedArmor;

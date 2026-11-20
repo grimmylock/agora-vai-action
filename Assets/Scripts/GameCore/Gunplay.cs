@@ -514,7 +514,7 @@ namespace GameCore
                 if (EelSump.IsEelHead(target, hit.Part)) raw *= EelSump.HeadBonus;   // Boss 3: only the eel's head takes extra damage (Yan, 2026-11-06)
                 if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
                 if (shooter is Player) raw *= CombatRules.PlayerDamage;
-                raw *= CombatRules.Lethality;
+                raw *= CombatRules.Lethality * Boss.DamageScale(target);   // 2026-11-20: the Verger takes a tenth while he changes
                 float ignore = w.Db?.IgnorePhysDRPercent ?? 0f;
                 if (shooter is Player pk)
                 {

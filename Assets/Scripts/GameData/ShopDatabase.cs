@@ -85,6 +85,7 @@ namespace GameData
                 foreach (var weaponEntry in categoryEntry.Value)
                 {
                     var def = weaponEntry.Value;
+                    if (GameData.WeaponDatabase.Unique.Contains(weaponEntry.Key)) continue;     // a boss's own weapon is in no shop
                     list.Add(new ShopItemDef
                     {
                         Id = $"weapon_{categoryEntry.Key}_{weaponEntry.Key}",
