@@ -16,7 +16,7 @@ def limb(cols, haunch, leg, lw, paw, arm, aw, hand, near, seed):
         m = Mask(S); build(m); im = shade(m, c, **kw); L.append(strands(im, kw.get('seed', 1), fur) if fur else im); return m
     s = seed
     part(lambda m: (E(m, *haunch), T(m, leg, lw)), cols, fur=150 if near else 90, tex=0.14, seed=s, depth=4, bias=-0.05)                     # the haunch and the leg: thigh, knee, a thin shin, a long foot
-    if near: part(lambda m: E(m, haunch[0] + 3, haunch[1] + 4, 9.5, 5, 58), MUSC, fur=40, depth=2.6, tex=0.16, seed=s + 1, gain=0.8)   # the lit thigh muscle
+    if near: part(lambda m: E(m, haunch[0] + 3, haunch[1] + 4, 9.5, 5, 58), MUSC, fur=40, depth=1.2, tex=0.12, seed=s + 1, gain=0.7)   # the lit thigh muscle
     px_, py_ = paw                                                                                                                              # the paw: a pad and three toes, each ending in a bone claw
     part(lambda m: (E(m, px_, py_, 5.5, 2.6), [T(m, [(px_ + 2, py_), (px_ + 9 + i, py_ + 1.8 + i * 0.8)], [3.0, 2.2]) for i in range(3)]), cols, fur=30, depth=1.6, tex=0.1, seed=s + 2)
     cl = Mask(S)
@@ -31,10 +31,12 @@ def limb(cols, haunch, leg, lw, paw, arm, aw, hand, near, seed):
     L.append(shade(cl, CLAW, depth=1.0))
     im = paint(S, L)
     return outline(im, DARK[0]) if near else im                                                          # a dark edge on the near limbs so they stand off the body
-def beast_bare():
+def limbs_pair():
     far = limb(FURD, (36, 62, 8.5, 8.5), [(34, 60), (41, 74), (34, 88), (38, 96)], [12, 8, 5, 4], (41, 97), [(52, 32), (58, 52), (55, 74), (59, 92)], [9, 6.4, 4.6, 3.8], (59, 94), False, 40)
     near = limb(FUR, (38, 62, 10.5, 10), [(37, 58), (45, 72), (38, 86), (42, 96)], [15, 10, 6, 4.8], (45, 97.5), [(50, 30), (60, 42), (56, 60), (64, 80), (62, 94)], [11, 9, 6.4, 5.4, 4.6], (62, 95), True, 60)
-    im = Image.new("RGBA", S, (0, 0, 0, 0)); im.alpha_composite(far); im.alpha_composite(bd.trunk()); im.alpha_composite(near)
+    return far, near
+def beast_bare():
+    far, near = limbs_pair(); im = Image.new("RGBA", S, (0, 0, 0, 0)); im.alpha_composite(far); im.alpha_composite(bd.trunk()); im.alpha_composite(near)
     return bd.with_head(im)
 if __name__ == "__main__":
     f = crop(beast_bare(), 2); f.save(os.path.join(OUT, "verger_beast_limbs.png"))
