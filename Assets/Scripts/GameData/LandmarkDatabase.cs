@@ -357,6 +357,19 @@ namespace GameData
                 L("Loading Bay", "Behind the lab door: a short concrete corridor and a freight bay, crates stencilled with a Garrison mark."),
                 L("Freight Lift", "A freight lift at the bay's end, its gate chained open. It goes down."),
             },
+            ["abandoned_cathedral"] = new List<LandmarkDef>   // 2026-11-20: the Choir mission
+            {
+                L("Cathedral Doors", "The great doors, hanging open on one hinge. The city is a grey rectangle behind you."),
+                L("Bell Rope", "A thick rope hanging from the belfry into the crossing, its end worn bare by hands. Above it, in the dark, something heavy waits."),
+                L("Altar", "A stone altar at the head of the nave, brown with old stains. Candle stubs, a cracked cross."),
+                L("West Door", "The west transept door. It was barred from inside once; the bar is on the floor."),
+                L("East Door", "The east transept door, swollen in its frame."),
+                L("Sacristy", "A small vestry off the apse: a cupboard of vestments, a locked cashbox, a rifle on the table."),
+                L("Crypt Niche", "A side chapel gone to a den: bones in the corners, scratch marks up the wall."),
+                L("Roost", "A chapel in the east aisle. Something has been sleeping here."),
+                L("Window 1", "A tall window, its glass long gone."), L("Window 2", "A tall window, its glass long gone."), L("Window 3", "A tall window, its glass long gone."), L("Window 4", "A tall window, its glass long gone."),
+                L("Window 5", "A tall window, its glass long gone."), L("Window 6", "A tall window, its glass long gone."), L("Window 7", "A tall window, its glass long gone."), L("Window 8", "A tall window, its glass long gone."),
+            },
             ["loading_annex"] = new List<LandmarkDef>
             {
                 L("Freight Lift", "The freight lift up to the tunnels, its gate chained open."),

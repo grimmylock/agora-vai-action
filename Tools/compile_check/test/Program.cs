@@ -100,7 +100,7 @@ static class Program {
     SpoolStoryChecks();
     CrownChecks();
     Tier2PoiChecks();
-    ChoirChecks();
+    // ChoirChecks();   (the open-air bell boss was retired 2026-11-20)
     FurnishChecks();
     AnnexDoorChecks();
     StoryLandmarkChecks();

@@ -79,7 +79,7 @@ namespace GameData
 
             // Extreme Tier (T6)
             // Tier 6 is one map (owned by the city): the Epicenter and the Siege Ward are its regions
-            new ZoneDef { Id = "abandoned_city", Name = "Abandoned City", Tier = 6, BaseHazardModifier = 5, ConnectedZones = { "antenna_grid", "outskirts", "hospital" }, AllowedFactions = { "Obelisk", "Garrison" }, HiddenConnections = new List<string> { "underground_bunker" } },
+            new ZoneDef { Id = "abandoned_city", Name = "Abandoned City", Tier = 6, BaseHazardModifier = 5, ConnectedZones = { "antenna_grid", "outskirts", "hospital", "abandoned_cathedral" }, AllowedFactions = { "Obelisk", "Garrison" }, HiddenConnections = new List<string> { "underground_bunker" } },
             new ZoneDef { Id = "outskirts", Name = "Anomalous Epicenter", Tier = 6, BaseHazardModifier = 5, ConnectedZones = { "abandoned_city" }, AllowedFactions = { "Obelisk" }, MapId = "abandoned_city" },
             new ZoneDef { Id = "hospital", Name = "The Siege Ward", Tier = 6, BaseHazardModifier = 5, ConnectedZones = { "abandoned_city", "reactor_core", "hospital_morgue" }, AllowedFactions = { "Obelisk", "Garrison" }, HiddenConnections = new List<string> { "siege_catacombs" }, MapId = "abandoned_city" },
 
@@ -101,6 +101,7 @@ namespace GameData
             new ZoneDef { Id = "flooded_bunker", Name = "Flooded Bunker", Tier = 1, BaseHazardModifier = 2, ConnectedZones = { "marshes" }, AllowedFactions = { "Mutant" }, IsDungeon = true, RequiresKey = "flooded_bunker" },
             new ZoneDef { Id = "smugglers_tunnel", Name = "Smugglers' Tunnel", Tier = 1, BaseHazardModifier = 1, ConnectedZones = { "smugglers_run" }, AllowedFactions = { "Raiders", "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "loading_annex", Name = "The Loading Annex", Tier = 4, BaseHazardModifier = 2, ConnectedZones = { "taken_tunnels" }, AllowedFactions = { }, IsDungeon = true },   // 2026-11-19: Tier 3 beat 4 "The Door Under the Dock" (STORY_GAUNT_LAB.md): the lab behind the lab door, reached by the freight lift
+            new ZoneDef { Id = "abandoned_cathedral", Name = "The Abandoned Cathedral", Tier = 6, BaseHazardModifier = 4, ConnectedZones = { "abandoned_city" }, AllowedFactions = { }, IsDungeon = true },   // 2026-11-20: the Choir mission (MISSION_CHOIR.md): the bell, the Husk waves, the Verger
             new ZoneDef { Id = "taken_tunnels", Name = "The Hatch Tunnels", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "industrial_basin", "loading_annex" }, AllowedFactions = { }, IsDungeon = true },   // 2026-11-16: Tier 2 beat 1 "Taken" (Tier2Story): entered by the story, never by an exit
             new ZoneDef { Id = "crusher_pit", Name = "The Crusher Pit", Tier = 2, BaseHazardModifier = 2, ConnectedZones = { "scrapyard" }, AllowedFactions = { "Mutant" }, IsDungeon = true },
             new ZoneDef { Id = "valley_mine", Name = "The Valley Mine", Tier = 2, BaseHazardModifier = 2, ConnectedZones = { "black_valley" }, AllowedFactions = { "Mutant" }, IsDungeon = true },

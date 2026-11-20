@@ -1172,3 +1172,32 @@ The bell hits the flagstones and rings once, flat and dead. The square goes quie
 Belfry Cache	Esconderijo do Campanário
 What the bell-ringers kept under the frame: wages, a collection plate and a good rifle.	O que os sineiros guardavam sob a armação: salários, um prato de coleta e um bom fuzil.
 The Clock Tower: a great bell was ringing the Husks out of the streets on the eleven-second beat. It is down. They stand where they are.	A Torre do Relógio: um grande sino chamava os Husks das ruas no ritmo de onze segundos. Ele caiu. Eles ficam onde estão.
+
+# ---- The Abandoned Cathedral (zone, landmarks) ----
+The Abandoned Cathedral	A Catedral Abandonada
+Cathedral Doors	Portas da Catedral
+The Cathedral	A Catedral
+Bell Rope	Corda do Sino
+Altar	Altar
+West Door	Porta Oeste
+East Door	Porta Leste
+Sacristy	Sacristia
+Crypt Niche	Nicho da Cripta
+Roost	Poleiro
+Window 1	Janela 1
+Window 2	Janela 2
+Window 3	Janela 3
+Window 4	Janela 4
+Window 5	Janela 5
+Window 6	Janela 6
+Window 7	Janela 7
+Window 8	Janela 8
+The great doors, hanging open on one hinge. The city is a grey rectangle behind you.	As grandes portas, abertas e presas por uma só dobradiça. A cidade é um retângulo cinza atrás de você.
+A thick rope hanging from the belfry into the crossing, its end worn bare by hands. Above it, in the dark, something heavy waits.	Uma corda grossa pendendo do campanário até o cruzamento, a ponta gasta por mãos. Lá em cima, no escuro, algo pesado espera.
+A stone altar at the head of the nave, brown with old stains. Candle stubs, a cracked cross.	Um altar de pedra no fim da nave, marrom de manchas velhas. Tocos de vela, uma cruz rachada.
+The west transept door. It was barred from inside once; the bar is on the floor.	A porta do transepto oeste. Já foi trancada por dentro; a tranca está no chão.
+The east transept door, swollen in its frame.	A porta do transepto leste, inchada no batente.
+A small vestry off the apse: a cupboard of vestments, a locked cashbox, a rifle on the table.	Uma pequena sacristia ao lado da abside: um armário de vestes, um cofre trancado, um fuzil sobre a mesa.
+A side chapel gone to a den: bones in the corners, scratch marks up the wall.	Uma capela lateral virada covil: ossos nos cantos, marcas de garras na parede.
+A chapel in the east aisle. Something has been sleeping here.	Uma capela na nave leste. Algo tem dormido aqui.
+A tall window, its glass long gone.	Uma janela alta, o vidro há muito perdido.

@@ -64,6 +64,7 @@ namespace GameCore
                 ["crusher_pit"] = TierDungeons.CrusherPit(),
                 ["taken_tunnels"] = TierDungeons.TakenTunnels(),
                 ["loading_annex"] = TierDungeons.LoadingAnnex(),
+                ["abandoned_cathedral"] = TierDungeons.Cathedral(),
                 ["valley_mine"] = TierDungeons.ValleyMine(),
 
                 // Tier 3 is one map (owned by the hub)

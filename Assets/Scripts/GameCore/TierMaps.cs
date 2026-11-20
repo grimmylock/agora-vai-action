@@ -1393,7 +1393,13 @@ namespace GameCore
             c.Landmark("Highrise Row", 107, 98);
             // the Central Plaza, its dead fountain, the subway entrance (Underground Bunker)
             c.Clear(110, 120, 40, 30, Concrete);
-            c.Rect(128, 133, 4, 4, Solid, 1, "fountain");
+            c.Rect(124, 125, 4, 4, Solid, 1, "fountain");   // (2026-11-20: moved up to make room for the cathedral on the plaza's south side)
+            // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md): a stone nave across the plaza's south side, a gabled front with tall windows and buttresses, the great doors on the north face; its inside is the dungeon zone `abandoned_cathedral`
+            c.Rect(114, 136, 34, 14, Solid, 0, "concrete");
+            for (int wx = 117; wx <= 144; wx += 4) c.Put(wx, 136, Solid, "window");
+            foreach (var bx in new[] { 114, 122, 138, 147 }) { c.Put(bx, 135, HardCover, "part"); }
+            c.Put(130, 136, Door, "metal").Put(131, 136, Door, "metal");
+            c.Landmark("The Cathedral", 131, 134).Exit("abandoned_cathedral", 131, 136);
             c.Put(114, 124, HardCover, "busstop").Put(146, 124, HardCover, "dumpster").Put(118, 144, ScatterCover, "trash");
             c.Landmark("Central Plaza", 130, 128);
             c.Rect(144, 145, 4, 3, Difficult, -1, "rubble");
@@ -1425,9 +1431,6 @@ namespace GameCore
             // city small finds: the burned tram, the clock tower perch, the dead scout, the cart barricade, the evac buses
             for (int i = -2; i <= 2; i++) c.Put(124 + i, 114, HardCover, i == 0 ? "bus" : "part");
             c.Landmark("Burned Tram", 124, 116);
-            // 2026-11-20 the Choir (ChoirBoss.cs): a cleared plaza round the tower (kept off the blocks at 140,88 and 160,120), five stone pillars to break the toll's line of sight; the Great Bell stands just north of the tower
-            c.Clear(140, 108, 32, 12, Asphalt, false);
-            foreach (var (qx, qy) in new[] { (148, 110), (164, 110), (146, 118), (168, 115), (154, 122) }) { c.Put(qx, qy, HardCover, "part"); c.Put(qx, qy + 1, HardCover, "part"); }
             Tower(c, 156, 112, 6);
             c.Stash("Clock Tower", 157, 113);
             c.Landmark("Clock Tower", 156, 116);
