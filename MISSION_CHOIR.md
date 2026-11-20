@@ -27,3 +27,15 @@ The Abandoned City (Tier 6) is full of Husks. A client pays to thin them. The Cl
 3. The toll when YOU ring it: deafens you (my pick), nothing, or hurts you as built?
 4. Keep the Great Bell as a boss anywhere (e.g., a one-time finale at toll 30), or drop the boss idea entirely?
 5. Does a "Ringer" Husk (the creature I proposed) still appear, e.g., as the heavy at toll 10?
+
+## Yan's cathedral version (2026-11-20, replaces the open-plaza setting above)
+"Inside a kind of gothic cathedral: we go inside, it loads to the inside of the cathedral, we ring the bell, husks come from the windows and doors, we kill them... repeat... maybe a few mutants get drawn in by the BLOOD."
+- **A new interior map** (`abandoned_cathedral`, a dungeon-style zone entered from a big building on the Abandoned City's Central Plaza; plan as text like the other dungeons, `TierDungeons` + `LandmarkDatabase` + an exit on the Tier 6 map). The plaza, pillars and the Tier 6 bell tower prop become the cathedral's exterior; the plaza I cleared stays as its forecourt.
+- **The nave**: a long hall with two rows of stone pillars (hard cover) and pews (low cover), side aisles, a choir loft, the crossing where the bell rope hangs from the belfry, an altar end, a sacristy (the reward cache) and tall windows down both walls. Landmarks mark the spawn points: "West Door", "Side Door N/S", "Window 1..8".
+- **The loop**: ring the bell (E at the rope) -> toll on the beat -> Husks come through the doors and CLIMB THROUGH THE WINDOWS (glass breaks, a short climb-in pose) in waves -> kill them -> ring again. Escalation by toll count as before.
+- **Blood draws mutants**: the game already does this: `Noise.Smell` (Noise.cs:34): a death sends unaware mutant packs within 25 tiles to the body if they like their odds (they weigh their HP against everyone standing near it). Inside the cathedral the mutants are a few unaware packs placed in the aisles/crypt/outside (a Tier 6 pack, plus one tier-higher "what was that" thing as the heavy), so the more Husks you drop the more likely they come. Rule 7 holds: nobody is spawned next to you, the bodies are the trigger.
+- **Pressure, not a boss**: Husk waves + blood-lured mutants = the "overwhelmed but you still win" feel; the pillars, pews, the crossing and the loft are the tools. No Great-Bell boss and no Ringer needed (the Ringer idea is dropped unless Yan wants it back).
+- **Toll when you ring it**: the cathedral echoes, so it deafens (aim blown, muffled) and puts Husks in a short frenzy; it never hurts you directly.
+- **Reward and repeat**: pay per Husk, a completion bonus, a cache in the sacristy; the city's Husk population refills over days so the job comes back (cooldown like the raid).
+
+Defaults I will use unless Yan says otherwise: client = Contractors; repeatable secondary job (no story gate); toll deafens; no boss; the blood-lured mutants are the heavy.
