@@ -6782,3 +6782,8 @@ Harness passed. Not run in Unity or rendered; scene tiles are placed by coordina
 ## Batch 9q - Tier 2 scenes rendered + concepts for the last three mutants (2026-11-19)
 - Rendered the Tier 2 scenes (`maps/renders/tier2_landmarks_scenes.png`): the decals are small and faint at map scale; the landmarks read, the story decals mostly do not. Not changed.
 - Concepts for Swarm (Rot Crawler), Mind Weaver, Void Weaver: see `ArtSource/MUTANT_CONCEPTS.md`, `make_concepts_remaining.py`, `ArtSource/mutants_anim/concepts_new/`. Not in the game; waiting on Yan for the sprite makers.
+
+## Batch 9r - Rot Crawler and Mind Weaver: SpriteCook redraws, Pixel Lab loops from the concepts (2026-11-20)
+- Yan liked the Rot Crawler and Mind Weaver concepts (the Void Weaver is parked: "we'll revisit"), and said the concepts are not game-quality sprites. Ran them through SpriteCook the way the Gaunt was (concept = design reference, Gaunt/Dread Prowler/Blight Brute = style references): `ArtSource/mutants_anim/concepts_new/spritecook/` (README, `compare_v1.png`). Rot Crawler 112x64 is game-ready in look and size; Mind Weaver came out 165x294 (too big for the game's scale).
+- Earlier the same day Pixel Lab loops were made from the CONCEPTS (crawl, hover; `concepts_new/pixellab/`, 2 of the trial's generations): superseded, redo from the SpriteCook sprites once Yan picks.
+- Credits: SpriteCook 14 left, Pixel Lab 17.05 generations. Nothing is in the game.
