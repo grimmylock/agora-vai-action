@@ -55,12 +55,15 @@ def head(open_deg=16):
     # scars: three old claw lines across the bridge and a notch torn from the ear
     for k in range(3): line(im, 38 + k * 3, 17 + k, 42 + k * 3, 24 + k, BONE[2]); line(im, 39 + k * 3, 17 + k, 43 + k * 3, 24 + k, BONE[3])
     px(im, [(24, 3), (25, 4), (25, 3)], (0, 0, 0, 0)); px(im, [(24, 4)], FURD[0])
-    # the leather mask: burst, a band still cutting into the muzzle with its buckle, a flap hanging from one strap under the jaw
-    band = Mask(S); band.poly([(41, 18), (43.5, 18), (45, 33), (42.5, 33)]); im.alpha_composite(shade(band, TAN, depth=1.1, tex=0.2, seed=9))
-    for yy in (21, 26, 31): px(im, [(X(41 + (yy - 17) * 0.2), yy), (X(42 + (yy - 17) * 0.2), yy)], LEATHER[1])
-    px(im, [(42, 25), (43, 25), (42, 26), (43, 26)], BRASS[4]); px(im, [(42, 26)], BRASS[2])
-    fl = Mask(S); fl.poly(rot([(32, 40), (39, 38), (42, 44), (40, 49), (37, 47), (35, 55), (32, 49), (30, 51)], open_deg * 0.4, hinge)); im.alpha_composite(shade(fl, TAN, depth=1.4, tex=0.22, seed=10))
-    for (x, y) in rot([(34, 44), (38, 47)], open_deg * 0.4, hinge): px(im, [(X(x), X(y))], LEATHER[1])
+    # the leather mask, still on: a stitched cup over the upper muzzle with a torn lower edge (the fangs burst through), a strap round the head under the eye, a brass buckle, a seam down the nose
+    strap = Mask(S); strap.tube([(38, 27), (30, 29), (20, 28), (10, 25)], [3.2, 3.2, 3.2, 3.0]); im.alpha_composite(shade(strap, LEATHER, depth=1.0, tex=0.2, seed=9))
+    cup = Mask(S); cup.poly([(36, 17), (46, 18), (55, 23), (57, 27), (56, 31), (52, 30), (50, 32), (46, 30), (43, 32), (39, 30), (36, 31), (34, 25)]); im.alpha_composite(shade(cup, TAN, depth=2.2, tex=0.24, seed=10))
+    seam = [(x, 21 + (x - 38) * 0.45) for x in range(38, 56)]; px(im, [(X(x), X(y)) for x, y in seam[::2]], LEATHER[1])             # the stitched seam along the top
+    for k in range(5): px(im, [(40 + k * 3, 19 + k), (40 + k * 3, 18 + k)], LEATHER[0])                                                    # stitches
+    line(im, 45, 20, 45, 30, LEATHER[1]); line(im, 46, 20, 46, 30, TAN[4])                                                                   # a fold where it strains over the muzzle
+    px(im, [(40, 26), (41, 26), (40, 27), (41, 27)], BRASS[4]); px(im, [(40, 27), (41, 27)], BRASS[2])                                   # the buckle where the strap meets the cup
+    px(im, [(52, 31), (53, 31), (53, 32)], FURD[1])                                                                                         # a torn gap
+    for (x, y) in ((8, 26), (7, 29), (9, 31)): line(im, x, y, x - 4, y + 4, LEATHER[2])                                                      # the strap's loose ends flapping behind the ear
     # blood on the muzzle, the teeth and the flap
     for (x, y) in ((53, 34), (49, 36), (35, 42), (56, 33), (41, 47)): P(x, y, RED[2]); P(x, y + 1, RED[1])
     return outline(im)
