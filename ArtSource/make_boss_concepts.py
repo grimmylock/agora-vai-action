@@ -119,9 +119,136 @@ def orderly():
     for k in range(3): px(hm, [(80 + k * 3, 80), (80 + k * 3, 82)], rgb("#2a2a24"))
     return outline(crop(hm, 2))
 
+
+# ------------------------------------------------------------------ MOTHER HOLLOW: a bloated pale pack-mother, her brood growing out of her flank
+def mother_hollow():
+    SKIN = ramp("#161213", "#2a2223", "#473a3b", "#6e5c5c", "#948280")
+    SKIN_F = ramp("#0b0909", "#151112", "#221b1c", "#352b2d", "#4a3e40")
+    SAC = ramp("#2a1418", "#4e2a30", "#7a4a4e", "#a87678", "#d0a8a2")
+    PUP = ramp("#2a2422", "#4e4440", "#7e716a", "#b0a398", "#d8cdc0")
+    HAIR = ramp("#0a0806", "#1a1410", "#2e241c", "#463a2e", "#665646")
+    S = (212, 128); L, part = mk(S); rnd = random.Random(11)
+    # far legs, long and wrong-jointed
+    part(lambda m: m.tube([(132, 66), (142, 88), (134, 104), (144, 114)], [9, 6, 4.4, 3.4]), SKIN_F, tex=0.1, seed=1)
+    part(lambda m: m.tube([(54, 70), (40, 90), (52, 106), (42, 116)], [11, 7, 5, 3.6]), SKIN_F, tex=0.1, seed=2)
+    # the body: a bloated barrel, the belly sagging nearly to the ground, hips narrow, the spine a ridge
+    part(lambda m: m.ell(84, 50, 44, 24, -5).ell(90, 74, 40, 24, 2).ell(134, 48, 26, 26, 8).ell(44, 52, 20, 20, 0), SKIN, tex=0.18, seed=3, depth=7.0)
+    sp = Mask(S)
+    for i in range(14): x = 150 - i * 8.4; sp.ell(x, 28 + abs(math.sin(i * 0.5)) * 3 + (i * 0.35), 3.0 - i * 0.05, 2.6)
+    L.append(shade(sp, BONE, depth=1.7))
+    # ribs splayed through the near flank
+    rb = Mask(S)
+    for k in range(7): x0 = 108 + k * 4.2; rb.tube([(x0, 38), (x0 + 3, 52 + k * 0.6), (x0 + 1, 66)], [2.2, 2.0, 1.2])
+    L.append(shade(rb, BONE, depth=1.3))
+    cav = Mask(S); cav.ell(122, 52, 18, 14, 4); L.insert(len(L) - 1, shade(cav, DARK, depth=2.2, tex=0.08, seed=5))
+    # the brood: sacs along the flank and belly, a pup's head pushing out of each, jaws working
+    for (cx, cy, r) in ((58, 58, 13), (82, 76, 14), (108, 80, 13), (132, 72, 11)):
+        part(lambda m, a=(cx, cy, r): m.ell(a[0], a[1], a[2], a[2] * 0.85), SAC, tex=0.12, seed=cx, depth=3.2)
+    # near legs
+    part(lambda m: m.tube([(124, 66), (138, 88), (130, 106), (142, 118)], [15, 10, 7, 5]), SKIN, tex=0.12, seed=6, bias=-0.1)
+    part(lambda m: m.tube([(48, 64), (30, 84), (48, 104), (34, 118)], [18, 12, 8, 5]), SKIN, tex=0.12, seed=7, bias=-0.1)
+    pw = Mask(S)
+    for dx in (-4, 0, 4): pw.tube([(142, 118), (144 + dx, 124)], [2.0, 0.8]); pw.tube([(34, 118), (31 + dx, 124)], [2.0, 0.8])
+    L.append(shade(pw, BONE, depth=1.0))
+    # neck and head: a long dropped neck, a skull-like muzzle, the jaw unhinged, milk-blind eyes
+    part(lambda m: m.tube([(146, 40), (166, 50), (178, 58)], [22, 18, 15]), SKIN, tex=0.12, seed=8, depth=4.0)
+    HL, hp = mk(S)
+    hp(lambda m: m.ell(182, 58, 19, 16, 8).poly([(176, 50), (204, 58), (212, 68), (210, 74), (186, 78)]), BONE, tex=0.1, seed=9, depth=3.2, bias=-0.1)
+    hp(lambda m: m.poly([(180, 74), (210, 76), (204, 106), (190, 112), (176, 90)]), ramp("#1a1210", "#33241f", "#58423a", "#85685a", "#b08e7c"), depth=1.8, tex=0.1, seed=10)
+    hp(lambda m: m.poly([(182, 75), (208, 77), (202, 100), (190, 106), (180, 90)]), DARK, depth=1.0)
+    hm_ = paint(S, HL)
+    for x in range(184, 210, 2): px(hm_, [(x, 75), (x, 76), (x, 79 if x % 4 == 0 else 77), (x, 80 if x % 6 == 0 else 77)], rgb("#dcd2b8"))
+    for x in range(186, 204, 3): px(hm_, [(x, 103), (x, 102)], rgb("#b0a688"))
+    for (ex, ey) in ((181, 50), (194, 56)): px(hm_, [(ex + i, ey + j) for i in range(0, 6) for j in range(0, 5)], rgb("#cfd2cc")); px(hm_, [(ex + 3, ey + 2)], rgb("#5a6a7a"))     # milk-blind eyes, a pinprick iris
+    L.append(hm_)
+    # black drool, and her hair: a woman's hair falling from the back of the skull down over the neck and chest
+    dr = paint(S, [])
+    for x in (186, 192, 198, 204): line(dr, x, 104, x - 1, 124 + (x % 5), rgb("#08070a")); px(dr, [(x - 1, 125 + (x % 5))], rgb("#241a30"))
+    for i in range(46):
+        x0 = 170 + rnd.uniform(-8, 6); y0 = 48 + rnd.uniform(-4, 6); ln = rnd.uniform(26, 58); sw = rnd.uniform(-10, 4)
+        pts = [(x0 + sw * (k / 8) ** 1.5 - k * 0.6, y0 + k * ln / 8) for k in range(9)]
+        for a, b in zip(pts, pts[1:]): line(dr, a[0], a[1], b[0], b[1], HAIR[rnd.choice((1, 2, 3, 3, 4))])
+    L.append(dr)
+    hm = paint(S, L)
+    # the pups: heads pushing out of the sacs, eyes sealed, mouths open, one half out
+    for (cx, cy, r, ang) in ((58, 58, 13, 200), (82, 76, 14, 250), (108, 80, 13, 280), (132, 72, 11, 320)):
+        a = math.radians(ang); hx, hy = cx + math.cos(a) * r * 0.55, cy + math.sin(a) * r * 0.5
+        hd = Mask(S); hd.ell(hx, hy, 8, 6.6, ang - 180); hm.alpha_composite(shade(hd, PUP, depth=2.2, tex=0.08, seed=cx))
+        mo = Mask(S); mo.ell(hx + math.cos(a) * 3.4, hy + math.sin(a) * 3.0, 2.6, 1.7); hm.alpha_composite(shade(mo, DARK, depth=1.0))
+        px(hm, [(hx - 1, hy - 2), (hx + 1, hy - 2)], rgb("#1a1412"))
+        for t in range(3): px(hm, [(hx + math.cos(a) * 3.4 - 2 + t * 2, hy + math.sin(a) * 3.0 - 1)], rgb("#e8e0cc"))
+    # veins from the sacs and bruises on the hide
+    for (cx, cy) in ((58, 58), (82, 76), (108, 80), (132, 72)):
+        x, y = cx, cy
+        for i in range(16): nx = x + rnd.uniform(-1.6, 1.6) - 0.7; ny = y - 1.7 + rnd.uniform(-0.6, 0.6); line(hm, x, y, nx, ny, SAC[2] if i % 2 else SAC[1]); x, y = nx, ny
+    for (cx, cy, r) in ((98, 40, 5), (70, 44, 6), (44, 56, 5)):
+        bm = Mask(S); bm.ell(cx, cy, r, r * 0.7); hm.alpha_composite(shade(bm, SAC, depth=1.4, tex=0.2, seed=cx))
+    a_ = np.array(hm).astype(float); H_, W_ = a_.shape[:2]; yy, xx = np.mgrid[0:H_, 0:W_]
+    v = np.clip(1.0 - 0.5 * (((xx - W_ / 2) / (W_ / 2)) ** 2 + ((yy - H_ * 0.5) / (H_ * 0.62)) ** 2) ** 1.1, 0.45, 1.0)
+    a_[:, :, :3] *= v[:, :, None]; hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
+    return outline(crop(hm, 2))
+
+# ------------------------------------------------------------------ THE FERRYMAN: a drowned man in an oilskin coat, a ship's lantern for a head
+def ferryman():
+    COAT = ramp("#0c1410", "#18261f", "#2a4034", "#46644f", "#6c8c6c")
+    COAT_F = ramp("#070b09", "#0e1612", "#18261f", "#243a2e", "#365040")
+    IRON = ramp("#0a0b0c", "#181b1e", "#2c3236", "#48515a", "#6e7a84")
+    GLASS = ramp("#0e2a1e", "#1a5a3c", "#34a068", "#7adca0", "#d2fae6")
+    ROPE = ramp("#241c10", "#4a3a20", "#7a6238", "#a8884e", "#d0b06a")
+    FLESH = ramp("#1a2220", "#2e3c3a", "#4c605c", "#74908a", "#a4c0b8")
+    S = (130, 190); L, part = mk(S); rnd = random.Random(5)
+    # wading boots with the water standing round them
+    part(lambda m: m.tube([(50, 124), (46, 156), (44, 172)], [20, 16, 14]), COAT_F, tex=0.1, seed=1)
+    part(lambda m: m.tube([(80, 124), (86, 154), (90, 172)], [20, 16, 14]), COAT, tex=0.1, seed=2)
+    part(lambda m: m.poly([(34, 172), (56, 172), (60, 184), (28, 184)]), ramp("#050606", "#0e1010", "#1a1d1c", "#2a2e2c", "#3c413e"), depth=2.0); part(lambda m: m.poly([(82, 172), (100, 172), (108, 184), (76, 184)]), ramp("#050606", "#0e1010", "#1a1d1c", "#2a2e2c", "#3c413e"), depth=2.0)
+    # the oilskin coat: long, slick, split at the hem, stooped
+    part(lambda m: m.poly([(42, 50), (90, 50), (104, 120), (112, 168), (94, 160), (82, 172), (66, 158), (50, 172), (38, 160), (24, 166), (30, 120)]), COAT, tex=0.12, seed=3, depth=5.0)
+    part(lambda m: m.ell(66, 54, 30, 10, 0), COAT, tex=0.1, seed=4, depth=3.0)
+    cl = paint(S, [])
+    for (x0, y0, x1, y1) in ((52, 62, 46, 150), (66, 62, 66, 156), (80, 62, 86, 152), (58, 100, 54, 160), (74, 100, 78, 160)): line(cl, x0, y0, x1, y1, COAT[0]); line(cl, x0 + 2, y0, x1 + 2, y1, COAT[4])
+    L.append(cl)
+    # rope bindings across the chest and a lifebelt hanging at the hip, red and white
+    rp = Mask(S); rp.tube([(36, 58), (66, 84), (96, 108)], [3.4, 3.4, 3.4]); rp.tube([(96, 58), (66, 84), (36, 108)], [3.4, 3.4, 3.4]); rp.tube([(40, 118), (66, 124), (92, 118)], [3.0, 3.0, 3.0]); L.append(shade(rp, ROPE, depth=1.4, tex=0.2, seed=6))
+    bw = Mask(S); bw.ell(94, 126, 13, 13); inner = Mask(S); inner.ell(94, 126, 6, 6); bw.cut(inner); L.append(shade(bw, ramp("#5a1010", "#9a1c1c", "#c8352e", "#e8665a", "#f8a8a0"), depth=2.2))
+    for ang in (30, 120, 210, 300):
+        a = math.radians(ang); w = Mask(S); w.ell(94 + math.cos(a) * 9.5, 126 + math.sin(a) * 9.5, 3.6, 3.6); L.append(shade(w, ramp("#6a6860", "#9a978c", "#c4c1b4", "#e6e3d6", "#faf8ee"), depth=1.2))
+    # arms: long, ending in barnacled gloves; one holds a boat hook, a dripping oar with iron hooks
+    part(lambda m: m.tube([(40, 56), (28, 88), (30, 120), (34, 142)], [14, 11, 9, 8]), COAT_F, tex=0.1, seed=7)
+    part(lambda m: m.tube([(92, 56), (112, 88), (110, 126), (106, 150)], [15, 12, 10, 8.4]), COAT, tex=0.1, seed=8, bias=-0.1)
+    gl = Mask(S); gl.ell(34, 146, 6, 7); gl.ell(106, 154, 6.4, 7); L.append(shade(gl, FLESH, depth=1.8, tex=0.2, seed=9))
+    shaft = Mask(S); shaft.tube([(106, 156), (112, 90), (116, 30), (118, 6)], [3.2, 3.0, 3.0, 2.6]); L.append(shade(shaft, ROPE, depth=1.2, tex=0.2, seed=2))
+    hk = Mask(S); hk.tube([(118, 8), (126, 4), (128, 14), (122, 20)], [3, 2.6, 2.2, 1.4]); hk.tube([(116, 30), (124, 34), (123, 44)], [2.6, 2, 1.2]); L.append(shade(hk, IRON, depth=1.2))
+    # barnacles and weed on the shoulders and sleeves
+    bn = paint(S, [])
+    for _ in range(46):
+        x = rnd.choice((rnd.randint(30, 52), rnd.randint(86, 108))); y = rnd.randint(50, 100); px(bn, [(x, y), (x + 1, y)], rnd.choice([ROPE[3], BONE[3], BONE[2]]))
+    for x0 in (44, 56, 90, 100):
+        for k in range(18): px(bn, [(x0 + int(2 * math.sin(k * 0.6)), 56 + k)], rnd.choice([COAT[3], COAT[2], GLASS[1]]))
+    L.append(bn)
+    # the head: a ship's lantern, iron frame and ring, four panes of sick green glass, a pale shape pressed against it from inside
+    fr = Mask(S); fr.poly([(48, 8), (84, 8), (88, 18), (88, 56), (84, 62), (48, 62), (44, 56), (44, 18)]); L.append(shade(fr, IRON, depth=2.4))
+    gp = Mask(S); gp.poly([(51, 14), (81, 14), (81, 56), (51, 56)]); L.append(shade(gp, GLASS, depth=5.0, gain=1.1, bias=0.1))
+    ring = Mask(S); ring.ell(66, 4, 7, 5); r2 = Mask(S); r2.ell(66, 4, 4, 3); ring.cut(r2); L.append(shade(ring, IRON, depth=1.4))
+    hm = paint(S, L)
+    pale = Mask(S); pale.ell(66, 36, 11, 15, 0); hm.alpha_composite(shade(pale, ramp("#1a2a24", "#34504a", "#587a72", "#88b0a6", "#bce0d4"), depth=2.8))   # the face of whoever is inside
+    for (x0, y0, x1, y1) in ((57, 20, 56, 54), (66, 14, 66, 56), (75, 20, 76, 54), (51, 35, 81, 35)): line(hm, x0, y0, x1, y1, IRON[2])                  # the panes' lead
+    px(hm, [(60, 30), (61, 30), (72, 30), (73, 30)], rgb("#04100a")); px(hm, [(66, y) for y in range(42, 47)], rgb("#04100a"))                       # hollow eyes and a long mouth
+    for k in range(5): px(hm, [(52 + k, 20 + k * 6)], GLASS[4])
+    px(hm, [(x, 58) for x in range(54, 80, 3)], GLASS[3])                                                                                           # a pool of light at the base of the glass
+    # water: running off the coat in streaks, a ring round the boots, drips off the hook
+    for _ in range(70): x = rnd.randint(28, 110); y = rnd.randint(70, 168); line(hm, x, y, x, y + rnd.randint(3, 8), rnd.choice([COAT[4], GLASS[1], FLESH[3]]))
+    for r, col in ((24, FLESH[1]), (30, FLESH[2]), (38, FLESH[1])):
+        for t in range(0, 360, 6):
+            a = math.radians(t); x = 66 + math.cos(a) * r * 1.5; y = 180 + math.sin(a) * r * 0.22
+            if 0 <= x < S[0] and 0 <= y < S[1]: hm.putpixel((int(x), int(y)), tuple(col))
+    a_ = np.array(hm).astype(float); H_, W_ = a_.shape[:2]; yy, xx = np.mgrid[0:H_, 0:W_]
+    v = np.clip(1.0 - 0.45 * (((xx - W_ / 2) / (W_ / 2)) ** 2 + ((yy - H_ * 0.5) / (H_ * 0.62)) ** 2) ** 1.1, 0.5, 1.0); glow = ((xx > 44) & (xx < 90) & (yy < 62))
+    v = np.where(glow, 1.0, v); a_[:, :, :3] *= v[:, :, None]; hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
+    return outline(crop(hm, 2))
+
 if __name__ == '__main__':
-    items = [('singer', 'THE SINGER (T2)', singer()), ('orderly', 'THE ORDERLY (T6)', orderly())]
-    K = 4; pad = 40
+    items = [('singer', 'THE SINGER (T2)', singer()), ('orderly', 'THE ORDERLY (T6)', orderly()), ('mother_hollow', 'MOTHER HOLLOW (T1)', mother_hollow()), ('ferryman', 'THE FERRYMAN (T3)', ferryman())]
+    K = 3; pad = 40
     W = sum(im.width * K for _, _, im in items) + pad * 3; H = max(im.height for _, _, im in items) * K + pad * 2
     sh = Image.new('RGBA', (W, H), (22, 20, 24, 255)); x = pad; d = ImageDraw.Draw(sh)
     for k, label, im in items:
