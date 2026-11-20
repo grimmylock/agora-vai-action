@@ -13,8 +13,13 @@ T = 32; M = 40; WT = 34; DEPTH = 24; HMAX = 640; BOT = 36
 Wpx = WT * T + 2 * M; Hpx = DEPTH * T + HMAX + BOT; BASE = Hpx - BOT
 def P(xt, dt, h): return (M + xt * T, BASE - dt * T - h)
 
-GOTH = P_gothic = ramp("#201d1c", "#2e2a29", "#403b39", "#58524e", "#78716b")
-SLATE = ramp("#131d1b", "#1e2d29", "#2b4038", "#3c5a4e", "#548070")
+import os
+if os.environ.get("CATH_PALETTE") == "concrete":          # the first exterior's colours (grey concrete walls, the tar/rust roof): offered to Yan as an alternative (2026-11-20)
+    GOTH = P_gothic = ramp("#4c4b46", "#5d5c56", "#6e6c65", "#807d74", "#939085")
+    SLATE = ramp("#2f2c2a", "#3a3634", "#4a423a", "#5e5246", "#77685a")
+else:
+    GOTH = P_gothic = ramp("#201d1c", "#2e2a29", "#403b39", "#58524e", "#78716b")
+    SLATE = ramp("#131d1b", "#1e2d29", "#2b4038", "#3c5a4e", "#548070")
 BAYER = np.array([[0, 2], [3, 1]]) / 4.0
 
 def _h(a, b, k=0): return ((a * 73856093) ^ (b * 19349663) ^ (k * 83492791)) % 1000 / 1000.0
