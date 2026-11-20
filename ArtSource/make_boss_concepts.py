@@ -308,23 +308,22 @@ def excavator():
     PAINT = ramp("#2e2808", "#524a10", "#7a6c1c", "#a08c30", "#c4b058")
     IRON = ramp("#0a0b0c", "#181b1e", "#2c3236", "#48515a", "#6e7a84")
     TRACK = ramp("#060606", "#121312", "#202220", "#323532", "#484c48")
-    HOSE = ramp("#2a0a08", "#561812", "#8a2c20", "#b84a38", "#e08a78")
+    HOSE = ramp("#050505", "#0e0e0e", "#1a1a1a", "#2a2a2a", "#3e3e3e")
     GLASS = ramp("#0e1a16", "#1c3a30", "#2e5c4c", "#56907c", "#a8d8c4")
     FLESH = ramp("#241816", "#4a2e2a", "#78504a", "#a47c70", "#cfa898")
     S = (260, 160); L, part = mk(S); rnd = random.Random(2)
     # crawler tracks: a long rounded body, road wheels, link teeth
     part(lambda m: m.ell(80, 138, 62, 16).poly([(24, 130), (136, 130), (136, 150), (24, 150)]), TRACK, tex=0.1, seed=1, depth=4.0)
     for wx in range(34, 130, 16): w = Mask(S); w.ell(wx, 140, 7.4, 7.4); L.append(shade(w, IRON, depth=2.4))
-    for bx in (30, 52, 96, 120):                                                                                        # bones and rags jammed in the tracks
-        b_ = Mask(S); b_.tube([(bx, 150), (bx + 6, 140), (bx + 2, 132)], [3, 2.6, 2]); L.append(shade(b_, BONE, depth=1.2))
     tr = paint(S, [])
     for x in range(22, 140, 4): px(tr, [(x, 124 + (1 if x % 8 else 0)), (x, 154)], TRACK[4])
     L.append(tr)
     # the house: a heavy rust-and-yellow box, peeling paint, the engine hump behind the cab
     part(lambda m: m.poly([(30, 76), (118, 76), (126, 128), (24, 128)]), RUST, tex=0.24, seed=2, depth=5.0)
     part(lambda m: m.poly([(34, 74), (62, 70), (66, 88), (34, 92)]), PAINT, tex=0.3, seed=3, depth=2.4)
-    for (fx, fy) in ((44, 100), (66, 108), (92, 112), (108, 98)):                                                      # vents burst open, flesh pushing out of them
-        v_ = Mask(S); v_.ell(fx, fy, 7, 5); L.append(shade(v_, DARK, depth=1.6)); f_ = Mask(S); f_.tube([(fx - 3, fy), (fx + 2, fy + 8), (fx - 1, fy + 14)], [5, 4, 2.6]); L.append(shade(f_, FLESH, depth=1.8, tex=0.15, seed=fx))
+    for (fx, fy) in ((44, 100), (66, 108), (92, 112), (108, 98)):                                                      # louvred engine vents, a few slats bent
+        v_ = Mask(S); v_.poly([(fx - 8, fy - 5), (fx + 8, fy - 5), (fx + 8, fy + 5), (fx - 8, fy + 5)]); L.append(shade(v_, IRON, depth=1.4))
+        for k in range(4): line_im = paint(S, []); line(line_im, fx - 7, fy - 3 + k * 2.4, fx + 7, fy - 3 + k * 2.4 + (1 if (fx + k) % 3 == 0 else 0), RUST[1]); L.append(line_im)
     pl = paint(S, [])
     for _ in range(80): px(pl, [(rnd.randint(30, 120), rnd.randint(78, 126))], rnd.choice([RUST[0], RUST[1], PAINT[1]]))
     for yy in range(96, 126, 6): line(pl, 32, yy, 118, yy + 1, RUST[1])
@@ -336,9 +335,6 @@ def excavator():
     hd = Mask(S); hd.ell(104, 60, 9, 11); hm.alpha_composite(shade(hd, ramp("#1a1c1a", "#34383a", "#5a6062", "#8c9496", "#c0c8c8"), depth=3.0))      # the husk's grey face
     for (ex, ey) in ((100, 58), (108, 58)): px(hm, [(ex, ey), (ex + 1, ey)], rgb("#04100a"))
     px(hm, [(x, 66) for x in range(101, 108)], rgb("#04100a")); px(hm, [(104, y) for y in range(60, 66)], rgb("#10201a"))
-    for (x0, y0) in ((86, 80), (96, 82), (112, 80), (120, 78)):                                                                                     # flesh creeping up the cab frame
-        x, y = x0, y0
-        for i in range(14): nx = x + rnd.uniform(-1, 1); ny = y - rnd.uniform(0.8, 1.6); px(hm, [(nx, ny), (nx + 1, ny)], FLESH[rnd.choice((2, 3, 3, 4))]); x, y = nx, ny
     for (hx_, hy_, fl) in ((92, 66, 1), (116, 68, -1)):                                                              # the husk's hands pressed flat on the glass, fingers spread
         hh = Mask(S); hh.ell(hx_, hy_, 4.4, 5); hm.alpha_composite(shade(hh, ramp("#1a1c1a", "#34383a", "#5a6062", "#8c9496", "#c0c8c8"), depth=1.6))
         for k in range(5): a_ = math.radians(-80 + k * 22); line(hm, hx_, hy_, hx_ + math.cos(a_) * 7 * fl, hy_ + math.sin(a_) * 7, rgb("#a8b0b0"))
@@ -353,12 +349,13 @@ def excavator():
         n = int(max(abs(x1 - x0), abs(y1 - y0))); 
         for i in range(n + 1): u = i / n; x = x0 + (x1 - x0) * u; y = y0 + (y1 - y0) * u + 2 * math.sin(u * 14); px(hm, [(x, y)], HOSE[2 + (i // 3) % 2])
     hat = Mask(S); hat.ell(150, 30, 7, 4); hm.alpha_composite(shade(hat, PAINT, depth=1.6))
-    # the bucket: a jaw, upper and lower, open, teeth along both, the hinge at the arm tip, drool of hydraulic oil
-    up = Mask(S); up.poly([(224, 52), (252, 48), (256, 70), (240, 74), (226, 70)]); hm.alpha_composite(shade(up, IRON, tex=0.1, seed=7, depth=2.6))
-    lo = Mask(S); lo.poly([(226, 76), (252, 84), (254, 112), (236, 106), (224, 90)]); hm.alpha_composite(shade(lo, IRON, tex=0.1, seed=8, depth=2.6))
-    inn = Mask(S); inn.poly([(228, 72), (252, 72), (250, 84), (230, 82)]); hm.alpha_composite(shade(inn, DARK, depth=1.2))
-    for x in range(226, 256, 4): hm.alpha_composite(shade((lambda m: (m.poly([(x, 70), (x + 4, 70), (x + 2, 79)]), m)[1])(Mask(S)), ramp("#3a3730", "#6a665a", "#9a9482", "#c8c2ac", "#eee8d4"), depth=1.0)); hm.alpha_composite(shade((lambda m: (m.poly([(x + 2, 86), (x + 6, 86), (x + 4, 77)]), m)[1])(Mask(S)), ramp("#3a3730", "#6a665a", "#9a9482", "#c8c2ac", "#eee8d4"), depth=1.0))
-    for x in (240, 246): line(hm, x, 112, x - 1, 128 + (x % 3), HOSE[3])
+    # the bucket: an ordinary dented steel scoop on the arm tip, five blunt digging teeth along the lip, dirt and rust caked in it
+    sc = Mask(S); sc.poly([(224, 54), (240, 50), (256, 78), (252, 108), (230, 104), (222, 82)]); hm.alpha_composite(shade(sc, IRON, tex=0.2, seed=7, depth=3.4))
+    lip = Mask(S); lip.poly([(240, 104), (252, 108), (254, 112), (236, 110)]); hm.alpha_composite(shade(lip, IRON, depth=1.2))
+    for k in range(5):
+        tx = 232 + k * 5; t_ = Mask(S); t_.poly([(tx, 106), (tx + 4, 106), (tx + 3, 116), (tx + 1, 116)]); hm.alpha_composite(shade(t_, ramp("#2a2218", "#4a3c28", "#6e5a3c", "#96805a", "#baa47a"), depth=1.0))
+    for _ in range(40): px(hm, [(rnd.randint(228, 252), rnd.randint(60, 104))], rnd.choice([RUST[1], RUST[2], PAINT[0]]))
+    pin = Mask(S); pin.ell(230, 58, 4, 4); hm.alpha_composite(shade(pin, IRON, depth=2.0))
     # exhaust stack and steam, rust streaks, oil stains
     stk = Mask(S); stk.tube([(46, 76), (46, 52)], [6, 6]); hm.alpha_composite(shade(stk, IRON, depth=1.6))
     for k in range(10): px(hm, [(46 + rnd.uniform(-3, 3) + k * 0.5, 50 - k * 2.6)], rnd.choice([(150, 150, 150, 110), (110, 110, 110, 90)]))
