@@ -23,6 +23,7 @@ HEADS = {
   "hoodgoggles":(["......KK", ".....KHh", "....KHhh", "....KVwV", "....KFeF", "....KNNN", ".....KNN"], ["......KK", ".....KHh", "....KHhh", "....KHHH", "....KHHH", "....KNNN", ".....KNN"]),   # a hood, goggles on the brow, a scarf over the mouth
   "mohawk":    (["......KA", ".....KFA", "....KFFA", "....KFFF", "....KFeF", "....KFFf", ".....KFF"], ["......KA", ".....KFA", "....KFFA", "....KFFA", "....KFFA", "....KFFf", ".....Kff"]),   # shaved sides, a crest
   "ragmask":   (["......KK", "....KHHH", "...KHhhh", "...KHJHH", "....KFeF", "....KNNN", ".....KNN"], ["......KK", "....KHHH", "...KHhhh", "...KHJHH", "...KHHHH", "....KNNN", ".....KNN"]),   # a grey rag wound round the head with a strand of barbed wire, a red scarf over the mouth (Spool)
+  "hunterhat": (["......KK", ".....KHH", "....KHHH", "..KHHHHH", "....KFeF", "....KNNN", ".....KNN"], ["......KK", ".....KHH", "....KHHH", "..KHHHHH", "...KHHHH", "....KAAA", ".....KAA"]),   # the Verger: a wide-brimmed hat that drops the face into shadow, pale eyes, a leather mask over the mouth
   "shaggy":    (["......KK", ".....KAA", "....KAAA", "....KAFF", "....KFeF", "....KFAA", ".....KAA"], ["......KK", ".....KAA", "....KAAA", "....KAAA", "....KAAA", "....KAAA", ".....KAA"]),   # unkempt hair and stubble
 }
 for k, (f, b) in HEADS.items(): av.HEADS[k] = f; av.HEADS_BACK[k] = b
@@ -40,6 +41,7 @@ LOOKS = {
   "Konrad Hale":   dict(head="peakcap", body="jacket", H="#2a3450", S="#586038", D="#3a3a2a", A="#4a3a2a", E=DARK, arm="#3a7a9a"),                              # a peaked cap, an olive supply jacket
   "The Runner":    dict(head="hoodgoggles", body="jacket", H="#6b6a3a", S="#4a3a2a", D="#2e2a26", N="#a83a2a", E=DARK),                                       # hood, goggles, a red scarf
   "Barbwire Coat": dict(head="ragmask", body="heavy", H="#8a8478", S="#46372c", P="#7a5a38", D="#2a2018", N="#a83a2a", J="#8a8478", E=DARK, F="#b8845e", f="#8e6244", arm="#46372c"),   # Spool's: a patched leather coat, wire round the shoulders
+  "Verger Coat":   dict(head="hunterhat", body="coat", H="#2c2c33", S="#25252b", D="#16161a", P="#553824", A="#1a1410", N="#5a3a24", E="#e8eef0", F="#1c1412", f="#120d0b", arm="#25252b"),   # the cathedral's beast hunter: a long dark coat, a wide hat, a leather mask, a red scarf, blood vials
   "Bogdan":        dict(head="mohawk", body="vest", S="#1c1c1e", P="#8a3a2a", D="#2a2a2a", A="#a02020", E=DARK, F="#c0866a", arm="#b02a2a"),                    # a Raider warlord: a red crest, black leather, rust plates
 }
 # Spool's barbed wire (Yan, 2026-11-19: "his coat doesn't read as barbed wire"): at 16 px a strand reads as a steel line with small bright crosses (the barbs) at every third pixel, so the coat carries two coils across the chest,
@@ -50,6 +52,7 @@ def _wbarbs(y, xs, up=True, down=True): return [(x, yy, _B) for x in xs for yy, 
 WIRE = (_wline(8, 4, 11) + _wbarbs(8, [5, 8, 11]) + _wline(10, 4, 11, 1) + _wbarbs(10, [6, 9]) + [(3, 6, _B), (12, 6, _B)] + _wline(3, 4, 11) + [(5, 2, _B), (8, 2, _W2), (10, 2, _B)])
 MARKS = {   # extra pixels (front only): scars, a bandage, a stubble line
   "Barbwire Coat": WIRE + [(3, 8, _W1), (12, 8, _W2)],  "Voss":        [(9, 5, "#a8685a"), (9, 6, "#a8685a")],                                                         # a scar down the cheek
+  "Verger Coat": [(6, 7, "#9a1a22"), (7, 7, "#b8262e"), (8, 7, "#9a1a22"), (9, 7, "#7e1a20"), (6, 8, "#9a1a22"), (6, 9, "#7e1a20"), (5, 11, "#9a1a22"), (10, 11, "#9a1a22"), (8, 11, "#9a1a22")],   # the scarf and its tail, and blood vials on the belt
   "Bogdan":      [(6, 4, "#a8685a"), (6, 5, "#a8685a"), (10, 5, "#a8685a")],                                     # scars
   "Lev Marchuk": [(7, 6, "#6a5a4a"), (8, 6, "#6a5a4a")],                                                         # stubble at the chin
 }

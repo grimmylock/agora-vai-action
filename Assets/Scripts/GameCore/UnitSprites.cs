@@ -235,12 +235,12 @@ namespace GameCore
         /// <summary>Boss 1: one-of-a-kind suits outside the faction atlases (ArtSource/make_unique_armor.py): a 96x16 strip -
         /// front, walk a, walk b, back, back walk a, back walk b - added under the suit's name like an atlas cell.</summary>
         public static readonly string[] UniqueSuits = { "Black Visor Suit", "Grey Robe",
-            "Yefim", "Pavel", "Lev Marchuk", "Dr. Priya Osei", "The Scrap King", "Voss", "Emil Rask", "Konrad Hale", "The Runner", "Bogdan", "Barbwire Coat" };   // the last ten: the story's people (ArtSource/make_npc_looks.py, StoryNpcs.cs)
+            "Yefim", "Pavel", "Lev Marchuk", "Dr. Priya Osei", "The Scrap King", "Voss", "Emil Rask", "Konrad Hale", "The Runner", "Bogdan", "Barbwire Coat", "Verger Coat" };   // the last ten: the story's people (ArtSource/make_npc_looks.py, StoryNpcs.cs)
         public static readonly Dictionary<string, (string cuff, string glove)> UniqueGloves = new Dictionary<string, (string, string)>
             { ["Black Visor Suit"] = ("#1f2226", "#2a2c30"), ["Grey Robe"] = ("#4f555c", "#aab0ae"),
               ["Yefim"] = ("#6b5a3e", "#3a3028"), ["Pavel"] = ("#8794a0", "#d8bca6"), ["Lev Marchuk"] = ("#4a4036", "#2a2a2a"), ["Dr. Priya Osei"] = ("#e0e2e0", "#b88060"),
               ["The Scrap King"] = ("#2a2420", "#6a4a2a"), ["Voss"] = ("#6a5c42", "#2a2a28"), ["Emil Rask"] = ("#aab8c4", "#c8a688"), ["Konrad Hale"] = ("#586038", "#3a3a2a"),
-              ["The Runner"] = ("#4a3a2a", "#2e2a26"), ["Bogdan"] = ("#1c1c1e", "#2a2a2a"), ["Barbwire Coat"] = ("#8e949a", "#5a4430") };
+              ["The Runner"] = ("#4a3a2a", "#2e2a26"), ["Bogdan"] = ("#1c1c1e", "#2a2a2a"), ["Barbwire Coat"] = ("#8e949a", "#5a4430"), ["Verger Coat"] = ("#25252b", "#3a2618") };
 
         static void Unique(string name)
         {

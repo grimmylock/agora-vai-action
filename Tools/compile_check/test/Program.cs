@@ -120,7 +120,7 @@ static class Program {
       }
     var allNames = ArmorDatabase.Tiers.Values.SelectMany(d => d.Values).Select(a => a.Name).ToHashSet();
     foreach (var n in SpriteAtlasIndex.Armor) Check(allNames.Contains(n), $"atlas name not an armor: {n}");
-    Check(ArmorDatabase.Tiers.Values.Sum(d => d.Count) == 181, "armor count (180 + Spool's Barbwire Coat) " + ArmorDatabase.Tiers.Values.Sum(d => d.Count));
+    Check(ArmorDatabase.Tiers.Values.Sum(d => d.Count) == 182, "armor count (180 + Spool's Barbwire Coat + the Verger Coat) " + ArmorDatabase.Tiers.Values.Sum(d => d.Count));
     foreach (var t in MutantDatabase.Tiers.Values) foreach (var m in t.Values) Check(SpriteAtlasIndex.Mutants.Contains(m.Name), "no mutant sprite " + m.Name);
     Check(ShopDatabase.Items.Count(i => i.FactionIssue) == 143, "faction issue in shop list " + ShopDatabase.Items.Count(i => i.FactionIssue));
     // loadouts: every human faction, rank and zone tier gets weapon + armor; categories vary

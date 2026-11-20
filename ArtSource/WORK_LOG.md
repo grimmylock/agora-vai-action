@@ -6843,3 +6843,8 @@ Yan: "Assign by place, wire them in". See MISSION_CHOIR.md "Doors". Harness: ALL
 
 ## Batch 9af - the Verger concept (2026-11-20)
 Yan: "give me the concept for that boss we talked about after this". `ArtSource/make_verger_concept.py`: two poses (guard, overhead wind-up), three passes (the first read as a cartoon: a bald face, a bucket mask, a ring for an axe head; the second slimmed the coat, hid the face in the hat's shadow and gave the axe a proper bearded head; the third fixed the chop pose). Concept quality, not in the game.
+
+## Batch 9ag (2026-11-20) - the Verger as game art
+- Yan: "Yes, build him as a game sprite". Hand-drawn (no generator): `ArtSource/weapons/hand/verger_axe.py` -> `weapon_VergerGreataxe(.png/_hd.png)` (bearded serrated greataxe, wrapped grip, brass ring, blood); `make_npc_looks.py` gained the `hunterhat` head and the `Verger Coat` look (wide hat, shadowed face with pale eyes, leather mask, red scarf, vials) -> `armor_unique_verger_coat(.png/_x2.png)`.
+- Registered: `WeaponDatabase` VergerGreataxe (T6, 560, adjacent, 20% phys DR ignore), `ArmorDatabase` VergerCoat (+ `Unique`, not in loot), `HeldWeapon` grip, `HeadGear`, `UnitSprites.UniqueSuits/UniqueGloves`. Harness armor count 181 -> 182. Harness passes.
+- NOT built: the boss fight itself (`Boss.cs` def/moves), the bell/mission. NOT run in Unity; grip offsets and the coat on a body are unchecked in game.

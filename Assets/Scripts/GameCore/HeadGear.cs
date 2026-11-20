@@ -198,6 +198,7 @@ namespace GameCore
             ["Raider Scrap Plates"] = "balaclava",
             ["Raider Stitched Coat"] = "bandit",
             ["Barbwire Coat"] = "bandit",
+            ["Verger Coat"] = "bandit",
             ["Raider Tire-Plate Armor"] = "bandit",
             ["Raider Tracksuit"] = "bandit",
             ["Raider Veteran Coat"] = "hoodface",
