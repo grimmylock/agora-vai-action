@@ -24,6 +24,7 @@ def limb(cols, haunch, leg, lw, paw, arm, aw, hand, near, seed):
     L.append(shade(cl, CLAW, depth=1.0))
     part(lambda m: T(m, arm, aw), cols, fur=150 if near else 80, tex=0.14, seed=s + 3, depth=3.4, bias=-0.05)                                      # the arm
     if near: part(lambda m: T(m, arm[:3], [aw[0] * 0.7, aw[1] * 0.7, aw[2] * 0.7]), MUSC, fur=20, depth=1.8, tex=0.1, seed=s + 4, gain=0.82)          # the lit muscle on the upper arm
+    if near: part(lambda m: PL(m, [(52, 58), (44, 62), (51, 67)]), FUR, fur=10, depth=1.2, seed=s + 6)                                                      # the elbow, a bony point
     hx, hy = hand                                                                                                                               # the hand: a fur-backed palm, four long fingers, bone claws
     part(lambda m: (E(m, hx, hy, 4.8, 3.6), [T(m, [(hx + dx * 0.4, hy + 1), (hx + dx * 1.3, hy + 8 + (1.5 if i in (1, 2) else 0))], [2.8, 1.6]) for i, dx in enumerate((-3.6, -1.2, 1.2, 3.6))]), cols, fur=26, depth=1.6, tex=0.1, seed=s + 5)
     cl = Mask(S)
@@ -31,12 +32,26 @@ def limb(cols, haunch, leg, lw, paw, arm, aw, hand, near, seed):
     L.append(shade(cl, CLAW, depth=1.0))
     im = paint(S, L)
     return outline(im, DARK[0]) if near else im                                                          # a dark edge on the near limbs so they stand off the body
+def tone(im):
+    """fur tone: the back darker, the chest and belly warmer and lighter"""
+    a = np.array(im).astype(float); H, W = a.shape[:2]; al = a[:, :, 3] > 0
+    for x in range(W):
+        ys = np.where(al[:, x])[0]
+        if len(ys) == 0: continue
+        t0 = ys[0]
+        for y in ys[:12]: a[y, x, :3] *= 0.74 + 0.022 * (y - t0)
+    for y in range(H):
+        xs = np.where(al[y, :])[0]
+        if len(xs) == 0: continue
+        x1 = xs[-1]
+        for x in xs[-9:]: a[y, x, :3] *= 1.0 + 0.016 * (9 - (x1 - x)); a[y, x, 0] *= 1.04
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
 def limbs_pair():
-    far = limb(FURD, (36, 62, 8.5, 8.5), [(34, 60), (41, 74), (34, 88), (38, 96)], [12, 8, 5, 4], (41, 97), [(52, 32), (58, 52), (55, 74), (59, 92)], [9, 6.4, 4.6, 3.8], (59, 94), False, 40)
-    near = limb(FUR, (38, 62, 10.5, 10), [(37, 58), (45, 72), (38, 86), (42, 96)], [15, 10, 6, 4.8], (45, 97.5), [(50, 30), (60, 42), (56, 60), (64, 80), (62, 94)], [11, 9, 6.4, 5.4, 4.6], (62, 95), True, 60)
-    return far, near
+    far = limb(FURD, (36, 62, 8.5, 8.5), [(34, 60), (41, 74), (34, 88), (38, 96)], [12, 8, 5, 4], (41, 97), [(56, 32), (65, 50), (60, 72), (69, 90)], [9, 6.4, 4.6, 3.8], (69, 92), False, 40)
+    near = limb(FUR, (38, 62, 10.5, 10), [(37, 58), (45, 72), (38, 86), (42, 96)], [15, 10, 6, 4.8], (45, 97.5), [(50, 30), (62, 44), (52, 62), (66, 82), (63, 94)], [11, 9, 6.4, 5.4, 4.6], (63, 95), True, 60)
+    return tone(far), tone(near)
 def beast_bare():
-    far, near = limbs_pair(); im = Image.new("RGBA", S, (0, 0, 0, 0)); im.alpha_composite(far); im.alpha_composite(bd.trunk()); im.alpha_composite(near)
+    far, near = limbs_pair(); im = Image.new("RGBA", S, (0, 0, 0, 0)); im.alpha_composite(far); im.alpha_composite(tone(bd.trunk())); im.alpha_composite(near)
     return bd.with_head(im)
 if __name__ == "__main__":
     f = crop(beast_bare(), 2); f.save(os.path.join(OUT, "verger_beast_limbs.png"))
