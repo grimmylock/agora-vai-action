@@ -49,12 +49,12 @@ def build(W, H, haft_y, haft_th, haft_x1, wrap, ring_x, head, spike, socket, cap
         for x in range(sx0, sx1): g[haft_y - 1 + t][x] = ("4" if t == 0 else "3" if t < (haft_th + 2) // 2 else "2" if t < haft_th + 1 else "1")
     return ["".join(r) for r in g]
 MENU = build(62, 30, 13, 4, 44, (10, 27), 29,
-             head=[(44, 9), (48, 2), (55, 0), (60, 3), (61, 17), (58, 21), (55, 27), (50, 29), (48, 25), (50, 20), (46, 18), (44, 17)],
-             spike=[(38, 9), (45, 11), (45, 14), (40, 14)], socket=(42, 48), cap=3, serr=3,
+             head=[(45, 9), (46, 5), (43, 2), (48, 0), (55, 0), (60, 3), (61, 9), (61, 20), (60, 26), (55, 29), (48, 29), (43, 27), (46, 23), (45, 18)],
+             spike=[], socket=(42, 48), cap=3, serr=3,
              blood=[(58, 8, "R"), (59, 9, "r"), (60, 14, "R"), (57, 20, "r"), (53, 25, "R"), (52, 27, "r")], engr=[(50, 5, 57, 13), (49, 12, 55, 18)])
 HAND = build(30, 14, 6, 2, 19, (5, 12), 14,
-             head=[(19, 5), (21, 1), (25, 0), (28, 2), (29, 9), (27, 11), (25, 13), (22, 13), (21, 10), (22, 8), (19, 8)],
-             spike=[(16, 3), (20, 5), (20, 7), (17, 7)], socket=(18, 22), cap=2, serr=3,
+             head=[(21, 5), (21, 3), (18, 1), (22, 0), (26, 0), (29, 3), (29, 10), (27, 13), (22, 13), (18, 12), (21, 10), (21, 8)],
+             spike=[], socket=(18, 22), cap=2, serr=3,
              blood=[(27, 4, "R"), (28, 6, "r"), (26, 10, "R")], engr=[(22, 2, 26, 6)])
 if __name__ == "__main__":
     mp.paint(HAND, PAL, 32, 16).save(os.path.join(mp.WEAP, "weapon_VergerGreataxe.png")); mp.paint(MENU, PAL, 64, 32).save(os.path.join(mp.WEAP, "weapon_VergerGreataxe_hd.png"))
