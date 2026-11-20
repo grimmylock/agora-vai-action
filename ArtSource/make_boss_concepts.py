@@ -122,67 +122,59 @@ def orderly():
 
 # ------------------------------------------------------------------ MOTHER HOLLOW: a bloated pale pack-mother, her brood growing out of her flank
 def mother_hollow():
-    SKIN = ramp("#161213", "#2a2223", "#473a3b", "#6e5c5c", "#948280")
-    SKIN_F = ramp("#0b0909", "#151112", "#221b1c", "#352b2d", "#4a3e40")
-    SAC = ramp("#2a1418", "#4e2a30", "#7a4a4e", "#a87678", "#d0a8a2")
-    PUP = ramp("#2a2422", "#4e4440", "#7e716a", "#b0a398", "#d8cdc0")
-    HAIR = ramp("#0a0806", "#1a1410", "#2e241c", "#463a2e", "#665646")
+    # Built from the Pallid Prowler's own look (Resources/Sprites/Mutants/mutant_hd_pallid_prowler.png): a lean bone-grey hound with a ridged shoulder hump, thin long legs and an acid-green glowing maw. She is that, grown huge and swollen with her brood; the pups are small Pallid Prowlers pushing out of sacs, mouths already green.
+    SKIN = ramp("#1a1916", "#363329", "#625d50", "#958e7c", "#c4bca8")
+    SKIN_F = ramp("#0d0c0b", "#181714", "#27251f", "#3d3a31", "#57534a")
+    SAC = ramp("#1c241a", "#36482e", "#5e7a50", "#8fb07c", "#c4e0b0")
+    PUP = ramp("#2a2822", "#4c493e", "#797464", "#a9a390", "#d4cdb8")
+    GREEN = ramp("#0c2606", "#1f5a0c", "#46a018", "#82e034", "#d2ff90")
     S = (212, 128); L, part = mk(S); rnd = random.Random(11)
-    # far legs, long and wrong-jointed
-    part(lambda m: m.tube([(132, 66), (142, 88), (134, 104), (144, 114)], [9, 6, 4.4, 3.4]), SKIN_F, tex=0.1, seed=1)
-    part(lambda m: m.tube([(54, 70), (40, 90), (52, 106), (42, 116)], [11, 7, 5, 3.6]), SKIN_F, tex=0.1, seed=2)
-    # the body: a bloated barrel, the belly sagging nearly to the ground, hips narrow, the spine a ridge
-    part(lambda m: m.ell(84, 50, 44, 24, -5).ell(90, 74, 40, 24, 2).ell(134, 48, 26, 26, 8).ell(44, 52, 20, 20, 0), SKIN, tex=0.18, seed=3, depth=7.0)
+    # far legs: thin and long like the Prowler's, folded too far
+    part(lambda m: m.tube([(132, 66), (146, 90), (138, 106), (150, 116)], [8, 5.4, 4, 3]), SKIN_F, tex=0.1, seed=1)
+    part(lambda m: m.tube([(54, 70), (38, 92), (54, 106), (44, 116)], [10, 6.4, 4.6, 3.2]), SKIN_F, tex=0.1, seed=2)
+    # the body: the Prowler's hunched hump of shoulder, a narrow chest, the belly swollen and hanging
+    part(lambda m: m.ell(84, 46, 40, 15, -6).ell(126, 36, 26, 20, 16).ell(46, 52, 15, 14, 0).ell(96, 74, 36, 20, 2), SKIN, tex=0.16, seed=3, depth=5.5)
     sp = Mask(S)
-    for i in range(14): x = 150 - i * 8.4; sp.ell(x, 28 + abs(math.sin(i * 0.5)) * 3 + (i * 0.35), 3.0 - i * 0.05, 2.6)
+    for i in range(12): x = 142 - i * 9; sp.ell(x, 20 + abs(math.sin(i * 0.55)) * 2.5 + (i * 0.9), 3.0 - i * 0.05, 2.7)
     L.append(shade(sp, BONE, depth=1.7))
-    # ribs splayed through the near flank
     rb = Mask(S)
-    for k in range(7): x0 = 108 + k * 4.2; rb.tube([(x0, 38), (x0 + 3, 52 + k * 0.6), (x0 + 1, 66)], [2.2, 2.0, 1.2])
+    for k in range(7): x0 = 100 + k * 4.4; rb.tube([(x0, 36), (x0 + 3, 48 + k * 0.6), (x0 + 1, 60)], [2.2, 2.0, 1.2])
     L.append(shade(rb, BONE, depth=1.3))
-    cav = Mask(S); cav.ell(122, 52, 18, 14, 4); L.insert(len(L) - 1, shade(cav, DARK, depth=2.2, tex=0.08, seed=5))
-    # the brood: sacs along the flank and belly, a pup's head pushing out of each, jaws working
-    for (cx, cy, r) in ((58, 58, 13), (82, 76, 14), (108, 80, 13), (132, 72, 11)):
-        part(lambda m, a=(cx, cy, r): m.ell(a[0], a[1], a[2], a[2] * 0.85), SAC, tex=0.12, seed=cx, depth=3.2)
-    # near legs
-    part(lambda m: m.tube([(124, 66), (138, 88), (130, 106), (142, 118)], [15, 10, 7, 5]), SKIN, tex=0.12, seed=6, bias=-0.1)
-    part(lambda m: m.tube([(48, 64), (30, 84), (48, 104), (34, 118)], [18, 12, 8, 5]), SKIN, tex=0.12, seed=7, bias=-0.1)
+    cav = Mask(S); cav.ell(114, 47, 18, 12, 4); L.insert(len(L) - 1, shade(cav, DARK, depth=2.2, tex=0.08, seed=5))
+    # the brood: pale sacs with green veins along the belly and flank
+    for (cx, cy, r) in ((56, 60, 12), (80, 80, 13), (106, 84, 12), (130, 74, 10)):
+        part(lambda m, a=(cx, cy, r): m.ell(a[0], a[1], a[2], a[2] * 0.85), SAC, tex=0.14, seed=cx, depth=3.2)
+    part(lambda m: m.tube([(124, 66), (140, 90), (132, 108), (146, 120)], [13, 8.4, 6, 4.4]), SKIN, tex=0.12, seed=6, bias=-0.1)
+    part(lambda m: m.tube([(48, 64), (28, 86), (50, 106), (34, 120)], [16, 10, 6.4, 4.4]), SKIN, tex=0.12, seed=7, bias=-0.1)
     pw = Mask(S)
-    for dx in (-4, 0, 4): pw.tube([(142, 118), (144 + dx, 124)], [2.0, 0.8]); pw.tube([(34, 118), (31 + dx, 124)], [2.0, 0.8])
+    for dx in (-4, 0, 4): pw.tube([(146, 120), (148 + dx, 126)], [2.0, 0.8]); pw.tube([(34, 120), (31 + dx, 126)], [2.0, 0.8])
     L.append(shade(pw, BONE, depth=1.0))
-    # neck and head: a long dropped neck, a skull-like muzzle, the jaw unhinged, milk-blind eyes
-    part(lambda m: m.tube([(146, 40), (166, 50), (178, 58)], [22, 18, 15]), SKIN, tex=0.12, seed=8, depth=4.0)
+    # the neck dropped forward and the Prowler's long wedge of a head, huge, the jaw hanging open on a green glow
+    part(lambda m: m.tube([(140, 34), (160, 44), (174, 54)], [18, 13, 10]), SKIN, tex=0.12, seed=8, depth=3.4)
     HL, hp = mk(S)
-    hp(lambda m: m.ell(182, 58, 19, 16, 8).poly([(176, 50), (204, 58), (212, 68), (210, 74), (186, 78)]), BONE, tex=0.1, seed=9, depth=3.2, bias=-0.1)
-    hp(lambda m: m.poly([(180, 74), (210, 76), (204, 106), (190, 112), (176, 90)]), ramp("#1a1210", "#33241f", "#58423a", "#85685a", "#b08e7c"), depth=1.8, tex=0.1, seed=10)
-    hp(lambda m: m.poly([(182, 75), (208, 77), (202, 100), (190, 106), (180, 90)]), DARK, depth=1.0)
+    hp(lambda m: m.ell(176, 52, 10, 8.5, 8).poly([(172, 47), (196, 54), (206, 61), (204, 65), (182, 67)]), SKIN, tex=0.1, seed=9, depth=3.2)
+    hp(lambda m: m.poly([(180, 66), (204, 66), (200, 88), (190, 92), (178, 78)]), ramp("#14130f", "#2a2820", "#48443a", "#6e695a", "#9a937e"), depth=1.8, tex=0.1, seed=10)
+    hp(lambda m: m.poly([(182, 66), (202, 67), (198, 84), (190, 88), (181, 76)]), GREEN, depth=3.0)
     hm_ = paint(S, HL)
-    for x in range(184, 210, 2): px(hm_, [(x, 75), (x, 76), (x, 79 if x % 4 == 0 else 77), (x, 80 if x % 6 == 0 else 77)], rgb("#dcd2b8"))
-    for x in range(186, 204, 3): px(hm_, [(x, 103), (x, 102)], rgb("#b0a688"))
-    for (ex, ey) in ((181, 50), (194, 56)): px(hm_, [(ex + i, ey + j) for i in range(0, 6) for j in range(0, 5)], rgb("#cfd2cc")); px(hm_, [(ex + 3, ey + 2)], rgb("#5a6a7a"))     # milk-blind eyes, a pinprick iris
+    for x in range(182, 204, 2): px(hm_, [(x, 66), (x, 67), (x, 70 if x % 4 == 0 else 68)], rgb("#e4e0cc"))
+    for x in range(184, 198, 3): px(hm_, [(x, 86), (x, 85), (x, 83 if x % 6 == 0 else 84)], rgb("#c0bba4"))
+    px(hm_, [(x, y) for x in range(173, 178) for y in range(47, 51)], rgb("#050503"))                          # a socket, no eye: it has none
+    px(hm_, [(x, y) for x in range(186, 190) for y in range(52, 55)], rgb("#050503"))
     L.append(hm_)
-    # black drool, and her hair: a woman's hair falling from the back of the skull down over the neck and chest
     dr = paint(S, [])
-    for x in (186, 192, 198, 204): line(dr, x, 104, x - 1, 124 + (x % 5), rgb("#08070a")); px(dr, [(x - 1, 125 + (x % 5))], rgb("#241a30"))
-    for i in range(46):
-        x0 = 170 + rnd.uniform(-8, 6); y0 = 48 + rnd.uniform(-4, 6); ln = rnd.uniform(26, 58); sw = rnd.uniform(-10, 4)
-        pts = [(x0 + sw * (k / 8) ** 1.5 - k * 0.6, y0 + k * ln / 8) for k in range(9)]
-        for a, b in zip(pts, pts[1:]): line(dr, a[0], a[1], b[0], b[1], HAIR[rnd.choice((1, 2, 3, 3, 4))])
+    for x in (184, 190, 196): line(dr, x, 88, x - 1, 108 + (x % 5), GREEN[2]); px(dr, [(x - 1, 109 + (x % 5))], GREEN[4])           # green drool
     L.append(dr)
     hm = paint(S, L)
-    # the pups: heads pushing out of the sacs, eyes sealed, mouths open, one half out
-    for (cx, cy, r, ang) in ((58, 58, 13, 200), (82, 76, 14, 250), (108, 80, 13, 280), (132, 72, 11, 320)):
+    # the pups: small Pallid Prowlers, pale, green-mouthed, pushing out of the sacs, a front paw already out
+    for (cx, cy, r, ang) in ((56, 60, 12, 200), (80, 80, 13, 250), (106, 84, 12, 280), (130, 74, 10, 320)):
         a = math.radians(ang); hx, hy = cx + math.cos(a) * r * 0.55, cy + math.sin(a) * r * 0.5
-        hd = Mask(S); hd.ell(hx, hy, 8, 6.6, ang - 180); hm.alpha_composite(shade(hd, PUP, depth=2.2, tex=0.08, seed=cx))
-        mo = Mask(S); mo.ell(hx + math.cos(a) * 3.4, hy + math.sin(a) * 3.0, 2.6, 1.7); hm.alpha_composite(shade(mo, DARK, depth=1.0))
-        px(hm, [(hx - 1, hy - 2), (hx + 1, hy - 2)], rgb("#1a1412"))
-        for t in range(3): px(hm, [(hx + math.cos(a) * 3.4 - 2 + t * 2, hy + math.sin(a) * 3.0 - 1)], rgb("#e8e0cc"))
-    # veins from the sacs and bruises on the hide
-    for (cx, cy) in ((58, 58), (82, 76), (108, 80), (132, 72)):
+        hd = Mask(S); hd.ell(hx, hy, 8, 6, ang - 180); hd.poly([(hx + math.cos(a) * 5, hy + math.sin(a) * 4 - 2), (hx + math.cos(a) * 11, hy + math.sin(a) * 9), (hx + math.cos(a) * 5, hy + math.sin(a) * 4 + 3)])
+        hm.alpha_composite(shade(hd, PUP, depth=2.0, tex=0.08, seed=cx))
+        mo = Mask(S); mo.ell(hx + math.cos(a) * 7, hy + math.sin(a) * 6, 2.8, 2.0); hm.alpha_composite(shade(mo, GREEN, depth=1.2))
+        pawm = Mask(S); pawm.tube([(hx, hy + 3), (hx + math.cos(a + 1.2) * 8, hy + math.sin(a + 1.2) * 8)], [2.4, 1.6]); hm.alpha_composite(shade(pawm, PUP, depth=1.0))
+    for (cx, cy) in ((56, 60), (80, 80), (106, 84), (130, 74)):
         x, y = cx, cy
-        for i in range(16): nx = x + rnd.uniform(-1.6, 1.6) - 0.7; ny = y - 1.7 + rnd.uniform(-0.6, 0.6); line(hm, x, y, nx, ny, SAC[2] if i % 2 else SAC[1]); x, y = nx, ny
-    for (cx, cy, r) in ((98, 40, 5), (70, 44, 6), (44, 56, 5)):
-        bm = Mask(S); bm.ell(cx, cy, r, r * 0.7); hm.alpha_composite(shade(bm, SAC, depth=1.4, tex=0.2, seed=cx))
+        for i in range(16): nx = x + rnd.uniform(-1.6, 1.6) - 0.7; ny = y - 1.7 + rnd.uniform(-0.6, 0.6); line(hm, x, y, nx, ny, GREEN[1] if i % 2 else GREEN[2]); x, y = nx, ny
     a_ = np.array(hm).astype(float); H_, W_ = a_.shape[:2]; yy, xx = np.mgrid[0:H_, 0:W_]
     v = np.clip(1.0 - 0.5 * (((xx - W_ / 2) / (W_ / 2)) ** 2 + ((yy - H_ * 0.5) / (H_ * 0.62)) ** 2) ** 1.1, 0.45, 1.0)
     a_[:, :, :3] *= v[:, :, None]; hm = Image.fromarray(np.clip(a_, 0, 255).astype(np.uint8), "RGBA")
