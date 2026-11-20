@@ -1186,7 +1186,9 @@ except ImportError:
 try:
     import props_cathedral as _pc
     PROPS.update(_pc.NEW); VARIANTS.update(_pc.VARIANTS)
-    import props_cathedral_exterior as _pce
-    PROPS.update(_pce.NEW); VARIANTS.update(_pce.VARIANTS)
+    import os as _os
+    if _os.environ.get("CATH_PAINTED"):                      # the painted exterior is an option (TierMaps.PaintedCathedral); not packed by default
+        import props_cathedral_exterior as _pce
+        PROPS.update(_pce.NEW); VARIANTS.update(_pce.VARIANTS)
 except ImportError:
     pass

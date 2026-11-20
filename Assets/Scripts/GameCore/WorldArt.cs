@@ -367,7 +367,7 @@ namespace GameCore
 
         /// <summary>Which face a door wears: an ordinary one, a blast door, or Boss 2's lab locks (blue badge readers, hazard-striped power doors,
         /// each lit green once unlocked - LabLocks).</summary>
-        static string DoorFace(string look) => look == "blast" ? "blastdoor" : look == "metaldoor" ? "metaldoor" : look == "door_badge" ? "badgedoor" : look == "door_badge_on" ? "badgedoor_on"
+        static string DoorFace(string look) => look != null && look.StartsWith("dx_") ? "x_" + look.Substring(3) : look == "blast" ? "blastdoor" : look == "metaldoor" ? "metaldoor" : look == "door_badge" ? "badgedoor" : look == "door_badge_on" ? "badgedoor_on"
             : look == "door_power" ? "powerdoor" : look == "door_power_on" ? "powerdoor_on"
             : look == "door_keypad" ? "keypaddoor" : look == "door_keypad_on" ? "keypaddoor_on" : look == "door_steam" ? "steamdoor" : look == "door_steam_on" ? "steamdoor_on" : "door";
 
@@ -395,7 +395,7 @@ namespace GameCore
             if (t.Type == TileType.Door)
             {
                 string hm = HostMaterial(x, y), wk = WallKey(x, y), face = DoorFace(l);   // Boss 2: staff-badge and power doors have their own faces
-                s = Get($"w_{hm}_{wk}_{face}") ?? Get($"w_{hm}_{wk}_metaldoor"); wall = true;
+                s = Get($"w_{hm}_{wk}_{face}") ?? (face.StartsWith("x_") ? Get($"w_{hm}_{wk}_door") : null) ?? Get($"w_{hm}_{wk}_metaldoor"); wall = true;   // 2026-11-20: a door of a new kind falls back to the plain door where its face was not built
             }
             else if (t.Type == TileType.Solid && l != null && (BuiltWall.Contains(l) || Mass.Contains(l) || l == "window" || l == "metaldoor"))
             {

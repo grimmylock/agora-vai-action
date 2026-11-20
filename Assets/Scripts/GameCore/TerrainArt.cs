@@ -95,6 +95,7 @@ namespace GameCore
                 case TileType.HardCover: return t.Look ?? Pick(theme.Hard, x, y, coarse: false);
                 case TileType.Door:
                     if (t.Look == "door_badge" || t.Look == "door_badge_on" || t.Look == "door_power" || t.Look == "door_power_on" || t.Look == "blast" || (t.Look != null && (t.Look.StartsWith("door_keypad") || t.Look.StartsWith("door_steam")))) return t.Look;   // "blast": the heavy blast door (WorldArt.DoorFace)   // Boss 2: LabLocks' doors keep their own faces
+                    if (t.Look != null && t.Look.StartsWith("dx_")) return t.Look;   // 2026-11-20: door variety by place (DoorStyles): WorldArt.DoorFace maps it to its face
                     return t.Look == "metal" ? "metaldoor" : "door";
                 case TileType.DoorOpen: return t.Look == "broken" ? "door_broken" : "door_open";
                 case TileType.Barrel: return "barrel";

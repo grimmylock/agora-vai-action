@@ -287,7 +287,7 @@ namespace GameCore
             ["rockfall"] = "pry", ["irongate"] = "gate", ["sealslab"] = "code", ["door_badge"] = "staff", ["door_power"] = "power",
             ["door_keypad"] = "code", ["door_steam"] = "coolant", ["portcullis_a"] = "lever1", ["portcullis_b"] = "lever2", ["portcullis_c"] = "lever3",
         };
-        static bool IsBarrier(string look) => look != null && !look.StartsWith("door_");
+        static bool IsBarrier(string look) => look != null && !look.StartsWith("door_") && !look.StartsWith("dx_");
 
         /// <summary>The key a lock's look asks for, or null for an ordinary door (and for one already unlocked, "_on").</summary>
         public static string KeyOf(string look) => look == null ? null : look == "deepwater" ? Key(WaterKind(Zone)) : LockKinds.TryGetValue(look, out var kind) ? Key(kind) : null;

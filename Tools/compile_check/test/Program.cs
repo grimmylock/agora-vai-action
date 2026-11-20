@@ -100,6 +100,7 @@ static class Program {
     SpoolStoryChecks();
     CrownChecks();
     Tier2PoiChecks();
+    DoorStyleChecks();
     // ChoirChecks();   (the open-air bell boss was retired 2026-11-20)
     FurnishChecks();
     AnnexDoorChecks();
@@ -2822,6 +2823,23 @@ static class Program {
       Check(Story.Has(ChoirBoss.Flag) && ChoirBoss.Current == null && p.Ru == ru0 + 800, "Choir: the bell down: flag set, 800 Ru, the toll stops");
       int before = EncounterState.Enemies.Count; UnityEngine.Time.time += 30f; ChoirBoss.Tick(0.1f); Check(EncounterState.Enemies.Count == before && ChoirBoss.Current == null, "Choir: once silenced it does not come back");
     } finally { ChoirBoss.ZoneOverride = null; ChoirBoss.Reset(); EncounterState.Enemies.Clear(); }
+  }
+
+  static void DoorStyleChecks() {   // 2026-11-20: door variety by place
+    int total = 0; var per = new System.Collections.Generic.SortedDictionary<string, int>();
+    foreach (var kv in GameData.MapLayoutDatabase.All) {
+      var m = kv.Value; int n = 0, plain = 0;
+      for (int y = 0; y < m.Tiles.Length; y++) for (int x = 0; x < m.Tiles[y].Length; x++) {
+        if (m.Tiles[y][x] != "Door") continue; string l = m.Looks == null ? null : m.Looks[y][x]; if (l != null && l.StartsWith("dx_")) n++; else if (l == null) plain++;
+      }
+      if (n + plain > 0) per[kv.Key] = n; total += n;
+    }
+    Console.WriteLine("  door styles: " + string.Join(", ", per.Select(k => k.Key + "=" + k.Value)));
+    { var mm = GameData.MapLayoutDatabase.All["abandoned_city"]; Console.WriteLine("  city size " + mm.Tiles[0].Length + "x" + mm.Tiles.Length); for (int yy = 128; yy <= 132; yy++) { var sb = new System.Text.StringBuilder(); for (int xx = 86; xx <= 96; xx++) sb.Append(mm.Tiles[yy][xx].Substring(0, 1)); Console.WriteLine("  row " + yy + ": " + sb); } }
+    foreach (var z in new[] { "secret_lab_alpha", "abandoned_city" }) { var m = GameData.MapLayoutDatabase.All[z]; var ds = new System.Collections.Generic.List<string>();
+      for (int y = 0; y < m.Tiles.Length; y++) for (int x = 0; x < m.Tiles[y].Length; x++) if (m.Tiles[y][x] == "Door" && m.Looks[y][x] != null && m.Looks[y][x].StartsWith("dx_")) ds.Add(x + "," + y + ":" + m.Looks[y][x]);
+      Console.WriteLine("  doors " + z + ": " + string.Join(" ", ds.Take(12))); }
+    Check(total > 0, "DoorStyles: doors get a look by place (" + total + " across the maps)");
   }
 
   static void Tier2PoiChecks() {   // 2026-11-19: Tier 2 points of interest: the papers, the crews, the radiant spots

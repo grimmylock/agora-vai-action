@@ -134,6 +134,15 @@ def gate_double():
 SINGLES = {"glass": glass_single, "barred": barred_single, "roller": roller_single, "cell": cell_single, "lab": lab_single, "arched": arched_single, "plank": plank_single}
 DOUBLES = {"gothic": gothic_double, "barn": barn_double, "steel": steel_double, "glass": glass_double, "gate": gate_double}
 
+FACES = {}
+for _n, _f in SINGLES.items(): FACES["x_" + _n] = (lambda f: lambda: f())(_f)
+for _n, _f in DOUBLES.items():
+    _k = _n + "d" if _n == "glass" else _n
+    FACES["x_" + _k + "_l"] = (lambda f: lambda: f().crop((0, 0, 16, 19)))(_f); FACES["x_" + _k + "_r"] = (lambda f: lambda: f().crop((16, 0, 32, 19)))(_f)
+def face(name):
+    """the 16 x 19 door art for an atlas extra name (x_glass, x_gothic_l, ...) as an RGBA numpy array"""
+    return np.array(FACES[name]())
+
 if __name__ == "__main__":
     import walls
     def wall(mat, mask=10, extra=None):
