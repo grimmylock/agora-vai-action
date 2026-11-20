@@ -6849,3 +6849,4 @@ Yan: "give me the concept for that boss we talked about after this". `ArtSource/
 - Registered: `WeaponDatabase` VergerGreataxe (T6, 560, adjacent, 20% phys DR ignore), `ArmorDatabase` VergerCoat (+ `Unique`, not in loot), `HeldWeapon` grip, `HeadGear`, `UnitSprites.UniqueSuits/UniqueGloves`. Harness armor count 181 -> 182. Harness passes.
 - NOT built: the boss fight itself (`Boss.cs` def/moves), the bell/mission. NOT run in Unity; grip offsets and the coat on a body are unchecked in game.
 - 9ag fix (Yan: the axe read as a hammer, the face read as skin): axe head redrawn as a double-bearded crescent with notches against the haft, no back spike; Verger face is now hat-shadow black with white eyes and a tan leather mask (side straps, brass buckle). Not checked in Unity.
+- 9ag fix 2 (Yan: the crescent read as a shovel): head redrawn as a flared double-horned bit with straight diagonals and a slightly hollow edge. Not checked in Unity.
