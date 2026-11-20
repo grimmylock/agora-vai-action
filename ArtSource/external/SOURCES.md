@@ -108,3 +108,17 @@ Not imported (not CC0 or no licence shown): 0_mem0ry furniture/workshop/shelter 
 |-|-|-|-|-|-|
 | `../../Assets/Resources/Audio/mus_no_escape.mp3` | "NO ESCAPE - Horror Terror Chase Music (Royalty Free)", 2:08 | Daniel Herrera (ID3 tags) | titled "Royalty Free"; the licence text was NOT seen by me - Yan to confirm on the upload page before release | YouTube video id `ta7PPkwLZsg` (from the file name) | to-use (the escape in Tier 2 "Taken") |
 | `../../Assets/Resources/Audio/amb_mine.ogg` (loop cut by `../audio/make_mine_ambience.py` from the 10:26 original, which is NOT in the repo) | "AMBIENCE - Scary Haunted Mine - For study, chill, sleep" | Max "stallfish" Denton (ID3 tags), 2026 | not seen by me - Yan to confirm on the upload page before release | YouTube video id `4h6vteozhq8` (from the file name) | to-use (the cave ambience) |
+
+## Cathedral references, leads only (2026-11-20; Yan: "search for references")
+Found by web search; the pages could NOT be fetched (opengameart.org and itch.io are not on this cloud environment's allowlist), so every licence below comes from search snippets and is UNVERIFIED. Nothing downloaded, nothing in the repo. Class = `reference` (look at, draw from) until a licence is read.
+| Pack | What the snippet says | Licence per snippet | Class |
+|-|-|-|-|
+| OpenGameArt node 138633 (a church tileset tagged stained glass, church) | CC0-tagged | CC0 | to check, then `to-use` or `to-be-altered` |
+| GothicVania Church Pack, https://opengameart.org/content/gothicvania-church-pack | side-view pixel church pack ("Castlevania-like scene") | CC0 | reference (side view, not top-down) |
+| Gothic Window Tileset (OpenGameArt, made in Aseprite) | gothic windows | CC0 | to check, good fit for the stained windows |
+| Ruined Cathedral Tileset, https://opengameart.org/node/192217 (HLopHLop) | top-down 16x16 ruined cathedral | CC-BY 4.0 (not CC0: credit needed, Yan decides) | reference |
+| Church Tileset (Time Elements), https://finalbossblues.itch.io/church-tileset-time-elements | church exterior + interior + NPCs | not seen | reference |
+| 16x16 1-bit Church Interior Tile Set, https://bigindie.itch.io/16x16-church-interior-tile-set | 1-bit interior items | pay-what-you-want, licence not seen | reference |
+| Medieval Church Interior, https://opengameart.org/content/medieval-church-interior | 3D, not pixel art | CC0 | not useful |
+| VisuStella Worlds: Medieval Church; KR Holy Saints Cathedral Tileset; Pixel Gothic Pack | pews, chandeliers, statues, stained glass | paid | not usable |
+Architecture facts for layout (text only, Lumen Learning / Wikipedia "Cathedral floorplan"): Latin-cross plan, nave and two aisles separated by an arcade of pillars, a bay is the square unit between pillars and the nave is usually two bays wide, then galleries/triforium and clerestory above; medieval naves had no pews (they are later), so pews are an artistic choice for a ruined parish-style cathedral.
