@@ -2799,6 +2799,14 @@ static class Program {
       for (int i = 0; i < 300 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
       Check(began && f.Doing.Phase1Only, $"Verger: form 1 picks scythe moves ({f.Doing?.Name})");
       Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h), "Verger: before the change rounds glance off him and he takes full damage");
+      // the Hook: he stops at the blade's tip and, if it cuts you, drags you in
+      var hook = Boss.Verger.Moves.First(m => m.Name == "Hook"); Check(hook.Drag > 0f && hook.Danger, "Verger: the Hook is red and drags");
+      f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = h.MaxHp; f.Phase = 1; h.X = p.X + 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp;
+      Boss.Begin(f, hook, UnityEngine.Time.time, 1f); bool dragged = false; var (bx0, by0) = Ballistics.Pos(p);
+      for (int i = 0; i < 200 && !dragged; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); var sh = Rt.Of(p); dragged = sh.ShoveFrom >= 0f; }
+      var sp = Rt.Of(p); Check(dragged && p.Hp < p.MaxHp, $"Verger: the Hook that cuts drags you toward him (shove {sp.ShoveX:0.0},{sp.ShoveY:0.0}, hp {p.Hp}/{p.MaxHp})");
+      Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger: the drag is a real pull, not a teleport");
+      Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       // half health: the change
       f.Doing = null; f.OpenUntil = -1f; h.Hp = Boss.Verger.Hp / 2 - 10; UnityEngine.Time.time += 5f; Boss.Tick(f, p);
       Check(f.Phase == 2 && f.Beast && f.ChangeUntil > UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Beast Claws", "Verger: at half health he changes and takes up the claws");

@@ -1,6 +1,6 @@
 // Boss 6: the Verger (Yan, 2026-11-20: "a gothic beast hunter using an axe" -> a scythe; "he comes every run at the end" of the cathedral job, MISSION_CHOIR.md; "he starts as a sprite swinging his scythe ... at 50% he transforms into a beast").
 // The fight is Boss.cs (Boss.Verger): the Visor's duel on a war scythe, then at half health the change (Def.Change: hittable at a tenth of the damage for 4 s) and the claws. This file is his entrance and his end.
-// NOT built yet: the cathedral job that sends him in at the end of a run (the bell, the Husk waves); the beast's own sprite (until it exists he fights on in the human body); the hook's drag; the co-op sync of the change (host-side only).
+// NOT built yet: the cathedral job that sends him in at the end of a run (the bell, the Husk waves); the beast's own sprite (until it exists he fights on in the human body); the co-op sync of the change (host-side only).
 using System.Linq;
 using UnityEngine;
 

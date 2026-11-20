@@ -31,6 +31,7 @@ namespace GameCore
             public int Hits = 1;           // a combo: each hit has its own glint
             public float Gap = 0.4f;       // between a combo's hits
             public float Lunge;            // > 0: he closes this far in one rush before the hit
+            public float Drag;             // 2026-11-20 (the Verger's Hook): > 0: he does not rush in, he stops at the blade's tip and, if it cuts you, drags you up to this many tiles toward him
             public float Mult = 1f;        // x the weapon's damage
             public int Weight = 1;         // how often he picks it
             public bool Phase2Only, Phase1Only;     // 2026-11-20 (the Verger): a two-form boss has moves for only one form
@@ -149,7 +150,7 @@ namespace GameCore
                 // form 1: the scythe (poses: 0 slam = the overhead cut, 1 wide sweep, 2 rising swing)
                 new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, Poses = new[] { 0 }, Open = 1.4f, Phase1Only = true },
                 new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f, Phase1Only = true },
-                new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Mult = 1.2f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase1Only = true },
+                new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 0 }, Open = 1.2f, Phase1Only = true },
                 new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Poses = new[] { 1, 1, 2 }, Open = 1.8f, Phase1Only = true },
                 // form 2: the claws
                 new Move { Name = "Rake", Wind = 0.45f, Hits = 3, Gap = 0.32f, Mult = 0.55f, Weight = 3, Poses = new[] { 1, 2, 1 }, Open = 1.0f, Phase2Only = true },
@@ -275,15 +276,27 @@ namespace GameCore
         static void Land(Fight f, Player p)
         {
             var h = f.Unit; var m = f.Doing;
-            StepIn(h, p, m.Lunge > 0f ? 0.8f : 0.9f);                             // the hit comes with a step (a lunge: the whole rush)
+            StepIn(h, p, m.Drag > 0f ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
             if (m.Danger && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }   // the dive goes under it
             if (h.EquippedWeapon == null) return;
-            Parry.Unparryable = m.Danger;
+            Parry.Unparryable = m.Danger; int hp0 = p.Hp;
             try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, m.Mult); }
             finally { Parry.Unparryable = false; }
+            if (m.Drag > 0f && p.Hp < hp0) DragIn(h, p, m.Drag);
+        }
+
+        public const float HookGap = 2.0f, DragStop = 0.9f;
+        /// <summary>2026-11-20 (the Verger's Hook): the blade's beard catches you and hauls you in: a slide toward him (Rt.Shove: eased, walls and friends stop it) to just in front of him, and a moment on the floor.</summary>
+        internal static void DragIn(HumanEnemy h, Player p, float maxTiles)
+        {
+            var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
+            float dx = hx - px, dy = hy - py, d = Mathf.Sqrt(dx * dx + dy * dy); float pull = Mathf.Min(maxTiles, d - DragStop);
+            if (pull < 0.15f || d < 0.01f) return;
+            Rt.Shove(p, dx / d * pull, dy / d * pull, 0.3f); Rt.Knockdown(p, 0.5f);
+            GameLog.Write("The hook catches you and drags you in."); Sfx.Play("boss_sting", null, 0.5f, 0f, 1.4f);
         }
 
         /// <summary>Close in to `gap` tiles from p before a hit lands - you stand anywhere inside a tile, so "the next tile" can still
