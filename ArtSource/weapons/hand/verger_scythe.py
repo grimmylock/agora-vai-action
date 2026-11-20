@@ -1,5 +1,5 @@
 # The Verger's scythe (2026-11-20; BOSS_ROSTER #14, ArtSource/make_verger_concept.py): menu sprite (64x32) and in-hand sprite (32x16) in the melee set's own letter-grid format, built from polygons with
-# a light from the top-left and written to Assets/Resources/Sprites/Weapons/weapon_VergerScythe(.png|_hd.png). Snath left, the blade rises from its right end and sweeps forward, edge on the inside of the curve. python3 ArtSource/weapons/hand/verger_axe.py
+# a light from the top-left and written to Assets/Resources/Sprites/Weapons/weapon_VergerScythe(.png|_hd.png). Snath left, the blade rises from its right end and sweeps BACK over the snath like a reaper's scythe, edge on the inside of the curve. python3 ArtSource/weapons/hand/verger_axe.py
 import os, sys, math
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import melee_px as mp
@@ -30,7 +30,7 @@ def build(W, H, haft_y, haft_th, haft_x1, wrap, ring_x, p0, p1, p2, w0, cap, nib
     N = 60
     for i in range(N + 1):
         t = i / N; x, y = bez(p0, p1, p2, t); x2, y2 = bez(p0, p1, p2, min(1, t + 0.01)); x1, y1 = bez(p0, p1, p2, max(0, t - 0.01))
-        dx, dy = x2 - x1, y2 - y1; d = math.hypot(dx, dy) or 1; nxv, nyv = dy / d, -dx / d      # the normal pointing to the inside of the curve
+        dx, dy = x2 - x1, y2 - y1; d = math.hypot(dx, dy) or 1; nxv, nyv = -dy / d, dx / d      # the normal pointing to the inside of the curve
         w = w0 * (1 - t) ** 0.75 + 0.4
         L.append((x - nxv * w * 0.35, y - nyv * w * 0.35)); R.append((x + nxv * w * 0.65, y + nyv * w * 0.65))
     poly = L + R[::-1]
@@ -43,19 +43,19 @@ def build(W, H, haft_y, haft_th, haft_x1, wrap, ring_x, p0, p1, p2, w0, cap, nib
     inn = lambda x, y: 0 <= x < W and 0 <= y < H and inside(poly, x + 0.5, y + 0.5)
     for y in range(H):
         for x in range(W):
-            if inn(x, y) and not (inn(x + 1, y) and inn(x, y + 1)) and g[y][x] in "12345": g[y][x] = "5"      # the bright cutting edge on the inside
+            if inn(x, y) and not (inn(x - 1, y) and inn(x, y + 1)) and g[y][x] in "12345": g[y][x] = "5"      # the bright cutting edge on the inside
     for y in range(H):
         for x in range(W):
-            if inn(x, y) and not inn(x - 1, y - 1) and g[y][x] in "345": g[y][x] = "2"                         # a dark spine on the outside
+            if inn(x, y) and not inn(x + 1, y - 1) and g[y][x] in "345": g[y][x] = "2"                         # a dark spine on the outside
     for (x, y, c) in blood:
         if 0 <= y < H and 0 <= x < W and g[y][x] in "12345": g[y][x] = c
     for t in range(haft_th + 2):                                                                # the socket collar where the blade meets the snath
         for x in range(int(p0[0]) - 3, int(p0[0]) + 3):
             if 0 <= haft_y - 1 + t < H: g[haft_y - 1 + t][x] = ("4" if t == 0 else "3" if t < (haft_th + 2) // 2 else "2" if t < haft_th + 1 else "1")
     return ["".join(r) for r in g]
-MENU = build(62, 30, 22, 4, 44, (10, 27), 29, (46.5, 24), (46, 5), (61, 1.5), 8, 3, (28, 0, 4),
-             [(58, 4, "R"), (55, 6, "r"), (50, 12, "R"), (49, 18, "r")])
-HAND = build(30, 14, 10, 2, 21, (5, 12), 14, (22.5, 11), (22, 2), (29.5, 0.8), 4, 2, (13, 0, 2),
-             [(28, 1, "R"), (25, 3, "r")])
+MENU = build(62, 30, 22, 4, 56, (10, 27), 29, (56.5, 24), (57, 5), (36, 1.5), 8, 3, (28, 0, 4),
+             [(40, 4, "R"), (44, 5, "r"), (53, 12, "R"), (55, 18, "r")])
+HAND = build(30, 14, 10, 2, 27, (5, 12), 14, (27.5, 11), (28, 2), (15, 0.8), 4, 2, (13, 0, 2),
+             [(18, 1, "R"), (21, 2, "r")])
 if __name__ == "__main__":
     mp.paint(HAND, PAL, 32, 16).save(os.path.join(mp.WEAP, "weapon_VergerScythe.png")); mp.paint(MENU, PAL, 64, 32).save(os.path.join(mp.WEAP, "weapon_VergerScythe_hd.png"))
