@@ -27,6 +27,12 @@ Already built: Tier 1 Blight Brute (chase), Tier 2 Spool + the Specimen (Lab Alp
 - **The Marshal and the portal computer** (how it would work): the fight is an ordinary Visor/Spool-style duel in three phases. The portal computer is just an interactable object (same system as the lab consoles/switches) behind the arena, and the portal a zone exit. When the Marshal breaks, a 90 s countdown starts and a choice appears: shoot/smash the computer (portal collapses, flag set) or push through before it closes (exit opens). All pieces exist (interactables, exits, timers like the Barrier's); it is content work, not new tech.
 - **Tier 2 had no mutant boss**: added the Singer (3a). With it, the Pitman (3b) can drop to a plain story encounter.
 
+## Yan's answers (2026-11-20, second round)
+- **Mind Weaver adds: puppets** (Husks on threads; cutting a thread frees/stuns the Husk). Liked.
+- **The small Mind Weaver as a normal Tier 3 mutant: NOT decided** ("will take away from the actual boss"). Until he says, it does not go into any spawn pool; the Mind Weaver stays unique to the Tier 5 fight. The hand-built small sprites (`mind_weaver_small_{a,b,c}.png`) are parked.
+- **The Singer: approved** ("amazing and disturbing, silent hill style").
+- **Design direction for all creature bosses: Silent Hill / Resident Evil / Bloodborne** (body horror, wrongness, dread, strong silhouettes). Briefs and concepts: `BOSS_DESIGNS.md`.
+
 ## Order I would build in (cheapest, most reuse first)
 1. Pitman (T2) and the Hook (T1): reuse the Eel/Visor frames, human or Husk art only.
 2. Mother Hollow (T1): scaled Prowler art + the Elder's wave code.

@@ -1,0 +1,16 @@
+# Boss creature designs (2026-11-20; Yan: "silent hill, resident evil, bloodborne style monsters")
+Direction words (for the artist, never shown to players): wrongness over gore, one strong silhouette each, a human thing inside the monster (hands, a mouth, a uniform), a rhythm or a sound as the signature (the 11 s beat), and a single unreadable part (a face with no eyes, a mask). Muted palette plus ONE accent colour per boss. Original names only. Concept sprites are hand-built (`ArtSource/make_boss_concepts.py`), NOT in the game, and are concept quality, not final art.
+
+| Boss | Silhouette | The human thing | Wrongness | Accent | Tell to animate |
+|-|-|-|-|-|-|
+| **The Singer** (T2, Valley Mine) | A rock wall that bulges into a huge pale face; wide and static, 6 x 4 tiles | miners' hands pushing out of the rock, hard hats and lamps set into the flesh (two still lit: "two lamps still burning in the drift") | a vertical mouth that opens like a zipper, teeth down both lips, no eyes, veins in the stone | lamp amber | the mouth opens on the 11 s note; hands curl in time |
+| **The Orderly** (T6, Morgue) | A hunched giant in a stained surgical apron, one arm far too long | the apron, the rubber boots, a ward name tag | a gauze mask stitched into a grin over no face, an IV stand fused into the back, a bed rail with saw teeth as a weapon | arterial red on white | slow drag step, saw scrape, the mask breathes |
+| **Mother Hollow** (T1, Secret Cave) | A bloated pale hound the size of a cart, ribs splayed | a woman's long hair and a wedding-ring bone in the jaw | pups' heads pushing out of sacs along her flank, milk-blind eyes | bruise violet | the sacs twitch before a brood wave |
+| **The Ferryman** (T3, Stranded Ferry) | Tall drowned figure in an oilskin coat, rope-bound, water always running off it | a lifebelt with the ferry's name, a ticket punch | a ship's lantern for a head with something pale moving in the glass | lantern green | the lantern swings, the deck tilts |
+| **The Specimen, grown** (T4, Deep Caverns) | A brain the size of a bed on a spray of spinal legs | the lab collar still around one stalk, a name card in the slime | too many mouths on the nerve tips, an eye in the wrong place | wet pink | stalks probe in a pattern that remembers you |
+| **The Excavator** (T5, Quarry Basin) | A mining rig with a bucket of teeth, hoses like veins | a Husk fused into the cab, a hard hat on the boom | the bucket is a jaw, hydraulic fluid is dark red, the cab glass is wet from inside | rust orange | boom sweep, jaw chomp, steam vents |
+| **The Choir** (T6, Bell Tower) | A column of Husks fused mouth to mouth up the tower | their work uniforms still on | every mouth open on the same note | bell brass | the column sways on each toll |
+| **The Mind** (T7, final) | No body: a foundry hall that has become a face | the transmitters like teeth, the lift cable like a tongue | the walls breathe on the 11 s beat | cold violet | the hall exhales |
+
+## Concepts drawn so far
+- The Singer (`mutants_anim/boss_concepts/singer_concept.png`), The Orderly (`orderly_concept.png`). The rest are briefs only.
