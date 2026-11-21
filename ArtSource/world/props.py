@@ -1201,7 +1201,7 @@ except ImportError:
 # 2026-11-21: desk / cabinet / computer / lab bench / chair redrawn by Pixel Lab in four facings (props_furn_pl.py), over the old props of the same names (NO_PL=1 keeps the old ones)
 try:
     import os as _os2
-    if not _os2.environ.get("NO_PL"):
+    if _os2.environ.get("PL_FURN") and not _os2.environ.get("NO_PL"):     # 2026-11-21: OFF by default (Yan: "too detailed and the angles are not right"); PL_FURN=1 packs the Pixel Lab set
         import props_furn_pl as _pf
         PROPS.update(_pf.NEW); VARIANTS.update(_pf.VARIANTS)
 except ImportError:
