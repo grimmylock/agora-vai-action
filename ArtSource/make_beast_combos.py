@@ -11,7 +11,9 @@ CLIPS = {m.group(1): (int(m.group(2)), [float(x) for x in m.group(3).split(",")]
 SMEAR = {"rake": {5}, "sweep": {5, 6}, "slam": {4}}          # frames that are a swipe blob / shockwave: never a join point
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
+REMAP = {"rake": [0, 1, 2, 3, 4, 4, 7, 7, 8, 9, 10, 11, 12], "sweep": [0, 1, 2, 3, 4, 4, 7, 7, 8, 9, 10, 11, 12]}          # the baked low smears are not used (export_verger_beast_clips.py): the game draws the slash
 FR = {n: [hard(Image.open(f)) for f in sorted(glob.glob(os.path.join(SRC, n, "f_*.png")))[:CLIPS[n][0]]] for n in ("rake", "sweep", "slam")}
+FR = {n: ([fr[i] for i in REMAP[n]] if n in REMAP else fr) for n, fr in FR.items()}
 MASK = {n: [np.array(f)[..., 3] > 0 for f in FR[n]] for n in FR}
 def iou(a, b): return (a & b).sum() / max(1, (a | b).sum())
 # Chosen joins (the candidates were listed by silhouette overlap and by the gap between the two hits): (frame of A where it hands over, frame of B it continues from).

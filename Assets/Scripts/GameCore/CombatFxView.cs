@@ -829,12 +829,12 @@ namespace GameCore
                 }
                 case "beastslash": // 2026-11-21 (the Verger's beast): three claw marks tear through the air in front of him toward the target (ArtSource/make_beast_slash_fx.py: Fx/fx_beast_slash.png, 4 frames), turned toward the target, with a shake and the claws' sound; a landed blow throws blood
                 {
-                    var frames = Strip("Sprites/Fx/fx_beast_slash", 4, WeaponArt.PixelsPerUnit, new Vector2(0.05f, 0.5f));
+                    var frames = Strip("Sprites/Fx/fx_beast_slash", 4, WeaponArt.PixelsPerUnit, new Vector2(0.5f, 0.5f));
                     var dirv = to - from; float ang = Mathf.Atan2(dirv.y, dirv.x) * Mathf.Rad2Deg, flip = dirv.x < 0f ? -1f : 1f; float dl = Mathf.Sqrt(dirv.x * dirv.x + dirv.y * dirv.y); var dn = dl > 0.01f ? dirv / dl : Vector3.right;
-                    var at = from + dn * 0.9f + new Vector3(0f, 0.7f, 0f);
+                    var at = Vector3.Lerp(from + new Vector3(0f, 1.1f, 0f), to + new Vector3(0f, 0.55f, 0f), 0.7f);      // 2026-11-21 (Yan: his swipes "target below him, not in front"): the marks land where the claws meet the target (chest height of whoever is in front of him), not at his own knees
                     if (frames != null)
                     {
-                        var sr = NewSprite("BeastSlash", frames[0], Color.white, _root, 14); sr.transform.position = at; sr.transform.rotation = Quaternion.Euler(0f, 0f, ang + (flip < 0f ? 180f : 0f)); sr.transform.localScale = new Vector3(1f, flip < 0f ? -1f : 1f, 1f) * 0.7f;
+                        var sr = NewSprite("BeastSlash", frames[0], Color.white, _root, 14); sr.transform.position = at; sr.transform.rotation = Quaternion.Euler(0f, 0f, ang + (flip < 0f ? 180f : 0f)); sr.transform.localScale = new Vector3(1f, flip < 0f ? -1f : 1f, 1f) * 0.55f;
                         _live.Add(new Particle { Sr = sr, Born = Time.time, Life = 0.24f, Frames = frames });
                     }
                     Burst(at, new Color(0.9f, 0.8f, 0.7f), 8, 2.2f, 0.3f);

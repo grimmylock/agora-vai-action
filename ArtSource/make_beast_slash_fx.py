@@ -1,12 +1,12 @@
 # The werewolf's claw slash, drawn (2026-11-21; Yan: "the double swipe barely looks like an attack"): three parallel claw crescents sweeping in front of the beast, 4 frames (they draw in, burn full, thin, fade), pointing right; CombatFxView ("beastslash")
-# turns them toward the target and plays them over 0.22 s at every blow. Hand-built with pxart masks (hard pixels, no antialiasing): Assets/Resources/Sprites/Fx/fx_beast_slash.png (4 frames of 80x120).
+# turns them toward the target and plays them over 0.22 s at every blow. Hand-built with pxart masks (hard pixels, no antialiasing): Assets/Resources/Sprites/Fx/fx_beast_slash.png (4 frames of 96x150).
 import os, sys, math
 import numpy as np
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pxart import Mask
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Assets", "Resources", "Sprites", "Fx")
-W, H = 80, 120
+W, H = 96, 150
 CORE = (250, 242, 222, 255); MID = (222, 200, 168, 255); EDGE = (176, 34, 42, 255); DIM = (120, 96, 90, 255)
 def crescent(r_out, r_in, a0, a1, cx=8, cy=32, taper=True):
     """a crescent between two arcs of different radii/centres: thick in the middle, a point at each end; angles in degrees (0 = right, + = down)"""
@@ -18,19 +18,20 @@ def crescent(r_out, r_in, a0, a1, cx=8, cy=32, taper=True):
         pts_i.append((cx + (r_out - (r_out - r_in) * wob) * math.cos(a), cy + (r_out - (r_out - r_in) * wob) * math.sin(a)))
     return pts_o + pts_i[::-1]
 def frame(sweep, bright, fade):
+    """three long thin claw streaks, parallel, each a tapered arc (a point at both ends): drawn in over the sweep, then they thin out and fade"""
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    for k, (ro, thick, dcy, span) in enumerate(((46, 13, -31, 24), (54, 17, 0, 28), (46, 13, 31, 24))):          # three claws, parallel: the middle one longest and thickest
+    for k, (ro, thick, dcy, span) in enumerate(((72, 6, -30, 34), (80, 8, 0, 38), (72, 6, 30, 34))):
         a0 = -span; a1 = a0 + 2 * span * sweep
-        for col, shrink in ((EDGE, 0), (MID, 3.0), (CORE, 6.0)):
+        for col, shrink in ((EDGE, 0), (MID, 2.0), (CORE, 3.6)):
             if thick - shrink < 1: continue
-            m = Mask((W, H)); m.poly(crescent(ro, ro - (thick - shrink), a0, a1, cx=6, cy=60 + dcy))
+            m = Mask((W, H)); m.poly(crescent(ro, ro - (thick - shrink), a0, a1, cx=-10, cy=75 + dcy))
             bits = m.bits(); px = np.array(im)
             c = col if bright else DIM
             px[bits] = c if fade >= 1 else (c[0], c[1], c[2], int(255 * fade)); im = Image.fromarray(px, "RGBA")
     return im
 def main():
     os.makedirs(OUT, exist_ok=True)
-    frames = [frame(0.45, True, 1), frame(1.0, True, 1), frame(1.0, True, 1), frame(1.0, False, 0.55)]     # draw in, full, full (held a beat), faded
+    frames = [frame(0.55, True, 1), frame(1.0, True, 1), frame(1.0, False, 0.8), frame(1.0, False, 0.4)]     # draw in, full, full (held a beat), faded
     strip = Image.new("RGBA", (W * 4, H), (0, 0, 0, 0))
     for i, f in enumerate(frames): strip.alpha_composite(f, (i * W, 0))
     strip.save(os.path.join(OUT, "fx_beast_slash.png"))

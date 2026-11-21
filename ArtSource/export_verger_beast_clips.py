@@ -6,6 +6,8 @@ import numpy as np
 from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.join(HERE, "mutants_anim", "verger_beast", "pixellab")
 OUT = os.path.join(HERE, "..", "Assets", "Resources", "Sprites", "Mutants", "anim")
+# 2026-11-21 (Yan: "his swipes kinda target below him, not in front"): the generated rake and sweep bake a black smear crescent along the ground into frames 5-6; the game draws the claw slash itself now (CombatFxView "beastslash"), so those frames are replaced by the apex pose (frame 4, held) and the forward-lean frame 7: same count, same timing, no low smear
+REMAP = {"rake": [0, 1, 2, 3, 4, 4, 7, 7, 8, 9, 10, 11, 12], "sweep": [0, 1, 2, 3, 4, 4, 7, 7, 8, 9, 10, 11, 12]}
 CLIPS = {"walk": 8, "slam": 13, "rake": 13, "charge": 9, "sweep": 13, "roar": 13}      # clip -> how many of its frames to keep (walk: the 9th repeats the first)
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
@@ -15,6 +17,7 @@ def main():
         fs = sorted(glob.glob(os.path.join(SRC, name, "f_*.png")))[:n]
         assert len(fs) == n, (name, len(fs))
         ims = [hard(Image.open(f)) for f in fs]; w, h = ims[0].size
+        if name in REMAP: ims = [ims[i] for i in REMAP[name]]
         strip = Image.new("RGBA", (w * n, h), (0, 0, 0, 0))
         for i, im in enumerate(ims): strip.alpha_composite(im, (i * w, 0))
         buf = io.BytesIO(); strip.save(buf, "PNG"); open(os.path.join(OUT, "verger_beast_%s.bytes" % name), "wb").write(buf.getvalue())
