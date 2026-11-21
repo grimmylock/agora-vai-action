@@ -1271,7 +1271,7 @@ static class Program {
           if (f.Doing != null) {
             if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; }
             float left = f.StrikeAt - now; bool red = Boss.Red(f.Doing, f.Doing.Hits - f.HitsLeft);
-            if (red) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
+            if (red) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; int side = (strike % 2 == 0) ? 1 : -1; input.X = sy != 0 ? side : 0; input.Y = sx != 0 ? side : (sy == 0 ? 1 : 0); } }   // dive to the side (alternating), not away: the bot stays in the fight
             else if (strike % 4 != 3 && left <= 0.11f && left > 0.11f - dt) input.Parry = true;
           }
           if (Boss.Staggered(v) || Boss.Open(v) || f.Doing == null) { fire = !fire; input.Fire = fire; }

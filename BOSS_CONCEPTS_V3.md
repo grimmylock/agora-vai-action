@@ -106,15 +106,16 @@ A bot with an assault rifle: parries every white blow on the perfect beat (misse
 
 | Boss | Broken | Time | Hits taken | Medkits | Downed |
 |-|-|-|-|-|-|
-| The Visor (baseline Yan has played) | 2/2 | 51 s | 41 | 17 | 8.5 |
-| Spool | 2/2 | 36 s | 15 | 5 | 3.5 |
-| The Scrap King | 2/2 | 47 s | 18 | 11 | 8 |
-| The Verger (scythe, this batch) | 2/2 | 69 s | 54 | 30 | 16.5 |
-| Mother Hollow | 2/2 | 24 s | 5 | 0.5 | 0 |
-| The Singer | 1/2 (4 runs: 1/4) | 49 s | 1 | 0 | 0 |
-| The Ferryman | 2/2 | 47 s | 5 | 2 | 1 |
-| The Specimen, grown | 2/2 | 46 s | 27 | 13.5 | 7 |
-| The Excavator | 2/2 | 67 s | 18 | 15 | 6.5 |
-| The Orderly | 2/2 | 71 s | 27 | 13 | 7.5 |
+| The Visor (baseline Yan has played) | 2/2 | 53 s | 44 | 18.5 | 9 |
+| Spool | 2/2 | 39 s | 12 | 3 | 1.5 |
+| The Scrap King | 2/2 | 48 s | 14 | 9.5 | 6 |
+| The Verger (scythe, this batch) | 2/2 | 71 s | 43 | 25 | 13.5 |
+| Mother Hollow | 2/2 | 25 s | 9 | 2 | 1 |
+| The Singer | 2/2 | 35 s | 0 | 0 | 0 |
+| The Ferryman | 2/2 | 35 s | 5 | 1 | 1 |
+| The Specimen, grown | 2/2 | 45 s | 24 | 13 | 6.5 |
+| The Excavator | 2/2 | 54 s | 6 | 3 | 1.5 |
+| The Orderly | 2/2 | 67 s | 20 | 7 | 3 |
 
-How to read it: the bot dives every red move perfectly, which no person does, so the bosses built mostly of red moves (Mother Hollow, the Singer, the Ferryman) look far easier here than they will be. The probe also shoots Mother Hollow's brood off-screen. The Singer "fails" because the bot dives AWAY from each red and drifts out of range behind clutter (a probe artefact: a rooted boss with nothing in reach just waits). The Verger is the hardest of all to this bot (54 hits taken): his whites come fast and in long strings. Numbers were NOT changed from this (rule 6: harder is allowed, easier is not; Yan's first run decides).
+(Second run of the probe: the bot now dives to the side, alternating, instead of away; the first version drifted out of the Singer's reach and stalled.)
+How to read it: the bot dives every red move perfectly, which no person does, so the bosses built mostly of red moves (Mother Hollow, the Singer, the Ferryman) look far easier here than they will be. The probe also shoots Mother Hollow's brood off-screen. The Verger is the hardest of all to this bot (54 hits taken): his whites come fast and in long strings. Numbers were NOT changed from this (rule 6: harder is allowed, easier is not; Yan's first run decides).
