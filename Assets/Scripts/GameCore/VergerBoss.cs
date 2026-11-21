@@ -44,9 +44,9 @@ namespace GameCore
         {
             ["walk"]   = new Clip { Name = "walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
             ["slam"]   = new Clip { Name = "slam", Frames = 13, Ms = new float[] { 100, 200, 260, 300, 90, 120, 160, 160, 160, 160, 180, 200, 240 }, Hit = 4 },                // rear up (1-3), the slam (4), crouched (5-9), heave up (10-12)
-            ["rake"]   = new Clip { Name = "rake", Frames = 13, Ms = new float[] { 100, 100, 120, 140, 100, 60, 120, 120, 100, 100, 140, 160, 200 }, Hit = 5 },
+            ["rake"]   = new Clip { Name = "rake", Frames = 13, Ms = new float[] { 100, 100, 120, 140, 120, 40, 70, 110, 120, 100, 120, 160, 200 }, Hit = 6 },       // rears the arm back (2-4), a backhand smear (5, brief), the forward slash (6), recovers
             ["charge"] = new Clip { Name = "charge", Frames = 9, Ms = new float[] { 100, 120, 140, 180, 200, 90, 110, 140, 200 }, Hit = 5 },
-            ["sweep"]  = new Clip { Name = "sweep", Frames = 13, Ms = new float[] { 100, 120, 120, 140, 140, 70, 120, 140, 140, 160, 200, 220, 260 }, Hit = 5 },
+            ["sweep"]  = new Clip { Name = "sweep", Frames = 13, Ms = new float[] { 100, 120, 140, 160, 140, 70, 80, 120, 140, 140, 200, 220, 260 }, Hit = 5 },      // draws both arms back (2-4), the low sweep (5-6), arms reaching forward (7-9), rises
             ["roar"]   = new Clip { Name = "roar", Frames = 13, Ms = new float[] { 100, 140, 180, 220, 400, 400, 400, 400, 400, 400, 300, 260, 360 }, Hit = 4 },                // the change: rears up (1-3), roars (4-9), settles (10-12): ~4 s
         };
         const float ClipPivotY = 22f / 232f;                   // the feet row is 6 px above the cell's bottom, and the pivot sits 16 px above the feet

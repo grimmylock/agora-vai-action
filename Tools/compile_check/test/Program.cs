@@ -3183,7 +3183,8 @@ static class Program {
       Story.Set("husks_known"); for (int i = 0; i < 300; i++) SquadManager.TickHour();
       int packs = MacroState.Current.OfflineSquads.Count(q => q.Faction == Husk.Faction && q.Members.Any(m => m.IsAlive()));
       Check(packs >= 1 && packs <= Husk.MaxPacks, $"Husk packs: after the canister they roam, at most {Husk.MaxPacks} ({packs})");
-      Check(MacroState.Current.OfflineSquads.Where(q => q.Faction == Husk.Faction).All(q => { var z = MacroState.Current.OfflineSquads.Count > 0 ? MacroMapDatabase.Find(q.ZoneId) : null; return z != null && !z.IsSafeZone; }), "Husk packs: never in a Safe Zone");
+      { var badPacks = MacroState.Current.OfflineSquads.Where(q => q.Faction == Husk.Faction).Where(q => { var z = MacroMapDatabase.Find(q.ZoneId); return z == null || z.IsSafeZone; }).Select(q => $"zone '{q.ZoneId}' alive {q.Members.Count(m => m.IsAlive())}/{q.Members.Count}").ToList();
+        Check(badPacks.Count == 0, "Husk packs: never in a Safe Zone" + (badPacks.Count > 0 ? " (" + string.Join("; ", badPacks) + ")" : "")); }
       MacroState.Current.OfflineSquads.RemoveAll(q => q.Faction == Husk.Faction); EncounterState.Enemies.RemoveAll(e => Husk.Is(e)); MacroState.Current.StoryFlags.Clear(); }
     // Polish: the story's people as units
     { MacroState.Current.StoryFlags.Clear(); StoryNpcs.Reset(); EncounterState.Enemies.RemoveAll(e => e.Faction == StoryNpcs.Faction);

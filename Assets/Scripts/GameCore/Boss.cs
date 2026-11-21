@@ -156,7 +156,7 @@ namespace GameCore
                 new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 0 }, Open = 1.2f, Phase1Only = true },
                 new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Poses = new[] { 1, 1, 2 }, Open = 1.8f, Phase1Only = true },
                 // form 2: the brawler (Heavy style: 0 slam, 1 wide sweep, 2 rising): slow, heavy, long openings
-                new Move { Name = "Rake", Wind = 0.7f, Hits = 2, Gap = 0.5f, Mult = 0.7f, Weight = 3, Poses = new[] { 1, 2 }, Open = 1.3f, Phase2Only = true, Clip = "rake" },
+                new Move { Name = "Rake", Wind = 0.65f, Mult = 1.1f, Weight = 3, Poses = new[] { 1 }, Open = 1.3f, Phase2Only = true, Clip = "rake" },       // (one fast slash: the regenerated clip shows one forward blow)
                 new Move { Name = "Smash", Wind = 1.2f, Danger = true, Mult = 1.9f, Weight = 2, Poses = new[] { 0 }, Open = 2.4f, Phase2Only = true, Clip = "slam" },
                 new Move { Name = "Charge", Wind = 1.0f, Danger = true, Lunge = 7f, Mult = 1.5f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true, Clip = "charge" },
                 new Move { Name = "Sweep", Wind = 0.9f, Mult = 1.2f, Weight = 2, Poses = new[] { 1 }, Open = 1.8f, Phase2Only = true, Clip = "sweep" },
