@@ -64,6 +64,7 @@ namespace GameCore
             {
                 list.Add(("<color=#ff5a3a>BOSS</color> The Scrap King - sledgehammer duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.KingDuel(p)) }));   // Boss 5
                 list.Add(("<color=#ffb04a>JOB</color> The cathedral job - bell, Husk waves, then the Verger (short contract: 8 Husks)", new (string, System.Action)[] { ("Go", () => TestingGround.CathedralJobTest(p)) }));
+                list.Add(("<color=#ff5a3a>BOSS</color> The Singer - the warm wall (cover from the note, dive the grasp, parry the crush)", new (string, System.Action)[] { ("Fight", () => TestingGround.SingerFight(p)) }));   // 2026-11-21
                 list.Add(("<color=#ff5a3a>BOSS</color> Mother Hollow - the den mother (parry the bite, dive the pounce and the spit, her brood comes)", new (string, System.Action)[] { ("Fight", () => TestingGround.MotherHollowFight(p)) }));   // 2026-11-21
                 list.Add(("<color=#ff5a3a>BOSS</color> The Verger - the scythe duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.VergerDuel(p)) }));   // Boss 6
                 list.Add(("<color=#ff5a3a>BOSS</color> Spool - barbed wire bat duel (F parries)", new (string, System.Action)[] { ("Fight", () => TestingGround.SpoolDuel(p)) }));   // Boss 4

@@ -56,6 +56,7 @@ namespace GameCore
             public Move[] Moves;
             public string Phase2Line;
             public string Art;             // 2026-11-21: a creature boss drawn from Pixel Lab clips (BossArt.cs, BOSS_CONCEPTS_V3.md); null = a body with a held weapon
+            public bool Rooted;            // 2026-11-21 (the Singer): it never walks or steps into a blow
             public bool Creature;          // no weapon or armour to loot from it (its execution gives its own spoils)
             public System.Action<Player, HumanEnemy> Defeated;     // its own end (spoils, story), called by the execution
             public string PoseKey;         // 2026-11-21: his own pose set (HeldPoseMath.VisorPoses / VergerPoses), null = his weapon's
@@ -259,7 +260,7 @@ namespace GameCore
             if (f.Doing == null)
             {
                 if (now < f.OpenUntil) return;                                  // Visor 5: getting his breath back - he doesn't move
-                if (dist > 1 && now >= f.NextStep)
+                if (dist > 1 && now >= f.NextStep && !f.Def.Rooted)
                 {
                     f.NextStep = now + f.Def.StepSeconds * speed;
                     h.MoveToward(p.X, p.Y);
@@ -336,10 +337,12 @@ namespace GameCore
             if (fx == "howl") { Howl(f, p, Red(m, hi0)); return; }                                  // 2026-11-21: a sound, not a swing: it reaches across the room
             if (fx == "quake") { Quake(f, p, m, hi0); return; }                                      // a ring round him
             if (fx == "toll") { Toll(f); return; }
+            if (fx == "note") { f.StruckAt = Time.time; SingerBoss.Note(f, m, hi0); return; }          // 2026-11-21 the Singer
+            if (fx == "grasp") { f.StruckAt = Time.time; SingerBoss.Grasp(f, p, m, hi0); return; }
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)                                                   // 2026-11-21 the Verger: the blade rung on the stone
             f.StruckAt = Time.time;
-            StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
+            if (!f.Def.Rooted) StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
@@ -399,6 +402,7 @@ namespace GameCore
 
         public const float HookGap = 2.0f, DragStop = 0.9f;
         /// <summary>2026-11-20 (the Verger's Hook): the blade's beard catches you and hauls you in: a slide toward him (Rt.Shove: eased, walls and friends stop it) to just in front of him, and a moment on the floor.</summary>
+        public static void DragTo(HumanEnemy h, Player p, float maxTiles) => DragIn(h, p, maxTiles);
         internal static void DragIn(HumanEnemy h, Player p, float maxTiles)
         {
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);

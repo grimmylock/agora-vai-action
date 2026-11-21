@@ -33,7 +33,7 @@ namespace GameData
     {
         // Keyed exactly like WEAPON_DB in the JS: Categories["sidearm"]["PSh18Pchela"]
         /// <summary>2026-11-20: a boss's own weapons: in no shop and no random loadout (the Verger's scythe and claws).</summary>
-        public static readonly System.Collections.Generic.HashSet<string> Unique = new System.Collections.Generic.HashSet<string> { "VergerScythe", "VergerClaws", "MotherJaws" };
+        public static readonly System.Collections.Generic.HashSet<string> Unique = new System.Collections.Generic.HashSet<string> { "VergerScythe", "VergerClaws", "MotherJaws", "SingerHands" };
         public static readonly Dictionary<string, Dictionary<string, WeaponDef>> Categories =
             new Dictionary<string, Dictionary<string, WeaponDef>>
         {
@@ -51,6 +51,7 @@ namespace GameData
                 ["Hammer"] = new WeaponDef { Name = "Hammer", BaseDamage = 330, Range = "Adjacent", WeightKg = 0.7f, Tier = 3 },
                 ["FireAxe"] = new WeaponDef { Name = "Fire Axe", BaseDamage = 450, Range = "Adjacent", WeightKg = 2.0f, Tier = 3, IgnorePhysDRPercent = 0.1f },
                 ["Sledgehammer"] = new WeaponDef { Name = "Sledgehammer", BaseDamage = 650, Range = "Adjacent", WeightKg = 4.0f, Tier = 4, IgnorePhysDRPercent = 0.2f },
+                ["SingerHands"] = new WeaponDef { Name = "The Singer's Hands", BaseDamage = 240, Range = "Adjacent", WeightKg = 2.0f, Tier = 2 },   // 2026-11-21: the Singer's grasp and crush (SingerBoss.cs); never loot
                 ["MotherJaws"] = new WeaponDef { Name = "Mother's Jaws", BaseDamage = 220, Range = "Adjacent", WeightKg = 2.0f, Tier = 1 },   // 2026-11-21: Mother Hollow's bite (MotherHollow.cs); a creature's, never loot
                 ["VergerClaws"] = new WeaponDef { Name = "Beast Claws", BaseDamage = 600, Range = "Adjacent", WeightKg = 2.0f, Tier = 6 },   // 2026-11-20: the Verger's second form (BOSS_DESIGNS.md); not a pick-up, never in a loot table
                 ["VergerScythe"] = new WeaponDef { Name = "Verger's Scythe", BaseDamage = 560, Range = "Adjacent", WeightKg = 3.4f, Tier = 6, IgnorePhysDRPercent = 0.2f },   // 2026-11-20: the Verger's own (BOSS_ROSTER #14): a long war scythe, two-handed; drops with him, in no loot table

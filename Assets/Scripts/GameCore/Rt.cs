@@ -824,7 +824,8 @@ namespace GameCore
             Tier2Story.Tick(Time.deltaTime);                                       // Tier 2 beat 1 "Taken"
             CathedralJob.Tick(Time.deltaTime);                                     // the cathedral job: the bell, the waves, the Verger at the end
             SpoolBoss.Tick(Time.deltaTime);
-            MotherHollow.Tick(Time.deltaTime);                                     // 2026-11-21: the den mother in the Secret Cave                                        // Boss 4: Spool in the Dog Kennels
+            MotherHollow.Tick(Time.deltaTime);
+            SingerBoss.Tick(Time.deltaTime);                                       // 2026-11-21: the warm wall in the Valley Mine                                     // 2026-11-21: the den mother in the Secret Cave                                        // Boss 4: Spool in the Dog Kennels
             // (ChoirBoss.Tick retired 2026-11-20: the Choir is the cathedral job now, MISSION_CHOIR.md)
             Tier2Poi.Tick();                                                      // Tier 2 points of interest: papers + crews
             CrownJob.Tick(Time.deltaTime);                                         // Tier 2 "The Crown": the waves at the Nest, then the King

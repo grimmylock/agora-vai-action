@@ -129,6 +129,13 @@ namespace GameCore
             MotherHollow.Spawn(x, y, false);
         }
 
+        /// <summary>2026-11-21: the Singer on the range, 8 tiles in front of you (it never moves: find cover from its note).</summary>
+        public static void SingerFight(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 8, p.Y);
+            SingerBoss.Spawn(x, y, false);
+        }
+
         /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>
         public static void KingDuel(Player p)
         {

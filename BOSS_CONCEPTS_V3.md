@@ -73,7 +73,7 @@ Every fight below is built on what exists: `Boss.cs` (glints: white = parry, red
 | Boss | Concept stills | Animations | Total |
 |-|-|-|-|
 | Mother Hollow | 8 (1 bitforge test, 1 pixflux test, 4 pixflux with the Prowler as init, 1 inpaint try, 1 init with sacs painted in: the model would not draw belly sacs) | 8 (idle, walk, pounce, bite, howl, spit, hurt, death; all first try) | 16 |
-| The Singer | 2 | | 2 |
+| The Singer | 2 | 6 (idle, note, scream, grasp, hurt, death) | 8 |
 | The Ferryman | 2 | | 2 |
 | The Orderly | 4 (the first two drew a plain big man with an IV stand; the re-roll asked for the gauze-wrapped faceless head, the stitched grin, the long arm) | | 4 |
 | The Specimen, grown | 2 | | 2 |
@@ -86,3 +86,9 @@ Every fight below is built on what exists: `Boss.cs` (glints: white = parry, red
 - Drawn 0.75x (about 4 tiles long, 2 tall), turns toward the nearest player; the hurt clip plays when a hit lands between moves; the death clip plays at the break and holds.
 - Hit frames: picked from the silhouette's furthest reach, then bite/spit/pounce corrected by eye (`HIT` in the exporter). Timings are mine (wind-up slows into the hit).
 - NOT done: no sound of her own (the Gaunt's scream for the howl, a splash for the acid); the brood sacs; co-op sync; never run in Unity.
+
+## The Singer: BUILT (2026-11-21)
+`SingerBoss.cs`; Testing Ground > "BOSS The Singer"; harness `SingerChecks`; preview `maps/renders/bosses_v3/singer_in_mine.gif` (its clips at game scale over the Valley Mine render, at the Miners' Rest).
+- Rooted (`Boss.Def.Rooted`: never walks, never steps into a blow). Moves: Note (red: everyone within 14 tiles who can see it is hit, deafened 1.5 s and knocked down; cover breaks the line; a dive goes under), Grasp (red: a hand hauls the nearest player within 8 tiles 4 tiles toward the wall), Crush (white, at the wall: parry it); phase 2 the Scream (the Howl's cone) and the Chorus (two notes).
+- When: the Valley Mine, a player within 12 tiles of the Miners' Rest; once (`singer_done`). Spoils: the Singing Stone (2400 Ru). Its hands: The Singer's Hands (240, Tier 2), never loot.
+- Honest state: the art is the painted concept (the cave round the face included), so it is a rectangle 8 x 6 tiles stood at the head of the gallery: its edges show and it covers the top of the Miners' Rest floor. The idle clip has the lamps flare in its middle frames (reads as a pulse). The lamps as weak points and the face tearing open (the brief's phase 2) are NOT built. Never run in Unity.

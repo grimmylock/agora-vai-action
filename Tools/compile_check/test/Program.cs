@@ -101,6 +101,7 @@ static class Program {
     VergerChecks();
     VergerBeastChecks();
     MotherHollowChecks();
+    SingerChecks();
     CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
@@ -2874,6 +2875,31 @@ static class Program {
       p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has(MotherHollow.Done), "Mother Hollow: the execution sets mother_hollow_done");
       Check(h.Inventory.Items.Any(i => i.Name == MotherHollow.Trophy) && !h.Inventory.Items.Any(i => i.Type == "weapon") && h.EquippedWeapon == null, "Mother Hollow: her skull is on the body, no weapon to loot");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MotherHollow.Brood.Clear(); }
+  }
+  static void SingerChecks() {   // 2026-11-21: the Singer (SingerBoss.cs, BOSS_CONCEPTS_V3.md 2): a rooted wall; the note is blocked by cover, the grasp drags you in
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 94000f; UnityEngine.Time.unscaledTime = 94000f;
+    GameServices.Grid = new TacticalGridSystem();
+    try {
+      var D = SingerBoss.Def; var art = BossArt.Of(D.Art);
+      Check(art != null && D.Moves.All(m => m.Clip == null || art.Clips.ContainsKey(m.Clip)) && art.Clips.ContainsKey("idle"), "Singer: its clip table has idle and a clip for every move");
+      var f = Boss.Spawn(D, px + 6, py); var h = f.Unit; int hx0 = h.X, hy0 = h.Y;
+      Check(D.Rooted && h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "The Singer's Hands", "Singer: rooted, a Mutant, its hands as its weapon");
+      for (int i = 0; i < 600; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); }
+      Check(h.X == hx0 && h.Y == hy0, $"Singer: ten seconds of fighting and it has not moved ({h.X},{h.Y})");
+      void Reset(int dx, int dy) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = h.MaxHp; p.X = px + dx; p.Y = py + dy; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Rt.Of(p).ShoveFrom = -1f; Body.Reset(); }
+      void Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); h.Hp = h.MaxHp; } f.Doing = null; f.OpenUntil = -1f; }
+      var note = D.Moves.First(m => m.Name == "Note");
+      Reset(0, 0); Run(note); Check(p.Hp < p.MaxHp && Body.Concussed(p) && Rt.Of(p).ProneUntil > UnityEngine.Time.time - 1f, $"Singer: the Note hits you in the open six tiles away, deafens and knocks you down ({p.Hp}/{p.MaxHp})");
+      for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 3, y, TileType.Solid);   // a wall of timbers between you
+      Reset(0, 0); Run(note); Check(p.Hp == p.MaxHp && !Body.Concussed(p), "Singer: behind cover the Note goes past you");
+      for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 3, y, TileType.Empty);
+      Reset(0, 0); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(note); Check(p.Hp == p.MaxHp, "Singer: a dive goes under the Note");
+      Reset(-10, 0); Run(note); Check(p.Hp == p.MaxHp, "Singer: past its range (16 tiles) the Note is only a sound");
+      var grasp = D.Moves.First(m => m.Name == "Grasp");
+      Reset(1, 0); var (bx, by) = Ballistics.Pos(p); Run(grasp); for (int i = 0; i < 60; i++) { UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.deltaTime = 1f / 60f; Rt.PlayerTick(p, new Rt.Input()); }
+      var (ax, ay) = Ballistics.Pos(p); Check(p.Hp < p.MaxHp && ax > bx + 1f, $"Singer: the Grasp hits and hauls you toward the wall ({bx:0.0} -> {ax:0.0})");
+      h.Hp = 1; Boss.OnDamaged(h); p.X = h.X - 1; p.Y = h.Y; Check(f.Broken && Boss.TryFinish(p) && Story.Has(SingerBoss.Done) && h.Inventory.Items.Any(i => i.Name == SingerBoss.Trophy), "Singer: broken, executed, singer_done, the Singing Stone on it");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
   }
   static void VergerBeastChecks() {   // 2026-11-20: the Verger's PARKED beast form (Boss.VergerBeast, 2026-11-21: out of the game, kept working): a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
