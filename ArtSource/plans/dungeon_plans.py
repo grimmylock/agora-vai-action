@@ -548,6 +548,7 @@ def hospital_morgue():
     p.g[36][11] = '5'                                              # the boiler switch
     p.g[5][42] = 'K'; p.g[22][43] = 'L'                            # stashes: the records safe (the goal), the linen store
     p.g[3][23] = 'E'; p.g[22][11] = 'C'; p.g[22][29] = 'A'; p.g[39][24] = 'B'; p.g[4][39] = 'G'
+    p.g[20][42] = 'U'; p.g[23][41] = 'X'; p.g[20][15] = 'Y'; p.g[38][30] = 'Q'      # 2026-11-21 (the stalker): lair marks in the rooms you hide from it in (DungeonLairs: one mutant each, to be taken out with melee)
     scatter(p, 70, what="**~%\";&&'x")      # 2026-11-21: blood, bones and grime everywhere (it was 20 mixed bits)
     return p
 def morgue_check(p): return badge_power_check(p, loop=[(x, 20) for x in range(18, 22)], loop_name="the service hole")

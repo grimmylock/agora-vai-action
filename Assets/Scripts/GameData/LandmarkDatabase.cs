@@ -421,6 +421,10 @@ namespace GameData
             ["hospital_morgue"] = new List<LandmarkDef>
             {
                 L("Morgue Landing", "The stairs end at a tiled landing. It's cold down here, colder than it should be."),
+                L("Cold Room Slabs", "A row of steel slabs, one of them not empty."),
+                L("Ward Bed", "A bed frame with its straps still buckled."),
+                L("Ward Corner", "The far corner of the linen ward, where the lamps do not reach."),
+                L("Boiler Pipes", "Warm pipes, and a shape between them."),
                 L("Cold Room", "Steel drawers along both walls, some of them open."),
                 L("Autopsy Theatre", "Two steel tables under dead lamps."),
                 L("Boiler Room", "The hospital's boilers and the service corridor round them."),

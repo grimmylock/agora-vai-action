@@ -43,8 +43,8 @@ namespace GameCore
         static bool _spawnedHere; static string _map;
         public const string MorgueZone = "hospital_morgue";
         public const float PatrolStep = 0.62f, HuntStep = 0.29f, Sight = 18f, FootstepRange = 6f, GiveUpAfter = 6f, RetreatFor = 9f;   // seconds per tile (walk 2.6 t/s = 0.38, sprint 4.4 = 0.23)
-        public static readonly Boss.Move CatchMove = new Boss.Move { Name = "Catch", Wind = 0.7f, Danger = true, MaxDist = 2f, Mult = 0.7f, Effects = new[] { "slab" }, Weight = 0, Open = 1.2f, Clip = "grab" };
-        class St { public int Mode; public (int x, int y) Wp; public float NextStep, WaitUntil, StuckAt, LoseAt, RetreatUntil, CatchAt; public (int x, int y)? Heard; public Player Target; public bool Catching; public (int x, int y) LastSeen; public bool HasWp; public int Stuck; }
+        public static readonly Boss.Move CatchMove = new Boss.Move { Name = "Catch", Wind = 0.7f, Danger = true, MaxDist = 2f, Mult = 1.6f, Effects = new[] { "slab" }, Weight = 0, Open = 1.2f, Clip = "grab" };   // (Yan: a noise hunt "kills you": the catch is near lethal)
+        class St { public int Mode; public (int x, int y) Wp; public float NextStep, WaitUntil, StuckAt, LoseAt, RetreatUntil, CatchAt; public (int x, int y)? Heard; public bool HeardShot; public Player Target; public bool Catching; public (int x, int y) LastSeen; public bool HasWp; public int Stuck; }
         // modes: 0 patrol, 1 investigate, 2 hunt, 3 retreat
         static readonly Dictionary<Boss.Fight, St> _st = new Dictionary<Boss.Fight, St>();
         static readonly List<(int x, int y)> _wps = new List<(int, int)>();
@@ -65,15 +65,13 @@ namespace GameCore
             SpawnStalker(); _spawnedHere = true;
         }
 
-        /// <summary>The roaming points: the morgue's named rooms (and a few tiles round them), each a walkable tile.</summary>
+        /// <summary>The roaming points (Yan: "patrolling the corridors and you use the rooms to dodge it"): tiles of the morgue's two corridors (dungeon_plans.py hospital_morgue: the long corridor along y 10, the service corridor
+        /// along y 30). The service corridor lies behind the theatre's badge door: until it is open the pathfinding finds no way there and the stalker keeps to the long one. Rooms are never waypoints; it only goes into one to hunt or to look.</summary>
+        static readonly (int x, int y)[] CorridorPoints = { (5, 10), (13, 10), (21, 10), (29, 10), (37, 10), (42, 10), (8, 30), (16, 30), (24, 30), (32, 30), (40, 30) };
         static void BuildWaypoints()
         {
             _wps.Clear();
-            foreach (var n in new[] { "Morgue Landing", "Cold Room", Lair, "Boiler Room", "Records Room" })
-            {
-                var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == n); if (l == null) continue;
-                var pt = TerrainMap.FindNearestEnterable(l.X, l.Y); if (!_wps.Contains(pt)) _wps.Add(pt);
-            }
+            foreach (var (x, y) in CorridorPoints) { if (x >= TerrainMap.Width || y >= TerrainMap.Height) continue; var pt = TerrainMap.FindNearestEnterable(x, y); if (!_wps.Contains(pt) && System.Math.Max(System.Math.Abs(pt.x - x), System.Math.Abs(pt.y - y)) <= 2) _wps.Add(pt); }
         }
         /// <summary>For the Testing Ground (no morgue): six walkable points on a ring round (cx, cy).</summary>
         public static void RingWaypoints(int cx, int cy, int r)
@@ -119,7 +117,7 @@ namespace GameCore
         public static void Heard(int x, int y, int radius, ICombatant source)
         {
             if (!(source is Player)) return;
-            foreach (var f in Boss.Fights) { if (f.Def != Def || !f.Stalking || f.Gone) continue; var st = State(f); if (st.Mode >= 2) continue; if (CombatantUtil.Distance(f.Unit, x, y) > radius) continue; st.Mode = 1; st.Heard = TerrainMap.FindNearestEnterable(x, y); st.HasWp = false; f.Unit.Alert = Mathf.Max(f.Unit.Alert, 0.55f); }
+            foreach (var f in Boss.Fights) { if (f.Def != Def || !f.Stalking || f.Gone) continue; var st = State(f); if (st.Mode >= 2) continue; if (CombatantUtil.Distance(f.Unit, x, y) > radius) continue; st.Mode = 1; st.Heard = TerrainMap.FindNearestEnterable(x, y); st.HeardShot = true; st.HasWp = false; f.Unit.Alert = Mathf.Max(f.Unit.Alert, 0.55f); }   // a shot: it RUNS there
         }
 
         /// <summary>Boss.Tick while it roams and nothing is in progress: senses, then patrol / investigate / hunt / retreat.</summary>
@@ -158,7 +156,7 @@ namespace GameCore
                 h.SpottedAt = now;
                 int dist = CombatantUtil.Distance(h, t);
                 if (dist <= 1 && now >= st.CatchAt) { st.CatchAt = now + 4f; st.Catching = true; Boss.Begin(f, CatchMove, now, 1f); return; }
-                if (now >= st.LoseAt) { st.Mode = 1; st.Heard = st.LastSeen; st.HasWp = false; h.IsAggroed = false; h.Alert = 0.6f; return; }   // lost you: go to where it last saw you
+                if (now >= st.LoseAt) { st.Mode = 1; st.Heard = st.LastSeen; st.HeardShot = false; st.HasWp = false; h.IsAggroed = false; h.Alert = 0.6f; return; }   // lost you: go to where it last saw you
                 if (now >= st.NextStep && dist > 1) { st.NextStep = now + HuntStep; h.MoveToward(t.X, t.Y); }
                 return;
             }
@@ -166,8 +164,8 @@ namespace GameCore
             if (st.Mode == 1 && st.Heard != null)
             {
                 var hp = st.Heard.Value; int dd = CombatantUtil.Distance(h, hp.x, hp.y);
-                if (dd <= 1) { st.Heard = null; st.WaitUntil = now + 3f; }
-                else if (now >= st.NextStep) { st.NextStep = now + PatrolStep * 0.8f; h.MoveToward(hp.x, hp.y); }
+                if (dd <= 1) { st.Heard = null; st.HeardShot = false; st.WaitUntil = now + 3f; }
+                else if (now >= st.NextStep) { st.NextStep = now + (st.HeardShot ? HuntStep : PatrolStep * 0.8f); h.MoveToward(hp.x, hp.y); }
                 return;
             }
             if (st.Mode == 1) { if (now >= st.WaitUntil) st.Mode = 0; return; }

@@ -106,6 +106,7 @@ static class Program {
     FerrymanChecks();
     LateBossChecks();
     StalkerChecks();
+    MorgueStalkChecks();
     CreatureBossClipChecks();
     BossHitboxChecks();
     CathedralJobChecks();
@@ -2991,16 +2992,17 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 96000f; UnityEngine.Time.unscaledTime = 96000f; UnityEngine.Time.deltaTime = 1f / 60f;
     GameServices.Grid = new TacticalGridSystem();
     try {
-      OrderlyBoss.RingWaypoints(px + 6, py, 3); var f = OrderlyBoss.SpawnStalker(); var h = f.Unit; Rt.SetOffset(h, 0f, 0f);
+      OrderlyBoss.RingWaypoints(px + 7, py, 2); var f = OrderlyBoss.SpawnStalker(); var h = f.Unit; Rt.SetOffset(h, 0f, 0f);
       Check(f.Stalking && !h.IsAggroed && Boss.DamageScale(h) == 0f && Boss.Current != f, "Stalker: it starts roaming, unaware, takes no damage and shows no boss bar");
-      for (int y = py - 4; y <= py + 4; y++) TerrainMap.SetTileType(px + 3, y, TileType.Solid);   // a wall between you and it
+      for (int y = py - 7; y <= py + 7; y++) TerrainMap.SetTileType(px + 3, y, TileType.Solid);   // a wall between you and it, the whole height of the arena
       p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); h.X = px + 7; h.Y = py; int x0 = h.X, y0 = h.Y;
-      void Run(float seconds) { for (int i = 0; i < (int)(seconds * 60); i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = System.Math.Max(1, p.Hp); Boss.Tick(f, p); } }
-      Run(25f);
-      Check(!h.IsAggroed && h.Alert < 0.5f && (h.X != x0 || h.Y != y0), $"Stalker: behind a wall, you unnoticed, it wanders on ({x0},{y0}) -> ({h.X},{h.Y}), notice {h.Alert:0.00} {OrderlyBoss.DebugState(f)}");
-      for (int y = py - 4; y <= py + 4; y++) TerrainMap.SetTileType(px + 3, y, TileType.Empty);
+      Check(!GameServices.Grid.CheckLineOfSight(h.X, h.Y, p.X, p.Y), "Stalker (test): the wall blocks line of sight");
+      bool wandered = false; void Run(float seconds) { for (int i = 0; i < (int)(seconds * 60); i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = System.Math.Max(1, p.Hp); Boss.Tick(f, p); if (h.X != x0 || h.Y != y0) wandered = true; } }
+      Run(45f);
+      Check(!h.IsAggroed && h.Alert < 0.5f && wandered, $"Stalker: behind a wall, you unnoticed, it wanders on ({x0},{y0}) -> ({h.X},{h.Y}), notice {h.Alert:0.00} {OrderlyBoss.DebugState(f)}");
+      for (int y = py - 7; y <= py + 7; y++) TerrainMap.SetTileType(px + 3, y, TileType.Empty);
       Noise.Make(px + 2, py, 20, p);
-      Check(h.Alert >= 0.5f, $"Stalker: a shot at {h.X - px} tiles makes it go and look (notice {h.Alert:0.00})");
+      Check(h.Alert >= 0.5f, $"Stalker: a shot at {h.X - px} tiles makes it go and look (notice {h.Alert:0.00}) {OrderlyBoss.DebugState(f)} at ({h.X},{h.Y}) shot ({px + 2},{py}) stalking {f.Stalking}");
       h.Alert = 0f; h.X = px + 7; h.Y = py; Rt.SetOffset(h, 0f, 0f);
       for (int i = 0; i < 60 * 40 && !h.IsAggroed; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); }
       Check(h.IsAggroed, "Stalker: in plain sight, standing still, its notice fills and it hunts");
@@ -3014,6 +3016,29 @@ static class Program {
       p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; p.X = h.X - 3; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f); h.Hp = h.MaxHp; bool moved = false; int hx = h.X, hy = h.Y;
       for (int i = 0; i < 60 * 20; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = System.Math.Max(1, p.Hp); Boss.Tick(f, p); if (h.X != hx || h.Y != hy) moved = true; }
       Check(moved, "Stalker: after the stalk the Orderly proper walks at you and fights");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
+  }
+  static void MorgueStalkChecks() {   // 2026-11-21: the stalker on the REAL Hospital Morgue map: it patrols the corridors, the rooms hide you, a shot in a room brings it running there
+    GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;
+    var p = Player.Current; Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 98000f; UnityEngine.Time.unscaledTime = 98000f; UnityEngine.Time.deltaTime = 1f / 60f;
+    try {
+      MacroState.Current.CurrentZoneId = "hospital_morgue"; TerrainMap.BuildTerrainForZone("hospital_morgue"); GameServices.Grid = new TacticalGridSystem(); EncounterState.Enemies.Clear(); Rt.Reset(); Boss.Reset();
+      OrderlyBoss.OnEnterZone("hospital_morgue"); p.X = 11; p.Y = 22; Rt.SetOffset(p, 0f, 0f);   // you hide in the cold room
+      OrderlyBoss.Tick(1f / 60f); var f = Boss.Fights.FirstOrDefault(x => x.Def == OrderlyBoss.Def); Check(f != null && f.Stalking, "Morgue stalker: it spawns as a stalker when you enter the morgue");
+      if (f == null) return; var h = f.Unit; var seenCells = new HashSet<(int, int)>(); int inCorr = 0, total = 0, inRooms = 0; float maxAlert = 0f; bool hunted = false;
+      bool Corr(int x, int y) => (y >= 8 && y <= 12 && x >= 3 && x <= 44) || (y >= 29 && y <= 32 && x >= 5 && x <= 42) || (x >= 9 && x <= 12 && y >= 12 && y <= 16) || (x >= 27 && x <= 30 && y >= 12 && y <= 16) || (x >= 37 && x <= 40 && y >= 6 && y <= 9) || (x >= 22 && x <= 25 && y >= 6 && y <= 9) || (x >= 41 && x <= 43 && y >= 12 && y <= 16) || (x >= 27 && x <= 30 && y >= 26 && y <= 29) || (x >= 21 && x <= 24 && y >= 31 && y <= 35);
+      var trace = new System.Collections.Generic.List<string>();
+      for (int i = 0; i < 60 * 300; i++) {
+        UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); OrderlyBoss.Tick(1f / 60f);
+        if (i % 30 == 0) { trace.Add(h.X + "\t" + h.Y); total++; if (Corr(h.X, h.Y)) inCorr++; else inRooms++; seenCells.Add((h.X / 4, h.Y / 4)); maxAlert = System.Math.Max(maxAlert, h.Alert); if (h.IsAggroed) hunted = true; }
+      }
+      System.IO.File.WriteAllLines("/tmp/stalk_path.tsv", trace);
+      Console.WriteLine($"   morgue stalker: {total} samples, {inCorr} in corridors, {inRooms} elsewhere, {seenCells.Count} map cells visited, max notice {maxAlert:0.00}, hunted {hunted}, ended at ({h.X},{h.Y})");
+      Check(total > 0 && inCorr >= total * 0.9f && seenCells.Count >= 6, "Morgue stalker: five minutes on patrol: it keeps to the corridors and covers them");
+      Check(!hunted && maxAlert < 0.7f, $"Morgue stalker: you hiding in the cold room, it does not find you (notice {maxAlert:0.00})");
+      h.X = 20; h.Y = 10; Rt.SetOffset(h, 0f, 0f); Noise.Make(p.X, p.Y, 20, p); int d0 = CombatantUtil.Distance(h, p); float t0 = UnityEngine.Time.time; bool arrived = false;
+      for (int i = 0; i < 60 * 40 && !arrived; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); if (CombatantUtil.Distance(h, p) <= 3) arrived = true; }
+      Check(arrived, $"Morgue stalker: a shot in the cold room brings it there ({d0} tiles, {UnityEngine.Time.time - t0:0} s) now at ({h.X},{h.Y}) {OrderlyBoss.DebugState(f)} door tile enterable {TerrainMap.CanEnterTile(10, 14)} {TerrainMap.CanEnterTile(11, 14)} type {TerrainMap.GetTile(10, 14)?.Type}");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
   }
   static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
