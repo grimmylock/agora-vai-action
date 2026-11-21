@@ -1,4 +1,4 @@
-# The morgue set (2026-11-21; Yan: "make the lab/hospital where he's located be something scary too, straight out of silent hill"). Drawn like the cathedral set (props_cathedral.py helpers,
+# The morgue set, v2 (2026-11-21, Yan: "the silent hill props do not look great right now"): Pixel Lab pixflux drawings (world/morgue_pl/run.sh, picks below), area-shrunk to prop size and re-palettised. The first, hand-drawn set is props_morgue_handdrawn.py. (v1 note:  Yan: "make the lab/hospital where he's located be something scary too, straight out of silent hill"). Drawn like the cathedral set (props_cathedral.py helpers,
 # double density: a tile is 32 sprite px, every surface lit). Looks: gurney, bodybag, wheelchair, bedframe, ivstand, hangbag. Registered into props.PROPS by props.py.
 import numpy as np
 from PIL import Image, ImageDraw
@@ -96,6 +96,29 @@ def hangbag(seed):
     for y in range(66, 72): im.putpixel((11, y), BLOOD[3]) if y % 2 == 0 else None
     d.ellipse([8, 70, 15, 73], fill=BLOOD[1])
     return finish2(im, (11, 71), (16, 4, 1, 0), tall=True)
+
+
+import os
+_HERE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "morgue_pl")
+# name: (picked take, width in sprite px at scale 2 (32 px a tile), pivot y as the share of the height, shadow, tall)
+PICKS = {"gurney": (12, 40, 0.93, (30, 6, 1, -1), False), "bodybag": (11, 38, 0.9, (28, 5, 1, -1), False), "wheelchair": (12, 32, 0.93, (26, 5, 1, -1), False),
+         "bedframe": (12, 36, 0.95, (30, 5, 1, -1), False), "ivstand": (12, 16, 0.97, (14, 4, 1, -1), True), "hangbag": (12, 24, 0.97, (16, 4, 1, 0), True)}
+
+def _prop(name):
+    take, wpx, py, shadow, tall = PICKS[name]; src = Image.open(os.path.join(_HERE, f"{name}_{take}.png")).convert("RGBA")
+    a = np.array(src); ys, xs = np.where(a[..., 3] > 0); src = src.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    h = max(2, round(src.height * wpx / src.width)); im = src.resize((wpx, h), Image.BOX)
+    arr = np.array(im); al = arr[..., 3] >= 110
+    q = Image.fromarray(arr[..., :3]).quantize(colors=28, method=Image.MEDIANCUT, dither=Image.NONE).convert("RGB"); out = np.dstack([np.array(q), np.where(al, 255, 0).astype(np.uint8)]); out[~al] = 0
+    im = Image.fromarray(out.astype(np.uint8), "RGBA")
+    return finish2(im, (im.width // 2, int(im.height * py)), shadow, tall=tall)
+
+def gurney(seed): return _prop("gurney")
+def bodybag(seed): return _prop("bodybag")
+def wheelchair(seed): return _prop("wheelchair")
+def bedframe(seed): return _prop("bedframe")
+def ivstand(seed): return _prop("ivstand")
+def hangbag(seed): return _prop("hangbag")
 
 NEW = {"gurney": gurney, "bodybag": bodybag, "wheelchair": wheelchair, "bedframe": bedframe, "ivstand": ivstand, "hangbag": hangbag}
 VARIANTS = {k: 1 for k in NEW}
