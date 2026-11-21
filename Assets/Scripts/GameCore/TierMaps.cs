@@ -467,7 +467,7 @@ namespace GameCore
             // the Sunken Tanker: the hull half under water, a dry deck to shoot from
             c.Rect(138, 36, 8, 3, Solid, 0, "hull");
             c.Rect(139, 37, 6, 1, Empty, 2, "platform");
-            c.Ramp(146, 37, 1, 0, 1, 2, 0, 1, "platform");
+            c.Ramp(145, 37, 1, 0, 2, 2, 0, 1, "platform");   // 2026-11-21 world QA: from the hull's east end (it started outside the hull wall: the deck was out of reach)
             c.Clear(147, 35, 1, 5, Mud);
             c.Landmark("Sunken Tanker", 141, 36);
             // the Reed Blind on the east bank
@@ -743,7 +743,7 @@ namespace GameCore
             c.Road(3, Dirt, (160, 84), (160, 98));
             // The Maze (place B): canyons of stacked wrecks
             c.Stamp("The Maze", 112, 100, 6, "junk", Dirt, 0, "tires");
-            c.Landmark("The Maze", 140, 124);
+            c.Landmark("The Maze", 140, 138);   // 2026-11-21 world QA: on the open middle lane (it was on a stack of wrecks)
             // the Scrap King's Nest: the tallest heap, a car-door shack on top - the Raiders' yard
             c.Blob(186, 108, 8, Solid, 3, 0.35f, "junk");
             c.Rect(184, 105, 5, 5, Empty, 5, "platform"); c.Ramp(186, 117, 0, -1, 8, 0, 5, 2);
@@ -891,7 +891,7 @@ namespace GameCore
             // the stranded ferry, beached on the lakebed when the water went
             c.Rect(50, 40, 24, 8, Solid, 0, "hull");
             c.Rect(52, 42, 20, 4, Empty, 2, "platform");
-            c.Ramp(62, 48, 0, -1, 2, 0, 2, 2, "platform");
+            c.Ramp(62, 48, 0, -1, 3, 0, 2, 2, "platform");   // 2026-11-21 world QA: 3 long (2 stopped at the hull wall, the deck was out of reach)
             c.Put(73, 44, Door, "metal");
             c.Landmark("Stranded Ferry", 75, 44).Exit("stranded_ferry", 73, 44);
             // the lakeside holiday camp on the old west shore (place C)
@@ -932,7 +932,7 @@ namespace GameCore
             c.Clear(130, 44, 40, 4, Concrete); c.Landmark("Freight Platform", 150, 45);
             // Container Stacks (place B): firing lanes between the stacks
             c.Stamp("Container Stacks", 112, 66, 4, "container", Gravel);
-            c.Landmark("Container Stacks", 148, 80);
+            c.Landmark("Container Stacks", 148, 82);   // 2026-11-21 world QA: in the lane, not inside a container
             // the Roundhouse: the Contractors' staging point
             c.Clear(118, 108, 44, 20, Concrete, false);
             c.Stamp("Roundhouse", 120, 110, 4, "wall", Concrete, 0, "crate");
@@ -1288,8 +1288,9 @@ namespace GameCore
             c.Rect(10, 56, 1, 38, Solid, -3, "concrete"); c.Rect(47, 56, 1, 38, Solid, -3, "concrete");
             c.Rect(20, 64, 18, 20, Solid, -1, "hull");
             TerraceRamp(c, 29, 98, 0, -1, 6, 0, -3);
+            c.Rect(42, 86, 5, 5, Solid, -3, "concrete");      // 2026-11-21 world QA: the pump house round the tunnel door (the door stood alone in the pit)
             c.Put(44, 90, Door, "metal");
-            c.Landmark("Dry Dock", 29, 88).Landmark("Dock Pump House", 44, 88).Exit("drydock_tunnels", 44, 90);
+            c.Landmark("Dry Dock", 29, 88).Landmark("Dock Pump House", 44, 91).Exit("drydock_tunnels", 44, 90);
             // ship small finds
             Tower(c, 6, 98, 6);
             c.Landmark("Lighthouse", 6, 102);
@@ -1396,7 +1397,7 @@ namespace GameCore
             c.Clear(110, 120, 40, 30, Concrete);
             c.Rect(122, 121, 4, 4, Solid, 1, "fountain");   // (2026-11-20: moved up to make room for the cathedral on the plaza's south side)
             c.Put(114, 124, HardCover, "busstop").Put(146, 124, HardCover, "dumpster").Put(118, 144, ScatterCover, "trash");
-            c.Landmark("Central Plaza", 130, 123);
+            c.Landmark("Central Plaza", 120, 122);   // 2026-11-21 world QA: off the cathedral's roof, onto the open square
             // 2026-11-20 the Abandoned Cathedral (MISSION_CHOIR.md). Two builds, one switch: PaintedCathedral = true is the painted set-piece prop (ArtSource/world/props_cathedral_exterior.py); false is the little castle built from the
             // gothic wall tiles (Yan: "can't we build a little castle shaped thing with the gothic wall tiles"): a cross-shaped nave and transept with an apse, stained windows on the south faces (the two detached front towers were dropped: "not needed").
             if (PaintedCathedral)
@@ -1460,7 +1461,7 @@ namespace GameCore
             c.Rect(196 - 8, 186, 6, 5, Solid, 0, "plaster");
             c.Put(186, 192, HardCover, "dumpster");
             c.Stash("Kiosk", 187, 192);
-            c.Landmark("Kiosk", 187, 195);
+            c.Landmark("Kiosk", 187, 193);   // 2026-11-21 world QA: off the map's edge wall
 
             // ================================================================ THE SIEGE WARD
             for (int x = 62; x <= 198; x++)
@@ -1506,7 +1507,7 @@ namespace GameCore
             // ================================================================ THE ANOMALOUS EPICENTER
             c.Ring(28, 110, 22, 26, Solid, 2, "cliff");
             foreach (var (gx, gy) in new[] { (54, 108), (28, 86), (28, 134), (4, 110) }) c.Blob(gx, gy, 3, Empty, 0, 0.1f);
-            c.Landmark("The Crater Rim", 50, 100);
+            c.Landmark("The Crater Rim", 52, 98);   // 2026-11-21 world QA: on the rim path, not inside the rock
             c.HeightBlob(28, 110, 18, -2);
             c.HeightBlob(28, 110, 10, -4);
             c.PaintBlob(28, 110, 16, Mud);

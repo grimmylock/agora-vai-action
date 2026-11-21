@@ -169,6 +169,9 @@ static class MapQa {
         bool nsP = Pass(x, y - 1) && Pass(x, y + 1) && Wall(x - 1, y) && Wall(x + 1, y), ewP = Pass(x - 1, y) && Pass(x + 1, y) && Wall(x, y - 1) && Wall(x, y + 1);
         bool wide = (Wall(x - 1, y) || TerrainMap.GetTile(x - 1, y).Type == TileType.Door || TerrainMap.GetTile(x - 1, y).Type == TileType.DoorOpen) && (Wall(x + 1, y) || TerrainMap.GetTile(x + 1, y).Type == TileType.Door || TerrainMap.GetTile(x + 1, y).Type == TileType.DoorOpen) && Pass(x, y - 1) && Pass(x, y + 1)
                  || (Wall(x, y - 1) || TerrainMap.GetTile(x, y - 1).Type == TileType.Door || TerrainMap.GetTile(x, y - 1).Type == TileType.DoorOpen) && (Wall(x, y + 1) || TerrainMap.GetTile(x, y + 1).Type == TileType.Door || TerrainMap.GetTile(x, y + 1).Type == TileType.DoorOpen) && Pass(x - 1, y) && Pass(x + 1, y);
+        bool IsDoor(int ax, int ay) { var at = TerrainMap.GetTile(ax, ay); return at != null && (at.Type == TileType.Door || at.Type == TileType.DoorOpen); }
+        int l = x, r = x, u = y, dn = y; while (IsDoor(l - 1, y)) l--; while (IsDoor(r + 1, y)) r++; while (IsDoor(x, u - 1)) u--; while (IsDoor(x, dn + 1)) dn++;
+        wide |= Wall(l - 1, y) && Wall(r + 1, y) && Pass(x, y - 1) && Pass(x, y + 1) || Wall(x, u - 1) && Wall(x, dn + 1) && Pass(x - 1, y) && Pass(x + 1, y);   // a double / quadruple door: the run of doors is set in the wall
         if (!ns && !ew && !nsP && !ewP && !wide) lines.Add($"DOOR\t{x}\t{y}\t1\t1\t{t.Look ?? t.Type.ToString()} not set in a wall between two walkable sides");
         else if (!ns && !ew && (nsP || ewP)) lines.Add($"BLOCKED\t{x}\t{y}\t1\t1\tdoorway {t.Look} has cover or a prop against it");
       }

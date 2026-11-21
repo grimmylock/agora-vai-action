@@ -291,7 +291,27 @@ namespace GameCore
                                     break;
                                 case '=': Set(x, y, TileType.HardCover, baseHeight, hardLook); break;
                                 case '~': Set(x, y, TileType.Difficult, baseHeight, null); break;
-                                case 'D': Set(x, y, TileType.Door, baseHeight, wallLook == "concrete" ? "metal" : null); break;
+                                case 'D':
+                                    if (scale >= 2)
+                                    {   // 2026-11-21 world QA: a scaled-up door was a scale x scale block of door tiles (walkable 'building fronts', 3x3 / 4x4 doors). Now one doorway through the thick wall:
+                                        // the middle line across the block is the passage, the rest of it wall
+                                        bool W(int ax, int ay) => ay >= 0 && ay < rows.Length && ax >= 0 && ax < rows[ay].Length && rows[ay][ax] == '#';
+                                        bool O(int ax, int ay) => ay >= 0 && ay < rows.Length && ax >= 0 && ax < rows[ay].Length && "#CcH=T".IndexOf(rows[ay][ax]) < 0;   // open floor (cover, machines and crates count as closed)
+                                        bool wl = W(gx - 1, gy), wr = W(gx + 1, gy), wu = W(gx, gy - 1), wd = W(gx, gy + 1);
+                                        bool oL = O(gx - 1, gy), oR = O(gx + 1, gy), oU = O(gx, gy - 1), oD = O(gx, gy + 1);
+                                        // the passage's axis: between open floor on two opposite sides (a door in a wall line), or, with open floor on one side only and a wall opposite (a shop front on a solid block), toward that wall with the door flush against it
+                                        bool ns = oU && oD && !(oL && oR), ew = oL && oR && !(oU && oD);
+                                        int at = scale / 2;
+                                        if (!ns && !ew && (oU ^ oD) && (oU ? wd : wu)) { ns = true; at = wu ? 0 : scale - 1; }
+                                        else if (!ns && !ew && (oL ^ oR) && (oL ? wr : wl)) { ew = true; at = wl ? 0 : scale - 1; }
+                                        if (ns || ew)
+                                        {
+                                            int mid = scale / 2, across = ns ? sx : sy, along = ns ? sy : sx;
+                                            if (across != mid) { Set(x, y, TileType.Solid, baseHeight, wallLook); break; }
+                                            if (along != at) { Set(x, y, TileType.Empty, baseHeight, null); break; }
+                                        }
+                                    }
+                                    Set(x, y, TileType.Door, baseHeight, wallLook == "concrete" ? "metal" : null); break;
                                 case '^': Set(x, y, TileType.Empty, baseHeight + 2, "platform"); break;
                                 case 'H': Set(x, y, TileType.Solid, baseHeight, "machine"); break;
                                 case 'T': Set(x, y, TileType.ScatterCover, baseHeight, "crate"); break;

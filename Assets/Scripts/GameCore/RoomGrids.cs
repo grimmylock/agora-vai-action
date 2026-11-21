@@ -14,7 +14,7 @@ namespace GameCore
             {
                 "E.#.#..#..",
                 "#.#.#.#.#.",
-                ".......#..",
+                "..........",                // 2026-11-21 world QA: was ".......#..", which sealed the cell above it (a walled lot nobody could reach)
                 "#.###.#.##",
                 "....#.....",
                 "#.#.#.##.#",
@@ -134,10 +134,10 @@ namespace GameCore
             ["The Trenches"] = new[]
             {
                 "......C......C.......",
-                "~~~D~~~~~D~~~~~D~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~",       // 2026-11-21 world QA: the junctions were 'D' (at scale 4 a 4x4 block of doors standing in the trench, drawn as a shed); now open trench
                 "###~#####~#####~#####",
                 "###~#####~#####~#####",
-                "~~~D~~~~~D~~~~~D~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~",
                 "......C......C.......",
                 ".....................",
             },
