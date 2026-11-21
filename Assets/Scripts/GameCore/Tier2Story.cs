@@ -350,7 +350,7 @@ namespace GameCore
 
         static Dictionary<(int, int), int> _stageDist; static int _stageWallY;
         /// <summary>Path distances (4-neighbour steps over enterable tiles) from the Broken Wall; the tiles at least 8 rows below it are the passage behind the wall, the ones the corridor itself never reaches (2026-11-21).</summary>
-        static (int x, int y)? StageBeyond(LandmarkInstance bw)
+        internal static (int x, int y)? StageBeyond(LandmarkInstance bw)
         {
             var d = new Dictionary<(int, int), int>(); var q = new Queue<(int, int)>(); var st = TerrainMap.FindNearestEnterable(bw.X, bw.Y); q.Enqueue(st); d[st] = 0;
             while (q.Count > 0) { var (cx, cy) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = cx + dx, ny = cy + dy; if (d.ContainsKey((nx, ny)) || nx < 1 || ny < 1 || nx >= TerrainMap.Width - 1 || ny >= TerrainMap.Height - 1 || !TerrainMap.CanEnterTile(nx, ny)) continue; d[(nx, ny)] = d[(cx, cy)] + 1; q.Enqueue((nx, ny)); } }
@@ -359,7 +359,7 @@ namespace GameCore
             return beyond == null ? ((int x, int y)?)null : (beyond.Value.Item1, beyond.Value.Item2);
         }
         /// <summary>Where wave `i` waits (0..3): further and further down the passage behind the wall, 8 steps apart, starting 8 steps past where the Gaunt waits.</summary>
-        static (int x, int y) StageAt(int i)
+        internal static (int x, int y) StageAt(int i)
         {
             int want = 32 + 8 * i; var c = _stageDist.Where(kv => kv.Key.Item2 >= _stageWallY + 8 && kv.Value >= want).OrderBy(kv => kv.Value).Select(kv => ((int, int)?)kv.Key).FirstOrDefault();
             if (c == null) c = _stageDist.Where(kv => kv.Key.Item2 >= _stageWallY + 8).OrderByDescending(kv => kv.Value).Select(kv => ((int, int)?)kv.Key).FirstOrDefault();

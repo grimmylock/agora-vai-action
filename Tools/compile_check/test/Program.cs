@@ -2682,10 +2682,14 @@ static class Program {
       // the door scene
       var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); EncounterState.Enemies.Clear(); p.X = door.X; p.Y = door.Y + 1; p.Hp = p.MaxHp;
       Check(Tier3Annex.TryInteract(p) && Tier3Annex.Step == 3, "Annex: E at the lab door starts the door scene");
+      { var bwa = TerrainMap.Landmarks.First(l => l.Name == "Broken Wall"); var ea = EncounterState.Enemies.OfType<Mutant>().FirstOrDefault(m => Gaunt.IsElder(m));
+        Check(ea != null && ea.X >= bwa.X && ea.Y >= bwa.Y + 8, $"Annex: the Elder waits in the passage behind the broken wall, not in the far maze ({ea?.X},{ea?.Y})"); }
       int before = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy)); bool screamed = false;
       for (int i = 0; i < 160; i++) { UnityEngine.Time.time += 0.25f; Tier3Annex.TickRt(0.25f); p.Hp = p.MaxHp; foreach (var e in EncounterState.Enemies.OfType<Mutant>()) if (Gaunt.IsElder(e) && Gaunt.Pose(e) == "scream") screamed = true; if (Story.CamLock.HasValue == false && i > 120) break; }
       int horde = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy) && !Gaunt.IsElder((Mutant)e));
       Check(screamed && horde >= 40 && EncounterState.Enemies.OfType<Mutant>().Where(m => !Gaunt.IsElder(m)).All(m => m.IsAggroed), $"Annex: the Elder walks out, screams, and the horde comes out running ({horde} mutants, all aggroed; scream seen {screamed})");
+      { var bwa = TerrainMap.Landmarks.First(l => l.Name == "Broken Wall"); var spawned = EncounterState.Enemies.OfType<Mutant>().Where(m => !Gaunt.IsElder(m)).ToList();
+        Check(spawned.Count >= 40 && spawned.Count(m => m.X >= bwa.X && m.Y >= bwa.Y + 8) >= spawned.Count * 9 / 10, $"Annex: the horde is let go in the passage behind the broken wall, none of it in the corridor ({spawned.Count(m => m.X >= bwa.X && m.Y >= bwa.Y + 8)} of {spawned.Count} there)"); }
       foreach (var e in EncounterState.Enemies.OfType<Mutant>().Where(m => !Gaunt.IsElder(m)).ToList()) e.Hp = 0;
       for (int i = 0; i < 80; i++) { UnityEngine.Time.time += 0.25f; Tier3Annex.TickRt(0.25f); p.Hp = p.MaxHp; if (Tier3Annex.Step == 4) break; }
       Check(Tier3Annex.Step == 4, "Annex: the horde is down: step 4, go into the cavern");

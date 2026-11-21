@@ -114,7 +114,7 @@ namespace GameCore
         static void BuildWaves()
         {
             Waves.Clear(); _out.Clear();
-            var nest = Mark(Nest); if (nest == null) return;
+            var bwl = Mark(Broken); if (bwl == null || Tier2Story.StageBeyond(bwl) == null) return;     // 2026-11-21: the waves wait down the passage behind the Broken Wall (path distance), like "Taken": the 'Nest' landmark is not authored in this map (it landed in the far west maze)
             int extra = Mathf.Max(0, Player.All.Count - 1);
             void Wave(float at, int x, int y, params (string key, int n)[] kinds)
             {
@@ -128,10 +128,10 @@ namespace GameCore
                     }
                 Waves.Add((at, who));
             }
-            Wave(Gaunt.ElderScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 5), ("tier2:VeilProwler", 2));
-            Wave(Gaunt.ElderScreamFor + 0.5f, nest.X, nest.Y - 8, ("BlindMaw", 5), ("PallidProwler", 5));
-            Wave(Gaunt.ElderScreamFor + 1.0f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 3), ("tier4:DreadProwler", 2));
-            Wave(Gaunt.ElderScreamFor + 1.5f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 4), ("tier2:VeilProwler", 2));
+            Wave(Gaunt.ElderScreamFor, Tier2Story.StageAt(0).x, Tier2Story.StageAt(0).y, ("PallidProwler", 6), ("BlindMaw", 5), ("tier2:VeilProwler", 2));
+            Wave(Gaunt.ElderScreamFor + 0.5f, Tier2Story.StageAt(1).x, Tier2Story.StageAt(1).y, ("BlindMaw", 5), ("PallidProwler", 5));
+            Wave(Gaunt.ElderScreamFor + 1.0f, Tier2Story.StageAt(2).x, Tier2Story.StageAt(2).y, ("Swarm", 6), ("BlindMaw", 3), ("tier4:DreadProwler", 2));
+            Wave(Gaunt.ElderScreamFor + 1.5f, Tier2Story.StageAt(3).x, Tier2Story.StageAt(3).y, ("Swarm", 6), ("PallidProwler", 4), ("tier2:VeilProwler", 2));
         }
 
         public static bool TryInteract(Player p)
@@ -148,8 +148,8 @@ namespace GameCore
             GameLog.Event("The reader buzzes red. The lights go red down the whole corridor and the siren starts.");
             Sfx.Play("explosion", TacticalGridView.GridToWorld(Player.Current.X, Player.Current.Y), 0.8f, 0.05f, 1f);
             Tier2Story.RedLights();
-            var nest = Mark(Nest);
-            if (nest != null) { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _elder = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_elder); }
+            var bwm = Mark(Broken); var far = bwm == null ? null : Tier2Story.StageBeyond(bwm);                    // the Elder waits in the passage behind the Broken Wall (2026-11-21)
+            if (far != null) { _elder = new Mutant(Gaunt.ElderName, far.Value.x, far.Value.y, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_elder); }
             Story.SetObjective(Mission, "Hold the corridor", Door);
         }
 
@@ -197,6 +197,7 @@ namespace GameCore
                 bool arrived = System.Math.Abs(_elder.X - sx) <= 1 && System.Math.Abs(_elder.Y - sy) <= 2;
                 if (arrived || t >= 20f)
                 {
+                    { var pl = Player.Current; if (pl != null) { _elder.FaceToward(pl.X, pl.Y); _elder.PatrolTarget = (pl.X, pl.Y); } }      // 2026-11-21: it screams and points AT you (the view turns an unaggroed mutant toward its patrol target)
                     _screamAt = now; Gaunt.ForcePose(_elder, "scream", Gaunt.CallTotal); Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(_elder.X, _elder.Y), 1f, 0.03f, 1f);
                     GameLog.Event("It opens its jaw wider than a jaw should open and screams. Then it lifts one long arm and points down the corridor - at you.");
                 }
@@ -282,7 +283,7 @@ namespace GameCore
             foreach (var p in Player.All) { if (at != null) { var (x, y) = TerrainMap.FindNearestEnterable(at.X + k % 3 - 1, at.Y + (stage == 1 ? 2 : 1) + k / 3); p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f); } Supply(p); k++; }
             if (stage == 2)
             {
-                var nest = Mark(Nest); var (gx, gy) = nest == null ? (0, 0) : TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14);
+                var bwt = Mark(Broken); var farT = bwt == null ? null : Tier2Story.StageBeyond(bwt); var (gx, gy) = farT == null ? (0, 0) : (farT.Value.x, farT.Value.y);
                 _elder = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; _screamAt = Time.time - 99f; _retreatAt = Time.time - 99f;   // (the Elder is added to the world when you come near the arena)
                 Story.SetObjective(Mission, "Go into the cavern past the broken wall - whatever screams waits at the far end", Arena);
             }
