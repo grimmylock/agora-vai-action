@@ -32,3 +32,7 @@ excavator drive ok
 excavator sweep ok
 excavator slam ok
 excavator scoop ok
+excavator hurt ok
+excavator death ok
+orderly idle ok
+orderly walk ok

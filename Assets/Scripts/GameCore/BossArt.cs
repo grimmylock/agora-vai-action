@@ -15,6 +15,15 @@ namespace GameCore
         public static readonly Dictionary<string, Art> Table = new Dictionary<string, Art>
         {
             // clips begin
+            ["excavator"] = new Art { Key = "excavator", W = 256, H = 200, Facing = "left", Clips = new Dictionary<string, VergerBoss.Clip> {
+                ["death"] = new VergerBoss.Clip { Name = "boss_excavator_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
+                ["drive"] = new VergerBoss.Clip { Name = "boss_excavator_drive", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
+                ["hurt"] = new VergerBoss.Clip { Name = "boss_excavator_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },
+                ["idle"] = new VergerBoss.Clip { Name = "boss_excavator_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
+                ["scoop"] = new VergerBoss.Clip { Name = "boss_excavator_scoop", Frames = 17, Ms = new float[] { 110, 117, 125, 132, 140, 147, 155, 162, 170, 177, 185, 192, 200, 80, 135, 150, 165 }, Hit = 13 },
+                ["slam"] = new VergerBoss.Clip { Name = "boss_excavator_slam", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
+                ["sweep"] = new VergerBoss.Clip { Name = "boss_excavator_sweep", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
+            } },
             ["ferryman"] = new Art { Key = "ferryman", W = 148, H = 208, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["death"] = new VergerBoss.Clip { Name = "boss_ferryman_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
                 ["flare"] = new VergerBoss.Clip { Name = "boss_ferryman_flare", Frames = 13, Ms = new float[] { 110, 155, 200, 80, 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = 3 },
@@ -34,6 +43,9 @@ namespace GameCore
                 ["pounce"] = new VergerBoss.Clip { Name = "boss_mother_hollow_pounce", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
                 ["spit"] = new VergerBoss.Clip { Name = "boss_mother_hollow_spit", Frames = 9, Ms = new float[] { 110, 132, 155, 177, 200, 80, 135, 150, 165 }, Hit = 5 },
                 ["walk"] = new VergerBoss.Clip { Name = "boss_mother_hollow_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
+            } },
+            ["orderly"] = new Art { Key = "orderly", W = 224, H = 200, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
+                ["idle"] = new VergerBoss.Clip { Name = "boss_orderly_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
             } },
             ["singer"] = new Art { Key = "singer", W = 256, H = 216, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["death"] = new VergerBoss.Clip { Name = "boss_singer_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },

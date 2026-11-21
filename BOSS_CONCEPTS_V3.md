@@ -77,7 +77,7 @@ Every fight below is built on what exists: `Boss.cs` (glints: white = parry, red
 | The Ferryman | 2 | 8 (idle, walk, thrust, hook, flare, sweep, hurt, death) | 10 |
 | The Orderly | 4 (the first two drew a plain big man with an IV stand; the re-roll asked for the gauze-wrapped faceless head, the stitched grin, the long arm) | | 4 |
 | The Specimen, grown | 2 | 8 (idle, walk, lash, lash2, scream, mind, hurt, death) | 10 |
-| The Excavator | 4 (the first two: a clean toy digger with fake lettering on a white ground; the re-roll: derelict, at night, no text; its painted background cut out by flood fill) | | 4 |
+| The Excavator | 4 (the first two: a clean toy digger with fake lettering on a white ground; the re-roll: derelict, at night, no text; its painted background cut out by flood fill) | 7 (idle, drive, sweep (the turntable spins), slam, scoop (16 frames), hurt (oil spray), death (smoke)) | 11 |
 
 ## Mother Hollow: BUILT (2026-11-21)
 `MotherHollow.cs` (the fight, the brood, the acid, her spoils), `BossArt.cs` (the creature-boss drawing, generic for all six), `export_boss_clips.py` (strips + the clip table). Testing Ground > Humans tab > "BOSS Mother Hollow". Harness `MotherHollowChecks`. Preview: `maps/renders/bosses_v3/mother_hollow_in_den.gif` (her clips at game scale in the Secret Cave render, next to a player).
