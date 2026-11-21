@@ -106,6 +106,7 @@ static class Program {
     FerrymanChecks();
     LateBossChecks();
     CreatureBossClipChecks();
+    BossHitboxChecks();
     CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
@@ -2975,6 +2976,18 @@ static class Program {
       Check(a != null && new[] { "idle", "hurt", "death" }.All(c => a.Clips.ContainsKey(c)) && d.Moves.All(m => m.Clip == null || a.Clips.ContainsKey(m.Clip)), $"{d.Name}: idle, hurt, death and a clip for every move");
       Check(a != null && d.Moves.Where(m => m.Clip != null && !a.Clips[m.Clip].Loop).All(m => a.Clips[m.Clip].Hit >= 0 && a.Clips[m.Clip].Hit < a.Clips[m.Clip].Frames) && a.Clips.Values.All(c => c.Ms.Length == c.Frames), $"{d.Name}: every attack clip has its hit frame inside it, every clip a time per frame");
     }
+  }
+  static void BossHitboxChecks() {   // 2026-11-21: a creature boss is hit on its drawn silhouette (HitProfiles "boss:<art>"), not on a man's one-tile column
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); UnityEngine.Time.time = 91000f;
+    try {
+      var f = Boss.Spawn(ExcavatorBoss.Def, px + 1, py + 8); var h = f.Unit; Rt.SetOffset(h, 0f, 0f); var (hx, hy) = Ballistics.Pos(h);
+      var hit = Ballistics.Trace(p, hx + 2.5f, hy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { h });
+      Check(BossArt.HitKey(h) == "boss:excavator" && hit.Unit == h, "Boss hitbox: a round 2.5 tiles off the Excavator's middle hits its tracks (its own silhouette)");
+      var miss = Ballistics.Trace(p, hx + 6f, hy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { h }); Check(miss.Unit == null, "Boss hitbox: 6 tiles off its middle misses");
+      var g = Boss.Spawn(FerrymanBoss.Def, px - 3, py + 8); var (gx, gy) = Ballistics.Pos(g.Unit); Rt.SetOffset(g.Unit, 0f, 0f);
+      Check(Ballistics.Trace(p, gx + 1.2f, gy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { g.Unit }).Unit == null && Ballistics.Trace(p, gx + 0.2f, gy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { g.Unit }).Unit == g.Unit, "Boss hitbox: the thin Ferryman is hit at his coat, missed a tile and a bit beside it");
+      Check(BossArt.HitKey(EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => Boss.Of(e) == null) ?? new HumanEnemy("Raider", 0, 0, "Raiders", "Rookie", null, null)) == null, "Boss hitbox: an ordinary human keeps a man's silhouette");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); }
   }
   static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 92000f; UnityEngine.Time.unscaledTime = 92000f;

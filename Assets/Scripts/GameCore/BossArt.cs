@@ -91,6 +91,8 @@ namespace GameCore
             bool targetLeft = p.X < u.X; return a.Facing == "left" ? !targetLeft : targetLeft;
         }
         public static Vector3 Lunge(ICombatant u) => VergerBoss.LungeOffset(u);
+        /// <summary>2026-11-21: the hit profile key of a creature boss (GameData.HitProfiles "boss:&lt;art&gt;", made by ArtSource/make_hit_profiles.py from its idle clip at its drawn size), null for anyone else.</summary>
+        public static string HitKey(HumanEnemy h) => Boss.Of(h) is Boss.Fight f && f.Def.Art != null && GameData.HitProfiles.All.ContainsKey("boss:" + f.Def.Art) ? "boss:" + f.Def.Art : null;
 
         public static Sprite[] Frames(Art a, string clip) => a != null && a.Clips != null && a.Clips.TryGetValue(clip, out var c) ? UnitSprites.HDFx(c.Name, c.Frames, new Vector2(0.5f, 6f / a.H)) : null;
 

@@ -50,6 +50,11 @@ namespace GameCore
         static float HalfWidth(ICombatant u, float h, float dx, float dy, out string part)
         {
             if (EelBoss.Is(u)) { part = null; return -1f; }   // Boss 3: the eel is hit along its whole body (EelSump.TraceBody), not at its two base units
+            if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss (BossArt) is hit on its own drawn silhouette, not a man's
+            {
+                float top = GameData.HitProfiles.Height(bk); part = h * BodyTiles >= 0.7f * top ? "Head" : "Body";
+                float a = GameData.HitProfiles.Half(bk, h * BodyTiles); return a < 0f ? -1f : Reach(a, GameData.HitProfiles.DepthCap(bk), dx, dy);
+            }
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
             {
                 string key = m.Db?.Name; float top = MutantHeight(m) + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
@@ -80,6 +85,12 @@ namespace GameCore
         {
             var l = new List<(float, float, float, string)>();
             if (u == null || EelBoss.Is(u) || Rt.Untouchable(u)) return l;
+            if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss's own silhouette
+            {
+                float ht = GameData.HitProfiles.Height(bk);
+                for (float y = 0f; y < ht - 0.001f; y += 2f / 32f) { float y2 = System.Math.Min(ht, y + 2f / 32f), a = GameData.HitProfiles.Half(bk, (y + y2) * 0.5f); if (a > 0f) l.Add((y / BodyTiles, y2 / BodyTiles, a, (y + y2) * 0.5f >= 0.7f * ht ? "Head" : "Body")); }
+                return l;
+            }
             bool mut = !(u is Player) && !(u is HumanEnemy) && u is Mutant;
             var m = u as Mutant; string key = mut ? m.Db?.Name : "human";
             if (mut && !GameData.HitProfiles.All.ContainsKey(key ?? "")) { float sz = MutantSize(m), top = (sz + EelSump.LiftOfUnit(m)) / BodyTiles; l.Add((0f, top, 0.25f * sz, "Body")); return l; }
