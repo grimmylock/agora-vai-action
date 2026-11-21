@@ -39,7 +39,8 @@ static class RenderMain {
       var sw = System.Diagnostics.Stopwatch.StartNew();
       MacroState.Current.CurrentZoneId = id;
       TerrainMap.BuildTerrainForZone(id);
-      if (Environment.GetEnvironmentVariable("MAP_QA") == "1") MapQa.Run(id, art);   // 2026-11-21: the structural quality check (MapQa below)
+      if (Environment.GetEnvironmentVariable("MAP_QA") == "1") MapQa.Run(id, art);
+      var regAt = Environment.GetEnvironmentVariable("REGIONAT"); if (!string.IsNullOrEmpty(regAt)) foreach (var pt in regAt.Split(';')) { var xy = pt.Split(','); Console.WriteLine($"region {id} {pt} {TerrainMap.RegionAt(int.Parse(xy[0]), int.Parse(xy[1]))}"); }   // 2026-11-21: which region a tile is in (quest checks)   // 2026-11-21: the structural quality check (MapQa below)
       if (Environment.GetEnvironmentVariable("STASHES") == "1")   // Batch 124: where the stashes are
         foreach (var o in TerrainMap.InteractiveObjects) Console.WriteLine($"stash {o.X},{o.Y} {TerrainMap.GetTile(o.X, o.Y).Look} {o.Name}");
       var annexLines = new System.Collections.Generic.List<string>();
