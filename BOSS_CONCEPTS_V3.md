@@ -73,10 +73,10 @@ Every fight below is built on what exists: `Boss.cs` (glints: white = parry, red
 | Boss | Concept stills | Animations | Total |
 |-|-|-|-|
 | Mother Hollow | 8 (1 bitforge test, 1 pixflux test, 4 pixflux with the Prowler as init, 1 inpaint try, 1 init with sacs painted in: the model would not draw belly sacs) | 8 (idle, walk, pounce, bite, howl, spit, hurt, death; all first try) | 16 |
-| The Singer | 2 | 6 (idle, note, scream, grasp, hurt, death) | 8 |
-| The Ferryman | 2 | 8 (idle, walk, thrust, hook, flare, sweep, hurt, death) | 10 |
-| The Orderly | 4 (the first two drew a plain big man with an IV stand; the re-roll asked for the gauze-wrapped faceless head, the stitched grin, the long arm) | | 4 |
-| The Specimen, grown | 2 | 8 (idle, walk, lash, lash2, scream, mind, hurt, death) | 10 |
+| The Singer | 2 | 7 (idle, note, scream, grasp, hurt, death; the scream re-rolled: the first barely moved) | 9 |
+| The Ferryman | 2 | 9 (idle, walk, thrust, hook, flare, sweep, hurt, death; the thrust re-rolled: the first only tilted the pole) | 11 |
+| The Orderly | 4 (the first two drew a plain big man with an IV stand; the re-roll asked for the gauze-wrapped faceless head, the stitched grin, the long arm) | 8 (idle, walk, drag (sparks along the floor), overhead, grab, drip, hurt, death) | 12 |
+| The Specimen, grown | 2 | 9 (idle, walk, lash, lash2, scream, mind, hurt, death; the scream re-rolled) | 11 |
 | The Excavator | 4 (the first two: a clean toy digger with fake lettering on a white ground; the re-roll: derelict, at night, no text; its painted background cut out by flood fill) | 7 (idle, drive, sweep (the turntable spins), slam, scoop (16 frames), hurt (oil spray), death (smoke)) | 11 |
 
 ## Mother Hollow: BUILT (2026-11-21)
@@ -119,3 +119,5 @@ A bot with an assault rifle: parries every white blow on the perfect beat (misse
 
 (Second run of the probe: the bot now dives to the side, alternating, instead of away; the first version drifted out of the Singer's reach and stalled.)
 How to read it: the bot dives every red move perfectly, which no person does, so the bosses built mostly of red moves (Mother Hollow, the Singer, the Ferryman) look far easier here than they will be. The probe also shoots Mother Hollow's brood off-screen. The Verger is the hardest of all to this bot (54 hits taken): his whites come fast and in long strings. Numbers were NOT changed from this (rule 6: harder is allowed, easier is not; Yan's first run decides).
+
+**Total so far: about 70 of the 2000 generations (Pixel Lab balance read 1940 mid-run); every boss is under 20 of its 50.** The old run of each re-rolled clip is kept as `<clip>_v1` (not exported).

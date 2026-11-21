@@ -105,6 +105,7 @@ static class Program {
     SingerChecks();
     FerrymanChecks();
     LateBossChecks();
+    CreatureBossClipChecks();
     CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
@@ -2967,6 +2968,13 @@ static class Program {
       Rt.Of(p).ShoveFrom = -1f; f.Doing = null; h.Hp = 1; Boss.OnDamaged(h); p.X = h.X - 1; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f);
       Check(f.Broken && Boss.TryFinish(p) && Story.Has(FerrymanBoss.Done) && h.Inventory.Items.Any(i => i.Name == FerrymanBoss.Trophy), "Ferryman: broken, executed, ferryman_done, the Ferry Lantern on him");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); Rt.Of(p).AimAt = null; }
+  }
+  static void CreatureBossClipChecks() {   // 2026-11-21: every creature boss (Boss.Def.Art) has its clips: idle, hurt, death, and one for every move, each with its hit frame inside it
+    foreach (var d in Boss.Registry.Where(d => d.Art != null)) {
+      var a = BossArt.Of(d.Art);
+      Check(a != null && new[] { "idle", "hurt", "death" }.All(c => a.Clips.ContainsKey(c)) && d.Moves.All(m => m.Clip == null || a.Clips.ContainsKey(m.Clip)), $"{d.Name}: idle, hurt, death and a clip for every move");
+      Check(a != null && d.Moves.Where(m => m.Clip != null && !a.Clips[m.Clip].Loop).All(m => a.Clips[m.Clip].Hit >= 0 && a.Clips[m.Clip].Hit < a.Clips[m.Clip].Frames) && a.Clips.Values.All(c => c.Ms.Length == c.Frames), $"{d.Name}: every attack clip has its hit frame inside it, every clip a time per frame");
+    }
   }
   static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 92000f; UnityEngine.Time.unscaledTime = 92000f;

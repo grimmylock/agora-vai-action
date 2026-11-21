@@ -10,7 +10,7 @@ H = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.join(H, "mutants_a
 OUT = os.path.join(H, "..", "Assets", "Resources", "Sprites", "Mutants", "anim"); CS = os.path.join(H, "..", "Assets", "Scripts", "GameCore", "BossArt.cs")
 FACING = {"mother_hollow": "left", "singer": "front", "ferryman": "front", "specimen": "front", "excavator": "left", "orderly": "front"}
 LOOPS = {"idle", "walk", "drive"}
-HIT = {("mother_hollow", "bite"): 5, ("mother_hollow", "spit"): 5, ("mother_hollow", "pounce"): 8, ("singer", "note"): 4, ("singer", "scream"): 5, ("singer", "grasp"): 6, ("ferryman", "thrust"): 6, ("ferryman", "hook"): 9, ("ferryman", "sweep"): 7, ("ferryman", "flare"): 3, ("specimen", "mind"): 4, ("excavator", "sweep"): 5, ("excavator", "slam"): 5, ("excavator", "scoop"): 13}      # read off the strips by eye where the automatic pick missed (a slash streak or the glob widens the silhouette later than the blow)
+HIT = {("mother_hollow", "bite"): 5, ("mother_hollow", "spit"): 5, ("mother_hollow", "pounce"): 8, ("singer", "note"): 4, ("singer", "scream"): 3, ("singer", "grasp"): 6, ("ferryman", "thrust"): 4, ("ferryman", "hook"): 9, ("ferryman", "sweep"): 7, ("ferryman", "flare"): 3, ("specimen", "mind"): 4, ("excavator", "sweep"): 5, ("excavator", "slam"): 5, ("excavator", "scoop"): 13, ("orderly", "grab"): 5, ("orderly", "drip"): 6, ("specimen", "scream"): 6}      # read off the strips by eye where the automatic pick missed (a slash streak or the glob widens the silhouette later than the blow)
 MS = {"idle": 150, "walk": 110, "drive": 110}          # per-frame defaults; attacks get a wind-up / snap / recover shape below
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
@@ -36,6 +36,7 @@ def main():
         if boss not in FACING: continue
         for cd in sorted(glob.glob(os.path.join(bd, "*", ""))):
             clip = os.path.basename(os.path.dirname(cd)); fs = sorted(glob.glob(os.path.join(cd, "f_*.png")))
+            if clip.endswith("_v1"): continue                                     # a re-rolled clip's old run (run_rerolls.py keeps it)
             if not fs: continue
             ims = [hard(Image.open(f)) for f in fs]; loop = clip in LOOPS
             if loop and len(ims) > 2: ims = ims[:-1]
