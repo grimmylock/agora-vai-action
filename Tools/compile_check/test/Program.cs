@@ -2813,7 +2813,7 @@ static class Program {
       Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger: the drag is a real pull, not a teleport");
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       foreach (var m in Boss.Verger.Moves.Where(m => m.Clip != null)) Check(VergerBoss.Clips.ContainsKey(m.Clip) && VergerBoss.Clips[m.Clip].Ms.Length == VergerBoss.Clips[m.Clip].Frames && VergerBoss.Clips[m.Clip].Hit < VergerBoss.Clips[m.Clip].Frames, "Verger: the beast's move " + m.Name + " has a well-formed clip (" + m.Clip + ")");
-      Check(Boss.Verger.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.Verger.Moves.Count(m => m.Phase2Only) == 7, "Verger: the beast has seven moves (Rake, Smash, Charge, Sweep and the combos Rake-Sweep, Rake-Smash, Rampage), each with an animation clip");
+      Check(Boss.Verger.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.Verger.Moves.Count(m => m.Phase2Only) == 11, "Verger: the beast has eleven moves (Rake, Smash, Charge, Sweep, Howl, Quake and the combos Rake-Sweep, Rake-Smash, Rampage, Trample, Howl-Rake), each with an animation clip");
       foreach (var m in Boss.Verger.Moves.Where(m => m.Hits > 1 && m.Clip != null)) { var c = VergerBoss.Clips[m.Clip]; bool gapsOk = c.Hits != null && c.Hits.Length == m.Hits && m.Gaps != null && m.Gaps.Length == m.Hits - 1; for (int k = 0; gapsOk && k < m.Hits - 1; k++) { float ms = 0f; for (int fi = c.Hits[k]; fi < c.Hits[k + 1]; fi++) ms += c.Ms[fi]; gapsOk = System.Math.Abs(ms / 1000f - m.Gaps[k]) < 0.02f; }
         Check(gapsOk && c.Hit == c.Hits[0], "Verger: the combo " + m.Name + " has as many blows as its clip and the pauses between them are the clip's own"); }
       // half health: the change
@@ -2840,6 +2840,16 @@ static class Program {
         Check(strikes.Count == 3 && System.Math.Abs((strikes[1] - strikes[0]) - ramp.Gaps[0] * 1.1f) < 0.12f && System.Math.Abs((strikes[2] - strikes[1]) - ramp.Gaps[1] * 1.1f) < 0.12f, $"Verger: the Rampage lands three blows with the clip's pauses at his pace ({strikes.Count} blows, {(strikes.Count == 3 ? $"{strikes[1] - strikes[0]:0.00}s, {strikes[2] - strikes[1]:0.00}s" : "")})");
         Check(Boss.Red(ramp, 2) && !Boss.Red(ramp, 0) && !Boss.Red(ramp, 1), "Verger: only the Rampage's last blow is red");
         f.Doing = null; f.OpenUntil = -1f; }
+      {   // the Howl and the Quake
+        var howl = Boss.Verger.Moves.First(m => m.Name == "Howl"); var quake = Boss.Verger.Moves.First(m => m.Name == "Quake");
+        void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.ChangeUntil = -1f; h.Hp = Boss.Verger.Hp / 3; h.X = px; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
+        void Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 1.1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); } }
+        Reset(6); Run(howl); Check(Rt.Of(p).ProneUntil > UnityEngine.Time.time - 0.5f && Body.Concussed(p), "Verger: the Howl across the room (6 tiles) knocks you down and deafens you");
+        Reset(6); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(howl); Check(!Body.Concussed(p), "Verger: a dive goes under the Howl");
+        Reset(14); Run(howl); Check(!Body.Concussed(p), "Verger: the Howl does not reach past 9 tiles");
+        Reset(3); int hp1 = p.Hp; Run(quake); Check(p.Hp < hp1, $"Verger: the Quake hurts everyone within its ring ({hp1} -> {p.Hp})");
+        Reset(8); hp1 = p.Hp; Run(quake); Check(p.Hp == hp1, "Verger: the Quake does not reach past its ring");
+        Rt.Of(p).DiveUntil = -1f; Body.Reset(); f.Doing = null; f.OpenUntil = -1f; }
       h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
       Check(VergerBoss.IsBeast(h), "Verger: after the change he is drawn as the beast");
       p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");

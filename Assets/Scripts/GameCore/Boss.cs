@@ -31,6 +31,8 @@ namespace GameCore
             public int Hits = 1;           // a combo: each hit has its own glint
             public float Gap = 0.4f;       // between a combo's hits
             public float Lunge;            // > 0: he closes this far in one rush before the hit
+            public string[] Effects;       // 2026-11-21 (the Verger's beast): what a blow does instead of a plain swing: "howl" (a cone: aim blown, knocked down), "quake" (a ring round him); null/empty = the weapon's swing
+            public float MaxDist = 1f;     // how far from you he may start a move that is not a rush (a Howl reaches across the room)
             public float[] Gaps, Mults;    // 2026-11-21 (the Verger's combos): the pause before each following hit, and each hit's own damage multiplier (null = Gap / Mult for all)
             public bool[] RedHits;         // 2026-11-21: which hits of a combo are red (can't be parried, a dive goes under): the Smash that finishes a combo
             public float BelowHp;          // 2026-11-21: > 0: only once his health is below this share of his full health (the beast's last stretch)
@@ -167,6 +169,11 @@ namespace GameCore
                 new Move { Name = "Smash", Wind = 1.2f, Danger = true, Mult = 1.9f, Weight = 2, Poses = new[] { 0 }, Open = 2.4f, Phase2Only = true, Clip = "slam" },
                 new Move { Name = "Charge", Wind = 1.0f, Danger = true, Lunge = 7f, Mult = 1.5f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true, Clip = "charge" },
                 new Move { Name = "Sweep", Wind = 0.9f, Mult = 1.2f, Weight = 2, Poses = new[] { 1 }, Open = 1.8f, Phase2Only = true, Clip = "sweep" },
+                // 2026-11-21 (Yan: "he needs more moves"): a Howl across the room, a Quake round him, and two more combos
+                new Move { Name = "Howl", Wind = 1.1f, Danger = true, MaxDist = 9f, Effects = new[] { "howl" }, Weight = 2, Poses = new[] { 0 }, Open = 1.8f, Phase2Only = true, Clip = "howl" },
+                new Move { Name = "Quake", Wind = 1.4f, Danger = true, Mult = 1.5f, Effects = new[] { "quake" }, Weight = 2, Poses = new[] { 0 }, Open = 2.6f, Phase2Only = true, Clip = "slam" },
+                new Move { Name = "Trample", Wind = 1.0f, Hits = 2, Lunge = 7f, Gaps = new[] { 1.30f }, Mults = new[] { 1.3f, 1.8f }, RedHits = new[] { true, true }, Weight = 2, Poses = new[] { 0, 0 }, Open = 2.4f, Phase2Only = true, Clip = "trample" },
+                new Move { Name = "Howl-Rake", Wind = 1.1f, Hits = 2, MaxDist = 1.5f, Effects = new[] { "howl", null }, Gaps = new[] { 0.99f }, Mults = new[] { 1f, 1.2f }, RedHits = new[] { true, false }, Weight = 2, Poses = new[] { 0, 1 }, Open = 2.0f, Phase2Only = true, Clip = "howlrake" },
                 // 2026-11-21 combos (Yan: "like the Gaunt has"): the clips stitched (make_beast_combos.py), the gaps between the blows read off the clip
                 new Move { Name = "Rake-Sweep", Wind = 0.65f, Hits = 2, Gaps = new[] { 0.49f }, Mults = new[] { 0.9f, 1.0f }, Weight = 2, Poses = new[] { 1, 1 }, Open = 1.6f, Phase2Only = true, Clip = "rakesweep" },
                 new Move { Name = "Rake-Smash", Wind = 0.65f, Hits = 2, Gaps = new[] { 1.21f }, Mults = new[] { 0.9f, 1.8f }, RedHits = new[] { false, true }, Weight = 2, Poses = new[] { 1, 0 }, Open = 2.3f, Phase2Only = true, Clip = "rakeslam" },
@@ -225,7 +232,7 @@ namespace GameCore
                     h.MoveToward(p.X, p.Y);
                 }
                 if (now < f.NextMoveAt) return;
-                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.BelowHp <= 0f || h.Hp <= f.Def.Hp * m.BelowHp) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= 1)).ToList();
+                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.BelowHp <= 0f || h.Hp <= f.Def.Hp * m.BelowHp) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= m.MaxDist)).ToList();
                 if (options.Count == 0) return;
                 int roll = Random.Range(0, options.Sum(m => m.Weight));
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
@@ -290,7 +297,10 @@ namespace GameCore
         /// <summary>The hit lands now: a lunge rushes in first; the swing takes whoever is in its arc (parry, block or blood).</summary>
         static void Land(Fight f, Player p)
         {
-            var h = f.Unit; var m = f.Doing;
+            var h = f.Unit; var m = f.Doing; int hi0 = m.Hits - f.HitsLeft;
+            string fx = m.Effects != null && m.Effects.Length > 0 ? m.Effects[System.Math.Min(hi0, m.Effects.Length - 1)] : null;
+            if (fx == "howl") { Howl(f, p, Red(m, hi0)); return; }                                  // 2026-11-21: a sound, not a swing: it reaches across the room
+            if (fx == "quake") { Quake(f, p, m, hi0); return; }                                      // a ring round him
             f.StruckAt = Time.time;
             StepIn(h, p, m.Drag > 0f ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
@@ -304,6 +314,36 @@ namespace GameCore
             finally { Parry.Unparryable = false; }
             if (VergerBoss.IsBeast(h)) { var sf = CombatFx.Push("beastslash", h, p, null); sf.Now = true; sf.Hit = p.Hp < hp0; if (sf.Hit) HitStop(0.05f); }      // 2026-11-21: the claws' slash is drawn, and a landed blow has weight
             if (m.Drag > 0f) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
+        }
+
+        public const float HowlRange = 9f, HowlCone = 100f, QuakeRadius = 4.2f;
+        /// <summary>2026-11-21 (the Verger's beast, "he needs more moves"): the Howl: in a wide cone in front of him everyone not under it (a dive) has their aim blown, is deafened for two seconds and knocked down for a second (a Tumbler gets half): the setup for what follows. Like the Gaunt's scream.</summary>
+        static void Howl(Fight f, Player target, bool red)
+        {
+            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.03f, 0.55f); CombatFx.Push("stagger", f.Unit, null, null).Now = true;
+            float dx = target.X - h.X, dy = target.Y - h.Y, l = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy)); dx /= l; dy /= l; int n = 0;
+            foreach (var q in Player.All.Where(q => q.IsAlive()))
+            {
+                float px = q.X - h.X, py = q.Y - h.Y, d = Mathf.Sqrt(px * px + py * py);
+                if (d > HowlRange || d < 0.01f || (px * dx + py * dy) / d < Mathf.Cos(HowlCone * 0.5f * Mathf.Deg2Rad) || Rt.Untouchable(q)) continue;
+                var aim = Gunplay.AimOf(q); aim.Steady = 0f; aim.Bloom = Gunplay.PlayerMaxBloom; Body.Concuss(q, 2f);
+                Rt.Knockdown(q, CombatantUtil.HasPerk(q, "Tumbler") ? 0.5f : 1.0f); n++;
+                GameLog.Write("The howl hits you like a wall: your ears give out and you go down.");
+            }
+            if (n == 0) GameLog.Write("The howl goes over you.");
+        }
+        /// <summary>2026-11-21: the Quake: the slam shakes the floor in a ring (QuakeRadius tiles) round him: every player in it takes the blow (a dive goes under) and is knocked down.</summary>
+        static void Quake(Fight f, Player target, Move m, int hi)
+        {
+            var h = f.Unit; f.StruckAt = Time.time; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("boss_sting", null, 0.6f, 0f, 0.5f); CombatFx.Push("stagger", h, null, null).Now = true; HitStop(0.06f);
+            if (h.EquippedWeapon == null) return;
+            foreach (var q in Player.All.Where(q => q.IsAlive()))
+            {
+                if (CombatantUtil.Distance(h, q) > QuakeRadius) continue;
+                if (Rt.Of(q).Diving || Rt.Untouchable(q)) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", q, h, null).Now = true; continue; }
+                Parry.Unparryable = true; try { Melee.HitUnit(h, h.EquippedWeapon, q, MultOf(m, hi)); } finally { Parry.Unparryable = false; }
+                Rt.Knockdown(q, 0.6f);
+            }
         }
 
         public const float HookGap = 2.0f, DragStop = 0.9f;

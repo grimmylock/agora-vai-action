@@ -47,10 +47,14 @@ namespace GameCore
             ["rake"]   = new Clip { Name = "rake", Frames = 13, Ms = new float[] { 100, 100, 120, 140, 120, 70, 120, 110, 120, 100, 120, 160, 200 }, Hit = 6 },       // rears the arm back (2-4), a backhand smear (5, brief), the forward slash (6), recovers
             ["charge"] = new Clip { Name = "charge", Frames = 9, Ms = new float[] { 100, 120, 140, 180, 200, 90, 110, 140, 200 }, Hit = 5 },
             ["sweep"]  = new Clip { Name = "sweep", Frames = 13, Ms = new float[] { 100, 120, 140, 160, 140, 110, 120, 120, 140, 140, 200, 220, 260 }, Hit = 5 },      // draws both arms back (2-4), the low sweep (5-6), arms reaching forward (7-9), rises
-            // combos (ArtSource/make_beast_combos.py: the rake, sweep and slam clips stitched where their silhouettes meet; Hits = the frames the blows land on)
+            ["howl"]   = new Clip { Name = "howl", Frames = 9, Ms = new float[] { 100, 140, 180, 220, 320, 320, 260, 240, 300 }, Hit = 3 },        // the roar clip's first nine frames: rears up, the head thrown back (the howl lands on frame 3), holds, settles
+            // combos begin (ArtSource/make_beast_combos.py: the rake, sweep and slam clips stitched where their silhouettes meet; Hits = the frames the blows land on)
             ["rakesweep"] = new Clip { Name = "rakesweep", Frames = 18, Ms = new float[] { 100, 100, 120, 140, 120, 70, 120, 110, 120, 140, 110, 120, 120, 140, 140, 200, 220, 260 }, Hit = 6, Hits = new[] { 6, 10 } },
             ["rakeslam"] = new Clip { Name = "rakeslam", Frames = 22, Ms = new float[] { 100, 100, 120, 140, 120, 70, 120, 110, 120, 100, 200, 260, 300, 90, 120, 160, 160, 160, 160, 180, 200, 240 }, Hit = 6, Hits = new[] { 6, 13 } },
             ["rampage"] = new Clip { Name = "rampage", Frames = 28, Ms = new float[] { 100, 100, 120, 140, 120, 70, 120, 110, 120, 140, 110, 120, 120, 140, 140, 200, 200, 260, 300, 90, 120, 160, 160, 160, 160, 180, 200, 240 }, Hit = 6, Hits = new[] { 6, 10, 19 } },
+            ["trample"] = new Clip { Name = "trample", Frames = 21, Ms = new float[] { 100, 120, 140, 180, 200, 90, 110, 140, 200, 200, 260, 300, 90, 120, 160, 160, 160, 160, 180, 200, 240 }, Hit = 5, Hits = new[] { 5, 12 } },
+            ["howlrake"] = new Clip { Name = "howlrake", Frames = 16, Ms = new float[] { 100, 140, 180, 220, 320, 120, 140, 120, 70, 120, 110, 120, 100, 120, 160, 200 }, Hit = 3, Hits = new[] { 3, 9 } },
+            // combos end
             ["roar"]   = new Clip { Name = "roar", Frames = 13, Ms = new float[] { 100, 140, 180, 220, 400, 400, 400, 400, 400, 400, 300, 260, 360 }, Hit = 4 },                // the change: rears up (1-3), roars (4-9), settles (10-12): ~4 s
         };
         const float ClipPivotY = 22f / 232f;                   // the feet row is 6 px above the cell's bottom, and the pivot sits 16 px above the feet

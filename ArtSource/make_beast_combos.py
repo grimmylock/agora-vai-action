@@ -8,20 +8,21 @@ HERE = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.join(HERE, "mut
 OUT = os.path.join(HERE, "..", "Assets", "Resources", "Sprites", "Mutants", "anim")
 CS = open(os.path.join(HERE, "..", "Assets", "Scripts", "GameCore", "VergerBoss.cs")).read()
 CLIPS = {m.group(1): (int(m.group(2)), [float(x) for x in m.group(3).split(",")], int(m.group(4))) for m in re.finditer(r'\["(\w+)"\]\s*=\s*new Clip \{[^}]*?Frames = (\d+), Ms = new float\[\] \{([^}]*)\}, Hit = (-?\d+)', CS)}
-SMEAR = {"rake": {5}, "sweep": {5, 6}, "slam": {4}}          # frames that are a swipe blob / shockwave: never a join point
+SMEAR = {"rake": set(), "sweep": set(), "slam": {4}, "charge": set(), "howl": set()}          # frames that are a swipe blob / shockwave: never a join point
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
 REMAP = {"rake": [0, 1, 2, 3, 4, 4, 7, 7, 8, 9, 10, 11, 12], "sweep": [0, 1, 2, 3, 4, 4, 7, 7, 8, 9, 10, 11, 12]}          # the baked low smears are not used (export_verger_beast_clips.py): the game draws the slash
-FR = {n: [hard(Image.open(f)) for f in sorted(glob.glob(os.path.join(SRC, n, "f_*.png")))[:CLIPS[n][0]]] for n in ("rake", "sweep", "slam")}
+SOURCE = {"howl": "roar"}
+FR = {n: [hard(Image.open(f)) for f in sorted(glob.glob(os.path.join(SRC, SOURCE.get(n, n), "f_*.png")))[:CLIPS[n][0]]] for n in ("rake", "sweep", "slam", "charge", "howl")}
 FR = {n: ([fr[i] for i in REMAP[n]] if n in REMAP else fr) for n, fr in FR.items()}
 MASK = {n: [np.array(f)[..., 3] > 0 for f in FR[n]] for n in FR}
 def iou(a, b): return (a & b).sum() / max(1, (a | b).sum())
 # Chosen joins (the candidates were listed by silhouette overlap and by the gap between the two hits): (frame of A where it hands over, frame of B it continues from).
 # Rake -> Sweep is a fast follow-up (0.37 s, overlap 0.62); the Smash (slam) as a finisher keeps its whole raise-the-arms wind-up (from frame 1) as its tell: its raised-arm pose never matches the others closely (overlap 0.55-0.57).
-JOINS = {("rake", "sweep"): (8, 4), ("rake", "slam"): (9, 1), ("sweep", "slam"): (10, 1)}
+JOINS = {("rake", "sweep"): (8, 4), ("rake", "slam"): (9, 1), ("sweep", "slam"): (10, 1), ("charge", "slam"): (8, 1), ("howl", "rake"): (4, 2)}
 def join(A, B):
     i, j = JOINS[(A, B)]; return (iou(MASK[A][i], MASK[B][j]), i, j)
-COMBOS = {"rakesweep": ["rake", "sweep"], "rakeslam": ["rake", "slam"], "rampage": ["rake", "sweep", "slam"]}
+COMBOS = {"rakesweep": ["rake", "sweep"], "rakeslam": ["rake", "slam"], "rampage": ["rake", "sweep", "slam"], "trample": ["charge", "slam"], "howlrake": ["howl", "rake"]}
 def build():
     out = {}
     for name, seq in COMBOS.items():
