@@ -134,3 +134,18 @@ Yan: "Mother Hollow fits and it's well animated." The rest did not land:
 | The vat re-animated | 11 |
 | The Specimen v2 | 4 stills + 7 clips = 11 (the Specimen in all: 33 of 50) |
 | The Singer, wall tries | 2 pixflux + 2 bitforge + 1 pixflux (1 lost to a dropped connection) = 5 (the Singer in all: 14) |
+
+## Second review (2026-11-21) and status
+Yan: "Ferryman as an anglerfish in the water that lures people and comes out to attack, has legs. OK / Orderly as a insect, ok but im not sure on the designs, feels too natural and less freaky mutant / face in the wall, scrap it / the excavator, i think the artstyle itself holds it back / For the monsters, i want more silent hill style/dead space style stuff, looks too tame for now, search for references / the brain outside the vat should be at another lab ... new moves, moves around ... the eye behind him connected through a cord moves around and fires", then "try and make the designs match the games current art-style too, some of them came out TOO detailed".
+- References and rules: `HORROR_DESIGN_REFS.md`.
+- The Singer: PARKED.
+- The Specimen v3: BUILT (Lab Gamma's Signal Room, the eye on a cord as its own target, blink/pulse/pull; see WORK_LOG 9aj).
+- The Ferryman / the Orderly: concepts at game size from our sprites (`boss_concepts/v5/`: the style now matches the Pallid Prowler and the Gaunt, but the "made of people" horror does not survive at that size: the model draws a pale beast with a lantern, insects with a bag). At double size and reduced, it went cartoonish (a grinning fish with a skull lantern). Not animated; waiting for a direction (see the reply to Yan).
+- The Excavator: a flat-style test from our APC sprite came out as an APC (the init dominates; without it the result is too detailed). Proposal: draw it in code like our vehicles (`ArtSource/world/props_x2.py`), as a rig (body, boom, stick, bucket) animated by turning its joints.
+
+| Pixel Lab since the second review | |
+|-|-|
+| The Specimen's eye | 1 still + 3 clips |
+| The Ferryman v5 | 2 at game size + 2 at double size |
+| The Orderly v5 | 2 |
+| The Excavator flat test | 1 |
