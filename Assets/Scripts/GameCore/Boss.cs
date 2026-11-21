@@ -57,6 +57,7 @@ namespace GameCore
             public string Phase2Line;
             public string Art;             // 2026-11-21: a creature boss drawn from Pixel Lab clips (BossArt.cs, BOSS_CONCEPTS_V3.md); null = a body with a held weapon
             public bool Rooted;            // 2026-11-21 (the Singer): it never walks or steps into a blow
+            public int KeepAt;             // 2026-11-21 (the grown Specimen): > 0: it keeps about this many tiles from its target (a caster), stepping back when closer
             public bool Creature;          // no weapon or armour to loot from it (its execution gives its own spoils)
             public System.Action<Player, HumanEnemy> Defeated;     // its own end (spoils, story), called by the execution
             public string PoseKey;         // 2026-11-21: his own pose set (HeldPoseMath.VisorPoses / VergerPoses), null = his weapon's
@@ -269,7 +270,13 @@ namespace GameCore
             if (f.Doing == null)
             {
                 if (now < f.OpenUntil) return;                                  // Visor 5: getting his breath back - he doesn't move
-                if (dist > 1 && now >= f.NextStep && !f.Def.Rooted)
+                if (now >= f.NextStep && !f.Def.Rooted && f.Def.KeepAt > 0 && (dist < f.Def.KeepAt - 1 || dist > f.Def.KeepAt + 1))   // a caster keeps its distance
+                {
+                    f.NextStep = now + f.Def.StepSeconds * speed;
+                    if (dist > f.Def.KeepAt + 1) h.MoveToward(p.X, p.Y);
+                    else { int ax = h.X + System.Math.Sign(h.X - p.X), ay = h.Y + System.Math.Sign(h.Y - p.Y); if (TerrainMap.CanEnterTile(ax, ay) && TerrainMap.UnitAt(ax, ay, h) == null) { h.X = ax; h.Y = ay; } }
+                }
+                else if (dist > 1 && now >= f.NextStep && !f.Def.Rooted && f.Def.KeepAt <= 0)
                 {
                     f.NextStep = now + f.Def.StepSeconds * speed;
                     h.MoveToward(p.X, p.Y);
@@ -351,7 +358,9 @@ namespace GameCore
             if (fx == "grasp") { f.StruckAt = Time.time; SingerBoss.Grasp(f, p, m, hi0); return; }
             if (fx == "flare") { f.StruckAt = Time.time; FerrymanBoss.Flare(f); return; }               // 2026-11-21 the Ferryman
             if (fx == "hands") { f.StruckAt = Time.time; FerrymanBoss.Hands(f, m, hi0); return; }
-            if (fx == "mind") { f.StruckAt = Time.time; SpecimenGrown.Mind(f); return; }                // 2026-11-21 the Specimen, grown
+            if (fx == "mind") { f.StruckAt = Time.time; SpecimenGrown.Mind(f); return; }
+            if (fx == "laser") { f.StruckAt = Time.time; SpecimenGrown.Laser(f, m, hi0); return; }
+            if (fx == "orbs") { f.StruckAt = Time.time; SpecimenGrown.Orbs(f); return; }                // 2026-11-21 the Specimen, grown
             if (fx == "digslam") { f.StruckAt = Time.time; ExcavatorBoss.DigSlam(f, m, hi0); return; }   // 2026-11-21 the Excavator
             if (fx == "rocks") { f.StruckAt = Time.time; ExcavatorBoss.Rocks(f, m, hi0); return; }
             if (fx == "slab") { f.StruckAt = Time.time; OrderlyBoss.Slab(f, p, m, hi0); return; }         // 2026-11-21 the Orderly

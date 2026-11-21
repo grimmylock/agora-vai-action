@@ -150,7 +150,7 @@ namespace GameCore
         public static void Tick(float dt)
         {
             var f = Current;
-            if (f == null || f.Gone || !EncounterState.Enemies.Contains(f.Unit)) { Orbs.Clear(); Throws.Clear(); Beams.Clear(); Pulse = null; return; }
+            if (f == null || f.Gone || !EncounterState.Enemies.Contains(f.Unit)) { if (!SpecimenGrown.Active) Orbs.Clear(); Throws.Clear(); Beams.Clear(); Pulse = null; return; }   // (the grown Specimen's orbs fly on its own tick)
             float now = Time.time;
             var players = Player.All.Where(p => p.IsAlive() && !Body.Down(p)).ToList();
             if (!f.Started)
@@ -461,7 +461,7 @@ namespace GameCore
         }
 
         /// <summary>Orbs drift straight on; a wall, a door or cover stops them; a player in the way takes the hit (not mid-dive).</summary>
-        static void FlyOrbs(float dt, List<Player> players)
+        internal static void FlyOrbs(float dt, List<Player> players)
         {
             for (int i = 0; i < Orbs.Count; i++)
             {
@@ -484,7 +484,7 @@ namespace GameCore
             }
         }
 
-        static void Hurt(Player p, int dmg, string what)
+        internal static void Hurt(Player p, int dmg, string what)
         {
             int dealt = Mathf.RoundToInt(dmg * (1f - Mathf.Min(0.75f, p.AnomDR)));
             p.Hp = System.Math.Max(0, p.Hp - dealt);

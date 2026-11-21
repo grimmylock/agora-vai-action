@@ -8,9 +8,9 @@ import numpy as np
 from PIL import Image
 H = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.join(H, "mutants_anim", "bosses_v3")
 OUT = os.path.join(H, "..", "Assets", "Resources", "Sprites", "Mutants", "anim"); CS = os.path.join(H, "..", "Assets", "Scripts", "GameCore", "BossArt.cs")
-FACING = {"mother_hollow": "left", "singer": "front", "ferryman": "front", "specimen": "front", "excavator": "left", "orderly": "front"}
+FACING = {"mother_hollow": "left", "singer": "front", "ferryman": "front", "specimen": "front", "excavator": "left", "orderly": "front", "specimen_v2": "front", "singer_wall": "front"}
 LOOPS = {"idle", "walk", "drive"}
-HIT = {("mother_hollow", "bite"): 5, ("mother_hollow", "spit"): 5, ("mother_hollow", "pounce"): 8, ("singer", "note"): 4, ("singer", "scream"): 3, ("singer", "grasp"): 6, ("ferryman", "thrust"): 4, ("ferryman", "hook"): 9, ("ferryman", "sweep"): 7, ("ferryman", "flare"): 3, ("specimen", "mind"): 4, ("excavator", "sweep"): 5, ("excavator", "slam"): 5, ("excavator", "scoop"): 13, ("orderly", "grab"): 5, ("orderly", "drip"): 6, ("specimen", "scream"): 6}      # read off the strips by eye where the automatic pick missed (a slash streak or the glob widens the silhouette later than the blow)
+HIT = {("mother_hollow", "bite"): 5, ("mother_hollow", "spit"): 5, ("mother_hollow", "pounce"): 8, ("singer", "note"): 4, ("singer", "scream"): 3, ("singer", "grasp"): 6, ("ferryman", "thrust"): 4, ("ferryman", "hook"): 9, ("ferryman", "sweep"): 7, ("ferryman", "flare"): 3, ("specimen", "mind"): 4, ("specimen_v2", "laser"): 4, ("specimen_v2", "orbs"): 7, ("specimen_v2", "mind"): 4, ("excavator", "sweep"): 5, ("excavator", "slam"): 5, ("excavator", "scoop"): 13, ("orderly", "grab"): 5, ("orderly", "drip"): 6, ("specimen", "scream"): 6}      # read off the strips by eye where the automatic pick missed (a slash streak or the glob widens the silhouette later than the blow)
 MS = {"idle": 150, "walk": 110, "drive": 110}          # per-frame defaults; attacks get a wind-up / snap / recover shape below
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
@@ -29,6 +29,17 @@ def timing(n, hit, loop, name):
         elif i == hit: ms.append(80)                                          # the snap
         else: ms.append(int(120 + 60 * (i - hit) / max(1, n - hit)))         # the recovery
     return ms
+REMAP = {("specimen_v2", "laser"): [0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 12]}   # the baked beam frames (3-11) are replaced by the eye charging and flickering: the game draws the beam
+KEY_OUT = {("specimen_v2", "laser")}       # 2026-11-21: clips whose baked effect is drawn by the game instead (the Specimen's beam: CombatFxView.SpecimenBeams): the hot magenta beam pixels are keyed out
+def key_out(im):
+    a = np.array(im); hot = (a[..., 0] > 170) & (a[..., 2] > 170) & (a[..., 1] < 120); a[hot] = 0; return Image.fromarray(a, "RGBA")
+RECOLOR = {("specimen_v2", "orbs"), ("specimen_v2", "mind")}      # the generator's hot magenta -> the vat brain's own violet ramp (by brightness), so the effect matches the vat's orbs and eyes
+VIOLET = [(40, 18, 64), (74, 42, 122), (118, 72, 190), (156, 112, 226), (206, 176, 250)]
+def recolor(im):
+    a = np.array(im).astype(int); hot = (a[..., 0] > 150) & (a[..., 2] > 150) & (a[..., 1] < 140) & (a[..., 3] > 0)
+    lum = (a[..., 0] + a[..., 1] + a[..., 2]) / 3.0; idx = np.clip(((lum - 60) / 170 * (len(VIOLET) - 1)).round().astype(int), 0, len(VIOLET) - 1)
+    for k, c in enumerate(VIOLET): a[hot & (idx == k), :3] = c
+    return Image.fromarray(a.astype(np.uint8), "RGBA")
 def main():
     os.makedirs(OUT, exist_ok=True); rows = {}
     for bd in sorted(glob.glob(os.path.join(SRC, "*", ""))):
@@ -39,6 +50,9 @@ def main():
             if clip.endswith("_v1"): continue                                     # a re-rolled clip's old run (run_rerolls.py keeps it)
             if not fs: continue
             ims = [hard(Image.open(f)) for f in fs]; loop = clip in LOOPS
+            if (boss, clip) in REMAP: ims = [ims[i] for i in REMAP[(boss, clip)]]
+            if (boss, clip) in KEY_OUT: ims = [key_out(i) for i in ims]
+            if (boss, clip) in RECOLOR: ims = [recolor(i) for i in ims]
             if loop and len(ims) > 2: ims = ims[:-1]
             n = len(ims); w, h = ims[0].size
             hit = -1 if loop or clip in ("hurt", "death") else HIT.get((boss, clip), hit_frame(ims, FACING[boss]))

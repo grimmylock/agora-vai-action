@@ -620,6 +620,26 @@ namespace GameCore
         static void HideFrom(List<SpriteRenderer> pool, int n) { for (int i = n; i < pool.Count; i++) if (pool[i] != null && pool[i].gameObject.activeSelf) pool[i].gameObject.SetActive(false); }
         static Vector3 W(float x, float y, float up = 0f) => new Vector3(x, -y + up, 0f);   // tile space (y down) -> world
 
+        /// <summary>2026-11-21: the grown Specimen's beams (SpecimenGrown.Beams), drawn with the vat's beam strips from its giant eye; returns how many beam sprites it used.</summary>
+        int SpecimenBeams(string pn)
+        {
+            var sf = SpecimenGrown.Current; if (sf == null || SpecimenGrown.Beams.Count == 0) return 0;
+            var (bx, by) = Ballistics.Pos(sf.Unit); float lift = SpecimenGrown.EyeHeight; int nb = 0;
+            var beamF = Strip("Sprites/Fx/boss_brain_beam" + pn, 4, 32f, new Vector2(0.5f, 0.5f)); var capF = Strip("Sprites/Fx/boss_brain_beamcap" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
+            foreach (var b in SpecimenGrown.Beams)
+            {
+                float r = b.Angle * Mathf.Deg2Rad, flick = 0.85f + 0.15f * Mathf.Sin(Time.time * 60f); int segs = Mathf.CeilToInt(b.Length);
+                for (int k = 0; k < segs; k++)                                                                   // over the ground from its feet, lifted to the eye at the start and easing down to chest height
+                {
+                    var sg = Pooled(_beams, nb++, "Beam", 9); if (sg == null) continue; float mid = k + 0.5f, wlen = Mathf.Min(1f, b.Length - k), h = Mathf.Lerp(lift, 0.5f, Mathf.Clamp01(mid / 3f));
+                    sg.sprite = beamF?[(k + (int)(Time.time * 14f)) % 4] ?? White(); sg.color = beamF != null ? new Color(1f, 1f, 1f, flick) : new Color(0.85f, 0.55f, 1f, flick);
+                    sg.transform.position = W(bx + Mathf.Cos(r) * mid, by + Mathf.Sin(r) * mid - h, 0.35f); sg.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); sg.transform.localScale = new Vector3(wlen, beamF != null ? 1.15f : 0.15f, 1f);
+                }
+                var cp = Pooled(_beams, nb++, "BeamCap", 10); if (cp != null && capF != null) { cp.sprite = capF[(int)(Time.time * 14f) % 4]; cp.color = Color.white; cp.transform.position = W(bx, by - lift, 0.35f); cp.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); cp.transform.localScale = Vector3.one * 1.6f; }
+            }
+            return nb;
+        }
+
         void DrawOrbs()
         {
             var f = BrainBoss.Current;
@@ -648,7 +668,7 @@ namespace GameCore
                 sr.transform.localScale = Vector3.one * Mathf.Min(1f, 0.4f + o.Age * 3f);   // they swell out of the brain
             }
             HideFrom(_orbs, n);
-            if (f == null || f.Gone) { HideFrom(_beams, 0); HideFrom(_throws, 0); if (_wave != null) _wave.gameObject.SetActive(false); if (_glow != null) _glow.gameObject.SetActive(false); return; }
+            if (f == null || f.Gone) { HideFrom(_beams, SpecimenBeams(pn)); HideFrom(_throws, 0); if (_wave != null) _wave.gameObject.SetActive(false); if (_glow != null) _glow.gameObject.SetActive(false); return; }
             var (cx, cy) = BrainBoss.Center(f);
             // the beams: a wide faint glow and a thin white core from the brain to the wall; while it winds up, a hairline where it will start
             int nb = 0;

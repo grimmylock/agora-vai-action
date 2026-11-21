@@ -1,59 +1,328 @@
 {
  "mother_hollow": [
-  ["idle", 8, 1, "side view facing left, the eyeless pale hound breathes slowly, ribs rising and falling, head sways low and sniffs, green drool drips, stays in place"],
-  ["walk", 8, 1, "side view facing left, the hunched pale hound prowls forward slowly on its long thin legs, a creeping stalking walk cycle, head low, stays in place"],
-  ["pounce", 12, 0, "side view facing left, the pale hound crouches low, then leaps far forward with its jaws wide open and front claws reaching, lands crouched"],
-  ["bite", 12, 0, "side view facing left, the pale hound lunges its head forward and bites hard, then violently shakes its head side to side as if holding prey, then lets go"],
-  ["howl", 12, 0, "side view facing left, the pale hound raises its eyeless head high and howls with its glowing green jaw wide open, body trembling, then lowers its head"],
-  ["spit", 8, 0, "side view facing left, the pale hound rears its head back then thrusts it forward and spits a gob of glowing green acid out of its mouth"],
-  ["hurt", 8, 0, "side view facing left, the pale hound flinches back from a hit, recoils and shakes, then recovers"],
-  ["death", 12, 0, "side view facing left, the pale hound staggers, its legs buckle, it collapses onto its side and lies still"]
+  [
+   "idle",
+   8,
+   1,
+   "side view facing left, the eyeless pale hound breathes slowly, ribs rising and falling, head sways low and sniffs, green drool drips, stays in place"
+  ],
+  [
+   "walk",
+   8,
+   1,
+   "side view facing left, the hunched pale hound prowls forward slowly on its long thin legs, a creeping stalking walk cycle, head low, stays in place"
+  ],
+  [
+   "pounce",
+   12,
+   0,
+   "side view facing left, the pale hound crouches low, then leaps far forward with its jaws wide open and front claws reaching, lands crouched"
+  ],
+  [
+   "bite",
+   12,
+   0,
+   "side view facing left, the pale hound lunges its head forward and bites hard, then violently shakes its head side to side as if holding prey, then lets go"
+  ],
+  [
+   "howl",
+   12,
+   0,
+   "side view facing left, the pale hound raises its eyeless head high and howls with its glowing green jaw wide open, body trembling, then lowers its head"
+  ],
+  [
+   "spit",
+   8,
+   0,
+   "side view facing left, the pale hound rears its head back then thrusts it forward and spits a gob of glowing green acid out of its mouth"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "side view facing left, the pale hound flinches back from a hit, recoils and shakes, then recovers"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "side view facing left, the pale hound staggers, its legs buckle, it collapses onto its side and lies still"
+  ]
  ],
  "singer": [
-  ["idle", 8, 1, "the huge pale face in the cave wall breathes slowly, the jaw trembles, the bony hands on the ground curl and uncurl their fingers, the lamps flicker, no camera movement"],
-  ["note", 12, 0, "the huge pale face in the cave wall slowly opens its mouth extremely wide and sings one long note, the jaw stretching down, the hands press flat on the ground, then the mouth closes"],
-  ["scream", 12, 0, "the huge pale face in the cave wall thrashes and screams with its mouth wide open, the head shaking violently, the hands claw at the ground, rock dust falls"],
-  ["grasp", 12, 0, "one bony hand of the face in the cave wall lifts off the ground and lunges far forward toward the viewer, fingers grabbing, then pulls back"],
-  ["hurt", 8, 0, "the huge pale face in the cave wall flinches and recoils as if struck, the jaw snapping shut, then settles"],
-  ["death", 12, 0, "the huge pale face in the cave wall goes slack, its jaw drops, the hands go limp, cracks spread across the face and it sags down into the rock"]
+  [
+   "idle",
+   8,
+   1,
+   "the huge pale face in the cave wall breathes slowly, the jaw trembles, the bony hands on the ground curl and uncurl their fingers, the lamps flicker, no camera movement"
+  ],
+  [
+   "note",
+   12,
+   0,
+   "the huge pale face in the cave wall slowly opens its mouth extremely wide and sings one long note, the jaw stretching down, the hands press flat on the ground, then the mouth closes"
+  ],
+  [
+   "scream",
+   12,
+   0,
+   "the huge pale face in the cave wall thrashes and screams with its mouth wide open, the head shaking violently, the hands claw at the ground, rock dust falls"
+  ],
+  [
+   "grasp",
+   12,
+   0,
+   "one bony hand of the face in the cave wall lifts off the ground and lunges far forward toward the viewer, fingers grabbing, then pulls back"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "the huge pale face in the cave wall flinches and recoils as if struck, the jaw snapping shut, then settles"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "the huge pale face in the cave wall goes slack, its jaw drops, the hands go limp, cracks spread across the face and it sags down into the rock"
+  ]
  ],
  "ferryman": [
-  ["idle", 8, 1, "the tall drowned ferryman with a lantern for a head stands still, the green lantern glow pulses, his coat sways, water drips off him, he breathes"],
-  ["walk", 8, 1, "the tall drowned ferryman with a lantern for a head walks forward with a slow heavy dragging walk cycle, leaning on his pole, stays in place"],
-  ["thrust", 12, 0, "the tall drowned ferryman pulls his long pole back and thrusts it far forward in a fast stab, then draws it back"],
-  ["hook", 12, 0, "the tall drowned ferryman swings his long hooked pole far forward, catches something and drags it back toward himself with both hands"],
-  ["flare", 12, 0, "the tall drowned ferryman leans forward and his lantern head flares with a blinding bright green light, then dims"],
-  ["sweep", 12, 0, "the tall drowned ferryman swings his long pole in a wide horizontal sweep from one side to the other with both hands, like rowing a boat"],
-  ["hurt", 8, 0, "the tall drowned ferryman staggers back as if struck, the lantern swinging, then recovers"],
-  ["death", 12, 0, "the tall drowned ferryman sinks to his knees, the green light in his lantern head fades out and he collapses forward"]
+  [
+   "idle",
+   8,
+   1,
+   "the tall drowned ferryman with a lantern for a head stands still, the green lantern glow pulses, his coat sways, water drips off him, he breathes"
+  ],
+  [
+   "walk",
+   8,
+   1,
+   "the tall drowned ferryman with a lantern for a head walks forward with a slow heavy dragging walk cycle, leaning on his pole, stays in place"
+  ],
+  [
+   "thrust",
+   12,
+   0,
+   "the tall drowned ferryman pulls his long pole back and thrusts it far forward in a fast stab, then draws it back"
+  ],
+  [
+   "hook",
+   12,
+   0,
+   "the tall drowned ferryman swings his long hooked pole far forward, catches something and drags it back toward himself with both hands"
+  ],
+  [
+   "flare",
+   12,
+   0,
+   "the tall drowned ferryman leans forward and his lantern head flares with a blinding bright green light, then dims"
+  ],
+  [
+   "sweep",
+   12,
+   0,
+   "the tall drowned ferryman swings his long pole in a wide horizontal sweep from one side to the other with both hands, like rowing a boat"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "the tall drowned ferryman staggers back as if struck, the lantern swinging, then recovers"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "the tall drowned ferryman sinks to his knees, the green light in his lantern head fades out and he collapses forward"
+  ]
  ],
  "specimen": [
-  ["idle", 8, 1, "the giant brain on spider legs pulses and throbs slowly, its long legs shift their weight, tendrils sway, slime drips, stays in place"],
-  ["walk", 8, 1, "the giant brain skitters forward on its many long spider legs, a fast skittering walk cycle, the brain bobbing, stays in place"],
-  ["lash", 12, 0, "the giant brain rears up on its back legs and lashes one long front leg forward like a whip, then sets it down"],
-  ["lash2", 12, 0, "the giant brain lashes two front legs forward one after the other, left then right, fast whipping strikes"],
-  ["scream", 12, 0, "the giant brain rears up high, the hanging tendrils spread wide and shudder as if screaming, the brain swells, then settles"],
-  ["mind", 8, 0, "the giant brain shudders and the single eye glows brightly, the brain pulses with energy, legs braced"],
-  ["hurt", 8, 0, "the giant brain recoils from a hit, its legs flinching inward, then recovers"],
-  ["death", 12, 0, "the giant brain's spider legs buckle and fold, it collapses to the ground, the brain deflating and going still"]
+  [
+   "idle",
+   8,
+   1,
+   "the giant brain on spider legs pulses and throbs slowly, its long legs shift their weight, tendrils sway, slime drips, stays in place"
+  ],
+  [
+   "walk",
+   8,
+   1,
+   "the giant brain skitters forward on its many long spider legs, a fast skittering walk cycle, the brain bobbing, stays in place"
+  ],
+  [
+   "lash",
+   12,
+   0,
+   "the giant brain rears up on its back legs and lashes one long front leg forward like a whip, then sets it down"
+  ],
+  [
+   "lash2",
+   12,
+   0,
+   "the giant brain lashes two front legs forward one after the other, left then right, fast whipping strikes"
+  ],
+  [
+   "scream",
+   12,
+   0,
+   "the giant brain rears up high, the hanging tendrils spread wide and shudder as if screaming, the brain swells, then settles"
+  ],
+  [
+   "mind",
+   8,
+   0,
+   "the giant brain shudders and the single eye glows brightly, the brain pulses with energy, legs braced"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "the giant brain recoils from a hit, its legs flinching inward, then recovers"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "the giant brain's spider legs buckle and fold, it collapses to the ground, the brain deflating and going still"
+  ]
  ],
  "excavator": [
-  ["idle", 8, 1, "the rusted excavator idles, its engine shudders, the body vibrates slightly, the exhaust pipe puffs dark smoke, the boom sways slightly, no movement across the ground"],
-  ["drive", 8, 1, "the rusted excavator drives forward, the caterpillar tracks rolling, the body rocking slightly, stays in place"],
-  ["sweep", 12, 0, "the rusted excavator swings its long boom arm in a wide horizontal sweep low across the ground, the bucket scraping, then back"],
-  ["slam", 12, 0, "the rusted excavator raises its boom arm high then slams the toothed bucket straight down hard into the ground, dust bursts, then lifts it"],
-  ["scoop", 16, 0, "the rusted excavator digs its bucket into the ground, scoops up rocks, lifts the boom high and flings the rocks forward"],
-  ["hurt", 8, 0, "the rusted excavator jolts as if struck, a hose bursts spraying oil, the cab shakes"],
-  ["death", 12, 0, "the rusted excavator's boom arm sags and drops to the ground, black smoke and steam pour out, it tilts and goes dead"]
+  [
+   "idle",
+   8,
+   1,
+   "the rusted excavator idles, its engine shudders, the body vibrates slightly, the exhaust pipe puffs dark smoke, the boom sways slightly, no movement across the ground"
+  ],
+  [
+   "drive",
+   8,
+   1,
+   "the rusted excavator drives forward, the caterpillar tracks rolling, the body rocking slightly, stays in place"
+  ],
+  [
+   "sweep",
+   12,
+   0,
+   "the rusted excavator swings its long boom arm in a wide horizontal sweep low across the ground, the bucket scraping, then back"
+  ],
+  [
+   "slam",
+   12,
+   0,
+   "the rusted excavator raises its boom arm high then slams the toothed bucket straight down hard into the ground, dust bursts, then lifts it"
+  ],
+  [
+   "scoop",
+   16,
+   0,
+   "the rusted excavator digs its bucket into the ground, scoops up rocks, lifts the boom high and flings the rocks forward"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "the rusted excavator jolts as if struck, a hose bursts spraying oil, the cab shakes"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "the rusted excavator's boom arm sags and drops to the ground, black smoke and steam pour out, it tilts and goes dead"
+  ]
  ],
  "orderly": [
-  ["idle", 8, 1, "the hunched faceless giant with a gauze-wrapped head breathes heavily, shoulders heaving, the long arm with the bloody blade hangs and twitches, stays in place"],
-  ["walk", 8, 1, "the hunched faceless giant walks forward with a slow heavy limping stride, dragging the bloody blade along the floor, leaning on the IV pole, stays in place"],
-  ["drag", 12, 0, "the hunched faceless giant drags the long bloody blade across the floor in a low sweeping slash forward, sparks, then pulls it back"],
-  ["overhead", 12, 0, "the hunched faceless giant raises the bloody blade high over his gauze-wrapped head and chops it straight down hard, then straightens"],
-  ["grab", 12, 0, "the hunched faceless giant lunges forward and grabs with his long free arm, lifts and slams down hard, then stands"],
-  ["drip", 12, 0, "the hunched faceless giant grips the IV bag on his pole and squeezes it, dark fluid flows, his body shudders and straightens"],
-  ["hurt", 8, 0, "the hunched faceless giant staggers back from a hit, his gauze head jerking, then recovers"],
-  ["death", 12, 0, "the hunched faceless giant drops to his knees, the IV pole falls, he slumps forward and collapses onto the floor"]
+  [
+   "idle",
+   8,
+   1,
+   "the hunched faceless giant with a gauze-wrapped head breathes heavily, shoulders heaving, the long arm with the bloody blade hangs and twitches, stays in place"
+  ],
+  [
+   "walk",
+   8,
+   1,
+   "the hunched faceless giant walks forward with a slow heavy limping stride, dragging the bloody blade along the floor, leaning on the IV pole, stays in place"
+  ],
+  [
+   "drag",
+   12,
+   0,
+   "the hunched faceless giant drags the long bloody blade across the floor in a low sweeping slash forward, sparks, then pulls it back"
+  ],
+  [
+   "overhead",
+   12,
+   0,
+   "the hunched faceless giant raises the bloody blade high over his gauze-wrapped head and chops it straight down hard, then straightens"
+  ],
+  [
+   "grab",
+   12,
+   0,
+   "the hunched faceless giant lunges forward and grabs with his long free arm, lifts and slams down hard, then stands"
+  ],
+  [
+   "drip",
+   12,
+   0,
+   "the hunched faceless giant grips the IV bag on his pole and squeezes it, dark fluid flows, his body shudders and straightens"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "the hunched faceless giant staggers back from a hit, his gauze head jerking, then recovers"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "the hunched faceless giant drops to his knees, the IV pole falls, he slumps forward and collapses onto the floor"
+  ]
+ ],
+ "specimen_v2": [
+  [
+   "idle",
+   8,
+   1,
+   "the huge floating brain bobs gently up and down in the air, its violet eyes dart around, the giant eyeball behind it slowly looks left and right, the dangling nerve stems sway. The floating brain stays in place, front view."
+  ],
+  [
+   "walk",
+   8,
+   1,
+   "the huge floating brain drifts forward through the air, bobbing, nerve stems trailing and swaying behind it. The floating brain stays in place, front view."
+  ],
+  [
+   "laser",
+   12,
+   0,
+   "the giant eyeball behind the brain glows brighter and brighter violet, then fires a thick violet laser beam straight forward, the beam flickers, then fades. The floating brain stays in place, front view."
+  ],
+  [
+   "orbs",
+   12,
+   0,
+   "the brain swells and pulses, violet energy gathers around it and several small glowing violet orbs burst out of it and fly outward. The floating brain stays in place, front view."
+  ],
+  [
+   "mind",
+   8,
+   0,
+   "all of the brain's violet eyes flare bright at once and a violet psychic ring pulses out from the brain. The floating brain stays in place, front view."
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "the floating brain recoils and shudders as if struck, its eyes squeezing shut, then recovers. The floating brain stays in place, front view."
+  ],
+  [
+   "death",
+   12,
+   0,
+   "the floating brain convulses, its eyes go dark, the giant eyeball closes, and the brain drops to the ground and goes limp. The floating brain stays in place, front view."
+  ]
  ]
 }

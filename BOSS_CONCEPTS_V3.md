@@ -121,3 +121,16 @@ A bot with an assault rifle: parries every white blow on the perfect beat (misse
 How to read it: the bot dives every red move perfectly, which no person does, so the bosses built mostly of red moves (Mother Hollow, the Singer, the Ferryman) look far easier here than they will be. The probe also shoots Mother Hollow's brood off-screen. The Verger is the hardest of all to this bot (54 hits taken): his whites come fast and in long strings. Numbers were NOT changed from this (rule 6: harder is allowed, easier is not; Yan's first run decides).
 
 **Total so far: about 70 of the 2000 generations (Pixel Lab balance read 1940 mid-run); every boss is under 20 of its 50.** The old run of each re-rolled clip is kept as `<clip>_v1` (not exported).
+
+## Yan's review (2026-11-21) and what changed
+Yan: "Mother Hollow fits and it's well animated." The rest did not land:
+- **The Singer**: "the artstyle is completely different and it being drawn as a painted rectangle will not fit the game, also it's drawn in a front-facing perspective and our walls are in 3/4". Option A chosen: a face built into our 3/4 mine wall. Work in progress (the first pixflux/bitforge tries from our wall tiles did not work: one gave a stone dome with lamps, no face).
+- **The Specimen**: "doesn't read as the Brain escaped ... doesn't have any of the aspects the brain had like the big eye tentacle or the laser attacks" -> Yan: "reanimate the brain in the vat boss now that we have credits, so reanimate him first THEN continue animating it outside the vat". DONE: the vat sheet re-animated (11 generations, `ArtSource/bosses/vat_reanimate.py`, only inside the glass); the Specimen v2 drawn from the vat brain's own art (the brain cut from the sheet, grown by Pixel Lab at a low init weight, the giant eye behind it; 4 stills + 7 clips) and refought with the vat's attacks: the Laser from the giant eye (dive, walls stop it; phase 2 the Sweep), the vat's orbs and bolt, the Mind-Lash, the Drift; it keeps its distance (`Boss.Def.KeepAt`). The generator's baked magenta beam is keyed out (the game draws the beam with the vat's beam strips, `CombatFxView.SpecimenBeams`) and its magenta flashes are mapped to the vat's violet. The first Specimen's clips are in `bosses_v3/_scrapped/`.
+- **The Excavator**: "kinda decent but it has ground drawn below it that doesn't match the artstyle, also the zombie inside is not one of our sprites for husks". DONE without generations: `ArtSource/fix_excavator_clips.py` (the painted ground cleared, the real Husk sprite in the cab, found frame by frame).
+- **The Orderly / the Ferryman**: "doesn't really read as a boss" -> Yan: "scrap the ferryman and orderly or make them clearly mutant, no human shaped BIG bosses like the mutants we have today". Proposed: the Ferryman as a drowned anglerfish mutant with a lure (the flare kept), the Orderly as a mantis-like mutant with bone-saw forelimbs and a blood sac (the drip kept). Concepts only until Yan picks.
+
+| Pixel Lab, since the review | |
+|-|-|
+| The vat re-animated | 11 |
+| The Specimen v2 | 4 stills + 7 clips = 11 (the Specimen in all: 33 of 50) |
+| The Singer, wall tries | 2 pixflux + 2 bitforge + 1 pixflux (1 lost to a dropped connection) = 5 (the Singer in all: 14) |

@@ -3002,7 +3002,20 @@ static class Program {
       for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Solid);
       Reset(6); Run(mind); Check(!Body.Concussed(p), "Specimen grown: out of its sight the Mind-Lash misses");
       for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Empty);
-      Check(SpecimenGrown.Def.Moves.Any(m => m.Lunge > 0f && m.Danger), "Specimen grown: it skitters (a red rush)");
+      Check(SpecimenGrown.Def.Moves.Any(m => m.Lunge > 0f && m.Danger), "Specimen grown: it drifts at you (a red rush)");
+      {   // 2026-11-21 v2: the vat's attacks, free: the laser, the orbs; it keeps its distance
+        var laser = SpecimenGrown.Def.Moves.First(m => m.Name == "Laser"); var orbsM = SpecimenGrown.Def.Moves.First(m => m.Name == "Orbs");
+        Reset(6); Run(laser, null, () => SpecimenGrown.Tick(1f / 60f)); Check(p.Hp < p.MaxHp, $"Specimen grown: the giant eye's Laser burns you along its line ({p.Hp}/{p.MaxHp})");
+        SpecimenGrown.Beams.Clear(); Reset(6); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(laser, null, () => SpecimenGrown.Tick(1f / 60f)); Check(p.Hp == p.MaxHp, "Specimen grown: a dive goes under the Laser");
+        for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Solid);
+        SpecimenGrown.Beams.Clear(); Reset(6); Run(laser, null, () => SpecimenGrown.Tick(1f / 60f)); Check(p.Hp == p.MaxHp, $"Specimen grown: a wall stops the Laser (hp {p.Hp}/{p.MaxHp}, beam {(SpecimenGrown.Beams.Count > 0 ? SpecimenGrown.Beams[0].Length : -1f):0.0}, aim {f.AimX},{f.AimY}, me {p.X},{p.Y}, it {h.X},{h.Y}, tile {TerrainMap.GetTile(px + 2, py)?.Type})");
+        for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Empty);
+        BrainBoss.Orbs.Clear(); Reset(6); Run(orbsM); Check(BrainBoss.Orbs.Count >= 9 && BrainBoss.Orbs.Any(o => o.Kind == "bolt"), $"Specimen grown: the Orbs throw a ring of the vat's orbs and a bolt ({BrainBoss.Orbs.Count})");
+        int hpB = p.Hp; for (int i = 0; i < 180; i++) { UnityEngine.Time.time += 1f / 60f; SpecimenGrown.Tick(1f / 60f); } Check(p.Hp < hpB || BrainBoss.Orbs.Count < 9, "Specimen grown: its orbs fly on its own tick (one reaches you or flies off)");
+        BrainBoss.Orbs.Clear(); f.Doing = null; f.OpenUntil = -1f; f.NextMoveAt = UnityEngine.Time.time + 99f; h.X = px + 5; h.Y = py; p.X = px + 4; p.Y = py; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+        for (int i = 0; i < 240; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
+        Check(CombatantUtil.Distance(h, p) >= SpecimenGrown.Def.KeepAt - 1, $"Specimen grown: it backs off to keep its distance ({CombatantUtil.Distance(h, p)} tiles)");
+      }
       Boss.Reset(); EncounterState.Enemies.Clear();
       // the Excavator
       f = Boss.Spawn(ExcavatorBoss.Def, px + 5, py); h = f.Unit; var slam = ExcavatorBoss.Def.Moves.First(m => m.Name == "Dig-Slam");
