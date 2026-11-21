@@ -6,7 +6,7 @@ def b64(p, size=None):
     im = Image.open(p).convert('RGBA')
     if size: im = im.resize(size, Image.NEAREST)
     b = io.BytesIO(); im.save(b, 'PNG'); return {"type": "base64", "base64": base64.b64encode(b.getvalue()).decode()}
-body = {"description": desc, "image_size": {"width": w, "height": h}, "no_background": True, "seed": seed, "text_guidance_scale": 8, "view": "side", "detail": "highly detailed", "shading": "detailed shading", "outline": "single color black outline"}
+body = {"description": desc, "image_size": {"width": w, "height": h}, "no_background": True, "seed": seed, "text_guidance_scale": 8, "view": __import__("os").environ.get("VIEW", "side"), "detail": "highly detailed", "shading": "detailed shading", "outline": "single color black outline"}
 if len(sys.argv) > 6: body["style_image"] = b64(sys.argv[6], (w, h)); body["style_strength"] = 60
 if len(sys.argv) > 7: body["init_image"] = b64(sys.argv[7], (w, h)); body["init_image_strength"] = int(sys.argv[8])
 def call(url, data=None):
