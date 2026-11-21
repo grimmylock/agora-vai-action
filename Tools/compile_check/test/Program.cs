@@ -3816,6 +3816,8 @@ static class Program {
       { int out_ = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy)); int rats2 = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
         Check(out_ >= 40 && rats2 >= 10, $"taken: the Gaunt called: the horde came out running ({out_} mutants, {rats2} rats)"); }
       Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
+      Check(Gaunt.RiseCalls >= 2, $"taken: the horde's two small Gaunts climb out of the ground when they are let go ({Gaunt.RiseCalls})");
+      { float armOut = 150 + 120 + 120 + 140 + 160 + 180; Check(Gaunt.ElderScreamFor * 1000f >= armOut && Gaunt.ElderScreamFor * 1000f < 1330f && Gaunt.ScreamFor > Gaunt.ElderScreamFor, "gaunt: the Elder's call lands once its arm is fully out (frame 6 of the new scream clip, 870 ms) and before the point is half over"); }
       Check(Sfx.MusicName == Tier2Story.ChaseTrack, $"taken: the chase song plays once the scream and the point are over ({Sfx.MusicName})");
       Check(EncounterState.Enemies.OfType<HumanEnemy>().Count(h => h.IsAlive()) == 5 && EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).All(e => e.IsAggroed), "taken: the soldiers hold the corridor (nothing has reached them yet) and the whole horde is loose");
       { var sold = EncounterState.Enemies.OfType<HumanEnemy>().First(h => h.IsAlive()); var mm = EncounterState.Enemies.OfType<Mutant>().First(m => !(m is HumanEnemy) && m.IsAlive() && m.Db?.Name == "Swarm");

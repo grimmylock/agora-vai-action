@@ -73,7 +73,7 @@ namespace GameCore
                 && (GameServices.Grid == null || GameServices.Grid.CheckLineOfSight(e.X, e.Y, target.X, target.Y)))
             {
                 Gaunt.ForcePose(e, "scream", Gaunt.CallTotal); Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(e.X, e.Y), 1f, 0.03f, 1f);
-                _screamAt = now + Gaunt.ScreamFor; _nextScream = now + (_phase == 0 ? 14f : 10f); GameLog.Event("The Elder plants itself and draws a breath.");
+                _screamAt = now + Gaunt.ElderScreamFor; _nextScream = now + (_phase == 0 ? 14f : 10f); GameLog.Event("The Elder plants itself and draws a breath.");
             }
             if (_screamAt >= 0f && now >= _screamAt) { _screamAt = -1f; Scream(e, target); }
             if (_phase >= 2 && _slamAt < 0f && !_shield && now >= _nextSlam && Player.All.Any(p => p.IsAlive() && CombatantUtil.Distance(e, p) <= SlamNear))

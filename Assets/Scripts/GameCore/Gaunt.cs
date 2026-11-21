@@ -18,7 +18,10 @@ namespace GameCore
         public static bool IsElder(Mutant m) => m?.Db?.Name == ElderName;
         public const float WalkFrameSeconds = 0.085f, RunFrameSeconds = 0.07f, ElderWalkFrameSeconds = 0.11f, ElderRunFrameSeconds = 0.085f;           // its strips are tuned to its ground speed (about 1.6 and 2.5 tiles a cycle against 3 tiles a second: close, not exact)
         public const float ArtScale = 32f / 43f;                    // Yan, 2026-11-17: "reduce the gaunt size by 25% ... they barely fit the screen": both Gaunts are drawn at this fraction of their art (HitProfiles are cut at 43 px a tile to match)
-        public const float ScreamFor = 1.2f, CallTotal = 2.6f;      // the arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal
+        // The arm snaps out and the call lands at ScreamFor; the whole animation lasts CallTotal. 2026-11-21: the Elder's Pixel Lab scream clip (ElderClips scream, 13 frames, 2600 ms) has the arm lifting at frame 5 (690 ms) and fully out
+        // pointing from frame 6 (870 ms) to frame 11 (held to 2110 ms), so its call lands at ElderScreamFor 0.9 s (it was 1.2 s, 0.33 s into the point); the small Gaunts' older 8-picture strip (ScreamMs) snaps its arm out at its 5th picture, 1.14 s: ScreamFor.
+        public const float ScreamFor = 1.2f, ElderScreamFor = 0.9f, CallTotal = 2.6f;
+        public static float ScreamAt(Mutant m) => IsElder(m) ? ElderScreamFor : ScreamFor;
         // the wild Gaunt calls a smaller, shorter drive; the Elder drives a whole horde (range tiles, drive seconds, speed factor, seconds between calls)
         static (float range, float drive, float haste, float every) Kit(Mutant m) => IsElder(m) ? (22f, 12f, 1.45f, 10f) : (12f, 7f, 1.3f, 16f);
 
@@ -111,7 +114,7 @@ namespace GameCore
             var s = Of(g); float now = Time.time;
             s.NextCall = now + System.Math.Max(Kit(g).every, CallTotal + 2f);
             ForcePose(g, "scream", CallTotal);
-            s.EffectAt = now + ScreamFor; s.Target = target;
+            s.EffectAt = now + ScreamAt(g); s.Target = target;
             Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(g.X, g.Y), 1f, 0.03f, 1f);
         }
 
@@ -147,9 +150,10 @@ namespace GameCore
         }
 
         /// <summary>A small Gaunt claws its way up out of the ground (Yan, 2026-11-19: instead of popping in): the rise clip, standing still until it is up.</summary>
+        public static int RiseCalls;                                           // (harness: how many small Gaunts were told to climb out of the ground)
         public static void Rise(Mutant w)
         {
-            if (ElderClips.Get(Name, "rise") == null) return; float s = ElderClips.Seconds(Name, "rise");
+            RiseCalls++; if (ElderClips.Get(Name, "rise") == null) return; float s = ElderClips.Seconds(Name, "rise");
             ForcePose(w, "rise", s); RtAi.Hold(w, s);
         }
 

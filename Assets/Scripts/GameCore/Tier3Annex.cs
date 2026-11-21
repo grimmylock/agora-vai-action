@@ -128,10 +128,10 @@ namespace GameCore
                     }
                 Waves.Add((at, who));
             }
-            Wave(Gaunt.ScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 5), ("tier2:VeilProwler", 2));
-            Wave(Gaunt.ScreamFor + 0.5f, nest.X, nest.Y - 8, ("BlindMaw", 5), ("PallidProwler", 5));
-            Wave(Gaunt.ScreamFor + 1.0f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 3), ("tier4:DreadProwler", 2));
-            Wave(Gaunt.ScreamFor + 1.5f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 4), ("tier2:VeilProwler", 2));
+            Wave(Gaunt.ElderScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 5), ("tier2:VeilProwler", 2));
+            Wave(Gaunt.ElderScreamFor + 0.5f, nest.X, nest.Y - 8, ("BlindMaw", 5), ("PallidProwler", 5));
+            Wave(Gaunt.ElderScreamFor + 1.0f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 3), ("tier4:DreadProwler", 2));
+            Wave(Gaunt.ElderScreamFor + 1.5f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 4), ("tier2:VeilProwler", 2));
         }
 
         public static bool TryInteract(Player p)

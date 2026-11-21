@@ -335,10 +335,10 @@ namespace GameCore
             // 2026-11-18 (Yan: two frontline soldiers held the whole horde; "give the elder gaunt 15k HP, make the horde less swarms and more of the other mutant dogs, and 2 little gaunts"): about 55, four waves close together
             // - mostly the dogs (Pallid, Blind Maw, Veil, two Dread Prowlers), twelve rats, two small Gaunts among the third wave (the Elder keeps its 15,000 HP and walks out first)
             // 2026-11-18 (Yan: hidden until the Gaunt calls them, then already running during the scene): out of the world until the call lands (ScreamFor 1.2 s into the scream), then each wave appears in the dark of the tunnel and runs - all four inside the scream's 2.6 s
-            Wave(Gaunt.ScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));          // seconds after the scream begins
-            Wave(Gaunt.ScreamFor + 0.35f, nest.X, nest.Y - 8, ("BlindMaw", 6), ("PallidProwler", 6));
-            Wave(Gaunt.ScreamFor + 0.7f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
-            Wave(Gaunt.ScreamFor + 1.05f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
+            Wave(Gaunt.ElderScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));          // seconds after the scream begins
+            Wave(Gaunt.ElderScreamFor + 0.35f, nest.X, nest.Y - 8, ("BlindMaw", 6), ("PallidProwler", 6));
+            Wave(Gaunt.ElderScreamFor + 0.7f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
+            Wave(Gaunt.ElderScreamFor + 1.05f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
             { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
@@ -390,7 +390,8 @@ namespace GameCore
             // Yan (2026-11-17): "the soldiers didn't shoot the mutants or hold their ground, they just kinda died without being touched": they hold the corridor and fight for real (real bullets at the nearest
             // mutant they can see; whatever reaches them is pinned on them and mauls them), so the horde has to chew through five rifles before it gets to you.
             SoldiersFight(now, ts);
-            for (int wi = 0; wi < Waves.Count; wi++) { var w = Waves[wi]; if (ts < w.at || !_wavesOut.Add(wi)) continue; foreach (var m in w.who) { if (!EncounterState.Enemies.Contains(m)) EncounterState.Enemies.Add(m); m.IsAggroed = true; } if (wi == 0) Say("Everything that was feeding turns its head toward the corridor and comes."); else if (wi == 1) Say("More. Dozens more, coming up out of the dark tunnel."); }   // the call lands: they appear out of the dark already running
+            // 2026-11-21: the horde's two small Gaunts climb out of the ground when they are let go (Gaunt.Rise, like the Elder's summons) instead of popping in
+            for (int wi = 0; wi < Waves.Count; wi++) { var w = Waves[wi]; if (ts < w.at || !_wavesOut.Add(wi)) continue; foreach (var m in w.who) { if (!EncounterState.Enemies.Contains(m)) EncounterState.Enemies.Add(m); m.IsAggroed = true; if (Gaunt.Is(m) && !Gaunt.IsElder(m)) Gaunt.Rise(m); } if (wi == 0) Say("Everything that was feeding turns its head toward the corridor and comes."); else if (wi == 1) Say("More. Dozens more, coming up out of the dark tunnel."); }   // the call lands: they appear out of the dark already running
             if (_gaunt != null && _gaunt.IsAlive() && ts >= 4f) _gaunt.IsAggroed = true;      // it joins the hunt: from here the game's Gaunt (its call, its drive) takes over
             if (GameOver(now)) return;
             if (t > 6f && Everyone.Any(p => p.IsAlive() && DistTo(p, Ladder) <= 3f)) Out();
