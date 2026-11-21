@@ -320,7 +320,7 @@ namespace GameCore
         /// <summary>2026-11-21 (the Verger's beast, "he needs more moves"): the Howl: in a wide cone in front of him everyone not under it (a dive) has their aim blown, is deafened for two seconds and knocked down for a second (a Tumbler gets half): the setup for what follows. Like the Gaunt's scream.</summary>
         static void Howl(Fight f, Player target, bool red)
         {
-            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.03f, 0.55f); CombatFx.Push("stagger", f.Unit, null, null).Now = true;
+            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.03f, 0.55f); CombatFx.Push("howlwave", h, target, null).Now = true;
             float dx = target.X - h.X, dy = target.Y - h.Y, l = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy)); dx /= l; dy /= l; int n = 0;
             foreach (var q in Player.All.Where(q => q.IsAlive()))
             {

@@ -387,7 +387,7 @@ namespace GameCore
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
             if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
-            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "glassburst" || e.Kind == "beastslash")
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "glassburst" || e.Kind == "beastslash" || e.Kind == "howlwave")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
                 BossFx(e, from, to);
@@ -784,6 +784,7 @@ namespace GameCore
             }
         }
 
+        const float HowlConeRad = 0.87f;      // half the howl cone (50 degrees) in radians
         void Shake(float amp) { if (amp >= _shakeAmp || Time.time - _shakeAt > ShakeTime) { _shakeAt = Time.time; _shakeAmp = amp; } }
 
         void BossFx(FxEvent e, Vector3 from, Vector3 to)
@@ -825,6 +826,21 @@ namespace GameCore
                     else { Bit(tip, ChainSteel, 5, 2, (a - tip) / 0.5f, 0f, 0.5f, 13); Bit(tip + new Vector3(0.125f, -0.125f, 0f), ChainSteel, 2, 3, (a - tip) / 0.5f, 0f, 0.5f, 13); }
                     if (e.Hit) { Burst(b, Steel, 14, 2.6f, 0.35f); Burst(b, Color.white, 6, 3.6f, 0.25f, 2); Shake(0.12f); Sfx.Play("hook_catch", to, 1f, 0.03f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.8f, 0.03f); }
                     else Sfx.Play("hook_throw", from, 0.9f, 0.04f);
+                    break;
+                }
+                case "howlwave": // 2026-11-21 (Yan: the howl "doesn't feel like an attack"): the sound is drawn: bright arcs leave his muzzle across the cone toward the target (a wall of rings, fanned 100 degrees, fast, thinning out), dust blown off the floor, a hard shake
+                {
+                    var dirv = to - from; float dl = Mathf.Sqrt(dirv.x * dirv.x + dirv.y * dirv.y); var dn = dl > 0.01f ? dirv / dl : Vector3.right; float baseA = Mathf.Atan2(dn.y, dn.x);
+                    var mouth = from + new Vector3(dn.x * 0.9f, 1.6f + dn.y * 0.3f, 0f);
+                    for (int ring = 0; ring < 4; ring++)
+                        for (int k = -9; k <= 9; k++)
+                        {
+                            float a = baseA + k * (HowlConeRad / 9f), sp = 11f - ring * 1.1f; var v = new Vector3(Mathf.Cos(a), Mathf.Sin(a) * 0.8f, 0f);
+                            var col = ring == 0 ? new Color(1f, 0.95f, 0.85f) : ring == 1 ? new Color(0.95f, 0.7f, 0.55f) : new Color(0.75f, 0.35f, 0.3f);
+                            Bit(mouth + v * (0.4f + ring * 0.55f), col, 3, 1 + (ring < 2 ? 1 : 0), v * sp, 0f, 0.5f - ring * 0.04f, 15);
+                        }
+                    Burst(from, new Color(0.7f, 0.65f, 0.6f), 26, 5f, 0.6f, 2);
+                    Shake(0.35f); Sfx.Play("boss_sting", from, 0.7f, 0f);
                     break;
                 }
                 case "beastslash": // 2026-11-21 (the Verger's beast): three claw marks tear through the air in front of him toward the target (ArtSource/make_beast_slash_fx.py: Fx/fx_beast_slash.png, 4 frames), turned toward the target, with a shake and the claws' sound; a landed blow throws blood

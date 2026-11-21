@@ -12,12 +12,20 @@ SOURCE = {"howl": "roar"}      # clips cut from another clip's frames (the howl 
 CLIPS = {"walk": 8, "howl": 9, "slam": 13, "rake": 13, "charge": 9, "sweep": 13, "roar": 13}      # clip -> how many of its frames to keep (walk: the 9th repeats the first)
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
+CLEAN = {"howl", "roar"}      # 2026-11-21 (Yan: "the howl has some artifacts around it"): the generator leaves stray specks round the body in these clips; keep the body and anything within 4 px of it
+def despeckle(im):
+    from scipy import ndimage
+    a = np.array(im); m = a[..., 3] > 0; lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=4))
+    if n < 2: return im
+    big = lab == (1 + int(np.argmax(ndimage.sum(m, lab, range(1, n + 1))))); a[~(big & m)] = 0; return Image.fromarray(a, "RGBA")
 def main():
     os.makedirs(OUT, exist_ok=True)
     for name, n in CLIPS.items():
         fs = sorted(glob.glob(os.path.join(SRC, SOURCE.get(name, name), "f_*.png")))[:n]
         assert len(fs) == n, (name, len(fs))
-        ims = [hard(Image.open(f)) for f in fs]; w, h = ims[0].size
+        ims = [hard(Image.open(f)) for f in fs]
+        if name in CLEAN: ims = [despeckle(i) for i in ims]
+        w, h = ims[0].size
         if name in REMAP: ims = [ims[i] for i in REMAP[name]]
         strip = Image.new("RGBA", (w * n, h), (0, 0, 0, 0))
         for i, im in enumerate(ims): strip.alpha_composite(im, (i * w, 0))
