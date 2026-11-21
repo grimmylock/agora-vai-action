@@ -172,7 +172,7 @@ namespace GameCore
                 // 2026-11-21 (Yan: "he needs more moves"): a Howl across the room, a Quake round him, and two more combos
                 new Move { Name = "Howl", Wind = 1.1f, Danger = true, MaxDist = 9f, Effects = new[] { "howl" }, Weight = 2, Poses = new[] { 0 }, Open = 1.8f, Phase2Only = true, Clip = "howl" },
                 new Move { Name = "Quake", Wind = 1.4f, Danger = true, Mult = 1.5f, Effects = new[] { "quake" }, Weight = 2, Poses = new[] { 0 }, Open = 2.6f, Phase2Only = true, Clip = "slam" },
-                new Move { Name = "Trample", Wind = 1.0f, Hits = 2, Lunge = 7f, Gaps = new[] { 1.30f }, Mults = new[] { 1.3f, 1.8f }, RedHits = new[] { true, true }, Weight = 2, Poses = new[] { 0, 0 }, Open = 2.4f, Phase2Only = true, Clip = "trample" },
+                new Move { Name = "Trample", Wind = 1.0f, Hits = 2, Lunge = 7f, Gaps = new[] { 1.23f }, Mults = new[] { 1.3f, 1.8f }, RedHits = new[] { true, true }, Weight = 2, Poses = new[] { 0, 0 }, Open = 2.4f, Phase2Only = true, Clip = "trample" },
                 new Move { Name = "Howl-Rake", Wind = 1.1f, Hits = 2, MaxDist = 1.5f, Effects = new[] { "howl", null }, Gaps = new[] { 0.99f }, Mults = new[] { 1f, 1.2f }, RedHits = new[] { true, false }, Weight = 2, Poses = new[] { 0, 1 }, Open = 2.0f, Phase2Only = true, Clip = "howlrake" },
                 // 2026-11-21 combos (Yan: "like the Gaunt has"): the clips stitched (make_beast_combos.py), the gaps between the blows read off the clip
                 new Move { Name = "Rake-Sweep", Wind = 0.65f, Hits = 2, Gaps = new[] { 0.49f }, Mults = new[] { 0.9f, 1.0f }, Weight = 2, Poses = new[] { 1, 1 }, Open = 1.6f, Phase2Only = true, Clip = "rakesweep" },
