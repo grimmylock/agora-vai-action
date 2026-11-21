@@ -344,5 +344,61 @@
    0,
    "the floating eyeball bursts, the iris goes dark, it deflates and falls"
   ]
+ ],
+ "ferryman_v2": [
+  [
+   "idle",
+   8,
+   1,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, breathes heavily, the mouth slowly opens and closes, the lantern sways gently on its bony spine, water drips off it, stays in place"
+  ],
+  [
+   "walk",
+   8,
+   1,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, crawls forward slowly on its long bent arms and legs like a spider, a creeping crawl cycle, the lantern swaying, stays in place"
+  ],
+  [
+   "bite",
+   12,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, rears its body back, the vertical mouth gapes wide open, then lunges its whole front forward and snaps the jaws shut hard, then pulls back"
+  ],
+  [
+   "claw",
+   10,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, lifts one long front arm high, then slashes it down and forward in a fast clawing swipe, then sets it back down"
+  ],
+  [
+   "lure",
+   12,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, lowers its body flat and still, lifts the lantern high and swings it slowly in front of its open mouth, the green light pulsing brighter, then lowers it"
+  ],
+  [
+   "dive",
+   10,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, presses itself low and sinks straight down into dark water below it until only the green lantern is left above the surface, then that sinks too"
+  ],
+  [
+   "emerge",
+   10,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, bursts up out of dark water below it with the mouth wide open and limbs spread, water splashing off, then settles into a crouch"
+  ],
+  [
+   "hurt",
+   8,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, flinches back from a hit, the mouth shudders, the lantern swings wildly, then recovers"
+  ],
+  [
+   "death",
+   12,
+   0,
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, shudders, its limbs buckle and it collapses flat onto its belly, the lantern drops to the ground and its green light goes out"
+  ]
  ]
 }

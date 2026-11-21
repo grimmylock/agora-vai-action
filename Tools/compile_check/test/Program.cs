@@ -2951,10 +2951,10 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 93000f; UnityEngine.Time.unscaledTime = 93000f;
     try {
       var D = FerrymanBoss.Def; var f = Boss.Spawn(D, px + 5, py); var h = f.Unit;
-      Check(h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "The Ferryman's Hook" && Melee.For(h.EquippedWeapon).Reach >= 2.5f, "Ferryman: a Mutant with a boat hook's reach");
+      Check(h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "The Ferryman's Hook" && Melee.For(h.EquippedWeapon).Reach >= 2.5f, "Ferryman: a Mutant with long drowned arms");
       void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = h.MaxHp; h.X = px + 5; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + 5 - dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Rt.Of(p).AimAt = null; Body.Reset(); }
       void Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); h.Hp = h.MaxHp; } f.Doing = null; f.OpenUntil = -1f; }
-      var flare = D.Moves.First(m => m.Name == "Flare");
+      var flare = D.Moves.First(m => m.Name == "Lure");
       Reset(6); var (hx, hy) = Ballistics.Pos(h); Rt.Of(p).AimAt = (hx, hy); Run(flare); Check(Body.Concussed(p), "Ferryman: crosshair on him when the lantern flares: dazzled");
       Reset(6); var (qx, qy) = Ballistics.Pos(p); Rt.Of(p).AimAt = (qx - 4f, qy); Run(flare); Check(!Body.Concussed(p), "Ferryman: crosshair off him (looking away): the flare does nothing");
       Reset(14); Rt.Of(p).AimAt = (hx, hy); Run(flare); Check(!Body.Concussed(p), "Ferryman: out of the flare's range");
@@ -2962,7 +2962,7 @@ static class Program {
       Reset(4); Run(hands); Check(p.Hp < p.MaxHp && Rt.Of(p).ProneUntil > UnityEngine.Time.time - 1.5f, "Ferryman: the Hands pull you down four tiles away");
       Reset(4); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(hands); Check(p.Hp == p.MaxHp, "Ferryman: a dive goes over the Hands");
       Reset(9); Run(hands); Check(p.Hp == p.MaxHp, "Ferryman: the Hands do not reach nine tiles");
-      var hook = D.Moves.First(m => m.Name == "Hook"); Reset(3); bool dragged = false; Boss.Begin(f, hook, UnityEngine.Time.time, 1f);
+      var hook = D.Moves.First(m => m.Name == "Reel"); Reset(3); bool dragged = false; Boss.Begin(f, hook, UnityEngine.Time.time, 1f);
       for (int i = 0; i < 200 && !dragged; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); dragged = Rt.Of(p).ShoveFrom >= 0f; }
       Check(dragged && p.Hp < p.MaxHp, "Ferryman: the Hook catches and drags you");
       Rt.Of(p).ShoveFrom = -1f; f.Doing = null; h.Hp = 1; Boss.OnDamaged(h); p.X = h.X - 1; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f);

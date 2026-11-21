@@ -1,12 +1,12 @@
-// Boss: the Ferryman (Tier 3, Stranded Ferry: the Car Deck; BOSS_CONCEPTS_V3.md 3, BOSS_ROSTER.md 4). A tall drowned figure in a torn oilskin coat with a ship's lantern for a head.
-// Drawn from Pixel Lab clips (BossArt key "ferryman"). The fight is Boss.cs with effects of its own:
-//  - the Thrust (white: parry the pole) and the Hook (red: the Verger's catch-and-drag, at a boat hook's length);
-//  - the Flare: the lantern blazes: every player within FlareRange whose crosshair is ON him (within FlareCone degrees) is dazzled: aim gone, deafened-and-dazed 2 s.
-//    A new tell: "don't look at it" (aim away from him as the glint shows); a dive does not help;
-//  - the Hands: he strikes the deck and drowned hands come up round him: everyone within HandsRange not diving is pulled down (knocked down, a little hurt);
-//  - phase 2: the Row (red, a wide sweep of the pole) and the double thrust.
-// Co-op: he fights the nearest player; the flare and the hands catch everyone. Host-side only.
-// NOT built from the brief yet: the phantom lake (water slow zones), the deck tilting and rolling cars, the lantern as a breakable weak point.
+// Boss: the Ferryman (Tier 3, Stranded Ferry: the Car Deck; BOSS_CONCEPTS_V3.md 3, BOSS_ROSTER.md 4). REDONE 2026-11-21 from Yan's own ChatGPT drawing (ArtSource/mutants_anim/boss_concepts/gpt/ferryman_native.png, ferryman_from_gpt.py): a drowned
+// corpse that became an anglerfish - a split torso for a mouth, rib teeth, four long human limbs bent backwards, a spine growing out of its back with a ship's lantern on it and a drowned face in the glass. Side on, crawls. Drawn from Pixel Lab clips (BossArt key "ferryman").
+// The fight is Boss.cs with effects of its own:
+//  - the Bite (white: parry it; a lunge across the deck) and the Claw (a long arm);
+//  - the Lure (red): the lantern blazes: every player within FlareRange whose crosshair is ON the light (within FlareCone degrees) is dazzled: aim gone, dazed 2 s. "Don't look at it": a dive does not help;
+//  - the Hands: it strikes the deck and drowned hands come up round it: everyone within HandsRange not diving is pulled down (knocked down, a little hurt);
+//  - phase 2: the Reel (red: the lantern swings and the light hauls you toward the mouth, then the bite), the Double Claw.
+// Co-op: it fights the nearest player; the lure and the hands catch everyone. Host-side only.
+// NOT built from the brief yet: the phantom lake (water slow zones), the deck tilting and rolling cars, the dive and ambush from the water (the dive / emerge clips exist), the lantern as a breakable weak point.
 using System.Linq;
 using GameData;
 using UnityEngine;
@@ -24,12 +24,12 @@ namespace GameCore
             Art = "ferryman", Creature = true, StepSeconds = 0.42f, Recover = 1.0f, Phase2Line = "The lantern burns green-white. Water runs up the rails that should run down.",
             Moves = new[]
             {
-                new Boss.Move { Name = "Thrust", Wind = 0.8f, MaxDist = 2f, Mult = 1.0f, Weight = 3, Open = 1.3f, Clip = "thrust" },
-                new Boss.Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.5f, Mult = 0.9f, Weight = 2, Open = 1.4f, Clip = "hook" },
-                new Boss.Move { Name = "Flare", Wind = 1.1f, Danger = true, MaxDist = FlareRange, Effects = new[] { "flare" }, Weight = 2, Open = 1.5f, Clip = "flare" },
-                new Boss.Move { Name = "Hands", Wind = 1.0f, Danger = true, MaxDist = HandsRange, Mult = 0.4f, Effects = new[] { "hands" }, Weight = 2, Open = 1.6f, Clip = "thrust" },
-                new Boss.Move { Name = "Row", Wind = 1.0f, Danger = true, MaxDist = 2f, Mult = 1.4f, Weight = 2, Open = 2.0f, Phase2Only = true, Clip = "sweep" },
-                new Boss.Move { Name = "Double Thrust", Wind = 0.7f, Hits = 2, Gap = 0.55f, MaxDist = 2f, Mult = 0.8f, Weight = 2, Open = 1.6f, Phase2Only = true, Clip = "thrust" },
+                new Boss.Move { Name = "Bite", Wind = 0.8f, Lunge = 3f, Mult = 1.1f, Weight = 3, Open = 1.3f, Clip = "bite" },
+                new Boss.Move { Name = "Claw", Wind = 0.7f, MaxDist = 2.5f, Mult = 0.8f, Weight = 3, Open = 1.1f, Clip = "claw" },
+                new Boss.Move { Name = "Lure", Wind = 1.2f, Danger = true, MaxDist = FlareRange, Effects = new[] { "flare" }, Weight = 2, Open = 1.5f, Clip = "lure" },
+                new Boss.Move { Name = "Hands", Wind = 1.0f, Danger = true, MaxDist = HandsRange, Mult = 0.4f, Effects = new[] { "hands" }, Weight = 2, Open = 1.6f, Clip = "claw" },
+                new Boss.Move { Name = "Reel", Wind = 1.1f, Danger = true, Drag = 4.5f, Mult = 1.0f, Weight = 2, Open = 1.6f, Phase2Only = true, Clip = "lure" },
+                new Boss.Move { Name = "Double Claw", Wind = 0.6f, Hits = 2, Gap = 0.5f, MaxDist = 2.5f, Mult = 0.8f, Weight = 2, Open = 1.6f, Phase2Only = true, Clip = "claw" },
             },
         };
         static FerrymanBoss() { Def.Defeated = Defeated; }
@@ -54,7 +54,7 @@ namespace GameCore
             f.NextMoveAt = Time.time + (intro ? 2.8f : 1.6f);
             if (intro)
             {
-                GameLog.Event("Water is running across the car deck from nowhere. In the middle of it a tall man in a dripping coat leans on a boat hook, and where his head should be a lantern burns green.");
+                GameLog.Event("Water is running across the car deck from nowhere. In the middle of it something pale crawls toward you on long wrong arms, its chest split open for a mouth, and over its back a lantern burns green with a face pressed to the glass.");
                 Story.Cutscene(x + 0.5f, y + 0.5f, 2.2f);
             }
             return f;
@@ -79,7 +79,7 @@ namespace GameCore
                 if (CombatantUtil.Distance(h, q) > FlareRange || !LooksAt(q, h)) continue;
                 var aim = Gunplay.AimOf(q); aim.Steady = 0f; aim.Bloom = Gunplay.PlayerMaxBloom; Body.Concuss(q, 2f); n++;
             }
-            GameLog.Write(n > 0 ? "You looked at the lantern. The green light burns into your eyes." : "The lantern blazes. You kept your eyes off it.");
+            GameLog.Write(n > 0 ? "You looked at the lantern. The face in the glass looked back, and the green light burns into your eyes." : "The lantern blazes. You kept your eyes off it.");
         }
 
         /// <summary>The Hands' blow: drowned hands come up through the deck round him: everyone within HandsRange not diving is pulled down.</summary>
@@ -100,8 +100,8 @@ namespace GameCore
         static void Defeated(Player p, HumanEnemy h)
         {
             h.Inventory.Items.Add(new InventoryItem { Id = "ferry_lantern", Name = Trophy, Type = "misc", Qty = 1, WeightKg = 2f, Price = 2600 });
-            Story.Journal("The Ferryman: on the Stranded Ferry's car deck a drowned man with a lantern for a head rowed a lake that is not there. The water is gone. The lantern is cold, and yours.");
-            GameLog.Event("He sinks to his knees. The green light in the lantern gutters and goes out, and the water on the deck goes with it.");
+            Story.Journal("The Ferryman: on the Stranded Ferry's car deck something drowned and split open crawled through a lake that is not there, and lured with a lantern. The water is gone. The lantern is cold, and yours.");
+            GameLog.Event("It folds flat onto the deck. The green light in the lantern gutters and goes out, and the water goes with it.");
         }
     }
 }
