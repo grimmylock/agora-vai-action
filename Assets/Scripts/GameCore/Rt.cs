@@ -826,7 +826,10 @@ namespace GameCore
             SpoolBoss.Tick(Time.deltaTime);
             MotherHollow.Tick(Time.deltaTime);
             SingerBoss.Tick(Time.deltaTime);
-            FerrymanBoss.Tick(Time.deltaTime);                                     // 2026-11-21: the lantern-head on the Stranded Ferry                                       // 2026-11-21: the warm wall in the Valley Mine                                     // 2026-11-21: the den mother in the Secret Cave                                        // Boss 4: Spool in the Dog Kennels
+            FerrymanBoss.Tick(Time.deltaTime);
+            SpecimenGrown.Tick(Time.deltaTime);
+            ExcavatorBoss.Tick(Time.deltaTime);                                    // 2026-11-21: the husk-driven rig in the Quarry Basin
+            OrderlyBoss.Tick(Time.deltaTime);                                      // 2026-11-21: the giant in the Hospital Morgue                                    // 2026-11-21: the escaped brain on the Crystal Pool                                     // 2026-11-21: the lantern-head on the Stranded Ferry                                       // 2026-11-21: the warm wall in the Valley Mine                                     // 2026-11-21: the den mother in the Secret Cave                                        // Boss 4: Spool in the Dog Kennels
             // (ChoirBoss.Tick retired 2026-11-20: the Choir is the cathedral job now, MISSION_CHOIR.md)
             Tier2Poi.Tick();                                                      // Tier 2 points of interest: papers + crews
             CrownJob.Tick(Time.deltaTime);                                         // Tier 2 "The Crown": the waves at the Nest, then the King

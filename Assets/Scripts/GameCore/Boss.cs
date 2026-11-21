@@ -311,6 +311,7 @@ namespace GameCore
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
             { Player t = null; int bd = int.MaxValue; foreach (var q in Player.All) { if (!q.IsAlive()) continue; int d = CombatantUtil.Distance(f.Unit, q); if (d < bd) { bd = d; t = q; } } if (t != null) { f.AimX = t.X; f.AimY = t.Y; } }
             f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
+            if (m.Effects != null && m.Effects.Contains("drip")) OrderlyBoss.DripBegins(f);         // the Orderly: how hurt he is when he starts squeezing the bag
             if (m.Clip != null && !BossArt.Start(f, m.Clip, f.StrikeAt, speed)) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
@@ -341,6 +342,11 @@ namespace GameCore
             if (fx == "grasp") { f.StruckAt = Time.time; SingerBoss.Grasp(f, p, m, hi0); return; }
             if (fx == "flare") { f.StruckAt = Time.time; FerrymanBoss.Flare(f); return; }               // 2026-11-21 the Ferryman
             if (fx == "hands") { f.StruckAt = Time.time; FerrymanBoss.Hands(f, m, hi0); return; }
+            if (fx == "mind") { f.StruckAt = Time.time; SpecimenGrown.Mind(f); return; }                // 2026-11-21 the Specimen, grown
+            if (fx == "digslam") { f.StruckAt = Time.time; ExcavatorBoss.DigSlam(f, m, hi0); return; }   // 2026-11-21 the Excavator
+            if (fx == "rocks") { f.StruckAt = Time.time; ExcavatorBoss.Rocks(f, m, hi0); return; }
+            if (fx == "slab") { f.StruckAt = Time.time; OrderlyBoss.Slab(f, p, m, hi0); return; }         // 2026-11-21 the Orderly
+            if (fx == "drip") { OrderlyBoss.Drip(f); return; }
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)                                                   // 2026-11-21 the Verger: the blade rung on the stone
             f.StruckAt = Time.time;
@@ -598,6 +604,7 @@ namespace GameCore
 
         /// <summary>A moment of near-frozen time (real seconds): the weight on a parry, a phase change, the finisher.</summary>
         public static float StopLeft => _stopUntil < 0f ? 0f : Mathf.Max(0f, _stopUntil - Time.unscaledTime);      // co-op: what is left of the hit-stop, for the friends
+        public static void HitStopPublic(float seconds) => HitStop(seconds);
         public static void HitStop(float seconds)
         {
             if (Rt.Paused) return;

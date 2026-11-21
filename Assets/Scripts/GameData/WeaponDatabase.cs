@@ -33,7 +33,7 @@ namespace GameData
     {
         // Keyed exactly like WEAPON_DB in the JS: Categories["sidearm"]["PSh18Pchela"]
         /// <summary>2026-11-20: a boss's own weapons: in no shop and no random loadout (the Verger's scythe and claws).</summary>
-        public static readonly System.Collections.Generic.HashSet<string> Unique = new System.Collections.Generic.HashSet<string> { "VergerScythe", "VergerClaws", "MotherJaws", "SingerHands", "FerrymanHook" };
+        public static readonly System.Collections.Generic.HashSet<string> Unique = new System.Collections.Generic.HashSet<string> { "VergerScythe", "VergerClaws", "MotherJaws", "SingerHands", "FerrymanHook", "SpecimenLegs", "ExcavatorBucket", "OrderlySaw" };
         public static readonly Dictionary<string, Dictionary<string, WeaponDef>> Categories =
             new Dictionary<string, Dictionary<string, WeaponDef>>
         {
@@ -51,6 +51,9 @@ namespace GameData
                 ["Hammer"] = new WeaponDef { Name = "Hammer", BaseDamage = 330, Range = "Adjacent", WeightKg = 0.7f, Tier = 3 },
                 ["FireAxe"] = new WeaponDef { Name = "Fire Axe", BaseDamage = 450, Range = "Adjacent", WeightKg = 2.0f, Tier = 3, IgnorePhysDRPercent = 0.1f },
                 ["Sledgehammer"] = new WeaponDef { Name = "Sledgehammer", BaseDamage = 650, Range = "Adjacent", WeightKg = 4.0f, Tier = 4, IgnorePhysDRPercent = 0.2f },
+                ["ExcavatorBucket"] = new WeaponDef { Name = "The Excavator's Bucket", BaseDamage = 450, Range = "Adjacent", WeightKg = 8.0f, Tier = 5 },   // 2026-11-21: the rig's boom and bucket (ExcavatorBoss.cs); never loot
+                ["OrderlySaw"] = new WeaponDef { Name = "The Orderly's Saw", BaseDamage = 520, Range = "Adjacent", WeightKg = 4.0f, Tier = 6 },   // 2026-11-21: the Orderly's long saw-blade (OrderlyBoss.cs); never loot
+                ["SpecimenLegs"] = new WeaponDef { Name = "The Specimen's Legs", BaseDamage = 380, Range = "Adjacent", WeightKg = 2.0f, Tier = 4 },   // 2026-11-21: the grown Specimen's lashing legs (SpecimenGrown.cs); never loot
                 ["FerrymanHook"] = new WeaponDef { Name = "The Ferryman's Hook", BaseDamage = 320, Range = "Adjacent", WeightKg = 3.0f, Tier = 3 },   // 2026-11-21: the Ferryman's boat hook (FerrymanBoss.cs); never loot
                 ["SingerHands"] = new WeaponDef { Name = "The Singer's Hands", BaseDamage = 240, Range = "Adjacent", WeightKg = 2.0f, Tier = 2 },   // 2026-11-21: the Singer's grasp and crush (SingerBoss.cs); never loot
                 ["MotherJaws"] = new WeaponDef { Name = "Mother's Jaws", BaseDamage = 220, Range = "Adjacent", WeightKg = 2.0f, Tier = 1 },   // 2026-11-21: Mother Hollow's bite (MotherHollow.cs); a creature's, never loot

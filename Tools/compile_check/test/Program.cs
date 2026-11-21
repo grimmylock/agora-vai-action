@@ -103,6 +103,7 @@ static class Program {
     MotherHollowChecks();
     SingerChecks();
     FerrymanChecks();
+    LateBossChecks();
     CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
@@ -2923,6 +2924,37 @@ static class Program {
       Rt.Of(p).ShoveFrom = -1f; f.Doing = null; h.Hp = 1; Boss.OnDamaged(h); p.X = h.X - 1; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f);
       Check(f.Broken && Boss.TryFinish(p) && Story.Has(FerrymanBoss.Done) && h.Inventory.Items.Any(i => i.Name == FerrymanBoss.Trophy), "Ferryman: broken, executed, ferryman_done, the Ferry Lantern on him");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); Rt.Of(p).AimAt = null; }
+  }
+  static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 92000f; UnityEngine.Time.unscaledTime = 92000f;
+    GameServices.Grid = new TacticalGridSystem();
+    try {
+      Boss.Fight f = null; HumanEnemy h = null;
+      void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.X = px + 5; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + 5 - dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
+      void Run(Boss.Move mv, System.Action mid = null, System.Action each = null) { Boss.Begin(f, mv, UnityEngine.Time.time, 1f); mid?.Invoke(); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; each?.Invoke(); Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); } f.Doing = null; f.OpenUntil = -1f; }
+      // the Specimen, grown
+      f = Boss.Spawn(SpecimenGrown.Def, px + 5, py); h = f.Unit; var mind = SpecimenGrown.Def.Moves.First(m => m.Name == "Mind-Lash");
+      Reset(6); Run(mind); Check(Body.Concussed(p), "Specimen grown: the Mind-Lash dazes you in its sight");
+      for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Solid);
+      Reset(6); Run(mind); Check(!Body.Concussed(p), "Specimen grown: out of its sight the Mind-Lash misses");
+      for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Empty);
+      Check(SpecimenGrown.Def.Moves.Any(m => m.Lunge > 0f && m.Danger), "Specimen grown: it skitters (a red rush)");
+      Boss.Reset(); EncounterState.Enemies.Clear();
+      // the Excavator
+      f = Boss.Spawn(ExcavatorBoss.Def, px + 5, py); h = f.Unit; var slam = ExcavatorBoss.Def.Moves.First(m => m.Name == "Dig-Slam");
+      Check(Melee.For(h.EquippedWeapon).Reach >= 3f && ExcavatorBoss.Def.Hp >= 10000, "Excavator: a boom arm's reach and a machine's health");
+      Reset(4); Run(slam); Check(p.Hp < p.MaxHp && Rt.Of(p).ProneUntil > UnityEngine.Time.time - 1.5f, "Excavator: the Dig-Slam lands on where you stood and knocks you down");
+      Reset(4); Run(slam, () => { p.Y = py + 4; Rt.SetOffset(p, 0f, 0f); }); Check(p.Hp == p.MaxHp, "Excavator: step off the marked spot and the slam misses");
+      var rocks = ExcavatorBoss.Def.Moves.First(m => m.Name == "Scoop"); Reset(6); Run(rocks); Check(p.Hp < p.MaxHp, "Excavator: the Scoop's rubble lands on you where you stood");
+      Boss.Reset(); EncounterState.Enemies.Clear();
+      // the Orderly: the drip
+      f = Boss.Spawn(OrderlyBoss.Def, px + 5, py); h = f.Unit; var drip = OrderlyBoss.Def.Moves.First(m => m.Name == "Drip");
+      Reset(4); h.Hp = h.MaxHp * 7 / 10; int before = h.Hp; Run(drip); Check(h.Hp > before && OrderlyBoss.DripsUsed(f) == 1, $"Orderly: the Drip mends him ({before} -> {h.Hp})");
+      Reset(4); h.Hp = h.MaxHp * 8 / 10; before = h.Hp; Run(drip, () => { h.Hp -= (int)(OrderlyBoss.Def.Hp * 0.05f); }); Check(h.Hp < before && OrderlyBoss.Burst(f) && h.StatusEffects.Bleeding, "Orderly: hurt him while he squeezes and the bag bursts: no heal, he bleeds");
+      Reset(4); before = h.Hp; Run(drip); Check(h.Hp <= before, "Orderly: a burst bag never mends him again");
+      var grab = OrderlyBoss.Def.Moves.First(m => m.Name == "Grab"); Reset(1); Run(grab); Check(p.Hp < p.MaxHp && Rt.Of(p).ProneUntil > UnityEngine.Time.time - 1.5f, "Orderly: the Grab slams you down");
+      h.Hp = 1; Boss.OnDamaged(h); p.X = h.X - 1; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f); Check(f.Broken && Boss.TryFinish(p) && Story.Has(OrderlyBoss.Done) && h.Inventory.Items.Any(i => i.Name == OrderlyBoss.Trophy), "Orderly: broken, executed, orderly_done, the Ward Name Tag on him");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
   }
   static void VergerBeastChecks() {   // 2026-11-20: the Verger's PARKED beast form (Boss.VergerBeast, 2026-11-21: out of the game, kept working): a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;

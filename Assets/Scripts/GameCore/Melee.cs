@@ -33,6 +33,9 @@ namespace GameCore
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
             ["Verger's Scythe"] = new Stats { Swing = 0.9f, Reach = 2.1f, ThrowSpeed = 9f, ThrowRange = 6f, Blade = true, Bleeds = true, TwoHanded = true, WindUp = 1f },   // 2026-11-20: a war scythe: the longest reach in the game, it cuts and bleeds
+            ["The Excavator's Bucket"] = new Stats { Swing = 1.0f, Reach = 3.0f, Blade = false },   // 2026-11-21: a boom arm's reach
+            ["The Orderly's Saw"] = new Stats { Swing = 0.7f, Reach = 2.3f, Blade = true, Bleeds = true },   // 2026-11-21: a long arm and a long saw
+            ["The Specimen's Legs"] = new Stats { Swing = 0.5f, Reach = 2.3f, Blade = true, Bleeds = true },   // 2026-11-21: long spinal legs that whip
             ["The Ferryman's Hook"] = new Stats { Swing = 0.7f, Reach = 2.5f, Blade = true, Bleeds = false },   // 2026-11-21: a long boat hook
             ["The Singer's Hands"] = new Stats { Swing = 0.7f, Reach = 2.2f, Blade = false },   // 2026-11-21: the Singer's hands slam the floor in front of the wall
             ["Mother's Jaws"] = new Stats { Swing = 0.6f, Reach = 2.0f, Blade = true, Bleeds = true },   // 2026-11-21: Mother Hollow: a long neck, a wide jaw

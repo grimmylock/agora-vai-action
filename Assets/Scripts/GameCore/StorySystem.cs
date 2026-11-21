@@ -305,6 +305,9 @@ namespace GameCore
             MotherHollow.OnEnterZone(zone?.Id);
             SingerBoss.OnEnterZone(zone?.Id);
             FerrymanBoss.OnEnterZone(zone?.Id);
+            SpecimenGrown.OnEnterZone(zone?.Id);
+            ExcavatorBoss.OnEnterZone(zone?.Id);
+            OrderlyBoss.OnEnterZone(zone?.Id);
             Tier3Story.OnEnterZone(zone?.Id);
             StoryNpcs.OnEnterZone();   // the story's people as units   // Story 7: the pills crate on the Stranded Ferry   // Story 5: the Brute in the Rust Culvert
             if (zone == null || zone.IsSafeZone) return;
