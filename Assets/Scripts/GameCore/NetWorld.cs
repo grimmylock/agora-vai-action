@@ -107,10 +107,41 @@ namespace GameCore
                 var at = MutantAttack.NetState(e, now); if (at.code != 0) { w.Write(at.code); w.Write(at.t20); w.Write(at.d1); w.Write(at.d2); }      // 2026-11-12: the canines' attack animation, only while one plays
                 var gp = Gaunt.NetPose(e); if (gp.code != 0) { w.Write(gp.code); w.Write(gp.t20); }                                                 // 2026-11-16: the Gaunt's scream / point (1 / 2) and how long ago it began
             }
+            WriteBosses(w, send);
             WriteBrain(w);
             // forget the ids of enemies that are gone
             foreach (var gone in Ids.Keys.Where(k => !(k is Player) && !EncounterState.Enemies.Contains(k as Mutant)).ToList()) Ids.Remove(gone);
         }
+        // ------------------------------------------------------------------ 2026-11-21: the duel bosses (Boss.cs) among the enemies just sent: which boss, the clip it plays (a creature boss's drawing, BossArt) and how far into it, its state.
+        // So a client draws Mother Hollow as Mother Hollow (not a plain body) and its boss bar works. The fight itself stays the host's.
+        static void WriteBosses(BinaryWriter w, List<Mutant> sent)
+        {
+            w.Flush(); int room = Packet - (int)w.BaseStream.Length - 120;            // the brain's block comes after
+            var fs = Boss.Fights.Where(f => !f.Gone && !f.Mirror && sent.Contains(f.Unit)).Take(System.Math.Max(0, System.Math.Min(3, room / 20))).ToList(); w.Write((byte)fs.Count); float now = Time.time;
+            foreach (var f in fs)
+            {
+                w.Write((ushort)IdOf(f.Unit)); w.Write((byte)System.Math.Max(0, System.Array.IndexOf(Boss.Registry, f.Def)));
+                string clip = f.Clip ?? ""; if (clip.Length > 12) clip = clip.Substring(0, 12); w.Write(clip); w.Write(f.Clip != null ? (now - f.ClipT0) / Mathf.Max(0.01f, f.ClipScale) : 0f);
+                w.Write((byte)((f.Broken ? 1 : 0) | (f.Finished ? 2 : 0) | (f.Beast ? 4 : 0) | (f.Phase == 2 ? 8 : 0) | (now < f.OpenUntil ? 16 : 0)));
+            }
+        }
+        public class BossIn { public int Id, Def, Flags; public string Clip; public float T; }
+        static List<BossIn> ReadBosses(BinaryReader r) { var l = new List<BossIn>(); int n = r.ReadByte(); for (int i = 0; i < n; i++) l.Add(new BossIn { Id = r.ReadUInt16(), Def = r.ReadByte(), Clip = r.ReadString(), T = r.ReadSingle(), Flags = r.ReadByte() }); return l; }
+        /// <summary>On a client: a mirror Fight for each boss the host sent (never ticked: Boss.Tick skips mirrors), carrying the clip and the state the drawing and the HUD read.</summary>
+        static void ApplyBosses(List<BossIn> bs)
+        {
+            float now = Time.time; var keep = new HashSet<Boss.Fight>();
+            foreach (var b in bs ?? new List<BossIn>())
+            {
+                if (!Mirror.TryGetValue(b.Id, out var m) || !(m is HumanEnemy h) || b.Def >= Boss.Registry.Length) continue;
+                var f = Boss.Fights.FirstOrDefault(x => x.Mirror && x.Unit == h);
+                if (f == null) { f = new Boss.Fight { Def = Boss.Registry[b.Def], Unit = h, Started = now, Mirror = true }; Boss.Fights.Add(f); h.MaxHp = System.Math.Max(h.MaxHp, f.Def.Hp); h.Unkillable = true; }
+                f.Clip = b.Clip.Length > 0 ? b.Clip : null; f.ClipT0 = now - b.T; f.ClipScale = 1f;
+                f.Broken = (b.Flags & 1) != 0; f.Finished = (b.Flags & 2) != 0; f.Beast = (b.Flags & 4) != 0; f.Phase = (b.Flags & 8) != 0 ? 2 : 1; f.OpenUntil = (b.Flags & 16) != 0 ? now + 0.2f : -1f; keep.Add(f);
+            }
+            Boss.Fights.RemoveAll(f => f.Mirror && !keep.Contains(f));
+        }
+
         // ------------------------------------------------------------------ the brain boss (Boss 2): its vat's state and every effect the view draws
         static void WriteBrain(BinaryWriter w)
         {
@@ -159,7 +190,7 @@ namespace GameCore
         // ------------------------------------------------------------------ the client
         public class Entry { public int Id, A, B, Fr, X, Y, Hp, Alert, Atk, AtkT, D1, D2, GPose, GT; public bool Human, Alive, Aggro, Spotted, Calling, Cloaked; public float Ox, Oy; }
         public class FxIn { public int Seq, Kind, Weapon, Rounds, FromX, FromY, ToX, ToY, Overkill; public byte ActorT, TargetT; public ulong Actor, Target; public int Flags; public float EndX, EndY, Seconds; public string Px; }
-        public class WorldIn { public BrainIn Brain; public bool Slow; public float Stop; public List<(int seq, string text)> Logs = new List<(int, string)>(); public List<(int seq, byte t, ulong who, int kind, string text)> Nums = new List<(int, byte, ulong, int, string)>(); public List<FxIn> Fx = new List<FxIn>(); public List<Entry> Enemies = new List<Entry>(); }
+        public class WorldIn { public List<BossIn> Bosses; public BrainIn Brain; public bool Slow; public float Stop; public List<(int seq, string text)> Logs = new List<(int, string)>(); public List<(int seq, byte t, ulong who, int kind, string text)> Nums = new List<(int, byte, ulong, int, string)>(); public List<FxIn> Fx = new List<FxIn>(); public List<Entry> Enemies = new List<Entry>(); }
         public static WorldIn Read(BinaryReader r)
         {
             var o = new WorldIn { Slow = r.ReadBoolean(), Stop = r.ReadSingle() };
@@ -178,12 +209,13 @@ namespace GameCore
                 var e = new Entry { Id = r.ReadUInt16() }; int fl = r.ReadByte(); e.Human = (fl & 1) != 0; e.Alive = (fl & 2) != 0; e.Aggro = (fl & 4) != 0; e.Spotted = (fl & 8) != 0; e.Calling = (fl & 16) != 0; e.Cloaked = (fl & 32) != 0; e.A = r.ReadUInt16(); e.B = r.ReadUInt16(); e.Fr = r.ReadByte();
                 e.X = r.ReadInt16(); e.Y = r.ReadInt16(); e.Ox = r.ReadSByte() / 127f; e.Oy = r.ReadSByte() / 127f; e.Hp = r.ReadUInt16(); e.Alert = r.ReadByte(); if ((fl & 64) != 0) { e.Atk = r.ReadByte(); e.AtkT = r.ReadByte(); e.D1 = r.ReadSByte(); e.D2 = r.ReadSByte(); } if ((fl & 128) != 0) { e.GPose = r.ReadByte(); e.GT = r.ReadByte(); } o.Enemies.Add(e);
             }
+            o.Bosses = ReadBosses(r);
             o.Brain = ReadBrain(r);
             return o;
         }
 
         static readonly Dictionary<int, Mutant> Mirror = new Dictionary<int, Mutant>(); static int _seenLog, _seenNum, _seenFx;
-        public static void ResetClient() { Mirror.Clear(); _seenLog = _seenNum = _seenFx = 0; }
+        public static void ResetClient() { Boss.Fights.RemoveAll(f => f.Mirror); Mirror.Clear(); _seenLog = _seenNum = _seenFx = 0; }
         static ICombatant Resolve(byte t, ulong id) => t == 1 ? Net.PlayerOf(id) : t == 2 && Mirror.TryGetValue((int)id, out var m) ? m : null;
 
         /// <summary>On a client: the clock, the lines, the numbers, the effects and the enemies of the host's snapshot.</summary>
@@ -212,6 +244,7 @@ namespace GameCore
                 if (e.Calling && m is HumanEnemy hcall) { EncounterState.Caller = hcall; if (EncounterState.CallAt < 0f) EncounterState.CallAt = Time.time; } else if (EncounterState.Caller == m) { EncounterState.Caller = null; EncounterState.CallAt = -1f; }
             }
             foreach (var id in Mirror.Keys.Where(k => !seen.Contains(k)).ToList()) { EncounterState.Enemies.Remove(Mirror[id]); Mirror.Remove(id); }
+            ApplyBosses(o.Bosses);
             ApplyBrain(o.Brain);
             foreach (var (seq, text) in o.Logs) if (seq > _seenLog) { _seenLog = seq; GameLog.Write(text); }
             foreach (var n in o.Nums)

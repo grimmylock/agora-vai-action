@@ -79,6 +79,7 @@ namespace GameCore
             public string Clip; public float ClipT0, ClipScale = 1f;   // the animation clip playing (VergerBoss.Clips) and when it started
             public int AimX, AimY;             // 2026-11-21: where the target stood when the move began (a spit lands there)
             public float StruckAt = -99f;      // when his last hit landed (the beast's attack frame)
+            public bool Mirror;                // 2026-11-21: a client's copy of the host's fight (NetWorld): drawn, never ticked or finished here
             public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
@@ -89,6 +90,9 @@ namespace GameCore
         public static float MultOf(Move m, int i) => m.Mults != null ? m.Mults[i % m.Mults.Length] : m.Mult;
 
         public static readonly List<Fight> Fights = new List<Fight>();
+        /// <summary>2026-11-21: every duel boss, in a fixed order (the snapshot names a boss by its index here: append, never reorder).</summary>
+        public static Def[] Registry => _registry ??= new[] { Visor, Spool, King, Verger, VergerBeast, MotherHollow.Def, SingerBoss.Def, FerrymanBoss.Def, SpecimenGrown.Def, ExcavatorBoss.Def, OrderlyBoss.Def };
+        static Def[] _registry;
         public static Fight Of(ICombatant u) => u == null ? null : Fights.FirstOrDefault(f => f.Unit == u && !f.Gone);
         public static bool Is(ICombatant u) => Of(u) != null;
         public static Fight Current => Fights.FirstOrDefault(f => !f.Gone && !f.Finished) ?? Fights.LastOrDefault(f => !f.Gone && Time.time - (f.LootedAt < 0 ? Time.time : f.LootedAt) < 4f);
@@ -234,6 +238,7 @@ namespace GameCore
 
         public static void Tick(Fight f, Player p)
         {
+            if (f.Mirror) return;                                                   // a client's copy: the host runs the fight
             var h = f.Unit; float now = Time.time;
             // Visor 2: his wind-up is held through the glint, and the strike starts just before the hit lands
             var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def.PoseKey; mc.Pace = f.Def.Pace;
@@ -483,7 +488,7 @@ namespace GameCore
             GameLog.Event($"{f.Def.Name} drops to one knee. E next to him: execute.");
         }
 
-        public static Fight BrokenNear(Player p) => Fights.FirstOrDefault(f => f.Broken && !f.Finished && CombatantUtil.Distance(p, f.Unit) <= 2);
+        public static Fight BrokenNear(Player p) => Fights.FirstOrDefault(f => f.Broken && !f.Finished && !f.Mirror && CombatantUtil.Distance(p, f.Unit) <= 2);
 
         /// <summary>E next to a broken boss: the finisher.</summary>
         public static bool TryFinish(Player p)

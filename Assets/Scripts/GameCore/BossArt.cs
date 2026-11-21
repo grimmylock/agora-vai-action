@@ -15,6 +15,16 @@ namespace GameCore
         public static readonly Dictionary<string, Art> Table = new Dictionary<string, Art>
         {
             // clips begin
+            ["ferryman"] = new Art { Key = "ferryman", W = 148, H = 208, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
+                ["death"] = new VergerBoss.Clip { Name = "boss_ferryman_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
+                ["flare"] = new VergerBoss.Clip { Name = "boss_ferryman_flare", Frames = 13, Ms = new float[] { 110, 155, 200, 80, 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = 3 },
+                ["hook"] = new VergerBoss.Clip { Name = "boss_ferryman_hook", Frames = 13, Ms = new float[] { 110, 121, 132, 143, 155, 166, 177, 188, 200, 80, 135, 150, 165 }, Hit = 9 },
+                ["hurt"] = new VergerBoss.Clip { Name = "boss_ferryman_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },
+                ["idle"] = new VergerBoss.Clip { Name = "boss_ferryman_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
+                ["sweep"] = new VergerBoss.Clip { Name = "boss_ferryman_sweep", Frames = 13, Ms = new float[] { 110, 125, 140, 155, 170, 185, 200, 80, 130, 140, 150, 160, 170 }, Hit = 7 },
+                ["thrust"] = new VergerBoss.Clip { Name = "boss_ferryman_thrust", Frames = 13, Ms = new float[] { 110, 128, 146, 164, 182, 200, 80, 128, 137, 145, 154, 162, 171 }, Hit = 6 },
+                ["walk"] = new VergerBoss.Clip { Name = "boss_ferryman_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
+            } },
             ["mother_hollow"] = new Art { Key = "mother_hollow", W = 232, H = 112, Facing = "left", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["bite"] = new VergerBoss.Clip { Name = "boss_mother_hollow_bite", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
                 ["death"] = new VergerBoss.Clip { Name = "boss_mother_hollow_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
@@ -26,10 +36,17 @@ namespace GameCore
                 ["walk"] = new VergerBoss.Clip { Name = "boss_mother_hollow_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
             } },
             ["singer"] = new Art { Key = "singer", W = 256, H = 216, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
+                ["death"] = new VergerBoss.Clip { Name = "boss_singer_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
                 ["grasp"] = new VergerBoss.Clip { Name = "boss_singer_grasp", Frames = 13, Ms = new float[] { 110, 128, 146, 164, 182, 200, 80, 128, 137, 145, 154, 162, 171 }, Hit = 6 },
+                ["hurt"] = new VergerBoss.Clip { Name = "boss_singer_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },
                 ["idle"] = new VergerBoss.Clip { Name = "boss_singer_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
                 ["note"] = new VergerBoss.Clip { Name = "boss_singer_note", Frames = 13, Ms = new float[] { 110, 140, 170, 200, 80, 126, 133, 140, 146, 153, 160, 166, 173 }, Hit = 4 },
                 ["scream"] = new VergerBoss.Clip { Name = "boss_singer_scream", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
+            } },
+            ["specimen"] = new Art { Key = "specimen", W = 252, H = 184, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
+                ["idle"] = new VergerBoss.Clip { Name = "boss_specimen_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
+                ["lash"] = new VergerBoss.Clip { Name = "boss_specimen_lash", Frames = 13, Ms = new float[] { 110, 125, 140, 155, 170, 185, 200, 80, 130, 140, 150, 160, 170 }, Hit = 7 },
+                ["walk"] = new VergerBoss.Clip { Name = "boss_specimen_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
             } },            // clips end
         };
 

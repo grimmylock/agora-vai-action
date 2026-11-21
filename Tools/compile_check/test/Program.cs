@@ -3907,6 +3907,7 @@ static class Program {
       int fx0 = CombatFx.Pending.Count, nm0 = TestingGround.Numbers.Count; Net.OnSnapshot(snap);
       Check(CombatFx.Pending.Count == fx0 && TestingGround.Numbers.Count == nm0, "Co-op world: a resent snapshot does not play anything twice");
       NetWorldCrowd(link, rw, ra, mk);
+      NetWorldBoss(link);
     } finally { GameLog.Target = null; Net.Reset(); Net.Link = null; Rt.On = false; Rt.SetSlow(false); }
   }
 
@@ -3920,6 +3921,20 @@ static class Program {
     Check(big.Length <= NetWorld.Packet && bd.World.Enemies.Count >= 12 && bd.World.Enemies.Count < 91, $"Co-op world: a crowded fight (91 enemies, 30 shots, long lines) still fits one packet ({big.Length} bytes, {bd.World.Enemies.Count} enemies sent, nearest first)");
   }
 
+
+  static void NetWorldBoss(FakeLink link) {   // 2026-11-21: a creature boss reaches a friend as itself (which boss, its clip, its state), not as a plain body
+    Net.Reset(); Net.Link = link; Net.Host(); Net.OnJoin(7); EncounterState.Enemies.Clear(); Boss.Reset(); Rt.SetSlow(false); var p = Player.Current; int px = p.X, py = p.Y; UnityEngine.Time.time = 9100f;
+    var f = Boss.Spawn(MotherHollow.Def, px + 3, py); Boss.Begin(f, MotherHollow.Def.Moves.First(m => m.Name == "Bite"), UnityEngine.Time.time, 1f); UnityEngine.Time.time += 0.2f;
+    var snap = Net.EncodeSnapshot(); var d = Net.DecodeSnapshot(snap);
+    Check(snap.Length <= NetWorld.Packet && d.World.Bosses != null && d.World.Bosses.Count == 1 && d.World.Bosses[0].Clip == "bite", $"Co-op boss: the snapshot names the boss and its clip ({snap.Length} bytes)");
+    Net.Reset(); Net.Link = link; link.Id = 7; Boss.Reset(); GameBootstrap.StartNewGame(new CharacterSpec(), null, save: false); Net.BecomeClient(); EncounterState.Enemies.Clear(); UnityEngine.Time.time = 9300f;
+    Net.OnSnapshot(snap);
+    var mf = Boss.Fights.FirstOrDefault(x => x.Mirror);
+    Check(mf != null && mf.Def == MotherHollow.Def && mf.Clip == "bite" && System.Math.Abs((UnityEngine.Time.time - mf.ClipT0) - 0.2f) < 0.05f && EncounterState.Enemies.Contains(mf.Unit), "Co-op boss: the client has a mirror fight of Mother Hollow playing the bite where the host is in it");
+    var hx = mf.Unit.X; mf.NextMoveAt = 0f; Boss.Tick(mf, Player.Current); Check(mf.Doing == null && mf.Unit.X == hx && Boss.BrokenNear(Player.Current) == null, "Co-op boss: the client never runs the fight (no moves, no finisher on its copy)");
+    Net.OnSnapshot(Net.EncodeSnapshot() is byte[] _ ? snap : snap); Check(Boss.Fights.Count(x => x.Mirror) == 1, "Co-op boss: a resent snapshot keeps one mirror");
+    Boss.Reset();
+  }
 
   // Yan, 2026-11-08: dying alone wakes you at the camp, like the squad wipe; only the Testing Ground keeps the death screen
   static bool _sessionShake;
