@@ -176,8 +176,9 @@ def chapel_crypt():
     p = Plan(40, 44, 9501); r = p.r
     p.room(16, 2, 8, 6, ',')                                       # St: the stair landing
     p.vline(19, 8, 25, 2, ',')                                     # Pa: the burial passage, south from the landing (to the gallery: the gate is across it)
-    for y in (9, 12, 15, 18, 21):                                  # burial niches either side
+    for y in (9, 12, 15, 18, 21):                                  # burial niches either side, each open onto the passage (2026-11-21 QA: they were walled off from it, unreachable rooms)
         p.room(15, y, 3, 2, ','); p.room(22, y, 3, 2, ',')
+        p.g[y][18] = ','; p.g[y][21] = ','
     p.room(4, 10, 10, 10, ','); p.hline(14, 18, 14, 2, ',')        # Os: the ossuary, west
     p.room(4, 3, 6, 5, ','); p.vline(7, 8, 9, 1, ',')              # Pc: the priest's cell, north of the ossuary
     p.room(6, 26, 28, 4, ',')                                      # Bg: the bone gallery, a long cross passage beyond the gate
@@ -812,18 +813,50 @@ def catacombs_check(p):
     return out
 
 def lattice_foundry_lower():
-    """The Lattice Foundry's synthesis level (T5). NOT re-planned: the Batch 91 floor (foundry_plans.lower: the ring corridor round the Coil Hall, the cable tunnel, the crew corridor, the Foreman's office, the
-    plant room) is kept as Yan approved it, and the locks are set INTO it: the Foreman's locker ('3', in his office) = the badge ; the plant room's three ways in become badge doors ('1') and the fuse ('4') is
-    in there ; the bus switch ('5', needs the fuse) is at the cable tunnel's west end ; the Coil Hall's north, west and south doors become dead power doors ('2') and the east breach is walled up, so the Cell
-    Synthesizer (goal, 'Y') needs the power. The graph's coolant lock (steam doors) is not built: there is no art for it yet."""
-    import foundry_plans
-    p = foundry_plans.lower(); g = p.g
-    for (x, y) in ((36, 15), (27, 24), (36, 33)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '2'
-    for (x, y) in ((45, 25), (44, 26)): assert g[y][x] == 'r', (x, y, g[y][x]); g[y][x] = '#'
-    for (x, y) in ((19, 41), (52, 42)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '1'
-    assert g[38][36] == '.'; g[38][36] = '1'
-    for (x, y) in ((11, 9), (11, 15)): assert g[y][x] == 'D', (x, y, g[y][x]); g[y][x] = '}'     # the crew quarters' two doors: steam doors (the coolant valve in the plant room clears them)
-    g[27][19] = '3'; g[40][22] = '6'; g[8][17] = '4'; g[3][6] = '5'       # the badge, the coolant valve (plant room), the fuse (crew quarters), the bus switch
+    """The Lattice Foundry's synthesis level (T5). RE-PLANNED 2026-11-21 (Yan: "run a quality check on all dungeons ... i've noticed some badly done structures"): the Batch 91 floor had a round
+    Coil Hall and a round ring corridor drawn as one-tile staircase walls, bitten bunk rooms and kinked tunnels (145 jagged wall tiles, five times any other built map). Same rooms, same lock chain,
+    plain rectangles: the Service Stair (S, east) -> the ring corridor (a rectangle round the hall; the hub) -> the Foreman's office ('3' = badge, between the crew corridor and the ring) ; the plant room
+    under the ring behind three badge doors ('1': from the ring, the crew corridor and the stair) holds the coolant valve ('6') ; the crew quarters' steam doors ('}') -> the fuse ('4', bunk room 1) ;
+    the bus switch ('5', needs the fuse) at the cable tunnel's west end = power ; the Coil Hall's north, west and south doors are dead power doors ('2'), its east wall is solid ; the Cell Synthesizer
+    (goal, 'Y') stands in the middle among the coils. Loop: the ring, and the crew corridor <-> tunnel <-> stair."""
+    p = Plan(74, 48, 9351); r = p.r
+    p.hline(5, 68, 3, 2)                                            # the cable tunnel, north, straight
+    for x in range(7, 68, 4): p.g[4][x] = 'p'
+    p.vline(9, 5, 44, 2)                                            # the crew corridor, west
+    p.hline(19, 54, 9, 2); p.hline(19, 54, 37, 2); p.vline(19, 9, 38, 2); p.vline(53, 9, 38, 2)   # the ring corridor round the hall
+    p.vline(36, 5, 8, 2)                                            # tunnel -> ring (north)
+    p.room(24, 14, 25, 20)                                          # the Coil Hall
+    p.vline(36, 11, 13, 1); p.g[12][36] = '2'                       # its three dead power doors: north,
+    p.hline(21, 23, 24, 1); p.g[24][22] = '2'                       # west,
+    p.vline(36, 34, 36, 1); p.g[35][36] = '2'                       # south (the east wall stays solid)
+    for (x, y) in ((31, 19), (41, 19), (29, 24), (43, 24), (31, 29), (41, 29), (36, 18), (36, 30)): p.g[y][x] = 'm'   # the coils round the synthesizer
+    p.g[24][36] = 'Y'; p.g[18][39] = 'H'
+    p.room(60, 20, 8, 8); p.g[23][64] = 'S'                         # the Service Stair landing
+    p.hline(55, 59, 24, 1); p.g[24][57] = 'D'                       # stair -> ring
+    p.vline(66, 5, 19, 1); p.g[19][66] = 'D'                        # tunnel -> stair
+    p.room(13, 6, 5, 5); p.hline(11, 12, 8, 1); p.g[8][11] = '}'    # bunk room 1 (the fuse), behind a steam door
+    p.room(13, 13, 5, 6); p.hline(11, 12, 15, 1); p.g[15][11] = '}' # bunk room 2, behind a steam door
+    p.g[9][15] = 'Q'
+    p.room(13, 21, 5, 8); p.g[24][15] = 'F'                         # the Foreman's office
+    p.hline(11, 12, 24, 1); p.g[24][12] = 'D'                       # crew corridor -> office
+    p.hline(18, 18, 26, 1); p.g[26][18] = 'D'                       # office -> ring (west)
+    p.room(13, 32, 5, 5); p.hline(11, 12, 34, 1); p.g[34][12] = 'D' # bunk room 3
+    p.room(20, 41, 33, 5)                                           # the plant room, under the ring
+    p.vline(36, 39, 40, 1); p.g[39][36] = '1'                       # ring -> plant (badge)
+    p.hline(11, 19, 43, 1); p.g[43][15] = '1'                       # crew corridor -> plant (badge)
+    p.hline(53, 64, 43, 1); p.vline(64, 28, 43, 1); p.g[43][58] = '1'; p.g[28][64] = 'D'   # plant -> stair (badge), stair's south door
+    p.g[42][35] = 'P'
+    for x in (23, 27, 31, 40, 44, 48): p.g[42 + r.choice((-1, 0, 1))][x] = 'm'
+    for x in range(21, 52, 2):
+        if p.g[45][x] == '.': p.g[45][x] = 'p'
+    for (x, y) in ((25, 44), (26, 44), (46, 43), (47, 43)): p.g[y][x] = 'w'
+    p.g[27][15] = '3'; p.g[43][22] = '6'; p.g[7][16] = '4'; p.g[3][6] = '5'   # the badge, the coolant valve, the fuse, the bus switch
+    props(p, ((14, 22, 'd'), (17, 22, 'd'), (14, 28, 'l'), (14, 7, 'l'), (14, 9, 'l'), (17, 9, 'c'), (14, 14, 'l'), (16, 17, 't'), (14, 33, 'l'), (16, 35, 'c'),
+              (61, 21, 'x'), (66, 26, 'c'), (25, 15, 'x'), (47, 32, 'x')))
+    for (x, y) in ((33, 22), (40, 27), (35, 26), (42, 21)): p.g[y][x] = '*'      # the crew's last stand round the synthesizer
+    for (x, y) in ((34, 22), (39, 26), (63, 22), (15, 23)): p.g[y][x] = 'i'      # work lights
+    for (x, y) in ((10, 18), (24, 3), (58, 4), (36, 38), (44, 44)): p.g[y][x] = 'e'   # red lamps down the tunnels and the plant room
+    scatter(p, 22)
     return p
 LF_GIVES = {'3': ('badge', None), '6': ('coolant', None), '4': ('fuse', None), '5': ('power', 'fuse')}
 LF_LOCKS = {'1': 'badge', '}': 'coolant', '2': 'power'}

@@ -39,6 +39,7 @@ static class RenderMain {
       var sw = System.Diagnostics.Stopwatch.StartNew();
       MacroState.Current.CurrentZoneId = id;
       TerrainMap.BuildTerrainForZone(id);
+      if (Environment.GetEnvironmentVariable("MAP_QA") == "1") MapQa.Run(id, art);   // 2026-11-21: the structural quality check (MapQa below)
       if (Environment.GetEnvironmentVariable("STASHES") == "1")   // Batch 124: where the stashes are
         foreach (var o in TerrainMap.InteractiveObjects) Console.WriteLine($"stash {o.X},{o.Y} {TerrainMap.GetTile(o.X, o.Y).Look} {o.Name}");
       var annexLines = new System.Collections.Generic.List<string>();
@@ -123,5 +124,73 @@ static class RenderMain {
       }
     }
     return 0;
+  }
+}
+
+
+// 2026-11-21 (Yan: "run a quality check on all dungeons ... i've noticed some badly done structures"): MAP_QA=1 render.sh <maps> prints, per built map, what a player would hit:
+//  POCKET  floor no exit can reach (every lock counted open, low cover counted vaultable): size and box; LOST  a landmark or stash no reachable tile touches;
+//  DOOR    a door tile not set in a wall between two walkable sides; BLOCKED  a doorway with a prop or cover on its walkable side; PILLAR  a lone 1-tile wall in the open (in a built room);
+//  DIAG    two walls touching only at a corner with floor on the other diagonal (the odd dark blocks / a gap that looks walkable); EXIT  an exit on a tile you cannot stand on.
+// Writes map_qa_<id>.tsv (kind x y w h note) for Tools/render/map_qa_overlay.py.
+static class MapQa {
+  static System.Collections.Generic.HashSet<(int, int)> _secret = new System.Collections.Generic.HashSet<(int, int)>();   // walls meant to be broken (Lab Beta's cracked wall): open for the flood
+  static bool Pass(int x, int y) { var t = TerrainMap.GetTile(x, y); return t != null && x >= 0 && y >= 0 && x < TerrainMap.Width && y < TerrainMap.Height && (t.Type != TileType.Solid || _secret.Contains((x, y))); }
+  static bool Walk(int x, int y) { var t = TerrainMap.GetTile(x, y); return t != null && x >= 0 && y >= 0 && x < TerrainMap.Width && y < TerrainMap.Height && (t.Type == TileType.Empty || t.Type == TileType.Difficult || t.Type == TileType.Door || t.Type == TileType.DoorOpen); }
+  static bool Wall(int x, int y) { var t = TerrainMap.GetTile(x, y); return t == null || x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height || t.Type == TileType.Solid; }
+  public static void Run(string id, string art) {
+    int W = TerrainMap.Width, H = TerrainMap.Height; var lines = new System.Collections.Generic.List<string>(); var seen = new bool[W, H];
+    _secret.Clear(); foreach (var l in TerrainMap.Landmarks ?? new System.Collections.Generic.List<LandmarkInstance>()) if (l.Name == Boss.CrackedWall) _secret.Add((l.X, l.Y));
+    var q = new System.Collections.Generic.Queue<(int, int)>();
+    foreach (var e in TerrainMap.Exits) { if (!Pass(e.X, e.Y)) lines.Add($"EXIT\t{e.X}\t{e.Y}\t1\t1\tto {e.TargetZoneId} on a wall"); else if (!seen[e.X, e.Y]) { seen[e.X, e.Y] = true; q.Enqueue((e.X, e.Y)); } }
+    if (q.Count == 0) { var (sx, sy) = TerrainMap.FindNearestEnterable(W / 2, H / 2, 40); seen[sx, sy] = true; q.Enqueue((sx, sy)); lines.Add($"NOTE\t{sx}\t{sy}\t1\t1\tno exits: flood from the middle"); }
+    int[] dx = { 1, -1, 0, 0 }, dy = { 0, 0, 1, -1 };
+    while (q.Count > 0) { var (x, y) = q.Dequeue(); for (int k = 0; k < 4; k++) { int nx = x + dx[k], ny = y + dy[k]; if (nx < 0 || ny < 0 || nx >= W || ny >= H || seen[nx, ny] || !Pass(nx, ny)) continue; seen[nx, ny] = true; q.Enqueue((nx, ny)); } }
+    // pockets: connected unreachable passable areas
+    var done = new bool[W, H]; int pockets = 0, small = 0;
+    for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) {
+      if (seen[x, y] || done[x, y] || !Pass(x, y)) continue;
+      var cq = new System.Collections.Generic.Queue<(int, int)>(); cq.Enqueue((x, y)); done[x, y] = true; int n = 0, x0 = x, x1 = x, y0 = y, y1 = y, walk = 0;
+      while (cq.Count > 0) { var (cx, cy) = cq.Dequeue(); n++; if (Walk(cx, cy)) walk++; x0 = Math.Min(x0, cx); x1 = Math.Max(x1, cx); y0 = Math.Min(y0, cy); y1 = Math.Max(y1, cy);
+        for (int k = 0; k < 4; k++) { int nx = cx + dx[k], ny = cy + dy[k]; if (nx < 0 || ny < 0 || nx >= W || ny >= H || done[nx, ny] || seen[nx, ny] || !Pass(nx, ny)) continue; done[nx, ny] = true; cq.Enqueue((nx, ny)); } }
+      bool edge = x0 == 0 || y0 == 0 || x1 == W - 1 || y1 == H - 1;
+      if (walk >= 4 && !edge) { pockets++; lines.Add($"POCKET\t{x0}\t{y0}\t{x1 - x0 + 1}\t{y1 - y0 + 1}\t{n} tiles ({walk} floor) no exit reaches"); } else if (walk > 0 && !edge) small++;
+    }
+    bool Touch(int x, int y) { for (int ox = -1; ox <= 1; ox++) for (int oy = -1; oy <= 1; oy++) { int nx = x + ox, ny = y + oy; if (nx >= 0 && ny >= 0 && nx < W && ny < H && seen[nx, ny]) return true; } return false; }
+    foreach (var l in TerrainMap.Landmarks ?? new System.Collections.Generic.List<LandmarkInstance>()) if (!l.Name.StartsWith("exit:") && l.X >= 0 && l.Y >= 0 && l.X < W && l.Y < H && !Touch(l.X, l.Y)) lines.Add($"LOST\t{l.X}\t{l.Y}\t1\t1\tlandmark {l.Name}");
+    foreach (var o in TerrainMap.InteractiveObjects) if (o.X >= 0 && o.Y >= 0 && o.X < W && o.Y < H && !Touch(o.X, o.Y)) lines.Add($"LOST\t{o.X}\t{o.Y}\t1\t1\tobject {o.Name}");
+    bool built = TerrainMap.Tiles != null;
+    for (int y = 1; y < H - 1; y++) for (int x = 1; x < W - 1; x++) {
+      var t = TerrainMap.GetTile(x, y);
+      if (t.Type == TileType.Door || t.Type == TileType.DoorOpen) {
+        bool ns = Walk(x, y - 1) && Walk(x, y + 1) && Wall(x - 1, y) && Wall(x + 1, y), ew = Walk(x - 1, y) && Walk(x + 1, y) && Wall(x, y - 1) && Wall(x, y + 1);
+        bool nsP = Pass(x, y - 1) && Pass(x, y + 1) && Wall(x - 1, y) && Wall(x + 1, y), ewP = Pass(x - 1, y) && Pass(x + 1, y) && Wall(x, y - 1) && Wall(x, y + 1);
+        bool wide = (Wall(x - 1, y) || TerrainMap.GetTile(x - 1, y).Type == TileType.Door || TerrainMap.GetTile(x - 1, y).Type == TileType.DoorOpen) && (Wall(x + 1, y) || TerrainMap.GetTile(x + 1, y).Type == TileType.Door || TerrainMap.GetTile(x + 1, y).Type == TileType.DoorOpen) && Pass(x, y - 1) && Pass(x, y + 1)
+                 || (Wall(x, y - 1) || TerrainMap.GetTile(x, y - 1).Type == TileType.Door || TerrainMap.GetTile(x, y - 1).Type == TileType.DoorOpen) && (Wall(x, y + 1) || TerrainMap.GetTile(x, y + 1).Type == TileType.Door || TerrainMap.GetTile(x, y + 1).Type == TileType.DoorOpen) && Pass(x - 1, y) && Pass(x + 1, y);
+        if (!ns && !ew && !nsP && !ewP && !wide) lines.Add($"DOOR\t{x}\t{y}\t1\t1\t{t.Look ?? t.Type.ToString()} not set in a wall between two walkable sides");
+        else if (!ns && !ew && (nsP || ewP)) lines.Add($"BLOCKED\t{x}\t{y}\t1\t1\tdoorway {t.Look} has cover or a prop against it");
+      }
+      if (t.Type == TileType.Solid && Walk(x - 1, y) && Walk(x + 1, y) && Walk(x, y - 1) && Walk(x, y + 1) && Walk(x - 1, y - 1) && Walk(x + 1, y + 1) && Walk(x + 1, y - 1) && Walk(x - 1, y + 1)) {
+        var g = TerrainMap.GetTile(x, y).Ground; if (g != GroundType.CaveFloor && g != GroundType.Dirt && g != GroundType.Grass && g != GroundType.DarkGrass && g != GroundType.Mud && g != GroundType.Sand && g != GroundType.Gravel) lines.Add($"PILLAR\t{x}\t{y}\t1\t1\tlone wall {t.Look} in the open");
+      }
+      if (x < W - 1 && y < H - 1) {
+        bool a = Wall(x, y), b = Wall(x + 1, y), c = Wall(x, y + 1), d = Wall(x + 1, y + 1);
+        if (a && d && !b && !c && Walk(x + 1, y) && Walk(x, y + 1)) lines.Add($"DIAG\t{x}\t{y}\t2\t2\twalls touch only at a corner");
+        if (b && c && !a && !d && Walk(x, y) && Walk(x + 1, y + 1)) lines.Add($"DIAG\t{x}\t{y}\t2\t2\twalls touch only at a corner");
+      }
+    }
+    // jagged walls: a wall tile with walkable floor on two perpendicular sides (a stub end, a staircase step, a bitten corner); in a cave they are rock and natural, so caves are counted apart
+    int jag = 0; var jagAt = new System.Collections.Generic.List<(int, int)>();
+    for (int y = 1; y < H - 1; y++) for (int x = 1; x < W - 1; x++) {
+      if (!Wall(x, y)) continue; bool n = Walk(x, y - 1), so = Walk(x, y + 1), w = Walk(x - 1, y), e = Walk(x + 1, y);
+      if ((n || so) && (w || e)) { jag++; jagAt.Add((x, y)); }
+    }
+    int cave = 0, tiles = 0; for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) { var t = TerrainMap.GetTile(x, y); if (t != null && Walk(x, y)) { tiles++; if (t.Ground == GroundType.CaveFloor) cave++; } }
+    lines.Add($"JAGSUM\t0\t0\t0\t0\t{jag} jagged wall tiles ({(tiles > 0 ? cave * 100 / tiles : 0)}% cave floor)");
+    foreach (var (jx, jy) in jagAt) lines.Add($"JAG\t{jx}\t{jy}\t1\t1\tjagged");
+    int reach = 0, pass = 0; for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) { if (Pass(x, y)) { pass++; if (seen[x, y]) reach++; } }
+    Console.WriteLine($"QA {id}: {W}x{H}, reachable {reach}/{pass} passable tiles, {pockets} pockets, {small} tiny pockets, " + string.Join(", ", lines.GroupBy(l => l.Split('\t')[0]).Select(g => $"{g.Count()} {g.Key}")));
+    foreach (var l in lines.Where(l => !l.StartsWith("DIAG") && !l.StartsWith("JAG\t")).Take(40)) Console.WriteLine("  " + l.Replace('\t', ' '));
+    System.IO.File.WriteAllLines($"{art}/map_qa_{id}.tsv", lines);
   }
 }
