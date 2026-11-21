@@ -14,6 +14,8 @@ if jid:
         time.sleep(5); j = call("/v2/background-jobs/" + jid)
         if j.get("status") in ("completed", "failed"): break
     r = j.get("last_response") or j
+tid = r.get("tileset_id") or (r.get("tileset") or {}).get("id")
+if tid and "tiles" not in (r.get("tileset") or r): r = call("/v2/tilesets/" + tid)   # the job result only names it: fetch the tiles
 json.dump(r, open(os.path.join(H, name + ".json"), "w"))
 ts = r.get("tileset") or r; os.makedirs(os.path.join(H, name), exist_ok=True); n = 0
 def walk(o, path=""):

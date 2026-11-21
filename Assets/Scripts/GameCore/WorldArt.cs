@@ -587,7 +587,9 @@ namespace GameCore
             x0 = System.Math.Max(0, x0); y0 = System.Math.Max(0, y0); x1 = System.Math.Min(_w - 1, x1); y1 = System.Math.Min(_h - 1, y1);
             int W = _w * Px, H = _h * Px;
             var tex = new Spr[GroundName.Length];
-            for (int i = 0; i < tex.Length; i++) tex[i] = Get("g_" + GroundName[i]);
+            var rockTex = Get("g_rocktop_pl");
+            var texFirst = new bool[GroundName.Length];   // 2026-11-21 (Yan: "try the 16px pixel lab tilesets"): a Pixel Lab ground texture (g_<name>_pl, ArtSource/world/tiles_pl) replaces the procedural look of that ground
+            for (int i = 0; i < tex.Length; i++) { var pl = Get("g_" + GroundName[i] + "_pl"); if (pl != null) { tex[i] = pl; texFirst[i] = true; } else tex[i] = Get("g_" + GroundName[i]); }
             if (TerrainMap.ZoneId == "abandoned_cathedral") { var fl = Get("g_flagstone"); if (fl != null) tex[(int)GroundType.LabTile] = fl; }   // 2026-11-20: the cathedral's floor is a checker of flagstones (indoor logic stays LabTile's)
             int gx0 = x0 * Px, gy0 = y0 * Px, gx1 = (x1 + 1) * Px, gy1 = (y1 + 1) * Px;
 
@@ -630,13 +632,13 @@ namespace GameCore
                             if (_slab != null && _slab[ci]) { float n = H01(gx >> 1, gy >> 1, 41); px[row + gx] = Lerp(SlabA, SlabB, n * 0.6f); continue; }
                             Color32 c;
                             var g = own;
-                            if (core) c = Procedural(coreStyle, 20, gx, gy);
+                            if (core) c = coreStyle == RockTop && rockTex != null ? At(rockTex, gx % rockTex.W, gy % rockTex.H) : Procedural(coreStyle, 20, gx, gy);   // (the cliff / cave rock mass: a Pixel Lab texture when there is one)
                             else
                             {
                                 if (!uni) g = GroundPx(gx, gy);
                                 var style = Styles[(int)g];
                                 var s = tex[(int)g];
-                                c = style != null ? Procedural(style, (int)g, gx, gy)
+                                c = style != null && !texFirst[(int)g] ? Procedural(style, (int)g, gx, gy)
                                   : s != null ? At(s, gx % s.W, gy % s.H) : new Color32(60, 60, 56, 255);
                                 if (!uni && Soft(g))                            // 2026-11-11 (the world look-over: dark mud on pale sand met in a hard stair-step line): where two kinds of loose ground meet, a ragged fringe a few pixels wide of half-and-half pixels
                                 {
@@ -645,7 +647,7 @@ namespace GameCore
                                     if (g2 != g && Soft(g2))
                                     {
                                         var st2 = Styles[(int)g2]; var s2 = tex[(int)g2];
-                                        var c2 = st2 != null ? Procedural(st2, (int)g2, gx, gy) : s2 != null ? At(s2, gx % s2.W, gy % s2.H) : c;
+                                        var c2 = st2 != null && !texFirst[(int)g2] ? Procedural(st2, (int)g2, gx, gy) : s2 != null ? At(s2, gx % s2.W, gy % s2.H) : c;
                                         c = Lerp(c, c2, H01(gx, gy, 73) < 0.5f ? 0.5f : 0.8f);
                                     }
                                 }
