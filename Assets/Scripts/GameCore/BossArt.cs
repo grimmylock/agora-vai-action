@@ -44,8 +44,13 @@ namespace GameCore
                 ["scream"] = new VergerBoss.Clip { Name = "boss_singer_scream", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
             } },
             ["specimen"] = new Art { Key = "specimen", W = 252, H = 184, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
+                ["death"] = new VergerBoss.Clip { Name = "boss_specimen_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
+                ["hurt"] = new VergerBoss.Clip { Name = "boss_specimen_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },
                 ["idle"] = new VergerBoss.Clip { Name = "boss_specimen_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
                 ["lash"] = new VergerBoss.Clip { Name = "boss_specimen_lash", Frames = 13, Ms = new float[] { 110, 125, 140, 155, 170, 185, 200, 80, 130, 140, 150, 160, 170 }, Hit = 7 },
+                ["lash2"] = new VergerBoss.Clip { Name = "boss_specimen_lash2", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
+                ["mind"] = new VergerBoss.Clip { Name = "boss_specimen_mind", Frames = 9, Ms = new float[] { 110, 140, 170, 200, 80, 132, 144, 156, 168 }, Hit = 4 },
+                ["scream"] = new VergerBoss.Clip { Name = "boss_specimen_scream", Frames = 13, Ms = new float[] { 110, 132, 155, 177, 200, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 5 },
                 ["walk"] = new VergerBoss.Clip { Name = "boss_specimen_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
             } },            // clips end
         };
