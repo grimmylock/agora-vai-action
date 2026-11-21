@@ -2978,8 +2978,8 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); UnityEngine.Time.time = 91000f;
     try {
       var f = Boss.Spawn(ExcavatorBoss.Def, px + 1, py + 8); var h = f.Unit; Rt.SetOffset(h, 0f, 0f); var (hx, hy) = Ballistics.Pos(h);
-      var hit = Ballistics.Trace(p, hx + 2.5f, hy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { h });
-      Check(BossArt.HitKey(h) == "boss:excavator" && hit.Unit == h, "Boss hitbox: a round 2.5 tiles off the Excavator's middle hits its tracks (its own silhouette)");
+      var hit = Ballistics.Trace(p, hx + 1.0f, hy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { h });
+      Check(BossArt.HitKey(h) == "boss:grinder" && hit.Unit == h, "Boss hitbox: a round a tile off the Grinder's middle hits its body (its own silhouette)");
       var miss = Ballistics.Trace(p, hx + 6f, hy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { h }); Check(miss.Unit == null, "Boss hitbox: 6 tiles off its middle misses");
       var g = Boss.Spawn(FerrymanBoss.Def, px - 3, py + 8); var (gx, gy) = Ballistics.Pos(g.Unit); Rt.SetOffset(g.Unit, 0f, 0f);
       Check(Ballistics.Trace(p, gx + 1.2f, gy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { g.Unit }).Unit == null && Ballistics.Trace(p, gx + 0.2f, gy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { g.Unit }).Unit == g.Unit, "Boss hitbox: the thin Ferryman is hit at his coat, missed a tile and a bit beside it");

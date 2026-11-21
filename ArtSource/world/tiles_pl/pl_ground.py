@@ -3,7 +3,7 @@
 import os, io, json, base64, random
 from PIL import Image, ImageEnhance
 H = os.path.dirname(os.path.abspath(__file__))
-TILESETS = {"cavefloor": ("cave.json", "lower"), "labtile": ("lab.json", "lower"), "concrete": ("concrete.json", "lower"), "floor": ("hospital.json", "lower"), "rocktop": ("cave.json", "upper")}
+TILESETS = {"cavefloor": ("cave.json", "lower"), "labtile": ("lab.json", "lower")}   # Yan 2026-11-21: "keep cave floor and lab tiles" (concrete, hospital floor and rock top were trials; their jsons stay)
 def _img(o): d = o["base64"] if isinstance(o, dict) else o; return Image.open(io.BytesIO(base64.b64decode(d.split(",")[-1]))).convert("RGBA")
 def base_tile(jsonname, terrain):
     p = os.path.join(H, jsonname)
