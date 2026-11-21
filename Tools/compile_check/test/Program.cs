@@ -105,6 +105,7 @@ static class Program {
     SingerChecks();
     FerrymanChecks();
     LateBossChecks();
+    StalkerChecks();
     CreatureBossClipChecks();
     BossHitboxChecks();
     CathedralJobChecks();
@@ -2985,6 +2986,35 @@ static class Program {
       Check(Ballistics.Trace(p, gx + 1.2f, gy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { g.Unit }).Unit == null && Ballistics.Trace(p, gx + 0.2f, gy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { g.Unit }).Unit == g.Unit, "Boss hitbox: the thin Ferryman is hit at his coat, missed a tile and a bit beside it");
       Check(BossArt.HitKey(EncounterState.Enemies.OfType<HumanEnemy>().FirstOrDefault(e => Boss.Of(e) == null) ?? new HumanEnemy("Raider", 0, 0, "Raiders", "Rookie", null, null)) == null, "Boss hitbox: an ordinary human keeps a man's silhouette");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); }
+  }
+  static void StalkerChecks() {   // 2026-11-21: the Orderly as a stalker (OrderlyBoss.StalkTick): roams unhurtable, notices by sight and sound, hunts, catches, retreats, and the power ends the stalk
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 96000f; UnityEngine.Time.unscaledTime = 96000f; UnityEngine.Time.deltaTime = 1f / 60f;
+    GameServices.Grid = new TacticalGridSystem();
+    try {
+      OrderlyBoss.RingWaypoints(px + 6, py, 3); var f = OrderlyBoss.SpawnStalker(); var h = f.Unit; Rt.SetOffset(h, 0f, 0f);
+      Check(f.Stalking && !h.IsAggroed && Boss.DamageScale(h) == 0f && Boss.Current != f, "Stalker: it starts roaming, unaware, takes no damage and shows no boss bar");
+      for (int y = py - 4; y <= py + 4; y++) TerrainMap.SetTileType(px + 3, y, TileType.Solid);   // a wall between you and it
+      p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); h.X = px + 7; h.Y = py; int x0 = h.X, y0 = h.Y;
+      void Run(float seconds) { for (int i = 0; i < (int)(seconds * 60); i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = System.Math.Max(1, p.Hp); Boss.Tick(f, p); } }
+      Run(25f);
+      Check(!h.IsAggroed && h.Alert < 0.5f && (h.X != x0 || h.Y != y0), $"Stalker: behind a wall, you unnoticed, it wanders on ({x0},{y0}) -> ({h.X},{h.Y}), notice {h.Alert:0.00} {OrderlyBoss.DebugState(f)}");
+      for (int y = py - 4; y <= py + 4; y++) TerrainMap.SetTileType(px + 3, y, TileType.Empty);
+      Noise.Make(px + 2, py, 20, p);
+      Check(h.Alert >= 0.5f, $"Stalker: a shot at {h.X - px} tiles makes it go and look (notice {h.Alert:0.00})");
+      h.Alert = 0f; h.X = px + 7; h.Y = py; Rt.SetOffset(h, 0f, 0f);
+      for (int i = 0; i < 60 * 40 && !h.IsAggroed; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); }
+      Check(h.IsAggroed, "Stalker: in plain sight, standing still, its notice fills and it hunts");
+      p.Hp = p.MaxHp; int hp0 = p.Hp; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
+      for (int i = 0; i < 60 * 20 && p.Hp >= hp0; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
+      Check(p.Hp < hp0, $"Stalker: it closes in and catches you ({hp0} -> {p.Hp})");
+      for (int i = 0; i < 60 * 6; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = System.Math.Max(1, p.Hp); Boss.Tick(f, p); }
+      Check(!h.IsAggroed && h.Alert < 0.2f && f.Stalking, "Stalker: after the catch it backs off and forgets you for a while");
+      OrderlyBoss.EndStalk(f);
+      Check(!f.Stalking && h.IsAggroed && Boss.DamageScale(h) == 1f && Boss.Current == f, "Stalker: the power ends the stalk: killable, hunting, with its boss bar");
+      p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; p.X = h.X - 3; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f); h.Hp = h.MaxHp; bool moved = false; int hx = h.X, hy = h.Y;
+      for (int i = 0; i < 60 * 20; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = System.Math.Max(1, p.Hp); Boss.Tick(f, p); if (h.X != hx || h.Y != hy) moved = true; }
+      Check(moved, "Stalker: after the stalk the Orderly proper walks at you and fights");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
   }
   static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 92000f; UnityEngine.Time.unscaledTime = 92000f;

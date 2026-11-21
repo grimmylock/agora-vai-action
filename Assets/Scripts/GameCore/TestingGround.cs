@@ -154,6 +154,8 @@ namespace GameCore
         public static void ExcavatorFight(Player p) { var (x, y) = TerrainMap.FindNearestEnterable(p.X + 9, p.Y); ExcavatorBoss.Spawn(x, y, false); }
         /// <summary>2026-11-21: the Orderly on the range, 6 tiles in front of you.</summary>
         public static void OrderlyFight(Player p) { var (x, y) = TerrainMap.FindNearestEnterable(p.X + 6, p.Y); OrderlyBoss.Spawn(x, y, false); }
+        /// <summary>2026-11-21: the Orderly as a STALKER on the range: it roams six points on a ring round you, hunts what it sees or hears and cannot be hurt (the boiler power does not exist here: it never ends).</summary>
+        public static void OrderlyStalkFight(Player p) { OrderlyBoss.RingWaypoints(p.X, p.Y, 14); OrderlyBoss.SpawnStalker(); GameLog.Write("[TESTING GROUND] The Orderly is loose on the range. It cannot be hurt. Stay out of its sight and quiet. Main menu > Testing Ground to come back."); }
 
         /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>
         public static void KingDuel(Player p)

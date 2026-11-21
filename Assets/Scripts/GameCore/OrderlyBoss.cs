@@ -5,7 +5,11 @@
 //  - the Drip: it squeezes the IV bag and mends DripHeal of its health, unless you hurt it by DripBreak of its health while it does it (the bag bursts: no heal, and it bleeds).
 //    It can drip DripMax times a fight. A tool for the player (rule 6): stop it, and it is the weaker for the rest of the fight;
 //  - phase 2: the Double Saw (white, white) and the Saw Rush (red, a lunge).
-// It is woken when a player comes near the Autopsy Theatre, once. Co-op: the nearest player. Host-side only.
+// 2026-11-21 (Yan: "a kind of stalker type enemy, that roams the halls of the dungeon and has to be avoided until the final confrontation", "stays in the morgue"): in the Hospital Morgue it is a STALKER until the boiler
+// power is back on. It spawns far from you, quietly, and roams the morgue's rooms (patrol: walks slowly, listens at each stop). Yellow "!" over it while its notice fills, red when it has found you. It notices
+// you by sight (line of sight, nearer and brighter = faster: crouching and standing in the dark help) and by sound (shots, running footsteps near it); it hunts a little faster than you walk, slower than you sprint,
+// loses you after a few seconds without sight, goes to the last place it saw or heard you, and gives up. It takes NO damage and has no boss bar. Caught, it grabs you (the Catch: heavy, slams you down) and then
+// retreats for a while. When the boiler switch brings the power back it drops the roaming: the Orderly proper (killable, its moves above) comes for you wherever you are. Co-op: it notices the most visible player.
 // NOT built from the brief yet: the lights going out (the cave darkness), the bag as a separate target on its back.
 using System.Collections.Generic;
 using System.Linq;
@@ -37,18 +41,55 @@ namespace GameCore
         static OrderlyBoss() { Def.Defeated = Defeated; }
 
         static bool _spawnedHere; static string _map;
-        public static void OnEnterZone(string zoneId) { _spawnedHere = false; _drip.Clear(); }
+        public const string MorgueZone = "hospital_morgue";
+        public const float PatrolStep = 0.62f, HuntStep = 0.29f, Sight = 18f, FootstepRange = 6f, GiveUpAfter = 6f, RetreatFor = 9f;   // seconds per tile (walk 2.6 t/s = 0.38, sprint 4.4 = 0.23)
+        public static readonly Boss.Move CatchMove = new Boss.Move { Name = "Catch", Wind = 0.7f, Danger = true, MaxDist = 2f, Mult = 0.7f, Effects = new[] { "slab" }, Weight = 0, Open = 1.2f, Clip = "grab" };
+        class St { public int Mode; public (int x, int y) Wp; public float NextStep, WaitUntil, StuckAt, LoseAt, RetreatUntil, CatchAt; public (int x, int y)? Heard; public Player Target; public bool Catching; public (int x, int y) LastSeen; public bool HasWp; public int Stuck; }
+        // modes: 0 patrol, 1 investigate, 2 hunt, 3 retreat
+        static readonly Dictionary<Boss.Fight, St> _st = new Dictionary<Boss.Fight, St>();
+        static readonly List<(int x, int y)> _wps = new List<(int, int)>();
+        public static void OnEnterZone(string zoneId) { _spawnedHere = false; _drip.Clear(); _st.Clear(); _wps.Clear(); }
+
+        static bool PowerOn() { var k = LabLocks.Key("power"); return k != null && MacroState.Current != null && MacroState.Current.Keys.Contains(k); }
 
         public static void Tick(float dt)
         {
             if (Net.Mode == Net.Role.Client || Story.Has(Done) || Player.Current == null) return;
-            if (_map != TerrainMap.ZoneId) { _map = TerrainMap.ZoneId; _spawnedHere = false; }
-            var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == Lair); if (l == null) return;
+            if (_map != TerrainMap.ZoneId) { _map = TerrainMap.ZoneId; _spawnedHere = false; _st.Clear(); _wps.Clear(); }
             Boss.Fights.RemoveAll(f => f.Def == Def && !f.Finished && !EncounterState.Enemies.Contains(f.Unit));
-            if (_spawnedHere || Boss.Fights.Any(f => f.Def == Def && !f.Gone)) return;
-            if (!Player.All.Any(p => p.IsAlive() && Mathf.Sqrt((p.X - l.X) * (p.X - l.X) + (p.Y - l.Y) * (p.Y - l.Y)) <= WakeRange)) return;
-            var (x, y) = TerrainMap.FindNearestEnterable(l.X, l.Y);
-            Spawn(x, y, true); _spawnedHere = true;
+            foreach (var f in Boss.Fights.Where(f => f.Def == Def && f.Stalking && !f.Gone).ToList()) if (PowerOn()) EndStalk(f);   // the lamps come on: the finale
+            if (TerrainMap.ZoneId != MorgueZone || _spawnedHere || Boss.Fights.Any(f => f.Def == Def && !f.Gone)) return;
+            if (!Player.All.Any(p => p.IsAlive())) return;
+            BuildWaypoints();
+            if (PowerOn()) { var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == Lair); if (l == null) return; var (x, y) = TerrainMap.FindNearestEnterable(l.X, l.Y); Spawn(x, y, true); _spawnedHere = true; return; }   // power already on: the Orderly proper, at its tables
+            SpawnStalker(); _spawnedHere = true;
+        }
+
+        /// <summary>The roaming points: the morgue's named rooms (and a few tiles round them), each a walkable tile.</summary>
+        static void BuildWaypoints()
+        {
+            _wps.Clear();
+            foreach (var n in new[] { "Morgue Landing", "Cold Room", Lair, "Boiler Room", "Records Room" })
+            {
+                var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == n); if (l == null) continue;
+                var pt = TerrainMap.FindNearestEnterable(l.X, l.Y); if (!_wps.Contains(pt)) _wps.Add(pt);
+            }
+        }
+        /// <summary>For the Testing Ground (no morgue): six walkable points on a ring round (cx, cy).</summary>
+        public static void RingWaypoints(int cx, int cy, int r)
+        {
+            _wps.Clear();
+            for (int i = 0; i < 6; i++) { double a = i * Mathf.PI / 3; _wps.Add(TerrainMap.FindNearestEnterable(cx + (int)(Mathf.Cos((float)a) * r), cy + (int)(Mathf.Sin((float)a) * r))); }
+        }
+
+        public static Boss.Fight SpawnStalker()
+        {
+            var p = Player.Current; (int x, int y) best = _wps.Count > 0 ? _wps[0] : (p.X + 12, p.Y);
+            int bd = -1; foreach (var w in _wps) { int d = CombatantUtil.Distance(p, w.x, w.y); if (d > bd) { bd = d; best = w; } }   // the farthest room from you
+            var (x2, y2) = TerrainMap.FindNearestEnterable(best.x, best.y);
+            var f = Boss.Spawn(Def, x2, y2, true); f.Stalking = true; Rt.SetOffset(f.Unit, 0f, 0f); f.Unit.Alert = 0f;
+            _st[f] = new St { Mode = 0, WaitUntil = Time.time + 6f, NextStep = Time.time };
+            return f;
         }
 
         public static Boss.Fight Spawn(int x, int y, bool intro)
@@ -61,6 +102,87 @@ namespace GameCore
                 Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f); Sfx.Play("saw_scrape", TacticalGridView.GridToWorld(x, y), 1f, 0f);
             }
             return f;
+        }
+
+        public static string DebugState(Boss.Fight f) { var st = State(f); return $"mode {st.Mode} wp {st.Wp} has {st.HasWp} stuck {st.Stuck} wait {st.WaitUntil - Time.time:0.0} wps {_wps.Count}"; }
+        static St State(Boss.Fight f) { if (!_st.TryGetValue(f, out var st)) { st = new St { WaitUntil = Time.time + 3f }; _st[f] = st; } return st; }
+
+        /// <summary>The finale: it stops roaming. The Orderly proper (killable, its own moves) comes for the nearest player.</summary>
+        public static void EndStalk(Boss.Fight f)
+        {
+            f.Stalking = false; f.Unit.IsAggroed = true; f.Unit.Alert = 1f; f.NextMoveAt = Time.time + 2.0f; f.Doing = null; _st.Remove(f);
+            Boss.NameCard(Def.Name.ToUpperInvariant(), Def.Title); Sfx.Play("boss_sting", null, 1f, 0f);
+            GameLog.Event("The boiler takes. Somewhere in the dark the sawing stops. Then, down the corridor, something starts walking toward you, and it is not slow any more.");
+        }
+
+        /// <summary>Noise.Make: a shot or blast. A stalker within hearing goes to look (unless it is hunting or retreating).</summary>
+        public static void Heard(int x, int y, int radius, ICombatant source)
+        {
+            if (!(source is Player)) return;
+            foreach (var f in Boss.Fights) { if (f.Def != Def || !f.Stalking || f.Gone) continue; var st = State(f); if (st.Mode >= 2) continue; if (CombatantUtil.Distance(f.Unit, x, y) > radius) continue; st.Mode = 1; st.Heard = TerrainMap.FindNearestEnterable(x, y); st.HasWp = false; f.Unit.Alert = Mathf.Max(f.Unit.Alert, 0.55f); }
+        }
+
+        /// <summary>Boss.Tick while it roams and nothing is in progress: senses, then patrol / investigate / hunt / retreat.</summary>
+        public static void StalkTick(Boss.Fight f)
+        {
+            var h = f.Unit; float now = Time.time; if (f.Broken || f.Finished || !h.IsAlive()) return; var st = State(f);
+            if (now < f.StaggerUntil) return;
+            if (st.Catching) { st.Catching = false; st.Mode = 3; st.RetreatUntil = now + RetreatFor; st.HasWp = false; h.Alert = 0f; h.IsAggroed = false; st.Target = null; }
+            // ---- senses
+            Player seen = null; float bestGain = 0f; bool sees = false;
+            foreach (var p in Player.All)
+            {
+                if (!p.IsAlive()) continue; int d = CombatantUtil.Distance(h, p); float gain = 0f;
+                bool los = d <= Sight && GameServices.Grid != null && GameServices.Grid.CheckLineOfSight(h.X, h.Y, p.X, p.Y);
+                if (los)
+                {
+                    float light = Mathf.Clamp01(Vision.Light(p.X, p.Y)); gain = (1f - d / Sight) * (0.3f + 0.7f * light) * (p.Sneaking ? 0.5f : 1f) * (Rt.Of(p).Moving > 0 ? (Rt.Of(p).Moving > 1 ? 1.3f : 1f) : 0.6f); sees = true;
+                    if (d <= 3) gain = Mathf.Max(gain, 0.8f);                                       // at arm's length it knows
+                }
+                else if (d <= FootstepRange && Rt.Of(p).Moving > 1 && !p.Sneaking) gain = 0.3f;          // running footsteps through a wall
+                if (gain > bestGain) { bestGain = gain; seen = p; }
+            }
+            if (st.Mode == 3 && now < st.RetreatUntil) { }                                          // retreating: it does not notice for a while
+            else if (st.Mode == 2) { if (sees && seen != null) { st.Target = seen; st.LoseAt = now + GiveUpAfter; st.LastSeen = (seen.X, seen.Y); } }
+            else
+            {
+                if (bestGain > 0f) { h.Alert = Mathf.Min(1f, h.Alert + bestGain * 1.1f * Time.deltaTime); if (seen != null) st.LastSeen = (seen.X, seen.Y); }
+                else h.Alert = Mathf.Max(0f, h.Alert - 0.25f * Time.deltaTime);
+                if (h.Alert >= 1f && seen != null) { st.Mode = 2; st.Target = seen; st.LoseAt = now + GiveUpAfter; h.IsAggroed = true; h.SpottedAt = now; Sfx.Play("boss_sting", null, 0.7f, 0f, 1.2f); GameLog.Write("It has found you."); }
+            }
+            if (st.Mode == 3 && now >= st.RetreatUntil) { st.Mode = 0; st.HasWp = false; st.WaitUntil = now + 2f; }
+            // ---- movement / the catch
+            if (st.Mode == 2)
+            {
+                var t = st.Target; if (t == null || !t.IsAlive()) { t = Player.All.Where(p => p.IsAlive()).OrderBy(p => CombatantUtil.Distance(h, p)).FirstOrDefault(); st.Target = t; if (t == null) return; }
+                h.SpottedAt = now;
+                int dist = CombatantUtil.Distance(h, t);
+                if (dist <= 1 && now >= st.CatchAt) { st.CatchAt = now + 4f; st.Catching = true; Boss.Begin(f, CatchMove, now, 1f); return; }
+                if (now >= st.LoseAt) { st.Mode = 1; st.Heard = st.LastSeen; st.HasWp = false; h.IsAggroed = false; h.Alert = 0.6f; return; }   // lost you: go to where it last saw you
+                if (now >= st.NextStep && dist > 1) { st.NextStep = now + HuntStep; h.MoveToward(t.X, t.Y); }
+                return;
+            }
+            h.IsAggroed = false;
+            if (st.Mode == 1 && st.Heard != null)
+            {
+                var hp = st.Heard.Value; int dd = CombatantUtil.Distance(h, hp.x, hp.y);
+                if (dd <= 1) { st.Heard = null; st.WaitUntil = now + 3f; }
+                else if (now >= st.NextStep) { st.NextStep = now + PatrolStep * 0.8f; h.MoveToward(hp.x, hp.y); }
+                return;
+            }
+            if (st.Mode == 1) { if (now >= st.WaitUntil) st.Mode = 0; return; }
+            // patrol / retreat: walk to a waypoint, listen there, pick the next
+            if (now < st.WaitUntil) return;
+            if (!st.HasWp || CombatantUtil.Distance(h, st.Wp.x, st.Wp.y) <= 1 || st.Stuck > 12)
+            {
+                if (st.HasWp && st.Stuck <= 12) st.WaitUntil = now + Random.Range(2f, 4.5f);
+                st.Stuck = 0; if (_wps.Count == 0) BuildWaypoints(); if (_wps.Count == 0) return;
+                var cands = _wps.Where(w => CombatantUtil.Distance(h, w.x, w.y) > 3).ToList(); if (cands.Count == 0) cands = _wps;
+                if (st.Mode == 3) st.Wp = cands.OrderByDescending(w => Player.All.Where(p => p.IsAlive()).Select(p => CombatantUtil.Distance(p, w.x, w.y)).DefaultIfEmpty(0).Min()).First();   // away from you
+                else st.Wp = cands[Random.Range(0, cands.Count)];
+                st.HasWp = true; if (now < st.WaitUntil) return;
+            }
+            if (now >= st.NextStep) { st.NextStep = now + PatrolStep; int x0 = h.X, y0 = h.Y; h.MoveToward(st.Wp.x, st.Wp.y); if (h.X == x0 && h.Y == y0) st.Stuck++; else st.Stuck = 0; }
         }
 
         /// <summary>Boss.Begin of the Drip: remember his health, to see whether the bag bursts.</summary>

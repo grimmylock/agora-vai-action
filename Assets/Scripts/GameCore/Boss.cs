@@ -81,6 +81,7 @@ namespace GameCore
             public int AimX, AimY;             // 2026-11-21: where the target stood when the move began (a spit lands there)
             public float StruckAt = -99f;      // when his last hit landed (the beast's attack frame)
             public bool Mirror;                // 2026-11-21: a client's copy of the host's fight (NetWorld): drawn, never ticked or finished here
+            public bool Stalking;              // 2026-11-21 (the Orderly, Yan: "a kind of stalker type enemy that roams the halls and has to be avoided until the final confrontation"): it roams and hunts by sight and sound, takes no damage, and has no boss bar until OrderlyBoss ends the stalk
             public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
@@ -96,7 +97,7 @@ namespace GameCore
         static Def[] _registry;
         public static Fight Of(ICombatant u) => u == null ? null : Fights.FirstOrDefault(f => f.Unit == u && !f.Gone);
         public static bool Is(ICombatant u) => Of(u) != null;
-        public static Fight Current => Fights.FirstOrDefault(f => !f.Gone && !f.Finished) ?? Fights.LastOrDefault(f => !f.Gone && Time.time - (f.LootedAt < 0 ? Time.time : f.LootedAt) < 4f);
+        public static Fight Current => Fights.FirstOrDefault(f => !f.Gone && !f.Finished && !f.Stalking) ?? Fights.LastOrDefault(f => !f.Gone && !f.Stalking && Time.time - (f.LootedAt < 0 ? Time.time : f.LootedAt) < 4f);
 
         // the name card (HudView.Boss.cs reads it)
         public static string SplashTitle, SplashSub; public static float SplashAt = -99f, SplashSeconds = 3.2f;
@@ -223,7 +224,7 @@ namespace GameCore
         static ArmorDef Bare(ArmorDef a) => new ArmorDef { Name = "Verger Coat (bare)", PhysDR = a.PhysDR, AnomDR = a.AnomDR, BeltSlots = a.BeltSlots, ModSlots = a.ModSlots, Mp = a.Mp, WeightKg = a.WeightKg, Note = a.Note, ImmuneToToxic = a.ImmuneToToxic, AnomalyAdvantage = a.AnomalyAdvantage, ImmuneToProne = a.ImmuneToProne, ImmuneToCrits = a.ImmuneToCrits, HalvesAPDamage = a.HalvesAPDamage };
 
         /// <summary>Put a boss on the map at (x, y) and start the fight.</summary>
-        public static Fight Spawn(Def def, int x, int y)
+        public static Fight Spawn(Def def, int x, int y, bool quiet = false)
         {
             var w = WeaponDatabase.Categories["melee"].TryGetValue(def.Weapon, out var wd) ? wd : null;
             var a = SuitOf(def);
@@ -231,6 +232,7 @@ namespace GameCore
             EncounterState.Enemies.Add(h); EncounterState.InCombat = true;
             var f = new Fight { Def = def, Unit = h, Started = Time.time, NextMoveAt = Time.time + 1.2f };
             Fights.Add(f);
+            if (quiet) { h.IsAggroed = false; return f; }                          // 2026-11-21: a stalker arrives unannounced
             Splash(def.Name.ToUpperInvariant(), def.Title);
             Sfx.Play("boss_sting", null, 1f, 0f);
             HitStop(0.4f);
@@ -243,6 +245,7 @@ namespace GameCore
         public static void Tick(Fight f, Player p)
         {
             if (f.Mirror) return;                                                   // a client's copy: the host runs the fight
+            if (f.Stalking && f.Doing == null && f.Def == OrderlyBoss.Def) { OrderlyBoss.StalkTick(f); return; }   // 2026-11-21: the roaming stage (a move in progress, the catch, runs the normal way below)
             var h = f.Unit; float now = Time.time;
             // Visor 2: his wind-up is held through the glint, and the strike starts just before the hit lands
             var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def.PoseKey; mc.Pace = f.Def.Pace;
@@ -312,7 +315,7 @@ namespace GameCore
             GameLog.Event($"{f.Def.Name}: {c.Line ?? f.Def.Phase2Line}");
         }
         /// <summary>2026-11-20: the damage multiplier a boss takes right now (Melee.Strike and Gunplay.Resolve): a tenth while he changes.</summary>
-        public static float DamageScale(ICombatant u) => Of(u) is Fight f && f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f;
+        public static float DamageScale(ICombatant u) => Of(u) is Fight f ? (f.Stalking ? 0f : f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f) : 1f;   // 2026-11-20: the Verger takes a tenth while he changes; 2026-11-21: a stalker takes nothing
 
         /// <summary>Visor 5: the window after a move - he stands, knife low, breathing; bullets get through (Deflects).</summary>
         static void OpenUp(Fight f, float seconds, float now)

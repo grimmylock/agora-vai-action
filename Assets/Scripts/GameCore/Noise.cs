@@ -15,6 +15,7 @@ namespace GameCore
             var w = Atmosphere.Current;
             radius = (int)(radius * (w == Weather.Storm ? 0.6f : w == Weather.Rain ? 0.8f : 1f));
             if (source is Player p) Contact.Heard(x, y, radius, p);   // Batch 62: hunters hear where you are
+            OrderlyBoss.Heard(x, y, radius, source);                   // 2026-11-21: the stalker in the Hospital Morgue turns toward gunfire
             var spot = TerrainMap.FindNearestEnterable(x, y);
             foreach (var e in EncounterState.Enemies)
             {

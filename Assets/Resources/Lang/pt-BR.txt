@@ -1344,3 +1344,6 @@ GRAB!	AGARRAR!
 SAW RUSH!	INVESTIDA DA SERRA!
 ROW!	REMADA!
 CHORUS!	CORO!
+
+It has found you.	Ele encontrou você.
+The boiler takes. Somewhere in the dark the sawing stops. Then, down the corridor, something starts walking toward you, and it is not slow any more.	A caldeira pega. Em algum lugar no escuro o serrar para. Então, pelo corredor, algo começa a andar na sua direção, e não é mais lento.
