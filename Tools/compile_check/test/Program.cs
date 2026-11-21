@@ -3183,6 +3183,10 @@ static class Program {
       Story.Set("husks_known"); for (int i = 0; i < 300; i++) SquadManager.TickHour();
       int packs = MacroState.Current.OfflineSquads.Count(q => q.Faction == Husk.Faction && q.Members.Any(m => m.IsAlive()));
       Check(packs >= 1 && packs <= Husk.MaxPacks, $"Husk packs: after the canister they roam, at most {Husk.MaxPacks} ({packs})");
+      { // 2026-11-21: the cause of the old "Husk packs: never in a Safe Zone" flake: SquadManager.Retreat sent a beaten pack to any neighbouring zone, Safe Zones included
+        var edge = MacroMapDatabase.Zones.FirstOrDefault(z => !z.IsSafeZone && !z.IsDungeon && z.ConnectedZones.Any(c => MacroMapDatabase.Find(c)?.IsSafeZone == true));
+        bool leaked = false; if (edge != null) for (int i = 0; i < 200 && !leaked; i++) { var sq = new OfflineSquad { ZoneId = edge.Id, Faction = Husk.Faction, Members = new List<Mutant>(), PersistFullState = true }; SquadManager.Retreat(sq); var hz = sq.Heading == null ? null : MacroMapDatabase.Find(sq.Heading); leaked = hz != null && (hz.IsSafeZone || hz.IsDungeon); }
+        Check(edge != null && !leaked, $"Husk packs: a beaten pack never retreats into a Safe Zone or a dungeon (from {edge?.Id})"); }
       { var badPacks = MacroState.Current.OfflineSquads.Where(q => q.Faction == Husk.Faction).Where(q => { var z = MacroMapDatabase.Find(q.ZoneId); return z == null || z.IsSafeZone; }).Select(q => $"zone '{q.ZoneId}' alive {q.Members.Count(m => m.IsAlive())}/{q.Members.Count}").ToList();
         Check(badPacks.Count == 0, "Husk packs: never in a Safe Zone" + (badPacks.Count > 0 ? " (" + string.Join("; ", badPacks) + ")" : "")); }
       MacroState.Current.OfflineSquads.RemoveAll(q => q.Faction == Husk.Faction); EncounterState.Enemies.RemoveAll(e => Husk.Is(e)); MacroState.Current.StoryFlags.Clear(); }

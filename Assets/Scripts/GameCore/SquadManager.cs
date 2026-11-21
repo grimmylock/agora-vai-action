@@ -967,6 +967,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
                 .Where(id => id != squad.ZoneId && InBand(squad, id)).Select(id => (id, r: Route(squad.ZoneId, id, squad.Faction, true))).Where(t => t.r != null)
                 .OrderBy(t => t.r.Count).Select(t => t.id).FirstOrDefault();   // Batch 83: a northern squad doesn't fall back to a southern outpost
             var near = MacroMapDatabase.Find(squad.ZoneId)?.ConnectedZones.OrderBy(_ => Random.value).ToList() ?? new List<string>();
+            if (squad.Faction == Husk.Faction) near = near.Where(z => CanEnter(z, squad.Faction)).ToList();   // 2026-11-21: a beaten Husk pack fell back to ANY neighbouring zone, a Safe Zone included (the harness found Husk packs in scavengers_hub): they keep out of Safe Zones and dungeons, so with nowhere to go they stay
             squad.Heading = home ?? near.FirstOrDefault(z => InBand(squad, z)) ?? near.FirstOrDefault();
             squad.Job = squad.Heading == null ? null : "retreat";
         }
