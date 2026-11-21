@@ -29,3 +29,21 @@ def pattern(jsonname, terrain, seed=7):
 def register(GROUNDS):
     for name, (j, terr) in TILESETS.items():
         if pattern(j, terr) is not None: GROUNDS[name + "_pl"] = (lambda jj=j, tt=terr: (lambda seed=3: pattern(jj, tt, seed)))()
+
+# ---- wall faces (2026-11-21, Yan: "try walls next"): the tilesets' all-"upper" tile (a seamless wall / rock / plate texture) as the front face of a wall material; the autotile geometry, doors, windows and weathering of walls.py stay.
+WALL_FACES = {"plaster": ("hospital.json", "upper", 0.30, 0.72), "concrete": ("lab.json", "upper", 1.0, 1.0), "cliff": ("cave.json", "upper", 1.0, 1.0), "hull": ("concrete.json", "upper", 0.25, 0.62)}   # (tileset, terrain, saturation, brightness): the green plaster and the orange plate came out loud
+def face_fn(jsonname, terrain, sat=1.0, val=1.0):
+    t = base_tile(jsonname, terrain)
+    if t is None: return None
+    if sat != 1.0 or val != 1.0:
+        from PIL import ImageEnhance; a = t.getchannel("A"); t = ImageEnhance.Brightness(ImageEnhance.Color(t.convert("RGB")).enhance(sat)).enhance(val).convert("RGBA"); t.putalpha(a)
+    px = t.convert("RGBA").load(); w, h = t.size
+    def f(x, k, H, r):
+        c = px[x % w, k % h]; sh = 1.04 - 0.28 * (k / max(1, H - 1))          # lit at the top edge, darker toward the floor
+        return (min(255, int(c[0] * sh)), min(255, int(c[1] * sh)), min(255, int(c[2] * sh)), 255)
+    return f
+def apply_walls(MATERIALS):
+    for mat, (j, terr, sat, val) in WALL_FACES.items():
+        fn = face_fn(j, terr, sat, val)
+        if fn is None or mat not in MATERIALS: continue
+        H, T, organic, cap, face, lip = MATERIALS[mat]; MATERIALS[mat] = (H, T, organic, cap, fn, lip)

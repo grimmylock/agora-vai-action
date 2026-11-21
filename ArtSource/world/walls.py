@@ -254,6 +254,12 @@ MATERIALS = {
     "junk":       (12, 16, True, tex_cap(junk_tex(9)), junk_face(None), None),
     "container":  (20, 10, False, plain_cap([hx("#7f4a35")], hx("#6a3a29")), weather(container_face(ramp("#4a2a20", "#6b3a2a", "#874a33", "#9c5c40"))), hx("#9c5c40")),   # Batch 101
 }
+try:     # 2026-11-21: Pixel Lab wall faces (tiles_pl/pl_ground.py WALL_FACES); NO_PL=1 keeps the procedural ones
+    import sys as _sys, os as _os
+    if not _os.environ.get("NO_PL"):
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "tiles_pl")); import pl_ground; pl_ground.apply_walls(MATERIALS)
+except ImportError:
+    pass
 WALL_H = {k: v[0] for k, v in MATERIALS.items()}
 
 def roof_mask(f, mask, corners, edge=5):
