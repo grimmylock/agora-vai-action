@@ -18,6 +18,15 @@ def despeckle(im):
     a = np.array(im); m = a[..., 3] > 0; lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=4))
     if n < 2: return im
     big = lab == (1 + int(np.argmax(ndimage.sum(m, lab, range(1, n + 1))))); a[~(big & m)] = 0; return Image.fromarray(a, "RGBA")
+PIN = {"walk"}      # 2026-11-21 (Yan: "why does he walk doing little jumps"): the generated walk cycle drifts, the whole body rising up to 15 px and sliding sideways; every frame is moved rigidly (no resampling) so its lowest pixel sits on one row and its mass centre on one column
+def pin(ims):
+    ys = [np.where(np.array(i)[..., 3].any(1))[0].max() for i in ims]; cx = []
+    for i in ims:
+        a = np.array(i)[..., 3] > 0; cx.append((np.where(a)[1]).mean())
+    ty = int(round(np.median(ys))); tx = float(np.median(cx)); out = []
+    for i, y, c in zip(ims, ys, cx):
+        o = Image.new("RGBA", i.size, (0, 0, 0, 0)); o.alpha_composite(i, (int(round(tx - c)), ty - y)); out.append(o)
+    return out
 def main():
     os.makedirs(OUT, exist_ok=True)
     for name, n in CLIPS.items():
@@ -25,6 +34,7 @@ def main():
         assert len(fs) == n, (name, len(fs))
         ims = [hard(Image.open(f)) for f in fs]
         if name in CLEAN: ims = [despeckle(i) for i in ims]
+        if name in PIN: ims = pin(ims)
         w, h = ims[0].size
         if name in REMAP: ims = [ims[i] for i in REMAP[name]]
         strip = Image.new("RGBA", (w * n, h), (0, 0, 0, 0))
