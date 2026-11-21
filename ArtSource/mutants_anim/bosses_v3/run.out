@@ -36,3 +36,6 @@ excavator hurt ok
 excavator death ok
 orderly idle ok
 orderly walk ok
+orderly drag ok
+orderly overhead ok
+orderly grab ok

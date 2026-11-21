@@ -100,3 +100,21 @@ Each has its file, a Testing Ground entry (Humans tab, "BOSS ...") and harness c
 - **The Excavator** (`ExcavatorBoss.cs`, Quarry Basin, Pit Floor, 11000 HP): Boom Sweep (red, wide), Dig-Slam (red, a 2-tile circle where you stood), Scoop (red, rubble on three spots), Track Charge (red, 8 tiles); phase 2 Double Sweep. Spoils: the control lever. NOT built: the hoses and cab glass as weak points.
 - **The Orderly** (`OrderlyBoss.cs`, Hospital Morgue, Autopsy Theatre, 12000 HP): Drag-Saw (white), Overhead (red), Grab (red: slammed down and pulled in), the Drip (mends 6% unless you hurt him by 3% while he squeezes: then the bag bursts and he bleeds; 3 a fight, phase 1 only); phase 2 Double Saw, Saw Rush. Spoils: the Ward Name Tag. NOT built: the lights going out, the bag as its own target.
 - All health, damage, ranges and timings are guesses; none of it has been run in Unity.
+
+## A rough fight probe (2026-11-21): `dotnet /tmp/test.dll bossprobe [all|name] [runs]`
+A bot with an assault rifle: parries every white blow on the perfect beat (misses one in four), dives every red one, shoots all the time (rounds glance off unless the boss is open or staggered), drinks a medkit under 35 %, gets up when downed. 2 runs each, the real Boss/Rt/Melee code at 60 frames a second:
+
+| Boss | Broken | Time | Hits taken | Medkits | Downed |
+|-|-|-|-|-|-|
+| The Visor (baseline Yan has played) | 2/2 | 51 s | 41 | 17 | 8.5 |
+| Spool | 2/2 | 36 s | 15 | 5 | 3.5 |
+| The Scrap King | 2/2 | 47 s | 18 | 11 | 8 |
+| The Verger (scythe, this batch) | 2/2 | 69 s | 54 | 30 | 16.5 |
+| Mother Hollow | 2/2 | 24 s | 5 | 0.5 | 0 |
+| The Singer | 1/2 (4 runs: 1/4) | 49 s | 1 | 0 | 0 |
+| The Ferryman | 2/2 | 47 s | 5 | 2 | 1 |
+| The Specimen, grown | 2/2 | 46 s | 27 | 13.5 | 7 |
+| The Excavator | 2/2 | 67 s | 18 | 15 | 6.5 |
+| The Orderly | 2/2 | 71 s | 27 | 13 | 7.5 |
+
+How to read it: the bot dives every red move perfectly, which no person does, so the bosses built mostly of red moves (Mother Hollow, the Singer, the Ferryman) look far easier here than they will be. The probe also shoots Mother Hollow's brood off-screen. The Singer "fails" because the bot dives AWAY from each red and drifts out of range behind clutter (a probe artefact: a rooted boss with nothing in reach just waits). The Verger is the hardest of all to this bot (54 hits taken): his whites come fast and in long strings. Numbers were NOT changed from this (rule 6: harder is allowed, easier is not; Yan's first run decides).

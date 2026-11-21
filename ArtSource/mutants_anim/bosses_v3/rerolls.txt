@@ -1,1 +1,3 @@
-ferryman	thrust	side-on lunge: steps forward and stabs the long pole far out to his left, arm and pole fully extended, body leaning into it, then pulls back
+ferryman	thrust	the tall drowned ferryman lunges one big step forward and stabs the long pole far out in front of him with both hands, his whole body stretched into the thrust, then pulls back to standing
+singer	scream	the huge pale face in the cave wall throws its head back and screams with its jaw stretched impossibly wide, the whole face shaking violently, the bony hands slamming the ground, rocks and dust falling
+specimen	scream	the giant brain on spider legs rears up high on its back legs, all its tendrils whip outward and thrash wildly, the brain swells and shudders violently, then it slams back down

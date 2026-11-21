@@ -17,6 +17,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
+    if (args.Length > 0 && args[0] == "bossprobe") { BossProbe(args.Length > 1 ? args[1] : "all", args.Length > 2 ? int.Parse(args[2]) : 3); return 0; }
     if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelsump") { EelSumpFrames(args[1], args.Length > 2 ? args[2] : ""); return 0; }
@@ -1242,6 +1243,48 @@ static class Program {
     sb.Append("],\"hits\":" + hits + ",\"dives\":" + dives + "}");
     System.IO.File.WriteAllText(path, sb.ToString()); GameLog.Target = null;
     Console.WriteLine($"brain fight: {k * dt:0.0} s, escaped {f.Gone}, hits on the bot {hits}, dives {dives}, hp left {p.Hp}");
+  }
+
+  // 2026-11-21: a rough fight probe for the duel bosses (Boss.Registry): a bot with an assault rifle parries every white blow on the perfect beat (missing one in four), dives every red one,
+  // shoots whenever the boss is open or staggered, otherwise keeps 3 tiles off and shoots anyway (most rounds glance off), drinks a medkit under 35% (counted), gets up when downed (counted).
+  // Prints, per boss: whether it broke him inside 6 minutes, how long it took, hits taken, medkits, downs. Rough: the bot never uses cover, so the Singer's note and the Ferryman's flare land.
+  //   dotnet /tmp/test.dll bossprobe [all|<boss name>] [runs]
+  static void BossProbe(string which, int runs) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    foreach (var def in Boss.Registry.Where(d => d != Boss.VergerBeast && (which == "all" || d.Name.ToLowerInvariant().Contains(which.ToLowerInvariant())))) {
+      var times = new List<float>(); int wins = 0, kits = 0, downs = 0, hits = 0;
+      for (int run = 0; run < runs; run++) {
+        UnityEngine.Random.InitState(1000 + run);
+        var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); MotherHollow.Brood.Clear();
+        for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+        UnityEngine.Time.time = 40000f + run * 1000f; UnityEngine.Time.unscaledTime = UnityEngine.Time.time; UnityEngine.Time.timeScale = 1f;
+        var gun = p.MakeWeapon("assault", "VK74"); p.EquippedWeapon = gun; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Rt.Of(p).Focus = Rt.FocusMax;
+        var f = Boss.Spawn(def, px + 5, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); float t0 = UnityEngine.Time.time, lastStrike = -1f; int strike = 0, hp0 = p.Hp; bool fire = false;
+        for (int k = 0; k < 60 * 360 && !f.Broken; k++) {
+          float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.timeScale = 1f; float now = UnityEngine.Time.time;
+          var (bx, by) = Ballistics.Pos(v); var input = new Rt.Input { Mouse = (bx, by + 0.44f - 0.45f * Ballistics.BodyTiles) };
+          int dist = CombatantUtil.Distance(p, v); int sx = Math.Sign(v.X - p.X), sy = Math.Sign(v.Y - p.Y);
+          if (p.Hp < hp0) { hits++; } 
+          if (p.Hp < p.MaxHp * 0.35f) { p.Hp = (int)(p.MaxHp * 0.7f); kits++; }
+          if (Body.Down(p)) { Body.Forget(p); p.Hp = Math.Max(p.Hp, (int)(p.MaxHp * 0.6f)); downs++; }
+          hp0 = p.Hp; Rt.Of(p).Focus = Rt.FocusMax; if (p.EquippedWeapon != null) p.EquippedWeapon.CurrentMagazine = System.Math.Max(1, p.EquippedWeapon.MagCapacity);
+          if (f.Doing != null) {
+            if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; }
+            float left = f.StrikeAt - now; bool red = Boss.Red(f.Doing, f.Doing.Hits - f.HitsLeft);
+            if (red) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
+            else if (strike % 4 != 3 && left <= 0.11f && left > 0.11f - dt) input.Parry = true;
+          }
+          if (Boss.Staggered(v) || Boss.Open(v) || f.Doing == null) { fire = !fire; input.Fire = fire; }
+          if (f.Doing == null && dist < 3) { input.X = -sx; input.Y = -sy; } else if (f.Doing == null && dist > 5) { input.X = sx; input.Y = sy; }
+          Rt.PlayerTick(p, input); Rt.WorldTick(p); Rt.Glide(dt); CombatFx.Pending.Clear();
+          foreach (var b in MotherHollow.Brood.ToList()) { b.Hp = 0; EncounterState.Enemies.Remove(b); }   // (the probe is about the boss: its brood is shot off-screen)
+        }
+        if (f.Broken) { wins++; times.Add(UnityEngine.Time.time - t0); }
+        if (Environment.GetEnvironmentVariable("PROBE_DEBUG") != null) Console.WriteLine($"  run {run}: boss hp {v.Hp}/{v.MaxHp} phase {f.Phase} broken {f.Broken} player at {p.X},{p.Y} boss at {v.X},{v.Y} strikes {strike}");
+        Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset();
+      }
+      Console.WriteLine($"{def.Name,-22} broken {wins}/{runs}  time {(times.Count > 0 ? times.Average().ToString("0") + " s" : "-"),-7} hits taken {hits / (float)runs:0}  medkits {kits / (float)runs:0.0}  downed {downs / (float)runs:0.0}");
+    }
   }
 
   static void BossFrames(string path) {
