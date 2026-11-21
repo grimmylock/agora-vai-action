@@ -4,7 +4,7 @@ from PIL import Image
 r = json.load(open("est.json")); rig = r["rig"]; rest = r["frames"][0]; W, H = 188, 148; N = 8
 idx = {j["name"]: i for i, j in enumerate(rig)}
 LEGS = {"front_near": 0, "hind_near": 0, "mid_near": 1, "hind_far": 1}          # leg: its pair (pairs alternate)
-STRIDE = {"front_near": 0.085, "hind_near": 0.07, "mid_near": 0.045, "hind_far": 0.05}; LIFT = 0.07            # foot travel (x fraction of the width), lift (y fraction of the height)
+STRIDE = {"front_near": 0.17, "hind_near": 0.14, "mid_near": 0.09, "hind_far": 0.10}; LIFT = 0.14            # foot travel (x fraction of the width), lift (y fraction of the height)
 FWD = -1                                                                       # forward on screen is left
 def frame(k):
     t = k / N; pts = copy.deepcopy(rest); bob = 0.010 * abs(math.sin(2 * math.pi * t))
@@ -22,6 +22,7 @@ def frame(k):
             if f"{leg}_{part}" not in idx: continue
             p = pts[idx[f"{leg}_{part}"]]; p["x"] = round(rest[idx[f"{leg}_{part}"]]["x"] + dx, 4); p["y"] = round(rest[idx[f"{leg}_{part}"]]["y"] - lf, 4)
         kn = pts[idx[f"{leg}_knee"]]; kn["x"] = round(rest[idx[f"{leg}_knee"]]["x"] + dx * 0.5, 4); kn["y"] = round(rest[idx[f"{leg}_knee"]]["y"] - lf * 0.9 - bob, 4)
+    for p in pts: p['x'] = round(min(0.99, max(0.01, p['x'])), 4); p['y'] = round(min(0.99, max(0.01, p['y'])), 4)   # the API wants 0-1
     return pts
 frames = [frame(k) for k in range(N)]
 im = Image.open("stand_pad.png").convert("RGBA"); b = io.BytesIO(); im.save(b, "PNG")
