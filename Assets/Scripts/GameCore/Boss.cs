@@ -342,7 +342,7 @@ namespace GameCore
             string fx = m.Effects != null && m.Effects.Length > 0 ? m.Effects[System.Math.Min(hi0, m.Effects.Length - 1)] : null;
             if (fx == "howl") { Howl(f, p, Red(m, hi0)); return; }                                  // 2026-11-21: a sound, not a swing: it reaches across the room
             if (fx == "quake") { Quake(f, p, m, hi0); return; }                                      // a ring round him
-            if (fx == "toll") { Toll(f); return; }
+            if (fx == "toll") { Toll(f); return; }                                                   // 2026-11-21 the Verger: the blade rung on the stone
             if (fx == "note") { f.StruckAt = Time.time; SingerBoss.Note(f, m, hi0); return; }          // 2026-11-21 the Singer
             if (fx == "grasp") { f.StruckAt = Time.time; SingerBoss.Grasp(f, p, m, hi0); return; }
             if (fx == "flare") { f.StruckAt = Time.time; FerrymanBoss.Flare(f); return; }               // 2026-11-21 the Ferryman
@@ -353,7 +353,7 @@ namespace GameCore
             if (fx == "slab") { f.StruckAt = Time.time; OrderlyBoss.Slab(f, p, m, hi0); return; }         // 2026-11-21 the Orderly
             if (fx == "drip") { OrderlyBoss.Drip(f); return; }
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
-            if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)                                                   // 2026-11-21 the Verger: the blade rung on the stone
+            if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)
             f.StruckAt = Time.time;
             if (!f.Def.Rooted) StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
