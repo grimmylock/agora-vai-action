@@ -99,6 +99,7 @@ static class Program {
     ElderClipChecks();
     SpoolChecks();
     VergerChecks();
+    VergerBeastChecks();
     CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
@@ -1400,11 +1401,11 @@ static class Program {
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     EncounterState.Enemies.Clear();
-    var bd = verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; var mvs = verger ? bd.Moves.Where(m => !m.Phase2Only).ToArray() : bd.Moves; spool |= verger;
+    var bd = verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; var mvs = bd.Moves;   // 2026-11-21: the Verger is all scythe now (both phases) spool |= verger;
     var f = Boss.Spawn(bd, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
     var g = WeaponArt.GripOf("melee", wkey);
     var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"" + wkey + "\",\"title\":\"" + bd.Name + "\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
-    sb.Append(string.Join(",", mvs.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : "") + "\""))).Append("],\"frames\":[");
+    sb.Append(string.Join(",", mvs.Select(m => "\"" + m.Name + (m.Danger ? " (red)" : m.RedHits != null ? " (red " + string.Join("", m.RedHits.Select(r => r ? "R" : "w")) + ")" : "") + (m.Phase2Only ? " [P2]" : m.Phase1Only ? " [P1]" : "") + "\""))).Append("],\"frames\":[");
     int k = 0;
     for (int mi = 0; mi < mvs.Length; mi++) {
       var m = mvs[mi];
@@ -2791,70 +2792,119 @@ static class Program {
     } finally { CathedralJob.ZoneOverride = null; CathedralJob.Reset(); Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
-  static void VergerChecks() {   // 2026-11-20: Boss 6, the Verger: a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
+  static void VergerChecks() {   // 2026-11-21 (Yan: "make the human version the entire boss, elaborate more on the human scythe-moveset"): the Verger is the man with the scythe, his own pose set, two phases, no change
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 96000f; UnityEngine.Time.unscaledTime = 96000f;
+    try {
+      var V = Boss.Verger;
+      Check(V.Hp == 7000 && V.Change == null && V.PoseKey == HeldPoseMath.VergerPoses && !V.Vanishes && V.Moves.All(m => m.Clip == null), "Verger: 7000 HP, no change (the beast is parked), his own scythe poses, no beast clips, keeps his body");
+      Check(V.Moves.All(m => m.Poses.All(q => q >= 0 && q < HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger))) && HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger) == 8 && Melee.Shapes[(int)HeldPoseMath.Style.Verger].Length == 8, "Verger: eight scythe poses, each with its hit shape, and every move uses only those");
+      Check(V.Moves.Count(m => !m.Phase2Only) >= 6 && V.Moves.Count(m => !m.Phase1Only) >= 11 && V.Moves.Count(m => m.Phase2Only) >= 6, $"Verger: a full moveset ({V.Moves.Count(m => !m.Phase2Only)} in phase 1, {V.Moves.Count(m => !m.Phase1Only)} in phase 2)");
+      Check(V.Moves.Where(m => m.Hits > 1).All(m => (m.Gaps == null || m.Gaps.Length == m.Hits - 1) && (m.Mults == null || m.Mults.Length == m.Hits) && (m.RedHits == null || m.RedHits.Length == m.Hits)), "Verger: every combo has one pause per gap, one damage and one colour per blow");
+      Check(HeldPoseMath.StyleOf(HeldPoseMath.VergerPoses) == HeldPoseMath.Style.Verger && HeldPoseMath.Sweep(HeldPoseMath.Style.Verger, 4) && !HeldPoseMath.Sweep(HeldPoseMath.Style.Verger, 0), "Verger: his pose key is his style; the danse is a flat sweep, the reap is not");
+      var f = Boss.Spawn(V, px + 2, py); var h = f.Unit;
+      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable, "Verger: spawns with the scythe and the coat");
+      Boss.Tick(f, p); Check(Melee.ChargeOf(h).PoseKey == HeldPoseMath.VergerPoses, "Verger: his swings use his own poses");
+      var danse = Melee.Shape(h.EquippedWeapon, 4, h); var hook = Melee.Shape(h.EquippedWeapon, 3, h); var reap = Melee.Shape(h.EquippedWeapon, 0, h);
+      Check(danse.arc >= 360f && danse.all && hook.reach > reap.reach && reap.reach >= 2f, $"Verger: the danse cuts all round him, the hook reaches furthest, the reap still reaches two tiles ({reap.reach:0.00})");
+      // he fights from the blade's tip: a swing begins from two tiles out
+      var seen = new HashSet<string>();
+      for (int rep = 0; rep < 200; rep++) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; f.Phase = 1; h.Hp = h.MaxHp; h.X = p.X + 2; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+      Check(seen.Contains("Reap") && seen.Contains("Hook") && !seen.Any(n => V.Moves.First(m => m.Name == n).Phase2Only), $"Verger: two tiles out he swings (and hooks), phase 1 moves only ({string.Join(",", seen)})");
+      // the Hook drags; the Hook-Reap drags on the first blow only, and its reap is white
+      var hk = V.Moves.First(m => m.Name == "Hook"); Check(hk.Drag > 0f && hk.Danger, "Verger: the Hook is red and drags");
+      f.Doing = null; f.OpenUntil = -1f; h.X = p.X + 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp;
+      Boss.Begin(f, hk, UnityEngine.Time.time, 1f); bool dragged = false;
+      for (int i = 0; i < 200 && !dragged; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); dragged = Rt.Of(p).ShoveFrom >= 0f; }
+      Check(dragged && p.Hp < p.MaxHp, "Verger: the Hook that cuts drags you toward him");
+      var hr = V.Moves.First(m => m.Name == "Hook-Reap"); Check(Boss.Red(hr, 0) && !Boss.Red(hr, 1) && hr.Drag > 0f, "Verger: the Hook-Reap's hook is red, its reap is white (parry it)");
+      Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
+      // phase 2: no change, the same man, quicker, the long combos
+      h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); h.Hp = V.Hp / 2 - 10; UnityEngine.Time.time += 5f; f.NextMoveAt = UnityEngine.Time.time + 9f; Boss.Tick(f, p);
+      Check(f.Phase == 2 && !f.Beast && f.ChangeUntil < UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && Boss.DamageScale(h) == 1f && !VergerBoss.IsBeast(h), "Verger: at half health phase 2 starts and he stays a man with the scythe (no change, full damage)");
+      seen.Clear();
+      for (int rep = 0; rep < 300; rep++) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.Hp = V.Hp * 4 / 10; h.X = p.X + 1 + rep % 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+      Check(seen.Contains("Danse") && seen.Contains("Widow's Harvest") && seen.Contains("Toll") && !seen.Contains("Harvest") && !seen.Contains("Last Rite"), $"Verger: phase 2 brings the Danse, the Widow's Harvest and the Toll, drops the Harvest, and holds the Last Rite back ({string.Join(",", seen)})");
+      seen.Clear();
+      for (int rep = 0; rep < 300; rep++) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.Hp = V.Hp / 5; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+      Check(seen.Contains("Last Rite"), $"Verger: below a quarter of his health the Last Rite comes out ({string.Join(",", seen)})");
+      {   // the Widow's Harvest lands five blows; the Toll deafens within six tiles, a dive goes under, ten tiles is out of it
+        void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = V.Hp / 3; h.X = px; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
+        int Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 0.8f); int n = 0; float last = f.StruckAt; for (int i = 0; i < 600 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); h.Hp = V.Hp / 3; if (f.StruckAt != last) { last = f.StruckAt; n++; } } return n; }
+        var wh = V.Moves.First(m => m.Name == "Widow's Harvest"); Reset(1); int blows = Run(wh); Check(blows == 5 && p.Hp < p.MaxHp, $"Verger: the Widow's Harvest is five blows ({blows})");
+        var toll = V.Moves.First(m => m.Name == "Toll");
+        Reset(5); Run(toll); Check(Body.Concussed(p), "Verger: the Toll deafens you five tiles away");
+        Reset(5); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(toll); Check(!Body.Concussed(p), "Verger: a dive goes under the Toll");
+        Reset(10); Run(toll); Check(!Body.Concussed(p), "Verger: the Toll does not reach ten tiles");
+        Rt.Of(p).DiveUntil = -1f; Body.Reset(); f.Doing = null; f.OpenUntil = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); }
+      h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
+      p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");
+      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe") && h.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Verger Coat"), "Verger: the scythe and the coat are on the body");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
+  }
+  static void VergerBeastChecks() {   // 2026-11-20: the Verger's PARKED beast form (Boss.VergerBeast, 2026-11-21: out of the game, kept working): a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
     try {
-      Check(Boss.Verger.Hp == 7000 && Boss.Verger.Change != null && Boss.Verger.Moves.Any(m => m.Phase1Only) && Boss.Verger.Moves.Any(m => m.Phase2Only) && Boss.Verger.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.Verger.Vanishes, "Verger: 7000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
-      var f = Boss.Spawn(Boss.Verger, px + 2, py); var h = f.Unit;
-      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 7000, "Verger: spawns with the scythe and the coat, holds at 1 HP until executed");
-      Check(Melee.For(h.EquippedWeapon).Reach >= 2f && Melee.For(h.EquippedWeapon).Blade && Melee.For(h.EquippedWeapon).Bleeds, "Verger: the scythe is the longest reach and it cuts and bleeds");
-      Check(!ShopDatabase.Items.Any(i => i.Name == "Verger Coat" || i.Name == "Verger's Scythe") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 6)?.Name == "Verger Coat"), "Verger: his coat and scythe are in no shop and no random loadout");
+      Check(Boss.VergerBeast.Hp == 7000 && Boss.VergerBeast.Change != null && Boss.VergerBeast.Moves.Any(m => m.Phase1Only) && Boss.VergerBeast.Moves.Any(m => m.Phase2Only) && Boss.VergerBeast.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.VergerBeast.Vanishes, "Verger beast: 7000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
+      var f = Boss.Spawn(Boss.VergerBeast, px + 2, py); var h = f.Unit;
+      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 7000, "Verger beast: spawns with the scythe and the coat, holds at 1 HP until executed");
+      Check(Melee.For(h.EquippedWeapon).Reach >= 2f && Melee.For(h.EquippedWeapon).Blade && Melee.For(h.EquippedWeapon).Bleeds, "Verger beast: the scythe is the longest reach and it cuts and bleeds");
+      Check(!ShopDatabase.Items.Any(i => i.Name == "Verger Coat" || i.Name == "Verger's Scythe") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 6)?.Name == "Verger Coat"), "Verger beast: his coat and scythe are in no shop and no random loadout");
       f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f); f.NextMoveAt = UnityEngine.Time.time; bool began = false;
       for (int i = 0; i < 300 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
-      Check(began && f.Doing.Phase1Only, $"Verger: form 1 picks scythe moves ({f.Doing?.Name})");
-      Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h), "Verger: before the change rounds glance off him and he takes full damage");
+      Check(began && f.Doing.Phase1Only, $"Verger beast: form 1 picks scythe moves ({f.Doing?.Name})");
+      Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h), "Verger beast: before the change rounds glance off him and he takes full damage");
       // the Hook: he stops at the blade's tip and, if it cuts you, drags you in
-      var hook = Boss.Verger.Moves.First(m => m.Name == "Hook"); Check(hook.Drag > 0f && hook.Danger, "Verger: the Hook is red and drags");
+      var hook = Boss.VergerBeast.Moves.First(m => m.Name == "Hook"); Check(hook.Drag > 0f && hook.Danger, "Verger beast: the Hook is red and drags");
       f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = h.MaxHp; f.Phase = 1; h.X = p.X + 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp;
       Boss.Begin(f, hook, UnityEngine.Time.time, 1f); bool dragged = false; var (bx0, by0) = Ballistics.Pos(p);
       for (int i = 0; i < 200 && !dragged; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); var sh = Rt.Of(p); dragged = sh.ShoveFrom >= 0f; }
-      var sp = Rt.Of(p); Check(dragged && p.Hp < p.MaxHp, $"Verger: the Hook that cuts drags you toward him (shove {sp.ShoveX:0.0},{sp.ShoveY:0.0}, hp {p.Hp}/{p.MaxHp})");
-      Check(CombatFx.Pending.Any(e => e.Kind == "hookchain" && e.Hit && e.Actor == h && e.Target == p), "Verger: a caught Hook sends the chain event (the view draws it and plays its sounds)");
-      Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger: the drag is a real pull, not a teleport");
+      var sp = Rt.Of(p); Check(dragged && p.Hp < p.MaxHp, $"Verger beast: the Hook that cuts drags you toward him (shove {sp.ShoveX:0.0},{sp.ShoveY:0.0}, hp {p.Hp}/{p.MaxHp})");
+      Check(CombatFx.Pending.Any(e => e.Kind == "hookchain" && e.Hit && e.Actor == h && e.Target == p), "Verger beast: a caught Hook sends the chain event (the view draws it and plays its sounds)");
+      Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger beast: the drag is a real pull, not a teleport");
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
-      foreach (var m in Boss.Verger.Moves.Where(m => m.Clip != null)) Check(VergerBoss.Clips.ContainsKey(m.Clip) && VergerBoss.Clips[m.Clip].Ms.Length == VergerBoss.Clips[m.Clip].Frames && VergerBoss.Clips[m.Clip].Hit < VergerBoss.Clips[m.Clip].Frames, "Verger: the beast's move " + m.Name + " has a well-formed clip (" + m.Clip + ")");
-      Check(Boss.Verger.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.Verger.Moves.Count(m => m.Phase2Only) == 11, "Verger: the beast has eleven moves (Rake, Smash, Charge, Sweep, Howl, Quake and the combos Rake-Sweep, Rake-Smash, Rampage, Trample, Howl-Rake), each with an animation clip");
-      foreach (var m in Boss.Verger.Moves.Where(m => m.Hits > 1 && m.Clip != null)) { var c = VergerBoss.Clips[m.Clip]; bool gapsOk = c.Hits != null && c.Hits.Length == m.Hits && m.Gaps != null && m.Gaps.Length == m.Hits - 1; for (int k = 0; gapsOk && k < m.Hits - 1; k++) { float ms = 0f; for (int fi = c.Hits[k]; fi < c.Hits[k + 1]; fi++) ms += c.Ms[fi]; gapsOk = System.Math.Abs(ms / 1000f - m.Gaps[k]) < 0.02f; }
-        Check(gapsOk && c.Hit == c.Hits[0], "Verger: the combo " + m.Name + " has as many blows as its clip and the pauses between them are the clip's own"); }
+      foreach (var m in Boss.VergerBeast.Moves.Where(m => m.Clip != null)) Check(VergerBoss.Clips.ContainsKey(m.Clip) && VergerBoss.Clips[m.Clip].Ms.Length == VergerBoss.Clips[m.Clip].Frames && VergerBoss.Clips[m.Clip].Hit < VergerBoss.Clips[m.Clip].Frames, "Verger beast: the beast's move " + m.Name + " has a well-formed clip (" + m.Clip + ")");
+      Check(Boss.VergerBeast.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.VergerBeast.Moves.Count(m => m.Phase2Only) == 11, "Verger beast: the beast has eleven moves (Rake, Smash, Charge, Sweep, Howl, Quake and the combos Rake-Sweep, Rake-Smash, Rampage, Trample, Howl-Rake), each with an animation clip");
+      foreach (var m in Boss.VergerBeast.Moves.Where(m => m.Hits > 1 && m.Clip != null)) { var c = VergerBoss.Clips[m.Clip]; bool gapsOk = c.Hits != null && c.Hits.Length == m.Hits && m.Gaps != null && m.Gaps.Length == m.Hits - 1; for (int k = 0; gapsOk && k < m.Hits - 1; k++) { float ms = 0f; for (int fi = c.Hits[k]; fi < c.Hits[k + 1]; fi++) ms += c.Ms[fi]; gapsOk = System.Math.Abs(ms / 1000f - m.Gaps[k]) < 0.02f; }
+        Check(gapsOk && c.Hit == c.Hits[0], "Verger beast: the combo " + m.Name + " has as many blows as its clip and the pauses between them are the clip's own"); }
       // half health: the change
-      f.Doing = null; f.OpenUntil = -1f; h.Hp = Boss.Verger.Hp / 2 - 10; UnityEngine.Time.time += 5f; Boss.Tick(f, p);
-      Check(f.Phase == 2 && f.Beast && f.ChangeUntil > UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Beast Claws", "Verger: at half health he changes and takes up the claws");
-      Check(f.Clip == "roar" && System.Math.Abs(f.ClipT0 - UnityEngine.Time.time) < 0.2f, "Verger: the change plays the roar clip from its start");
-      Check(System.Math.Abs(Boss.DamageScale(h) - 0.1f) < 0.001f && !Boss.Deflects(h), "Verger: mid-change he is hittable at a tenth of the damage");
-      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe" && i.Condition == ItemCondition.Working), "Verger: the scythe went into his pack at the change");
-      Check(f.Doing == null && UnityEngine.Time.time < f.NextMoveAt, "Verger: he does nothing while he changes"); f.NextMoveAt = UnityEngine.Time.time;
-      for (int i = 0; i < 40; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); } Check(f.Doing == null, "Verger: still nothing while the window is open");
-      UnityEngine.Time.time = f.ChangeUntil + 0.1f; Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h) == (UnityEngine.Time.time >= f.OpenUntil), "Verger: the window closes: full damage again");
-      f.NextMoveAt = UnityEngine.Time.time; began = false; h.Hp = Boss.Verger.Hp / 2 - 10; f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f);
+      f.Doing = null; f.OpenUntil = -1f; h.Hp = Boss.VergerBeast.Hp / 2 - 10; UnityEngine.Time.time += 5f; Boss.Tick(f, p);
+      Check(f.Phase == 2 && f.Beast && f.ChangeUntil > UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Beast Claws", "Verger beast: at half health he changes and takes up the claws");
+      Check(f.Clip == "roar" && System.Math.Abs(f.ClipT0 - UnityEngine.Time.time) < 0.2f, "Verger beast: the change plays the roar clip from its start");
+      Check(System.Math.Abs(Boss.DamageScale(h) - 0.1f) < 0.001f && !Boss.Deflects(h), "Verger beast: mid-change he is hittable at a tenth of the damage");
+      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe" && i.Condition == ItemCondition.Working), "Verger beast: the scythe went into his pack at the change");
+      Check(f.Doing == null && UnityEngine.Time.time < f.NextMoveAt, "Verger beast: he does nothing while he changes"); f.NextMoveAt = UnityEngine.Time.time;
+      for (int i = 0; i < 40; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); } Check(f.Doing == null, "Verger beast: still nothing while the window is open");
+      UnityEngine.Time.time = f.ChangeUntil + 0.1f; Check(Boss.DamageScale(h) == 1f && Boss.Deflects(h) == (UnityEngine.Time.time >= f.OpenUntil), "Verger beast: the window closes: full damage again");
+      f.NextMoveAt = UnityEngine.Time.time; began = false; h.Hp = Boss.VergerBeast.Hp / 2 - 10; f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f);
       for (int i = 0; i < 600 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
-      Check(began && f.Doing.Phase2Only, $"Verger: form 2 fights with the claws' moves ({f.Doing?.Name})");
-      Check(f.Doing.Clip != null && f.Clip == f.Doing.Clip && System.Math.Abs(f.ClipT0 + VergerBoss.Clips[f.Clip].PreHitSeconds * f.ClipScale - f.StrikeAt) < 0.01f, "Verger: the move's clip is timed so its hit frame lands on the strike");
+      Check(began && f.Doing.Phase2Only, $"Verger beast: form 2 fights with the claws' moves ({f.Doing?.Name})");
+      Check(f.Doing.Clip != null && f.Clip == f.Doing.Clip && System.Math.Abs(f.ClipT0 + VergerBoss.Clips[f.Clip].PreHitSeconds * f.ClipScale - f.StrikeAt) < 0.01f, "Verger beast: the move's clip is timed so its hit frame lands on the strike");
       {   // the combos: Rampage only in the beast's last stretch; its three blows land with the clip's pauses, the last one red
-        var ramp = Boss.Verger.Moves.First(m => m.Name == "Rampage"); var seen = new HashSet<string>();
-        for (int rep = 0; rep < 150; rep++) { h.Hp = Boss.Verger.Hp * 3 / 10; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.ChangeUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
-        Check(!seen.Contains("Rampage") && seen.Contains("Rake-Sweep"), $"Verger: above a quarter of his health the beast does not Rampage but does chain the Rake-Sweep ({string.Join(",", seen)})");
-        seen.Clear(); for (int rep = 0; rep < 150; rep++) { h.Hp = Boss.Verger.Hp / 5; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
-        Check(seen.Contains("Rampage"), $"Verger: below a quarter of his health the beast Rampages ({string.Join(",", seen)})");
-        h.Hp = Boss.Verger.Hp / 5; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Boss.Begin(f, ramp, UnityEngine.Time.time, 1.1f);
-        var strikes = new List<float>(); float lastStrike = f.StruckAt; for (int i = 0; i < 900 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; h.Hp = Boss.Verger.Hp / 5; Boss.Tick(f, p); if (f.StruckAt != lastStrike) { lastStrike = f.StruckAt; strikes.Add(lastStrike); } }
-        Check(strikes.Count == 3 && System.Math.Abs((strikes[1] - strikes[0]) - ramp.Gaps[0] * 1.1f) < 0.12f && System.Math.Abs((strikes[2] - strikes[1]) - ramp.Gaps[1] * 1.1f) < 0.12f, $"Verger: the Rampage lands three blows with the clip's pauses at his pace ({strikes.Count} blows, {(strikes.Count == 3 ? $"{strikes[1] - strikes[0]:0.00}s, {strikes[2] - strikes[1]:0.00}s" : "")})");
-        Check(Boss.Red(ramp, 2) && !Boss.Red(ramp, 0) && !Boss.Red(ramp, 1), "Verger: only the Rampage's last blow is red");
+        var ramp = Boss.VergerBeast.Moves.First(m => m.Name == "Rampage"); var seen = new HashSet<string>();
+        for (int rep = 0; rep < 150; rep++) { h.Hp = Boss.VergerBeast.Hp * 3 / 10; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.ChangeUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+        Check(!seen.Contains("Rampage") && seen.Contains("Rake-Sweep"), $"Verger beast: above a quarter of his health the beast does not Rampage but does chain the Rake-Sweep ({string.Join(",", seen)})");
+        seen.Clear(); for (int rep = 0; rep < 150; rep++) { h.Hp = Boss.VergerBeast.Hp / 5; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+        Check(seen.Contains("Rampage"), $"Verger beast: below a quarter of his health the beast Rampages ({string.Join(",", seen)})");
+        h.Hp = Boss.VergerBeast.Hp / 5; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Boss.Begin(f, ramp, UnityEngine.Time.time, 1.1f);
+        var strikes = new List<float>(); float lastStrike = f.StruckAt; for (int i = 0; i < 900 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; h.Hp = Boss.VergerBeast.Hp / 5; Boss.Tick(f, p); if (f.StruckAt != lastStrike) { lastStrike = f.StruckAt; strikes.Add(lastStrike); } }
+        Check(strikes.Count == 3 && System.Math.Abs((strikes[1] - strikes[0]) - ramp.Gaps[0] * 1.1f) < 0.12f && System.Math.Abs((strikes[2] - strikes[1]) - ramp.Gaps[1] * 1.1f) < 0.12f, $"Verger beast: the Rampage lands three blows with the clip's pauses at his pace ({strikes.Count} blows, {(strikes.Count == 3 ? $"{strikes[1] - strikes[0]:0.00}s, {strikes[2] - strikes[1]:0.00}s" : "")})");
+        Check(Boss.Red(ramp, 2) && !Boss.Red(ramp, 0) && !Boss.Red(ramp, 1), "Verger beast: only the Rampage's last blow is red");
         f.Doing = null; f.OpenUntil = -1f; }
       {   // the Howl and the Quake
-        var howl = Boss.Verger.Moves.First(m => m.Name == "Howl"); var quake = Boss.Verger.Moves.First(m => m.Name == "Quake");
-        void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.ChangeUntil = -1f; h.Hp = Boss.Verger.Hp / 3; h.X = px; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
+        var howl = Boss.VergerBeast.Moves.First(m => m.Name == "Howl"); var quake = Boss.VergerBeast.Moves.First(m => m.Name == "Quake");
+        void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.ChangeUntil = -1f; h.Hp = Boss.VergerBeast.Hp / 3; h.X = px; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
         void Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 1.1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); } }
-        Reset(6); Run(howl); Check(Rt.Of(p).ProneUntil > UnityEngine.Time.time - 0.5f && Body.Concussed(p), "Verger: the Howl across the room (6 tiles) knocks you down and deafens you");
-        Reset(6); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(howl); Check(!Body.Concussed(p), "Verger: a dive goes under the Howl");
-        Reset(14); Run(howl); Check(!Body.Concussed(p), "Verger: the Howl does not reach past 9 tiles");
-        Reset(3); int hp1 = p.Hp; Run(quake); Check(p.Hp < hp1, $"Verger: the Quake hurts everyone within its ring ({hp1} -> {p.Hp})");
-        Reset(8); hp1 = p.Hp; Run(quake); Check(p.Hp == hp1, "Verger: the Quake does not reach past its ring");
+        Reset(6); Run(howl); Check(Rt.Of(p).ProneUntil > UnityEngine.Time.time - 0.5f && Body.Concussed(p), "Verger beast: the Howl across the room (6 tiles) knocks you down and deafens you");
+        Reset(6); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(howl); Check(!Body.Concussed(p), "Verger beast: a dive goes under the Howl");
+        Reset(14); Run(howl); Check(!Body.Concussed(p), "Verger beast: the Howl does not reach past 9 tiles");
+        Reset(3); int hp1 = p.Hp; Run(quake); Check(p.Hp < hp1, $"Verger beast: the Quake hurts everyone within its ring ({hp1} -> {p.Hp})");
+        Reset(8); hp1 = p.Hp; Run(quake); Check(p.Hp == hp1, "Verger beast: the Quake does not reach past its ring");
         Rt.Of(p).DiveUntil = -1f; Body.Reset(); f.Doing = null; f.OpenUntil = -1f; }
-      h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
-      Check(VergerBoss.IsBeast(h), "Verger: after the change he is drawn as the beast");
-      p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");
-      Check(!VergerBoss.IsBeast(h), "Verger: the execution turns him back into the man (his corpse)");
-      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe") && h.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Verger Coat" && i.Condition == ItemCondition.Working) && !h.Inventory.Items.Any(i => i.Name == "Beast Claws"), "Verger: the scythe and the coat are on the body, the claws are not loot");
+      h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger beast: at the break he drops to a knee");
+      Check(VergerBoss.IsBeast(h), "Verger beast: after the change he is drawn as the beast");
+      p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger beast: the execution sets verger_done");
+      Check(!VergerBoss.IsBeast(h), "Verger beast: the execution turns him back into the man (his corpse)");
+      Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe") && h.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Verger Coat" && i.Condition == ItemCondition.Working) && !h.Inventory.Items.Any(i => i.Name == "Beast Claws"), "Verger beast: the scythe and the coat are on the body, the claws are not loot");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 

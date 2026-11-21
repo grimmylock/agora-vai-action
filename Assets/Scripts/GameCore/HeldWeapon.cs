@@ -197,10 +197,11 @@ namespace GameCore
         // forward/down; hx, hy: the fist's shift in character px, + = forward / down; lean: the body's tilt, + = back). A move is
         // (wound up, end of the strike); the strike turns the raw way between them (a horizontal sweep turns the opposite way to
         // a chop, under the hands instead of over the head). ----
-        public enum Style { Knife, Chop, Heavy, Visor }
+        public enum Style { Knife, Chop, Heavy, Visor, Verger }
         static readonly HashSet<string> Knives = new HashSet<string> { "HuntingKnife", "SpetsnazSwitchblade", "SerratedTrenchKnife", "ObeliskRitualBlade" };
         public static Style StyleOf(string key) =>
             key == VisorPoses ? Style.Visor
+            : key == VergerPoses ? Style.Verger
             : key != null && Knives.Contains(key) ? Style.Knife
             : key != null && WeaponDatabase.Categories["melee"].TryGetValue(key, out var d) && d.WeightKg >= Melee.TwoHandedKg ? Style.Heavy : Style.Chop;
 
@@ -211,6 +212,7 @@ namespace GameCore
             (-5f, 0f, -2f, 0f),        // hatchet, machete, hammer: raised, head up and forward
             (-35f, -1f, -1f, 0f),      // two-handed: up across the body, ready to come round
             (165f, 1f, -1f, 0f),       // the Visor: the knife reversed, blade down along the forearm, low and forward
+            (-55f, -1f, -1f, 0f),      // 2026-11-21 the Verger: the scythe carried high across the body, the blade hanging behind his shoulder
         };
         static readonly ((float off, float hx, float hy, float lean) a, (float off, float hx, float hy, float lean) b)[][] Moves =
         {
@@ -238,8 +240,21 @@ namespace GameCore
                 ((-135f, -3f, -1f, 8f), (-495f, 5f, -1f, -10f)),     // 4 spin: a full turn, the blade out at the end of the arm
                 ((-205f, -1f, -10f, 12f), (-232f, 5f, 3f, -14f)),    // 5 execution: up as high as he can reach, then all the way down
             },
+            // 2026-11-21 (Yan: "make the human version the entire boss, elaborate more on the human scythe-moveset"): the Verger's war scythe,
+            // two hands, the longest reach in the game. Boss.Move.Poses strings these; Melee.Shapes has the matching hit shape per pose.
+            new[] {
+                ((-160f, -2f, -8f, 11f), (100f, 3f, 2f, -11f)),      // 0 reap: the blade lifted over his head and brought down into the floor in front
+                ((-130f, -4f, -1f, 6f), (-285f, 5f, -1f, -10f)),     // 1 sweep: from behind him, round in front at waist height
+                ((165f, -2f, 3f, -2f), (-65f, 4f, -5f, 8f)),         // 2 rising: the blade from the floor, up through you
+                ((40f, 6f, 0f, -10f), (-60f, -3f, -1f, 7f)),         // 3 hook: thrown out at arm's length, the beard hauled back toward him
+                ((-130f, -3f, -1f, 8f), (-490f, 5f, -1f, -10f)),     // 4 danse: a full turn with the scythe at the end of his arms, all round him
+                ((-110f, -4f, 4f, 3f), (-275f, 5f, 5f, -6f)),        // 5 ankle reap: bent low, the blade skims the floor at your feet
+                ((-285f, 5f, -1f, -6f), (-130f, -4f, -1f, 8f)),      // 6 backhand: the sweep come back the other way
+                ((-200f, -1f, -10f, 13f), (-240f, 5f, 3f, -14f)),    // 7 impale: the point raised straight up, then driven down through you
+            },
         };
         public const string VisorPoses = "@Visor";             // Melee.Charge.PoseKey: his poses instead of his knife's
+        public const string VergerPoses = "@Verger";           // 2026-11-21: the Verger's scythe poses
         public static int MoveCount(Style st) => Moves[(int)st].Length;
         public static (float off, float hx, float hy, float lean) Stance(Style st) => Stances[(int)st];
 
@@ -250,7 +265,7 @@ namespace GameCore
         // the start of the follow-through. Read from the pose math at those times, so it's the same at any frame rate.
         public const float SmearStep = 0.025f; public const int SmearCount = 4;
         public static bool Striking(float sinceSwing, float swingHold) => swingHold < 0f && sinceSwing >= WindUp && sinceSwing < WindUp + ChopTime + Follow * 0.6f;   // px the fist travels on its arc per radian-ish of swing; how much of the turn the wrist takes
-        public static bool Sweep(Style st, int move) => st != Style.Knife && Wrap(st, move) == 1;
+        public static bool Sweep(Style st, int move) => st == Style.Verger ? Wrap(st, move) is 1 or 4 or 5 or 6 : st != Style.Knife && Wrap(st, move) == 1;
         static int Wrap(Style st, int move) => ((move % MoveCount(st)) + MoveCount(st)) % MoveCount(st);
 
         /// <summary>A swing at `t` s of move `move` (any number: it wraps) for this style; outside a swing, the stance. In a combo
@@ -341,7 +356,7 @@ namespace GameCore
             // the other hand: on the handle above the fist with a two-handed weapon; otherwise up in a guard in front of the chest,
             // pulled back as the weapon hand goes out (none while throwing - it's up there with the weapon)
             float sx, sy; bool sup = throwHold < 0f && sinceThrow >= WhipTime;
-            if (st == Style.Heavy) { float r = deg * Mathf.Deg2Rad; sx = gx + cx + 4f * Mathf.Cos(r); sy = gy + 1.5f - 4f * Mathf.Sin(r); }
+            if (st == Style.Heavy || st == Style.Verger) { float r = deg * Mathf.Deg2Rad; sx = gx + cx + 4f * Mathf.Cos(r); sy = gy + 1.5f - 4f * Mathf.Sin(r); }
             else { float fx = ChestX + 3f - 0.3f * hx; sx = (left ? 13f - fx : fx) + cx; sy = ChestY - 1.5f - (st == Style.Knife ? 0f : 1f) + 0.5f * hy; }   // out in front of the chest
             return new HeldFrame
             {

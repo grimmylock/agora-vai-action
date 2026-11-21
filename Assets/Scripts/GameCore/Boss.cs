@@ -55,6 +55,8 @@ namespace GameCore
             public int ParriesToStagger = 3;  // Yan: "make it so he needs 3 parries to get stunned"
             public Move[] Moves;
             public string Phase2Line;
+            public string PoseKey;         // 2026-11-21: his own pose set (HeldPoseMath.VisorPoses / VergerPoses), null = his weapon's
+            public string[] Phase2Barks;   // lines over his head when phase 2 starts
             public Transform Change;       // 2026-11-20 (the Verger, BOSS_DESIGNS.md): at half health he changes (a window, a new weapon) instead of just flaring
         }
         /// <summary>The half-health change: he is hittable but takes (1 - Reduction) of the damage for `Seconds`, does nothing meanwhile, then fights on with `Weapon` (a melee db key).</summary>
@@ -103,7 +105,7 @@ namespace GameCore
 
         public static readonly Def Visor = new Def
         {
-            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 4800, DoneFlag = "visor_done",   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
+            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 4800, DoneFlag = "visor_done", PoseKey = HeldPoseMath.VisorPoses,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = new[]
             {
@@ -149,32 +151,58 @@ namespace GameCore
             },
         };
 
-        // Boss 6 (Yan, 2026-11-20: "he starts as a sprite swinging his scythe, similar to visor and other melee fights, but at 50% he transforms into a beast", VergerBoss.cs, BOSS_DESIGNS.md): the cathedral's last verger.
-        // Form 1 is the Visor's duel on a war scythe (the longest reach in the game, it cuts and bleeds); at half health he changes (Def.Change: 90% damage reduction while he does) and fights on with claws.
-        // His second form has NO sprite yet: until it is made he fights on in the human body, with the claws' moves.
+        // Boss 6 (Yan, 2026-11-20: "he starts as a sprite swinging his scythe, similar to visor and other melee fights"; 2026-11-21: "i don't like it [the beast], he looks very ai generated and his attacks don't read well,
+        // save it but take him out of the game for now and make the human version the entire boss, elaborate more on the human scythe-moveset"). VergerBoss.cs, BOSS_DESIGNS.md: the cathedral's last verger.
+        // The whole fight is the man with the war scythe (the longest reach in the game, it cuts and bleeds), on his own pose set (HeldPoseMath.VergerPoses: reap, sweep, rising, hook, danse, ankle reap,
+        // backhand, impale). He fights from the blade's tip (MaxDist 2: he starts swings from two tiles out). Phase 2 at half health: the hat comes off, he is quicker, and the long combos come out;
+        // the last quarter adds the Last Rite. The beast (VergerBeast below) is parked: its art, clips, moves and code are kept and tested, nothing spawns it.
         public static readonly Def Verger = new Def
+        {
+            Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 7000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false, PoseKey = HeldPoseMath.VergerPoses,
+            StepSeconds = 0.33f, Recover = 1.0f, Phase2Line = "He takes off the hat and sets it down on the flagstones. The mask stays on.", Phase2Barks = new[] { "Then I will not be gentle.", "The bell rings for you now." },
+            Moves = VergerScytheMoves(),
+        };
+        /// <summary>2026-11-21: the scythe moveset (poses: 0 reap, 1 sweep, 2 rising, 3 hook, 4 danse, 5 ankle reap, 6 backhand, 7 impale). White = parry, red = dive under or get out of reach.</summary>
+        static Move[] VergerScytheMoves() => new[]
+        {
+            // both phases: the measured hunter
+            new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, MaxDist = 2f, Poses = new[] { 0 }, Open = 1.4f },                                                     // overhead, into the floor in front of him
+            new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.65f, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6 }, Open = 1.7f },                         // round and back
+            new Move { Name = "Rising Cut", Wind = 0.7f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 2 }, Open = 1.1f },                                              // the quick one: short wind, short opening
+            new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 3 }, Open = 1.2f },                           // from range: the beard catches you and he hauls you in
+            new Move { Name = "Ankle Reap", Wind = 0.9f, Danger = true, Mult = 0.9f, MaxDist = 2f, Weight = 2, Poses = new[] { 5 }, Open = 1.6f },                               // low, at your feet: dive over it
+            // phase 1 only
+            new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gaps = new[] { 0.45f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.9f }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 0 }, Open = 1.8f, Phase1Only = true },
+            // phase 2: the hat comes off
+            new Move { Name = "Danse", Wind = 0.8f, Hits = 2, Gap = 0.5f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4 }, Open = 1.8f, Phase2Only = true },          // two full turns, all round him
+            new Move { Name = "Toll", Wind = 1.0f, Danger = true, MaxDist = 6f, Effects = new[] { "toll" }, Weight = 1, Poses = new[] { 0 }, Open = 1.3f, Phase2Only = true },     // the blade struck on the flagstones rings like the bell: deafened and your aim gone (dive)
+            new Move { Name = "Hook-Reap", Wind = 1.0f, Hits = 2, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f }, Mults = new[] { 1.0f, 1.4f }, RedHits = new[] { true, false }, Weight = 2, Poses = new[] { 3, 0 }, Open = 2.0f, Phase2Only = true },   // hauled in, then the reap: parry the second
+            new Move { Name = "Reaper's Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.6f, Weight = 2, Poses = new[] { 7 }, Open = 2.2f, Phase2Only = true },             // across the nave and the point driven down
+            new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 5, Gaps = new[] { 0.4f, 0.4f, 0.5f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 1.2f }, RedHits = new[] { false, false, true, false, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 0 }, Open = 2.4f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
+            new Move { Name = "Last Rite", Wind = 0.9f, Hits = 4, Gaps = new[] { 0.5f, 0.45f, 0.7f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 1.8f }, RedHits = new[] { false, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 7 }, Open = 2.8f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
+        };
+
+        // ---- PARKED (Yan, 2026-11-21: "save it but take him out of the game for now"): the beast form. Nothing spawns this def; the harness still runs it so the code keeps working. ----
+        // At half health he changed (Def.Change: hittable at a tenth of the damage for 4 s) into the werewolf brawler drawn from Pixel Lab clips (VergerBoss.Clips), with the claws' moves below.
+        public static readonly Def VergerBeast = new Def
         {
             Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 7000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false,
             StepSeconds = 0.33f, Recover = 1.0f, Phase2Line = "The coat splits at the seams. What stands up is not a man.",
             Change = new Transform { Weapon = "VergerClaws", Seconds = 4f, Reduction = 0.9f, Splash = "THE CHANGE", Line = "The hat falls. The mask splits. The scythe drops from hands that are not hands.", Barks = new[] { "Forgive me.", "I kept the bell. I kept the dead out. And you rang it." } },
             Moves = new[]
             {
-                // form 1: the scythe (poses: 0 slam = the overhead cut, 1 wide sweep, 2 rising swing)
                 new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, Poses = new[] { 0 }, Open = 1.4f, Phase1Only = true },
                 new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f, Phase1Only = true },
                 new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 0 }, Open = 1.2f, Phase1Only = true },
                 new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Poses = new[] { 1, 1, 2 }, Open = 1.8f, Phase1Only = true },
-                // form 2: the brawler (Heavy style: 0 slam, 1 wide sweep, 2 rising): slow, heavy, long openings
                 new Move { Name = "Rake", Wind = 0.65f, Mult = 1.1f, Weight = 3, Poses = new[] { 1 }, Open = 1.3f, Phase2Only = true, Clip = "rake" },       // (one fast slash: the regenerated clip shows one forward blow)
                 new Move { Name = "Smash", Wind = 1.2f, Danger = true, Mult = 1.9f, Weight = 2, Poses = new[] { 0 }, Open = 2.4f, Phase2Only = true, Clip = "slam" },
                 new Move { Name = "Charge", Wind = 1.0f, Danger = true, Lunge = 7f, Mult = 1.5f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true, Clip = "charge" },
                 new Move { Name = "Sweep", Wind = 0.9f, Mult = 1.2f, Weight = 2, Poses = new[] { 1 }, Open = 1.8f, Phase2Only = true, Clip = "sweep" },
-                // 2026-11-21 (Yan: "he needs more moves"): a Howl across the room, a Quake round him, and two more combos
                 new Move { Name = "Howl", Wind = 1.1f, Danger = true, MaxDist = 9f, Effects = new[] { "howl" }, Weight = 2, Poses = new[] { 0 }, Open = 1.8f, Phase2Only = true, Clip = "howl" },
                 new Move { Name = "Quake", Wind = 1.4f, Danger = true, Mult = 1.5f, Effects = new[] { "quake" }, Weight = 2, Poses = new[] { 0 }, Open = 2.6f, Phase2Only = true, Clip = "slam" },
                 new Move { Name = "Trample", Wind = 1.0f, Hits = 2, Lunge = 7f, Gaps = new[] { 1.30f }, Mults = new[] { 1.3f, 1.8f }, RedHits = new[] { true, true }, Weight = 2, Poses = new[] { 0, 0 }, Open = 2.4f, Phase2Only = true, Clip = "trample" },
                 new Move { Name = "Howl-Rake", Wind = 1.1f, Hits = 2, MaxDist = 1.5f, Effects = new[] { "howl", null }, Gaps = new[] { 0.99f }, Mults = new[] { 1f, 1.2f }, RedHits = new[] { true, false }, Weight = 2, Poses = new[] { 0, 1 }, Open = 2.0f, Phase2Only = true, Clip = "howlrake" },
-                // 2026-11-21 combos (Yan: "like the Gaunt has"): the clips stitched (make_beast_combos.py), the gaps between the blows read off the clip
                 new Move { Name = "Rake-Sweep", Wind = 0.65f, Hits = 2, Gaps = new[] { 0.49f }, Mults = new[] { 0.9f, 1.0f }, Weight = 2, Poses = new[] { 1, 1 }, Open = 1.6f, Phase2Only = true, Clip = "rakesweep" },
                 new Move { Name = "Rake-Smash", Wind = 0.65f, Hits = 2, Gaps = new[] { 1.21f }, Mults = new[] { 0.9f, 1.8f }, RedHits = new[] { false, true }, Weight = 2, Poses = new[] { 1, 0 }, Open = 2.3f, Phase2Only = true, Clip = "rakeslam" },
                 new Move { Name = "Rampage", Wind = 0.65f, Hits = 3, Gaps = new[] { 0.49f, 1.59f }, Mults = new[] { 0.8f, 0.9f, 1.9f }, RedHits = new[] { false, false, true }, BelowHp = 0.25f, Weight = 3, Poses = new[] { 1, 1, 0 }, Open = 2.6f, Phase2Only = true, Clip = "rampage" },
@@ -203,7 +231,7 @@ namespace GameCore
         {
             var h = f.Unit; float now = Time.time;
             // Visor 2: his wind-up is held through the glint, and the strike starts just before the hit lands
-            var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def == Visor ? HeldPoseMath.VisorPoses : null; mc.Pace = f.Def.Pace;
+            var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def.PoseKey; mc.Pace = f.Def.Pace;
             if (f.Doing == null) mc.SwingFrom = -1f;
             else if (mc.SwingFrom >= 0f && now >= f.StrikeAt - HeldPoseMath.ChopTime / mc.Pace) { float held = now - mc.SwingFrom; mc.SwingFrom = -1f; mc.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp) / mc.Pace; }
             if (f.Doing != null && f.GlintDue >= 0f && now >= f.GlintDue) { f.GlintDue = -1f; Glint(f, Red(f.Doing, f.Doing.Hits - f.HitsLeft)); }
@@ -219,6 +247,7 @@ namespace GameCore
                 Sfx.Play("boss_sting", null, 0.8f, 0f, 1.25f);
                 CombatFx.Push("aura", h, null, h.EquippedWeapon).Now = true;
                 HitStop(0.3f);
+                if (f.Def.Phase2Barks != null) for (int i = 0; i < f.Def.Phase2Barks.Length; i++) Banter.Say(h, f.Def.Phase2Barks[i], 1, 0.3f + i * 1.8f);
             }
             float speed = f.Beast ? 1.1f : f.Phase == 2 ? 0.8f : 1f;     // the Verger's beast is a slow brawler (1.1: his waits and openings are a tenth longer); every other boss's phase 2 is quicker
             int dist = CombatantUtil.Distance(h, p);
@@ -301,8 +330,9 @@ namespace GameCore
             string fx = m.Effects != null && m.Effects.Length > 0 ? m.Effects[System.Math.Min(hi0, m.Effects.Length - 1)] : null;
             if (fx == "howl") { Howl(f, p, Red(m, hi0)); return; }                                  // 2026-11-21: a sound, not a swing: it reaches across the room
             if (fx == "quake") { Quake(f, p, m, hi0); return; }                                      // a ring round him
+            if (fx == "toll") { Toll(f); return; }                                                   // 2026-11-21 the Verger: the blade rung on the stone
             f.StruckAt = Time.time;
-            StepIn(h, p, m.Drag > 0f ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
+            StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
@@ -313,7 +343,21 @@ namespace GameCore
             try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, MultOf(m, hi)); }
             finally { Parry.Unparryable = false; }
             if (VergerBoss.IsBeast(h)) { var sf = CombatFx.Push("beastslash", h, p, null); sf.Now = true; sf.Hit = p.Hp < hp0; if (sf.Hit) HitStop(0.05f); }      // 2026-11-21: the claws' slash is drawn, and a landed blow has weight
-            if (m.Drag > 0f) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
+            if (m.Drag > 0f && hi == 0) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
+        }
+
+        public const float TollRange = 6f;
+        /// <summary>2026-11-21 (the Verger's phase 2): he strikes the blade on the flagstones and it rings like the cathedral bell: every player within TollRange who is not under it (a dive) is deafened for 1.5 s and has their aim blown. No damage: the setup for the Hook.</summary>
+        static void Toll(Fight f)
+        {
+            var h = f.Unit; f.StruckAt = Time.time; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("boss_sting", TacticalGridView.GridToWorld(h.X, h.Y), 0.8f, 0.02f, 1.6f); CombatFx.Push("stagger", h, null, null).Now = true;
+            int n = 0;
+            foreach (var q in Player.All.Where(q => q.IsAlive()))
+            {
+                if (CombatantUtil.Distance(h, q) > TollRange || Rt.Untouchable(q) || Rt.Of(q).Diving) continue;
+                var aim = Gunplay.AimOf(q); aim.Steady = 0f; aim.Bloom = Gunplay.PlayerMaxBloom; Body.Concuss(q, 1.5f); n++;
+            }
+            GameLog.Write(n > 0 ? "The scythe rings on the stone like the bell. Your ears give out." : "The scythe rings on the stone. You were under it.");
         }
 
         public const float HowlRange = 9f, HowlCone = 100f, QuakeRadius = 4.2f;
@@ -448,7 +492,7 @@ namespace GameCore
             GameLog.Event($"You execute {f.Def.Name}. Your Focus surges.");
             if (f.Def.DoneFlag != null) Story.Set(f.Def.DoneFlag);
             if (f.Def == Spool) SpoolBoss.Defeated(p, f.Unit);
-            if (f.Def == Verger) VergerBoss.Defeated(p, f.Unit);
+            if (f.Def == Verger || f.Def == VergerBeast) VergerBoss.Defeated(p, f.Unit);
             return true;
         }
 

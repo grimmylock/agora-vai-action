@@ -1,6 +1,6 @@
 // Boss 6: the Verger (Yan, 2026-11-20: "a gothic beast hunter using an axe" -> a scythe; "he comes every run at the end" of the cathedral job, MISSION_CHOIR.md; "he starts as a sprite swinging his scythe ... at 50% he transforms into a beast").
-// The fight is Boss.cs (Boss.Verger): the Visor's duel on a war scythe, then at half health the change (Def.Change: hittable at a tenth of the damage for 4 s) and the claws. This file is his entrance and his end.
-// NOT built yet: the cathedral job that sends him in at the end of a run (the bell, the Husk waves); the beast's own sprite (until it exists he fights on in the human body); the co-op sync of the change (host-side only).
+// The fight is Boss.cs (Boss.Verger): the Visor's duel on a war scythe with his own pose set, the whole fight (2026-11-21, Yan: the beast "looks very ai generated and his attacks don't read well, save it but take him out of the game for now").
+// The beast form is PARKED: Boss.VergerBeast (the half-health change and the claws' moves) and the clip code below are kept and tested by the harness; nothing spawns it. Co-op: host-side only (boss fights are not synced).
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -59,7 +59,7 @@ namespace GameCore
         };
         const float ClipPivotY = 22f / 232f;                   // the feet row is 6 px above the cell's bottom, and the pivot sits 16 px above the feet
         static readonly Dictionary<HumanEnemy, (float x, float y)> _last = new Dictionary<HumanEnemy, (float, float)>();
-        public static bool IsBeast(ICombatant u) => u is HumanEnemy && Boss.Of(u) is Boss.Fight f && f.Def == Boss.Verger && f.Beast && !f.Finished;
+        public static bool IsBeast(ICombatant u) => u is HumanEnemy && Boss.Of(u) is Boss.Fight f && f.Beast && !f.Finished;
         public static bool FacesLeft(ICombatant u) { var p = Player.Current; return p != null && p.X < u.X; }
         public static Sprite[] ClipFrames(string name) => Clips.TryGetValue(name, out var c) ? UnitSprites.HDFx("verger_beast_" + name, c.Frames, new Vector2(0.5f, ClipPivotY)) : null;
 
@@ -100,8 +100,13 @@ namespace GameCore
         /// <summary>His execution (Boss.FinishNow): the scythe and the coat are on the body.</summary>
         public static void Defeated(Player p, HumanEnemy h)
         {
-            Story.Journal("The Verger: the cathedral's last hunter kept the bell and the dead apart. He changed at the end, and he is down. His scythe and his coat are yours.");
-            GameLog.Event("The beast shrinks into a man in a torn coat, and lies still. The scythe is in his pack.");
+            if (Boss.Fights.Any(f => f.Unit == h && f.Def == Boss.VergerBeast))       // the parked beast form
+            {
+                Story.Journal("The Verger: the cathedral's last hunter kept the bell and the dead apart. He changed at the end, and he is down. His scythe and his coat are yours.");
+                GameLog.Event("The beast shrinks into a man in a torn coat, and lies still. The scythe is in his pack."); return;
+            }
+            Story.Journal("The Verger: the cathedral's last hunter kept the bell and the dead apart. He is down. His scythe and his coat are yours.");
+            GameLog.Event("The Verger folds over the scythe's snath and kneels there, his hat beside him on the flagstones. He does not get up.");
         }
     }
 }

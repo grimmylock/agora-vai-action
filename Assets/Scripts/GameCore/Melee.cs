@@ -56,7 +56,7 @@ namespace GameCore
         // Melee 2c (Yan chose "option 1": each swing its own hit shape, each weapon its own reach). Reach in tiles from your middle,
         // per kind of weapon (Tactical Hatchet: its own, Table); per move: reach x, arc (degrees in front), every body in it or only
         // the nearest, damage x. Same order as HeldPoseMath.Moves.
-        static readonly float[] BaseReach = { 1.3f, 1.45f, 1.75f, 1.3f };    // knife, one-handed, two-handed, the Visor
+        static readonly float[] BaseReach = { 1.3f, 1.45f, 1.75f, 1.3f, 1.75f };    // knife, one-handed, two-handed, the Visor, the Verger
         public static readonly (float reach, float arc, bool all, float dmg)[][] Shapes =
         {
             new[] { (1.2f, 40f, false, 1.1f), (1f, 100f, false, 1f), (1f, 100f, false, 1f) },        // stab: long, narrow; the slashes
@@ -64,6 +64,8 @@ namespace GameCore
             new[] { (1f, 60f, false, 1.25f), (1f, 160f, true, 0.85f), (1.05f, 90f, false, 1f) },     // slam; wide sweep; rising swing
             // the Visor (damage stays his Boss.Move.Mult: x1): backhand, rising, ice-pick, thrust (long), spin (all round him), execution
             new[] { (1f, 120f, false, 1f), (1f, 100f, false, 1f), (1f, 70f, false, 1f), (1.25f, 40f, false, 1f), (1f, 360f, true, 1f), (1.1f, 80f, false, 1f) },
+            // 2026-11-21 the Verger (damage stays his Boss.Move.Mult): reap (narrow), sweep (wide, all), rising, hook (long, narrow), danse (all round him), ankle reap (wide, all), backhand (wide, all), impale (long)
+            new[] { (1f, 60f, false, 1f), (1f, 160f, true, 1f), (1f, 90f, false, 1f), (1.15f, 40f, false, 1f), (0.95f, 360f, true, 1f), (1.05f, 170f, true, 1f), (1f, 160f, true, 1f), (1.1f, 50f, false, 1f) },
         };
         public static (float reach, float arc, bool all, float dmg) Shape(Weapon w, int move, ICombatant by = null)
         {

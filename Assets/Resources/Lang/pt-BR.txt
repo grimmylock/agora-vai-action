@@ -1218,6 +1218,19 @@ The bell goes quiet. From the altar end, a tall man in a long coat walks down th
 The Verger: the cathedral's last hunter kept the bell and the dead apart. He changed at the end, and he is down. His scythe and his coat are yours.	O Sacristão: o último caçador da catedral mantinha o sino e os mortos separados. No fim ele se transformou, e agora caiu. A foice e o casaco dele são seus.
 The beast shrinks into a man in a torn coat, and lies still. The scythe is in his pack.	A fera encolhe até virar um homem de casaco rasgado, e fica imóvel. A foice está na mochila dele.
 The hook catches you and drags you in.	O gancho te agarra e te arrasta para perto.
+He takes off the hat and sets it down on the flagstones. The mask stays on.	Ele tira o chapéu e o deixa sobre as lajes. A máscara fica.
+The Verger: He takes off the hat and sets it down on the flagstones. The mask stays on.	O Sacristão: Ele tira o chapéu e o deixa sobre as lajes. A máscara fica.
+Then I will not be gentle.	Então não serei gentil.
+The bell rings for you now.	Agora o sino toca por você.
+The scythe rings on the stone like the bell. Your ears give out.	A foice ressoa na pedra como o sino. Seus ouvidos falham.
+The scythe rings on the stone. You were under it.	A foice ressoa na pedra. Você passou por baixo.
+The Verger: the cathedral's last hunter kept the bell and the dead apart. He is down. His scythe and his coat are yours.	O Sacristão: o último caçador da catedral mantinha o sino e os mortos separados. Ele caiu. A foice e o casaco dele são seus.
+The Verger folds over the scythe's snath and kneels there, his hat beside him on the flagstones. He does not get up.	O Sacristão se dobra sobre o cabo da foice e fica ajoelhado, o chapéu ao lado dele nas lajes. Ele não se levanta.
+REAP!	CEIFAR!
+ANKLE REAP!	CEIFA BAIXA!
+TOLL!	BADALADA!
+REAPER'S RUSH!	INVESTIDA DO CEIFADOR!
+LAST RITE!	ÚLTIMO RITO!
 HOOK!	GANCHO!
 POUNCE!	BOTE!
 MAUL!	DILACERAR!
