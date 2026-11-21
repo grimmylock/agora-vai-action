@@ -359,7 +359,9 @@ namespace GameCore
             if (fx == "flare") { f.StruckAt = Time.time; FerrymanBoss.Flare(f); return; }               // 2026-11-21 the Ferryman
             if (fx == "hands") { f.StruckAt = Time.time; FerrymanBoss.Hands(f, m, hi0); return; }
             if (fx == "mind") { f.StruckAt = Time.time; SpecimenGrown.Mind(f); return; }
-            if (fx == "laser") { f.StruckAt = Time.time; SpecimenGrown.Laser(f, m, hi0); return; }
+            if (fx == "pulse") { f.StruckAt = Time.time; SpecimenGrown.Pulse(f); return; }
+            if (fx == "pull") { f.StruckAt = Time.time; SpecimenGrown.Pull(f); return; }
+            if (fx == "blink") { f.StruckAt = Time.time; SpecimenGrown.Blink(f, p); return; }
             if (fx == "orbs") { f.StruckAt = Time.time; SpecimenGrown.Orbs(f); return; }                // 2026-11-21 the Specimen, grown
             if (fx == "digslam") { f.StruckAt = Time.time; ExcavatorBoss.DigSlam(f, m, hi0); return; }   // 2026-11-21 the Excavator
             if (fx == "rocks") { f.StruckAt = Time.time; ExcavatorBoss.Rocks(f, m, hi0); return; }

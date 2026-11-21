@@ -620,25 +620,41 @@ namespace GameCore
         static void HideFrom(List<SpriteRenderer> pool, int n) { for (int i = n; i < pool.Count; i++) if (pool[i] != null && pool[i].gameObject.activeSelf) pool[i].gameObject.SetActive(false); }
         static Vector3 W(float x, float y, float up = 0f) => new Vector3(x, -y + up, 0f);   // tile space (y down) -> world
 
-        /// <summary>2026-11-21: the grown Specimen's beams (SpecimenGrown.Beams), drawn with the vat's beam strips from its giant eye; returns how many beam sprites it used.</summary>
+        /// <summary>2026-11-21: the grown Specimen's eye beams (SpecimenGrown.Beams: each from where it was fired, its start lifted to the floating eye) with the vat's beam strips, and the cord from the
+        /// brain to the eye (a sagging chain of flesh-coloured bits, slack once the eye is dead); returns how many beam sprites it used.</summary>
         int SpecimenBeams(string pn)
         {
-            var sf = SpecimenGrown.Current; if (sf == null || SpecimenGrown.Beams.Count == 0) return 0;
-            var (bx, by) = Ballistics.Pos(sf.Unit); float lift = SpecimenGrown.EyeHeight; int nb = 0;
-            var beamF = Strip("Sprites/Fx/boss_brain_beam" + pn, 4, 32f, new Vector2(0.5f, 0.5f)); var capF = Strip("Sprites/Fx/boss_brain_beamcap" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
+            var sf = SpecimenGrown.Current; if (sf == null) { HideFrom(_cord, 0); return 0; }
+            int nb = 0; var beamF = Strip("Sprites/Fx/boss_brain_beam" + pn, 4, 32f, new Vector2(0.5f, 0.5f)); var capF = Strip("Sprites/Fx/boss_brain_beamcap" + pn, 4, 32f, new Vector2(0.5f, 0.5f));
             foreach (var b in SpecimenGrown.Beams)
             {
                 float r = b.Angle * Mathf.Deg2Rad, flick = 0.85f + 0.15f * Mathf.Sin(Time.time * 60f); int segs = Mathf.CeilToInt(b.Length);
-                for (int k = 0; k < segs; k++)                                                                   // over the ground from its feet, lifted to the eye at the start and easing down to chest height
+                for (int k = 0; k < segs; k++)                                                                   // over the ground, the start lifted to the eye, easing down to chest height
                 {
-                    var sg = Pooled(_beams, nb++, "Beam", 9); if (sg == null) continue; float mid = k + 0.5f, wlen = Mathf.Min(1f, b.Length - k), h = Mathf.Lerp(lift, 0.5f, Mathf.Clamp01(mid / 3f));
+                    var sg = Pooled(_beams, nb++, "Beam", 9); if (sg == null) continue; float mid = k + 0.5f, wlen = Mathf.Min(1f, b.Length - k), h = Mathf.Lerp(b.Lift, 0.5f, Mathf.Clamp01(mid / 3f));
                     sg.sprite = beamF?[(k + (int)(Time.time * 14f)) % 4] ?? White(); sg.color = beamF != null ? new Color(1f, 1f, 1f, flick) : new Color(0.85f, 0.55f, 1f, flick);
-                    sg.transform.position = W(bx + Mathf.Cos(r) * mid, by + Mathf.Sin(r) * mid - h, 0.35f); sg.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); sg.transform.localScale = new Vector3(wlen, beamF != null ? 1.15f : 0.15f, 1f);
+                    sg.transform.position = W(b.X + Mathf.Cos(r) * mid, b.Y + Mathf.Sin(r) * mid - h, 0.35f); sg.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); sg.transform.localScale = new Vector3(wlen, beamF != null ? 1.15f : 0.15f, 1f);
                 }
-                var cp = Pooled(_beams, nb++, "BeamCap", 10); if (cp != null && capF != null) { cp.sprite = capF[(int)(Time.time * 14f) % 4]; cp.color = Color.white; cp.transform.position = W(bx, by - lift, 0.35f); cp.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); cp.transform.localScale = Vector3.one * 1.6f; }
+                var cp = Pooled(_beams, nb++, "BeamCap", 10); if (cp != null && capF != null) { cp.sprite = capF[(int)(Time.time * 14f) % 4]; cp.color = Color.white; cp.transform.position = W(b.X, b.Y - b.Lift, 0.35f); cp.transform.rotation = Quaternion.Euler(0f, 0f, -b.Angle); cp.transform.localScale = Vector3.one * 1.2f; }
             }
+            // the cord
+            int nc = 0;
+            if (SpecimenGrown.Eye != null && (SpecimenGrown.EyeAlive || Time.time - SpecimenGrown.EyeDiedAt < 2f))
+            {
+                var (ax, ay) = SpecimenGrown.BrainCord(sf); var (ex, ey) = SpecimenGrown.EyeAt(); bool slack = !SpecimenGrown.EyeAlive;
+                float len = Mathf.Sqrt((ex - ax) * (ex - ax) + (ey - ay) * (ey - ay)); int n = Mathf.Max(6, Mathf.CeilToInt(len * 6f));
+                for (int k = 0; k <= n; k++)
+                {
+                    float t = k / (float)n, sag = (slack ? 1.2f : 0.35f) * 4f * t * (1f - t), wave = 0.08f * Mathf.Sin(Time.time * 6f + t * 9f) * (slack ? 0f : 1f);
+                    var c = Pooled(_cord, nc++, "Cord", 8); if (c == null) continue;
+                    c.sprite = White(); c.color = Color.Lerp(new Color(0.42f, 0.2f, 0.26f), new Color(0.62f, 0.34f, 0.38f), 0.5f + 0.5f * Mathf.Sin(t * 20f));
+                    c.transform.position = W(Mathf.Lerp(ax, ex, t) + wave, Mathf.Lerp(ay, ey, t) + sag, 0.3f); c.transform.rotation = Quaternion.identity; c.transform.localScale = Vector3.one * (3f / 32f);
+                }
+            }
+            HideFrom(_cord, nc);
             return nb;
         }
+        readonly List<SpriteRenderer> _cord = new List<SpriteRenderer>();
 
         void DrawOrbs()
         {

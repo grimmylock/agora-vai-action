@@ -2995,23 +2995,45 @@ static class Program {
       Boss.Fight f = null; HumanEnemy h = null;
       void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.X = px + 5; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + 5 - dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
       void Run(Boss.Move mv, System.Action mid = null, System.Action each = null) { Boss.Begin(f, mv, UnityEngine.Time.time, 1f); mid?.Invoke(); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; each?.Invoke(); Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); } f.Doing = null; f.OpenUntil = -1f; }
-      // the Specimen, grown
-      f = Boss.Spawn(SpecimenGrown.Def, px + 5, py); h = f.Unit; var mind = SpecimenGrown.Def.Moves.First(m => m.Name == "Mind-Lash");
-      Reset(6); Run(mind); Check(Body.Concussed(p), "Specimen grown: the Mind-Lash dazes you in its sight");
+      // the Specimen, grown (v3, 2026-11-21: Lab Gamma; the brain blinks, pulses, pulls; the eye on its cord circles and fires, and can be shot off)
+      f = SpecimenGrown.Spawn(px + 5, py, false); h = f.Unit; var eye = SpecimenGrown.Eye;
+      Check(SpecimenGrown.Zone == "secret_lab_gamma" && eye != null && EncounterState.Enemies.Contains(eye) && SpecimenGrown.IsEye(eye), "Specimen grown: it lives in Lab Gamma now, and its eye is a target of its own");
+      var mind = SpecimenGrown.Def.Moves.First(m => m.Name == "Mind-Lash");
+      Reset(6); Run(mind, null, () => SpecimenGrown.Tick(1f / 60f)); Check(Body.Concussed(p), "Specimen grown: the Mind-Lash dazes you in its sight");
       for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Solid);
-      Reset(6); Run(mind); Check(!Body.Concussed(p), "Specimen grown: out of its sight the Mind-Lash misses");
+      Reset(6); Run(mind, null, () => SpecimenGrown.Tick(1f / 60f)); Check(!Body.Concussed(p), "Specimen grown: out of its sight the Mind-Lash misses");
       for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Empty);
-      Check(SpecimenGrown.Def.Moves.Any(m => m.Lunge > 0f && m.Danger), "Specimen grown: it drifts at you (a red rush)");
-      {   // 2026-11-21 v2: the vat's attacks, free: the laser, the orbs; it keeps its distance
-        var laser = SpecimenGrown.Def.Moves.First(m => m.Name == "Laser"); var orbsM = SpecimenGrown.Def.Moves.First(m => m.Name == "Orbs");
-        Reset(6); Run(laser, null, () => SpecimenGrown.Tick(1f / 60f)); Check(p.Hp < p.MaxHp, $"Specimen grown: the giant eye's Laser burns you along its line ({p.Hp}/{p.MaxHp})");
-        SpecimenGrown.Beams.Clear(); Reset(6); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(laser, null, () => SpecimenGrown.Tick(1f / 60f)); Check(p.Hp == p.MaxHp, "Specimen grown: a dive goes under the Laser");
-        for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Solid);
-        SpecimenGrown.Beams.Clear(); Reset(6); Run(laser, null, () => SpecimenGrown.Tick(1f / 60f)); Check(p.Hp == p.MaxHp, $"Specimen grown: a wall stops the Laser (hp {p.Hp}/{p.MaxHp}, beam {(SpecimenGrown.Beams.Count > 0 ? SpecimenGrown.Beams[0].Length : -1f):0.0}, aim {f.AimX},{f.AimY}, me {p.X},{p.Y}, it {h.X},{h.Y}, tile {TerrainMap.GetTile(px + 2, py)?.Type})");
-        for (int y = py - 2; y <= py + 2; y++) TerrainMap.SetTileType(px + 2, y, TileType.Empty);
-        BrainBoss.Orbs.Clear(); Reset(6); Run(orbsM); Check(BrainBoss.Orbs.Count >= 9 && BrainBoss.Orbs.Any(o => o.Kind == "bolt"), $"Specimen grown: the Orbs throw a ring of the vat's orbs and a bolt ({BrainBoss.Orbs.Count})");
-        int hpB = p.Hp; for (int i = 0; i < 180; i++) { UnityEngine.Time.time += 1f / 60f; SpecimenGrown.Tick(1f / 60f); } Check(p.Hp < hpB || BrainBoss.Orbs.Count < 9, "Specimen grown: its orbs fly on its own tick (one reaches you or flies off)");
-        BrainBoss.Orbs.Clear(); f.Doing = null; f.OpenUntil = -1f; f.NextMoveAt = UnityEngine.Time.time + 99f; h.X = px + 5; h.Y = py; p.X = px + 4; p.Y = py; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+      {
+        // the eye circles the brain on its cord
+        var (e0x, e0y) = Ballistics.Pos(eye); for (int i = 0; i < 60; i++) { UnityEngine.Time.time += 1f / 60f; SpecimenGrown.Tick(1f / 60f); }
+        var (e1x, e1y) = Ballistics.Pos(eye); var (hbx, hby) = Ballistics.Pos(h); float cord = (float)System.Math.Sqrt((e1x - hbx) * (e1x - hbx) + (e1y - hby) * (e1y - hby));
+        Check((System.Math.Abs(e1x - e0x) + System.Math.Abs(e1y - e0y)) > 0.3f && cord <= SpecimenGrown.CordLength + 1f, $"Specimen grown: the eye moves round the brain on its cord ({cord:0.0} tiles from it)");
+        // the eye fires on its own: charge, then a beam
+        Reset(6); p.Hp = p.MaxHp; int hp0 = p.Hp; bool charged = false;
+        for (int i = 0; i < 60 * 8 && p.Hp == hp0; i++) { UnityEngine.Time.time += 1f / 60f; SpecimenGrown.Tick(1f / 60f); charged |= SpecimenGrown.EyeCharging; Rt.SetOffset(p, 0f, 0f); }
+        Check(charged && p.Hp < hp0, $"Specimen grown: the eye charges and its beam burns you ({p.Hp}/{hp0})");
+        // the pulse throws you back, a dive goes through it
+        var pulse = SpecimenGrown.Def.Moves.First(m => m.Name == "Pulse");
+        SpecimenGrown.Beams.Clear(); Reset(4); var (b0x, _) = Ballistics.Pos(p); hp0 = p.Hp; Run(pulse); for (int i = 0; i < 30; i++) { UnityEngine.Time.time += 1f / 60f; Rt.PlayerTick(p, new Rt.Input()); }
+        var (b1x, _) = Ballistics.Pos(p); Check(p.Hp < hp0 && b1x < b0x - 0.5f, $"Specimen grown: the Pulse hurts and throws you back ({b0x:0.0} -> {b1x:0.0})");
+        SpecimenGrown.Beams.Clear(); Reset(4); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; hp0 = p.Hp; Run(pulse); Check(p.Hp == hp0, "Specimen grown: a dive goes through the Pulse");
+        // the pull drags you in
+        var pull = SpecimenGrown.Def.Moves.First(m => m.Name == "Pull");
+        SpecimenGrown.Beams.Clear(); Reset(8); var (c0x, _) = Ballistics.Pos(p); Run(pull); for (int i = 0; i < 40; i++) { UnityEngine.Time.time += 1f / 60f; Rt.PlayerTick(p, new Rt.Input()); }
+        var (c1x, _) = Ballistics.Pos(p); Check(c1x > c0x + 1f, $"Specimen grown: the Pull drags you toward it ({c0x:0.0} -> {c1x:0.0})");
+        // the blink: it is somewhere else
+        var blink = SpecimenGrown.Def.Moves.First(m => m.Name == "Blink"); Reset(6); int hx0 = h.X, hy0 = h.Y; Run(blink);
+        Check(h.X != hx0 || h.Y != hy0, $"Specimen grown: the Blink takes it to another spot ({hx0},{hy0} -> {h.X},{h.Y})");
+        // orbs
+        BrainBoss.Orbs.Clear(); var orbsM = SpecimenGrown.Def.Moves.First(m => m.Name == "Orbs"); Reset(6); Run(orbsM);
+        Check(BrainBoss.Orbs.Count >= 9 && BrainBoss.Orbs.Any(o => o.Kind == "bolt"), $"Specimen grown: the Orbs throw a ring of the vat's orbs and a bolt ({BrainBoss.Orbs.Count})");
+        BrainBoss.Orbs.Clear();
+        // shoot the eye off: its beams stop
+        eye.Hp = 0; SpecimenGrown.Tick(1f / 60f); Reset(6); hp0 = p.Hp;
+        for (int i = 0; i < 60 * 8; i++) { UnityEngine.Time.time += 1f / 60f; SpecimenGrown.Tick(1f / 60f); }
+        Check(!SpecimenGrown.EyeAlive && !EncounterState.Enemies.Contains(eye) && p.Hp == hp0, "Specimen grown: with its eye shot off, no more beams");
+        // keeps its distance
+        f.Doing = null; f.OpenUntil = -1f; f.NextMoveAt = UnityEngine.Time.time + 99f; h.X = px + 5; h.Y = py; p.X = px + 4; p.Y = py; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
         for (int i = 0; i < 240; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); }
         Check(CombatantUtil.Distance(h, p) >= SpecimenGrown.Def.KeepAt - 1, $"Specimen grown: it backs off to keep its distance ({CombatantUtil.Distance(h, p)} tiles)");
       }

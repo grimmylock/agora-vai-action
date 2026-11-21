@@ -324,5 +324,25 @@
    0,
    "the floating brain convulses, its eyes go dark, the giant eyeball closes, and the brain drops to the ground and goes limp. The floating brain stays in place, front view."
   ]
+ ],
+ "specimen_eye": [
+  [
+   "idle",
+   8,
+   1,
+   "the floating eyeball bobs gently in the air, its violet iris darts left and right looking around, it blinks once, the torn nerve cord sways below"
+  ],
+  [
+   "charge",
+   8,
+   0,
+   "the floating eyeball stares straight ahead, its violet iris glows brighter and brighter until it blazes white-violet, the eyeball trembles"
+  ],
+  [
+   "death",
+   8,
+   0,
+   "the floating eyeball bursts, the iris goes dark, it deflates and falls"
+  ]
  ]
 }

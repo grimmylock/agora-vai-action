@@ -847,7 +847,7 @@ namespace GameCore
             {
                 if (!e.IsAlive()) { NextTurn.Remove(e); continue; }
                 if (Boss.Of(e) is Boss.Fight bf) { Boss.Tick(bf, TargetOf(e, local)); continue; }   // Boss 1: a boss runs his own moves
-                if (BrainBoss.Is(e) || EelBoss.Is(e)) continue;                  // Boss 2/3: their own Tick runs them
+                if (BrainBoss.Is(e) || EelBoss.Is(e) || SpecimenGrown.IsEye(e)) continue;   // (the grown Specimen's eye: SpecimenGrown.TickEye moves it)                  // Boss 2/3: their own Tick runs them
                 bool fighting = e.IsAggroed && EncounterState.IsActive(e) || Companion.Is(e) && EncounterState.InCombat;
                 if (!fighting) { NextTurn.Remove(e); if (!e.IsAggroed && !Companion.Is(e) && !TestingGround.IsDummy(e) && NpcFights.Real(e, grid)) { } continue; }   // squads fighting each other (NpcFights.Real) run here every frame
                 p = Companion.Is(e) ? local : AttentionOf(e, local);             // co-op: half the enemies fight the player nearest them, the rest are shared among the others (AttentionOf)

@@ -85,6 +85,7 @@ namespace GameCore
                     return ForArmor(h.EquippedArmor);
                 case Mutant m:
                     string name = m.Db?.Name ?? m.Name;
+                    if (name == SpecimenGrown.EyeName) return SpecimenGrown.EyeSprite();      // 2026-11-21: the grown Specimen's eye on its cord (BossArt "specimen_eye")
                     var hd = HD(name);
                     if (hd != null) return hd;                                       // the approved double-resolution art (Batch 130c)
                     if (m.IsCloaked && _mutants.TryGetValue(name + " (cloaked)", out var cloaked)) return cloaked;
