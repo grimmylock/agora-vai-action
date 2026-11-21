@@ -1,3 +1,4 @@
+// PARKED 2026-11-21 (Yan, after the painted-rectangle art and then a face-in-the-wall concept: "face in the wall, scrap it, not gonna work"): nothing spawns it (Rt.WorldTick no longer ticks it, no Testing Ground entry); the code and its harness checks stay.
 // Boss: the Singer (Tier 2, Valley Mine: the warm wall at the head of the Main Gallery; BOSS_CONCEPTS_V3.md 2, BOSS_ROSTER.md 3a, Yan 2026-11-20: "amazing and disturbing, silent hill style").
 // A wall of mine rock and pale flesh that bulges into one huge face, miners' hands on the floor in front of it, two helmet lamps still burning. It never moves (Def.Rooted).
 // Drawn from Pixel Lab clips (BossArt key "singer"): a painted wall section 8 x 6 tiles, stood against the gallery's end.
@@ -23,7 +24,7 @@ namespace GameCore
         public static readonly Boss.Def Def = new Boss.Def
         {
             Name = "The Singer", Title = "THE WARM WALL", Weapon = "SingerHands", Armor = null, Hp = 5200, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
-            Art = "singer", Creature = true, Rooted = true, StepSeconds = 9f, Recover = 1.0f, Phase2Line = "The face splits wider than a face can. The whole gallery hums.",
+            Art = null, Creature = true, Rooted = true,   // (parked: its art was scrapped) StepSeconds = 9f, Recover = 1.0f, Phase2Line = "The face splits wider than a face can. The whole gallery hums.",
             Moves = new[]
             {
                 new Boss.Move { Name = "Note", Wind = 1.2f, Danger = true, MaxDist = NoteRange, Mult = 0.8f, Effects = new[] { "note" }, Weight = 3, Open = 1.6f, Clip = "note" },

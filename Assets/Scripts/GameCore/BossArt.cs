@@ -54,14 +54,6 @@ namespace GameCore
                 ["overhead"] = new VergerBoss.Clip { Name = "boss_orderly_overhead", Frames = 13, Ms = new float[] { 110, 125, 140, 155, 170, 185, 200, 80, 130, 140, 150, 160, 170 }, Hit = 7 },
                 ["walk"] = new VergerBoss.Clip { Name = "boss_orderly_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
             } },
-            ["singer"] = new Art { Key = "singer", W = 256, H = 216, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
-                ["death"] = new VergerBoss.Clip { Name = "boss_singer_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
-                ["grasp"] = new VergerBoss.Clip { Name = "boss_singer_grasp", Frames = 13, Ms = new float[] { 110, 128, 146, 164, 182, 200, 80, 128, 137, 145, 154, 162, 171 }, Hit = 6 },
-                ["hurt"] = new VergerBoss.Clip { Name = "boss_singer_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },
-                ["idle"] = new VergerBoss.Clip { Name = "boss_singer_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
-                ["note"] = new VergerBoss.Clip { Name = "boss_singer_note", Frames = 13, Ms = new float[] { 110, 140, 170, 200, 80, 126, 133, 140, 146, 153, 160, 166, 173 }, Hit = 4 },
-                ["scream"] = new VergerBoss.Clip { Name = "boss_singer_scream", Frames = 13, Ms = new float[] { 110, 155, 200, 80, 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = 3 },
-            } },
             ["specimen_v2"] = new Art { Key = "specimen_v2", W = 152, H = 152, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["death"] = new VergerBoss.Clip { Name = "boss_specimen_v2_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
                 ["hurt"] = new VergerBoss.Clip { Name = "boss_specimen_v2_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },

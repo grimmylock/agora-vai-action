@@ -2927,8 +2927,7 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 94000f; UnityEngine.Time.unscaledTime = 94000f;
     GameServices.Grid = new TacticalGridSystem();
     try {
-      var D = SingerBoss.Def; var art = BossArt.Of(D.Art);
-      Check(art != null && D.Moves.All(m => m.Clip == null || art.Clips.ContainsKey(m.Clip)) && art.Clips.ContainsKey("idle"), "Singer: its clip table has idle and a clip for every move");
+      var D = SingerBoss.Def;   // PARKED 2026-11-21: no art, nothing spawns it; the fight code is still checked
       var f = Boss.Spawn(D, px + 6, py); var h = f.Unit; int hx0 = h.X, hy0 = h.Y;
       Check(D.Rooted && h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "The Singer's Hands", "Singer: rooted, a Mutant, its hands as its weapon");
       for (int i = 0; i < 600; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); }
