@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pixel Lab pixflux world props, trial batch (2026-11-21): out world/gen_pl/<name>_<seed>.png, one job at a time. view "high top-down", medium detail.
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../.."; while [ ! -f /tmp/tiles_done ]; do sleep 20; done
 G() { # name w h seed desc
   [ -f world/gen_pl/$1_$4.png ] || VIEW="high top-down" DIR=south DETAIL="medium detail" SHADING="medium shading" python3 pixellab_pixflux.py world/gen_pl/$1_$4.png $2 $3 $4 "$5" > /dev/null 2>&1
   echo "$1 $4 $([ -f world/gen_pl/$1_$4.png ] && echo ok || echo FAIL)"

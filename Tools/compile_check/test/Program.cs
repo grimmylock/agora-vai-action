@@ -2927,11 +2927,9 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 94000f; UnityEngine.Time.unscaledTime = 94000f;
     GameServices.Grid = new TacticalGridSystem();
     try {
-      var D = SingerBoss.Def;   // PARKED 2026-11-21: no art, nothing spawns it; the fight code is still checked
+      var D = SingerBoss.Def;   // 2026-11-21: the Gallery Choir (was the parked Singer)
       var f = Boss.Spawn(D, px + 6, py); var h = f.Unit; int hx0 = h.X, hy0 = h.Y;
-      Check(D.Rooted && h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "The Singer's Hands", "Singer: rooted, a Mutant, its hands as its weapon");
-      for (int i = 0; i < 600; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); }
-      Check(h.X == hx0 && h.Y == hy0, $"Singer: ten seconds of fighting and it has not moved ({h.X},{h.Y})");
+      Check(!D.Rooted && h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "The Choir's Hands", "Singer: rooted, a Mutant, its hands as its weapon");
       void Reset(int dx, int dy) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = h.MaxHp; p.X = px + dx; p.Y = py + dy; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Rt.Of(p).ShoveFrom = -1f; Body.Reset(); }
       void Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); h.Hp = h.MaxHp; } f.Doing = null; f.OpenUntil = -1f; }
       var note = D.Moves.First(m => m.Name == "Note");

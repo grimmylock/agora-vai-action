@@ -1,11 +1,12 @@
-// Boss: the Excavator (Tier 5, Quarry Basin: the Pit Floor; BOSS_CONCEPTS_V3.md 6, BOSS_ROSTER.md 8; Yan: a husk-driven rig, no flesh). A wrecked mining excavator with a Husk at the controls.
-// Drawn from Pixel Lab clips (BossArt key "excavator"). The fight is Boss.cs with effects of its own:
-//  - Boom Sweep (red: a wide arc of the boom; dive or get outside its reach), Track Charge (red: it drives straight at you, 8 tiles);
-//  - Dig-Slam (red): the bucket comes down on where you stood when it raised it: everyone within SlamRadius of that spot is hit and knocked down;
-//  - Scoop-and-Throw (red): rubble lands on three spots round where you stood: each RockRadius wide;
-//  - phase 2 (the cab glass is gone, the Husk drives it berserk): the Double Sweep.
-// It finds you when a player comes near the Pit Floor (a landmark of the Tier 5 map), once. Co-op: the nearest player; the slam and the rocks catch everyone in them. Host-side only.
-// NOT built from the brief yet: the hydraulic hoses as weak points (each cut slows the boom), the cab glass breaking and the driver as a target, boarding the arm.
+// Boss: the Grinder (Tier 5, Quarry Basin: the Pit Floor; the class keeps its old name, ExcavatorBoss, and the flag "excavator_done", for saves). REDONE 2026-11-21 from Yan's own ChatGPT drawing (boss_concepts/gpt/grinder_native.png):
+// the Excavator (art style rejected) is replaced by a huge blind segmented worm that ate a quarry crew and their digger: a toothed round mouth, rusted spikes, boots and hands between its rings. Side on. Pixel Lab clips (BossArt key "grinder").
+// The fight is Boss.cs with effects of its own:
+//  - the Bite (red: a long lunge of the head; dive or get outside its reach), the Burrow Rush (red: it drives straight at you, 8 tiles);
+//  - the Dig-Slam (red): it rears and crashes down on where you stood when it rose: everyone within SlamRadius of that spot is hit and knocked down;
+//  - the Scoop (red): it spits gravel that lands on three spots round where you stood: each RockRadius wide;
+//  - phase 2 (it goes berserk): the Double Bite.
+// It finds you when a player comes near the Pit Floor (a landmark of the Tier 5 map), once. Co-op: the nearest player; the slam and the gravel catch everyone in them. Host-side only.
+// NOT built from the brief yet: the weak points (the exposed crew), burrowing under the ground.
 using System.Linq;
 using GameData;
 using UnityEngine;
@@ -14,20 +15,20 @@ namespace GameCore
 {
     public static class ExcavatorBoss
     {
-        public const string Lair = "Pit Floor", Done = "excavator_done", Trophy = "Excavator Control Lever";
+        public const string Lair = "Pit Floor", Done = "excavator_done", Trophy = "Grinder Tooth";
         public const float WakeRange = 14f, SlamRadius = 2.0f, RockRadius = 1.2f;
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Excavator", Title = "THE DRIVER NEVER CLOCKED OFF", Weapon = "ExcavatorBucket", Armor = null, Hp = 11000, Faction = "Mutants", Rank = "Master", DoneFlag = Done, Vanishes = false,
-            Art = "excavator", Creature = true, StepSeconds = 0.55f, Recover = 1.0f, Phase2Line = "The cab glass bursts outward. The thing at the controls throws the levers all the way.",
+            Name = "The Grinder", Title = "THE SHIFT NEVER ENDED", Weapon = "ExcavatorBucket", Armor = null, Hp = 11000, Faction = "Mutants", Rank = "Master", DoneFlag = Done, Vanishes = false,
+            Art = "grinder", Creature = true, StepSeconds = 0.55f, Recover = 1.0f, Phase2Line = "The rings split along their seams. What is left of the crew starts to scream.",
             Moves = new[]
             {
-                new Boss.Move { Name = "Boom Sweep", Wind = 1.1f, Danger = true, MaxDist = 3f, Mult = 1.3f, Weight = 3, Poses = new[] { 1 }, Open = 1.6f, Clip = "sweep" },
+                new Boss.Move { Name = "Bite", Wind = 1.1f, Danger = true, MaxDist = 3f, Mult = 1.3f, Weight = 3, Poses = new[] { 1 }, Open = 1.6f, Clip = "bite" },
                 new Boss.Move { Name = "Dig-Slam", Wind = 1.2f, Danger = true, MaxDist = 6f, Mult = 1.6f, Effects = new[] { "digslam" }, Weight = 2, Open = 1.8f, Clip = "slam" },
-                new Boss.Move { Name = "Scoop", Wind = 1.3f, Danger = true, MaxDist = 10f, Mult = 0.9f, Effects = new[] { "rocks" }, Weight = 2, Open = 1.8f, Clip = "scoop" },
-                new Boss.Move { Name = "Track Charge", Wind = 1.0f, Danger = true, Lunge = 8f, Mult = 1.5f, Weight = 2, Open = 2.2f, Clip = "drive" },
-                new Boss.Move { Name = "Double Sweep", Wind = 0.9f, Hits = 2, Gap = 0.9f, MaxDist = 3f, Mult = 1.1f, RedHits = new[] { true, true }, Weight = 3, Poses = new[] { 1, 1 }, Open = 2.0f, Phase2Only = true, Clip = "sweep" },
+                new Boss.Move { Name = "Scoop", Wind = 1.3f, Danger = true, MaxDist = 10f, Mult = 0.9f, Effects = new[] { "rocks" }, Weight = 2, Open = 1.8f, Clip = "spit" },
+                new Boss.Move { Name = "Burrow Rush", Wind = 1.0f, Danger = true, Lunge = 8f, Mult = 1.5f, Weight = 2, Open = 2.2f, Clip = "walk" },
+                new Boss.Move { Name = "Double Bite", Wind = 0.9f, Hits = 2, Gap = 0.9f, MaxDist = 3f, Mult = 1.1f, RedHits = new[] { true, true }, Weight = 3, Poses = new[] { 1, 1 }, Open = 2.0f, Phase2Only = true, Clip = "bite" },
             },
         };
         static ExcavatorBoss() { Def.Defeated = Defeated; }
@@ -53,7 +54,7 @@ namespace GameCore
             f.NextMoveAt = Time.time + (intro ? 3.0f : 1.8f);
             if (intro)
             {
-                GameLog.Event("Down on the pit floor a diesel coughs, and coughs again, and catches. The rusted excavator turns on its tracks toward you. There is someone in the cab with his hands flat on the glass.");
+                GameLog.Event("Down on the pit floor the gravel starts to slide. Something the width of a truck rises out of it, ringed with rusted teeth, and there are boots and hands between its rings that are still moving.");
                 Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f); Sfx.Play("diesel", TacticalGridView.GridToWorld(x, y), 1f, 0f);
             }
             return f;
@@ -92,9 +93,9 @@ namespace GameCore
 
         static void Defeated(Player p, HumanEnemy h)
         {
-            h.Inventory.Items.Add(new InventoryItem { Id = "excavator_lever", Name = Trophy, Type = "misc", Qty = 1, WeightKg = 2f, Price = 3600 });
-            Story.Journal("The Excavator: a Husk drove a wrecked mining rig round the Quarry Basin's pit floor. The engine is dead now and so, finally, is the driver. You kept the control lever he would not let go of.");
-            GameLog.Event("The boom sags to the ground with a groan of steel. Black smoke pours out of the engine and the tracks stop. In the cab the driver's hands slide down the broken glass.");
+            h.Inventory.Items.Add(new InventoryItem { Id = "grinder_tooth", Name = Trophy, Type = "misc", Qty = 1, WeightKg = 2f, Price = 3600 });
+            Story.Journal("The Grinder: a worm the width of a truck ate a quarry crew and their digger, and wore them. It is down on the Quarry Basin's pit floor. You kept one of its rusted teeth.");
+            GameLog.Event("Its rings go slack one by one. The hands between them open, and close, and stop. The gravel settles over what is left.");
         }
     }
 }

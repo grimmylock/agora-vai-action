@@ -825,7 +825,7 @@ namespace GameCore
             CathedralJob.Tick(Time.deltaTime);                                     // the cathedral job: the bell, the waves, the Verger at the end
             SpoolBoss.Tick(Time.deltaTime);                                        // Boss 4: Spool in the Dog Kennels
             MotherHollow.Tick(Time.deltaTime);                                     // 2026-11-21: the den mother in the Secret Cave
-            // SingerBoss.Tick: PARKED 2026-11-21 (Yan: the face in the wall "scrap it, not gonna work"; the code stays, nothing spawns it)
+            SingerBoss.Tick(Time.deltaTime);                                       // 2026-11-21: the Gallery Choir in the Valley Mine
             FerrymanBoss.Tick(Time.deltaTime);                                     // 2026-11-21: the lantern-head on the Stranded Ferry
             SpecimenGrown.Tick(Time.deltaTime);                                    // 2026-11-21: the escaped brain on the Crystal Pool
             ExcavatorBoss.Tick(Time.deltaTime);                                    // 2026-11-21: the husk-driven rig in the Quarry Basin

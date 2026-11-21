@@ -1,15 +1,12 @@
-// PARKED 2026-11-21 (Yan, after the painted-rectangle art and then a face-in-the-wall concept: "face in the wall, scrap it, not gonna work"): nothing spawns it (Rt.WorldTick no longer ticks it, no Testing Ground entry); the code and its harness checks stay.
-// Boss: the Singer (Tier 2, Valley Mine: the warm wall at the head of the Main Gallery; BOSS_CONCEPTS_V3.md 2, BOSS_ROSTER.md 3a, Yan 2026-11-20: "amazing and disturbing, silent hill style").
-// A wall of mine rock and pale flesh that bulges into one huge face, miners' hands on the floor in front of it, two helmet lamps still burning. It never moves (Def.Rooted).
-// Drawn from Pixel Lab clips (BossArt key "singer"): a painted wall section 8 x 6 tiles, stood against the gallery's end.
-// The fight is Boss.cs with effects of its own:
-//  - the Note (red): the mouth opens and the note rolls down the gallery: everyone who can SEE it (line of sight) within NoteRange is hit, knocked down and deafened; get behind
-//    the timbers or a cart (cover breaks the line), or dive under it;
-//  - the Grasp (red): a hand shoots out and drags you toward the mouth (the Verger's drag, longer); dive;
-//  - the Crush (white, close): the hands slam whoever stands at the wall: parry it;
-//  - phase 2: the Scream (red, a cone down the gallery: the Howl's code) and the Chorus (two notes).
-// Co-op: it aims at the nearest player, the note hits everyone in sight. Host-side only (boss fights are not synced yet).
-// NOT built from the brief yet: the lamps as weak points (shoot one: that side goes blind), the face tearing open to a weak point in phase 2.
+// Boss: the Gallery Choir (Tier 2, Valley Mine: Miners' Rest; the class keeps its old name, SingerBoss, and the flag "singer_done", for saves). REDONE 2026-11-21 from Yan's own ChatGPT drawing (boss_concepts/gpt/choir_native.png):
+// the Singer (a wall with a face; "scrap it") is replaced by a dozen dead miners fused into one crawling mass: singing mouths along its back, three screaming faces with burning helmet lamps at the front, miners' limbs for legs, mine timber and a
+// cart wheel grown through it. It crawls. Pixel Lab clips (BossArt key "choir"). The fight is Boss.cs with effects of its own:
+//  - the Note (red): every mouth sings and the note rolls down the gallery: everyone who can SEE it (line of sight) within NoteRange is hit, knocked down and deafened; get behind the timbers or a cart (cover breaks the line), or dive under it;
+//  - the Grasp (red): a long arm shoots out and drags you toward it (the Verger's drag, longer); dive;
+//  - the Crush (white, close): the limbs slam whoever stands at it: parry it;
+//  - phase 2: the Scream (red, a cone: the Howl's code) and the Chorus (two notes).
+// Co-op: it aims at the nearest player, the note hits everyone in sight. Host-side only.
+// NOT built from the brief yet: the helmet lamps as weak points (shoot one: that side goes blind).
 using System.Linq;
 using GameData;
 using UnityEngine;
@@ -18,13 +15,13 @@ namespace GameCore
 {
     public static class SingerBoss
     {
-        public const string Lair = "Miners' Rest", Zone = "valley_mine", Done = "singer_done", Trophy = "Singing Stone";
+        public const string Lair = "Miners' Rest", Zone = "valley_mine", Done = "singer_done", Trophy = "Choir Lamp";
         public const float WakeRange = 12f, NoteRange = 14f, GraspRange = 8f, GraspDrag = 4f;
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Singer", Title = "THE WARM WALL", Weapon = "SingerHands", Armor = null, Hp = 5200, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
-            Art = null, Creature = true, Rooted = true,   // (parked: its art was scrapped) StepSeconds = 9f, Recover = 1.0f, Phase2Line = "The face splits wider than a face can. The whole gallery hums.",
+            Name = "The Gallery Choir", Title = "THE SHIFT THAT SINGS", Weapon = "SingerHands", Armor = null, Hp = 5200, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
+            Art = "choir", Creature = true, StepSeconds = 0.6f, Recover = 1.0f, Phase2Line = "Every mouth on its back opens at once. The gallery hums with one long note.",
             Moves = new[]
             {
                 new Boss.Move { Name = "Note", Wind = 1.2f, Danger = true, MaxDist = NoteRange, Mult = 0.8f, Effects = new[] { "note" }, Weight = 3, Open = 1.6f, Clip = "note" },
@@ -57,7 +54,7 @@ namespace GameCore
             f.NextMoveAt = Time.time + (intro ? 3.0f : 1.8f);
             if (intro)
             {
-                GameLog.Event("The note you have been hearing since the adit stops. At the head of the gallery the wall is warm, and it has a face.");
+                GameLog.Event("The note you have been hearing since the adit stops. Something heavy shifts at the head of the gallery: a heap of grey flesh on too many arms, a dozen mouths open along its back, and three faces at the front with their helmet lamps still burning.");
                 Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f);
             }
             return f;
@@ -85,14 +82,14 @@ namespace GameCore
             var h = f.Unit; if (p == null || h.EquippedWeapon == null || CombatantUtil.Distance(h, p) > GraspRange) return;
             if (Rt.Of(p).Diving || Rt.Untouchable(p)) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }
             int hp0 = p.Hp; Parry.Unparryable = true; try { Melee.HitUnit(h, h.EquippedWeapon, p, Boss.MultOf(m, hi)); } finally { Parry.Unparryable = false; }
-            if (p.Hp < hp0) { Boss.DragTo(h, p, GraspDrag); GameLog.Write("A grey hand closes round your leg and hauls you toward the wall."); }
+            if (p.Hp < hp0) { Boss.DragTo(h, p, GraspDrag); GameLog.Write("A grey hand closes round your leg and hauls you toward the mouths."); }
         }
 
         static void Defeated(Player p, HumanEnemy h)
         {
-            h.Inventory.Items.Add(new InventoryItem { Id = "singer_stone", Name = Trophy, Type = "misc", Qty = 1, WeightKg = 3f, Price = 2400 });
-            Story.Journal("The Singer: the warm wall at the head of the Valley Mine's gallery had a face, and sang one note on the eleven-second beat. It is quiet now. A piece of it still hums in your hand.");
-            GameLog.Event("The face goes slack. The note stops, and the gallery is only cold rock again. One of the stones by the mouth is still warm, and still humming.");
+            h.Inventory.Items.Add(new InventoryItem { Id = "choir_lamp", Name = Trophy, Type = "misc", Qty = 1, WeightKg = 3f, Price = 2400 });
+            Story.Journal("The Gallery Choir: a dozen dead miners had grown into one thing at the head of the Valley Mine's gallery, and sang. It is quiet now. One of the helmet lamps still burns in your hand.");
+            GameLog.Event("The mouths fall silent one by one. The lamps go dark, all but one, which keeps burning amber on the floor beside it.");
         }
     }
 }
