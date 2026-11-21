@@ -162,7 +162,7 @@ GROUNDS = {
     "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate, "flagstone": flagstone,
 }
 try:
-    import sys as _sys, os as _os; _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "tiles_pl")); import pl_ground; pl_ground.register(GROUNDS)   # 2026-11-21: Pixel Lab ground textures (tiles_pl), used in place of the procedural ones
+    import sys as _sys, os as _os; _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "tiles_pl")); import pl_ground; (None if _os.environ.get("NO_PL") else pl_ground.register(GROUNDS))   # 2026-11-21: Pixel Lab ground textures (tiles_pl), used in place of the procedural ones
 except ImportError:
     pass
 
