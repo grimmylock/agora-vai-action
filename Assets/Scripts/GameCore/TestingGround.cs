@@ -136,6 +136,13 @@ namespace GameCore
             SingerBoss.Spawn(x, y, false);
         }
 
+        /// <summary>2026-11-21: the Ferryman on the range, 6 tiles in front of you (don't look at the lantern when it flares).</summary>
+        public static void FerrymanFight(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 6, p.Y);
+            FerrymanBoss.Spawn(x, y, false);
+        }
+
         /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>
         public static void KingDuel(Player p)
         {

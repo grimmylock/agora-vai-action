@@ -654,6 +654,7 @@ namespace GameCore
             ["Sledgehammer"] = new[] { 4.5f, 8f, float.NaN, float.NaN, 28f, 12.5f },
             ["WoodenBaseballBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
             ["VergerClaws"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },   // 2026-11-20: bare claws, no weapon sprite: the grip only keeps the swing poses working
+            ["FerrymanHook"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },  // 2026-11-21: the Ferryman: drawn by his own clips
             ["SingerHands"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },   // 2026-11-21: the Singer: no weapon sprite
             ["MotherJaws"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },    // 2026-11-21: Mother Hollow's bite: no weapon sprite, the grip keeps the swing code working
             ["VergerScythe"] = new[] { 7f, 15f, float.NaN, float.NaN, 24f, 6f },   // 2026-11-20: the grip on the wrap of the low snath, the cutting point mid-blade (a bigger, straighter blade: 36x20 sprite)

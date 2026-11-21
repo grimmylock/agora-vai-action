@@ -339,6 +339,8 @@ namespace GameCore
             if (fx == "toll") { Toll(f); return; }
             if (fx == "note") { f.StruckAt = Time.time; SingerBoss.Note(f, m, hi0); return; }          // 2026-11-21 the Singer
             if (fx == "grasp") { f.StruckAt = Time.time; SingerBoss.Grasp(f, p, m, hi0); return; }
+            if (fx == "flare") { f.StruckAt = Time.time; FerrymanBoss.Flare(f); return; }               // 2026-11-21 the Ferryman
+            if (fx == "hands") { f.StruckAt = Time.time; FerrymanBoss.Hands(f, m, hi0); return; }
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)                                                   // 2026-11-21 the Verger: the blade rung on the stone
             f.StruckAt = Time.time;
