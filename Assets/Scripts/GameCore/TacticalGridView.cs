@@ -279,7 +279,7 @@ namespace GameCore
                 {
                     Held(_enemyMarkers[i]).MeleeCharge = Melee.ChargeOf(he);                 // Melee 2c: his swings and moves drive the pose
                     Held(_enemyMarkers[i]).Show(he.EquippedWeapon, he.EquippedArmor, _enemyMarkers[i].transform.position,
-                        AimPoint(he, _enemyMarkers[i]), alive && he.Morale != "Surrendered" && !VergerBoss.IsBeast(he), Away(_enemyMarkers[i]));   // (the Verger's beast has claws, no weapon or gloves to draw)
+                        AimPoint(he, _enemyMarkers[i]), alive && he.Morale != "Surrendered" && !BossArt.Drawn(he), Away(_enemyMarkers[i]));   // (the Verger's beast has claws, no weapon or gloves to draw)
                 }
                 else if (_held.TryGetValue(_enemyMarkers[i], out var stale)) stale.Show(null, null, Vector3.zero, null, false);   // slot reused by a mutant
             }
@@ -811,7 +811,7 @@ namespace GameCore
         {
             bool known = _motion.Known(u);
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
-            marker.transform.position = _motion.Place(u, logical) + VergerBoss.LungeOffset(u);      // (the Verger's beast leans into each blow)
+            marker.transform.position = _motion.Place(u, logical) + BossArt.Lunge(u);      // (the Verger's beast leans into each blow)
             float gl = Emplacement.LiftOf(u); if (gl > 0f) marker.transform.position += new Vector3(0f, gl, 0f);   // up on the Barrier's watchtower
             if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }
             bool held = u is Player hp && EelSump.Gripping(hp) && CombatFxView.EelStand.HasValue;                // Boss 3: held in the jaws: drawn AT the mouth, over the eel (it hid him)
@@ -1129,7 +1129,7 @@ namespace GameCore
             if (art != null && alive && unit is Mutant wm && !(unit is HumanEnemy) && !BrainBoss.Is(wm)) { string wn = wm.Db?.Name ?? wm.Name; if (art == UnitSprites.HD(wn)) walkArt = Gaunt.Frame(wm) ?? MutantAttack.Frame(wm, wn, Time.time) ?? MutantWalk.Frame(wm, wn, Time.time) ?? Gaunt.Idle(wm); }
             else if (art != null && !alive && Gaunt.Is(unit as Mutant)) walkArt = Gaunt.DeathFrame((Mutant)unit);                // its fall, then it lies where it dropped
             marker.sprite = walkArt != null ? walkArt : art != null ? art : (_spriteBeing != null ? _spriteBeing : GetWhiteSprite());
-            marker.transform.localScale = Vector3.one * (art != null ? TileWorldSize : TileWorldSize * 0.7f) * (unit is Mutant gsc && Gaunt.Is(gsc) ? Gaunt.ArtScale : 1f) * (VergerBoss.IsBeast(unit) ? VergerBoss.BeastScale : 1f);
+            marker.transform.localScale = Vector3.one * (art != null ? TileWorldSize : TileWorldSize * 0.7f) * (unit is Mutant gsc && Gaunt.Is(gsc) ? Gaunt.ArtScale : 1f) * (BossArt.Drawn(unit) ? BossArt.Scale(unit) : 1f);
             Color live = art != null ? Color.white : fallbackColor;
             if (unit is HumanEnemy h && h.Morale == "Surrendered") live = new Color(0.7f, 0.75f, 0.9f, 0.85f);   // hands up
             if (unit is Mutant nm && nm.Named) { live = Color.Lerp(Color.white, new Color(1f, 0.55f, 0.2f), 0.35f + 0.25f * Mathf.Sin(Time.time * 3f)); marker.transform.localScale *= 1.2f; }
@@ -1144,7 +1144,7 @@ namespace GameCore
                 int dis = MutantAttack.DissolveIndex(cloak);
                 if (dis >= 0 && walkArt == null && hm.Db?.Name == "Veil Prowler") { var ds = UnitSprites.HDFx("veil_prowler_dissolve", 6, new Vector2(0.5f, 16f / 37f)); if (ds != null) marker.sprite = ds[dis]; }   // a pixel-noise dissolve on the stand pose
             }
-            else marker.flipX = VergerBoss.IsBeast(unit) && VergerBoss.FacesLeft(unit);        // the beast is drawn facing right and turns toward you
+            else marker.flipX = BossArt.Drawn(unit) && BossArt.Flip(unit);        // the beast is drawn facing right and turns toward you
             if (unit is Mutant gx && Gaunt.Is(gx)) { float tilt = Gaunt.DeathTilt(gx); tilt += GauntBoss.SlamLean(gx); marker.transform.localRotation = Quaternion.Euler(0f, 0f, marker.flipX ? -tilt : tilt); if (GauntBoss.Enraged(gx)) live = Color.Lerp(live, new Color(1f, 0.55f, 0.5f, live.a), 0.5f); }   // a dead Gaunt tips over backwards (no death strip: done in code)
             marker.color = alive ? live : new Color(0.35f, 0.32f, 0.3f, 0.9f);
         }

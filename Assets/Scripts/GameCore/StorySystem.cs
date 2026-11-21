@@ -302,6 +302,7 @@ namespace GameCore
             BrainBoss.OnEnterZone(zone?.Id);   // Boss 2: the vat in Lab Alpha
             EelBoss.OnEnterZone(zone?.Id);   // Boss 3: the eel in the Sump
             Tier1Story.OnEnterZone(zone?.Id);
+            MotherHollow.OnEnterZone(zone?.Id);
             Tier3Story.OnEnterZone(zone?.Id);
             StoryNpcs.OnEnterZone();   // the story's people as units   // Story 7: the pills crate on the Stranded Ferry   // Story 5: the Brute in the Rust Culvert
             if (zone == null || zone.IsSafeZone) return;

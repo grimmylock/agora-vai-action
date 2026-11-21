@@ -55,6 +55,9 @@ namespace GameCore
             public int ParriesToStagger = 3;  // Yan: "make it so he needs 3 parries to get stunned"
             public Move[] Moves;
             public string Phase2Line;
+            public string Art;             // 2026-11-21: a creature boss drawn from Pixel Lab clips (BossArt.cs, BOSS_CONCEPTS_V3.md); null = a body with a held weapon
+            public bool Creature;          // no weapon or armour to loot from it (its execution gives its own spoils)
+            public System.Action<Player, HumanEnemy> Defeated;     // its own end (spoils, story), called by the execution
             public string PoseKey;         // 2026-11-21: his own pose set (HeldPoseMath.VisorPoses / VergerPoses), null = his weapon's
             public string[] Phase2Barks;   // lines over his head when phase 2 starts
             public Transform Change;       // 2026-11-20 (the Verger, BOSS_DESIGNS.md): at half health he changes (a window, a new weapon) instead of just flaring
@@ -73,6 +76,7 @@ namespace GameCore
             public int Parries; public float LastParryAt = -99f;
             public float GlintDue = -1f;
             public string Clip; public float ClipT0, ClipScale = 1f;   // the animation clip playing (VergerBoss.Clips) and when it started
+            public int AimX, AimY;             // 2026-11-21: where the target stood when the move began (a spit lands there)
             public float StruckAt = -99f;      // when his last hit landed (the beast's attack frame)
             public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
@@ -101,7 +105,7 @@ namespace GameCore
         // it; take the hatchet and he gets up - a nod to a certain unkillable courier, no names from that game. He draws a knife.
         /// <summary>Yan: "a black suit with a red visor and a gas mask" (ArtSource/make_unique_armor.py) - his alone, not in any loot table.</summary>
         public static readonly ArmorDef BlackVisorSuit = new ArmorDef { Name = "Black Visor Suit", PhysDR = 0.6f, AnomDR = 0.3f, BeltSlots = 2, ModSlots = 2, Mp = 4, WeightKg = 14f };
-        static ArmorDef SuitOf(Def def) { if (def.Armor == BlackVisorSuit.Name) return BlackVisorSuit; if (def.Armor == "The Scrap King") return StoryNpcs.SuitOf("The Scrap King", 0.4f); foreach (var t in new[] { "tier5", "tier4", "tier3", "tier2", "tier1" }) { var a = ArmorDatabase.Get(t, def.Armor); if (a != null) return a; } return null; }
+        static ArmorDef SuitOf(Def def) { if (def.Armor == null) return null; if (def.Armor == BlackVisorSuit.Name) return BlackVisorSuit; if (def.Armor == "The Scrap King") return StoryNpcs.SuitOf("The Scrap King", 0.4f); foreach (var t in new[] { "tier5", "tier4", "tier3", "tier2", "tier1" }) { var a = ArmorDatabase.Get(t, def.Armor); if (a != null) return a; } return null; }
 
         public static readonly Def Visor = new Def
         {
@@ -304,8 +308,9 @@ namespace GameCore
         internal static void Begin(Fight f, Move m, float now, float speed)
         {
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
+            { Player t = null; int bd = int.MaxValue; foreach (var q in Player.All) { if (!q.IsAlive()) continue; int d = CombatantUtil.Distance(f.Unit, q); if (d < bd) { bd = d; t = q; } } if (t != null) { f.AimX = t.X; f.AimY = t.Y; } }
             f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
-            if (m.Clip != null) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
+            if (m.Clip != null && !BossArt.Start(f, m.Clip, f.StrikeAt, speed)) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
 
@@ -330,7 +335,9 @@ namespace GameCore
             string fx = m.Effects != null && m.Effects.Length > 0 ? m.Effects[System.Math.Min(hi0, m.Effects.Length - 1)] : null;
             if (fx == "howl") { Howl(f, p, Red(m, hi0)); return; }                                  // 2026-11-21: a sound, not a swing: it reaches across the room
             if (fx == "quake") { Quake(f, p, m, hi0); return; }                                      // a ring round him
-            if (fx == "toll") { Toll(f); return; }                                                   // 2026-11-21 the Verger: the blade rung on the stone
+            if (fx == "toll") { Toll(f); return; }
+            if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
+            if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)                                                   // 2026-11-21 the Verger: the blade rung on the stone
             f.StruckAt = Time.time;
             StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
@@ -455,6 +462,7 @@ namespace GameCore
             BrainBoss.OnDamaged(u);                                        // Boss 2: cracks, and no death at 0
             EelBoss.OnDamaged(u);                                          // Boss 3: wounds at 75/50/25%, the vomit at 0
             var f = Of(u);
+            if (f != null && !f.Finished && !f.Broken && u.Hp > 1) BossArt.Hurt(f);       // 2026-11-21: a creature boss flinches (its hurt clip)
             if (f == null || f.Finished || f.Broken || u.Hp > 1) return;   // Unkillable holds him at 1: that's the break
             f.Broken = true; f.Doing = null;
             Splash("EXECUTE", "E - next to him");
@@ -484,6 +492,7 @@ namespace GameCore
             var fx = CombatFx.Push("finisher", p, f.Unit, p.EquippedWeapon); fx.Now = true; fx.Hit = true; fx.Killed = true;
             if (f.Def.Change != null) HumanLootSystem.StashArmorOnly(f.Unit, ItemCondition.Working);   // the Verger: his coat (the scythe went into his pack at the change)
             else if (f.Def == Spool) HumanLootSystem.StashWornGear(f.Unit, ItemCondition.Working);   // before the death hook rolls his loot: the bat and the coat, in good order
+            if (f.Def.Creature) { f.Unit.EquippedWeapon = null; f.Unit.EquippedArmor = null; f.Unit.Inventory.Items.Clear(); }   // 2026-11-21: a creature has no gun or coat to drop: its spoils come from Def.Defeated
             f.Beast = false;                                                        // the Verger: the beast shrinks back into the man (his corpse is the man in the torn coat)
             f.Unit.Unkillable = false; f.Unit.Hp = 0;
             Weapon.OnTargetKilled(p, f.Unit);
@@ -493,6 +502,7 @@ namespace GameCore
             if (f.Def.DoneFlag != null) Story.Set(f.Def.DoneFlag);
             if (f.Def == Spool) SpoolBoss.Defeated(p, f.Unit);
             if (f.Def == Verger || f.Def == VergerBeast) VergerBoss.Defeated(p, f.Unit);
+            f.Def.Defeated?.Invoke(p, f.Unit);
             return true;
         }
 

@@ -80,7 +80,7 @@ namespace GameCore
             {
                 case Player p: return ForArmor(p.EquippedArmor);
                 case HumanEnemy h:
-                    if (VergerBoss.IsBeast(h) && VergerBoss.BeastFrame(h) is Sprite beast) return beast;                // the Verger's second form (VergerBoss.cs)
+                    if (BossArt.Drawn(h) && BossArt.Frame(h) is Sprite beast) return beast;                // a creature boss's clip, or the Verger's parked beast (BossArt.cs)
                     if (Husk.Is(h) && h.EquippedArmor != null && _hArmor.TryGetValue(h.EquippedArmor.Name, out var hs)) return hs;
                     return ForArmor(h.EquippedArmor);
                 case Mutant m:

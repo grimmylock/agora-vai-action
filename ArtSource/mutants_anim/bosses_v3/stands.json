@@ -1,0 +1,62 @@
+{
+ "mother_hollow": {
+  "stand": [
+   168,
+   87
+  ],
+  "canvas": [
+   232,
+   112
+  ]
+ },
+ "singer": {
+  "stand": [
+   256,
+   192
+  ],
+  "canvas": [
+   256,
+   216
+  ]
+ },
+ "ferryman": {
+  "stand": [
+   84,
+   184
+  ],
+  "canvas": [
+   148,
+   208
+  ]
+ },
+ "specimen": {
+  "stand": [
+   186,
+   160
+  ],
+  "canvas": [
+   252,
+   184
+  ]
+ },
+ "excavator": {
+  "stand": [
+   248,
+   176
+  ],
+  "canvas": [
+   256,
+   200
+  ]
+ },
+ "orderly": {
+  "stand": [
+   157,
+   174
+  ],
+  "canvas": [
+   224,
+   200
+  ]
+ }
+}

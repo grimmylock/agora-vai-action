@@ -72,9 +72,17 @@ Every fight below is built on what exists: `Boss.cs` (glints: white = parry, red
 ## Generations used (Pixel Lab, of 2000; max 50 a boss)
 | Boss | Concept stills | Animations | Total |
 |-|-|-|-|
-| Mother Hollow | 8 (1 bitforge test, 1 pixflux test, 4 pixflux with the Prowler as init, 1 inpaint try, 1 init with sacs painted in: the model would not draw belly sacs) | | 8 |
+| Mother Hollow | 8 (1 bitforge test, 1 pixflux test, 4 pixflux with the Prowler as init, 1 inpaint try, 1 init with sacs painted in: the model would not draw belly sacs) | 8 (idle, walk, pounce, bite, howl, spit, hurt, death; all first try) | 16 |
 | The Singer | 2 | | 2 |
 | The Ferryman | 2 | | 2 |
 | The Orderly | 4 (the first two drew a plain big man with an IV stand; the re-roll asked for the gauze-wrapped faceless head, the stitched grin, the long arm) | | 4 |
 | The Specimen, grown | 2 | | 2 |
 | The Excavator | 4 (the first two: a clean toy digger with fake lettering on a white ground; the re-roll: derelict, at night, no text; its painted background cut out by flood fill) | | 4 |
+
+## Mother Hollow: BUILT (2026-11-21)
+`MotherHollow.cs` (the fight, the brood, the acid, her spoils), `BossArt.cs` (the creature-boss drawing, generic for all six), `export_boss_clips.py` (strips + the clip table). Testing Ground > Humans tab > "BOSS Mother Hollow". Harness `MotherHollowChecks`. Preview: `maps/renders/bosses_v3/mother_hollow_in_den.gif` (her clips at game scale in the Secret Cave render, next to a player).
+- Moves: Bite (white, parry), Pounce (red, 6-tile leap), Howl (the brood: 3 Pallid Prowlers out of the cave's three Dark Niches, 5 in phase 2, never more than 6 alive; on the range a ring 10 tiles round her), Spit (red: lands where you stood when she wound up: walk out or dive; Toxic Bleed). Phase 2: Drag (red, 9-tile lunge), Double Spit.
+- When: in the Secret Cave once the Brute's part of the culvert story is over (culvert step 4+, no Brute rematch pending), when a player comes within 10 tiles of the Mutant Den; once (`mother_hollow_done`). Spoils: Pack-Mother's Skull (1800 Ru). Her bite: Mother's Jaws (220, Tier 1), never loot.
+- Drawn 0.75x (about 4 tiles long, 2 tall), turns toward the nearest player; the hurt clip plays when a hit lands between moves; the death clip plays at the break and holds.
+- Hit frames: picked from the silhouette's furthest reach, then bite/spit/pounce corrected by eye (`HIT` in the exporter). Timings are mine (wind-up slows into the hit).
+- NOT done: no sound of her own (the Gaunt's scream for the howl, a splash for the acid); the brood sacs; co-op sync; never run in Unity.

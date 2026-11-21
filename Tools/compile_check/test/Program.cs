@@ -100,6 +100,7 @@ static class Program {
     SpoolChecks();
     VergerChecks();
     VergerBeastChecks();
+    MotherHollowChecks();
     CathedralJobChecks();
     SpoolStoryChecks();
     CrownChecks();
@@ -2840,6 +2841,39 @@ static class Program {
       p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");
       Check(h.Inventory.Items.Any(i => i.Type == "weapon" && i.Name == "Verger's Scythe") && h.Inventory.Items.Any(i => i.Type == "armor" && i.Name == "Verger Coat"), "Verger: the scythe and the coat are on the body");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
+  }
+  static void MotherHollowChecks() {   // 2026-11-21: Mother Hollow (MotherHollow.cs, BOSS_CONCEPTS_V3.md): the den mother, drawn from Pixel Lab clips (BossArt), her brood and her acid
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); MotherHollow.Brood.Clear(); UnityEngine.Time.time = 95000f; UnityEngine.Time.unscaledTime = 95000f;
+    try {
+      var D = MotherHollow.Def; var art = BossArt.Of(D.Art);
+      Check(art != null && new[] { "idle", "walk", "hurt", "death" }.All(c => art.Clips.ContainsKey(c)) && D.Moves.All(m => m.Clip == null || art.Clips.ContainsKey(m.Clip)), "Mother Hollow: her clip table has idle, walk, hurt, death and a clip for every move");
+      Check(D.Moves.Where(m => m.Clip != null).All(m => art.Clips[m.Clip].Hit >= 0 && art.Clips[m.Clip].Hit < art.Clips[m.Clip].Frames && art.Clips[m.Clip].Ms.Length == art.Clips[m.Clip].Frames), "Mother Hollow: every move's clip has a hit frame inside it");
+      var f = Boss.Spawn(D, px + 3, py); var h = f.Unit;
+      Check(h.Faction == "Mutants" && h.EquippedWeapon?.Db?.Name == "Mother's Jaws" && h.EquippedArmor == null && h.Unkillable && h.MaxHp == D.Hp, "Mother Hollow: a Mutant with her jaws, no armour, held at 1 HP until executed");
+      Check(!ShopDatabase.Items.Any(i => i.Name == "Mother's Jaws") && WeaponDatabase.Unique.Contains("MotherJaws"), "Mother Hollow: her jaws are in no shop");
+      // the bite starts the bite clip, timed to land on the strike
+      var bite = D.Moves.First(m => m.Name == "Bite"); h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Boss.Begin(f, bite, UnityEngine.Time.time, 1f);
+      Check(f.Clip == "bite" && System.Math.Abs(f.ClipT0 + art.Clips["bite"].PreHitSeconds - f.StrikeAt) < 0.01f, "Mother Hollow: the Bite plays its clip, hit frame on the strike");
+      f.Doing = null; f.OpenUntil = -1f;
+      // the acid: where you stood when she wound up; step out and it misses, a dive goes under it
+      var spit = D.Moves.First(m => m.Name == "Spit");
+      void Run(Boss.Move mv, System.Action mid = null) { Boss.Begin(f, mv, UnityEngine.Time.time, 1f); mid?.Invoke(); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); h.Hp = h.MaxHp; } f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; }
+      void Reset() { h.X = px + 5; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; p.StatusEffects.ToxicBleed = false; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
+      Reset(); Run(spit); Check(p.Hp < p.MaxHp && p.StatusEffects.ToxicBleed, $"Mother Hollow: the Spit hits where you stood and burns ({p.Hp}/{p.MaxHp})");
+      Reset(); Run(spit, () => { p.Y = py + 3; Rt.SetOffset(p, 0f, 0f); }); Check(p.Hp == p.MaxHp, "Mother Hollow: step out of where she aimed and the Spit misses");
+      Reset(); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(spit); Check(p.Hp == p.MaxHp, "Mother Hollow: a dive goes under the Spit");
+      // the howl: the brood comes (no niches on the range: a ring round her), never more than the cap
+      Reset(); var howl = D.Moves.First(m => m.Name == "Howl"); int e0 = EncounterState.Enemies.Count; Run(howl);
+      Check(MotherHollow.Brood.Count == MotherHollow.BroodPhase1 && MotherHollow.Brood.All(b => b.Db?.Name == "Pallid Prowler" && b.IsAggroed && CombatantUtil.Distance(b, p) >= 4), $"Mother Hollow: the Howl brings {MotherHollow.BroodPhase1} Pallid Prowlers, away from you ({MotherHollow.Brood.Count})");
+      f.Phase = 2; Run(howl); Run(howl); Check(MotherHollow.Brood.Count <= MotherHollow.BroodCap, $"Mother Hollow: never more than {MotherHollow.BroodCap} of her brood at once ({MotherHollow.Brood.Count})");
+      foreach (var b in MotherHollow.Brood) EncounterState.Enemies.Remove(b); MotherHollow.Brood.Clear();
+      // the den: she only wakes once the Brute's business is over
+      Check(!Boss.Fights.Any(x => x.Def == D && x != f), "Mother Hollow: (only the range one so far)");
+      // the break and the execution: her skull, no jaws or coat to loot
+      h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Mother Hollow: at the break she goes down");
+      p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has(MotherHollow.Done), "Mother Hollow: the execution sets mother_hollow_done");
+      Check(h.Inventory.Items.Any(i => i.Name == MotherHollow.Trophy) && !h.Inventory.Items.Any(i => i.Type == "weapon") && h.EquippedWeapon == null, "Mother Hollow: her skull is on the body, no weapon to loot");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MotherHollow.Brood.Clear(); }
   }
   static void VergerBeastChecks() {   // 2026-11-20: the Verger's PARKED beast form (Boss.VergerBeast, 2026-11-21: out of the game, kept working): a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;

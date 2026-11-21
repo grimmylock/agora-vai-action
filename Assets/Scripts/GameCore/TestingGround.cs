@@ -122,6 +122,13 @@ namespace GameCore
             VergerBoss.Spawn(x, y, false);
         }
 
+        /// <summary>2026-11-21: Mother Hollow on the range, 7 tiles in front of you (the range has no niches: her brood crawls in from 10 tiles round her).</summary>
+        public static void MotherHollowFight(Player p)
+        {
+            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 7, p.Y);
+            MotherHollow.Spawn(x, y, false);
+        }
+
         /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>
         public static void KingDuel(Player p)
         {

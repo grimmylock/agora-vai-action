@@ -33,6 +33,7 @@ namespace GameCore
         public static readonly Dictionary<string, Stats> Table = new Dictionary<string, Stats>
         {
             ["Verger's Scythe"] = new Stats { Swing = 0.9f, Reach = 2.1f, ThrowSpeed = 9f, ThrowRange = 6f, Blade = true, Bleeds = true, TwoHanded = true, WindUp = 1f },   // 2026-11-20: a war scythe: the longest reach in the game, it cuts and bleeds
+            ["Mother's Jaws"] = new Stats { Swing = 0.6f, Reach = 2.0f, Blade = true, Bleeds = true },   // 2026-11-21: Mother Hollow: a long neck, a wide jaw
             ["Beast Claws"] = new Stats { Swing = 0.6f, Reach = 1.9f, Blade = true, Bleeds = true },   // the brawler form: long arms, heavy blows (Heavy style: slam, wide sweep, rising)
             ["Tactical Hatchet"] = new Stats { Swing = 0.65f, Reach = 1.35f, ThrowSpeed = 13f, ThrowRange = 9f, StuckX = 23.5f, StuckY = 8.5f },
         };
