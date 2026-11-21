@@ -5005,6 +5005,19 @@ static class Program {
       UnityEngine.Time.deltaTime = 0f; UnityEngine.Time.time = 0f; UnityEngine.Time.timeScale = 1f;
     }
     // RT 6f: clearing a jam - the support hand leaves the gun to slap the magazine and rack the action, then comes back
+    {   // 2026-11-21 (Yan: "hand placement on assault rifles breaks when aiming down and up"): the support hand stays on the barrel's line, inside the body's band, at every angle, for every long gun
+      int bad = 0, cnt = 0; string first = null;
+      foreach (var kv in WeaponDatabase.Categories.Where(c => c.Key == "assault" || c.Key == "sniper" || c.Key == "shotgun" || c.Key == "smg" || c.Key == "lmg")) foreach (var w in kv.Value)
+      {
+        var g = WeaponArt.GripOf(kv.Key, w.Key); if (g == null || float.IsNaN(g[2])) continue;
+        for (int ang = -90; ang <= 90; ang += 15)
+        {
+          var pose = HeldPoseMath.Compute(kv.Key, ang, g[0], g[1], g[2], g[3]); float rad = ang * UnityEngine.Mathf.Deg2Rad, c = UnityEngine.Mathf.Cos(rad), sn = UnityEngine.Mathf.Sin(rad);
+          float vx = pose.SupportX - pose.GripX, vy = pose.SupportY - pose.GripY; float below = System.Math.Abs((g[3] - g[1]) * 0.5f); float off = System.Math.Abs(vx * (-sn) - vy * c);            // distance from the barrel line through the grip
+          cnt++; if (pose.SupportY > HeldPoseMath.WaistTopRow + 1.5f || pose.SupportY < HeldPoseMath.SupportTopRow - 1.5f || off > below + 1.6f) { bad++; first = first ?? $"{w.Key} at {ang}: hand ({pose.SupportX},{pose.SupportY}) grip ({pose.GripX},{pose.GripY}) off-line {off:0.0}"; }
+        }
+      }
+      Check(cnt > 100 && bad == 0, $"held: every long gun's support hand stays on the barrel's line and inside the body's band at every aim angle ({bad} of {cnt} bad; {first})"); }
     { var g = WeaponArt.GripOf("assault", "VK74"); var rest = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
       var tap = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.25f, "jam", 1); var rack = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.65f, "jam", 1);
       var done = HeldPoseMath.Frame("assault", g, 0f, 0f, 0f, 0f, 99f, 0.9f, "jam", 1); rest = HeldPoseMath.Frame("assault", g, done.GunDeg, 0f, 0f, 0f, 99f, 1f, "none", 1);   // same tilt, no hand work

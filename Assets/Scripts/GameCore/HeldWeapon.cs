@@ -46,6 +46,7 @@ namespace GameCore
     {
         public const float ChestX = 8f, ChestY = 9.5f;
         public const float WaistTopRow = 10f;   // a 2-row hand starting here ends on the belt row (11)
+        public const float SupportTopRow = 3f;  // the support hand never rides higher than this row (just under the chin) when the barrel points up
 
         public static float Reach(string category) =>
             category == "sidearm" || category == "melee" ? 4f : category == "smg" ? 3.5f : 3f;
@@ -72,8 +73,18 @@ namespace GameCore
             if (float.IsNaN(supportX)) { ax = 1f; ay = 1f; }                               // pistol cup
             else { ax = (supportX - gripX) * 0.5f; ay = (supportY - gripY) * 0.5f; }       // half-size px -> character px
             p.HasSupport = true;
-            p.SupportX = Mathf.Round(p.GripX + ax * dx + ay * px);
-            p.SupportY = Mathf.Min(Mathf.Round(p.GripY + ax * dy + ay * py), WaistTopRow + 1f);
+            // 2026-11-21 (Yan: "hand placement on assault rifles breaks when aiming down and up"): the hand's row used to be clamped on its own (never below the belt row), which slid it OFF the barrel's line whenever
+            // the barrel pointed down at a slant, and nothing stopped it from sitting far above the head when the barrel pointed up (a rifle's foregrip is 10+ px from the grip). Now the hand stays ON the barrel's line and
+            // slides back toward the grip until it is inside the body's band (no lower than the belt, no higher than SupportTopRow).
+            float along = ax, baseY = p.GripY + ay * py;
+            if (ax > 0f)
+            {
+                if (dy > 0.001f) along = Mathf.Min(along, (WaistTopRow + 1f - baseY) / dy);
+                else if (dy < -0.001f) along = Mathf.Min(along, (baseY - SupportTopRow) / -dy);
+                along = Mathf.Max(along, 0f);
+            }
+            p.SupportX = Mathf.Round(p.GripX + along * dx + ay * px);
+            p.SupportY = Mathf.Round(p.GripY + along * dy + ay * py);
             return p;
         }
 
