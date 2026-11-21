@@ -811,7 +811,7 @@ namespace GameCore
         {
             bool known = _motion.Known(u);
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
-            marker.transform.position = _motion.Place(u, logical);
+            marker.transform.position = _motion.Place(u, logical) + VergerBoss.LungeOffset(u);      // (the Verger's beast leans into each blow)
             float gl = Emplacement.LiftOf(u); if (gl > 0f) marker.transform.position += new Vector3(0f, gl, 0f);   // up on the Barrier's watchtower
             if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }
             bool held = u is Player hp && EelSump.Gripping(hp) && CombatFxView.EelStand.HasValue;                // Boss 3: held in the jaws: drawn AT the mouth, over the eel (it hid him)

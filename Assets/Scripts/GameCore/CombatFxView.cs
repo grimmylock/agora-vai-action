@@ -387,7 +387,7 @@ namespace GameCore
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
             if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
-            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "glassburst")
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "glassburst" || e.Kind == "beastslash")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
                 BossFx(e, from, to);
@@ -825,6 +825,22 @@ namespace GameCore
                     else { Bit(tip, ChainSteel, 5, 2, (a - tip) / 0.5f, 0f, 0.5f, 13); Bit(tip + new Vector3(0.125f, -0.125f, 0f), ChainSteel, 2, 3, (a - tip) / 0.5f, 0f, 0.5f, 13); }
                     if (e.Hit) { Burst(b, Steel, 14, 2.6f, 0.35f); Burst(b, Color.white, 6, 3.6f, 0.25f, 2); Shake(0.12f); Sfx.Play("hook_catch", to, 1f, 0.03f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.8f, 0.03f); }
                     else Sfx.Play("hook_throw", from, 0.9f, 0.04f);
+                    break;
+                }
+                case "beastslash": // 2026-11-21 (the Verger's beast): three claw marks tear through the air in front of him toward the target (ArtSource/make_beast_slash_fx.py: Fx/fx_beast_slash.png, 4 frames), turned toward the target, with a shake and the claws' sound; a landed blow throws blood
+                {
+                    var frames = Strip("Sprites/Fx/fx_beast_slash", 4, WeaponArt.PixelsPerUnit, new Vector2(0.05f, 0.5f));
+                    var dirv = to - from; float ang = Mathf.Atan2(dirv.y, dirv.x) * Mathf.Rad2Deg, flip = dirv.x < 0f ? -1f : 1f; float dl = Mathf.Sqrt(dirv.x * dirv.x + dirv.y * dirv.y); var dn = dl > 0.01f ? dirv / dl : Vector3.right;
+                    var at = from + dn * 0.9f + new Vector3(0f, 0.7f, 0f);
+                    if (frames != null)
+                    {
+                        var sr = NewSprite("BeastSlash", frames[0], Color.white, _root, 14); sr.transform.position = at; sr.transform.rotation = Quaternion.Euler(0f, 0f, ang + (flip < 0f ? 180f : 0f)); sr.transform.localScale = new Vector3(1f, flip < 0f ? -1f : 1f, 1f) * 0.7f;
+                        _live.Add(new Particle { Sr = sr, Born = Time.time, Life = 0.24f, Frames = frames });
+                    }
+                    Burst(at, new Color(0.9f, 0.8f, 0.7f), 8, 2.2f, 0.3f);
+                    Sfx.Play(Random.value < 0.5f ? "claw_0" : "claw_1", from, 1f, 0.05f);
+                    if (e.Hit) { for (int k = 0; k < 4; k++) Puff("fx_hit_blood", to + new Vector3(Random.Range(-0.25f, 0.25f), Random.Range(0.2f, 0.8f), 0f), 0.4f, 0.3f, null, 1.6f); Burst(to + new Vector3(0f, 0.5f, 0f), new Color(0.6f, 0.06f, 0.08f), 14, 3f, 0.5f, 2); Shake(0.18f); Sfx.Play("hit_hard", to, 0.8f); }
+                    else Shake(0.06f);
                     break;
                 }
                 case "glassburst": // 2026-11-20 (the cathedral job): a stained-glass window bursts inward as the Husks climb in: coloured shards (ruby, amber, blue, green and plain glass) thrown into the nave, falling, and the crash

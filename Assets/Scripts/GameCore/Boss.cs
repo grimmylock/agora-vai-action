@@ -168,9 +168,9 @@ namespace GameCore
                 new Move { Name = "Charge", Wind = 1.0f, Danger = true, Lunge = 7f, Mult = 1.5f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true, Clip = "charge" },
                 new Move { Name = "Sweep", Wind = 0.9f, Mult = 1.2f, Weight = 2, Poses = new[] { 1 }, Open = 1.8f, Phase2Only = true, Clip = "sweep" },
                 // 2026-11-21 combos (Yan: "like the Gaunt has"): the clips stitched (make_beast_combos.py), the gaps between the blows read off the clip
-                new Move { Name = "Rake-Sweep", Wind = 0.65f, Hits = 2, Gaps = new[] { 0.44f }, Mults = new[] { 0.9f, 1.0f }, Weight = 2, Poses = new[] { 1, 1 }, Open = 1.6f, Phase2Only = true, Clip = "rakesweep" },
-                new Move { Name = "Rake-Smash", Wind = 0.65f, Hits = 2, Gaps = new[] { 1.16f }, Mults = new[] { 0.9f, 1.8f }, RedHits = new[] { false, true }, Weight = 2, Poses = new[] { 1, 0 }, Open = 2.3f, Phase2Only = true, Clip = "rakeslam" },
-                new Move { Name = "Rampage", Wind = 0.65f, Hits = 3, Gaps = new[] { 0.44f, 1.51f }, Mults = new[] { 0.8f, 0.9f, 1.9f }, RedHits = new[] { false, false, true }, BelowHp = 0.25f, Weight = 3, Poses = new[] { 1, 1, 0 }, Open = 2.6f, Phase2Only = true, Clip = "rampage" },
+                new Move { Name = "Rake-Sweep", Wind = 0.65f, Hits = 2, Gaps = new[] { 0.49f }, Mults = new[] { 0.9f, 1.0f }, Weight = 2, Poses = new[] { 1, 1 }, Open = 1.6f, Phase2Only = true, Clip = "rakesweep" },
+                new Move { Name = "Rake-Smash", Wind = 0.65f, Hits = 2, Gaps = new[] { 1.21f }, Mults = new[] { 0.9f, 1.8f }, RedHits = new[] { false, true }, Weight = 2, Poses = new[] { 1, 0 }, Open = 2.3f, Phase2Only = true, Clip = "rakeslam" },
+                new Move { Name = "Rampage", Wind = 0.65f, Hits = 3, Gaps = new[] { 0.49f, 1.59f }, Mults = new[] { 0.8f, 0.9f, 1.9f }, RedHits = new[] { false, false, true }, BelowHp = 0.25f, Weight = 3, Poses = new[] { 1, 1, 0 }, Open = 2.6f, Phase2Only = true, Clip = "rampage" },
             },
         };
 
@@ -302,6 +302,7 @@ namespace GameCore
             Parry.Unparryable = red; int hp0 = p.Hp;
             try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, MultOf(m, hi)); }
             finally { Parry.Unparryable = false; }
+            if (VergerBoss.IsBeast(h)) { var sf = CombatFx.Push("beastslash", h, p, null); sf.Now = true; sf.Hit = p.Hp < hp0; if (sf.Hit) HitStop(0.05f); }      // 2026-11-21: the claws' slash is drawn, and a landed blow has weight
             if (m.Drag > 0f) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
         }
 
