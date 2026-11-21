@@ -284,7 +284,8 @@ namespace GameCore
             Hear("explosion", 0.8f);
             RedLights();
             Posts.Clear(); var dm = Mark(Door); int dx = dm?.X ?? 40;
-            foreach (var oy in new[] { 6, 7, 8, 9, 10 }) Posts.Add(TerrainMap.FindNearestEnterable(dx + 10, oy));   // 2026-11-18 (Yan: "form a line instead of posting up by the walls"): one firing line across the corridor east of you, shoulder to shoulder; the bottom row stays open for you to run west
+            int dy0 = dm?.Y ?? 7;                                                       // 2026-11-21: the Annex rework moved the lab door (it was y 7, now 17): the line is laid out from the door, not from fixed rows
+            foreach (var oy in new[] { -1, 0, 1, 2, 3 }) Posts.Add(TerrainMap.FindNearestEnterable(dx + 10, dy0 + oy));   // 2026-11-18 (Yan: "form a line instead of posting up by the walls"): one firing line across the corridor east of you, shoulder to shoulder; the bottom row stays open for you to run west
             Say("At the far end of the corridor the wall bursts outward. Something answers from the dark behind it. Many somethings.");
             SpawnHorde();
             Story.SetObjective(Mission, "RUN - back to the hatch ladder", Ladder);
@@ -293,7 +294,8 @@ namespace GameCore
         /// <summary>Yan (2026-11-16): the corridor is white-lit; when the card fails the ceiling lights turn to red hazard lights (their tiles change look, the light map and the lighting bake follow) and the siren starts.</summary>
         internal static void RedLights()
         {
-            for (int y = 6; y <= 11; y++) for (int x = 6; x <= 80; x++) if (TerrainMap.GetTile(x, y)?.Look == "light") TerrainMap.SetTileType(x, y, TileType.Empty, "redlight");
+            int ly = Mark(Door)?.Y ?? 7;                                                  // (the corridor is the six rows from one above the door's landmark: it was y 6-11, it is now 16-21)
+            for (int y = ly - 1; y <= ly + 4; y++) for (int x = 3; x <= 90; x++) if (TerrainMap.GetTile(x, y)?.Look == "light") TerrainMap.SetTileType(x, y, TileType.Empty, "redlight");
             LightMap.Reset(); Lighting.Reset();                                              // (the picture's lamp field keeps its own bake of the lights: it must collect them again)
             Sfx.Ambient("amb_alarm");
         }
@@ -331,17 +333,38 @@ namespace GameCore
         static void SpawnHorde()
         {
             Waves.Clear(); _wavesOut.Clear();
-            var bw = Mark("Broken Wall"); var nest = Mark("Nest"); if (bw == null || nest == null) return;
+            var bw = Mark("Broken Wall"); if (bw == null) return;
+            // 2026-11-21 (Yan: "all the mutants were already in the corridor, the soldiers didn't form a line, the gaunt pointed the wrong way"): the Annex rework of this map left the 'Nest' landmark in the far west maze (27, 51), so the Gaunt and
+            // the waves were staged there and the posts/lights sat on rows that are no longer the corridor. The Gaunt and the waves are now staged by walking distance from the Broken Wall, down the passage behind it (never in the corridor).
+            var far = StageBeyond(bw); if (far == null) return;
+            var nest = new LandmarkInstance { Name = "Nest", X = far.Value.x, Y = far.Value.y, Description = "" };
             // 2026-11-18 (Yan: two frontline soldiers held the whole horde; "give the elder gaunt 15k HP, make the horde less swarms and more of the other mutant dogs, and 2 little gaunts"): about 55, four waves close together
             // - mostly the dogs (Pallid, Blind Maw, Veil, two Dread Prowlers), twelve rats, two small Gaunts among the third wave (the Elder keeps its 15,000 HP and walks out first)
             // 2026-11-18 (Yan: hidden until the Gaunt calls them, then already running during the scene): out of the world until the call lands (ScreamFor 1.2 s into the scream), then each wave appears in the dark of the tunnel and runs - all four inside the scream's 2.6 s
-            Wave(Gaunt.ElderScreamFor, nest.X, nest.Y - 12, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));          // seconds after the scream begins
-            Wave(Gaunt.ElderScreamFor + 0.35f, nest.X, nest.Y - 8, ("BlindMaw", 6), ("PallidProwler", 6));
-            Wave(Gaunt.ElderScreamFor + 0.7f, nest.X, nest.Y - 4, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
-            Wave(Gaunt.ElderScreamFor + 1.05f, nest.X, nest.Y + 2, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
-            { var (gx, gy) = TerrainMap.FindNearestEnterable(nest.X, nest.Y - 14); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
+            Wave(Gaunt.ElderScreamFor, StageAt(0).x, StageAt(0).y, ("PallidProwler", 6), ("BlindMaw", 6), ("tier2:VeilProwler", 2));          // seconds after the scream begins
+            Wave(Gaunt.ElderScreamFor + 0.35f, StageAt(1).x, StageAt(1).y, ("BlindMaw", 6), ("PallidProwler", 6));
+            Wave(Gaunt.ElderScreamFor + 0.7f, StageAt(2).x, StageAt(2).y, ("Swarm", 6), ("BlindMaw", 4), ("tier4:DreadProwler", 2), ("tier3:Gaunt", 2));
+            Wave(Gaunt.ElderScreamFor + 1.05f, StageAt(3).x, StageAt(3).y, ("Swarm", 6), ("PallidProwler", 6), ("tier2:VeilProwler", 2));
+            { var (gx, gy) = (far.Value.x, far.Value.y); _gaunt = new Mutant(Gaunt.ElderName, gx, gy, Gaunt.ElderDef) { IsAggroed = false }; EncounterState.Enemies.Add(_gaunt); } _screamAt = -1f; _gauntWalking = false;     // the Gaunt waits in the dark tunnel; it walks out first
         }
 
+        static Dictionary<(int, int), int> _stageDist; static int _stageWallY;
+        /// <summary>Path distances (4-neighbour steps over enterable tiles) from the Broken Wall; the tiles at least 8 rows below it are the passage behind the wall, the ones the corridor itself never reaches (2026-11-21).</summary>
+        static (int x, int y)? StageBeyond(LandmarkInstance bw)
+        {
+            var d = new Dictionary<(int, int), int>(); var q = new Queue<(int, int)>(); var st = TerrainMap.FindNearestEnterable(bw.X, bw.Y); q.Enqueue(st); d[st] = 0;
+            while (q.Count > 0) { var (cx, cy) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = cx + dx, ny = cy + dy; if (d.ContainsKey((nx, ny)) || nx < 1 || ny < 1 || nx >= TerrainMap.Width - 1 || ny >= TerrainMap.Height - 1 || !TerrainMap.CanEnterTile(nx, ny)) continue; d[(nx, ny)] = d[(cx, cy)] + 1; q.Enqueue((nx, ny)); } }
+            _stageDist = d; _stageWallY = bw.Y;
+            var beyond = d.Where(kv => kv.Key.Item2 >= bw.Y + 8).OrderBy(kv => kv.Value).Where(kv => kv.Value >= 24).Select(kv => ((int, int)?)kv.Key).FirstOrDefault();
+            return beyond == null ? ((int x, int y)?)null : (beyond.Value.Item1, beyond.Value.Item2);
+        }
+        /// <summary>Where wave `i` waits (0..3): further and further down the passage behind the wall, 8 steps apart, starting 8 steps past where the Gaunt waits.</summary>
+        static (int x, int y) StageAt(int i)
+        {
+            int want = 32 + 8 * i; var c = _stageDist.Where(kv => kv.Key.Item2 >= _stageWallY + 8 && kv.Value >= want).OrderBy(kv => kv.Value).Select(kv => ((int, int)?)kv.Key).FirstOrDefault();
+            if (c == null) c = _stageDist.Where(kv => kv.Key.Item2 >= _stageWallY + 8).OrderByDescending(kv => kv.Value).Select(kv => ((int, int)?)kv.Key).FirstOrDefault();
+            return c == null ? (0, 0) : (c.Value.Item1, c.Value.Item2);
+        }
         static Mutant _gaunt; static float _gauntStep, _screamAt = -1f; static bool _gauntWalking;
 
         /// <summary>Yan (2026-11-16): the Gaunt is the first thing out of the dark: it walks into the red light at the broken wall, SCREAMS and POINTS at the soldiers - and only then does the horde come.
@@ -379,6 +402,7 @@ namespace GameCore
                 bool arrived = System.Math.Abs(_gaunt.X - sx) <= 1 && System.Math.Abs(_gaunt.Y - sy) <= 2;
                 if (arrived || t >= 20f)
                 {
+                    { var face = Escorts.FirstOrDefault(e => e.IsAlive()); var pt = face != null ? (face.X, face.Y) : (Posts.Count > 2 ? Posts[2] : (sx - 20, sy)); _gaunt.FaceToward(pt.Item1, pt.Item2); _gaunt.PatrolTarget = (pt.Item1, pt.Item2); }   // 2026-11-21: it screams and points AT the soldiers (the view turns an unaggroed mutant toward its patrol target)
                     _screamAt = now; Gaunt.ForcePose(_gaunt, "scream", Gaunt.CallTotal); GauntScream(_gaunt);
                     Say("It opens its jaw wider than a jaw should open and screams. Then it lifts one long arm and points at the soldiers.");
                 }

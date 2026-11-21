@@ -3804,18 +3804,26 @@ static class Program {
       var door = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); p.X = door.X; p.Y = door.Y; Rt.SetOffset(p, 0f, 0f);
       Run(0.2f);
       Check(Tier2Story.Step == 3 && Tier2Story.CanUseDoor(p), "taken: at the door nothing happens by itself - E uses the passcard");
+      { int k = 0; foreach (var h in EncounterState.Enemies.OfType<HumanEnemy>().Where(h => h.IsAlive())) { var (qx, qy) = TerrainMap.FindNearestEnterable(door.X + 1 + k, door.Y + 1); h.X = qx; h.Y = qy; Rt.SetOffset(h, 0f, 0f); k++; } }   // (the harness teleported you to the door: bring the squad, as the walk would have)
       Check(Tier2Story.TryUseDoor(p), "taken: E at the door starts the door scene");
       Run(5f); Check(Tier2Story.Step == 3 && Story.CamLock.HasValue && Story.Letterbox, "taken: the door scene: the camera on the lock, bars, the alarm not yet");
       Run(3f);
       int horde = EncounterState.Enemies.Count(e => !(e is HumanEnemy) && e.IsAlive()); int rats = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
       Check(Tier2Story.Step == 4 && horde <= 1 && rats == 0 && EncounterState.Enemies.Count(e => e is Mutant gm && gm.Db?.Name == Gaunt.Name) == 0, $"taken: the passcard fails - the alarm; the horde is NOT in the world yet ({horde} mutants: just the Elder Gaunt in the dark; step {Tier2Story.Step})");
       Run(2.4f); Check(EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && m.IsAlive()).All(m => !m.IsAggroed), "taken: the alarm goes and nothing charges yet - the Gaunt comes first");
+      Run(3f);
+      { var dl = TerrainMap.Landmarks.First(l => l.Name == "Lab Door"); var bwl = TerrainMap.Landmarks.First(l => l.Name == "Broken Wall"); var sol = EncounterState.Enemies.OfType<HumanEnemy>().Where(h => h.IsAlive()).ToList();
+        Check(sol.Count == 5 && sol.All(h => h.X >= dl.X + 8 && h.X <= dl.X + 12 && h.Y >= dl.Y - 2 && h.Y <= dl.Y + 4) && sol.Select(h => h.Y).Distinct().Count() >= 4, $"taken: the soldiers form a line across the corridor east of the door ({string.Join(" ", sol.Select(h => h.X + "," + h.Y))})");
+        var el0 = EncounterState.Enemies.OfType<Mutant>().First(m => Gaunt.IsElder(m)); Check(el0.X >= bwl.X && el0.Y >= bwl.Y, $"taken: the Gaunt comes up the passage behind the broken wall, not from the far maze ({el0.X},{el0.Y})"); }
       Check(Sfx.MusicName == null, "taken: no chase song while the Gaunt's scene is still going");
       Check(EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive()).OfType<Mutant>().All(m => Tier2Story.Holds(m)), "taken: the horde and the Gaunt wait in the dark, held by the story, until they are let go");
       Run(22f);
       { int out_ = EncounterState.Enemies.Count(e => e is Mutant && !(e is HumanEnemy)); int rats2 = EncounterState.Enemies.Count(e => e is Mutant m && m.Db?.Name == "Swarm");
         Check(out_ >= 40 && rats2 >= 10, $"taken: the Gaunt called: the horde came out running ({out_} mutants, {rats2} rats)"); }
       Check(EncounterState.Enemies.OfType<Mutant>().Any(m => Gaunt.IsElder(m) && m.IsAlive() && m.IsAggroed), "taken: the Elder Gaunt screamed, pointed, and joins the hunt");
+      { var bwl = TerrainMap.Landmarks.First(l => l.Name == "Broken Wall"); var horde2 = EncounterState.Enemies.OfType<Mutant>().Where(m => !(m is HumanEnemy) && !Gaunt.IsElder(m)).ToList();
+        Check(horde2.Count >= 40 && horde2.All(m => m.Y >= bwl.Y + 8 && m.X >= bwl.X), $"taken: the horde is let go in the passage behind the broken wall, nothing in the corridor ({horde2.Count} mutants)");
+        var elx = EncounterState.Enemies.OfType<Mutant>().First(m => Gaunt.IsElder(m)); Check(elx.PatrolTarget.HasValue && elx.PatrolTarget.Value.x < elx.X, "taken: the Gaunt turns toward the soldiers (west) for the scream and the point"); }
       Check(Gaunt.RiseCalls >= 2, $"taken: the horde's two small Gaunts climb out of the ground when they are let go ({Gaunt.RiseCalls})");
       { float armOut = 150 + 120 + 120 + 140 + 160 + 180; Check(Gaunt.ElderScreamFor * 1000f >= armOut && Gaunt.ElderScreamFor * 1000f < 1330f && Gaunt.ScreamFor > Gaunt.ElderScreamFor, "gaunt: the Elder's call lands once its arm is fully out (frame 6 of the new scream clip, 870 ms) and before the point is half over"); }
       Check(Sfx.MusicName == Tier2Story.ChaseTrack, $"taken: the chase song plays once the scream and the point are over ({Sfx.MusicName})");
