@@ -9,6 +9,8 @@ Watch the Console for red first. Then, per boss:
 - [ ] The glint: white = parry, red = dive or step out. Does each attack's hit land on the frame where it visibly hits? (Hit frames were picked by eye from the strips: `HIT` in `ArtSource/export_boss_clips.py`.)
 - [ ] The boss bar, PHASE 2 at half health, the break (E to execute), the trophy in its body.
 - [ ] Its own sounds (procedural, `ArtSource/audio/sfx_bosses.py`): too loud, too quiet, wrong?
+- [ ] Shooting it: rounds now hit its drawn silhouette (`HitProfiles` "boss:<key>", F6 shows the shape), but only its lower part (rounds fly at most one body-tile above the feet, as for every unit).
+- [ ] Walking: it still blocks only its own tile, so you can walk into the Excavator's tracks or the Singer's wall picture. Needs multi-tile blocking if it looks wrong.
 
 ## Mother Hollow (Secret Cave, Mutant Den, after the culvert story)
 - [ ] Bite (white, parry), Pounce (red, dive under the leap), Spit (red: it lands where you stood when she wound up: walk out), Howl (the brood: on the range they crawl in from 10 tiles round her; in the cave out of the three Dark Niches).
