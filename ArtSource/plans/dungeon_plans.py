@@ -535,14 +535,14 @@ def hospital_morgue():
     # 2026-11-21 (Yan: "make the lab/hospital where he's located be something scary too, straight out of silent hill"): the morgue is dressed as a place where something has been living a long time.
     # g gurney, o body bag, u wheelchair, q bed frame, v IV stand, k a body bag hanging from the ceiling (TierDungeons.HospitalMorgue turns these letters into props); e the red emergency lamps are the only light.
     # Everything sits on the edges of the corridors and rooms: the lanes between stay open (the QA check and the locks do not care, the player does).
-    props(p, ((6, 9, 'u'), (14, 9, 'k'), (17, 9, 'g'), (26, 9, 'o'), (32, 9, 'u'), (35, 9, 'g'), (41, 9, 'k'), (7, 11, 'o'), (13, 11, 'v'), (19, 11, 'u'), (25, 11, 'g'), (31, 11, 'k'), (40, 11, 'o'), (36, 11, 'v'),
+    props(p, ((6, 9, 'u'), (17, 9, 'g'), (26, 9, 'o'), (35, 9, 'g'), (7, 11, 'o'), (13, 11, 'v'), (25, 11, 'g'), (40, 11, 'o'),
               (8, 10, 'e'), (20, 10, 'e'), (33, 10, 'e'), (43, 10, 'e'),
-              (22, 4, 'g'), (25, 3, 'e'), (25, 5, 'u'), (24, 6, 'o'),
+              (25, 3, 'e'), (25, 5, 'u'),
               (7, 18, 'o'), (9, 18, 'o'), (12, 18, 'o'), (14, 18, 'o'), (6, 27, 'o'), (16, 27, 'o'), (10, 22, 'g'), (6, 23, 'g'), (14, 25, 'g'), (7, 17, 'k'), (15, 26, 'k'), (13, 20, 'v'), (5, 27, 'e'), (16, 17, 'e'), (10, 19, 'e'),
-              (24, 19, 'k'), (34, 20, 'k'), (24, 23, 'k'), (34, 24, 'k'), (27, 22, 'k'), (30, 23, 'g'), (26, 24, 'g'), (30, 18, 'v'), (32, 22, 'v'), (23, 16, 'e'), (35, 16, 'e'), (23, 25, 'e'), (35, 25, 'e'), (29, 21, 'e'),
-              (16, 38, 'k'), (26, 39, 'k'), (12, 38, 'g'), (19, 40, 'u'), (33, 38, 'u'), (35, 41, 'q'), (12, 41, 'e'), (24, 37, 'e'), (36, 36, 'e'),
+              (24, 19, 'k'), (34, 20, 'k'), (24, 23, 'k'), (30, 23, 'g'), (26, 24, 'g'), (30, 18, 'v'), (32, 22, 'v'), (23, 16, 'e'), (35, 16, 'e'), (23, 25, 'e'), (35, 25, 'e'), (29, 21, 'e'),
+              (12, 41, 'e'), (24, 37, 'e'), (36, 36, 'e'),
               (41, 18, 'q'), (43, 18, 'q'), (41, 21, 'q'), (44, 16, 'v'), (42, 17, 'e'),
-              (40, 3, 'e'), (42, 3, 'k'), (14, 31, 'u'), (20, 30, 'u'), (26, 31, 'v'), (38, 30, 'k'), (18, 31, 'e'), (33, 30, 'e'), (9, 30, 'o'), (31, 31, 'o')))
+              (40, 3, 'e'), (18, 31, 'e'), (33, 30, 'e')))
     p.g[17][34] = '3'                                              # the autopsy drawer with the pathologist's badge
     p.g[41][36] = '4'                                              # the boilerman's locker: the fuse
     p.g[36][11] = '5'                                              # the boiler switch

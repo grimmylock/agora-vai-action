@@ -6,8 +6,11 @@ from PIL import Image
 from collections import deque
 H = os.path.dirname(os.path.abspath(__file__)); G = os.path.join(H, "mutants_anim", "boss_concepts", "gpt")
 import sys
-NAME = sys.argv[1] if len(sys.argv) > 1 else "ferryman"; P, OX, OY = (int(v) for v in (sys.argv[2:5] if len(sys.argv) > 4 else (8, 7, 7)))
+NAME = sys.argv[1] if len(sys.argv) > 1 else "ferryman"; P, OX, OY = (float(v) for v in (sys.argv[2:5] if len(sys.argv) > 4 else (8, 7, 7)))   # the period may be fractional (grinder 9.63, choir 8.33: the drawings were scaled by a non-integer)
 a = np.array(Image.open(os.path.join(G, "" + NAME + "_gpt_raw.jpg")).convert("RGB")).astype(int)
+if os.environ.get("BLANK"):   # "x0,y0,x1,y1;..." in raw px: painted over with the background (a caption, a scale figure)
+    for box in os.environ["BLANK"].split(";"):
+        x0, y0, x1, y1 = (int(v) for v in box.split(",")); a[y0:y1, x0:x1] = (55, 54, 60)
 h, w, _ = a.shape; bg = np.array([55, 54, 60])
 near = np.abs(a - bg).sum(2) < 30
 seen = np.zeros((h, w), bool); q = deque()
@@ -26,14 +29,17 @@ from scipy import ndimage   # enclosed background (between a saw and the torso) 
 lab, nl = ndimage.label(near); sizes = ndimage.sum(near, lab, range(1, nl + 1))
 for i, sz in enumerate(sizes, 1):
     if sz > 1500: seen |= lab == i
-cw, ch = (w - OX) // P, (h - OY) // P
+cw, ch = int((w - OX) // P), int((h - OY) // P)
 out = np.zeros((ch, cw, 4), np.uint8)
 for cy in range(ch):
     for cx in range(cw):
-        blk = a[OY + cy * P + 2: OY + cy * P + P - 2, OX + cx * P + 2: OX + cx * P + P - 2]
-        bgm = seen[OY + cy * P + 2: OY + cy * P + P - 2, OX + cx * P + 2: OX + cx * P + P - 2]
+        y0, y1 = int(OY + cy * P + P * 0.25), int(OY + cy * P + P * 0.75) + 1; x0, x1 = int(OX + cx * P + P * 0.25), int(OX + cx * P + P * 0.75) + 1
+        blk = a[y0:y1, x0:x1]; bgm = seen[y0:y1, x0:x1]
         if bgm.mean() > 0.5: continue
         out[cy, cx, :3] = np.median(blk[~bgm], 0); out[cy, cx, 3] = 255
+lab2, n2 = ndimage.label(out[..., 3] > 0, structure=np.ones((3, 3)))   # dust specks and stray pixels: drop pieces under 8 art pixels
+for i in range(1, n2 + 1):
+    if (lab2 == i).sum() < 8: out[lab2 == i] = 0
 im = Image.fromarray(out, "RGBA")
 ys, xs = np.where(out[..., 3] > 0); im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
 # small palette (keeps the lantern green: quantize the opaque pixels only)

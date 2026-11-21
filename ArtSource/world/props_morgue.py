@@ -111,6 +111,11 @@ def _prop(name):
     arr = np.array(im); al = arr[..., 3] >= 110
     q = Image.fromarray(arr[..., :3]).quantize(colors=28, method=Image.MEDIANCUT, dither=Image.NONE).convert("RGB"); out = np.dstack([np.array(q), np.where(al, 255, 0).astype(np.uint8)]); out[~al] = 0
     im = Image.fromarray(out.astype(np.uint8), "RGBA")
+    if name == "hangbag":                                          # hangs from a steel ceiling rail (Yan: "the hanging bags hang from nothing"): a rail across the top, a bracket and the chain
+        W2 = im.width + 12; top = Image.new("RGBA", (W2, im.height + 5), (0, 0, 0, 0)); top.alpha_composite(im, (6, 5)); d = ImageDraw.Draw(top)
+        d.rectangle([0, 0, W2 - 1, 1], fill=STEEL[3]); d.line([(0, 2), (W2 - 1, 2)], fill=STEEL[1]); d.line([(0, 3), (W2 - 1, 3)], fill=STEEL[0]); d.rectangle([W2 // 2 - 2, 3, W2 // 2 + 1, 5], fill=STEEL[2])
+        for x in range(2, W2 - 1, 5): d.point((x, 0), fill=STEEL[4])
+        im = top
     return finish2(im, (im.width // 2, int(im.height * py)), shadow, tall=tall)
 
 def gurney(seed): return _prop("gurney")
