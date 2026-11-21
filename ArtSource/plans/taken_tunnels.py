@@ -167,6 +167,7 @@ def build(seed):
     put3(37, 3, '+'); put3(43, 3, '+')                                         # rock-bolted timber props holding the roof
     for (x, y) in ((40, 10), (40, 5)): put3(x, y, 'i')
     put3(40, 1, 'L'); put3(40, 5, 'M')
+    import plan_tidy; plan_tidy.diag_fill(g)   # 2026-11-21 QA: close walls that touch only at a corner
     rows = [''.join(r_) for r_ in g]
     trail = [(x, y + SHIFT, k) for (x, y, k) in trail]
     build.trail = trail

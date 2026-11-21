@@ -41,7 +41,7 @@ for (x, y) in ((9, 22), (54, 22), (9, 31), (54, 31)): g[y][x] = '9'             
 for (x, y) in ((29, 27), (34, 27)): g[y][x] = '8'                                # candelabra at the crossing, either side of the bell rope
 for (x, y) in ((26, 48), (37, 48)): g[y][x] = 'y'                                # fonts in the narthex
 # --- windows in the outer walls (Solid 'n'), each with a spawn landmark floor tile just inside
-wins = [(12, 17, 'F', 1), (12, 25, 'G', 1), (12, 33, 'H', 1), (12, 41, 'J', 1), (51, 17, 'K', -1), (51, 25, 'L', -1), (51, 33, 'M', -1), (51, 41, 'O', -1)]
+wins = [(12, 17, 'F', 1), (4, 23, 'G', 1), (12, 33, 'H', 1), (12, 41, 'J', 1), (51, 17, 'K', -1), (59, 29, 'L', -1), (51, 33, 'M', -1), (51, 41, 'O', -1)]   # 2026-11-21 QA: G and L were on x=12/51 where the transept is open (a lone window standing in the floor); now in the transept end walls
 # the transepts' west/east ends are y22..31 from x5/x58, so the aisle windows at y 17..41 sit on x=12 and x=51 where the aisle is (13..19/44..50)
 for (x, y, ch, d) in wins:
     g[y][x] = 'n'; g[y][x + d] = ch

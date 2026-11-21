@@ -21,7 +21,7 @@ def pumping_basement():
     p.room(4, 30, 8, 7)                                  # Pp: the pump panel room
     p.vline(7, 28, 29, 2); p.put(7, 28, '2'); p.put(8, 28, '2')   # its power door
     p.room(14, 30, 7, 6)                                 # Sump: a dry dead end
-    p.vline(17, 28, 29, 2); p.put(17, 28, '!')
+    p.vline(17, 28, 29, 2); p.put(17, 28, '!'); p.put(18, 28, '!')   # 2026-11-21 QA: both halves of the 2-wide doorway (one half was left open beside the door)
     p.vline(28, 28, 29, 2); p.put(28, 28, '!'); p.put(29, 28, '!')   # the culvert's door (steel)
     p.vline(27, 29, 34, 3, 'W'); p.hline(27, 50, 33, 3, 'W')       # the culvert: black water over your head
     p.room(51, 30, 4, 8)                                 # Of: the outfall
@@ -422,6 +422,7 @@ def stranded_ferry():
     for x0 in (5, 10, 15):
         p.room(x0, 15, 4, 4); p.g[19][x0 + 1] = 'D'                # cabins north of the corridor
         p.room(x0, 23, 4, 4); p.g[22][x0 + 2] = 'D'                # and south
+    p.room(20, 15, 3, 4); p.g[19][21] = 'D'; p.room(20, 23, 3, 4); p.g[22][21] = 'D'   # 2026-11-21 QA: a fourth, narrower cabin each side (the gap before the lounge was a blank block of wall)
     p.vline(3, 13, 19, 1); p.g[13][3] = 'r'; p.g[19][3] = 'r'      # the rusted-through deck plate: car deck <-> the corridor's west end (the loop)
     p.room(14, 29, 30, 8); p.vline(30, 26, 28, 2)                  # Er: the engine room, down a stair from the lounge
     for x in (30, 31): p.g[27][x] = '1'                            # the badge door on that stair
@@ -1002,9 +1003,11 @@ def pumping_check(p):
 PLANS = {"pumping_basement": pumping_basement, "secret_cave": secret_cave, "smugglers_tunnel": smugglers_tunnel, "chapel_crypt": chapel_crypt, "valley_mine": valley_mine, "crusher_pit": crusher_pit, "flooded_bunker": flooded_bunker, "stranded_ferry": stranded_ferry, "camp_shelter": camp_shelter, "drydock_tunnels": drydock_tunnels, "hospital_morgue": hospital_morgue, "maintenance_tunnels": maintenance_tunnels, "underground_bunker": underground_bunker, "deep_caverns": deep_caverns, "underground_labyrinth": underground_labyrinth, "siege_catacombs": siege_catacombs, "lattice_foundry_lower": lattice_foundry_lower, "secret_lab_gamma": secret_lab_gamma, "secret_lab_beta": secret_lab_beta}
 CHECKS = {"pumping_basement": pumping_check, "secret_cave": cave_check, "smugglers_tunnel": smugglers_check, "chapel_crypt": crypt_check, "valley_mine": mine_check, "crusher_pit": pit_check, "flooded_bunker": bunker_check, "stranded_ferry": ferry_check, "camp_shelter": shelter_check, "drydock_tunnels": drydock_check, "hospital_morgue": morgue_check, "maintenance_tunnels": tunnels_check, "underground_bunker": ubunker_check, "deep_caverns": caverns_check, "underground_labyrinth": labyrinth_check, "siege_catacombs": catacombs_check, "lattice_foundry_lower": foundry_check, "secret_lab_gamma": gamma_check, "secret_lab_beta": beta_check}
 if __name__ == "__main__":
+    import plan_tidy
     here = os.path.dirname(os.path.abspath(__file__)); bad = 0
     for name, fn in PLANS.items():
-        p = fn(); res = CHECKS[name](p) if name in CHECKS else []
+        p = fn(); plan_tidy.diag_fill(p.g)   # 2026-11-21 QA: close walls that touch only at a corner (before the checks, so they test the tidied plan)
+        res = CHECKS[name](p) if name in CHECKS else []
         for line in res: print(name, line); bad += line.startswith("FAIL")
         open(os.path.join(here, name + ".txt"), "w").write("\n".join("".join(row) for row in p.g))
         print("\n".join("".join(row) for row in p.g))

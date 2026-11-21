@@ -140,7 +140,9 @@ static class MapQa {
   static bool Wall(int x, int y) { var t = TerrainMap.GetTile(x, y); return t == null || x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height || t.Type == TileType.Solid; }
   public static void Run(string id, string art) {
     int W = TerrainMap.Width, H = TerrainMap.Height; var lines = new System.Collections.Generic.List<string>(); var seen = new bool[W, H];
-    _secret.Clear(); foreach (var l in TerrainMap.Landmarks ?? new System.Collections.Generic.List<LandmarkInstance>()) if (l.Name == Boss.CrackedWall) _secret.Add((l.X, l.Y));
+    _secret.Clear(); var cracks = new System.Collections.Generic.List<(int X, int Y)>(); foreach (var l in TerrainMap.Landmarks ?? new System.Collections.Generic.List<LandmarkInstance>()) if (l.Name == Boss.CrackedWall) cracks.Add((l.X, l.Y));
+    if (MapLayoutDatabase.All.TryGetValue(id, out var qlay) && qlay.Anchors != null) foreach (var kv in qlay.Anchors) if (kv.Key == Boss.CrackedWall) cracks.Add((kv.Value.x, kv.Value.y));   // the layout's anchors (TerrainMap.Landmarks can be empty here)
+    foreach (var l in cracks) { _secret.Add((l.X, l.Y)); foreach (var (ox, oy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var tt = TerrainMap.GetTile(l.X + ox, l.Y + oy); if (tt != null && tt.Type == TileType.Solid) _secret.Add((l.X + ox, l.Y + oy)); } }   // the landmark can be nudged off the wall onto the floor beside it
     var q = new System.Collections.Generic.Queue<(int, int)>();
     foreach (var e in TerrainMap.Exits) { if (!Pass(e.X, e.Y)) lines.Add($"EXIT\t{e.X}\t{e.Y}\t1\t1\tto {e.TargetZoneId} on a wall"); else if (!seen[e.X, e.Y]) { seen[e.X, e.Y] = true; q.Enqueue((e.X, e.Y)); } }
     if (q.Count == 0) { var (sx, sy) = TerrainMap.FindNearestEnterable(W / 2, H / 2, 40); seen[sx, sy] = true; q.Enqueue((sx, sy)); lines.Add($"NOTE\t{sx}\t{sy}\t1\t1\tno exits: flood from the middle"); }
@@ -157,7 +159,7 @@ static class MapQa {
       if (walk >= 4 && !edge) { pockets++; lines.Add($"POCKET\t{x0}\t{y0}\t{x1 - x0 + 1}\t{y1 - y0 + 1}\t{n} tiles ({walk} floor) no exit reaches"); } else if (walk > 0 && !edge) small++;
     }
     bool Touch(int x, int y) { for (int ox = -1; ox <= 1; ox++) for (int oy = -1; oy <= 1; oy++) { int nx = x + ox, ny = y + oy; if (nx >= 0 && ny >= 0 && nx < W && ny < H && seen[nx, ny]) return true; } return false; }
-    foreach (var l in TerrainMap.Landmarks ?? new System.Collections.Generic.List<LandmarkInstance>()) if (!l.Name.StartsWith("exit:") && l.X >= 0 && l.Y >= 0 && l.X < W && l.Y < H && !Touch(l.X, l.Y)) lines.Add($"LOST\t{l.X}\t{l.Y}\t1\t1\tlandmark {l.Name}");
+    if (qlay != null && qlay.Anchors != null) foreach (var kv in qlay.Anchors) { int lx = kv.Value.x, ly = kv.Value.y; if (!kv.Key.StartsWith("exit:") && lx >= 0 && ly >= 0 && lx < W && ly < H && !Touch(lx, ly)) lines.Add($"LOST\t{lx}\t{ly}\t1\t1\tlandmark {kv.Key}"); }
     foreach (var o in TerrainMap.InteractiveObjects) if (o.X >= 0 && o.Y >= 0 && o.X < W && o.Y < H && !Touch(o.X, o.Y)) lines.Add($"LOST\t{o.X}\t{o.Y}\t1\t1\tobject {o.Name}");
     bool built = TerrainMap.Tiles != null;
     for (int y = 1; y < H - 1; y++) for (int x = 1; x < W - 1; x++) {
