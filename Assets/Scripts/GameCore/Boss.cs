@@ -31,6 +31,9 @@ namespace GameCore
             public int Hits = 1;           // a combo: each hit has its own glint
             public float Gap = 0.4f;       // between a combo's hits
             public float Lunge;            // > 0: he closes this far in one rush before the hit
+            public float[] Gaps, Mults;    // 2026-11-21 (the Verger's combos): the pause before each following hit, and each hit's own damage multiplier (null = Gap / Mult for all)
+            public bool[] RedHits;         // 2026-11-21: which hits of a combo are red (can't be parried, a dive goes under): the Smash that finishes a combo
+            public float BelowHp;          // 2026-11-21: > 0: only once his health is below this share of his full health (the beast's last stretch)
             public string Clip;            // 2026-11-20 (the Verger's beast): which animation clip plays for this move (VergerBoss.Clips)
             public float Drag;             // 2026-11-20 (the Verger's Hook): > 0: he does not rush in, he stops at the blade's tip and, if it cuts you, drags you up to this many tiles toward him
             public float Mult = 1f;        // x the weapon's damage
@@ -65,12 +68,16 @@ namespace GameCore
             public float Started;
             public int Parries; public float LastParryAt = -99f;
             public float GlintDue = -1f;
-            public string Clip; public float ClipT0;   // the animation clip playing (VergerBoss.Clips) and when it started
+            public string Clip; public float ClipT0, ClipScale = 1f;   // the animation clip playing (VergerBoss.Clips) and when it started
             public float StruckAt = -99f;      // when his last hit landed (the beast's attack frame)
             public float ChangeUntil = -1f; public bool Beast;   // the half-health change: the window it lasts, and whether he is in his second form
             public float OpenUntil = -1f;  // Visor 5: his opening after a move (Yan: "a few in between pauses between his attacks and combos, window of oportunity")   // Visor 4: the glint comes GlintLead before each hit, the same beat for every move   // perfect parries toward the next stagger (they fade after GuardRecovers s)
         }
         public const float GuardRecovers = 8f, GlintLead = 0.4f;
+        /// <summary>2026-11-21: is hit `i` (0-based) of this move red? A move is red whole (Danger) or hit by hit (RedHits).</summary>
+        public static bool Red(Move m, int i) => m.Danger || (m.RedHits != null && m.RedHits[System.Math.Min(i, m.RedHits.Length - 1)]);
+        public static float GapBefore(Move m, int i) => m.Gaps != null ? m.Gaps[System.Math.Min(System.Math.Max(0, i - 1), m.Gaps.Length - 1)] : m.Gap;      // the pause before hit i (i >= 1)
+        public static float MultOf(Move m, int i) => m.Mults != null ? m.Mults[i % m.Mults.Length] : m.Mult;
 
         public static readonly List<Fight> Fights = new List<Fight>();
         public static Fight Of(ICombatant u) => u == null ? null : Fights.FirstOrDefault(f => f.Unit == u && !f.Gone);
@@ -160,6 +167,10 @@ namespace GameCore
                 new Move { Name = "Smash", Wind = 1.2f, Danger = true, Mult = 1.9f, Weight = 2, Poses = new[] { 0 }, Open = 2.4f, Phase2Only = true, Clip = "slam" },
                 new Move { Name = "Charge", Wind = 1.0f, Danger = true, Lunge = 7f, Mult = 1.5f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Phase2Only = true, Clip = "charge" },
                 new Move { Name = "Sweep", Wind = 0.9f, Mult = 1.2f, Weight = 2, Poses = new[] { 1 }, Open = 1.8f, Phase2Only = true, Clip = "sweep" },
+                // 2026-11-21 combos (Yan: "like the Gaunt has"): the clips stitched (make_beast_combos.py), the gaps between the blows read off the clip
+                new Move { Name = "Rake-Sweep", Wind = 0.65f, Hits = 2, Gaps = new[] { 0.44f }, Mults = new[] { 0.9f, 1.0f }, Weight = 2, Poses = new[] { 1, 1 }, Open = 1.6f, Phase2Only = true, Clip = "rakesweep" },
+                new Move { Name = "Rake-Smash", Wind = 0.65f, Hits = 2, Gaps = new[] { 1.16f }, Mults = new[] { 0.9f, 1.8f }, RedHits = new[] { false, true }, Weight = 2, Poses = new[] { 1, 0 }, Open = 2.3f, Phase2Only = true, Clip = "rakeslam" },
+                new Move { Name = "Rampage", Wind = 0.65f, Hits = 3, Gaps = new[] { 0.44f, 1.51f }, Mults = new[] { 0.8f, 0.9f, 1.9f }, RedHits = new[] { false, false, true }, BelowHp = 0.25f, Weight = 3, Poses = new[] { 1, 1, 0 }, Open = 2.6f, Phase2Only = true, Clip = "rampage" },
             },
         };
 
@@ -188,7 +199,7 @@ namespace GameCore
             var mc = Melee.ChargeOf(h); mc.PoseKey = f.Def == Visor ? HeldPoseMath.VisorPoses : null; mc.Pace = f.Def.Pace;
             if (f.Doing == null) mc.SwingFrom = -1f;
             else if (mc.SwingFrom >= 0f && now >= f.StrikeAt - HeldPoseMath.ChopTime / mc.Pace) { float held = now - mc.SwingFrom; mc.SwingFrom = -1f; mc.SwungAt = now - Mathf.Min(held, HeldPoseMath.WindUp) / mc.Pace; }
-            if (f.Doing != null && f.GlintDue >= 0f && now >= f.GlintDue) { f.GlintDue = -1f; Glint(f, f.Doing.Danger); }
+            if (f.Doing != null && f.GlintDue >= 0f && now >= f.GlintDue) { f.GlintDue = -1f; Glint(f, Red(f.Doing, f.Doing.Hits - f.HitsLeft)); }
             if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
             if (now < f.StaggerUntil) return;
@@ -214,7 +225,7 @@ namespace GameCore
                     h.MoveToward(p.X, p.Y);
                 }
                 if (now < f.NextMoveAt) return;
-                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= 1)).ToList();
+                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.BelowHp <= 0f || h.Hp <= f.Def.Hp * m.BelowHp) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= 1)).ToList();
                 if (options.Count == 0) return;
                 int roll = Random.Range(0, options.Sum(m => m.Weight));
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
@@ -223,7 +234,7 @@ namespace GameCore
             if (now < f.StrikeAt) return;
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
-            if (--f.HitsLeft > 0) { f.StrikeAt = now + f.Doing.Gap * speed; f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
+            if (--f.HitsLeft > 0) { f.StrikeAt = now + GapBefore(f.Doing, f.Doing.Hits - f.HitsLeft) * speed; f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
             OpenUp(f, f.Doing.Open * speed, now);
             f.Doing = null; f.NextMoveAt = f.OpenUntil + 0.3f * Random.Range(0.8f, 1.3f);
         }
@@ -258,7 +269,7 @@ namespace GameCore
         {
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
             f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
-            if (m.Clip != null) VergerBoss.StartClip(f, m.Clip, f.StrikeAt);                 // the beast's animation, timed so its hit frame lands on the strike
+            if (m.Clip != null) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
 
@@ -267,7 +278,7 @@ namespace GameCore
         {
             var mc = Melee.ChargeOf(f.Unit); var m = f.Doing; int i = m.Hits - f.HitsLeft;
             mc.From = i > 0 ? mc.Since(now) : -1f;
-            mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now; mc.Red = m.Danger;
+            mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now; mc.Red = Red(m, i);
         }
 
         static void Glint(Fight f, bool danger)
@@ -285,10 +296,11 @@ namespace GameCore
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
-            if (m.Danger && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }   // the dive goes under it
+            int hi = m.Hits - f.HitsLeft; bool red = Red(m, hi);
+            if (red && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }   // the dive goes under it
             if (h.EquippedWeapon == null) return;
-            Parry.Unparryable = m.Danger; int hp0 = p.Hp;
-            try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, m.Mult); }
+            Parry.Unparryable = red; int hp0 = p.Hp;
+            try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, MultOf(m, hi)); }
             finally { Parry.Unparryable = false; }
             if (m.Drag > 0f) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
         }

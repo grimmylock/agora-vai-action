@@ -2813,7 +2813,9 @@ static class Program {
       Check(System.Math.Abs(sp.ShoveX) + System.Math.Abs(sp.ShoveY) > 0.8f && CombatantUtil.Distance(p, h) >= 1, "Verger: the drag is a real pull, not a teleport");
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       foreach (var m in Boss.Verger.Moves.Where(m => m.Clip != null)) Check(VergerBoss.Clips.ContainsKey(m.Clip) && VergerBoss.Clips[m.Clip].Ms.Length == VergerBoss.Clips[m.Clip].Frames && VergerBoss.Clips[m.Clip].Hit < VergerBoss.Clips[m.Clip].Frames, "Verger: the beast's move " + m.Name + " has a well-formed clip (" + m.Clip + ")");
-      Check(Boss.Verger.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.Verger.Moves.Count(m => m.Phase2Only) == 4, "Verger: the beast has four moves (Rake, Smash, Charge, Sweep), each with an animation clip");
+      Check(Boss.Verger.Moves.Where(m => m.Phase2Only).All(m => m.Clip != null) && Boss.Verger.Moves.Count(m => m.Phase2Only) == 7, "Verger: the beast has seven moves (Rake, Smash, Charge, Sweep and the combos Rake-Sweep, Rake-Smash, Rampage), each with an animation clip");
+      foreach (var m in Boss.Verger.Moves.Where(m => m.Hits > 1 && m.Clip != null)) { var c = VergerBoss.Clips[m.Clip]; bool gapsOk = c.Hits != null && c.Hits.Length == m.Hits && m.Gaps != null && m.Gaps.Length == m.Hits - 1; for (int k = 0; gapsOk && k < m.Hits - 1; k++) { float ms = 0f; for (int fi = c.Hits[k]; fi < c.Hits[k + 1]; fi++) ms += c.Ms[fi]; gapsOk = System.Math.Abs(ms / 1000f - m.Gaps[k]) < 0.02f; }
+        Check(gapsOk && c.Hit == c.Hits[0], "Verger: the combo " + m.Name + " has as many blows as its clip and the pauses between them are the clip's own"); }
       // half health: the change
       f.Doing = null; f.OpenUntil = -1f; h.Hp = Boss.Verger.Hp / 2 - 10; UnityEngine.Time.time += 5f; Boss.Tick(f, p);
       Check(f.Phase == 2 && f.Beast && f.ChangeUntil > UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Beast Claws", "Verger: at half health he changes and takes up the claws");
@@ -2826,7 +2828,18 @@ static class Program {
       f.NextMoveAt = UnityEngine.Time.time; began = false; h.Hp = Boss.Verger.Hp / 2 - 10; f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f);
       for (int i = 0; i < 600 && !began; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); began = f.Doing != null; }
       Check(began && f.Doing.Phase2Only, $"Verger: form 2 fights with the claws' moves ({f.Doing?.Name})");
-      Check(f.Doing.Clip != null && f.Clip == f.Doing.Clip && System.Math.Abs(f.ClipT0 + VergerBoss.Clips[f.Clip].PreHitSeconds - f.StrikeAt) < 0.01f, "Verger: the move's clip is timed so its hit frame lands on the strike");
+      Check(f.Doing.Clip != null && f.Clip == f.Doing.Clip && System.Math.Abs(f.ClipT0 + VergerBoss.Clips[f.Clip].PreHitSeconds * f.ClipScale - f.StrikeAt) < 0.01f, "Verger: the move's clip is timed so its hit frame lands on the strike");
+      {   // the combos: Rampage only in the beast's last stretch; its three blows land with the clip's pauses, the last one red
+        var ramp = Boss.Verger.Moves.First(m => m.Name == "Rampage"); var seen = new HashSet<string>();
+        for (int rep = 0; rep < 150; rep++) { h.Hp = Boss.Verger.Hp * 3 / 10; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.ChangeUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+        Check(!seen.Contains("Rampage") && seen.Contains("Rake-Sweep"), $"Verger: above a quarter of his health the beast does not Rampage but does chain the Rake-Sweep ({string.Join(",", seen)})");
+        seen.Clear(); for (int rep = 0; rep < 150; rep++) { h.Hp = Boss.Verger.Hp / 5; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
+        Check(seen.Contains("Rampage"), $"Verger: below a quarter of his health the beast Rampages ({string.Join(",", seen)})");
+        h.Hp = Boss.Verger.Hp / 5; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Boss.Begin(f, ramp, UnityEngine.Time.time, 1.1f);
+        var strikes = new List<float>(); float lastStrike = f.StruckAt; for (int i = 0; i < 900 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; h.Hp = Boss.Verger.Hp / 5; Boss.Tick(f, p); if (f.StruckAt != lastStrike) { lastStrike = f.StruckAt; strikes.Add(lastStrike); } }
+        Check(strikes.Count == 3 && System.Math.Abs((strikes[1] - strikes[0]) - ramp.Gaps[0] * 1.1f) < 0.12f && System.Math.Abs((strikes[2] - strikes[1]) - ramp.Gaps[1] * 1.1f) < 0.12f, $"Verger: the Rampage lands three blows with the clip's pauses at his pace ({strikes.Count} blows, {(strikes.Count == 3 ? $"{strikes[1] - strikes[0]:0.00}s, {strikes[2] - strikes[1]:0.00}s" : "")})");
+        Check(Boss.Red(ramp, 2) && !Boss.Red(ramp, 0) && !Boss.Red(ramp, 1), "Verger: only the Rampage's last blow is red");
+        f.Doing = null; f.OpenUntil = -1f; }
       h.Hp = 1; Boss.OnDamaged(h); Check(f.Broken, "Verger: at the break he drops to a knee");
       Check(VergerBoss.IsBeast(h), "Verger: after the change he is drawn as the beast");
       p.X = h.X - 1; p.Y = h.Y; Check(Boss.TryFinish(p) && Story.Has("verger_done"), "Verger: the execution sets verger_done");

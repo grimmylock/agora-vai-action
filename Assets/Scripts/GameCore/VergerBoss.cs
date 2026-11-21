@@ -27,7 +27,7 @@ namespace GameCore
         public const float BeastScale = 0.5f;                 // drawn at half the strip's size: about 3 tiles tall, next to the Gaunt's 3 (it grew a lot, 1 tile -> ~3)
         public class Clip
         {
-            public string Name; public int Frames; public float[] Ms; public int Hit; public bool Loop;      // Hit = the frame the blow lands on (-1: none)
+            public string Name; public int Frames; public float[] Ms; public int Hit; public int[] Hits; public bool Loop;      // Hit = the frame the blow lands on (-1: none)
             public float PreHitSeconds { get { float t = 0f; for (int i = 0; i < Hit && i < Ms.Length; i++) t += Ms[i]; return t / 1000f; } }
             /// <summary>The frame at `t` seconds into the clip: -2 = not started, -1 = over (a loop never ends).</summary>
             public int IndexAt(float t)
@@ -47,6 +47,10 @@ namespace GameCore
             ["rake"]   = new Clip { Name = "rake", Frames = 13, Ms = new float[] { 100, 100, 120, 140, 120, 40, 70, 110, 120, 100, 120, 160, 200 }, Hit = 6 },       // rears the arm back (2-4), a backhand smear (5, brief), the forward slash (6), recovers
             ["charge"] = new Clip { Name = "charge", Frames = 9, Ms = new float[] { 100, 120, 140, 180, 200, 90, 110, 140, 200 }, Hit = 5 },
             ["sweep"]  = new Clip { Name = "sweep", Frames = 13, Ms = new float[] { 100, 120, 140, 160, 140, 70, 80, 120, 140, 140, 200, 220, 260 }, Hit = 5 },      // draws both arms back (2-4), the low sweep (5-6), arms reaching forward (7-9), rises
+            // combos (ArtSource/make_beast_combos.py: the rake, sweep and slam clips stitched where their silhouettes meet; Hits = the frames the blows land on)
+            ["rakesweep"] = new Clip { Name = "rakesweep", Frames = 18, Ms = new float[] { 100, 100, 120, 140, 120, 40, 70, 110, 120, 140, 70, 80, 120, 140, 140, 200, 220, 260 }, Hit = 6, Hits = new[] { 6, 10 } },
+            ["rakeslam"] = new Clip { Name = "rakeslam", Frames = 22, Ms = new float[] { 100, 100, 120, 140, 120, 40, 70, 110, 120, 100, 200, 260, 300, 90, 120, 160, 160, 160, 160, 180, 200, 240 }, Hit = 6, Hits = new[] { 6, 13 } },
+            ["rampage"] = new Clip { Name = "rampage", Frames = 28, Ms = new float[] { 100, 100, 120, 140, 120, 40, 70, 110, 120, 140, 70, 80, 120, 140, 140, 200, 200, 260, 300, 90, 120, 160, 160, 160, 160, 180, 200, 240 }, Hit = 6, Hits = new[] { 6, 10, 19 } },
             ["roar"]   = new Clip { Name = "roar", Frames = 13, Ms = new float[] { 100, 140, 180, 220, 400, 400, 400, 400, 400, 400, 300, 260, 360 }, Hit = 4 },                // the change: rears up (1-3), roars (4-9), settles (10-12): ~4 s
         };
         const float ClipPivotY = 22f / 232f;                   // the feet row is 6 px above the cell's bottom, and the pivot sits 16 px above the feet
@@ -56,10 +60,10 @@ namespace GameCore
         public static Sprite[] ClipFrames(string name) => Clips.TryGetValue(name, out var c) ? UnitSprites.HDFx("verger_beast_" + name, c.Frames, new Vector2(0.5f, ClipPivotY)) : null;
 
         /// <summary>Plays `clip` so that its hit frame lands at `hitAt` (a long wind-up shows the stand until the clip begins).</summary>
-        public static void StartClip(Boss.Fight f, string clip, float hitAt)
+        public static void StartClip(Boss.Fight f, string clip, float hitAt, float scale = 1f)
         {
             if (!Clips.TryGetValue(clip, out var c)) return;
-            f.Clip = clip; f.ClipT0 = hitAt - c.PreHitSeconds;
+            f.Clip = clip; f.ClipScale = scale; f.ClipT0 = hitAt - c.PreHitSeconds * scale;       // the fight's pace (1.1 for the beast) stretches the waits, so the clip plays that much slower too
         }
 
         /// <summary>The beast's picture this frame: the clip that is playing (the change's roar, a move's blow), else the walk cycle while he moves, else the stand (the walk's first frame). Falls back to the old hand-built poses if the clips are missing, and to the man if nothing is.</summary>
@@ -69,7 +73,7 @@ namespace GameCore
             var (x, y) = Ballistics.Pos(h); bool moving = _last.TryGetValue(h, out var l) && (Mathf.Abs(l.x - x) + Mathf.Abs(l.y - y)) > 0.01f; _last[h] = (x, y);
             if (f.Clip != null && Clips.TryGetValue(f.Clip, out var c))
             {
-                int i = c.IndexAt(now - f.ClipT0);
+                int i = c.IndexAt((now - f.ClipT0) / f.ClipScale);
                 if (i >= 0) { var cs = ClipFrames(c.Name); if (cs != null && i < cs.Length) return cs[i]; }
                 else if (i == -1) f.Clip = null;
             }
