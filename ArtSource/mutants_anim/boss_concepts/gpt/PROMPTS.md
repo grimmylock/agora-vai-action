@@ -21,3 +21,28 @@ Size: about 3.5 times the height of the small player on the right of the sheet, 
 The creature: "The Orderly", a horror boss in the style of Silent Hill and Dead Space. An insect made out of a hospital patient. A pale grey human torso stretched long into an insect thorax, bent forward. Its two arms have grown into long jagged bone-saw blades held up like a praying mantis. A black hospital body bag is fused over its back like beetle wing cases, half unzipped. IV tubes run into its body from a hanging bag of dark blood on a bent drip pole growing out of its back. A stretched human face is on the underside of its belly, mouth open. It stands on six thin legs made of human forearms and fingers. Scraps of a stained surgical gown hang off it.
 It should look miserable and wrong, made of people, not like a real insect. One accent colour: arterial red (the blood bag, the wounds).
 ```
+
+---
+# Round 2 (2026-11-21): replacements for the two bosses still not working (Yan: "can we redesign the other ones too or create new concepts to replace them?")
+Same rules as above: attach `style_reference_sheet.png`, ask for 2-3 versions, side view facing left, flat grey background, one accent colour. Yours (the Ferryman, the Orderly) came out exactly right with these; this is the same recipe.
+Mother Hollow stays (you liked her). The Specimen stays as the brain + eye (you asked for it). The Verger stays the scythe man.
+
+## The Gallery Choir (replaces the Singer, Tier 2, Valley Mine)
+```
+Pixel art game sprite, ONE creature, side view facing left, on a plain flat grey background.
+Match the attached reference sheet exactly in style: the same pixel size, the same simple shading, the same dark 1-pixel outline, the same muted palette. It must look like it belongs next to those creatures, not more detailed than them.
+Size: about 4 times the height of the small player on the right of the sheet, a huge slow heap that crawls.
+
+The creature: "The Gallery Choir", a horror boss in the style of Silent Hill and Dead Space. A dozen dead miners fused into one crawling mass of grey flesh, rock dust and rotten canvas overalls. Many mouths open along its back and sides, all different sizes, all singing. Miners' arms and legs push out of it at wrong angles and drag it forward along the ground. Two old helmet lamps are still burning amber in the flesh like eyes. A rusted ore-cart wheel and a length of rail are grown through its side. Splintered mine timber sticks out of its back like ribs.
+It should look miserable and wrong, made of people, not like an animal. One accent colour: the amber of the two helmet lamps.
+```
+
+## The Grinder (replaces the Excavator, Tier 5, Quarry Basin)
+```
+Pixel art game sprite, ONE creature, side view facing left, on a plain flat grey background.
+Match the attached reference sheet exactly in style: the same pixel size, the same simple shading, the same dark 1-pixel outline, the same muted palette. It must look like it belongs next to those creatures, not more detailed than them.
+Size: about 4 times the height of the small player on the right of the sheet, a long low body that rears up in front.
+
+The creature: "The Grinder", a horror boss in the style of Silent Hill and Dead Space. A huge blind segmented worm that has eaten a quarry crew and a digger. Its front end is a round mouth ringed with rows of rusted drill-bit and excavator-tooth teeth, spinning slowly. Its pale grey body is made of rings, and out of the gaps between the rings poke the arms and boots of crushed workers in faded hi-vis vests. A broken hydraulic arm and a dented bucket have grown into its side like a deformed limb. Dust and gravel fall off it.
+It should look miserable and wrong, made of people and machine, not like a real worm. One accent colour: faded hi-vis orange on the vests and the teeth's rust.
+```
