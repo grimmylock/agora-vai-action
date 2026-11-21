@@ -92,49 +92,43 @@
    "idle",
    8,
    1,
-   "the tall drowned ferryman with a lantern for a head stands still, the green lantern glow pulses, his coat sways, water drips off him, he breathes"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, breathes heavily, the mouth slowly opens and closes, the lantern sways gently on its bony spine, water drips off it, stays in place"
   ],
   [
    "walk",
    8,
    1,
-   "the tall drowned ferryman with a lantern for a head walks forward with a slow heavy dragging walk cycle, leaning on his pole, stays in place"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, crawls forward slowly on its long bent arms and legs like a spider, a creeping crawl cycle, the lantern swaying, stays in place"
   ],
   [
-   "thrust",
+   "bite",
    12,
    0,
-   "the tall drowned ferryman pulls his long pole back and thrusts it far forward in a fast stab, then draws it back"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, rears its body back, the vertical mouth gapes wide open, then lunges its whole front forward and snaps the jaws shut hard, then pulls back"
   ],
   [
-   "hook",
+   "claw",
    12,
    0,
-   "the tall drowned ferryman swings his long hooked pole far forward, catches something and drags it back toward himself with both hands"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, lifts one long front arm high, then slashes it down and forward in a fast clawing swipe, then sets it back down"
   ],
   [
-   "flare",
+   "lure",
    12,
    0,
-   "the tall drowned ferryman leans forward and his lantern head flares with a blinding bright green light, then dims"
-  ],
-  [
-   "sweep",
-   12,
-   0,
-   "the tall drowned ferryman swings his long pole in a wide horizontal sweep from one side to the other with both hands, like rowing a boat"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, lowers its body flat and still, lifts the lantern high and swings it slowly in front of its open mouth, the green light pulsing brighter, then lowers it"
   ],
   [
    "hurt",
    8,
    0,
-   "the tall drowned ferryman staggers back as if struck, the lantern swinging, then recovers"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, flinches back from a hit, the mouth shudders, the lantern swings wildly, then recovers"
   ],
   [
    "death",
    12,
    0,
-   "the tall drowned ferryman sinks to his knees, the green light in his lantern head fades out and he collapses forward"
+   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, shudders, its limbs buckle and it collapses flat onto its belly, the lantern drops to the ground and its green light goes out"
   ]
  ],
  "specimen": [
@@ -345,60 +339,54 @@
    "the floating eyeball bursts, the iris goes dark, it deflates and falls"
   ]
  ],
- "ferryman_v2": [
+ "orderly_v2": [
   [
    "idle",
    8,
    1,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, breathes heavily, the mouth slowly opens and closes, the lantern sways gently on its bony spine, water drips off it, stays in place"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, breathes slowly, the blood bag sways on its pole, the saw blades twitch, stays in place"
   ],
   [
    "walk",
    8,
    1,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, crawls forward slowly on its long bent arms and legs like a spider, a creeping crawl cycle, the lantern swaying, stays in place"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, skitters forward on its six thin legs in a creeping insect walk cycle, saw blades held high, the blood bag swaying, stays in place"
   ],
   [
-   "bite",
+   "saw",
    12,
    0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, rears its body back, the vertical mouth gapes wide open, then lunges its whole front forward and snaps the jaws shut hard, then pulls back"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, draws both saw blades back, then sweeps them forward in a wide fast horizontal slash, then pulls them back up"
   ],
   [
-   "claw",
-   10,
-   0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, lifts one long front arm high, then slashes it down and forward in a fast clawing swipe, then sets it back down"
-  ],
-  [
-   "lure",
+   "chop",
    12,
    0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, lowers its body flat and still, lifts the lantern high and swings it slowly in front of its open mouth, the green light pulsing brighter, then lowers it"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, raises both saw blades high over its head, then brings them down hard in a vicious chop, then lifts them again"
   ],
   [
-   "dive",
-   10,
+   "grab",
+   12,
    0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, presses itself low and sinks straight down into dark water below it until only the green lantern is left above the surface, then that sinks too"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, rears up on its back legs, then lunges forward low with its legs spread and its torso stretched to pin prey, then lets go"
   ],
   [
-   "emerge",
-   10,
+   "drip",
+   12,
    0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, bursts up out of dark water below it with the mouth wide open and limbs spread, water splashing off, then settles into a crouch"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, hunches and squeezes the blood bag on its pole, dark blood pulsing down the tubes into its body, its wounds closing, then relaxes"
   ],
   [
    "hurt",
    8,
    0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, flinches back from a hit, the mouth shudders, the lantern swings wildly, then recovers"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, flinches back from a hit, the blades jerk, the blood bag swings, then recovers"
   ],
   [
    "death",
    12,
    0,
-   "side view facing left, the pale drowned anglerfish creature with a huge vertical mouth full of rib teeth and a bony spine lure holding a green lantern, crawling on four long thin human limbs, shudders, its limbs buckle and it collapses flat onto its belly, the lantern drops to the ground and its green light goes out"
+   "side view facing left, the pale hunched insect-like creature made of a human patient, two arms grown into long bloody bone-saw blades held up like a praying mantis, six thin legs, a black body bag fused over its back like wing cases, IV tubes and a hanging blood bag on a bent pole on its back, staggers, its thin legs buckle, it collapses onto the floor on its side, the saw blades fall limp and it lies still"
   ]
  ]
 }

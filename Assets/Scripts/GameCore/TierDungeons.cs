@@ -189,7 +189,24 @@ namespace GameCore
             var marks = new Dictionary<char, (string, string)> { ['E'] = ("Morgue Landing", "hospital"), ['C'] = ("Cold Room", null), ['A'] = ("Autopsy Theatre", null), ['B'] = ("Boiler Room", null),
                 ['G'] = ("Records Room", null) };
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("hospital_morgue")) { ['K'] = "Records Safe", ['L'] = "Linen Store" };
-            return FloorPlan("hospital_morgue", LabPlans["hospital_morgue"], "plaster", LabTile, marks, stashes);
+            // 2026-11-21 (Yan: "something scary, straight out of silent hill"): the morgue's own dressing (ArtSource/world/props_morgue.py): g gurney, o body bag, u wheelchair, q bed frame, v IV stand,
+            // k a body bag hanging from the ceiling. These letters mean something else on other plans, so they are stamped here, on top of the plain plan (like the cathedral's).
+            const string special = "gouqvk"; var rows = LabPlans["hospital_morgue"]; var plain = new string[rows.Length];
+            for (int i = 0; i < plain.Length; i++) { var cs = rows[i].ToCharArray(); for (int j = 0; j < cs.Length; j++) if (special.IndexOf(cs[j]) >= 0) cs[j] = '.'; plain[i] = new string(cs); }
+            var c = new TerrainCanvas(rows[0].Length, rows.Length, TerrainCanvas.Seed("hospital_morgue"));
+            StampPlan(c, 0, 0, plain, "plaster", LabTile, marks, stashes);
+            for (int y = 0; y < rows.Length; y++)
+                for (int x = 0; x < rows[y].Length; x++)
+                    switch (rows[y][x])
+                    {
+                        case 'g': c.Put(x, y, ScatterCover, "gurney"); break;
+                        case 'o': c.Put(x, y, ScatterCover, "bodybag"); break;
+                        case 'u': c.Put(x, y, ScatterCover, "wheelchair"); break;
+                        case 'q': c.Put(x, y, ScatterCover, "bedframe"); break;
+                        case 'v': c.Put(x, y, ScatterCover, "ivstand"); break;
+                        case 'k': c.Put(x, y, HardCover, "hangbag"); break;
+                    }
+            return Finish(c, "plaster");
         }
 
         // ------------------------------------------------------------------ the hidden dungeons, redone by hand (2026-11-11; they were generated lab plans)

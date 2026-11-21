@@ -1192,3 +1192,9 @@ try:
         PROPS.update(_pce.NEW); VARIANTS.update(_pce.VARIANTS)
 except ImportError:
     pass
+# 2026-11-21: the morgue set (props_morgue.py): gurney, bodybag, wheelchair, bedframe, ivstand, hangbag (the Hospital Morgue's dressing)
+try:
+    import props_morgue as _pm
+    PROPS.update(_pm.NEW); VARIANTS.update(_pm.VARIANTS)
+except ImportError:
+    pass
