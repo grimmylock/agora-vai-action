@@ -364,7 +364,8 @@ namespace GameCore
                     Vector3 Tip(float ox, float oy) { float x = mir * ox, y = oy; return hp0 + new Vector3(x * cs - y * sn2, x * sn2 + y * cs, 0f); }
                     EelHandUp = Tip(JawUpX[jk], JawUpY[jk]); EelHandLo = Tip(JawLoX[jk], JawLoY[jk]);
                     float outward = _eelHead.flipX ? 1f : -1f; EelFace = -outward;                              // he stands out in front of its face, looking at it
-                    EelStand = new Vector3((EelHandUp.Value.x + EelHandLo.Value.x) * 0.5f, (EelHandUp.Value.y + EelHandLo.Value.y) * 0.5f, 0f);   // the middle of his hands: where the camera closes in (he is not moved)
+                    EelStand = new Vector3((EelHandUp.Value.x + EelHandLo.Value.x) * 0.5f, (EelHandUp.Value.y + EelHandLo.Value.y) * 0.5f, 0f);
+                    Vision.Glows.Add((EelStand.Value.x + EelFace * 2f - 0.5f, -EelStand.Value.y - 0.5f, 4.5f, 0.9f));      // 2026-11-21: a light where the player is DRAWN (his own light stays on the tile he really stands on, which can be anywhere in the arena)   // the middle of his hands: where the camera closes in (he is not moved)
                 }
                 else EelStand = EelHandUp = EelHandLo = null;
             }

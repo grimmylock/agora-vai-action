@@ -1093,7 +1093,9 @@ namespace GameCore
             float want = Mathf.Clamp(Mathf.Max(_zoom, need), CameraViewHalfHeightTiles, CameraMaxHalfHeightTiles);
             _shown = _shown <= 0f ? want : Mathf.MoveTowards(_shown, want, Time.deltaTime * (want > _shown ? 4f : 1.5f));   // out quickly, back in slowly
             _close = Mathf.MoveTowards(_close, EelSump.Gripping(Player.Current) ? 1f : 0f, Time.unscaledDeltaTime * 4f);   // Boss 3: the jaw-hold's close-up, leaning in on the player holding the eel's mouth
-            cam.orthographicSize = _shown * (1f - 0.09f * Boss.Punch) * (1f - 0.8f * _close) * (1f - 0.3f * _hl);   // Boss 1: the perfect parry's little zoom-in
+            // 2026-11-21 (Yan: "the drowner parry scene also breaks depending on where you are in the arena and how zoomed in the camera is"): the jaw-hold's close-up was a share of YOUR zoom (x0.2), so a player zoomed out or pulled wide by a far
+            // enemy got a different frame (too wide to read the gloves, or too tight to see the body): it now eases to one fixed framing, JawHoldHalfHeight tiles from the middle of the screen to its top, whatever your zoom.
+            cam.orthographicSize = Mathf.Lerp(_shown * (1f - 0.09f * Boss.Punch) * (1f - 0.3f * _hl), JawHoldHalfHeight * (1f - 0.09f * Boss.Punch), _close);   // Boss 1: the perfect parry's little zoom-in
             // Boss 3's introduction: a cinematic camera (Story.CamLock). It glides to its point and zoom; when the lock ends it eases back to the player's own view instead of snapping.
             var lk = Story.CamLock;
             if (lk.HasValue)
@@ -1112,6 +1114,7 @@ namespace GameCore
             }
             Story.CamCut = false;
         }
+        public const float JawHoldHalfHeight = 2.8f;                          // the jaw-hold close-up: the camera's half height in tiles (the player's gloves, body and the eel's jaws fit)
         private static float _cineBlend, _cineSize; private static Vector3 _cinePos;
         private static float _shown, _close, _hl;
 
@@ -1171,6 +1174,7 @@ namespace GameCore
         /// anomaly, landmark (and whether it's a story objective), object or exit.</summary>
         private void UpdateHover(Player player)
         {
+            if (_hoverText != null && EelSump.Gripping(player)) { _hoverText.text = ""; return; }      // 2026-11-21: the readout sat on top of the boss bar and the parry prompt during the jaw-hold
             if (_hoverText == null)
             {
                 var canvas = FindAnyObjectByType<Canvas>();
