@@ -74,9 +74,9 @@ Every fight below is built on what exists: `Boss.cs` (glints: white = parry, red
 |-|-|-|-|
 | Mother Hollow | 8 (1 bitforge test, 1 pixflux test, 4 pixflux with the Prowler as init, 1 inpaint try, 1 init with sacs painted in: the model would not draw belly sacs) | 8 (idle, walk, pounce, bite, howl, spit, hurt, death; all first try) | 16 |
 | The Singer | 2 | 6 (idle, note, scream, grasp, hurt, death) | 8 |
-| The Ferryman | 2 | | 2 |
+| The Ferryman | 2 | 8 (idle, walk, thrust, hook, flare, sweep, hurt, death) | 10 |
 | The Orderly | 4 (the first two drew a plain big man with an IV stand; the re-roll asked for the gauze-wrapped faceless head, the stitched grin, the long arm) | | 4 |
-| The Specimen, grown | 2 | | 2 |
+| The Specimen, grown | 2 | 8 (idle, walk, lash, lash2, scream, mind, hurt, death) | 10 |
 | The Excavator | 4 (the first two: a clean toy digger with fake lettering on a white ground; the re-roll: derelict, at night, no text; its painted background cut out by flood fill) | | 4 |
 
 ## Mother Hollow: BUILT (2026-11-21)

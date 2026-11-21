@@ -73,7 +73,7 @@ namespace GameCore
         /// <summary>The Flare's blow: everyone within FlareRange looking at him is dazzled (aim gone, dazed 2 s).</summary>
         public static void Flare(Boss.Fight f)
         {
-            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("psi", TacticalGridView.GridToWorld(h.X, h.Y), 0.9f, 0.02f, 0.6f); int n = 0;
+            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("lantern_flare", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.03f); int n = 0;
             foreach (var q in Player.All.Where(q => q.IsAlive()))
             {
                 if (CombatantUtil.Distance(h, q) > FlareRange || !LooksAt(q, h)) continue;
@@ -85,7 +85,7 @@ namespace GameCore
         /// <summary>The Hands' blow: drowned hands come up through the deck round him: everyone within HandsRange not diving is pulled down.</summary>
         public static void Hands(Boss.Fight f, Boss.Move m, int hi)
         {
-            var h = f.Unit; Sfx.Play("eel_splash_big", TacticalGridView.GridToWorld(h.X, h.Y), 0.8f, 0.03f); if (h.EquippedWeapon == null) return; int n = 0;
+            var h = f.Unit; Sfx.Play("drowned_hands", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.04f); if (h.EquippedWeapon == null) return; int n = 0;
             foreach (var q in Player.All.Where(q => q.IsAlive()))
             {
                 if (CombatantUtil.Distance(h, q) > HandsRange) continue;

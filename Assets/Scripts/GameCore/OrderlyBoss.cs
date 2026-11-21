@@ -57,7 +57,7 @@ namespace GameCore
             if (intro)
             {
                 GameLog.Event("Between the two steel tables something very tall straightens up. Its head is wrapped in old gauze, a grin stitched across it. It drags a long saw off the table and the blade screams on the tiles.");
-                Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f);
+                Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f); Sfx.Play("saw_scrape", TacticalGridView.GridToWorld(x, y), 1f, 0f);
             }
             return f;
         }
@@ -72,6 +72,7 @@ namespace GameCore
             var h = f.Unit; _drip.TryGetValue(f, out var d);
             if (d.burst || d.used >= DripMax) { GameLog.Write("He squeezes the bag. Nothing comes out of it."); return; }
             if (d.hp - h.Hp >= Def.Hp * DripBreak) { _drip[f] = (h.Hp, d.used, true); h.StatusEffects.Bleeding = true; GameLog.Event("The IV bag bursts. Black fluid sprays over the tiles, and he bleeds."); CombatFx.PxAt("acid_splash", h.X, h.Y); return; }
+            Sfx.Play("drip_squeeze", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.05f);
             int heal = Mathf.RoundToInt(Def.Hp * DripHeal); h.Hp = Mathf.Min(h.MaxHp, h.Hp + heal); _drip[f] = (h.Hp, d.used + 1, false);
             GameLog.Write("He squeezes the bag on his pole. Dark fluid runs down the tube into him, and he straightens.");
         }

@@ -68,7 +68,7 @@ namespace GameCore
         /// <summary>The Howl's blow: Pallid Prowlers crawl out of the cave's dark niches (the ones at least BroodMinDistance tiles from every player), up to BroodCap living at once.</summary>
         public static void Howl(Boss.Fight f)
         {
-            var h = f.Unit; Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(h.X, h.Y), 0.9f, 0.03f, 0.8f); CombatFx.Push("stagger", h, null, null).Now = true;
+            var h = f.Unit; Sfx.Play("mother_howl", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.04f); CombatFx.Push("stagger", h, null, null).Now = true;
             var db = MutantDatabase.Tiers["tier1"]["PallidProwler"]; int want = Mathf.Min(f.Phase == 2 ? BroodPhase2 : BroodPhase1, BroodCap - Brood.Count), made = 0;
             var spots = (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).Where(l => Niches.Contains(l.Name) && Player.All.Where(p => p.IsAlive()).All(p => Mathf.Sqrt((p.X - l.X) * (p.X - l.X) + (p.Y - l.Y) * (p.Y - l.Y)) >= BroodMinDistance)).ToList();
             if (spots.Count == 0) spots = (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).Where(l => Niches.Contains(l.Name)).ToList();   // everyone is near a niche: they still answer
@@ -86,7 +86,7 @@ namespace GameCore
         /// <summary>The Spit's blow: the glob comes down where its target stood when she wound up (Fight.AimX/AimY): everyone within AcidRadius of it, unless diving, takes the hit and a Toxic Bleed.</summary>
         public static void Acid(Boss.Fight f, Boss.Move m, int hi)
         {
-            var h = f.Unit; CombatFx.PxAt("acid_splash", f.AimX, f.AimY); Sfx.Play("eel_splash", TacticalGridView.GridToWorld(f.AimX, f.AimY), 0.6f, 0.05f, 1.4f);
+            var h = f.Unit; CombatFx.PxAt("acid_splash", f.AimX, f.AimY); Sfx.Play("acid_spit", TacticalGridView.GridToWorld(f.AimX, f.AimY), 0.9f, 0.05f);
             if (h.EquippedWeapon == null) return;
             foreach (var q in Player.All.Where(q => q.IsAlive()))
             {

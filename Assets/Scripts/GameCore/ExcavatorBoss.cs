@@ -54,7 +54,7 @@ namespace GameCore
             if (intro)
             {
                 GameLog.Event("Down on the pit floor a diesel coughs, and coughs again, and catches. The rusted excavator turns on its tracks toward you. There is someone in the cab with his hands flat on the glass.");
-                Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f);
+                Story.Cutscene(x + 0.5f, y + 0.5f, 2.4f); Sfx.Play("diesel", TacticalGridView.GridToWorld(x, y), 1f, 0f);
             }
             return f;
         }
@@ -74,7 +74,7 @@ namespace GameCore
         /// <summary>The Dig-Slam's blow: the bucket lands on the spot its target stood on when it rose (Fight.AimX/AimY).</summary>
         public static void DigSlam(Boss.Fight f, Boss.Move m, int hi)
         {
-            CombatFx.PxAt("small_explosion", f.AimX, f.AimY); Sfx.Play("eel_slam", TacticalGridView.GridToWorld(f.AimX, f.AimY), 1f, 0.03f, 0.7f); CombatFx.Push("stagger", f.Unit, null, null).Now = true; Boss.HitStopPublic(0.06f);
+            CombatFx.PxAt("small_explosion", f.AimX, f.AimY); Sfx.Play("bucket_slam", TacticalGridView.GridToWorld(f.AimX, f.AimY), 1f, 0.03f); CombatFx.Push("stagger", f.Unit, null, null).Now = true; Boss.HitStopPublic(0.06f);
             HitAround(f, m, hi, f.AimX + 0.5f, f.AimY + 0.5f, SlamRadius, 0.8f);
         }
 

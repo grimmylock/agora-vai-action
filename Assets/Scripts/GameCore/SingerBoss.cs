@@ -65,7 +65,7 @@ namespace GameCore
         /// <summary>The Note's blow: everyone within NoteRange who can see the wall (line of sight) and is not diving is hit (unparryable), knocked down and deafened. Cover breaks the line.</summary>
         public static void Note(Boss.Fight f, Boss.Move m, int hi)
         {
-            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("gaunt_scream", TacticalGridView.GridToWorld(h.X, h.Y), 0.8f, 0.02f, 0.45f); CombatFx.Push("stagger", h, null, null).Now = true;
+            var h = f.Unit; CombatFx.PxAt("thunderclap", h.X, h.Y); Sfx.Play("singer_note", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.02f); CombatFx.Push("stagger", h, null, null).Now = true;
             if (h.EquippedWeapon == null) return; int n = 0;
             foreach (var q in Player.All.Where(q => q.IsAlive()))
             {
