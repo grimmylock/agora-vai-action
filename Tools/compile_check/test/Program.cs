@@ -2824,7 +2824,7 @@ static class Program {
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       // phase 2: no change, the same man, quicker, the long combos
       h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); h.Hp = V.Hp / 2 - 10; UnityEngine.Time.time += 5f; f.NextMoveAt = UnityEngine.Time.time + 9f; Boss.Tick(f, p);
-      Check(f.Phase == 2 && !f.Beast && f.ChangeUntil < UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && Boss.DamageScale(h) == 1f && !VergerBoss.IsBeast(h), "Verger: at half health phase 2 starts and he stays a man with the scythe (no change, full damage)");
+      Check(f.Phase == 2 && !f.Beast && f.ChangeUntil < UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && Boss.DamageScale(h) == 1f && !VergerBoss.IsBeast(h) && h.EquippedArmor?.Name == "Verger Coat (bare)" && h.EquippedArmor.PhysDR > 0f, "Verger: at half health phase 2 starts and he stays a man with the scythe (no change, full damage), the hat off");
       seen.Clear();
       for (int rep = 0; rep < 300; rep++) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.Hp = V.Hp * 4 / 10; h.X = p.X + 1 + rep % 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
       Check(seen.Contains("Danse") && seen.Contains("Widow's Harvest") && seen.Contains("Toll") && !seen.Contains("Harvest") && !seen.Contains("Last Rite"), $"Verger: phase 2 brings the Danse, the Widow's Harvest and the Toll, drops the Harvest, and holds the Last Rite back ({string.Join(",", seen)})");

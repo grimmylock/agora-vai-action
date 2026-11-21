@@ -218,6 +218,9 @@ namespace GameCore
             },
         };
 
+        /// <summary>2026-11-21: the Verger's coat without the hat (a look of its own: ArtSource/make_npc_looks.py "Verger Coat (bare)"), the same protection.</summary>
+        static ArmorDef Bare(ArmorDef a) => new ArmorDef { Name = "Verger Coat (bare)", PhysDR = a.PhysDR, AnomDR = a.AnomDR, BeltSlots = a.BeltSlots, ModSlots = a.ModSlots, Mp = a.Mp, WeightKg = a.WeightKg, Note = a.Note, ImmuneToToxic = a.ImmuneToToxic, AnomalyAdvantage = a.AnomalyAdvantage, ImmuneToProne = a.ImmuneToProne, ImmuneToCrits = a.ImmuneToCrits, HalvesAPDamage = a.HalvesAPDamage };
+
         /// <summary>Put a boss on the map at (x, y) and start the fight.</summary>
         public static Fight Spawn(Def def, int x, int y)
         {
@@ -258,6 +261,7 @@ namespace GameCore
                 CombatFx.Push("aura", h, null, h.EquippedWeapon).Now = true;
                 HitStop(0.3f);
                 if (f.Def.Phase2Barks != null) for (int i = 0; i < f.Def.Phase2Barks.Length; i++) Banter.Say(h, f.Def.Phase2Barks[i], 1, 0.3f + i * 1.8f);
+                if (f.Def == Verger && h.EquippedArmor != null) h.EquippedArmor = Bare(h.EquippedArmor);       // 2026-11-21: the hat comes off (the look "Verger Coat (bare)", same coat)
             }
             float speed = f.Beast ? 1.1f : f.Phase == 2 ? 0.8f : 1f;     // the Verger's beast is a slow brawler (1.1: his waits and openings are a tenth longer); every other boss's phase 2 is quicker
             int dist = CombatantUtil.Distance(h, p);
@@ -509,6 +513,7 @@ namespace GameCore
             var fx = CombatFx.Push("finisher", p, f.Unit, p.EquippedWeapon); fx.Now = true; fx.Hit = true; fx.Killed = true;
             if (f.Def.Change != null) HumanLootSystem.StashArmorOnly(f.Unit, ItemCondition.Working);   // the Verger: his coat (the scythe went into his pack at the change)
             else if (f.Def == Spool) HumanLootSystem.StashWornGear(f.Unit, ItemCondition.Working);   // before the death hook rolls his loot: the bat and the coat, in good order
+            if (f.Def == Verger && f.Unit.EquippedArmor?.Name == "Verger Coat (bare)") f.Unit.EquippedArmor = SuitOf(f.Def);   // the coat you loot is his coat (the hat look was only the drawing)
             if (f.Def.Creature) { f.Unit.EquippedWeapon = null; f.Unit.EquippedArmor = null; f.Unit.Inventory.Items.Clear(); }   // 2026-11-21: a creature has no gun or coat to drop: its spoils come from Def.Defeated
             f.Beast = false;                                                        // the Verger: the beast shrinks back into the man (his corpse is the man in the torn coat)
             f.Unit.Unkillable = false; f.Unit.Hp = 0;

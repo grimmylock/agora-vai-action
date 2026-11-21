@@ -13,6 +13,7 @@ SPR = os.path.join(HERE, "..", "Assets", "Resources", "Sprites"); OUT = os.path.
 
 # heads: 8 columns, mirrored; rows 0..6 (the body starts at row 7). K outline, H/h headgear, A hair, F/f skin, e eye, W/w glasses, V goggles, N cloth, J metal.
 HEADS = {
+  "maskhair":  (["......KK", ".....KAA", "....KAAA", "....KAAA", "....KFeF", "....KNNN", ".....KNN"], ["......KK", ".....KAA", "....KAAA", "....KAAA", "....KAAA", "....KAAA", ".....KAA"]),   # 2026-11-21 the Verger in phase 2: the hat off, dark hair slicked back, pale eyes, the leather mask still on
   "beard":     (["......KK", "....KHHH", "...KHhhh", "...KHHHH", "....KFeF", "....KAAA", ".....KAA"], ["......KK", "....KHHH", "...KHhhh", "...KHHHH", "....KAAA", "....KAAA", ".....KAA"]),   # flat cap, a full beard
   "glasses":   (["......KK", ".....KAA", "....KAAA", "....KAFF", "....KWwW", "....KFFf", ".....KFF"], ["......KK", ".....KAA", "....KAAA", "....KAAA", "....KAAA", "....KAAA", ".....Kff"]),   # round glasses, messy hair
   "longhair":  (["......KK", ".....KAA", "....KAAA", "....KAFF", "....KAeF", "....KAFf", ".....KAF"], ["......KK", ".....KAA", "....KAAA", "....KAAA", "....KAAA", "....KAAA", ".....KAA"]),   # hair falling past the face
@@ -42,6 +43,7 @@ LOOKS = {
   "The Runner":    dict(head="hoodgoggles", body="jacket", H="#6b6a3a", S="#4a3a2a", D="#2e2a26", N="#a83a2a", E=DARK),                                       # hood, goggles, a red scarf
   "Barbwire Coat": dict(head="ragmask", body="heavy", H="#8a8478", S="#46372c", P="#7a5a38", D="#2a2018", N="#a83a2a", J="#8a8478", E=DARK, F="#b8845e", f="#8e6244", arm="#46372c"),   # Spool's: a patched leather coat, wire round the shoulders
   "Verger Coat":   dict(head="hunterhat", body="coat", H="#2c2c33", S="#25252b", D="#16161a", P="#553824", A="#1a1410", N="#8c7656", E="#f2f6f8", F="#0e0c0e", f="#0a090a", arm="#25252b"),   # the cathedral's beast hunter: a long dark coat, a wide hat, a leather mask, a red scarf, blood vials
+  "Verger Coat (bare)": dict(head="maskhair", body="coat", H="#2c2c33", S="#25252b", D="#16161a", P="#553824", A="#1e1c22", N="#8c7656", E="#f2f6f8", F="#5a4a44", f="#3a302c", arm="#25252b"),   # 2026-11-21: phase 2, the hat set down on the flagstones
   "Bogdan":        dict(head="mohawk", body="vest", S="#1c1c1e", P="#8a3a2a", D="#2a2a2a", A="#a02020", E=DARK, F="#c0866a", arm="#b02a2a"),                    # a Raider warlord: a red crest, black leather, rust plates
 }
 # Spool's barbed wire (Yan, 2026-11-19: "his coat doesn't read as barbed wire"): at 16 px a strand reads as a steel line with small bright crosses (the barbs) at every third pixel, so the coat carries two coils across the chest,
@@ -53,6 +55,7 @@ WIRE = (_wline(8, 4, 11) + _wbarbs(8, [5, 8, 11]) + _wline(10, 4, 11, 1) + _wbar
 MARKS = {   # extra pixels (front only): scars, a bandage, a stubble line
   "Barbwire Coat": WIRE + [(3, 8, _W1), (12, 8, _W2)],  "Voss":        [(9, 5, "#a8685a"), (9, 6, "#a8685a")],                                                         # a scar down the cheek
   "Verger Coat": [(5, 5, "#2a1c12"), (10, 5, "#2a1c12"), (6, 6, "#5a4630"), (9, 6, "#5a4630"), (7, 6, "#d4b45a"), (8, 6, "#5a4630"), (7, 5, "#a89070"), (8, 5, "#a89070"), (6, 7, "#9a1a22"), (7, 7, "#b8262e"), (8, 7, "#9a1a22"), (9, 7, "#7e1a20"), (6, 8, "#9a1a22"), (6, 9, "#7e1a20"), (5, 11, "#9a1a22"), (10, 11, "#9a1a22"), (8, 11, "#9a1a22")],   # the scarf and its tail, and blood vials on the belt
+  "Verger Coat (bare)": [(5, 5, "#2a1c12"), (10, 5, "#2a1c12"), (6, 6, "#5a4630"), (9, 6, "#5a4630"), (7, 6, "#d4b45a"), (8, 6, "#5a4630"), (7, 5, "#a89070"), (8, 5, "#a89070"), (6, 7, "#9a1a22"), (7, 7, "#b8262e"), (8, 7, "#9a1a22"), (9, 7, "#7e1a20"), (6, 8, "#9a1a22"), (6, 9, "#7e1a20"), (5, 11, "#9a1a22"), (10, 11, "#9a1a22"), (8, 11, "#9a1a22")],   # the scarf and its tail, and blood vials on the belt
   "Bogdan":      [(6, 4, "#a8685a"), (6, 5, "#a8685a"), (10, 5, "#a8685a")],                                     # scars
   "Lev Marchuk": [(7, 6, "#6a5a4a"), (8, 6, "#6a5a4a")],                                                         # stubble at the chin
 }
