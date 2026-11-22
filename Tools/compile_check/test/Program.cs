@@ -8,6 +8,7 @@ static class Program {
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
     if (args.Length > 0 && args[0] == "pistolttk") { PistolTtk(); return 0; }
     if (args.Length > 0 && args[0] == "mutantmaps") { MutantMaps(); return 0; }
+    if (args.Length > 0 && args[0] == "mutanthits") { MutantHits(); return 0; }
     if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
@@ -261,6 +262,7 @@ static class Program {
       Check(MacroState.Current.Day == day0 + 10 && night && seen.Count >= 3, $"30 menu minutes: 10 days pass, night falls, the weather changes ({string.Join(",", seen)})");
       Console.WriteLine($"  menu after 30 min: {MenuBackdrop.Label()}");
     }
+    MutantStrikeChecks();
     Console.WriteLine(fails == 0 ? "ALL CHECKS PASSED" : $"{fails} FAILURES");
     return fails == 0 ? 0 : 1;
   }
@@ -1365,6 +1367,45 @@ static class Program {
     if (Environment.GetEnvironmentVariable("ZONES") != null) foreach (var z in MacroMapDatabase.Zones.OrderBy(z => z.Tier)) Console.WriteLine($"{z.Id,-26} T{z.Tier} {(ZoneLayoutRecipes.IsInterior(z.Id) ? "interior" : "outdoor ")} safe={z.IsSafeZone,-5} [{string.Join(",", z.AllowedFactions ?? new List<string>())}]");
     Console.WriteLine("lairs (DungeonLairs) are placed by name:");
     foreach (var m in where) Console.WriteLine($"\n{m.Key}: {m.Value.Count} zones\n   " + string.Join("; ", m.Value));
+  }
+
+  // 2026-11-22 (Yan: "most enemies are hitting me without the animations playing, without any cooldown in between attacks"): every mutant chases and fights the player for 12 s (the player stands still and takes it); each hit is logged with the
+  // attack clip playing at that moment (MutantAttack.KindOf) and the gap since the last hit.
+  static void MutantHits() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var kinds = new List<MutantDef>(); foreach (var t in MutantDatabase.Tiers) kinds.AddRange(t.Value.Values); kinds.AddRange(MutantDatabase.Wards.Values); kinds.Add(Gaunt.ElderDef);
+    foreach (var def in kinds) {
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); p.HealPermanent(1000000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f);
+      for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      EncounterState.Enemies.Clear(); var m = new Mutant(def.Name, px + 4, py, def); m.IsAggroed = true; EncounterState.Enemies.Add(m); Rt.SetOffset(m, 0f, 0f); RtAi.Chase(m);
+      RtAi.FallbackStrikes = 0; UnityEngine.Time.time = 60000f; var hits = new List<(float t, string kind)>(); int hp0 = p.Hp; int animStarts = 0; bool wasPlaying = false;
+      for (int k = 0; k < 60 * 12; k++) {
+        float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.unscaledDeltaTime = dt;
+        RtAi.TickMutant(m, p); Rt.Glide(dt); CombatFx.Pending.Clear();
+        bool pl = MutantAttack.Playing(m); if (pl && !wasPlaying) animStarts++; wasPlaying = pl;
+        if (p.Hp < hp0) { hits.Add((UnityEngine.Time.time - 60000f, MutantAttack.KindOf(m) ?? "NONE")); hp0 = p.Hp; }
+      }
+      RtAi.FallbackStrikes = RtAi.FallbackStrikes; int noAnim = hits.Count(h => h.kind == "NONE"); double minGap = hits.Count > 1 ? Enumerable.Range(1, hits.Count - 1).Min(i => hits[i].t - hits[i - 1].t) : 0;
+      Console.WriteLine($"{def.Name,-16} hits {hits.Count,3} (no animation playing: {noAnim,3}), animations started {animStarts,3}, clipless strikes {RtAi.FallbackStrikes,3}, shortest gap {minGap:0.00} s, has clips {MutantAttack.Has(m)}");
+    }
+  }
+
+  static void MutantStrikeChecks() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService(); Arena(out int apx, out int apy);
+    // 2026-11-22: a mutant with attack clips never strikes without one, one without clips winds up first, nobody hits twice inside a second
+      var ms = new List<string>(); bool bad = false; string why = "";
+      foreach (var nm in new[] { ("tier1", "BlindMaw"), ("tier3", "Gaunt"), ("tier3", "MindWeaver"), ("tier1", "Swarm"), ("tier4", "BlightBrute") }) {
+        var def = MutantDatabase.Get(nm.Item1, nm.Item2); var pl = Player.Current; pl.HealPermanent(1000000); pl.Hp = pl.MaxHp; Rt.On = true; Rt.SetOffset(pl, 0f, 0f);
+        for (int y = pl.Y - 7; y <= pl.Y + 7; y++) for (int x = pl.X - 7; x <= pl.X + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+        EncounterState.Enemies.Clear(); var mu2 = new Mutant(def.Name, pl.X + 3, pl.Y, def); mu2.IsAggroed = true; EncounterState.Enemies.Add(mu2); Rt.SetOffset(mu2, 0f, 0f); RtAi.Chase(mu2); RtAi.FallbackStrikes = 0;
+        UnityEngine.Time.time = 70000f; int hpS = pl.Hp; float firstHit = -1f, close = -1f, lastHit = -9f; float minGap = 9f;
+        for (int k2 = 0; k2 < 60 * 10; k2++) { float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; RtAi.TickMutant(mu2, pl); Rt.Glide(dt); CombatFx.Pending.Clear();
+          if (close < 0f && CombatantUtil.IsAdjacent(mu2, pl)) close = UnityEngine.Time.time;
+          if (pl.Hp < hpS) { float t0 = UnityEngine.Time.time; if (firstHit < 0f) firstHit = t0; hpS = pl.Hp; if (t0 - lastHit > 0.2f) minGap = Math.Min(minGap, t0 - lastHit); lastHit = t0; } }
+        if (RtAi.FallbackStrikes != 0) { bad = true; why += " " + def.Name + " struck without a clip;"; }
+        if (!MutantAttack.Has(mu2) && firstHit >= 0f && firstHit - close < 0.4f) { bad = true; why += " " + def.Name + " struck at once;"; }
+        if (minGap < 0.9f && !MutantAttack.Has(mu2)) { bad = true; why += " " + def.Name + " hit again in " + minGap.ToString("0.00") + " s;"; } }
+      Check(!bad, "mutants: no strike without its attack clip, a winding-up tell for those with no clips, a pause between blows" + why);
   }
 
   static void BossFrames(string path) {
@@ -6610,6 +6651,7 @@ static class Program {
       Check(SquadManager.MutantWeight(1) < SquadManager.MutantWeight(2) && SquadManager.MutantWeight(2) < SquadManager.MutantWeight(3) && SquadManager.MutantWeight(3) <= SquadManager.MutantWeight(5), "mutants get commoner with the tier (weights 0.5, 0.75, 1, 1.25, 1.5)");
       var mz = MacroMapDatabase.Find("marshes"); var oneT = new List<int>(); for (int kk = 0; kk < 30; kk++) { var sq = SquadManager.CreateOfflineSquad(mz.Id, "Mutant", 3); if (sq == null) continue; oneT.Add(sq.Members.Count); if (sq.Members.Any(u => !(u is Mutant mm) || u.Name == "Veil Prowler")) oneT.Add(-1); }
       Check(oneT.Count > 0 && !oneT.Contains(-1), "a Tier 1 surface squad has no Veil Prowler or anything above its tier"); }
+
     bool crossed = false;
     for (int i = 0; i < 24 * 12 && !crossed && packs.Any(q => m.OfflineSquads.Contains(q)); i++) { Atmosphere.Advance(60f); crossed = packs.Any(q => q.ZoneId == through.Id || q.Job == null && m.OfflineSquads.Contains(q)); }
     Check(crossed || !packs.Any(q => m.OfflineSquads.Contains(q)), "a pack reaches the zone (or dies trying)");

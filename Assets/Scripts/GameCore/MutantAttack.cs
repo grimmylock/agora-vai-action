@@ -39,7 +39,7 @@ namespace GameCore
         class State
         {
             public string Kind; public float Start; public bool Hit, Launched; public int Hits;
-            public int FromX, FromY, ToX, ToY; public float NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f; public bool ThrowFaceLeft;
+            public int FromX, FromY, ToX, ToY; public float CoolUntil, NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f; public bool ThrowFaceLeft;
             public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Mirror; public float DisengageUntil; public float NextCharge, ChargeRunStart = -1f, ChargeDx, ChargeDy, ChargeX0, ChargeY0, ChargeDist, ChargeLast, ChargeEnd = -1f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
@@ -95,6 +95,7 @@ namespace GameCore
             if (!m.IsAlive() || m.StatusEffects.Prone) { if (st.Kind != null) Cancel(m, st); return false; }
             if (st.Kind != null) { Advance(m, p, st, now); return st.Kind != null; }
             if (p == null || !p.IsAlive() || Body.Down(p)) return false;
+            if (now < st.CoolUntil) return false;                                   // 2026-11-22: the pause between attacks counts from the END of the clip, not from its start (a clip longer than the pause left none)
             if (st.Recloak)
             {
                 if (m.Hp < st.RecloakHp) { st.RecloakHp = m.Hp; st.RecloakFrom = now; }                  // hit while slipping away: the timer starts again
@@ -176,6 +177,7 @@ namespace GameCore
         public const float DisengageSeconds = 1.0f;
         static void AfterAttack(Mutant m, Player p, State st, float now)
         {
+            st.CoolUntil = now + BiteCooldown(m, Random.value);
             if (!m.ActiveCamouflage) { st.DisengageUntil = now + DisengageSeconds; return; }       // nobody glues itself to the player (Yan): after a strike the others back off for a moment too
             if (p == null) return;
             st.Recloak = true; st.RecloakFrom = now; st.RecloakHp = m.Hp;

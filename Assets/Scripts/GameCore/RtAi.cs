@@ -25,7 +25,7 @@ namespace GameCore
         {
             public (int x, int y)? Goal;
             public bool Flee, Chasing;
-            public float NextStep, NextShot, ReloadUntil = -1f, PinnedUntil = -1f, MovedAt = -9f;
+            public float StrikeAt = -1f, NextStep, NextShot, ReloadUntil = -1f, PinnedUntil = -1f, MovedAt = -9f;
             public int BurstLeft;
             public float ClearAt = -9f, MoveForShotAt = -9f; public bool Clear = true;   // the round's path to the target is open (re-traced every 0.25 s); when it is not he stops firing and looks for a tile with a clear line
             public float FarShotAt = -9f;                             // the last probing shot taken from outside his effective range while still closing in
@@ -65,7 +65,14 @@ namespace GameCore
             float now = Time.time;
             if (m.StatusEffects.Prone) return;
             if (Gaunt.Busy(m)) return;                                                                     // a Gaunt mid-call stands and screams
-            if (!s.Flee && MutantAttack.Has(m) && MutantAttack.Update(m, p, now, ref s.NextShot)) return;   // 2026-11-12: a canine plays its attack animation (no walking, the strike lands on its contact frame)
+            bool clips = MutantAttack.Has(m);
+            if (!clips && s.StrikeAt >= 0f)                                                                  // 2026-11-22 (Yan: "hitting me without the animations playing, without any cooldown"): a mutant with no attack clips winds up first (the white tell: parry it), stands still, and strikes only if you are still in reach
+            {
+                if (s.Flee || Body.Down(p) || !p.IsAlive() || !m.IsInEngageRange(p)) s.StrikeAt = -1f;
+                else if (now < s.StrikeAt) return;
+                else { s.StrikeAt = -1f; s.NextShot = now + MutantAttack.BiteCooldown(m, Random.value); m.Attack(p); return; }
+            }
+            if (!s.Flee && clips && MutantAttack.Update(m, p, now, ref s.NextShot)) return;   // 2026-11-12: a canine plays its attack animation (no walking, the strike lands on its contact frame)
             if (now >= s.NextStep)
             {
                 s.NextStep = now + 1f / Speed(m) * (m.StatusEffects.Wound == "Leg" ? 1.7f : 1f);
@@ -79,9 +86,11 @@ namespace GameCore
                 else if (s.Goal.HasValue && (m.X, m.Y) != s.Goal.Value && !m.MoveToward(s.Goal.Value.x, s.Goal.Value.y)) s.Goal = null;
             }
             if (s.Flee || now < s.NextShot || Body.Down(p) || !p.IsAlive() || !m.IsInEngageRange(p)) return;
-            s.NextShot = now + (Ballistics.MutantSize(m) >= 2f ? 1.6f : 1.0f) * Random.Range(0.85f, 1.2f);
-            m.Attack(p);
+            if (clips) return;                                                                                // a mutant WITH clips strikes only through MutantAttack (its contact frame); this was the instant bite on the frame its clip ended
+            float wind = (Ballistics.MutantSize(m) >= 2f || m.Db?.Behavior == "ranged") ? 0.7f : 0.45f;
+            s.StrikeAt = now + wind; s.NextShot = s.StrikeAt + 2f; var tell = CombatFx.Push("glint", m, null); tell.Now = true;
         }
+        public static int FallbackStrikes;   // (kept for the harness: now always 0)
 
         /// <summary>A tile two steps to one side of the line to the target (whichever side is open), for a clear shot.</summary>
         static (int x, int y)? SideStep(HumanEnemy h, ICombatant p)
