@@ -3,7 +3,7 @@
 import os, io, json, base64, random
 from PIL import Image, ImageEnhance
 H = os.path.dirname(os.path.abspath(__file__))
-TILESETS = {"cavefloor": ("cave.json", "lower"), "labtile": ("lab.json", "lower")}   # Yan 2026-11-21: "keep cave floor and lab tiles" (concrete, hospital floor and rock top were trials; their jsons stay)
+TILESETS = {"cavefloor": ("cave.json", "lower"), "labtile": ("lab.json", "lower"), "floor": ("wood.json", "lower")}   # Yan 2026-11-21: "keep cave floor and lab tiles" (concrete, hospital floor and rock top were trials; their jsons stay)
 def _img(o): d = o["base64"] if isinstance(o, dict) else o; return Image.open(io.BytesIO(base64.b64decode(d.split(",")[-1]))).convert("RGBA")
 def base_tile(jsonname, terrain):
     p = os.path.join(H, jsonname)
@@ -14,7 +14,7 @@ def base_tile(jsonname, terrain):
     for t in d["tileset"]["tiles"]:
         if all(v == terrain for v in t["corners"].values()): return _img(t["image"]).convert("RGBA")
     return None
-def pattern(jsonname, terrain, seed=7):
+def pattern(jsonname, terrain, seed=7, transpose=True):
     t = base_tile(jsonname, terrain)
     if t is None: return None
     r = random.Random(seed); w, h = t.size; out = Image.new("RGBA", (w * 4, h * 4))
@@ -23,12 +23,13 @@ def pattern(jsonname, terrain, seed=7):
             v = t
             if r.random() < 0.5: v = v.transpose(Image.FLIP_LEFT_RIGHT)
             if r.random() < 0.5: v = v.transpose(Image.FLIP_TOP_BOTTOM)
-            if r.random() < 0.5: v = v.transpose(Image.TRANSPOSE)
+            if transpose and r.random() < 0.5: v = v.transpose(Image.TRANSPOSE)
             out.paste(v, (cx * w, cy * h))
     return out
 def register(GROUNDS):
     for name, (j, terr) in TILESETS.items():
-        if pattern(j, terr) is not None: GROUNDS[name + "_pl"] = (lambda jj=j, tt=terr: (lambda seed=3: pattern(jj, tt, seed)))()
+        tr = name != "floor"          # planks keep their direction: no transposing the wooden floor
+        if pattern(j, terr) is not None: GROUNDS[name + "_pl"] = (lambda jj=j, tt=terr, t2=tr: (lambda seed=3: pattern(jj, tt, seed, t2)))()
 
 # ---- wall faces (2026-11-21, Yan: "try walls next"): the tilesets' all-"upper" tile (a seamless wall / rock / plate texture) as the front face of a wall material; the autotile geometry, doors, windows and weathering of walls.py stay.
 WALL_FACES = {"plaster": ("hospital.json", "upper", 0.30, 0.72), "concrete": ("lab.json", "upper", 1.0, 1.0), "cliff": ("cave.json", "upper", 1.0, 1.0), "hull": ("concrete.json", "upper", 0.25, 0.62)}   # (tileset, terrain, saturation, brightness): the green plaster and the orange plate came out loud

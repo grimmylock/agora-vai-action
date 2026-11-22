@@ -192,10 +192,11 @@ namespace GameCore
             var stashes = new Dictionary<char, string>(LabLocks.StashesOf("hospital_morgue")) { ['K'] = "Locker Room Cache", ['L'] = "Cleaning Cabinet" };
             // 2026-11-21 (Yan: "something scary, straight out of silent hill"): the morgue's own dressing (ArtSource/world/props_morgue.py): g gurney, o body bag, u wheelchair, q bed frame, v IV stand,
             // k a body bag hanging from the ceiling. These letters mean something else on other plans, so they are stamped here, on top of the plain plan (like the cathedral's).
-            const string special = "gouqvk"; var rows = LabPlans["hospital_morgue"]; var plain = new string[rows.Length];
+            const string special = "gouqvkhmnprsti"; var rows = LabPlans["hospital_morgue"]; var plain = new string[rows.Length];
             for (int i = 0; i < plain.Length; i++) { var cs = rows[i].ToCharArray(); for (int j = 0; j < cs.Length; j++) if (special.IndexOf(cs[j]) >= 0) cs[j] = '.'; plain[i] = new string(cs); }
             var c = new TerrainCanvas(rows[0].Length, rows.Length, TerrainCanvas.Seed("hospital_morgue"));
             StampPlan(c, 0, 0, plain, "plaster", LabTile, marks, stashes);
+            c.Paint(78, 6, 10, 6, Floor);                                   // the office: a wooden floor (dungeon_plans.py hospital_morgue: x 78..87, y 6..11)
             for (int y = 0; y < rows.Length; y++)
                 for (int x = 0; x < rows[y].Length; x++)
                     switch (rows[y][x])
@@ -206,6 +207,14 @@ namespace GameCore
                         case 'q': c.Put(x, y, ScatterCover, "bedframe"); break;
                         case 'v': c.Put(x, y, ScatterCover, "ivstand"); break;
                         case 'k': c.Put(x, y, HardCover, "hangbag"); break;
+                        case 'h': c.Put(x, y, ScatterCover, "odesk"); break;          // 2026-11-22 (Yan: "the office doesn't look like an office"): the office set (ArtSource/world/props_office_pl.py)
+                        case 'm': c.Put(x, y, ScatterCover, "opc"); break;
+                        case 'n': c.Put(x, y, ScatterCover, "ochair"); break;
+                        case 'p': c.Put(x, y, HardCover, "ofile"); break;
+                        case 'r': c.Put(x, y, HardCover, "oshelf"); break;
+                        case 's': c.Put(x, y, ScatterCover, "osofa"); break;
+                        case 't': c.Put(x, y, ScatterCover, "oplant"); break;
+                        case 'i': c.Put(x, y, HardCover, "ocooler"); break;
                     }
             return Finish(c, "plaster");
         }

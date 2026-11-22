@@ -159,7 +159,7 @@ namespace GameCore
         /// <summary>2026-11-10 (Yan: "every object is placed facing the camera, it doesn't look natural"): furniture whose look has back and side sprites (`p_<look>_fn / _fe / _fw`, ArtSource/world/props_v2.py
         /// FACINGS). Its back goes against the wall beside it: a wall to the north = the drawn front faces the camera (the default sprite, null); a wall to the south = it faces north ("n": we see its back);
         /// a wall to the west = it faces east ("e": its side); a wall to the east = "w". Free-standing pieces (no wall beside them) get a stable pick by position.</summary>
-        static readonly HashSet<string> FacingProps = new HashSet<string> { "lockers", "desk", "cabinet", "console", "machine" };
+        static readonly HashSet<string> FacingProps = new HashSet<string> { "lockers", "desk", "cabinet", "console", "machine", "odesk", "opc", "ochair", "ofile", "oshelf", "osofa" };
         static readonly HashSet<string> SideFacing = new HashSet<string> { "lockers", "desk", "cabinet" };   // pieces with side views; the console and the lathe only have a back view (their sides did not read)
         private static string Facing(int x, int y, string look)
         {

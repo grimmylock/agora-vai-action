@@ -3043,26 +3043,26 @@ static class Program {
     var p = Player.Current; Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear(); Body.Reset(); UnityEngine.Time.time = 98000f; UnityEngine.Time.unscaledTime = 98000f; UnityEngine.Time.deltaTime = 1f / 60f;
     try {
       MacroState.Current.PersistedZoneTerrain.Remove("hospital_morgue"); MacroState.Current.CurrentZoneId = "hospital_morgue"; TerrainMap.BuildTerrainForZone("hospital_morgue"); GameServices.Grid = new TacticalGridSystem(); EncounterState.Enemies.Clear(); Rt.Reset(); Boss.Reset();
-      OrderlyBoss.OnEnterZone("hospital_morgue"); p.X = 13; p.Y = 6; Rt.SetOffset(p, 0f, 0f);   // you hide in the Anteroom
+      OrderlyBoss.OnEnterZone("hospital_morgue"); p.X = 22; p.Y = 7; Rt.SetOffset(p, 0f, 0f);   // you hide in the Anteroom
       OrderlyBoss.Tick(1f / 60f); var f = Boss.Fights.FirstOrDefault(x => x.Def == OrderlyBoss.Def); Check(f != null && f.Stalking, "Morgue stalker: it spawns as a stalker when you enter the morgue");
       if (f == null) return; var h = f.Unit; var seenCells = new HashSet<(int, int)>(); int inCorr = 0, total = 0; float maxAlert = 0f; bool hunted = false; var trace = new System.Collections.Generic.List<string>();
-      bool Corr(int x, int y) => y >= 11 && y <= 17 && x >= 2 && x <= 51;
+      bool Corr(int x, int y) => y >= 12 && y <= 20 && x >= 3 && x <= 95;
       for (int i = 0; i < 60 * 300; i++) {
         UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); OrderlyBoss.Tick(1f / 60f);
         if (i % 30 == 0) { trace.Add(h.X + "\t" + h.Y); total++; if (Corr(h.X, h.Y)) inCorr++; seenCells.Add((h.X / 4, h.Y / 4)); maxAlert = System.Math.Max(maxAlert, h.Alert); if (h.IsAggroed) hunted = true; }
       }
       System.IO.File.WriteAllLines("/tmp/stalk_path.tsv", trace);
       Console.WriteLine($"   morgue stalker: {total} samples, {inCorr} in the corridor, {seenCells.Count} map cells visited, max notice {maxAlert:0.00}, hunted {hunted}, ended at ({h.X},{h.Y})");
-      Check(total > 0 && inCorr >= total * 0.95f && seenCells.Count >= 5, "Morgue stalker: five minutes on patrol: it keeps to the long corridor and covers it");
+      Check(total > 0 && inCorr >= total * 0.95f && seenCells.Count >= 8, "Morgue stalker: five minutes on patrol: it keeps to the long corridor and covers it");
       Check(!hunted && maxAlert < 0.7f, $"Morgue stalker: you hiding in the Anteroom, it does not find you (notice {maxAlert:0.00})");
-      h.X = 20; h.Y = 14; Rt.SetOffset(h, 0f, 0f); Noise.Make(p.X, p.Y, 20, p); int d0 = CombatantUtil.Distance(h, p); float t0 = UnityEngine.Time.time; bool arrived = false;
+      h.X = 30; h.Y = 16; Rt.SetOffset(h, 0f, 0f); Noise.Make(p.X, p.Y, 20, p); int d0 = CombatantUtil.Distance(h, p); float t0 = UnityEngine.Time.time; bool arrived = false;
       for (int i = 0; i < 60 * 40 && !arrived; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); if (CombatantUtil.Distance(h, p) <= 3) arrived = true; }
       Check(arrived, $"Morgue stalker: a shot in the Anteroom brings it there ({d0} tiles, {UnityEngine.Time.time - t0:0} s)");
       // the key, the chase corridor, the big room
-      MacroState.Current.Keys.Add("morgue_staff"); LabLocks.Granted("morgue_staff"); h.X = 30; h.Y = 14; Rt.SetOffset(h, 0f, 0f); p.X = 54; p.Y = 18; Rt.SetOffset(p, 0f, 0f);
+      MacroState.Current.Keys.Add("morgue_staff"); LabLocks.Granted("morgue_staff"); h.X = 70; h.Y = 16; Rt.SetOffset(h, 0f, 0f); p.X = 99; p.Y = 20; Rt.SetOffset(p, 0f, 0f);
       for (int i = 0; i < 60 * 2; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); OrderlyBoss.Tick(1f / 60f); }
       Check(f.Stalking && h.IsAggroed && CombatantUtil.Distance(h, p) >= 10, $"Morgue stalker: you step into the chase corridor: it hunts you, with a lead ({CombatantUtil.Distance(h, p)} tiles)");
-      p.X = 43; p.Y = 33; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
+      p.X = 85; p.Y = 51; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
       Check(!f.Stalking && Boss.Current == f && Boss.DamageScale(h) == 1f, "Morgue stalker: you reach the big room: the stalk ends, the fight begins");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MacroState.Current.Keys.Clear(); }
   }

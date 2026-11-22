@@ -1206,3 +1206,9 @@ try:
         PROPS.update(_pf.NEW); VARIANTS.update(_pf.VARIANTS)
 except ImportError:
     pass
+# 2026-11-22: the office set (props_office_pl.py): desk, desk with a computer, chair, filing cabinet, bookshelf, sofa, plant, water cooler (front and back views)
+try:
+    import props_office_pl as _po
+    PROPS.update(_po.NEW); VARIANTS.update(_po.VARIANTS)
+except ImportError:
+    pass
