@@ -77,7 +77,7 @@ namespace GameCore
                     if (Mathf.Abs(jx) <= 2.5f && Mathf.Abs(jy) <= 2.5f) { sx += jx; sy += jy; } else { sx = 0f; sy = 0f; }   // a jump far off is a teleport
                     Was[e] = (bx, by);
                 }
-                float len = Mathf.Sqrt(sx * sx + sy * sy), step = Mathf.Max(RtAi.Speed(e) * 1.15f, len > 1.2f ? len / RushTime : 0f) * dt;   // a lunge rushes (game time: bullet time slows it too)
+                float len = Mathf.Sqrt(sx * sx + sy * sy), step = Mathf.Max(RtAi.Speed(e) * 1.15f, len > 1.2f ? len / (e is HumanEnemy && Boss.Of(e) != null ? RushTimeBoss : RushTime) : 0f) * dt;   // a lunge rushes (game time: bullet time slows it too)
                 if (len <= step || !e.IsAlive()) { sx = 0f; sy = 0f; } else { sx *= (len - step) / len; sy *= (len - step) / len; }
                 Slide[e] = (sx, sy);
             }
@@ -88,6 +88,7 @@ namespace GameCore
         public const float StaminaMax = 100f, SprintDrain = 18f, StaminaRegen = 14f;
         public const float Radius = 0.22f;
         public const float NpcTurnSeconds = 3f, RoundSeconds = 6f;
+        public const float RushTimeBoss = 0.32f;                      // 2026-11-22: a boss's lunge is drawn as a rush you can see (3 tiles in a third of a second), not a snap
         public const float RushTime = 0.12f;                          // Glide: a jump of more than 1.2 tiles (a lunge) closes in about this long   // a human enemy re-thinks its plan every ~3 s (RtAi acts in between)
 
         // Co-op groundwork (Yan: "if we decided to build for it from the start why are we building NOT for it?" - ACTION_DESIGN
@@ -576,6 +577,16 @@ namespace GameCore
             if (over == null && TerrainMap.CoverAcAt(mx, my) > 0 && !TerrainMap.BlocksSight(mx, my)) h = 0.3f;   // a barrel, sandbags, a desk: shoot the thing itself
             // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
             if (over != null) { var (ux, uy) = atEel ? (eelX, eelY) : Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
+            if (over != null && !atEel)                                                                       // 2026-11-22: the crosshair on the HEAD drawn on the sprite is a head shot; on its body at head height, a body shot (the head box is side to side too)
+            {
+                string hk = over is HumanEnemy hbo ? BossArt.HitKey(hbo) : over is Mutant mo ? mo.Db?.Name : null;
+                if (hk != null && GameData.HitProfiles.Head.TryGetValue(hk, out var hbx))
+                {
+                    var (ux2, uy2) = Ballistics.Pos(over); float hgt = h * Ballistics.BodyTiles; bool flp = over is Mutant mf && !(over is HumanEnemy) && UnitSprites.Flipped(mf);
+                    if (GameData.HitProfiles.OnHead(hk, flp, at.x - ux2, hgt)) h = Mathf.Clamp(h, (hbx.lo + 0.02f) / Ballistics.BodyTiles, (hbx.hi - 0.02f) / Ballistics.BodyTiles);
+                    else if (GameData.HitProfiles.InHeadRows(hk, hgt)) h = (hbx.lo - 0.03f) / Ballistics.BodyTiles;
+                }
+            }
             if (len < 0.05f) return;
             // Yan, 2026-11-13 (eel fight): "the aim keeps snapping toward its base in the water". The round is aimed at the part's footing on the ground (that is what the hit test reads), but the part is drawn Z tiles
             // up, so the gun and the round went to the water. The round now RISES to the part's height over that distance (Up), and the gun stays on the crosshair (FxEvent.AtEel).

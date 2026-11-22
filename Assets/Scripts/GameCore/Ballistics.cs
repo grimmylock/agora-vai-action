@@ -54,14 +54,14 @@ namespace GameCore
             if (EelBoss.Is(u)) { part = null; return -1f; }   // Boss 3: the eel is hit along its whole body (EelSump.TraceBody), not at its two base units
             if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss (BossArt) is hit on its own drawn silhouette, not a man's
             {
-                float top = GameData.HitProfiles.Height(bk); part = h * BodyTiles >= 0.7f * top ? "Head" : "Body";
+                float top = GameData.HitProfiles.Height(bk); part = GameData.HitProfiles.HasHead(bk) ? (GameData.HitProfiles.InHeadRows(bk, h * BodyTiles) ? "Head" : "Body") : h * BodyTiles >= 0.7f * top ? "Head" : "Body";   // 2026-11-22: the head is where the head is drawn
                 if (bk == "boss:orderly" && h * BodyTiles >= 0.78f * top && h * BodyTiles <= 0.93f * top) part = "Bag";      // 2026-11-22: the IV bag on its pole, high on its back: a weak point (OrderlyBoss.BagHit)
                 float a = GameData.HitProfiles.Half(bk, h * BodyTiles); return a < 0f ? -1f : Reach(a, GameData.HitProfiles.DepthCap(bk), dx, dy);
             }
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
             {
                 string key = m.Db?.Name; float top = MutantHeight(m) + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
-                part = h * BodyTiles >= 0.7f * top ? "Head" : "Body";
+                part = GameData.HitProfiles.HasHead(key) ? (GameData.HitProfiles.InHeadRows(key, h * BodyTiles) ? "Head" : "Body") : h * BodyTiles >= 0.7f * top ? "Head" : "Body";   // 2026-11-22 (Yan: "the hitboxes only consider the top of the mutants as the head, not the actual head from the sprite"): the head rows of its sprite (HitProfiles.Head); the crosshair's own side-to-side position picks head or body in Rt.PlayerFire
                 if (h * BodyTiles > top) return -1f;
                 float a = GameData.HitProfiles.Half(key, h * BodyTiles); if (a >= 0f) cx = GameData.HitProfiles.CentreOf(key, h * BodyTiles) * (UnitSprites.Flipped(m) ? -1f : 1f);   // the shape sits where the sprite does
                 if (a < 0f) return key != null && GameData.HitProfiles.All.ContainsKey(key) ? -1f : 0.25f * MutantSize(m);   // no silhouette (the bosses): the old column
@@ -92,7 +92,7 @@ namespace GameCore
             if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss's own silhouette
             {
                 float ht = GameData.HitProfiles.Height(bk);
-                for (float y = 0f; y < ht - 0.001f; y += 2f / 32f) { float y2 = System.Math.Min(ht, y + 2f / 32f), a = GameData.HitProfiles.Half(bk, (y + y2) * 0.5f); if (a > 0f) l.Add((y / BodyTiles, y2 / BodyTiles, a, (y + y2) * 0.5f >= 0.7f * ht ? "Head" : "Body", 0f)); }
+                for (float y = 0f; y < ht - 0.001f; y += 2f / 32f) { float y2 = System.Math.Min(ht, y + 2f / 32f), a = GameData.HitProfiles.Half(bk, (y + y2) * 0.5f); if (a > 0f) l.Add((y / BodyTiles, y2 / BodyTiles, a, (GameData.HitProfiles.HasHead(bk) ? GameData.HitProfiles.InHeadRows(bk, (y + y2) * 0.5f) : (y + y2) * 0.5f >= 0.7f * ht) ? "Head" : "Body", 0f)); }
                 return l;
             }
             bool mut = !(u is Player) && !(u is HumanEnemy) && u is Mutant;
@@ -105,7 +105,7 @@ namespace GameCore
                 float y2 = System.Math.Min(height, y + step), mid = (y + y2) * 0.5f, a = GameData.HitProfiles.Half(key, mut ? mid : mid / s);
                 if (a <= 0f) continue;
                 float hs = mid / BodyTiles;
-                string part = mut ? (mid >= 0.7f * height ? "Head" : "Body") : hs >= HeadFrom * s ? "Head" : hs >= TorsoFrom * s ? "Torso" : "Legs";
+                string part = mut ? ((GameData.HitProfiles.HasHead(key) ? GameData.HitProfiles.InHeadRows(key, mid) : mid >= 0.7f * height) ? "Head" : "Body") : hs >= HeadFrom * s ? "Head" : hs >= TorsoFrom * s ? "Torso" : "Legs";
                 l.Add((y / BodyTiles, y2 / BodyTiles, a, part, mut ? GameData.HitProfiles.CentreOf(key, mid) * (UnitSprites.Flipped(m) ? -1f : 1f) : 0f));
             }
             return l;

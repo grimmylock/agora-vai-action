@@ -68,6 +68,38 @@ namespace GameData
         public static readonly float[] EelBody = new[] { 1.109f, 1.141f, 1.203f, 1.219f, 1.234f, 1.250f, 1.188f, 1.203f, 1.219f, 1.141f, 1.141f, 1.133f, 1.156f, 1.055f, 1.062f, 1.086f, 1.109f, 1.031f, 1.031f, 1.062f, 1.086f, 0.984f, 1.031f, 1.078f, 1.094f, 1.070f, 1.062f, 1.078f, 1.078f, 1.062f, 0.969f, 0.969f, 0.992f, 0.945f, 0.953f, 0.984f, 0.938f, 0.914f, 0.906f, 0.906f, 0.898f, 0.906f, 0.906f, 0.938f, 0.859f, 0.883f, 0.914f, 0.883f, 0.867f, 0.867f, 0.875f, 0.875f, 0.891f, 0.891f, 0.859f, 0.859f, 0.867f, 0.875f, 0.836f, 0.844f, 0.797f, 0.797f, 0.781f, 0.812f, 0.828f, 0.875f, 0.867f, 0.867f, 0.867f, 0.852f, 0.891f, 0.883f, 0.875f, 0.875f, 0.852f, 0.875f, 0.883f, 0.914f, 0.875f, 0.867f, 0.938f, 0.906f, 0.891f, 0.906f, 0.906f, 0.906f, 0.922f, 0.977f, 0.984f, 0.953f, 0.938f, 0.844f, 0.781f, 0.766f, 0.766f, 0.766f, 0.727f, 0.703f, 0.719f, 0.719f, 0.711f, 0.688f, 0.641f, 0.656f, 0.672f, 0.672f, 0.609f, 0.602f, 0.609f, 0.594f, 0.539f, 0.547f, 0.547f, 0.500f, 0.484f, 0.477f, 0.477f, 0.461f, 0.445f, 0.438f, 0.438f, 0.430f, 0.406f, 0.414f, 0.406f, 0.367f, 0.344f, 0.344f, 0.320f, 0.312f, 0.312f, 0.273f, 0.234f, 0.219f, 0.203f, 0.203f, 0.188f, 0.188f, 0.156f, 0.141f };
         public const float EelHeadHalf = 1.250f;
 
+        /// <summary>2026-11-22 (Yan: the head is where the head is drawn, not the top 30%): (x0, x1, yLo, yHi) of the head, x from the unit's centre in the picture facing right (+-99 = any x), y above the feet, tiles. ArtSource/make_hit_profiles.py HEAD_FRAC.</summary>
+        public static readonly Dictionary<string, (float x0, float x1, float lo, float hi)> Head = new Dictionary<string, (float, float, float, float)>
+        {
+            ["Pallid Prowler"] = (0.441f, 0.703f, 0.151f, 0.446f),
+            ["Blind Maw"] = (0.259f, 0.719f, 0.200f, 0.780f),
+            ["Veil Prowler"] = (0.480f, 0.750f, 0.317f, 0.652f),
+            ["Dread Prowler"] = (0.551f, 0.984f, 0.416f, 0.856f),
+            ["Blight Brute"] = (-0.145f, 0.390f, 0.600f, 1.181f),
+            ["Gaunt"] = (0.186f, 0.977f, 1.276f, 2.279f),
+            ["Elder Gaunt"] = (0.219f, 1.163f, 1.920f, 3.000f),
+            ["Ward Wretch"] = (-0.256f, 0.203f, 1.556f, 1.875f),
+            ["Ward Hulk"] = (-0.511f, 0.202f, 1.417f, 1.969f),
+            ["Ward Crawler"] = (-0.661f, 0.021f, 0.881f, 1.469f),
+            ["boss:mother_hollow"] = (-99.000f, 99.000f, 0.202f, 1.214f),
+            ["boss:ferryman"] = (-99.000f, 99.000f, 0.879f, 2.286f),
+            ["boss:grinder"] = (-99.000f, 99.000f, 2.982f, 5.421f),
+            ["boss:orderly"] = (-99.000f, 99.000f, 0.458f, 1.603f),
+            ["boss:choir"] = (-99.000f, 99.000f, 2.002f, 2.860f),
+            ["boss:specimen_v2"] = (-99.000f, 99.000f, 1.305f, 2.372f),
+            ["boss:specimen_eye"] = (-99.000f, 99.000f, 0.000f, 1.375f),
+        };
+
+        /// <summary>Is the point (x from the centre, height above the feet) on the head? `flipped`: the mutant is drawn mirrored. Bodies without a head box: the old rule, the top 30%.</summary>
+        public static bool HasHead(string key) => key != null && Head.ContainsKey(key);
+
+        public static bool OnHead(string key, bool flipped, float x, float height)
+        {
+            if (key == null || !Head.TryGetValue(key, out var h)) return false; if (flipped) x = -x;
+            return height >= h.lo && height <= h.hi && x >= h.x0 && x <= h.x1;
+        }
+        public static bool InHeadRows(string key, float height) => key != null && Head.TryGetValue(key, out var h) && height >= h.lo && height <= h.hi;
+
         /// <summary>The silhouette's height in tiles (feet to crown), 0 for a body without one.</summary>
         public static float Height(string key) => key != null && All.TryGetValue(key, out var p) ? p.half.Length / (float)p.ppt : 0f;
     }

@@ -73,7 +73,7 @@ namespace GameCore
         {
             public Def Def; public HumanEnemy Unit;
             public int Phase = 1;
-            public Move Doing; public int HitsLeft; public float StrikeAt = -1f, NextMoveAt, NextStep, StaggerUntil = -1f;
+            public float LungedFor = -1f; public Move Doing; public int HitsLeft; public float StrikeAt = -1f, NextMoveAt, NextStep, StaggerUntil = -1f;
             public bool Broken, Finished, Gone; public float LootedAt = -1f;
             public float GlintAt = -99f; public bool GlintDanger;   // for the view
             public float Started;
@@ -294,6 +294,8 @@ namespace GameCore
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
                 return;
             }
+            if (f.Doing.Lunge > 0f && f.Doing.Drag <= 0f && !f.Def.Rooted && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
+            { f.LungedFor = f.StrikeAt; StepIn(f.Unit, p, 0.8f); }
             if (now < f.StrikeAt) return;
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
@@ -328,6 +330,7 @@ namespace GameCore
         }
         public static bool Open(ICombatant u) => Of(u) is Fight f && Time.time < f.OpenUntil && !f.Broken && !f.Finished;
 
+        public const float LungeLead = 0.34f;     // how long before the blow a lunging boss sets off (he arrives as it lands)
         internal static void Begin(Fight f, Move m, float now, float speed)
         {
             f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
