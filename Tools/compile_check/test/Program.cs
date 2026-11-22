@@ -1362,6 +1362,7 @@ static class Program {
       foreach (var t in MutantDatabase.Tiers) { int tr = int.Parse(new string(t.Key.Where(char.IsDigit).ToArray())); if (tr < lo || tr > hi) continue; foreach (var m in t.Value.Values.Where(d => d.Name != Gaunt.Name)) Add(m.Name, $"{z.Name} (T{z.Tier}{(nest ? ", underground" : "")})"); }
       if (Array.IndexOf(Gaunt.Woods, z.Id) >= 0) Add(Gaunt.Name, $"{z.Name} (T{z.Tier}, the forests: 30% of the squad)");
     }
+    if (Environment.GetEnvironmentVariable("ZONES") != null) foreach (var z in MacroMapDatabase.Zones.OrderBy(z => z.Tier)) Console.WriteLine($"{z.Id,-26} T{z.Tier} {(ZoneLayoutRecipes.IsInterior(z.Id) ? "interior" : "outdoor ")} safe={z.IsSafeZone,-5} [{string.Join(",", z.AllowedFactions ?? new List<string>())}]");
     Console.WriteLine("lairs (DungeonLairs) are placed by name:");
     foreach (var m in where) Console.WriteLine($"\n{m.Key}: {m.Value.Count} zones\n   " + string.Join("; ", m.Value));
   }
