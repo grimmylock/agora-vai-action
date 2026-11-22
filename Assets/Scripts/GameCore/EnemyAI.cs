@@ -197,15 +197,8 @@ namespace GameCore
             }
 
             if (h.Morale == "Surrendered" || h.IsFleeing()) return;
-            int pct = h.MaxHp > 0 ? h.Hp * 100 / h.MaxHp : 100;
-            int broken = h.RankData?.MoraleHPPercent ?? 50;
-            if (pct <= broken) { Break(h, player); return; }
-            // crossing the Shaken line shakes them once; a Rally afterwards sticks
-            if (!h.HpShaken && ShakenPercent.TryGetValue(h.Rank, out var shaken) && pct <= shaken)
-            {
-                h.HpShaken = true;
-                Shake(h, "is badly hurt");
-            }
+            // 2026-11-22 (Yan: "remove the flees at HP% code ... you can remove it from all enemies, including humans"): no more Break / Shaken at a share of health (RankData.MoraleHPPercent, ShakenPercent);
+            // what is left of morale is a leader lost and a friend seen to fall (Shake), a Rally, a surrender asked for by the player.
         }
 
         private static void HumanTurn(HumanEnemy h, Player player)

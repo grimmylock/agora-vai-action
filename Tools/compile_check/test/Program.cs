@@ -6605,7 +6605,11 @@ static class Program {
     var packs = SquadManager.SendMigration(through.Id);
     Check(packs.Count >= 1 && packs.All(q => q.Faction == "Mutant" && ZoneLayoutRecipes.IsInterior(q.ZoneId) && q.Heading == through.Id), "migrating packs come up from underground and head for the zone");
     m.MigrationZoneId = through.Id;
-    Check(WorldEvents.Hazard(through) == hz && !WorldEvents.Factions(through).Contains("Mutant"), "the migration no longer just bumps a number");
+    Check(WorldEvents.Hazard(through) == hz && WorldEvents.Factions(through).Count(f => f == "Mutant") <= 1, "the migration no longer just bumps a number (Black Valley lists the mutants itself since 2026-11-22, once)");
+    { var surf = new[] { "marshes", "smugglers_run", "scrapyard", "industrial_basin", "black_valley", "rail_yards" }; Check(surf.All(id => MacroMapDatabase.Find(id).AllowedFactions.Contains("Mutant")), "mutants roam the tier 1-3 surface (marshes, smuggler's run, scrapyard, industrial basin, black valley, rail yards)");
+      Check(SquadManager.MutantWeight(1) < SquadManager.MutantWeight(2) && SquadManager.MutantWeight(2) < SquadManager.MutantWeight(3) && SquadManager.MutantWeight(3) <= SquadManager.MutantWeight(5), "mutants get commoner with the tier (weights 0.5, 0.75, 1, 1.25, 1.5)");
+      var mz = MacroMapDatabase.Find("marshes"); var oneT = new List<int>(); for (int kk = 0; kk < 30; kk++) { var sq = SquadManager.CreateOfflineSquad(mz.Id, "Mutant", 3); if (sq == null) continue; oneT.Add(sq.Members.Count); if (sq.Members.Any(u => !(u is Mutant mm) || u.Name == "Veil Prowler")) oneT.Add(-1); }
+      Check(oneT.Count > 0 && !oneT.Contains(-1), "a Tier 1 surface squad has no Veil Prowler or anything above its tier"); }
     bool crossed = false;
     for (int i = 0; i < 24 * 12 && !crossed && packs.Any(q => m.OfflineSquads.Contains(q)); i++) { Atmosphere.Advance(60f); crossed = packs.Any(q => q.ZoneId == through.Id || q.Job == null && m.OfflineSquads.Contains(q)); }
     Check(crossed || !packs.Any(q => m.OfflineSquads.Contains(q)), "a pack reaches the zone (or dies trying)");

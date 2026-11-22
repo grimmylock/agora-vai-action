@@ -55,7 +55,7 @@ namespace GameCore
                     // silently produce garbage the moment one does - clamp against the database's
                     // real max tier instead of a stale hardcoded number.
                     int minTier = System.Math.Min(MutantDatabase.MaxTier, System.Math.Max(1, zone.Tier - 1));
-                    int maxTier = System.Math.Min(MutantDatabase.MaxTier, zone.Tier + 1);
+                    int maxTier = System.Math.Min(MutantDatabase.MaxTier, zone.Tier <= 1 ? 1 : zone.Tier + 1);   // 2026-11-22: a Tier 1 surface squad is Tier 1 mutants only (a pack of 3), no Veil Prowler on the first road
                     var db = EncounterGeneration.PickRandomMutantByTier(minTier, maxTier);
                     if (System.Array.IndexOf(Gaunt.Woods, zone.Id) >= 0 && Random.value < 0.3f) db = MutantDatabase.Get("tier3", "Gaunt");   // Yan, 2026-11-16: the wild Gaunt hunts the forests
                     var member = EncounterGeneration.CreateMutantFromDb(db, x, y);
@@ -298,16 +298,24 @@ namespace GameCore
             h.MakeBoss(Callsigns[Random.Range(0, Callsigns.Length)]);
         }
 
+        /// <summary>2026-11-22 (Yan: mutants on the surface, "balance by tier"): how often a zone picks the mutants against one of its human factions (weight 1 each): rarer in the starting tiers, equal from Tier 3.</summary>
+        public static float MutantWeight(int tier) => tier <= 1 ? 0.5f : tier == 2 ? 0.75f : tier == 3 ? 1f : tier <= 5 ? 1.25f : 1.5f;
+        static string PickFaction(ZoneDef zone, List<string> factions)
+        {
+            float total = factions.Sum(f => f == "Mutant" ? MutantWeight(zone.Tier) : 1f), r = Random.value * total;
+            foreach (var f in factions) { r -= f == "Mutant" ? MutantWeight(zone.Tier) : 1f; if (r <= 0f) return f; }
+            return factions[factions.Count - 1];
+        }
         static OfflineSquad Spawn(ZoneDef zone, string faction = null)
         {
             if (faction == null)
             {
                 var factions = WorldEvents.Factions(zone).Where(f => f == "Mutant" || f == "Zombie" || FactionDeck.Any(f, zone.Tier >= 4)).ToList();
                 if (factions.Count == 0) return null;
-                faction = factions[Random.Range(0, factions.Count)];
+                faction = PickFaction(zone, factions.Select(f => f == "Zombie" ? "Mutant" : f).Distinct().ToList());
             }
             if (faction == "Zombie") faction = "Mutant";
-            int memberCount = faction == "Mutant" ? 2 + Random.Range(0, Mathf.Max(1, zone.Tier)) : HumanSquadSize(faction, zone.Tier);
+            int memberCount = faction == "Mutant" ? (zone.Tier <= 1 ? 3 : 2 + Random.Range(0, Mathf.Max(1, zone.Tier))) : HumanSquadSize(faction, zone.Tier);
             return CreateOfflineSquad(zone.Id, faction, memberCount);
         }
 
@@ -357,7 +365,7 @@ namespace GameCore
             ["Liberators"] = new[] { "vanguard_barracks" },  // A, 14, tier 4
             ["Sentinels"] = new[] { "crimson_woods" },       // A, 14, tier 4
             ["Obelisk"] = new[] { "reactor_core" },          // S, 25, tier 7
-            ["Mutant"] = new[] { "dried_lake", "crimson_woods", "antenna_grid" },
+            ["Mutant"] = new[] { "dried_lake", "crimson_woods", "antenna_grid", "marshes", "scrapyard" },   // 2026-11-22: and the south, where the tier 1-2 surface now has them too
         };
         public static (int min, int max) OutpostTiers(int strength) => strength < 5 ? (1, 2) : strength <= 10 ? (3, 3) : strength <= 17 ? (4, 6) : (7, 7);
         public const float TravelChancePerHour = 1f / 8f;          // a squad with orders crosses a zone about as fast as you do (8 h)
@@ -584,7 +592,7 @@ namespace GameCore
                 if (factions.Count == 0) continue;
                 factions = factions.Where(f => f == "Mutant" || FactionDeck.Any(f, z.Tier >= 4)).ToList();   // Batch 52: nobody left to send
                 if (factions.Count == 0) continue;
-                string faction = factions[Random.Range(0, factions.Count)];
+                string faction = PickFaction(z, factions);
                 var home = (Homes.TryGetValue(faction, out var h) ? h : new string[0])
                     .Where(id => !OnMap(id, skipZone) && Route(id, z.Id, faction, true) != null).OrderBy(_ => Random.value).FirstOrDefault();
                 if (home == null) continue;                                 // nobody can get there (or the only way out of their base is past you)

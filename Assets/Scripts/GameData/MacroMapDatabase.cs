@@ -46,23 +46,23 @@ namespace GameData
             // The map overhaul: Tier 1 is one map (owned by "perimeter"); the marsh, the run and Bonfire Village are its
             // regions. The Safe Zone is now the village, not the whole Perimeter.
             new ZoneDef { Id = "perimeter", Name = "The Perimeter", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "marshes", "smugglers_run", "bonfire_village", "chapel_crypt", "farmhouse_upper" }, AllowedFactions = { "Wanderers", "Raiders" }, HiddenConnections = new List<string> { "secret_cave" } },
-            new ZoneDef { Id = "marshes", Name = "Toxic Marshes", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter", "smugglers_run", "scrapyard", "pumping_basement", "flooded_bunker" }, AllowedFactions = { "Wanderers", "Raiders" }, MapId = "perimeter" },
-            new ZoneDef { Id = "smugglers_run", Name = "Smuggler's Run", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter", "marshes", "industrial_basin", "smugglers_tunnel" }, AllowedFactions = { "Wanderers", "Raiders" }, MapId = "perimeter" },
+            new ZoneDef { Id = "marshes", Name = "Toxic Marshes", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter", "smugglers_run", "scrapyard", "pumping_basement", "flooded_bunker" }, AllowedFactions = { "Wanderers", "Raiders", "Mutant" }, MapId = "perimeter" },
+            new ZoneDef { Id = "smugglers_run", Name = "Smuggler's Run", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter", "marshes", "industrial_basin", "smugglers_tunnel" }, AllowedFactions = { "Wanderers", "Raiders", "Mutant" }, MapId = "perimeter" },
             new ZoneDef { Id = "bonfire_village", Name = "Bonfire Village", Tier = 1, BaseHazardModifier = 0, ConnectedZones = { "perimeter" }, AllowedFactions = { "Wanderers" }, IsSafeZone = true, MapId = "perimeter" },
 
             // Low-Mid Tier (T2)
             // Tier 2 is one map (owned by "scrapyard"): the Industrial Basin and Black Valley are its regions
-            new ZoneDef { Id = "scrapyard", Name = "The Scrapyard", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "marshes", "industrial_basin", "black_valley", "crusher_pit" }, AllowedFactions = { "Raiders", "Wanderers" } },
+            new ZoneDef { Id = "scrapyard", Name = "The Scrapyard", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "marshes", "industrial_basin", "black_valley", "crusher_pit" }, AllowedFactions = { "Raiders", "Wanderers", "Mutant" } },
             // ponytail: no IsSafeZone here on purpose - the TTRPG source's Zone Map calls Industrial
             // Basin out explicitly as a transit zone with no static trader ("that absence is
             // intentional texture, not an oversight"). Wandering Traders (Batch 4) cover it instead.
-            new ZoneDef { Id = "industrial_basin", Name = "Industrial Basin", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "smugglers_run", "scrapyard", "black_valley" }, AllowedFactions = { "Wanderers", "Garrison" }, HiddenConnections = new List<string> { "secret_lab_alpha", "taken_tunnels" }, MapId = "scrapyard" },
-            new ZoneDef { Id = "black_valley", Name = "Black Valley", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "scrapyard", "industrial_basin", "scavengers_hub", "valley_mine" }, AllowedFactions = { "Raiders", "Liberators" }, MapId = "scrapyard" },
+            new ZoneDef { Id = "industrial_basin", Name = "Industrial Basin", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "smugglers_run", "scrapyard", "black_valley" }, AllowedFactions = { "Wanderers", "Garrison", "Mutant" }, HiddenConnections = new List<string> { "secret_lab_alpha", "taken_tunnels" }, MapId = "scrapyard" },
+            new ZoneDef { Id = "black_valley", Name = "Black Valley", Tier = 2, BaseHazardModifier = 1, ConnectedZones = { "scrapyard", "industrial_basin", "scavengers_hub", "valley_mine" }, AllowedFactions = { "Raiders", "Liberators", "Mutant" }, MapId = "scrapyard" },
 
             // Middle Tier (T3)
             // Tier 3 is one map (owned by the hub, which stays a Safe Zone): the Rail-Yards and Dried Lake are its regions
             new ZoneDef { Id = "scavengers_hub", Name = "Scavenger's Hub", Tier = 3, BaseHazardModifier = 0, ConnectedZones = { "black_valley", "rail_yards", "dried_lake" }, AllowedFactions = { "Sentinels", "Wanderers" }, IsSafeZone = true },
-            new ZoneDef { Id = "rail_yards", Name = "The Rail-Yards", Tier = 3, BaseHazardModifier = 2, ConnectedZones = { "scavengers_hub", "dried_lake", "vanguard_barracks" }, AllowedFactions = { "Contractors", "Sentinels" }, HiddenConnections = new List<string> { "maintenance_tunnels" }, MapId = "scavengers_hub" },
+            new ZoneDef { Id = "rail_yards", Name = "The Rail-Yards", Tier = 3, BaseHazardModifier = 2, ConnectedZones = { "scavengers_hub", "dried_lake", "vanguard_barracks" }, AllowedFactions = { "Contractors", "Sentinels", "Mutant" }, HiddenConnections = new List<string> { "maintenance_tunnels" }, MapId = "scavengers_hub" },
             new ZoneDef { Id = "dried_lake", Name = "Dried Lake Sub-Station", Tier = 3, BaseHazardModifier = 2, ConnectedZones = { "scavengers_hub", "rail_yards", "ghost_town", "stranded_ferry" }, AllowedFactions = { "Surveyors", "Mutant" }, HiddenConnections = new List<string> { "sub_station_depths" }, MapId = "scavengers_hub" },
 
             // High-Mid Tier (T4)

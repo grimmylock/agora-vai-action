@@ -152,11 +152,8 @@ namespace GameCore
         /// <summary>Ported from checkPanic().</summary>
         public void CheckPanic()
         {
-            if (State != "fleeing" && PanicThreshold > 0 && (float)Hp / MaxHp <= PanicThreshold)
-            {
-                State = "fleeing";
-                GameLog.Write($"{Name} panics and tries to fall back!");
-            }
+            // 2026-11-22 (Yan: "remove the flees at HP% code, it's making the fights bug out and mutants never finish the fight and just disappear"): nothing flees at a health share any more,
+            // mutants or humans. PanicThreshold stays in the data and does nothing; a mutant fights to the death.
         }
 
         /// <summary>Ported from moveToward(target). Returns whether a step was actually taken.</summary>
