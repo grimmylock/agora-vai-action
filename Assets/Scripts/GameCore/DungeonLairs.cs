@@ -11,7 +11,7 @@ namespace GameCore
 {
     public static class DungeonLairs
     {
-        class Lair { public string Zone, Landmark; public int TierPlus; }
+        class Lair { public string Zone, Landmark, Kind; public int TierPlus; }   // Kind: a placed mutant by name (MutantDatabase.Wards); null = a random one of the zone's tier
         static readonly Lair[] All =
         {
             new Lair { Zone = "secret_cave", Landmark = "Dark Niche West", TierPlus = 0 },
@@ -23,21 +23,22 @@ namespace GameCore
             new Lair { Zone = "abandoned_cathedral", Landmark = "Crypt Niche", TierPlus = 0 },   // 2026-11-20: blood-lured (Noise.Smell) mutants of the Choir mission
             new Lair { Zone = "abandoned_cathedral", Landmark = "Roost", TierPlus = 1 },        // and what nests in the sump
             // 2026-11-21 (the Orderly stalks the morgue's long corridor; the rooms off it are where you hide from it, and what waits in them is taken out with melee or it hears the shot): two in the Anteroom, three in Cold Storage, three in the Dissection Hall, one in the washroom
-            new Lair { Zone = "hospital_morgue", Landmark = "Anteroom West", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Anteroom East", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage West", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage Middle", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage East", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Dissection West", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Dissection Middle", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Dissection East", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Washroom", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Anteroom West", Kind = "Ward Wretch", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Anteroom East", Kind = "Ward Crawler", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage West", Kind = "Ward Crawler", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage Middle", Kind = "Ward Wretch", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage East", Kind = "Ward Hulk", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Dissection West", Kind = "Ward Wretch", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Dissection Middle", Kind = "Ward Hulk", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Dissection East", Kind = "Ward Crawler", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Washroom", Kind = "Ward Hulk", TierPlus = 0 },
         };
 
         static string Flag(Lair l) => "lair:" + l.Zone + ":" + l.Landmark;
 
         /// <summary>The landmark names of a zone's lairs (tests and the examine text).</summary>
         public static IEnumerable<string> LandmarksOf(string zone) => All.Where(l => l.Zone == zone).Select(l => l.Landmark);
+        public static string KindOf(string zone, string landmark) => All.FirstOrDefault(l => l.Zone == zone && l.Landmark == landmark)?.Kind;
         public static int TierPlusOf(string zone, string landmark) => All.FirstOrDefault(l => l.Zone == zone && l.Landmark == landmark)?.TierPlus ?? 0;
 
         /// <summary>Called when a map is entered (ZoneTravel): places each lair's mutant the first time.</summary>
@@ -53,7 +54,7 @@ namespace GameCore
                 if (lm == null) continue;
                 flags.Add(Flag(l));
                 int t = Mathf.Clamp(zone.Tier + l.TierPlus, 1, MutantDatabase.MaxTier);
-                var db = EncounterGeneration.PickRandomMutantByTier(t, t) ?? EncounterGeneration.PickRandomMutantByTier(1, t);
+                var db = l.Kind != null && MutantDatabase.Wards.TryGetValue(l.Kind, out var wd) ? wd : (EncounterGeneration.PickRandomMutantByTier(t, t) ?? EncounterGeneration.PickRandomMutantByTier(1, t));
                 var sq = SquadManager.CreateOfflineSquad(zone.Id, "Mutant", 1);
                 if (sq == null) continue;
                 var m = EncounterGeneration.CreateMutantFromDb(db, lm.X, lm.Y);

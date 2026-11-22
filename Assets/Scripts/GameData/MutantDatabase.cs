@@ -27,11 +27,20 @@ namespace GameData
         public bool GroundSlam;
         public bool Leap; // Circle & Leap (Dread Prowler) - replaces the old "TriplePounce" flavor-only flag
         public bool NeuralOverload;
+        public bool Ward;              // 2026-11-22: a placed room mutant (the Hospital Morgue's): never rolled by the random encounter pools
     }
 
     public static class MutantDatabase
     {
         // Keyed exactly like MUTANT_DB in the JS: Tiers["tier1"]["BlindMaw"]
+        /// <summary>2026-11-22 (Yan's sheet): the Hospital Morgue's room mutants. Placed by DungeonLairs by name; not in Tiers, so no random pool ever picks them. Melee only (the Wretch and the Crawler also leap).</summary>
+        public static readonly Dictionary<string, MutantDef> Wards = new Dictionary<string, MutantDef>
+        {
+            ["Ward Wretch"] = new MutantDef { Name = "Ward Wretch", Tier = 5, Hp = 700, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 4, Ac = 12, AttackDamage = 340, AgilityMod = 1, Behavior = "berserk", PanicThreshold = 0f, Ward = true },
+            ["Ward Hulk"] = new MutantDef { Name = "Ward Hulk", Tier = 5, Hp = 1500, PhysDR = 0.2f, AnomDR = 0.2f, Ap = 3, Mp = 2, Ac = 11, AttackDamage = 520, AgilityMod = -1, Behavior = "berserk", PanicThreshold = 0f, Ward = true },
+            ["Ward Crawler"] = new MutantDef { Name = "Ward Crawler", Tier = 5, Hp = 600, PhysDR = 0.0f, AnomDR = 0.1f, Ap = 4, Mp = 5, Ac = 13, AttackDamage = 300, AgilityMod = 2, Behavior = "berserk", PanicThreshold = 0f, Ward = true },
+        };
+
         public static readonly Dictionary<string, Dictionary<string, MutantDef>> Tiers =
             new Dictionary<string, Dictionary<string, MutantDef>>
         {

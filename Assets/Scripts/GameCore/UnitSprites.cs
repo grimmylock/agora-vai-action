@@ -105,7 +105,7 @@ namespace GameCore
             if (_hd == null)
             {
                 _hd = new Dictionary<string, Sprite>();
-                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute", "Gaunt", "Elder Gaunt", "The Great Bell" })
+                foreach (var n in new[] { "Pallid Prowler", "Blind Maw", "Veil Prowler", "Dread Prowler", "Blight Brute", "Gaunt", "Elder Gaunt", "The Great Bell", "Ward Wretch", "Ward Hulk", "Ward Crawler" })
                 {
                     var tex = Resources.Load<Texture2D>("Sprites/Mutants/mutant_hd_" + n.ToLowerInvariant().Replace(' ', '_'));
                     if (tex != null) _hd[n] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 16f / tex.height), 2 * Cell, 0, SpriteMeshType.FullRect);

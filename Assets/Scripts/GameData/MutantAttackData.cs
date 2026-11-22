@@ -46,6 +46,21 @@ namespace GameData
             {
                 ["claw"] = new AttackAnim { Frames = 8, W = 218, H = 160, Contact = 5, ContactMs = 540, TotalMs = 820, PivotY = 0.1f, Ms = new[] { 110, 150, 140, 70, 70, 60, 110, 110 }, Travel = new[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
             },
+            // 2026-11-22: the room mutants of the Hospital Morgue (ArtSource/export_room_mutants.py, Yan's sheet): melee for all three, a leap for the Wretch and the Crawler (the Hulk has none)
+            ["Ward Wretch"] = new Dictionary<string, AttackAnim>
+            {
+                ["melee"] = new AttackAnim { Frames = 13, W = 96, H = 80, Contact = 3, ContactMs = 465, TotalMs = 1760, PivotY = 0.28750f, Ms = new[] { 110, 155, 200, 80, 115, 120, 125, 130, 135, 140, 145, 150, 155 }, Travel = new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f } },
+                ["pounce"] = new AttackAnim { Frames = 13, W = 112, H = 80, Contact = 10, ContactMs = 1550, TotalMs = 1899, PivotY = 0.28750f, Ms = new[] { 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 80, 126, 143 }, Travel = new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.17f, 0.33f, 0.50f, 0.67f, 0.83f, 1.00f, 1.00f, 1.00f } },
+            },
+            ["Ward Hulk"] = new Dictionary<string, AttackAnim>
+            {
+                ["melee"] = new AttackAnim { Frames = 13, W = 104, H = 80, Contact = 3, ContactMs = 465, TotalMs = 1760, PivotY = 0.26250f, Ms = new[] { 110, 155, 200, 80, 115, 120, 125, 130, 135, 140, 145, 150, 155 }, Travel = new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f } },
+            },
+            ["Ward Crawler"] = new Dictionary<string, AttackAnim>
+            {
+                ["melee"] = new AttackAnim { Frames = 13, W = 80, H = 64, Contact = 8, ContactMs = 1237, TotalMs = 1857, PivotY = 0.34375f, Ms = new[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 120, 130, 140, 150 }, Travel = new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f } },
+                ["pounce"] = new AttackAnim { Frames = 13, W = 128, H = 64, Contact = 10, ContactMs = 1550, TotalMs = 1899, PivotY = 0.32812f, Ms = new[] { 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 80, 126, 143 }, Travel = new[] { 0.00f, 0.00f, 0.11f, 0.22f, 0.33f, 0.44f, 0.56f, 0.67f, 0.78f, 0.89f, 1.00f, 1.00f, 1.00f } },
+            },
         };
     }
 }

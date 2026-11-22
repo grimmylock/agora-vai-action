@@ -1326,7 +1326,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             foreach (var tier in MutantDatabase.Tiers.Values)
                 foreach (var m in tier.Values)
                     if (m.Name == name) return m;
-            return null;
+            return MutantDatabase.Wards.TryGetValue(name, out var ward) ? ward : null;
         }
 
     }

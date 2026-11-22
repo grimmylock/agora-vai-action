@@ -107,6 +107,7 @@ static class Program {
     LateBossChecks();
     StalkerChecks();
     MorgueStalkChecks();
+    WardChecks();
     CreatureBossClipChecks();
     BossHitboxChecks();
     CathedralJobChecks();
@@ -3065,6 +3066,26 @@ static class Program {
       p.X = 85; p.Y = 51; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
       Check(!f.Stalking && Boss.Current == f && Boss.DamageScale(h) == 1f, "Morgue stalker: you reach the big room: the stalk ends, the fight begins");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MacroState.Current.Keys.Clear(); }
+  }
+  static void WardChecks() {   // 2026-11-22: the morgue's room mutants (Ward Wretch, Ward Hulk, Ward Crawler): melee lands at its contact frame, the Wretch and the Crawler leap, the Hulk never does, none is in a random pool, the lairs place them by name
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MutantAttack.Reset(); EncounterState.Enemies.Clear(); UnityEngine.Time.time = 120f;
+    Check(MutantDatabase.Wards.Count == 3 && MutantDatabase.Wards.Values.All(w => w.Ward && MutantAttack.Has(new Mutant(w.Name, 0, 0, w))), "Wards: three room mutants with attack strips");
+    Check(!Enumerable.Range(1, 5).Any(t => Enumerable.Range(0, 400).Any(_ => EncounterGeneration.PickRandomMutantByTier(t, t)?.Ward == true)), "Wards: no random encounter pool ever picks one");
+    Check(MutantDatabase.Wards.Keys.All(n => GameData.MutantAttackData.Table[n].ContainsKey("melee")) && GameData.MutantAttackData.Table["Ward Wretch"].ContainsKey("pounce") && GameData.MutantAttackData.Table["Ward Crawler"].ContainsKey("pounce") && !GameData.MutantAttackData.Table["Ward Hulk"].ContainsKey("pounce"), "Wards: melee for all, a leap for the Wretch and the Crawler, none for the Hulk");
+    (Mutant m, int hp0) Spawn(string name, int dx) { var mu = new Mutant(name, px + dx, py, MutantDatabase.Wards[name]); EncounterState.Enemies.Add(mu); Rt.SetOffset(mu, 0f, 0f); p.HealPermanent(5000); return (mu, p.Hp); }
+    foreach (var name in new[] { "Ward Wretch", "Ward Hulk", "Ward Crawler" }) {
+      EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); var (m, hp0) = Spawn(name, 1); float ns = 0f, start = UnityEngine.Time.time, firstHit = -1f; bool melee = false;
+      for (int i = 0; i < 300; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(m, p, UnityEngine.Time.time, ref ns); if (MutantAttack.KindOf(m) == "melee") melee = true; if (firstHit < 0f && p.Hp < hp0) firstHit = (UnityEngine.Time.time - start) * 1000f; }
+      var a = GameData.MutantAttackData.Table[name]["melee"]; Console.WriteLine($"   ward {name}: melee {melee}, first hit {firstHit:0} ms, contact {a.ContactMs} ms"); Check(melee && firstHit >= a.ContactMs - 15f && firstHit <= a.ContactMs + 60f, $"Wards: {name}'s melee lands at its contact frame ({firstHit:0} ms, contact {a.ContactMs} ms)");
+    }
+    foreach (var name in new[] { "Ward Wretch", "Ward Crawler", "Ward Hulk" }) {
+      EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); var (m, hp0) = Spawn(name, 4); float ns = 0f; bool leapt = false, slid = false;
+      for (int i = 0; i < 300; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(m, p, UnityEngine.Time.time, ref ns); Rt.Glide(0.01f); if (MutantAttack.KindOf(m) == "pounce") { leapt = true; if (Rt.Sliding(m)) slid = true; } }
+      Check(name == "Ward Hulk" ? !leapt : leapt && slid, name == "Ward Hulk" ? "Wards: the Hulk never leaps" : $"Wards: {name} leaps from four tiles and the body slides across");
+    }
+    Check(DungeonLairs.KindOf("hospital_morgue", "Cold Storage East") == "Ward Hulk" && DungeonLairs.KindOf("hospital_morgue", "Anteroom West") == "Ward Wretch" && DungeonLairs.LandmarksOf("hospital_morgue").All(n => DungeonLairs.KindOf("hospital_morgue", n) != null), "Wards: every morgue lair names its mutant");
+    Rt.On = false; EncounterState.Enemies.Clear(); MutantAttack.Reset();
   }
   static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 92000f; UnityEngine.Time.unscaledTime = 92000f;

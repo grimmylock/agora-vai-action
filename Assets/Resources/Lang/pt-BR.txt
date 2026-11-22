@@ -1348,3 +1348,7 @@ CHORUS!	CORO!
 It has found you.	Ele encontrou você.
 The door at the foot of the corridor swings shut behind you, and the room goes quiet. Then the sawing starts, and it is very close, and there is nowhere left to run.	A porta ao pé do corredor se fecha atrás de você, e a sala fica em silêncio. Então o serrar começa, muito perto, e não há mais para onde correr.
 The key turns, and somewhere behind you in the corridor the sawing starts, and comes toward you. Run.	A chave gira, e em algum lugar atrás de você no corredor o serrar começa e vem na sua direção. Corra.
+Ward Wretch	Paciente Retorcido
+Ward Hulk	Paciente Colosso
+Ward Crawler	Paciente Rastejante
+A row of steel slabs, one of them not empty.	Uma fileira de lajes de aço, uma delas não está vazia.

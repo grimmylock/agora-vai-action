@@ -296,7 +296,7 @@ namespace GameCore
             return list;
         }
 
-        public static IEnumerable<MutantDef> AllMutants() => MutantDatabase.Tiers.OrderBy(t => t.Key).SelectMany(t => t.Value.Values).Concat(new[] { Gaunt.ElderDef });   // 2026-11-17: the Elder Gaunt (story-only otherwise) can be spawned on the range too
+        public static IEnumerable<MutantDef> AllMutants() => MutantDatabase.Tiers.OrderBy(t => t.Key).SelectMany(t => t.Value.Values).Concat(new[] { Gaunt.ElderDef }).Concat(MutantDatabase.Wards.Values);   // 2026-11-17: the Elder Gaunt (story-only otherwise) can be spawned on the range too
 
         static void Spawned(int n, string what, bool aware)
         {
