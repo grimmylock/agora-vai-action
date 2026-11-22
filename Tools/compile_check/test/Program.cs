@@ -3577,8 +3577,8 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true;
     var e = new HumanEnemy("Raider", px + 6, py, "Raiders", "Experienced", null, null); EncounterState.Enemies.Add(e); Vision.Spotlight = e;   // (lit for the scene: it counts as seen)
     var (ex, ey) = Ballistics.Pos(e);
-    Check(Rt.UnitUnder(ex + 0.9f, ey + 0.2f) == null && Rt.UnitUnder(ex + 0.9f, ey + 0.2f, Rt.AssistRadius) == e, "Aim: a crosshair beside him (off the sprite, within a tile) is aiming at him");
-    Check(Rt.UnitUnder(ex + 2.5f, ey, Rt.AssistRadius) == null && Rt.UnitUnder(ex + 1.5f, ey, Rt.ScopeAssistRadius) == e, "Aim: two and a half tiles away is not; through a scope the reach is wider");
+    Check(Rt.UnitUnder(ex + 0.9f, ey + 0.2f) == null && Rt.UnitUnder(ex + 0.9f, ey + 0.2f, Rt.AssistRadius) == null, "Aim: no aim assist (2026-11-22): a crosshair beside him, off the sprite, is not aiming at him");
+    Check(Rt.UnitUnder(ex + 2.5f, ey, Rt.AssistRadius) == null && Rt.UnitUnder(ex + 1.5f, ey, Rt.ScopeAssistRadius) == null && Rt.UnitUnder(ex, ey + 0.1f) == e, "Aim: far from him is not, a scope does not widen it, and right on him is");
     Vision.Spotlight = null; EncounterState.Enemies.Remove(e);
   }
 

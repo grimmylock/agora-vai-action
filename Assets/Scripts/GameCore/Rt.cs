@@ -756,7 +756,7 @@ namespace GameCore
         /// <summary>The living unit whose sprite the point (tile space) is over, if any - the nearest one.</summary>
         /// <summary>2026-11-19 (Yan: "the crosshair needs to be in the general direction of the enemy for it to count as aiming at him, putting the mouse directly over the enemy sprite is very hard, should matter when aiming through scopes"):
         /// how far (tiles) from a body's middle the crosshair still counts as aiming at it when it is not over the sprite itself: wider through a scope, where the picture is magnified and the cursor travels far.</summary>
-        public const float AssistRadius = 1.0f, ScopeAssistRadius = 1.8f;
+        public const float AssistRadius = 0f, ScopeAssistRadius = 0f;   // 2026-11-22 (Yan: "the aim assist thing is messing up the actual aiming, I aim for the head and the aim snaps to the hitbox"): off. The round goes where the crosshair is; a body is hit only under its own sprite.
         public static float AssistFor(Weapon w) => Optics.Scoped(w) ? ScopeAssistRadius : AssistRadius;
 
         /// <summary>The body the crosshair is on - or, with `assist` > 0 and nothing under it, the nearest living, visible body whose middle is within `assist` tiles (a big body: that much plus a third of its height).</summary>

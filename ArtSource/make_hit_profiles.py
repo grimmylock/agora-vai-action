@@ -11,10 +11,36 @@ def profile(a, ppt):
     for y in range(bot, top - 1, -1):
         xs = np.where(a[y])[0]; out.append(max(cx - xs.min(), xs.max() + 1 - cx) / ppt if len(xs) else 0.0)
     out = np.array(out); sm = np.maximum.reduce([out, np.append(out[1:], 0), np.insert(out[:-1], 0, 0)]); return sm, ppt
+import re as _re2
 E_ = {}
+# 2026-11-22 (Yan: "the hitboxes do not match the sprite for a lot of the mutants, every part of the body must be damageable"): the silhouette is the UNION (per row, the widest reach) of the stand sprite, the 8 walk pictures, the 8 run pictures and the
+# contact frame of each melee clip, each aligned by its own ground row and centre: a limb or a head that swings out while it walks or strikes is no longer outside the hit shape.
+_ATT = open(os.path.join(ROOT, 'Assets/Scripts/GameData/MutantAttackData.cs')).read()
+def union_profile(k, name, ppt):
+    stand = np.array(Image.open(f'{R}/Mutants/mutant_hd_{k}.png').convert('RGBA'))[..., 3] > 0
+    best, _ = profile(stand, ppt); best = list(best)
+    cuts = []
+    for kind in ('walk', 'run'):
+        fn = f'{R}/Mutants/anim/{k}_{kind}.bytes'
+        if os.path.exists(fn):
+            st = np.array(Image.open(fn).convert('RGBA'))[..., 3] > 0
+            if st.shape[1] % 8 == 0: cuts += [st[:, i * (st.shape[1] // 8):(i + 1) * (st.shape[1] // 8)] for i in range(8)]
+    for kind in ('bite', 'melee', 'claw', 'swipe', 'slam'):
+        fn = f'{R}/Mutants/anim/{k}_{kind}.bytes'
+        m = _re2.search(r'\["%s"\] = new Dictionary.*?\["%s"\] = new AttackAnim \{ Frames = (\d+), W = \d+, H = \d+, Contact = (\d+)' % (_re2.escape(name), kind), _ATT, _re2.S)
+        if os.path.exists(fn) and m:
+            st = np.array(Image.open(fn).convert('RGBA'))[..., 3] > 0; n, c = int(m.group(1)), int(m.group(2))
+            if st.shape[1] % n == 0: cuts.append(st[:, c * (st.shape[1] // n):(c + 1) * (st.shape[1] // n)])
+    for a in cuts:
+        if not a.any(): continue
+        p, _ = profile(a, ppt)
+        for i, v in enumerate(p):
+            if i < len(best): best[i] = max(best[i], v)
+            else: best.append(v)
+    return np.array(best), ppt
 at = np.array(Image.open(f'{R}/armor_atlas_x2.png').convert('RGBA'))[..., 3] > 0; E_['human'] = profile(at[0:32, 0:32], 32)
 for k, n in [('pallid_prowler', 'Pallid Prowler'), ('blind_maw', 'Blind Maw'), ('veil_prowler', 'Veil Prowler'), ('dread_prowler', 'Dread Prowler'), ('blight_brute', 'Blight Brute'), ('gaunt', 'Gaunt'), ('elder_gaunt', 'Elder Gaunt'), ('ward_wretch', 'Ward Wretch'), ('ward_hulk', 'Ward Hulk'), ('ward_crawler', 'Ward Crawler')]:
-    E_[n] = profile(np.array(Image.open(f'{R}/Mutants/mutant_hd_{k}.png').convert('RGBA'))[..., 3] > 0, 43 if k in ('gaunt', 'elder_gaunt') else 32)   # 2026-11-17: the Gaunts are drawn at 32/43 of their art (Gaunt.ArtScale)
+    E_[n] = union_profile(k, n, 43 if k in ('gaunt', 'elder_gaunt') else 32)   # 2026-11-17: the Gaunts are drawn at 32/43 of their art (Gaunt.ArtScale)
 ma = np.array(Image.open(f'{R}/mutant_atlas.png').convert('RGBA'))[..., 3] > 0
 for i, n in {2: 'Swarm', 7: 'Mind Weaver', 10: 'Void Weaver'}.items(): E_[n] = profile(ma[:, i * 16:(i + 1) * 16], 16)
 # bosses (2026-11-14): the brain in its vat (the sheet's first frame; the sprite's bottom is 10 px under the tile's middle, the model's ground line 16 px, so 6 base rows are added) and the eel's body: the thickness of

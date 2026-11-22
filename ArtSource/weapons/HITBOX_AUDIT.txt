@@ -1,0 +1,11 @@
+mutant           frames unhittable      worst         (clip) empty hitbox
+Pallid Prowler       47       0.2%       3.0%          bite2       49.4%
+Blind Maw            52       1.8%      20.2%         pounce       43.4%
+Veil Prowler         60       1.8%      21.9%         pounce       56.7%
+Dread Prowler        51       1.1%       9.0%         pounce       46.1%
+Blight Brute         43       3.8%      28.0%          throw       31.8%
+Gaunt                25       0.0%       0.2%           claw       60.0%
+Elder Gaunt          33      20.8%      90.0%         combo4       52.8%
+Ward Wretch          35      10.4%      43.0%         pounce       50.9%
+Ward Hulk            22       1.8%      10.3%          melee       39.5%
+Ward Crawler         35       3.2%      18.1%         pounce       48.0%

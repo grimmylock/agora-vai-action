@@ -480,7 +480,7 @@ namespace GameCore
                         if ((px - o.X) * (px - o.X) + (py - o.Y) * (py - o.Y) > (OrbRadius + 0.3f) * (OrbRadius + 0.3f) || Rt.Untouchable(p)) continue;
                         Hurt(p, o.Kind == "bolt" ? BoltDamage : OrbDamage, "A psychic orb hits you"); gone = true; break;
                     }
-                if (gone) Orbs.RemoveAt(i--);
+                if (gone) { if (i >= Orbs.Count) break; Orbs.RemoveAt(i--); }   // 2026-11-22: a hit that ends the fight clears the list under us (the soak test's random crash in the brain fight)
             }
         }
 
