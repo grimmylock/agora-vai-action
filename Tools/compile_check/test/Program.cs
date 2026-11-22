@@ -974,7 +974,7 @@ static class Program {
     st = SumpRun(true, 2, "snare:hurl", f => { SumpPlace(SP1, 36.0f, 20.0f); SumpPlace(SP2, 22.0f, 22.0f); }, null, 16f); cross = Math.Max(cross, st.MaxCross);
     Check(st.Ev.Any(e => e.Kind == "hit" && e.Dmg == 260 && e.Text == "hurled") && st.Ev.Any(e => e.Kind == "hit" && e.Dmg == 210), "EelSump snare (hurl): the snared player is thrown at the other one and both are hurt");
     // SNARE: shoot the tail while it drags: it lets go, the thrower never comes, the tail goes down
-    st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), (f, t) => { if (t > 3.6f && f.Sump.Tail.Hp > 1 && f.Sump.TailOut) { f.Sump.Tail.Hp = Math.Max(1, f.Sump.Tail.Hp - 90); Boss.OnDamaged(f.Sump.Tail); } }, 16f); cross = Math.Max(cross, st.MaxCross);
+    st = SumpRun(false, 2, "snare:launch", f => SumpPlace(SP1, 36.0f, 20.0f), (f, t) => { if (t > 3.6f && f.Sump.Tail.Hp > 1 && f.Sump.TailOut) { f.Sump.Tail.Hp = Math.Max(1, f.Sump.Tail.Hp - 2900); Boss.OnDamaged(f.Sump.Tail); } }, 16f); cross = Math.Max(cross, st.MaxCross);
     Check(st.F.Sump.TailBroken && Hits(st, 0, 420) == 0 && st.EndT > 0f && st.EndT < 12f, $"EelSump snare: shooting the tail makes it let go (broken {st.F.Sump.TailBroken}, no throw {Hits(st, 0, 420) == 0}, over in {st.EndT:0.0} s)");
     // FLOOD: the floor turns to deep water, then comes back; it bursts out under the player standing in it
     st = SumpRun(false, 2, "flood", f => SumpPlace(SP1, 42.5f, 26.0f), null, 16f); cross = Math.Max(cross, st.MaxCross);
@@ -1315,7 +1315,7 @@ static class Program {
 
   // 2026-11-22 (Yan: "a tier-based list based on which weapon from the boss's respective tier kills it the fastest, include the mutants"): for every mutant and boss, the fastest gun of ITS tier
   // (tier 6+ uses tier 5, the highest there is) with Standard ammo, every round on the torso (shotguns: all six pellets), reloads included, no dodging. Same damage pieces as Gunplay.Resolve.
-  static void TierTtk() {
+  static void TierTtk() { bool solve = Environment.GetEnvironmentVariable("SOLVE") != null;
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset();
     var guns = new List<(string key, string cat, Weapon w, int tier)>();
@@ -1331,7 +1331,10 @@ static class Program {
       }
       return best;
     }
-    string Row(string name, int tier, int hp, float dr, bool human) { var b = Best(tier, hp, dr, human, null); return $"{name,-22} T{tier} HP {hp,6} DR {dr:0.00}  {b.name,-22} {b.dmg,4}/shot  {b.rounds,4} rounds  {b.sec,5:0.0} s"; }
+    var muts_ = new HashSet<string>(); foreach (var t in MutantDatabase.Tiers) foreach (var m in t.Value) muts_.Add(m.Value.Name);
+    double[] mutT = { 0, 1.0, 1.5, 2.0, 2.5, 3.0 }; double[] bossT = { 0, 120, 190, 260, 340, 410, 480 };
+    int Solve(int tier, float dr, bool human, double target) { int lo = 10, hi = 4000000; while (hi - lo > 1) { int mid = (lo + hi) / 2; if (Best(tier, mid, dr, human, null).sec <= target) lo = mid; else hi = mid; } return lo; }
+    string Row(string name, int tier, int hp, float dr, bool human) { if (solve) { double tg = name.Contains("(ward)") || muts_.Contains(name) ? mutT[Math.Min(tier, 5)] : bossT[Math.Min(tier, 6)]; int ns = Solve(tier, dr, human, tg); int rd = ns >= 20000 ? 500 : ns >= 4000 ? 100 : 50; return $"{name,-22} T{tier} HP {hp,6} -> {(ns + rd / 2) / rd * rd,7}  (target {tg} s)"; } var b = Best(tier, hp, dr, human, null); return $"{name,-22} T{tier} HP {hp,6} DR {dr:0.00}  {b.name,-22} {b.dmg,4}/shot  {b.rounds,4} rounds  {b.sec,5:0.0} s"; }
     Console.WriteLine("== mutants ==");
     var muts = new List<(string name, int tier, MutantDef d)>();
     foreach (var t in MutantDatabase.Tiers) foreach (var m in t.Value) muts.Add((m.Value.Name, int.Parse(new string(t.Key.Where(char.IsDigit).ToArray())), m.Value));
@@ -1344,7 +1347,7 @@ static class Program {
       Boss.Reset(); var f = Boss.Spawn(def, px + 5, py); var v = f.Unit; int tier = zoneOf.TryGetValue(def.Name, out var zid) && MacroMapDatabase.Find(zid) != null ? MacroMapDatabase.Find(zid).Tier : 2;
       Console.WriteLine(Row(def.Name, tier, v.MaxHp > 0 ? v.MaxHp : v.Hp, v.PhysDR * CombatRules.ArmorScale(v), v is HumanEnemy)); Boss.Reset(); EncounterState.Enemies.Clear();
     }
-    Console.WriteLine(Row("Brain in the vat", MacroMapDatabase.Find("secret_lab_alpha").Tier, BrainBoss.MaxHp, BrainBoss.Def.PhysDR, false)); Console.WriteLine(Row("The Drowner (eel)", 3, EelBoss.MaxHp, EelBoss.Def.PhysDR, false));
+    Console.WriteLine(Row("Gallery Choir (cathedral)", MacroMapDatabase.Find("abandoned_cathedral").Tier, ChoirBoss.Def.Hp, ChoirBoss.Def.PhysDR, false)); Console.WriteLine(Row("Brain in the vat", MacroMapDatabase.Find("secret_lab_alpha").Tier, BrainBoss.MaxHp, BrainBoss.Def.PhysDR, false)); Console.WriteLine(Row("The Drowner (eel)", 3, EelBoss.MaxHp, EelBoss.Def.PhysDR, false));
   }
 
   static void BossFrames(string path) {
@@ -2566,7 +2569,7 @@ static class Program {
     // Yan: "make it so he needs 3 parries to get stunned": two perfect parries are deflections, the third opens him; they fade
     { var p = Arena(out int px, out int py); Boss.Reset(); EncounterState.Enemies.Clear(); var bf = Boss.Spawn(Boss.Visor, px + 1, py);
       bool a1 = Boss.Stagger(bf.Unit, 1f), a2 = Boss.Stagger(bf.Unit, 1f), a3 = Boss.Stagger(bf.Unit, 1f);
-      Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 4800, "Boss: the Visor (4800 HP) staggers on the 3rd perfect parry, not before");
+      Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 106500, "Boss: the Visor (106500 HP) staggers on the 3rd perfect parry, not before");
       bf.StaggerUntil = -1f; Boss.Stagger(bf.Unit, 1f); bf.LastParryAt -= Boss.GuardRecovers + 1f;
       Check(!Boss.Stagger(bf.Unit, 1f) && Boss.GuardDamage(bf) == 1, "Boss: parries toward a stagger fade after a while");
       // "parries are probably too hard": the glint is a fixed beat before each hit, and a parry that lands frees the key for the next hit
@@ -2923,7 +2926,7 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 96000f; UnityEngine.Time.unscaledTime = 96000f;
     try {
       var V = Boss.Verger;
-      Check(V.Hp == 7000 && V.Change == null && V.PoseKey == HeldPoseMath.VergerPoses && !V.Vanishes && V.Moves.All(m => m.Clip == null), "Verger: 7000 HP, no change (the beast is parked), his own scythe poses, no beast clips, keeps his body");
+      Check(V.Hp == 184000 && V.Change == null && V.PoseKey == HeldPoseMath.VergerPoses && !V.Vanishes && V.Moves.All(m => m.Clip == null), "Verger: 184000 HP, no change (the beast is parked), his own scythe poses, no beast clips, keeps his body");
       Check(V.Moves.All(m => m.Poses.All(q => q >= 0 && q < HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger))) && HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger) == 8 && Melee.Shapes[(int)HeldPoseMath.Style.Verger].Length == 8, "Verger: eight scythe poses, each with its hit shape, and every move uses only those");
       Check(V.Moves.Count(m => !m.Phase2Only) >= 6 && V.Moves.Count(m => !m.Phase1Only) >= 11 && V.Moves.Count(m => m.Phase2Only) >= 6, $"Verger: a full moveset ({V.Moves.Count(m => !m.Phase2Only)} in phase 1, {V.Moves.Count(m => !m.Phase1Only)} in phase 2)");
       Check(V.Moves.Where(m => m.Hits > 1).All(m => (m.Gaps == null || m.Gaps.Length == m.Hits - 1) && (m.Mults == null || m.Mults.Length == m.Hits) && (m.RedHits == null || m.RedHits.Length == m.Hits)), "Verger: every combo has one pause per gap, one damage and one colour per blow");
@@ -3214,12 +3217,15 @@ static class Program {
       Check(OrderlyBoss.Def.Moves.Where(m => m.Name == "Tube Lash").All(m => m.MinDist >= 3f && m.MaxDist >= 6f), "Orderly: the lash is a ranged move (not used up close)");
       { var oa = BossArt.Of("orderly"); Check(oa != null && new[] { "lamp_tear", "lamp_tear_b", "idle_b", "walk_b", "saw_b" }.All(c => oa.Clips.ContainsKey(c)) && !oa.Clips.ContainsKey("lash") && OrderlyBoss.Def.Moves.All(m => m.Clip == null || oa.Clips.ContainsKey(m.Clip)), "Orderly: the lamp-tear clip and the burst-bag copies are in the table, every move's clip exists"); }
       { var sr = OrderlyBoss.Def.Moves.First(m => m.Name == "Saw Rush"); Check(sr.Hits == 3 && sr.Clips != null && sr.Clips.SequenceEqual(new[] { "saw", "chop", "lamp_tear" }) && sr.Mults.Length == 3 && sr.Gaps.Length == 2, "Orderly: Saw Rush is the saw, the chop and the lamp tear in succession"); }
+      { var q0 = Player.Current; int n0 = Player.All.Count; var mu = new Mutant("Gaunt", 1, 1, MutantDatabase.Get("tier3", "Gaunt")); var hu = new HumanEnemy("Raider", 1, 1, "Raiders", "Rookie", null, null);
+        float hp1 = CoopScale.HpMult, mOne = CoopScale.DamageTakenMult(mu); var q = Player.Join(); float hp2 = CoopScale.HpMult, mTwo = CoopScale.DamageTakenMult(mu), hTwo = CoopScale.DamageTakenMult(hu); var q2 = Player.Join(); float hp3 = CoopScale.HpMult;
+        Check(Math.Abs(hp1 - 1f) < 0.001f && Math.Abs(hp2 - 1.25f) < 0.001f && Math.Abs(hp3 - 1.5f) < 0.001f && Math.Abs(mOne - 1f) < 0.001f && Math.Abs(mTwo - 0.8f) < 0.001f && hTwo == 1f, $"Co-op: each extra player adds 25% health to mutants and bosses (a fifth less damage taken at two players), humans are unchanged ({hp1} {hp2} {hp3} {mOne} {mTwo} {hTwo})"); }
       // the bag: a round at the bag's height is a bag hit, x2.5, and the bag holds only so much
-      Reset(5); var (ohx, ohy) = Ballistics.Pos(h); float topH = GameData.HitProfiles.Height("boss:orderly"); Check(BossArt.HitKey(h) == "boss:orderly" && topH > 3f, $"Orderly: its hit profile is the drawn one ({topH:0.0} tiles tall)");
+      Reset(5); var (ohx, ohy) = Ballistics.Pos(h); float topH = GameData.HitProfiles.Height("boss:orderly"); Check(BossArt.HitKey(h) == "boss:orderly" && topH > 3f, $"Orderly: its hit profile is the drawn hp1 ({topH:0.0} tiles tall)");
       var bagShot = Ballistics.Trace(p, ohx + 0.6f, ohy - 6f, 0f, 1f, 12f, (0.88f * topH) / Ballistics.BodyTiles, new ICombatant[] { h }); Check(bagShot.Unit == h && bagShot.Part == "Bag", $"Orderly: a round at the bag's height is a bag hit ({bagShot.Part})");
       var chestShot = Ballistics.Trace(p, ohx + 0.6f, ohy - 6f, 0f, 1f, 12f, (0.4f * topH) / Ballistics.BodyTiles, new ICombatant[] { h }); Check(chestShot.Unit == h && chestShot.Part == "Body", $"Orderly: a round at the chest is just the body ({chestShot.Part})");
       OrderlyBoss.OnEnterZone("x"); f.Stalking = false; f.Broken = false; f.Finished = false; h.Hp = h.MaxHp; float one = OrderlyBoss.BagHit(f, 100f); Check(System.Math.Abs(one - 100f * OrderlyBoss.BagMult) < 0.1f, "Orderly: a bag hit does 2.5x");
-      for (int i = 0; i < 40 && !OrderlyBoss.BagBurst(f); i++) OrderlyBoss.BagHit(f, 100f); Check(OrderlyBoss.BagBurst(f) && h.StatusEffects.Bleeding && f.StaggerUntil > UnityEngine.Time.time, "Orderly: the bag bursts after enough hits: bleeding, open for a moment");
+      for (int i = 0; i < 40 && !OrderlyBoss.BagBurst(f); i++) OrderlyBoss.BagHit(f, 2000f); Check(OrderlyBoss.BagBurst(f) && h.StatusEffects.Bleeding && f.StaggerUntil > UnityEngine.Time.time, "Orderly: the bag bursts after enough hits: bleeding, open for a moment");
       Check(OrderlyBoss.BagHit(f, 100f) == 100f, "Orderly: a burst bag is just a body now");
       Reset(4); h.Hp = h.MaxHp * 7 / 10; before = h.Hp; Run(drip); Check(h.Hp <= before, "Orderly: a bag you burst never mends it");
       var grab = OrderlyBoss.Def.Moves.First(m => m.Name == "Grab"); Reset(1); Run(grab); Check(p.Hp < p.MaxHp && Rt.Of(p).ProneUntil > UnityEngine.Time.time - 1.5f, "Orderly: the Grab slams you down");
@@ -3229,9 +3235,9 @@ static class Program {
   static void VergerBeastChecks() {   // 2026-11-20: the Verger's PARKED beast form (Boss.VergerBeast, 2026-11-21: out of the game, kept working): a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
     try {
-      Check(Boss.VergerBeast.Hp == 7000 && Boss.VergerBeast.Change != null && Boss.VergerBeast.Moves.Any(m => m.Phase1Only) && Boss.VergerBeast.Moves.Any(m => m.Phase2Only) && Boss.VergerBeast.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.VergerBeast.Vanishes, "Verger beast: 7000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
+      Check(Boss.VergerBeast.Hp == 184000 && Boss.VergerBeast.Change != null && Boss.VergerBeast.Moves.Any(m => m.Phase1Only) && Boss.VergerBeast.Moves.Any(m => m.Phase2Only) && Boss.VergerBeast.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.VergerBeast.Vanishes, "Verger beast: 184000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
       var f = Boss.Spawn(Boss.VergerBeast, px + 2, py); var h = f.Unit;
-      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 7000, "Verger beast: spawns with the scythe and the coat, holds at 1 HP until executed");
+      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 184000, "Verger beast: spawns with the scythe and the coat, holds at 1 HP until executed");
       Check(Melee.For(h.EquippedWeapon).Reach >= 2f && Melee.For(h.EquippedWeapon).Blade && Melee.For(h.EquippedWeapon).Bleeds, "Verger beast: the scythe is the longest reach and it cuts and bleeds");
       Check(!ShopDatabase.Items.Any(i => i.Name == "Verger Coat" || i.Name == "Verger's Scythe") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 6)?.Name == "Verger Coat"), "Verger beast: his coat and scythe are in no shop and no random loadout");
       f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f); f.NextMoveAt = UnityEngine.Time.time; bool began = false;
@@ -3296,9 +3302,9 @@ static class Program {
   static void SpoolChecks() {   // 2026-11-19: Boss 4, Spool in the Dog Kennels (Tier 2)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 90000f; UnityEngine.Time.unscaledTime = 90000f;
     try {
-      Check(Boss.Spool.Hp == 3600 && Boss.Spool.Moves.Count(m => m.Danger) == 2 && Boss.Spool.Moves.Any(m => m.Phase2Only) && Boss.Spool.Faction == "Outcasts" && !Boss.Spool.Vanishes, "Spool: 3600 HP, two red moves, phase 2 moves, an Outcast who keeps his body");
+      Check(Boss.Spool.Hp == 52000 && Boss.Spool.Moves.Count(m => m.Danger) == 2 && Boss.Spool.Moves.Any(m => m.Phase2Only) && Boss.Spool.Faction == "Outcasts" && !Boss.Spool.Vanishes, "Spool: 52000 HP, two red moves, phase 2 moves, an Outcast who keeps his body");
       var f = Boss.Spawn(Boss.Spool, px + 2, py); var h = f.Unit;
-      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Barbwire Coat" && h.Unkillable && h.MaxHp == 3600, "Spool: spawns with the bat and his barbwire coat, holds at 1 HP until executed");
+      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Barbwire Coat" && h.Unkillable && h.MaxHp == 52000, "Spool: spawns with the bat and his barbwire coat, holds at 1 HP until executed");
       Boss.Fights.Clear(); EncounterState.Enemies.Clear();
       // the lair wakes him when you come within range of the Dog Kennels, once
       Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 6, Y = py, Description = "" });
@@ -4108,7 +4114,7 @@ static class Program {
       for (int i = 0; i < 900 && !(wrapped && f.Discharged); i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; if (f.Stage == "wrap") { wrapped = true; solid = Math.Max(solid, Enumerable.Range(0, EelSump.N).Count(j => s.Z[j] > 0.3f)); charged |= s.Charge > 0.5f; } }
       Check(wrapped && solid >= 20 && charged, $"Eel platform form: round the platform the proxy spine has {solid} solid samples and the discharge shows as charge ({charged})");
       var net = Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel; Check(net != null && net.Has && net.HasSpine && net.Stage == "wrap", "Eel platform form: the co-op snapshot carries it like the Sump's");
-      f.Unit.Hp -= 1300; EelBoss.OnDamaged(f.Unit); keys.Add("depths_drain1"); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt);
+      f.Unit.Hp -= 41300; EelBoss.OnDamaged(f.Unit); keys.Add("depths_drain1"); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt);
       Check(f.Gone && !EncounterState.Enemies.Contains(f.Unit) && Story.Has("eelwound05"), $"Eel platform form: when the pump runs the eel is gone and its wounds are remembered ({f.Unit.Hp})");
       EncounterState.Enemies.Clear(); MacroState.Current.CurrentZoneId = LabLocks.Depths1; ZoneTravel.EnterZone(LabLocks.Depths1); Check(EelBoss.Current == null, "Eel platform form: a drained level has no eel");
       MacroState.Current.CurrentZoneId = LabLocks.Depths3; ZoneTravel.EnterZone(LabLocks.Depths3); var g = EelBoss.Current;
@@ -4231,7 +4237,7 @@ static class Program {
         var el = new Mutant(Gaunt.ElderName, px + 4, py + 1, Gaunt.ElderDef) { IsAggroed = true }; EncounterState.Enemies.Add(el); UnityEngine.Time.time += 20f; Gaunt.Call(el, p); UnityEngine.Time.time += 1.6f; Gaunt.Tick();
         int wilds0 = EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt");
         Check(EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt") - wilds0 >= 0 && EncounterState.Enemies.OfType<Mutant>().Count(m => m.Db?.Name == "Gaunt") >= 3, "gaunt: the Elder's call summons two wild Gaunts (the one that stood there plus two)");
-        Check(!wildFar && Gaunt.IsDriven(far) && Gaunt.Is(el) && el.Db.Hp > w.Db.Hp * 3 - 1, "gaunt: the wild one's call reaches 12 tiles, the Elder's 22, and the Elder is a mini-boss (3200 HP)"); }
+        Check(!wildFar && Gaunt.IsDriven(far) && Gaunt.Is(el) && el.Db.Hp > w.Db.Hp * 3 - 1, "gaunt: the wild one's call reaches 12 tiles, the Elder's 22, and the Elder is a mini-boss (15x the wild one)"); }
       { UnityEngine.Time.time += 60f; Gaunt.Reset(); EncounterState.Enemies.Clear();
         var g3 = new Mutant("Gaunt", px + 5, py, MutantDatabase.Get("tier3", "Gaunt")) { IsAggroed = true }; var d3 = new Mutant("Blind Maw", px + 8, py, MutantDatabase.Get("tier1", "BlindMaw")); EncounterState.Enemies.Add(g3); EncounterState.Enemies.Add(d3);
         Gaunt.Call(g3, p); UnityEngine.Time.time += 0.8f; Gaunt.Tick(); g3.Hp = 0; UnityEngine.Time.time += 1.0f; Gaunt.Tick();

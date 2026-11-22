@@ -22,7 +22,7 @@ namespace GameCore
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "Mother Hollow", Title = "THE DEN REMEMBERS HER", Weapon = "MotherJaws", Armor = null, Hp = 4200, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
+            Name = "Mother Hollow", Title = "THE DEN REMEMBERS HER", Weapon = "MotherJaws", Armor = null, Hp = 44000, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
             Art = "mother_hollow", Creature = true, StepSeconds = 0.3f, Recover = 1.0f, Phase2Line = "She stops circling. The whole den is hers, and so are you.",
             Moves = new[]
             {

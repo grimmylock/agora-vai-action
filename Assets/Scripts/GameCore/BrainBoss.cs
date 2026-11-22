@@ -22,7 +22,7 @@ namespace GameCore
     public static class BrainBoss
     {
         public const string Lab = "secret_lab_alpha", Name = "The Specimen", Escaped = "brain_escaped";
-        public const int VatX = 37, VatY = 9, MaxHp = 18000, Wake = 9;   // Yan: "not tanky enough" -> "triple his hp"
+        public const int VatX = 37, VatY = 9, MaxHp = 376500, Wake = 9;   // Yan: "not tanky enough" -> "triple his hp"
         public const float StillFor = 3f, RiseFor = 1.4f, EyeFor = 2.4f;
         public const float OrbSpeed = 3.2f, BoltSpeed = 4.6f, OrbRadius = 0.3f, OrbLife = 9f, PullFor = 3f, PullSpeed = 1.3f, PullReach = 14f;
         public const float PulseSpeed = 8f, PulseReach = 16f, PulseWind = 1.1f, LaserTurn = 105f, LaserFor = 3.4f, LaserHitGap = 0.6f;

@@ -1,26 +1,27 @@
 == mutants ==
 Swarm                  T1 HP     50 DR 0.00  PSh-18 Pchela           120/shot     1 rounds    0.0 s
-Blind Maw              T1 HP    400 DR 0.00  Obrez-66                450/shot     1 rounds    0.0 s
-Pallid Prowler         T1 HP    450 DR 0.00  Obrez-66                450/shot     1 rounds    0.0 s
-Veil Prowler           T2 HP    700 DR 0.00  VKM                     358/shot     2 rounds    0.1 s
-Mind Weaver            T3 HP    900 DR 0.00  TS-9 Tishina            431/shot     3 rounds    0.1 s
-Gaunt                  T3 HP   1000 DR 0.00  TS-9 Tishina            431/shot     3 rounds    0.1 s
-Blight Brute           T4 HP   1200 DR 0.40  Corvan Battle Rifle     300/shot     4 rounds    0.3 s
-Dread Prowler          T4 HP   1550 DR 0.00  BR-86 Bulldog           450/shot     4 rounds    0.3 s
-Ward Crawler (ward)    T5 HP    600 DR 0.00  VK-127 Grom             990/shot     1 rounds    0.0 s
-Ward Wretch (ward)     T5 HP    700 DR 0.00  VK-127 Grom             990/shot     1 rounds    0.0 s
-Ward Hulk (ward)       T5 HP   1500 DR 0.20  Corvan Bullpup          407/shot     4 rounds    0.2 s
-Void Weaver            T5 HP   1700 DR 0.00  Corvan Bullpup          508/shot     4 rounds    0.2 s
+Blind Maw              T1 HP   2700 DR 0.00  VKS-74U                 225/shot    12 rounds    0.9 s
+Pallid Prowler         T1 HP   2700 DR 0.00  VKS-74U                 225/shot    12 rounds    0.9 s
+Veil Prowler           T2 HP   6800 DR 0.00  Smerch-3                325/shot    21 rounds    1.5 s
+Gaunt                  T3 HP   9600 DR 0.00  Corvan LMG              370/shot    26 rounds    2.0 s
+Mind Weaver            T3 HP   9600 DR 0.00  Corvan LMG              370/shot    26 rounds    2.0 s
+Blight Brute           T4 HP   7800 DR 0.40  PL-74                   280/shot    28 rounds    2.5 s
+Dread Prowler          T4 HP  13100 DR 0.00  PL-74                   467/shot    29 rounds    2.6 s
+Ward Hulk (ward)       T5 HP  12300 DR 0.20  PL-74P Polovets Zulu    374/shot    33 rounds    3.0 s
+Void Weaver            T5 HP  15400 DR 0.00  PL-74P Polovets Zulu    467/shot    33 rounds    3.0 s
+Ward Wretch (ward)     T5 HP  15400 DR 0.00  PL-74P Polovets Zulu    467/shot    33 rounds    3.0 s
+Ward Crawler (ward)    T5 HP  15400 DR 0.00  PL-74P Polovets Zulu    467/shot    33 rounds    3.0 s
 == bosses ==
-The Visor              T4 HP   4800 DR 0.60  PL-74P Polovets          41/shot   118 rounds   14.7 s
-Spool                  T2 HP   3600 DR 0.40  Smerch-3                 37/shot    98 rounds   12.7 s
-The Scrap King         T2 HP   5000 DR 0.40  Smerch-3                 37/shot   136 rounds   17.3 s
-The Verger             T6 HP   7000 DR 0.50  G-7 Rail Prototype      790/shot     9 rounds   12.0 s
-Mother Hollow          T1 HP   4200 DR 0.00  Vosa vz. 62              53/shot    80 rounds   10.1 s
-The Gallery Choir      T2 HP   5200 DR 0.00  Smerch-3                 58/shot    90 rounds   10.3 s
-The Ferryman           T3 HP   6000 DR 0.00  Corvan LMG               50/shot   120 rounds    9.5 s
-The Specimen           T4 HP   8000 DR 0.00  PL-74P Polovets         101/shot    80 rounds    7.3 s
-The Grinder            T5 HP  11000 DR 0.00  PL-74P Polovets Zulu    100/shot   110 rounds   14.0 s
-The Orderly            T6 HP  12000 DR 0.00  PL-74P Polovets Zulu    100/shot   120 rounds   14.9 s
-Brain in the vat       T2 HP  18000 DR 0.20  PL-62 Kobza             247/shot    73 rounds    6.6 s
-The Drowner (eel)      T3 HP  24000 DR 0.20  Corvan LMG              296/shot    82 rounds    6.5 s
+The Visor              T4 HP 106500 DR 0.60  PL-74P Polovets          41/shot  2598 rounds  337.2 s
+Spool                  T2 HP  52000 DR 0.40  Smerch-3                 37/shot  1406 rounds  188.2 s
+The Scrap King         T2 HP  52000 DR 0.40  Smerch-3                 37/shot  1406 rounds  188.2 s
+The Verger             T6 HP 184000 DR 0.50  PL-74P Polovets Zulu     50/shot  3680 rounds  480.0 s
+Mother Hollow          T1 HP  44000 DR 0.00  Vosa vz. 62              53/shot   831 rounds  120.1 s
+The Gallery Choir      T2 HP  82000 DR 0.00  Smerch-3                 58/shot  1414 rounds  190.6 s
+The Ferryman           T3 HP 129000 DR 0.00  Corvan LMG               50/shot  2580 rounds  260.3 s
+The Specimen           T4 HP 262500 DR 0.00  PL-74P Polovets         101/shot  2600 rounds  337.4 s
+The Grinder            T5 HP 313000 DR 0.00  PL-74P Polovets Zulu    100/shot  3130 rounds  409.7 s
+The Orderly            T6 HP 368000 DR 0.00  PL-74P Polovets Zulu    100/shot  3680 rounds  480.0 s
+Gallery Choir (cathedral) T6 HP   9000 DR 0.30  Corvan Bullpup          356/shot    26 rounds    2.0 s
+Brain in the vat       T2 HP 376500 DR 0.20  Smerch-3                267/shot  1411 rounds  190.3 s
+The Drowner (eel)      T3 HP 762500 DR 0.20  Corvan LMG              296/shot  2577 rounds  260.1 s

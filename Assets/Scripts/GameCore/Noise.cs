@@ -26,7 +26,7 @@ namespace GameCore
             }
         }
 
-        public const int SmellRange = 25;
+        public const int SmellRange = 25, HpPowerDivisor = 8;
 
         /// <summary>Yan: "make it so mutants only come over if someone dies (they smell the blood) and only if they think they can win
         /// the fight". A death at (x, y): each unaware pack within 25 tiles weighs itself (its members' HP) against everyone still
@@ -40,7 +40,7 @@ namespace GameCore
             var noses = EncounterState.Enemies.Where(e => !(e is HumanEnemy) && e.IsAlive() && !e.IsAggroed && D(e, x, y) <= SmellRange).ToList();
             foreach (var e in noses)
             {
-                int pack = noses.Where(o => D(o, e.X, e.Y) <= 6).Sum(o => o.Hp);
+                int pack = noses.Where(o => D(o, e.X, e.Y) <= 6).Sum(o => o.Hp) / HpPowerDivisor;   // 2026-11-22: mutants carry ~8x the health since the HP review, the odds still count what they did (health / 8) against yours
                 if (pack > standing) e.PatrolTarget = spot;
             }
         }

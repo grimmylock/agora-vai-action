@@ -23,11 +23,11 @@ namespace GameCore
         public const string Lair = "Signal Room", Zone = "secret_lab_gamma", Done = "specimen_grown_done", Trophy = "Specimen Tissue", EyeName = "The Specimen's Eye";
         public const float WakeRange = 12f, MindRange = 11f, BeamReach = 14f, BeamHalfWidth = 0.55f, BeamFor = 0.6f, SweepFor = 1.2f, SweepArc = 60f;
         public const float CordLength = 3.2f, EyeOrbit = 45f, EyeLift = 1.1f, EyeCharge = 1.0f, EyeEvery = 5f, EyeEvery2 = 3.4f, PulseRadius = 6f, PullReach = 10f, PullTiles = 3f, BrainLift = 1.0f;
-        public const int LaserDamage = 150, PulseDamage = 120, PullDamage = 60, EyeHp = 2400;
+        public const int LaserDamage = 150, PulseDamage = 120, PullDamage = 60, EyeHp = 78700;
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Specimen", Title = "IT REMEMBERS YOU", Weapon = "SpecimenLegs", Armor = null, Hp = 8000, Faction = "Mutants", Rank = "Master", DoneFlag = Done, Vanishes = false,
+            Name = "The Specimen", Title = "IT REMEMBERS YOU", Weapon = "SpecimenLegs", Armor = null, Hp = 262500, Faction = "Mutants", Rank = "Master", DoneFlag = Done, Vanishes = false,
             Art = "specimen_v2", Creature = true, KeepAt = 5, StepSeconds = 0.3f, Recover = 1.0f, Phase2Line = "The eye on its cord opens all the way. Every eye on the brain opens with it.",
             Moves = new[]
             {

@@ -12,7 +12,7 @@ namespace GameCore
     {
         public const string Name = "Gaunt", ElderName = "Elder Gaunt";
         /// <summary>The Elder Gaunt (Yan, 2026-11-16: the big mean one is a mini-boss, the smaller crazier one is the wild kind of the forests): not in any random pool, placed by hand (the Tier 2 horde, later a forest lair).</summary>
-        public static readonly GameData.MutantDef ElderDef = new GameData.MutantDef { Name = ElderName, Tier = 4, Hp = 15000, PhysDR = 0.1f, AnomDR = 0.35f, Ap = 5, Mp = 5, Ac = 14, AttackDamage = 450, AgilityMod = 2, Behavior = "berserk", ThroatLacerationChance = 0.4f, ArmorPierce = 0.25f, PanicThreshold = 0f };
+        public static readonly GameData.MutantDef ElderDef = new GameData.MutantDef { Name = ElderName, Tier = 4, Hp = 144000, PhysDR = 0.1f, AnomDR = 0.35f, Ap = 5, Mp = 5, Ac = 14, AttackDamage = 450, AgilityMod = 2, Behavior = "berserk", ThroatLacerationChance = 0.4f, ArmorPierce = 0.25f, PanicThreshold = 0f };
         /// <summary>Forest zones: the wild Gaunt lives there (SquadManager gives a mutant pack a Gaunt now and then); nowhere else it is not rolled.</summary>
         public static readonly string[] Woods = { "crimson_woods", "black_valley", "camp_shelter" };
         public static bool IsElder(Mutant m) => m?.Db?.Name == ElderName;
