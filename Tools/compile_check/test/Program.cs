@@ -1320,21 +1320,22 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset();
     var guns = new List<(string key, string cat, Weapon w, int tier)>();
     foreach (var cat in WeaponDatabase.Categories) { if (cat.Key == "melee" || cat.Key == "thrown") continue; foreach (var kv in cat.Value) { if (WeaponDatabase.Unique.Contains(kv.Key) || kv.Value.Tier <= 0 || (Environment.GetEnvironmentVariable("NO_RAIL") != null && kv.Key == "G7RailPrototype")) continue; var w = p.MakeWeapon(cat.Key, kv.Key); if (w?.Db == null || !Gunplay.Guns.ContainsKey(w.Db.Name)) continue; guns.Add((kv.Key, cat.Key, w, kv.Value.Tier)); } }
-    (double sec, int rounds, string name, int dmg) Best(int tier, float hp, float physDr, bool human, Func<Weapon, float> shotMult) {
+    (double sec, int rounds, string name, int dmg) Best(int tier, float hp, float physDr, bool human, Func<Weapon, float> shotMult, int pack = 1) {
       (double sec, int rounds, string name, int dmg) best = (1e9, 0, "-", 0);
       foreach (var g in guns.Where(g => g.tier == Math.Min(tier, 5))) {
         var gd = Gunplay.Guns[g.w.Db.Name]; bool shot = CombatRules.IsShotgun(g.w); int pel = shot ? 6 : 1;
         float raw = Gunplay.RoundDamage(g.w, "Torso", 6f, pel) * Gunplay.TuneMult(g.w, human) * Gunplay.FalloffMult(g.w, 6f) * CombatRules.PlayerDamage * CombatRules.Lethality; var load = AmmoDatabase.Load(g.w.Db, g.w.CurrentAmmoType);
         int one = load != null ? CombatRules.PhysicalDamage(raw, load, physDr, g.w.Db.IgnorePhysDRPercent ?? 0f) : CombatRules.PhysicalDamage(raw, g.w.CurrentAmmoType, physDr, g.w.Db.IgnorePhysDRPercent ?? 0f); int perShot = one * pel;
-        int n = (int)Math.Ceiling(hp / (double)perShot); int mag = Math.Max(1, g.w.MagCapacity); double sec = (n - 1) * 60.0 / gd.rpm + ((n - 1) / mag) * gd.reload;
+        int n = (int)Math.Ceiling(hp / (double)perShot) * pack; int mag = Math.Max(1, g.w.MagCapacity); double sec = (n - 1) * 60.0 / gd.rpm + ((n - 1) / mag) * gd.reload;
         if (sec < best.sec) best = (sec, n, g.w.Db.Name, perShot);
       }
       return best;
     }
     var muts_ = new HashSet<string>(); foreach (var t in MutantDatabase.Tiers) foreach (var m in t.Value) muts_.Add(m.Value.Name);
     double[] mutT = { 0, 1.0, 1.5, 2.0, 2.5, 3.0 }; double[] bossT = { 0, 120, 190, 260, 340, 410, 480 };
-    int Solve(int tier, float dr, bool human, double target) { int lo = 10, hi = 4000000; while (hi - lo > 1) { int mid = (lo + hi) / 2; if (Best(tier, mid, dr, human, null).sec <= target) lo = mid; else hi = mid; } return lo; }
-    string Row(string name, int tier, int hp, float dr, bool human) { if (solve) { double tg = name.Contains("(ward)") || muts_.Contains(name) ? mutT[Math.Min(tier, 5)] : bossT[Math.Min(tier, 6)]; int ns = Solve(tier, dr, human, tg); int rd = ns >= 20000 ? 500 : ns >= 4000 ? 100 : 50; return $"{name,-22} T{tier} HP {hp,6} -> {(ns + rd / 2) / rd * rd,7}  (target {tg} s)"; } var b = Best(tier, hp, dr, human, null); return $"{name,-22} T{tier} HP {hp,6} DR {dr:0.00}  {b.name,-22} {b.dmg,4}/shot  {b.rounds,4} rounds  {b.sec,5:0.0} s"; }
+    int Solve(int tier, float dr, bool human, double target, int pack = 1) { int lo = 10, hi = 4000000; while (hi - lo > 1) { int mid = (lo + hi) / 2; if (Best(tier, mid, dr, human, null, pack).sec <= target) lo = mid; else hi = mid; } return lo; }
+    var perMutant = new Dictionary<string, (double t, int pack)> { ["Blind Maw"] = (1.0, 3), ["Pallid Prowler"] = (1.2, 3), ["Veil Prowler"] = (1.5, 1), ["Mind Weaver"] = (1.6, 1), ["Gaunt"] = (2.2, 1), ["Dread Prowler"] = (2.4, 1), ["Void Weaver"] = (2.6, 1) };
+    string Row(string name, int tier, int hp, float dr, bool human) { if (solve && perMutant.TryGetValue(name, out var pm)) { int ns = Solve(tier, dr, human, pm.t, pm.pack); int rd = ns >= 4000 ? 100 : 50; return $"{name,-22} T{tier} HP {hp,6} -> {(ns + rd / 2) / rd * rd,7}  (target {pm.t} s for {pm.pack})"; } if (!solve) { var bp = perMutant.TryGetValue(name, out var pm2) ? pm2.pack : 1; var b2 = Best(tier, hp, dr, human, null, bp); return $"{name,-22} T{tier} HP {hp,6} DR {dr:0.00}  {b2.name,-22} {b2.dmg,4}/shot  {b2.rounds,4} rounds  {b2.sec,5:0.0} s{(bp > 1 ? " (pack of " + bp + ")" : "")}"; } if (solve) { double tg = name.Contains("(ward)") || muts_.Contains(name) ? mutT[Math.Min(tier, 5)] : bossT[Math.Min(tier, 6)]; int ns = Solve(tier, dr, human, tg); int rd = ns >= 20000 ? 500 : ns >= 4000 ? 100 : 50; return $"{name,-22} T{tier} HP {hp,6} -> {(ns + rd / 2) / rd * rd,7}  (target {tg} s)"; } var b = Best(tier, hp, dr, human, null); return $"{name,-22} T{tier} HP {hp,6} DR {dr:0.00}  {b.name,-22} {b.dmg,4}/shot  {b.rounds,4} rounds  {b.sec,5:0.0} s"; }
     Console.WriteLine("== mutants ==");
     var muts = new List<(string name, int tier, MutantDef d)>();
     foreach (var t in MutantDatabase.Tiers) foreach (var m in t.Value) muts.Add((m.Value.Name, int.Parse(new string(t.Key.Where(char.IsDigit).ToArray())), m.Value));

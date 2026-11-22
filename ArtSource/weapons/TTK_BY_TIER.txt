@@ -1,16 +1,16 @@
 == mutants ==
 Swarm                  T1 HP     50 DR 0.00  PSh-18 Pchela           120/shot     1 rounds    0.0 s
-Blind Maw              T1 HP   2700 DR 0.00  VKS-74U                 225/shot    12 rounds    0.9 s
-Pallid Prowler         T1 HP   2700 DR 0.00  VKS-74U                 225/shot    12 rounds    0.9 s
+Blind Maw              T1 HP    900 DR 0.00  VKS-74U                 225/shot    12 rounds    0.9 s (pack of 3)
+Pallid Prowler         T1 HP   1150 DR 0.00  VKS-74U                 225/shot    18 rounds    1.5 s (pack of 3)
 Veil Prowler           T2 HP   6800 DR 0.00  Smerch-3                325/shot    21 rounds    1.5 s
-Gaunt                  T3 HP   9600 DR 0.00  Corvan LMG              370/shot    26 rounds    2.0 s
-Mind Weaver            T3 HP   9600 DR 0.00  Corvan LMG              370/shot    26 rounds    2.0 s
-Blight Brute           T4 HP   7800 DR 0.40  PL-74                   280/shot    28 rounds    2.5 s
-Dread Prowler          T4 HP  13100 DR 0.00  PL-74                   467/shot    29 rounds    2.6 s
-Ward Hulk (ward)       T5 HP  12300 DR 0.20  PL-74P Polovets Zulu    374/shot    33 rounds    3.0 s
-Void Weaver            T5 HP  15400 DR 0.00  PL-74P Polovets Zulu    467/shot    33 rounds    3.0 s
-Ward Wretch (ward)     T5 HP  15400 DR 0.00  PL-74P Polovets Zulu    467/shot    33 rounds    3.0 s
-Ward Crawler (ward)    T5 HP  15400 DR 0.00  PL-74P Polovets Zulu    467/shot    33 rounds    3.0 s
+Mind Weaver            T3 HP   8600 DR 0.00  TS-9 Tishina            431/shot    20 rounds    1.3 s
+Gaunt                  T3 HP  10400 DR 0.00  Corvan LMG              370/shot    29 rounds    2.2 s
+Blight Brute           T4 HP  10000 DR 0.40  PL-74                   280/shot    36 rounds    3.2 s
+Dread Prowler          T4 HP  12600 DR 0.00  PL-74                   467/shot    27 rounds    2.4 s
+Ward Crawler (ward)    T5 HP    600 DR 0.00  VK-127 Grom             990/shot     1 rounds    0.0 s
+Ward Wretch (ward)     T5 HP    700 DR 0.00  VK-127 Grom             990/shot     1 rounds    0.0 s
+Ward Hulk (ward)       T5 HP  10000 DR 0.20  Corvan Bullpup          407/shot    25 rounds    1.9 s
+Void Weaver            T5 HP  15200 DR 0.00  Corvan Bullpup          508/shot    30 rounds    2.3 s
 == bosses ==
 The Visor              T4 HP 106500 DR 0.60  PL-74P Polovets          41/shot  2598 rounds  337.2 s
 Spool                  T2 HP  52000 DR 0.40  Smerch-3                 37/shot  1406 rounds  188.2 s
