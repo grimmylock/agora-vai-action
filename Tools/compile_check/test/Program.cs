@@ -3065,6 +3065,7 @@ static class Program {
       Check(f.Stalking && h.IsAggroed && CombatantUtil.Distance(h, p) >= 10, $"Morgue stalker: you step into the chase corridor: it hunts you, with a lead ({CombatantUtil.Distance(h, p)} tiles)");
       p.X = 156; p.Y = 16; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
       Check(!f.Stalking && Boss.Current == f && Boss.DamageScale(h) == 1f, "Morgue stalker: you reach the big room: the stalk ends, the fight begins");
+      float lampBefore = LightMap.At(156, 11); OrderlyBoss.Phase2(f); Check(lampBefore > 0.1f && LightMap.At(156, 11) == 0f, $"Morgue boss: phase 2 puts the big room's lamp out ({lampBefore:0.00} -> {LightMap.At(156, 11):0.00})");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MacroState.Current.Keys.Clear(); }
   }
   static void WardChecks() {   // 2026-11-22: the morgue's room mutants (Ward Wretch, Ward Hulk, Ward Crawler): melee lands at its contact frame, the Wretch and the Crawler leap, the Hulk never does, none is in a random pool, the lairs place them by name
@@ -3149,6 +3150,21 @@ static class Program {
       Reset(4); h.Hp = h.MaxHp * 7 / 10; int before = h.Hp; Run(drip); Check(h.Hp > before && OrderlyBoss.DripsUsed(f) == 1, $"Orderly: the Drip mends him ({before} -> {h.Hp})");
       Reset(4); h.Hp = h.MaxHp * 8 / 10; before = h.Hp; Run(drip, () => { h.Hp -= (int)(OrderlyBoss.Def.Hp * 0.05f); }); Check(h.Hp < before && OrderlyBoss.Burst(f) && h.StatusEffects.Bleeding, "Orderly: hurt him while he squeezes and the bag bursts: no heal, he bleeds");
       Reset(4); before = h.Hp; Run(drip); Check(h.Hp <= before, "Orderly: a burst bag never mends him again");
+      var lash = OrderlyBoss.Def.Moves.First(m => m.Name == "Tube Lash");
+      Reset(5); var (bpx, bpy) = Ballistics.Pos(p); Run(lash); for (int i = 0; i < 60; i++) { UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.deltaTime = 1f / 60f; Rt.PlayerTick(p, new Rt.Input()); } var (apx, apy) = Ballistics.Pos(p); Check(p.Hp < p.MaxHp && apx > bpx + 1f, $"Orderly: the Tube Lash hits you five tiles away and hauls you toward it ({bpx:0.0} -> {apx:0.0})");
+      Reset(5); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(lash); Check(p.Hp == p.MaxHp, "Orderly: a dive goes under the Tube Lash");
+      Reset(9); Run(lash); Check(p.Hp == p.MaxHp, "Orderly: nine tiles away the Tube Lash only strikes the wall");
+      for (int yy = py - 3; yy <= py + 3; yy++) TerrainMap.SetTileType(px + 4, yy, TileType.Solid); Reset(5); Run(lash); Check(p.Hp == p.MaxHp, "Orderly: a wall between you and it stops the lash");
+      for (int yy = py - 3; yy <= py + 3; yy++) TerrainMap.SetTileType(px + 4, yy, TileType.Empty);
+      Check(OrderlyBoss.Def.Moves.Where(m => m.Name == "Tube Lash").All(m => m.MinDist >= 3f && m.MaxDist >= 6f), "Orderly: the lash is a ranged move (not used up close)");
+      // the bag: a round at the bag's height is a bag hit, x2.5, and the bag holds only so much
+      Reset(5); var (ohx, ohy) = Ballistics.Pos(h); float topH = GameData.HitProfiles.Height("boss:orderly"); Check(BossArt.HitKey(h) == "boss:orderly" && topH > 3f, $"Orderly: its hit profile is the drawn one ({topH:0.0} tiles tall)");
+      var bagShot = Ballistics.Trace(p, ohx + 0.6f, ohy - 6f, 0f, 1f, 12f, (0.88f * topH) / Ballistics.BodyTiles, new ICombatant[] { h }); Check(bagShot.Unit == h && bagShot.Part == "Bag", $"Orderly: a round at the bag's height is a bag hit ({bagShot.Part})");
+      var chestShot = Ballistics.Trace(p, ohx + 0.6f, ohy - 6f, 0f, 1f, 12f, (0.4f * topH) / Ballistics.BodyTiles, new ICombatant[] { h }); Check(chestShot.Unit == h && chestShot.Part == "Body", $"Orderly: a round at the chest is just the body ({chestShot.Part})");
+      OrderlyBoss.OnEnterZone("x"); f.Stalking = false; f.Broken = false; f.Finished = false; h.Hp = h.MaxHp; float one = OrderlyBoss.BagHit(f, 100f); Check(System.Math.Abs(one - 100f * OrderlyBoss.BagMult) < 0.1f, "Orderly: a bag hit does 2.5x");
+      for (int i = 0; i < 40 && !OrderlyBoss.BagBurst(f); i++) OrderlyBoss.BagHit(f, 100f); Check(OrderlyBoss.BagBurst(f) && h.StatusEffects.Bleeding && f.StaggerUntil > UnityEngine.Time.time, "Orderly: the bag bursts after enough hits: bleeding, open for a moment");
+      Check(OrderlyBoss.BagHit(f, 100f) == 100f, "Orderly: a burst bag is just a body now");
+      Reset(4); h.Hp = h.MaxHp * 7 / 10; before = h.Hp; Run(drip); Check(h.Hp <= before, "Orderly: a bag you burst never mends it");
       var grab = OrderlyBoss.Def.Moves.First(m => m.Name == "Grab"); Reset(1); Run(grab); Check(p.Hp < p.MaxHp && Rt.Of(p).ProneUntil > UnityEngine.Time.time - 1.5f, "Orderly: the Grab slams you down");
       h.Hp = 1; Boss.OnDamaged(h); p.X = h.X - 1; p.Y = h.Y; Rt.SetOffset(p, 0f, 0f); Check(f.Broken && Boss.TryFinish(p) && Story.Has(OrderlyBoss.Done) && h.Inventory.Items.Any(i => i.Name == OrderlyBoss.Trophy), "Orderly: broken, executed, orderly_done, the Ward Name Tag on him");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }

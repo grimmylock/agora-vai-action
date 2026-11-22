@@ -1352,3 +1352,7 @@ Ward Wretch	Paciente Retorcido
 Ward Hulk	Paciente Colosso
 Ward Crawler	Paciente Rastejante
 A row of steel slabs, one of them not empty.	Uma fileira de lajes de aço, uma delas não está vazia.
+The tubes whip across the room and strike the wall.	Os tubos chicoteiam pela sala e batem na parede.
+The tubes lash round your legs and haul you across the floor.	Os tubos se enrolam nas suas pernas e arrastam você pelo chão.
+Your round tears the IV bag open. Black fluid sprays across the tiles and it screams.	Seu tiro rasga a bolsa de soro. Fluido preto espirra pelos ladrilhos e ele grita.
+It hooks the lamp rail with a saw blade and tears it out of the ceiling. The light goes with it.	Ele prende o trilho da lâmpada com uma lâmina de serra e o arranca do teto. A luz vai junto.

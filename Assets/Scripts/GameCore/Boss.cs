@@ -32,6 +32,7 @@ namespace GameCore
             public float Gap = 0.4f;       // between a combo's hits
             public float Lunge;            // > 0: he closes this far in one rush before the hit
             public string[] Effects;       // 2026-11-21 (the Verger's beast): what a blow does instead of a plain swing: "howl" (a cone: aim blown, knocked down), "quake" (a ring round him); null/empty = the weapon's swing
+            public float MinDist;          // 2026-11-22 (the Orderly's tube lash): a move that only starts at least this far away
             public float MaxDist = 1f;     // how far from you he may start a move that is not a rush (a Howl reaches across the room)
             public float[] Gaps, Mults;    // 2026-11-21 (the Verger's combos): the pause before each following hit, and each hit's own damage multiplier (null = Gap / Mult for all)
             public bool[] RedHits;         // 2026-11-21: which hits of a combo are red (can't be parried, a dive goes under): the Smash that finishes a combo
@@ -265,6 +266,7 @@ namespace GameCore
                 CombatFx.Push("aura", h, null, h.EquippedWeapon).Now = true;
                 HitStop(0.3f);
                 if (f.Def.Phase2Barks != null) for (int i = 0; i < f.Def.Phase2Barks.Length; i++) Banter.Say(h, f.Def.Phase2Barks[i], 1, 0.3f + i * 1.8f);
+                if (f.Def == OrderlyBoss.Def) OrderlyBoss.Phase2(f);                                          // 2026-11-22: it tears the lamp off the rail
                 if (f.Def == Verger && h.EquippedArmor != null) h.EquippedArmor = Bare(h.EquippedArmor);       // 2026-11-21: the hat comes off (the look "Verger Coat (bare)", same coat)
             }
             float speed = f.Beast ? 1.1f : f.Phase == 2 ? 0.8f : 1f;     // the Verger's beast is a slow brawler (1.1: his waits and openings are a tenth longer); every other boss's phase 2 is quicker
@@ -285,7 +287,7 @@ namespace GameCore
                     h.MoveToward(p.X, p.Y);
                 }
                 if (now < f.NextMoveAt) return;
-                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.BelowHp <= 0f || h.Hp <= f.Def.Hp * m.BelowHp) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist <= m.MaxDist)).ToList();
+                var options = f.Def.Moves.Where(m => (!m.Phase2Only || f.Phase == 2) && (!m.Phase1Only || f.Phase == 1) && (m.BelowHp <= 0f || h.Hp <= f.Def.Hp * m.BelowHp) && (m.Lunge > 0f ? dist >= 2 && dist <= m.Lunge : dist >= m.MinDist && dist <= m.MaxDist)).ToList();
                 if (options.Count == 0) return;
                 int roll = Random.Range(0, options.Sum(m => m.Weight));
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
@@ -370,6 +372,7 @@ namespace GameCore
             if (fx == "rocks") { f.StruckAt = Time.time; ExcavatorBoss.Rocks(f, m, hi0); return; }
             if (fx == "slab") { f.StruckAt = Time.time; OrderlyBoss.Slab(f, p, m, hi0); return; }         // 2026-11-21 the Orderly
             if (fx == "drip") { OrderlyBoss.Drip(f); return; }
+            if (fx == "lash") { f.StruckAt = Time.time; OrderlyBoss.Lash(f, p, m, hi0); return; }          // 2026-11-22 the Orderly: the IV tubes whip out and haul you in
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)
             f.StruckAt = Time.time;

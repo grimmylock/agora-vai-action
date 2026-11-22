@@ -515,6 +515,7 @@ namespace GameCore
                 if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
                 if (shooter is Player) raw *= CombatRules.PlayerDamage;
                 raw *= CombatRules.Lethality * Boss.DamageScale(target);   // 2026-11-20: the Verger takes a tenth while he changes
+                if (hit.Part == "Bag" && Boss.Of(target) is Boss.Fight bagFight && bagFight.Def == OrderlyBoss.Def) raw = OrderlyBoss.BagHit(bagFight, raw);   // 2026-11-22: a round in the IV bag
                 float ignore = w.Db?.IgnorePhysDRPercent ?? 0f;
                 if (shooter is Player pk)
                 {

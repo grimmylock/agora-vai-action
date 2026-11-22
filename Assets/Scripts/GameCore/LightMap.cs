@@ -52,6 +52,13 @@ namespace GameCore
             }
         }
 
+        /// <summary>2026-11-22 (the Orderly tears the lamp down in phase 2): every placed light in the rectangle goes out.</summary>
+        public static void Snuff(int x0, int y0, int x1, int y1)
+        {
+            Ensure(); if (_lit == null) return; int h = _lit.Length / System.Math.Max(1, _w);
+            for (int y = System.Math.Max(0, y0); y <= System.Math.Min(h - 1, y1); y++) for (int x = System.Math.Max(0, x0); x <= System.Math.Min(_w - 1, x1); x++) { _lit[y * _w + x] = 0f; _red[y * _w + x] = 0f; }
+        }
+
         /// <summary>0..1 light from placed lights at a cell.</summary>
         public static float At(int x, int y)
         {

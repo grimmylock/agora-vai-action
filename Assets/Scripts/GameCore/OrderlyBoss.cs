@@ -23,7 +23,7 @@ namespace GameCore
     public static class OrderlyBoss
     {
         public const string Lair = "Autopsy Theatre", Done = "orderly_done", Trophy = "Ward Name Tag";
-        public const float WakeRange = 10f, DripHeal = 0.06f, DripBreak = 0.03f; public const int DripMax = 3;
+        public const float LashRange = 7f, LashDrag = 4.5f, BagMult = 2.5f, BagIntegrity = 1800f, WakeRange = 10f, DripHeal = 0.06f, DripBreak = 0.03f; public const int DripMax = 3;
         static readonly Dictionary<Boss.Fight, (int hp, int used, bool burst)> _drip = new Dictionary<Boss.Fight, (int, int, bool)>();
 
         public static readonly Boss.Def Def = new Boss.Def
@@ -35,6 +35,7 @@ namespace GameCore
                 new Boss.Move { Name = "Saw", Wind = 0.9f, MaxDist = 2f, Mult = 1.0f, Weight = 3, Poses = new[] { 1 }, Open = 1.4f, Clip = "saw" },
                 new Boss.Move { Name = "Chop", Wind = 1.1f, Danger = true, MaxDist = 2f, Mult = 1.6f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Clip = "chop" },
                 new Boss.Move { Name = "Grab", Wind = 1.0f, Danger = true, MaxDist = 2f, Mult = 1.1f, Effects = new[] { "slab" }, Weight = 2, Open = 1.8f, Clip = "grab" },
+                new Boss.Move { Name = "Tube Lash", Wind = 1.15f, Danger = true, MinDist = 3f, MaxDist = LashRange, Mult = 0.9f, Effects = new[] { "lash" }, Weight = 3, Open = 1.5f, Clip = "grab" },   // 2026-11-22: ends free kiting
                 new Boss.Move { Name = "Drip", Wind = 1.6f, MaxDist = 20f, Effects = new[] { "drip" }, Weight = 1, Open = 0.8f, Phase1Only = true, Clip = "drip" },
                 new Boss.Move { Name = "Double Saw", Wind = 0.8f, Hits = 2, Gap = 0.6f, MaxDist = 2f, Mult = 0.8f, Weight = 3, Poses = new[] { 1, 1 }, Open = 1.8f, Phase2Only = true, Clip = "saw" },
                 new Boss.Move { Name = "Saw Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.4f, Weight = 2, Poses = new[] { 1 }, Open = 2.2f, Phase2Only = true, Clip = "saw" },
@@ -50,7 +51,7 @@ namespace GameCore
         // modes: 0 patrol, 1 investigate, 2 hunt, 3 retreat
         static readonly Dictionary<Boss.Fight, St> _st = new Dictionary<Boss.Fight, St>();
         static readonly List<(int x, int y)> _wps = new List<(int, int)>();
-        public static void OnEnterZone(string zoneId) { _spawnedHere = false; _drip.Clear(); _st.Clear(); _wps.Clear(); }
+        public static void OnEnterZone(string zoneId) { _spawnedHere = false; _drip.Clear(); _bag.Clear(); _st.Clear(); _wps.Clear(); }
 
         static (int x, int y)? Lm(string name) { var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == name); return l == null ? ((int, int)?)null : (l.X, l.Y); }
         /// <summary>Past the locked door: the chase corridor (horizontal: from the landmark at its west end eastward, six tiles either side).</summary>
@@ -198,6 +199,42 @@ namespace GameCore
                 st.HasWp = true; if (now < st.WaitUntil) return;
             }
             if (now >= st.NextStep) { st.NextStep = now + PatrolStep; int x0 = h.X, y0 = h.Y; h.MoveToward(st.Wp.x, st.Wp.y); if (h.X == x0 && h.Y == y0) st.Stuck++; else st.Stuck = 0; }
+        }
+
+        static readonly Dictionary<Boss.Fight, float> _bag = new Dictionary<Boss.Fight, float>();
+        /// <summary>A round in the IV bag (Ballistics: the crosshair on the upper back): ×BagMult damage, and the bag only holds BagIntegrity of it. When it is gone it bursts: no more Drip, it bleeds, and it is open for 2.5 s.</summary>
+        public static float BagHit(Boss.Fight f, float raw)
+        {
+            if (f.Broken || f.Finished || f.Stalking) return raw; _drip.TryGetValue(f, out var d); if (d.burst) return raw;
+            float left = (_bag.TryGetValue(f, out var b) ? b : BagIntegrity) - raw; _bag[f] = left; CombatFx.PxAt("acid_splash", f.Unit.X, f.Unit.Y);
+            if (left <= 0f) BurstBag(f, "Your round tears the IV bag open. Black fluid sprays across the tiles and it screams.");
+            return raw * BagMult;
+        }
+        static void BurstBag(Boss.Fight f, string line)
+        {
+            _drip.TryGetValue(f, out var d); _drip[f] = (f.Unit.Hp, d.used, true); f.Unit.StatusEffects.Bleeding = true; f.StaggerUntil = Time.time + 2.5f; f.Doing = null; f.OpenUntil = f.StaggerUntil;
+            CombatFx.PxAt("acid_splash", f.Unit.X, f.Unit.Y); Sfx.Play("hit_hard", null, 1f, 0.03f, 0.7f); GameLog.Event(line);
+        }
+        public static bool BagBurst(Boss.Fight f) => _drip.TryGetValue(f, out var d) && d.burst;
+
+        /// <summary>Phase 2 begins: it rips the room's lamp off the rail. Every placed light within the theatre goes out: you need the flashlight to read its telegraphs.</summary>
+        public static void Phase2(Boss.Fight f)
+        {
+            var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == Lair); if (l == null) { return; }
+            LightMap.Snuff(l.X - 12, l.Y - 12, l.X + 12, l.Y + 12); Sfx.Play("saw_scrape", TacticalGridView.GridToWorld(f.Unit.X, f.Unit.Y), 1f, 0f, 0.8f);
+            GameLog.Event("It hooks the lamp rail with a saw blade and tears it out of the ceiling. The light goes with it.");
+        }
+
+        /// <summary>The Tube Lash's blow: the IV tubes whip out across the room: whoever it can see within LashRange who is not diving is hit (red: unparryable), and if it cuts, hauled LashDrag tiles toward it.</summary>
+        public static void Lash(Boss.Fight f, Player p, Boss.Move m, int hi)
+        {
+            var h = f.Unit; if (p == null || h.EquippedWeapon == null) return; int d = CombatantUtil.Distance(h, p); Sfx.Play("drip_squeeze", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.05f, 0.7f);
+            var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true;
+            if (d > LashRange + 1 || GameServices.Grid != null && !GameServices.Grid.CheckLineOfSight(h.X, h.Y, p.X, p.Y)) { GameLog.Write("The tubes whip across the room and strike the wall."); return; }
+            if (Rt.Of(p).Diving || Rt.Untouchable(p)) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }
+            int hp0 = p.Hp; Parry.Unparryable = true; try { Melee.HitUnit(h, h.EquippedWeapon, p, Boss.MultOf(m, hi)); } finally { Parry.Unparryable = false; }
+            bool caught = p.Hp < hp0; cf.Hit = caught;
+            if (caught) { Boss.DragTo(h, p, LashDrag); GameLog.Write("The tubes lash round your legs and haul you across the floor."); }
         }
 
         /// <summary>Boss.Begin of the Drip: remember his health, to see whether the bag bursts.</summary>

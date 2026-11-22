@@ -53,6 +53,7 @@ namespace GameCore
             if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss (BossArt) is hit on its own drawn silhouette, not a man's
             {
                 float top = GameData.HitProfiles.Height(bk); part = h * BodyTiles >= 0.7f * top ? "Head" : "Body";
+                if (bk == "boss:orderly" && h * BodyTiles >= 0.78f * top && h * BodyTiles <= 0.93f * top) part = "Bag";      // 2026-11-22: the IV bag on its pole, high on its back: a weak point (OrderlyBoss.BagHit)
                 float a = GameData.HitProfiles.Half(bk, h * BodyTiles); return a < 0f ? -1f : Reach(a, GameData.HitProfiles.DepthCap(bk), dx, dy);
             }
             if (!(u is Player) && !(u is HumanEnemy) && u is Mutant m)
