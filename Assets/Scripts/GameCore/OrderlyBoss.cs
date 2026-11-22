@@ -35,10 +35,10 @@ namespace GameCore
                 new Boss.Move { Name = "Saw", Wind = 0.9f, MaxDist = 2f, Mult = 1.0f, Weight = 3, Poses = new[] { 1 }, Open = 1.4f, Clip = "saw" },
                 new Boss.Move { Name = "Chop", Wind = 1.1f, Danger = true, MaxDist = 2f, Mult = 1.6f, Weight = 2, Poses = new[] { 0 }, Open = 2.0f, Clip = "chop" },
                 new Boss.Move { Name = "Grab", Wind = 1.0f, Danger = true, MaxDist = 2f, Mult = 1.1f, Effects = new[] { "slab" }, Weight = 2, Open = 1.8f, Clip = "grab" },
-                new Boss.Move { Name = "Tube Lash", Wind = 1.15f, Danger = true, MinDist = 3f, MaxDist = LashRange, Mult = 0.9f, Effects = new[] { "lash" }, Weight = 3, Open = 1.5f, Clip = "grab" },   // 2026-11-22: ends free kiting
+                new Boss.Move { Name = "Tube Lash", Wind = 1.15f, Danger = true, MinDist = 3f, MaxDist = LashRange, Mult = 0.9f, Effects = new[] { "lash" }, Weight = 3, Open = 1.5f, Clip = "lash" },   // 2026-11-22: ends free kiting
                 new Boss.Move { Name = "Drip", Wind = 1.6f, MaxDist = 20f, Effects = new[] { "drip" }, Weight = 1, Open = 0.8f, Phase1Only = true, Clip = "drip" },
-                new Boss.Move { Name = "Double Saw", Wind = 0.8f, Hits = 2, Gap = 0.6f, MaxDist = 2f, Mult = 0.8f, Weight = 3, Poses = new[] { 1, 1 }, Open = 1.8f, Phase2Only = true, Clip = "saw" },
-                new Boss.Move { Name = "Saw Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.4f, Weight = 2, Poses = new[] { 1 }, Open = 2.2f, Phase2Only = true, Clip = "saw" },
+                new Boss.Move { Name = "Double Saw", Wind = 0.8f, Hits = 2, Gap = 0.6f, MaxDist = 2f, Mult = 0.8f, Weight = 3, Poses = new[] { 1, 1 }, Open = 1.8f, Phase2Only = true, Clip = "double_saw" },
+                new Boss.Move { Name = "Saw Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.4f, Weight = 2, Poses = new[] { 1 }, Open = 2.2f, Phase2Only = true, Clip = "saw_rush" },
             },
         };
         static OrderlyBoss() { Def.Defeated = Defeated; }
@@ -221,6 +221,7 @@ namespace GameCore
         public static void Phase2(Boss.Fight f)
         {
             var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == Lair); if (l == null) { return; }
+            BossArt.Play(f, "lamp_tear"); for (int k = 0; k < 4; k++) CombatFx.PxAt(k % 2 == 0 ? "parry" : "blunt_hit", l.X + (k - 2) * 2, l.Y - 1 + (k % 2));   // the blade bites the lamp rail: sparks along it
             LightMap.Snuff(l.X - 12, l.Y - 12, l.X + 12, l.Y + 12); Sfx.Play("saw_scrape", TacticalGridView.GridToWorld(f.Unit.X, f.Unit.Y), 1f, 0f, 0.8f);
             GameLog.Event("It hooks the lamp rail with a saw blade and tears it out of the ceiling. The light goes with it.");
         }
@@ -229,7 +230,7 @@ namespace GameCore
         public static void Lash(Boss.Fight f, Player p, Boss.Move m, int hi)
         {
             var h = f.Unit; if (p == null || h.EquippedWeapon == null) return; int d = CombatantUtil.Distance(h, p); Sfx.Play("drip_squeeze", TacticalGridView.GridToWorld(h.X, h.Y), 1f, 0.05f, 0.7f);
-            var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true;
+            var cf = CombatFx.Push("tubelash", h, p, null); cf.Now = true;
             if (d > LashRange + 1 || GameServices.Grid != null && !GameServices.Grid.CheckLineOfSight(h.X, h.Y, p.X, p.Y)) { GameLog.Write("The tubes whip across the room and strike the wall."); return; }
             if (Rt.Of(p).Diving || Rt.Untouchable(p)) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }
             int hp0 = p.Hp; Parry.Unparryable = true; try { Melee.HitUnit(h, h.EquippedWeapon, p, Boss.MultOf(m, hi)); } finally { Parry.Unparryable = false; }

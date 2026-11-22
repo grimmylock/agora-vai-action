@@ -387,7 +387,7 @@ namespace GameCore
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
             if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
-            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "glassburst" || e.Kind == "beastslash" || e.Kind == "howlwave")
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "tubelash" || e.Kind == "glassburst" || e.Kind == "beastslash" || e.Kind == "howlwave")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
                 BossFx(e, from, to);
@@ -862,6 +862,28 @@ namespace GameCore
                     else { Bit(tip, ChainSteel, 5, 2, (a - tip) / 0.5f, 0f, 0.5f, 13); Bit(tip + new Vector3(0.125f, -0.125f, 0f), ChainSteel, 2, 3, (a - tip) / 0.5f, 0f, 0.5f, 13); }
                     if (e.Hit) { Burst(b, Steel, 14, 2.6f, 0.35f); Burst(b, Color.white, 6, 3.6f, 0.25f, 2); Shake(0.12f); Sfx.Play("hook_catch", to, 1f, 0.03f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.8f, 0.03f); }
                     else Sfx.Play("hook_throw", from, 0.9f, 0.04f);
+                    break;
+                }
+                case "tubelash": // 2026-11-22 (the Orderly's Tube Lash; replaces the iron hook): three dark-red IV tubes whip out from his body bag along the line to you, each a wavy run of short pieces, the ends frayed and dripping; the line pulls back toward him as it fades
+                {
+                    var a = from + new Vector3(0.35f, 0.9f, 0f); var b = to + new Vector3(0f, 0.45f, 0f); var dv = b - a; float len = Mathf.Max(0.5f, Mathf.Sqrt(dv.x * dv.x + dv.y * dv.y)); var dn = dv / len; var nrm = new Vector3(-dn.y, dn.x, 0f);
+                    var tube = new[] { new Color(0.32f, 0.04f, 0.06f), new Color(0.46f, 0.07f, 0.09f), new Color(0.2f, 0.03f, 0.05f) };
+                    int n = Mathf.Max(6, Mathf.RoundToInt(len / 0.22f));
+                    for (int t = 0; t < 3; t++)
+                    {
+                        float phase = t * 2.1f, amp = (e.Hit ? 0.06f : 0.18f) + t * 0.03f, reach = t == 1 ? 1f : (t == 0 ? 0.93f : 0.86f);        // the three do not end at the same place
+                        for (int k = 0; k <= n; k++)
+                        {
+                            float u = k / (float)n * reach; float wob = Mathf.Sin(u * 11f + phase) * amp * Mathf.Sin(Mathf.PI * Mathf.Min(1f, u * 1.2f));
+                            var pos = a + dn * (len * u) + nrm * wob + new Vector3(0f, (t - 1) * 0.07f, 0f);
+                            Bit(pos, k % 5 == 4 ? tube[(t + 1) % 3] : tube[t], 3, 2, (a - pos) / 0.4f, 0f, 0.4f, 12 + (t == 1 ? 1 : 0));
+                        }
+                        var tip = a + dn * (len * reach) + nrm * 0.02f * t;                                        // the ragged end: three frayed bits, one wet
+                        for (int r = 0; r < 3; r++) Bit(tip + new Vector3(Random.Range(-0.12f, 0.12f), Random.Range(-0.1f, 0.1f), 0f), r == 0 ? new Color(0.7f, 0.1f, 0.12f) : tube[t], 2, 1 + (r % 2), (a - tip) / 0.4f, 0f, 0.4f, 14);
+                        if (e.Hit) Bit(tip, new Color(0.7f, 0.1f, 0.12f), 1, 3, new Vector3(0f, -1.5f, 0f), 6f, 0.5f, 14);
+                    }
+                    if (e.Hit) { Burst(b, new Color(0.55f, 0.05f, 0.08f), 14, 2.6f, 0.35f); Burst(b, Color.white, 4, 3.2f, 0.2f, 2); Shake(0.12f); Sfx.Play("hit_hard", to, 0.8f, 0.05f, 0.8f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.6f, 0.05f, 0.7f); }
+                    else Sfx.Play("drip_squeeze", from, 0.9f, 0.05f, 0.6f);
                     break;
                 }
                 case "howlwave": // 2026-11-21 (Yan: the howl "doesn't feel like an attack"): the sound is drawn: bright arcs leave his muzzle across the cone toward the target (a wall of rings, fanned 100 degrees, fast, thinning out), dust blown off the floor, a hard shake

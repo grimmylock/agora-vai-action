@@ -54,16 +54,30 @@ namespace GameCore
             } },
             ["orderly"] = new Art { Key = "orderly", W = 224, H = 176, Facing = "left", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["chop"] = new VergerBoss.Clip { Name = "boss_orderly_chop", Frames = 13, Ms = new float[] { 110, 128, 146, 164, 182, 200, 80, 128, 137, 145, 154, 162, 171 }, Hit = 6 },
+                ["chop_b"] = new VergerBoss.Clip { Name = "boss_orderly_chop_b", Frames = 13, Ms = new float[] { 110, 80, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175 }, Hit = 1 },
                 ["death"] = new VergerBoss.Clip { Name = "boss_orderly_death", Frames = 13, Ms = new float[] { 124, 128, 132, 137, 141, 145, 150, 154, 158, 162, 167, 171, 175 }, Hit = -1 },
-                ["drag"] = new VergerBoss.Clip { Name = "boss_orderly_drag", Frames = 13, Ms = new float[] { 110, 155, 200, 80, 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = 3 },
+                ["death_b"] = new VergerBoss.Clip { Name = "boss_orderly_death_b", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
+                ["double_saw"] = new VergerBoss.Clip { Name = "boss_orderly_double_saw", Frames = 8, Ms = new float[] { 110, 155, 200, 80, 132, 144, 156, 168 }, Hit = 3 },
+                ["double_saw_b"] = new VergerBoss.Clip { Name = "boss_orderly_double_saw_b", Frames = 8, Ms = new float[] { 110, 200, 80, 130, 140, 150, 160, 170 }, Hit = 2 },
                 ["drip"] = new VergerBoss.Clip { Name = "boss_orderly_drip", Frames = 13, Ms = new float[] { 110, 128, 146, 164, 182, 200, 80, 128, 137, 145, 154, 162, 171 }, Hit = 6 },
+                ["drip_b"] = new VergerBoss.Clip { Name = "boss_orderly_drip_b", Frames = 13, Ms = new float[] { 110, 80, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175 }, Hit = 1 },
                 ["grab"] = new VergerBoss.Clip { Name = "boss_orderly_grab", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
+                ["grab_b"] = new VergerBoss.Clip { Name = "boss_orderly_grab_b", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
                 ["hurt"] = new VergerBoss.Clip { Name = "boss_orderly_hurt", Frames = 9, Ms = new float[] { 126, 132, 138, 144, 150, 156, 162, 168, 174 }, Hit = -1 },
+                ["hurt_b"] = new VergerBoss.Clip { Name = "boss_orderly_hurt_b", Frames = 9, Ms = new float[] { 110, 125, 140, 155, 170, 185, 200, 80, 150 }, Hit = 7 },
                 ["idle"] = new VergerBoss.Clip { Name = "boss_orderly_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
-                ["overhead"] = new VergerBoss.Clip { Name = "boss_orderly_overhead", Frames = 13, Ms = new float[] { 110, 118, 126, 134, 142, 150, 159, 167, 175, 183, 191, 200, 80 }, Hit = 12 },
+                ["idle_b"] = new VergerBoss.Clip { Name = "boss_orderly_idle_b", Frames = 9, Ms = new float[] { 110, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 1 },
+                ["lamp_tear"] = new VergerBoss.Clip { Name = "boss_orderly_lamp_tear", Frames = 8, Ms = new float[] { 110, 140, 170, 200, 80, 135, 150, 165 }, Hit = 4 },
+                ["lamp_tear_b"] = new VergerBoss.Clip { Name = "boss_orderly_lamp_tear_b", Frames = 8, Ms = new float[] { 110, 80, 128, 137, 145, 154, 162, 171 }, Hit = 1 },
+                ["lash"] = new VergerBoss.Clip { Name = "boss_orderly_lash", Frames = 8, Ms = new float[] { 110, 140, 170, 200, 80, 135, 150, 165 }, Hit = 4 },
+                ["lash_b"] = new VergerBoss.Clip { Name = "boss_orderly_lash_b", Frames = 8, Ms = new float[] { 110, 140, 170, 200, 80, 135, 150, 165 }, Hit = 4 },
                 ["saw"] = new VergerBoss.Clip { Name = "boss_orderly_saw", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
+                ["saw_b"] = new VergerBoss.Clip { Name = "boss_orderly_saw_b", Frames = 13, Ms = new float[] { 110, 121, 132, 143, 155, 166, 177, 188, 200, 80, 135, 150, 165 }, Hit = 9 },
+                ["saw_rush"] = new VergerBoss.Clip { Name = "boss_orderly_saw_rush", Frames = 8, Ms = new float[] { 110, 140, 170, 200, 80, 135, 150, 165 }, Hit = 4 },
+                ["saw_rush_b"] = new VergerBoss.Clip { Name = "boss_orderly_saw_rush_b", Frames = 8, Ms = new float[] { 110, 200, 80, 130, 140, 150, 160, 170 }, Hit = 2 },
                 ["walk"] = new VergerBoss.Clip { Name = "boss_orderly_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
                 ["run"] = new VergerBoss.Clip { Name = "boss_orderly_walk", Frames = 8, Ms = new float[] { 62, 62, 62, 62, 62, 62, 62, 62 }, Hit = -1, Loop = true },
+                ["walk_b"] = new VergerBoss.Clip { Name = "boss_orderly_walk_b", Frames = 9, Ms = new float[] { 110, 80, 127, 135, 142, 150, 157, 165, 172 }, Hit = 1 },
             } },
             ["specimen_eye"] = new Art { Key = "specimen_eye", W = 60, H = 68, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["charge"] = new VergerBoss.Clip { Name = "boss_specimen_eye_charge", Frames = 9, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80 }, Hit = 8 },
@@ -115,6 +129,8 @@ namespace GameCore
         public static void Hurt(Boss.Fight f) { if (f.Def.Art != null && f.Doing == null && (f.Clip == null || f.Clip == "idle" || f.Clip == "walk" || f.Clip == "drive")) Play(f, "hurt"); }
 
         static readonly Dictionary<HumanEnemy, (float x, float y)> _last = new Dictionary<HumanEnemy, (float, float)>();
+        /// <summary>2026-11-22: the strip a clip is drawn from: the Orderly's burst-bag copy (`<clip>_b`, ArtSource/mutants_anim/bosses_v3/make_burst_bag.py) once his IV bag has burst.</summary>
+        static string V(Boss.Fight f, Art a, string clip) => f != null && a.Key == "orderly" && OrderlyBoss.BagBurst(f) && a.Clips.ContainsKey(clip + "_b") ? clip + "_b" : clip;
         /// <summary>Its picture this frame.</summary>
         public static Sprite Frame(HumanEnemy h)
         {
@@ -124,18 +140,18 @@ namespace GameCore
             if ((f.Broken || f.Finished) && a.Clips.TryGetValue("death", out var dc))
             {
                 if (f.Clip != "death") Play(f, "death");
-                int di = dc.IndexAt(now - f.ClipT0); var ds = Frames(a, "death"); if (ds != null) return ds[di < 0 ? ds.Length - 1 : Mathf.Min(di, ds.Length - 1)];
+                int di = dc.IndexAt(now - f.ClipT0); var ds = Frames(a, V(f, a, "death")); if (ds != null) return ds[di < 0 ? ds.Length - 1 : Mathf.Min(di, ds.Length - 1)];
             }
             if (f.Clip != null && a.Clips.TryGetValue(f.Clip, out var c) && !c.Loop)
             {
                 int i = c.IndexAt((now - f.ClipT0) / f.ClipScale);
-                if (i >= 0) { var cs = Frames(a, f.Clip); if (cs != null && i < cs.Length) return cs[i]; }
-                else if (i == -2) { var idle0 = Frames(a, "idle"); if (idle0 != null) return idle0[0]; }     // a long wind-up: the stand until the clip begins
+                if (i >= 0) { var cs = Frames(a, V(f, a, f.Clip)); if (cs != null && i < cs.Length) return cs[i]; }
+                else if (i == -2) { var idle0 = Frames(a, V(f, a, "idle")); if (idle0 != null) return idle0[0]; }     // a long wind-up: the stand until the clip begins
                 else f.Clip = null;
             }
             string loop = moving ? (a.Clips.ContainsKey("walk") ? "walk" : a.Clips.ContainsKey("drive") ? "drive" : "idle") : "idle";
             if (moving && f.Stalking && h.IsAggroed && a.Clips.ContainsKey("run")) loop = "run";                          // 2026-11-22: a hunting stalker runs (the walk strip played faster)
-            var ls = Frames(a, loop); if (ls == null) return null;
+            var ls = Frames(a, V(f, a, loop)); if (ls == null) return null;
             var lc = a.Clips[loop]; int li = lc.IndexAt(now + (h.GetHashCode() & 7) * 0.13f); return ls[Mathf.Clamp(li, 0, ls.Length - 1)];
         }
     }
