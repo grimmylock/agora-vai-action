@@ -3158,6 +3158,7 @@ static class Program {
       for (int yy = py - 3; yy <= py + 3; yy++) TerrainMap.SetTileType(px + 4, yy, TileType.Empty);
       Check(OrderlyBoss.Def.Moves.Where(m => m.Name == "Tube Lash").All(m => m.MinDist >= 3f && m.MaxDist >= 6f), "Orderly: the lash is a ranged move (not used up close)");
       { var oa = BossArt.Of("orderly"); Check(oa != null && new[] { "lamp_tear", "lamp_tear_b", "idle_b", "walk_b", "saw_b" }.All(c => oa.Clips.ContainsKey(c)) && !oa.Clips.ContainsKey("lash") && OrderlyBoss.Def.Moves.All(m => m.Clip == null || oa.Clips.ContainsKey(m.Clip)), "Orderly: the lamp-tear clip and the burst-bag copies are in the table, every move's clip exists"); }
+      { var sr = OrderlyBoss.Def.Moves.First(m => m.Name == "Saw Rush"); Check(sr.Hits == 3 && sr.Clips != null && sr.Clips.SequenceEqual(new[] { "saw", "chop", "lamp_tear" }) && sr.Mults.Length == 3 && sr.Gaps.Length == 2, "Orderly: Saw Rush is the saw, the chop and the lamp tear in succession"); }
       // the bag: a round at the bag's height is a bag hit, x2.5, and the bag holds only so much
       Reset(5); var (ohx, ohy) = Ballistics.Pos(h); float topH = GameData.HitProfiles.Height("boss:orderly"); Check(BossArt.HitKey(h) == "boss:orderly" && topH > 3f, $"Orderly: its hit profile is the drawn one ({topH:0.0} tiles tall)");
       var bagShot = Ballistics.Trace(p, ohx + 0.6f, ohy - 6f, 0f, 1f, 12f, (0.88f * topH) / Ballistics.BodyTiles, new ICombatant[] { h }); Check(bagShot.Unit == h && bagShot.Part == "Bag", $"Orderly: a round at the bag's height is a bag hit ({bagShot.Part})");

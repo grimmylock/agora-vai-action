@@ -38,7 +38,7 @@ namespace GameCore
                 new Boss.Move { Name = "Tube Lash", Wind = 1.15f, Danger = true, MinDist = 3f, MaxDist = LashRange, Mult = 0.9f, Effects = new[] { "lash" }, Weight = 3, Open = 1.5f, Clip = "grab" },   // 2026-11-22: ends free kiting
                 new Boss.Move { Name = "Drip", Wind = 1.6f, MaxDist = 20f, Effects = new[] { "drip" }, Weight = 1, Open = 0.8f, Phase1Only = true, Clip = "drip" },
                 new Boss.Move { Name = "Double Saw", Wind = 0.8f, Hits = 2, Gap = 0.6f, MaxDist = 2f, Mult = 0.8f, Weight = 3, Poses = new[] { 1, 1 }, Open = 1.8f, Phase2Only = true, Clip = "saw" },
-                new Boss.Move { Name = "Saw Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.4f, Weight = 2, Poses = new[] { 1 }, Open = 2.2f, Phase2Only = true, Clip = "saw" },
+                new Boss.Move { Name = "Saw Rush", Wind = 1.0f, Hits = 3, Danger = true, Lunge = 6f, Gaps = new[] { 0.85f, 0.7f }, Mults = new[] { 0.8f, 0.9f, 1.2f }, RedHits = new[] { true, true, true }, Weight = 2, Poses = new[] { 1, 0, 1 }, Open = 2.2f, Phase2Only = true, Clips = new[] { "saw", "chop", "lamp_tear" } },   // 2026-11-22 (Yan: "use the saw, chop and lamp tear to make the saw rush, he just does them in succession")
             },
         };
         static OrderlyBoss() { Def.Defeated = Defeated; }

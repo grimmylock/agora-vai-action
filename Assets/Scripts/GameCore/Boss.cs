@@ -37,6 +37,7 @@ namespace GameCore
             public float[] Gaps, Mults;    // 2026-11-21 (the Verger's combos): the pause before each following hit, and each hit's own damage multiplier (null = Gap / Mult for all)
             public bool[] RedHits;         // 2026-11-21: which hits of a combo are red (can't be parried, a dive goes under): the Smash that finishes a combo
             public float BelowHp;          // 2026-11-21: > 0: only once his health is below this share of his full health (the beast's last stretch)
+            public string[] Clips;         // 2026-11-22 (the Orderly's Saw Rush): a combo whose hits each play their own clip, one after the other (null = Clip for all)
             public string Clip;            // 2026-11-20 (the Verger's beast): which animation clip plays for this move (VergerBoss.Clips)
             public float Drag;             // 2026-11-20 (the Verger's Hook): > 0: he does not rush in, he stops at the blade's tip and, if it cuts you, drags you up to this many tiles toward him
             public float Mult = 1f;        // x the weapon's damage
@@ -296,7 +297,7 @@ namespace GameCore
             if (now < f.StrikeAt) return;
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
-            if (--f.HitsLeft > 0) { f.StrikeAt = now + GapBefore(f.Doing, f.Doing.Hits - f.HitsLeft) * speed; f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
+            if (--f.HitsLeft > 0) { f.StrikeAt = now + GapBefore(f.Doing, f.Doing.Hits - f.HitsLeft) * speed; if (f.Doing.Clips != null) BossArt.Start(f, f.Doing.Clips[System.Math.Min(f.Doing.Clips.Length - 1, f.Doing.Hits - f.HitsLeft)], f.StrikeAt, speed); f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
             OpenUp(f, f.Doing.Open * speed, now);
             f.Doing = null; f.NextMoveAt = f.OpenUntil + 0.3f * Random.Range(0.8f, 1.3f);
         }
@@ -333,7 +334,8 @@ namespace GameCore
             { Player t = null; int bd = int.MaxValue; foreach (var q in Player.All) { if (!q.IsAlive()) continue; int d = CombatantUtil.Distance(f.Unit, q); if (d < bd) { bd = d; t = q; } } if (t != null) { f.AimX = t.X; f.AimY = t.Y; } }
             f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
             if (m.Effects != null && m.Effects.Contains("drip")) OrderlyBoss.DripBegins(f);         // the Orderly: how hurt he is when he starts squeezing the bag
-            if (m.Clip != null && !BossArt.Start(f, m.Clip, f.StrikeAt, speed)) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
+            if (m.Clips != null) BossArt.Start(f, m.Clips[0], f.StrikeAt, speed);
+            else if (m.Clip != null && !BossArt.Start(f, m.Clip, f.StrikeAt, speed)) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
             if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
 
