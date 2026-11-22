@@ -51,17 +51,18 @@ def main():
             clip = os.path.basename(os.path.dirname(cd)); fs = sorted(glob.glob(os.path.join(cd, "f_*.png")))
             if clip.endswith("_v1"): continue                                     # a re-rolled clip's old run (run_rerolls.py keeps it)
             if not fs: continue
-            ims = [hard(Image.open(f)) for f in fs]; loop = clip in LOOPS
+            base = clip[:-2] if clip.endswith("_b") else clip      # the Orderly's burst-bag copies (make_burst_bag.py) share their clip's timing, loop and hit frame
+            ims = [hard(Image.open(f)) for f in fs]; loop = base in LOOPS
             if (boss, clip) in REMAP: ims = [ims[i] for i in REMAP[(boss, clip)]]
             if (boss, clip) in KEY_OUT: ims = [key_out(i) for i in ims]
             if (boss, clip) in RECOLOR: ims = [recolor(i) for i in ims]
             if loop and len(ims) > 2: ims = ims[:-1]
             n = len(ims); w, h = ims[0].size
-            hit = -1 if loop or clip in ("hurt", "death") else HIT.get((boss, clip), hit_frame(ims, FACING[boss]))
+            hit = -1 if loop or base in ("hurt", "death") else HIT.get((boss, base), hit_frame(ims, FACING[boss]))
             strip = Image.new("RGBA", (w * n, h), (0, 0, 0, 0))
             for i, im in enumerate(ims): strip.alpha_composite(im, (i * w, 0))
             strip.save(os.path.join(OUT, "boss_%s_%s.bytes" % (boss, clip)), "PNG")
-            rows.setdefault(boss, []).append((clip, n, timing(n, hit, loop, clip), hit, loop, w, h))
+            rows.setdefault(boss, []).append((clip, n, timing(n, hit, loop, base), hit, loop, w, h))
             if (boss, clip) in RUN_FROM_WALK:       # 2026-11-22: a RUN clip made from the walk strip played faster (Yan: 'i don't remember if he has a running animation? if not we can try speeding up the walk animation')
                 rows[boss].append(("run", n, [RUN_FROM_WALK[(boss, clip)]] * n, -1, True, w, h)); RUN_FILE[(boss, "run")] = clip
             print(boss, clip, n, "frames", (w, h), "hit", hit)
