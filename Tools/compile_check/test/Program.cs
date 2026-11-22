@@ -9,6 +9,8 @@ static class Program {
     if (args.Length > 0 && args[0] == "pistolttk") { PistolTtk(); return 0; }
     if (args.Length > 0 && args[0] == "mutantmaps") { MutantMaps(); return 0; }
     if (args.Length > 0 && args[0] == "mutanthits") { MutantHits(); return 0; }
+    if (args.Length > 0 && args[0] == "humanhits") { HumanHits(); return 0; }
+    if (args.Length > 0 && args[0] == "mutantaudit") { MutantAudit(); return 0; }
     if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
@@ -1405,7 +1407,67 @@ static class Program {
         if (RtAi.FallbackStrikes != 0) { bad = true; why += " " + def.Name + " struck without a clip;"; }
         if (!MutantAttack.Has(mu2) && firstHit >= 0f && firstHit - close < 0.4f) { bad = true; why += " " + def.Name + " struck at once;"; }
         if (minGap < 0.9f && !MutantAttack.Has(mu2)) { bad = true; why += " " + def.Name + " hit again in " + minGap.ToString("0.00") + " s;"; } }
+      { var missing = new List<string>(); foreach (var kv in MutantAttack.RuleSet) { var r = kv.Value; var ks = new List<string>(); if (r.MeleeA != null) ks.Add(r.MeleeA); if (r.MeleeB != null) ks.Add(r.MeleeB); if (r.SlamCd > 0f) ks.Add("slam"); if (r.BoulderMax > 0) ks.Add("throw"); if (r.PounceMax > 0) ks.Add("pounce"); if (r.SpitMax > 0) ks.Add("spit"); foreach (var kk2 in ks) if (MutantAttack.Anim(kv.Key, kk2) == null) missing.Add(kv.Key + " " + kk2);
+          foreach (var kk2 in ks) { var a = MutantAttack.Anim(kv.Key, kk2); if (a != null && (a.ContactMs > a.TotalMs || a.Ms.Sum() != a.TotalMs)) missing.Add(kv.Key + " " + kk2 + " (timing)"); } }
+        Check(missing.Count == 0, "mutant attacks: every attack kind a mutant can start has a clip with consistent timing (" + string.Join(", ", missing) + ")"); }
       Check(!bad, "mutants: no strike without its attack clip, a winding-up tell for those with no clips, a pause between blows" + why);
+  }
+
+  // 2026-11-22 (Yan: "check the humans too for the same bug"): humans of each weapon kind close on a standing player for 15 s; each hit is logged with the gap since the last and, for blows, whether a real swing (Melee.NpcSwing: a wind-up) was under way.
+  static void HumanHits() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var setups = new List<(string label, string cat, string key, bool dry)> { ("unarmed", null, null, false), ("hunting knife", "melee", "HuntingKnife", false), ("sledgehammer", "melee", "Sledgehammer", false), ("pistol", "sidearm", "PSh18Pchela", false), ("smg", "smg", "CorvanWasp9", false), ("rifle", "assault", "VK74", false), ("shotgun", "shotgun", "Obrez66", false), ("rifle, out of rounds", "assault", "VK74", true) };
+    foreach (var sp in setups) {
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); p.HealPermanent(1000000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f); Rt.Of(p).Focus = 0f;
+      for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      EncounterState.Enemies.Clear(); Weapon w = sp.cat == null ? null : p.MakeWeapon(sp.cat, sp.key); if (w != null && sp.dry) { w.CurrentMagazine = 0; }
+      var h = new HumanEnemy("Raider", px + 5, py, "Raiders", "Veteran", null, null); h.EquippedWeapon = w; if (w != null) w.Owner = h; h.IsAggroed = true; EncounterState.Enemies.Add(h); Rt.SetOffset(h, 0f, 0f); 
+      UnityEngine.Time.time = 80000f; int hp0 = p.Hp; var gaps = new List<float>(); float last = -9f, firstHit = -1f; int instant = 0, swung = 0; RtAi.GoTo(h, (p.X, p.Y)); if (sp.dry) RtAi.MarkDry(h);
+      float lastSwing = -9f; int moves = 0;
+      for (int k = 0; k < 60 * 15; k++) { float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.unscaledDeltaTime = dt;
+        if (w != null && !sp.dry) w.CurrentMagazine = Math.Max(1, w.CurrentMagazine); Contact.Spot(p); Rt.PlayerTick(p, new Rt.Input()); Rt.WorldTick(p); Rt.Glide(dt); CombatFx.Pending.Clear();
+        var ch = Melee.ChargeOf(h); if (ch.Move != moves) { moves = ch.Move; lastSwing = UnityEngine.Time.time; }
+        if (p.Hp < hp0) { float t = UnityEngine.Time.time; if (firstHit < 0f) firstHit = t - 80000f; if (t - last > 0.15f) gaps.Add(t - last); last = t; hp0 = p.Hp; bool wasSwing = t - lastSwing <= 1.2f; if (wasSwing) swung++; else instant++; } }
+      Console.WriteLine($"{sp.label,-22} hits {gaps.Count,3}, first at {firstHit:0.0} s, shortest gap {(gaps.Count > 1 ? gaps.Skip(1).Min() : 0):0.00} s, blows after a swing {swung}, blows with no swing {instant}");
+    }
+  }
+
+  // 2026-11-22 (Yan: "a full pass on mutant attacks matching the animations"): static (every attack kind a mutant's rules can start has a clip in the table and its strip file; the contact frame is inside the clip; the frame times add up) and live
+  // (each clip's damage lands at its contact frame, once per contact, never outside a clip).
+  static void MutantAudit() {
+    string dir = "../../Assets/Resources/Sprites/Mutants/anim/"; int problems = 0; void Bad(string m) { problems++; Console.WriteLine("  PROBLEM: " + m); }
+    foreach (var kv in MutantAttack.RuleSet) {
+      string name = kv.Key; var r = kv.Value; var kinds = new List<string>(); if (r.MeleeA != null) kinds.Add(r.MeleeA); if (r.MeleeB != null) kinds.Add(r.MeleeB); if (r.SlamCd > 0f) kinds.Add("slam"); if (r.BoulderMax > 0) kinds.Add("throw"); if (r.PounceMax > 0) kinds.Add("pounce"); if (r.SpitMax > 0) kinds.Add("spit");
+      Console.WriteLine($"{name}: {string.Join(", ", kinds)}{(r.ChargeMax > 0 ? ", charge (the run clip)" : "")}");
+      string key = name.ToLowerInvariant().Replace(' ', '_');
+      foreach (var k in kinds) {
+        var a = MutantAttack.Anim(name, k); if (a == null) { Bad($"{name} {k}: no clip in the table, the attack would do nothing"); continue; }
+        if (!System.IO.File.Exists(dir + key + "_" + k + ".bytes") && !name.EndsWith("Gaunt")) Bad($"{name} {k}: strip file {key}_{k}.bytes missing");
+        int sum = a.Ms.Sum(); if (sum != a.TotalMs) Bad($"{name} {k}: frame times add up to {sum} ms, the table says {a.TotalMs}");
+        if (a.ContactMs > a.TotalMs || a.Contact >= a.Frames) Bad($"{name} {k}: contact {a.ContactMs} ms / frame {a.Contact} outside the clip ({a.TotalMs} ms, {a.Frames} frames)");
+        int cum = a.Ms.Take(a.Contact).Sum(); if (Math.Abs(cum - a.ContactMs) > 60) Bad($"{name} {k}: the contact frame {a.Contact} starts at {cum} ms but the contact time is {a.ContactMs} ms");
+        Console.WriteLine($"   {k,-7} {a.Frames,2} frames {a.TotalMs,5} ms, contact frame {a.Contact} at {a.ContactMs} ms ({(a.TotalMs - a.ContactMs)} ms recovery)");
+      }
+    }
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    Console.WriteLine("-- live: damage against the clip --");
+    foreach (var def in MutantDatabase.Tiers.Values.SelectMany(t => t.Values).Concat(MutantDatabase.Wards.Values).Concat(new[] { Gaunt.ElderDef }).Where(d => MutantAttack.RuleSet.ContainsKey(d.Name))) {
+      var perKind = new Dictionary<string, List<float>>(); int outside = 0, hitsTotal = 0, clipsTotal = 0;
+      foreach (int dist in new[] { 1, 3, 5 }) {
+        var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); p.HealPermanent(1000000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f);
+        for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+        EncounterState.Enemies.Clear(); var m = new Mutant(def.Name, px + dist, py, def); m.IsAggroed = true; EncounterState.Enemies.Add(m); Rt.SetOffset(m, 0f, 0f); RtAi.Chase(m);
+        UnityEngine.Time.time = 90000f; int hp0 = p.Hp; string cur = null; float t0 = 0f; string prev = null;
+        for (int k = 0; k < 60 * 14; k++) { float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.unscaledDeltaTime = dt;
+          RtAi.TickMutant(m, p); Rt.Glide(dt); CombatFx.Pending.Clear(); string kind = MutantAttack.KindOf(m);
+          if (kind != null && prev == null) { cur = kind; t0 = UnityEngine.Time.time; clipsTotal++; } if (kind != null) cur = kind;
+          if (p.Hp < hp0) { hitsTotal++; hp0 = p.Hp; if (kind == null && !(cur == "spit" || cur == "throw") ) outside++; else if (cur != null) { if (!perKind.TryGetValue(cur, out var l)) perKind[cur] = l = new List<float>(); l.Add((UnityEngine.Time.time - t0) * 1000f); } }
+          prev = kind; }
+      }
+      string line = string.Join("; ", perKind.Select(e => { var a = MutantAttack.Anim(def.Name, e.Key); return $"{e.Key}: lands at {e.Value.Average():0} ms (clip contact {(a != null ? a.ContactMs.ToString() : "?")})"; }));
+      Console.WriteLine($"{def.Name,-14} {hitsTotal,2} hits in {clipsTotal,2} clips, {outside} outside a clip; {line}"); if (outside > 0) Bad($"{def.Name}: {outside} hits with no clip playing");
+    }
+    Console.WriteLine(problems == 0 ? "AUDIT CLEAN" : problems + " problems");
   }
 
   static void BossFrames(string path) {

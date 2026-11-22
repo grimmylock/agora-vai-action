@@ -90,6 +90,7 @@ namespace GameCore
             float wind = (Ballistics.MutantSize(m) >= 2f || m.Db?.Behavior == "ranged") ? 0.7f : 0.45f;
             s.StrikeAt = now + wind; s.NextShot = s.StrikeAt + 2f; var tell = CombatFx.Push("glint", m, null); tell.Now = true;
         }
+        public static void MarkDry(Mutant m) { Of(m).Dry = true; }   // (harness: a human out of rounds, fighting with fists and the butt)
         public static int FallbackStrikes;   // (kept for the harness: now always 0)
 
         /// <summary>A tile two steps to one side of the line to the target (whichever side is open), for a clear shot.</summary>
@@ -211,6 +212,12 @@ namespace GameCore
                 s.ReloadUntil = -1f;
                 if (w != null) { if (w.IsJammed) w.ClearJam(); else if (!w.Reload()) { s.Dry = true; Shout(h, "I'm out!"); } }
             }
+            if (s.StrikeAt >= 0f)                                                                           // 2026-11-22 (Yan: "check the humans too"): fists and the rifle butt wind up too (below), then land only if you are still next to him
+            {
+                if (s.Flee || !t.IsAlive() || (pl != null && Body.Down(pl)) || !CombatantUtil.IsAdjacent(h, t)) s.StrikeAt = -1f;
+                else if (now < s.StrikeAt) return;
+                else { s.StrikeAt = -1f; s.NextShot = now + 1.2f; h.MeleeAttack(t); return; }
+            }
             if (s.Flee || now < s.NextShot || (pl != null && Body.Down(pl)) || !t.IsAlive()) return;
             var grid = GameServices.Grid;
             if (grid == null) return;
@@ -219,9 +226,8 @@ namespace GameCore
             {
                 if (CombatantUtil.IsAdjacent(h, t))
                 {
-                    s.NextShot = now + 1.2f;
-                    if (w != null && CombatRules.IsMelee(w)) w.Fire(t);                  // Melee 2c: a real swing with his blade (it winds up: parry it)
-                    else h.MeleeAttack(t);                                             // out of rounds: fists and the rifle butt
+                    if (w != null && CombatRules.IsMelee(w)) { s.NextShot = now + 1.2f; w.Fire(t); }   // Melee 2c: a real swing with his blade (it winds up: parry it)
+                    else { s.StrikeAt = now + 0.5f; s.NextShot = s.StrikeAt; var tell = CombatFx.Push("glint", h, null); tell.Now = true; }   // out of rounds: fists and the rifle butt: a half-second wind-up with the parry tell
                 }
                 return;
             }
