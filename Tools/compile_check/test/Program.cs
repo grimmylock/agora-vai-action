@@ -6,6 +6,7 @@ static class Program {
     // RT 7z-d: the real JsonUtility stub (RT 7x) made SquadManager's offline_squads.json persist between runs, so every run started
     // from the last one's squads - the checks and the scene dumps drifted. Every run starts clean.
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
+    if (args.Length > 0 && args[0] == "pistolttk") { PistolTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
@@ -1289,6 +1290,25 @@ static class Program {
         Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset();
       }
       Console.WriteLine($"{def.Name,-22} broken {wins}/{runs}  time {(times.Count > 0 ? times.Average().ToString("0") + " s" : "-"),-7} hits taken {hits / (float)runs:0}  medkits {kits / (float)runs:0.0}  downed {downs / (float)runs:0.0}");
+    }
+  }
+
+  // 2026-11-22 (Yan: "use the starting pistol as a measuring stick"): rounds and seconds for the starting sidearm (PSh-18 Pchela, Standard 9x18) to take every boss from full health, every round landing (torso / head), no dodging,
+  // reloads included. Uses the same pieces Gunplay.Resolve does (RoundDamage, TuneMult, Lethality, DamageScale, the load, the unit's PhysDR).
+  static void PistolTtk() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset();
+    var gun = p.MakeWeapon("sidearm", "PSh18Pchela"); p.EquippedWeapon = gun; var gd = Gunplay.Guns[gun.Db.Name];
+    Console.WriteLine($"gun {gun.Db.Name}: base {gun.BaseDamage}, mag {gun.MagCapacity}, {gd.rpm} rpm, reload {gd.reload} s, ammo {gun.CurrentAmmoType}, PlayerDamage {CombatRules.PlayerDamage}, Lethality {CombatRules.Lethality}");
+    foreach (var def in Boss.Registry.Where(d => d != Boss.VergerBeast).Distinct()) {
+      for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      Boss.Reset(); var f = Boss.Spawn(def, px + 5, py); var v = f.Unit;
+      int Dmg(string part) { float raw = Gunplay.RoundDamage(gun, part, 6f, 1) * Gunplay.TuneMult(gun, v is HumanEnemy) * Gunplay.FalloffMult(gun, 6f) * CombatRules.PlayerDamage * CombatRules.Lethality * Boss.DamageScale(v);
+        float dr = part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(v)).dr : v.PhysDR * CombatRules.ArmorScale(v); var load = AmmoDatabase.Load(gun.Db, gun.CurrentAmmoType); return load != null ? CombatRules.PhysicalDamage(raw, load, dr, gun.Db.IgnorePhysDRPercent ?? 0f) : CombatRules.PhysicalDamage(raw, gun.CurrentAmmoType, dr, gun.Db.IgnorePhysDRPercent ?? 0f); }
+      int dt = Dmg("Torso"), dh = Dmg("Head"); int hp = v.MaxHp > 0 ? v.MaxHp : v.Hp;
+      string Ttk(int d) { int n = (int)Math.Ceiling(hp / (double)d); int reloads = (n - 1) / gun.MagCapacity; double sec = (n - 1) * 60.0 / gd.rpm + reloads * gd.reload; return $"{n,5} rounds {sec,6:0} s ({sec / 60:0.0} min)"; }
+      Console.WriteLine($"{def.Name,-20} HP {hp,6} PhysDR {v.PhysDR:0.00}  torso {dt,3}: {Ttk(dt)}   head {dh,3}: {Ttk(dh)}");
+      Boss.Reset(); EncounterState.Enemies.Clear();
     }
   }
 
