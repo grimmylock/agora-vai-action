@@ -577,16 +577,6 @@ namespace GameCore
             if (over == null && TerrainMap.CoverAcAt(mx, my) > 0 && !TerrainMap.BlocksSight(mx, my)) h = 0.3f;   // a barrel, sandbags, a desk: shoot the thing itself
             // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
             if (over != null) { var (ux, uy) = atEel ? (eelX, eelY) : Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
-            if (over != null && !atEel)                                                                       // 2026-11-22: the crosshair on the HEAD drawn on the sprite is a head shot; on its body at head height, a body shot (the head box is side to side too)
-            {
-                string hk = over is HumanEnemy hbo ? BossArt.HitKey(hbo) : over is Mutant mo ? mo.Db?.Name : null;
-                if (hk != null && GameData.HitProfiles.Head.TryGetValue(hk, out var hbx))
-                {
-                    var (ux2, uy2) = Ballistics.Pos(over); float hgt = h * Ballistics.BodyTiles; bool flp = over is Mutant mf && !(over is HumanEnemy) && UnitSprites.Flipped(mf);
-                    if (GameData.HitProfiles.OnHead(hk, flp, at.x - ux2, hgt)) h = Mathf.Clamp(h, (hbx.lo + 0.02f) / Ballistics.BodyTiles, (hbx.hi - 0.02f) / Ballistics.BodyTiles);
-                    else if (GameData.HitProfiles.InHeadRows(hk, hgt)) h = (hbx.lo - 0.03f) / Ballistics.BodyTiles;
-                }
-            }
             if (len < 0.05f) return;
             // Yan, 2026-11-13 (eel fight): "the aim keeps snapping toward its base in the water". The round is aimed at the part's footing on the ground (that is what the hit test reads), but the part is drawn Z tiles
             // up, so the gun and the round went to the water. The round now RISES to the part's height over that distance (Up), and the gun stays on the crosshair (FxEvent.AtEel).
@@ -796,6 +786,14 @@ namespace GameCore
                 var (ux, uy) = Ballistics.Pos(u);
                 bool mut = u is Mutant mm && !(u is HumanEnemy);
                 // the crosshair is over the SPRITE's own pixels' reach (HitProfiles: the width of the row of the sprite at that height); a body without a silhouette (the bosses) keeps the old box
+                if (Ballistics.OutlineKey(u) is string okey)                                  // 2026-11-22: a mutant or creature boss is under the crosshair where its drawn OUTLINE is
+                {
+                    var oruns = GameData.HitProfiles.RunsAt(okey, uy + Ballistics.FeetBelow - y); if (oruns == null) continue;
+                    bool ofl = Ballistics.OutlineFlipped(u), onit = false; for (int oi = 0; oi + 1 < oruns.Length && !onit; oi += 2) { float ra = ofl ? -oruns[oi + 1] : oruns[oi], rb = ofl ? -oruns[oi] : oruns[oi + 1]; onit = x - ux >= ra && x - ux <= rb; }
+                    if (!onit) continue;
+                    float od = System.Math.Abs(x - ux) + System.Math.Abs(y - uy); if (od < bd) { bd = od; best = u; }
+                    continue;
+                }
                 string pkey = u is HumanEnemy hbu && BossArt.HitKey(hbu) is string bku ? bku : mut ? ((Mutant)u).Db?.Name : "human";   // 2026-11-22 (Yan: the Ferryman's and the worm's hitbox was only the middle of the sprite): a creature boss is under the crosshair on ITS silhouette, not a man's
                 float a = GameData.HitProfiles.Half(pkey, uy + Ballistics.FeetBelow - y);
                 float ccx = mut ? GameData.HitProfiles.CentreOf(pkey, uy + Ballistics.FeetBelow - y) * (UnitSprites.Flipped((Mutant)u) ? -1f : 1f) : 0f;

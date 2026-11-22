@@ -13,24 +13,29 @@ HEADS = {n: tuple(float(v.rstrip('f')) for v in vals.split(',')) for n, vals in 
 ATT = open(os.path.join(ROOT, 'Assets/Scripts/GameData/MutantAttackData.cs')).read()
 BA = open(os.path.join(ROOT, 'Assets/Scripts/GameCore/BossArt.cs')).read()
 ZOOM = 3
+RUNS_SRC = src[src.index('Runs = new'):src.index('HasRuns')]
+def _parse_runs():
+    out = {}; cur = None
+    for line in RUNS_SRC.splitlines():
+        m = re.match(r'\s*\["([^"]+)"\] = new float\[\]\[\]', line)
+        if m: cur = m.group(1); out[cur] = []; continue
+        if cur and 'new[]' in line: out[cur].append([float(v.rstrip('f')) for v in re.findall(r'-?[0-9.]+f', line)])
+        elif cur and 'new float[0]' in line: out[cur].append([])
+    return out
+RUNS = _parse_runs()
 def overlay(img, key, ppt, flip, name_unit=None):
-    """img: RGBA frame; draws the shape for `key` on it (the frame's bottom opaque row = row 0, its centre = the unit's centre)."""
+    """draws the OUTLINE (HitProfiles.Runs) the round and the crosshair test: img's bottom opaque row = row 0, its centre = the unit's centre; a flipped picture mirrors the runs."""
     a = np.array(img)[..., 3] > 0
-    if not a.any(): return img
+    if not a.any() or key not in RUNS: return img
     ys = np.where(a.any(1))[0]; bot = ys.max(); w, h = img.size; cx = w / 2.0
-    half = All[key][1]; cen = Centre.get(key, np.zeros(len(half))); top = len(half)
     lay = Image.new('RGBA', img.size, (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
-    for r in range(len(half)):
+    for r, runs in enumerate(RUNS[key]):
         y = bot - r
         if y < 0: break
-        c = cen[r] * (-1 if flip else 1); x0 = cx + (c - half[r]) * ppt; x1 = cx + (c + half[r]) * ppt
-        col = (255, 150, 30, 90)
-        d.line([(x0, y), (x1, y)], fill=col)
-    if key in HEADS:                                                                  # the head box (HitProfiles.Head): red
-        x0, x1, lo, hi = HEADS[key]
-        if flip: x0, x1 = -x1, -x0
-        if x0 < -50: x0, x1 = -cx / ppt, cx / ppt
-        d.rectangle([cx + x0 * ppt, bot - hi * ppt, cx + x1 * ppt, bot - lo * ppt], fill=(255, 40, 40, 120), outline=(255, 255, 255, 220))
+        for i in range(0, len(runs) - 1, 2):
+            ra, rb = runs[i], runs[i + 1]
+            if flip: ra, rb = -rb, -ra
+            d.line([(cx + ra * ppt, y), (cx + rb * ppt, y)], fill=(255, 150, 30, 110))
     return Image.alpha_composite(img, lay)
 def panel(frame, key, ppt, flip, zoom=None):
     im = frame.transpose(Image.FLIP_LEFT_RIGHT) if flip else frame
@@ -58,7 +63,7 @@ for key, (ppt, half) in All.items():
         fn = f'{R}/Mutants/anim/{base}_{kind}.bytes'; m = re.search(r'\["%s"\] = new Dictionary.*?\["%s"\] = new AttackAnim \{ Frames = (\d+), W = \d+, H = \d+, Contact = (\d+)' % (re.escape(key), kind), ATT, re.S)
         if os.path.exists(fn) and m: ps.append(panel(strip_frame(fn, int(m.group(1)), int(m.group(2))), key, ppt, False)); break
     mut_items.append((f'{key}  (stand facing right | facing left | walk | strike contact)', ps))
-sheet(mut_items, 'MUTANTS: hit shape over the sprite (orange = body, red box = head)', os.path.join(OUT, 'mutants.png'))
+sheet(mut_items, 'MUTANTS: hit shape over the sprite (orange = the whole body: one part, no head zone)', os.path.join(OUT, 'mutants.png'))
 atlas = Image.open(f'{R}/mutant_atlas.png').convert('RGBA'); items = []
 for i, n in {2: 'Swarm', 7: 'Mind Weaver', 10: 'Void Weaver'}.items():
     cell = atlas.crop((i * 16, 0, (i + 1) * 16, atlas.height)); ppt = All[n][0]; items.append((n + '  (16 px a tile; never flipped)', [panel(cell, n, ppt, False, 6)]))

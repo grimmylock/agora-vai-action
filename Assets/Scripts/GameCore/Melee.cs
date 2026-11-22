@@ -290,8 +290,8 @@ namespace GameCore
             if (target is Player rp) CrownJob.Reprisal(by, rp, dmg);                      // the Crown of Scrap: a tenth of it goes back
             Boss.OnDamaged(target);                                                       // Boss 1: a boss at 0 breaks, he doesn't die
             if (fx != null) { fx.Killed = !target.IsAlive(); fx.Overkill = dmg - before; }   // the view plays blood, the fall, gibs
-            GameLog.Write($"{(by is Player ? "You hit" : by.Name + " hits")} {(target is Player ? "you" : target.Name)} in the {(part ?? "body").ToLowerInvariant()} for {dmg}.");
-            TestingGround.Note(target, dmg, part ?? "Torso");
+            GameLog.Write(Ballistics.OnePart(target) ? $"{(by is Player ? "You hit" : by.Name + " hits")} {target.Name} for {dmg}." : $"{(by is Player ? "You hit" : by.Name + " hits")} {(target is Player ? "you" : target.Name)} in the {(part ?? "body").ToLowerInvariant()} for {dmg}.");
+            TestingGround.Note(target, dmg, Ballistics.OnePart(target) ? null : part ?? "Torso");
             if (target is Mutant tm && !TestingGround.IsDummy(tm)) { tm.IsAggroed = true; }
             if (by is Player && target is HumanEnemy he && !TestingGround.IsDummy(he)) foreach (var o in EnemyAI.Squad(he)) if (o.IsAlive()) o.IsAggroed = true;
             if (target.IsAlive())
