@@ -197,6 +197,15 @@ namespace GameCore
             var c = new TerrainCanvas(rows[0].Length, rows.Length, TerrainCanvas.Seed("hospital_morgue"));
             c.Paint(0, 0, rows[0].Length, rows.Length, Concrete);              // what shows under and below the walls (the wall faces hang over it): plain concrete, not the tile floor
             StampPlan(c, 0, 0, plain, "plaster", LabTile, marks, stashes);
+            for (int y = 0; y < rows.Length; y++) for (int x = 0; x < rows[y].Length; x++) if (rows[y][x] == '#') c.Paint(x, y, 1, 1, CaveFloor);   // the ground under a wall shows where no lifted cap covers it (the strip under the corridor's south wall): dark, not tile
+            // 2026-11-22 (Yan: "fix the geometry artifacts under the corridor wall"): the solid rock round the rooms is drawn as a fully dark mass (rock, never a slab top: a slab's lifted caps left floor strips and grey bands under every wall); walls stay plaster
+            for (int y = 1; y < rows.Length - 1; y++)
+                for (int x = 1; x < rows[y].Length - 1; x++)
+                {
+                    bool deep = true;
+                    for (int dy = -1; dy <= 1 && deep; dy++) for (int dx = -1; dx <= 1; dx++) { int xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || yy >= rows.Length || xx >= rows[yy].Length) continue; if (rows[yy][xx] != '#') { deep = false; break; } }
+                    if (deep) c.Put(x, y, Solid, "cliff");
+                }
             c.Paint(78, 6, 10, 6, Floor);                                   // the office: a wooden floor (dungeon_plans.py hospital_morgue: x 78..87, y 6..11)
             for (int y = 0; y < rows.Length; y++)
                 for (int x = 0; x < rows[y].Length; x++)
@@ -210,7 +219,7 @@ namespace GameCore
                         case 'k': c.Put(x, y, HardCover, "hangbag"); break;
                         case 'h': c.Put(x, y, ScatterCover, "odesk"); break;          // 2026-11-22 (Yan: "the office doesn't look like an office"): the office set (ArtSource/world/props_office_pl.py)
                         case 'm': c.Put(x, y, ScatterCover, "opc"); break;
-                        case 'n': c.Put(x, y, ScatterCover, "ochair"); break;
+                        case 'n': c.Put(x, y, ScatterCover, "ochair_fn"); break;   // the chairs sit just south of a desk with their backs to us (they face the desk)
                         case 'p': c.Put(x, y, HardCover, "ofile"); break;
                         case 'r': c.Put(x, y, HardCover, "oshelf"); break;
                         case 's': c.Put(x, y, ScatterCover, "osofa"); break;
