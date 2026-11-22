@@ -90,7 +90,7 @@ namespace GameCore
         };
 
         /// <summary>How big each boss is drawn (x its strip's 32 px a tile), set apart from the generated table above.</summary>
-        static readonly Dictionary<string, float> Scales = new Dictionary<string, float> { ["mother_hollow"] = 0.75f, ["singer"] = 1f, ["ferryman"] = 0.75f, ["specimen"] = 0.7f, ["excavator"] = 1f, ["grinder"] = 0.85f, ["choir"] = 0.75f, ["orderly"] = 0.85f, ["specimen_v2"] = 0.75f, ["singer_wall"] = 2f, ["specimen_eye"] = 1f };
+        static readonly Dictionary<string, float> Scales = new Dictionary<string, float> { ["mother_hollow"] = 0.75f, ["singer"] = 1f, ["ferryman"] = 0.75f, ["specimen"] = 0.7f, ["excavator"] = 1f, ["grinder"] = 1.7f, ["choir"] = 0.75f, ["orderly"] = 0.85f, ["specimen_v2"] = 0.75f, ["singer_wall"] = 2f, ["specimen_eye"] = 1f };
         public static Art Of(string key) => key != null && Table.TryGetValue(key, out var a) ? a : null;
         public static float ScaleOf(string key) => key != null && Scales.TryGetValue(key, out var s) ? s : 1f;
 

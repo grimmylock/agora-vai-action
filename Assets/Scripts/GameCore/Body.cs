@@ -72,7 +72,7 @@ namespace GameCore
                 left = 0f;
             }
             s.Hp[p] = System.Math.Max(0f, left);
-            if (s.Hp["Head"] <= 0f || s.Hp["Torso"] <= 0f) { Drop(u, s); return p; }
+            if (!(u is Player) && (s.Hp["Head"] <= 0f || s.Hp["Torso"] <= 0f)) { Drop(u, s); return p; }   // 2026-11-22 (Yan: "some attacks down me without having me at 1 hp"): a player goes down only when his health reaches 1 (Player.TakeDamage), never because a head or torso pool ran dry first
             if (!s.Broken.Contains(p)) Wound(u, s, p, ammo, woundMult);
             Sync(u, s);
             return p;

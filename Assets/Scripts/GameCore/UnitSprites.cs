@@ -100,6 +100,17 @@ namespace GameCore
         // Mutants without one keep their old atlas cell (Swarm, Gaunt, Mind Weaver, Void Weaver).
         private static Dictionary<string, Sprite> _hd;
         /// <summary>2026-11-22 (Yan: "the new enemies in gowns only have animations facing right"): the morgue's Ward mutants were drawn facing LEFT (the other mutants face right), so the view's turn toward you is the other way round for them.</summary>
+        static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Mutant, System.Runtime.CompilerServices.StrongBox<bool>> _flip = new System.Runtime.CompilerServices.ConditionalWeakTable<Mutant, System.Runtime.CompilerServices.StrongBox<bool>>();
+        /// <summary>2026-11-22 (Yan: the hit shape follows which way the mutant faces): whether this mutant's picture is drawn mirrored (flipX): it turns toward you in a fight and toward where it walks otherwise, and keeps that between moves. The view and the hit tests read the same answer.</summary>
+        public static bool Flipped(Mutant m)
+        {
+            if (m == null) return false;
+            var box = _flip.GetOrCreateValue(m); var p = Player.Current; string nm = m.Db?.Name ?? m.Name;
+            int? tx = m.IsAggroed && p != null ? p.X : m.PatrolTarget?.x;
+            if (m.IsAlive() && tx.HasValue && tx.Value != m.X) box.Value = (tx.Value < m.X) != DrawnLeft(nm);
+            if (MutantAttack.FaceOverride(m, out bool throwLeft)) box.Value = throwLeft;
+            return box.Value;
+        }
         public static bool DrawnLeft(string name) => name != null && name.StartsWith("Ward ");
         public static Sprite HD(string name)
         {

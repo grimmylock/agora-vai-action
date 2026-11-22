@@ -785,14 +785,16 @@ namespace GameCore
                 var (ux, uy) = Ballistics.Pos(u);
                 bool mut = u is Mutant mm && !(u is HumanEnemy);
                 // the crosshair is over the SPRITE's own pixels' reach (HitProfiles: the width of the row of the sprite at that height); a body without a silhouette (the bosses) keeps the old box
-                float a = GameData.HitProfiles.Half(mut ? ((Mutant)u).Db?.Name : "human", uy + Ballistics.FeetBelow - y);
+                string pkey = u is HumanEnemy hbu && BossArt.HitKey(hbu) is string bku ? bku : mut ? ((Mutant)u).Db?.Name : "human";   // 2026-11-22 (Yan: the Ferryman's and the worm's hitbox was only the middle of the sprite): a creature boss is under the crosshair on ITS silhouette, not a man's
+                float a = GameData.HitProfiles.Half(pkey, uy + Ballistics.FeetBelow - y);
+                float ccx = mut ? GameData.HitProfiles.CentreOf(pkey, uy + Ballistics.FeetBelow - y) * (UnitSprites.Flipped((Mutant)u) ? -1f : 1f) : 0f;
                 if (a < 0f)
                 {
                     if (!mut || GameData.HitProfiles.All.ContainsKey(((Mutant)u).Db?.Name ?? "")) continue;
                     float tall = Ballistics.MutantSize((Mutant)u);
                     if (System.Math.Abs(x - ux) > 0.45f * tall || y > uy + Ballistics.FeetBelow || y < uy + Ballistics.FeetBelow - tall) continue;
                 }
-                else if (System.Math.Abs(x - ux) > a) continue;
+                else if (System.Math.Abs(x - (ux + ccx)) > a) continue;
                 float d = System.Math.Abs(x - ux) + System.Math.Abs(y - uy);
                 if (d < bd) { bd = d; best = u; }
             }

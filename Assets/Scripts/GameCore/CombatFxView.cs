@@ -252,10 +252,10 @@ namespace GameCore
                 {
                     if (u == null || !u.IsAlive()) continue;
                     var (ux, uy) = Ballistics.Pos(u); float feet = -(uy + Ballistics.FeetBelow);
-                    foreach (var (lo, hi, half, part) in Ballistics.Boxes(u))
+                    foreach (var (lo, hi, half, part, bcx) in Ballistics.BoxesC(u))
                     {
                         var col = part == "Head" ? new Color(1f, 0.15f, 0.15f, 0.45f) : part == "Legs" ? new Color(0.2f, 1f, 0.3f, 0.45f) : part == "Body" ? new Color(1f, 0.55f, 0.1f, 0.45f) : new Color(1f, 0.9f, 0.2f, 0.45f);
-                        BoxLine(ux - half, feet + lo * Ballistics.BodyTiles, ux + half, feet + hi * Ballistics.BodyTiles, col);   // one filled band per 2 pixel rows: together, the silhouette the round sees
+                        BoxLine(ux + bcx - half, feet + lo * Ballistics.BodyTiles, ux + bcx + half, feet + hi * Ballistics.BodyTiles, col);   // one filled band per 2 pixel rows: together, the silhouette the round sees
                     }
                 }
                 var f = EelBoss.Current; var s = f != null ? EelSump.SpineOf(f) : null;

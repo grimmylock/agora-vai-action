@@ -1136,10 +1136,7 @@ namespace GameCore
             if (unit is Mutant hm && !(unit is HumanEnemy) && !BrainBoss.Is(hm) && art != null && art == UnitSprites.HD(hm.Db?.Name ?? hm.Name))
             {
                 // they're drawn facing right: turn toward you in a fight, toward where they walk otherwise (kept between moves)
-                var p = Player.Current;
-                int? tx = hm.IsAggroed && p != null ? p.X : hm.PatrolTarget?.x;
-                if (alive && tx.HasValue && tx.Value != unit.X) marker.flipX = (tx.Value < unit.X) != UnitSprites.DrawnLeft(hm.Db?.Name ?? hm.Name);
-                if (MutantAttack.FaceOverride(hm, out bool throwLeft)) marker.flipX = throwLeft;                                    // the Brute's throw faces its target, rock in hand
+                marker.flipX = UnitSprites.Flipped(hm);                                              // (UnitSprites.Flipped: toward you in a fight, toward where it walks otherwise, the Brute's throw toward its target; the hit shape reads the same)
                 float cloak = MutantAttack.CloakFade(hm, Time.time); live.a = 1f - 0.7f * cloak;       // the Veil Prowler's shimmer (no cloaked cell at this size), now faded in and out over 0.35 s
                 int dis = MutantAttack.DissolveIndex(cloak);
                 if (dis >= 0 && walkArt == null && hm.Db?.Name == "Veil Prowler") { var ds = UnitSprites.HDFx("veil_prowler_dissolve", 6, new Vector2(0.5f, 16f / 37f)); if (ds != null) marker.sprite = ds[dis]; }   // a pixel-noise dissolve on the stand pose

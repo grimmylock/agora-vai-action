@@ -12,6 +12,7 @@ static class Program {
     if (args.Length > 0 && args[0] == "humanhits") { HumanHits(); return 0; }
     if (args.Length > 0 && args[0] == "mutantaudit") { MutantAudit(); return 0; }
     if (args.Length > 0 && args[0] == "veilpath") { VeilPath(); return 0; }
+    if (args.Length > 1 && args[0] == "bosspath") { BossPath(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
@@ -1394,6 +1395,18 @@ static class Program {
   }
 
   static void MutantStrikeChecks() {
+    { // 2026-11-22 (Yan: "some bosses have their hitbox only in the middle of the body"; "the hit shape follows which way the mutant faces"): the crosshair on any part of a drawn silhouette is on the body: every creature boss at its far left / right edges and at several heights, every mutant on both sides of its centre, facing either way
+      var pp2 = Player.Current; var missed = new List<string>(); int tested = 0;
+      foreach (var def in Boss.Registry.Where(d => d != Boss.VergerBeast && d.Art != null && GameData.HitProfiles.All.ContainsKey("boss:" + d.Art))) {
+        Boss.Reset(); EncounterState.Enemies.Clear(); var fb = Boss.Spawn(def, pp2.X + 6, pp2.Y); var ub = fb.Unit; Vision.Spotlight = ub; var (bx, by) = Ballistics.Pos(ub); string key = "boss:" + def.Art; float ht = GameData.HitProfiles.Height(key);
+        for (float hh = 0.15f; hh < ht - 0.05f; hh += ht / 6f) { float half = GameData.HitProfiles.Half(key, hh); if (half <= 0.15f) continue; foreach (int sg in new[] { -1, 1 }) { tested++; if (Rt.UnitUnder(bx + sg * (half - 0.08f), by + Ballistics.FeetBelow - hh) != ub) missed.Add(def.Name + " h" + hh.ToString("0.0") + (sg < 0 ? " left" : " right")); } }
+        Boss.Reset(); EncounterState.Enemies.Clear(); }
+      foreach (var def in MutantDatabase.Tiers.Values.SelectMany(t => t.Values).Concat(MutantDatabase.Wards.Values).Where(d => GameData.HitProfiles.Centre.ContainsKey(d.Name))) {
+        EncounterState.Enemies.Clear(); foreach (int face in new[] { -1, 1 }) { var mm = new Mutant(def.Name, pp2.X + 6, pp2.Y, def); mm.IsAggroed = true; EncounterState.Enemies.Add(mm); Vision.Spotlight = mm; pp2.X = face > 0 ? mm.X - 5 : mm.X + 5; pp2.Y = mm.Y; var (mx, my) = Ballistics.Pos(mm); bool fl = UnitSprites.Flipped(mm); float ht = GameData.HitProfiles.Height(def.Name);
+          for (float hh = 0.15f; hh < ht - 0.05f; hh += ht / 6f) { float half = GameData.HitProfiles.Half(def.Name, hh), c = GameData.HitProfiles.CentreOf(def.Name, hh) * (fl ? -1f : 1f); if (half <= 0.15f) continue; foreach (int sg in new[] { -1, 1 }) { tested++; if (Rt.UnitUnder(mx + c + sg * (half - 0.06f), my + Ballistics.FeetBelow - hh) != mm) missed.Add(def.Name + (fl ? " flipped" : "") + " h" + hh.ToString("0.0")); } }
+          EncounterState.Enemies.Clear(); } }
+      Vision.Spotlight = null; pp2.X = pp2.X;
+      Console.WriteLine($"  hitbox points tested: {tested}"); Check(missed.Count == 0, $"hitboxes: the crosshair on the edges of every drawn silhouette (creature bosses, mutants, both facings) is on the body ({tested} points; missed: {string.Join(", ", missed.Take(8))})"); }
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService(); Arena(out int apx, out int apy);
     // 2026-11-22: a mutant with attack clips never strikes without one, one without clips winds up first, nobody hits twice inside a second
       var ms = new List<string>(); bool bad = false; string why = "";
@@ -1483,6 +1496,23 @@ static class Program {
       if (d > 0.5f) { jumps++; Console.WriteLine($"t {UnityEngine.Time.time - 95000f:0.00}: jumped {d:0.0} tiles ({lx:0.0},{ly:0.0}) -> ({x:0.0},{y:0.0}) kind {kind ?? "-"} (last {lastKind ?? "-"}), tile {m.X},{m.Y} offset {Rt.Offset(m).Item1:0.0},{Rt.Offset(m).Item2:0.0} dist to you {CombatantUtil.Distance(m, p)}"); }
       if (kind != null) lastKind = kind; lx = x; ly = y; }
     Console.WriteLine("jumps: " + jumps);
+  }
+
+  // 2026-11-22 (Yan: "the Ferryman teleports around in some attacks"): a boss fights a player who stands still for 90 s; every frame the drawn position (tile + offset + slide) jumps by more than 0.6 tile is printed with the move he is doing.
+  static void BossPath(string which) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    foreach (var def in Boss.Registry.Where(d => d != Boss.VergerBeast && d.Name.ToLowerInvariant().Contains(which.ToLowerInvariant()))) {
+      var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); p.HealPermanent(10000000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f);
+      for (int y = py - 9; y <= py + 9; y++) for (int x = px - 9; x <= px + 11; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      UnityEngine.Time.time = 99000f; UnityEngine.Time.timeScale = 1f; var f = Boss.Spawn(def, px + 5, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); if (Environment.GetEnvironmentVariable("PHASE2") != null) { v.Hp = (int)(v.MaxHp * 0.4f); } var (lx, ly) = Ballistics.Pos(v); var (lpx, lpy) = Ballistics.Pos(p); int pjumps = 0; int jumps = 0; var byMove = new Dictionary<string, int>(); var moveCount = new Dictionary<string, int>(); string lastMove = null;
+      for (int k = 0; k < 60 * 90; k++) { float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.unscaledDeltaTime = dt; UnityEngine.Time.timeScale = 1f;
+        p.Hp = p.MaxHp; var kin = new Rt.Input(); if (Environment.GetEnvironmentVariable("KITE") != null) { int dd = CombatantUtil.Distance(p, v); int sxk = Math.Sign(p.X - v.X); if (dd < 3) kin.X = sxk; else if (dd > 4) kin.X = -sxk; } Rt.PlayerTick(p, kin); Rt.WorldTick(p); Rt.Glide(dt); CombatFx.Pending.Clear(); var (x, y) = Ballistics.Pos(v); float d = (float)Math.Sqrt((x - lx) * (x - lx) + (y - ly) * (y - ly));
+        string mv = f.Doing?.Name ?? f.Clip ?? "-"; if (d > 0.6f && k > 2) { jumps++; byMove[mv + " (after " + (lastMove ?? "-") + ")"] = byMove.TryGetValue(mv + " (after " + (lastMove ?? "-") + ")", out var c0) ? c0 + 1 : 1; if (jumps <= 12) Console.WriteLine($"  t {UnityEngine.Time.time - 99000f:0.00}: jumped {d:0.0} tiles in {mv}: ({lx:0.0},{ly:0.0}) -> ({x:0.0},{y:0.0})"); }
+        { var (qx, qy) = Ballistics.Pos(p); float pd = (float)Math.Sqrt((qx - lpx) * (qx - lpx) + (qy - lpy) * (qy - lpy)); if (pd > 0.6f && k > 2) { pjumps++; if (pjumps <= 6) Console.WriteLine($"  t {UnityEngine.Time.time - 99000f:0.00}: YOU jumped {pd:0.0} tiles in {mv}"); } lpx = qx; lpy = qy; }
+        if (f.Doing != null) { if (f.Doing.Name != lastMove) moveCount[f.Doing.Name] = moveCount.TryGetValue(f.Doing.Name, out var mc0) ? mc0 + 1 : 1; lastMove = f.Doing.Name; } lx = x; ly = y; if (f.Broken || f.Finished) break; }
+      Console.WriteLine($"{def.Name}: {jumps} jumps over 0.6 tile; " + string.Join(", ", byMove.Select(e => e.Key + " x" + e.Value)) + $", you jumped {pjumps}x  | moves done: " + string.Join(", ", moveCount.Select(e => e.Key + " " + e.Value)));
+      Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear();
+    }
   }
 
   static void BossFrames(string path) {

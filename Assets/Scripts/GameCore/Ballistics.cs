@@ -47,8 +47,10 @@ namespace GameCore
         /// <summary>Half-width of a unit's hit shape for a round at height h (share of a standing human) flying along the unit vector (dx, dy) (tile space). Yan, 2026-11-14: "hitboxes that actually match the
         /// sprites": the width comes from the sprite's own silhouette (GameData/HitProfiles.cs, made by ArtSource/make_hit_profiles.py: the reach of each pixel row from the feet up), not a rectangle. The
         /// silhouette is the width on screen, i.e. for a round that comes up or down the screen; one that comes along the screen sees only the body's depth (HitProfiles.DepthCap), blended by direction.</summary>
-        static float HalfWidth(ICombatant u, float h, float dx, float dy, out string part)
+        static float HalfWidth(ICombatant u, float h, float dx, float dy, out string part) => HalfWidth(u, h, dx, dy, out part, out _);
+        static float HalfWidth(ICombatant u, float h, float dx, float dy, out string part, out float cx)
         {
+            cx = 0f;
             if (EelBoss.Is(u)) { part = null; return -1f; }   // Boss 3: the eel is hit along its whole body (EelSump.TraceBody), not at its two base units
             if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss (BossArt) is hit on its own drawn silhouette, not a man's
             {
@@ -61,7 +63,7 @@ namespace GameCore
                 string key = m.Db?.Name; float top = MutantHeight(m) + EelSump.LiftOfUnit(m);   // Boss 3: a raised eel part is taller from the ground by how high it is drawn
                 part = h * BodyTiles >= 0.7f * top ? "Head" : "Body";
                 if (h * BodyTiles > top) return -1f;
-                float a = GameData.HitProfiles.Half(key, h * BodyTiles);
+                float a = GameData.HitProfiles.Half(key, h * BodyTiles); if (a >= 0f) cx = GameData.HitProfiles.CentreOf(key, h * BodyTiles) * (UnitSprites.Flipped(m) ? -1f : 1f);   // the shape sits where the sprite does
                 if (a < 0f) return key != null && GameData.HitProfiles.All.ContainsKey(key) ? -1f : 0.25f * MutantSize(m);   // no silhouette (the bosses): the old column
                 return Reach(a, GameData.HitProfiles.DepthCap(key), dx, dy);
             }
@@ -82,19 +84,20 @@ namespace GameCore
         public static bool ShowBoxes;                       // F6 (dev): CombatFxView draws every enemy's hit shape
 
         /// <summary>The hit shape of a body as bands of 2 pixel rows for the F6 overlay: (from, to) as a share of a standing human's height, the silhouette's half-width on screen in tiles, part.</summary>
-        public static List<(float lo, float hi, float half, string part)> Boxes(ICombatant u)
+        public static List<(float lo, float hi, float half, string part)> Boxes(ICombatant u) => System.Linq.Enumerable.ToList(System.Linq.Enumerable.Select(BoxesC(u), b => (b.lo, b.hi, b.half, b.part)));
+        public static List<(float lo, float hi, float half, string part, float cx)> BoxesC(ICombatant u)
         {
-            var l = new List<(float, float, float, string)>();
+            var l = new List<(float, float, float, string, float)>();
             if (u == null || EelBoss.Is(u) || Rt.Untouchable(u)) return l;
             if (u is HumanEnemy hb && BossArt.HitKey(hb) is string bk)                    // 2026-11-21: a creature boss's own silhouette
             {
                 float ht = GameData.HitProfiles.Height(bk);
-                for (float y = 0f; y < ht - 0.001f; y += 2f / 32f) { float y2 = System.Math.Min(ht, y + 2f / 32f), a = GameData.HitProfiles.Half(bk, (y + y2) * 0.5f); if (a > 0f) l.Add((y / BodyTiles, y2 / BodyTiles, a, (y + y2) * 0.5f >= 0.7f * ht ? "Head" : "Body")); }
+                for (float y = 0f; y < ht - 0.001f; y += 2f / 32f) { float y2 = System.Math.Min(ht, y + 2f / 32f), a = GameData.HitProfiles.Half(bk, (y + y2) * 0.5f); if (a > 0f) l.Add((y / BodyTiles, y2 / BodyTiles, a, (y + y2) * 0.5f >= 0.7f * ht ? "Head" : "Body", 0f)); }
                 return l;
             }
             bool mut = !(u is Player) && !(u is HumanEnemy) && u is Mutant;
             var m = u as Mutant; string key = mut ? m.Db?.Name : "human";
-            if (mut && !GameData.HitProfiles.All.ContainsKey(key ?? "")) { float sz = MutantSize(m), top = (sz + EelSump.LiftOfUnit(m)) / BodyTiles; l.Add((0f, top, 0.25f * sz, "Body")); return l; }
+            if (mut && !GameData.HitProfiles.All.ContainsKey(key ?? "")) { float sz = MutantSize(m), top = (sz + EelSump.LiftOfUnit(m)) / BodyTiles; l.Add((0f, top, 0.25f * sz, "Body", 0f)); return l; }
             float s = mut ? 1f : Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;
             float height = mut ? MutantHeight(m) + EelSump.LiftOfUnit(m) : BodyTiles * s, step = 2f / 32f;
             for (float y = 0f; y < height - 0.001f; y += step)
@@ -103,7 +106,7 @@ namespace GameCore
                 if (a <= 0f) continue;
                 float hs = mid / BodyTiles;
                 string part = mut ? (mid >= 0.7f * height ? "Head" : "Body") : hs >= HeadFrom * s ? "Head" : hs >= TorsoFrom * s ? "Torso" : "Legs";
-                l.Add((y / BodyTiles, y2 / BodyTiles, a, part));
+                l.Add((y / BodyTiles, y2 / BodyTiles, a, part, mut ? GameData.HitProfiles.CentreOf(key, mid) * (UnitSprites.Flipped(m) ? -1f : 1f) : 0f));
             }
             return l;
         }
@@ -129,7 +132,7 @@ namespace GameCore
                 float t = rx * dx + ry * dy;                 // along the line
                 if (t <= 0.05f || t > range || t >= bestT) continue;
                 float side = rx * dy - ry * dx;              // signed distance off the line (+ = the round passes on its right)
-                float half = HalfWidth(u, h, dx, dy, out string part);
+                float half = HalfWidth(u, h, dx, dy, out string part, out float hcx); side += hcx * dy;                              // a shape off to one side of the unit's centre
                 if (shooter is Player && half > 0f) half += pad < 0f ? PlayerHitPad : pad;                                 // 2026-11-19 (Yan: "if the bullet goes through the enemy sprite it hits at least 80% of the time"): the hit shape is the sprite's own silhouette, so a round a hair outside its edge flew "through" the picture. The player's rounds get a little padding all round
                 if (half <= 0f || System.Math.Abs(side) > half) continue;
                 if (part == "Torso" && System.Math.Abs(side) > ArmFrom) part = "Arm";
