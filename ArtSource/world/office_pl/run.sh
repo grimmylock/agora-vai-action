@@ -8,11 +8,11 @@ F() { # name dir w h desc
 [ -d world/tiles_pl/wood ] || (cd world/tiles_pl && python3 make_tileset.py wood "dark worn wooden plank floor with grain and scuffs, planks running left to right" "dark wood panel wall top with grain" 3 > /tmp/tile_wood.log 2>&1); echo "wood $([ -d world/tiles_pl/wood ] && echo ok || echo FAIL)"
 for d in south north; do
 F odesk $d 40 40 "plain wooden office desk with two drawer pedestals, a few papers on top"
-F ochair $d 24 32 "simple office swivel chair with a dark fabric seat"
+F ochair $d 32 40 "simple office swivel chair with a dark fabric seat"
 F opc $d 40 40 "wooden office desk with an old beige crt computer monitor and keyboard on it, papers"
 F ofile $d 28 44 "tall grey metal four-drawer filing cabinet"
 F oshelf $d 40 48 "tall wooden bookshelf full of books and binders"
-F oplant $d 24 36 "dead dried-up potted plant in a pot"
+F oplant $d 32 40 "dead dried-up potted plant in a pot"
 F ocooler $d 24 44 "office water cooler with an empty water bottle on top"
 F osofa $d 48 32 "worn brown leather two-seat office sofa"
 done

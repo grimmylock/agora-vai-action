@@ -195,6 +195,7 @@ namespace GameCore
             const string special = "gouqvkhmnprsti"; var rows = LabPlans["hospital_morgue"]; var plain = new string[rows.Length];
             for (int i = 0; i < plain.Length; i++) { var cs = rows[i].ToCharArray(); for (int j = 0; j < cs.Length; j++) if (special.IndexOf(cs[j]) >= 0) cs[j] = '.'; plain[i] = new string(cs); }
             var c = new TerrainCanvas(rows[0].Length, rows.Length, TerrainCanvas.Seed("hospital_morgue"));
+            c.Paint(0, 0, rows[0].Length, rows.Length, Concrete);              // what shows under and below the walls (the wall faces hang over it): plain concrete, not the tile floor
             StampPlan(c, 0, 0, plain, "plaster", LabTile, marks, stashes);
             c.Paint(78, 6, 10, 6, Floor);                                   // the office: a wooden floor (dungeon_plans.py hospital_morgue: x 78..87, y 6..11)
             for (int y = 0; y < rows.Length; y++)
