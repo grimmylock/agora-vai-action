@@ -87,5 +87,8 @@ for key, (ppt, half) in All.items():
     art = key[5:]; idle = f'{R}/Mutants/anim/boss_{art}_idle.bytes'; m = re.search(r'"boss_%s_idle", Frames = (\d+)' % art, BA)
     if not os.path.exists(idle) or not m: continue
     n = int(m.group(1)); f0 = strip_frame(idle, n, 0); ps = [panel(f0, key, ppt, False, 1)]
-    b_items.append((f'{key}  (idle; the sprite is drawn at {ppt} px a tile)', ps))
+    for ak in [k for k in ATK if k.startswith(key + '|')][:4]:                       # 2026-11-22: the attack clips: the picture at their middle frame, the outline with the clip's reach added
+        kind = ak.split('|')[1]; mm = re.search(r'"boss_%s_%s", Frames = (\d+)' % (art, kind), BA); fn = f'{R}/Mutants/anim/boss_{art}_{kind}.bytes'
+        if mm and os.path.exists(fn): nn = int(mm.group(1)); ps.append(panel(strip_frame(fn, nn, nn // 2 + 1), key, ppt, False, 1, ak))
+    b_items.append((f'{key}  (idle, then attack clips with their reach added; drawn at {ppt} px a tile)', ps))
 sheet(b_items, 'CREATURE BOSSES: hit shape over the idle picture', os.path.join(OUT, 'bosses.png'))

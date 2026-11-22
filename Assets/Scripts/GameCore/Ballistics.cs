@@ -83,7 +83,7 @@ namespace GameCore
             return null;
         }
         /// <summary>2026-11-22 (Yan: "the Gaunt hitbox should also include the arm in attacks"): the extra outline of the clip a mutant is playing right now (HitProfiles.AttackRuns), or null.</summary>
-        public static float[] AttackRunsNow(ICombatant u, string key, float height) => u is Mutant m && !(u is HumanEnemy) && MutantAttack.KindOf(m) is string kind ? GameData.HitProfiles.AttackRunsAt(key, kind, height) : null;
+        public static float[] AttackRunsNow(ICombatant u, string key, float height) => u is HumanEnemy hb ? (Boss.Of(hb) is Boss.Fight bf && BossArt.AttackNow(bf) is string bk ? GameData.HitProfiles.AttackRunsAt(key, bk, height) : null) : u is Mutant m && MutantAttack.KindOf(m) is string kind ? GameData.HitProfiles.AttackRunsAt(key, kind, height) : null;
         /// <summary>Is the body drawn mirrored (the outline mirrors with it)?</summary>
         public static bool OutlineFlipped(ICombatant u) => u is HumanEnemy hb ? BossArt.Flip(hb) : u is Mutant m && UnitSprites.Flipped(m);
         /// <summary>Does a round along (dx, dy) at height h (a share of a standing human) passing `side` off the unit's centre go through its outline? Each run of the picture's row covers the stretch of ground its x-extent projects to across the round's line (x * dy) and the body's own depth (|dx| times half the run, capped).</summary>

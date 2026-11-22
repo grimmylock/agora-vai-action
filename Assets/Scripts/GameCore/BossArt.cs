@@ -117,6 +117,13 @@ namespace GameCore
             var a = Of(f.Def.Art); if (a == null || clip == null || !a.Clips.TryGetValue(clip, out var c)) return false;
             f.Clip = clip; f.ClipScale = scale; f.ClipT0 = hitAt - c.PreHitSeconds * scale; return true;
         }
+        /// <summary>2026-11-22 (Yan: "do the same for the bosses' attacks"): the attack clip this boss is drawing right now (not a loop, not hurt or death), or null: his hit outline gains that clip's (HitProfiles.AttackRuns).</summary>
+        public static string AttackNow(Boss.Fight f)
+        {
+            if (f == null || f.Clip == null || f.Finished || f.Broken) return null;
+            var a = Of(f.Def.Art); if (a == null || !a.Clips.TryGetValue(f.Clip, out var c) || c.Loop || f.Clip == "hurt" || f.Clip == "death" || f.Clip == "idle") return null;
+            return c.IndexAt((Time.time - f.ClipT0) / f.ClipScale) >= 0 ? f.Clip : null;
+        }
         /// <summary>A clip that is not a blow (hurt, death, a call): from now, at its own pace.</summary>
         public static void Play(Boss.Fight f, string clip) { var a = Of(f.Def.Art); if (a != null && a.Clips.ContainsKey(clip)) { f.Clip = clip; f.ClipScale = 1f; f.ClipT0 = Time.time; } }
         /// <summary>A hit landed on it: the hurt clip, unless a move's clip is playing (a blow is not interrupted by the drawing).</summary>

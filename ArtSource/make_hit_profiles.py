@@ -159,6 +159,15 @@ for _k, _s in _sc.items():
     if not _m or not os.path.exists(_f): continue
     _im = np.array(Image.open(_f).convert('RGBA'))[..., 3] > 0; _w = _im.shape[1] // int(_m.group(1))
     E_['boss:' + _k] = profile(_im[:, 0:_w], int(round(32 / _s))); make_runs('boss:' + _k, _im[:, 0:_w], [], int(round(32 / _s)), mirror=False)
+    for _cm in _re.finditer(r'"boss_%s_(\w+)", Frames = (\d+)' % _k, _ba):       # 2026-11-22: while a boss's attack clip plays its outline gains that clip's (every frame)
+        _clip, _n = _cm.group(1), int(_cm.group(2))
+        if _clip in ('idle', 'walk', 'run', 'drive', 'hurt', 'death') or _clip.endswith('_b') or (_k, _clip) in (('specimen_v2', 'laser'), ('specimen_v2', 'mind'), ('specimen_v2', 'orbs'), ('specimen_eye', 'charge'), ('grinder', 'spit')): continue   # (clips with the effect baked in: a beam, a ring, a spray: not body)
+        _fn = os.path.join(R, 'Mutants', 'anim', 'boss_%s_%s.bytes' % (_k, _clip))
+        if not os.path.exists(_fn): continue
+        _st = np.array(Image.open(_fn).convert('RGBA'))[..., 3] > 0
+        if _st.shape[1] % _n: continue
+        _fw = _st.shape[1] // _n; _fr = [_st[:, i * _fw:(i + 1) * _fw] for i in range(_n)]; _fr = [f for f in _fr if f.any()]
+        make_attack_runs('boss:' + _k, _clip, _fr, int(round(32 / _s)), (_w, _im.shape[0]))
 eb = np.array(Image.open(f'{R}/Fx/boss_eel_body_s0.png').convert('RGBA'))[..., 3] > 0; EEL = [max(0.12, float(np.median(eb[:, i * 8:i * 8 + 8].sum(0))) / 2 / 32) for i in range(140)]
 eh = np.array(Image.open(f'{R}/Fx/boss_eel_head_s0.png').convert('RGBA'))[..., 3] > 0; EELHEAD = float(eh.sum(0).max()) / 2 / 32
 for _bk, (_lo, _hi) in BOSS_HEAD.items():
