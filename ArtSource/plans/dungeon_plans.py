@@ -514,7 +514,7 @@ def hospital_morgue():
     corridor; the rooms are where you hide (each holds mutants to take out in melee: a shot brings it running); the office holds the key (stash '3'); the locked door ('1' x3) opens onto the chase corridor; the fight is in the big room
     (the Autopsy Theatre, 'A'). Marks: E the way in, A the theatre, C the chase corridor, 6 7 8 9 H J M P R lair marks (DungeonLairs: one mutant each), K / L stashes. Specials stamped by TierDungeons.HospitalMorgue:
     g gurney, o body bag, u wheelchair, q bed frame, v IV stand, k hanging bag; h office desk, m desk with a computer, n office chair, p filing cabinet, r bookshelf, s sofa, t dead plant, i water cooler (the office, its floor is wood)."""
-    p = Plan(110, 66, 9831)
+    p = Plan(175, 36, 9831)
     p.room(4, 13, 90, 7)                                           # the long corridor, x 4..93, y 13..19
     p.room(16, 3, 13, 9); p.hline(21, 22, 12, 1, 'D')              # Anteroom (2 mutants)
     p.room(41, 8, 4, 4); p.g[12][42] = 'D'                         # the cleaning cabinet (loot)
@@ -524,14 +524,14 @@ def hospital_morgue():
     p.room(33, 21, 13, 10); p.hline(35, 36, 20, 1, 'D')            # the Dissection Hall (3 mutants)
     p.room(68, 21, 3, 9); p.g[20][69] = 'D'                        # the washroom (1 mutant)
     p.vline(94, 15, 17, 1, '1')                                    # the locked door at the corridor's east end (3 tiles, the office key)
-    p.room(95, 13, 9, 49)                                          # the chase corridor, x 95..103, y 13..61
-    p.room(76, 41, 18, 21); p.vline(94, 59, 60, 1, 'D')            # the big room (the Autopsy Theatre), its door at the corridor's foot
+    p.room(95, 13, 49, 9)                                          # the chase corridor, HORIZONTAL (Yan, 2026-11-22: 'make the chase corridor horizontal, big room to the east'): x 95..143, y 13..21
+    p.room(145, 6, 22, 22); p.vline(144, 16, 18, 1, 'D')           # the big room (the Autopsy Theatre) at the east end: x 145..166, y 6..27, its 3-tile door at the corridor's end
     # obstacles (2 tiles each, alternating sides so a lane stays open): the corridor's gurneys, wheelchairs and crates; the chase corridor's
     cyc = 'gucgug'
     for i, (x, y) in enumerate(((10, 14), (18, 17), (27, 15), (38, 14), (46, 18), (53, 16), (60, 14), (66, 18), (74, 15), (84, 17), (90, 14))):
         props(p, ((x, y, cyc[i % 6]), (x + 1, y, cyc[(i + 2) % 6])))
-    for i, (x, y) in enumerate(((96, 18), (100, 24), (97, 30), (101, 36), (96, 43), (100, 50), (97, 56))):
-        props(p, ((x, y, cyc[i % 6]), (x, y + 1, cyc[(i + 3) % 6])))
+    for i, (x, y) in enumerate(((98, 14), (105, 19), (112, 15), (119, 20), (126, 14), (133, 19), (139, 16))):
+        props(p, ((x, y, cyc[i % 6]), (x + 1, y, cyc[(i + 3) % 6])))
     props(p, ((8, 13, 'e'), (91, 19, 'e')))                         # 2026-11-22 (Yan: 'dark and scary, flashlight required'): just two dim red lamps in the whole corridor (by the stairs and at the locked door); the rest is dark
     # the rooms
     props(p, ((17, 3, 'f'), (18, 3, 'd'), (19, 3, 'd'), (27, 3, 'f'), (18, 8, 'a'), (20, 8, 'a'), (24, 8, 'a'), (26, 6, 'v'), (22, 5, 'o'), (24, 5, 'o'),                  # the Anteroom
@@ -541,12 +541,12 @@ def hospital_morgue():
               (36, 24, 'a'), (40, 24, 'a'), (44, 24, 'a'), (36, 28, 'a'), (40, 28, 'a'), (38, 22, 'g'), (43, 22, 'g'), (34, 26, 'v'), (45, 26, 'v'), (35, 22, 'k'), (44, 29, 'k'), (38, 29, 'k'),   # the Dissection Hall
               (68, 22, 'j'), (70, 28, 'x'), (68, 28, 'w'),                                                                                                                                           # the washroom
               (78, 6, 'r'), (79, 6, 'r'), (80, 6, 'p'), (81, 6, 'p'), (84, 6, 'm'), (86, 6, 'h'), (84, 7, 'n'), (86, 7, 'n'), (80, 9, 'h'), (80, 10, 'n'), (82, 10, 's'), (83, 10, 's'), (78, 11, 't'), (87, 11, 'i'),   # the office
-              (77, 42, 'l'), (79, 42, 'l'), (81, 42, 'l'), (83, 42, 'l'), (87, 42, 'l'), (89, 42, 'l'), (91, 42, 'l'), (80, 47, 'a'), (88, 47, 'a'), (80, 55, 'a'), (88, 55, 'a'), (78, 51, 'g'), (92, 51, 'g'),       # the Autopsy Theatre
-              (79, 44, 'k'), (91, 44, 'k'), (79, 58, 'k'), (91, 58, 'k'), (85, 47, 'k'), (85, 55, 'k'), (82, 50, 'v'), (88, 52, 'v'), (85, 44, 'e')))
+              (148, 7, 'l'), (150, 7, 'l'), (152, 7, 'l'), (154, 7, 'l'), (158, 7, 'l'), (160, 7, 'l'), (162, 7, 'l'), (151, 12, 'a'), (159, 12, 'a'), (151, 20, 'a'), (159, 20, 'a'), (149, 16, 'g'), (163, 16, 'g'),       # the Autopsy Theatre
+              (150, 9, 'k'), (162, 9, 'k'), (150, 23, 'k'), (162, 23, 'k'), (156, 12, 'k'), (156, 20, 'k'), (153, 15, 'v'), (159, 17, 'v'), (156, 9, 'e')))
     for (x, y, ch) in ((18, 6, '6'), (26, 9, '7'), (52, 4, '8'), (57, 4, '9'), (60, 7, 'H'), (35, 25, 'J'), (40, 26, 'M'), (44, 27, 'P'), (69, 26, 'R')): p.g[y][x] = ch    # lair marks (one mutant each)
     p.g[8][87] = '3'                                               # the duty officer's desk: the key (against the east wall, not in the middle of the room)
     p.g[10][43] = 'L'; p.g[24][10] = 'K'                           # the cleaning cabinet, the locker room cache
-    p.g[16][5] = 'E'; p.g[51][85] = 'A'; p.g[15][99] = 'C'
+    p.g[16][5] = 'E'; p.g[16][156] = 'A'; p.g[17][99] = 'C'
     scatter(p, 260, what="**~%\";&&'x")
     return p
 def morgue_check(p):

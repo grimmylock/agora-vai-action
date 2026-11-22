@@ -3060,10 +3060,10 @@ static class Program {
       for (int i = 0; i < 60 * 40 && !arrived; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); if (CombatantUtil.Distance(h, p) <= 3) arrived = true; }
       Check(arrived, $"Morgue stalker: a shot in the Anteroom brings it there ({d0} tiles, {UnityEngine.Time.time - t0:0} s)");
       // the key, the chase corridor, the big room
-      MacroState.Current.Keys.Add("morgue_staff"); LabLocks.Granted("morgue_staff"); h.X = 70; h.Y = 16; Rt.SetOffset(h, 0f, 0f); p.X = 99; p.Y = 20; Rt.SetOffset(p, 0f, 0f);
+      MacroState.Current.Keys.Add("morgue_staff"); LabLocks.Granted("morgue_staff"); h.X = 70; h.Y = 16; Rt.SetOffset(h, 0f, 0f); p.X = 100; p.Y = 17; Rt.SetOffset(p, 0f, 0f);
       for (int i = 0; i < 60 * 2; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); OrderlyBoss.Tick(1f / 60f); }
       Check(f.Stalking && h.IsAggroed && CombatantUtil.Distance(h, p) >= 10, $"Morgue stalker: you step into the chase corridor: it hunts you, with a lead ({CombatantUtil.Distance(h, p)} tiles)");
-      p.X = 85; p.Y = 51; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
+      p.X = 156; p.Y = 16; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
       Check(!f.Stalking && Boss.Current == f && Boss.DamageScale(h) == 1f, "Morgue stalker: you reach the big room: the stalk ends, the fight begins");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MacroState.Current.Keys.Clear(); }
   }

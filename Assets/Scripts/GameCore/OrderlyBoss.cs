@@ -53,8 +53,8 @@ namespace GameCore
         public static void OnEnterZone(string zoneId) { _spawnedHere = false; _drip.Clear(); _st.Clear(); _wps.Clear(); }
 
         static (int x, int y)? Lm(string name) { var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == name); return l == null ? ((int, int)?)null : (l.X, l.Y); }
-        /// <summary>Past the locked door: the chase corridor (the landmark's column, two tiles either side, from its top down).</summary>
-        public static bool InChase(Player p) { var l = Lm("Chase Corridor"); return l != null && p.IsAlive() && System.Math.Abs(p.X - l.Value.x) <= 5 && p.Y >= l.Value.y - 1; }
+        /// <summary>Past the locked door: the chase corridor (horizontal: from the landmark at its west end eastward, six tiles either side).</summary>
+        public static bool InChase(Player p) { var l = Lm("Chase Corridor"); return l != null && p.IsAlive() && p.X >= l.Value.x - 1 && System.Math.Abs(p.Y - l.Value.y) <= 6; }
         /// <summary>In the big room: the Autopsy Theatre's landmark is its middle.</summary>
         public static bool InTheatre(Player p) { var l = Lm(Lair); return l != null && p.IsAlive() && System.Math.Abs(p.X - l.Value.x) <= 9 && System.Math.Abs(p.Y - l.Value.y) <= 10; }
 
@@ -128,7 +128,7 @@ namespace GameCore
         static void BeginChase(Boss.Fight f, St st, Player runner)
         {
             var h = f.Unit; var door = Lm("Chase Corridor");
-            if (door != null && CombatantUtil.Distance(h, runner) < 14) { var (bx, by) = TerrainMap.FindNearestEnterable(door.Value.x - 19, door.Value.y + 1); h.X = bx; h.Y = by; Rt.SetOffset(h, 0f, 0f); }
+            if (door != null && CombatantUtil.Distance(h, runner) < 14) { var (bx, by) = TerrainMap.FindNearestEnterable(door.Value.x - 19, door.Value.y - 1); h.X = bx; h.Y = by; Rt.SetOffset(h, 0f, 0f); }
             h.Alert = 1f; st.HasWp = false; Sfx.Play("boss_sting", null, 0.9f, 0f, 1.1f);
             GameLog.Event("The key turns, and somewhere behind you in the corridor the sawing starts, and comes toward you. Run.");
         }
