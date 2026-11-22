@@ -7,6 +7,7 @@ static class Program {
     // from the last one's squads - the checks and the scene dumps drifted. Every run starts clean.
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
     if (args.Length > 0 && args[0] == "pistolttk") { PistolTtk(); return 0; }
+    if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
@@ -1310,6 +1311,40 @@ static class Program {
       Console.WriteLine($"{def.Name,-20} HP {hp,6} PhysDR {v.PhysDR:0.00}  torso {dt,3}: {Ttk(dt)}   head {dh,3}: {Ttk(dh)}");
       Boss.Reset(); EncounterState.Enemies.Clear();
     }
+  }
+
+  // 2026-11-22 (Yan: "a tier-based list based on which weapon from the boss's respective tier kills it the fastest, include the mutants"): for every mutant and boss, the fastest gun of ITS tier
+  // (tier 6+ uses tier 5, the highest there is) with Standard ammo, every round on the torso (shotguns: all six pellets), reloads included, no dodging. Same damage pieces as Gunplay.Resolve.
+  static void TierTtk() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset();
+    var guns = new List<(string key, string cat, Weapon w, int tier)>();
+    foreach (var cat in WeaponDatabase.Categories) { if (cat.Key == "melee" || cat.Key == "thrown") continue; foreach (var kv in cat.Value) { if (WeaponDatabase.Unique.Contains(kv.Key) || kv.Value.Tier <= 0 || (Environment.GetEnvironmentVariable("NO_RAIL") != null && kv.Key == "G7RailPrototype")) continue; var w = p.MakeWeapon(cat.Key, kv.Key); if (w?.Db == null || !Gunplay.Guns.ContainsKey(w.Db.Name)) continue; guns.Add((kv.Key, cat.Key, w, kv.Value.Tier)); } }
+    (double sec, int rounds, string name, int dmg) Best(int tier, float hp, float physDr, bool human, Func<Weapon, float> shotMult) {
+      (double sec, int rounds, string name, int dmg) best = (1e9, 0, "-", 0);
+      foreach (var g in guns.Where(g => g.tier == Math.Min(tier, 5))) {
+        var gd = Gunplay.Guns[g.w.Db.Name]; bool shot = CombatRules.IsShotgun(g.w); int pel = shot ? 6 : 1;
+        float raw = Gunplay.RoundDamage(g.w, "Torso", 6f, pel) * Gunplay.TuneMult(g.w, human) * Gunplay.FalloffMult(g.w, 6f) * CombatRules.PlayerDamage * CombatRules.Lethality; var load = AmmoDatabase.Load(g.w.Db, g.w.CurrentAmmoType);
+        int one = load != null ? CombatRules.PhysicalDamage(raw, load, physDr, g.w.Db.IgnorePhysDRPercent ?? 0f) : CombatRules.PhysicalDamage(raw, g.w.CurrentAmmoType, physDr, g.w.Db.IgnorePhysDRPercent ?? 0f); int perShot = one * pel;
+        int n = (int)Math.Ceiling(hp / (double)perShot); int mag = Math.Max(1, g.w.MagCapacity); double sec = (n - 1) * 60.0 / gd.rpm + ((n - 1) / mag) * gd.reload;
+        if (sec < best.sec) best = (sec, n, g.w.Db.Name, perShot);
+      }
+      return best;
+    }
+    string Row(string name, int tier, int hp, float dr, bool human) { var b = Best(tier, hp, dr, human, null); return $"{name,-22} T{tier} HP {hp,6} DR {dr:0.00}  {b.name,-22} {b.dmg,4}/shot  {b.rounds,4} rounds  {b.sec,5:0.0} s"; }
+    Console.WriteLine("== mutants ==");
+    var muts = new List<(string name, int tier, MutantDef d)>();
+    foreach (var t in MutantDatabase.Tiers) foreach (var m in t.Value) muts.Add((m.Value.Name, int.Parse(new string(t.Key.Where(char.IsDigit).ToArray())), m.Value));
+    foreach (var m in MutantDatabase.Wards) muts.Add((m.Value.Name + " (ward)", m.Value.Tier, m.Value));
+    foreach (var m in muts.OrderBy(x => x.tier).ThenBy(x => x.d.Hp)) Console.WriteLine(Row(m.name, m.tier, m.d.Hp, m.d.PhysDR, false));
+    Console.WriteLine("== bosses ==");
+    var zoneOf = new Dictionary<string, string> { ["Mother Hollow"] = "secret_cave", ["The Gallery Choir"] = "valley_mine", ["The Ferryman"] = "stranded_ferry", ["The Specimen"] = "deep_caverns", ["The Grinder"] = "quarry_basin", ["The Orderly"] = "hospital_morgue", ["The Verger"] = "abandoned_cathedral", ["The Visor"] = "secret_lab_beta" };
+    foreach (var def in Boss.Registry.Where(d => d != Boss.VergerBeast).Distinct()) {
+      for (int y = py - 7; y <= py + 7; y++) for (int x = px - 7; x <= px + 9; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+      Boss.Reset(); var f = Boss.Spawn(def, px + 5, py); var v = f.Unit; int tier = zoneOf.TryGetValue(def.Name, out var zid) && MacroMapDatabase.Find(zid) != null ? MacroMapDatabase.Find(zid).Tier : 2;
+      Console.WriteLine(Row(def.Name, tier, v.MaxHp > 0 ? v.MaxHp : v.Hp, v.PhysDR * CombatRules.ArmorScale(v), v is HumanEnemy)); Boss.Reset(); EncounterState.Enemies.Clear();
+    }
+    Console.WriteLine(Row("Brain in the vat", MacroMapDatabase.Find("secret_lab_alpha").Tier, BrainBoss.MaxHp, BrainBoss.Def.PhysDR, false)); Console.WriteLine(Row("The Drowner (eel)", 3, EelBoss.MaxHp, EelBoss.Def.PhysDR, false));
   }
 
   static void BossFrames(string path) {
