@@ -2689,7 +2689,7 @@ static class Program {
     // Yan: "make it so he needs 3 parries to get stunned": two perfect parries are deflections, the third opens him; they fade
     { var p = Arena(out int px, out int py); Boss.Reset(); EncounterState.Enemies.Clear(); var bf = Boss.Spawn(Boss.Visor, px + 1, py);
       bool a1 = Boss.Stagger(bf.Unit, 1f), a2 = Boss.Stagger(bf.Unit, 1f), a3 = Boss.Stagger(bf.Unit, 1f);
-      Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 75500, "Boss: the Visor (75500 HP) staggers on the 3rd perfect parry, not before");
+      Check(!a1 && !a2 && a3 && Boss.Staggered(bf.Unit) && Boss.Visor.Hp == 52900, "Boss: the Visor (52900 HP) staggers on the 3rd perfect parry, not before");
       bf.StaggerUntil = -1f; Boss.Stagger(bf.Unit, 1f); bf.LastParryAt -= Boss.GuardRecovers + 1f;
       Check(!Boss.Stagger(bf.Unit, 1f) && Boss.GuardDamage(bf) == 1, "Boss: parries toward a stagger fade after a while");
       // "parries are probably too hard": the glint is a fixed beat before each hit, and a parry that lands frees the key for the next hit
@@ -3046,7 +3046,7 @@ static class Program {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 96000f; UnityEngine.Time.unscaledTime = 96000f;
     try {
       var V = Boss.Verger;
-      Check(V.Hp == 160000 && V.Change == null && V.PoseKey == HeldPoseMath.VergerPoses && !V.Vanishes && V.Moves.All(m => m.Clip == null), "Verger: 160000 HP, no change (the beast is parked), his own scythe poses, no beast clips, keeps his body");
+      Check(V.Hp == 112000 && V.Change == null && V.PoseKey == HeldPoseMath.VergerPoses && !V.Vanishes && V.Moves.All(m => m.Clip == null), "Verger: 112000 HP, no change (the beast is parked), his own scythe poses, no beast clips, keeps his body");
       Check(V.Moves.All(m => m.Poses.All(q => q >= 0 && q < HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger))) && HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger) == 8 && Melee.Shapes[(int)HeldPoseMath.Style.Verger].Length == 8, "Verger: eight scythe poses, each with its hit shape, and every move uses only those");
       Check(V.Moves.Count(m => !m.Phase2Only) >= 6 && V.Moves.Count(m => !m.Phase1Only) >= 11 && V.Moves.Count(m => m.Phase2Only) >= 6, $"Verger: a full moveset ({V.Moves.Count(m => !m.Phase2Only)} in phase 1, {V.Moves.Count(m => !m.Phase1Only)} in phase 2)");
       Check(V.Moves.Where(m => m.Hits > 1).All(m => (m.Gaps == null || m.Gaps.Length == m.Hits - 1) && (m.Mults == null || m.Mults.Length == m.Hits) && (m.RedHits == null || m.RedHits.Length == m.Hits)), "Verger: every combo has one pause per gap, one damage and one colour per blow");
@@ -3355,9 +3355,9 @@ static class Program {
   static void VergerBeastChecks() {   // 2026-11-20: the Verger's PARKED beast form (Boss.VergerBeast, 2026-11-21: out of the game, kept working): a scythe duel, then at half health the change (90% less damage for 4 s) and the claws
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
     try {
-      Check(Boss.VergerBeast.Hp == 160000 && Boss.VergerBeast.Change != null && Boss.VergerBeast.Moves.Any(m => m.Phase1Only) && Boss.VergerBeast.Moves.Any(m => m.Phase2Only) && Boss.VergerBeast.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.VergerBeast.Vanishes, "Verger beast: 160000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
+      Check(Boss.VergerBeast.Hp == 112000 && Boss.VergerBeast.Change != null && Boss.VergerBeast.Moves.Any(m => m.Phase1Only) && Boss.VergerBeast.Moves.Any(m => m.Phase2Only) && Boss.VergerBeast.Moves.Count(m => m.Danger && m.Phase1Only) == 1 && !Boss.VergerBeast.Vanishes, "Verger beast: 112000 HP, a change at half health, moves for each form, one red move with the scythe, keeps his body");
       var f = Boss.Spawn(Boss.VergerBeast, px + 2, py); var h = f.Unit;
-      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 160000, "Verger beast: spawns with the scythe and the coat, holds at 1 HP until executed");
+      Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable && h.MaxHp == 112000, "Verger beast: spawns with the scythe and the coat, holds at 1 HP until executed");
       Check(Melee.For(h.EquippedWeapon).Reach >= 2f && Melee.For(h.EquippedWeapon).Blade && Melee.For(h.EquippedWeapon).Bleeds, "Verger beast: the scythe is the longest reach and it cuts and bleeds");
       Check(!ShopDatabase.Items.Any(i => i.Name == "Verger Coat" || i.Name == "Verger's Scythe") && !Enumerable.Range(0, 300).Any(_ => EncounterGeneration.PickRandomArmorByTier(1, 6)?.Name == "Verger Coat"), "Verger beast: his coat and scythe are in no shop and no random loadout");
       f.Unit.X = p.X + 1; f.Unit.Y = p.Y; Rt.SetOffset(h, 0f, 0f); f.NextMoveAt = UnityEngine.Time.time; bool began = false;
@@ -3422,9 +3422,9 @@ static class Program {
   static void SpoolChecks() {   // 2026-11-19: Boss 4, Spool in the Dog Kennels (Tier 2)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); UnityEngine.Time.time = 90000f; UnityEngine.Time.unscaledTime = 90000f;
     try {
-      Check(Boss.Spool.Hp == 41000 && Boss.Spool.Moves.Count(m => m.Danger) == 2 && Boss.Spool.Moves.Any(m => m.Phase2Only) && Boss.Spool.Faction == "Outcasts" && !Boss.Spool.Vanishes, "Spool: 41000 HP, two red moves, phase 2 moves, an Outcast who keeps his body");
+      Check(Boss.Spool.Hp == 28700 && Boss.Spool.Moves.Count(m => m.Danger) == 2 && Boss.Spool.Moves.Any(m => m.Phase2Only) && Boss.Spool.Faction == "Outcasts" && !Boss.Spool.Vanishes, "Spool: 28700 HP, two red moves, phase 2 moves, an Outcast who keeps his body");
       var f = Boss.Spawn(Boss.Spool, px + 2, py); var h = f.Unit;
-      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Barbwire Coat" && h.Unkillable && h.MaxHp == 41000, "Spool: spawns with the bat and his barbwire coat, holds at 1 HP until executed");
+      Check(h.Faction == "Outcasts" && h.EquippedWeapon?.Db?.Name == "Barbed Wire Bat" && h.EquippedArmor?.Name == "Barbwire Coat" && h.Unkillable && h.MaxHp == 28700, "Spool: spawns with the bat and his barbwire coat, holds at 1 HP until executed");
       Boss.Fights.Clear(); EncounterState.Enemies.Clear();
       // the lair wakes him when you come within range of the Dog Kennels, once
       Tier2Jobs.ZoneOverride = MacroMapDatabase.MapOf("scrapyard"); TerrainMap.Landmarks.Add(new LandmarkInstance { Name = SpoolBoss.Lair, X = px + 6, Y = py, Description = "" });
@@ -4234,7 +4234,7 @@ static class Program {
       for (int i = 0; i < 900 && !(wrapped && f.Discharged); i++) { UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt); UnityEngine.Time.time += dt; if (f.Stage == "wrap") { wrapped = true; solid = Math.Max(solid, Enumerable.Range(0, EelSump.N).Count(j => s.Z[j] > 0.3f)); charged |= s.Charge > 0.5f; } }
       Check(wrapped && solid >= 20 && charged, $"Eel platform form: round the platform the proxy spine has {solid} solid samples and the discharge shows as charge ({charged})");
       var net = Net.DecodeSnapshot(Net.EncodeSnapshot()).Eel; Check(net != null && net.Has && net.HasSpine && net.Stage == "wrap", "Eel platform form: the co-op snapshot carries it like the Sump's");
-      f.Unit.Hp -= 41300; EelBoss.OnDamaged(f.Unit); keys.Add("depths_drain1"); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt);
+      f.Unit.Hp -= 28900; EelBoss.OnDamaged(f.Unit); keys.Add("depths_drain1"); UnityEngine.Time.deltaTime = dt; EelBoss.Tick(dt);
       Check(f.Gone && !EncounterState.Enemies.Contains(f.Unit) && Story.Has("eelwound05"), $"Eel platform form: when the pump runs the eel is gone and its wounds are remembered ({f.Unit.Hp})");
       EncounterState.Enemies.Clear(); MacroState.Current.CurrentZoneId = LabLocks.Depths1; ZoneTravel.EnterZone(LabLocks.Depths1); Check(EelBoss.Current == null, "Eel platform form: a drained level has no eel");
       MacroState.Current.CurrentZoneId = LabLocks.Depths3; ZoneTravel.EnterZone(LabLocks.Depths3); var g = EelBoss.Current;

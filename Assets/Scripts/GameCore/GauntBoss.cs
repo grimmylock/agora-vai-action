@@ -156,7 +156,7 @@ namespace GameCore
             foreach (var spec in kinds)
             {
                 var m0 = mouths.Count > 0 ? mouths[k2 % mouths.Count] : null; int bx = m0?.X ?? e.X, by = m0?.Y ?? e.Y;
-                var m = Tier3Annex.Make(spec, bx + (k2 % 5) - 2, by + (k2 / 5 % 3) - 1); m.IsAggroed = true; EncounterState.Enemies.Add(m); Wave.Add(m);
+                var m = Tier3Annex.Make(spec, bx + (k2 % 5) - 2, by + (k2 / 5 % 3) - 1, Gaunt.CalledHpShare); m.IsAggroed = true; EncounterState.Enemies.Add(m); Wave.Add(m);
                 if (target != null) Gaunt.Haste(m, 14f, 1.3f, target); k2++;
             }
             _waveSize = Wave.Count; _shield = true; _shieldHp = e.Hp; _shieldUntil = Time.time + 30f; _waveStart = Time.time;

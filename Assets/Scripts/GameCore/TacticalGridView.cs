@@ -1138,7 +1138,7 @@ namespace GameCore
                 // they're drawn facing right: turn toward you in a fight, toward where they walk otherwise (kept between moves)
                 var p = Player.Current;
                 int? tx = hm.IsAggroed && p != null ? p.X : hm.PatrolTarget?.x;
-                if (alive && tx.HasValue && tx.Value != unit.X) marker.flipX = tx.Value < unit.X;
+                if (alive && tx.HasValue && tx.Value != unit.X) marker.flipX = (tx.Value < unit.X) != UnitSprites.DrawnLeft(hm.Db?.Name ?? hm.Name);
                 if (MutantAttack.FaceOverride(hm, out bool throwLeft)) marker.flipX = throwLeft;                                    // the Brute's throw faces its target, rock in hand
                 float cloak = MutantAttack.CloakFade(hm, Time.time); live.a = 1f - 0.7f * cloak;       // the Veil Prowler's shimmer (no cloaked cell at this size), now faded in and out over 0.35 s
                 int dis = MutantAttack.DissolveIndex(cloak);

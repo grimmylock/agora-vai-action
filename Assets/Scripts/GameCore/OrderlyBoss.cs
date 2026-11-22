@@ -23,12 +23,12 @@ namespace GameCore
     public static class OrderlyBoss
     {
         public const string Lair = "Autopsy Theatre", Done = "orderly_done", Trophy = "Ward Name Tag";
-        public const float LashRange = 7f, LashDrag = 4.5f, BagMult = 2.5f, BagIntegrity = 55000f, WakeRange = 10f, DripHeal = 0.06f, DripBreak = 0.03f; public const int DripMax = 3;
+        public const float LashRange = 7f, LashDrag = 4.5f, BagMult = 2.5f, BagIntegrity = 38500f, WakeRange = 10f, DripHeal = 0.06f, DripBreak = 0.03f; public const int DripMax = 3;
         static readonly Dictionary<Boss.Fight, (int hp, int used, bool burst)> _drip = new Dictionary<Boss.Fight, (int, int, bool)>();
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Orderly", Title = "HE IS STILL ON SHIFT", Weapon = "OrderlySaw", Armor = null, Hp = 368000, Faction = "Mutants", Rank = "Legend", DoneFlag = Done, Vanishes = false,
+            Name = "The Orderly", Title = "HE IS STILL ON SHIFT", Weapon = "OrderlySaw", Armor = null, Hp = 257600, Faction = "Mutants", Rank = "Legend", DoneFlag = Done, Vanishes = false,
             Art = "orderly", Creature = true, StepSeconds = 0.45f, Recover = 1.0f, Phase2Line = "It tears the drip out of its back. What runs out of the tube is black.",
             Moves = new[]
             {

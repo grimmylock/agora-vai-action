@@ -99,6 +99,8 @@ namespace GameCore
         // line (16 px under the middle of a tile, where a 16 px human's feet are). They face right; TacticalGridView mirrors them.
         // Mutants without one keep their old atlas cell (Swarm, Gaunt, Mind Weaver, Void Weaver).
         private static Dictionary<string, Sprite> _hd;
+        /// <summary>2026-11-22 (Yan: "the new enemies in gowns only have animations facing right"): the morgue's Ward mutants were drawn facing LEFT (the other mutants face right), so the view's turn toward you is the other way round for them.</summary>
+        public static bool DrawnLeft(string name) => name != null && name.StartsWith("Ward ");
         public static Sprite HD(string name)
         {
             if (name == BrainBoss.Name) { var v = VatFrames(); return v == null ? null : v[BrainBoss.ArtRow * 8 + BrainBoss.ArtCol]; }   // Boss 2: the vat, by phase and moment

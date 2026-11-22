@@ -83,6 +83,9 @@ namespace GameCore
 
         // ------------------------------------------------------------------ the tunnels, the door, the Elder
 
+        /// <summary>2026-11-22 (Yan: the little ones the Elder Gaunt calls have 80% less health than the normal kind): hpShare scales the health of what is made.</summary>
+        internal static Mutant Make(string spec, int x, int y, float hpShare)
+        { var m = Make(spec, x, y); if (hpShare < 1f) { m.MaxHp = System.Math.Max(1, (int)(m.MaxHp * hpShare)); m.Hp = m.MaxHp; } return m; }
         internal static Mutant Make(string spec, int x, int y)
         {
             var tk = spec.Split(':'); string tier = tk.Length == 2 ? tk[0] : "tier1", key = tk.Length == 2 ? tk[1] : spec;
@@ -124,7 +127,7 @@ namespace GameCore
                     for (int k = 0; k < kv.n + extra * 4 / kinds.Length && placed < total; k++, placed++)
                     {
                         var (sx, sy) = TerrainMap.FindNearestEnterable(x + (placed % 6) - 3, y + placed / 6, 10);
-                        taken.Add((sx, sy)); who.Add(Make(kv.key, sx, sy));
+                        taken.Add((sx, sy)); who.Add(Make(kv.key, sx, sy, Gaunt.CalledHpShare));
                     }
                 Waves.Add((at, who));
             }
