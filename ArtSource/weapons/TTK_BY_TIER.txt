@@ -12,16 +12,16 @@ Ward Wretch (ward)     T5 HP    700 DR 0.00  VK-127 Grom             990/shot   
 Ward Hulk (ward)       T5 HP  10000 DR 0.20  Corvan Bullpup          407/shot    25 rounds    1.9 s
 Void Weaver            T5 HP  15200 DR 0.00  Corvan Bullpup          508/shot    30 rounds    2.3 s
 == bosses ==
-The Visor              T4 HP 106500 DR 0.60  PL-74P Polovets          41/shot  2598 rounds  337.2 s
-Spool                  T2 HP  52000 DR 0.40  Smerch-3                 37/shot  1406 rounds  188.2 s
-The Scrap King         T2 HP  52000 DR 0.40  Smerch-3                 37/shot  1406 rounds  188.2 s
-The Verger             T6 HP 184000 DR 0.50  PL-74P Polovets Zulu     50/shot  3680 rounds  480.0 s
+The Visor              T4 HP  75500 DR 0.60  PL-74P Polovets          41/shot  1842 rounds  240.1 s
+Spool                  T2 HP  41000 DR 0.40  Smerch-3                 37/shot  1109 rounds  147.9 s
+The Scrap King         T2 HP  50000 DR 0.40  Smerch-3                 37/shot  1352 rounds  182.3 s
+The Verger             T6 HP 160000 DR 0.50  PL-74P Polovets Zulu     50/shot  3200 rounds  416.2 s
 Mother Hollow          T1 HP  44000 DR 0.00  Vosa vz. 62              53/shot   831 rounds  120.1 s
-The Gallery Choir      T2 HP  82000 DR 0.00  Smerch-3                 58/shot  1414 rounds  190.6 s
-The Ferryman           T3 HP 129000 DR 0.00  Corvan LMG               50/shot  2580 rounds  260.3 s
+The Gallery Choir      T2 HP  86500 DR 0.00  Smerch-3                 58/shot  1492 rounds  200.0 s
+The Ferryman           T3 HP 138500 DR 0.00  Corvan LMG               50/shot  2770 rounds  280.0 s
 The Specimen           T4 HP 262500 DR 0.00  PL-74P Polovets         101/shot  2600 rounds  337.4 s
-The Grinder            T5 HP 313000 DR 0.00  PL-74P Polovets Zulu    100/shot  3130 rounds  409.7 s
+The Grinder            T5 HP 306500 DR 0.00  PL-74P Polovets Zulu    100/shot  3065 rounds  399.8 s
 The Orderly            T6 HP 368000 DR 0.00  PL-74P Polovets Zulu    100/shot  3680 rounds  480.0 s
 Gallery Choir (cathedral) T6 HP   9000 DR 0.30  Corvan Bullpup          356/shot    26 rounds    2.0 s
-Brain in the vat       T2 HP 376500 DR 0.20  Smerch-3                267/shot  1411 rounds  190.3 s
-The Drowner (eel)      T3 HP 762500 DR 0.20  Corvan LMG              296/shot  2577 rounds  260.1 s
+Brain in the vat       T2 HP 515500 DR 0.20  Smerch-3                267/shot  1931 rounds  259.9 s
+The Drowner (eel)      T3 HP 819500 DR 0.20  Corvan LMG              296/shot  2769 rounds  279.9 s

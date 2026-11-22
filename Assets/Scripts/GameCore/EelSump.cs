@@ -20,7 +20,7 @@ namespace GameCore
     public static class EelSump
     {
         public const int N = 140; public const float PerTile = 4f, Speed = 0.8f, HideZ = -5f, Surface = 0.02f, HitZ = 0.09f;      // HitZ: a part lower than this is a shadow in the water (the lurk, the flood's swim): drawn, never hit   // 35 tiles of spine, 4 samples a tile; "out of the water" = Z above Surface
-        public const int TailMax = 82600; public const string TailName = "The Drowner's tail";
+        public const int TailMax = 88800; public const string TailName = "The Drowner's tail";
         public static readonly MutantDef TailDef = new MutantDef { Name = TailName, Tier = 3, Hp = TailMax, PhysDR = 0.1f, AnomDR = 0.3f, Ap = 0, Mp = 0, Ac = 10, AttackDamage = 0, Behavior = "boss", PanicThreshold = 0f };
 
         public class Pool { public string Name; public float X, Y, RX, RY; public bool Big; }

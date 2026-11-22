@@ -20,7 +20,7 @@ namespace GameCore
     public static class EelBoss
     {
         public const string Name = "The Drowner", Fled = "eel_fled";
-        public const int MaxHp = 762500, ShockDamage = 90, StrikeDamage = 220, SnapDamage = 170, LungeDamage = 200, SlamDamage = 240, SweepDamage = 200;
+        public const int MaxHp = 819500, ShockDamage = 90, StrikeDamage = 220, SnapDamage = 170, LungeDamage = 200, SlamDamage = 240, SweepDamage = 200;
         public const float CarryCap = 0.2f, F = 1f / 15f;      // the strips play at 15 fps
         public const float RingIn = 1.9f, RingOut = 3.4f, ShockGap = 0.7f, SweepR = 215f / 32f;
         public const float Burst = 0.9f, Hold = 4.0f, ConstrictFor = 1.5f, ConstrictSpacing = 0.5f, ReleaseFor = 0.7f, Turns = 2.5f, RingR = 3.2f, Pitch = 0.4f, CoilRise = 0.7f;   // 2.5 turns of a ring that widens 0.28 a turn (2.3 -> 3.0, inside the 1.9-3.1 touch ring): the whole 35 tiles of body fits   // the wrap: the head circles for Burst s, the coil is held for Hold s (after the discharge), then it lets go

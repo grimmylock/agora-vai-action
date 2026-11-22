@@ -20,7 +20,7 @@ namespace GameCore
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Grinder", Title = "THE SHIFT NEVER ENDED", Weapon = "ExcavatorBucket", Armor = null, Hp = 313000, Faction = "Mutants", Rank = "Master", DoneFlag = Done, Vanishes = false,
+            Name = "The Grinder", Title = "THE SHIFT NEVER ENDED", Weapon = "ExcavatorBucket", Armor = null, Hp = 306500, Faction = "Mutants", Rank = "Master", DoneFlag = Done, Vanishes = false,
             Art = "grinder", Creature = true, StepSeconds = 0.55f, Recover = 1.0f, Phase2Line = "The rings split along their seams. What is left of the crew starts to scream.",
             Moves = new[]
             {

@@ -118,7 +118,7 @@ namespace GameCore
 
         public static readonly Def Visor = new Def
         {
-            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 106500, DoneFlag = "visor_done", PoseKey = HeldPoseMath.VisorPoses,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
+            Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 75500, DoneFlag = "visor_done", PoseKey = HeldPoseMath.VisorPoses,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = new[]
             {
@@ -137,7 +137,7 @@ namespace GameCore
         // The same fight as the Visor on a slower, heavier weapon: long wind-ups, big openings after each move, a two-handed bat that bleeds and concusses.
         public static readonly Def Spool = new Def
         {
-            Name = "Spool", Title = "THE SCRAP KING'S EXILE", Weapon = "BarbedWireBat", Armor = "BarbwireCoat", Hp = 52000, Faction = "Outcasts", Rank = "Veteran", DoneFlag = "spool_done", Vanishes = false,
+            Name = "Spool", Title = "THE SCRAP KING'S EXILE", Weapon = "BarbedWireBat", Armor = "BarbwireCoat", Hp = 41000, Faction = "Outcasts", Rank = "Veteran", DoneFlag = "spool_done", Vanishes = false,
             StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He tears the rag off the grip. The wire is bare now, and so is he.",
             Moves = new[]
             {
@@ -152,7 +152,7 @@ namespace GameCore
         // Boss 5: the Scrap King himself (CrownJob.cs, "The Crown"): the Tier 2 finale. A sledgehammer, a crown of scrap, the Nest's yard.
         public static readonly Def King = new Def
         {
-            Name = "The Scrap King", Title = "KING OF THE HEAP", Weapon = "Sledgehammer", Armor = "The Scrap King", Hp = 52000, Faction = "Raiders", Rank = "Expert", DoneFlag = "king_done", Vanishes = false,
+            Name = "The Scrap King", Title = "KING OF THE HEAP", Weapon = "Sledgehammer", Armor = "The Scrap King", Hp = 50000, Faction = "Raiders", Rank = "Expert", DoneFlag = "king_done", Vanishes = false,
             StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He throws the crown down. \"Then you can have the whole yard.\"",
             Moves = new[]
             {
@@ -171,7 +171,7 @@ namespace GameCore
         // the last quarter adds the Last Rite. The beast (VergerBeast below) is parked: its art, clips, moves and code are kept and tested, nothing spawns it.
         public static readonly Def Verger = new Def
         {
-            Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 184000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false, PoseKey = HeldPoseMath.VergerPoses,
+            Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 160000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false, PoseKey = HeldPoseMath.VergerPoses,
             StepSeconds = 0.33f, Recover = 1.0f, Phase2Line = "He takes off the hat and sets it down on the flagstones. The mask stays on.", Phase2Barks = new[] { "Then I will not be gentle.", "The bell rings for you now." },
             Moves = VergerScytheMoves(),
         };
@@ -199,7 +199,7 @@ namespace GameCore
         // At half health he changed (Def.Change: hittable at a tenth of the damage for 4 s) into the werewolf brawler drawn from Pixel Lab clips (VergerBoss.Clips), with the claws' moves below.
         public static readonly Def VergerBeast = new Def
         {
-            Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 184000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false,
+            Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 160000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false,
             StepSeconds = 0.33f, Recover = 1.0f, Phase2Line = "The coat splits at the seams. What stands up is not a man.",
             Change = new Transform { Weapon = "VergerClaws", Seconds = 4f, Reduction = 0.9f, Splash = "THE CHANGE", Line = "The hat falls. The mask splits. The scythe drops from hands that are not hands.", Barks = new[] { "Forgive me.", "I kept the bell. I kept the dead out. And you rang it." } },
             Moves = new[]

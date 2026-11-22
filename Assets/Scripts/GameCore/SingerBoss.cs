@@ -20,7 +20,7 @@ namespace GameCore
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Gallery Choir", Title = "THE SHIFT THAT SINGS", Weapon = "SingerHands", Armor = null, Hp = 82000, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
+            Name = "The Gallery Choir", Title = "THE SHIFT THAT SINGS", Weapon = "SingerHands", Armor = null, Hp = 86500, Faction = "Mutants", Rank = "Veteran", DoneFlag = Done, Vanishes = false,
             Art = "choir", Creature = true, StepSeconds = 0.6f, Recover = 1.0f, Phase2Line = "Every mouth on its back opens at once. The gallery hums with one long note.",
             Moves = new[]
             {

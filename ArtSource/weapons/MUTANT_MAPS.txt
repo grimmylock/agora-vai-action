@@ -1,0 +1,28 @@
+lairs (DungeonLairs) are placed by name:
+
+Blight Brute: 6 zones
+   Dried Lake Sub-Station (T3); Crimson Woods (T4); The Antenna Grid (T5); The Stranded Ferry (T3, underground); The Camp Shelter (T4, underground); The Dry Dock Tunnels (T5, underground)
+
+Blind Maw: 7 zones
+   Secret Cave Area (T1, underground); Chapel Crypt (T1, underground); Pumping Station Basement (T1, underground); Flooded Bunker (T1, underground); Smugglers' Tunnel (T1, underground); The Crusher Pit (T2, underground); The Valley Mine (T2, underground)
+
+Dread Prowler: 6 zones
+   Dried Lake Sub-Station (T3); Crimson Woods (T4); The Antenna Grid (T5); The Stranded Ferry (T3, underground); The Camp Shelter (T4, underground); The Dry Dock Tunnels (T5, underground)
+
+Gaunt: 2 zones
+   Crimson Woods (T4, the forests: 30% of the squad); The Camp Shelter (T4, the forests: 30% of the squad)
+
+Mind Weaver: 6 zones
+   Dried Lake Sub-Station (T3); Crimson Woods (T4); The Crusher Pit (T2, underground); The Valley Mine (T2, underground); The Stranded Ferry (T3, underground); The Camp Shelter (T4, underground)
+
+Pallid Prowler: 7 zones
+   Secret Cave Area (T1, underground); Chapel Crypt (T1, underground); Pumping Station Basement (T1, underground); Flooded Bunker (T1, underground); Smugglers' Tunnel (T1, underground); The Crusher Pit (T2, underground); The Valley Mine (T2, underground)
+
+Swarm: 7 zones
+   Secret Cave Area (T1, underground); Chapel Crypt (T1, underground); Pumping Station Basement (T1, underground); Flooded Bunker (T1, underground); Smugglers' Tunnel (T1, underground); The Crusher Pit (T2, underground); The Valley Mine (T2, underground)
+
+Veil Prowler: 9 zones
+   Dried Lake Sub-Station (T3); Secret Cave Area (T1, underground); Chapel Crypt (T1, underground); Pumping Station Basement (T1, underground); Flooded Bunker (T1, underground); Smugglers' Tunnel (T1, underground); The Crusher Pit (T2, underground); The Valley Mine (T2, underground); The Stranded Ferry (T3, underground)
+
+Void Weaver: 5 zones
+   Crimson Woods (T4); The Antenna Grid (T5); The Camp Shelter (T4, underground); The Dry Dock Tunnels (T5, underground); The Hospital Morgue (T6, underground)

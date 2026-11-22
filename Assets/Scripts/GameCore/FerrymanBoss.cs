@@ -20,7 +20,7 @@ namespace GameCore
 
         public static readonly Boss.Def Def = new Boss.Def
         {
-            Name = "The Ferryman", Title = "THE LAKE THAT IS NOT THERE", Weapon = "FerrymanHook", Armor = null, Hp = 129000, Faction = "Mutants", Rank = "Expert", DoneFlag = Done, Vanishes = false,
+            Name = "The Ferryman", Title = "THE LAKE THAT IS NOT THERE", Weapon = "FerrymanHook", Armor = null, Hp = 138500, Faction = "Mutants", Rank = "Expert", DoneFlag = Done, Vanishes = false,
             Art = "ferryman", Creature = true, StepSeconds = 0.42f, Recover = 1.0f, Phase2Line = "The lantern burns green-white. Water runs up the rails that should run down.",
             Moves = new[]
             {
