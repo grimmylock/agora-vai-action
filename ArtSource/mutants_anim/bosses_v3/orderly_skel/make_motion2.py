@@ -3,6 +3,8 @@
 import json, math, io, base64, copy, sys
 from PIL import Image
 r = json.load(open("est.json")); rig = r["rig"]; rest = r["frames"][0]; W, H = 188, 148; N = 8
+PW, PH, OX, OY = 236, 172, 44, 24                                  # padded canvas: room for blades reaching out left and up
+SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
 idx = {j["name"]: i for i, j in enumerate(rig)}
 UP = ["hips", "chest", "neck", "head", "body_bag_root", "body_bag_mid", "body_bag_tip", "blade_near_shoulder", "blade_far_shoulder", "iv_pole_base", "iv_pole_top", "iv_hook", "blood_bag_top", "blood_bag_bottom"]
 BODY = ["hips", "chest", "neck", "head", "body_bag_root", "body_bag_mid", "body_bag_tip", "iv_pole_base", "iv_pole_top", "iv_hook", "blood_bag_top", "blood_bag_bottom", "blade_near_shoulder", "blade_far_shoulder"]
@@ -43,44 +45,47 @@ def pose(crouch=0.0, lean=0.0, rear=0.0, near=0.0, far=0.0, nreach=1.0, freach=1
     if bag:
         for n, k in (("body_bag_mid", 0.5), ("body_bag_tip", 1.0)): x, y = P(n, pts); put(pts, n, x + bag * k, y - abs(bag) * 0.4 * k)
     if sway: move(pts, ["iv_pole_top", "iv_hook", "blood_bag_top", "blood_bag_bottom"], sway, 0)
-    for p in pts: p["x"] = round(min(0.99, max(0.01, p["x"])), 4); p["y"] = round(min(0.99, max(0.01, p["y"])), 4)
-    return pts
+    return topad(pts)
+def topad(pts):
+    out = copy.deepcopy(pts)
+    for p in out: p["x"] = round(min(0.99, max(0.01, (p["x"] * W + OX) / PW)), 4); p["y"] = round(min(0.99, max(0.01, (p["y"] * H + OY) / PH)), 4)
+    return out
 def lerp(a, b, t): return a + (b - a) * t
 CLIPS = {}
-# saw rush: coil (crouch, both blades hauled back), explode forward (lean, blades swing through to the front and down), legs at full run, then slide out
-CLIPS["saw_rush"] = [pose(crouch=6, lean=6, near=70, far=60, feet_back=3), pose(crouch=9, lean=9, near=85, far=72, feet_back=5),
-    pose(crouch=5, lean=-6, near=40, far=35, ph=0.0, amp=0.30, lift=0.16), pose(crouch=4, lean=-12, near=-20, far=-10, ph=0.25, amp=0.30, lift=0.16),
-    pose(crouch=5, lean=-14, near=-75, far=-60, ph=0.5, amp=0.30, lift=0.16), pose(crouch=5, lean=-14, near=-95, far=-80, ph=0.75, amp=0.30, lift=0.16),
-    pose(crouch=3, lean=-9, near=-70, far=-55, ph=0.0, amp=0.18, lift=0.1), pose(crouch=1, lean=-3, near=-30, far=-25, ph=0.4, amp=0.06, lift=0.03)]
-# double saw: near blade overhead and down in a diagonal chop; the far blade then comes round flat, a sideways sweep, body twisting after it
-CLIPS["double_saw"] = [pose(lean=3, near=35, far=10), pose(lean=4, near=60, far=10, rear=3), pose(lean=-4, near=-20, far=10),
-    pose(lean=-8, crouch=2, near=-95, far=15), pose(lean=2, near=-60, far=60, crouch=1), pose(lean=-3, near=-45, far=-10, crouch=1),
-    pose(lean=-10, crouch=2, near=-50, far=-80), pose(lean=-4, near=-20, far=-50)]
-# tube lash: rears up and back, held a beat, snaps forward (the tubes whip out from the body bag), pulls back
-CLIPS["lash"] = [pose(rear=4, bag=2), pose(rear=9, bag=5, near=20, far=15), pose(rear=13, bag=8, near=30, far=25), pose(rear=13, bag=8, near=30, far=25, sway=1),
-    pose(rear=2, lean=-14, crouch=3, bag=-14, near=-40, far=-35), pose(rear=0, lean=-18, crouch=4, bag=-20, near=-60, far=-50), pose(rear=3, lean=-8, bag=-8, near=-20, far=-20), pose(rear=1, lean=-2, bag=-2)]
-# lamp tear: rises on the hind legs, one blade straight up and hooked over the lamp, wrenches it down
-CLIPS["lamp_tear"] = [pose(rear=3, near=20), pose(rear=7, near=50, nreach=1.05), pose(rear=11, near=75, nreach=1.15), pose(rear=12, near=78, nreach=1.2, lean=-2),
-    pose(rear=12, near=78, nreach=1.2, lean=-3, sway=1), pose(rear=8, lean=-6, near=30, nreach=1.1, crouch=2), pose(rear=3, lean=-8, near=-30, crouch=4), pose(rear=0, near=-10, crouch=2)]
-im = Image.open("stand_pad.png").convert("RGBA"); b = io.BytesIO(); im.save(b, "PNG")
+# all numbers are PIXELS of the 188x148 stand. saw rush: coil low with both blades back, burst forward with the legs at a run (stride 34 px, lift 16), blades held out ahead, then slide out
+CLIPS["saw_rush"] = [pose(crouch=10, lean=8, near=65, far=55, feet_back=4), pose(crouch=14, lean=12, near=75, far=62, feet_back=7),
+    pose(crouch=8, lean=-8, near=20, far=10, ph=0.0, amp=36, lift=16), pose(crouch=7, lean=-16, near=-25, far=-20, ph=0.25, amp=40, lift=18),
+    pose(crouch=8, lean=-20, near=-45, far=-38, ph=0.5, amp=40, lift=18), pose(crouch=8, lean=-20, near=-50, far=-42, ph=0.75, amp=40, lift=18),
+    pose(crouch=6, lean=-14, near=-35, far=-30, ph=0.0, amp=26, lift=12), pose(crouch=2, lean=-4, near=-10, far=-8, ph=0.4, amp=8, lift=3)]
+# double saw: near blade up and over (a diagonal chop), the far blade then sweeps flat across, the body twisting after it
+CLIPS["double_saw"] = [pose(lean=3, near=30, far=5), pose(lean=5, near=55, far=5, rear=8), pose(lean=-4, near=0, far=5, crouch=3),
+    pose(lean=-10, crouch=5, near=-70, far=10), pose(lean=-4, near=-60, far=50, crouch=3), pose(lean=0, near=-40, far=30, rear=4),
+    pose(lean=-12, crouch=5, near=-45, far=-60), pose(lean=-6, near=-20, far=-30, crouch=2)]
+# tube lash: rears up high and tips back with the blades folded away, hangs there, then snaps forward low and the tubes whip
+CLIPS["lash"] = [pose(rear=6, bag=3, near=40, far=40), pose(rear=14, bag=6, near=55, far=55), pose(rear=22, bag=10, near=65, far=65), pose(rear=24, bag=12, near=65, far=65, sway=2),
+    pose(rear=4, lean=-18, crouch=8, bag=-18, near=40, far=40), pose(rear=0, lean=-24, crouch=10, bag=-26, near=30, far=30), pose(rear=6, lean=-12, crouch=4, bag=-10, near=40, far=40), pose(rear=2, lean=-3, bag=-3, near=20, far=20)]
+# lamp tear: rises on the hind legs, one blade straight up over the head and hooked, wrenched down; the far blade stays tucked
+CLIPS["lamp_tear"] = [pose(rear=6, near=30, far=40), pose(rear=14, near=55, far=40, nreach=1.05), pose(rear=22, near=78, far=40, nreach=1.15), pose(rear=24, near=82, far=40, nreach=1.2, lean=-2),
+    pose(rear=24, near=82, far=40, nreach=1.2, lean=-3, sway=2), pose(rear=14, lean=-8, near=35, far=40, nreach=1.1, crouch=4), pose(rear=4, lean=-10, near=-30, far=40, crouch=8), pose(rear=0, near=-10, far=20, crouch=3)]
+im0 = Image.open("stand_pad.png").convert("RGBA"); im = Image.new("RGBA", (PW, PH), (0, 0, 0, 0)); im.paste(im0, (OX, OY)); b = io.BytesIO(); im.save(b, "PNG")
 DESC = {"saw_rush": "pale hunched insect-like creature made of a human patient with two bloody saw-blade arms, four thin legs, black body bag on its back, blood bag on an iv pole, it crouches then charges forward at speed slashing both blades through",
         "double_saw": "pale hunched insect-like creature made of a human patient with two bloody saw-blade arms, four thin legs, black body bag on its back; it chops down with one blade then sweeps the other blade sideways",
         "lash": "pale hunched insect-like creature made of a human patient with two bloody saw-blade arms, four thin legs, black body bag on its back; it rears up then lunges forward whipping its body forward",
         "lamp_tear": "pale hunched insect-like creature made of a human patient with two bloody saw-blade arms, four thin legs, black body bag on its back; it rises up and hooks a blade overhead then wrenches it down"}
 for name, fr in CLIPS.items():
     assert len(fr) == N
-    body = {"description": DESC[name], "first_frame": {"type": "base64", "base64": base64.b64encode(b.getvalue()).decode()}, "first_frame_keypoints": rest, "keypoints": fr, "rig": rig, "action": name, "direction": "west", "view": "side", "seed": 7, "no_background": True}
-    json.dump(body, open(f"body_{name}.json", "w"))
+    body = {"description": DESC[name], "first_frame": {"type": "base64", "base64": base64.b64encode(b.getvalue()).decode()}, "first_frame_keypoints": topad(rest), "keypoints": fr, "rig": rig, "action": name, "direction": "west", "view": "side", "seed": SEED, "no_background": True}
+    json.dump(body, open(f"body_{name}_s{SEED}.json", "w"))
     # a stick preview so the poses can be checked before spending generations
     from PIL import ImageDraw
-    sheet = Image.new("RGB", (W * 4 * 2, H * 2 * 2), (24, 24, 28))
+    sheet = Image.new("RGB", (PW * 4 * 2, PH * 2 * 2), (24, 24, 28))
     for k, pts in enumerate(fr):
-        tile = Image.new("RGB", (W, H), (24, 24, 28)); d = ImageDraw.Draw(tile); tile.paste(im.convert("RGB"), (0, 0), im.split()[3].point(lambda v: 70 if v else 0))
-        pt = lambda n: (pts[idx[n]]["x"] * W, pts[idx[n]]["y"] * H)
+        tile = Image.new("RGB", (PW, PH), (24, 24, 28)); d = ImageDraw.Draw(tile); tile.paste(im.convert("RGB"), (0, 0), im.split()[3].point(lambda v: 70 if v else 0))
+        pt = lambda n: (pts[idx[n]]["x"] * PW, pts[idx[n]]["y"] * PH)
         for chain, col in ((["hips", "chest", "neck", "head"], (230, 230, 230)), (["blade_near_shoulder", "blade_near_elbow", "blade_near_wrist", "blade_near_tip"], (255, 80, 80)), (["blade_far_shoulder", "blade_far_elbow", "blade_far_wrist", "blade_far_tip"], (255, 160, 60)),
                            (["body_bag_root", "body_bag_mid", "body_bag_tip"], (120, 120, 255)), (["iv_pole_base", "iv_pole_top"], (80, 255, 80))):
             d.line([pt(n) for n in chain], fill=col, width=2)
         for leg in ("front_near", "mid_near", "hind_near", "hind_far"): d.line([pt(f"{leg}_{p}") for p in ("hip", "knee", "foot") ], fill=(80, 220, 255), width=2)
-        sheet.paste(tile.resize((W * 2, H * 2), Image.NEAREST), ((k % 4) * W * 2, (k // 4) * H * 2))
+        sheet.paste(tile.resize((PW * 2, PH * 2), Image.NEAREST), ((k % 4) * PW * 2, (k // 4) * PH * 2))
     sheet.save(f"stick_{name}.png")
 print("ok")

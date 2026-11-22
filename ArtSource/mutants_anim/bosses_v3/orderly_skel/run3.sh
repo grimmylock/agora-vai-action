@@ -1,0 +1,1 @@
+for s in 7 11; do for c in saw_rush double_saw lash lamp_tear; do python3 ../../../pixellab_call.py /v2/animate-with-skeleton-v3 body_${c}_s$s.json resp_${c}_s$s.json > run3_${c}_s$s.out 2>&1; done; done
