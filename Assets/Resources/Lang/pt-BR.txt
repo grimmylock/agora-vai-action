@@ -1346,4 +1346,5 @@ ROW!	REMADA!
 CHORUS!	CORO!
 
 It has found you.	Ele encontrou você.
-The boiler takes. Somewhere in the dark the sawing stops. Then, down the corridor, something starts walking toward you, and it is not slow any more.	A caldeira pega. Em algum lugar no escuro o serrar para. Então, pelo corredor, algo começa a andar na sua direção, e não é mais lento.
+The door at the foot of the corridor swings shut behind you, and the room goes quiet. Then the sawing starts, and it is very close, and there is nowhere left to run.	A porta ao pé do corredor se fecha atrás de você, e a sala fica em silêncio. Então o serrar começa, muito perto, e não há mais para onde correr.
+The key turns, and somewhere behind you in the corridor the sawing starts, and comes toward you. Run.	A chave gira, e em algum lugar atrás de você no corredor o serrar começa e vem na sua direção. Corra.

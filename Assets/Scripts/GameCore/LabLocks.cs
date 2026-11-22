@@ -155,16 +155,11 @@ namespace GameCore
                 ['3'] = new Thing { Name = "Sluice Wheel Handle", Look = "stash_toolbox", Kind = "gate", Desc = "A cast-iron crank handle hung on a hook beside the sluice gears.",
                                     Says = "[DOCK] The sluice wheel's handle, heavy as a sledge. It fits the gate by the fitters' store, and the ladder hatch." },
             },
-            // Hospital Morgue (Tier 6; dungeons/hospital_morgue.mmd): the Alpha locks. The autopsy drawer = badge -> the theatre's back door; the boilerman's locker = fuse; the boiler switch; power wakes the records door.
+            // Hospital Morgue (Tier 6), REDONE 2026-11-21 (Yan's sketch): one lock. The duty officer's desk in the office off the long corridor holds the key to the locked door at the corridor's east end; beyond it the chase corridor and the big room.
             ["hospital_morgue"] = new Dictionary<char, Thing>
             {
-                ['3'] = new Thing { Name = "Autopsy Drawer", Look = "stash_footlocker", Kind = "staff", Ru = 180, Desc = "An instrument drawer under the theatre's wall cabinet, jammed half open.",
-                                    Says = "[MORGUE] A pathologist's badge among the scalpels. The service door's reader would still read it." },
-                ['4'] = new Thing { Name = "Boilerman's Locker", Look = "stash_footlocker", Kind = "fuse", Ru = 60, Desc = "A locker by the boilers, a calendar from a year nobody finished taped inside the door.",
-                                    Says = "[MORGUE] A ceramic fuse wrapped in a rag, BOILER FEED written on the rag." },
-                ['5'] = new Thing { Name = "Boiler Switch", Look = "labswitch", Kind = "power", Needs = "fuse",
-                                    Desc = "The boiler house switchboard. One fuse carrier is empty.",
-                                    Says = "[MORGUE] The board hums. Overhead the corridor lamps flicker on, and by the stair a dead door wakes." },
+                ['3'] = new Thing { Name = "Duty Officer's Desk", Look = "stash_footlocker", Kind = "staff", Ru = 180, Desc = "A steel desk, the bottom drawer jammed half open, a ring of keys on a nail above it.",
+                                    Says = "[MORGUE] A heavy key on a brass tag: THEATRE. The locked door at the end of the corridor will take it. Whatever walks these halls will hear you using it." },
             },
             // Maintenance Tunnels (hidden, Tier 3; dungeons/maintenance_tunnels.mmd): badge -> fuse -> power -> the pump (drain).
             ["maintenance_tunnels"] = new Dictionary<char, Thing>

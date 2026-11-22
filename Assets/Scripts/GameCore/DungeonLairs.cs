@@ -22,10 +22,16 @@ namespace GameCore
             new Lair { Zone = "crusher_pit", Landmark = "Oil Sump", TierPlus = 1 },
             new Lair { Zone = "abandoned_cathedral", Landmark = "Crypt Niche", TierPlus = 0 },   // 2026-11-20: blood-lured (Noise.Smell) mutants of the Choir mission
             new Lair { Zone = "abandoned_cathedral", Landmark = "Roost", TierPlus = 1 },        // and what nests in the sump
-            new Lair { Zone = "hospital_morgue", Landmark = "Cold Room Slabs", TierPlus = 0 },   // 2026-11-21 (the Orderly stalks the corridors; the rooms are where you hide from it, and what waits in them is taken out with melee or it hears the shot)
-            new Lair { Zone = "hospital_morgue", Landmark = "Ward Bed", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Ward Corner", TierPlus = 0 },
-            new Lair { Zone = "hospital_morgue", Landmark = "Boiler Pipes", TierPlus = 0 },
+            // 2026-11-21 (the Orderly stalks the morgue's long corridor; the rooms off it are where you hide from it, and what waits in them is taken out with melee or it hears the shot): two in the Anteroom, three in Cold Storage, three in the Dissection Hall, one in the washroom
+            new Lair { Zone = "hospital_morgue", Landmark = "Anteroom West", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Anteroom East", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage West", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage Middle", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Cold Storage East", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Dissection West", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Dissection Middle", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Dissection East", TierPlus = 0 },
+            new Lair { Zone = "hospital_morgue", Landmark = "Washroom", TierPlus = 0 },
         };
 
         static string Flag(Lair l) => "lair:" + l.Zone + ":" + l.Landmark;

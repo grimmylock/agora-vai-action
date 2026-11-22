@@ -2089,11 +2089,31 @@ static class Program {
     Check(WorldArtMissing(Z) == "", $"{Z}: every look on the map has art ({WorldArtMissing(Z)})");
     keys.Clear(); Rt.On = false;
   }
+  static void MorgueLayoutChecks() {   // 2026-11-21: the redone Hospital Morgue (Yan's sketch): a long corridor with rooms, one locked door (the office key), the chase corridor, the big room
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out _, out _); Rt.On = true; Rt.Reset(); var keys = MacroState.Current.Keys; keys.Clear();
+    string Z = "hospital_morgue"; MacroState.Current.PersistedZoneTerrain.Remove(Z); MacroState.Current.CurrentZoneId = Z; TerrainMap.BuildTerrainForZone(Z); EncounterState.Enemies.Clear();
+    int Count(TileType type, string look) { int n = 0; for (int y = 0; y < TerrainMap.Height; y++) for (int x = 0; x < TerrainMap.Width; x++) { var t = TerrainMap.GetTile(x, y); if (t.Type == type && t.Look == look) n++; } return n; }
+    HashSet<(int, int)> Flood(int sx, int sy) { var seen = new HashSet<(int, int)> { (sx, sy) }; var q = new Queue<(int, int)>(); q.Enqueue((sx, sy)); while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var n = (x + dx, y + dy); if (!seen.Contains(n) && TerrainMap.CanEnterTile(n.Item1, n.Item2)) { seen.Add(n); q.Enqueue(n); } } } return seen; }
+    var start = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Morgue Landing"); var theatre = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Autopsy Theatre"); var chase = TerrainMap.Landmarks.FirstOrDefault(l => l.Name == "Chase Corridor");
+    var desk = TerrainMap.InteractiveObjects.FirstOrDefault(o => o.GrantsKey == "morgue_staff");
+    Check(start != null && theatre != null && chase != null && desk != null && Count(TileType.Door, "door_badge") == 3 && TerrainMap.Exits.Count(e => e.TargetZoneId == "hospital") == 1, "Morgue: the landing, the theatre, the chase corridor, the officer's desk with the key, the 3-tile locked door, one way out to the hospital");
+    if (start == null || theatre == null || chase == null || desk == null) { keys.Clear(); Rt.On = false; return; }
+    var s0 = Flood(start.X, start.Y); var names = new[] { "Anteroom West", "Anteroom East", "Cold Storage West", "Cold Storage Middle", "Cold Storage East", "Dissection West", "Dissection Middle", "Dissection East", "Washroom" };
+    bool Near(HashSet<(int, int)> s, int x, int y) => s.Contains((x, y)) || s.Contains((x + 1, y)) || s.Contains((x - 1, y)) || s.Contains((x, y + 1)) || s.Contains((x, y - 1));
+    Check(Near(s0, desk.X, desk.Y) && names.All(n => { var l = TerrainMap.Landmarks.FirstOrDefault(m => m.Name == n); return l != null && Near(s0, l.X, l.Y); }) && !s0.Contains((chase.X, chase.Y)) && !s0.Contains((theatre.X, theatre.Y)), "Morgue: at the start every room and the key are reachable; the chase corridor and the big room are not");
+    keys.Add("morgue_staff"); LabLocks.Granted("morgue_staff");
+    var s1 = Flood(start.X, start.Y);
+    Check(Count(TileType.Door, "door_badge") == 0 && s1.Contains((chase.X, chase.Y)) && s1.Contains((theatre.X, theatre.Y)), "Morgue: with the key the locked door opens onto the chase corridor and the big room");
+    Check(DungeonLairs.LandmarksOf(Z).Count(n => names.Contains(n)) == 9, "Morgue: nine room mutants (2 + 3 + 3 + 1)");
+    Check(WorldArtMissing(Z) == "", $"{Z}: every look on the map has art ({WorldArtMissing(Z)})");
+    keys.Clear(); Rt.On = false;
+  }
   static void DungeonRedoChecks() {
     PumpingChecks(); CaveChecks(); SmugglersChecks(); CryptChecks(); MineChecks(); PitChecks(); BunkerChecks();
     BadgePowerChecks("stranded_ferry", "ferry", "Car Deck", "Captain's Bridge", "dried_lake", 2, 2);
     BadgePowerChecks("camp_shelter", "shelter", "Shelter Stair", "Shelter Command", "crimson_woods", 2, 2);
-    BadgePowerChecks("hospital_morgue", "morgue", "Morgue Landing", "Records Room", "hospital", 2, 2);
+    MorgueLayoutChecks();
     DrydockChecks();
     BadgePowerChecks("underground_bunker", "ubunk", "Blast Door Foyer", "Command Centre", "abandoned_city", 2, 2);
     ChainChecks("deep_caverns", "Surface Shaft", "Crystal Pool", "crimson_woods", "cavern_pry", "cavern_drain");
@@ -3018,28 +3038,33 @@ static class Program {
       Check(moved, "Stalker: after the stalk the Orderly proper walks at you and fights");
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
   }
-  static void MorgueStalkChecks() {   // 2026-11-21: the stalker on the REAL Hospital Morgue map: it patrols the corridors, the rooms hide you, a shot in a room brings it running there
+  static void MorgueStalkChecks() {   // 2026-11-21: the stalker on the REAL Hospital Morgue map: it patrols the long corridor, the rooms hide you, a shot brings it running, the chase corridor and the big room end it
     GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;
-    var p = Player.Current; Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 98000f; UnityEngine.Time.unscaledTime = 98000f; UnityEngine.Time.deltaTime = 1f / 60f;
+    var p = Player.Current; Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); MacroState.Current.Keys.Clear(); Body.Reset(); UnityEngine.Time.time = 98000f; UnityEngine.Time.unscaledTime = 98000f; UnityEngine.Time.deltaTime = 1f / 60f;
     try {
-      MacroState.Current.CurrentZoneId = "hospital_morgue"; TerrainMap.BuildTerrainForZone("hospital_morgue"); GameServices.Grid = new TacticalGridSystem(); EncounterState.Enemies.Clear(); Rt.Reset(); Boss.Reset();
-      OrderlyBoss.OnEnterZone("hospital_morgue"); p.X = 11; p.Y = 22; Rt.SetOffset(p, 0f, 0f);   // you hide in the cold room
+      MacroState.Current.PersistedZoneTerrain.Remove("hospital_morgue"); MacroState.Current.CurrentZoneId = "hospital_morgue"; TerrainMap.BuildTerrainForZone("hospital_morgue"); GameServices.Grid = new TacticalGridSystem(); EncounterState.Enemies.Clear(); Rt.Reset(); Boss.Reset();
+      OrderlyBoss.OnEnterZone("hospital_morgue"); p.X = 13; p.Y = 6; Rt.SetOffset(p, 0f, 0f);   // you hide in the Anteroom
       OrderlyBoss.Tick(1f / 60f); var f = Boss.Fights.FirstOrDefault(x => x.Def == OrderlyBoss.Def); Check(f != null && f.Stalking, "Morgue stalker: it spawns as a stalker when you enter the morgue");
-      if (f == null) return; var h = f.Unit; var seenCells = new HashSet<(int, int)>(); int inCorr = 0, total = 0, inRooms = 0; float maxAlert = 0f; bool hunted = false;
-      bool Corr(int x, int y) => (y >= 8 && y <= 12 && x >= 3 && x <= 44) || (y >= 29 && y <= 32 && x >= 5 && x <= 42) || (x >= 9 && x <= 12 && y >= 12 && y <= 16) || (x >= 27 && x <= 30 && y >= 12 && y <= 16) || (x >= 37 && x <= 40 && y >= 6 && y <= 9) || (x >= 22 && x <= 25 && y >= 6 && y <= 9) || (x >= 41 && x <= 43 && y >= 12 && y <= 16) || (x >= 27 && x <= 30 && y >= 26 && y <= 29) || (x >= 21 && x <= 24 && y >= 31 && y <= 35);
-      var trace = new System.Collections.Generic.List<string>();
+      if (f == null) return; var h = f.Unit; var seenCells = new HashSet<(int, int)>(); int inCorr = 0, total = 0; float maxAlert = 0f; bool hunted = false; var trace = new System.Collections.Generic.List<string>();
+      bool Corr(int x, int y) => y >= 11 && y <= 17 && x >= 2 && x <= 51;
       for (int i = 0; i < 60 * 300; i++) {
         UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); OrderlyBoss.Tick(1f / 60f);
-        if (i % 30 == 0) { trace.Add(h.X + "\t" + h.Y); total++; if (Corr(h.X, h.Y)) inCorr++; else inRooms++; seenCells.Add((h.X / 4, h.Y / 4)); maxAlert = System.Math.Max(maxAlert, h.Alert); if (h.IsAggroed) hunted = true; }
+        if (i % 30 == 0) { trace.Add(h.X + "\t" + h.Y); total++; if (Corr(h.X, h.Y)) inCorr++; seenCells.Add((h.X / 4, h.Y / 4)); maxAlert = System.Math.Max(maxAlert, h.Alert); if (h.IsAggroed) hunted = true; }
       }
       System.IO.File.WriteAllLines("/tmp/stalk_path.tsv", trace);
-      Console.WriteLine($"   morgue stalker: {total} samples, {inCorr} in corridors, {inRooms} elsewhere, {seenCells.Count} map cells visited, max notice {maxAlert:0.00}, hunted {hunted}, ended at ({h.X},{h.Y})");
-      Check(total > 0 && inCorr >= total * 0.9f && seenCells.Count >= 6, "Morgue stalker: five minutes on patrol: it keeps to the corridors and covers them");
-      Check(!hunted && maxAlert < 0.7f, $"Morgue stalker: you hiding in the cold room, it does not find you (notice {maxAlert:0.00})");
-      h.X = 20; h.Y = 10; Rt.SetOffset(h, 0f, 0f); Noise.Make(p.X, p.Y, 20, p); int d0 = CombatantUtil.Distance(h, p); float t0 = UnityEngine.Time.time; bool arrived = false;
+      Console.WriteLine($"   morgue stalker: {total} samples, {inCorr} in the corridor, {seenCells.Count} map cells visited, max notice {maxAlert:0.00}, hunted {hunted}, ended at ({h.X},{h.Y})");
+      Check(total > 0 && inCorr >= total * 0.95f && seenCells.Count >= 5, "Morgue stalker: five minutes on patrol: it keeps to the long corridor and covers it");
+      Check(!hunted && maxAlert < 0.7f, $"Morgue stalker: you hiding in the Anteroom, it does not find you (notice {maxAlert:0.00})");
+      h.X = 20; h.Y = 14; Rt.SetOffset(h, 0f, 0f); Noise.Make(p.X, p.Y, 20, p); int d0 = CombatantUtil.Distance(h, p); float t0 = UnityEngine.Time.time; bool arrived = false;
       for (int i = 0; i < 60 * 40 && !arrived; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); if (CombatantUtil.Distance(h, p) <= 3) arrived = true; }
-      Check(arrived, $"Morgue stalker: a shot in the cold room brings it there ({d0} tiles, {UnityEngine.Time.time - t0:0} s) now at ({h.X},{h.Y}) {OrderlyBoss.DebugState(f)} door tile enterable {TerrainMap.CanEnterTile(10, 14)} {TerrainMap.CanEnterTile(11, 14)} type {TerrainMap.GetTile(10, 14)?.Type}");
-    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); }
+      Check(arrived, $"Morgue stalker: a shot in the Anteroom brings it there ({d0} tiles, {UnityEngine.Time.time - t0:0} s)");
+      // the key, the chase corridor, the big room
+      MacroState.Current.Keys.Add("morgue_staff"); LabLocks.Granted("morgue_staff"); h.X = 30; h.Y = 14; Rt.SetOffset(h, 0f, 0f); p.X = 54; p.Y = 18; Rt.SetOffset(p, 0f, 0f);
+      for (int i = 0; i < 60 * 2; i++) { UnityEngine.Time.time += 1f / 60f; p.Hp = p.MaxHp; Boss.Tick(f, p); OrderlyBoss.Tick(1f / 60f); }
+      Check(f.Stalking && h.IsAggroed && CombatantUtil.Distance(h, p) >= 10, $"Morgue stalker: you step into the chase corridor: it hunts you, with a lead ({CombatantUtil.Distance(h, p)} tiles)");
+      p.X = 43; p.Y = 33; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(1f / 60f);
+      Check(!f.Stalking && Boss.Current == f && Boss.DamageScale(h) == 1f, "Morgue stalker: you reach the big room: the stalk ends, the fight begins");
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Body.Reset(); MacroState.Current.Keys.Clear(); }
   }
   static void LateBossChecks() {   // 2026-11-21: the Specimen grown (mind-lash needs sight), the Excavator (the slam lands where you stood), the Orderly (the drip heals unless you burst it)
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); MacroState.Current.StoryFlags.Clear(); Body.Reset(); UnityEngine.Time.time = 92000f; UnityEngine.Time.unscaledTime = 92000f;

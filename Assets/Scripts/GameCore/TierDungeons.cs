@@ -186,9 +186,10 @@ namespace GameCore
         /// '4' the boilerman's locker (fuse), '5' the boiler switch (power), '2' the dead records door, 'G' the records room (goal), 'C' cold room, 'A' theatre, 'B' boiler room, 'K' 'L' stashes.</summary>
         public static MapLayout HospitalMorgue()
         {
-            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Morgue Landing", "hospital"), ['C'] = ("Cold Room", null), ['A'] = ("Autopsy Theatre", null), ['B'] = ("Boiler Room", null),
-                ['G'] = ("Records Room", null), ['U'] = ("Ward Bed", null), ['X'] = ("Ward Corner", null), ['Y'] = ("Cold Room Slabs", null), ['Q'] = ("Boiler Pipes", null) };
-            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("hospital_morgue")) { ['K'] = "Records Safe", ['L'] = "Linen Store" };
+            var marks = new Dictionary<char, (string, string)> { ['E'] = ("Morgue Landing", "hospital"), ['A'] = ("Autopsy Theatre", null), ['C'] = ("Chase Corridor", null),
+                ['6'] = ("Anteroom West", null), ['7'] = ("Anteroom East", null), ['8'] = ("Cold Storage West", null), ['9'] = ("Cold Storage Middle", null), ['H'] = ("Cold Storage East", null),
+                ['J'] = ("Dissection West", null), ['M'] = ("Dissection Middle", null), ['P'] = ("Dissection East", null), ['R'] = ("Washroom", null) };
+            var stashes = new Dictionary<char, string>(LabLocks.StashesOf("hospital_morgue")) { ['K'] = "Locker Room Cache", ['L'] = "Cleaning Cabinet" };
             // 2026-11-21 (Yan: "something scary, straight out of silent hill"): the morgue's own dressing (ArtSource/world/props_morgue.py): g gurney, o body bag, u wheelchair, q bed frame, v IV stand,
             // k a body bag hanging from the ceiling. These letters mean something else on other plans, so they are stamped here, on top of the plain plan (like the cathedral's).
             const string special = "gouqvk"; var rows = LabPlans["hospital_morgue"]; var plain = new string[rows.Length];

@@ -421,14 +421,12 @@ namespace GameData
             ["hospital_morgue"] = new List<LandmarkDef>
             {
                 L("Morgue Landing", "The stairs end at a tiled landing. It's cold down here, colder than it should be."),
-                L("Cold Room Slabs", "A row of steel slabs, one of them not empty."),
-                L("Ward Bed", "A bed frame with its straps still buckled."),
-                L("Ward Corner", "The far corner of the linen ward, where the lamps do not reach."),
-                L("Boiler Pipes", "Warm pipes, and a shape between them."),
-                L("Cold Room", "Steel drawers along both walls, some of them open."),
-                L("Autopsy Theatre", "Two steel tables under dead lamps."),
-                L("Boiler Room", "The hospital's boilers and the service corridor round them."),
-                L("Records Room", "Shelves of patient files behind a door that needs power, and a safe nobody emptied."),
+                L("Autopsy Theatre", "A hall with steel tables under dead lamps, and a door at its foot that leads back to the corridor."),
+                L("Chase Corridor", "A long corridor south, past the locked door, with gurneys and chairs shoved against the walls."),
+                L("Anteroom West", "A desk and a bench, a bag on the floor."), L("Anteroom East", "A cabinet, a bag on the floor."),
+                L("Cold Storage West", "Steel drawers along the wall."), L("Cold Storage Middle", "A gurney with a sheet over it."), L("Cold Storage East", "A bag hangs from the ceiling rail."),
+                L("Dissection West", "A table with straps."), L("Dissection Middle", "A table with a lamp over it."), L("Dissection East", "A cabinet of instruments."),
+                L("Washroom", "Tiles, a drain, and something against the far wall."),
             },
             ["secret_lab_alpha"] = new List<LandmarkDef>
             {

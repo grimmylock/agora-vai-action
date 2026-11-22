@@ -509,49 +509,51 @@ def camp_shelter():
 def shelter_check(p): return badge_power_check(p, loop=[(6, y) for y in range(31, 34)], loop_name="the vent crawl")
 
 def hospital_morgue():
-    """Hospital Morgue (T6, under the Siege Ward hospital). Graph dungeons/hospital_morgue.mmd: the landing -> the long corridor (the dead records door is in sight beside the stair) -> the cold room and the
-    autopsy theatre (the drawer '3' = the badge) ; the theatre's badge door ('1' x2) -> the service corridor -> the boiler room (the boilerman's locker '4' = the fuse; the boiler switch '5' needs it = power) ;
-    the power door ('2' x2) -> the records room (goal, the Records Safe). The loop: a service hole between the cold room and the autopsy theatre."""
-    p = Plan(48, 46, 9831)
-    p.room(21, 2, 6, 5); p.vline(23, 7, 9, 2)                      # Ml: the morgue landing
-    p.hline(4, 43, 10, 3)                                          # the long corridor
-    p.room(34, 2, 10, 5); p.vline(38, 7, 9, 2)                     # Rs: the records room, behind the dead door
-    for x in (38, 39): p.g[8][x] = '2'
-    p.room(4, 16, 14, 12); p.vline(10, 13, 15, 2)                  # Cr: the cold room
-    p.room(22, 16, 14, 10); p.vline(28, 13, 15, 2)                 # At: the autopsy theatre
-    for x in (10, 11): p.g[14][x] = '!'
-    for x in (28, 29): p.g[14][x] = 'D'
-    p.hline(18, 21, 20, 1, 'r')                                    # the service hole cold room <-> theatre (the loop)
-    p.vline(28, 26, 29, 2); p.hline(6, 41, 30, 2)                  # the service corridor, behind the theatre's badge door
-    for x in (28, 29): p.g[27][x] = '1'
-    p.room(10, 35, 28, 8); p.vline(22, 32, 34, 2)                  # Bo: the boiler room
-    p.room(40, 16, 5, 8); p.vline(42, 13, 15, 1)                   # a linen store (a dead end)
-    for y in range(17, 27, 2): p.g[y][4] = 'l'; p.g[y][17] = 'l'   # the drawers along the cold room's walls
-    p.g[19][17] = '.'
-    props(p, ((8, 20, 'a'), (12, 23, 'a'), (9, 25, 'x'), (26, 20, 'a'), (31, 20, 'a'), (23, 17, 'f'), (25, 17, 'f'), (23, 24, 'j'), (33, 17, 'j'),
-              (35, 3, 'f'), (37, 3, 'f'), (39, 3, 'f'), (36, 5, 'd'), (41, 5, 'd'), (22, 3, 'c'),
-              (14, 36, 'm'), (15, 36, 'm'), (20, 36, 'm'), (21, 36, 'm'), (28, 36, 'm'), (29, 36, 'm'), (26, 41, 'b'), (18, 41, 'x'), (32, 40, 'c'),
-              (11, 40, 'p'), (12, 40, 'p'), (13, 40, 'p'), (8, 30, 'c'), (36, 31, 't'), (16, 11, '>'), (33, 11, 't')))
-    # 2026-11-21 (Yan: "make the lab/hospital where he's located be something scary too, straight out of silent hill"): the morgue is dressed as a place where something has been living a long time.
-    # g gurney, o body bag, u wheelchair, q bed frame, v IV stand, k a body bag hanging from the ceiling (TierDungeons.HospitalMorgue turns these letters into props); e the red emergency lamps are the only light.
-    # Everything sits on the edges of the corridors and rooms: the lanes between stay open (the QA check and the locks do not care, the player does).
-    props(p, ((6, 9, 'u'), (17, 9, 'g'), (26, 9, 'o'), (35, 9, 'g'), (7, 11, 'o'), (13, 11, 'v'), (25, 11, 'g'), (40, 11, 'o'),
-              (8, 10, 'e'), (20, 10, 'e'), (33, 10, 'e'), (43, 10, 'e'),
-              (25, 3, 'e'), (25, 5, 'u'),
-              (7, 18, 'o'), (9, 18, 'o'), (12, 18, 'o'), (14, 18, 'o'), (6, 27, 'o'), (16, 27, 'o'), (10, 22, 'g'), (6, 23, 'g'), (14, 25, 'g'), (7, 17, 'k'), (15, 26, 'k'), (13, 20, 'v'), (5, 27, 'e'), (16, 17, 'e'), (10, 19, 'e'),
-              (24, 19, 'k'), (34, 20, 'k'), (24, 23, 'k'), (30, 23, 'g'), (26, 24, 'g'), (30, 18, 'v'), (32, 22, 'v'), (23, 16, 'e'), (35, 16, 'e'), (23, 25, 'e'), (35, 25, 'e'), (29, 21, 'e'),
-              (12, 41, 'e'), (24, 37, 'e'), (36, 36, 'e'),
-              (41, 18, 'q'), (43, 18, 'q'), (41, 21, 'q'), (44, 16, 'v'), (42, 17, 'e'),
-              (40, 3, 'e'), (18, 31, 'e'), (33, 30, 'e')))
-    p.g[17][34] = '3'                                              # the autopsy drawer with the pathologist's badge
-    p.g[41][36] = '4'                                              # the boilerman's locker: the fuse
-    p.g[36][11] = '5'                                              # the boiler switch
-    p.g[5][42] = 'K'; p.g[22][43] = 'L'                            # stashes: the records safe (the goal), the linen store
-    p.g[3][23] = 'E'; p.g[22][11] = 'C'; p.g[22][29] = 'A'; p.g[39][24] = 'B'; p.g[4][39] = 'G'
-    p.g[20][42] = 'U'; p.g[23][41] = 'X'; p.g[20][15] = 'Y'; p.g[38][30] = 'Q'      # 2026-11-21 (the stalker): lair marks in the rooms you hide from it in (DungeonLairs: one mutant each, to be taken out with melee)
-    scatter(p, 70, what="**~%\";&&'x")      # 2026-11-21: blood, bones and grime everywhere (it was 20 mixed bits)
+    """Hospital Morgue, REDONE 2026-11-21 from Yan's sketch ('a big corridor with rooms you go in and out of until you reach a biiiig room, and it comes, there the fight happens'). The Orderly stalks the long corridor;
+    the rooms off it are where you hide from it (each holds mutants to take out in melee: a shot brings it running). The office holds the key (stash '3'); it opens the locked door ('1' x3) at the corridor's east end;
+    beyond it the chase corridor (obstacles) runs south to the big room (the Autopsy Theatre, 'A') where the fight happens. Marks: E the way in, A the theatre, C the chase corridor, 6 7 8 9 H J M P R lair marks
+    (DungeonLairs: one mutant each), K / L stashes (a locker room cache, the cleaning cabinet), '3' the office desk (the key)."""
+    p = Plan(60, 46, 9831)
+    p.room(2, 12, 49, 5)                                           # the long corridor, x 2..50, y 12..16
+    p.room(8, 3, 12, 8); p.hline(13, 14, 11, 1, 'D')               # Anteroom (2 mutants), door in the corridor's north wall
+    p.room(25, 7, 4, 4); p.g[11][26] = 'D'                         # the cleaning cabinet (loot)
+    p.room(31, 3, 12, 8); p.hline(36, 37, 11, 1, 'D')              # Cold Storage (3 mutants)
+    p.room(44, 3, 7, 8); p.hline(46, 47, 11, 1, 'D')               # the office (the key)
+    p.room(6, 18, 5, 5); p.g[17][8] = 'D'                          # the locker room (loot)
+    p.room(21, 18, 12, 9); p.hline(24, 25, 17, 1, 'D')             # the Dissection Hall (3 mutants)
+    p.room(38, 18, 3, 8); p.g[17][39] = 'D'                        # the washroom (1 mutant)
+    p.hline(51, 51, 13, 3, '1')                                    # the locked door at the corridor's east end (3 tiles, the office key)
+    p.room(52, 12, 5, 28)                                          # the chase corridor, x 52..56, y 12..39
+    p.room(36, 27, 15, 13); p.hline(51, 51, 37, 2, 'D')            # the big room (the Autopsy Theatre), its door at the corridor's foot
+    # obstacles: the corridor's gurneys and chairs (g wheelchair u crate c): alternate sides so a lane stays open; the chase corridor's too
+    props(p, ((6, 13, 'u'), (9, 15, 'g'), (17, 13, 'g'), (19, 15, 'u'), (23, 13, 'c'), (28, 15, 'g'), (31, 13, 'u'), (34, 15, 'g'), (41, 13, 'g'), (43, 15, 'u'), (48, 14, 'g'),
+              (53, 14, 'g'), (55, 18, 'u'), (53, 22, 'c'), (55, 25, 'g'), (53, 29, 'u'), (55, 33, 'g'), (53, 36, 'c')))
+    props(p, ((4, 12, 'e'), (12, 16, 'e'), (22, 12, 'e'), (32, 16, 'e'), (40, 12, 'e'), (48, 16, 'e'), (54, 16, 'e'), (54, 28, 'e'), (54, 38, 'e')))     # red emergency lamps: the only light
+    # the rooms
+    props(p, ((9, 4, 'd'), (10, 4, 'f'), (18, 4, 'f'), (9, 9, 'a'), (11, 9, 'a'), (17, 8, 'v'), (13, 6, 'o'), (15, 5, 'o'), (9, 7, 'e'), (18, 9, 'e'),                       # the Anteroom
+              (26, 8, 'f'), (27, 9, 'l'), (28, 8, 'b'),                                                                                                                    # the cleaning cabinet
+              (32, 4, 'l'), (34, 4, 'l'), (36, 4, 'l'), (38, 4, 'l'), (40, 4, 'l'), (42, 5, 'o'), (32, 8, 'o'), (35, 7, 'g'), (40, 8, 'g'), (38, 6, 'k'), (33, 6, 'k'), (41, 9, 'e'), (32, 9, 'e'),   # Cold Storage
+              (45, 4, 'd'), (46, 4, 'f'), (49, 4, 'f'), (49, 8, 'd'), (47, 8, 'u'), (45, 9, 'e'),                                                                          # the office
+              (7, 19, 'l'), (9, 19, 'l'), (7, 22, 'l'), (10, 22, 'b'),                                                                                                     # the locker room
+              (22, 19, 'f'), (23, 24, 'a'), (28, 20, 'a'), (30, 23, 'a'), (31, 19, 'f'), (26, 25, 'g'), (29, 25, 'v'), (22, 21, 'k'), (32, 21, 'k'), (27, 22, 'e'),         # the Dissection Hall
+              (38, 19, 'j'), (40, 24, 'x'), (39, 23, 'w'),                                                                                                                 # the washroom
+              (38, 28, 'f'), (49, 28, 'f'), (38, 38, 'l'), (49, 38, 'l'), (42, 31, 'a'), (46, 31, 'a'), (42, 35, 'a'), (46, 35, 'a'), (39, 33, 'g'), (49, 33, 'g'), (44, 29, 'k'), (40, 29, 'k'), (48, 29, 'k'),
+              (44, 38, 'k'), (38, 31, 'v'), (49, 36, 'v'), (37, 38, 'e'), (50, 28, 'e'), (43, 33, 'e')))                                                                    # the Autopsy Theatre
+    for (x, y, ch) in ((10, 5, '6'), (17, 6, '7'), (33, 5, '8'), (37, 8, '9'), (41, 6, 'H'), (23, 21, 'J'), (27, 24, 'M'), (31, 25, 'P'), (39, 21, 'R')): p.g[y][x] = ch    # lair marks (one mutant each)
+    p.g[8][47] = '3'                                               # the duty officer's desk: the key
+    p.g[9][26] = 'L'; p.g[21][9] = 'K'                             # the cleaning cabinet, the locker room cache
+    p.g[14][2] = 'E'; p.g[33][43] = 'A'; p.g[14][54] = 'C'
+    scatter(p, 80, what="**~%\";&&'x")
     return p
-def morgue_check(p): return badge_power_check(p, loop=[(x, 20) for x in range(18, 22)], loop_name="the service hole")
+def morgue_check(p):
+    st = flood_stages(p, {'3': ('badge', None)}, {'1': 'badge'}); g = p.g; out = []; first, last = st[0][1], st[-1][1]
+    A, C, D3 = pos(g, 'A'), pos(g, 'C'), pos(g, '3')
+    ok(out, D3 in first and A not in first and C not in first, "at the start: every room and the office key are reachable; the chase corridor and the big room are not")
+    ok(out, A in last and C in last, f"with the key the chase corridor and the big room open ({len(st)} stages)")
+    rooms = [(13, 6), (36, 6), (47, 6), (9, 20), (26, 22), (39, 22), (27, 9)]
+    ok(out, all(r in first for r in rooms), "every room off the corridor is reachable at the start")
+    ok(out, all(sum(1 for row in g for ch in row if ch == m) == 1 for m in "67 89HJMPR".replace(" ", "")), "nine lair marks, one each")
+    return out
 
 def drydock_tunnels():
     """Dry Dock Tunnels (T5, under the dock's pump house). Graph dungeons/drydock_tunnels.mmd: the pump house stair -> the workmen's niche (the fuse '4') and the pump gallery (the hub: the pump panel '6',

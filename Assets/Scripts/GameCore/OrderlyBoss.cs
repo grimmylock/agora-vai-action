@@ -5,11 +5,13 @@
 //  - the Drip: it squeezes the IV bag and mends DripHeal of its health, unless you hurt it by DripBreak of its health while it does it (the bag bursts: no heal, and it bleeds).
 //    It can drip DripMax times a fight. A tool for the player (rule 6): stop it, and it is the weaker for the rest of the fight;
 //  - phase 2: the Double Saw (white, white) and the Saw Rush (red, a lunge).
-// 2026-11-21 (Yan: "a kind of stalker type enemy, that roams the halls of the dungeon and has to be avoided until the final confrontation", "stays in the morgue"): in the Hospital Morgue it is a STALKER until the boiler
-// power is back on. It spawns far from you, quietly, and roams the morgue's rooms (patrol: walks slowly, listens at each stop). Yellow "!" over it while its notice fills, red when it has found you. It notices
-// you by sight (line of sight, nearer and brighter = faster: crouching and standing in the dark help) and by sound (shots, running footsteps near it); it hunts a little faster than you walk, slower than you sprint,
-// loses you after a few seconds without sight, goes to the last place it saw or heard you, and gives up. It takes NO damage and has no boss bar. Caught, it grabs you (the Catch: heavy, slams you down) and then
-// retreats for a while. When the boiler switch brings the power back it drops the roaming: the Orderly proper (killable, its moves above) comes for you wherever you are. Co-op: it notices the most visible player.
+// 2026-11-21 (Yan: "a kind of stalker type enemy, that roams the halls of the dungeon and has to be avoided until the final confrontation", "stays in the morgue", then his sketch of the map: a big corridor with rooms, a locked
+// door, a chase corridor and one big room where the fight happens): in the Hospital Morgue it is a STALKER until you reach the big room. It spawns far from you, quietly, and patrols the long corridor (rooms are where you hide
+// from it; it goes into one only to look at a noise or to hunt). Yellow "!" over it while its notice fills, red when it has found you. It notices you by sight (line of sight, nearer and brighter = faster: crouching and standing
+// in the dark help) and by sound (a shot sends it RUNNING to the spot; running footsteps near it count); it hunts a little faster than you walk, slower than you sprint, loses you after a few seconds without sight, goes to the last
+// place it saw or heard you, and gives up. It takes NO damage and has no boss bar. Caught, it grabs you (the Catch: near lethal) and then retreats for a while. The office key opens the locked door at the corridor's east end;
+// the moment you step into the chase corridor beyond it, it hunts you down it (the obstacles are yours to weave through: you can outrun it, it can catch you). Reach the big room (the Autopsy Theatre) and the stalk ends: the
+// Orderly proper (killable, its moves above) fights you there. Co-op: it notices the most visible player.
 // NOT built from the brief yet: the lights going out (the cave darkness), the bag as a separate target on its back.
 using System.Collections.Generic;
 using System.Linq;
@@ -44,30 +46,32 @@ namespace GameCore
         public const string MorgueZone = "hospital_morgue";
         public const float PatrolStep = 0.62f, HuntStep = 0.29f, Sight = 18f, FootstepRange = 6f, GiveUpAfter = 6f, RetreatFor = 9f;   // seconds per tile (walk 2.6 t/s = 0.38, sprint 4.4 = 0.23)
         public static readonly Boss.Move CatchMove = new Boss.Move { Name = "Catch", Wind = 0.7f, Danger = true, MaxDist = 2f, Mult = 1.6f, Effects = new[] { "slab" }, Weight = 0, Open = 1.2f, Clip = "grab" };   // (Yan: a noise hunt "kills you": the catch is near lethal)
-        class St { public int Mode; public (int x, int y) Wp; public float NextStep, WaitUntil, StuckAt, LoseAt, RetreatUntil, CatchAt; public (int x, int y)? Heard; public bool HeardShot; public Player Target; public bool Catching; public (int x, int y) LastSeen; public bool HasWp; public int Stuck; }
+        class St { public int Mode; public (int x, int y) Wp; public float NextStep, WaitUntil, StuckAt, LoseAt, RetreatUntil, CatchAt; public (int x, int y)? Heard; public bool HeardShot; public Player Target; public bool Catching, Chasing; public (int x, int y) LastSeen; public bool HasWp; public int Stuck; }
         // modes: 0 patrol, 1 investigate, 2 hunt, 3 retreat
         static readonly Dictionary<Boss.Fight, St> _st = new Dictionary<Boss.Fight, St>();
         static readonly List<(int x, int y)> _wps = new List<(int, int)>();
         public static void OnEnterZone(string zoneId) { _spawnedHere = false; _drip.Clear(); _st.Clear(); _wps.Clear(); }
 
-        static bool PowerOn() { var k = LabLocks.Key("power"); return k != null && MacroState.Current != null && MacroState.Current.Keys.Contains(k); }
+        static (int x, int y)? Lm(string name) { var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == name); return l == null ? ((int, int)?)null : (l.X, l.Y); }
+        /// <summary>Past the locked door: the chase corridor (the landmark's column, two tiles either side, from its top down).</summary>
+        public static bool InChase(Player p) { var l = Lm("Chase Corridor"); return l != null && p.IsAlive() && System.Math.Abs(p.X - l.Value.x) <= 2 && p.Y >= l.Value.y - 1; }
+        /// <summary>In the big room: the Autopsy Theatre's landmark is its middle.</summary>
+        public static bool InTheatre(Player p) { var l = Lm(Lair); return l != null && p.IsAlive() && System.Math.Abs(p.X - l.Value.x) <= 7 && System.Math.Abs(p.Y - l.Value.y) <= 6; }
 
         public static void Tick(float dt)
         {
             if (Net.Mode == Net.Role.Client || Story.Has(Done) || Player.Current == null) return;
             if (_map != TerrainMap.ZoneId) { _map = TerrainMap.ZoneId; _spawnedHere = false; _st.Clear(); _wps.Clear(); }
             Boss.Fights.RemoveAll(f => f.Def == Def && !f.Finished && !EncounterState.Enemies.Contains(f.Unit));
-            foreach (var f in Boss.Fights.Where(f => f.Def == Def && f.Stalking && !f.Gone).ToList()) if (PowerOn()) EndStalk(f);   // the lamps come on: the finale
+            foreach (var f in Boss.Fights.Where(f => f.Def == Def && f.Stalking && !f.Gone).ToList()) if (Player.All.Any(InTheatre)) EndStalk(f);   // you reached the big room: the finale
             if (TerrainMap.ZoneId != MorgueZone || _spawnedHere || Boss.Fights.Any(f => f.Def == Def && !f.Gone)) return;
             if (!Player.All.Any(p => p.IsAlive())) return;
             BuildWaypoints();
-            if (PowerOn()) { var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == Lair); if (l == null) return; var (x, y) = TerrainMap.FindNearestEnterable(l.X, l.Y); Spawn(x, y, true); _spawnedHere = true; return; }   // power already on: the Orderly proper, at its tables
             SpawnStalker(); _spawnedHere = true;
         }
 
-        /// <summary>The roaming points (Yan: "patrolling the corridors and you use the rooms to dodge it"): tiles of the morgue's two corridors (dungeon_plans.py hospital_morgue: the long corridor along y 10, the service corridor
-        /// along y 30). The service corridor lies behind the theatre's badge door: until it is open the pathfinding finds no way there and the stalker keeps to the long one. Rooms are never waypoints; it only goes into one to hunt or to look.</summary>
-        static readonly (int x, int y)[] CorridorPoints = { (5, 10), (13, 10), (21, 10), (29, 10), (37, 10), (42, 10), (8, 30), (16, 30), (24, 30), (32, 30), (40, 30) };
+        /// <summary>The roaming points (Yan: "patrolling the corridors and you use the rooms to dodge it"): tiles of the morgue's two corridors (dungeon_plans.py hospital_morgue: the long corridor, y 12..16). Rooms are never waypoints; it only goes into one to hunt or to look.</summary>
+        static readonly (int x, int y)[] CorridorPoints = { (6, 14), (13, 14), (20, 14), (27, 14), (34, 14), (41, 14), (47, 14) };
         static void BuildWaypoints()
         {
             _wps.Clear();
@@ -110,7 +114,7 @@ namespace GameCore
         {
             f.Stalking = false; f.Unit.IsAggroed = true; f.Unit.Alert = 1f; f.NextMoveAt = Time.time + 2.0f; f.Doing = null; _st.Remove(f);
             Boss.NameCard(Def.Name.ToUpperInvariant(), Def.Title); Sfx.Play("boss_sting", null, 1f, 0f);
-            GameLog.Event("The boiler takes. Somewhere in the dark the sawing stops. Then, down the corridor, something starts walking toward you, and it is not slow any more.");
+            GameLog.Event("The door at the foot of the corridor swings shut behind you, and the room goes quiet. Then the sawing starts, and it is very close, and there is nowhere left to run.");
         }
 
         /// <summary>Noise.Make: a shot or blast. A stalker within hearing goes to look (unless it is hunting or retreating).</summary>
@@ -120,12 +124,25 @@ namespace GameCore
             foreach (var f in Boss.Fights) { if (f.Def != Def || !f.Stalking || f.Gone) continue; var st = State(f); if (st.Mode >= 2) continue; if (CombatantUtil.Distance(f.Unit, x, y) > radius) continue; st.Mode = 1; st.Heard = TerrainMap.FindNearestEnterable(x, y); st.HeardShot = true; st.HasWp = false; f.Unit.Alert = Mathf.Max(f.Unit.Alert, 0.55f); }   // a shot: it RUNS there
         }
 
+        /// <summary>The first step into the chase corridor: it gives you a lead (if it is close it is set back down the long corridor), the sting, a line.</summary>
+        static void BeginChase(Boss.Fight f, St st, Player runner)
+        {
+            var h = f.Unit; var door = Lm("Chase Corridor");
+            if (door != null && CombatantUtil.Distance(h, runner) < 14) { var (bx, by) = TerrainMap.FindNearestEnterable(door.Value.x - 14, door.Value.y); h.X = bx; h.Y = by; Rt.SetOffset(h, 0f, 0f); }
+            h.Alert = 1f; st.HasWp = false; Sfx.Play("boss_sting", null, 0.9f, 0f, 1.1f);
+            GameLog.Event("The key turns, and somewhere behind you in the corridor the sawing starts, and comes toward you. Run.");
+        }
+
         /// <summary>Boss.Tick while it roams and nothing is in progress: senses, then patrol / investigate / hunt / retreat.</summary>
         public static void StalkTick(Boss.Fight f)
         {
             var h = f.Unit; float now = Time.time; if (f.Broken || f.Finished || !h.IsAlive()) return; var st = State(f);
             if (now < f.StaggerUntil) return;
-            if (st.Catching) { st.Catching = false; st.Mode = 3; st.RetreatUntil = now + RetreatFor; st.HasWp = false; h.Alert = 0f; h.IsAggroed = false; st.Target = null; }
+            if (st.Catching) { st.Catching = false; st.Mode = 3; st.RetreatUntil = now + (st.Chasing ? 4f : RetreatFor); st.HasWp = false; h.Alert = 0f; h.IsAggroed = false; st.Target = null; }
+            // ---- the chase: you are in the corridor past the locked door
+            var runner = Player.All.FirstOrDefault(InChase);
+            if (runner != null && st.Mode != 3) { if (!st.Chasing) { st.Chasing = true; BeginChase(f, st, runner); } st.Mode = 2; st.Target = runner; st.LoseAt = now + 30f; h.IsAggroed = true; h.SpottedAt = now; }
+            else if (runner == null) st.Chasing = false;
             // ---- senses
             Player seen = null; float bestGain = 0f; bool sees = false;
             foreach (var p in Player.All)
@@ -157,7 +174,7 @@ namespace GameCore
                 int dist = CombatantUtil.Distance(h, t);
                 if (dist <= 1 && now >= st.CatchAt) { st.CatchAt = now + 4f; st.Catching = true; Boss.Begin(f, CatchMove, now, 1f); return; }
                 if (now >= st.LoseAt) { st.Mode = 1; st.Heard = st.LastSeen; st.HeardShot = false; st.HasWp = false; h.IsAggroed = false; h.Alert = 0.6f; return; }   // lost you: go to where it last saw you
-                if (now >= st.NextStep && dist > 1) { st.NextStep = now + HuntStep; h.MoveToward(t.X, t.Y); }
+                if (now >= st.NextStep && dist > 1) { st.NextStep = now + (st.Chasing ? HuntStep * 1.05f : HuntStep); h.MoveToward(t.X, t.Y); }
                 return;
             }
             h.IsAggroed = false;
