@@ -67,7 +67,7 @@ def union_profile(k, name, ppt):
         if os.path.exists(fn):
             st = np.array(Image.open(fn).convert('RGBA'))[..., 3] > 0
             if st.shape[1] % 8 == 0: cuts += [st[:, i * (st.shape[1] // 8):(i + 1) * (st.shape[1] // 8)] for i in range(8)]
-    make_runs(name, stand, [c for c in cuts if c.any()], ppt, mirror=name.startswith('Ward '))
+    make_runs(name, stand, [c for c in cuts if c.any()], ppt, mirror=False)   # the runs are as the picture is DRAWN (a Ward faces left); the game mirrors them with the marker's flipX, like the sprite
     for a in cuts:
         if not a.any(): continue
         l, r = profile_lr(a, ppt)
