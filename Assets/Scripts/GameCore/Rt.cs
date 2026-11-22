@@ -788,8 +788,9 @@ namespace GameCore
                 // the crosshair is over the SPRITE's own pixels' reach (HitProfiles: the width of the row of the sprite at that height); a body without a silhouette (the bosses) keeps the old box
                 if (Ballistics.OutlineKey(u) is string okey)                                  // 2026-11-22: a mutant or creature boss is under the crosshair where its drawn OUTLINE is
                 {
-                    var oruns = GameData.HitProfiles.RunsAt(okey, uy + Ballistics.FeetBelow - y); if (oruns == null) continue;
-                    bool ofl = Ballistics.OutlineFlipped(u), onit = false; for (int oi = 0; oi + 1 < oruns.Length && !onit; oi += 2) { float ra = ofl ? -oruns[oi + 1] : oruns[oi], rb = ofl ? -oruns[oi] : oruns[oi + 1]; onit = x - ux >= ra && x - ux <= rb; }
+                    float oh = uy + Ballistics.FeetBelow - y; var oruns = GameData.HitProfiles.RunsAt(okey, oh); var oatk = Ballistics.AttackRunsNow(u, okey, oh); if (oruns == null && oatk == null) continue;
+                    bool ofl = Ballistics.OutlineFlipped(u), onit = false;
+                    for (int op = 0; op < 2 && !onit; op++) { var orr = op == 0 ? oruns : oatk; for (int oi = 0; orr != null && oi + 1 < orr.Length && !onit; oi += 2) { float ra = ofl ? -orr[oi + 1] : orr[oi], rb = ofl ? -orr[oi] : orr[oi + 1]; onit = x - ux >= ra && x - ux <= rb; } }
                     if (!onit) continue;
                     float od = System.Math.Abs(x - ux) + System.Math.Abs(y - uy); if (od < bd) { bd = od; best = u; }
                     continue;

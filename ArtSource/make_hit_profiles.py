@@ -67,7 +67,7 @@ def union_profile(k, name, ppt):
         if os.path.exists(fn):
             st = np.array(Image.open(fn).convert('RGBA'))[..., 3] > 0
             if st.shape[1] % 8 == 0: cuts += [st[:, i * (st.shape[1] // 8):(i + 1) * (st.shape[1] // 8)] for i in range(8)]
-    make_runs(name, stand, [c for c in cuts if c.any()], ppt, mirror=False)   # the runs are as the picture is DRAWN (a Ward faces left); the game mirrors them with the marker's flipX, like the sprite
+    make_runs(name, stand, [c for c in cuts if c.any()], ppt, mirror=False); collect_attacks(name, k, ppt, stand.shape)   # the runs are as the picture is DRAWN (a Ward faces left); the game mirrors them with the marker's flipX, like the sprite
     for a in cuts:
         if not a.any(): continue
         l, r = profile_lr(a, ppt)
@@ -118,6 +118,31 @@ def make_runs(name, stand, frames, ppt, mirror=False):
     rows = _runs_of(m, ppt)
     if mirror: rows = [sorted([(-b_, -a_) for a_, b_ in r]) for r in rows]
     RUNS[name] = rows
+
+# 2026-11-22 (Yan: 'the Gaunt hitbox should also include the arm in attacks'): while a clip plays, the outline of ITS frames is added to the body's. ATTACK_RUNS["<mutant>|<kind>"]: the union of the frames around the contact (the generated attack table) or of every cell of the clip (the Gaunts' own strips).
+ATTACK_RUNS = {}
+def make_attack_runs(name, kind, frames, ppt, body_key_frames):
+    if not frames: return
+    W = max([f.shape[1] for f in frames] + [body_key_frames[0]]) + 4; H = max([f.shape[0] for f in frames] + [body_key_frames[1]]) + 2
+    m = np.zeros((H, W), bool)
+    for f in frames: m |= _core(_align(f, W, H))
+    ATTACK_RUNS[name + '|' + kind] = _runs_of(m, ppt)
+def collect_attacks(name, k, ppt, stand_shape):
+    atab = _ATT
+    for kind in ('bite', 'bite2', 'melee', 'claw', 'swipe', 'slam', 'throw', 'pounce', 'spit', 'stab', 'combo2', 'combo3', 'combo4'):
+        fn = f'{R}/Mutants/anim/{k}_{kind}.bytes'
+        if not os.path.exists(fn): continue
+        st = np.array(Image.open(fn).convert('RGBA'))[..., 3] > 0
+        m = _re2.search(r'\["%s"\] = new Dictionary.*?\["%s"\] = new AttackAnim \{ Frames = (\d+), W = \d+, H = \d+, Contact = (\d+)' % (_re2.escape(name), kind), atab, _re2.S)
+        cells = None
+        if m: n, c = int(m.group(1)), int(m.group(2)); idx = range(max(0, c - 1), min(n, c + 2))
+        else:                                                                         # the Gaunts' own clips: Cells from ElderClips.Data / .Small, every cell
+            ed = open(os.path.join(ROOT, 'Assets/Scripts/GameCore/ElderClips.%s.cs' % ('Data' if name == 'Elder Gaunt' else 'Small'))).read()
+            mm = _re2.search(r'\["%s"\] = new Clip \{ Cells = (\d+)' % kind, ed)
+            if not mm: continue
+            n = int(mm.group(1)); idx = range(n)
+        if st.shape[1] % n: continue
+        w = st.shape[1] // n; make_attack_runs(name, kind, [st[:, i * w:(i + 1) * w] for i in idx if st[:, i * w:(i + 1) * w].any()], ppt, stand_shape)
 at = np.array(Image.open(f'{R}/armor_atlas_x2.png').convert('RGBA'))[..., 3] > 0; E_['human'] = profile(at[0:32, 0:32], 32, tight=False)
 for k, n in [('pallid_prowler', 'Pallid Prowler'), ('blind_maw', 'Blind Maw'), ('veil_prowler', 'Veil Prowler'), ('dread_prowler', 'Dread Prowler'), ('blight_brute', 'Blight Brute'), ('gaunt', 'Gaunt'), ('elder_gaunt', 'Elder Gaunt'), ('ward_wretch', 'Ward Wretch'), ('ward_hulk', 'Ward Hulk'), ('ward_crawler', 'Ward Crawler')]:
     E_[n] = union_profile(k, n, 43 if k in ('gaunt', 'elder_gaunt') else 32)   # 2026-11-17: the Gaunts are drawn at 32/43 of their art (Gaunt.ArtScale)
@@ -168,7 +193,15 @@ _runs_txt += ['        };', '', '        public static bool HasRuns(string key) 
               '        /// <summary>The runs of the picture\'s row `height` tiles above the feet, or null above the crown (or for a body without an outline).</summary>',
               '        public static float[] RunsAt(string key, float height)', '        {', '            if (key == null || height < 0f || !Runs.TryGetValue(key, out var r) || !All.TryGetValue(key, out var p)) return null;',
               '            int row = (int)(height * p.ppt); return row >= r.Length ? null : r[row];', '        }', '']
-_extra += _runs_txt
+_att_txt = ['        /// <summary>2026-11-22: what a mutant\'s outline gains WHILE a clip plays (the arm of a claw, the lunge of a bite): key "<mutant>|<kind>", rows like Runs.</summary>',
+            '        public static readonly Dictionary<string, float[][]> AttackRuns = new Dictionary<string, float[][]>', '        {']
+for _n, _rows in ATTACK_RUNS.items():
+    _att_txt.append(f'            ["{_n}"] = new float[][]'); _att_txt.append('            {')
+    for _r in _rows: _att_txt.append('                new[] { ' + ', '.join(f'{v:.3f}f' for ab in _r for v in ab) + ' },' if _r else '                new float[0],')
+    _att_txt.append('            },')
+_att_txt += ['        };', '', '        public static float[] AttackRunsAt(string key, string kind, float height)', '        {', '            if (key == null || kind == null || height < 0f || !AttackRuns.TryGetValue(key + "|" + kind, out var r) || !All.TryGetValue(key, out var p)) return null;',
+             '            int row = (int)(height * p.ppt); return row >= r.Length ? null : r[row];', '        }', '']
+_extra += _runs_txt + _att_txt
 _txt = _txt.replace("        /// <summary>The silhouette's height in tiles (feet to crown)", '\n'.join(_extra) + "\n        /// <summary>The silhouette's height in tiles (feet to crown)", 1)
 open(os.path.join(ROOT, 'Assets/Scripts/GameData/HitProfiles.cs'), 'w').write(_txt)
 for n, (p, ppt) in E_.items(): print(f'{n:16s} {len(p)} rows ({len(p)/ppt:.2f} tiles) half {p.min():.2f}..{p.max():.2f}')

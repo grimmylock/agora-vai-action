@@ -23,13 +23,26 @@ def _parse_runs():
         elif cur and 'new float[0]' in line: out[cur].append([])
     return out
 RUNS = _parse_runs()
-def overlay(img, key, ppt, flip, name_unit=None):
+ATK_SRC = src[src.index('AttackRuns = new'):src.index('AttackRunsAt')]
+def _parse_atk():
+    out = {}; cur = None
+    for line in ATK_SRC.splitlines():
+        m = re.match(r'\s*\["([^"]+)"\] = new float\[\]\[\]', line)
+        if m: cur = m.group(1); out[cur] = []; continue
+        if cur and 'new[]' in line: out[cur].append([float(v.rstrip('f')) for v in re.findall(r'-?[0-9.]+f', line)])
+        elif cur and 'new float[0]' in line: out[cur].append([])
+    return out
+ATK = _parse_atk()
+def overlay(img, key, ppt, flip, extra=None):
     """draws the OUTLINE (HitProfiles.Runs) the round and the crosshair test: img's bottom opaque row = row 0, its centre = the unit's centre; a flipped picture mirrors the runs."""
     a = np.array(img)[..., 3] > 0
     if not a.any() or key not in RUNS: return img
     ys = np.where(a.any(1))[0]; bot = ys.max(); w, h = img.size; cx = w / 2.0
     lay = Image.new('RGBA', img.size, (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
-    for r, runs in enumerate(RUNS[key]):
+    rows = RUNS[key]
+    if extra and extra in ATK:
+        n = max(len(rows), len(ATK[extra])); rows = [(rows[r] if r < len(rows) else []) + (ATK[extra][r] if r < len(ATK[extra]) else []) for r in range(n)]
+    for r, runs in enumerate(rows):
         y = bot - r
         if y < 0: break
         for i in range(0, len(runs) - 1, 2):
@@ -37,10 +50,10 @@ def overlay(img, key, ppt, flip, name_unit=None):
             if flip: ra, rb = -rb, -ra
             d.line([(cx + ra * ppt, y), (cx + rb * ppt, y)], fill=(255, 150, 30, 110))
     return Image.alpha_composite(img, lay)
-def panel(frame, key, ppt, flip, zoom=None):
+def panel(frame, key, ppt, flip, zoom=None, extra=None):
     im = frame.transpose(Image.FLIP_LEFT_RIGHT) if flip else frame
     # the shape is computed for the picture AS DRAWN: a flipped picture mirrors the shape (done through `flip` above), not the pixels' own centre
-    out = overlay(im, key, ppt, flip)
+    out = overlay(im, key, ppt, flip, extra)
     z = zoom or ZOOM; return out.resize((out.width * z, out.height * z), Image.NEAREST)
 def strip_frame(fn, n, i):
     st = Image.open(fn).convert('RGBA'); w = st.width // n; return st.crop((i * w, 0, (i + 1) * w, st.height))
@@ -61,7 +74,7 @@ for key, (ppt, half) in All.items():
     if os.path.exists(walk): ps.append(panel(strip_frame(walk, 8, 3), key, ppt, False))
     for kind in ('bite', 'melee', 'claw', 'slam', 'swipe'):
         fn = f'{R}/Mutants/anim/{base}_{kind}.bytes'; m = re.search(r'\["%s"\] = new Dictionary.*?\["%s"\] = new AttackAnim \{ Frames = (\d+), W = \d+, H = \d+, Contact = (\d+)' % (re.escape(key), kind), ATT, re.S)
-        if os.path.exists(fn) and m: ps.append(panel(strip_frame(fn, int(m.group(1)), int(m.group(2))), key, ppt, False)); break
+        if os.path.exists(fn) and m: ps.append(panel(strip_frame(fn, int(m.group(1)), int(m.group(2))), key, ppt, False, None, key + '|' + kind)); break
     mut_items.append((f'{key}  (stand facing right | facing left | walk | strike contact)', ps))
 sheet(mut_items, 'MUTANTS: hit shape over the sprite (orange = the whole body: one part, no head zone)', os.path.join(OUT, 'mutants.png'))
 atlas = Image.open(f'{R}/mutant_atlas.png').convert('RGBA'); items = []

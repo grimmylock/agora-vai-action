@@ -82,19 +82,25 @@ namespace GameCore
             if (u is Mutant m && !EelBoss.Is(u)) { string k = m.Db?.Name; return GameData.HitProfiles.HasRuns(k) ? k : null; }
             return null;
         }
+        /// <summary>2026-11-22 (Yan: "the Gaunt hitbox should also include the arm in attacks"): the extra outline of the clip a mutant is playing right now (HitProfiles.AttackRuns), or null.</summary>
+        public static float[] AttackRunsNow(ICombatant u, string key, float height) => u is Mutant m && !(u is HumanEnemy) && MutantAttack.KindOf(m) is string kind ? GameData.HitProfiles.AttackRunsAt(key, kind, height) : null;
         /// <summary>Is the body drawn mirrored (the outline mirrors with it)?</summary>
         public static bool OutlineFlipped(ICombatant u) => u is HumanEnemy hb ? BossArt.Flip(hb) : u is Mutant m && UnitSprites.Flipped(m);
         /// <summary>Does a round along (dx, dy) at height h (a share of a standing human) passing `side` off the unit's centre go through its outline? Each run of the picture's row covers the stretch of ground its x-extent projects to across the round's line (x * dy) and the body's own depth (|dx| times half the run, capped).</summary>
         public static bool OutlineHit(ICombatant u, string key, float h, float dx, float dy, float side, float pad, out string part)
         {
-            part = "Body"; var runs = GameData.HitProfiles.RunsAt(key, h * BodyTiles); if (runs == null) return false;
+            part = "Body"; var runs = GameData.HitProfiles.RunsAt(key, h * BodyTiles); var atk = AttackRunsNow(u, key, h * BodyTiles); if (runs == null && atk == null) return false;
             if (key == "boss:orderly" && h * BodyTiles >= 0.78f * GameData.HitProfiles.Height(key) && h * BodyTiles <= 0.93f * GameData.HitProfiles.Height(key)) part = "Bag";   // the IV bag on its pole: a weak point (OrderlyBoss.BagHit)
             bool flip = OutlineFlipped(u); float cap = System.Math.Min(GameData.HitProfiles.DepthCap(key), 0.9f), adx = System.Math.Abs(dx);
-            for (int i = 0; i + 1 < runs.Length; i += 2)
+            for (int pass = 0; pass < 2; pass++)
             {
-                float a = flip ? -runs[i + 1] : runs[i], b = flip ? -runs[i] : runs[i + 1]; float e = System.Math.Min((b - a) * 0.5f, cap) * adx + pad;
-                float lo = -System.Math.Max(a * dy, b * dy) - e, hi = -System.Math.Min(a * dy, b * dy) + e;   // (side = (centre - round) x dy: a point u to the right of the centre sits at side -u*dy)
-                if (side >= lo && side <= hi) return true;
+                var rr = pass == 0 ? runs : atk; if (rr == null) continue;
+                for (int i = 0; i + 1 < rr.Length; i += 2)
+                {
+                    float a = flip ? -rr[i + 1] : rr[i], b = flip ? -rr[i] : rr[i + 1]; float e = System.Math.Min((b - a) * 0.5f, cap) * adx + pad;
+                    float lo = System.Math.Min(a * dy, b * dy), hi = System.Math.Max(a * dy, b * dy); float slo = -hi - e, shi = -lo + e;   // (side = (centre - round) x dy: a point u to the right of the centre sits at side -u*dy)
+                    if (side >= slo && side <= shi) return true;
+                }
             }
             return false;
         }
@@ -115,8 +121,9 @@ namespace GameCore
                 var lo2 = new List<(float, float, float, string, float)>(); float ht2 = GameData.HitProfiles.Height(okb); bool fl = OutlineFlipped(u);
                 for (float y = 0f; y < ht2 - 0.001f; y += 2f / 32f)
                 {
-                    var runs = GameData.HitProfiles.RunsAt(okb, y + 1f / 32f); if (runs == null) continue;
-                    for (int i = 0; i + 1 < runs.Length; i += 2) { float ra = fl ? -runs[i + 1] : runs[i], rb = fl ? -runs[i] : runs[i + 1]; lo2.Add((y / BodyTiles, System.Math.Min(ht2, y + 2f / 32f) / BodyTiles, (rb - ra) * 0.5f, "Body", (ra + rb) * 0.5f)); }
+                    var runs = GameData.HitProfiles.RunsAt(okb, y + 1f / 32f);
+                    for (int i = 0; runs != null && i + 1 < runs.Length; i += 2) { float ra = fl ? -runs[i + 1] : runs[i], rb = fl ? -runs[i] : runs[i + 1]; lo2.Add((y / BodyTiles, System.Math.Min(ht2, y + 2f / 32f) / BodyTiles, (rb - ra) * 0.5f, "Body", (ra + rb) * 0.5f)); }
+                    var ar = AttackRunsNow(u, okb, y + 1f / 32f); for (int i = 0; ar != null && i + 1 < ar.Length; i += 2) { float ra = fl ? -ar[i + 1] : ar[i], rb = fl ? -ar[i] : ar[i + 1]; lo2.Add((y / BodyTiles, System.Math.Min(ht2, y + 2f / 32f) / BodyTiles, (rb - ra) * 0.5f, "Body", (ra + rb) * 0.5f)); }
                 }
                 return lo2;
             }
