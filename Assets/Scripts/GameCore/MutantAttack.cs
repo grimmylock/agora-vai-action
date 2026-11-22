@@ -39,7 +39,7 @@ namespace GameCore
         class State
         {
             public string Kind; public float Start; public bool Hit, Launched; public int Hits;
-            public int FromX, FromY, ToX, ToY; public float CoolUntil, NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f; public bool ThrowFaceLeft;
+            public int FromX, FromY, ToX, ToY; public float AdjSince = -1f, CoolUntil, NextPounce, NextSpit, NextSlam, OutSince = -1f, DustStart = -99f; public bool ThrowFaceLeft;
             public float SpitArrive = -1f; public int SpitTx, SpitTy; public bool SpitDone; public float SplatStart = -99f; public bool Mirror; public float DisengageUntil; public float NextCharge, ChargeRunStart = -1f, ChargeDx, ChargeDy, ChargeX0, ChargeY0, ChargeDist, ChargeLast, ChargeEnd = -1f; public bool Recloak; public float RecloakFrom; public int RecloakHp;
         }
         static readonly Dictionary<Mutant, State> States = new Dictionary<Mutant, State>();
@@ -49,7 +49,20 @@ namespace GameCore
         public static void Reset() { States.Clear(); Fade.Clear(); }
 
         public static bool Has(Mutant m) => m != null && !(m is HumanEnemy) && m.Db != null && MutantAttackData.Table.ContainsKey(m.Db.Name);
-        public static AttackAnim Anim(string mutant, string kind) => RegisterElder() && mutant != null && MutantAttackData.Table.TryGetValue(mutant, out var t) && t.TryGetValue(kind, out var a) ? a : null;
+        public static AttackAnim Anim(string mutant, string kind) => RegisterElder() && mutant != null && MutantAttackData.Table.TryGetValue(mutant, out var t) && t.TryGetValue(kind, out var a) ? Slowed(mutant, kind, a) : null;
+        /// <summary>2026-11-22 (Yan: "the Blind Maw's attack animation needs to be a little slower and hit a little later"): a clip's time scale per mutant, applied to the generated table (the frames stay, each is held longer; the contact comes later).</summary>
+        static readonly Dictionary<string, float> Slow = new Dictionary<string, float> { ["Blind Maw"] = 1.4f };
+        static readonly Dictionary<AttackAnim, AttackAnim> _slowed = new Dictionary<AttackAnim, AttackAnim>();
+        static AttackAnim Slowed(string mutant, string kind, AttackAnim a)
+        {
+            if (!Slow.TryGetValue(mutant, out var k) || a is ElderClips.ComboAnim) return a;
+            if (_slowed.TryGetValue(a, out var c)) return c;
+            var ms = new int[a.Ms.Length]; for (int i = 0; i < ms.Length; i++) ms[i] = Mathf.RoundToInt(a.Ms[i] * k);
+            int cm = 0; for (int i = 0; i < a.Contact && i < ms.Length; i++) cm += ms[i];
+            return _slowed[a] = new AttackAnim { Frames = a.Frames, W = a.W, H = a.H, Contact = a.Contact, PivotY = a.PivotY, Ms = ms, Travel = a.Travel, MuzzleX = a.MuzzleX, MuzzleY = a.MuzzleY, ContactMs = cm, TotalMs = System.Linq.Enumerable.Sum(ms) };
+        }
+        /// <summary>The wait between reaching you and the first bite: the Maw does not bite on the frame it arrives.</summary>
+        static readonly Dictionary<string, float> EngageDelay = new Dictionary<string, float> { ["Blind Maw"] = 0.4f };
         static bool RegisterElder() { ElderClips.Register(); return true; }
         public static bool Playing(Mutant m) => m != null && States.TryGetValue(m, out var s) && s.Kind != null;
         public static string KindOf(Mutant m) => m != null && States.TryGetValue(m, out var s) ? s.Kind : null;
@@ -102,9 +115,12 @@ namespace GameCore
                 else if (now - st.RecloakFrom >= RecloakSeconds && CombatantUtil.Distance(m, p) >= RecloakDistance) { m.IsCloaked = true; st.Recloak = false; }
             }
             var rules = RuleSet[m.Db.Name]; int d = CombatantUtil.Distance(m, p);
+            if (d > 1) st.AdjSince = -1f;
             if (d <= 1)
             {
                 st.OutSince = -1f;
+                if (st.AdjSince < 0f) st.AdjSince = now;
+                if (EngageDelay.TryGetValue(m.Db.Name, out var react) && now - st.AdjSince < react) return false;   // it has only just got here
                 if (now < nextShot) return false;
                 nextShot = now + BiteCooldown(m, Random.value);
                 if (rules.SlamCd > 0f && now >= st.NextSlam) { st.NextSlam = now + rules.SlamCd; st.DustStart = -99f; Begin(m, st, "slam", now); return true; }
@@ -201,7 +217,7 @@ namespace GameCore
         /// <summary>Which pixel-dissolve frame (0..5) to draw while the cloak is fading, or -1.</summary>
         public static int DissolveIndex(float fade) => fade <= 0.03f || fade >= 0.97f ? -1 : Mathf.Clamp((int)(fade * 6f), 0, 5);
 
-        public const float ChargeWindupSeconds = 0.3f, ChargeStumbleSeconds = 1.2f, ChargeHitRecoverSeconds = 0.7f, ChargeReach = 0.95f;
+        public const float ChargeWindupSeconds = 0.5f, ChargeStumbleSeconds = 1.2f, ChargeHitRecoverSeconds = 0.7f, ChargeReach = 0.95f;
 
         /// <summary>The Maw's charge: a short rear-back, then a straight run along the line fixed at the start for ChargeLen tiles at ChargeSpeed. The bite (and bleeding) lands if the player is in its path;
         /// if the player stepped aside it runs the whole length, stops where it ends and stumbles for a moment (a window to hurt it). It stops short at a wall or another body.</summary>

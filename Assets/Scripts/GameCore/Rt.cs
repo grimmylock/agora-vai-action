@@ -42,7 +42,7 @@ namespace GameCore
         static readonly HashSet<ICombatant> Held = new HashSet<ICombatant>();
         public static void HoldSlide(ICombatant u) { if (u != null) Held.Add(u); }
         public static void SetSlide(ICombatant u, float x, float y) { if (u != null) { Held.Add(u); Slide[u] = (x, y); } }
-        public static void ReleaseSlide(ICombatant u) { if (u != null) { Held.Remove(u); Slide[u] = (0f, 0f); Was.Remove(u); } }
+        public static void ReleaseSlide(ICombatant u) { if (u != null) { Held.Remove(u); Slide[u] = (0f, 0f); var (rox, roy) = Offset(u); Was[u] = (u.X + 0.5f + rox, u.Y + 0.5f + roy); } }   // 2026-11-22 (Yan: the Veil "teleports" after its lunge): remember where it stands NOW instead of forgetting, so a step taken in the same frame still glides
         /// <summary>Knocked down: sprawled for `seconds` like after a dive (can't move, a low target).</summary>
         public static void Knockdown(Player p, float seconds) { if (p == null) return; var s = Of(p); s.DiveUntil = -1f; s.ProneUntil = Mathf.Max(s.ProneUntil, Time.time + seconds); }
 

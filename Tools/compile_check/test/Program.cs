@@ -11,6 +11,7 @@ static class Program {
     if (args.Length > 0 && args[0] == "mutanthits") { MutantHits(); return 0; }
     if (args.Length > 0 && args[0] == "humanhits") { HumanHits(); return 0; }
     if (args.Length > 0 && args[0] == "mutantaudit") { MutantAudit(); return 0; }
+    if (args.Length > 0 && args[0] == "veilpath") { VeilPath(); return 0; }
     if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
@@ -1468,6 +1469,20 @@ static class Program {
       Console.WriteLine($"{def.Name,-14} {hitsTotal,2} hits in {clipsTotal,2} clips, {outside} outside a clip; {line}"); if (outside > 0) Bad($"{def.Name}: {outside} hits with no clip playing");
     }
     Console.WriteLine(problems == 0 ? "AUDIT CLEAN" : problems + " problems");
+  }
+
+  // 2026-11-22 (Yan: "the Veil Prowler teleports around after some attacks, especially the lunge, it instantly goes back to lunge range"): the drawn position of a Veil Prowler fighting a standing player, frame by frame; any frame-to-frame jump over 0.5 tiles is printed.
+  static void VeilPath() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); p.HealPermanent(1000000); p.Hp = p.MaxHp; Rt.SetOffset(p, 0f, 0f);
+    for (int y = py - 9; y <= py + 9; y++) for (int x = px - 9; x <= px + 11; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    EncounterState.Enemies.Clear(); var m = new Mutant("Veil Prowler", px + 5, py, MutantDatabase.Get("tier2", "VeilProwler")); m.IsAggroed = true; EncounterState.Enemies.Add(m); Rt.SetOffset(m, 0f, 0f); RtAi.Chase(m);
+    UnityEngine.Time.time = 95000f; var (lx, ly) = Ballistics.Pos(m); string lastKind = null; int jumps = 0;
+    for (int k = 0; k < 60 * 20; k++) { float dt = 1f / 60f; UnityEngine.Time.time += dt; UnityEngine.Time.deltaTime = dt; UnityEngine.Time.unscaledTime += dt; UnityEngine.Time.unscaledDeltaTime = dt;
+      RtAi.TickMutant(m, p); Rt.Glide(dt); CombatFx.Pending.Clear(); var (x, y) = Ballistics.Pos(m); if (Environment.GetEnvironmentVariable("VEIL_TRACE") != null && UnityEngine.Time.time - 95000f < 3f && k % 3 == 0) Console.WriteLine($"  t {UnityEngine.Time.time - 95000f:0.00} tile {m.X},{m.Y} pos {x:0.00},{y:0.00} kind {MutantAttack.KindOf(m) ?? "-"} cloaked {m.IsCloaked}"); string kind = MutantAttack.KindOf(m); float d = (float)Math.Sqrt((x - lx) * (x - lx) + (y - ly) * (y - ly));
+      if (d > 0.5f) { jumps++; Console.WriteLine($"t {UnityEngine.Time.time - 95000f:0.00}: jumped {d:0.0} tiles ({lx:0.0},{ly:0.0}) -> ({x:0.0},{y:0.0}) kind {kind ?? "-"} (last {lastKind ?? "-"}), tile {m.X},{m.Y} offset {Rt.Offset(m).Item1:0.0},{Rt.Offset(m).Item2:0.0} dist to you {CombatantUtil.Distance(m, p)}"); }
+      if (kind != null) lastKind = kind; lx = x; ly = y; }
+    Console.WriteLine("jumps: " + jumps);
   }
 
   static void BossFrames(string path) {

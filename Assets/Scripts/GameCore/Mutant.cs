@@ -309,7 +309,7 @@ namespace GameCore
             if (ActiveCamouflage)   // Batch 51: a cloaked hunter always strikes and slips back (was a 15% coin flip)
             {
                 GameLog.Write($"{Name} fades back into cover after the strike.");
-                MoveAwayFrom(target);
+                if (!Rt.On) MoveAwayFrom(target);   // 2026-11-22: in real time the retreat is MutantAttack.AfterAttack (a glided walk); this instant tile step was the Veil's teleport at the moment of contact
             }
         }
     }
