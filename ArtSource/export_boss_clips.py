@@ -11,6 +11,8 @@ OUT = os.path.join(H, "..", "Assets", "Resources", "Sprites", "Mutants", "anim")
 FACING = {"mother_hollow": "left", "singer": "front", "ferryman": "left", "grinder": "left", "choir": "left", "specimen": "front", "excavator": "left", "orderly": "left", "specimen_v2": "front", "singer_wall": "front", "specimen_eye": "front"}
 LOOPS = {"idle", "walk", "drive"}
 HIT = {("mother_hollow", "bite"): 5, ("mother_hollow", "spit"): 5, ("mother_hollow", "pounce"): 8, ("singer", "note"): 4, ("singer", "scream"): 3, ("singer", "grasp"): 6, ("grinder", "bite"): 8, ("grinder", "slam"): 8, ("grinder", "spit"): 5, ("choir", "note"): 4, ("choir", "grasp"): 6, ("choir", "scream"): 4, ("ferryman", "bite"): 8, ("ferryman", "lure"): 6, ("ferryman", "claw"): 7, ("orderly", "saw"): 8, ("orderly", "chop"): 6, ("orderly", "drip"): 6, ("specimen", "mind"): 4, ("specimen_v2", "laser"): 4, ("specimen_v2", "orbs"): 7, ("specimen_v2", "mind"): 4, ("specimen_eye", "charge"): 8, ("excavator", "sweep"): 5, ("excavator", "slam"): 5, ("excavator", "scoop"): 13, ("specimen", "scream"): 6}      # read off the strips by eye where the automatic pick missed (a slash streak or the glob widens the silhouette later than the blow)
+RUN_FROM_WALK = {("orderly", "walk"): 62}      # ms a frame (the walk is 110)
+RUN_FILE = {}
 MS = {"idle": 150, "walk": 110, "drive": 110}          # per-frame defaults; attacks get a wind-up / snap / recover shape below
 def hard(im):
     a = np.array(im.convert("RGBA")); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0); a[a[..., 3] == 0] = 0; return Image.fromarray(a, "RGBA")
@@ -60,13 +62,15 @@ def main():
             for i, im in enumerate(ims): strip.alpha_composite(im, (i * w, 0))
             strip.save(os.path.join(OUT, "boss_%s_%s.bytes" % (boss, clip)), "PNG")
             rows.setdefault(boss, []).append((clip, n, timing(n, hit, loop, clip), hit, loop, w, h))
+            if (boss, clip) in RUN_FROM_WALK:       # 2026-11-22: a RUN clip made from the walk strip played faster (Yan: 'i don't remember if he has a running animation? if not we can try speeding up the walk animation')
+                rows[boss].append(("run", n, [RUN_FROM_WALK[(boss, clip)]] * n, -1, True, w, h)); RUN_FILE[(boss, "run")] = clip
             print(boss, clip, n, "frames", (w, h), "hit", hit)
     lines = []
     for boss, cl in rows.items():
         w, h = cl[0][5], cl[0][6]
         lines.append('            ["%s"] = new Art { Key = "%s", W = %d, H = %d, Facing = "%s", Clips = new Dictionary<string, VergerBoss.Clip> {' % (boss, boss, w, h, FACING[boss]))
         for clip, n, ms, hit, loop, _, _ in cl:
-            lines.append('                ["%s"] = new VergerBoss.Clip { Name = "boss_%s_%s", Frames = %d, Ms = new float[] { %s }, Hit = %d%s },' % (clip, boss, clip, n, ", ".join(str(m) for m in ms), hit, ", Loop = true" if loop else ""))
+            lines.append('                ["%s"] = new VergerBoss.Clip { Name = "boss_%s_%s", Frames = %d, Ms = new float[] { %s }, Hit = %d%s },' % (clip, boss, RUN_FILE.get((boss, clip), clip), n, ", ".join(str(m) for m in ms), hit, ", Loop = true" if loop else ""))
         lines.append("            } },")
     src = open(CS).read()
     src = re.sub(r"(// clips begin\n).*?(\s*// clips end)", lambda m: m.group(1) + "\n".join(lines) + m.group(2), src, flags=re.S)

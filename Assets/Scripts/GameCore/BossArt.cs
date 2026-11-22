@@ -63,6 +63,7 @@ namespace GameCore
                 ["overhead"] = new VergerBoss.Clip { Name = "boss_orderly_overhead", Frames = 13, Ms = new float[] { 110, 118, 126, 134, 142, 150, 159, 167, 175, 183, 191, 200, 80 }, Hit = 12 },
                 ["saw"] = new VergerBoss.Clip { Name = "boss_orderly_saw", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
                 ["walk"] = new VergerBoss.Clip { Name = "boss_orderly_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
+                ["run"] = new VergerBoss.Clip { Name = "boss_orderly_walk", Frames = 8, Ms = new float[] { 62, 62, 62, 62, 62, 62, 62, 62 }, Hit = -1, Loop = true },
             } },
             ["specimen_eye"] = new Art { Key = "specimen_eye", W = 60, H = 68, Facing = "front", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["charge"] = new VergerBoss.Clip { Name = "boss_specimen_eye_charge", Frames = 9, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80 }, Hit = 8 },
@@ -133,6 +134,7 @@ namespace GameCore
                 else f.Clip = null;
             }
             string loop = moving ? (a.Clips.ContainsKey("walk") ? "walk" : a.Clips.ContainsKey("drive") ? "drive" : "idle") : "idle";
+            if (moving && f.Stalking && h.IsAggroed && a.Clips.ContainsKey("run")) loop = "run";                          // 2026-11-22: a hunting stalker runs (the walk strip played faster)
             var ls = Frames(a, loop); if (ls == null) return null;
             var lc = a.Clips[loop]; int li = lc.IndexAt(now + (h.GetHashCode() & 7) * 0.13f); return ls[Mathf.Clamp(li, 0, ls.Length - 1)];
         }
