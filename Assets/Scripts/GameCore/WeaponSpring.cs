@@ -8,7 +8,14 @@ namespace GameCore
     {
         public struct State { public float Pos, Vel; public bool Init; }
         /// <summary>omega (rad/s: stiffness), zeta (damping ratio: < 1 overshoots), max lag in degrees (so a fast spin drags the blade behind by at most this much).</summary>
-        public static (float w, float z, float max)? For(string key) => key == "VergerScythe" ? (18f, 0.32f, 75f) : key == "Sledgehammer" ? (14f, 0.36f, 65f) : ((float, float, float)?)null;       // the sledgehammer is the heavier head: a softer, slower spring
+        public static (float w, float z, float max)? For(string key)
+        {
+            if (key == "VergerScythe") return (18f, 0.32f, 75f);          // the scythe and the sledgehammer are hand-tuned (Yan liked them)
+            if (key == "Sledgehammer") return (14f, 0.36f, 65f);          // the heavier head: a softer, slower spring
+            if (key == null || !GameData.WeaponDatabase.Categories["melee"].TryGetValue(key, out var d)) return null;
+            // 2026-11-23 (Yan: "add it to the rest by weight"): 0.5 kg or less = a crisp small flick, 4 kg or more = nearly the hammer's slow swing
+            float t = Mathf.Clamp01(((d.WeightKg ?? 1f) - 0.5f) / 3.5f); return (Mathf.Lerp(26f, 15f, t), Mathf.Lerp(0.46f, 0.37f, t), Mathf.Lerp(32f, 68f, t));
+        }
 
         /// <summary>One step toward `target` (degrees); returns where the blade is now.</summary>
         public static float Step(ref State s, float target, float dt, float w, float z, float max)

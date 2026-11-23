@@ -1,7 +1,7 @@
 """2026-11-23 (boss_all.py: visor_all.py for the other human bosses; Yan: "do them all in sequence, I'll review everything when done"). The original: (Yan: "show me all of the Visor's moves, including the combos, the stance and everything else"): one animated sheet, in order: stance, walking, guard (the parry), guard broken (stagger), open (recovering), on one knee (broken, waiting for the finisher), then
 every move from its wind-up through every blow of its combo to the opening after it, each captioned with its hits and poses. The game's own pose code (`visorstates`, `visormoves` dumps), his real sprites. 30 frames a second of game time.
 Usage (boss_all.py, the same for Spool / the Scrap King / the Verger): python3 Tools/render/boss_all.py moves.json DefName out.gif"""
-import json, os, re, sys
+import json, math, os, re, sys
 from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from melee_scene import SPR, S, BG, big_glove, glove, paste
@@ -20,7 +20,13 @@ KEY = _w["key"]; kd, hs = tab("Dense", KEY), tab("HandScale", KEY)
 if kd > 1: im = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}_hd.png")).convert("RGBA"); img = im.resize((round(im.width / kd * hs), round(im.height / kd * hs)), Image.LANCZOS)
 else: _m = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}.png")).convert("RGBA"); img = _m.resize((round(_m.width * hs), round(_m.height * hs)), Image.NEAREST) if hs != 1 else _m
 moves = _w; grip = [moves["grip"][0] * hs, moves["grip"][1] * hs]
-SPRING_PARAMS = {"VergerScythe": (18.0, 0.32, 75.0), "Sledgehammer": (14.0, 0.36, 65.0)}     # WeaponSpring.For
+def _spring_for(key):                                                                      # WeaponSpring.For
+    if key == "VergerScythe": return (18.0, 0.32, 75.0)
+    if key == "Sledgehammer": return (14.0, 0.36, 65.0)
+    m = re.search(r'\["%s"\] = new WeaponDef \{[^}]*WeightKg = ([0-9.]+)f' % key, open(os.path.join(ROOT, "Assets/Scripts/GameData/WeaponDatabase.cs")).read())
+    if not m: return None
+    t = max(0.0, min(1.0, (float(m.group(1)) - 0.5) / 3.5)); return (26 + (15 - 26) * t, 0.46 + (0.37 - 0.46) * t, 32 + (68 - 32) * t)
+SPRING_PARAMS = {KEY: _spring_for(KEY)} if _spring_for(KEY) else {}
 SPRING = os.environ.get("SPRING") == "1" and KEY in SPRING_PARAMS; _sp = {"pos": None, "vel": 0.0}
 def spring_deg(target, dt=1 / 30.0, w=18.0, z=0.32, mx=75.0):
     w, z, mx = SPRING_PARAMS.get(KEY, (w, z, mx))       # WeaponSpring.Step, the same numbers
@@ -30,7 +36,9 @@ def spring_deg(target, dt=1 / 30.0, w=18.0, z=0.32, mx=75.0):
     _sp["pos"] = max(target - mx, min(target + mx, _sp["pos"])); return _sp["pos"]
 def draw(f, caption, sub="", base=None, drop=0, squash=1.0, lane=None, air=0.0):
     gx, gy, deg, hx, hy, sup, sx, sy, lean, move, doing, length, hdeg = f[:13]; bkey = f[14] if len(f) > 14 else ""
-    if SPRING: deg = spring_deg(deg)
+    if SPRING:                                                                    # the blade springs; the fist turns with it and the other hand stays on a two-handed handle (HeldWeaponView)
+        d0 = deg; deg = spring_deg(deg); hdeg += 0.6 * (deg - d0)
+        if sup and KEY in ("VergerScythe", "Sledgehammer", "FireAxe"): rr = math.radians(deg); sx = round(gx + 4 * math.cos(rr)); sy = round(gy - 4 * math.sin(rr) - 0.5) + 0.5
     glint = f[13] if len(f) > 13 and not isinstance(f[13], str) else 0
     u = Image.new("RGBA", (W, W)); b = posed(bkey, base or cellsb[0])
     drop = drop - int(air * 16 * S)                                                  # the leap: up off the ground (tiles -> px)
@@ -59,7 +67,7 @@ add(stance, "STANCE", DEF)
 # the moves
 names = {i: f"pose {i}" for i in range(12)}
 if DEF == "Verger": vi = boss.index("static Move[] VergerScytheMovesRaw()"); blk = boss[vi:boss.index("};", vi)]
-else: vi = boss.index("public static readonly Def %s = new Def" % DEF); blk = boss[vi:boss.index("            }, 1f),", vi)]
+else: vi = boss.index("public static readonly Def %s = new Def" % DEF); blk = boss[vi:boss.index("            }, ", vi)]
 info = {}
 for m in re.finditer(r'new Move \{ Name = "([^"]+)"([^}]*)\}', blk):
     t = m.group(2); h = re.search(r"Hits = (\d+)", t); p = re.search(r"Poses = new\[\] \{([^}]*)\}", t); gp = re.search(r"Gap = ([0-9.]+)f", t)

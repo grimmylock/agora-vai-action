@@ -1361,6 +1361,12 @@ namespace GameCore
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
             float bladeDeg = f.GunDeg; var spr = cat == "melee" ? WeaponSpring.For(key) : null;                       // 2026-11-23: a heavy blade trails the hand and overshoots (WeaponSpring)
             if (spr.HasValue) bladeDeg = WeaponSpring.Step(ref _spring, f.GunDeg, Time.deltaTime, spr.Value.w, spr.Value.z, spr.Value.max); else _spring.Init = false;
+            if (spr.HasValue)                                                                                          // 2026-11-23 (Yan: "the hands need to follow the spring"): the fist turns with the blade, and the other hand stays on the handle of a two-handed weapon
+            {
+                f.HandDeg += HeldPoseMath.HandTurn * (bladeDeg - f.GunDeg);
+                var stl = HeldPoseMath.StyleOf(mc?.PoseKey ?? key);
+                if (f.HasSupport && (stl == HeldPoseMath.Style.Heavy || stl == HeldPoseMath.Style.Verger)) { float supRad = bladeDeg * Mathf.Deg2Rad; f.SupX = Mathf.Round(f.GripX + 4f * Mathf.Cos(supRad)); f.SupY = Mathf.Round(f.GripY - 4f * Mathf.Sin(supRad) - 0.5f) + 0.5f; }
+            }
             _gun.transform.localRotation = Quaternion.Euler(0f, 0f, bladeDeg);
             _gun.transform.localScale = new Vector3((f.Length > 0f ? f.Length : 1f) * _bs, _bs, 1f);
             var brk = WeaponArt.Break(cat, key);

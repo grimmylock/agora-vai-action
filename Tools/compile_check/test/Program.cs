@@ -3326,7 +3326,9 @@ static class Program {
     var s2 = new WeaponSpring.State(); WeaponSpring.Step(ref s2, 0f, 1f / 60f, sp.w, sp.z, sp.max); float lag = 0f; for (int i = 0; i < 6; i++) lag = WeaponSpring.Step(ref s2, 60f * (i + 1), 1f / 60f, sp.w, sp.z, sp.max) - 60f * (i + 1);
     Check(lag < -1f && lag >= -sp.max - 0.01f, $"Scythe spring: a fast swing leaves the blade behind the hand by {-lag:0} degrees (never more than {sp.max:0})");
     var s3 = new WeaponSpring.State(); WeaponSpring.Step(ref s3, 10f, 1f / 60f, sp.w, sp.z, sp.max); Check(WeaponSpring.Step(ref s3, 400f, 1f / 60f, sp.w, sp.z, sp.max) == 400f, "Scythe spring: a flip of the facing (a jump of more than 300 degrees) snaps instead of whirling");
-    Check(WeaponSpring.For("TacticalHatchet") == null && WeaponSpring.For("SerratedTrenchKnife") == null && WeaponSpring.For("Sledgehammer").Value.w < WeaponSpring.For("VergerScythe").Value.w, "Weapon spring: the scythe and the sledgehammer have it (the hammer's softer and slower), nothing else yet");
+    var wk = new[] { "HuntingKnife", "TacticalHatchet", "WoodenBaseballBat", "FireAxe", "Sledgehammer" }.Select(k => (k, sp: WeaponSpring.For(k))).ToList();
+    Check(wk.All(x => x.sp.HasValue) && wk[0].sp.Value.w > wk[1].sp.Value.w && wk[1].sp.Value.w >= wk[3].sp.Value.w && wk[3].sp.Value.w > wk[4].sp.Value.w && wk[0].sp.Value.max < wk[3].sp.Value.max, "Weapon spring: every melee weapon has one, crisper and shorter for the light ones, slower and longer for the heavy ones (by weight): " + string.Join(", ", wk.Select(x => $"{x.k} {x.sp.Value.w:0}")));
+    Check(WeaponSpring.For("PSh18Pchela") == null && WeaponSpring.For(null) == null, "Weapon spring: guns have none");
   }
 
   static void BossBreathingChecks() {

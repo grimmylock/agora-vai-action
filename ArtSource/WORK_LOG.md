@@ -7139,3 +7139,9 @@ Yan: "yes, try the spring on the scythe" (the hands stay choreographed; the BLAD
 
 ### Batch 9dt (2026-11-23): the spring on the sledgehammer
 Yan liked the scythe's spring ("a little recoil, the animations do not feel completely stiff"): `WeaponSpring.For("Sledgehammer")` = (14 rad/s, 0.36, 65 degrees): a softer, slower spring for the heavier head (the King's hammer and the player's). Preview `maps/renders/sledgehammer_spring.gif` (the King's moves, without and with). Harness passes; not seen in Unity.
+
+### Batch 9du (2026-11-23): springs by weight, the hands follow the spring
+Yan: "add it to the rest by weight"; "the hands need to follow the spring, I didn't notice on the scythe but the hands do not follow the spring at the end of the animation so it doesn't look great".
+- `WeaponSpring.For(key)`: every melee weapon has a spring by weight: 0.5 kg or less omega 26 / damping 0.46 / max lag 32 degrees, rising to omega 15 / 0.37 / 68 degrees at 4 kg (Hunting Knife 26, Hatchet 25, Bat 24, Fire Axe 21, Sledgehammer 14 hand-tuned, scythe 18 hand-tuned); guns none; check: lighter = crisper and shorter.
+- The hands (`HeldWeaponView.ShowCore`): they were still placed from the UNSPRUNG angle, so at an overshoot the blade left the other hand behind. Now the fist turns with the blade (`HandDeg += HandTurn x the spring's offset`) and, on a two-handed weapon (the Heavy and Verger styles), the support hand is recomputed along the handle from the sprung angle. A one-handed weapon's other hand stays where it was (it is a guard, not on the weapon).
+- Preview `maps/renders/scythe_spring_hands.gif` (without / with, hands following). `boss_all.py` mirrors the hand logic and takes the spring by weight for any weapon. Harness passes; not seen in Unity.
