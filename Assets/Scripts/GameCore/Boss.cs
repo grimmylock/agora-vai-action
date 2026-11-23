@@ -166,9 +166,9 @@ namespace GameCore
             {
                 new Move { Name = "Swing", Wind = 0.9f, Weight = 3, Mult = 0.9f, Poses = new[] { 1 }, Open = 1.4f },
                 new Move { Name = "Backswing", Wind = 0.8f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f },
-                new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Mult = 1.5f, Weight = 1, Poses = new[] { 0 }, Open = 2.3f },
+                new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Leap = 0.6f, Lunge = 3f, Mult = 1.5f, Weight = 1, Poses = new[] { 0 }, Open = 2.3f },
                 new Move { Name = "Wire rush", Wind = 0.9f, Danger = true, Lunge = 4f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
-                new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.8f },
+                new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gaps = new[] { 0.45f, 0.9f }, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.8f },
             }, 1f),
         };
 
@@ -181,9 +181,9 @@ namespace GameCore
             {
                 new Move { Name = "Smash", Wind = 1.0f, Weight = 3, Mult = 0.8f, Poses = new[] { 0 }, Open = 1.5f },
                 new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.6f, Mult = 0.55f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.8f },
-                new Move { Name = "Crush", Wind = 1.2f, Danger = true, Mult = 1.4f, Weight = 1, Poses = new[] { 0 }, Open = 2.4f },
+                new Move { Name = "Crush", Wind = 1.2f, Danger = true, Leap = 0.8f, Lunge = 3f, Mult = 1.4f, Weight = 1, Poses = new[] { 0 }, Open = 2.4f },
                 new Move { Name = "Charge", Wind = 0.9f, Danger = true, Lunge = 5f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
-                new Move { Name = "Rubble", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.9f },
+                new Move { Name = "Rubble", Wind = 0.7f, Hits = 3, Gaps = new[] { 0.9f, 0.45f }, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.9f },
             }, 1f),
         };
 
@@ -213,12 +213,12 @@ namespace GameCore
             // phase 1 only
             new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gaps = new[] { 0.45f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.9f }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 0 }, Open = 1.8f, Phase1Only = true },
             // phase 2: the hat comes off
-            new Move { Name = "Danse", Wind = 0.8f, Hits = 4, Gap = 0.5f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4, 4, 4 }, Open = 2.0f, Phase2Only = true },          // four full turns, all round him (2026-11-23: phase 2 is longer combos, not faster)
+            new Move { Name = "Danse", Wind = 0.8f, Hits = 4, Gaps = new[] { 0.5f, 1.0f, 0.5f }, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4, 4, 4 }, Open = 2.0f, Phase2Only = true },          // four full turns, all round him (2026-11-23: phase 2 is longer combos, not faster)
             new Move { Name = "Toll", Wind = 1.0f, Danger = true, MaxDist = 6f, Effects = new[] { "toll" }, Weight = 1, Poses = new[] { 0 }, Open = 1.3f, Phase2Only = true },     // the blade struck on the flagstones rings like the bell: deafened and your aim gone (dive)
             new Move { Name = "Hook-Reap", Call = true, Wind = 1.0f, Hits = 3, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f, 0.55f }, Mults = new[] { 1.0f, 1.0f, 1.4f }, RedHits = new[] { false, false, false }, Weight = 2, Poses = new[] { 3, 0, 2 }, Open = 2.2f, Phase2Only = true },   // hauled in, then the reap: parry the second
             new Move { Name = "Reaper's Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.6f, Weight = 2, Poses = new[] { 7 }, Open = 2.2f, Phase2Only = true },             // across the nave and the point driven down
-            new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 7, Gaps = new[] { 0.4f, 0.4f, 0.5f, 0.6f, 0.4f, 0.55f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 0.7f, 0.6f, 1.3f }, RedHits = new[] { false, false, true, false, false, true, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 4, 5, 0 }, Open = 2.6f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
-            new Move { Name = "Last Rite", Wind = 0.9f, Hits = 6, Gaps = new[] { 0.5f, 0.45f, 0.7f, 0.45f, 0.6f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 0.7f, 0.6f, 1.9f }, RedHits = new[] { false, false, true, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 4, 5, 7 }, Open = 3.0f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
+            new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 7, Gaps = new[] { 0.45f, 0.45f, 1.0f, 0.45f, 0.45f, 1.0f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 0.7f, 0.6f, 1.3f }, RedHits = new[] { false, false, true, false, false, true, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 4, 5, 0 }, Open = 2.6f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
+            new Move { Name = "Last Rite", Wind = 0.9f, Hits = 6, Gaps = new[] { 0.5f, 0.9f, 0.5f, 0.9f, 0.5f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 0.7f, 0.6f, 1.9f }, RedHits = new[] { false, false, true, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 4, 5, 7 }, Open = 3.0f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
         };
 
         // ---- PARKED (Yan, 2026-11-21: "save it but take him out of the game for now"): the beast form. Nothing spawns this def; the harness still runs it so the code keeps working. ----

@@ -27,6 +27,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
+    if (args.Length > 0 && args[0] == "beatcheck") { BeatCheck(); return 0; }
     if (args.Length > 0 && args[0] == "bossdmg") { BossDmg(); return 0; }
     if (args.Length > 1 && args[0] == "sceneprowlers") { SceneProwlers(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1], args.Length > 2 ? args[2] : "visor"); return 0; }
@@ -1746,6 +1747,34 @@ static class Program {
       }
       Console.WriteLine(line);
     }
+    Rt.On = false;
+  }
+
+
+  // 2026-11-23 (Yan: "the move counter doesn't seem to follow the attacks actually landing in timing"): for every move of the human bosses, the beats BeatsOf predicts at the moment the move starts against when the player really loses HP
+  static void BeatCheck() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
+    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    UnityEngine.Time.time = 50000f; UnityEngine.Time.unscaledTime = 50000f; UnityEngine.Time.timeScale = 1f;
+    var lay = new List<(float dx, bool red, float alpha)>(); int viewBad = 0, viewTested = 0;
+    foreach (var def in new[] { Boss.Visor, Boss.Spool, Boss.King, Boss.Verger }) {
+      EncounterState.Enemies.Clear(); Boss.Reset(); var f = Boss.Spawn(def, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
+      foreach (var m in def.Moves) {
+        if (m.Phase2Only) f.Phase = 2; else f.Phase = 1; p.X = px; p.Y = py; v.X = px + 1; v.Y = py; Rt.SetOffset(v, 0f, 0f); p.Hp = p.MaxHp = 1000000; f.StaggerUntil = -1f; f.BreatherUntil = -1f; f.ChangeUntil = -1f; f.OpenUntil = -1f; f.Doing = null; f.NextMoveAt = UnityEngine.Time.time + 99f;
+        float t0 = UnityEngine.Time.time + 1f / 60f; UnityEngine.Time.time += 1f / 60f; float speed = f.Phase == 2 && def != Boss.Verger ? 0.8f : 1f; Boss.Begin(f, m, UnityEngine.Time.time, speed);
+        var pred = new List<Boss.Beat>(); Boss.BeatsOf(f, pred); var predAt = pred.Select(b => b.In).ToList(); var real = new List<float>(); var swung = new List<float>(); float lastSw = -99f; int hp = p.Hp; float strike0 = f.StrikeAt - t0;
+        for (int i = 0; i < 60 * 12 && (f.Doing != null || i < 5); i++) {
+          UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.deltaTime = 1f / 60f; var bl = new List<Boss.Beat>(); Boss.BeatsOf(f, bl); BossBeatsView.Layout(bl, lay); var offs = lay.Select(o => o.dx).ToList(); Boss.Tick(f, p); Melee.Tick(1f / 60f); Gunplay.LandAll();
+          { var mcv = Melee.ChargeOf(v); if (mcv.SwungAt != lastSw && mcv.SwungAt > 0f) { lastSw = mcv.SwungAt; swung.Add(mcv.SwungAt - t0); } }
+          if (p.Hp < hp) { real.Add(UnityEngine.Time.time - t0); hp = p.Hp; viewTested++; float nearest = offs.Count > 0 ? offs.Min(o => System.Math.Abs(o)) : 9f; if (nearest > 0.55f * 0.04f + 0.02f) viewBad++; }
+        }
+        string fmt(IEnumerable<float> xs) => string.Join(" ", xs.Select(x => x.ToString("0.00")));
+        float maxErr = 0f; for (int i = 0; i < System.Math.Min(predAt.Count, real.Count); i++) maxErr = System.Math.Max(maxErr, System.Math.Abs(predAt[i] - real[i]));
+        Console.WriteLine($"{def.Name,-15} {m.Name,-16} predicted [{fmt(predAt)}]  landed [{fmt(real)}]  pose strike starts [{fmt(swung)}]  {(predAt.Count != real.Count ? "COUNT " + predAt.Count + " vs " + real.Count : "")} max error {maxErr:0.00} s");
+      }
+    }
+    Console.WriteLine($"view: at the instant a blow really lands, a mark sits within 0.04 s of the notch in {viewTested - viewBad} of {viewTested} blows");
     Rt.On = false;
   }
 

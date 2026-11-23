@@ -13,8 +13,14 @@ namespace GameCore
         const int MaxMarks = 8;
         readonly Transform _root; readonly System.Func<ICombatant, SpriteRenderer> _markerOf;
         readonly Dictionary<Boss.Fight, List<SpriteRenderer>> _marks = new Dictionary<Boss.Fight, List<SpriteRenderer>>();
-        readonly List<Boss.Beat> _beats = new List<Boss.Beat>(); static Sprite _px;
+        readonly List<Boss.Beat> _beats = new List<Boss.Beat>(); readonly List<(float dx, bool red, float alpha)> _layout = new List<(float, bool, float)>(); static Sprite _px;
 
+        /// <summary>The layout, pure (tested): where each mark sits to the right of the notch (tiles) and how opaque it is.</summary>
+        public static void Layout(List<Boss.Beat> beats, List<(float dx, bool red, float alpha)> into)
+        {
+            into.Clear();
+            foreach (var b in beats) { if (b.In > LookAhead || into.Count >= MaxMarks) continue; into.Add((Mathf.Max(0f, b.In) * PerSecond, b.Red, Mathf.Clamp01(1f - Mathf.Max(0f, b.In - (LookAhead - 0.5f)) / 0.5f))); }
+        }
         public BossBeatsView(Transform root, System.Func<ICombatant, SpriteRenderer> markerOf) { _root = root; _markerOf = markerOf; }
         static Sprite Px() { if (_px != null) return _px; var t = new Texture2D(1, 1, TextureFormat.RGBA32, false); t.SetPixel(0, 0, Color.white); t.Apply(); t.filterMode = FilterMode.Point; return _px = Sprite.Create(t, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f, 0, SpriteMeshType.FullRect); }
 
@@ -34,12 +40,11 @@ namespace GameCore
                 {
                     var head = marker.transform.position + new Vector3(0f, HeadHeight, 0f);
                     var notch = Mark(list, 0); notch.transform.position = head; notch.transform.localScale = new Vector3(0.05f, 0.2f, 1f); notch.color = new Color(1f, 1f, 1f, 0.55f); notch.gameObject.SetActive(true); shown = 1;   // the notch: where a blow is "now"
-                    foreach (var b in _beats)
+                    Layout(_beats, _layout);
+                    foreach (var (dx, red, alpha) in _layout)
                     {
-                        if (b.In > LookAhead || shown > MaxMarks) continue;
-                        float k = Mathf.Clamp01(1f - Mathf.Max(0f, b.In - (LookAhead - 0.5f)) / 0.5f);                 // fades in at the far end
-                        var m = Mark(list, shown++); m.transform.position = head + new Vector3(Mathf.Max(0f, b.In) * PerSecond, 0f, 0f); m.transform.localScale = new Vector3(MarkW, MarkH, 1f);
-                        m.color = b.Red ? new Color(1f, 0.22f, 0.16f, k) : new Color(1f, 1f, 0.92f, k); m.gameObject.SetActive(true);
+                        var m = Mark(list, shown++); m.transform.position = head + new Vector3(dx, 0f, 0f); m.transform.localScale = new Vector3(MarkW, MarkH, 1f);
+                        m.color = red ? new Color(1f, 0.22f, 0.16f, alpha) : new Color(1f, 1f, 0.92f, alpha); m.gameObject.SetActive(true);
                     }
                 }
                 for (int i = shown; i < list.Count; i++) list[i].gameObject.SetActive(false);
