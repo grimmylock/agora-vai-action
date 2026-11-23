@@ -220,7 +220,7 @@ namespace GameCore
             {
                 EncounterState.InCombat = false;
                 EncounterState.ResetFight();
-                EncounterState.Enemies.RemoveAll(e => e.IsAlive() && e.IsFleeing() && !Vision.Shows(e));   // 2026-11-23 (Yan: hurt mutants "completely disappear, not die"): only those that have run out of your sight are gone; one still in view used to blink out the moment the fight ended
+                EncounterState.Enemies.RemoveAll(e => e.IsAlive() && e.IsFleeing());
                 // Stay right here on the map and hand control straight back - there's no separate
                 // "Overworld" to fall back to anymore, so unlike the player-death case above,
                 // CombatOver can't be left standing (PlayerController blocks all input unless

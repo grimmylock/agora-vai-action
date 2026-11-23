@@ -147,7 +147,7 @@ namespace GameCore
 
         /// <summary>Ported from isFleeing().</summary>
         public virtual bool IsFleeing() =>
-            State == "fleeing" || (PanicThreshold > 0 && (float)Hp / MaxHp <= PanicThreshold);
+            State == "fleeing";   // 2026-11-23: the health-share clause is gone for good (Yan asked in 9bm, 2026-11-22: CheckPanic was emptied but this property still tested PanicThreshold, so low mutants still ran off and vanished)
 
         /// <summary>Ported from checkPanic().</summary>
         public void CheckPanic()

@@ -7184,3 +7184,7 @@ Yan (video + two screenshots): weapons not changing side when facing up; some mu
 - **Empty hands:** the walk/run read used the snapped one-pixel travel and UnitLife's own hop; it now uses the smoothed speed (`_spdSm`) and the position minus the hop.
 - **Lean:** with breathing off, `UnitLife.Pose` gave the last lean to a body standing still; it is now only applied while moving or on a step frame (the preview tilts only in motion). Harness passes; nothing run in Unity, so whether the lean/hands now match the preview is unconfirmed.
 
+## 2026-11-23 - Batch 9ea: the health-share flee really removed (correcting 9dz)
+
+Yan: "didn't we remove the mutants flee rule? i asked for that a while ago". Yes - 9bm (2026-11-22) emptied `Mutant.CheckPanic`, but `Mutant.IsFleeing()` still tested `Hp/MaxHp <= PanicThreshold` itself (`Mutant.cs:149`), and `EnemyAI.MutantTurn` / `RtAi` / `TurnLoop.CheckCombatEnd` all ask `IsFleeing()`, so low-health mutants still ran and were deleted when the fight ended. `IsFleeing()` is now only `State == "fleeing"`. My 9dz "keep them while in view" change to `TurnLoop.cs` is reverted (it treated the symptom). Harness passes; not run in Unity. Humans were already state-based (`HumanEnemy.cs:194`).
+
