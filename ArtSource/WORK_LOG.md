@@ -7007,3 +7007,6 @@ Yan: "try the same walk on the other raider suits". `UnitLife.Applies` now cover
 
 ### Batch 9co (2026-11-23): life test on every human faction
 Yan: "try it on the other human factions too". `UnitLife.Applies` is now every HumanEnemy with a suit except bosses and Husks (all factions, story NPCs, companions). Walk hop + lean only (breathing off, flinch on heavy hits). The player is still untouched. Harness passes; not seen in Unity. Suits whose sprite has no walk frames just get the lean.
+
+### Batch 9cp (2026-11-23): life on the player and the people-bosses
+Yan: "add it to the player and npc bosses with normal sprites". `UnitLife.Applies`: the player, every suit-wearing human (bosses drawn as people included: Visor, Spool, Scrap King, Verger) except Husks and clip-drawn creature bosses. The player skips it while diving, knocked down, down, up on the tower or held by the eel. Walk hop + lean (+ heavy-hit flinch, 20% of max HP, 1.5 s apart); breathing stays off. Harness passes; NOT seen in Unity: the lean against the aim line and the held weapon on the player.

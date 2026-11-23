@@ -857,7 +857,7 @@ namespace GameCore
             if (hv != null) hv.BodyDrop = bodyPose != null && (bodyPose.StartsWith("crouch") || bodyPose.StartsWith("kneel") || bodyPose.StartsWith("sit") || bodyPose.StartsWith("stagger")) ? 1f : 0f;
             if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3 / Poses: the body's frame
             // 2026-11-23 (Yan: "pick 1 human sprite and do it only for it, as a test"): the Raider Jacket gets procedural life (UnitLife.cs); the marker's tilt is put back the moment it stops applying (a slot is reused)
-            if (up && !held && UnitLife.Applies(u))
+            if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
                 var (hdx, hdy) = _fx.LastHitDir(u); var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, marker.flipX ? -1f : 1f, Time.time, hdx, 0f);
                 marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker);
