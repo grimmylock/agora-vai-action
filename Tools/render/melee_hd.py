@@ -7,6 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from melee_scene import SPR, S, BG, big_glove, glove, paste
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 src = open(os.path.join(ROOT, "Assets/Scripts/GameCore/HeldWeapon.cs")).read()
+def scale(k):
+    m = re.search(r'\["%s"\] = ([0-9.]+)f' % k, src.split("HandScale = new")[1].split("};")[0]); return float(m.group(1)) if m else 1.0
 def dense(k): m = re.search(r'\["%s"\] = ([0-9.]+)f' % k, src.split("Dense = new")[1].split("};")[0]); return float(m.group(1)) if m else 1.0
 def main(mm, out, old=False):
     d = json.load(open(mm)); os.makedirs(out, exist_ok=True)
@@ -17,19 +19,20 @@ def main(mm, out, old=False):
     rows = []
     for wpn in d["weapons"]:
         key = wpn["key"]; k = dense(key)
-        hd = Image.open(os.path.join(SPR, f"Weapons/weapon_{key}_hd.png")).convert("RGBA")
-        img = hd.resize((max(1, round(hd.width / k)), max(1, round(hd.height / k))), Image.LANCZOS)      # to the in-hand scale (the game: Bilinear at ppu x k)
+        hs = scale(key)
+        if k > 1.0: hd = Image.open(os.path.join(SPR, f"Weapons/weapon_{key}_hd.png")).convert("RGBA"); img = hd.resize((max(1, round(hd.width / k * hs)), max(1, round(hd.height / k * hs))), Image.LANCZOS)   # to the in-hand scale x HandScale (the game: Bilinear at ppu x k / scale)
+        else: mini = Image.open(os.path.join(SPR, f"Weapons/weapon_{key}.png")).convert("RGBA"); img = mini.resize((max(1, round(mini.width * hs)), max(1, round(mini.height * hs))), Image.NEAREST)   # the scythe: its mini picture, drawn bigger
         fr = wpn["frames"]; first = [i for i, f in enumerate(fr) if f[10]][0]
         picks = [5, first + 3, first + 6, first + 10]; cells = []
         for i in picks:
             gx, gy, deg, hx, hy, sup, sx, sy, lean, move, swinging, length, hdeg = fr[i][:13]
             c = Image.new("RGBA", (W, W + 24), BG); u = Image.new("RGBA", (W, W)); u.alpha_composite(body, (ub, ub))
             wi = img if length > 0.99 else img.resize((max(1, round(img.width * length)), img.height), Image.NEAREST)
-            paste(u, wi, (wpn["grip"][0] * length, wpn["grip"][1]), (ub + gx * S, ub + gy * S), deg)
+            paste(u, wi, (wpn["grip"][0] * length * hs, wpn["grip"][1] * hs), (ub + gx * S, ub + gy * S), deg)
             fz = fist.rotate(hdeg, expand=True, resample=Image.NEAREST); u.alpha_composite(fz, (round(ub + hx * S - fz.width / 2), round(ub + hy * S - fz.height / 2)))
             if sup: u.alpha_composite(other, (round(ub + sx * S - 2 * S), round(ub + sy * S - 1.5 * S)))
             u = u.rotate(lean, center=(ub + 8 * S, ub + 8 * S), resample=Image.NEAREST); c.alpha_composite(u, (0, 24))
-            ImageDraw.Draw(c).text((8, 4), f"{key} (k {k:.2f})" + ("  stance" if i == picks[0] else ""), font=font, fill=(240, 200, 90)); cells.append(c)
+            ImageDraw.Draw(c).text((8, 4), f"{key} (k {k:.2f}, x{hs:.2f})" + ("  stance" if i == picks[0] else ""), font=font, fill=(240, 200, 90)); cells.append(c)
         rows.append(cells)
     sheet = Image.new("RGB", (W * 4, (W + 24) * len(rows)), BG[:3])
     for r, cells in enumerate(rows):

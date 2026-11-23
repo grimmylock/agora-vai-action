@@ -1869,7 +1869,7 @@ static class Program {
   // (each click within the combo gap is the next move), at 30 frames a second -> Tools/render/melee_moves.py
   static void MeleeMoves(string path) {
     var p = Arena(out int px, out int py); var sb = new System.Text.StringBuilder("{\"weapons\":[");
-    var keys = new[] { "HuntingKnife", "SteppeMachete", "FireAxe", "Hatchet", "Sledgehammer", "WoodenBaseballBat", "BarbedWireBat" };   // 2026-11-23: more of them for Tools/render/melee_hd.py
+    var keys = new[] { "HuntingKnife", "SteppeMachete", "FireAxe", "Hatchet", "Sledgehammer", "WoodenBaseballBat", "BarbedWireBat", "TacticalHatchet", "VergerScythe" };   // 2026-11-23: more of them for Tools/render/melee_hd.py
     for (int k = 0; k < keys.Length; k++) {
       Melee.Reset(); EncounterState.Enemies.Clear(); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f);
       p.EquipWeapon("melee", keys[k]); var w = p.EquippedWeapon; var g = WeaponArt.GripOf("melee", keys[k]);
@@ -2609,7 +2609,7 @@ static class Program {
     for (int i = 0; i < 30; i++) { UnityEngine.Time.time += 0.01f; MutantAttack.Update(hostB, p, UnityEngine.Time.time, ref ns); }
     nb = MutantAttack.NetState(hostB, UnityEngine.Time.time); var mirB = new Mutant("BlightBrute", hostB.X, hostB.Y, MutantDatabase.Get("tier4", "BlightBrute")); EncounterState.Enemies.Add(mirB);
     MutantAttack.Mirror(mirB, nb.code, nb.t20 * 0.02f, nb.d1, nb.d2, UnityEngine.Time.time);
-    Check(WeaponArt.Density("RinaldiR6") > 4.5f && WeaponArt.Density("HaldenLeverShotgun") > 3.6f && WeaponArt.Density("FrontierLeverRifle") > 3.5f && WeaponArt.Density("Nightwalker4570") > 3.5f && WeaponArt.Density("HuntingKnife") > 3f && WeaponArt.Density("TacticalHatchet") == 1f && WeaponArt.Density("VK74") > 3.3f && WeaponArt.Density(null) == 1f && WeaponArt.Mag("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Cylinder("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Mag("shotgun", "HaldenLeverShotgun") == (null, null), "WeaponArt: the Rinaldi and the three lever guns are held with their double-size pictures (densities 4.6, 3.6, 3.55, 3.55) and have no cut pieces, the other guns are unchanged");
+    Check(WeaponArt.Density("RinaldiR6") > 4.5f && WeaponArt.Density("HaldenLeverShotgun") > 3.6f && WeaponArt.Density("FrontierLeverRifle") > 3.5f && WeaponArt.Density("Nightwalker4570") > 3.5f && WeaponArt.Density("HuntingKnife") > 3f && WeaponArt.Density("TacticalHatchet") > 1.5f && WeaponArt.Density("VK74") > 3.3f && WeaponArt.Density(null) == 1f && WeaponArt.Mag("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Cylinder("sidearm", "RinaldiR6") == (null, null) && WeaponArt.Mag("shotgun", "HaldenLeverShotgun") == (null, null), "WeaponArt: the Rinaldi and the three lever guns are held with their double-size pictures (densities 4.6, 3.6, 3.55, 3.55) and have no cut pieces, the other guns are unchanged");
     Check(nb.code == 6 && MutantAttack.KindOf(mirB) == "slam", $"co-op: a client's mirror plays the Brute's slam (code {nb.code})");
     var bt = GameData.MutantAttackData.Table["Blight Brute"]["throw"]; Check(bt.MuzzleX != null && bt.MuzzleX.Length == bt.Frames && bt.Contact == 12, "Blight Brute: the throw carries a release point per frame and releases on frame 12");
     p.HealPermanent(5000); EncounterState.Enemies.Clear(); MutantAttack.Reset(); Rt.Reset(); p.X = px; p.Y = py;

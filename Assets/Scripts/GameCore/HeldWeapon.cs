@@ -585,7 +585,7 @@ namespace GameCore
         public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
         {
             // 2026-11-23 (Yan: "replace the current mini-sprites with the inventory ones ... reducing the size of the png and placing it in the characters hands"): the melee weapons are drawn from their inventory pictures too (weapon_<Key>_hd.png), k = the picture's content width / the old in-hand picture's (the same size on screen as before); grip and cutting point re-mapped by position on the weapon (ArtSource/weapons/melee_to_hd.py). The Tactical Hatchet stays Yan's own drawing.
-            ["HuntingKnife"] = 3.41f, ["SpetsnazSwitchblade"] = 3.47f, ["SteppeMachete"] = 2.00f, ["SerratedTrenchKnife"] = 2.86f, ["ObeliskRitualBlade"] = 2.54f, ["Hatchet"] = 2.77f, ["WoodenBaseballBat"] = 2.03f, ["Hammer"] = 2.59f, ["FireAxe"] = 2.07f, ["Sledgehammer"] = 1.94f, ["BarbedWireBat"] = 2.03f, ["VergerScythe"] = 1.97f,   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
+            ["TacticalHatchet"] = 1.91f, ["HuntingKnife"] = 3.41f, ["SpetsnazSwitchblade"] = 3.47f, ["SteppeMachete"] = 2.00f, ["SerratedTrenchKnife"] = 2.86f, ["ObeliskRitualBlade"] = 2.54f, ["Hatchet"] = 2.77f, ["WoodenBaseballBat"] = 2.03f, ["Hammer"] = 2.59f, ["FireAxe"] = 2.07f, ["Sledgehammer"] = 1.94f, ["BarbedWireBat"] = 2.03f,   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
             ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
             ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
             ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
@@ -633,6 +633,10 @@ namespace GameCore
             ["VKM"] = 5.76f,
             ["CorvanBattleRifle"] = 5.64f, ["BayouPump"] = 5.90f, ["CorvanGnatPDW"] = 6.79f,
         };
+        // 2026-11-23 (Yan: "the scythe looked better in the mini version ... make it bigger in hand" / "make all melees a bit bigger and match their reach and hitbox to it"): every melee weapon is drawn 1.15x in the hand (the scythe 1.4x), and Melee.Shape scales its reach by the same factor; the Verger's scythe is its mini picture again (blade straightened: ArtSource/weapons/scythe_straighten.py), drawn bigger in the hand: the
+        // sprite and its cutting point scale about the grip, so the hand stays on the snath.
+        public static readonly Dictionary<string, float> HandScale = new Dictionary<string, float> { ["HuntingKnife"] = 1.15f, ["SpetsnazSwitchblade"] = 1.15f, ["SteppeMachete"] = 1.15f, ["SerratedTrenchKnife"] = 1.15f, ["ObeliskRitualBlade"] = 1.15f, ["Hatchet"] = 1.15f, ["WoodenBaseballBat"] = 1.15f, ["Hammer"] = 1.15f, ["FireAxe"] = 1.15f, ["Sledgehammer"] = 1.15f, ["BarbedWireBat"] = 1.15f, ["TacticalHatchet"] = 1.15f, ["VergerScythe"] = 1.4f };
+        public static float Scale(string key) => key != null && HandScale.TryGetValue(key, out var k) ? k : 1f;
         public static float Density(string key) => key != null && Dense.TryGetValue(key, out var k) ? k : 1f;
         // grip, support (NaN = none), muzzle (blade tip for melee) in weapon-sprite pixels;
         // per-weapon entries override the category
@@ -666,7 +670,7 @@ namespace GameCore
             ["MotherJaws"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },    // 2026-11-21: Mother Hollow's bite: no weapon sprite, the grip keeps the swing code working
             ["VergerScythe"] = new[] { 7f, 15f, float.NaN, float.NaN, 24f, 6.5f },   // 2026-11-20: the grip on the wrap of the low snath, the cutting point mid-blade (a bigger, straighter blade: 36x20 sprite)
             ["BarbedWireBat"] = new[] { 5f, 7.5f, float.NaN, float.NaN, 29f, 7.5f },
-            ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
+            ["TacticalHatchet"] = new[] { 10f, 7f, float.NaN, float.NaN, 26f, 11.5f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 6.3f, 10.3f, float.NaN, float.NaN, 19.8f, 3.5f },
             ["WaldenP9"] = new[] { 5.7f, 10.5f, float.NaN, float.NaN, 21.7f, 3.4f },
             ["Halden45Service"] = new[] { 5.2f, 10f, float.NaN, float.NaN, 21.7f, 3.2f },
@@ -1008,11 +1012,12 @@ namespace GameCore
             bool own = tex != null;
             if (!own) { dense = 1f; tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_cat_" + cat); }
             var g = own && Grips.TryGetValue(key, out var kg) ? kg : Grips.TryGetValue("cat_" + cat, out var cg) ? cg : Grips["cat_assault"];
+            float hs = own ? Scale(key) : 1f; if (hs != 1f) g = new[] { g[0], g[1], g[2], g[3], g[0] + (g[4] - g[0]) * hs, g[1] + (g[5] - g[1]) * hs };      // bigger in hand: the cutting point moves out with the blade
             Sprite s = null;
             if (tex != null)
             {
                 tex.filterMode = dense > 1f ? FilterMode.Bilinear : FilterMode.Point;   // 2026-11-15: the guns used at the SpriteCook still's own size (about 6 texture px per old-pixel) are drawn smaller than their picture: bilinear, so they shrink smoothly instead of being sampled to noise
-                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] * dense / tex.width, 1f - g[1] * dense / tex.height), PixelsPerUnit * dense, 0, SpriteMeshType.FullRect);   // grip in virtual px = texture px / dense
+                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(g[0] * dense / tex.width, 1f - g[1] * dense / tex.height), PixelsPerUnit * dense / hs, 0, SpriteMeshType.FullRect);   // grip in virtual px = texture px / dense
             }
             return Cache[id] = (s, g);
         }

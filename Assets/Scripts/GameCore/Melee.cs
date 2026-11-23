@@ -77,7 +77,7 @@ namespace GameCore
         {
             var st = HeldPoseMath.StyleOf(by != null && ChargeOf(by).PoseKey != null ? ChargeOf(by).PoseKey : w?.Db != null ? KeyOf(w) : null); var row = Shapes[(int)st];
             var m = row[((move % row.Length) + row.Length) % row.Length];
-            return (For(w).Reach * m.reach, m.arc, m.all, m.dmg);
+            return (For(w).Reach * m.reach * WeaponArt.Scale(w?.Db != null ? KeyOf(w) : null), m.arc, m.all, m.dmg);       // 2026-11-23: the weapon is drawn bigger in the hand (WeaponArt.HandScale), so it reaches as far as it looks
         }
         /// <summary>RT 7v: how long a blunt hit leaves a human dazed: the heavier, the longer (4 s for a 1 kg bat, 8 for the sledge).</summary>
         public static float ConcussSeconds(Weapon w) => Mathf.Clamp(3f + (w?.Db?.WeightKg ?? 1f) * 1.25f, 3f, 8f);

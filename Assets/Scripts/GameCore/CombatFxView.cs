@@ -157,7 +157,7 @@ namespace GameCore
             var tex = Resources.Load<Texture2D>("Sprites/Weapons/weapon_" + item.Key + "_stuck");
             if (tex == null || stats == null || float.IsNaN(stats.StuckX)) return _stuckSprites[item.Key] = null;
             tex.filterMode = FilterMode.Point;
-            return _stuckSprites[item.Key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(stats.StuckX / tex.width, 1f - stats.StuckY / tex.height), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
+            return _stuckSprites[item.Key] = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(stats.StuckX / tex.width, 1f - stats.StuckY / tex.height), WeaponArt.PixelsPerUnit / WeaponArt.Scale(item.Key), 0, SpriteMeshType.FullRect);
         }
 
         private void TickMelee()
