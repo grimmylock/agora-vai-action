@@ -274,7 +274,8 @@ namespace GameCore
                 _alertMarks[i].gameObject.SetActive(shown && enemy.IsAlive() && (red || yellow || calling));
                 if (!shown) continue;
                 bool alive = DrawUnit(enemy, _enemyMarkers[i], Companion.Is(enemy) ? new Color(0.45f, 1f, 0.55f) : new Color(1f, 0.25f, 0.2f));
-                if (VergerPhase2.Ghosting(enemy)) SpawnGhost(_enemyMarkers[i]);                                          // 2026-11-23: the Verger's low-opacity afterimage
+                if (VergerPhase2.Ghosting(enemy)) SpawnGhost(_enemyMarkers[i]);
+                if (VergerPhase2.GlowOf(enemy) is float gl && gl > 0.25f) SpawnHalo(_enemyMarkers[i], gl);                                          // 2026-11-23: the Verger's low-opacity afterimage
                 if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = calling ? Color.white : red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
                 if (enemy is HumanEnemy he)   // aware enemies point at the player, the rest where they look (Batch 128); corpses and the surrendered drop it
                 {
@@ -920,21 +921,36 @@ namespace GameCore
 
         /// <summary>Walls, trees and other tall things in front of a unit go see-through while they hide it.</summary>
         // 2026-11-23 (Yan: "the after-image as a low opacity version of himself"): a red-tinted copy of his marker sprite every 0.05 s while he swings, fading over 0.3 s (no ghost of the held scythe yet)
-        readonly System.Collections.Generic.List<(SpriteRenderer sr, float born)> _ghosts = new System.Collections.Generic.List<(SpriteRenderer, float)>(); float _ghostAt;
+        readonly System.Collections.Generic.List<(SpriteRenderer sr, float born, float life, float a0)> _ghosts = new System.Collections.Generic.List<(SpriteRenderer, float, float, float)>(); float _ghostAt;
         void SpawnGhost(SpriteRenderer src)
         {
             if (src == null || Time.time < _ghostAt) return; _ghostAt = Time.time + 0.05f;
             var go = new GameObject("Afterimage"); go.transform.position = src.transform.position; go.transform.rotation = src.transform.rotation; go.transform.localScale = src.transform.localScale;
             var sr = go.AddComponent<SpriteRenderer>(); sr.sprite = src.sprite; sr.flipX = src.flipX; sr.flipY = src.flipY; sr.sortingOrder = src.sortingOrder - 2; sr.color = new Color(1f, 0.4f, 0.35f, 0.3f);
-            _ghosts.Add((sr, Time.time));
+            _ghosts.Add((sr, Time.time, 0.3f, 0.3f));
+            var hv = Held(src); var gun = hv != null && hv.Visible ? hv.GunRenderer : null;                                  // and the scythe in his hands, where it is now
+            if (gun != null && gun.sprite != null)
+            {
+                var gg = new GameObject("AfterimageScythe"); gg.transform.position = gun.transform.position; gg.transform.rotation = gun.transform.rotation; gg.transform.localScale = gun.transform.lossyScale;
+                var gs = gg.AddComponent<SpriteRenderer>(); gs.sprite = gun.sprite; gs.flipX = gun.flipX; gs.flipY = gun.flipY; gs.sortingOrder = gun.sortingOrder - 2; gs.color = new Color(1f, 0.3f, 0.25f, 0.3f);
+                _ghosts.Add((gs, Time.time, 0.3f, 0.3f));
+            }
+        }
+        // the red glow round the blade (a slightly bigger red copy of the scythe behind it, renewed every frame): a multiplied tint alone only darkens steel to maroon
+        void SpawnHalo(SpriteRenderer src, float glow)
+        {
+            var hv = Held(src); var gun = hv != null && hv.Visible ? hv.GunRenderer : null; if (gun == null || gun.sprite == null) return;
+            var gg = new GameObject("ScytheGlow"); gg.transform.position = gun.transform.position; gg.transform.rotation = gun.transform.rotation; gg.transform.localScale = gun.transform.lossyScale * 1.18f;
+            var gs = gg.AddComponent<SpriteRenderer>(); gs.sprite = gun.sprite; gs.flipX = gun.flipX; gs.flipY = gun.flipY; gs.sortingOrder = gun.sortingOrder - 1; gs.color = new Color(1f, 0.15f, 0.08f, 0.4f * glow);
+            _ghosts.Add((gs, Time.time, 0.06f, 0.4f * glow));
         }
         void TickGhosts()
         {
             for (int i = _ghosts.Count - 1; i >= 0; i--)
             {
-                var (sr, born) = _ghosts[i]; float a = 1f - (Time.time - born) / 0.3f;
+                var (sr, born, life, a0) = _ghosts[i]; float a = 1f - (Time.time - born) / life;
                 if (sr == null || a <= 0f) { if (sr != null) Destroy(sr.gameObject); _ghosts.RemoveAt(i); continue; }
-                var c = sr.color; c.a = 0.3f * a; sr.color = c;
+                var c = sr.color; c.a = a0 * a; sr.color = c;
             }
         }
         private void UpdateFades()

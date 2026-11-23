@@ -36,8 +36,9 @@ namespace GameCore
             var f = _f; if (f == null || w == null || f.Unit == null || f.Gone || f.Broken || f.Finished || !ReferenceEquals(f.Unit.EquippedWeapon, w)) return Color.white;
             float g = Glow(f, Time.time); if (g <= 0f) return Color.white;
             float pulse = 0.88f + 0.12f * Mathf.Sin(Time.time * 9f);
-            return Color.Lerp(Color.white, new Color(1f, 0.2f * pulse, 0.14f * pulse), g);
+            return Color.Lerp(Color.white, new Color(1f, 0.3f * pulse, 0.22f * pulse), g);
         }
+        public static float GlowOf(ICombatant u) { var f = Boss.Of(u); return f != null && f == _f ? Glow(f, Time.time) : 0f; }
         /// <summary>The ghost trail (TacticalGridView): phase 2, mid-move.</summary>
         public static bool Ghosting(ICombatant u) { var f = Boss.Of(u); return f != null && f == _f && Done && f.Doing != null && !f.Broken && !f.Finished; }
 

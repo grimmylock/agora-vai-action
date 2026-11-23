@@ -898,12 +898,14 @@ namespace GameCore
                 case "scytheember": // 2026-11-23: red embers rising off the scythe (Rounds = how many sets): the rite, the swings of phase 2, the flash
                 {
                     int n = Mathf.Clamp(e.Rounds, 1, 4);
+                    var mkr = e.Actor != null ? _markerOf(e.Actor) : null; var hv = mkr != null ? _heldOf(mkr) : null; bool onBlade = hv != null && hv.Visible && hv.GunSprite != null;   // 2026-11-23 (Yan: "the effects on the scythe"): the embers leave the blade itself, wherever the pose has it
                     for (int k = 0; k < n * 2; k++)
                     {
-                        var at = from + new Vector3(Random.Range(-0.7f, 0.7f), Random.Range(0.1f, 0.9f), 0f); var col = Random.value < 0.35f ? new Color(1f, 0.75f, 0.35f) : new Color(1f, 0.18f + Random.value * 0.15f, 0.1f);
+                        var at = from + new Vector3(Random.Range(-0.7f, 0.7f), Random.Range(0.1f, 0.9f), 0f);
+                        if (onBlade) { var bb = hv.GunSprite.bounds; at = hv.Gun.TransformPoint(new Vector3(Random.Range(bb.min.x, bb.max.x), Random.Range(bb.min.y, bb.max.y), 0f)); at.z = 0f; } var col = Random.value < 0.35f ? new Color(1f, 0.75f, 0.35f) : new Color(1f, 0.18f + Random.value * 0.15f, 0.1f);
                         Bit(at, col, 1, 1, new Vector3(Random.Range(-0.25f, 0.25f), Random.Range(0.5f, 1.3f), 0f), -0.4f, Random.Range(0.4f, 0.9f), 12);
                     }
-                    if (e.Rounds >= 4) { Burst(from + new Vector3(0f, 0.5f, 0f), new Color(1f, 0.25f, 0.15f), 26, 3.4f, 0.55f, 2); Shake(0.3f); }
+                    if (e.Rounds >= 4) { Burst(onBlade ? hv.Gun.position : from + new Vector3(0f, 0.5f, 0f), new Color(1f, 0.25f, 0.15f), 26, 3.4f, 0.55f, 2); Shake(0.3f); }
                     break;
                 }
                 case "howlwave": // 2026-11-21 (Yan: the howl "doesn't feel like an attack"): the sound is drawn: bright arcs leave his muzzle across the cone toward the target (a wall of rings, fanned 100 degrees, fast, thinning out), dust blown off the floor, a hard shake

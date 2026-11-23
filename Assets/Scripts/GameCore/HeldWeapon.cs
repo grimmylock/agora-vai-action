@@ -1092,6 +1092,7 @@ namespace GameCore
             return Sel.transform.TransformPoint(new Vector3(lx, ly, 0f));
         }
         public Sprite GunSprite => _gun.sprite;
+        public SpriteRenderer GunRenderer => _gun;      // 2026-11-23: the Verger's afterimage copies the held scythe too
 
         public void Recoil(WeaponFeel f, float scale)
         {
