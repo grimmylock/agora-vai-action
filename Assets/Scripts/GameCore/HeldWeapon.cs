@@ -233,12 +233,15 @@ namespace GameCore
             // Visor 2 (Yan: "build the visor's own moveset, he can have some different animation combos"): a reverse-grip knife
             // fighter. Boss.Move.Poses strings these into his combos.
             new[] {
-                ((-135f, -3f, -2f, 5f), (-235f, 5f, -1f, -8f)),      // 0 backhand: the blade from behind, round in front, down along the arm
-                ((-185f, -1f, 3f, -3f), (-355f, 4f, -5f, 7f)),       // 1 rising: from the hip, up and out through the face
-                ((-205f, 0f, -8f, 7f), (-225f, 4f, 2f, -10f)),       // 2 ice-pick: fist over the head, blade down, driven into you
-                ((65f, -4f, 0f, 7f), (60f, 7f, 0f, -12f)),           // 3 thrust: the knife flipped forward, all his weight behind it
-                ((-135f, -3f, -1f, 8f), (-495f, 5f, -1f, -10f)),     // 4 spin: a full turn, the blade out at the end of the arm
-                ((-205f, -1f, -10f, 12f), (-232f, 5f, 3f, -14f)),    // 5 execution: up as high as he can reach, then all the way down
+                // 2026-11-23 (Yan: "clearer poses, more expressive movements, it doesn't matter if it looks a bit out of reach for his hands, expression and gameplay come before realism"): every wind-up is exaggerated and DIFFERENT, so the move reads
+                // from its silhouette before the glint: backhand = knife cocked far behind a twisted body; rising = crouched, blade by the floor; ice-pick = fist stretched high over the head; thrust = knife drawn all the way back to the hip; spin = coiled the wrong way; execution = arched
+                // back with both arms high. The strikes throw the body further (bigger lean) and reach further than a real arm could.
+                ((-160f, -6f, -3f, 11f), (-255f, 8f, -1f, -14f)),    // 0 backhand: the blade cocked far behind a twisted body, then round in front, down along the arm
+                ((-195f, -3f, 6f, -8f), (-365f, 5f, -8f, 10f)),      // 1 rising: crouched low, the blade by the floor, then up and out through the face
+                ((-218f, 1f, -14f, 15f), (-235f, 5f, 5f, -18f)),     // 2 ice-pick: the fist stretched high over the head, blade down, driven into you
+                ((72f, -8f, 1f, 11f), (60f, 11f, 0f, -17f)),         // 3 thrust: the knife drawn all the way back to the hip, then flung out with all his weight
+                ((-100f, -6f, -1f, -12f), (-500f, 7f, -1f, -14f)),   // 4 spin: coiled the wrong way, then a full turn, the blade out at the end of the arm
+                ((-212f, -1f, -15f, 17f), (-240f, 6f, 5f, -19f)),    // 5 execution: arched back with the knife as high as he can reach, then all the way down
             },
             // 2026-11-21 (Yan: "make the human version the entire boss, elaborate more on the human scythe-moveset"): the Verger's war scythe,
             // two hands, the longest reach in the game. Boss.Move.Poses strings these; Melee.Shapes has the matching hit shape per pose.

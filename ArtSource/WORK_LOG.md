@@ -7100,3 +7100,9 @@ Yan: yes to natural clotting, yes to the perfect parry's second wind, yes to bre
 
 ### Batch 9dl (2026-11-23): the Scrap King's HP
 Yan: the King is a push-over on purpose: hits hard, slow predictable attacks, little HP (max 5k); his real fight is him vs Spool (The Crown). `Boss.King.Hp` 35000 -> 5000. His damage and moves are unchanged (still 2.6 hits to kill in the best Tier 2 armour; his multi-hit strings now use the combo falloff). Harness passes.
+
+### Batch 9dm (2026-11-23): the Visor's poses, first pass
+Yan: "lets focus on the visor new animations right now"; "clearer poses, yes, more expressive movements, doesn't matter if it looks a bit out of reach for his hands, expression and gameplay come before realism"; the glint must coincide with the parry window (it does: GlintLead 0.40 s inside the 0.45 s window).
+- `HeldPoseMath.Moves` (the Visor row): all six poses exaggerated and made distinct (bigger lean and fist travel): backhand cocked far behind a twisted body; rising crouched with the blade by the floor; ice-pick with the fist stretched high overhead; thrust drawn back to the hip; spin coiled the wrong way; execution arched back, knife at full height. The wind-up poses are what shows at the glint, so the move reads before it lands.
+- Tool: `Tools/render/visor_compare.py before.json after.json out.png` (the game's own `visormoves` dump, his real sprites; also `melee_moves.py` now draws the weapons as the game does, hd shrunk by Dense x HandScale).
+- Not done: Slash, Flurry and Feint flurry still open on the same backhand pose (their Poses arrays start with 0): they read alike until the blow lands; the next step is to give each move its own opening pose and a longer visible wind-up (the wind-up now only starts moving at the Begin), plus body crouch/step offsets and a flourish for the breathers. Harness passes; not seen in Unity.

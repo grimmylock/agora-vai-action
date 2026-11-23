@@ -33,7 +33,14 @@ def main(src, out):
     W = 16 * S * 3
     cols = []
     for wpn in d["weapons"]:
-        img = Image.open(os.path.join(SPR, f"Weapons/weapon_{wpn['key']}.png")).convert("RGBA")
+        import re as _re
+        _hw = open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "Assets/Scripts/GameCore/HeldWeapon.cs")).read()
+        def _tab(name, key):
+            m = _re.search(r'\["%s"\] = ([0-9.]+)f' % key, _hw.split(name + " = new")[1].split("};")[0]); return float(m.group(1)) if m else 1.0
+        kd, hs = _tab("Dense", wpn["key"]), _tab("HandScale", wpn["key"])       # 2026-11-23: as the game draws it now: the inventory picture shrunk by Dense, times HandScale
+        if kd > 1.0: _im = Image.open(os.path.join(SPR, f"Weapons/weapon_{wpn['key']}_hd.png")).convert("RGBA"); img = _im.resize((max(1, round(_im.width / kd * hs)), max(1, round(_im.height / kd * hs))), Image.LANCZOS)
+        else: _im = Image.open(os.path.join(SPR, f"Weapons/weapon_{wpn['key']}.png")).convert("RGBA"); img = _im.resize((max(1, round(_im.width * hs)), max(1, round(_im.height * hs))), Image.NEAREST) if hs != 1.0 else _im
+        wpn = dict(wpn); wpn["grip"] = [wpn["grip"][0] * hs, wpn["grip"][1] * hs]
         title, moves = (wpn["title"], wpn["moves"]) if "title" in wpn else NAMES[wpn["key"]]
         fr = []
         for frm in wpn["frames"]:
