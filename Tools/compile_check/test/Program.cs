@@ -1437,8 +1437,8 @@ static class Program {
           before = Rt.UnitUnder(px4, by + Ballistics.FeetBelow - bestH) == ub; UnityEngine.Time.time = 130000f; BossArt.Play(fb, bestClip); during = Rt.UnitUnder(px4, by + Ballistics.FeetBelow - bestH) == ub; bdone++;
           bl.Add($"{def.Name} {bestClip}: {(before ? "ALREADY on the body" : "off before")}, {(during ? "on during" : "NOT on during")}"); Boss.Reset(); EncounterState.Enemies.Clear(); }
         Console.WriteLine("  " + string.Join(" | ", bl)); Check(bdone >= 4 && bl.All(x => x.EndsWith("on during") && !x.Contains("ALREADY")), "bosses: the far reach of an attack clip is under the crosshair only while the clip plays (" + string.Join(" | ", bl) + ")"); }
-      { var pt = Player.Current; TestingGround.OrderlyChase(pt); var chaseF = Boss.Fights.FirstOrDefault(f => f.Def == OrderlyBoss.Def && !f.Gone); var lm = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == "Chase Corridor");
-        Check(TerrainMap.ZoneId == OrderlyBoss.MorgueZone && lm != null && Math.Abs(pt.X - lm.X) <= 3 && Math.Abs(pt.Y - lm.Y) <= 3 && chaseF != null && chaseF.Stalking && OrderlyBoss.InChase(pt), "Testing Ground: the Orderly chase entry puts you at the west end of the chase corridor with the stalker loose"); }
+      { var pt = Player.Current; TestingGround.OrderlyChase(pt); var chaseF = Boss.Fights.FirstOrDefault(f => f.Def == OrderlyBoss.Def && !f.Gone);
+        Check(TerrainMap.ZoneId == OrderlyBoss.MorgueZone && Math.Abs(pt.X - OrderlyBoss.PatrolStart.x) <= 3 && Math.Abs(pt.Y - OrderlyBoss.PatrolStart.y) <= 3 && chaseF != null && chaseF.Stalking && !OrderlyBoss.InChase(pt), "Testing Ground: the Orderly morgue entry puts you at the west end of the long patrol corridor with the stalker loose"); }
       Console.WriteLine($"  hitbox points tested: {tested}"); Check(missed.Count == 0, $"hitboxes: the crosshair just inside both ends of every run of every drawn OUTLINE (creature bosses, mutants, both facings) is on the body ({tested} points; missed: {string.Join(", ", missed.Take(8))})"); }
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService(); Arena(out int apx, out int apy);
     // 2026-11-22: a mutant with attack clips never strikes without one, one without clips winds up first, nobody hits twice inside a second
@@ -3762,8 +3762,8 @@ static class Program {
       Check(Story.IsDone("leak") && Story.Has("those_paid_snipers") && p.Ru == ru + 1000, "Story 7b: Voss: \"those\" paid the snipers");
       // the Brute's return (Yefim's rematch)
       Story.SetStep("brute2", 1); Tier1Story.OnEnterZone(Tier1Story.CaveZone);
-      var br = EncounterState.Enemies.FirstOrDefault(e => e.Name == "Blight Brute");
-      Check(br != null && br.MaxHp == 10000 && !br.IsAggroed, "Story 7b: the rematch: the Brute sleeps in the Den again");
+      var br = Tier1Story.TheBrute;
+      Check(br != null && br.MaxHp == 10000 && !br.IsAggroed, $"Story 7b: the rematch: the Brute sleeps in the Den again (br {(br == null ? "null" : br.MaxHp + " hp, aggro " + br.IsAggroed)}, enemies {EncounterState.Enemies.Count})");
       br.Hp = 0; br.Unkillable = false; br.Hp = 0; ru = p.Ru; Tier1Story.Tick();
       Check(Story.IsDone("brute2") && p.Ru == ru + 1500, "Story 7b: the Brute dead: Yefim pays");
       EncounterState.Enemies.RemoveAll(e => e.Name == "Blight Brute");

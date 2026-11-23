@@ -167,7 +167,7 @@ namespace GameCore
 
             if (MacroState.Current.PersistedZoneAnomalies.TryGetValue(mapId, out var savedAnomalies))
             {
-                EncounterState.Anomalies = savedAnomalies;
+                EncounterState.Anomalies = AnomalyEngine.Enabled ? savedAnomalies : new System.Collections.Generic.List<Anomaly>();
             }
             else
             {

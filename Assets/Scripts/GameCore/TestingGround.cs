@@ -157,15 +157,14 @@ namespace GameCore
         /// <summary>2026-11-21: the Orderly as a STALKER on the range: it roams six points on a ring round you, hunts what it sees or hears and cannot be hurt (the boiler power does not exist here: it never ends).</summary>
         public static void OrderlyStalkFight(Player p) { OrderlyBoss.RingWaypoints(p.X, p.Y, 14); OrderlyBoss.SpawnStalker(); GameLog.Write("[TESTING GROUND] The Orderly is loose on the range. It cannot be hurt. Stay out of its sight and quiet. Main menu > Testing Ground to come back."); }
 
-        /// <summary>2026-11-23 (Yan: "add a testing ground entry to the orderly dungeon, spawning right at the beginning of the corridor"): the Hospital Morgue with the Orderly's story fresh, you standing at the WEST END of the chase corridor (the landmark that starts the chase): the stalker is loose, the key has "turned", the corridor runs east to the big room.</summary>
+        /// <summary>2026-11-23 (Yan: "add a testing ground entry to the orderly dungeon, spawning right at the beginning of the corridor"): the Hospital Morgue with the Orderly's story fresh, you standing at the WEST END of the long patrol corridor (Yan, 2026-11-23: "i meant the long patrol one"): the stalker is loose and patrolling it, the chase corridor and the big room lie east.</summary>
         public static void OrderlyChase(Player p)
         {
             Story.Clear(OrderlyBoss.Done); Story.Clear("orderly_stalking");
             MacroState.Current.CurrentZoneId = OrderlyBoss.MorgueZone; ZoneTravel.EnterZone(OrderlyBoss.MorgueZone);
-            var l = TerrainMap.Landmarks?.FirstOrDefault(m => m.Name == "Chase Corridor");
-            var (x, y) = l != null ? TerrainMap.FindNearestEnterable(l.X + 1, l.Y) : TerrainMap.FindNearestEnterable(p.X, p.Y);
+            var (x, y) = TerrainMap.FindNearestEnterable(OrderlyBoss.PatrolStart.x, OrderlyBoss.PatrolStart.y);
             EncounterState.InCombat = false; p.X = x; p.Y = y; Rt.SetOffset(p, 0f, 0f); OrderlyBoss.Tick(0f);
-            GameLog.Write("[TESTING GROUND] Hospital Morgue, the start of the chase corridor. The Orderly is loose behind you and the corridor runs east to the big room. Main menu > Testing Ground to come back.");
+            GameLog.Write("[TESTING GROUND] Hospital Morgue, the west end of the long corridor. The Orderly is loose and patrols it: use the rooms off it to hide, the chase corridor and the big room are east. Main menu > Testing Ground to come back.");
         }
 
         /// <summary>Boss 5: the Scrap King's duel on the range (the sledgehammer, F parries), him 5 tiles in front of you.</summary>

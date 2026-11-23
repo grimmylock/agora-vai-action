@@ -20,6 +20,8 @@ namespace GameCore
 
     public static class AnomalyEngine
     {
+        /// <summary>2026-11-23 (Yan: "remove invisible anomalies that spawn when you get close, we'll leave the anomalies for later"): the hidden anomaly fields are off: none are seeded, none trigger, none are loaded from a save. Set true to bring them back.</summary>
+        public static bool Enabled = false;
         /// <summary>Ported from chooseRandomAnomalyDefinition().</summary>
         public static AnomalyDef ChooseRandomAnomalyDefinition()
         {
@@ -31,7 +33,7 @@ namespace GameCore
         /// <summary>Ported from spawnRandomAnomalies(count = 6).</summary>
         public static void SpawnRandomAnomalies(int count = 6)
         {
-            EncounterState.Anomalies.Clear();
+            EncounterState.Anomalies.Clear(); if (!Enabled) return;
             int attempts = 0;
             var player = Player.Current;
 
@@ -204,6 +206,7 @@ namespace GameCore
         /// <summary>Ported from triggerAnomalyIfPresent(unit).</summary>
         public static void TriggerAnomalyIfPresent(ICombatant unit)
         {
+            if (!Enabled) return;
             var anomaly = GetAnomalyAt(unit.X, unit.Y);
             if (anomaly == null) return;
             if (!(unit is Player)) return;   // Batch 49: the Zone's own know where the fields are (the old dodge roll was their only protection)

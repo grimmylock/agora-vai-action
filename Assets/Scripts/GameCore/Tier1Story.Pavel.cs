@@ -19,7 +19,7 @@ namespace GameCore
         const string Canister = "story_canister";
         public static string ZoneOverride;   // harness: pretend to be on another map
         static string Zone => ZoneOverride ?? TerrainMap.ZoneId;
-        static Mutant _brute; static bool _wake; static float _wakeAt;
+        static Mutant _brute; static bool _wake; static float _wakeAt; public static Mutant TheBrute => _brute;   // (harness: the culvert Brute, not any other Blight Brute in the zone)
 
         public const int BruteHp = 10000;
 

@@ -4,7 +4,7 @@
 //  - the Saw (white: parry the sweep), the Chop (red: both blades down: dive or step out), the Grab (red: caught, slammed down and pulled to it);
 //  - the Drip: it squeezes the IV bag and mends DripHeal of its health, unless you hurt it by DripBreak of its health while it does it (the bag bursts: no heal, and it bleeds).
 //    It can drip DripMax times a fight. A tool for the player (rule 6): stop it, and it is the weaker for the rest of the fight;
-//  - phase 2: the Double Saw (white, white) and the Saw Rush (red, a lunge).
+//  - phase 2: the Saw Rush (red, a lunge: the saw, the chop and the lamp tear in a row; Double Saw removed 2026-11-23: it had no animation of its own).
 // 2026-11-21 (Yan: "a kind of stalker type enemy, that roams the halls of the dungeon and has to be avoided until the final confrontation", "stays in the morgue", then his sketch of the map: a big corridor with rooms, a locked
 // door, a chase corridor and one big room where the fight happens): in the Hospital Morgue it is a STALKER until you reach the big room. It spawns far from you, quietly, and patrols the long corridor (rooms are where you hide
 // from it; it goes into one only to look at a noise or to hunt). Yellow "!" over it while its notice fills, red when it has found you. It notices you by sight (line of sight, nearer and brighter = faster: crouching and standing
@@ -37,7 +37,6 @@ namespace GameCore
                 new Boss.Move { Name = "Grab", Wind = 1.0f, Danger = true, MaxDist = 2f, Mult = 1.1f, Effects = new[] { "slab" }, Weight = 2, Open = 1.8f, Clip = "grab" },
                 new Boss.Move { Name = "Tube Lash", Wind = 1.15f, Danger = true, MinDist = 3f, MaxDist = LashRange, Mult = 0.9f, Effects = new[] { "lash" }, Weight = 3, Open = 1.5f, Clip = "grab" },   // 2026-11-22: ends free kiting
                 new Boss.Move { Name = "Drip", Wind = 1.6f, MaxDist = 20f, Effects = new[] { "drip" }, Weight = 1, Open = 0.8f, Phase1Only = true, Clip = "drip" },
-                new Boss.Move { Name = "Double Saw", Wind = 0.8f, Hits = 2, Gap = 0.6f, MaxDist = 2f, Mult = 0.8f, Weight = 3, Poses = new[] { 1, 1 }, Open = 1.8f, Phase2Only = true, Clip = "saw" },
                 new Boss.Move { Name = "Saw Rush", Wind = 1.0f, Hits = 3, Danger = true, Lunge = 6f, Gaps = new[] { 0.85f, 0.7f }, Mults = new[] { 0.8f, 0.9f, 1.2f }, RedHits = new[] { true, true, true }, Weight = 2, Poses = new[] { 1, 0, 1 }, Open = 2.2f, Phase2Only = true, Clips = new[] { "saw", "chop", "lamp_tear" } },   // 2026-11-22 (Yan: "use the saw, chop and lamp tear to make the saw rush, he just does them in succession")
             },
         };
@@ -72,6 +71,8 @@ namespace GameCore
         }
 
         /// <summary>The roaming points (Yan: "patrolling the corridors and you use the rooms to dodge it"): tiles of the morgue's two corridors (dungeon_plans.py hospital_morgue: the long corridor, x 4..93, y 13..19). Rooms are never waypoints; it only goes into one to hunt or to look.</summary>
+        /// <summary>The west end of the long patrol corridor (the Testing Ground puts you here).</summary>
+        public static (int x, int y) PatrolStart => (6, 16);
         static readonly (int x, int y)[] CorridorPoints = { (7, 16), (17, 16), (27, 16), (37, 16), (47, 16), (57, 16), (67, 16), (77, 16), (87, 16), (92, 16) };
         static void BuildWaypoints()
         {

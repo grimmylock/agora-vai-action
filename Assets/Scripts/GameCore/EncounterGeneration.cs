@@ -41,7 +41,7 @@ namespace GameCore
             {
                 int tier = ParseTierKey(tierKey);
                 if (tier < minTier || tier > maxTier) continue;
-                pool.AddRange(MutantDatabase.Tiers[tierKey].Values.Where(d => d.Name != Gaunt.Name));   // the wild Gaunt lives only in the forests (SquadManager), not in every zone of its tier
+                pool.AddRange(MutantDatabase.Tiers[tierKey].Values.Where(d => d.Name != Gaunt.Name && d.Name != "Mind Weaver"));   // 2026-11-23 (Yan: "remove mind weaver spawns for now"): the Mind Weaver is left out of every random pool   // the wild Gaunt lives only in the forests (SquadManager), not in every zone of its tier
             }
             return pool.Count == 0 ? null : pool[Random.Range(0, pool.Count)];
         }
@@ -289,6 +289,7 @@ namespace GameCore
         /// <summary>Ported from spawnSectorAnomalies(count, tier).</summary>
         public static void SpawnSectorAnomalies(int count, int tier)
         {
+            if (!AnomalyEngine.Enabled) return;   // 2026-11-23: hidden anomaly fields are off for now
             int attempts = 0;
             var player = Player.Current;
             while (EncounterState.Anomalies.Count < count && attempts < 100)
