@@ -7019,3 +7019,6 @@ Yan: the walk is good; running "makes the hands circle instead of moving in an a
 
 ### Batch 9cs (2026-11-23): hand swing preview corrected
 Yan thought the rifle "held up to his head": that was my preview's rough placement, not the game. `Tools/render/hands_swing.py` now draws the rifle columns with the game's real stance (HeldPoseMath.Frame via the heldframes dump, `held_anim.frame`): the gun in front of the body at hip height, with the walk bob / run arc offsets added. No game code changed in this step.
+
+### Batch 9ct (2026-11-23): hand swing as a true pendulum (Yan's drawing)
+Yan drew it: the empty hands at a run moved in a loop (blue = the arc he wants, orange = what he saw) and the rifle only bobbed left and right instead of also swinging. Empty hands: x swings, y is lifted by sin^2 (lowest in the middle, up at both ends): an arc traced back and forth, no loop (`HeldPoseMath.FreeHands`). Rifle: at a run the whole held assembly (gun, hands, parts) turns about the torso pivot (8, 9) by +-7 degrees (`HeldWeaponView.Show` wrapper, `Swing`), so the muzzle sweeps an arc and the hands follow it; the gun's own rotation turns with it. The walk is unchanged (the 1 px bob). Also fixed: my earlier run offset used the aim angle with the wrong y sign. Preview redrawn with the same math. Harness passes; not seen in Unity.

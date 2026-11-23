@@ -412,9 +412,9 @@ namespace GameCore
         {
             float a = Mathf.Sin(phase) * swing;
             float dx = Mathf.Round(1.2f * a);                       // Yan: "pointing down and swinging a little to the sides" - no bob
-            float pump = Mathf.Round(Mathf.Cos(phase) * 2.5f * run);   // 2026-11-23: at a run the arms pump up and down the body, and swing wider
-            dx = Mathf.Round((1.2f + 2.2f * run) * a);
-            return (14f + dx, 11.5f + pump, 2f + dx, 11.5f - pump);
+            dx = Mathf.Round((1.2f + 2.2f * run) * a);                  // 2026-11-23: at a run the swing is wider, and a PENDULUM (Yan's drawing): lowest in the middle, lifted at both ends of the swing - an arc, never a loop
+            float lift = Mathf.Round(Mathf.Sin(phase) * Mathf.Sin(phase) * 2.2f * run);
+            return (14f + dx, 11.5f - lift, 2f + dx, 11.5f - lift);
         }
 
         /// <summary>Melee 3: the body's frame through a swing - gathered (half crouch) on the wind-up, a charge, a throw's lift and
@@ -1203,11 +1203,16 @@ namespace GameCore
             float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
             ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
             if (!LifeOn || !visible || weapon?.Db == null || JawHold || _walkK < 0.05f) return;
-            // walk: a 1 px bob on each step (Yan: good). Run (Yan: "the hands circle instead of moving in an arc"): a pendulum - fore and aft along the aim, lifted at both ends of the swing and lowest in the middle, so the path is an arc traced back and forth, not a loop
-            float step = Mathf.Sin(_phase2 * 2f) > 0.2f ? 1f : 0f, s1 = Mathf.Sin(_phase2), ca = Mathf.Cos(_angle * Mathf.Deg2Rad), sa = Mathf.Sin(_angle * Mathf.Deg2Rad);
-            float walkBob = Mathf.Round(step * _walkK) * (1f - _runK), swing = Mathf.Round(s1 * 2f * _runK), lift = Mathf.Round(s1 * s1 * 2f * _runK);
-            var d = Local(8f + ca * swing, 8f + sa * swing + walkBob + lift) - Local(8f, 8f);
-            foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf) r.transform.localPosition += d;
+            // walk: the 1 px bob on each step (Yan: good), unchanged. Run (Yan, with a drawing: "swinging in a circular motion instead of like a pendulum, the rifle just bobbing left and right instead of also swinging a bit"):
+            // the whole held assembly (gun, both hands, parts) turns about the torso like a pendulum: +-7 degrees at a full run, so the muzzle sweeps an arc and the hands follow it round the same pivot
+            float step = Mathf.Sin(_phase2 * 2f) > 0.2f ? 1f : 0f, walkBob = Mathf.Round(step * _walkK) * (1f - _runK);
+            float th = Mathf.Sin(_phase2) * 7f * _runK, c = Mathf.Cos(th * Mathf.Deg2Rad), sn = Mathf.Sin(th * Mathf.Deg2Rad);
+            Vector3 Swing(Vector3 p)                                                      // marker-local position -> where the pivot's turn puts it (counter-clockwise on screen for + degrees)
+            {
+                var pv = Local(8f, 9f); float vx = p.x - pv.x, vy = p.y - pv.y;
+                return new Vector3(pv.x + vx * c - vy * sn, pv.y + vx * sn + vy * c + (-walkBob / 16f), p.z);
+            }
+            foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf) { r.transform.localPosition = Swing(r.transform.localPosition); r.transform.localRotation = Quaternion.Euler(0f, 0f, r.transform.localEulerAngles.z + th); }
         }
         void ShowCore(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {

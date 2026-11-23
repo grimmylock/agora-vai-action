@@ -16,8 +16,8 @@ def glove():
     return img
 G = glove(); font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
 def free_hands(phase, swing, run):
-    a = math.sin(phase) * swing; pump = round(math.cos(phase) * 2.5 * run); dx = round((1.2 + 2.2 * run) * a)
-    return (14 + dx, 11.5 + pump, 2 + dx, 11.5 - pump)
+    a = math.sin(phase) * swing; dx = round((1.2 + 2.2 * run) * a); lift = round(math.sin(phase) ** 2 * 2.2 * run)     # lowest in the middle, lifted at both ends: an arc
+    return (14 + dx, 11.5 - lift, 2 + dx, 11.5 - lift)
 def frame(t, speed, armed, label):
     W = 16 * Z + 40; H = 16 * Z + 50; c = Image.new("RGBA", (W, H), BG); d = ImageDraw.Draw(c)
     phase = speed * t * 2 * math.pi / STRIDE; run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
@@ -55,9 +55,10 @@ def rifle_col(t, speed, label):
     body = fr.resize((16 * ha.S, 16 * ha.S), Image.NEAREST)
     ang = math.radians(rest[2]) if False else 0.0                      # aimed right in this picture (the game's aim angle is the gun's own deg)
     step = 1.0 if math.sin(phase * 2) > 0.2 else 0.0; s1 = math.sin(phase)
-    walkbob = round(step * walk) * (1 - run); swing = round(s1 * 2 * run); lift = round(s1 * s1 * 2 * run)     # the code's numbers
-    dx = math.cos(ang) * swing; dy = -(math.sin(ang) * swing + walkbob + lift)                                     # (canvas y points down)
-    f = list(rest); f[0] += dx; f[1] += dy; f[3] += dx; f[4] += dy; f[5] += dx; f[6] += dy; f[7] = 1
+    walkbob = round(step * walk) * (1 - run); th = math.sin(phase) * 7.0 * run; cs_, sn_ = math.cos(math.radians(th)), math.sin(math.radians(th))
+    def sw(x, y):                                    # the code's Swing(): turn about the torso pivot (8, 9) (px, y down), + degrees = counter-clockwise on screen; the walk's 1 px bob on top
+        vx, vy = x - 8.0, y - 9.0; return 8.0 + vx * cs_ + vy * sn_, 9.0 - vx * sn_ + vy * cs_ + walkbob
+    f = list(rest); f[0], f[1] = sw(rest[0], rest[1]); f[3], f[4] = sw(rest[3], rest[4]); f[5], f[6] = sw(rest[5], rest[6]); f[2] = rest[2] + th; f[7] = 1
     c = ha.frame(a, f, body, gun, gl, None).convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST)
     d = ImageDraw.Draw(c); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
 rows = [("empty: walk", 2.6), ("empty: run", 4.4)]
