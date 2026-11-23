@@ -69,6 +69,8 @@ def rifle_col(t, speed, aim, label):
             if on: c.alpha_composite(g2, (round((ha.BX + x + dx) * ha.S - 2 * ha.S), round((ha.BY + y - lift) * ha.S - 1.5 * ha.S)))
     if back: put_gun(); put_hands(); c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S))          # from behind: the rifle and the hands are behind the body (sorting orders -3..-2)
     else: c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S)); put_gun(); put_hands()
+    lean = {0: -2.0, 180: 2.0}.get(aim, 0.0)                                       # UnitLife: 2 degrees toward the sideways travel (none running straight up or down); the whole marker turns, rifle and hands with it
+    if lean: c = c.rotate(lean, resample=Image.NEAREST, center=((ha.BX + 8) * ha.S, (ha.BY + 16) * ha.S), fillcolor=ha.BG)
     c = c.convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST)
     d = ImageDraw.Draw(c); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
 rows = [("empty: walk", 2.6), ("empty: run", 4.4)]

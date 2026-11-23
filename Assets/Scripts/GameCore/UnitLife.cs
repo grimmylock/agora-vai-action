@@ -16,7 +16,7 @@ namespace GameCore
         public const string TestSuit = "Raider";   // (kept for reference: the first test subject) 2026-11-23 (Yan: "try it on the other human factions too"): now every hostile or story human with a suit
         const float Px = 1f / 16f, HeavyHit = 0.2f, FlinchCooldown = 1.5f;     // a hit of a fifth of his health or more
         const bool Breathing = false;                                          // 2026-11-23 (Yan: "the breathing doesn't look good"): idle breathing and the weight shift are off; the walk (hop + lean) stays
-        class S { public float Phase, ShiftAt, ShiftUntil, ShiftDir, FlinchAt = -9f, FlinchDx, FlinchDy; public int Hp = -1; }
+        class S { public float Tilt, Phase, ShiftAt, ShiftUntil, ShiftDir, FlinchAt = -9f, FlinchDx, FlinchDy; public int Hp = -1; }
         static readonly Dictionary<ICombatant, S> _s = new Dictionary<ICombatant, S>();
         public static void Reset() => _s.Clear();
 
@@ -39,7 +39,8 @@ namespace GameCore
             else
             {
                 if (stepFrame) off_y += Px;                                                                 // the hop on the foot-down frames
-                tilt = -2f * Mathf.Sign(faceDx);
+                if (Mathf.Abs(faceDx) > 0.002f) s.Tilt = -2f * Mathf.Sign(faceDx);                         // 2026-11-23 (Yan: "the little lean toward the side they're running"): faceDx is now the real sideways travel this frame (not the sprite flip); running straight up or down keeps the last lean
+                tilt = s.Tilt;
             }
             float fl = now - s.FlinchAt;
             if (fl >= 0f && fl < 0.18f)

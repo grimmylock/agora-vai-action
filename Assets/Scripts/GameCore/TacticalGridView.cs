@@ -80,6 +80,7 @@ namespace GameCore
         private readonly Dictionary<int, (WorldArt.Standing st, SpriteRenderer sr)> _standing = new Dictionary<int, (WorldArt.Standing, SpriteRenderer)>();
         private readonly HashSet<int> _fires = new HashSet<int>();   // standing cells drawn with the animated bonfire
         private readonly HashSet<SpriteRenderer> _faded = new HashSet<SpriteRenderer>();
+        private readonly Dictionary<SpriteRenderer, Vector3> _lifeLast = new Dictionary<SpriteRenderer, Vector3>();
         private readonly HashSet<SpriteRenderer> _lifeTilted = new HashSet<SpriteRenderer>();
         private readonly Dictionary<SpriteRenderer, int> _lastFoot = new Dictionary<SpriteRenderer, int>();
         float _rippleAt;   // RT fx 4: the last wading ripple (one every 0.6 s at most)
@@ -859,8 +860,8 @@ namespace GameCore
             // 2026-11-23 (Yan: "pick 1 human sprite and do it only for it, as a test"): the Raider Jacket gets procedural life (UnitLife.cs); the marker's tilt is put back the moment it stops applying (a slot is reused)
             if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
-                var (hdx, hdy) = _fx.LastHitDir(u); var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, marker.flipX ? -1f : 1f, Time.time, hdx, 0f);
-                marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; }
+                var (hdx, hdy) = _fx.LastHitDir(u); float travelX = _lifeLast.TryGetValue(marker, out var lastP) ? marker.transform.position.x - lastP.x : 0f; var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f);
+                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; }
             }
             else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; }
             // a footstep each time a foot comes down (Batch 30)
