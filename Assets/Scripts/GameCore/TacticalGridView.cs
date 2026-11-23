@@ -743,6 +743,7 @@ namespace GameCore
                 Destroy(m.gameObject);
             }
         }
+        private readonly Dictionary<SpriteRenderer, float> _lifeSpd = new Dictionary<SpriteRenderer, float>();
         private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
 
         /// <summary>Boss 3: while he holds the eel's jaws his gloves are on the two jaw tips (no weapon in sight).</summary>
@@ -862,7 +863,7 @@ namespace GameCore
             // 2026-11-23 (Yan: "pick 1 human sprite and do it only for it, as a test"): the Raider Jacket gets procedural life (UnitLife.cs); the marker's tilt is put back the moment it stops applying (a slot is reused)
             if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
-                var (hdx, hdy) = _fx.LastHitDir(u); float travelX = 0f, trSpeed = 0f; if (_lifeLast.TryGetValue(marker, out var lastP)) { var tv = marker.transform.position - lastP; travelX = tv.x; trSpeed = Mathf.Sqrt(tv.x * tv.x + tv.y * tv.y) / Mathf.Max(Time.deltaTime, 0.0001f); } var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f, trSpeed);
+                var (hdx, hdy) = _fx.LastHitDir(u); float travelX = 0f, trSpeed = 0f; if (_lifeLast.TryGetValue(marker, out var lastP)) { var tv = marker.transform.position - lastP; travelX = tv.x; trSpeed = Mathf.Sqrt(tv.x * tv.x + tv.y * tv.y) / Mathf.Max(Time.deltaTime, 0.0001f); _lifeSpd.TryGetValue(marker, out float sm0); sm0 += (trSpeed - sm0) * Mathf.Min(1f, Mathf.Max(Time.deltaTime, 0.0001f) / 0.12f); _lifeSpd[marker] = sm0; trSpeed = sm0; } /* smoothed: the drawn body is snapped to 1/16 tile, so a frame's travel flickers 0 / one pixel */ var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f, trSpeed);
                 _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; lh.Carry = CarryNow(u); lh.CarrySnap = u is Player sp && Time.time - Rt.Of(sp).FiredAt <= 0.8f; }
             }
             else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; lh2.Carry = false; }

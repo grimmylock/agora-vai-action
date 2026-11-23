@@ -7166,3 +7166,11 @@ Yan (screenshot: pistol hanging low, medkit floating, the glove away from it): "
 - Cause of the item bug, read from the code: while an item is used the carry (`Carry`, true whenever you are not aiming) still blended the weapon to its rest angle (`HeldWeaponView.ShowCore`), and the walk/run wrapper then moved the support glove with the carry swing and, for pistols (`cd.FreeArm`), replaced it with the hanging free arm - so the glove left the medkit sprite. Fix: with `UseKind != null` the carry drops to 0 at once and the wrapper returns before any swing (`HeldWeapon.cs`, ShowCore + Show).
 - Running: NOT fixed - I could not find a cause by reading (speed thresholds 1.5 / 3.4 tiles/s against Walk 2.6 / Sprint 4.4 in `Rt.cs:87` fit, `LifeOn` is set for `Player` in `TacticalGridView.cs:866`, Show runs after it). Asked Yan what he sees (walk or sprint, which weapon, hands / body lean / nothing). Harness passes; nothing run in Unity.
 
+## 2026-11-23 - Batch 9dy: walk/run animation speed read smoothed
+
+Yan: "the new walk and run animations do not work, tested all weapons, the character doesn't have the hand nor the body movement" (he also sent a video; the pistol carry shows in it, the swing and the body hop do not).
+
+- Likely cause (read from the code, NOT confirmed in Unity): the player is drawn snapped to 1/16 tile (`UnitMotionView.Place`, `UnitMotionView.cs:104`), so each frame's travel is 0 or one pixel; `HeldWeaponView.Show` and the UnitLife call in `TacticalGridView.DrawUnit` divided that by the frame time, so the speed flickered between 0 and several times the real one. The walk/run amplitudes are rounded to whole pixels, so averaged they collapsed to ~0 (the walk's 1 px x `_walkK` below 0.83 rounds to nothing; `_runK` hovered near 0.5).
+- Fix: both speeds are smoothed over 0.12 s (`_spdSm` in `HeldWeapon.cs`, `_lifeSpd` in `TacticalGridView.cs`), so walking reads about 2.6 tiles/s and sprinting 4.4 (`Rt.cs:87`).
+- Still true by design: melee and empty hands get no pendulum swing, only guns carried while not aiming (`sw = carrying ? 1 : 0`). The run tilt is 2-3 degrees (Yan asked for tiny). Harness passes; nothing run in Unity.
+

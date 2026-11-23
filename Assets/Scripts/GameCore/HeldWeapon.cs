@@ -1219,12 +1219,14 @@ namespace GameCore
         // the front of the body, close to it, level, pointing to the side he faces (the game's own resting stance at aim 0 or 180, drawn in front of the body, shifted 3 px toward the torso) instead of following the mouse
         // round to straight up or down. Aiming (right mouse), firing, reloading and melee leave it. _restLeft = which side (from the aim's sideways part, kept when the aim is nearly vertical).
         public bool Carry, CarrySnap; bool _restLeft; float _carryK; WeaponSpring.State _spring;
-        public Vector3 LifeOff; public bool LifeOn; float _runK, _walkK, _phase2; Vector3? _lastPos2;
+        public Vector3 LifeOff; public bool LifeOn; float _runK, _walkK, _phase2, _spdSm; Vector3? _lastPos2;
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
             var clean = unitPos - LifeOff; float spd = 0f;
             if (_lastPos2.HasValue) { float mx = clean.x - _lastPos2.Value.x, my = clean.y - _lastPos2.Value.y, mv = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); float dt = Mathf.Max(Time.deltaTime, 0.0001f); spd = mv / dt; _phase2 += mv * Mathf.PI * 2f / CycleTiles(spd); }
-            _lastPos2 = clean; float wk = LifeOn ? Mathf.Clamp01(spd / 1.5f) : 0f, rk = LifeOn ? Mathf.Clamp01((spd - 3.4f) / 1.0f) : 0f;
+            _lastPos2 = clean; // 2026-11-23 (Yan: the walk and run animations do nothing in Unity): the body is drawn snapped to 1/16 tile (UnitMotionView.Place), so a frame's travel is 0 or one pixel and the raw speed flickers between 0 and 4x the real one; the amplitudes (rounded to whole pixels) then collapsed to nothing. Smoothed over 0.12 s it reads the true tiles per second.
+            _spdSm += (spd - _spdSm) * Mathf.Min(1f, Mathf.Max(Time.deltaTime, 0.0001f) / 0.12f); spd = _spdSm;
+            float wk = LifeOn ? Mathf.Clamp01(spd / 1.5f) : 0f, rk = LifeOn ? Mathf.Clamp01((spd - 3.4f) / 1.0f) : 0f;
             float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
             ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
             if (UseKind != null) return;                                                               // using an item: no walk/run swing on top of the use pose (it moved the glove off the item and the free-arm hang replaced it)
