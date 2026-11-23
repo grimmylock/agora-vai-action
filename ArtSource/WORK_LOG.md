@@ -7188,3 +7188,10 @@ Yan (video + two screenshots): weapons not changing side when facing up; some mu
 
 Yan: "didn't we remove the mutants flee rule? i asked for that a while ago". Yes - 9bm (2026-11-22) emptied `Mutant.CheckPanic`, but `Mutant.IsFleeing()` still tested `Hp/MaxHp <= PanicThreshold` itself (`Mutant.cs:149`), and `EnemyAI.MutantTurn` / `RtAi` / `TurnLoop.CheckCombatEnd` all ask `IsFleeing()`, so low-health mutants still ran and were deleted when the fight ended. `IsFleeing()` is now only `State == "fleeing"`. My 9dz "keep them while in view" change to `TurnLoop.cs` is reverted (it treated the symptom). Harness passes; not run in Unity. Humans were already state-based (`HumanEnemy.cs:194`).
 
+## 2026-11-23 - Batch 9eb: why the player showed no hop and no lean in Unity
+
+Yan sent the preview run and an in-game clip: the preview leans and hops, the game has neither. Two causes found by reading the player's draw order in `TacticalGridView.cs` (the clip itself shows only an upright body):
+- **No lean:** `DrawUnit(player)` (line ~208) set the UnitLife tilt, then `PoseBody` (line ~223) overwrote the marker's rotation with `Held.Lean` (0 when walking) every frame. UnitLife's tilt is now remembered (`_lifeTilt`) and added there. (Enemies never went through `PoseBody`, which is why only the player lost it.)
+- **No hop:** `FollowCamera` was fed the marker's position AFTER UnitLife added its 1 px hop, so the camera hopped with the body and cancelled it (the ground jittered instead). The camera now follows the position minus the hop (`Held.LifeOff`).
+Harness passes; not run in Unity. The hop is 1 px (`UnitLife.Px`), the lean 2-3 degrees (as the preview's numbers; the preview draws the hop larger, which I did not match).
+

@@ -232,7 +232,7 @@ namespace GameCore
             // chevron bobs over the speaker
             var speaker = ChoiceUI.Speaker; var spm = speaker != null && speaker != player ? MarkerOf(speaker) : null;
             var cut = Story.InCutscene && Story.LookAt.HasValue ? new Vector3(Story.LookAt.Value.x, -Story.LookAt.Value.y, 0f) : (Vector3?)null;   // Story 3: a cutscene frames its point
-            FollowCamera(_playerMarker.transform.position, spm != null ? spm.transform.position : cut);
+            FollowCamera(_playerMarker.transform.position - (Held(_playerMarker).LifeOn ? Held(_playerMarker).LifeOff : Vector3.zero), spm != null ? spm.transform.position : cut);
             if (spm != null && _speakerMark == null) _speakerMark = CreateMarker("Speaker", Color.white, 1f, WorldArt.SortTop, _root.transform, Chevron());
             if (_speakerMark != null)
             {
@@ -692,7 +692,7 @@ namespace GameCore
         private void PoseBody(SpriteRenderer marker, Player p, bool down)
         {
             var pose = Rt.PoseOf(p);
-            float tilt = down ? (UnitSprites.Pose(p, "lying", false) != null ? 0f : 90f) : pose.Active ? pose.Tilt : Held(marker).Lean;   // Poses: the lying frame instead of turning the body
+            float tilt = down ? (UnitSprites.Pose(p, "lying", false) != null ? 0f : 90f) : pose.Active ? pose.Tilt : Held(marker).Lean + (_lifeTilted.Contains(marker) && _lifeTilt.TryGetValue(marker, out var lt0) ? lt0 : 0f);   // (2026-11-23: UnitLife's lean from the frame before - this line used to overwrite it with 0 for the player) Poses: the lying frame instead of turning the body
             marker.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
             if (!down && pose.Active) marker.transform.localScale = new Vector3(marker.transform.localScale.x * pose.SquashX, marker.transform.localScale.y * pose.SquashY, 1f);
             bool flying = !down && pose.Active && pose.Lift > 0.01f;
@@ -743,6 +743,7 @@ namespace GameCore
                 Destroy(m.gameObject);
             }
         }
+        private readonly Dictionary<SpriteRenderer, float> _lifeTilt = new Dictionary<SpriteRenderer, float>();
         private readonly Dictionary<SpriteRenderer, float> _lifeSpd = new Dictionary<SpriteRenderer, float>();
         private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
 
@@ -864,7 +865,7 @@ namespace GameCore
             if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
                 var (hdx, hdy) = _fx.LastHitDir(u); float travelX = 0f, trSpeed = 0f; if (_lifeLast.TryGetValue(marker, out var lastP)) { var tv = marker.transform.position - lastP; travelX = tv.x; trSpeed = Mathf.Sqrt(tv.x * tv.x + tv.y * tv.y) / Mathf.Max(Time.deltaTime, 0.0001f); _lifeSpd.TryGetValue(marker, out float sm0); sm0 += (trSpeed - sm0) * Mathf.Min(1f, Mathf.Max(Time.deltaTime, 0.0001f) / 0.12f); _lifeSpd[marker] = sm0; trSpeed = sm0; } /* smoothed: the drawn body is snapped to 1/16 tile, so a frame's travel flickers 0 / one pixel */ var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f, trSpeed);
-                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; lh.Carry = CarryNow(u); lh.CarrySnap = u is Player sp && Time.time - Rt.Of(sp).FiredAt <= 0.8f; }
+                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilt[marker] = lt; _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; lh.Carry = CarryNow(u); lh.CarrySnap = u is Player sp && Time.time - Rt.Of(sp).FiredAt <= 0.8f; }
             }
             else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; lh2.Carry = false; }
             // a footstep each time a foot comes down (Batch 30)
