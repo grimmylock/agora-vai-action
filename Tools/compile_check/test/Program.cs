@@ -1885,7 +1885,7 @@ static class Program {
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     EncounterState.Enemies.Clear();
-    var bd = king ? Boss.King : verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = king ? "Sledgehammer" : verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; spool |= king; var mvs = bd.Moves;   // 2026-11-21: the Verger is all scythe now (both phases) spool |= verger;
+    var bd = king ? Boss.King : verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = king ? "Sledgehammer" : verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; spool |= king || verger; var mvs = bd.Moves;   // 2026-11-21: the Verger is all scythe now (both phases) spool |= verger;
     var f = Boss.Spawn(bd, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
     var g = WeaponArt.GripOf("melee", wkey);
     var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"" + wkey + "\",\"title\":\"" + bd.Name + "\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
