@@ -1214,7 +1214,7 @@ namespace GameCore
         // 2026-11-23 (Yan: "I'd like for the weapon to stay in the resting position unless aiming or shooting ... held naturally close to the body in front of it"): Carry (set by the view each frame): the long gun is held across
         // the front of the body, close to it, level, pointing to the side he faces (the game's own resting stance at aim 0 or 180, drawn in front of the body, shifted 3 px toward the torso) instead of following the mouse
         // round to straight up or down. Aiming (right mouse), firing, reloading and melee leave it. _restLeft = which side (from the aim's sideways part, kept when the aim is nearly vertical).
-        public bool Carry, CarrySnap; bool _restLeft; float _carryK;
+        public bool Carry, CarrySnap; bool _restLeft; float _carryK; WeaponSpring.State _spring;
         public Vector3 LifeOff; public bool LifeOn; float _runK, _walkK, _phase2; Vector3? _lastPos2;
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
@@ -1359,7 +1359,9 @@ namespace GameCore
             _gun.sprite = mag != null && body != null ? body : sprite;
             _gun.flipY = f.Left; _gun.color = VergerPhase2.Tint(weapon);                              // 2026-11-23: the Verger's scythe glows red in phase 2
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
-            _gun.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
+            float bladeDeg = f.GunDeg; var spr = cat == "melee" ? WeaponSpring.For(key) : null;                       // 2026-11-23: a heavy blade trails the hand and overshoots (WeaponSpring)
+            if (spr.HasValue) bladeDeg = WeaponSpring.Step(ref _spring, f.GunDeg, Time.deltaTime, spr.Value.w, spr.Value.z, spr.Value.max); else _spring.Init = false;
+            _gun.transform.localRotation = Quaternion.Euler(0f, 0f, bladeDeg);
             _gun.transform.localScale = new Vector3((f.Length > 0f ? f.Length : 1f) * _bs, _bs, 1f);
             var brk = WeaponArt.Break(cat, key);
             if (brk.body != null && brk.barrels != null)

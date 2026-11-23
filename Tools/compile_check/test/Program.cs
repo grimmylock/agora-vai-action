@@ -116,6 +116,7 @@ static class Program {
     SpoolChecks();
     VergerChecks();
     BossBreathingChecks();
+    WeaponSpringChecks();
     ArmorFollowsWeaponChecks();
     VergerBeastChecks();
     MotherHollowChecks();
@@ -3316,6 +3317,18 @@ static class Program {
   }
 
   // 2026-11-23 (Yan): combo falloff, the parry's exposure and second wind, clotting, the boss's breathers
+
+  // 2026-11-23: the scythe's spring
+  static void WeaponSpringChecks() {
+    var sp = WeaponSpring.For("VergerScythe").Value; var st = new WeaponSpring.State(); WeaponSpring.Step(ref st, 0f, 1f / 60f, sp.w, sp.z, sp.max);
+    float peak = 0f, at = 0f, t = 0f; for (int i = 0; i < 180; i++) { t += 1f / 60f; float v = WeaponSpring.Step(ref st, 90f, 1f / 60f, sp.w, sp.z, sp.max); if (v > peak) { peak = v; at = t; } }
+    Check(peak > 100f && peak < 90f + sp.max + 0.01f && at < 0.45f && System.Math.Abs(st.Pos - 90f) < 0.5f, $"Scythe spring: a 90 degree jump overshoots to {peak:0} degrees at {at:0.00} s and settles on 90 ({st.Pos:0.0})");
+    var s2 = new WeaponSpring.State(); WeaponSpring.Step(ref s2, 0f, 1f / 60f, sp.w, sp.z, sp.max); float lag = 0f; for (int i = 0; i < 6; i++) lag = WeaponSpring.Step(ref s2, 60f * (i + 1), 1f / 60f, sp.w, sp.z, sp.max) - 60f * (i + 1);
+    Check(lag < -1f && lag >= -sp.max - 0.01f, $"Scythe spring: a fast swing leaves the blade behind the hand by {-lag:0} degrees (never more than {sp.max:0})");
+    var s3 = new WeaponSpring.State(); WeaponSpring.Step(ref s3, 10f, 1f / 60f, sp.w, sp.z, sp.max); Check(WeaponSpring.Step(ref s3, 400f, 1f / 60f, sp.w, sp.z, sp.max) == 400f, "Scythe spring: a flip of the facing (a jump of more than 300 degrees) snaps instead of whirling");
+    Check(WeaponSpring.For("TacticalHatchet") == null && WeaponSpring.For("SerratedTrenchKnife") == null, "Scythe spring: only the scythe has it for now");
+  }
+
   static void BossBreathingChecks() {
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); Body.Reset(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
     try {

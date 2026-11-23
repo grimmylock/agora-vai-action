@@ -20,8 +20,15 @@ KEY = _w["key"]; kd, hs = tab("Dense", KEY), tab("HandScale", KEY)
 if kd > 1: im = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}_hd.png")).convert("RGBA"); img = im.resize((round(im.width / kd * hs), round(im.height / kd * hs)), Image.LANCZOS)
 else: _m = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}.png")).convert("RGBA"); img = _m.resize((round(_m.width * hs), round(_m.height * hs)), Image.NEAREST) if hs != 1 else _m
 moves = _w; grip = [moves["grip"][0] * hs, moves["grip"][1] * hs]
+SPRING = os.environ.get("SPRING") == "1" and KEY == "VergerScythe"; _sp = {"pos": None, "vel": 0.0}
+def spring_deg(target, dt=1 / 30.0, w=18.0, z=0.32, mx=75.0):       # WeaponSpring.Step, the same numbers
+    if _sp["pos"] is None or abs(target - _sp["pos"]) > 300: _sp["pos"], _sp["vel"] = target, 0.0; return target
+    n = max(1, int(-(-dt // (1 / 120.0)))); h = dt / n
+    for _ in range(n): acc = w * w * (target - _sp["pos"]) - 2 * z * w * _sp["vel"]; _sp["vel"] += acc * h; _sp["pos"] += _sp["vel"] * h
+    _sp["pos"] = max(target - mx, min(target + mx, _sp["pos"])); return _sp["pos"]
 def draw(f, caption, sub="", base=None, drop=0, squash=1.0, lane=None, air=0.0):
     gx, gy, deg, hx, hy, sup, sx, sy, lean, move, doing, length, hdeg = f[:13]; bkey = f[14] if len(f) > 14 else ""
+    if SPRING: deg = spring_deg(deg)
     glint = f[13] if len(f) > 13 and not isinstance(f[13], str) else 0
     u = Image.new("RGBA", (W, W)); b = posed(bkey, base or cellsb[0])
     drop = drop - int(air * 16 * S)                                                  # the leap: up off the ground (tiles -> px)
@@ -44,7 +51,7 @@ def draw(f, caption, sub="", base=None, drop=0, squash=1.0, lane=None, air=0.0):
 frames = []
 def add(fs, caption, sub="", hold=10, **kw):
     for f in fs: frames.append(draw(f, caption, sub, **kw))
-    for _ in range(hold): frames.append(frames[-1])
+    for _ in range(hold): frames.append(draw(fs[-1], caption, sub, **kw))
 stance = [f for f in moves["frames"][:15]]
 add(stance, "STANCE", DEF)
 # the moves
@@ -82,5 +89,9 @@ for mi, title in enumerate(moves["moves"]):
             if ms["leap"] > 0: x = (now - (ms["wind"] - ms["leap"])) / ms["leap"]; air = 1.3 * 4 * x * (1 - x) if 0 < x < 1 else 0.0
         lanes.append(lane); airs.append(air)
     for k, f in enumerate(seq): frames.append(draw(f, nm.upper(), sub, lane=lanes[k], air=airs[k]))
-    for _ in range(12): frames.append(frames[-1])
+    for _ in range(12): frames.append(draw(seq[-1], nm.upper(), sub, lane=[], air=0.0))
+if os.environ.get("FRAMEDIR"):                                                      # raw frames (no GIF merging of identical ones), for side-by-side comparisons
+    os.makedirs(os.environ["FRAMEDIR"], exist_ok=True)
+    for i_, fr_ in enumerate(frames[:int(os.environ.get("FRAMEMAX", "100000"))]): fr_.save(os.path.join(os.environ["FRAMEDIR"], "%05d.png" % i_))
+    print(len(frames), "raw frames"); sys.exit(0)
 frames[0].save(sys.argv[3], save_all=True, append_images=frames[1:], duration=1000 // 30, loop=0); print(len(frames), "frames", frames[0].size)
