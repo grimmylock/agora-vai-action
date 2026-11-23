@@ -35,7 +35,7 @@ def spring_deg(target, dt=1 / 30.0, w=18.0, z=0.32, mx=75.0):
     for _ in range(n): acc = w * w * (target - _sp["pos"]) - 2 * z * w * _sp["vel"]; _sp["vel"] += acc * h; _sp["pos"] += _sp["vel"] * h
     _sp["pos"] = max(target - mx, min(target + mx, _sp["pos"])); return _sp["pos"]
 def draw(f, caption, sub="", base=None, drop=0, squash=1.0, lane=None, air=0.0):
-    gx, gy, deg, hx, hy, sup, sx, sy, lean, move, doing, length, hdeg = f[:13]; bkey = f[14] if len(f) > 14 else ""
+    gx, gy, deg, hx, hy, sup, sx, sy, lean, move, doing, length, hdeg = f[:13]; bkey = f[14] if len(f) > 14 else ""; flip = (f[15] if len(f) > 15 else 0) and os.environ.get("NOFLIP") != "1"
     if SPRING:                                                                    # the blade springs; the fist turns with it and the other hand stays on a two-handed handle (HeldWeaponView)
         d0 = deg; deg = spring_deg(deg); hdeg += 0.6 * (deg - d0)
         if sup and KEY in ("VergerScythe", "Sledgehammer", "FireAxe"): rr = math.radians(deg); sx = round(gx + 4 * math.cos(rr)); sy = round(gy - 4 * math.sin(rr) - 0.5) + 0.5
@@ -44,7 +44,7 @@ def draw(f, caption, sub="", base=None, drop=0, squash=1.0, lane=None, air=0.0):
     drop = drop - int(air * 16 * S)                                                  # the leap: up off the ground (tiles -> px)
     u.alpha_composite(b, (ub, ub + drop))
     wi = img if length > 0.99 else img.resize((max(1, round(img.width * length)), img.height), Image.NEAREST)
-    paste(u, wi, (grip[0] * length, grip[1]), (ub + gx * S, ub + gy * S + drop), deg)
+    paste(u, wi, (grip[0] * length, grip[1]), (ub + gx * S, ub + gy * S + drop), deg, bool(flip))   # flip: the Verger's scythe turned over so the edge leads (HeldPoseMath.FlipsBlade)
     fz = fist.rotate(hdeg, expand=True, resample=Image.NEAREST); u.alpha_composite(fz, (round(ub + hx * S - fz.width / 2), round(ub + hy * S - fz.height / 2 + drop)))
     if sup: u.alpha_composite(other, (round(ub + sx * S - 2 * S), round(ub + sy * S - 1.5 * S + drop)))
     u = u.rotate(lean, center=(ub + 8 * S, ub + 8 * S), resample=Image.NEAREST); c = Image.new("RGBA", (W, W), BG); c.alpha_composite(u); c = c.crop((40, 10, W - 40, W - 20))

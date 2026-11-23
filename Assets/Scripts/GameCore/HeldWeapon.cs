@@ -40,6 +40,8 @@ namespace GameCore
         public float ClipIn, PartOpen;      // 2026-11-16 (Sperling): how far the stripper clip has gone into the receiver (0..1, behind the gun), and how far the bolt stands open for the reload (0..1)
         public bool ShellInHand;            // 2026-11-16: a tube-fed gun's reload: the support hand carries a round from the pouch to the loading port
         public bool Left, HasSupport;
+        public bool FlipBlade;              // 2026-11-23 (Yan: the Verger sometimes strikes with the back of the scythe on upward swings): mirror the sprite across its shaft so the edge leads
+
     }
 
     public static class HeldPoseMath
@@ -259,6 +261,8 @@ namespace GameCore
                 ((-200f, -1f, -10f, 13f), (-240f, 5f, 3f, -14f)),    // 7 impale: the point raised straight up, then driven down through you
             },
         };
+        /// <summary>The Verger's swings that run the scythe the other way round (the edge would trail): the sprite is mirrored across its shaft for them.</summary>
+        public static bool FlipsBlade(Style st, int move) { if (st != Style.Verger) return false; int m = Wrap(st, move); return m == 2 || m == 6; }
         public const string VisorPoses = "@Visor";             // Melee.Charge.PoseKey: his poses instead of his knife's
         public const string VergerPoses = "@Verger";           // 2026-11-21: the Verger's scythe poses
         public static int MoveCount(Style st) => Moves[(int)st].Length;
@@ -371,7 +375,7 @@ namespace GameCore
             return new HeldFrame
             {
                 Body = BodyPose(sinceSwing, swingHold, throwHold, sinceThrow, gk, sinceBroken, left),
-                Left = left, HasSupport = sup, MagShown = false, SupX = Mathf.Round(sx), SupY = Mathf.Round(sy - 0.5f) + 0.5f,
+                Left = left, HasSupport = sup, MagShown = false, FlipBlade = throwHold < 0f && sinceThrow >= WhipTime && (swingHold >= 0f || (sinceSwing >= 0f && sinceSwing < SwingLength)) && FlipsBlade(st, move), SupX = Mathf.Round(sx), SupY = Mathf.Round(sy - 0.5f) + 0.5f,
                 GunDeg = deg,                                                            // edge forward (a flipped sprite mirrors it)
                 HandDeg = -side * turn * HandTurn,
                 GunX = gx + cx, GunY = gy + 1.5f, GripX = gx + cx, GripY = gy + 1.5f,
@@ -1346,7 +1350,7 @@ namespace GameCore
                 _smear[i].gameObject.SetActive(smear);
                 if (!smear) continue;
                 var gf = At(since - (i + 1) * HeldPoseMath.SmearStep);
-                _smear[i].sprite = sprite; _smear[i].flipY = gf.Left; _smear[i].sortingOrder = _base + (back ? -5 : 0);
+                _smear[i].sprite = sprite; _smear[i].flipY = gf.Left ^ gf.FlipBlade; _smear[i].sortingOrder = _base + (back ? -5 : 0);
                 _smear[i].transform.localPosition = Local(gf.GunX, gf.GunY);
                 _smear[i].transform.localRotation = Quaternion.Euler(0f, 0f, gf.GunDeg);
                 _smear[i].transform.localScale = new Vector3((gf.Length > 0f ? gf.Length : 1f) * _bs, _bs, 1f);
@@ -1357,7 +1361,7 @@ namespace GameCore
 
             var (body, mag) = WeaponArt.Mag(cat, key);
             _gun.sprite = mag != null && body != null ? body : sprite;
-            _gun.flipY = f.Left; _gun.color = VergerPhase2.Tint(weapon);                              // 2026-11-23: the Verger's scythe glows red in phase 2
+            _gun.flipY = f.Left ^ f.FlipBlade; _gun.color = VergerPhase2.Tint(weapon);                              // 2026-11-23: the Verger's scythe glows red in phase 2
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
             float bladeDeg = f.GunDeg; var spr = cat == "melee" ? WeaponSpring.For(key) : null;                       // 2026-11-23: a heavy blade trails the hand and overshoots (WeaponSpring)
             if (spr.HasValue) bladeDeg = WeaponSpring.Step(ref _spring, f.GunDeg, Time.deltaTime, spr.Value.w, spr.Value.z, spr.Value.max); else _spring.Init = false;

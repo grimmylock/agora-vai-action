@@ -757,7 +757,7 @@ static class Program {
     foreach (var ang in new[] { 0f, 90f, 180f, 270f }) {
       var f = HeldPoseMath.Frame("assault", g, ang, 0f, 0f, 0f, 99f, 1f, "none", 1);
       if (!first) sb.Append(','); first = false; var ci = System.Globalization.CultureInfo.InvariantCulture;
-      sb.Append($"{{\"angle\":{ang.ToString(ci)},\"gx\":{f.GunX.ToString(ci)},\"gy\":{f.GunY.ToString(ci)},\"deg\":{f.GunDeg.ToString(ci)},\"hx\":{f.GripX.ToString(ci)},\"hy\":{f.GripY.ToString(ci)},\"hdeg\":{f.HandDeg.ToString(ci)},\"sup\":{(f.HasSupport ? 1 : 0)},\"sx\":{f.SupX.ToString(ci)},\"sy\":{f.SupY.ToString(ci)},\"left\":{(f.Left ? 1 : 0)},\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}]}}");
+      sb.Append($"{{\"angle\":{ang.ToString(ci)},\"gx\":{f.GunX.ToString(ci)},\"gy\":{f.GunY.ToString(ci)},\"deg\":{f.GunDeg.ToString(ci)},\"hx\":{f.GripX.ToString(ci)},\"hy\":{f.GripY.ToString(ci)},\"hdeg\":{f.HandDeg.ToString(ci)},\"sup\":{(f.HasSupport ? 1 : 0)},\"sx\":{f.SupX.ToString(ci)},\"sy\":{f.SupY.ToString(ci)},\"left\":{(f.Left ? 1 : 0)},\"flip\":{(f.FlipBlade ? 1 : 0)},\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}]}}");
     }
     sb.Append("]"); System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("rest frames -> " + path);
   }
@@ -1906,7 +1906,7 @@ static class Program {
         var c = Melee.ChargeOf(v); var (vx, vy) = Ballistics.Pos(v); var (mx, my) = Ballistics.Pos(p);
         float aw = UnityEngine.Mathf.Atan2(-(my - vy), mx - vx) * UnityEngine.Mathf.Rad2Deg;
         var fr = HeldPoseMath.Frame("melee", g, aw, 0f, 0f, 0f, c.Since(now), 1f, "none", 1, null, c.SwingFrom >= 0f ? now - c.SwingFrom : -1f, -1f, 99f, c.PoseKey ?? (spool ? wkey : null), c.Move, c.From, now - c.GuardAt, now - c.BrokenAt, c.OpenK(now));   // (the game passes the weapon's key when the boss has no pose set of his own: Spool's bat is the Heavy style, two hands)
-        sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\"]"));
+        sb.Append(System.FormattableString.Invariant($"{(k++ > 0 ? "," : "")}[{fr.GunX},{fr.GunY},{fr.GunDeg},{fr.GripX},{fr.GripY},{(fr.HasSupport ? 1 : 0)},{fr.SupX},{fr.SupY},{fr.Lean},{mi},{(f.Doing != null ? 1 : 0)},{(fr.Length > 0f ? fr.Length : 1f)},{fr.HandDeg},{(now - f.GlintAt < 0.25f ? (f.GlintDanger ? 2 : 1) : 0)},\"{fr.Body}\",{(fr.FlipBlade ? 1 : 0)}]"));
       }
       f.Doing = null;
     }
@@ -3320,6 +3320,10 @@ static class Program {
 
   // 2026-11-23: the scythe's spring
   static void WeaponSpringChecks() {
+    { var V = HeldPoseMath.Style.Verger; var fl = new System.Collections.Generic.List<int>(); for (int m = 0; m < HeldPoseMath.MoveCount(V); m++) if (HeldPoseMath.FlipsBlade(V, m)) fl.Add(m);
+      Check(string.Join(",", fl) == "2,6" && !HeldPoseMath.FlipsBlade(HeldPoseMath.Style.Visor, 2), "Verger: the scythe is turned over for the rising cut and the backhand only (" + string.Join(",", fl) + ")");
+      var fr = HeldPoseMath.Frame("melee", new float[] { 2f, 5f }, 0f, 0f, 0f, 0f, 0.3f, 1f, "none", 1, null, -1f, -1f, 99f, HeldPoseMath.VergerPoses, 2, -1f, 99f, 99f, 0f); var fr0 = HeldPoseMath.Frame("melee", new float[] { 2f, 5f }, 0f, 0f, 0f, 0f, 0.3f, 1f, "none", 1, null, -1f, -1f, 99f, HeldPoseMath.VergerPoses, 1, -1f, 99f, 99f, 0f);
+      Check(fr.FlipBlade && !fr0.FlipBlade, "Verger: the flip rides the pose (rising cut flipped, sweep not)"); }
     var sp = WeaponSpring.For("VergerScythe").Value; var st = new WeaponSpring.State(); WeaponSpring.Step(ref st, 0f, 1f / 60f, sp.w, sp.z, sp.max);
     float peak = 0f, at = 0f, t = 0f; for (int i = 0; i < 180; i++) { t += 1f / 60f; float v = WeaponSpring.Step(ref st, 90f, 1f / 60f, sp.w, sp.z, sp.max); if (v > peak) { peak = v; at = t; } }
     Check(peak > 100f && peak < 90f + sp.max + 0.01f && at < 0.45f && System.Math.Abs(st.Pos - 90f) < 0.5f, $"Scythe spring: a 90 degree jump overshoots to {peak:0} degrees at {at:0.00} s and settles on 90 ({st.Pos:0.0})");
