@@ -41,11 +41,32 @@ def frame(t, speed, armed, label):
         for fx in (0.22, 0.62):
             g = G.resize((G.width * Z, G.height * Z), Image.NEAREST); layer.alpha_composite(g, (gxp + round(gun.width * fx - g.width / 2), gyp + round(gun.height * 0.62 - g.height / 2)))
     c.alpha_composite(layer); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
-rows = [("empty: walk", 2.6, False), ("empty: run", 4.4, False), ("rifle: walk", 2.6, True), ("rifle: run", 4.4, True)]
+# the rifle columns use the game's own stance (HeldPoseMath.Frame via the heldframes dump, drawn by held_anim.py) with the swing offsets added to the gun and both hands
+import json, subprocess
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import held_anim as ha
+if not os.path.exists("/tmp/hf.json"): subprocess.run(["dotnet", "/tmp/test.dll", "heldframes", "/tmp/hf.json"], check=True)
+anims = json.load(open("/tmp/hf.json")); a = next(x for x in anims if x["key"] == "CorvanBattleRifle" and x["style"] == "mag") if any(x["key"] == "CorvanBattleRifle" and x["style"] == "mag" for x in anims) else next(x for x in anims if x["style"] == "mag")
+gun = Image.open(os.path.join(SPR, "Weapons", f"weapon_{a['key']}.png")).convert("RGBA"); mpth = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_body.png")
+gl = ha.glove(a["cuff"], a["glove"]); rest = a["frames"][-1]
+def rifle_col(t, speed, label):
+    phase = speed * t * 2 * math.pi / STRIDE; run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
+    q = int(phase / (2 * math.pi) * 4) % 4; fr = stand if q in (1, 3) else (wa if q == 0 else wb)
+    body = fr.resize((16 * ha.S, 16 * ha.S), Image.NEAREST)
+    ang = math.radians(rest[2]) if False else 0.0                      # aimed right in this picture (the game's aim angle is the gun's own deg)
+    step = 1.0 if math.sin(phase * 2) > 0.2 else 0.0; s1 = math.sin(phase)
+    walkbob = round(step * walk) * (1 - run); swing = round(s1 * 2 * run); lift = round(s1 * s1 * 2 * run)     # the code's numbers
+    dx = math.cos(ang) * swing; dy = -(math.sin(ang) * swing + walkbob + lift)                                     # (canvas y points down)
+    f = list(rest); f[0] += dx; f[1] += dy; f[3] += dx; f[4] += dy; f[5] += dx; f[6] += dy; f[7] = 1
+    c = ha.frame(a, f, body, gun, gl, None).convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST)
+    d = ImageDraw.Draw(c); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
+rows = [("empty: walk", 2.6), ("empty: run", 4.4)]
 n = int(2.0 * FPS); frames = []
 for i in range(n):
-    t = i / FPS; cs = [frame(t, sp, ar, lb).convert("RGB") for lb, sp, ar in rows]
-    s = Image.new("RGB", (cs[0].width * 4, cs[0].height)); [s.paste(x, (k * x.width, 0)) for k, x in enumerate(cs)]; frames.append(s)
+    t = i / FPS; cs = [frame(t, sp, False, lb).convert("RGB") for lb, sp in rows] + [rifle_col(t, 2.6, "rifle: walk"), rifle_col(t, 4.4, "rifle: run")]
+    h = max(x.height for x in cs); s = Image.new("RGB", (sum(x.width for x in cs), h), BG[:3]); xx = 0
+    for x in cs: s.paste(x, (xx, 0)); xx += x.width
+    frames.append(s)
 os.makedirs(sys.argv[1], exist_ok=True)
 frames[0].save(os.path.join(sys.argv[1], "hands_swing.gif"), save_all=True, append_images=frames[1:], duration=1000 // FPS, loop=0)
 pick = [frames[k] for k in (0, 3, 6, 9)]; sh = Image.new("RGB", (pick[0].width, pick[0].height * 4)); [sh.paste(x, (0, k * x.height)) for k, x in enumerate(pick)]

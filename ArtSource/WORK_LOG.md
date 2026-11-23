@@ -7016,3 +7016,6 @@ Yan: "make the hands swing a little with the walk and a lot when running, as a t
 
 ### Batch 9cr (2026-11-23): hand swing, run fixed to an arc
 Yan: the walk is good; running "makes the hands circle instead of moving in an arc" (and the preview showed the gloves under the gun - that was the preview's rough placement, not the game). The run is now a pendulum along the AIM direction (fore-aft 2 px, lifted 2 px at both ends of the swing, lowest in the middle: an arc traced back and forth), the walk bob is unchanged (1 px per step, faded out as the run takes over). Preview redrawn with the gloves laid on the rifle. Harness passes; not seen in Unity.
+
+### Batch 9cs (2026-11-23): hand swing preview corrected
+Yan thought the rifle "held up to his head": that was my preview's rough placement, not the game. `Tools/render/hands_swing.py` now draws the rifle columns with the game's real stance (HeldPoseMath.Frame via the heldframes dump, `held_anim.frame`): the gun in front of the body at hip height, with the walk bob / run arc offsets added. No game code changed in this step.
