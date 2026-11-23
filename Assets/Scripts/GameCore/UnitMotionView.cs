@@ -99,7 +99,7 @@ namespace GameCore
             if (Rt.Free(u))                                                 // real-time fork: drawn where it is, feet keep time with the distance
             {
                 float moved = Dist(s.Vis, logical);
-                if (moved > 0.001f) { s.Stride += moved; s.MovedAt = Time.time; }
+                if (moved > 0.001f) { s.Stride += moved * AnimFactor(moved / Mathf.Max(Time.deltaTime, 0.0001f)); s.MovedAt = Time.time; }
                 s.Vis = logical; s.Path.Clear(); s.LastX = u.X; s.LastY = u.Y;
                 return new Vector3(Mathf.Round(s.Vis.x * 16f) / 16f, Mathf.Round(s.Vis.y * 16f) / 16f, 0f);
             }
@@ -118,17 +118,21 @@ namespace GameCore
                 if (s.Path.Count > 1 && Dist(s.Vis, s.Path.Peek()) < CornerCut) s.Path.Dequeue();   // Batch 102: round the corner, don't touch the tile centre
                 var t = s.Path.Peek();
                 float d = Dist(s.Vis, t);
-                if (d <= budget) { s.Vis = t; s.Path.Dequeue(); budget -= d; s.Stride += d; }
+                if (d <= budget) { s.Vis = t; s.Path.Dequeue(); budget -= d; s.Stride += d * AnimFactor(pace); }
                 else
                 {
                     s.Vis = new Vector3(s.Vis.x + (t.x - s.Vis.x) / d * budget, s.Vis.y + (t.y - s.Vis.y) / d * budget, 0f);
-                    s.Stride += budget; budget = 0f;
+                    s.Stride += budget * AnimFactor(pace); budget = 0f;
                 }
             }
             if (u == Player.Current) PlayerQueue = s.Path.Count;
             return new Vector3(Mathf.Round(s.Vis.x * 16f) / 16f, Mathf.Round(s.Vis.y * 16f) / 16f, 0f);
         }
 
+        /// <summary>2026-11-23 (Yan: "make the walking pace half as fast and match the running to the current walking pace, without affecting movement speed, only the animation"): how much of a tile's worth of steps the feet take per tile
+        /// walked. It was 1 (a full foot cycle per tile: 4 frames a tile). A walk (up to 3 tiles/s) now takes half of that; a run (4 tiles/s and up) takes the feet at the OLD walking cadence (2.6 cycles a second at the player's
+        /// 4.4 tiles/s = 0.59 of a tile's worth), in between it eases. Only the drawing: nothing moves differently.</summary>
+        public static float AnimFactor(float tilesPerSecond) => Mathf.Lerp(0.5f, 0.59f, Mathf.Clamp01(tilesPerSecond - 3f));
         public bool Known(ICombatant u) => u != null && _s.TryGetValue(u, out var s) && s.Init;
 
         public bool IsMoving(ICombatant u) => u != null && _s.TryGetValue(u, out var s) && (s.Path.Count > 0 || Time.time - s.MovedAt < 0.12f);

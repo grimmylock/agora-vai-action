@@ -1198,7 +1198,7 @@ namespace GameCore
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
             var clean = unitPos - LifeOff; float spd = 0f;
-            if (_lastPos2.HasValue) { float mx = clean.x - _lastPos2.Value.x, my = clean.y - _lastPos2.Value.y, mv = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); float dt = Mathf.Max(Time.deltaTime, 0.0001f); spd = mv / dt; _phase2 += mv * Mathf.PI * 2f / StrideTiles; }
+            if (_lastPos2.HasValue) { float mx = clean.x - _lastPos2.Value.x, my = clean.y - _lastPos2.Value.y, mv = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); float dt = Mathf.Max(Time.deltaTime, 0.0001f); spd = mv / dt; _phase2 += mv * Mathf.PI * 2f / CycleTiles(spd); }
             _lastPos2 = clean; float wk = LifeOn ? Mathf.Clamp01(spd / 1.5f) : 0f, rk = LifeOn ? Mathf.Clamp01((spd - 3.4f) / 1.0f) : 0f;
             float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
             ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
@@ -1248,7 +1248,7 @@ namespace GameCore
                 float mx = _lastPos.HasValue ? unitPos.x - _lastPos.Value.x : 0f, my = _lastPos.HasValue ? unitPos.y - _lastPos.Value.y : 0f;
                 float moved = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); _lastPos = unitPos;   // (a jump - a new map - isn't a step)
                 float dt = Mathf.Max(Time.deltaTime, 0.0001f), walking = Mathf.Clamp01(moved / dt / 1.5f);
-                _stepPhase += moved * Mathf.PI * 2f / StrideTiles;
+                _stepPhase += moved * Mathf.PI * 2f / CycleTiles(moved / dt);
                 _swing = Mathf.MoveTowards(_swing, walking, dt * 4f);
                 var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_stepPhase, _swing, _runK);
                 _grip.transform.localPosition = Local(rx, ry); _grip.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);   // hanging, fingers down
@@ -1460,6 +1460,8 @@ namespace GameCore
 
         // nothing equipped: big glove centres beside the torso (torso is columns 5-10, rows 8-11)
         public const float RestRightX = 13.5f, RestLeftX = 2.5f, RestY = 10f;
+        // 2026-11-23: the arm swing's pace follows the feet (UnitMotionView.AnimFactor): a walk takes twice the tiles per full swing (half as fast), a run swings at the old walking rate (4.4 tiles/s / 2.17 Hz = 2.03 tiles)
+        static float CycleTiles(float tilesPerSecond) => Mathf.Lerp(StrideTiles * 2f, 2.03f, Mathf.Clamp01(tilesPerSecond - 3f));
         const float StrideTiles = 1.2f;                     // a full arm swing (two steps) per this many tiles walked
         private Vector3? _lastPos; private float _stepPhase, _swing;
 
