@@ -41,30 +41,36 @@ def frame(t, speed, armed, label):
         for fx in (0.22, 0.62):
             g = G.resize((G.width * Z, G.height * Z), Image.NEAREST); layer.alpha_composite(g, (gxp + round(gun.width * fx - g.width / 2), gyp + round(gun.height * 0.62 - g.height / 2)))
     c.alpha_composite(layer); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
-# the rifle columns use the game's own stance (HeldPoseMath.Frame via the heldframes dump, drawn by held_anim.py) with the swing offsets added to the gun and both hands
+# the rifle columns use the game's own stance (HeldPoseMath.Frame at the aim: Program.cs `restframes`), drawn with the held_anim.py helpers; the swing is the code's: a pendulum across the body on SCREEN axes
 import json, subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import held_anim as ha
-if not os.path.exists("/tmp/hf.json"): subprocess.run(["dotnet", "/tmp/test.dll", "heldframes", "/tmp/hf.json"], check=True)
-anims = json.load(open("/tmp/hf.json")); a = next(x for x in anims if x["key"] == "CorvanBattleRifle" and x["style"] == "mag") if any(x["key"] == "CorvanBattleRifle" and x["style"] == "mag" for x in anims) else next(x for x in anims if x["style"] == "mag")
-gun = Image.open(os.path.join(SPR, "Weapons", f"weapon_{a['key']}.png")).convert("RGBA"); mpth = os.path.join(SPR, "Weapons", f"weapon_{a['key']}_body.png")
-gl = ha.glove(a["cuff"], a["glove"]); rest = a["frames"][-1]
-def rifle_col(t, speed, label):
+subprocess.run(["dotnet", "/tmp/test.dll", "restframes", "/tmp/rest.json"], check=True, capture_output=True)
+rest = {int(r["angle"]): r for r in json.load(open("/tmp/rest.json"))}
+gun = Image.open(os.path.join(SPR, "Weapons", "weapon_CorvanBattleRifle.png")).convert("RGBA"); gl = ha.glove("#5e2424", "#c8916a")
+bstand, bwa, bwb = cell("armor_back_atlas.png"), cell("armor_back_walk_a.png"), cell("armor_back_walk_b.png")
+def rifle_col(t, speed, aim, label):
+    r = rest[aim]; back = aim == 90
     phase = speed * t * 2 * math.pi / STRIDE; run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
-    q = int(phase / (2 * math.pi) * 4) % 4; fr = stand if q in (1, 3) else (wa if q == 0 else wb)
+    q = int(phase / (2 * math.pi) * 4) % 4
+    fr = (bstand if q in (1, 3) else (bwa if q == 0 else bwb)) if back else (stand if q in (1, 3) else (wa if q == 0 else wb))
     body = fr.resize((16 * ha.S, 16 * ha.S), Image.NEAREST)
-    ang = math.radians(rest[2]) if False else 0.0                      # aimed right in this picture (the game's aim angle is the gun's own deg)
-    step = 1.0 if math.sin(phase * 2) > 0.2 else 0.0; s1 = math.sin(phase)
-    walkbob = round(step * walk) * (1 - run); th = math.sin(phase) * 7.0 * run; cs_, sn_ = math.cos(math.radians(th)), math.sin(math.radians(th))
-    def sw(x, y):                                    # the code's Swing(): turn about the torso pivot (8, 9) (px, y down), + degrees = counter-clockwise on screen; the walk's 1 px bob on top
-        vx, vy = x - 8.0, y - 9.0; return 8.0 + vx * cs_ + vy * sn_, 9.0 - vx * sn_ + vy * cs_ + walkbob
-    f = list(rest); f[0], f[1] = sw(rest[0], rest[1]); f[3], f[4] = sw(rest[3], rest[4]); f[5], f[6] = sw(rest[5], rest[6]); f[2] = rest[2] + th; f[7] = 1
-    c = ha.frame(a, f, body, gun, gl, None).convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST)
+    s1 = math.sin(phase); amp = 1 + 2 * run; up = 1 + run
+    dx = round(s1 * amp * walk); lift = round(s1 * s1 * up * walk); th = -s1 * 5 * run          # the code: Swing() + the gun's lean
+    c = Image.new("RGBA", (ha.W * ha.S, ha.H * ha.S), ha.BG)
+    def put_gun(): ha.paste(c, gun, r["grip"][0], r["grip"][1], r["gx"] + dx, r["gy"] - lift, r["deg"] + th, bool(r["left"]))
+    def put_hands():
+        g2 = gl.transpose(Image.FLIP_LEFT_RIGHT) if r["left"] else gl
+        for (x, y, on) in ((r["sx"], r["sy"], r["sup"]), (r["hx"], r["hy"], 1)):
+            if on: c.alpha_composite(g2, (round((ha.BX + x + dx) * ha.S - 2 * ha.S), round((ha.BY + y - lift) * ha.S - 1.5 * ha.S)))
+    if back: put_gun(); put_hands(); c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S))          # from behind: the rifle and the hands are behind the body (sorting orders -3..-2)
+    else: c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S)); put_gun(); put_hands()
+    c = c.convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST)
     d = ImageDraw.Draw(c); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
 rows = [("empty: walk", 2.6), ("empty: run", 4.4)]
 n = int(2.0 * FPS); frames = []
 for i in range(n):
-    t = i / FPS; cs = [frame(t, sp, False, lb).convert("RGB") for lb, sp in rows] + [rifle_col(t, 2.6, "rifle: walk"), rifle_col(t, 4.4, "rifle: run")]
+    t = i / FPS; cs = [frame(t, sp, False, lb).convert("RGB") for lb, sp in rows] + [rifle_col(t, 2.6, 0, "rifle: walk"), rifle_col(t, 4.4, 0, "rifle: run"), rifle_col(t, 2.6, 90, "from behind: walk"), rifle_col(t, 4.4, 90, "from behind: run")]
     h = max(x.height for x in cs); s = Image.new("RGB", (sum(x.width for x in cs), h), BG[:3]); xx = 0
     for x in cs: s.paste(x, (xx, 0)); xx += x.width
     frames.append(s)

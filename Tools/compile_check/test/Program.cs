@@ -15,6 +15,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "bosspath") { BossPath(args[1]); return 0; }
     if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "restframes") { RestFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
@@ -742,6 +743,15 @@ static class Program {
   // Real-time fork, batch 1: rounds trace over the ground; the crosshair's height picks the part, from any side; cover by height
   // RT 6f: frames of the reload and jam-clearing animations straight from HeldPoseMath.Frame (the code HeldWeaponView.Show
   // draws with), for Tools/render/held_anim.py to put the real sprites on. 30 frames a second, aiming right and a little up.
+  static void RestFrames(string path) {   // 2026-11-23: the rifle's resting stance for four aims (0 right, 90 up = seen from behind, 180 left, 270 down), for Tools/render/hands_swing.py
+    var sb = new System.Text.StringBuilder("["); var g = WeaponArt.GripOf("assault", "CorvanBattleRifle"); bool first = true;
+    foreach (var ang in new[] { 0f, 90f, 180f, 270f }) {
+      var f = HeldPoseMath.Frame("assault", g, ang, 0f, 0f, 0f, 99f, 1f, "none", 1);
+      if (!first) sb.Append(','); first = false; var ci = System.Globalization.CultureInfo.InvariantCulture;
+      sb.Append($"{{\"angle\":{ang.ToString(ci)},\"gx\":{f.GunX.ToString(ci)},\"gy\":{f.GunY.ToString(ci)},\"deg\":{f.GunDeg.ToString(ci)},\"hx\":{f.GripX.ToString(ci)},\"hy\":{f.GripY.ToString(ci)},\"hdeg\":{f.HandDeg.ToString(ci)},\"sup\":{(f.HasSupport ? 1 : 0)},\"sx\":{f.SupX.ToString(ci)},\"sy\":{f.SupY.ToString(ci)},\"left\":{(f.Left ? 1 : 0)},\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}]}}");
+    }
+    sb.Append("]"); System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("rest frames -> " + path);
+  }
   static void HeldFrames(string path) {
     var sb = new System.Text.StringBuilder("[");
     var guns = new[] { ("sidearm", "PSh18Pchela"), ("assault", "VK74"), ("shotgun", "BayouPump"), ("smg", "CorvanHornet45"), ("heavy", "PL62Kobza"), ("sidearm", "HaldenServiceRevolver"), ("sidearm", "SperlingS96"), ("shotgun", "RangerP8"), ("sniper", "SKNKarabin"), ("smg", "CorvanWasp9"), ("assault", "CorvanBattleRifle"), ("smg", "CorvanGnatPDW"), ("assault", "VKM"), ("assault", "NA94Yenisei"), ("heavy", "RL44"), ("assault", "CorvanBullpup"), ("assault", "VK103"), ("heavy", "PL74"), ("heavy", "CorvanLMG"), ("sniper", "CorvanMarksman"), ("sniper", "SV2Strela"), ("sniper", "HaldenAM50Sledge"), ("shotgun", "Sever34"), ("smg", "VosaVz62"), ("smg", "CorvanHornet45"), ("assault", "TS9Tishina"), ("shotgun", "Sayan12"), ("sniper", "VSNShepot"), ("shotgun", "Tambour12"), ("sidearm", "SteppeEagle"), ("sniper", "VK127Grom"), ("shotgun", "Karusel5"), ("shotgun", "Kaban12"), ("sniper", "M91Trekhlineyka"), ("assault", "HaldenHR36K"), ("shotgun", "SP14Warden"), ("shotgun", "Hound13"), ("assault", "VK74Obelisk"), ("assault", "VKS74U"), ("assault", "TR30"), ("smg", "PPZZubr"), ("sniper", "Sever98"), ("assault", "BR86Bulldog"), ("sidearm", "Corvan57"), ("heavy", "PL74PPolovets"), ("heavy", "PL74PPolovetsZulu"), ("assault", "Smerch3"), ("sidearm", "SR21Gadyuka"), ("sidearm", "BlackHarrier"), ("sniper", "G7RailPrototype"), ("sidearm", "Halden45Service"), ("sidearm", "WaldenP9"), ("sidearm", "RinaldiR6"), ("sidearm", "RK12Kuvalda"), ("sniper", "FrontierLeverRifle"), ("shotgun", "Obrez66"), ("shotgun", "HaldenLeverShotgun"), ("sniper", "Nightwalker4570") };

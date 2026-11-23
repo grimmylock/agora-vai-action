@@ -1203,15 +1203,11 @@ namespace GameCore
             float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
             ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
             if (!LifeOn || !visible || weapon?.Db == null || JawHold || _walkK < 0.05f) return;
-            // walk: the 1 px bob on each step (Yan: good), unchanged. Run (Yan, with a drawing: "swinging in a circular motion instead of like a pendulum, the rifle just bobbing left and right instead of also swinging a bit"):
-            // the whole held assembly (gun, both hands, parts) turns about the torso like a pendulum: +-7 degrees at a full run, so the muzzle sweeps an arc and the hands follow it round the same pivot
-            float step = Mathf.Sin(_phase2 * 2f) > 0.2f ? 1f : 0f, walkBob = Mathf.Round(step * _walkK) * (1f - _runK);
-            float th = Mathf.Sin(_phase2) * 7f * _runK, c = Mathf.Cos(th * Mathf.Deg2Rad), sn = Mathf.Sin(th * Mathf.Deg2Rad);
-            Vector3 Swing(Vector3 p)                                                      // marker-local position -> where the pivot's turn puts it (counter-clockwise on screen for + degrees)
-            {
-                var pv = Local(8f, 9f); float vx = p.x - pv.x, vy = p.y - pv.y;
-                return new Vector3(pv.x + vx * c - vy * sn, pv.y + vx * sn + vy * c + (-walkBob / 16f), p.z);
-            }
+            // Yan, twice, with drawings: the rifle must swing like a PENDULUM across the body (a smile-shaped arc: sideways, lowest in the middle, lifted at both ends), not bob up and down. So: the whole held assembly
+            // (gun, both hands, parts) slides along that arc on SCREEN axes (1 px each way and 1 up at the ends at a walk, 3 px and 2 up at a run) and the gun leans with the swing (5 degrees at a run)
+            float s1 = Mathf.Sin(_phase2), amp = 1f + 2f * _runK, up = 1f + _runK;
+            float dxp = Mathf.Round(s1 * amp * _walkK), liftp = Mathf.Round(s1 * s1 * up * _walkK), th = -s1 * 5f * _runK;
+            Vector3 Swing(Vector3 p) => new Vector3(p.x + dxp / 16f, p.y + liftp / 16f, p.z);
             foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf) { r.transform.localPosition = Swing(r.transform.localPosition); r.transform.localRotation = Quaternion.Euler(0f, 0f, r.transform.localEulerAngles.z + th); }
         }
         void ShowCore(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
