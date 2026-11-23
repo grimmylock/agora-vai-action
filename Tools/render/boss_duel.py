@@ -17,7 +17,7 @@ frames = d["frames"]; ox, oy = d["origin"]; WHICH = d.get("which", "visor")
 Z = 3                                             # canvas px per character px
 X0, Y0, W, H = ox - 5.5, oy - 4.4, 14.0, 7.9      # the view, tiles
 OUT_W, OUT_H = int(W * 16 * Z * 2), int(H * 16 * Z * 2)
-world = Image.open(os.path.join(R, "Tools/render/_render/perimeter.png")).convert("RGBA")
+world = Image.open(os.path.join(R, "Tools/render/_render/%s.png" % d.get("world", "perimeter"))).convert("RGBA")
 # Yan: "they went out of the screen during the duel": the view follows the fight, as the game's camera follows you - eased
 # toward the middle of the two of them (CAM_EASE a frame), the ground cropped from the world render under it each frame
 CAM_EASE = 0.08
@@ -32,6 +32,7 @@ NAME = font("Silkscreen-Bold.ttf", 24)
 CREAM, YELLOW, RED = hexc("#e8dcc0"), hexc("#e0c060"), hexc("#b8302a")
 
 atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
+walkA, walkB = Image.open(os.path.join(SPR, "armor_walk_a.png")).convert("RGBA"), Image.open(os.path.join(SPR, "armor_walk_b.png")).convert("RGBA")
 ai = max(0, d["armor"]); pbody = atlas.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16))
 vstrip = Image.open(os.path.join(SPR, "armor_unique_barbwire_coat.png" if WHICH == "spool" else "armor_unique_black_visor_suit.png")).convert("RGBA")
 vcell = [vstrip.crop((i * 16, 0, i * 16 + 16, 16)) for i in range(6)]
@@ -132,6 +133,7 @@ def shake(t, amp):
     if amp >= shake_amp or t - shake_at > 0.15: shake_at, shake_amp = t, amp
 
 hurt = {}            # who -> real time of the last hit (the red flash)
+last_xy = {}; strides = {}   # for the walking feet
 dead_at = None; ghost = 1.0; prev_b = None; walk_t = {"p": 0.0, "b": 0.0}; last_pos = {}
 def draw(i):
     global dead_at, ghost, prev_b
@@ -177,9 +179,20 @@ def draw(i):
     # bodies, y-sorted
     pmoved = (round(px_, 2), round(py_, 2)) != last_pos.get("p"); bmoved = (round(bx, 2), round(by, 2)) != last_pos.get("b")
     last_pos["p"], last_pos["b"] = (round(px_, 2), round(py_, 2)), (round(bx, 2), round(by, 2))
+    # 2026-11-23: the walking life as the game now draws it: the feet at UnitMotionView.AnimFactor's cadence (half a foot cycle a tile walking, 0.59 running), a 1 px hop on the foot-down frames, a 2-3 degree lean toward the sideways travel
+    def stride_of(key, x, y):
+        lx, ly = last_xy.get(key, (x, y)); dist_ = math.hypot(x - lx, y - ly); last_xy[key] = (x, y); spd = dist_ * 30
+        if dist_ > 0.002: strides[key] = strides.get(key, 0.0) + dist_ * (0.5 + 0.09 * max(0.0, min(1.0, spd - 3.0)))
+        return dist_ > 0.002, int(strides.get(key, 0.0) * 4) % 4, spd, x - lx
+    pmv, pq, pspd, pdx = stride_of("p", px_, py_); bmv, bq, bspd, bdx = stride_of("b", bx, by)
     def drawp():
-        pose = f["pose"]; fl = max(0.0, 1 - (t - hurt.get("p", -9)) / 0.15) * 0.7
-        unit(c, ppose(f["pf"][12] if len(f["pf"]) > 12 else "", pbody), hatchet, d["gh"], f["pf"], PGLOVE, px_, py_, pose, fl, smear=f.get("ps"))
+        pose = list(f["pose"]); fl = max(0.0, 1 - (t - hurt.get("p", -9)) / 0.15) * 0.7
+        key_ = f["pf"][12] if len(f["pf"]) > 12 else ""
+        base = pbody
+        if pmv and not key_ and pq in (0, 2):                       # a foot down: the walk frame and the hop
+            wa_ = (walkA if pq == 0 else walkB).crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16)); base = wa_; pose[0] += 1 / 16
+        if pmv and abs(pdx) > 0.002: pose[1] += -(2 + max(0.0, min(1.0, pspd - 3.4))) * (1 if pdx > 0 else -1)
+        unit(c, ppose(key_, base), hatchet, d["gh"], f["pf"], PGLOVE, px_, py_, tuple(pose), fl, smear=f.get("ps"))
     def drawb():
         global dead_at
         if gone: return
@@ -189,7 +202,7 @@ def draw(i):
             c.alpha_composite(pool, (int(hx - pool.width / 2), int(hy + 2 * Z - pool.height / 2)))
             lying = vcell[0].resize((16 * Z, 16 * Z), Image.NEAREST).rotate(90 if px_ > bx else -90, resample=Image.NEAREST, expand=True)
             c.alpha_composite(lying, (int(hx - lying.width / 2), int(hy + 3 * Z - lying.height / 2))); return
-        cell = vpose(f["bf"][12] if len(f["bf"]) > 12 else "", vcell[(1 + int(t / 0.15) % 2) if bmoved else 0])
+        cell = vpose(f["bf"][12] if len(f["bf"]) > 12 else "", vcell[(1 if bq == 0 else 2 if bq == 2 else 0) if bmv else 0])
         fl = max(0.0, 1 - (t - hurt.get("b", -9)) / 0.15) * 0.7
         if broken: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by + 0.12, (0, -8, 1, 0.9, 1), fl)   # on one knee
         else: unit(c, cell, knife, d["gk"], f["bf"], VGLOVE, bx, by, (0, 0, 1, 1, 1), max(fl, 0.25 if stag else 0), jitter=(Z if stag and i % 2 else 0), smear=f.get("bs"), red=f.get("red"))

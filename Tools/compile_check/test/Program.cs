@@ -1586,15 +1586,22 @@ static class Program {
     }
   }
 
-  static void BossFrames(string path, string which = "visor") {   // 2026-11-23: "spool" = Spool's duel (the trailer scene): same bot, the barbed bat in his hands
-    bool spool = which == "spool";
+  static void BossFrames(string path, string which = "visor") {   // 2026-11-23: "spool" = Spool's duel (the trailer scene): the real Dog Kennels, a bot that moves like a player, the barbed bat in his hands
+    bool spool = which == "spool"; (int x, int y) spoolAt = (0, 0);
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
-    for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
+    string worldName = "perimeter";
+    if (spool) {                                                  // 2026-11-23 (Yan: "the clip should happen at the actual location in game"): the Dog Kennels' yard on the real Tier 2 map, the player walking in from the south
+      MacroState.Current.CurrentZoneId = "scrapyard"; ZoneTravel.EnterZone("scrapyard"); worldName = "scrapyard";
+      var lair = TerrainMap.Landmarks.First(m => m.Name == SpoolBoss.Lair); var (sxx, syy) = TerrainMap.FindNearestEnterable(lair.X, lair.Y + 1); var (pxx, pyy) = TerrainMap.FindNearestEnterable(lair.X - 1, lair.Y + 9);
+      p.X = pxx; p.Y = pyy; px = sxx; py = syy + 4;                    // (px, py): the camera's first look: between the two of them
+      spoolAt = (sxx, syy);
+    }
+    else for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Rt.Of(p).Focus = Rt.FocusMax;   // full Focus: it can dive his red moves
     Boss.Fight f;
-    if (spool) { var hd = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "TacticalHatchet"); if (hd != null) { p.AddItem(TestingGround.ItemOf(hd)); p.EquipWeaponFromInventory(hd.Id); } f = SpoolBoss.Spawn(px + 4, py, false); }
+    if (spool) { var hd = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "TacticalHatchet"); if (hd != null) { p.AddItem(TestingGround.ItemOf(hd)); p.EquipWeaponFromInventory(hd.Id); } f = SpoolBoss.Spawn(spoolAt.x, spoolAt.y, false); }
     else f = Boss.WakeVisor(p, px + 4, py);
     var v = f.Unit; Rt.SetOffset(v, 0f, 0f); string bkey = spool ? "BarbedWireBat" : "SerratedTrenchKnife";
     var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
@@ -1603,7 +1610,7 @@ static class Program {
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "");
     var sb = new System.Text.StringBuilder();
     sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#3d4148")
-      + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + (spool ? Boss.Spool.Hp : Boss.Visor.Hp) + ",\"which\":\"" + which + "\",\"bkey\":\"" + bkey + "\",\"frames\":[");
+      + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + (spool ? Boss.Spool.Hp : Boss.Visor.Hp) + ",\"which\":\"" + which + "\",\"world\":\"" + worldName + "\",\"bkey\":\"" + bkey + "\",\"frames\":[");
     float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f; var moves = new List<string>();
     for (int k = 0; k < 30 * 300; k++) {
       float scale = UnityEngine.Time.timeScale, gdt = real * scale;
@@ -1619,13 +1626,20 @@ static class Program {
       else if (f.Doing != null) {
         if (f.StrikeAt != lastStrike) { lastStrike = f.StrikeAt; strike++; moves.Add(f.Doing.Name); }
         float left = f.StrikeAt - now;
-        if (f.Doing.Danger) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } }
+        if (spool && !f.Doing.Danger && dist > 2) { input.X = sx; input.Y = sy; }                      // closes to where his bat reaches (he no longer snaps to you), then parries
+        if (f.Doing.Danger) { if (left <= 0.3f && !Rt.Of(p).Diving) { input.Jump = true; input.X = -sx == 0 ? -1 : -sx; input.Y = sy == 0 ? 1 : 0; } else if (dist < 3 && left > 0.3f) { input.X = -sx; input.Y = -sy; } }
         else if (strike % 6 == 4) { }                                                  // this one it misses: the hit lands
         else if (strike % 6 == 2) { if (left <= 0.26f && left > 0.2f) input.Parry = true; }   // late: blocked
         else if (left <= 0.11f && left > 0.11f - 1f / 30f) input.Parry = true;      // a beat after the glint (0.4 s before the hit): perfect
       }
       else if (Boss.Staggered(v) || Boss.Open(v)) { if (dist > 1) { input.X = sx; input.Y = sy; } else { fire = !fire; input.Fire = fire; } }   // open: in and hit him
-      else if (now < backUntil) { input.X = -sx; input.Y = 0; input.Sprint = true; }      // after some punishes it sprints off: he lunges
+      else if (now < backUntil) { input.X = -sx; input.Y = spool ? (((int)(now * 3f)) % 2 == 0 ? 1 : -1) * (sy == 0 ? 1 : 0) : 0; input.Sprint = true; }      // after some punishes it sprints off (a weave, for the spool clip): he lunges
+      else if (spool && backUntil < 0f) {                                                              // neutral: a player does not stand still. Run in from afar, then work the ring 2.5-3.5 tiles out: step in and out, circling him, a change of direction every ~1.3 s
+        input.Sprint = dist > 7;
+        int circ = ((int)(now / 1.3f) % 2 == 0) ? 1 : -1; int tx = -(v.Y - p.Y), ty = v.X - p.X; tx = Math.Sign(tx) * circ; ty = Math.Sign(ty) * circ;
+        if (dist > 4) { input.X = sx; input.Y = sy; } else if (dist < 3) { input.X = -sx + tx; input.Y = -sy + ty; } else { input.X = tx; input.Y = ty; }
+        input.X = Math.Sign(input.X); input.Y = Math.Sign(input.Y);
+      }
       else if (dist > 2 && backUntil < 0f) { input.X = sx; input.Y = sy; }
       bool open = Boss.Staggered(v);
       if (wasOpen && !open && ++staggers % 2 == 0) backUntil = now + 1.3f;
