@@ -4840,7 +4840,7 @@ static class Program {
       Check(Live() == 0 && TestingGround.Dummies.Count == 3, "testing ground: cleared (the dummies stay)");
       // the target dummy: hits show numbers (head ones marked), it never wakes up, heals 3 s after the last hit, stands up again
       EncounterState.InCombat = false; TestingGround.Now = 100f;
-      var dm = TestingGround.Dummies[0].H; int full = dm.Hp; var blade = W("melee", "HuntingKnife");
+      var dm = TestingGround.Dummies[0].H; dm.MaxHp = dm.Hp = 20000; int full = dm.Hp; var blade = W("melee", "HuntingKnife");
       Melee.Strike(tp, blade, dm, "Head", 1f); TestingGround.Tick();
       var num = TestingGround.Numbers.LastOrDefault();
       Check(dm.Hp < full && num != null && num.Who == dm && num.Kind == 1 && num.Text.StartsWith((full - dm.Hp) + " head") && !dm.IsAggroed && !EncounterState.InCombat,
@@ -4853,7 +4853,7 @@ static class Program {
       Check(!dm.IsAlive() && TestingGround.Numbers.Last().Kind == 2, "dummy: the killing hit is marked");
       TestingGround.Now = 107f; TestingGround.Tick();
       var again = TestingGround.Dummies.FirstOrDefault(d => d.X == 13 && d.Y == 19);
-      Check(again != null && again.H != dm && again.H.IsAlive() && again.H.Hp == full && TestingGround.Numbers.Count == 0 && TestingGround.Dummies.Count == 3,
+      Check(again != null && again.H != dm && again.H.IsAlive() && again.H.Hp == again.H.MaxHp && TestingGround.Numbers.Count == 0 && TestingGround.Dummies.Count == 3,
         "dummy: a dropped dummy stands up again in its place, and that isn't a hit");
       TestingGround.Now = -1f;
       Check(TestingGround.AllMutants().Count() > 5 && ShopDatabase.Items.Count(d => d.Type == "weapon") > 20, "testing ground: every mutant and weapon is on offer");
@@ -5786,7 +5786,7 @@ static class Program {
       Check(got == front && front.Hp < f0 && back.Hp == b0 && front.StatusEffects.Bleeding, $"RT 7a: a swing hits the one in front ({f0} -> {front.Hp}), not the one behind, and he bleeds");
       EncounterState.Enemies.Clear();
       var far = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(far);
-      int h0 = far.Hp;
+      far.MaxHp = far.Hp = 20000; int h0 = far.Hp;     // (the player's melee is doubled: a rookie's own hit points would die to one hatchet)
       Melee.Throw(p, hw, 1f, 0f, 0.45f);
       Check(p.EquippedWeapon == null && Melee.Air.Count == 1, "RT 7a: a thrown hatchet leaves your hands");
       float t = 0f; for (; t < 1f && Melee.Air.Count > 0; t += 0.02f) { Melee.Now = t; Melee.Tick(0.02f); }
@@ -5806,11 +5806,11 @@ static class Program {
         Check(ss.Swing > knife.Swing && ss.ThrowSpeed < knife.ThrowSpeed && sledge.BaseDamage > W("HuntingKnife").BaseDamage && ss.TwoHanded && !knife.TwoHanded,
           $"RT 7v: the sledge swings slower ({ss.Swing:0.00} s vs {knife.Swing:0.00}), flies slower, hits harder and takes both hands");
         var bat = W("WoodenBaseballBat"); Melee.Now = 0f;
-        var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; foe.Hp = 100000; EncounterState.Enemies.Add(foe);
+        var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; foe.MaxHp = foe.Hp = 100000; EncounterState.Enemies.Add(foe);
         Melee.Strike(p, bat, foe, "Torso", 1f);
         Check(!foe.StatusEffects.Bleeding && Body.Of(foe).ConcussedUntil > 0f, "RT 7v: a bat concusses, no bleeding");
         EncounterState.Enemies.Clear();
-        var far2 = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; far2.Hp = 100000; EncounterState.Enemies.Add(far2);
+        var far2 = new HumanEnemy("Far", px + 5, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; far2.MaxHp = far2.Hp = 100000; EncounterState.Enemies.Add(far2);
         Melee.Throw(p, bat, 1f, 0f, 0.45f);
         for (float t2 = 0f; t2 < 1.5f && Melee.Air.Count > 0; t2 += 0.02f) { Melee.Now = t2; Melee.Tick(0.02f); }
         Check(Melee.InBodies.Count == 0 && TerrainMap.GroundItems.Any(g => g.Item.Key == "WoodenBaseballBat"), "RT 7v: a thrown bat hits and drops, it never sticks");
@@ -5830,7 +5830,7 @@ static class Program {
       int Swung(float hold) {
         Melee.Reset(); EncounterState.Enemies.Clear(); p.EquipWeapon("melee", "TacticalHatchet"); var w2 = p.EquippedWeapon;
         var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(foe);
-        foe.Hp = 100000; int hp = foe.Hp; var at = (Ballistics.Pos(foe).x, Ballistics.Pos(foe).y);
+        foe.MaxHp = foe.Hp = 100000; int hp = foe.Hp; var at = (Ballistics.Pos(foe).x, Ballistics.Pos(foe).y);
         Melee.Now = 0f; Melee.PlayerInput(p, w2, true, false, at); Melee.Now = hold; Melee.PlayerInput(p, w2, false, false, at);
         for (float s = hold; s < hold + 1f; s += 0.02f) { Melee.Now = s; Melee.Tick(0.02f); }
         return hp - foe.Hp; }

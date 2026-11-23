@@ -274,6 +274,7 @@ namespace GameCore
         public static float LandsIn(ICombatant by) { float now = T, best = -1f; foreach (var q in Pending) if (q.by == by && (best < 0f || q.at - now < best)) best = q.at - now; return best; }
 
         /// <summary>Damage from a swing or a throw that lands: the old armor math, limb health, bleeding or a concussion.</summary>
+        public const float PlayerMeleeScale = 2f;   // 2026-11-23 (Yan: "double all melees damages, they feel weak since you have to parry half the time"): the player's melee (and thrown blades) x 2
         public static void Strike(ICombatant by, Weapon w, ICombatant target, string part, float side, FxEvent fx = null, float mult = 1f)
         {
             if (Rt.Untouchable(target)) { if (fx != null) fx.Hit = false; return; }   // RT 9: dived clear
@@ -283,7 +284,7 @@ namespace GameCore
             if (target is Mutant tm0 && !tm0.IsAggroed) raw *= 1.3f;                      // they never saw it coming
             if (EelSump.IsEelHead(target, part)) raw *= EelSump.HeadBonus;                // the eel's head takes extra, as for guns
             if (ItemCondition.IsDamaged(w.Condition)) raw *= 0.75f;
-            if (by is Player) raw *= CombatRules.PlayerDamage;
+            if (by is Player) raw *= CombatRules.PlayerDamage * PlayerMeleeScale;
             raw *= CombatRules.Lethality * Boss.DamageScale(target);                       // 2026-11-20: the Verger takes a tenth while he changes
             float dr = part == "Head" ? HeadGear.Of(HeadGear.ArmorOf(target)).dr : target.PhysDR * CombatRules.ArmorScale(target);
             int dmg = CombatRules.PhysicalDamage(raw, "Standard", dr, w.Db?.IgnorePhysDRPercent ?? 0f);

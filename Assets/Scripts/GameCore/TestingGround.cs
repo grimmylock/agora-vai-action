@@ -120,7 +120,7 @@ namespace GameCore
         {
             // 2026-11-23 (Yan: "make his entry in the bossfight testing grounds send us to the cathedral"): the cathedral itself, you at the doors, him walking down from the altar end (his introduction plays)
             Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Story.Clear("verger_done");
-            MacroState.Current.CurrentZoneId = CathedralJob.Zone; ZoneTravel.EnterZone(CathedralJob.Zone);
+            DungeonLairs.Skip(CathedralJob.Zone); MacroState.Current.CurrentZoneId = CathedralJob.Zone; ZoneTravel.EnterZone(CathedralJob.Zone);
             var door = CathedralJob.Mark("Cathedral Doors") ?? CathedralJob.Mark(CathedralJob.Rope); var altar = CathedralJob.Mark(CathedralJob.AltarMark) ?? CathedralJob.Mark(CathedralJob.Rope);
             if (door == null || altar == null) { var (fx, fy) = TerrainMap.FindNearestEnterable(p.X + 6, p.Y); VergerBoss.Spawn(fx, fy, false); return; }
             int k = 0; foreach (var q in Player.All) { int sx = System.Math.Sign(altar.X - door.X), sy = System.Math.Sign(altar.Y - door.Y); var (px, py) = TerrainMap.FindNearestEnterable(door.X + sx * 2 + k % 3, door.Y + sy * (2 + k / 3)); q.X = px; q.Y = py; Rt.SetOffset(q, 0f, 0f); k++; }

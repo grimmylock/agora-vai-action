@@ -34,6 +34,8 @@ namespace GameCore
             new Lair { Zone = "hospital_morgue", Landmark = "Washroom", Kind = "Ward Hulk", TierPlus = 0 },
         };
 
+        /// <summary>2026-11-23: the Testing Ground boss duels in a dungeon: its lairs count as cleared, so no stray mutant joins the fight.</summary>
+        public static void Skip(string zone) { foreach (var l in All.Where(l => l.Zone == zone)) MacroState.Current.StoryFlags.Add(Flag(l)); }
         static string Flag(Lair l) => "lair:" + l.Zone + ":" + l.Landmark;
 
         /// <summary>The landmark names of a zone's lairs (tests and the examine text).</summary>

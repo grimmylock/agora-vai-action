@@ -12,7 +12,7 @@ namespace GameCore
     {
         /// <summary>Ported from createMutantFromDb(dbEntry, x, y).</summary>
         /// <summary>2026-11-23 (Yan: "remove mind weaver spawns for now, a few of them spawned instead of the wretches"): mutants kept out of the world for now. Whatever asks for one (a squad, a lair, a story wave, a saved squad) gets another of its tier (or below) instead.</summary>
-        public static readonly System.Collections.Generic.HashSet<string> Disabled = new System.Collections.Generic.HashSet<string> { "Mind Weaver" };
+        public static readonly System.Collections.Generic.HashSet<string> Disabled = new System.Collections.Generic.HashSet<string> { "Mind Weaver", "Void Weaver" };
         public static MutantDef NotDisabled(MutantDef d)
         {
             if (d == null || !Disabled.Contains(d.Name)) return d;
