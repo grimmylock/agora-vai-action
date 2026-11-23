@@ -583,7 +583,9 @@ namespace GameCore
         /// same on-screen size as before. Its grip/support/muzzle entries below stay in "virtual" pixels (texture pixels / k, the old 32-a-unit pixels), so all the pose maths and the muzzle offset need no change; only the sprite
         /// (pivot and pixels-per-unit) is made at k. No cut pieces (magazine, cylinder) for it yet: its reload is the hands alone.</summary>
         public static readonly Dictionary<string, float> Dense = new Dictionary<string, float>
-        {   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
+        {
+            // 2026-11-23 (Yan: "replace the current mini-sprites with the inventory ones ... reducing the size of the png and placing it in the characters hands"): the melee weapons are drawn from their inventory pictures too (weapon_<Key>_hd.png), k = the picture's content width / the old in-hand picture's (the same size on screen as before); grip and cutting point re-mapped by position on the weapon (ArtSource/weapons/melee_to_hd.py). The Tactical Hatchet stays Yan's own drawing.
+            ["HuntingKnife"] = 3.41f, ["SpetsnazSwitchblade"] = 3.47f, ["SteppeMachete"] = 2.00f, ["SerratedTrenchKnife"] = 2.86f, ["ObeliskRitualBlade"] = 2.54f, ["Hatchet"] = 2.77f, ["WoodenBaseballBat"] = 2.03f, ["Hammer"] = 2.59f, ["FireAxe"] = 2.07f, ["Sledgehammer"] = 1.94f, ["BarbedWireBat"] = 2.03f, ["VergerScythe"] = 1.97f,   // k = the double-size picture's content width / the old in-hand picture's width (ArtSource/weapons/make_gun_x2.py prints the line; rules: ArtSource/weapons/WEAPON_SPRITE_RULES.md)
             ["RinaldiR6"] = 7.09f, ["HaldenLeverShotgun"] = 6.32f, ["FrontierLeverRifle"] = 6.00f, ["Nightwalker4570"] = 6.00f,
             ["SperlingS96"] = 5.00f, ["Halden45Service"] = 5.71f, ["HaldenServiceRevolver"] = 5.26f, ["WaldenP9"] = 5.38f,
             ["VK74"] = 5.79f, ["RangerP8"] = 5.95f, ["SKNKarabin"] = 5.67f, ["CorvanWasp9"] = 6.91f,
@@ -645,16 +647,16 @@ namespace GameCore
             ["cat_heavy"]   = new[] { 11.5f, 10.5f, 24f, 7.5f, 32f, 7f },
             // Batch 29: every weapon hand-pixelled (ArtSource/weapons/hand, exported by export_hand.py)
             // RT 7v: the melee set pixelled by hand from Yan's references (ArtSource/weapons/hand/melee_px.py), on 32x16 canvases
-            ["HuntingKnife"] = new[] { 11.5f, 8f, float.NaN, float.NaN, 23f, 7.5f },
-            ["SpetsnazSwitchblade"] = new[] { 11.5f, 8f, float.NaN, float.NaN, 23f, 7.5f },
-            ["SteppeMachete"] = new[] { 4.5f, 8f, float.NaN, float.NaN, 30f, 6.5f },
-            ["SerratedTrenchKnife"] = new[] { 9.5f, 7f, float.NaN, float.NaN, 26f, 7.5f },
-            ["ObeliskRitualBlade"] = new[] { 7f, 7f, float.NaN, float.NaN, 26f, 6.5f },
-            ["Hatchet"] = new[] { 10.5f, 7f, float.NaN, float.NaN, 25.5f, 11.5f },
-            ["FireAxe"] = new[] { 5.5f, 8f, float.NaN, float.NaN, 29.5f, 13.5f },
-            ["Hammer"] = new[] { 10.5f, 7f, float.NaN, float.NaN, 23.5f, 11f },
-            ["Sledgehammer"] = new[] { 4.5f, 8f, float.NaN, float.NaN, 28f, 12.5f },
-            ["WoodenBaseballBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
+            ["HuntingKnife"] = new[] { 5.5f, 4.5f, float.NaN, float.NaN, 17f, 4.5f },
+            ["SpetsnazSwitchblade"] = new[] { 5f, 4.5f, float.NaN, float.NaN, 16.5f, 4.5f },
+            ["SteppeMachete"] = new[] { 5f, 8f, float.NaN, float.NaN, 30.5f, 6.5f },
+            ["SerratedTrenchKnife"] = new[] { 5f, 4.5f, float.NaN, float.NaN, 21.5f, 5f },
+            ["ObeliskRitualBlade"] = new[] { 4.5f, 6.5f, float.NaN, float.NaN, 23.5f, 6f },
+            ["Hatchet"] = new[] { 6f, 4.5f, float.NaN, float.NaN, 21f, 8.5f },
+            ["FireAxe"] = new[] { 5f, 7.5f, float.NaN, float.NaN, 29f, 12.5f },
+            ["Hammer"] = new[] { 6.5f, 5.5f, float.NaN, float.NaN, 19.5f, 9f },
+            ["Sledgehammer"] = new[] { 5f, 8f, float.NaN, float.NaN, 28.5f, 12f },
+            ["WoodenBaseballBat"] = new[] { 5f, 7.5f, float.NaN, float.NaN, 29f, 7.5f },
             ["VergerClaws"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },   // 2026-11-20: bare claws, no weapon sprite: the grip only keeps the swing poses working
             ["ExcavatorBucket"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },   // 2026-11-21: drawn by its own clips
             ["OrderlySaw"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },        // 2026-11-21: drawn by his own clips
@@ -662,8 +664,8 @@ namespace GameCore
             ["FerrymanHook"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },  // 2026-11-21: the Ferryman: drawn by his own clips
             ["SingerHands"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },   // 2026-11-21: the Singer: no weapon sprite
             ["MotherJaws"] = new[] { 5f, 8f, float.NaN, float.NaN, 14f, 8f },    // 2026-11-21: Mother Hollow's bite: no weapon sprite, the grip keeps the swing code working
-            ["VergerScythe"] = new[] { 7f, 15f, float.NaN, float.NaN, 24f, 6f },   // 2026-11-20: the grip on the wrap of the low snath, the cutting point mid-blade (a bigger, straighter blade: 36x20 sprite)
-            ["BarbedWireBat"] = new[] { 5.5f, 7.5f, float.NaN, float.NaN, 29.5f, 7.5f },
+            ["VergerScythe"] = new[] { 7f, 15f, float.NaN, float.NaN, 24f, 6.5f },   // 2026-11-20: the grip on the wrap of the low snath, the cutting point mid-blade (a bigger, straighter blade: 36x20 sprite)
+            ["BarbedWireBat"] = new[] { 5f, 7.5f, float.NaN, float.NaN, 29f, 7.5f },
             ["TacticalHatchet"] = new[] { 9f, 6f, float.NaN, float.NaN, 25f, 11f },   // RT 7c: fist low on the handle, a little handle showing below it   // RT 7a: Yan's drawing (tactical_hatchet.py); "muzzle" = the blade's top corner
             ["PSh18Pchela"] = new[] { 6.3f, 10.3f, float.NaN, float.NaN, 19.8f, 3.5f },
             ["WaldenP9"] = new[] { 5.7f, 10.5f, float.NaN, float.NaN, 21.7f, 3.4f },
