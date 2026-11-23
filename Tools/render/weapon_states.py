@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import held_anim as ha
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); SPR = os.path.join(ROOT, "Assets/Resources/Sprites")
 subprocess.run(["dotnet", "/tmp/test.dll", "weaponstates", "/tmp/ws.json"], check=True, capture_output=True)
-rows = json.load(open("/tmp/ws.json")); FPS = 50
+rows = json.load(open("/tmp/ws.json")); FPS = 25
 def cell(n): return Image.open(os.path.join(SPR, n)).convert("RGBA").crop((0, 0, 16, 16))
 stand, wa, wb = cell("armor_atlas.png"), cell("armor_walk_a.png"), cell("armor_walk_b.png")
 gl = ha.glove("#5e2424", "#c8916a"); font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)

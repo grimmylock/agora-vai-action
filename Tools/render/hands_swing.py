@@ -4,7 +4,7 @@ Usage: python3 Tools/render/hands_swing.py out_dir -> hands_swing.gif, hands_swi
 import math, os, sys
 from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); SPR = os.path.join(ROOT, "Assets/Resources/Sprites")
-Z = 8; BG = (58, 54, 42, 255); FPS = 50; STRIDE = 1.2
+Z = 8; BG = (58, 54, 42, 255); FPS = 25; STRIDE = 1.2
 def clamp01(v): return max(0.0, min(1.0, v))
 def af(speed): return 0.5 + (0.59 - 0.5) * clamp01(speed - 3.0)                 # UnitMotionView.AnimFactor: a walk takes half the steps per tile, a run the old walking cadence
 def cycle(speed): return STRIDE * 2 + (2.03 - STRIDE * 2) * clamp01(speed - 3.0)   # HeldWeaponView.CycleTiles: tiles per full arm swing
