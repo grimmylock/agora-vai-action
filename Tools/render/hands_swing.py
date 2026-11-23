@@ -98,3 +98,26 @@ fr2[0].save(os.path.join(sys.argv[1], "run_directions.gif"), save_all=True, appe
 pick = [fr2[k] for k in (0, 7, 14, 21, 28, 35)]; sh = Image.new("RGB", (pick[0].width, pick[0].height * 3 // 1 // 3 * len(pick) // 1)); 
 sh = Image.new("RGB", (pick[0].width, pick[0].height * len(pick))); [sh.paste(x, (0, k * x.height)) for k, x in enumerate(pick)]
 sh.save(os.path.join(sys.argv[1], "run_directions_sheet.png")); print("dirs ok")
+
+# ---- the raise: carry -> aim up (0.12 s, smoothstep) and back (0.25 s), same blend as HeldWeaponView (aim angle + DeltaAngle(aim, rest) * ease) ----
+def blend(a, b, k): return a + (b - a) * k
+def raise_frame(k, label):                      # k = carry amount 1 (carried) .. 0 (aimed up)
+    r0, r1 = rest[0], rest[90]; ease = k * k * (3 - 2 * k)
+    f = dict(r1)
+    for key in ("gx", "gy", "hx", "hy", "sx", "sy", "deg"): f[key] = blend(r1[key], r0[key], ease)
+    f["gx"] += -3 * ease; f["hx"] += -3 * ease; f["sx"] += -3 * ease
+    back = ease < 0.5
+    body = (bstand if back else stand).resize((16 * ha.S, 16 * ha.S), Image.NEAREST)
+    c = Image.new("RGBA", (ha.W * ha.S, ha.H * ha.S), ha.BG)
+    def put_gun(): ha.paste(c, gun, r1["grip"][0], r1["grip"][1], f["gx"], f["gy"], f["deg"], False)
+    def put_hands():
+        for (x, y, on) in ((f["sx"], f["sy"], 1), (f["hx"], f["hy"], 1)): c.alpha_composite(gl, (round((ha.BX + x) * ha.S - 2 * ha.S), round((ha.BY + y) * ha.S - 1.5 * ha.S)))
+    if back: put_gun(); put_hands(); c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S))
+    else: c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S)); put_gun(); put_hands()
+    c = c.convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST); ImageDraw.Draw(c).text((6, 4), label, font=font, fill=(240, 200, 90)); return c
+seq = []
+for i in range(int(0.12 * FPS) + 1): seq.append(raise_frame(1 - i / (0.12 * FPS), "aim (right mouse): raise 0.12 s"))
+seq += [raise_frame(0, "aimed up")] * int(0.6 * FPS)
+for i in range(int(0.25 * FPS) + 1): seq.append(raise_frame(i / (0.25 * FPS), "released: lower 0.25 s"))
+seq += [raise_frame(1, "carried")] * int(0.6 * FPS)
+seq[0].save(os.path.join(sys.argv[1], "gun_raise.gif"), save_all=True, append_images=seq[1:], duration=1000 // FPS, loop=0); print("raise ok")

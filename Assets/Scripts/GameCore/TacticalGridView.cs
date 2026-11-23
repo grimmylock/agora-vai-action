@@ -861,7 +861,7 @@ namespace GameCore
             if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
                 var (hdx, hdy) = _fx.LastHitDir(u); float travelX = 0f, trSpeed = 0f; if (_lifeLast.TryGetValue(marker, out var lastP)) { var tv = marker.transform.position - lastP; travelX = tv.x; trSpeed = Mathf.Sqrt(tv.x * tv.x + tv.y * tv.y) / Mathf.Max(Time.deltaTime, 0.0001f); } var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f, trSpeed);
-                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; lh.Carry = CarryNow(u); }
+                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; lh.Carry = CarryNow(u); lh.CarrySnap = u is Player sp && Time.time - Rt.Of(sp).FiredAt <= 0.8f; }
             }
             else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; lh2.Carry = false; }
             // a footstep each time a foot comes down (Batch 30)
