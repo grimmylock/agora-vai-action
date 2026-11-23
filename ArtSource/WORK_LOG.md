@@ -7159,3 +7159,10 @@ Yan: "sometimes the verger doesn't strike with the bladed part of the scythe, us
 
 Yan: "sledgehammer has a little too much swing, besides that they all look fine, push to live". Sledgehammer spring (omega, zeta, max lag) 14/0.36/65 -> 16/0.5/38 (more damping, shorter overshoot; `WeaponSpring.For`, mirrored in the preview scripts). Full harness: ALL CHECKS PASSED. Merged `realtime-proto` into `main` at Yan's request. Not run in Unity.
 
+## 2026-11-23 - Batch 9dx: item use no longer fights the carry pose
+
+Yan (screenshot: pistol hanging low, medkit floating, the glove away from it): "the new running animations are not working and the new weapon placement animations break the use of items".
+
+- Cause of the item bug, read from the code: while an item is used the carry (`Carry`, true whenever you are not aiming) still blended the weapon to its rest angle (`HeldWeaponView.ShowCore`), and the walk/run wrapper then moved the support glove with the carry swing and, for pistols (`cd.FreeArm`), replaced it with the hanging free arm - so the glove left the medkit sprite. Fix: with `UseKind != null` the carry drops to 0 at once and the wrapper returns before any swing (`HeldWeapon.cs`, ShowCore + Show).
+- Running: NOT fixed - I could not find a cause by reading (speed thresholds 1.5 / 3.4 tiles/s against Walk 2.6 / Sprint 4.4 in `Rt.cs:87` fit, `LifeOn` is set for `Player` in `TacticalGridView.cs:866`, Show runs after it). Asked Yan what he sees (walk or sprint, which weapon, hands / body lean / nothing). Harness passes; nothing run in Unity.
+

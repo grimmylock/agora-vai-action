@@ -1227,6 +1227,7 @@ namespace GameCore
             _lastPos2 = clean; float wk = LifeOn ? Mathf.Clamp01(spd / 1.5f) : 0f, rk = LifeOn ? Mathf.Clamp01((spd - 3.4f) / 1.0f) : 0f;
             float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
             ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
+            if (UseKind != null) return;                                                               // using an item: no walk/run swing on top of the use pose (it moved the glove off the item and the free-arm hang replaced it)
             bool carrying = _carryK > 0.01f;
             if ((!LifeOn && !carrying) || !visible || weapon?.Db == null || JawHold || (_walkK < 0.05f && !carrying)) return;
             // Yan, twice, with drawings: the rifle must swing like a PENDULUM across the body (a smile-shaped arc: sideways, lowest in the middle, lifted at both ends), not bob up and down. So: the whole held assembly
@@ -1257,7 +1258,8 @@ namespace GameCore
             // 2026-11-23 (Yan: "fix this" - the gun jumps from the carry to the aim; "in the run up preview the weapon is behind the npc"): the carry blends in and out (_carryK: raised in 0.12 s when you aim, lowered over 0.25 s; a trigger pull
             // snaps it up at once so the first shot leaves the muzzle where it is aimed), and from the moment it is mostly carried it is drawn IN FRONT of the body even when the body shows its back (the `back` layering used to hide it)
             { float dtc = Mathf.Max(Time.deltaTime, 0.0001f); float tgt = Carry && on && !CombatRules.IsMelee(weapon) ? 1f : 0f;
-              if (tgt < 0.5f && CarrySnap) _carryK = 0f; else _carryK = Mathf.MoveTowards(_carryK, tgt, dtc / (tgt > _carryK ? 0.25f : 0.12f));
+              if (UseKind != null) { tgt = 0f; _carryK = 0f; }   // 2026-11-23 (Yan: the carry pose broke item use): using an item drops the carry at once, the use pose owns the hands
+              else if (tgt < 0.5f && CarrySnap) _carryK = 0f; else _carryK = Mathf.MoveTowards(_carryK, tgt, dtc / (tgt > _carryK ? 0.25f : 0.12f));
               if (_carryK > 0.5f) back = false; }
             // RT 6g: the magazine just under the gun (a pistol's sits inside the grip, hidden by it until it slides out)
             _mag.sortingOrder = _base + (back ? -4 : 1); _gun.sortingOrder = _base + (back ? -3 : 2); _barrels.sortingOrder = _gun.sortingOrder; _support.sortingOrder = _base + (back ? -2 : 3); _grip.sortingOrder = _base + (back ? -1 : 4);
