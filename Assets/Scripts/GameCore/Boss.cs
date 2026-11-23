@@ -176,22 +176,23 @@ namespace GameCore
             Moves = VergerScytheMoves(),
         };
         /// <summary>2026-11-21: the scythe moveset (poses: 0 reap, 1 sweep, 2 rising, 3 hook, 4 danse, 5 ankle reap, 6 backhand, 7 impale). White = parry, red = dive under or get out of reach.</summary>
+        const float VergerWindExtra = 0.3f;     // 2026-11-23 (Yan: "make the delay on his attacks 0.3 seconds slower, he hits too fast"): every move's wind-up + 0.3 s
         const float VergerDamage = 0.7f;      // 2026-11-23 (Yan: "3 shotting a player in tier 5 armor is kinda harsh, nerf it by about 30%"): every blow of his scythe moveset x 0.7
-        static Move[] VergerScytheMoves() { var ms = VergerScytheMovesRaw(); foreach (var m in ms) { m.Mult *= VergerDamage; if (m.Mults != null) for (int i = 0; i < m.Mults.Length; i++) m.Mults[i] *= VergerDamage; } return ms; }
+        static Move[] VergerScytheMoves() { var ms = VergerScytheMovesRaw(); foreach (var m in ms) { m.Wind += VergerWindExtra; m.Mult *= VergerDamage; if (m.Mults != null) for (int i = 0; i < m.Mults.Length; i++) m.Mults[i] *= VergerDamage; } return ms; }
         static Move[] VergerScytheMovesRaw() => new[]
         {
             // both phases: the measured hunter
             new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, MaxDist = 2f, Poses = new[] { 0 }, Open = 1.4f },                                                     // overhead, into the floor in front of him
             new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.65f, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6 }, Open = 1.7f },                         // round and back
             new Move { Name = "Rising Cut", Wind = 0.7f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 2 }, Open = 1.1f },                                              // the quick one: short wind, short opening
-            new Move { Name = "Hook", Wind = 1.0f, Danger = true, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 3 }, Open = 1.2f },                           // from range: the beard catches you and he hauls you in
+            new Move { Name = "Hook", Wind = 1.0f, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 3 }, Open = 1.2f },                           // from range: the beard catches you and he hauls you in
             new Move { Name = "Ankle Reap", Wind = 0.9f, Danger = true, Mult = 0.9f, MaxDist = 2f, Weight = 2, Poses = new[] { 5 }, Open = 1.6f },                               // low, at your feet: dive over it
             // phase 1 only
             new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gaps = new[] { 0.45f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.9f }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 0 }, Open = 1.8f, Phase1Only = true },
             // phase 2: the hat comes off
             new Move { Name = "Danse", Wind = 0.8f, Hits = 4, Gap = 0.5f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4, 4, 4 }, Open = 2.0f, Phase2Only = true },          // four full turns, all round him (2026-11-23: phase 2 is longer combos, not faster)
             new Move { Name = "Toll", Wind = 1.0f, Danger = true, MaxDist = 6f, Effects = new[] { "toll" }, Weight = 1, Poses = new[] { 0 }, Open = 1.3f, Phase2Only = true },     // the blade struck on the flagstones rings like the bell: deafened and your aim gone (dive)
-            new Move { Name = "Hook-Reap", Wind = 1.0f, Hits = 3, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f, 0.55f }, Mults = new[] { 1.0f, 1.0f, 1.4f }, RedHits = new[] { true, false, false }, Weight = 2, Poses = new[] { 3, 0, 2 }, Open = 2.2f, Phase2Only = true },   // hauled in, then the reap: parry the second
+            new Move { Name = "Hook-Reap", Wind = 1.0f, Hits = 3, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f, 0.55f }, Mults = new[] { 1.0f, 1.0f, 1.4f }, RedHits = new[] { false, false, false }, Weight = 2, Poses = new[] { 3, 0, 2 }, Open = 2.2f, Phase2Only = true },   // hauled in, then the reap: parry the second
             new Move { Name = "Reaper's Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.6f, Weight = 2, Poses = new[] { 7 }, Open = 2.2f, Phase2Only = true },             // across the nave and the point driven down
             new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 7, Gaps = new[] { 0.4f, 0.4f, 0.5f, 0.6f, 0.4f, 0.55f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 0.7f, 0.6f, 1.3f }, RedHits = new[] { false, false, true, false, false, true, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 4, 5, 0 }, Open = 2.6f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
             new Move { Name = "Last Rite", Wind = 0.9f, Hits = 6, Gaps = new[] { 0.5f, 0.45f, 0.7f, 0.45f, 0.6f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 0.7f, 0.6f, 1.9f }, RedHits = new[] { false, false, true, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 4, 5, 7 }, Open = 3.0f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
@@ -260,7 +261,7 @@ namespace GameCore
             if (f.Doing != null && f.GlintDue >= 0f && now >= f.GlintDue) { f.GlintDue = -1f; Glint(f, Red(f.Doing, f.Doing.Hits - f.HitsLeft)); }
             if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
-            if (f.Def == Verger && VergerPhase2.Tick(f, p, now)) return;                     // 2026-11-23: the half-health cutscene and its mash (VergerPhase2.cs); afterwards just the red sparks
+            if (f.Def == Verger && (VergerPhase2.Tick(f, p, now) || VergerHook.Tick(f, now))) return;                     // 2026-11-23: the half-health cutscene and its mash (VergerPhase2.cs); afterwards just the red sparks
             if (now < f.StaggerUntil) return;
             if (now < f.ChangeUntil) return;                                                  // mid-change: he does nothing, and takes a tenth
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2 && f.Def.Change != null) { BeginChange(f, now); return; }
@@ -300,8 +301,8 @@ namespace GameCore
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
                 return;
             }
-            if (f.Doing.Lunge > 0f && f.Doing.Drag <= 0f && !f.Def.Rooted && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
-            { f.LungedFor = f.StrikeAt; StepIn(f.Unit, p, 0.8f); }
+            if (f.Doing.Lunge > 0f && (f.Doing.Drag <= 0f || f.Def == Verger) && !f.Def.Rooted && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
+            { f.LungedFor = f.StrikeAt; StepIn(f.Unit, p, f.Doing.Drag > 0f ? HookGap : 0.8f); }
             if (now < f.StrikeAt) return;
             Land(f, p);
             if (f.Doing == null) return;                                    // parried mid-combo: the stagger already cut it short
@@ -387,17 +388,19 @@ namespace GameCore
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)
             f.StruckAt = Time.time;
-            if (!f.Def.Rooted) StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
+            bool standsAndSwings = f.Def == Verger && !f.Beast && m.Lunge <= 0f && m.Drag <= 0f;      // 2026-11-23 (Yan: "the Verger's attacks teleport him to the player, even if you space the attacks"): his plain swings no longer snap him to you at the hit - back out of the scythe's reach during the wind-up and it misses
+            if (!f.Def.Rooted && !standsAndSwings) StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
             var anim = CombatFx.Push("melee", h, p, h.EquippedWeapon); anim.Now = true;
             int hi = m.Hits - f.HitsLeft; bool red = Red(m, hi);
-            if (red && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; return; }   // the dive goes under it
+            if (red && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; if (m.Drag > 0f && hi == 0) { var mf = CombatFx.Push("hookchain", h, p, null); mf.Now = true; mf.Hit = false; } return; }   // 2026-11-23: the chain is thrown (and misses) even when you dive   // the dive goes under it
             if (h.EquippedWeapon == null) return;
-            Parry.Unparryable = red; int hp0 = p.Hp;
+            Parry.Unparryable = red; int hp0 = p.Hp, par0 = Parry.Count;
             try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, MultOf(m, hi)); }
             finally { Parry.Unparryable = false; }
             if (VergerBoss.IsBeast(h)) { var sf = CombatFx.Push("beastslash", h, p, null); sf.Now = true; sf.Hit = p.Hp < hp0; if (sf.Hit) HitStop(0.05f); }      // 2026-11-21: the claws' slash is drawn, and a landed blow has weight
+            if (m.Drag > 0f && hi == 0 && f.Def == Verger && Parry.Count != par0) { var pf = CombatFx.Push("hookchain", h, p, null); pf.Now = true; pf.Hit = true; VergerHook.Begin(f, p, Time.time); return; }      // parried: the tug-of-war
             if (m.Drag > 0f && hi == 0) { bool caught = p.Hp < hp0; var cf = CombatFx.Push("hookchain", h, p, null); cf.Now = true; cf.Hit = caught; if (caught) DragIn(h, p, m.Drag); }   // the chain: thrown, and if it cuts, hauled
         }
 
@@ -448,7 +451,7 @@ namespace GameCore
         public const float HookGap = 2.0f, DragStop = 0.9f;
         /// <summary>2026-11-20 (the Verger's Hook): the blade's beard catches you and hauls you in: a slide toward him (Rt.Shove: eased, walls and friends stop it) to just in front of him, and a moment on the floor.</summary>
         public static void DragTo(HumanEnemy h, Player p, float maxTiles) => DragIn(h, p, maxTiles);
-        internal static void DragIn(HumanEnemy h, Player p, float maxTiles)
+        public static void DragIn(HumanEnemy h, Player p, float maxTiles)
         {
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = hx - px, dy = hy - py, d = Mathf.Sqrt(dx * dx + dy * dy); float pull = Mathf.Min(maxTiles, d - DragStop);

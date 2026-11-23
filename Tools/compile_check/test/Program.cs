@@ -3156,12 +3156,21 @@ static class Program {
       for (int rep = 0; rep < 200; rep++) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; f.Phase = 1; h.Hp = h.MaxHp; h.X = p.X + 2; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
       Check(seen.Contains("Reap") && seen.Contains("Hook") && !seen.Any(n => V.Moves.First(m => m.Name == n).Phase2Only), $"Verger: two tiles out he swings (and hooks), phase 1 moves only ({string.Join(",", seen)})");
       // the Hook drags; the Hook-Reap drags on the first blow only, and its reap is white
-      var hk = V.Moves.First(m => m.Name == "Hook"); Check(hk.Drag > 0f && hk.Danger, "Verger: the Hook is red and drags");
+      var hk = V.Moves.First(m => m.Name == "Hook"); Check(hk.Drag > 0f && !hk.Danger, "Verger: the Hook is white (parry it) and drags");
       f.Doing = null; f.OpenUntil = -1f; h.X = p.X + 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp;
       Boss.Begin(f, hk, UnityEngine.Time.time, 1f); bool dragged = false;
       for (int i = 0; i < 200 && !dragged; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); dragged = Rt.Of(p).ShoveFrom >= 0f; }
       Check(dragged && p.Hp < p.MaxHp, "Verger: the Hook that cuts drags you toward him");
-      var hr = V.Moves.First(m => m.Name == "Hook-Reap"); Check(Boss.Red(hr, 0) && !Boss.Red(hr, 1) && hr.Drag > 0f, "Verger: the Hook-Reap's hook is red, its reap is white (parry it)");
+      var hr = V.Moves.First(m => m.Name == "Hook-Reap"); Check(!Boss.Red(hr, 0) && !Boss.Red(hr, 1) && hr.Drag > 0f, "Verger: the Hook-Reap's hook and reap are both white (parry them)");
+      {   // 2026-11-23: a parried chain is a 15-press tug-of-war: win = he is hauled in and stunned 3 s; lose = the chain cuts and drags you
+        h.X = p.X + 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; float now0 = UnityEngine.Time.time;
+        VergerHook.Begin(f, p, now0); for (int i = 0; i < 15; i++) VergerHook.MashInput(p); UnityEngine.Time.time += 0.1f; Boss.Tick(f, p);
+        Check(!VergerHook.Active && f.StaggerUntil >= UnityEngine.Time.time + 2.8f && CombatantUtil.Distance(h, p) <= 2, $"Verger: 15 presses on the parried chain haul him in and stun him 3 s ({f.StaggerUntil - UnityEngine.Time.time:0.0} s, {CombatantUtil.Distance(h, p)} tiles)");
+        h.X = p.X + 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; VergerHook.Begin(f, p, UnityEngine.Time.time); for (int i = 0; i < 14; i++) VergerHook.MashInput(p);
+        UnityEngine.Time.time += VergerHook.Window + 0.1f; Boss.Tick(f, p);
+        Check(!VergerHook.Active && p.Hp < p.MaxHp && f.StaggerUntil < UnityEngine.Time.time, "Verger: 14 presses are not enough - the chain cuts you");
+        Rt.Of(p).ShoveFrom = -1f; Rt.Of(p).ProneUntil = -1f; Boss.Release();
+      }
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       // phase 2: no change, the same man, quicker, the long combos
       h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); h.Hp = V.Hp / 2 - 10; UnityEngine.Time.time += 5f; f.NextMoveAt = UnityEngine.Time.time + 9f; Boss.Tick(f, p);

@@ -23,7 +23,7 @@ namespace GameCore
         public enum Result { None, Blocked, Perfect }
 
         /// <summary>Set by a boss while it lands a move that can't be parried.</summary>
-        public static bool Unparryable;
+        public static bool Unparryable; public static int Count;      // Count: parries that took (a caller compares before and after a swing)
 
         static float Long(Player p) => p.EquippedWeapon?.Db?.Name == "Serrated Trench Knife" ? 1.5f : 1f;
 
@@ -38,7 +38,7 @@ namespace GameCore
         public static void Press(Player p)
         {
             var s = Rt.Of(p); float now = Time.time;
-            s.GrabAt = now; if (EelSump.GrappleInput(p) || VergerPhase2.MashInput(p)) return;                      // Boss 3: any press counts against the eel's bite; holding its jaws, the key is the mash
+            s.GrabAt = now; if (EelSump.GrappleInput(p) || VergerPhase2.MashInput(p) || VergerHook.MashInput(p)) return;                      // Boss 3: any press counts against the eel's bite; holding its jaws, the key is the mash
             if (now < s.ParryReady || s.Diving || p == null || Body.Down(p)) return;
             if (!CanParry(p))                                                      // a gun in hand: the knife comes out with the guard
             {
@@ -59,7 +59,7 @@ namespace GameCore
             if (Unparryable || !CanParry(p) || since < 0f || since > Window * Long(p)) return Result.None;
             s.ParryAt = -99f;                                                      // one parry, one hit
             s.ParryReady = Time.time;                                              // Visor 4: one that lands frees the key - deflections chain through a combo (only a whiff costs the cooldown)
-            bool perfect = since <= Perfect * Long(p);
+            bool perfect = since <= Perfect * Long(p); Count++;
             var fx = CombatFx.Push("parry", p, by, p.EquippedWeapon); fx.Now = true; fx.Hit = perfect;
             if (perfect)
             {
