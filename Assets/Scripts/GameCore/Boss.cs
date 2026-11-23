@@ -301,7 +301,7 @@ namespace GameCore
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
                 return;
             }
-            if (f.Doing.Lunge > 0f && (f.Doing.Drag <= 0f || f.Def == Verger) && !f.Def.Rooted && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
+            if (f.Doing.Lunge > 0f && !f.Def.Rooted && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
             { f.LungedFor = f.StrikeAt; StepIn(f.Unit, p, f.Doing.Drag > 0f ? HookGap : 0.8f); }
             if (now < f.StrikeAt) return;
             Land(f, p);
@@ -388,7 +388,7 @@ namespace GameCore
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)
             f.StruckAt = Time.time;
-            bool standsAndSwings = f.Def == Verger && !f.Beast && m.Lunge <= 0f && m.Drag <= 0f;      // 2026-11-23 (Yan: "the Verger's attacks teleport him to the player, even if you space the attacks"): his plain swings no longer snap him to you at the hit - back out of the scythe's reach during the wind-up and it misses
+            bool standsAndSwings = !f.Beast && m.Lunge <= 0f && m.Drag <= 0f;      // 2026-11-23 (Yan: "the Verger's attacks teleport him to the player, even if you space the attacks" ... "do the other bosses too"): every boss's plain swings no longer snap him to you at the hit - back out of the scythe's reach during the wind-up and it misses
             if (!f.Def.Rooted && !standsAndSwings) StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
