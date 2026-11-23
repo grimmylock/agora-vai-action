@@ -80,6 +80,7 @@ namespace GameCore
         private readonly Dictionary<int, (WorldArt.Standing st, SpriteRenderer sr)> _standing = new Dictionary<int, (WorldArt.Standing, SpriteRenderer)>();
         private readonly HashSet<int> _fires = new HashSet<int>();   // standing cells drawn with the animated bonfire
         private readonly HashSet<SpriteRenderer> _faded = new HashSet<SpriteRenderer>();
+        private readonly HashSet<SpriteRenderer> _lifeTilted = new HashSet<SpriteRenderer>();
         private readonly Dictionary<SpriteRenderer, int> _lastFoot = new Dictionary<SpriteRenderer, int>();
         float _rippleAt;   // RT fx 4: the last wading ripple (one every 0.6 s at most)
         private readonly Dictionary<SpriteRenderer, SpriteRenderer> _shadows = new Dictionary<SpriteRenderer, SpriteRenderer>();
@@ -855,6 +856,13 @@ namespace GameCore
             if (held) { string sd = CombatFxView.EelFace < 0f ? "_l" : "_r"; float tw1 = EelSump.TwitchOf(EelBoss.Current); bodyPose = tw1 > 0.55f ? "lunge" + sd : Mathf.FloorToInt(Time.unscaledTime * 16f) % 2 == 0 ? "lunge_h" + sd : "crouch_h"; }   // Boss 3: straining against the jaws: the lunge frames, pressing in with each press
             if (hv != null) hv.BodyDrop = bodyPose != null && (bodyPose.StartsWith("crouch") || bodyPose.StartsWith("kneel") || bodyPose.StartsWith("sit") || bodyPose.StartsWith("stagger")) ? 1f : 0f;
             if (up && UnitSprites.Pose(u, bodyPose, away) is Sprite ps) marker.sprite = ps;   // Melee 3 / Poses: the body's frame
+            // 2026-11-23 (Yan: "pick 1 human sprite and do it only for it, as a test"): the Raider Jacket gets procedural life (UnitLife.cs); the marker's tilt is put back the moment it stops applying (a slot is reused)
+            if (up && !held && UnitLife.Applies(u))
+            {
+                var (hdx, hdy) = _fx.LastHitDir(u); var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, marker.flipX ? -1f : 1f, Time.time, hdx, 0f);
+                marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker);
+            }
+            else if (_lifeTilted.Remove(marker)) marker.transform.rotation = Quaternion.identity;
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))
