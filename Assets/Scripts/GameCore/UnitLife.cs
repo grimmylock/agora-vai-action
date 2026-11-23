@@ -23,7 +23,7 @@ namespace GameCore
         public static bool Applies(ICombatant u) => u is Player || (u is HumanEnemy h && h.EquippedArmor != null && !Husk.Is(h) && !BossArt.Drawn(h));      // 2026-11-23 (Yan: "add it to the player and npc bosses with normal sprites"): the player, every suit-wearing human and the bosses drawn as people (Visor, Spool, King, Verger); not Husks or the clip-drawn creature bosses
 
         /// <summary>The offset (world units, y up) and tilt (degrees, + = counter-clockwise) to give this unit's sprite this frame.</summary>
-        public static (Vector3 off, float tilt) Pose(ICombatant u, bool moving, bool stepFrame, float faceDx, float now, float hitDx, float hitDy)
+        public static (Vector3 off, float tilt) Pose(ICombatant u, bool moving, bool stepFrame, float faceDx, float now, float hitDx, float hitDy, float speed = 0f)
         {
             if (!_s.TryGetValue(u, out var s)) { s = new S { Phase = Random.value * 6.28f, ShiftAt = now + Random.Range(2f, 5f) }; _s[u] = s; }
             if (s.Hp >= 0 && u.Hp < s.Hp && s.Hp - u.Hp >= (u is Player pl ? pl.MaxHp : (u as HumanEnemy)?.MaxHp ?? 100) * HeavyHit && now - s.FlinchAt > FlinchCooldown) { s.FlinchAt = now; s.FlinchDx = hitDx; s.FlinchDy = hitDy; }   // 2026-11-23 (Yan: a flinch per bullet would make him vibrate): only a heavy hit, and at most once per cooldown
@@ -39,7 +39,7 @@ namespace GameCore
             else
             {
                 if (stepFrame) off_y += Px;                                                                 // the hop on the foot-down frames
-                if (Mathf.Abs(faceDx) > 0.002f) s.Tilt = -2f * Mathf.Sign(faceDx);                         // 2026-11-23 (Yan: "the little lean toward the side they're running"): faceDx is now the real sideways travel this frame (not the sprite flip); running straight up or down keeps the last lean
+                if (Mathf.Abs(faceDx) > 0.002f) s.Tilt = -(2f + Mathf.Clamp01(speed - 3.4f)) * Mathf.Sign(faceDx);       // 2 degrees walking, 3 running (Yan: "a bit bigger when running, just a tiny bit")                         // 2026-11-23 (Yan: "the little lean toward the side they're running"): faceDx is now the real sideways travel this frame (not the sprite flip); running straight up or down keeps the last lean
                 tilt = s.Tilt;
             }
             float fl = now - s.FlinchAt;

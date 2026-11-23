@@ -53,14 +53,14 @@ subprocess.run(["dotnet", "/tmp/test.dll", "restframes", "/tmp/rest.json"], chec
 rest = {int(r["angle"]): r for r in json.load(open("/tmp/rest.json"))}
 gun = Image.open(os.path.join(SPR, "Weapons", "weapon_CorvanBattleRifle.png")).convert("RGBA"); gl = ha.glove("#5e2424", "#c8916a")
 bstand, bwa, bwb = cell("armor_back_atlas.png"), cell("armor_back_walk_a.png"), cell("armor_back_walk_b.png")
-def rifle_col(t, speed, aim, label):
-    r = rest[aim]; back = aim == 90
+def rifle_col(t, speed, aim, label, carry=False):
+    r = rest[180 if (carry and aim == 180) else 0] if carry else rest[aim]; back = aim == 90 and not carry; bodyback = aim == 90
     phase = speed * t * 2 * math.pi / cycle(speed); run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
     q = int(speed * t * af(speed) * 4) % 4          # the game: HeldPoseMath.WalkFrame(stride) = int(stride * 4) % 4, stride in tiles walked x UnitMotionView.AnimFactor
-    fr = (bstand if q in (1, 3) else (bwa if q == 0 else bwb)) if back else (stand if q in (1, 3) else (wa if q == 0 else wb))
+    fr = (bstand if q in (1, 3) else (bwa if q == 0 else bwb)) if bodyback else (stand if q in (1, 3) else (wa if q == 0 else wb))
     body = fr.resize((16 * ha.S, 16 * ha.S), Image.NEAREST)
     s1 = math.sin(phase); amp = 1 + 2 * run; up = 1 + run
-    dx = round(s1 * amp * walk); lift = round(s1 * s1 * up * walk); th = -s1 * 5 * run          # the code: Swing() + the gun's lean
+    dx = round(s1 * amp * walk) + ((3 if aim == 180 else -3) if carry else 0); lift = round(s1 * s1 * up * walk); th = -s1 * 5 * run          # the code: Swing() + the gun's lean
     c = Image.new("RGBA", (ha.W * ha.S, ha.H * ha.S), ha.BG)
     def put_gun(): ha.paste(c, gun, r["grip"][0], r["grip"][1], r["gx"] + dx, r["gy"] - lift, r["deg"] + th, bool(r["left"]))
     def put_hands():
@@ -69,7 +69,7 @@ def rifle_col(t, speed, aim, label):
             if on: c.alpha_composite(g2, (round((ha.BX + x + dx) * ha.S - 2 * ha.S), round((ha.BY + y - lift) * ha.S - 1.5 * ha.S)))
     if back: put_gun(); put_hands(); c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S))          # from behind: the rifle and the hands are behind the body (sorting orders -3..-2)
     else: c.alpha_composite(body, (ha.BX * ha.S, ha.BY * ha.S)); put_gun(); put_hands()
-    lean = {0: -2.0, 180: 2.0}.get(aim, 0.0)                                       # UnitLife: 2 degrees toward the sideways travel (none running straight up or down); the whole marker turns, rifle and hands with it
+    amp_l = 2.0 + clamp01(speed - 3.4); lean = {0: -amp_l, 180: amp_l}.get(aim, 0.0)                                       # UnitLife: 2 degrees toward the sideways travel (none running straight up or down); the whole marker turns, rifle and hands with it
     if lean: c = c.rotate(lean, resample=Image.NEAREST, center=((ha.BX + 8) * ha.S, (ha.BY + 16) * ha.S), fillcolor=ha.BG)
     c = c.convert("RGB"); c = c.resize((c.width * 2 // 3, c.height * 2 // 3), Image.NEAREST)
     d = ImageDraw.Draw(c); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
@@ -90,7 +90,7 @@ ha.H += 20; ha.BY += 8; ha.W += 12; ha.BX += 9                                  
 dirs = [("up", 90), ("down", 270), ("left", 180), ("right", 0)]
 fr2 = []
 for i in range(int(2.0 * FPS)):
-    t = i / FPS; cs = [rifle_col(t, 4.4, aim, f"run {nm}") for nm, aim in dirs]
+    t = i / FPS; cs = [rifle_col(t, 4.4, aim, f"run {nm}", True) for nm, aim in dirs]
     s = Image.new("RGB", (sum(x.width for x in cs), cs[0].height), BG[:3]); xx = 0
     for x in cs: s.paste(x, (xx, 0)); xx += x.width
     fr2.append(s)

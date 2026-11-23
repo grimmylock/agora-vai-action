@@ -114,6 +114,7 @@ namespace GameCore
             public bool Dead;                                         // co-op: the dead penalty has been taken (Death.Tick)
             public float ThrowReadyAt;                                // a grenade can leave the hand again at this time
             public float ParryAt = -99f, ParryReady;                  // Boss 1: when the parry key went down, when it can again
+            public float FiredAt = -99f;                              // 2026-11-23: when the trigger last went down (the held weapon leaves its carry pose for a moment: HeldWeaponView.Carry)
             public float GrabAt = -99f;                               // Boss 3: when the parry key last went down, weapon or not (the eel's bite is parried bare-handed)
             public bool Diving => DiveUntil >= 0f;
             public bool DiveRight => DiveX >= 0f;                     // the view tilts the body into the dive
@@ -320,7 +321,7 @@ namespace GameCore
         public static void PlayerTick(Player p, Input i)
         {
             float dt = Time.deltaTime;
-            var s = Of(p); ShoveTick(p, s);
+            var s = Of(p); ShoveTick(p, s); if (i.Fire || i.FireDown || i.Fire2Down) s.FiredAt = Time.time;
             if (i.Parry) Parry.Press(p);                                                       // Boss 1
             TickThrow(p, s, ref i);                                                            // grenades, flashbangs and smokes: T takes one out, left click throws it
 

@@ -860,10 +860,10 @@ namespace GameCore
             // 2026-11-23 (Yan: "pick 1 human sprite and do it only for it, as a test"): the Raider Jacket gets procedural life (UnitLife.cs); the marker's tilt is put back the moment it stops applying (a slot is reused)
             if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
-                var (hdx, hdy) = _fx.LastHitDir(u); float travelX = _lifeLast.TryGetValue(marker, out var lastP) ? marker.transform.position.x - lastP.x : 0f; var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f);
-                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; }
+                var (hdx, hdy) = _fx.LastHitDir(u); float travelX = 0f, trSpeed = 0f; if (_lifeLast.TryGetValue(marker, out var lastP)) { var tv = marker.transform.position - lastP; travelX = tv.x; trSpeed = Mathf.Sqrt(tv.x * tv.x + tv.y * tv.y) / Mathf.Max(Time.deltaTime, 0.0001f); } var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, travelX, Time.time, hdx, 0f, trSpeed);
+                _lifeLast[marker] = marker.transform.position; marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; lh.Carry = CarryNow(u); }
             }
-            else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; }
+            else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; lh2.Carry = false; }
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))
@@ -946,6 +946,12 @@ namespace GameCore
             }
         }
         // the red glow round the blade (a slightly bigger red copy of the scythe behind it, renewed every frame): a multiplied tint alone only darkens steel to maroon
+        // 2026-11-23 (Yan: "the weapon stays in the resting position unless aiming or shooting"): carry pose unless aiming (right mouse), shooting (trigger within 0.8 s), reloading or two guns drawn. A player; people who have not noticed you also carry.
+        static bool CarryNow(ICombatant u)
+        {
+            if (u is Player p) { var s = Rt.Of(p); return !s.Aiming && Time.time - s.FiredAt > 0.8f && Gunplay.AimOf(p).ReloadUntil < 0f && !Body.Down(p) && !p.Gunslinging; }
+            return u is HumanEnemy he && !he.IsAggroed;
+        }
         void SpawnHalo(SpriteRenderer src, float glow)
         {
             var hv = Held(src); var gun = hv != null && hv.Visible ? hv.GunRenderer : null; if (gun == null || gun.sprite == null) return;
