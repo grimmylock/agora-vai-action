@@ -4,7 +4,7 @@ Usage: python3 Tools/render/hands_swing.py out_dir -> hands_swing.gif, hands_swi
 import math, os, sys
 from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); SPR = os.path.join(ROOT, "Assets/Resources/Sprites")
-Z = 8; BG = (58, 54, 42, 255); FPS = 30; STRIDE = 1.2
+Z = 8; BG = (58, 54, 42, 255); FPS = 50; STRIDE = 1.2
 def cell(n, x=0): return Image.open(os.path.join(SPR, n)).convert("RGBA").crop((x * 16, 0, x * 16 + 16, 16))
 stand, wa, wb = cell("armor_atlas.png"), cell("armor_walk_a.png"), cell("armor_walk_b.png")
 rifle = Image.open(os.path.join(SPR, "Weapons/weapon_CorvanBattleRifle.png")).convert("RGBA")
@@ -21,7 +21,8 @@ def free_hands(phase, swing, run):
 def frame(t, speed, armed, label):
     W = 16 * Z + 40; H = 16 * Z + 50; c = Image.new("RGBA", (W, H), BG); d = ImageDraw.Draw(c)
     phase = speed * t * 2 * math.pi / STRIDE; run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
-    q = int(phase / (2 * math.pi) * 4) % 4; f = stand if q in (1, 3) else (wa if q == 0 else wb); step_body = q in (0, 2)
+    q = int(speed * t * 4) % 4          # the game: HeldPoseMath.WalkFrame(stride) = int(stride * 4) % 4, stride in tiles walked: one body cycle per tile
+    f = stand if q in (1, 3) else (wa if q == 0 else wb); step_body = q in (0, 2)
     ox, oy = 20, 30 - (1 * Z if step_body else 0)
     d.ellipse((20 + 3 * Z, 30 + 14 * Z, 20 + 13 * Z, 30 + 16 * Z), fill=(30, 28, 22, 255))
     body = f.resize((16 * Z, 16 * Z), Image.NEAREST); tilt = -2.0
@@ -52,7 +53,7 @@ bstand, bwa, bwb = cell("armor_back_atlas.png"), cell("armor_back_walk_a.png"), 
 def rifle_col(t, speed, aim, label):
     r = rest[aim]; back = aim == 90
     phase = speed * t * 2 * math.pi / STRIDE; run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
-    q = int(phase / (2 * math.pi) * 4) % 4
+    q = int(speed * t * 4) % 4          # the game: HeldPoseMath.WalkFrame(stride) = int(stride * 4) % 4, stride in tiles walked: one body cycle per tile
     fr = (bstand if q in (1, 3) else (bwa if q == 0 else bwb)) if back else (stand if q in (1, 3) else (wa if q == 0 else wb))
     body = fr.resize((16 * ha.S, 16 * ha.S), Image.NEAREST)
     s1 = math.sin(phase); amp = 1 + 2 * run; up = 1 + run
