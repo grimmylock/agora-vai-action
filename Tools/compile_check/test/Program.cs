@@ -20,6 +20,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "visorstates") { VisorStates(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "spoolmoves") { VisorMoves(args[1], true); return 0; }
     if (args.Length > 1 && args[0] == "vergermoves") { VisorMoves(args[1], false, true); return 0; }
@@ -1830,6 +1831,21 @@ static class Program {
     sb.Append("],\"finish\":" + F(finishAt - 30000f) + ",\"clashes\":" + CrownJob.Clashes + "}");
     File.WriteAllText(path, sb.ToString()); Console.WriteLine($"crown duel -> {path}: {CrownJob.Clashes} swings, {CrownJob.Hits} hits, {CrownJob.Blocks} parried, King hp {k.Hp}, Spool hp {sp.Hp}");
     Rt.On = false; Boss.Reset(); Melee.Reset(); CrownJob.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
+  }
+
+
+  // 2026-11-23 (Yan: "show me all of the Visor's moves, including the combos, the stance and everything else"): the non-attack poses of the Visor from HeldPoseMath.Frame - stance, guard (the parry), guard broken (stagger), open (recovering), on one knee - for Tools/render/visor_all.py
+  static void VisorStates(string path) {
+    GameServices.Grid = new TacticalGridSystem(); UnityEngine.Time.time = 30000f;
+    var g = WeaponArt.GripOf("melee", "SerratedTrenchKnife"); var ci = System.Globalization.CultureInfo.InvariantCulture; var sb = new System.Text.StringBuilder("{\"segments\":["); bool firstSeg = true;
+    string Row(HeldFrame f) => string.Format(ci, "[{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},0,\"{13}\"]", f.GunX, f.GunY, f.GunDeg, f.GripX, f.GripY, f.HasSupport ? 1 : 0, f.SupX, f.SupY, f.Lean, 0, 0, f.Length > 0f ? f.Length : 1f, f.HandDeg, f.Body ?? "");
+    HeldFrame F(float guard = 99f, float broken = 99f, float open = 0f) => HeldPoseMath.Frame("melee", g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1, null, -1f, -1f, 99f, HeldPoseMath.VisorPoses, 0, -1f, guard, broken, open);
+    void Seg(string label, int frames, System.Func<int, HeldFrame> make) { if (!firstSeg) sb.Append(","); firstSeg = false; sb.Append("{\"label\":\"" + label + "\",\"frames\":["); for (int i = 0; i < frames; i++) { UnityEngine.Time.time += 1f / 30f; sb.Append((i > 0 ? "," : "") + Row(make(i))); } sb.Append("]}"); }
+    Seg("STANCE: the knife reversed along the forearm, low and forward", 36, i => F());
+    Seg("GUARD: the parry (F)", 24, i => F(guard: i / 30f));
+    Seg("GUARD BROKEN: a perfect parry knocks his arm up (stagger)", 48, i => F(broken: i / 30f));
+    Seg("OPEN: the opening after a combo, the weapon sinks and the shoulders heave", 48, i => F(open: System.Math.Min(1f, i / 9f)));
+    sb.Append("]}"); File.WriteAllText(path, sb.ToString()); Console.WriteLine("visor states -> " + path);
   }
 
   static void VisorMoves(string path, bool spool = false, bool verger = false) {
