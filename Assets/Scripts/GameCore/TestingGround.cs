@@ -118,8 +118,15 @@ namespace GameCore
         /// <summary>Boss 6: the Verger's duel on the range - him 6 tiles in front of you with the scythe (F parries).</summary>
         public static void VergerDuel(Player p)
         {
-            var (x, y) = TerrainMap.FindNearestEnterable(p.X + 6, p.Y);
-            VergerBoss.Spawn(x, y, false);
+            // 2026-11-23 (Yan: "make his entry in the bossfight testing grounds send us to the cathedral"): the cathedral itself, you at the doors, him walking down from the altar end (his introduction plays)
+            Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; Story.Clear("verger_done");
+            MacroState.Current.CurrentZoneId = CathedralJob.Zone; ZoneTravel.EnterZone(CathedralJob.Zone);
+            var door = CathedralJob.Mark("Cathedral Doors") ?? CathedralJob.Mark(CathedralJob.Rope); var altar = CathedralJob.Mark(CathedralJob.AltarMark) ?? CathedralJob.Mark(CathedralJob.Rope);
+            if (door == null || altar == null) { var (fx, fy) = TerrainMap.FindNearestEnterable(p.X + 6, p.Y); VergerBoss.Spawn(fx, fy, false); return; }
+            int k = 0; foreach (var q in Player.All) { int sx = System.Math.Sign(altar.X - door.X), sy = System.Math.Sign(altar.Y - door.Y); var (px, py) = TerrainMap.FindNearestEnterable(door.X + sx * 2 + k % 3, door.Y + sy * (2 + k / 3));   // two tiles in from the doors, toward the altar q.X = px; q.Y = py; Rt.SetOffset(q, 0f, 0f); k++; }
+            var (x, y) = TerrainMap.FindNearestEnterable(altar.X, altar.Y + 1);
+            VergerBoss.Spawn(x, y, true);
+            GameLog.Write("[TESTING GROUND] The abandoned cathedral: you at the doors, the Verger coming down the nave from the altar. Main menu > Testing Ground to come back.");
         }
 
         /// <summary>2026-11-21: Mother Hollow on the range, 7 tiles in front of you (the range has no niches: her brood crawls in from 10 tiles round her).</summary>

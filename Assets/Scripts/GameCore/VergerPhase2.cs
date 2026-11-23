@@ -126,7 +126,7 @@ namespace GameCore
                 {
                     GameLog.Write("The red scythe lands.");
                     foreach (var q in Player.All.Concat(new[] { p }).Distinct().ToList()) if (q != null && q.IsAlive() && CombatantUtil.Distance(h, q) <= 4)
-                    { Parry.Unparryable = true; try { Melee.HitUnit(h, h.EquippedWeapon, q, 1.6f); } finally { Parry.Unparryable = false; } Rt.Knockdown(q, 1.1f); }
+                    { Parry.Unparryable = true; try { Melee.HitUnit(h, h.EquippedWeapon, q, 1.6f * 0.7f); } finally { Parry.Unparryable = false; } Rt.Knockdown(q, 1.1f); }
                     CombatFx.Push("stagger", h, null, null).Now = true; Boss.HitStop(0.15f);
                 }
                 Finish(f, now, won);

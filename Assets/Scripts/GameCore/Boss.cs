@@ -176,7 +176,9 @@ namespace GameCore
             Moves = VergerScytheMoves(),
         };
         /// <summary>2026-11-21: the scythe moveset (poses: 0 reap, 1 sweep, 2 rising, 3 hook, 4 danse, 5 ankle reap, 6 backhand, 7 impale). White = parry, red = dive under or get out of reach.</summary>
-        static Move[] VergerScytheMoves() => new[]
+        const float VergerDamage = 0.7f;      // 2026-11-23 (Yan: "3 shotting a player in tier 5 armor is kinda harsh, nerf it by about 30%"): every blow of his scythe moveset x 0.7
+        static Move[] VergerScytheMoves() { var ms = VergerScytheMovesRaw(); foreach (var m in ms) { m.Mult *= VergerDamage; if (m.Mults != null) for (int i = 0; i < m.Mults.Length; i++) m.Mults[i] *= VergerDamage; } return ms; }
+        static Move[] VergerScytheMovesRaw() => new[]
         {
             // both phases: the measured hunter
             new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, MaxDist = 2f, Poses = new[] { 0 }, Open = 1.4f },                                                     // overhead, into the floor in front of him

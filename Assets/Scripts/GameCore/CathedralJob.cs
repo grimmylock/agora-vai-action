@@ -41,7 +41,7 @@ namespace GameCore
         public static bool Open => MacroState.Current.Day >= ReadyDay;
 
         static IEnumerable<LandmarkInstance> Marks(System.Func<string, bool> f) => (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).Where(l => f(l.Name));
-        static LandmarkInstance Mark(string name) => Marks(n => n == name).FirstOrDefault();
+        internal static LandmarkInstance Mark(string name) => Marks(n => n == name).FirstOrDefault();
 
         /// <summary>E at the Bell Rope: the first pull takes the contract and rings; every pull after rings again (not sooner than RingGap s).</summary>
         public static bool TryInteract(Player p)

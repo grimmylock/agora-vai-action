@@ -106,6 +106,10 @@ namespace GameCore
 
         public static AtmosphereLook Look()
         {
+            if (M.CurrentZoneId == "abandoned_cathedral")                 // 2026-11-23 (Yan: "make the cathedral lit, currently it is completely dark"): a dungeon, but light falls through its windows and candles burn: a steady dim day, no black beyond your light
+            {
+                var c = Look(12f, Weather.Overcast, false); c.Night = 0.18f; c.Vision = 18f; c.Cone = 0f; c.Haze = Mathf.Max(c.Haze, 0.03f); return c;
+            }
             if (!ZoneLayoutRecipes.IsUpstairs(M.CurrentZoneId)) return Look(M.Hour, Current, ZoneLayoutRecipes.IsInterior(M.CurrentZoneId));
             var l = Look(M.Hour, Weather.Overcast, false);   // Batch 120: upstairs in a building - the day's light through the windows, dimmer, no rain inside
             l.Night = Mathf.Max(l.Night, 0.3f); l.Vision = Mathf.Min(l.Vision, 14f);
