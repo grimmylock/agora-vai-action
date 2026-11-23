@@ -22,7 +22,7 @@ namespace GameCore
                 ["idle"] = new VergerBoss.Clip { Name = "boss_choir_idle", Frames = 8, Ms = new float[] { 150, 150, 150, 150, 150, 150, 150, 150 }, Hit = -1, Loop = true },
                 ["note"] = new VergerBoss.Clip { Name = "boss_choir_note", Frames = 13, Ms = new float[] { 110, 140, 170, 200, 80, 126, 133, 140, 146, 153, 160, 166, 173 }, Hit = 4 },
                 ["scream"] = new VergerBoss.Clip { Name = "boss_choir_scream", Frames = 13, Ms = new float[] { 110, 140, 170, 200, 80, 126, 133, 140, 146, 153, 160, 166, 173 }, Hit = 4 },
-                ["walk"] = new VergerBoss.Clip { Name = "boss_choir_walk", Frames = 12, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
+                ["walk"] = new VergerBoss.Clip { Name = "boss_choir_walk", Frames = 8, Ms = new float[] { 110, 110, 110, 110, 110, 110, 110, 110 }, Hit = -1, Loop = true },
             } },
             ["ferryman"] = new Art { Key = "ferryman", W = 256, H = 176, Facing = "left", Clips = new Dictionary<string, VergerBoss.Clip> {
                 ["bite"] = new VergerBoss.Clip { Name = "boss_ferryman_bite", Frames = 13, Ms = new float[] { 110, 122, 135, 148, 161, 174, 187, 200, 80, 132, 144, 156, 168 }, Hit = 8 },
