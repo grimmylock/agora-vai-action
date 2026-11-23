@@ -26,6 +26,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
+    if (args.Length > 0 && args[0] == "bossdmg") { BossDmg(); return 0; }
     if (args.Length > 1 && args[0] == "sceneprowlers") { SceneProwlers(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1], args.Length > 2 ? args[2] : "visor"); return 0; }
     if (args.Length > 0 && args[0] == "bossprobe") { BossProbe(args.Length > 1 ? args[1] : "all", args.Length > 2 ? int.Parse(args[2]) : 3); return 0; }
@@ -1725,6 +1726,27 @@ static class Program {
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; EncounterState.Enemies.Clear();
   }
 
+
+  // 2026-11-23: hits to kill a player (1000 HP) wearing the best armour of each tier, per human boss: a x1.0 blow (Boss.MultOf) and the move that hits hardest
+  static void BossDmg() {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset();
+    var cast = new (string name, Boss.Def def, string key)[] { ("Visor", Boss.Visor, "SerratedTrenchKnife"), ("Spool", Boss.Spool, "BarbedWireBat"), ("Scrap King", Boss.King, "Sledgehammer"), ("Verger", Boss.Verger, "VergerScythe") };
+    Console.WriteLine($"player max HP {p.MaxHp}");
+    for (int tier = 1; tier <= 6; tier++) {
+      var best = ArmorDatabase.Tiers[$"tier{tier}"].OrderByDescending(kv => kv.Value.PhysDR).First(); p.EquipArmor($"tier{tier}", best.Key);
+      var line = new System.Text.StringBuilder($"tier {tier} best armour {best.Value.Name} (DR {best.Value.PhysDR:0.00}, scaled {best.Value.PhysDR * CombatRules.ArmorScale(p):0.00}): ");
+      foreach (var (name, def, key) in cast) {
+        var h = new HumanEnemy("B", px + 1, py, "Raiders", "Legend", WeaponDatabase.Categories["melee"][key], null); int worst = 0, one = 0; var mx = def.Moves.OrderByDescending(m => Boss.MultOf(m, m.Hits - 1)).First();
+        p.Hp = p.MaxHp; Parry.Unparryable = true; Melee.HitUnit(h, h.EquippedWeapon, p, 1f); Parry.Unparryable = false; one = p.MaxHp - p.Hp;
+        p.Hp = p.MaxHp; Parry.Unparryable = true; Melee.HitUnit(h, h.EquippedWeapon, p, Boss.MultOf(mx, mx.Hits - 1)); Parry.Unparryable = false; worst = p.MaxHp - p.Hp;
+        line.Append($"{name} x1.0 = {one} ({p.MaxHp / (double)Math.Max(1, one):0.0} hits), hardest [{mx.Name} {Boss.MultOf(mx, mx.Hits - 1):0.0}x] {worst} ({p.MaxHp / (double)Math.Max(1, worst):0.0}); ");
+      }
+      Console.WriteLine(line);
+    }
+    Rt.On = false;
+  }
+
   // Pack 1: a pack as the game packs it (Pack.Settle on a real kit + loot, through Player.AddItem) for each bag -> Tools/render/pack_screen.py
   static void PackDump(string path) {
     var sb = new System.Text.StringBuilder("{\"bags\":[");
@@ -3234,6 +3256,7 @@ static class Program {
       Check(V.Moves.All(m => m.Poses.All(q => q >= 0 && q < HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger))) && HeldPoseMath.MoveCount(HeldPoseMath.Style.Verger) == 8 && Melee.Shapes[(int)HeldPoseMath.Style.Verger].Length == 8, "Verger: eight scythe poses, each with its hit shape, and every move uses only those");
       Check(V.Moves.Count(m => !m.Phase2Only) >= 6 && V.Moves.Count(m => !m.Phase1Only) >= 11 && V.Moves.Count(m => m.Phase2Only) >= 6, $"Verger: a full moveset ({V.Moves.Count(m => !m.Phase2Only)} in phase 1, {V.Moves.Count(m => !m.Phase1Only)} in phase 2)");
       Check(V.Moves.Where(m => m.Hits > 1).All(m => (m.Gaps == null || m.Gaps.Length == m.Hits - 1) && (m.Mults == null || m.Mults.Length == m.Hits) && (m.RedHits == null || m.RedHits.Length == m.Hits)), "Verger: every combo has one pause per gap, one damage and one colour per blow");
+      Check(Boss.GlintLead < Parry.Window && Boss.GlintLead > Parry.Window * 0.5f && Rt.DiveTime > Boss.GlintLead && Boss.GlintLead - 0.22f <= Parry.Perfect, $"Boss: the glint comes {Boss.GlintLead:0.00} s before the blow, inside the parry window ({Parry.Window:0.00} s): a press as soon as you see it parries, and a press after a normal reaction (~0.2 s) is perfect; a dive pressed at the glint (lasts {Rt.DiveTime:0.00} s) covers the blow");
       Check(HeldPoseMath.StyleOf(HeldPoseMath.VergerPoses) == HeldPoseMath.Style.Verger && HeldPoseMath.Sweep(HeldPoseMath.Style.Verger, 4) && !HeldPoseMath.Sweep(HeldPoseMath.Style.Verger, 0), "Verger: his pose key is his style; the danse is a flat sweep, the reap is not");
       var f = Boss.Spawn(V, px + 2, py); var h = f.Unit;
       Check(h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && h.EquippedArmor?.Name == "Verger Coat" && h.Unkillable, "Verger: spawns with the scythe and the coat");

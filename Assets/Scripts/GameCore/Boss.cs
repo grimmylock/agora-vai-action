@@ -117,11 +117,15 @@ namespace GameCore
         public static readonly ArmorDef BlackVisorSuit = new ArmorDef { Name = "Black Visor Suit", PhysDR = 0.6f, AnomDR = 0.3f, BeltSlots = 2, ModSlots = 2, Mp = 4, WeightKg = 14f };
         static ArmorDef SuitOf(Def def) { if (def.Armor == null) return null; if (def.Armor == BlackVisorSuit.Name) return BlackVisorSuit; if (def.Armor == "The Scrap King") return StoryNpcs.SuitOf("The Scrap King", 0.4f); foreach (var t in new[] { "tier5", "tier4", "tier3", "tier2", "tier1" }) { var a = ArmorDatabase.Get(t, def.Armor); if (a != null) return a; } return null; }
 
+        // 2026-11-23 (Yan: "try to keep [his damage] in line with the Verger: X amount of hits based on the max tier armor available in the area he is in (tier 4)"): `dotnet /tmp/test.dll bossdmg` prints the hits to kill a 1000 HP
+        // player in the best armour of each tier. The Verger (Tier 6 area, best armour Tier 5) takes ~6 standard blows and ~3.4 of his hardest; the Visor in the best Tier 4 suit took 7.9 and 4.4, so his blows are x1.3 (6.1 and 3.4).
+        const float VisorDamage = 1.3f;
+        static Move[] ScaleDamage(Move[] ms, float k) { foreach (var m in ms) { m.Mult *= k; if (m.Mults != null) for (int i = 0; i < m.Mults.Length; i++) m.Mults[i] *= k; } return ms; }
         public static readonly Def Visor = new Def
         {
             Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 52900, DoneFlag = "visor_done", PoseKey = HeldPoseMath.VisorPoses,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
             StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
-            Moves = new[]
+            Moves = ScaleDamage(new[]
             {
                 // Visor 2: each move strings his own poses (backhand 0, rising 1, ice-pick 2, thrust 3, spin 4, execution 5)
                 new Move { Name = "Slash", Wind = 0.6f, Weight = 2, Poses = new[] { 0 }, Open = 1f },
@@ -131,7 +135,7 @@ namespace GameCore
                 new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 0, 1, 4, 0, 2 }, Open = 1.8f },
                 new Move { Name = "Whirlwind", Wind = 0.55f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 }, Open = 1.5f },
                 new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 }, Open = 2.2f },
-            },
+            }, VisorDamage),
         };
 
         // Boss 4 (Yan, 2026-11-19: "put him in tier 2", "start building the boss similar to how the visor works"): the outcast Raider with the Barbed Wire Bat, in the Dog Kennels' fenced yard (SpoolBoss.cs).
