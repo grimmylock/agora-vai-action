@@ -759,7 +759,7 @@ static class Program {
     foreach (var (cat, key) in new[] { ("sidearm", "PSh18Pchela"), ("smg", "CorvanHornet45"), ("assault", "CorvanBattleRifle"), ("shotgun", "BayouPump"), ("sniper", "SKNKarabin"), ("heavy", "PL62Kobza") }) {
       var g = WeaponArt.GripOf(cat, key); var carry = HeldPoseMath.Frame(cat, g, WeaponCarry.RestAngle(cat, false), 0f, 0f, 0f, 99f, 1f, "none", 1); var aim = HeldPoseMath.Frame(cat, g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
       var d = WeaponCarry.Of(cat); if (!first) sb.Append(','); first = false;
-      sb.Append($"{{\"cat\":\"{cat}\",\"key\":\"{key}\",\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}],\"def\":{{\"shift\":{d.ShiftPx.ToString(ci)},\"drop\":{d.DropPx.ToString(ci)},\"wa\":{d.WalkAmp.ToString(ci)},\"wl\":{d.WalkLift.ToString(ci)},\"ra\":{d.RunAmp.ToString(ci)},\"rl\":{d.RunLift.ToString(ci)},\"rt\":{d.RunTilt.ToString(ci)}}},\"carry\":{Pose(carry)},\"aim\":{Pose(aim)}}}");
+      sb.Append($"{{\"cat\":\"{cat}\",\"key\":\"{key}\",\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}],\"def\":{{\"shift\":{d.ShiftPx.ToString(ci)},\"drop\":{d.DropPx.ToString(ci)},\"wa\":{d.WalkAmp.ToString(ci)},\"wl\":{d.WalkLift.ToString(ci)},\"ra\":{d.RunAmp.ToString(ci)},\"rl\":{d.RunLift.ToString(ci)},\"rt\":{d.RunTilt.ToString(ci)},\"free\":{(d.FreeArm ? 1 : 0)}}},\"carry\":{Pose(carry)},\"aim\":{Pose(aim)}}}");
     }
     sb.Append("]"); System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("weapon states -> " + path);
   }

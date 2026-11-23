@@ -32,8 +32,12 @@ def panel(row, state, t):
     c.alpha_composite(body, (ha.BX * ha.S, (ha.BY - hop) * ha.S))
     oy = -hop                                                                    # the body hops, the held weapon rides on it (the marker moves)
     ha.paste(c, gun, row["grip"][0], row["grip"][1], r["gx"] + dx, r["gy"] - lift + oy, r["deg"] + th, False)
-    for (x, y, on) in ((r["sx"], r["sy"], r["sup"]), (r["hx"], r["hy"], 1)):
+    free = carry and d.get("free")
+    for (x, y, on) in ((r["sx"], r["sy"], r["sup"] and not free), (r["hx"], r["hy"], 1)):
         if on: c.alpha_composite(gl, (round((ha.BX + x + dx) * ha.S - 2 * ha.S), round((ha.BY + y - lift + oy) * ha.S - 1.5 * ha.S)))
+    if free:                                                                      # the other arm hangs at the side and swings (HeldPoseMath.FreeHands), fingers down
+        a_ = math.sin(phase) * walkK; ddx = round((1.2 + 2.2 * run) * a_); lf = round(math.sin(phase) ** 2 * 2.2 * run); fx, fy = 2 + ddx, 11.5 - lf
+        g = gl.rotate(90, expand=True); c.alpha_composite(g, (round((ha.BX + fx) * ha.S - g.width / 2), round((ha.BY + fy + oy) * ha.S - g.height / 2)))
     if lean: c = c.rotate(lean, resample=Image.NEAREST, center=((ha.BX + 8) * ha.S, (ha.BY + 16) * ha.S), fillcolor=ha.BG)
     c = c.convert("RGB"); c = c.resize((c.width * 55 // 100, c.height * 55 // 100), Image.NEAREST)
     ImageDraw.Draw(c).text((4, 2), f"{row['cat']}: {state}", font=font, fill=(240, 200, 90)); return c

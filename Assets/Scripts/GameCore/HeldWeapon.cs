@@ -1216,7 +1216,13 @@ namespace GameCore
             float dxp = Mathf.Round(s1 * amp * _walkK) * sw, liftp = Mathf.Round(s1 * s1 * up * _walkK) * sw - bobAim, th = -s1 * cd.RunTilt * _runK * sw;
             float carryDx = (_restLeft ? cd.ShiftPx : -cd.ShiftPx) * _carryK, carryDrop = cd.DropPx * _carryK;                                  // close to the body: 3 px in toward the torso
             Vector3 Swing(Vector3 p) => new Vector3(p.x + (dxp + carryDx) / 16f, p.y + (liftp - carryDrop) / 16f, p.z);
-            foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf) { r.transform.localPosition = Swing(r.transform.localPosition); r.transform.localRotation = Quaternion.Euler(0f, 0f, r.transform.localEulerAngles.z + th); }
+            bool freeArm = cd.FreeArm && carrying && _carryK > 0.5f;                                   // the pistol's other arm: hangs at the side and swings with the steps (not carried with the gun)
+            if (freeArm)
+            {
+                var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_phase2, _walkK, _runK); bool fl = _restLeft; float fx = fl ? rx : lx, fy = fl ? ry : ly;       // the arm on the side away from the gun
+                _support.gameObject.SetActive(true); _support.sprite = HandSprite(armor, false); _support.flipX = !fl; _support.transform.localPosition = Local(fx, fy) + new Vector3(0f, 0f, -0.015f); _support.transform.localRotation = Quaternion.Euler(0f, 0f, fl ? -90f : 90f);
+            }
+            foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf && !(freeArm && r == _support)) { r.transform.localPosition = Swing(r.transform.localPosition); r.transform.localRotation = Quaternion.Euler(0f, 0f, r.transform.localEulerAngles.z + th); }
         }
         void ShowCore(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {

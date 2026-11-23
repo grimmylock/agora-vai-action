@@ -11,11 +11,12 @@ namespace GameCore
 {
     public static class WeaponCarry
     {
-        public struct Def { public float RestDeg, ShiftPx, DropPx, WalkAmp, WalkLift, RunAmp, RunLift, RunTilt; }
+        public struct Def { public float RestDeg, ShiftPx, DropPx, WalkAmp, WalkLift, RunAmp, RunLift, RunTilt; public bool FreeArm; }   // FreeArm: the other hand is off the gun, hanging and swinging with the steps
         static Def D(float rest, float shift, float drop, float wa, float wl, float ra, float rl, float rt) => new Def { RestDeg = rest, ShiftPx = shift, DropPx = drop, WalkAmp = wa, WalkLift = wl, RunAmp = ra, RunLift = rl, RunTilt = rt };
         //                                              rest    shift drop  walk  walk  run   run   run
         //                                              deg     px    px    amp   lift  amp   lift  tilt
-        static readonly Def Sidearm = D(-28f, 2f, 2f, 1f, 1f, 2f, 1f, 7f);     // a pistol: low-ready, muzzle down by the hip, swings freely
+        // 2026-11-23 EXPERIMENT (Yan: "make the character hold the pistol muzzle UP like james bond in the movie posters, and when running he runs holding the pistol muzzle up and swinging the other arm"): the pistol is held up at the chest, muzzle up, one-handed; the other arm hangs and swings with the steps (FreeArm). The old low-ready was D(-28, 2, 2, 1, 1, 2, 1, 7).
+        static readonly Def Sidearm = new Def { RestDeg = 78f, ShiftPx = -5f, DropPx = -1f, WalkAmp = 1f, WalkLift = 0f, RunAmp = 1f, RunLift = 1f, RunTilt = 2f, FreeArm = true };
         static readonly Def Smg = D(-12f, 3f, 1f, 1f, 1f, 3f, 2f, 5f);         // an SMG: close to the chest, a little down
         static readonly Def Assault = D(0f, 3f, 0f, 1f, 1f, 3f, 2f, 5f);       // a rifle: level across the front (the stance Yan approved)
         static readonly Def Shotgun = D(14f, 3f, 0f, 1f, 1f, 3f, 2f, 5f);      // a shotgun: across the chest, muzzle a little up
