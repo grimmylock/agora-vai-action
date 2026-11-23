@@ -69,7 +69,7 @@ namespace GameCore
             new[] { (1f, 70f, false, 1.15f), (0.95f, 150f, true, 0.85f) },                           // chop: narrow, harder; sweep: wide, all
             new[] { (1f, 60f, false, 1.25f), (1f, 160f, true, 0.85f), (1.05f, 90f, false, 1f) },     // slam; wide sweep; rising swing
             // the Visor (damage stays his Boss.Move.Mult: x1): backhand, rising, ice-pick, thrust (long), spin (all round him), execution
-            new[] { (1f, 120f, false, 1f), (1f, 100f, false, 1f), (1f, 70f, false, 1f), (1.25f, 40f, false, 1f), (1f, 360f, true, 1f), (1.1f, 80f, false, 1f) },
+            new[] { (1f, 120f, false, 1f), (1f, 100f, false, 1f), (1f, 70f, false, 1f), (1.25f, 40f, false, 1f), (1f, 360f, true, 1f), (1.1f, 80f, false, 1f), (1.15f, 40f, false, 1f), (1f, 110f, false, 1f), (1f, 80f, false, 1f) },   // + jab (short, narrow), cross, feint
             // 2026-11-21 the Verger (damage stays his Boss.Move.Mult): reap (narrow), sweep (wide, all), rising, hook (long, narrow), danse (all round him), ankle reap (wide, all), backhand (wide, all), impale (long)
             new[] { (1f, 60f, false, 1f), (1f, 160f, true, 1f), (1f, 90f, false, 1f), (1.15f, 40f, false, 1f), (0.95f, 360f, true, 1f), (1.05f, 170f, true, 1f), (1f, 160f, true, 1f), (1.1f, 50f, false, 1f) },
         };

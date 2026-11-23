@@ -133,9 +133,9 @@ namespace GameCore
                 // Visor 2: each move strings his own poses (backhand 0, rising 1, ice-pick 2, thrust 3, spin 4, execution 5)
                 new Move { Name = "Slash", Wind = 0.6f, Weight = 2, Poses = new[] { 0 }, Open = 1f },
                 new Move { Name = "Ice pick", Wind = 0.7f, Weight = 1, Mult = 1.15f, Poses = new[] { 2 }, Open = 1.2f },
-                new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2, Poses = new[] { 0, 1, 2 }, Open = 1.5f },
+                new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2, Poses = new[] { 6, 7, 1 }, Open = 1.5f },
                 new Move { Name = "Lunge", Wind = 0.75f, Danger = true, Lunge = 5f, Mult = 1.4f, Weight = 1, Poses = new[] { 3 }, Open = 2f },
-                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 0, 1, 4, 0, 2 }, Open = 1.8f },
+                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 8, 1, 4, 6, 2 }, Open = 1.8f },
                 new Move { Name = "Whirlwind", Wind = 0.55f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 }, Open = 1.5f },
                 new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 }, Open = 2.2f },
             }, VisorDamage),

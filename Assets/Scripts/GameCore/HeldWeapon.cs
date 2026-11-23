@@ -242,6 +242,9 @@ namespace GameCore
                 ((72f, -8f, 1f, 11f), (60f, 11f, 0f, -17f)),         // 3 thrust: the knife drawn all the way back to the hip, then flung out with all his weight
                 ((-100f, -6f, -1f, -12f), (-500f, 7f, -1f, -14f)),   // 4 spin: coiled the wrong way, then a full turn, the blade out at the end of the arm
                 ((-212f, -1f, -15f, 17f), (-240f, 6f, 5f, -19f)),    // 5 execution: arched back with the knife as high as he can reach, then all the way down
+                ((38f, -3f, 2f, 7f), (60f, 10f, 0f, -12f)),          // 6 jab: held low at the hip, then driven straight out in a short stab (the Flurry'"'"'s opener)
+                ((-70f, -6f, 4f, -9f), (-255f, 8f, -3f, 12f)),       // 7 cross: from low on the far side, up and across (the Flurry'"'"'s answer to the jab)
+                ((-95f, 3f, -10f, -10f), (-175f, -2f, 2f, 6f)),      // 8 feint: the knife flashed up high and the body rocked back, then dropped to a guard - the fake that opens the Feint flurry
             },
             // 2026-11-21 (Yan: "make the human version the entire boss, elaborate more on the human scythe-moveset"): the Verger's war scythe,
             // two hands, the longest reach in the game. Boss.Move.Poses strings these; Melee.Shapes has the matching hit shape per pose.
@@ -332,7 +335,11 @@ namespace GameCore
                 : sinceThrow < WhipTime ? Whip(sinceThrow)
                 : swingHold >= 0f ? Chop(Mathf.Min(swingHold, WindUp), st, move, from)
                 : Chop(sinceSwing, st, move, from);
-            if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp) off += 3f * Mathf.Sin(swingHold * 30f);   // a charged swing trembles
+            if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp)
+            {
+                float tn = st == Style.Visor ? Mathf.Clamp01((swingHold - WindUp) / 0.5f) : 0f;                     // 2026-11-23 (Yan: the tells must be clearer): the Visor's wind-up keeps COILING while it is held - further round, leaning further, the fist drawn back - and trembles more
+                off += 3f * (1f + tn) * Mathf.Sin(swingHold * 30f) + Mathf.Sign(off) * 7f * tn; lean += 3f * tn; hy -= 1.2f * tn;
+            }
             // Yan: "make guard breaks create a slowdown effect like the dive, so that the player sees the enemy getting their hands up
             // slower": the rise plays inside the break's slow motion (Boss.ParryMoment, 0.25x for a real second); "his hand goes up
             // almost at the end of the slowdown": eased out - it's knocked up at once and slows into the top - over BrokenRise (about
