@@ -1203,8 +1203,10 @@ namespace GameCore
             float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
             ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
             if (!LifeOn || !visible || weapon?.Db == null || JawHold || _walkK < 0.05f) return;
-            float step = Mathf.Sin(_phase2 * 2f) > 0.2f ? 1f : 0f, rock = Mathf.Round(Mathf.Sin(_phase2) * _runK * 1.5f);
-            var d = Local(8f + rock, 8f + Mathf.Round(step * (1f + 2f * _runK) * _walkK)) - Local(8f, 8f);
+            // walk: a 1 px bob on each step (Yan: good). Run (Yan: "the hands circle instead of moving in an arc"): a pendulum - fore and aft along the aim, lifted at both ends of the swing and lowest in the middle, so the path is an arc traced back and forth, not a loop
+            float step = Mathf.Sin(_phase2 * 2f) > 0.2f ? 1f : 0f, s1 = Mathf.Sin(_phase2), ca = Mathf.Cos(_angle * Mathf.Deg2Rad), sa = Mathf.Sin(_angle * Mathf.Deg2Rad);
+            float walkBob = Mathf.Round(step * _walkK) * (1f - _runK), swing = Mathf.Round(s1 * 2f * _runK), lift = Mathf.Round(s1 * s1 * 2f * _runK);
+            var d = Local(8f + ca * swing, 8f + sa * swing + walkBob + lift) - Local(8f, 8f);
             foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf) r.transform.localPosition += d;
         }
         void ShowCore(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)

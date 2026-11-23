@@ -32,11 +32,14 @@ def frame(t, speed, armed, label):
             g = G.rotate(deg, expand=True).resize((G.height * Z, G.width * Z), Image.NEAREST)
             layer.alpha_composite(g, (ox + round(x * Z - g.width / 2), oy + round(y * Z - g.height / 2)))
     else:
-        step = 1.0 if math.sin(phase * 2) > 0.2 else 0.0; rock = round(math.sin(phase) * run * 1.5); bob = round(step * (1 + 2 * run)) * walk
-        gx, gy = 10 + rock, 8.5 + bob
-        gun = rifle.resize((rifle.width * Z // 2, rifle.height * Z // 2), Image.NEAREST); layer.alpha_composite(gun, (ox + round(gx * Z - gun.width * 0.25), oy + round((16 - gy) * Z - gun.height / 2) - 10 * Z + 8 * Z + 0))
-        for hx in (gx - 0.5, gx + 3.5):
-            g = G.resize((G.width * Z, G.height * Z), Image.NEAREST); layer.alpha_composite(g, (ox + round(hx * Z - g.width / 2), oy + round((16 - gy) * Z - g.height / 2) + 8 * Z - 2 * Z))
+        step = 1.0 if math.sin(phase * 2) > 0.2 else 0.0; s1 = math.sin(phase)
+        walkbob = round(step) * (1 - run); swing = round(s1 * 2 * run); lift = round(s1 * s1 * 2 * run)     # the code's pendulum: fore-aft along the aim (here +x), lifted at the ends
+        gx, gy = 10 + swing, 8.5 + walkbob + lift
+        gun = rifle.resize((rifle.width * Z // 2, rifle.height * Z // 2), Image.NEAREST)
+        gxp = ox + round((gx - 3) * Z); gyp = oy + round((16 - gy - 6) * Z)                       # the rifle's top-left; the hands are laid ON it (grip under the receiver, support under the handguard)
+        layer.alpha_composite(gun, (gxp, gyp))
+        for fx in (0.22, 0.62):
+            g = G.resize((G.width * Z, G.height * Z), Image.NEAREST); layer.alpha_composite(g, (gxp + round(gun.width * fx - g.width / 2), gyp + round(gun.height * 0.62 - g.height / 2)))
     c.alpha_composite(layer); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
 rows = [("empty: walk", 2.6, False), ("empty: run", 4.4, False), ("rifle: walk", 2.6, True), ("rifle: run", 4.4, True)]
 n = int(2.0 * FPS); frames = []
