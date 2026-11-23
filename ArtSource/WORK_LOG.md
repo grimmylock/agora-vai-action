@@ -7155,3 +7155,7 @@ Yan: "sometimes the verger doesn't strike with the bladed part of the scythe, us
 - `Tools/render/melee_anim.py`: animated sheet of all nine melee weapons (the game's own pose code, inventory art at in-hand scale, spring by weight, fist and two-hand grip following it, the flip) -> `maps/renders/melee_weapons_anim.gif`. Python draw, NOT Unity. Guns are not in it (they have the `weapon_states` sheets).
 - Not checked: any of this in Unity; whether poses 2 and 6 are the right two (if another swing still shows the back of the blade, add its index in `FlipsBlade`); how the mirror looks at the instant it switches on at the start of the wind-up.
 
+## 2026-11-23 - Batch 9dw: Sledgehammer spring softened; pushed to live
+
+Yan: "sledgehammer has a little too much swing, besides that they all look fine, push to live". Sledgehammer spring (omega, zeta, max lag) 14/0.36/65 -> 16/0.5/38 (more damping, shorter overshoot; `WeaponSpring.For`, mirrored in the preview scripts). Full harness: ALL CHECKS PASSED. Merged `realtime-proto` into `main` at Yan's request. Not run in Unity.
+

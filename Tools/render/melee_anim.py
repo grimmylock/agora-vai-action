@@ -11,7 +11,7 @@ def tab(n, k):
     m = re.search(r'\["%s"\] = ([0-9.]+)f' % k, src.split(n + " = new")[1].split("};")[0]); return float(m.group(1)) if m else 1.0
 def spring_for(key):
     if key == "VergerScythe": return (18.0, 0.32, 75.0)
-    if key == "Sledgehammer": return (14.0, 0.36, 65.0)
+    if key == "Sledgehammer": return (16.0, 0.5, 38.0)
     m = re.search(r'\["%s"\] = new WeaponDef \{[^}]*WeightKg = ([0-9.]+)f' % key, db)
     t = max(0.0, min(1.0, (float(m.group(1)) - 0.5) / 3.5)) if m else 0.0; return (26 + (15 - 26) * t, 0.46 + (0.37 - 0.46) * t, 32 + (68 - 32) * t)
 class Spring:

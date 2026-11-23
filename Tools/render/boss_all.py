@@ -22,7 +22,7 @@ else: _m = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}.png")).convert("R
 moves = _w; grip = [moves["grip"][0] * hs, moves["grip"][1] * hs]
 def _spring_for(key):                                                                      # WeaponSpring.For
     if key == "VergerScythe": return (18.0, 0.32, 75.0)
-    if key == "Sledgehammer": return (14.0, 0.36, 65.0)
+    if key == "Sledgehammer": return (16.0, 0.5, 38.0)
     m = re.search(r'\["%s"\] = new WeaponDef \{[^}]*WeightKg = ([0-9.]+)f' % key, open(os.path.join(ROOT, "Assets/Scripts/GameData/WeaponDatabase.cs")).read())
     if not m: return None
     t = max(0.0, min(1.0, (float(m.group(1)) - 0.5) / 3.5)); return (26 + (15 - 26) * t, 0.46 + (0.37 - 0.46) * t, 32 + (68 - 32) * t)

@@ -11,7 +11,7 @@ namespace GameCore
         public static (float w, float z, float max)? For(string key)
         {
             if (key == "VergerScythe") return (18f, 0.32f, 75f);          // the scythe and the sledgehammer are hand-tuned (Yan liked them)
-            if (key == "Sledgehammer") return (14f, 0.36f, 65f);          // the heavier head: a softer, slower spring
+            if (key == "Sledgehammer") return (16f, 0.5f, 38f);          // the heavier head: a softer, slower spring (2026-11-23 Yan: "a little too much swing": more damping, a shorter overshoot)
             if (key == null || !GameData.WeaponDatabase.Categories["melee"].TryGetValue(key, out var d)) return null;
             // 2026-11-23 (Yan: "add it to the rest by weight"): 0.5 kg or less = a crisp small flick, 4 kg or more = nearly the hammer's slow swing
             float t = Mathf.Clamp01(((d.WeightKg ?? 1f) - 0.5f) / 3.5f); return (Mathf.Lerp(26f, 15f, t), Mathf.Lerp(0.46f, 0.37f, t), Mathf.Lerp(32f, 68f, t));
