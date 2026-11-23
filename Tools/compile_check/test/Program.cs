@@ -26,6 +26,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "sceneprowlers") { SceneProwlers(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1], args.Length > 2 ? args[2] : "visor"); return 0; }
     if (args.Length > 0 && args[0] == "bossprobe") { BossProbe(args.Length > 1 ? args[1] : "all", args.Length > 2 ? int.Parse(args[2]) : 3); return 0; }
     if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
@@ -1673,6 +1674,55 @@ static class Program {
     File.WriteAllText(path, sb.Append("]}").ToString());
     Console.WriteLine($"duel: {(f.Finished ? "executed" : "not finished")}, boss hp {v.Hp}, {UnityEngine.Time.unscaledTime - 30000f:0.0} s real, strikes {strike}: {string.Join(", ", moves)}");
     Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; Boss.Reset();
+  }
+
+
+  // 2026-11-23 (the trailer, scene 1): the starting character against three Pallid Prowlers in the Chapel Crypt's long corridor, on the real map; a bot that plays it like a person (aims and shoots while backing up the corridor, sprints off when one gets close).
+  // The real RtAi/MutantAttack run the Prowlers; dumped for Tools/render/scene_fight.py
+  static void SceneProwlers(string path) {
+    GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
+    GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;
+    var p = Player.Current; Rt.On = true; Rt.Reset(); EncounterState.Enemies.Clear(); EncounterState.ResetFight(); MacroState.Current.StoryFlags.Clear(); MutantAttack.Reset();
+    MacroState.Current.CurrentZoneId = "chapel_crypt"; ZoneTravel.EnterZone("chapel_crypt");
+    var (sx0, sy0) = TerrainMap.FindNearestEnterable(19, 13); p.X = sx0; p.Y = sy0; Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp;
+    UnityEngine.Time.time = 40000f; UnityEngine.Time.unscaledTime = 40000f; UnityEngine.Time.timeScale = 1f;
+    if (p.EquippedWeapon == null || CombatRules.IsMelee(p.EquippedWeapon)) { p.EquipWeapon("sidearm", "PSh18Pchela"); }
+    Ammo.Add(p.Inventory, Ammo.Key(p.EquippedWeapon.Db, "Standard"), 200); TestingGround.RefillAmmo(p);
+    var def = MutantDatabase.Get("tier1", "PallidProwler"); var mut = new List<Mutant>();
+    foreach (var (dx, dy) in new[] { (0, 9), (-1, 11), (1, 13) }) { var (mx0, my0) = TerrainMap.FindNearestEnterable(19 + dx, 13 + dy); var m = new Mutant("Pallid Prowler", mx0, my0, def) { IsAggroed = true }; mut.Add(m); EncounterState.Enemies.Add(m); Rt.SetOffset(m, 0f, 0f); }
+    EncounterState.InCombat = true;
+    var (cat0, key0) = WeaponArt.Identify(p.EquippedWeapon.Db); var g0 = WeaponArt.GripOf(cat0, key0);
+    var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
+    string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)}]";
+    var sb = new System.Text.StringBuilder(); int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "");
+    sb.Append("{\"world\":\"chapel_crypt\",\"origin\":[" + p.X + "," + p.Y + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#c8916a") + "\",\"cat\":\"" + cat0 + "\",\"key\":\"" + key0 + "\",\"grip\":[" + F(g0[0]) + "," + F(g0[1]) + "],\"maxhp\":" + def.Hp + ",\"anims\":{");
+    int ai = 0; foreach (var kv in MutantAttackData.Table["Pallid Prowler"]) { var a = kv.Value; sb.Append((ai++ > 0 ? "," : "") + $"\"{kv.Key}\":{{\"frames\":{a.Frames},\"w\":{a.W},\"h\":{a.H},\"pivot\":{F(a.PivotY)},\"ms\":[{string.Join(",", a.Ms)}]}}"); }
+    sb.Append("},\"frames\":["); float real = 1f / 30f, firedAt = -99f; bool first = true; int ended = 0;
+    for (int k = 0; k < 30 * 40; k++) {
+      float gdt = real * UnityEngine.Time.timeScale; UnityEngine.Time.time += gdt; UnityEngine.Time.deltaTime = gdt; UnityEngine.Time.unscaledTime += real; UnityEngine.Time.unscaledDeltaTime = real;
+      float now = UnityEngine.Time.time; var live = mut.Where(m => m.IsAlive()).OrderBy(m => CombatantUtil.Distance(p, m)).ToList();
+      if (p.Hp < p.MaxHp * 0.4f) p.Hp = (int)(p.MaxHp * 0.7f); if (Body.Down(p)) { Body.Forget(p); p.Hp = Math.Max(p.Hp, (int)(p.MaxHp * 0.6f)); }
+      var input = new Rt.Input(); var wp = p.EquippedWeapon; var aimG = Gunplay.AimOf(p);
+      if (live.Count > 0) {
+        var t = live[0]; var (tx, ty) = Ballistics.Pos(t); var (mx, my) = Ballistics.Pos(p); int d = CombatantUtil.Distance(p, t); input.Mouse = (tx, ty + 0.44f - 0.45f * Ballistics.BodyTiles);
+        if (d <= 3 && p.Y > 9) { input.Y = -1; input.Sprint = true; }                                // one is on top of it: sprint back up the corridor (not out of the crypt)
+        else { input.Aim = true; input.Fire = true; input.FireDown = ((int)(now * 6f)) % 2 == 0; if (d < 7 && p.Y > 9) input.Y = -1; }   // aim, shoot, give ground slowly
+        if (wp != null && wp.CurrentMagazine <= 1 && d > 5) input.Reload = true;
+      } else if (ended == 0) ended = k;
+      if (input.Fire) firedAt = now;
+      Rt.PlayerTick(p, input); Rt.WorldTick(p); Rt.Glide(UnityEngine.Time.deltaTime);
+      var ev = new List<string>(); foreach (var e in CombatFx.Pending) ev.Add($"[\"{e.Kind}\",{(e.Actor == p ? 1 : 0)},{F(e.EndX)},{F(e.EndY)},{(e.Hit ? 1 : 0)},{(e.Killed ? 1 : 0)}]"); CombatFx.Pending.Clear();
+      var (px, py) = Ballistics.Pos(p); var pose = Rt.PoseOf(p); var s = Rt.Of(p); float ang = input.Mouse.HasValue ? UnityEngine.Mathf.Atan2(-(input.Mouse.Value.y - py), input.Mouse.Value.x - px) * UnityEngine.Mathf.Rad2Deg : 0f;
+      ang = input.Mouse.HasValue ? UnityEngine.Mathf.Atan2(-(input.Mouse.Value.y - py), input.Mouse.Value.x - px) * UnityEngine.Mathf.Rad2Deg : 0f;
+      var aimF = HeldPoseMath.Frame(cat0, g0, ang, 0f, 0f, 0f, 99f, 1f, "none", 1); float rest = WeaponCarry.RestAngle(cat0, UnityEngine.Mathf.Cos(ang * UnityEngine.Mathf.Deg2Rad) < 0f); var carF = HeldPoseMath.Frame(cat0, g0, rest, 0f, 0f, 0f, 99f, 1f, "none", 1);
+      var ms = new List<string>();
+      foreach (var m in mut) { var (mx2, my2) = Ballistics.Pos(m); MutantAttack.ClipOf(m, out var kind, out var st); ms.Add($"[{F(mx2)},{F(my2)},{m.Hp},{(m.IsAlive() ? 1 : 0)},\"{kind ?? ""}\",{(kind == null ? -1f : now - st)},{(Rt.Sliding(m) ? 1 : 0)}]"); }
+      if (!first) sb.Append(","); first = false;
+      sb.Append($"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 40000f)},\"gt\":{F(now - 40000f)},\"p\":[{F(px)},{F(py)},{p.Hp},{(s.Aiming ? 1 : 0)},{(now - firedAt < 0.8f ? 1 : 0)},{F(ang)},{s.Moving}],\"pose\":[{F(pose.Lift)},{F(pose.Tilt)}],\"fa\":{Fr(aimF)},\"fc\":{Fr(carF)},\"m\":[{string.Join(",", ms)}],\"ev\":[{string.Join(",", ev)}]}}");
+      if (ended > 0 && k > ended + 45) break;
+    }
+    File.WriteAllText(path, sb.Append("]}").ToString()); Console.WriteLine($"prowlers: {mut.Count(m => !m.IsAlive())}/3 down, player hp {p.Hp}/{p.MaxHp}, {UnityEngine.Time.unscaledTime - 40000f:0.0} s");
+    Rt.On = false; Rt.SetSlow(false); UnityEngine.Time.timeScale = 1f; EncounterState.Enemies.Clear();
   }
 
   // Pack 1: a pack as the game packs it (Pack.Settle on a real kit + loot, through Player.AddItem) for each bag -> Tools/render/pack_screen.py

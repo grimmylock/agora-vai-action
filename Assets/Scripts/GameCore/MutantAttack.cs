@@ -65,6 +65,8 @@ namespace GameCore
         static readonly Dictionary<string, float> EngageDelay = new Dictionary<string, float> { ["Blind Maw"] = 0.4f };
         static bool RegisterElder() { ElderClips.Register(); return true; }
         public static bool Playing(Mutant m) => m != null && States.TryGetValue(m, out var s) && s.Kind != null;
+        /// <summary>2026-11-23 (the trailer renderer): which attack clip a mutant is in and when it began (game time).</summary>
+        public static bool ClipOf(Mutant m, out string kind, out float start) { kind = null; start = 0f; if (m == null || !States.TryGetValue(m, out var st) || st.Kind == null) return false; kind = st.Kind; start = st.Start; return true; }
         public static string KindOf(Mutant m) => m != null && States.TryGetValue(m, out var s) ? s.Kind : null;
 
         // ---- pure helpers (tested in the harness) ----
