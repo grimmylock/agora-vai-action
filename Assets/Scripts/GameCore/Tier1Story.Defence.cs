@@ -18,7 +18,7 @@ namespace GameCore
         public const string DefenceMission = "defense";
         public static readonly int[] WaveSizes = { 4, 5, 6, 8 };
         public const float WaveGap = 70f, DoorHp = 100f, DoorWearPerSecond = 2.5f;
-        static int _wave; static float _nextWave = -1f, _doorHp, _doorSay = 100f, _lastLeft = -1f;
+        static int _wave; static float _nextWave = -1f, _doorHp, _doorSay = 100f;
         static readonly List<Mutant> _husks = new List<Mutant>();
 
         static bool Dusk(float h) => h >= 19f && h < 23f;

@@ -678,10 +678,11 @@ namespace GameCore
             return z == null || !z.IsSafeZone || faction != null && z.AllowedFactions.Contains(faction);
         }
 
-        static bool CanEnter(string zoneId, string faction)
+        public static bool CanEnter(string zoneId, string faction)
         {
             var z = MacroMapDatabase.Find(zoneId);
             if (faction == Husk.Faction) return z != null && !z.IsSafeZone && !z.IsDungeon;   // Husks walk anywhere that isn't a Safe Zone
+            if (z != null && z.IsDungeon && WorldEvents.Factions(z).Count == 0) return false;   // 2026-11-23 (Yan: a Garrison squad stood in the Verger's cathedral): an EMPTY allowed list meant 'anyone may enter' - but for a dungeon with no inhabitants of its own (the cathedral, boss arenas) it means nobody
             return z != null && (WorldEvents.Factions(z).Count == 0 || WorldEvents.Factions(z).Contains(faction));
         }
 

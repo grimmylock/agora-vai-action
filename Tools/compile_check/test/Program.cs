@@ -117,6 +117,7 @@ static class Program {
     VergerChecks();
     BossBreathingChecks();
     WeaponSpringChecks();
+    DungeonSquadChecks();
     ArmorFollowsWeaponChecks();
     VergerBeastChecks();
     MotherHollowChecks();
@@ -3319,6 +3320,11 @@ static class Program {
   // 2026-11-23 (Yan): combo falloff, the parry's exposure and second wind, clotting, the boss's breathers
 
   // 2026-11-23: the scythe's spring
+  static void DungeonSquadChecks() {
+    var bad = new List<string>(); foreach (var z in MacroMapDatabase.Zones) if (z.IsDungeon && z.AllowedFactions.Count == 0) foreach (var f in new[] { "Garrison", "Raiders", "Mutant", "Obelisk", "Wanderers" }) if (SquadManager.CanEnter(z.Id, f)) bad.Add(z.Id + "/" + f);
+    Check(bad.Count == 0, "No squad may enter a dungeon with no inhabitants of its own (the cathedral, boss arenas): " + string.Join(", ", bad));
+    Check(!SquadManager.CanEnter("abandoned_cathedral", "Garrison") && SquadManager.CanEnter("abandoned_city", "Garrison"), "The Verger's cathedral refuses a Garrison squad, the city round it does not");
+  }
   static void WeaponSpringChecks() {
     { var V = HeldPoseMath.Style.Verger; var fl = new System.Collections.Generic.List<int>(); for (int m = 0; m < HeldPoseMath.MoveCount(V); m++) if (HeldPoseMath.FlipsBlade(V, m)) fl.Add(m);
       Check(string.Join(",", fl) == "2,6" && !HeldPoseMath.FlipsBlade(HeldPoseMath.Style.Visor, 2), "Verger: the scythe is turned over for the rising cut and the backhand only (" + string.Join(",", fl) + ")");
