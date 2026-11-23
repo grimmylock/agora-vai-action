@@ -7004,3 +7004,6 @@ Yan: the walk with the lean "looks better than current walking", keep it; "the b
 
 ### Batch 9cn (2026-11-23): life test on all Raider suits
 Yan: "try the same walk on the other raider suits". `UnitLife.Applies` now covers every suit whose name starts with "Raider" (15 suits, Jacket to Armored Warlord) on hostile humans; bosses and Husks still excluded. Same walk hop + lean (breathing off, flinch heavy-hit only). Harness passes; not seen in Unity.
+
+### Batch 9co (2026-11-23): life test on every human faction
+Yan: "try it on the other human factions too". `UnitLife.Applies` is now every HumanEnemy with a suit except bosses and Husks (all factions, story NPCs, companions). Walk hop + lean only (breathing off, flinch on heavy hits). The player is still untouched. Harness passes; not seen in Unity. Suits whose sprite has no walk frames just get the lean.
