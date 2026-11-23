@@ -24,6 +24,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "visormoves") { VisorMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "spoolmoves") { VisorMoves(args[1], true); return 0; }
     if (args.Length > 1 && args[0] == "vergermoves") { VisorMoves(args[1], false, true); return 0; }
+    if (args.Length > 1 && args[0] == "kingmoves") { VisorMoves(args[1], false, false, true); return 0; }
     if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
@@ -115,6 +116,7 @@ static class Program {
     SpoolChecks();
     VergerChecks();
     BossBreathingChecks();
+    ArmorFollowsWeaponChecks();
     VergerBeastChecks();
     MotherHollowChecks();
     SingerChecks();
@@ -1877,13 +1879,13 @@ static class Program {
     sb.Append("]}"); File.WriteAllText(path, sb.ToString()); Console.WriteLine("visor states -> " + path);
   }
 
-  static void VisorMoves(string path, bool spool = false, bool verger = false) {
+  static void VisorMoves(string path, bool spool = false, bool verger = false, bool king = false) {
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Melee.Reset(); Melee.Now = -1f; Boss.Reset();
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     EncounterState.Enemies.Clear();
-    var bd = verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; var mvs = bd.Moves;   // 2026-11-21: the Verger is all scythe now (both phases) spool |= verger;
+    var bd = king ? Boss.King : verger ? Boss.Verger : spool ? Boss.Spool : Boss.Visor; string wkey = king ? "Sledgehammer" : verger ? "VergerScythe" : spool ? "BarbedWireBat" : "SerratedTrenchKnife"; spool |= king; var mvs = bd.Moves;   // 2026-11-21: the Verger is all scythe now (both phases) spool |= verger;
     var f = Boss.Spawn(bd, px + 1, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f); Rt.SetOffset(p, 0f, 0f);
     var g = WeaponArt.GripOf("melee", wkey);
     var sb = new System.Text.StringBuilder("{\"weapons\":[{\"key\":\"" + wkey + "\",\"title\":\"" + bd.Name + "\",\"grip\":[" + g[0].ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + g[1].ToString(System.Globalization.CultureInfo.InvariantCulture) + "],\"moves\":[");
@@ -1907,7 +1909,7 @@ static class Program {
       }
       f.Doing = null;
     }
-    if (spool) { string cn = verger ? "Verger Coat" : "Barbwire Coat"; var ug = UnitSprites.UniqueGloves[cn]; sb.Append("]}],\"armor\":[0,\"" + ug.cuff + "\",\"" + ug.glove + "\"],\"body\":\"armor_unique_" + (verger ? "verger_coat" : "barbwire_coat") + ".png\"}"); }
+    if (spool) { string cn = king ? "The Scrap King" : verger ? "Verger Coat" : "Barbwire Coat"; var ug = UnitSprites.UniqueGloves[cn]; sb.Append("]}],\"armor\":[0,\"" + ug.cuff + "\",\"" + ug.glove + "\"],\"body\":\"armor_unique_" + (king ? "the_scrap_king" : verger ? "verger_coat" : "barbwire_coat") + ".png\"}"); }
     else sb.Append("]}],\"armor\":[0,\"#1f2226\",\"#2a2c30\"],\"body\":\"armor_unique_black_visor_suit.png\"}");
     File.WriteAllText(path, sb.ToString()); Console.WriteLine((spool ? "spool" : "visor") + " moves -> " + path);
     Rt.On = false; Boss.Reset(); Melee.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false;
@@ -3295,6 +3297,23 @@ static class Program {
     } finally { CathedralJob.ZoneOverride = null; CathedralJob.Reset(); Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
   }
 
+
+
+  // 2026-11-23 (Yan): the armour of a human enemy follows his weapon
+  static void ArmorFollowsWeaponChecks() {
+    UnityEngine.Random.InitState(31);
+    int Share(string cat, int variant) {
+      int hit = 0, n = 600; var cand = WeaponDatabase.Categories[cat].Values.Where(w => w.Tier <= 3).ToList();
+      for (int i = 0; i < n; i++) {
+        var w = cand[i % cand.Count]; var a = FactionArmorDatabase.PickArmor("Raiders", "Veteran", 3, false, FactionArmorDatabase.VariantFor(cat));
+        var line = FactionArmorDatabase.Lines["Raiders"]; int tier = ArmorDatabase.Tiers.First(kv => kv.Value.Values.Contains(a)).Key[4] - '0'; var key = ArmorDatabase.Tiers[$"tier{tier}"].First(kv => kv.Value == a).Key;
+        if (System.Array.IndexOf(line[tier - 1], key) == variant) hit++; }
+      return hit * 100 / n; }
+    int shot = Share("shotgun", 2), melee = Share("melee", 2), heavy = Share("heavy", 2), rifle = Share("assault", 1), pistol = Share("sidearm", 1), smg = Share("smg", 0), sniper = Share("sniper", 0);
+    Check(shot >= 70 && melee >= 70 && heavy >= 70 && rifle >= 70 && pistol >= 70 && smg >= 70 && sniper >= 70, $"Loadouts: the armour follows the weapon (heavy for shotguns {shot}%, melee {melee}%, machine guns {heavy}%; standard for rifles {rifle}%, pistols {pistol}%; light for SMGs {smg}%, snipers {sniper}%), the rest a random mix");
+    int leaders = 0; for (int i = 0; i < 100; i++) { var a = FactionArmorDatabase.PickArmor("Raiders", "Veteran", 3, true, 0); int tier = ArmorDatabase.Tiers.First(kv => kv.Value.Values.Contains(a)).Key[4] - '0'; var key = ArmorDatabase.Tiers[$"tier{tier}"].First(kv => kv.Value == a).Key; if (System.Array.IndexOf(FactionArmorDatabase.Lines["Raiders"][tier - 1], key) == 2) leaders++; }
+    Check(leaders == 100, "Loadouts: a leader still wears the heavy armour whatever he carries");
+  }
 
   // 2026-11-23 (Yan): combo falloff, the parry's exposure and second wind, clotting, the boss's breathers
   static void BossBreathingChecks() {

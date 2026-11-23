@@ -337,7 +337,7 @@ namespace GameCore
                 : Chop(sinceSwing, st, move, from);
             if (throwHold < 0f && sinceThrow >= WhipTime && swingHold > WindUp)
             {
-                float tn = st == Style.Visor ? Mathf.Clamp01((swingHold - WindUp) / 0.5f) : 0f;                     // 2026-11-23 (Yan: the tells must be clearer): the Visor's wind-up keeps COILING while it is held - further round, leaning further, the fist drawn back - and trembles more
+                float tn = st == Style.Visor || st == Style.Verger ? Mathf.Clamp01((swingHold - WindUp) / 0.5f) : 0f;                     // 2026-11-23 (Yan: the tells must be clearer): the Visor's wind-up keeps COILING while it is held - further round, leaning further, the fist drawn back - and trembles more
                 off += 3f * (1f + tn) * Mathf.Sin(swingHold * 30f) + Mathf.Sign(off) * 7f * tn; lean += 3f * tn; hy -= 1.2f * tn;
             }
             // Yan: "make guard breaks create a slowdown effect like the dive, so that the player sees the enemy getting their hands up

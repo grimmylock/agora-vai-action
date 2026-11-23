@@ -123,7 +123,7 @@ namespace GameCore
         {
             var (min, max) = RankToTierRange(rank);
             var weapon = PickFactionWeapon(faction, min, max) ?? PickRandomWeaponByTier(min, max);
-            var armor = FactionArmorDatabase.PickArmor(faction, rank, zoneTier, isLeader) ?? PickRandomArmorByTier(min, max);
+            var armor = FactionArmorDatabase.PickArmor(faction, rank, zoneTier, isLeader, FactionArmorDatabase.VariantFor(CombatRules.Category(weapon))) ?? PickRandomArmorByTier(min, max);   // 2026-11-23: the armour follows the weapon (heavy for shotguns, machine guns and melee; standard for rifles and pistols; light for SMGs and snipers)
             return (weapon, armor);
         }
 

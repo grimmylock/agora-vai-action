@@ -239,12 +239,15 @@ namespace GameData
 
         /// <summary>Faction armor for an NPC, or null if the faction has no line (caller falls back).
         /// Leaders always get the Heavy variant.</summary>
-        public static ArmorDef PickArmor(string faction, string rank, int zoneTier, bool isLeader = false)
+        /// <summary>2026-11-23 (Yan: "heavier armor users go for shotguns, melee and heavy, medium for assault rifles and sidearms, light for smg's, snipers"): which of the three armors of a line (0 Light, 1 Standard, 2 Heavy) suits a weapon category.</summary>
+        public static int VariantFor(string weaponCategory) { switch (weaponCategory) { case "shotgun": case "heavy": case "melee": return 2; case "assault": case "sidearm": return 1; case "smg": case "sniper": return 0; default: return -1; } }
+        public const float VariantFollowsWeapon = 0.75f;        // the share of a faction's fighters whose armour matches their weapon; the rest are the old random mix
+        public static ArmorDef PickArmor(string faction, string rank, int zoneTier, bool isLeader = false, int preferredVariant = -1)
         {
             if (!Lines.TryGetValue(LineFaction(faction), out var line)) return null;
             var (min, max) = ArmorTierRange(rank, zoneTier);
             int tier = Random.Range(min, max + 1);
-            int variant = isLeader ? 2 : Random.Range(0, 3);
+            int variant = isLeader ? 2 : preferredVariant >= 0 && Random.value < VariantFollowsWeapon ? preferredVariant : Random.Range(0, 3);
             return ArmorDatabase.Get($"tier{tier}", line[tier - 1][variant]);
         }
 

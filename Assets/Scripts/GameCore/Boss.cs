@@ -361,6 +361,7 @@ namespace GameCore
         {
             var h = f.Unit; f.BreatherUntil = from + BreatherSeconds; f.ChangeUntil = System.Math.Max(f.ChangeUntil, f.BreatherUntil); f.NextMoveAt = f.BreatherUntil + 0.4f;
             f.Doing = null; f.StrikeAt = f.BreatherUntil + 99f;
+            { var mc = Melee.ChargeOf(h); mc.OpenFrom = from + HeldPoseMath.Follow / mc.Pace; mc.OpenUntil = f.BreatherUntil; }          // the flourish: the weapon sinks and the shoulders heave (the same pose as an opening) - he is catching his breath, and the pose says so (Boss.Open stays false: it is not an opening)
             if (f.Def.BreatherBarks != null && f.Def.BreatherBarks.Length > 0) Banter.Say(h, f.Def.BreatherBarks[Random.Range(0, f.Def.BreatherBarks.Length)], 1, Mathf.Max(0f, from - Time.time) + 0.2f);
             if (phase) GameLog.Write("He draws breath. You have a moment."); else GameLog.Write("He steps back and resets. A moment to breathe.");
         }
