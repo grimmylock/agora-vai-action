@@ -186,7 +186,7 @@ namespace GameCore
             new Move { Name = "Reap", Wind = 1.0f, Weight = 3, Mult = 1.0f, MaxDist = 2f, Poses = new[] { 0 }, Open = 1.4f },                                                     // overhead, into the floor in front of him
             new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.55f, Mult = 0.65f, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6 }, Open = 1.7f },                         // round and back
             new Move { Name = "Rising Cut", Wind = 0.7f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 2 }, Open = 1.1f },                                              // the quick one: short wind, short opening
-            new Move { Name = "Hook", Wind = 1.0f, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 3 }, Open = 1.2f },                           // from range: the beard catches you and he hauls you in
+            new Move { Name = "Hook", Call = true, Wind = 1.0f, Lunge = 4f, Drag = 3.2f, Mult = 1.0f, Weight = 2, Poses = new[] { 3 }, Open = 1.2f },                           // from range: the beard catches you and he hauls you in
             new Move { Name = "Ankle Reap", Wind = 0.9f, Danger = true, Mult = 0.9f, MaxDist = 2f, Weight = 2, Poses = new[] { 5 }, Open = 1.6f },                               // low, at your feet: dive over it
             // phase 1 only
             new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gaps = new[] { 0.45f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.9f }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 0 }, Open = 1.8f, Phase1Only = true },
