@@ -3326,7 +3326,7 @@ static class Program {
     var s2 = new WeaponSpring.State(); WeaponSpring.Step(ref s2, 0f, 1f / 60f, sp.w, sp.z, sp.max); float lag = 0f; for (int i = 0; i < 6; i++) lag = WeaponSpring.Step(ref s2, 60f * (i + 1), 1f / 60f, sp.w, sp.z, sp.max) - 60f * (i + 1);
     Check(lag < -1f && lag >= -sp.max - 0.01f, $"Scythe spring: a fast swing leaves the blade behind the hand by {-lag:0} degrees (never more than {sp.max:0})");
     var s3 = new WeaponSpring.State(); WeaponSpring.Step(ref s3, 10f, 1f / 60f, sp.w, sp.z, sp.max); Check(WeaponSpring.Step(ref s3, 400f, 1f / 60f, sp.w, sp.z, sp.max) == 400f, "Scythe spring: a flip of the facing (a jump of more than 300 degrees) snaps instead of whirling");
-    Check(WeaponSpring.For("TacticalHatchet") == null && WeaponSpring.For("SerratedTrenchKnife") == null, "Scythe spring: only the scythe has it for now");
+    Check(WeaponSpring.For("TacticalHatchet") == null && WeaponSpring.For("SerratedTrenchKnife") == null && WeaponSpring.For("Sledgehammer").Value.w < WeaponSpring.For("VergerScythe").Value.w, "Weapon spring: the scythe and the sledgehammer have it (the hammer's softer and slower), nothing else yet");
   }
 
   static void BossBreathingChecks() {

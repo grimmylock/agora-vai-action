@@ -20,8 +20,10 @@ KEY = _w["key"]; kd, hs = tab("Dense", KEY), tab("HandScale", KEY)
 if kd > 1: im = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}_hd.png")).convert("RGBA"); img = im.resize((round(im.width / kd * hs), round(im.height / kd * hs)), Image.LANCZOS)
 else: _m = Image.open(os.path.join(SPR, f"Weapons/weapon_{KEY}.png")).convert("RGBA"); img = _m.resize((round(_m.width * hs), round(_m.height * hs)), Image.NEAREST) if hs != 1 else _m
 moves = _w; grip = [moves["grip"][0] * hs, moves["grip"][1] * hs]
-SPRING = os.environ.get("SPRING") == "1" and KEY == "VergerScythe"; _sp = {"pos": None, "vel": 0.0}
-def spring_deg(target, dt=1 / 30.0, w=18.0, z=0.32, mx=75.0):       # WeaponSpring.Step, the same numbers
+SPRING_PARAMS = {"VergerScythe": (18.0, 0.32, 75.0), "Sledgehammer": (14.0, 0.36, 65.0)}     # WeaponSpring.For
+SPRING = os.environ.get("SPRING") == "1" and KEY in SPRING_PARAMS; _sp = {"pos": None, "vel": 0.0}
+def spring_deg(target, dt=1 / 30.0, w=18.0, z=0.32, mx=75.0):
+    w, z, mx = SPRING_PARAMS.get(KEY, (w, z, mx))       # WeaponSpring.Step, the same numbers
     if _sp["pos"] is None or abs(target - _sp["pos"]) > 300: _sp["pos"], _sp["vel"] = target, 0.0; return target
     n = max(1, int(-(-dt // (1 / 120.0)))); h = dt / n
     for _ in range(n): acc = w * w * (target - _sp["pos"]) - 2 * z * w * _sp["vel"]; _sp["vel"] += acc * h; _sp["pos"] += _sp["vel"] * h

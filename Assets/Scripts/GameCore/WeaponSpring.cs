@@ -8,7 +8,7 @@ namespace GameCore
     {
         public struct State { public float Pos, Vel; public bool Init; }
         /// <summary>omega (rad/s: stiffness), zeta (damping ratio: < 1 overshoots), max lag in degrees (so a fast spin drags the blade behind by at most this much).</summary>
-        public static (float w, float z, float max)? For(string key) => key == "VergerScythe" ? (18f, 0.32f, 75f) : ((float, float, float)?)null;
+        public static (float w, float z, float max)? For(string key) => key == "VergerScythe" ? (18f, 0.32f, 75f) : key == "Sledgehammer" ? (14f, 0.36f, 65f) : ((float, float, float)?)null;       // the sledgehammer is the heavier head: a softer, slower spring
 
         /// <summary>One step toward `target` (degrees); returns where the blade is now.</summary>
         public static float Step(ref State s, float target, float dt, float w, float z, float max)
