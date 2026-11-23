@@ -1,0 +1,49 @@
+"""2026-11-23: the hand swing test (HeldWeaponView.Show wrapper + HeldPoseMath.FreeHands), redrawn with the same numbers, real sprites (Raider Jacket cell, its walk frames, a Corvan battle rifle), WITHOUT Unity.
+Rows: empty hands walking / running, rifle in hand walking / running. The rifle's grip positions are approximate (the real pose comes from HeldPoseMath.Frame); the bob and swing numbers are the code's.
+Usage: python3 Tools/render/hands_swing.py out_dir -> hands_swing.gif, hands_swing_sheet.png"""
+import math, os, sys
+from PIL import Image, ImageDraw, ImageFont
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); SPR = os.path.join(ROOT, "Assets/Resources/Sprites")
+Z = 8; BG = (58, 54, 42, 255); FPS = 30; STRIDE = 1.2
+def cell(n, x=0): return Image.open(os.path.join(SPR, n)).convert("RGBA").crop((x * 16, 0, x * 16 + 16, 16))
+stand, wa, wb = cell("armor_atlas.png"), cell("armor_walk_a.png"), cell("armor_walk_b.png")
+rifle = Image.open(os.path.join(SPR, "Weapons/weapon_CorvanBattleRifle.png")).convert("RGBA")
+def glove():
+    img = Image.new("RGBA", (5, 4)); col = {"K": (20, 22, 23, 255), "c": (42, 44, 48, 255), "l": (80, 84, 92, 255), "g": (54, 58, 64, 255), "d": (36, 38, 42, 255)}
+    for y, row in enumerate([".KKK.", "KcllK", "KcgdK", ".KKK."]):
+        for x, ch in enumerate(row):
+            if ch != ".": img.putpixel((x, y), col[ch])
+    return img
+G = glove(); font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
+def free_hands(phase, swing, run):
+    a = math.sin(phase) * swing; pump = round(math.cos(phase) * 2.5 * run); dx = round((1.2 + 2.2 * run) * a)
+    return (14 + dx, 11.5 + pump, 2 + dx, 11.5 - pump)
+def frame(t, speed, armed, label):
+    W = 16 * Z + 40; H = 16 * Z + 50; c = Image.new("RGBA", (W, H), BG); d = ImageDraw.Draw(c)
+    phase = speed * t * 2 * math.pi / STRIDE; run = max(0.0, min(1.0, (speed - 3.4) / 1.0)); walk = 1.0
+    q = int(phase / (2 * math.pi) * 4) % 4; f = stand if q in (1, 3) else (wa if q == 0 else wb); step_body = q in (0, 2)
+    ox, oy = 20, 30 - (1 * Z if step_body else 0)
+    d.ellipse((20 + 3 * Z, 30 + 14 * Z, 20 + 13 * Z, 30 + 16 * Z), fill=(30, 28, 22, 255))
+    body = f.resize((16 * Z, 16 * Z), Image.NEAREST); tilt = -2.0
+    layer = Image.new("RGBA", (W, H)); layer.alpha_composite(body, (ox, oy)); layer = layer.rotate(tilt, resample=Image.NEAREST, center=(ox + 8 * Z, oy + 16 * Z))
+    if not armed:
+        rx, ry, lx, ly = free_hands(phase, walk, run)
+        for (x, y, deg) in ((rx, ry, -90), (lx, ly, 90)):
+            g = G.rotate(deg, expand=True).resize((G.height * Z, G.width * Z), Image.NEAREST)
+            layer.alpha_composite(g, (ox + round(x * Z - g.width / 2), oy + round(y * Z - g.height / 2)))
+    else:
+        step = 1.0 if math.sin(phase * 2) > 0.2 else 0.0; rock = round(math.sin(phase) * run * 1.5); bob = round(step * (1 + 2 * run)) * walk
+        gx, gy = 10 + rock, 8.5 + bob
+        gun = rifle.resize((rifle.width * Z // 2, rifle.height * Z // 2), Image.NEAREST); layer.alpha_composite(gun, (ox + round(gx * Z - gun.width * 0.25), oy + round((16 - gy) * Z - gun.height / 2) - 10 * Z + 8 * Z + 0))
+        for hx in (gx - 0.5, gx + 3.5):
+            g = G.resize((G.width * Z, G.height * Z), Image.NEAREST); layer.alpha_composite(g, (ox + round(hx * Z - g.width / 2), oy + round((16 - gy) * Z - g.height / 2) + 8 * Z - 2 * Z))
+    c.alpha_composite(layer); d.text((6, 4), label, font=font, fill=(240, 200, 90)); return c
+rows = [("empty: walk", 2.6, False), ("empty: run", 4.4, False), ("rifle: walk", 2.6, True), ("rifle: run", 4.4, True)]
+n = int(2.0 * FPS); frames = []
+for i in range(n):
+    t = i / FPS; cs = [frame(t, sp, ar, lb).convert("RGB") for lb, sp, ar in rows]
+    s = Image.new("RGB", (cs[0].width * 4, cs[0].height)); [s.paste(x, (k * x.width, 0)) for k, x in enumerate(cs)]; frames.append(s)
+os.makedirs(sys.argv[1], exist_ok=True)
+frames[0].save(os.path.join(sys.argv[1], "hands_swing.gif"), save_all=True, append_images=frames[1:], duration=1000 // FPS, loop=0)
+pick = [frames[k] for k in (0, 3, 6, 9)]; sh = Image.new("RGB", (pick[0].width, pick[0].height * 4)); [sh.paste(x, (0, k * x.height)) for k, x in enumerate(pick)]
+sh.save(os.path.join(sys.argv[1], "hands_swing_sheet.png")); print("ok")
