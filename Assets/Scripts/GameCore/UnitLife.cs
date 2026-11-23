@@ -13,14 +13,14 @@ namespace GameCore
 {
     public static class UnitLife
     {
-        public const string TestSuit = "Raider Jacket";
+        public const string TestSuit = "Raider";   // 2026-11-23 (Yan: "try the same walk on the other raider suits"): every suit named Raider ...
         const float Px = 1f / 16f, HeavyHit = 0.2f, FlinchCooldown = 1.5f;     // a hit of a fifth of his health or more
         const bool Breathing = false;                                          // 2026-11-23 (Yan: "the breathing doesn't look good"): idle breathing and the weight shift are off; the walk (hop + lean) stays
         class S { public float Phase, ShiftAt, ShiftUntil, ShiftDir, FlinchAt = -9f, FlinchDx, FlinchDy; public int Hp = -1; }
         static readonly Dictionary<ICombatant, S> _s = new Dictionary<ICombatant, S>();
         public static void Reset() => _s.Clear();
 
-        public static bool Applies(ICombatant u) => u is HumanEnemy h && h.EquippedArmor != null && h.EquippedArmor.Name == TestSuit && !Boss.Is(u) && !Husk.Is(h);
+        public static bool Applies(ICombatant u) => u is HumanEnemy h && h.EquippedArmor != null && h.EquippedArmor.Name.StartsWith(TestSuit) && !Boss.Is(u) && !Husk.Is(h);
 
         /// <summary>The offset (world units, y up) and tilt (degrees, + = counter-clockwise) to give this unit's sprite this frame.</summary>
         public static (Vector3 off, float tilt) Pose(ICombatant u, bool moving, bool stepFrame, float faceDx, float now, float hitDx, float hitDy)

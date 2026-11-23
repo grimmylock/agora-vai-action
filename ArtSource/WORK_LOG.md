@@ -7001,3 +7001,6 @@ Yan, after a video of a layered pixel character maker: NPCs feel static. Chosen:
 
 ### Batch 9cm (2026-11-23): life test, first review
 Yan: the walk with the lean "looks better than current walking", keep it; "the breathing doesn't look good"; the flinch unsure ("lots of bullets fly during fights, the character will keep vibrating"). Breathing and the weight shift are switched off (`UnitLife.Breathing = false`); the flinch now fires only on a heavy hit (a fifth of his max HP or more) and at most once per 1.5 s. The walk hop + lean is unchanged. Still the Raider Jacket only; harness passes, not seen in Unity.
+
+### Batch 9cn (2026-11-23): life test on all Raider suits
+Yan: "try the same walk on the other raider suits". `UnitLife.Applies` now covers every suit whose name starts with "Raider" (15 suits, Jacket to Armored Warlord) on hostile humans; bosses and Husks still excluded. Same walk hop + lean (breathing off, flinch heavy-hit only). Harness passes; not seen in Unity.
