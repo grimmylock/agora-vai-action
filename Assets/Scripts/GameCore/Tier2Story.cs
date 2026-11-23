@@ -26,7 +26,7 @@ namespace GameCore
 
         static float _mapSince = -1f, _stageAt = -1f, _descentAt = -1f, _hordeAt = -1f, _gameOverAt = -1f;
         static int _stage;                              // the grab's stage while step 1; the horde's soldiers lost so far while step 4
-        static bool _warned0, _warned1, _warned2, _released1, _released2, _chaseMusic, _doorHint, _orderGiven;
+        static bool _warned0, _warned1, _warned2, _released1, _chaseMusic, _doorHint, _orderGiven;
         const float GauntAt = 4.4f;                       // seconds after the alarm: the sergeant has the camera until then, then the Gaunt
         static float _doorAt = -1f; static int _doorStage; static readonly List<(int x, int y)> Posts = new List<(int, int)>();
         static readonly List<HumanEnemy> Escorts = new List<HumanEnemy>();
@@ -36,7 +36,7 @@ namespace GameCore
         static readonly Dictionary<HumanEnemy, float> NextStep = new Dictionary<HumanEnemy, float>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = _released2 = false; Escorts.Clear(); Waves.Clear(); _wavesOut.Clear(); NextStep.Clear(); Supplied.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
+        public static void Reset() { _mapSince = _stageAt = _descentAt = _hordeAt = _gameOverAt = -1f; _stage = 0; _warned0 = _warned1 = _warned2 = _released1 = false; Escorts.Clear(); Waves.Clear(); _wavesOut.Clear(); NextStep.Clear(); Supplied.Clear(); _gaunt = null; _screamAt = -1f; _gauntWalking = false; _chaseMusic = false; Sfx.StopMusic(0f); _doorAt = -1f; _doorStage = 0; _doorHint = false; _orderGiven = false; Posts.Clear(); Vision.SpotAt = null; }
 
         public static int Step => Story.Step(Mission);
         static bool Active => Step >= 1 && !Story.IsDone(Mission);
