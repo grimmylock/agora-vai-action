@@ -1286,6 +1286,7 @@ namespace GameCore
             if (_carryK > 0.001f)
             {
                 float cx = Mathf.Cos(_angle * Mathf.Deg2Rad); if (Carry && Mathf.Abs(cx) > 0.25f) _restLeft = cx < 0f;
+                if (WeaponCarry.Of(WeaponArt.Identify(weapon.Db).Item1).FreeArm) _restLeft = true;     // the right hand (the screen's left): a one-handed carry always sits there
                 float ease = _carryK * _carryK * (3f - 2f * _carryK);
                 _angle += Mathf.DeltaAngle(_angle, WeaponCarry.RestAngle(WeaponArt.Identify(weapon.Db).Item1, _restLeft)) * ease;                       // between the aim and the resting stance
             }
