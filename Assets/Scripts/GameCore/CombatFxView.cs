@@ -146,7 +146,7 @@ namespace GameCore
             if (item?.Key == null) return null;
             if (_meleeSprites.TryGetValue(item.Key, out var hit)) return hit;
             var s = WeaponArt.For(item.Category ?? "melee", item.Key).sprite;            // turned round its middle, not its grip
-            return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit, 0, SpriteMeshType.FullRect);
+            return _meleeSprites[item.Key] = s == null ? null : Sprite.Create(s.texture, s.rect, new Vector2(0.5f, 0.5f), WeaponArt.PixelsPerUnit * WeaponArt.Density(item.Key) / WeaponArt.Scale(item.Key), 0, SpriteMeshType.FullRect);   // 2026-11-23: the weapon's own pixels per unit (the big inventory picture shrunk to in-hand size), not the small-sprite constant - a thrown knife lay on the floor 5x too big
         }
         private readonly Dictionary<string, Sprite> _stuckSprites = new Dictionary<string, Sprite>();
         private Sprite MeleeStuckSprite(InventoryItem item)

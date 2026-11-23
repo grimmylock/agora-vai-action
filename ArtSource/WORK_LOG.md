@@ -7174,3 +7174,13 @@ Yan: "the new walk and run animations do not work, tested all weapons, the chara
 - Fix: both speeds are smoothed over 0.12 s (`_spdSm` in `HeldWeapon.cs`, `_lifeSpd` in `TacticalGridView.cs`), so walking reads about 2.6 tiles/s and sprinting 4.4 (`Rt.cs:87`).
 - Still true by design: melee and empty hands get no pendulum swing, only guns carried while not aiming (`sw = carrying ? 1 : 0`). The run tilt is 2-3 degrees (Yan asked for tiny). Harness passes; nothing run in Unity.
 
+## 2026-11-23 - Batch 9dz: Unity-test fixes (thrown knife size, fleeing mutants, side flip, vibration, empty hands, standing lean)
+
+Yan (video + two screenshots): weapons not changing side when facing up; some mutants disappear when low on health (not die); thrown melee weapons look gigantic on the ground (they use the menu version); empty walk/run and the lean do not work or look like the preview; weapons vibrate in the hand when looking in certain directions while facing up or down.
+
+- **Thrown melee on the ground:** `CombatFxView.MeleeSprite` rebuilt the sprite at the small-sprite pixels-per-unit; it now uses the weapon's own (`PixelsPerUnit x Density / Scale`, as `WeaponArt.For` does) so the big inventory picture lies at in-hand size.
+- **Mutants vanishing:** by the code, a mutant at or under its `PanicThreshold` flees (`Mutant.IsFleeing`, `EnemyAI.cs:372` -> `RtAi.Flee`), and when the fight ends `TurnLoop.CheckCombatEnd` removed every living fleeing unit at once, even in plain view. Now only those out of the player's sight are removed (`!Vision.Shows`). A fleeing mutant in view stays and keeps running. NOT verified that this was the case Yan saw (no reproduction); if mutants still blink out mid-fight, the next suspect is `MutantAttack/MutantWalk.Frame` returning no sprite at low HP.
+- **Side and vibration:** the gun's side is the sign of cos(aim); with the aim over the vertical it flickered every frame. A 3 degree dead band keeps the previous side (`HeldWeaponView._faceLeft`, ShowCore). The carry's side switch threshold went from |cos| 0.25 to 0.08 so looking nearly straight up or down no longer keeps the old side.
+- **Empty hands:** the walk/run read used the snapped one-pixel travel and UnitLife's own hop; it now uses the smoothed speed (`_spdSm`) and the position minus the hop.
+- **Lean:** with breathing off, `UnitLife.Pose` gave the last lean to a body standing still; it is now only applied while moving or on a step frame (the preview tilts only in motion). Harness passes; nothing run in Unity, so whether the lean/hands now match the preview is unconfirmed.
+

@@ -1218,7 +1218,7 @@ namespace GameCore
         // 2026-11-23 (Yan: "I'd like for the weapon to stay in the resting position unless aiming or shooting ... held naturally close to the body in front of it"): Carry (set by the view each frame): the long gun is held across
         // the front of the body, close to it, level, pointing to the side he faces (the game's own resting stance at aim 0 or 180, drawn in front of the body, shifted 3 px toward the torso) instead of following the mouse
         // round to straight up or down. Aiming (right mouse), firing, reloading and melee leave it. _restLeft = which side (from the aim's sideways part, kept when the aim is nearly vertical).
-        public bool Carry, CarrySnap; bool _restLeft; float _carryK; WeaponSpring.State _spring;
+        public bool Carry, CarrySnap; bool _restLeft, _faceLeft; float _carryK; WeaponSpring.State _spring;
         public Vector3 LifeOff; public bool LifeOn; float _runK, _walkK, _phase2, _spdSm; Vector3? _lastPos2;
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
@@ -1289,10 +1289,10 @@ namespace GameCore
                 // Yan: "when nothing's equipped the hands ... look like chicken wings ... should stay still detached from the body but make
                 // movements as if they're swinging a little with each step": a pixel clear of the body at the hips, swinging opposite
                 // ways as you walk (the walk is read from how far the body moved), easing back to still when you stop
-                float mx = _lastPos.HasValue ? unitPos.x - _lastPos.Value.x : 0f, my = _lastPos.HasValue ? unitPos.y - _lastPos.Value.y : 0f;
-                float moved = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); _lastPos = unitPos;   // (a jump - a new map - isn't a step)
-                float dt = Mathf.Max(Time.deltaTime, 0.0001f), walking = Mathf.Clamp01(moved / dt / 1.5f);
-                _stepPhase += moved * Mathf.PI * 2f / CycleTiles(moved / dt);
+                var cu = unitPos - LifeOff; float mx = _lastPos.HasValue ? cu.x - _lastPos.Value.x : 0f, my = _lastPos.HasValue ? cu.y - _lastPos.Value.y : 0f;   // (minus UnitLife's own 1 px hop)
+                float moved = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); _lastPos = cu;   // (a jump - a new map - isn't a step)
+                float dt = Mathf.Max(Time.deltaTime, 0.0001f), walking = Mathf.Clamp01(_spdSm / 1.5f);   // 2026-11-23: the smoothed speed (Show), not this frame's snapped 0 / one-pixel travel
+                _stepPhase += moved * Mathf.PI * 2f / CycleTiles(_spdSm);
                 _swing = Mathf.MoveTowards(_swing, walking, dt * 4f);
                 var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_stepPhase, _swing, _runK);
                 _grip.transform.localPosition = Local(rx, ry); _grip.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);   // hanging, fingers down
@@ -1310,7 +1310,7 @@ namespace GameCore
             }
             if (_carryK > 0.001f)
             {
-                float cx = Mathf.Cos(_angle * Mathf.Deg2Rad); if (Carry && Mathf.Abs(cx) > 0.25f) _restLeft = cx < 0f;
+                float cx = Mathf.Cos(_angle * Mathf.Deg2Rad); if (Carry && Mathf.Abs(cx) > 0.08f) _restLeft = cx < 0f;   // (was 0.25: looking nearly straight up or down kept the old side)
                 if (WeaponCarry.Of(WeaponArt.Identify(weapon.Db).Item1).FreeArm) _restLeft = true;     // the right hand (the screen's left): a one-handed carry always sits there
                 float ease = _carryK * _carryK * (3f - 2f * _carryK);
                 _angle += Mathf.DeltaAngle(_angle, WeaponCarry.RestAngle(WeaponArt.Identify(weapon.Db).Item1, _restLeft)) * ease;                       // between the aim and the resting stance
@@ -1330,6 +1330,9 @@ namespace GameCore
             // turned frame, so the guns still point at the target instead of turning with the body
             float bodyTurn = _gun.transform.parent != null ? _gun.transform.parent.localEulerAngles.z : 0f;
             float local = Mathf.DeltaAngle(0f, _angle - bodyTurn);
+            // 2026-11-23 (Yan: the weapon vibrates in the hand when looking nearly straight up or down): which side the gun is on flips with the sign of cos(aim); with the mouse right over the line that sign flickers every frame. A 3 degree dead band
+            // keeps the side it had (the aim is pinned to just past vertical on that side).
+            { float cl = Mathf.Cos(local * Mathf.Deg2Rad); if (Mathf.Abs(cl) < 0.05f) { float sg = Mathf.Sin(local * Mathf.Deg2Rad) >= 0f ? 1f : -1f; local = sg * (90f + (_faceLeft ? 0.1f : -0.1f)); } else _faceLeft = cl < 0f; }
             float since = mc != null ? mc.Since(now) : now - _swingAt, hold = mc != null && mc.SwingFrom >= 0f ? now - mc.SwingFrom : -1f;
             HeldFrame At(float sw) => HeldPoseMath.Frame(cat, g, local, HeldPoseMath.Recoil(now - _shotAt, _recover, _hold), _climb, _kick, sw,
                 _reloadTime > 0f ? (now - _reloadAt) / _reloadTime : 1f, _reloadStyle, _reloadTrips,

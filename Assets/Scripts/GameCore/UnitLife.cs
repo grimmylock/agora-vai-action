@@ -36,7 +36,7 @@ namespace GameCore
                 if (now >= s.ShiftAt) { s.ShiftDir = Random.value < 0.5f ? -1f : 1f; s.ShiftUntil = now + Random.Range(0.8f, 1.4f); s.ShiftAt = s.ShiftUntil + Random.Range(3f, 6f); }
                 if (now < s.ShiftUntil) off_x += s.ShiftDir * Px;                                          // settling his weight
             }
-            else
+            else if (moving || stepFrame)                                                                   // 2026-11-23: standing still (breathing off) no longer keeps the last lean
             {
                 if (stepFrame) off_y += Px;                                                                 // the hop on the foot-down frames
                 if (Mathf.Abs(faceDx) > 0.002f) s.Tilt = -(2f + Mathf.Clamp01(speed - 3.4f)) * Mathf.Sign(faceDx);       // 2 degrees walking, 3 running (Yan: "a bit bigger when running, just a tiny bit")                         // 2026-11-23 (Yan: "the little lean toward the side they're running"): faceDx is now the real sideways travel this frame (not the sprite flip); running straight up or down keeps the last lean
