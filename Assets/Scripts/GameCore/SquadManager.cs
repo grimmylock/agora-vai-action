@@ -1333,7 +1333,7 @@ MacroState.Current.OfflineSquads.RemoveAll(s => !OnMap(s.ZoneId, skipZone) && s.
             if (string.IsNullOrEmpty(name)) return null;
             foreach (var tier in MutantDatabase.Tiers.Values)
                 foreach (var m in tier.Values)
-                    if (m.Name == name) return m;
+                    if (m.Name == name) return EncounterGeneration.NotDisabled(m);   // (a saved Mind Weaver comes back as something else)
             return MutantDatabase.Wards.TryGetValue(name, out var ward) ? ward : null;
         }
 

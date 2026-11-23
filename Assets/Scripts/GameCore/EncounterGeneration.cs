@@ -11,8 +11,14 @@ namespace GameCore
     public static class EncounterGeneration
     {
         /// <summary>Ported from createMutantFromDb(dbEntry, x, y).</summary>
-        public static Mutant CreateMutantFromDb(MutantDef dbEntry, int x, int y) =>
-            dbEntry == null ? new Mutant("Mutant", x, y, null) : new Mutant(dbEntry.Name, x, y, dbEntry);
+        /// <summary>2026-11-23 (Yan: "remove mind weaver spawns for now, a few of them spawned instead of the wretches"): mutants kept out of the world for now. Whatever asks for one (a squad, a lair, a story wave, a saved squad) gets another of its tier (or below) instead.</summary>
+        public static readonly System.Collections.Generic.HashSet<string> Disabled = new System.Collections.Generic.HashSet<string> { "Mind Weaver" };
+        public static MutantDef NotDisabled(MutantDef d)
+        {
+            if (d == null || !Disabled.Contains(d.Name)) return d;
+            return PickRandomMutantByTier(d.Tier, d.Tier) ?? PickRandomMutantByTier(1, d.Tier) ?? d;
+        }
+        public static Mutant CreateMutantFromDb(MutantDef dbEntry, int x, int y) { dbEntry = NotDisabled(dbEntry); return dbEntry == null ? new Mutant("Mutant", x, y, null) : new Mutant(dbEntry.Name, x, y, dbEntry); }
 
         /// <summary>2026-11-16 (Yan: "a group of small mutated rats, around 4 to 8, very low HP, each dies to even the weakest weapon in 1 shot but each takes a shot"): a Swarm is never one animal. Given the one just
         /// created at (x, y), the other 3-7 rats of its group on free tiles close by (empty for every other mutant). Callers add them next to the first.</summary>
@@ -41,7 +47,7 @@ namespace GameCore
             {
                 int tier = ParseTierKey(tierKey);
                 if (tier < minTier || tier > maxTier) continue;
-                pool.AddRange(MutantDatabase.Tiers[tierKey].Values.Where(d => d.Name != Gaunt.Name && d.Name != "Mind Weaver"));   // 2026-11-23 (Yan: "remove mind weaver spawns for now"): the Mind Weaver is left out of every random pool   // the wild Gaunt lives only in the forests (SquadManager), not in every zone of its tier
+                pool.AddRange(MutantDatabase.Tiers[tierKey].Values.Where(d => d.Name != Gaunt.Name && !Disabled.Contains(d.Name)));   // 2026-11-23 (Yan: "remove mind weaver spawns for now"): the Mind Weaver is left out of every random pool   // the wild Gaunt lives only in the forests (SquadManager), not in every zone of its tier
             }
             return pool.Count == 0 ? null : pool[Random.Range(0, pool.Count)];
         }

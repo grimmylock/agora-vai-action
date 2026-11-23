@@ -137,7 +137,7 @@ namespace GameCore
         static List<MutantDef> MutantsOf(int tier)
         {
             for (int t = tier; t >= 1; t--)
-                if (MutantDatabase.Tiers.TryGetValue("tier" + t, out var d) && d.Count > 0) return d.Values.ToList();
+                if (MutantDatabase.Tiers.TryGetValue("tier" + t, out var d) && d.Values.Any(x => !EncounterGeneration.Disabled.Contains(x.Name))) return d.Values.Where(x => !EncounterGeneration.Disabled.Contains(x.Name)).ToList();
             return new List<MutantDef>();
         }
 
