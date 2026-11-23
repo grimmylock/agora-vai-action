@@ -16,6 +16,7 @@ static class Program {
     if (args.Length > 0 && args[0] == "tierttk") { TierTtk(); return 0; }
     if (args.Length > 1 && args[0] == "heldframes") { HeldFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "restframes") { RestFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "weaponstates") { WeaponStates(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeframes") { MeleeFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleemoves") { MeleeMoves(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "meleeduel") { MeleeDuel(args[1]); return 0; }
@@ -751,6 +752,16 @@ static class Program {
       sb.Append($"{{\"angle\":{ang.ToString(ci)},\"gx\":{f.GunX.ToString(ci)},\"gy\":{f.GunY.ToString(ci)},\"deg\":{f.GunDeg.ToString(ci)},\"hx\":{f.GripX.ToString(ci)},\"hy\":{f.GripY.ToString(ci)},\"hdeg\":{f.HandDeg.ToString(ci)},\"sup\":{(f.HasSupport ? 1 : 0)},\"sx\":{f.SupX.ToString(ci)},\"sy\":{f.SupY.ToString(ci)},\"left\":{(f.Left ? 1 : 0)},\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}]}}");
     }
     sb.Append("]"); System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("rest frames -> " + path);
+  }
+  static void WeaponStates(string path) {   // 2026-11-23: every category's stance for Tools/render/weapon_states.py: its carry (WeaponCarry.RestAngle) and the same gun aimed level to the right, plus the sprite's grip point
+    var sb = new System.Text.StringBuilder("["); bool first = true; var ci = System.Globalization.CultureInfo.InvariantCulture;
+    string Pose(HeldFrame f) => $"{{\"gx\":{f.GunX.ToString(ci)},\"gy\":{f.GunY.ToString(ci)},\"deg\":{f.GunDeg.ToString(ci)},\"hx\":{f.GripX.ToString(ci)},\"hy\":{f.GripY.ToString(ci)},\"sup\":{(f.HasSupport ? 1 : 0)},\"sx\":{f.SupX.ToString(ci)},\"sy\":{f.SupY.ToString(ci)}}}";
+    foreach (var (cat, key) in new[] { ("sidearm", "PSh18Pchela"), ("smg", "CorvanHornet45"), ("assault", "CorvanBattleRifle"), ("shotgun", "BayouPump"), ("sniper", "SKNKarabin"), ("heavy", "PL62Kobza") }) {
+      var g = WeaponArt.GripOf(cat, key); var carry = HeldPoseMath.Frame(cat, g, WeaponCarry.RestAngle(cat, false), 0f, 0f, 0f, 99f, 1f, "none", 1); var aim = HeldPoseMath.Frame(cat, g, 0f, 0f, 0f, 0f, 99f, 1f, "none", 1);
+      var d = WeaponCarry.Of(cat); if (!first) sb.Append(','); first = false;
+      sb.Append($"{{\"cat\":\"{cat}\",\"key\":\"{key}\",\"grip\":[{g[0].ToString(ci)},{g[1].ToString(ci)}],\"def\":{{\"shift\":{d.ShiftPx.ToString(ci)},\"drop\":{d.DropPx.ToString(ci)},\"wa\":{d.WalkAmp.ToString(ci)},\"wl\":{d.WalkLift.ToString(ci)},\"ra\":{d.RunAmp.ToString(ci)},\"rl\":{d.RunLift.ToString(ci)},\"rt\":{d.RunTilt.ToString(ci)}}},\"carry\":{Pose(carry)},\"aim\":{Pose(aim)}}}");
+    }
+    sb.Append("]"); System.IO.File.WriteAllText(path, sb.ToString()); Console.WriteLine("weapon states -> " + path);
   }
   static void HeldFrames(string path) {
     var sb = new System.Text.StringBuilder("[");
