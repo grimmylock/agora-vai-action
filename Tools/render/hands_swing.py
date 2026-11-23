@@ -82,3 +82,17 @@ os.makedirs(sys.argv[1], exist_ok=True)
 frames[0].save(os.path.join(sys.argv[1], "hands_swing.gif"), save_all=True, append_images=frames[1:], duration=1000 // FPS, loop=0)
 pick = [frames[k] for k in (0, 3, 6, 9)]; sh = Image.new("RGB", (pick[0].width, pick[0].height * 4)); [sh.paste(x, (0, k * x.height)) for k, x in enumerate(pick)]
 sh.save(os.path.join(sys.argv[1], "hands_swing_sheet.png")); print("ok")
+
+# ---- running in the four directions (rifle pointing the way he runs; the swing is on screen axes, as in the code) ----
+ha.H += 20; ha.BY += 8; ha.W += 12; ha.BX += 9                                   # room for the muzzle above the head and to the sides
+dirs = [("up", 90), ("down", 270), ("left", 180), ("right", 0)]
+fr2 = []
+for i in range(int(2.0 * FPS)):
+    t = i / FPS; cs = [rifle_col(t, 4.4, aim, f"run {nm}") for nm, aim in dirs]
+    s = Image.new("RGB", (sum(x.width for x in cs), cs[0].height), BG[:3]); xx = 0
+    for x in cs: s.paste(x, (xx, 0)); xx += x.width
+    fr2.append(s)
+fr2[0].save(os.path.join(sys.argv[1], "run_directions.gif"), save_all=True, append_images=fr2[1:], duration=1000 // FPS, loop=0)
+pick = [fr2[k] for k in (0, 7, 14, 21, 28, 35)]; sh = Image.new("RGB", (pick[0].width, pick[0].height * 3 // 1 // 3 * len(pick) // 1)); 
+sh = Image.new("RGB", (pick[0].width, pick[0].height * len(pick))); [sh.paste(x, (0, k * x.height)) for k, x in enumerate(pick)]
+sh.save(os.path.join(sys.argv[1], "run_directions_sheet.png")); print("dirs ok")
