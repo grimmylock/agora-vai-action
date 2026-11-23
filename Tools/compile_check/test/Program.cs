@@ -112,6 +112,7 @@ static class Program {
     ElderClipChecks();
     SpoolChecks();
     VergerChecks();
+    BossBreathingChecks();
     VergerBeastChecks();
     MotherHollowChecks();
     SingerChecks();
@@ -2980,6 +2981,7 @@ static class Program {
       Check(v.Hp < vhp, "Boss 1: while he's staggered, they land");
       v.Hp = Boss.Visor.Hp / 2; f.StaggerUntil = -1f; f.NextMoveAt = 0f; UnityEngine.Time.time += 0.1f; Boss.Tick(f, p);
       Check(f.Phase == 2 && Boss.SplashTitle == "PHASE 2", "Boss 1: half health - phase 2");
+      Check(f.BreatherUntil > UnityEngine.Time.time && Boss.DamageScale(v) == 0f, "Boss 1: the phase change gives a breather: he stops and takes nothing"); f.BreatherUntil = -1f; f.ChangeUntil = -1f;
       v.Hp = 10; f.StaggerUntil = UnityEngine.Time.time + 1f; p.X = v.X - 1; p.Y = v.Y;
       Melee.Strike(p, p.EquippedWeapon, v, "Torso", 0f);
       Check(f.Broken && v.IsAlive() && v.Hp == 1 && Boss.SplashTitle == "EXECUTE", "Boss 1: at 0 he doesn't die - he breaks, EXECUTE");
@@ -3246,6 +3248,36 @@ static class Program {
       MacroState.Current.Day = 14; Check(CathedralJob.Open && CathedralJob.Pop >= CathedralJob.PopStart - 3 + 3 * 0 && CathedralJob.Pop <= CathedralJob.PopStart, "Cathedral: four days on it reopens and the city has refilled");
       CathedralJob.ZoneOverride = "somewhere_else"; CathedralJob.Tick(0.1f); Check(CathedralJob.St == CathedralJob.Stage.Idle, "Cathedral: leaving the cathedral ends the session");
     } finally { CathedralJob.ZoneOverride = null; CathedralJob.Reset(); Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); EncounterState.InCombat = false; }
+  }
+
+
+  // 2026-11-23 (Yan): combo falloff, the parry's exposure and second wind, clotting, the boss's breathers
+  static void BossBreathingChecks() {
+    var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); Body.Reset(); UnityEngine.Time.time = 97000f; UnityEngine.Time.unscaledTime = 97000f;
+    try {
+      var ff = Boss.Visor.Moves.First(m => m.Name == "Feint flurry"); float m0 = Boss.MultOf(ff, 0);
+      Check(ff.Falloff && System.Math.Abs(Boss.MultOf(ff, 1) - m0 * 0.8f) < 1e-3f && System.Math.Abs(Boss.MultOf(ff, 2) - m0 * 0.6f) < 1e-3f && System.Math.Abs(Boss.MultOf(ff, 4) - m0 * 0.2f) < 1e-3f, "Boss: a multi-hit string does 100%, 80%, 60%, 40%, 20% of its first blow");
+      Check(Boss.Spool.Moves.Where(m => m.Hits > 1).All(m => m.Falloff) && Boss.King.Moves.Where(m => m.Hits > 1).All(m => m.Falloff) && Boss.Visor.Moves.Where(m => m.Hits == 1).All(m => !m.Falloff && System.Math.Abs(Boss.MultOf(m, 0) - m.Mult) < 1e-4f), "Boss: the Visor, Spool and the King all use it on their strings, single blows are untouched");
+      // the parry: exposure and second wind
+      p.EquipWeapon("melee", "TacticalHatchet"); var foe = new HumanEnemy("Foe", px + 1, py, "Raiders", "Rookie", null, null) { IsAggroed = true }; EncounterState.Enemies.Add(foe);
+      Rt.Of(p).ParryAt = UnityEngine.Time.time - 0.1f; Rt.Of(p).ParryReady = 0f; var r1 = Parry.Try(p, foe);
+      Check(r1 == Parry.Result.Perfect && Parry.ExposedMult(foe) == 1.2f && Rt.Of(p).SecondWindUntil > UnityEngine.Time.time + 5.5f, "Parry: a perfect parry leaves him +20% for 5 s and gives a 6 s second wind");
+      UnityEngine.Time.time += 5.1f; Check(Parry.ExposedMult(foe) == 1f, "Parry: the exposure ends after 5 s");
+      Rt.Of(p).ParryAt = UnityEngine.Time.time - 0.3f; var r2 = Parry.Try(p, foe); Check(r2 == Parry.Result.Blocked && Parry.ExposedMult(foe) == 1.1f, "Parry: a normal parry leaves him +10%");
+      float scale = Boss.DamageScale(foe); Check(System.Math.Abs(scale - 1.1f * CoopScale.DamageTakenMult(foe)) < 1e-3f, "Parry: every hit on him takes the exposure into account (Boss.DamageScale)");
+      // clotting and the second wind on bleeding
+      var se = p.StatusEffects; se.Bleeding = true; se.Wound = "Leg"; se.ToxicBleed = true; Rt.Of(p).BleedSince = -1f; Rt.Of(p).ToxicSince = -1f; Rt.Of(p).SecondWindUntil = -99f; int hp0 = p.Hp;
+      AnomalyEngine.ProcessTurnStart(p); Check(p.Hp < hp0 && se.Bleeding && se.ToxicBleed, "Bleeding: both cost HP and keep going at first");
+      UnityEngine.Time.time += AnomalyEngine.ClotSeconds + 1f; AnomalyEngine.ProcessTurnStart(p); Check(!se.Bleeding && se.ToxicBleed, "Bleeding: a light bleed clots by itself after 30 s");
+      UnityEngine.Time.time += AnomalyEngine.ToxicSeconds - AnomalyEngine.ClotSeconds + 1f; AnomalyEngine.ProcessTurnStart(p); Check(!se.ToxicBleed, "Bleeding: a toxic bleed runs its course after 45 s");
+      se.Bleeding = true; se.Wound = "Torso"; Rt.Of(p).BleedSince = -1f; AnomalyEngine.ProcessTurnStart(p); UnityEngine.Time.time += 200f; AnomalyEngine.ProcessTurnStart(p); Check(se.Bleeding, "Bleeding: a torso wound stays until it is bandaged");
+      Rt.Of(p).SecondWindUntil = UnityEngine.Time.time + 6f; hp0 = p.Hp; AnomalyEngine.ProcessTurnStart(p); Check(p.Hp == hp0, "Bleeding: during the second wind it does not tick"); se.Bleeding = false; se.Wound = null;
+      // the breathers: every third string and the phase change
+      var f = Boss.Spawn(Boss.Spool, px + 2, py); var h = f.Unit; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; f.Strings = 2; f.NextMoveAt = 0f; var sw = Boss.Spool.Moves.First(m => m.Name == "Swing");
+      UnityEngine.Time.time += 1f; Boss.Begin(f, sw, UnityEngine.Time.time, 1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); }
+      Check(f.Strings == 3 && f.BreatherUntil > UnityEngine.Time.time - 3f && f.BreatherUntil - f.OpenUntil > 3.9f && f.NextMoveAt > f.BreatherUntil, $"Boss: after his third string he stops for {Boss.BreatherSeconds:0} s after the opening (breather until {f.BreatherUntil - UnityEngine.Time.time:0.0} s ahead)");
+      UnityEngine.Time.time = f.BreatherUntil - 0.5f; Check(Boss.DamageScale(h) == 0f, "Boss: nothing hurts him during the breather"); f.Broken = false;
+    } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); Body.Reset(); }
   }
 
   static void VergerChecks() {   // 2026-11-21 (Yan: "make the human version the entire boss, elaborate more on the human scythe-moveset"): the Verger is the man with the scythe, his own pose set, two phases, no change

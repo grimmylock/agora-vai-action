@@ -31,6 +31,7 @@ namespace GameCore
         }
 
         /// <summary>Ported from spawnRandomAnomalies(count = 6).</summary>
+        public const float ClotSeconds = 30f, ToxicSeconds = 45f;
         public static void SpawnRandomAnomalies(int count = 6)
         {
             EncounterState.Anomalies.Clear(); if (!Enabled) return;
@@ -238,13 +239,20 @@ namespace GameCore
                 var player = (Player)unit;
                 DetectorSweep(player);
 
-                if (player.StatusEffects.Bleeding && player.BleedImmune) { player.StatusEffects.Bleeding = false; GameLog.Write("The bleeding stops on its own."); }   // Batch 90: Rosary / Heart of the Wound
-                if (player.StatusEffects.Bleeding)
+                if (player.StatusEffects.Bleeding && player.BleedImmune) { player.StatusEffects.Bleeding = false; GameLog.Write("The bleeding stops on its own."); }
+                {   // 2026-11-23 (Yan: "bleeding and toxic never stop by themselves"): a light bleed clots after ClotSeconds (a Torso wound stays until it is bandaged), a toxic bleed wears off after ToxicSeconds; a perfect parry pauses both (SecondWind)
+                    var rs = Rt.Of(player); var se = player.StatusEffects; float tnow = Time.time;
+                    if (se.Bleeding) { if (rs.BleedSince < 0f) rs.BleedSince = tnow; else if (se.Wound != "Torso" && tnow - rs.BleedSince >= ClotSeconds) { se.Bleeding = false; rs.BleedSince = -1f; GameLog.Write("The bleeding clots."); } } else rs.BleedSince = -1f;
+                    if (se.ToxicBleed) { if (rs.ToxicSince < 0f) rs.ToxicSince = tnow; else if (tnow - rs.ToxicSince >= ToxicSeconds) { se.ToxicBleed = false; rs.ToxicSince = -1f; GameLog.Write("The toxin runs its course."); } } else rs.ToxicSince = -1f;
+                    if (tnow < rs.SecondWindUntil && (se.Bleeding || se.ToxicBleed)) GameLog.Write("Second wind: the bleeding holds off.");
+                }   // Batch 90: Rosary / Heart of the Wound
+                bool secondWind = Time.time < Rt.Of(player).SecondWindUntil;
+                if (player.StatusEffects.Bleeding && !secondWind)
                 {
                     player.TakeDamage(System.Math.Max(1, (int)(50 * player.ArtifactBleedMult)));
                     GameLog.Write($"Bleeding deals {System.Math.Max(1, (int)(50 * player.ArtifactBleedMult))} HP damage.");
                 }
-                if (player.StatusEffects.ToxicBleed)
+                if (player.StatusEffects.ToxicBleed && !secondWind)
                 {
                     player.TakeDamage(System.Math.Max(1, (int)(50 * player.ArtifactBleedMult)));
                     GameLog.Write("Toxic Bleed deals 50 HP damage.");

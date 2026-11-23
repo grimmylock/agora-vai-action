@@ -23,6 +23,12 @@ namespace GameCore
         public enum Result { None, Blocked, Perfect }
 
         /// <summary>Set by a boss while it lands a move that can't be parried.</summary>
+        public const float BlockExposure = 1.1f, PerfectExposure = 1.2f, ExposeSeconds = 5f, SecondWindSeconds = 6f;
+        static readonly System.Collections.Generic.Dictionary<ICombatant, (float mult, float until)> Exposed = new System.Collections.Generic.Dictionary<ICombatant, (float, float)>();
+        static void Expose(ICombatant by, float mult, float until) { if (by == null) return; if (Exposed.TryGetValue(by, out var e) && e.until > Time.time && e.mult > mult) mult = e.mult; Exposed[by] = (mult, until); }
+        /// <summary>x1.1 / x1.2 on the damage an enemy takes for 5 s after you parried it (Boss.DamageScale: every gun and melee hit asks).</summary>
+        public static float ExposedMult(ICombatant u) => u != null && Exposed.TryGetValue(u, out var e) && Time.time < e.until ? e.mult : 1f;
+        public static void ResetExposed() => Exposed.Clear();
         public static bool Unparryable; public static int Count;      // Count: parries that took (a caller compares before and after a swing)
 
         static float Long(Player p) => p.EquippedWeapon?.Db?.Name == "Serrated Trench Knife" ? 1.5f : 1f;
@@ -60,6 +66,7 @@ namespace GameCore
             s.ParryAt = -99f;                                                      // one parry, one hit
             s.ParryReady = Time.time;                                              // Visor 4: one that lands frees the key - deflections chain through a combo (only a whiff costs the cooldown)
             bool perfect = since <= Perfect * Long(p); Count++;
+            Expose(by, perfect ? PerfectExposure : BlockExposure, Time.time + ExposeSeconds); if (perfect) s.SecondWindUntil = Time.time + SecondWindSeconds;     // 2026-11-23 (Yan): a parry leaves the enemy open (+10% damage 5 s, a perfect one +20%) and a perfect one buys a second wind (bleed and toxic pause 6 s)
             var fx = CombatFx.Push("parry", p, by, p.EquippedWeapon); fx.Now = true; fx.Hit = perfect;
             if (perfect)
             {

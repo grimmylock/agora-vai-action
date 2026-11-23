@@ -28,6 +28,7 @@ namespace GameCore
             public string Name;
             public float Wind = 0.6f;      // the glint, then this long before the hit lands
             public bool Danger;            // red glint: can't be parried
+            public bool Falloff;           // 2026-11-23 (Yan): a multi-hit string: the first blow at full damage, each next one 20% lower (floor 20%) - nobody is one-shot by the tail of a flurry
             public bool Call;              // 2026-11-23: he shouts the move's name when it starts (Danger moves always do): the Verger's HOOK
             public int Hits = 1;           // a combo: each hit has its own glint
             public float Gap = 0.4f;       // between a combo's hits
@@ -58,6 +59,8 @@ namespace GameCore
             public int ParriesToStagger = 3;  // Yan: "make it so he needs 3 parries to get stunned"
             public Move[] Moves;
             public string Phase2Line;
+            public bool Breathers;         // 2026-11-23 (Yan): after every third string and at the phase change he stops for BreatherSeconds, hittable by nobody and attacking nobody: the player keeps control and can heal
+            public string[] BreatherBarks;
             public string Art;             // 2026-11-21: a creature boss drawn from Pixel Lab clips (BossArt.cs, BOSS_CONCEPTS_V3.md); null = a body with a held weapon
             public bool Rooted;            // 2026-11-21 (the Singer): it never walks or steps into a blow
             public int KeepAt;             // 2026-11-21 (the grown Specimen): > 0: it keeps about this many tiles from its target (a caster), stepping back when closer
@@ -72,7 +75,7 @@ namespace GameCore
 
         public class Fight
         {
-            public Def Def; public HumanEnemy Unit;
+            public Def Def; public HumanEnemy Unit; public int Strings; public float BreatherUntil = -1f;
             public int Phase = 1;
             public float LungedFor = -1f; public Move Doing; public int HitsLeft; public float StrikeAt = -1f, NextMoveAt, NextStep, StaggerUntil = -1f;
             public bool Broken, Finished, Gone; public float LootedAt = -1f;
@@ -92,7 +95,7 @@ namespace GameCore
         /// <summary>2026-11-21: is hit `i` (0-based) of this move red? A move is red whole (Danger) or hit by hit (RedHits).</summary>
         public static bool Red(Move m, int i) => m.Danger || (m.RedHits != null && m.RedHits[System.Math.Min(i, m.RedHits.Length - 1)]);
         public static float GapBefore(Move m, int i) => m.Gaps != null ? m.Gaps[System.Math.Min(System.Math.Max(0, i - 1), m.Gaps.Length - 1)] : m.Gap;      // the pause before hit i (i >= 1)
-        public static float MultOf(Move m, int i) => m.Mults != null ? m.Mults[i % m.Mults.Length] : m.Mult;
+        public static float MultOf(Move m, int i) { float first = m.Mults != null ? m.Mults[0] : m.Mult; if (m.Falloff && m.Hits > 1) return first * Mathf.Max(0.2f, 1f - 0.2f * i); return m.Mults != null ? m.Mults[i % m.Mults.Length] : m.Mult; }
 
         public static readonly List<Fight> Fights = new List<Fight>();
         /// <summary>2026-11-21: every duel boss, in a fixed order (the snapshot names a boss by its index here: append, never reorder).</summary>
@@ -107,7 +110,7 @@ namespace GameCore
         internal static void Splash(string title, string sub) { SplashTitle = title; SplashSub = sub; SplashAt = Time.unscaledTime; }
         public static void NameCard(string title, string sub) => Splash(title, sub);      // Boss 3's introduction shows its own card
 
-        public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; _holdUntil = -1f; Parry.Unparryable = false; SplashAt = -99f; }
+        public static void Reset() { Parry.ResetExposed(); Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; _holdUntil = -1f; Parry.Unparryable = false; SplashAt = -99f; }
 
         // ---------------- the first boss ----------------
 
@@ -120,11 +123,11 @@ namespace GameCore
         // 2026-11-23 (Yan: "try to keep [his damage] in line with the Verger: X amount of hits based on the max tier armor available in the area he is in (tier 4)"): `dotnet /tmp/test.dll bossdmg` prints the hits to kill a 1000 HP
         // player in the best armour of each tier. The Verger (Tier 6 area, best armour Tier 5) takes ~6 standard blows and ~3.4 of his hardest; the Visor in the best Tier 4 suit took 7.9 and 4.4, so his blows are x1.3 (6.1 and 3.4).
         const float VisorDamage = 1.3f;
-        static Move[] ScaleDamage(Move[] ms, float k) { foreach (var m in ms) { m.Mult *= k; if (m.Mults != null) for (int i = 0; i < m.Mults.Length; i++) m.Mults[i] *= k; } return ms; }
+        static Move[] ScaleDamage(Move[] ms, float k) { foreach (var m in ms) { if (m.Hits > 1) m.Falloff = true; m.Mult *= k; if (m.Mults != null) for (int i = 0; i < m.Mults.Length; i++) m.Mults[i] *= k; } return ms; }
         public static readonly Def Visor = new Def
         {
             Name = "The Visor", Title = "HE ALWAYS GETS UP", Weapon = "SerratedTrenchKnife", Armor = "Black Visor Suit", Hp = 52900, DoneFlag = "visor_done", PoseKey = HeldPoseMath.VisorPoses,   // Yan: "visor got absolutely crushed lol, he needs more hp, at least double"
-            StepSeconds = 0.3f, Recover = 0.9f, Phase2Line = "The red visor flares. He stops holding back.",
+            StepSeconds = 0.3f, Recover = 0.9f, Breathers = true, Phase2Line = "The red visor flares. He stops holding back.",
             Moves = ScaleDamage(new[]
             {
                 // Visor 2: each move strings his own poses (backhand 0, rising 1, ice-pick 2, thrust 3, spin 4, execution 5)
@@ -143,30 +146,30 @@ namespace GameCore
         public static readonly Def Spool = new Def
         {
             Name = "Spool", Title = "THE SCRAP KING'S EXILE", Weapon = "BarbedWireBat", Armor = "BarbwireCoat", Hp = 28700, Faction = "Outcasts", Rank = "Veteran", DoneFlag = "spool_done", Vanishes = false,
-            StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He tears the rag off the grip. The wire is bare now, and so is he.",
-            Moves = new[]
+            StepSeconds = 0.4f, Recover = 1.0f, Breathers = true, Phase2Line = "He tears the rag off the grip. The wire is bare now, and so is he.",
+            Moves = ScaleDamage(new[]
             {
                 new Move { Name = "Swing", Wind = 0.9f, Weight = 3, Mult = 0.9f, Poses = new[] { 1 }, Open = 1.4f },
                 new Move { Name = "Backswing", Wind = 0.8f, Hits = 2, Gap = 0.55f, Mult = 0.6f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.7f },
                 new Move { Name = "Overhead", Wind = 1.1f, Danger = true, Mult = 1.5f, Weight = 1, Poses = new[] { 0 }, Open = 2.3f },
                 new Move { Name = "Wire rush", Wind = 0.9f, Danger = true, Lunge = 4f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
                 new Move { Name = "Spin", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.8f },
-            },
+            }, 1f),
         };
 
         // Boss 5: the Scrap King himself (CrownJob.cs, "The Crown"): the Tier 2 finale. A sledgehammer, a crown of scrap, the Nest's yard.
         public static readonly Def King = new Def
         {
             Name = "The Scrap King", Title = "KING OF THE HEAP", Weapon = "Sledgehammer", Armor = "The Scrap King", Hp = 35000, Faction = "Raiders", Rank = "Expert", DoneFlag = "king_done", Vanishes = false,
-            StepSeconds = 0.4f, Recover = 1.0f, Phase2Line = "He throws the crown down. \"Then you can have the whole yard.\"",
-            Moves = new[]
+            StepSeconds = 0.4f, Recover = 1.0f, Breathers = true, Phase2Line = "He throws the crown down. \"Then you can have the whole yard.\"",
+            Moves = ScaleDamage(new[]
             {
                 new Move { Name = "Smash", Wind = 1.0f, Weight = 3, Mult = 0.8f, Poses = new[] { 0 }, Open = 1.5f },
                 new Move { Name = "Sweep", Wind = 0.9f, Hits = 2, Gap = 0.6f, Mult = 0.55f, Weight = 2, Poses = new[] { 1, 2 }, Open = 1.8f },
                 new Move { Name = "Crush", Wind = 1.2f, Danger = true, Mult = 1.4f, Weight = 1, Poses = new[] { 0 }, Open = 2.4f },
                 new Move { Name = "Charge", Wind = 0.9f, Danger = true, Lunge = 5f, Mult = 1.1f, Weight = 2, Phase2Only = true, Poses = new[] { 0 }, Open = 2.0f },
                 new Move { Name = "Rubble", Wind = 0.7f, Hits = 3, Gap = 0.45f, Mult = 0.5f, Weight = 2, Phase2Only = true, Poses = new[] { 1, 1, 2 }, Open = 1.9f },
-            },
+            }, 1f),
         };
 
         // Boss 6 (Yan, 2026-11-20: "he starts as a sprite swinging his scythe, similar to visor and other melee fights"; 2026-11-21: "i don't like it [the beast], he looks very ai generated and his attacks don't read well,
@@ -177,7 +180,7 @@ namespace GameCore
         public static readonly Def Verger = new Def
         {
             Name = "The Verger", Title = "THE CATHEDRAL'S LAST HUNTER", Weapon = "VergerScythe", Armor = "VergerCoat", Hp = 112000, Faction = "Outcasts", Rank = "Legend", DoneFlag = "verger_done", Vanishes = false, PoseKey = HeldPoseMath.VergerPoses,
-            StepSeconds = 0.33f, Recover = 1.0f, Phase2Line = "He takes off the hat and sets it down on the flagstones. The mask stays on.", Phase2Barks = new[] { "Then I will not be gentle.", "The bell rings for you now." },
+            StepSeconds = 0.33f, Recover = 1.0f, Breathers = true, Phase2Line = "He takes off the hat and sets it down on the flagstones. The mask stays on.", Phase2Barks = new[] { "Then I will not be gentle.", "The bell rings for you now." },
             Moves = VergerScytheMoves(),
         };
         /// <summary>2026-11-21: the scythe moveset (poses: 0 reap, 1 sweep, 2 rising, 3 hook, 4 danse, 5 ankle reap, 6 backhand, 7 impale). White = parry, red = dive under or get out of reach.</summary>
@@ -273,7 +276,7 @@ namespace GameCore
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2 && f.Def == Verger) { VergerPhase2.Begin(f, now); return; }
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2)
             {
-                f.Phase = 2; f.Doing = null; f.NextMoveAt = now + 1.4f;
+                f.Phase = 2; f.Doing = null; f.NextMoveAt = now + 1.4f; if (f.Def.Breathers) Breather(f, now, true);
                 Splash("PHASE 2", f.Def.Phase2Line);
                 Sfx.Play("boss_sting", null, 0.8f, 0f, 1.25f);
                 CombatFx.Push("aura", h, null, h.EquippedWeapon).Now = true;
@@ -314,6 +317,7 @@ namespace GameCore
             if (--f.HitsLeft > 0) { f.StrikeAt = now + GapBefore(f.Doing, f.Doing.Hits - f.HitsLeft) * speed; if (f.Doing.Clips != null) BossArt.Start(f, f.Doing.Clips[System.Math.Min(f.Doing.Clips.Length - 1, f.Doing.Hits - f.HitsLeft)], f.StrikeAt, speed); f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now); return; }
             OpenUp(f, f.Doing.Open * speed, now);
             f.Doing = null; f.NextMoveAt = f.OpenUntil + 0.3f * Random.Range(0.8f, 1.3f);
+            if (f.Def.Breathers && ++f.Strings % 3 == 0 && !f.Beast) Breather(f, f.OpenUntil, false);              // every third string: a real pause after his opening
         }
 
         /// <summary>2026-11-20: the half-health change (Def.Change): the scythe goes into his pack, the claws come out, the camera finds him, and for a few seconds he is hittable at a tenth of the damage.</summary>
@@ -332,9 +336,19 @@ namespace GameCore
             GameLog.Event($"{f.Def.Name}: {c.Line ?? f.Def.Phase2Line}");
         }
         /// <summary>2026-11-20: the damage multiplier a boss takes right now (Melee.Strike and Gunplay.Resolve): a tenth while he changes.</summary>
-        public static float DamageScale(ICombatant u) => (Of(u) is Fight f ? (f.Stalking || VergerPhase2.Active(f) ? 0f : f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f) : 1f) * CoopScale.DamageTakenMult(u);   // 2026-11-22: x 1 / (1 + 0.25 per extra player) for every mutant and boss (CoopScale)   // 2026-11-20: the Verger takes a tenth while he changes; 2026-11-21: a stalker takes nothing
+        public static float DamageScale(ICombatant u) => (Of(u) is Fight f ? (f.Stalking || VergerPhase2.Active(f) || Time.time < f.BreatherUntil ? 0f : f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f) : 1f) * CoopScale.DamageTakenMult(u) * Parry.ExposedMult(u);   // 2026-11-22: x 1 / (1 + 0.25 per extra player) for every mutant and boss (CoopScale)   // 2026-11-20: the Verger takes a tenth while he changes; 2026-11-21: a stalker takes nothing
 
         /// <summary>Visor 5: the window after a move - he stands, knife low, breathing; bullets get through (Deflects).</summary>
+        public const float BreatherSeconds = 4f;
+        /// <summary>2026-11-23 (Yan: "bleeding and toxic never stop ... the bossfights do not give clear windows for healing"): the boss stops for BreatherSeconds starting at `from` (after the opening, or at once at the phase change): he flourishes, takes no damage and attacks nobody, and
+        /// you keep control. The flourish is a bark and a flash for now (the poses come with the animation rework).</summary>
+        static void Breather(Fight f, float from, bool phase)
+        {
+            var h = f.Unit; f.BreatherUntil = from + BreatherSeconds; f.ChangeUntil = System.Math.Max(f.ChangeUntil, f.BreatherUntil); f.NextMoveAt = f.BreatherUntil + 0.4f;
+            f.Doing = null; f.StrikeAt = f.BreatherUntil + 99f;
+            if (f.Def.BreatherBarks != null && f.Def.BreatherBarks.Length > 0) Banter.Say(h, f.Def.BreatherBarks[Random.Range(0, f.Def.BreatherBarks.Length)], 1, Mathf.Max(0f, from - Time.time) + 0.2f);
+            if (phase) GameLog.Write("He draws breath. You have a moment."); else GameLog.Write("He steps back and resets. A moment to breathe.");
+        }
         static void OpenUp(Fight f, float seconds, float now)
         {
             f.OpenUntil = now + seconds;
