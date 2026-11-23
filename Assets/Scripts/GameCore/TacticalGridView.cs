@@ -274,6 +274,7 @@ namespace GameCore
                 _alertMarks[i].gameObject.SetActive(shown && enemy.IsAlive() && (red || yellow || calling));
                 if (!shown) continue;
                 bool alive = DrawUnit(enemy, _enemyMarkers[i], Companion.Is(enemy) ? new Color(0.45f, 1f, 0.55f) : new Color(1f, 0.25f, 0.2f));
+                if (VergerPhase2.Ghosting(enemy)) SpawnGhost(_enemyMarkers[i]);                                          // 2026-11-23: the Verger's low-opacity afterimage
                 if (_alertMarks[i].gameObject.activeSelf) { _alertMarks[i].color = calling ? Color.white : red ? BangRed : BangYellow; _alertMarks[i].transform.position = Above(_enemyMarkers[i]); }
                 if (enemy is HumanEnemy he)   // aware enemies point at the player, the rest where they look (Batch 128); corpses and the surrendered drop it
                 {
@@ -918,8 +919,27 @@ namespace GameCore
         }
 
         /// <summary>Walls, trees and other tall things in front of a unit go see-through while they hide it.</summary>
+        // 2026-11-23 (Yan: "the after-image as a low opacity version of himself"): a red-tinted copy of his marker sprite every 0.05 s while he swings, fading over 0.3 s (no ghost of the held scythe yet)
+        readonly System.Collections.Generic.List<(SpriteRenderer sr, float born)> _ghosts = new System.Collections.Generic.List<(SpriteRenderer, float)>(); float _ghostAt;
+        void SpawnGhost(SpriteRenderer src)
+        {
+            if (src == null || Time.time < _ghostAt) return; _ghostAt = Time.time + 0.05f;
+            var go = new GameObject("Afterimage"); go.transform.position = src.transform.position; go.transform.rotation = src.transform.rotation; go.transform.localScale = src.transform.localScale;
+            var sr = go.AddComponent<SpriteRenderer>(); sr.sprite = src.sprite; sr.flipX = src.flipX; sr.flipY = src.flipY; sr.sortingOrder = src.sortingOrder - 2; sr.color = new Color(1f, 0.4f, 0.35f, 0.3f);
+            _ghosts.Add((sr, Time.time));
+        }
+        void TickGhosts()
+        {
+            for (int i = _ghosts.Count - 1; i >= 0; i--)
+            {
+                var (sr, born) = _ghosts[i]; float a = 1f - (Time.time - born) / 0.3f;
+                if (sr == null || a <= 0f) { if (sr != null) Destroy(sr.gameObject); _ghosts.RemoveAt(i); continue; }
+                var c = sr.color; c.a = 0.3f * a; sr.color = c;
+            }
+        }
         private void UpdateFades()
         {
+            TickGhosts();
             if (!_world) return;
             _fadeNow.Clear();
             void Check(SpriteRenderer m)

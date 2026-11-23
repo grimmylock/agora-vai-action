@@ -3165,7 +3165,23 @@ static class Program {
       Rt.Of(p).ShoveFrom = -1f; p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; f.Doing = null; f.OpenUntil = -1f;
       // phase 2: no change, the same man, quicker, the long combos
       h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); h.Hp = V.Hp / 2 - 10; UnityEngine.Time.time += 5f; f.NextMoveAt = UnityEngine.Time.time + 9f; Boss.Tick(f, p);
-      Check(f.Phase == 2 && !f.Beast && f.ChangeUntil < UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && Boss.DamageScale(h) == 1f && !VergerBoss.IsBeast(h) && h.EquippedArmor?.Name == "Verger Coat (bare)" && h.EquippedArmor.PhysDR > 0f, "Verger: at half health phase 2 starts and he stays a man with the scythe (no change, full damage), the hat off");
+      Check(VergerPhase2.Active(f) && f.Phase == 2 && Boss.DamageScale(h) == 0f && Story.Letterbox && Story.CamLock != null && h.EquippedArmor?.Name == "Verger Coat", "Verger: at half health the cutscene starts (camera locked, letterbox, takes nothing, hat still on)");
+      {   // the rite: hat off, glow up, the flash, then the quick-time; mashing wins (staggered), not mashing loses (knocked down)
+        float t0 = UnityEngine.Time.time; bool hatOff = false, qte = false, ember = false; float glowMax = 0f; int guard = 0;
+        CombatFx.Pending.Clear();
+        while (VergerPhase2.Active(f) && guard++ < 3000) { UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.unscaledTime = UnityEngine.Time.time; Boss.Tick(f, p); glowMax = System.Math.Max(glowMax, VergerPhase2.Glow(f, UnityEngine.Time.time)); if (h.EquippedArmor?.Name == "Verger Coat (bare)") hatOff = true; if (VergerPhase2.InQte(f)) { qte = true; if (guard % 6 == 0) Parry.Press(p); } }
+        ember = CombatFx.Pending.Any(e => e.Kind == "scytheember") && CombatFx.Pending.Any(e => e.Kind == "vergerhat" && e.Rounds == 1) && CombatFx.Pending.Any(e => e.Kind == "vergerhat" && e.Rounds == 2);
+        float dur = UnityEngine.Time.time - t0;
+        Check(hatOff && qte && glowMax >= 1f && ember && dur >= 7f && dur <= 11f, $"Verger: the rite takes about ten seconds ({dur:0.0}), the hat comes off and lands, the scythe glows, embers rise, then the quick-time");
+        Check(f.Phase == 2 && VergerPhase2.Done && !Story.InCutscene && !Story.Letterbox && f.StaggerUntil > UnityEngine.Time.time && Boss.DamageScale(h) == 1f && VergerPhase2.Glow(f, UnityEngine.Time.time) == 1f, "Verger: mashed through - he is staggered, phase 2 has begun, the camera is free, he takes damage again");
+        Check(VergerPhase2.Tint(h.EquippedWeapon).r > VergerPhase2.Tint(h.EquippedWeapon).g + 0.5f && VergerPhase2.Tint(p.EquippedWeapon) == UnityEngine.Color.white, "Verger: his scythe is tinted red and nobody else's weapon is");
+        VergerPhase2.Reset(); f.Phase = 1; f.StaggerUntil = -1f; h.Hp = V.Hp / 2 - 10; h.X = p.X + 1; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Boss.Tick(f, p); guard = 0;
+        while (VergerPhase2.Active(f) && guard++ < 3000) { UnityEngine.Time.time += 1f / 60f; UnityEngine.Time.unscaledTime = UnityEngine.Time.time; Boss.Tick(f, p); }
+        Check(f.Phase == 2 && VergerPhase2.Done && p.Hp < p.MaxHp && Rt.Of(p).ProneUntil > UnityEngine.Time.time, $"Verger: not mashing - the red slash lands and knocks you down ({p.Hp}/{p.MaxHp})");
+        f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Body.Reset();
+        Check(V.Moves.First(m => m.Name == "Danse").Hits == 4 && V.Moves.First(m => m.Name == "Widow's Harvest").Hits == 7 && V.Moves.First(m => m.Name == "Last Rite").Hits == 6 && V.Moves.First(m => m.Name == "Hook-Reap").Hits == 3, "Verger: phase 2's combos are longer (Danse 4, Hook-Reap 3, Widow's Harvest 7, Last Rite 6)");
+      }
+      Check(!f.Beast && f.ChangeUntil < UnityEngine.Time.time && h.EquippedWeapon?.Db?.Name == "Verger's Scythe" && !VergerBoss.IsBeast(h) && h.EquippedArmor?.Name == "Verger Coat (bare)" && h.EquippedArmor.PhysDR > 0f, "Verger: afterwards he is still a man with the scythe (no change), the hat off");
       seen.Clear();
       for (int rep = 0; rep < 300; rep++) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; f.NextMoveAt = UnityEngine.Time.time; h.Hp = V.Hp * 4 / 10; h.X = p.X + 1 + rep % 3; h.Y = p.Y; Rt.SetOffset(h, 0f, 0f); p.Hp = p.MaxHp; Boss.Tick(f, p); if (f.Doing != null) seen.Add(f.Doing.Name); }
       Check(seen.Contains("Danse") && seen.Contains("Widow's Harvest") && seen.Contains("Toll") && !seen.Contains("Harvest") && !seen.Contains("Last Rite"), $"Verger: phase 2 brings the Danse, the Widow's Harvest and the Toll, drops the Harvest, and holds the Last Rite back ({string.Join(",", seen)})");
@@ -3175,7 +3191,7 @@ static class Program {
       {   // the Widow's Harvest lands five blows; the Toll deafens within six tiles, a dive goes under, ten tiles is out of it
         void Reset(int dx) { f.Doing = null; f.OpenUntil = -1f; f.StaggerUntil = -1f; h.Hp = V.Hp / 3; h.X = px; h.Y = py; Rt.SetOffset(h, 0f, 0f); p.X = px + dx; p.Y = py; Rt.SetOffset(p, 0f, 0f); p.Hp = p.MaxHp; Rt.Of(p).ProneUntil = -1f; Rt.Of(p).DiveUntil = -1f; Body.Reset(); }
         int Run(Boss.Move mv) { Boss.Begin(f, mv, UnityEngine.Time.time, 0.8f); int n = 0; float last = f.StruckAt; for (int i = 0; i < 600 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); h.Hp = V.Hp / 3; if (f.StruckAt != last) { last = f.StruckAt; n++; } } return n; }
-        var wh = V.Moves.First(m => m.Name == "Widow's Harvest"); Reset(1); int blows = Run(wh); Check(blows == 5 && p.Hp < p.MaxHp, $"Verger: the Widow's Harvest is five blows ({blows})");
+        var wh = V.Moves.First(m => m.Name == "Widow's Harvest"); Reset(1); int blows = Run(wh); Check(blows == 7 && p.Hp < p.MaxHp, $"Verger: the Widow's Harvest is seven blows ({blows})");
         var toll = V.Moves.First(m => m.Name == "Toll");
         Reset(5); Run(toll); Check(Body.Concussed(p), "Verger: the Toll deafens you five tiles away");
         Reset(5); Rt.Of(p).DiveUntil = UnityEngine.Time.time + 50f; Run(toll); Check(!Body.Concussed(p), "Verger: a dive goes under the Toll");

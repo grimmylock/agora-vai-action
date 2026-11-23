@@ -64,7 +64,7 @@ namespace GameCore
             bool panel = GameState.Current.ModalOpen || Story.InCutscene;   // a panel (or a cutscene) is up: you stand still, everything else runs
             if (k == null && !panel) return;
             if (!panel && k.escapeKey.wasPressedThisFrame && Time.frameCount != HudView.PackClosedFrame && (Rt.Paused || !HudView.CloseOldPanels())) { Rt.Paused = !Rt.Paused; Time.timeScale = Rt.Paused ? 0f : Rt.SlowMo ? Rt.SlowScale : 1f; }   // ESC pauses; nothing else does
-            if (Story.InCutscene && !Net.Client && k != null && k.escapeKey.wasPressedThisFrame) EelBoss.SkipIntro();     // ESC skips the eel's introduction
+            if (Story.InCutscene && !Net.Client && k != null && k.escapeKey.wasPressedThisFrame) { if (!VergerPhase2.Skip()) EelBoss.SkipIntro(); }     // ESC skips the eel's introduction, or the Verger's hat-and-scythe rite
             if (Rt.Paused && !Net.Client) return;                   // ponytail: ESC still pauses a host's whole world (Yan's rule: no pausing in co-op - with the menu work)
             var mine = panel || k == null ? default : Rt.Read(k, m);
             Net.Tick(Time.unscaledTime, mine);                       // RT 7y: a client sends this; a host sends snapshots

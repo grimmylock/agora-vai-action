@@ -387,7 +387,7 @@ namespace GameCore
             var feel = WeaponFeel.For(e.Weapon?.Db);
 
             if (e.Kind == "px") { PxFx(e.Px, from, 0f, 0f, PxHalf); return; }                       // RT fx 4: a ready-made strip at a tile
-            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "tubelash" || e.Kind == "glassburst" || e.Kind == "beastslash" || e.Kind == "howlwave")
+            if (e.Kind == "glint" || e.Kind == "parry" || e.Kind == "stagger" || e.Kind == "aura" || e.Kind == "finisher" || e.Kind == "smoke" || e.Kind == "deflect" || e.Kind == "dodge" || e.Kind == "hookchain" || e.Kind == "tubelash" || e.Kind == "glassburst" || e.Kind == "beastslash" || e.Kind == "howlwave" || e.Kind == "vergerhat" || e.Kind == "scytheember")
             {
                 if (e.Kind == "deflect" && e.Target != null && targetMarker != null) to = targetMarker.transform.position;
                 BossFx(e, from, to);
@@ -884,6 +884,26 @@ namespace GameCore
                     }
                     if (e.Hit) { Burst(b, new Color(0.55f, 0.05f, 0.08f), 14, 2.6f, 0.35f); Burst(b, Color.white, 4, 3.2f, 0.2f, 2); Shake(0.12f); Sfx.Play("hit_hard", to, 0.8f, 0.05f, 0.8f); Sfx.Play("chain_drag", Vector3.Lerp(a, b, 0.5f), 0.6f, 0.05f, 0.7f); }
                     else Sfx.Play("drip_squeeze", from, 0.9f, 0.05f, 0.6f);
+                    break;
+                }
+                case "vergerhat": // 2026-11-23 (the Verger's phase-2 rite; Yan: "use the sprite"): his own hat (Fx/fx_verger_hat.png, cut from his coat art by ArtSource/make_verger_hat.py) leaves his head (Rounds 1: a short arc, spinning) and lies on the flagstones (Rounds 2) for the rest of the fight
+                {
+                    var hatArt = Strip("Sprites/Fx/fx_verger_hat", 1, WeaponArt.PixelsPerUnit, new Vector2(0.5f, 0.5f)); var land = new Vector3(e.EndX, -e.EndY, 0f);
+                    if (e.Rounds <= 1) { var a = head + new Vector3(0f, 0.2f, 0f); var sr = NewSprite("VergerHat", hatArt?[0], new Color(0.12f, 0.12f, 0.14f), _root, 14); sr.transform.position = a; sr.transform.localScale = Vector3.one * (hatArt == null ? 0.6f : 1f);
+                        _live.Add(new Particle { Sr = sr, Born = Time.time, Life = 0.7f, Vel = (land - a) / 0.7f + new Vector3(0f, 0.9f, 0f), Gravity = 2.6f }); }
+                    else { var sr = NewSprite("VergerHatLying", hatArt?[0], new Color(0.12f, 0.12f, 0.14f), _root, 9); sr.transform.position = land; sr.transform.rotation = Quaternion.Euler(0f, 0f, 9f); sr.transform.localScale = Vector3.one * (hatArt == null ? 0.6f : 1f);
+                        _live.Add(new Particle { Sr = sr, Born = Time.time, Life = 240f, Fade = true, FadeFrom = 0.95f }); Burst(land, new Color(0.5f, 0.48f, 0.44f), 5, 0.8f, 0.3f); }
+                    break;
+                }
+                case "scytheember": // 2026-11-23: red embers rising off the scythe (Rounds = how many sets): the rite, the swings of phase 2, the flash
+                {
+                    int n = Mathf.Clamp(e.Rounds, 1, 4);
+                    for (int k = 0; k < n * 2; k++)
+                    {
+                        var at = from + new Vector3(Random.Range(-0.7f, 0.7f), Random.Range(0.1f, 0.9f), 0f); var col = Random.value < 0.35f ? new Color(1f, 0.75f, 0.35f) : new Color(1f, 0.18f + Random.value * 0.15f, 0.1f);
+                        Bit(at, col, 1, 1, new Vector3(Random.Range(-0.25f, 0.25f), Random.Range(0.5f, 1.3f), 0f), -0.4f, Random.Range(0.4f, 0.9f), 12);
+                    }
+                    if (e.Rounds >= 4) { Burst(from + new Vector3(0f, 0.5f, 0f), new Color(1f, 0.25f, 0.15f), 26, 3.4f, 0.55f, 2); Shake(0.3f); }
                     break;
                 }
                 case "howlwave": // 2026-11-21 (Yan: the howl "doesn't feel like an attack"): the sound is drawn: bright arcs leave his muzzle across the cone toward the target (a wall of rings, fanned 100 degrees, fast, thinning out), dust blown off the floor, a hard shake

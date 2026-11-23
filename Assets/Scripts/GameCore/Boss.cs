@@ -103,7 +103,7 @@ namespace GameCore
 
         // the name card (HudView.Boss.cs reads it)
         public static string SplashTitle, SplashSub; public static float SplashAt = -99f, SplashSeconds = 3.2f;
-        static void Splash(string title, string sub) { SplashTitle = title; SplashSub = sub; SplashAt = Time.unscaledTime; }
+        internal static void Splash(string title, string sub) { SplashTitle = title; SplashSub = sub; SplashAt = Time.unscaledTime; }
         public static void NameCard(string title, string sub) => Splash(title, sub);      // Boss 3's introduction shows its own card
 
         public static void Reset() { Sleepers.Clear(); Fights.Clear(); _stopUntil = -1f; _slowUntil = -1f; _momentAt = -99f; _holdUntil = -1f; Parry.Unparryable = false; SplashAt = -99f; }
@@ -187,12 +187,12 @@ namespace GameCore
             // phase 1 only
             new Move { Name = "Harvest", Wind = 0.8f, Hits = 3, Gaps = new[] { 0.45f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.9f }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 0 }, Open = 1.8f, Phase1Only = true },
             // phase 2: the hat comes off
-            new Move { Name = "Danse", Wind = 0.8f, Hits = 2, Gap = 0.5f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4 }, Open = 1.8f, Phase2Only = true },          // two full turns, all round him
+            new Move { Name = "Danse", Wind = 0.8f, Hits = 4, Gap = 0.5f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4, 4, 4 }, Open = 2.0f, Phase2Only = true },          // four full turns, all round him (2026-11-23: phase 2 is longer combos, not faster)
             new Move { Name = "Toll", Wind = 1.0f, Danger = true, MaxDist = 6f, Effects = new[] { "toll" }, Weight = 1, Poses = new[] { 0 }, Open = 1.3f, Phase2Only = true },     // the blade struck on the flagstones rings like the bell: deafened and your aim gone (dive)
-            new Move { Name = "Hook-Reap", Wind = 1.0f, Hits = 2, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f }, Mults = new[] { 1.0f, 1.4f }, RedHits = new[] { true, false }, Weight = 2, Poses = new[] { 3, 0 }, Open = 2.0f, Phase2Only = true },   // hauled in, then the reap: parry the second
+            new Move { Name = "Hook-Reap", Wind = 1.0f, Hits = 3, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f, 0.55f }, Mults = new[] { 1.0f, 1.0f, 1.4f }, RedHits = new[] { true, false, false }, Weight = 2, Poses = new[] { 3, 0, 2 }, Open = 2.2f, Phase2Only = true },   // hauled in, then the reap: parry the second
             new Move { Name = "Reaper's Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.6f, Weight = 2, Poses = new[] { 7 }, Open = 2.2f, Phase2Only = true },             // across the nave and the point driven down
-            new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 5, Gaps = new[] { 0.4f, 0.4f, 0.5f, 0.6f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 1.2f }, RedHits = new[] { false, false, true, false, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 0 }, Open = 2.4f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
-            new Move { Name = "Last Rite", Wind = 0.9f, Hits = 4, Gaps = new[] { 0.5f, 0.45f, 0.7f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 1.8f }, RedHits = new[] { false, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 7 }, Open = 2.8f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
+            new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 7, Gaps = new[] { 0.4f, 0.4f, 0.5f, 0.6f, 0.4f, 0.55f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 0.7f, 0.6f, 1.3f }, RedHits = new[] { false, false, true, false, false, true, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 4, 5, 0 }, Open = 2.6f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
+            new Move { Name = "Last Rite", Wind = 0.9f, Hits = 6, Gaps = new[] { 0.5f, 0.45f, 0.7f, 0.45f, 0.6f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 0.7f, 0.6f, 1.9f }, RedHits = new[] { false, false, true, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 4, 5, 7 }, Open = 3.0f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
         };
 
         // ---- PARKED (Yan, 2026-11-21: "save it but take him out of the game for now"): the beast form. Nothing spawns this def; the harness still runs it so the code keeps working. ----
@@ -223,6 +223,7 @@ namespace GameCore
         };
 
         /// <summary>2026-11-21: the Verger's coat without the hat (a look of its own: ArtSource/make_npc_looks.py "Verger Coat (bare)"), the same protection.</summary>
+        internal static ArmorDef BareOf(ArmorDef a) => Bare(a);
         static ArmorDef Bare(ArmorDef a) => new ArmorDef { Name = "Verger Coat (bare)", PhysDR = a.PhysDR, AnomDR = a.AnomDR, BeltSlots = a.BeltSlots, ModSlots = a.ModSlots, Mp = a.Mp, WeightKg = a.WeightKg, Note = a.Note, ImmuneToToxic = a.ImmuneToToxic, AnomalyAdvantage = a.AnomalyAdvantage, ImmuneToProne = a.ImmuneToProne, ImmuneToCrits = a.ImmuneToCrits, HalvesAPDamage = a.HalvesAPDamage };
 
         /// <summary>Put a boss on the map at (x, y) and start the fight.</summary>
@@ -232,6 +233,7 @@ namespace GameCore
             var a = SuitOf(def);
             var h = new HumanEnemy(def.Name, x, y, def.Faction, def.Rank, w, a) { IsAggroed = true, MaxHp = def.Hp, Hp = def.Hp, Unkillable = true };
             EncounterState.Enemies.Add(h); EncounterState.InCombat = true;
+            if (def == Verger) VergerPhase2.Reset();
             var f = new Fight { Def = def, Unit = h, Started = Time.time, NextMoveAt = Time.time + 1.2f };
             Fights.Add(f);
             if (quiet) { h.IsAggroed = false; return f; }                          // 2026-11-21: a stalker arrives unannounced
@@ -256,9 +258,11 @@ namespace GameCore
             if (f.Doing != null && f.GlintDue >= 0f && now >= f.GlintDue) { f.GlintDue = -1f; Glint(f, Red(f.Doing, f.Doing.Hits - f.HitsLeft)); }
             if (!f.Broken && !f.Finished && h.Hp <= 1) OnDamaged(h);              // bled (or blown) down to the break
             if (f.Broken || f.Finished || !h.IsAlive() || p == null) return;
+            if (f.Def == Verger && VergerPhase2.Tick(f, p, now)) return;                     // 2026-11-23: the half-health cutscene and its mash (VergerPhase2.cs); afterwards just the red sparks
             if (now < f.StaggerUntil) return;
             if (now < f.ChangeUntil) return;                                                  // mid-change: he does nothing, and takes a tenth
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2 && f.Def.Change != null) { BeginChange(f, now); return; }
+            if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2 && f.Def == Verger) { VergerPhase2.Begin(f, now); return; }
             if (f.Phase == 1 && h.Hp <= f.Def.Hp / 2)
             {
                 f.Phase = 2; f.Doing = null; f.NextMoveAt = now + 1.4f;
@@ -270,7 +274,7 @@ namespace GameCore
                 if (f.Def == OrderlyBoss.Def) OrderlyBoss.Phase2(f);                                          // 2026-11-22: it tears the lamp off the rail
                 if (f.Def == Verger && h.EquippedArmor != null) h.EquippedArmor = Bare(h.EquippedArmor);       // 2026-11-21: the hat comes off (the look "Verger Coat (bare)", same coat)
             }
-            float speed = f.Beast ? 1.1f : f.Phase == 2 ? 0.8f : 1f;     // the Verger's beast is a slow brawler (1.1: his waits and openings are a tenth longer); every other boss's phase 2 is quicker
+            float speed = f.Beast ? 1.1f : f.Phase == 2 && f.Def != Verger ? 0.8f : 1f;     // (Yan, 2026-11-23: the Verger is NOT quicker in phase 2 - longer combos and the afterimage instead) the Verger's beast is a slow brawler (1.1: his waits and openings are a tenth longer); every other boss's phase 2 is quicker
             int dist = CombatantUtil.Distance(h, p);
 
             if (f.Doing == null)
@@ -320,7 +324,7 @@ namespace GameCore
             GameLog.Event($"{f.Def.Name}: {c.Line ?? f.Def.Phase2Line}");
         }
         /// <summary>2026-11-20: the damage multiplier a boss takes right now (Melee.Strike and Gunplay.Resolve): a tenth while he changes.</summary>
-        public static float DamageScale(ICombatant u) => (Of(u) is Fight f ? (f.Stalking ? 0f : f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f) : 1f) * CoopScale.DamageTakenMult(u);   // 2026-11-22: x 1 / (1 + 0.25 per extra player) for every mutant and boss (CoopScale)   // 2026-11-20: the Verger takes a tenth while he changes; 2026-11-21: a stalker takes nothing
+        public static float DamageScale(ICombatant u) => (Of(u) is Fight f ? (f.Stalking || VergerPhase2.Active(f) ? 0f : f.Def.Change != null && Time.time < f.ChangeUntil ? 1f - f.Def.Change.Reduction : 1f) : 1f) * CoopScale.DamageTakenMult(u);   // 2026-11-22: x 1 / (1 + 0.25 per extra player) for every mutant and boss (CoopScale)   // 2026-11-20: the Verger takes a tenth while he changes; 2026-11-21: a stalker takes nothing
 
         /// <summary>Visor 5: the window after a move - he stands, knife low, breathing; bullets get through (Deflects).</summary>
         static void OpenUp(Fight f, float seconds, float now)
@@ -350,7 +354,7 @@ namespace GameCore
             mc.Move = m.Poses[i % m.Poses.Length]; mc.SwingFrom = now; mc.Red = Red(m, i);
         }
 
-        static void Glint(Fight f, bool danger)
+        internal static void Glint(Fight f, bool danger)
         {
             f.GlintAt = Time.time; f.GlintDanger = danger;
             var fx = CombatFx.Push("glint", f.Unit, null, f.Unit.EquippedWeapon); fx.Now = true; fx.Psi = danger;

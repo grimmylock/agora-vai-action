@@ -1292,7 +1292,7 @@ namespace GameCore
 
             var (body, mag) = WeaponArt.Mag(cat, key);
             _gun.sprite = mag != null && body != null ? body : sprite;
-            _gun.flipY = f.Left;
+            _gun.flipY = f.Left; _gun.color = VergerPhase2.Tint(weapon);                              // 2026-11-23: the Verger's scythe glows red in phase 2
             _gun.transform.localPosition = Local(f.GunX, f.GunY);
             _gun.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
             _gun.transform.localScale = new Vector3((f.Length > 0f ? f.Length : 1f) * _bs, _bs, 1f);
