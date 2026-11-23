@@ -139,6 +139,8 @@ namespace GameCore
         static void GameData_Reset() { Barrier.Horde.Clear(); }
 
         static bool _gunners;
+        /// <summary>2026-11-23: the Preacher's force field calls `batches` more groups of fanatics (past the usual total).</summary>
+        public static void ExtraWave(int batches) { if (_siegeAt < 0f) return; for (int i = 0; i < batches; i++) Feed(); }
         static void Feed()
         {
             int x = Random.Range(Barrier.X0 + 4, Barrier.X1 - 3), y = Barrier.ApexY - 40;

@@ -13,14 +13,18 @@ namespace GameCore
     public static class Preacher
     {
         public const string Name = "The Preacher";
-        public const int Hp = 2500, Damage = 35, Radius = 9;
+        public const int Hp = 1000, Damage = 35, Radius = 9;   // 2026-11-23 (Yan: "normal HP human but forcefield"): a human's health, the field does the rest
+        public const float ShieldSeconds = 15f;                 // the force field: up for 15 s, every third of his health lost (at 67% and at 34%), and it calls another wave
+        public const int ExtraWaveBatches = 3;
         public const float Gap = 7f, GapHurt = 4.5f, Tell = 1.4f;
         public static HumanEnemy Current; public static bool Exploded, Dead;
-        static float _nextAt, _waveAt = -1f; static bool _dropped;
+        static float _nextAt, _waveAt = -1f, _shieldUntil = -1f; static int _shieldHp, _shields; static bool _dropped;
+        /// <summary>The force field is up: nothing touches him (rounds are deflected, blows and blasts take nothing off).</summary>
+        public static bool Shielded(ICombatant u) => Is(u) && Time.time < _shieldUntil;
         public static bool Is(ICombatant u) => Current != null && ReferenceEquals(u, Current);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        public static void Reset() { Current = null; Exploded = Dead = _dropped = false; _nextAt = 0f; _waveAt = -1f; }
+        public static void Reset() { Current = null; Exploded = Dead = _dropped = false; _nextAt = 0f; _waveAt = -1f; _shieldUntil = -1f; _shields = 0; _shieldHp = 0; }
 
         public static HumanEnemy Spawn(int x, int y)
         {
@@ -33,7 +37,7 @@ namespace GameCore
         }
 
         /// <summary>Explosions.Blast: a blast on the Preacher cracks the core.</summary>
-        public static void OnBlast(ICombatant v) { if (Is(v)) Exploded = true; }
+        public static void OnBlast(ICombatant v) { if (Is(v) && !Shielded(v)) Exploded = true; }
 
         public static void Tick(float dt)
         {
@@ -55,6 +59,17 @@ namespace GameCore
                 return;
             }
             if (Net.Mode == Net.Role.Client) return;
+            // 2026-11-23 (Yan: "forcefield 15 second cooldown, activates every 33% HP lost, spawns more waves"): the field
+            if (now < _shieldUntil) { Current.Hp = System.Math.Max(Current.Hp, _shieldHp); }
+            else if (_shieldUntil > 0f) { _shieldUntil = -1f; GameLog.Event("The violet shell round the Preacher gutters out."); }
+            float frac = Current.Hp / (float)Current.MaxHp; int crossed = (frac <= 0.67f ? 1 : 0) + (frac <= 0.34f ? 1 : 0);
+            if (crossed > _shields && Current.IsAlive())
+            {
+                _shields = crossed; _shieldUntil = now + ShieldSeconds; _shieldHp = Current.Hp;
+                CombatFx.PxAt("void_pull", Current.X, Current.Y); CombatFx.PxAt("thunderclap", Current.X, Current.Y); Sfx.Play("boss_sting", TacticalGridView.GridToWorld(Current.X, Current.Y), 1f, 0f);
+                GameLog.Event("A violet shell closes round the Preacher. Nothing gets through it, and more of them are coming out of the woods.");
+                Banter.Say(Current, "Be one.", 2); Tier4Story.ExtraWave(ExtraWaveBatches);
+            }
             bool hurt = Current.Hp * 2 < Current.MaxHp;
             if (_waveAt < 0f && now >= _nextAt)
             {

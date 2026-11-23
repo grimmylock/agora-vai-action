@@ -576,7 +576,7 @@ namespace GameCore
             int mx = Mathf.FloorToInt(at.x), my = Mathf.FloorToInt(at.y);
             if (over == null && TerrainMap.CoverAcAt(mx, my) > 0 && !TerrainMap.BlocksSight(mx, my)) h = 0.3f;   // a barrel, sandbags, a desk: shoot the thing itself
             // the crosshair is over a body: aim at that body's footprint, at the height of the pixel under it
-            if (over != null) { var (ux, uy) = atEel ? (eelX, eelY) : Ballistics.Pos(over); dx = ux - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }
+            if (over != null) { var (ux, uy) = atEel ? (eelX, eelY) : Ballistics.Pos(over); dx = (atEel ? ux : at.x) - px; dy = uy - py; len = Mathf.Sqrt(dx * dx + dy * dy); }   // 2026-11-23 (Yan: "did you fix the aim assist changing the player's aim by itself?"): the round keeps the crosshair's own side-to-side position (it used to be pulled to the middle of the body's footprint, which moved a shot at an arm or a head toward the centre); only the depth (the footprint's row) comes from the body
             if (len < 0.05f) return;
             // Yan, 2026-11-13 (eel fight): "the aim keeps snapping toward its base in the water". The round is aimed at the part's footing on the ground (that is what the hit test reads), but the part is drawn Z tiles
             // up, so the gun and the round went to the water. The round now RISES to the part's height over that distance (Up), and the gun stays on the crosshair (FxEvent.AtEel).

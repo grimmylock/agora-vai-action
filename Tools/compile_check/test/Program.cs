@@ -1439,6 +1439,12 @@ static class Program {
         Console.WriteLine("  " + string.Join(" | ", bl)); Check(bdone >= 4 && bl.All(x => x.EndsWith("on during") && !x.Contains("ALREADY")), "bosses: the far reach of an attack clip is under the crosshair only while the clip plays (" + string.Join(" | ", bl) + ")"); }
       { var pt = Player.Current; TestingGround.OrderlyChase(pt); var chaseF = Boss.Fights.FirstOrDefault(f => f.Def == OrderlyBoss.Def && !f.Gone);
         Check(TerrainMap.ZoneId == OrderlyBoss.MorgueZone && Math.Abs(pt.X - OrderlyBoss.PatrolStart.x) <= 3 && Math.Abs(pt.Y - OrderlyBoss.PatrolStart.y) <= 3 && chaseF != null && chaseF.Stalking && !OrderlyBoss.InChase(pt), "Testing Ground: the Orderly morgue entry puts you at the west end of the long patrol corridor with the stalker loose"); }
+      { Preacher.Reset(); Rt.On = true; var pr9 = Preacher.Spawn(pp2.X + 8, pp2.Y); UnityEngine.Time.time = 140000f; EncounterState.Enemies.Add(pr9);
+        bool normalHp = Preacher.Hp == 1000 && pr9.MaxHp == 1000; pr9.Hp = 700; Preacher.Tick(0.1f); bool off1 = !Preacher.Shielded(pr9);
+        pr9.Hp = 660; Preacher.Tick(0.1f); bool on1 = Preacher.Shielded(pr9); pr9.Hp -= 300; Preacher.Tick(0.1f); bool holds = pr9.Hp == 660;
+        UnityEngine.Time.time += 16f; Preacher.Tick(0.1f); bool ends = !Preacher.Shielded(pr9); pr9.Hp = 330; Preacher.Tick(0.1f); bool on2 = Preacher.Shielded(pr9);
+        UnityEngine.Time.time += 16f; Preacher.Tick(0.1f); pr9.Hp = 200; Preacher.Tick(0.1f); bool no3 = !Preacher.Shielded(pr9);
+        Check(normalHp && off1 && on1 && holds && ends && on2 && no3, $"Preacher: a human's 1000 HP, a 15 s force field at 67% and at 34% that nothing gets through ({normalHp} {off1} {on1} {holds} {ends} {on2} {no3})"); Preacher.Reset(); EncounterState.Enemies.Remove(pr9); }
       Console.WriteLine($"  hitbox points tested: {tested}"); Check(missed.Count == 0, $"hitboxes: the crosshair just inside both ends of every run of every drawn OUTLINE (creature bosses, mutants, both facings) is on the body ({tested} points; missed: {string.Join(", ", missed.Take(8))})"); }
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService(); Arena(out int apx, out int apy);
     // 2026-11-22: a mutant with attack clips never strikes without one, one without clips winds up first, nobody hits twice inside a second
