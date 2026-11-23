@@ -160,7 +160,7 @@ namespace GameCore
         // Boss 5: the Scrap King himself (CrownJob.cs, "The Crown"): the Tier 2 finale. A sledgehammer, a crown of scrap, the Nest's yard.
         public static readonly Def King = new Def
         {
-            Name = "The Scrap King", Title = "KING OF THE HEAP", Weapon = "Sledgehammer", Armor = "The Scrap King", Hp = 35000, Faction = "Raiders", Rank = "Expert", DoneFlag = "king_done", Vanishes = false,
+            Name = "The Scrap King", Title = "KING OF THE HEAP", Weapon = "Sledgehammer", Armor = "The Scrap King", Hp = 5000, Faction = "Raiders", Rank = "Expert", DoneFlag = "king_done", Vanishes = false,
             StepSeconds = 0.4f, Recover = 1.0f, Breathers = true, Phase2Line = "He throws the crown down. \"Then you can have the whole yard.\"",
             Moves = ScaleDamage(new[]
             {
