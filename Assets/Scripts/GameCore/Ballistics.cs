@@ -84,6 +84,42 @@ namespace GameCore
         }
         /// <summary>2026-11-22 (Yan: "the Gaunt hitbox should also include the arm in attacks"): the extra outline of the clip a mutant is playing right now (HitProfiles.AttackRuns), or null.</summary>
         public static float[] AttackRunsNow(ICombatant u, string key, float height) => u is HumanEnemy hb ? (Boss.Of(hb) is Boss.Fight bf && BossArt.AttackNow(bf) is string bk ? GameData.HitProfiles.AttackRunsAt(key, bk, height) : null) : u is Mutant m && MutantAttack.KindOf(m) is string kind ? GameData.HitProfiles.AttackRunsAt(key, kind, height) : null;
+        /// <summary>2026-11-23 (Yan: "humans frame hitboxes ... they retain the headshot hitbox"): the suit whose OUTLINE a human is hit on (HitProfiles.HumanRuns: stand, crouch, lying, plus the swing poses while he strikes), or null (a mutant, a boss, an unknown suit).</summary>
+        public static string HumanSuit(ICombatant u)
+        {
+            if (!(u is Player) && !(u is HumanEnemy hb && BossArt.HitKey(hb) == null)) return null;
+            string n = u is Player p ? p.EquippedArmor?.Name : ((HumanEnemy)u).EquippedArmor?.Name; if (n == null) n = "Raider Jacket";
+            return GameData.HitProfiles.HasHumanRuns(n) ? n : (GameData.HitProfiles.HasHumanRuns("Raider Jacket") ? "Raider Jacket" : null);
+        }
+        public static string HumanState(ICombatant u) => Body.Down(u) || Rt.Low(u) ? "lying" : Crouched(u) ? "crouch" : "stand";
+        /// <summary>The part of a human a round at height h (share of a standing human) takes: head, torso or legs by height (the stance squashes the bands); null = it passes (a dive's i-frames).</summary>
+        public static string HumanPart(ICombatant u, float h)
+        {
+            if (Rt.Untouchable(u)) return null; float s = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f;
+            return h >= HeadFrom * s ? "Head" : h >= TorsoFrom * s ? "Torso" : "Legs";
+        }
+        /// <summary>A human's outline rows at `height` tiles above his feet in his pose (swing: the swing poses'). Crouching keeps the old gameplay rule, the standing outline squashed to CrouchScale (the crouch picture is only two pixels lower); lying and diving use the lying picture.</summary>
+        public static float[] HumanRuns(ICombatant u, string suit, float height, bool swing)
+        {
+            string st = HumanState(u); string set = swing ? "swing" : st == "crouch" ? "stand" : st; float hq = st == "crouch" ? height / CrouchScale : height;
+            return GameData.HitProfiles.HumanRunsAt(suit, set, hq);
+        }
+        public static bool HumanOutlineHit(ICombatant u, string suit, float h, float dx, float dy, float side, float pad)
+        {
+            float height = h * BodyTiles; var runs = HumanRuns(u, suit, height, false); var sw = Melee.Swinging(u) ? HumanRuns(u, suit, height, true) : null; if (runs == null && sw == null) return false;
+            float adx = System.Math.Abs(dx);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                var rr = pass == 0 ? runs : sw; if (rr == null) continue;
+                for (int i = 0; i + 1 < rr.Length; i += 2)
+                {
+                    float a = rr[i], b = rr[i + 1]; float e = System.Math.Min((b - a) * 0.5f, 0.3f) * adx + pad;
+                    float lo = System.Math.Min(a * dy, b * dy), hi = System.Math.Max(a * dy, b * dy);
+                    if (side >= -hi - e && side <= -lo + e) return true;
+                }
+            }
+            return false;
+        }
         /// <summary>Is the body drawn mirrored (the outline mirrors with it)?</summary>
         public static bool OutlineFlipped(ICombatant u) => u is HumanEnemy hb ? BossArt.Flip(hb) : u is Mutant m && UnitSprites.Flipped(m);
         /// <summary>Does a round along (dx, dy) at height h (a share of a standing human) passing `side` off the unit's centre go through its outline? Each run of the picture's row covers the stretch of ground its x-extent projects to across the round's line (x * dy) and the body's own depth (|dx| times half the run, capped).</summary>
@@ -135,6 +171,16 @@ namespace GameCore
                 for (float y = 0f; y < ht - 0.001f; y += 2f / 32f) { float y2 = System.Math.Min(ht, y + 2f / 32f), a = GameData.HitProfiles.Half(bk, (y + y2) * 0.5f); if (a > 0f) l.Add((y / BodyTiles, y2 / BodyTiles, a, (GameData.HitProfiles.HasHead(bk) ? GameData.HitProfiles.InHeadRows(bk, (y + y2) * 0.5f) : (y + y2) * 0.5f >= 0.7f * ht) ? "Head" : "Body", 0f)); }
                 return l;
             }
+            if (HumanSuit(u) is string hsu)                                                  // a human: his suit's outline in his pose, bands coloured by head / torso / legs
+            {
+                var lh = new List<(float, float, float, string, float)>(); string hst = HumanState(u); float sc = Body.Down(u) ? 0.3f : Rt.Low(u) ? 0.4f : Crouched(u) ? CrouchScale : 1f; bool sw = Melee.Swinging(u);
+                for (float y = 0f; y < 1.45f; y += 2f / 32f)
+                {
+                    foreach (var rr in new[] { HumanRuns(u, hsu, y + 1f / 32f, false), sw ? HumanRuns(u, hsu, y + 1f / 32f, true) : null })
+                        for (int i = 0; rr != null && i + 1 < rr.Length; i += 2) { float hs2 = (y + 1f / 32f) / BodyTiles; lh.Add((y / BodyTiles, (y + 2f / 32f) / BodyTiles, (rr[i + 1] - rr[i]) * 0.5f, hs2 >= HeadFrom * sc ? "Head" : hs2 >= TorsoFrom * sc ? "Torso" : "Legs", (rr[i] + rr[i + 1]) * 0.5f)); }
+                }
+                return lh;
+            }
             bool mut = !(u is Player) && !(u is HumanEnemy) && u is Mutant;
             var m = u as Mutant; string key = mut ? m.Db?.Name : "human";
             if (mut && !GameData.HitProfiles.All.ContainsKey(key ?? "")) { float sz = MutantSize(m), top = (sz + EelSump.LiftOfUnit(m)) / BodyTiles; l.Add((0f, top, 0.25f * sz, "Body", 0f)); return l; }
@@ -174,6 +220,13 @@ namespace GameCore
                 float t = rx * dx + ry * dy;                 // along the line
                 if (t <= 0.05f || t > range || t >= bestT) continue;
                 float side = rx * dy - ry * dx;              // signed distance off the line (+ = the round passes on its right)
+                if (HumanSuit(u) is string suit)                                                // 2026-11-23: a human: hit on the outline of his suit in the pose he is in; head, torso, arm, legs as before
+                {
+                    string hpart = HumanPart(u, h); if (hpart == null) continue;
+                    if (!HumanOutlineHit(u, suit, h, dx, dy, side, shooter is Player ? (pad < 0f ? PlayerHitPad : pad) : 0f)) continue;
+                    if (hpart == "Torso" && System.Math.Abs(side) > ArmFrom) hpart = "Arm";
+                    best = u; bestT = t; bestPart = hpart; bestSide = side; continue;
+                }
                 if (OutlineKey(u) is string okey)                                              // a mutant or a creature boss: hit on its drawn outline
                 {
                     if (!OutlineHit(u, okey, h, dx, dy, side, shooter is Player ? (pad < 0f ? PlayerHitPad : pad) : 0f, out string opart)) continue;

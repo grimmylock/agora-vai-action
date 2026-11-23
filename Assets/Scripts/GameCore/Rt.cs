@@ -795,6 +795,13 @@ namespace GameCore
                     float od = System.Math.Abs(x - ux) + System.Math.Abs(y - uy); if (od < bd) { bd = od; best = u; }
                     continue;
                 }
+                if (Ballistics.HumanSuit(u) is string hsu)                                    // 2026-11-23: a human is under the crosshair where his suit's outline is (his pose's, plus the swing's while he strikes)
+                {
+                    float hh = uy + Ballistics.FeetBelow - y; var hr = Ballistics.HumanRuns(u, hsu, hh, false); var hsw = Melee.Swinging(u) ? Ballistics.HumanRuns(u, hsu, hh, true) : null; if (hr == null && hsw == null) continue;
+                    bool hon = false; for (int hp2 = 0; hp2 < 2 && !hon; hp2++) { var hrr = hp2 == 0 ? hr : hsw; for (int hi2 = 0; hrr != null && hi2 + 1 < hrr.Length && !hon; hi2 += 2) hon = x - ux >= hrr[hi2] && x - ux <= hrr[hi2 + 1]; }
+                    if (!hon) continue; float hd2 = System.Math.Abs(x - ux) + System.Math.Abs(y - uy); if (hd2 < bd) { bd = hd2; best = u; }
+                    continue;
+                }
                 string pkey = u is HumanEnemy hbu && BossArt.HitKey(hbu) is string bku ? bku : mut ? ((Mutant)u).Db?.Name : "human";   // 2026-11-22 (Yan: the Ferryman's and the worm's hitbox was only the middle of the sprite): a creature boss is under the crosshair on ITS silhouette, not a man's
                 float a = GameData.HitProfiles.Half(pkey, uy + Ballistics.FeetBelow - y);
                 float ccx = mut ? GameData.HitProfiles.CentreOf(pkey, uy + Ballistics.FeetBelow - y) * (UnitSprites.Flipped((Mutant)u) ? -1f : 1f) : 0f;

@@ -92,3 +92,32 @@ for key, (ppt, half) in All.items():
         if mm and os.path.exists(fn): nn = int(mm.group(1)); ps.append(panel(strip_frame(fn, nn, nn // 2 + 1), key, ppt, False, 1, ak))
     b_items.append((f'{key}  (idle, then attack clips with their reach added; drawn at {ppt} px a tile)', ps))
 sheet(b_items, 'CREATURE BOSSES: hit shape over the idle picture', os.path.join(OUT, 'bosses.png'))
+
+# 2026-11-23: humans: each suit's outline in its states (stand front, crouch, lying, a swing pose), the head / torso / legs bands coloured
+HI_SRC = src[src.index('HumanIndex = new'):src.index('HumanShapes = new')]; HS_SRC = src[src.index('HumanShapes = new'):src.index('HumanRunsAt')]
+HINDEX = dict(re.findall(r'\["([^"]+)"\] = "(h\d+)"', HI_SRC)); HSHAPES = {}; cur = None
+for line in HS_SRC.splitlines():
+    m = re.match(r'\s*\["(h\d+)"\] = new float', line)
+    if m: cur = m.group(1); HSHAPES[cur] = []; continue
+    if cur and 'new[]' in line: HSHAPES[cur].append([float(v.rstrip('f')) for v in re.findall(r'-?[0-9.]+f', line)])
+    elif cur and 'new float[0]' in line: HSHAPES[cur].append([])
+import numpy as _np
+def human_panel(suit, state, cell_fn, col, row, zoom=6):
+    a = Image.open(f'{R}/{cell_fn}.png').convert('RGBA'); cw = a.width // 16; cell = a.crop((col * cw, row * cw, (col + 1) * cw, (row + 1) * cw))
+    al = _np.array(cell)[..., 3] > 0; ys = _np.where(al.any(1))[0]
+    if not len(ys): return Image.new('RGBA', (cw * zoom, cw * zoom), (0, 0, 0, 0))
+    bot = ys.max(); lay = Image.new('RGBA', cell.size, (0, 0, 0, 0)); d = ImageDraw.Draw(lay); rows = HSHAPES.get(HINDEX.get(suit + '|' + state), [])
+    for r_, runs in enumerate(rows):
+        y = bot - r_; hgt = (r_ + 0.5) / 32.0
+        col_ = (255, 40, 40, 120) if hgt >= 0.61 else (255, 150, 30, 100) if hgt >= 0.23 else (60, 220, 90, 100)
+        for i in range(0, len(runs) - 1, 2): d.line([(cw / 2.0 + runs[i] * 32, y), (cw / 2.0 + runs[i + 1] * 32, y)], fill=col_)
+    out = Image.alpha_composite(cell, lay); return out.resize((out.width * zoom, out.height * zoom), Image.NEAREST)
+ARM = [n for n in re.findall(r'"([^"]+)"', open(os.path.join(ROOT, 'Assets/Scripts/GameData/SpriteAtlasIndex.cs')).read().split('public static readonly string[] Armor')[1].split('};')[0])]
+hitems = []
+for suit in ['Raider Jacket', 'Sentinel Plate Carrier', 'Garrison Heavy Armor', 'IZC Containment Exo']:
+    if suit not in ARM:
+        cand = [n for n in ARM if n.split()[0] in suit.split()[:1]]; suit = cand[len(cand) // 2] if cand else ARM[0]
+    i = ARM.index(suit); col, row = i % 16, i // 16
+    ps = [human_panel(suit, 'stand', 'armor_atlas_x2', col, row), human_panel(suit, 'crouch', 'armor_pose_crouch_x2', col, row), human_panel(suit, 'lying', 'armor_pose_lying_x2', col, row), human_panel(suit, 'swing', 'armor_pose_lunge_r_x2', col, row)]
+    hitems.append((suit + '  (stand | crouch picture | lying | a lunge pose; red = head, orange = torso, green = legs)', ps))
+sheet(hitems, 'HUMANS: the suit outline in each state (a crouch uses the standing outline squashed to 70%, the picture is only 2 px lower)', os.path.join(OUT, 'humans.png'))

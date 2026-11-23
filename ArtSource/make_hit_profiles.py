@@ -168,6 +168,37 @@ for _k, _s in _sc.items():
         if _st.shape[1] % _n: continue
         _fw = _st.shape[1] // _n; _fr = [_st[:, i * _fw:(i + 1) * _fw] for i in range(_n)]; _fr = [f for f in _fr if f.any()]
         make_attack_runs('boss:' + _k, _clip, _fr, int(round(32 / _s)), (_w, _im.shape[0]))
+
+# 2026-11-23 (Yan: "humans frame hitboxes ... since the head is easy to identify they retain the headshot hitbox"): every SUIT's own outline per body state, from the 32 px atlases: stand = the front, the back and the four walk pictures; crouch = crouch and kneel (both views);
+# lying = the lying pose; swing = the lunge, lean, stagger and sit poses (what a blow does to the body). Identical shapes are stored once (HumanShape ids). Parts (head / torso / arm / legs) stay a matter of height, in Ballistics.
+_ARM_NAMES = re.findall(r'"([^"]+)"', open(os.path.join(ROOT, 'Assets/Scripts/GameData/SpriteAtlasIndex.cs')).read().split('public static readonly string[] Armor')[1].split('};')[0]) if False else None
+import re as _re3
+_sai = open(os.path.join(ROOT, 'Assets/Scripts/GameData/SpriteAtlasIndex.cs')).read(); _a = _sai.index('public static readonly string[] Armor'); _b = _sai.index('};', _a); ARMOR_NAMES = _re3.findall(r'"([^"]+)"', _sai[_a:_b])
+def _atlas_cells(fn):
+    p = f'{R}/{fn}.png'
+    if not os.path.exists(p): return None
+    a = np.array(Image.open(p).convert('RGBA'))[..., 3] > 0; cw = a.shape[1] // 16; return a, cw
+HUMAN_STATES = {'stand': ['armor_atlas_x2', 'armor_back_atlas_x2', 'armor_walk_a_x2', 'armor_walk_b_x2', 'armor_back_walk_a_x2', 'armor_back_walk_b_x2'],
+                'crouch': [f'armor_{b}pose_{k}_x2' for b in ('', 'back_') for k in ('crouch', 'crouch_h', 'kneel', 'kneel_h')],
+                'lying': ['armor_pose_lying_x2', 'armor_back_pose_lying_x2'],
+                'swing': [f'armor_{b}pose_{k}_x2' for b in ('', 'back_') for k in ('lean_h_l', 'lean_h_r', 'lean_l', 'lean_r', 'lunge_h_l', 'lunge_h_r', 'lunge_l', 'lunge_r', 'stagger_h_l', 'stagger_h_r', 'stagger_l', 'stagger_r', 'sit_h_l', 'sit_h_r', 'sit_l', 'sit_r')]}
+HUMAN_SHAPES = {}; HUMAN_INDEX = {}
+def build_humans():
+    atl = {st: [c for c in (_atlas_cells(fn) for fn in fns) if c] for st, fns in HUMAN_STATES.items()}
+    for i, name in enumerate(ARMOR_NAMES):
+        col, row = i % 16, i // 16
+        for st, lst in atl.items():
+            frames = []
+            for a, cw in lst:
+                cell = a[row * cw:(row + 1) * cw, col * cw:(col + 1) * cw]
+                if cell.any(): frames.append(cell)
+            if not frames: continue
+            W = cw + 2; H = cw + 2; m = np.zeros((H, W), bool)
+            for f in frames: m |= _align(f, W, H)
+            rows = _runs_of(m, 32, gap=2, minw=2); key = tuple(tuple((round(a_, 3), round(b_, 3)) for a_, b_ in r) for r in rows)
+            if key not in HUMAN_SHAPES: HUMAN_SHAPES[key] = 'h%d' % len(HUMAN_SHAPES)
+            HUMAN_INDEX[name + '|' + st] = HUMAN_SHAPES[key]
+build_humans()
 eb = np.array(Image.open(f'{R}/Fx/boss_eel_body_s0.png').convert('RGBA'))[..., 3] > 0; EEL = [max(0.12, float(np.median(eb[:, i * 8:i * 8 + 8].sum(0))) / 2 / 32) for i in range(140)]
 eh = np.array(Image.open(f'{R}/Fx/boss_eel_head_s0.png').convert('RGBA'))[..., 3] > 0; EELHEAD = float(eh.sum(0).max()) / 2 / 32
 for _bk, (_lo, _hi) in BOSS_HEAD.items():
@@ -210,7 +241,17 @@ for _n, _rows in ATTACK_RUNS.items():
     _att_txt.append('            },')
 _att_txt += ['        };', '', '        public static float[] AttackRunsAt(string key, string kind, float height)', '        {', '            if (key == null || kind == null || height < 0f || !AttackRuns.TryGetValue(key + "|" + kind, out var r) || !All.TryGetValue(key, out var p)) return null;',
              '            int row = (int)(height * p.ppt); return row >= r.Length ? null : r[row];', '        }', '']
-_extra += _runs_txt + _att_txt
+_hum = ['        /// <summary>2026-11-23: every suit\'s OUTLINE per body state ("<suit>|stand", "|crouch", "|lying", "|swing") as an id of a stored shape (HumanShapes: rows of runs, 32 px a tile, like Runs).</summary>',
+        '        public static readonly Dictionary<string, string> HumanIndex = new Dictionary<string, string>', '        {'] + [f'            ["{k}"] = "{v}",' for k, v in HUMAN_INDEX.items()] + ['        };', '',
+        '        public static readonly Dictionary<string, float[][]> HumanShapes = new Dictionary<string, float[][]>', '        {']
+for _k, _id in HUMAN_SHAPES.items():
+    _hum.append(f'            ["{_id}"] = new float[][]'); _hum.append('            {')
+    for _r in _k: _hum.append('                new[] { ' + ', '.join(f'{v:.3f}f' for ab in _r for v in ab) + ' },' if _r else '                new float[0],')
+    _hum.append('            },')
+_hum += ['        };', '', '        /// <summary>The runs of a suit\'s outline in a body state, `height` tiles above the feet: null above the crown or for an unknown suit/state.</summary>', '        public static float[] HumanRunsAt(string suit, string state, float height)', '        {',
+         '            if (height < 0f || suit == null || !HumanIndex.TryGetValue(suit + "|" + state, out var id) || !HumanShapes.TryGetValue(id, out var rows)) return null;', '            int row = (int)(height * 32f); return row >= rows.Length ? null : rows[row];', '        }', '',
+         '        public static bool HasHumanRuns(string suit) => suit != null && HumanIndex.ContainsKey(suit + "|stand");', '']
+_extra += _runs_txt + _att_txt + _hum
 _txt = _txt.replace("        /// <summary>The silhouette's height in tiles (feet to crown)", '\n'.join(_extra) + "\n        /// <summary>The silhouette's height in tiles (feet to crown)", 1)
 open(os.path.join(ROOT, 'Assets/Scripts/GameData/HitProfiles.cs'), 'w').write(_txt)
 for n, (p, ppt) in E_.items(): print(f'{n:16s} {len(p)} rows ({len(p)/ppt:.2f} tiles) half {p.min():.2f}..{p.max():.2f}')

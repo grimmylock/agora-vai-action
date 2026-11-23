@@ -120,6 +120,8 @@ namespace GameCore
         public const float PlayerReachSlack = 0.35f, PlayerArcSlack = 35f, PlayerBodyHalf = 0.4f;   // the player's swings only (NPC and boss swings stay as authored: parry timing)
         public const float ComboGap = 0.4f;                    // click again within this of the last swing ending: the next move
         static readonly Dictionary<ICombatant, Charge> Charges = new Dictionary<ICombatant, Charge>();
+        /// <summary>2026-11-23: a blow of his is under way (the body shows a lunge, lean or stagger pose): the hit outline of a human widens to those poses.</summary>
+        public static bool Swinging(ICombatant u) => u != null && Charges.TryGetValue(u, out var c) && T - c.SwungAt < HeldPoseMath.SwingLength + 0.2f && T >= c.SwungAt;
         public static Charge ChargeOf(ICombatant u) { if (!Charges.TryGetValue(u, out var c)) Charges[u] = c = new Charge(); return c; }
         public const float FullSwingCharge = 1f, MaxSwingBonus = 0.75f;   // held a second past the wind-up: x1.75 damage
         public const float FullThrowCharge = 0.6f, MinThrowHold = 0.2f;  // a throw charged 0.6 s flies full speed and range
