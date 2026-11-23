@@ -81,6 +81,7 @@ namespace GameCore
         private readonly HashSet<int> _fires = new HashSet<int>();   // standing cells drawn with the animated bonfire
         private readonly HashSet<SpriteRenderer> _faded = new HashSet<SpriteRenderer>();
         private readonly Dictionary<SpriteRenderer, Vector3> _lifeLast = new Dictionary<SpriteRenderer, Vector3>();
+        private BossBeatsView _beats;
         private readonly HashSet<SpriteRenderer> _lifeTilted = new HashSet<SpriteRenderer>();
         private readonly Dictionary<SpriteRenderer, int> _lastFoot = new Dictionary<SpriteRenderer, int>();
         float _rippleAt;   // RT fx 4: the last wading ripple (one every 0.6 s at most)
@@ -375,7 +376,7 @@ namespace GameCore
             }
             for (int i = smoked; i < _smokePool.Count; i++) _smokePool[i].gameObject.SetActive(false);
 
-            _fx.Tick();
+            _fx.Tick(); _beats?.Tick();
             _motion.PruneGone(u => u is Player || EncounterState.Enemies.Contains(u as Mutant));
             _motion.TickRagdolls();
             _fx.ApplyTo(player, _playerMarker);
@@ -632,7 +633,7 @@ namespace GameCore
 
             _playerMarker = CreateMarker("Player", new Color(0.2f, 0.6f, 1f), TileWorldSize * 0.7f, 5, _root.transform, _spriteBeing);
             _playerMarker.gameObject.AddComponent<UnityEngine.Rendering.SortingGroup>();
-            _fx = new CombatFxView(_root.transform, MarkerOf, Held);
+            _fx = new CombatFxView(_root.transform, MarkerOf, Held); _beats = new BossBeatsView(_root.transform, MarkerOf);
             _motion = new UnitMotionView(_root.transform, _fx);
             _fx.IsMoving = _motion.IsMoving;
             _fx.OnWound = _motion.Bleed;
@@ -817,6 +818,7 @@ namespace GameCore
             var logical = GridToWorld(u.X, u.Y) + StandOffset(u);
             marker.transform.position = _motion.Place(u, logical) + BossArt.Lunge(u);      // (the Verger's beast leans into each blow)
             float gl = Emplacement.LiftOf(u); if (gl > 0f) marker.transform.position += new Vector3(0f, gl, 0f);   // up on the Barrier's watchtower
+            float air = Boss.AirOf(u); if (air > 0f) marker.transform.position += new Vector3(0f, air, 0f);          // 2026-11-23: the Visor's ice-pick and execution leap and fall on you
             if (u is Player lp) { float lift = EelSump.LiftOf(lp); if (lift > 0f) marker.transform.position += new Vector3(0f, lift, 0f); }
             bool held = u is Player hp && EelSump.Gripping(hp) && CombatFxView.EelStand.HasValue;                // Boss 3: held in the jaws: drawn AT the mouth, over the eel (it hid him)
             if (held)                                                                                          // he is NOT moved: he stays where he parried and strains - shoved back a little by the eel, shaking with each press

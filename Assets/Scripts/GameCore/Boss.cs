@@ -28,6 +28,7 @@ namespace GameCore
             public string Name;
             public float Wind = 0.6f;      // the glint, then this long before the hit lands
             public bool Danger;            // red glint: can't be parried
+            public float Leap;             // 2026-11-23 (Yan: "make him jump in the air and try falling into the player"): seconds in the air before the blow lands (Boss.AirOf: the arc the view lifts him by)
             public bool Falloff;           // 2026-11-23 (Yan): a multi-hit string: the first blow at full damage, each next one 20% lower (floor 20%) - nobody is one-shot by the tail of a flurry
             public bool Call;              // 2026-11-23: he shouts the move's name when it starts (Danger moves always do): the Verger's HOOK
             public int Hits = 1;           // a combo: each hit has its own glint
@@ -75,7 +76,7 @@ namespace GameCore
 
         public class Fight
         {
-            public Def Def; public HumanEnemy Unit; public int Strings; public float BreatherUntil = -1f;
+            public Def Def; public HumanEnemy Unit; public float MoveSpeed = 1f; public int Strings; public float BreatherUntil = -1f;
             public int Phase = 1;
             public float LungedFor = -1f; public Move Doing; public int HitsLeft; public float StrikeAt = -1f, NextMoveAt, NextStep, StaggerUntil = -1f;
             public bool Broken, Finished, Gone; public float LootedAt = -1f;
@@ -94,6 +95,20 @@ namespace GameCore
         public const float GuardRecovers = 8f, GlintLead = 0.4f;
         /// <summary>2026-11-21: is hit `i` (0-based) of this move red? A move is red whole (Danger) or hit by hit (RedHits).</summary>
         public static bool Red(Move m, int i) => m.Danger || (m.RedHits != null && m.RedHits[System.Math.Min(i, m.RedHits.Length - 1)]);
+        /// <summary>2026-11-23: how high a leaping move has him off the ground right now (tiles): rises to 1.3 tiles and comes down on the player as the blow lands.</summary>
+        public static float AirOf(ICombatant u)
+        {
+            if (!(Of(u) is Fight f) || f.Doing == null || f.Doing.Leap <= 0f || f.Broken || f.Finished) return 0f;
+            float x = (Time.time - (f.StrikeAt - f.Doing.Leap)) / f.Doing.Leap; return x <= 0f || x >= 1f ? 0f : 1.3f * 4f * x * (1f - x);
+        }
+        public struct Beat { public float In; public bool Red; }
+        /// <summary>2026-11-23 (Yan: a rhythm counter over the attacker's head, "2 attacks / mini delay / 2 attacks / mini delay / 1 attack"): every blow still to come in the move he is doing, as seconds from now (the spacing is the real timing) and whether it is a red one.</summary>
+        public static void BeatsOf(Fight f, List<Beat> into)
+        {
+            into.Clear(); if (f == null || f.Doing == null || f.Broken || f.Finished || f.Gone) return;
+            var m = f.Doing; float t = f.StrikeAt - Time.time; int i0 = m.Hits - f.HitsLeft;
+            for (int i = i0; i < m.Hits; i++) { if (i > i0) t += GapBefore(m, i) * f.MoveSpeed; into.Add(new Beat { In = t, Red = Red(m, i) }); }
+        }
         public static float GapBefore(Move m, int i) => m.Gaps != null ? m.Gaps[System.Math.Min(System.Math.Max(0, i - 1), m.Gaps.Length - 1)] : m.Gap;      // the pause before hit i (i >= 1)
         public static float MultOf(Move m, int i) { float first = m.Mults != null ? m.Mults[0] : m.Mult; if (m.Falloff && m.Hits > 1) return first * Mathf.Max(0.2f, 1f - 0.2f * i); return m.Mults != null ? m.Mults[i % m.Mults.Length] : m.Mult; }
 
@@ -132,12 +147,12 @@ namespace GameCore
             {
                 // Visor 2: each move strings his own poses (backhand 0, rising 1, ice-pick 2, thrust 3, spin 4, execution 5)
                 new Move { Name = "Slash", Wind = 0.6f, Weight = 2, Poses = new[] { 0 }, Open = 1f },
-                new Move { Name = "Ice pick", Wind = 0.7f, Weight = 1, Mult = 1.15f, Poses = new[] { 2 }, Open = 1.2f },
+                new Move { Name = "Ice pick", Wind = 1.0f, Leap = 0.7f, Lunge = 4f, Weight = 1, Mult = 1.15f, Poses = new[] { 2 }, Open = 1.2f },
                 new Move { Name = "Flurry", Wind = 0.5f, Hits = 3, Gap = 0.38f, Mult = 0.7f, Weight = 2, Poses = new[] { 6, 7, 1 }, Open = 1.5f },
                 new Move { Name = "Lunge", Wind = 0.75f, Danger = true, Lunge = 5f, Mult = 1.4f, Weight = 1, Poses = new[] { 3 }, Open = 2f },
-                new Move { Name = "Feint flurry", Wind = 0.4f, Hits = 5, Gap = 0.3f, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 8, 1, 4, 6, 2 }, Open = 1.8f },
-                new Move { Name = "Whirlwind", Wind = 0.55f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 }, Open = 1.5f },
-                new Move { Name = "Execution", Wind = 0.9f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 }, Open = 2.2f },
+                new Move { Name = "Feint flurry", Wind = 0.7f, Hits = 5, Gaps = new[] { 0.45f, 0.9f, 0.45f, 0.9f }, Mult = 0.6f, Weight = 2, Phase2Only = true, Poses = new[] { 8, 1, 4, 6, 2 }, Open = 1.8f },
+                new Move { Name = "Whirlwind", Wind = 0.8f, Hits = 2, Gap = 0.45f, Mult = 0.9f, Weight = 1, Phase2Only = true, Poses = new[] { 4, 4 }, Open = 1.5f },
+                new Move { Name = "Execution", Wind = 1.1f, Leap = 0.8f, Danger = true, Lunge = 7f, Mult = 1.8f, Weight = 2, Phase2Only = true, Poses = new[] { 5 }, Open = 2.2f },
             }, VisorDamage),
         };
 
@@ -359,7 +374,7 @@ namespace GameCore
         public const float LungeLead = 0.34f;     // how long before the blow a lunging boss sets off (he arrives as it lands)
         internal static void Begin(Fight f, Move m, float now, float speed)
         {
-            f.Doing = m; f.HitsLeft = m.Hits; f.StrikeAt = now + m.Wind * speed;
+            f.Doing = m; f.HitsLeft = m.Hits; f.MoveSpeed = speed; f.StrikeAt = now + m.Wind * speed;
             { Player t = null; int bd = int.MaxValue; foreach (var q in Player.All) { if (!q.IsAlive()) continue; int d = CombatantUtil.Distance(f.Unit, q); if (d < bd) { bd = d; t = q; } } if (t != null) { f.AimX = t.X; f.AimY = t.Y; } }
             f.GlintDue = Mathf.Max(now, f.StrikeAt - GlintLead); WindPose(f, now);
             if (m.Effects != null && m.Effects.Contains("drip")) OrderlyBoss.DripBegins(f);         // the Orderly: how hurt he is when he starts squeezing the bag

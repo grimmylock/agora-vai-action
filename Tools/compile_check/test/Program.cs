@@ -3293,6 +3293,17 @@ static class Program {
       UnityEngine.Time.time += 1f; Boss.Begin(f, sw, UnityEngine.Time.time, 1f); for (int i = 0; i < 400 && f.Doing != null; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(f, p); p.Hp = System.Math.Max(1, p.Hp); }
       Check(f.Strings == 3 && f.BreatherUntil > UnityEngine.Time.time - 3f && f.BreatherUntil - f.OpenUntil > 3.9f && f.NextMoveAt > f.BreatherUntil, $"Boss: after his third string he stops for {Boss.BreatherSeconds:0} s after the opening (breather until {f.BreatherUntil - UnityEngine.Time.time:0.0} s ahead)");
       UnityEngine.Time.time = f.BreatherUntil - 0.5f; Check(Boss.DamageScale(h) == 0f, "Boss: nothing hurts him during the breather"); f.Broken = false;
+      {   // the rhythm counter and the leaps (2026-11-23)
+        var fv = Boss.Spawn(Boss.Visor, px + 3, py); var hv = fv.Unit; Rt.SetOffset(hv, 0f, 0f); var fe = Boss.Visor.Moves.First(m => m.Name == "Feint flurry"); float t0 = UnityEngine.Time.time;
+        Boss.Begin(fv, fe, t0, 1f); var beats = new List<Boss.Beat>(); Boss.BeatsOf(fv, beats);
+        Check(beats.Count == 5 && System.Math.Abs(beats[0].In - 0.7f) < 0.02f && System.Math.Abs(beats[1].In - beats[0].In - 0.45f) < 0.02f && System.Math.Abs(beats[2].In - beats[1].In - 0.9f) < 0.02f && System.Math.Abs(beats[3].In - beats[2].In - 0.45f) < 0.02f && System.Math.Abs(beats[4].In - beats[3].In - 0.9f) < 0.02f, "Boss: the Feint flurry shows its five blows as a rhythm: two, a breath, two, a breath, one (the marks are spaced by the real gaps)");
+        UnityEngine.Time.time = t0 + 1.0f; Boss.BeatsOf(fv, beats); Check(beats.Count == 5 && beats[0].In < 0f + 0.01f || beats.Count >= 4, "Boss: the counter keeps the blows still to come");
+        var ip = Boss.Visor.Moves.First(m => m.Name == "Ice pick"); Boss.Begin(fv, ip, t0, 1f); float strike = fv.StrikeAt;
+        UnityEngine.Time.time = strike - ip.Leap - 0.05f; float a0 = Boss.AirOf(hv); UnityEngine.Time.time = strike - ip.Leap / 2f; float a1 = Boss.AirOf(hv); UnityEngine.Time.time = strike + 0.01f; float a2 = Boss.AirOf(hv);
+        Check(a0 == 0f && a1 > 1.2f && a2 == 0f && ip.Lunge > 0f, "Boss: the ice-pick leaps - on the ground, 1.3 tiles up at the middle of the jump, down as the blow lands - and carries him to you");
+        var ex = Boss.Visor.Moves.First(m => m.Name == "Execution"); Check(ex.Leap > 0f && ex.Lunge > 0f && ex.Danger, "Boss: the execution leaps too (and stays red)");
+        UnityEngine.Time.time = t0; fv.Doing = null; Boss.Reset();
+      }
     } finally { Rt.On = false; Boss.Reset(); EncounterState.Enemies.Clear(); Body.Reset(); }
   }
 

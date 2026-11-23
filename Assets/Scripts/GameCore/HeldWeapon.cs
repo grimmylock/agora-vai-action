@@ -240,7 +240,7 @@ namespace GameCore
                 ((-195f, -3f, 6f, -8f), (-365f, 5f, -8f, 10f)),      // 1 rising: crouched low, the blade by the floor, then up and out through the face
                 ((-218f, 1f, -14f, 15f), (-235f, 5f, 5f, -18f)),     // 2 ice-pick: the fist stretched high over the head, blade down, driven into you
                 ((72f, -8f, 1f, 11f), (60f, 11f, 0f, -17f)),         // 3 thrust: the knife drawn all the way back to the hip, then flung out with all his weight
-                ((-100f, -6f, -1f, -12f), (-500f, 7f, -1f, -14f)),   // 4 spin: coiled the wrong way, then a full turn, the blade out at the end of the arm
+                ((-100f, -6f, -1f, -12f), (-500f, 7f, -1f, 346f)),   // 4 spin: coiled the wrong way, then a FULL turn of the whole body (the lean runs -12 -> 346 degrees), the blade out at the end of the arm
                 ((-212f, -1f, -15f, 17f), (-240f, 6f, 5f, -19f)),    // 5 execution: arched back with the knife as high as he can reach, then all the way down
                 ((38f, -3f, 2f, 7f), (60f, 10f, 0f, -12f)),          // 6 jab: held low at the hip, then driven straight out in a short stab (the Flurry'"'"'s opener)
                 ((-70f, -6f, 4f, -9f), (-255f, 8f, -3f, 12f)),       // 7 cross: from low on the far side, up and across (the Flurry'"'"'s answer to the jab)
