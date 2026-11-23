@@ -28,6 +28,7 @@ namespace GameCore
             public string Name;
             public float Wind = 0.6f;      // the glint, then this long before the hit lands
             public bool Danger;            // red glint: can't be parried
+            public bool Call;              // 2026-11-23: he shouts the move's name when it starts (Danger moves always do): the Verger's HOOK
             public int Hits = 1;           // a combo: each hit has its own glint
             public float Gap = 0.4f;       // between a combo's hits
             public float Lunge;            // > 0: he closes this far in one rush before the hit
@@ -192,7 +193,7 @@ namespace GameCore
             // phase 2: the hat comes off
             new Move { Name = "Danse", Wind = 0.8f, Hits = 4, Gap = 0.5f, Mult = 0.8f, MaxDist = 2f, Weight = 2, Poses = new[] { 4, 4, 4, 4 }, Open = 2.0f, Phase2Only = true },          // four full turns, all round him (2026-11-23: phase 2 is longer combos, not faster)
             new Move { Name = "Toll", Wind = 1.0f, Danger = true, MaxDist = 6f, Effects = new[] { "toll" }, Weight = 1, Poses = new[] { 0 }, Open = 1.3f, Phase2Only = true },     // the blade struck on the flagstones rings like the bell: deafened and your aim gone (dive)
-            new Move { Name = "Hook-Reap", Wind = 1.0f, Hits = 3, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f, 0.55f }, Mults = new[] { 1.0f, 1.0f, 1.4f }, RedHits = new[] { false, false, false }, Weight = 2, Poses = new[] { 3, 0, 2 }, Open = 2.2f, Phase2Only = true },   // hauled in, then the reap: parry the second
+            new Move { Name = "Hook-Reap", Call = true, Wind = 1.0f, Hits = 3, Lunge = 4f, Drag = 3.2f, Gaps = new[] { 0.7f, 0.55f }, Mults = new[] { 1.0f, 1.0f, 1.4f }, RedHits = new[] { false, false, false }, Weight = 2, Poses = new[] { 3, 0, 2 }, Open = 2.2f, Phase2Only = true },   // hauled in, then the reap: parry the second
             new Move { Name = "Reaper's Rush", Wind = 1.0f, Danger = true, Lunge = 6f, Mult = 1.6f, Weight = 2, Poses = new[] { 7 }, Open = 2.2f, Phase2Only = true },             // across the nave and the point driven down
             new Move { Name = "Widow's Harvest", Wind = 0.7f, Hits = 7, Gaps = new[] { 0.4f, 0.4f, 0.5f, 0.6f, 0.4f, 0.55f }, Mults = new[] { 0.5f, 0.5f, 0.6f, 0.6f, 0.7f, 0.6f, 1.3f }, RedHits = new[] { false, false, true, false, false, true, false }, MaxDist = 2f, Weight = 2, Poses = new[] { 1, 6, 5, 2, 4, 5, 0 }, Open = 2.6f, Phase2Only = true },   // sweep, back, the feet (dive), up, down
             new Move { Name = "Last Rite", Wind = 0.9f, Hits = 6, Gaps = new[] { 0.5f, 0.45f, 0.7f, 0.45f, 0.6f }, Mults = new[] { 0.7f, 0.6f, 0.7f, 0.7f, 0.6f, 1.9f }, RedHits = new[] { false, false, true, false, true, true }, MaxDist = 2f, BelowHp = 0.25f, Weight = 3, Poses = new[] { 4, 6, 5, 4, 5, 7 }, Open = 3.0f, Phase2Only = true },   // the last quarter: danse, back, the feet, the impale
@@ -301,7 +302,7 @@ namespace GameCore
                 foreach (var m in options) { if (roll < m.Weight) { Begin(f, m, now, speed); break; } roll -= m.Weight; }
                 return;
             }
-            if (f.Doing.Lunge > 0f && !f.Def.Rooted && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
+            if (f.Doing.Lunge > 0f && !f.Def.Rooted && !(f.Def == Verger && f.Doing.Drag > 0f) && f.LungedFor != f.StrikeAt && now >= f.StrikeAt - LungeLead && now < f.StrikeAt)   // 2026-11-22 (Yan: "the Ferryman's lunge bite teleports him"): the lunge used to happen at the hit and was drawn in 0.12 s; now he sets off LungeLead before it, and Rt.Glide draws a boss's rush over RushTimeBoss
             { f.LungedFor = f.StrikeAt; StepIn(f.Unit, p, f.Doing.Drag > 0f ? HookGap : 0.8f); }
             if (now < f.StrikeAt) return;
             Land(f, p);
@@ -346,7 +347,7 @@ namespace GameCore
             if (m.Effects != null && m.Effects.Contains("drip")) OrderlyBoss.DripBegins(f);         // the Orderly: how hurt he is when he starts squeezing the bag
             if (m.Clips != null) BossArt.Start(f, m.Clips[0], f.StrikeAt, speed);
             else if (m.Clip != null && !BossArt.Start(f, m.Clip, f.StrikeAt, speed)) VergerBoss.StartClip(f, m.Clip, f.StrikeAt, speed);                 // the beast's animation, timed so its hit frame lands on the strike
-            if (m.Danger) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
+            if (m.Danger || m.Call) Banter.Say(f.Unit, m.Name.ToUpperInvariant() + "!", 1);
         }
 
         /// <summary>Visor 2: the next hit's pose winds up (from wherever the last hit left the knife, in a combo).</summary>
@@ -388,7 +389,8 @@ namespace GameCore
             if (fx == "brood") { f.StruckAt = Time.time; MotherHollow.Howl(f); return; }                // 2026-11-21 Mother Hollow: the den answers
             if (fx == "acid") { f.StruckAt = Time.time; MotherHollow.Acid(f, m, hi0); if (f.Doing != null && f.HitsLeft > 1) { var t2 = p; f.AimX = t2.X; f.AimY = t2.Y; } return; }   // a glob where you stood (the next one aims anew)
             f.StruckAt = Time.time;
-            bool standsAndSwings = !f.Beast && m.Lunge <= 0f && m.Drag <= 0f;      // 2026-11-23 (Yan: "the Verger's attacks teleport him to the player, even if you space the attacks" ... "do the other bosses too"): every boss's plain swings no longer snap him to you at the hit - back out of the scythe's reach during the wind-up and it misses
+            bool standsAndSwings = !f.Beast && ((m.Lunge <= 0f && m.Drag <= 0f) || (f.Def == Verger && m.Name != "Reaper's Rush"));      // (2026-11-23, again: "he doesn't move when the attacks are going off": the Verger stands still for every move but his Rush; the hook is a chain that carries)
+            bool chainShot = f.Def == Verger && m.Drag > 0f && hi0 == 0;      // 2026-11-23 (Yan: "the Verger's attacks teleport him to the player, even if you space the attacks" ... "do the other bosses too"): every boss's plain swings no longer snap him to you at the hit - back out of the scythe's reach during the wind-up and it misses
             if (!f.Def.Rooted && !standsAndSwings) StepIn(h, p, m.Drag > 0f && hi0 == 0 ? HookGap : m.Lunge > 0f ? 0.8f : 0.9f);   // the hit comes with a step (a lunge: the whole rush; a hook: he stops at the blade's tip)
             var (hx, hy) = Ballistics.Pos(h); var (px, py) = Ballistics.Pos(p);
             float dx = px - hx, dy = py - hy, len = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dy * dy));
@@ -397,7 +399,7 @@ namespace GameCore
             if (red && Rt.Of(p).Diving) { GameLog.Write("DODGED!"); CombatFx.Push("dodge", p, h, null).Now = true; if (m.Drag > 0f && hi == 0) { var mf = CombatFx.Push("hookchain", h, p, null); mf.Now = true; mf.Hit = false; } return; }   // 2026-11-23: the chain is thrown (and misses) even when you dive   // the dive goes under it
             if (h.EquippedWeapon == null) return;
             Parry.Unparryable = red; int hp0 = p.Hp, par0 = Parry.Count;
-            try { Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, MultOf(m, hi)); }
+            try { if (chainShot) { if (CombatantUtil.Distance(h, p) <= m.Lunge) Melee.HitUnit(h, h.EquippedWeapon, p, MultOf(m, hi)); } else Melee.Swing(h, h.EquippedWeapon, dx / len, dy / len, 0.45f, MultOf(m, hi)); }      // the Verger's chain reaches as far as the move says (Lunge), from where he stands
             finally { Parry.Unparryable = false; }
             if (VergerBoss.IsBeast(h)) { var sf = CombatFx.Push("beastslash", h, p, null); sf.Now = true; sf.Hit = p.Hp < hp0; if (sf.Hit) HitStop(0.05f); }      // 2026-11-21: the claws' slash is drawn, and a landed blow has weight
             if (m.Drag > 0f && hi == 0 && f.Def == Verger && Parry.Count != par0) { var pf = CombatFx.Push("hookchain", h, p, null); pf.Now = true; pf.Hit = true; VergerHook.Begin(f, p, Time.time); return; }      // parried: the tug-of-war
