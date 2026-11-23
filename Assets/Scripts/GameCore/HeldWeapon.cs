@@ -408,11 +408,13 @@ namespace GameCore
         /// <summary>Empty hands: where the two gloves float (centres, character px) at a walk's `phase` (radians) and `swing` (0 still ..
         /// 1 walking): hanging fingers-down (HeldWeaponView turns them) a pixel clear of the torso at the hips, both swaying a pixel
         /// to one side then the other with the steps, snapped to pixels.</summary>
-        public static (float rx, float ry, float lx, float ly) FreeHands(float phase, float swing)
+        public static (float rx, float ry, float lx, float ly) FreeHands(float phase, float swing, float run = 0f)
         {
             float a = Mathf.Sin(phase) * swing;
             float dx = Mathf.Round(1.2f * a);                       // Yan: "pointing down and swinging a little to the sides" - no bob
-            return (14f + dx, 11.5f, 2f + dx, 11.5f);
+            float pump = Mathf.Round(Mathf.Cos(phase) * 2.5f * run);   // 2026-11-23: at a run the arms pump up and down the body, and swing wider
+            dx = Mathf.Round((1.2f + 2.2f * run) * a);
+            return (14f + dx, 11.5f + pump, 2f + dx, 11.5f - pump);
         }
 
         /// <summary>Melee 3: the body's frame through a swing - gathered (half crouch) on the wind-up, a charge, a throw's lift and
@@ -1189,7 +1191,23 @@ namespace GameCore
             r.transform.localRotation = Quaternion.Euler(0f, 0f, f.GunDeg);
         }
 
+        // 2026-11-23 (Yan: "make the hands swing a little with the walk and a lot when running, as a test"): Show is wrapped. The wrapper reads how fast the body really moves (minus UnitLife's own 1 px hop, LifeOff)
+        // and, with a weapon in the hands, bobs the whole held assembly (gun and both hands) a pixel with each step at a walk and 3 px with a lateral rock at a run; empty hands get a wider swing
+        // (HeldPoseMath.FreeHands, RunK). Only for units that UnitLife.Applies to (LifeOn): the rest are as they were.
+        public Vector3 LifeOff; public bool LifeOn; float _runK, _walkK, _phase2; Vector3? _lastPos2;
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
+        {
+            var clean = unitPos - LifeOff; float spd = 0f;
+            if (_lastPos2.HasValue) { float mx = clean.x - _lastPos2.Value.x, my = clean.y - _lastPos2.Value.y, mv = Mathf.Min(Mathf.Sqrt(mx * mx + my * my), 0.5f); float dt = Mathf.Max(Time.deltaTime, 0.0001f); spd = mv / dt; _phase2 += mv * Mathf.PI * 2f / StrideTiles; }
+            _lastPos2 = clean; float wk = LifeOn ? Mathf.Clamp01(spd / 1.5f) : 0f, rk = LifeOn ? Mathf.Clamp01((spd - 3.4f) / 1.0f) : 0f;
+            float k = Mathf.Max(Time.deltaTime, 0.0001f) * 6f; _walkK = Mathf.MoveTowards(_walkK, wk, k); _runK = Mathf.MoveTowards(_runK, rk, k);
+            ShowCore(weapon, armor, unitPos, aimAt, visible, back, offhand);
+            if (!LifeOn || !visible || weapon?.Db == null || JawHold || _walkK < 0.05f) return;
+            float step = Mathf.Sin(_phase2 * 2f) > 0.2f ? 1f : 0f, rock = Mathf.Round(Mathf.Sin(_phase2) * _runK * 1.5f);
+            var d = Local(8f + rock, 8f + Mathf.Round(step * (1f + 2f * _runK) * _walkK)) - Local(8f, 8f);
+            foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf) r.transform.localPosition += d;
+        }
+        void ShowCore(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {
             bool on = visible && weapon?.Db != null; BodyPose = null;
             foreach (var sm in _smear) sm.gameObject.SetActive(false);
@@ -1229,7 +1247,7 @@ namespace GameCore
                 float dt = Mathf.Max(Time.deltaTime, 0.0001f), walking = Mathf.Clamp01(moved / dt / 1.5f);
                 _stepPhase += moved * Mathf.PI * 2f / StrideTiles;
                 _swing = Mathf.MoveTowards(_swing, walking, dt * 4f);
-                var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_stepPhase, _swing);
+                var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_stepPhase, _swing, _runK);
                 _grip.transform.localPosition = Local(rx, ry); _grip.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);   // hanging, fingers down
                 _support.transform.localPosition = Local(lx, ly); _support.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
                 _g = null;

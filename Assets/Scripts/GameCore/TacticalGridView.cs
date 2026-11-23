@@ -860,9 +860,9 @@ namespace GameCore
             if (up && !held && gl <= 0f && UnitLife.Applies(u) && !(u is Player lifeP && (Rt.Of(lifeP).Diving || Time.time < Rt.Of(lifeP).ProneUntil || Body.Down(lifeP))))
             {
                 var (hdx, hdy) = _fx.LastHitDir(u); var (lo, lt) = UnitLife.Pose(u, _motion.IsMoving(u), wf >= 0, marker.flipX ? -1f : 1f, Time.time, hdx, 0f);
-                marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker);
+                marker.transform.position += lo; marker.transform.rotation = Quaternion.Euler(0f, 0f, lt); _lifeTilted.Add(marker); { var lh = Held(marker); lh.LifeOff = lo; lh.LifeOn = true; }
             }
-            else if (_lifeTilted.Remove(marker)) marker.transform.rotation = Quaternion.identity;
+            else if (_lifeTilted.Remove(marker)) { marker.transform.rotation = Quaternion.identity; var lh2 = Held(marker); lh2.LifeOn = false; lh2.LifeOff = Vector3.zero; }
             // a footstep each time a foot comes down (Batch 30)
             _lastFoot.TryGetValue(marker, out int lastWf);
             if (wf >= 0 && wf != lastWf && (u is Player || u is HumanEnemy))
