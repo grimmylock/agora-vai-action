@@ -26,7 +26,7 @@ static class Program {
     if (args.Length > 1 && args[0] == "crownduel") { CrownDuelFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "useframes") { UseFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "packdump") { PackDump(args[1]); return 0; }
-    if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1]); return 0; }
+    if (args.Length > 1 && args[0] == "bossframes") { BossFrames(args[1], args.Length > 2 ? args[2] : "visor"); return 0; }
     if (args.Length > 0 && args[0] == "bossprobe") { BossProbe(args.Length > 1 ? args[1] : "all", args.Length > 2 ? int.Parse(args[2]) : 3); return 0; }
     if (args.Length > 1 && args[0] == "brainframes") { BrainFrames(args[1]); return 0; }
     if (args.Length > 1 && args[0] == "eelframes") { EelFrames(args[1]); return 0; }
@@ -1586,20 +1586,24 @@ static class Program {
     }
   }
 
-  static void BossFrames(string path) {
+  static void BossFrames(string path, string which = "visor") {   // 2026-11-23: "spool" = Spool's duel (the trailer scene): same bot, the barbed bat in his hands
+    bool spool = which == "spool";
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); MacroState.Current.StoryFlags.Clear();
     for (int y = py - 6; y <= py + 6; y++) for (int x = px - 8; x <= px + 10; x++) TerrainMap.SetTileType(x, y, TileType.Empty);
     UnityEngine.Time.time = 30000f; UnityEngine.Time.unscaledTime = 30000f; UnityEngine.Time.timeScale = 1f;
     Rt.SetOffset(p, 0f, 0f); p.HealPermanent(0); p.Hp = p.MaxHp; Rt.Of(p).Focus = Rt.FocusMax;   // full Focus: it can dive his red moves
-    var f = Boss.WakeVisor(p, px + 4, py); var v = f.Unit; Rt.SetOffset(v, 0f, 0f);
+    Boss.Fight f;
+    if (spool) { var hd = ShopDatabase.Items.FirstOrDefault(i => i.Type == "weapon" && i.Category == "melee" && i.Key == "TacticalHatchet"); if (hd != null) { p.AddItem(TestingGround.ItemOf(hd)); p.EquipWeaponFromInventory(hd.Id); } f = SpoolBoss.Spawn(px + 4, py, false); }
+    else f = Boss.WakeVisor(p, px + 4, py);
+    var v = f.Unit; Rt.SetOffset(v, 0f, 0f); string bkey = spool ? "BarbedWireBat" : "SerratedTrenchKnife";
     var inv = System.Globalization.CultureInfo.InvariantCulture; string F(float x) => x.ToString("0.###", inv);
     string Fr(HeldFrame h) => $"[{F(h.GunX)},{F(h.GunY)},{F(h.GunDeg)},{F(h.GripX)},{F(h.GripY)},{F(h.SupX)},{F(h.SupY)},{(h.HasSupport ? 1 : 0)},{(h.Left ? 1 : 0)},{F(h.Lean)},{F(h.HandDeg)},{F(h.Length > 0f ? h.Length : 1f)},\"{h.Body}\"]";
-    var gh = WeaponArt.GripOf("melee", "TacticalHatchet"); var gk = WeaponArt.GripOf("melee", "SerratedTrenchKnife");
+    var gh = WeaponArt.GripOf("melee", "TacticalHatchet"); var gk = WeaponArt.GripOf("melee", bkey);
     int armor = Array.IndexOf(SpriteAtlasIndex.Armor, p.EquippedArmor?.Name ?? "");
     var sb = new System.Text.StringBuilder();
     sb.Append("{\"origin\":[" + px + "," + py + "],\"armor\":" + armor + ",\"cuff\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorCuff[armor] : "#5a4a36") + "\",\"glove\":\"" + (armor >= 0 ? SpriteAtlasIndex.ArmorGlove[armor] : "#3d4148")
-      + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + Boss.Visor.Hp + ",\"frames\":[");
+      + "\",\"gh\":[" + string.Join(",", gh.Select(F)) + "],\"gk\":[" + string.Join(",", gk.Select(F)) + "],\"maxhp\":" + (spool ? Boss.Spool.Hp : Boss.Visor.Hp) + ",\"which\":\"" + which + "\",\"bkey\":\"" + bkey + "\",\"frames\":[");
     float real = 1f / 30f, bossSwung = -99f, parryAt = -99f, lastStrike = -1f, lootAt = -1f, end = -1f; int strike = 0, staggers = 0; bool fire = false, wasOpen = false; float backUntil = -1f; var moves = new List<string>();
     for (int k = 0; k < 30 * 300; k++) {
       float scale = UnityEngine.Time.timeScale, gdt = real * scale;
@@ -1643,7 +1647,7 @@ static class Program {
       HeldFrame PAt(float sw) => HeldPoseMath.Frame("melee", gh, local, 0f, 0f, 0f, sw, 1f, "none", 1, null, ph, -1f, 99f,
         "TacticalHatchet", mc.Move, mc.From, now - mc.GuardAt, now - mc.BrokenAt);
       HeldFrame BAt(float sw) => HeldPoseMath.Frame("melee", gk, aw + 180f, 0f, 0f, 0f, sw, 1f, "none", 1, null, bh, -1f, 99f,
-        vc.PoseKey ?? "SerratedTrenchKnife", vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt, vc.OpenK(now));
+        vc.PoseKey ?? bkey, vc.Move, vc.From, now - vc.GuardAt, now - vc.BrokenAt, vc.OpenK(now));
       var fp = PAt(mc.Since(now)); var fb = BAt(vc.Since(now));
       string psm = Smear(PAt, mc.Since(now), ph), bsm = Smear(BAt, vc.Since(now), bh);
       sb.Append((k > 0 ? "," : "") + $"{{\"rt\":{F(UnityEngine.Time.unscaledTime - 30000f)},\"gt\":{F(now - 30000f)},\"ts\":{F(UnityEngine.Time.timeScale)},\"slow\":{(Rt.SlowMo ? 1 : 0)}"

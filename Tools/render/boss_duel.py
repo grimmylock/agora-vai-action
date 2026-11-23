@@ -13,7 +13,7 @@ R = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SPR = os.path.join(R, "Assets/Resources/Sprites")
 FONTS = os.path.join(R, "Assets/Resources/Fonts")
 d = json.load(open(sys.argv[1])); out = sys.argv[2]; os.makedirs(out, exist_ok=True)
-frames = d["frames"]; ox, oy = d["origin"]
+frames = d["frames"]; ox, oy = d["origin"]; WHICH = d.get("which", "visor")
 Z = 3                                             # canvas px per character px
 X0, Y0, W, H = ox - 5.5, oy - 4.4, 14.0, 7.9      # the view, tiles
 OUT_W, OUT_H = int(W * 16 * Z * 2), int(H * 16 * Z * 2)
@@ -33,19 +33,28 @@ CREAM, YELLOW, RED = hexc("#e8dcc0"), hexc("#e0c060"), hexc("#b8302a")
 
 atlas = Image.open(os.path.join(SPR, "armor_atlas.png")).convert("RGBA")
 ai = max(0, d["armor"]); pbody = atlas.crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16))
-vstrip = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit.png")).convert("RGBA")
+vstrip = Image.open(os.path.join(SPR, "armor_unique_barbwire_coat.png" if WHICH == "spool" else "armor_unique_black_visor_suit.png")).convert("RGBA")
 vcell = [vstrip.crop((i * 16, 0, i * 16 + 16, 16)) for i in range(6)]
 # Melee 3: the swing's body frames - his from the unique strip (front row), yours from armor_pose_<key>.png
 PKEYS = ["crouch", "crouch_h", "kneel", "kneel_h", "lean_h_l", "lean_h_r", "lean_l", "lean_r", "lunge_h_l", "lunge_h_r", "lunge_l", "lunge_r", "lying", "sit_h_l", "sit_h_r", "sit_l", "sit_r", "stagger_h_l", "stagger_h_r", "stagger_l", "stagger_r"]
-vposes = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit_poses.png")).convert("RGBA")
-def vpose(key, base): return vposes.crop((PKEYS.index(key) * 16, 0, PKEYS.index(key) * 16 + 16, 16)) if key else base
+vposes = Image.open(os.path.join(SPR, "armor_unique_black_visor_suit_poses.png")).convert("RGBA") if WHICH != "spool" else None
+def vpose(key, base): return vposes.crop((PKEYS.index(key) * 16, 0, PKEYS.index(key) * 16 + 16, 16)) if key and vposes is not None else base
 PP = {}
 def ppose(key, base):
     if not key: return base
     if key not in PP: PP[key] = Image.open(os.path.join(SPR, f"armor_pose_{key}.png")).convert("RGBA").crop(((ai % 16) * 16, (ai // 16) * 16, (ai % 16) * 16 + 16, (ai // 16) * 16 + 16))
     return PP[key]
-hatchet = Image.open(os.path.join(SPR, "Weapons/weapon_TacticalHatchet.png")).convert("RGBA")
-knife = Image.open(os.path.join(SPR, "Weapons/weapon_SerratedTrenchKnife.png")).convert("RGBA")
+import re
+_hw = open(os.path.join(R, "Assets/Scripts/GameCore/HeldWeapon.cs")).read()
+def _tab(name, key, default):
+    m = re.search(r'\["%s"\] = ([0-9.]+)f' % key, _hw.split(name + " = new")[1].split("};")[0]); return float(m.group(1)) if m else default
+def weapon_img(key):
+    """2026-11-23: the weapon as the game now draws it in the hand: the inventory picture shrunk by Dense[key] when it has one (else the mini), times HandScale[key]; returns the picture at the old in-hand scale and the scale to apply to the grip."""
+    k, hs = _tab("Dense", key, 1.0), _tab("HandScale", key, 1.0)
+    if k > 1.0: im = Image.open(os.path.join(SPR, f"Weapons/weapon_{key}_hd.png")).convert("RGBA"); return im.resize((max(1, round(im.width / k * hs)), max(1, round(im.height / k * hs))), Image.LANCZOS), hs
+    im = Image.open(os.path.join(SPR, f"Weapons/weapon_{key}.png")).convert("RGBA"); return im.resize((max(1, round(im.width * hs)), max(1, round(im.height * hs))), Image.NEAREST), hs
+hatchet, _hsp = weapon_img("TacticalHatchet"); d["gh"] = [v * _hsp for v in d["gh"]]
+knife, _hsb = weapon_img(d.get("bkey", "SerratedTrenchKnife")); d["gk"] = [v * _hsb for v in d["gk"]]
 def fx(n, k=3): im = Image.open(os.path.join(SPR, f"Fx/{n}.png")).convert("RGBA"); w = im.width // k; return [im.crop((i * w, 0, i * w + w, im.height)) for i in range(k)]
 SPARK, PSI, BLOOD, PUFF = fx("fx_hit_spark"), fx("fx_hit_psi"), fx("fx_hit_blood"), fx("fx_muzzle_puff")
 POOL = fx("fx_blood_pool", 5)
@@ -240,7 +249,7 @@ def hud(img, f, punch):
         fill = RED if not stag else (255, 200, 190, 255) if int(f["rt"] * 30) % 2 else RED
         if phase == 2 and not stag: fill = (int(184 + 71 * (0.5 + 0.5 * math.sin(f["rt"] * 6))), 64, 48, 255)
         if hp > 0: dd.rectangle((x0 + 4, y0 + 4, x0 + 4 + (BW - 8) * hp, y0 + 24), fill=fill)
-        name = "THE VISOR" + ("  II" if phase == 2 else "")
+        name = ("SPOOL" if WHICH == "spool" else "THE VISOR") + ("  II" if phase == 2 else "")
         dd.text((img.width // 2, y0 - 22), name, font=NAME, fill=CREAM, anchor="mm")
         gd = f["b"][9] if len(f["b"]) > 9 else 0
         opn = f["b"][10] if len(f["b"]) > 10 else 0
@@ -265,23 +274,20 @@ def hud(img, f, punch):
     if f["slow"]: dd.text((img.width - 30, img.height - 50), "BULLET TIME", font=NAME, fill=(150, 200, 255), anchor="rm")
 
 if __name__ == "__main__":
-    tmp = os.path.join(out, "_frames"); os.makedirs(tmp, exist_ok=True)
-    keys, sheet = [], []
-    want = {"glint": None, "parry": None, "stagger": None, "aura": None, "dodge": None, "finisher": None, "smoke": None}
-    for i, f in enumerate(frames):
+    # 2026-11-23: an excerpt for the trailer: argv[3], argv[4] = start and end in real seconds (default: 3 s before the first perfect parry, 12 s long); mp4 + gif
+    ev_i = [i for i, f in enumerate(frames) for e in f["ev"] if e[0] == "parry" and e[3]]
+    t0 = float(sys.argv[3]) if len(sys.argv) > 3 else (frames[ev_i[0]]["rt"] - 3.0 if ev_i else 0.0)
+    t1 = float(sys.argv[4]) if len(sys.argv) > 4 else t0 + 12.0
+    i0 = next(i for i, f in enumerate(frames) if f["rt"] >= t0); i1 = next((i for i, f in enumerate(frames) if f["rt"] >= t1), len(frames))
+    tmp = os.path.join(out, "_frames"); os.makedirs(tmp, exist_ok=True); n = 0
+    for i in range(max(0, i0 - 45), i1):                   # 1.5 s of warm-up so the camera and the effects are where they would be
         img = draw(i)
-        img.convert("RGB").save(os.path.join(tmp, f"{i:05d}.png"))
-        for e in f["ev"]:
-            k = e[0] if not (e[0] == "parry" and not e[3]) else None
-            if k in want and want[k] is None: want[k] = i + (4 if k in ("parry", "finisher", "aura") else 2)
-    for k in [0, 20] + [v for v in want.values() if v is not None]:
-        k = min(k, len(frames) - 1); sheet.append(Image.open(os.path.join(tmp, f"{k:05d}.png")))
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "30", "-i", os.path.join(tmp, "%05d.png"), "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                    "-crf", "20", os.path.join(out, "boss_duel.mp4")], check=True)
-    cw, ch = OUT_W // 3, OUT_H // 3; cols = 3; rows = (len(sheet) + cols - 1) // cols
-    s = Image.new("RGB", (cols * cw + (cols + 1) * 8, rows * ch + (rows + 1) * 8), (24, 26, 28))
-    for n, im in enumerate(sheet): s.paste(im.resize((cw, ch), Image.LANCZOS), (8 + (n % cols) * (cw + 8), 8 + (n // cols) * (ch + 8)))
-    s.save(os.path.join(out, "boss_duel_sheet.png"))
+        if i >= i0: img.convert("RGB").save(os.path.join(tmp, f"{n:05d}.png")); n += 1
+    name = f"duel_{WHICH}"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "30", "-i", os.path.join(tmp, "%05d.png"), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", os.path.join(out, name + ".mp4")], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "30", "-i", os.path.join(tmp, "%05d.png"), "-vf", "scale=720:-1:flags=neighbor,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=none", "-loop", "0", os.path.join(out, name + ".gif")], check=True)
+    mid = [Image.open(os.path.join(tmp, f"{k:05d}.png")) for k in (0, n // 4, n // 2, 3 * n // 4)]
+    s_ = Image.new("RGB", (OUT_W, OUT_H * 2 // 2)); 
+    sheet = Image.new("RGB", (OUT_W // 2 * 2, OUT_H // 2 * 2)); [sheet.paste(m.resize((OUT_W // 2, OUT_H // 2), Image.LANCZOS), ((q % 2) * OUT_W // 2, (q // 2) * OUT_H // 2)) for q, m in enumerate(mid)]; sheet.save(os.path.join(out, name + "_sheet.png"))
     for fn in os.listdir(tmp): os.remove(os.path.join(tmp, fn))
-    os.rmdir(tmp)
-    print(len(frames), "frames,", round(frames[-1]["rt"], 1), "s real ->", os.path.join(out, "boss_duel.mp4"))
+    os.rmdir(tmp); print(n, "frames,", round(frames[i1 - 1]["rt"] - frames[i0]["rt"], 1), "s ->", os.path.join(out, name + ".mp4"), "/ .gif")
