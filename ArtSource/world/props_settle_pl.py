@@ -20,9 +20,23 @@ def _load(item):
     src = src.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)); arr = np.array(src); al = arr[..., 3] >= 110
     q = Image.fromarray(arr[..., :3]).quantize(colors=28, method=Image.MEDIANCUT, dither=Image.NONE).convert("RGB"); out = np.dstack([np.array(q), np.where(al, 255, 0).astype(np.uint8)]); out[~al] = 0
     return Image.fromarray(out.astype(np.uint8), "RGBA")
+K = (20, 22, 23)            # the game's hard dark outline colour (worldlib.K)
+def _finish_black(im, pivot, shadow, tall=False):
+    """2026-11-24 (Yan: "some have hard black outlines and others don't, all of them should"): every settled-place prop gets a hard near-black 1 px outline all round, like the other furniture. An edge that is already dark (the Pixel Lab sprite drew its own outline there) is left alone,
+    so no prop gets a double-thick edge. Pad 1, double density, as finish2 does."""
+    a = np.array(im).astype(np.int32); H, W = a.shape[:2]
+    big = np.zeros((H + 2, W + 2, 4), np.int32); big[1:H + 1, 1:W + 1] = a; al = big[..., 3] > 0; o = big.copy(); HH, WW = al.shape
+    for y in range(HH):
+        for x in range(WW):
+            if al[y, x]: continue
+            nb = [big[y + dy, x + dx] for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)) if 0 <= x + dx < WW and 0 <= y + dy < HH and al[y + dy, x + dx]]
+            if not nb: continue
+            if all(int(c[0]) + int(c[1]) + int(c[2]) < 150 for c in nb): o[y, x] = (int(min(nb, key=lambda c: c[0] + c[1] + c[2])[0]), int(min(nb, key=lambda c: c[0] + c[1] + c[2])[1]), int(min(nb, key=lambda c: c[0] + c[1] + c[2])[2]), 255)   # it already has its own dark edge: keep that colour
+            else: o[y, x] = (K[0], K[1], K[2], 255)
+    return Prop(Image.fromarray(o.astype(np.uint8), "RGBA"), (pivot[0] + 1, pivot[1] + 1), shadow, tall, scale=2)
 def _make(item):
     def f(seed):
-        im = _load(item); return finish2(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1))
+        im = _load(item); return _finish_black(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1))
     return f
 NEW = {}; VARIANTS = {}
 for item in ITEMS:
