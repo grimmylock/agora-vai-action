@@ -172,3 +172,10 @@ Longer list: `ACTION_DESIGN.md` "Later list".
   loses them, so reinstall per session): `level-design` https://github.com/Scouten2/LevelDesignSkill (dungeon mission graphs,
   `graph_check.py`) - `agora-vai-pixel-art` (Yan's own, on the account). `pixelfx` (https://github.com/patch-gg/pixelfx, effects) is
   already in the repo at `.claude/skills/pixelfx`: nothing to install.
+
+## Handoff, 2026-11-24 (what a fresh session should know first)
+
+- Branch `realtime-proto` is current; `main` was last fast-forwarded at the Sledgehammer spring batch (9dw). Batches 9dv-9eh in `ArtSource/WORK_LOG.md` are everything since (Verger scythe flip, melee weapon sheet, item-use fix, walk/run/lean fixes, mutants no longer flee at a health share, squads barred from empty dungeons and Safe Zones, Tier 1 band, village + hub + barracks crews and services, medic/bar dialogue). **None of it has been run in Unity** - Yan tests next; his reports come back as screenshots/videos.
+- Pixel Lab: key is a network secret on the environment (`api.pixellab.ai`, `Authorization`), `.mcp.json` points the MCP at it; the repo's `ArtSource/pixellab_*.py` scripts call the REST API with no header and rely on the proxy injecting the key. On 2026-11-24 every call returned 401 "Not authenticated" after Yan rotated the key: check that first (`curl https://api.pixellab.ai/v2/balance`). If 401, the saved secret is wrong or not applied: ask Yan to re-save it in the environment's settings, then use a fresh session.
+- Next work Yan asked for: real props for settled places (beds, bar counter, bottle shelf, medical cabinet - currently stand-ins from `desk/armchair/lockers`), lines for the other crew members (guards, villagers, traders), more world detail outside the safe zones, the stutter hunt (`[PERF]` Console lines from `Perf.cs`; waiting on Yan's log), Yan's description of the boss counter-timing mismatch.
+
