@@ -7,7 +7,7 @@ def enc(p):
 ea, sa = enc(a); eb, sb = enc(b); W = max(sa[0], sb[0]); Hh = max(sa[1], sb[1])
 body = {"start_image": ea, "end_image": eb, "action": act, "image_size": {"width": min(128, W), "height": min(128, Hh)}, "seed": seed, "no_background": True}
 def call(url, data=None):
-    req = urllib.request.Request("https://api.pixellab.ai" + url, data=json.dumps(data).encode() if data else None, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request("https://api.pixellab.ai" + url, data=json.dumps(data).encode() if data else None, headers=__import__('pixellab_auth').HEADERS)
     try: return json.load(urllib.request.urlopen(req, timeout=120))
     except urllib.error.HTTPError as e: print(e.code, e.read()[:600]); raise
 r = call("/v2/interpolation-v2", body); jid = r.get("background_job_id"); print({k: v for k, v in r.items() if k != "images"})

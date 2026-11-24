@@ -6,7 +6,7 @@ im = Image.open(src).convert("RGBA"); W = (im.width + 3) // 4 * 4; Hh = (im.heig
 cv = Image.new("RGBA", (W, Hh), (0, 0, 0, 0)); cv.alpha_composite(im, (0, Hh - im.height)); b = io.BytesIO(); cv.save(b, "PNG")
 body = {"image": {"type": "base64", "base64": base64.b64encode(b.getvalue()).decode()}, "description": desc, "width": W, "height": Hh, "seed": seed, "no_background": True}
 def call(url, data=None):
-    req = urllib.request.Request("https://api.pixellab.ai" + url, data=json.dumps(data).encode() if data else None, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request("https://api.pixellab.ai" + url, data=json.dumps(data).encode() if data else None, headers=__import__('pixellab_auth').HEADERS)
     try: return json.load(urllib.request.urlopen(req, timeout=120))
     except urllib.error.HTTPError as e: print(e.code, e.read()[:500]); raise
 r = call("/v2/edit-image-pixen", body); jid = r.get("background_job_id"); print({k: v for k, v in r.items() if k != "image"})

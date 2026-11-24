@@ -7,7 +7,7 @@ def b64(p, mode='RGBA'):
 im = Image.open(src)
 body = {"description": desc, "image_size": {"width": im.width, "height": im.height}, "inpainting_image": b64(src), "mask_image": b64(mask, 'RGB'), "no_background": True, "seed": seed, "text_guidance_scale": 8, "detail": "highly detailed", "shading": "detailed shading", "outline": "single color black outline"}
 def call(url, data=None):
-    req = urllib.request.Request('https://api.pixellab.ai' + url, data=json.dumps(data).encode() if data else None, headers={'Content-Type': 'application/json'})
+    req = urllib.request.Request('https://api.pixellab.ai' + url, data=json.dumps(data).encode() if data else None, headers=__import__('pixellab_auth').HEADERS)
     try: return json.load(urllib.request.urlopen(req, timeout=120))
     except urllib.error.HTTPError as e: print(e.code, e.read()[:600]); raise
 r = call('/v2/inpaint', body); print({k: v for k, v in r.items() if k != 'image'} if isinstance(r, dict) else r)
