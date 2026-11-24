@@ -192,6 +192,8 @@ namespace GameCore
 
         static readonly Dictionary<ICombatant, float> NextTurn = new Dictionary<ICombatant, float>();
 
+        /// <summary>2026-11-24 (static-state audit, STATICAUDIT=1): a New Game or a Load in the same session must start the real-time world from nothing - the minds of the old enemies, the round timer, the old players' states - but a joined friend's input stays (co-op joins before the world is built).</summary>
+        public static void ResetWorld() { var keep = new List<KeyValuePair<Player, Input>>(Remote); Reset(); foreach (var kv in keep) Remote[kv.Key] = kv.Value; }
         public static void Reset() { RtAi.Reset(); Paused = false; States.Clear(); Remote.Clear(); SlowMo = false; Body.Reset(); Off.Clear(); Was.Clear(); Slide.Clear(); NextTurn.Clear(); Attention.Clear(); Explosions.Reset(); NpcFights.Reset(); Gunplay.Reset(); Melee.Reset(); Boss.Reset(); BrainBoss.Reset(); _round = 0f; }
 
         /// <summary>Move a unit by (dx, dy) tiles, sliding along walls. Crossing into the next tile is a real step for the

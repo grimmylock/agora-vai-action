@@ -195,6 +195,7 @@ namespace GameCore
         {
             Survival.Stop();                                                       // loading a character ends a survival run
             TestingGround.Session = false;
+            GameBootstrap.ResetSession();                                          // 2026-11-24: nothing of the world you were in comes along
             if (Dir == null || string.IsNullOrEmpty(characterId) || !File.Exists(CharFile(characterId)))
             {
                 GameLog.Write("No save file found.");

@@ -74,6 +74,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "5") WeaponApReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
+    if (Environment.GetEnvironmentVariable("STATICAUDIT") == "1") StaticAudit();
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "9") TakenSim();
@@ -2949,7 +2950,8 @@ static class Program {
       bf.StaggerUntil = -1f; Boss.Stagger(bf.Unit, 1f); bf.LastParryAt -= Boss.GuardRecovers + 1f;
       Check(!Boss.Stagger(bf.Unit, 1f) && Boss.GuardDamage(bf) == 1, "Boss: parries toward a stagger fade after a while");
       // "parries are probably too hard": the glint is a fixed beat before each hit, and a parry that lands frees the key for the next hit
-      var pl = Arena(out int qx, out int qy); Rt.On = true; bf.StaggerUntil = -1f; bf.Unit.X = qx + 1; bf.Unit.Y = qy;
+      var pl = Arena(out int qx, out int qy); Rt.On = true; if (!Boss.Fights.Contains(bf)) Boss.Fights.Add(bf);   // (a New Game now resets the boss fights, as it should: this check keeps its fight)
+      bf.StaggerUntil = -1f; bf.Unit.X = qx + 1; bf.Unit.Y = qy;
       var mv = Boss.Visor.Moves.First(m => m.Name == "Flurry"); float t0 = UnityEngine.Time.time;
       Boss.Begin(bf, mv, t0, 1f); float glintAt = -1f;
       for (int i = 0; i < 60 && glintAt < 0f; i++) { UnityEngine.Time.time += 1f / 60f; Boss.Tick(bf, pl); if (bf.GlintAt >= t0) glintAt = bf.GlintAt; }
@@ -5510,6 +5512,37 @@ static class Program {
       Check(Math.Abs(light - 1f) < 0.001f && Math.Abs(heavy - 0.9f) < 0.001f, $"heavy armor ({heavyKey.def.Name}) slows the walk 10%: light {light}, heavy {heavy}"); }
   }
 
+  // STATICAUDIT=1: what a second Play keeps (Enter Play Mode with domain reload off). Every static field of GameCore / GameData is summarised (value, or count + the first items of a collection), the game is started, played for a while
+  // (world ticks, an hour of A-Life, flags, damage), started again, and the fields that differ from the first start's are listed: state that "New Game" does not put back. Time, seeds and caches that depend on play are expected noise.
+  static string Sum(object v) {
+    if (v == null) return "null";
+    if (v is string str) return str;
+    if (v is System.Collections.IDictionary d) return "dict#" + d.Count;
+    if (v is System.Collections.IEnumerable en && !(v is UnityEngine.Object)) { int n = 0; var sb = new System.Text.StringBuilder(); foreach (var x in en) { if (n++ < 6) sb.Append(x is string || x == null || x.GetType().IsPrimitive || x.GetType().IsEnum ? (x?.ToString() ?? "null") : x.GetType().Name).Append(','); } return "list#" + n + ":" + sb; }
+    var t = v.GetType(); if (t.IsPrimitive || t.IsEnum || v is decimal) return v.ToString();
+    if (t.IsValueType) return v.ToString();
+    return t.Name;
+  }
+  static void StaticAudit() {
+    var types = typeof(Player).Assembly.GetTypes().Where(t => (t.Namespace == "GameCore" || t.Namespace == "GameData") && !t.IsGenericTypeDefinition && !t.Name.Contains("<")).ToList();
+    var fields = types.SelectMany(t => t.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly)).Where(f => !f.IsLiteral && !f.IsInitOnly || f.IsInitOnly && typeof(System.Collections.IEnumerable).IsAssignableFrom(f.FieldType) && f.FieldType != typeof(string)).Where(f => !f.Name.Contains("<")).ToList();
+    System.Collections.Generic.Dictionary<string, string> Snap() { var r = new System.Collections.Generic.Dictionary<string, string>(); foreach (var f in fields) { try { r[f.DeclaringType.Name + "." + f.Name] = Sum(f.GetValue(null)); } catch (Exception e) { r[f.DeclaringType.Name + "." + f.Name] = "!" + e.GetType().Name; } } return r; }
+    bool q = GameLog.Quiet; GameLog.Quiet = true;
+    GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true;
+    var s1 = Snap();
+    var p = Player.Current;
+    for (int i = 0; i < 2400; i++) {
+      UnityEngine.Time.time += 0.05f; try { Rt.WorldTick(p); } catch (Exception) { }
+      if (i % 4 == 0) { try { TurnLoop.TickAwareness(); } catch (Exception) { } }
+      if (i == 200) { Story.Set("audit_flag"); p.Hp = Math.Max(1, p.Hp - 20); p.Ru += 99; }
+      if (i % 300 == 299) { try { Atmosphere.Advance(60); } catch (Exception) { } }
+    }
+    GameBootstrap.StartNewGame(); GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player; Rt.On = true;
+    var s2 = Snap(); GameLog.Quiet = q;
+    var diff = s1.Where(kv => s2.TryGetValue(kv.Key, out var v) && v != kv.Value).OrderBy(kv => kv.Key).ToList();
+    Console.WriteLine($"STATICAUDIT {fields.Count} static fields, {diff.Count} differ after play + New Game:");
+    foreach (var kv in diff) Console.WriteLine($"  {kv.Key}: first start [{(kv.Value.Length > 70 ? kv.Value.Substring(0, 70) : kv.Value)}] -> second start [{(s2[kv.Key].Length > 70 ? s2[kv.Key].Substring(0, 70) : s2[kv.Key])}]");
+  }
   // VISBENCH=1: what one Vision.Update costs (line of sight to every cell within Vision.MaxRadius) on the open tier maps, ms per call; compare runs with different MaxRadius.
   static void VisionBench() {
     foreach (var zid in new[] { "abandoned_city", "perimeter", "marshes" }) {

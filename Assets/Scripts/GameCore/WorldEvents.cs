@@ -297,6 +297,7 @@ namespace GameCore
         // Yan: the off-screen news "need to be connected to actual world events". Only SquadManager calls News(),
         // and only for things that just happened: a squad wiped out in a fight (kind F), a squad moving (kind M).
         static int _lastRadioTick = -1;
+        public static void ResetSession() { _lastRadioTick = -1; }
 
         /// <summary>Records it for the rumor mill (about 30 kept). Gunfire in a zone next to yours also comes
         /// over the radio right away, at most once a game hour.</summary>

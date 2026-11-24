@@ -115,6 +115,11 @@ namespace GameCore
         /// death restart can call the exact same path instead of duplicating it. Doesn't touch
         /// GameServices or the MonoBehaviour components (TacticalGridView etc.) - those don't need
         /// recreating, they already read everything fresh from the statics reset here.</summary>
+        /// <summary>2026-11-24 (static-state audit): the statics of the running game that a New Game / Load must put back (with domain reload off they survive Play, and with it on they still survive a second New Game in one session).</summary>
+        public static void ResetSession()
+        {
+            Rt.ResetWorld(); MutantAttack.Reset(); StoryBarks.Reset(); Banter.Reset(); TurnLoop.ResetSession(); WorldEvents.ResetSession();
+        }
         public static void StartNewGame(CharacterSpec spec = null, string startZone = null, bool save = true)
         {
             Survival.Stop();                                                       // a new game is never a survival run (Survival.Begin turns it on)
@@ -124,6 +129,7 @@ namespace GameCore
             GameState.Current = new GameState();
             MacroState.Current = new MacroState();
             FactionDeck.Reset(); GarrisonRaid.Reset();
+            ResetSession();
             Companion.Current = null;
             StorySystem.ResetWorld();
 
