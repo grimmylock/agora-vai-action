@@ -88,6 +88,7 @@ namespace GameCore
             float Edge(int cx, int cy, int nx, int ny)
             {
                 if (!TerrainMap.CanEnterTile(nx, ny)) return float.PositiveInfinity;
+                if (unit is Mutant bm && SquadManager.Barred(bm, cx, cy, nx, ny)) return float.PositiveInfinity;   // a Safe Zone that is not theirs
                 int n = ny * W + nx;
                 if (known != null && n != goal && known.Contains(n)) return float.PositiveInfinity;   // Batch 49: walk around anomalies you know about
                 if (exits != null && n != goal && exits.Contains(n)) return float.PositiveInfinity;

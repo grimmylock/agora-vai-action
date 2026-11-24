@@ -50,6 +50,29 @@ namespace GameCore
             Place(mission, landmark, "Mutant", Enumerable.Range(0, n).Select(_ => EncounterGeneration.CreateMutantFromDb(def, 0, 0)).ToList());
         }
 
+        /// <summary>2026-11-24 (Yan: "the rookie village was empty"; ACTION_DESIGN: a Safe Zone with guards, friendly squads, a medic): once per game, the village gets its people - three guards at the fire, two at the medic's house, two at the repair bench,
+        /// two at the bunkhouse. They are Wanderer squads on a story post (they hold it; a hostile that gets close is fought by the normal squad skirmish, NpcFights).</summary>
+        static void TickResidents()
+        {
+            if (Story.Has("village_folk") || !TerrainMap.Landmarks.Any(l => l.Name == Yefim)) return;
+            Story.Set("village_folk");
+            void Crew(string tag, string at, string who, string rank, int n)
+            {
+                var list = new List<Mutant>();
+                for (int i = 0; i < n; i++)
+                {
+                    var (w, a) = EncounterGeneration.PickFactionLoadout("Wanderers", rank, 1, i == 0);
+                    list.Add(new HumanEnemy(who, 0, 0, "Wanderers", rank, w, a));
+                }
+                Place(tag, at, "Wanderers", list);
+            }
+            Crew("village_guards", Yefim, "Village Guard", "Experienced", 3);
+            Crew("village_medic", "Medic's House", "Villager", "Rookie", 2);
+            Crew("village_bench", "Repair Bench", "Villager", "Rookie", 2);
+            Crew("village_bunk", Bunkhouse(), "Villager", "Rookie", 2);
+        }
+        static string Bunkhouse() => Stas;
+
         static void Raiders(string mission, string landmark, int n)
         {
             var list = new List<Mutant>();
@@ -282,6 +305,7 @@ namespace GameCore
             if (Story.Step("raiders") == 1 && Cleared("raiders")) { Story.SetStep("raiders", 2); Story.SetObjective("raiders", "Tell Stas the camp is clear", Stas); }
             if (Story.Step("key") == 2 && Cleared("key")) { Story.SetStep("key", 3); Story.SetObjective("key", "Back to the Headman", Headman); }
             TickDefenceStart();
+            TickResidents();
             GreyRobes.TickSight(Player.Current);
             float h = MacroState.Current.Hour;
             if (Story.Step("burst") == 0 && Story.IsDone("fence") && Story.IsDone("raiders") && (h >= 21f || h < 5f))

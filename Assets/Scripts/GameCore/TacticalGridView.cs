@@ -324,7 +324,7 @@ namespace GameCore
             foreach (var (sr, name) in _landmarkMarkers)
             {
                 bool goal = StorySystem.IsObjective(zoneId, name);
-                sr.color = goal ? new Color(1f, 0.8f, 0.2f, pulse) : new Color(0.85f, 0.85f, 0.6f);
+                sr.color = goal ? new Color(1f, 0.8f, 0.2f, pulse) : new Color(0f, 0f, 0f, 0f);   // 2026-11-24 (Yan: yellow dots everywhere marking points of interest): only the current objective shows; the other landmarks draw nothing
                 sr.transform.localScale = Vector3.one * TileWorldSize * (goal ? 0.6f : 0.4f);
             }
             UpdateHover(player);

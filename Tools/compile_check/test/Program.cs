@@ -3321,6 +3321,22 @@ static class Program {
 
   // 2026-11-23: the scythe's spring
   static void DungeonSquadChecks() {
+    { MacroState.Current.CurrentZoneId = "bonfire_village"; TerrainMap.BuildTerrainForZone("bonfire_village");
+      var rw = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1, false); var raider = new HumanEnemy("Raider", 79, 145, "Raiders", "Rookie", rw.Item1, rw.Item2);
+      var mut = EncounterGeneration.CreateMutantFromDb(MutantDatabase.Tiers["tier1"]["BlindMaw"], 79, 145);
+      var ww = EncounterGeneration.PickFactionLoadout("Wanderers", "Rookie", 1, false); var wand = new HumanEnemy("Wanderer", 79, 145, "Wanderers", "Rookie", ww.Item1, ww.Item2);
+      Check(TerrainMap.RegionAt(79, 145) != "bonfire_village" && TerrainMap.RegionAt(79, 150) == "bonfire_village", "the village gate: (79,145) outside, (79,150) inside (" + TerrainMap.RegionAt(79, 145) + " / " + TerrainMap.RegionAt(79, 150) + ")");
+      Check(SquadManager.Barred(raider, 79, 145, 79, 148) && SquadManager.Barred(mut, 79, 145, 79, 148) && !SquadManager.Barred(wand, 79, 145, 79, 148) && !SquadManager.Barred(raider, 79, 150, 79, 151),
+        "Safe Zone: Raiders and mutants may not step in from outside, Wanderers may, and nobody is stopped inside");
+      var sq = SquadManager.CreateOfflineSquad("perimeter", "Raiders", 3); foreach (var hm in sq.Members.OfType<HumanEnemy>()) hm.Rank = "Veteran";
+      var sq1 = SquadManager.CreateOfflineSquad("perimeter", "Raiders", 3); foreach (var hm in sq1.Members.OfType<HumanEnemy>()) hm.Rank = "Experienced";
+      Check(!SquadManager.InBand(sq, "perimeter") && SquadManager.InBand(sq1, "perimeter") && SquadManager.InBand(sq, "marshes") == false, "Tier 1 takes Tier 1 leaders only (a Veteran-led gang is out of band there)");
+      MacroState.Current.OfflineSquads.Remove(sq); MacroState.Current.OfflineSquads.Remove(sq1); }
+    { Story.Reset(); var before = MacroState.Current.OfflineSquads.Count; Tier1Story.Tick();
+      var folk = MacroState.Current.OfflineSquads.Where(q => q.QuestId != null && q.QuestId.StartsWith("story:village_")).ToList();
+      Check(folk.Count == 4 && folk.Sum(q => q.Members.Count) == 9 && folk.All(q => q.Members.All(mm => TerrainMap.RegionAt(mm.X, mm.Y) == "bonfire_village")), "Bonfire Village has its people: 4 crews, 9 Wanderers, all inside the walls (" + folk.Count + " crews, " + folk.Sum(q => q.Members.Count) + " people)");
+      Tier1Story.Tick(); Check(MacroState.Current.OfflineSquads.Count(q => q.QuestId != null && q.QuestId.StartsWith("story:village_")) == 4, "...and only once");
+      foreach (var q in folk) { MacroState.Current.OfflineSquads.Remove(q); EncounterState.Enemies.RemoveAll(e => q.Members.Contains(e)); } }
     var bad = new List<string>(); foreach (var z in MacroMapDatabase.Zones) if (z.IsDungeon && z.AllowedFactions.Count == 0) foreach (var f in new[] { "Garrison", "Raiders", "Mutant", "Obelisk", "Wanderers" }) if (SquadManager.CanEnter(z.Id, f)) bad.Add(z.Id + "/" + f);
     Check(bad.Count == 0, "No squad may enter a dungeon with no inhabitants of its own (the cathedral, boss arenas): " + string.Join(", ", bad));
     Check(!SquadManager.CanEnter("abandoned_cathedral", "Garrison") && SquadManager.CanEnter("abandoned_city", "Garrison"), "The Verger's cathedral refuses a Garrison squad, the city round it does not");
@@ -6961,6 +6977,7 @@ static class Program {
       EncounterState.Enemies.RemoveAll(e => !foes.Members.Contains(e));      // only these three are in the fight (whoever else the map has by now would change the count the radio waits for)
       foreach (var x in foes.Members) { x.IsAggroed = true; }
       var help = SquadManager.CreateOfflineSquad(nb, "Garrison", 2);
+      foreach (var hm in help.Members.OfType<HumanEnemy>()) hm.Rank = "Experienced";   // 2026-11-24: Tier 1 only takes Tier 1 leaders (SquadManager.InBand), so the neighbour that answers a Tier 1 fight has to be one
       EncounterState.InCombat = true; EncounterState.ResetFight();
       var radio = new ListLog(); GameLog.Target = radio;
       int r = 0; while (!EncounterState.HelpCalled && r++ < 30) TurnLoop.RadioForHelp();

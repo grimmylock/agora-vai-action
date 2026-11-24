@@ -163,8 +163,23 @@ namespace GameCore
         /// Tiers 1-3. Mutants go anywhere. (Walking through on the way to an objective is fine - routes aren't limited.)</summary>
         public static bool InBand(OfflineSquad squad, string zoneId)
         {
-            int home = HomeTier(squad);
-            return home == 0 || (home >= 4) == ((MacroMapDatabase.Find(zoneId)?.Tier ?? 1) >= 4);
+            int home = HomeTier(squad), zt = MacroMapDatabase.Find(zoneId)?.Tier ?? 1;
+            if (zt <= 1 && home >= 2 && squad.QuestId == null && squad.Job == null) return false;   // 2026-11-24 (Yan: Raiders with Tier 2-3 gear rushed him in the starting village): Tier 1 belongs to Tier 1 leaders (Rookie / Experienced); Tier 2-3 squads do not drift down into it
+            return home == 0 || (home >= 4) == (zt >= 4);
+        }
+
+        /// <summary>2026-11-24 (Yan: Maws and Raiders rushed him inside Bonfire Village): a hostile unit does not walk INTO a Safe Zone that is not its faction's. Pathing refuses the step from outside the region to inside it
+        /// (Pathfinding.FindPath Edge). Husks (the night defence), quest and story crews, and anyone friendly to you are exempt; the player's own guns are untouched.</summary>
+        public static bool Barred(Mutant m, int fromX, int fromY, int toX, int toY)
+        {
+            var to = MacroMapDatabase.Find(TerrainMap.RegionAt(toX, toY));
+            if (to == null || !to.IsSafeZone) return false;
+            if (MacroMapDatabase.Find(TerrainMap.RegionAt(fromX, fromY)) == to) return false;     // already inside: no wall between squares of the village
+            string f = m is HumanEnemy h ? h.FactionName : "Mutant";
+            if (f == Husk.Faction || f == "Folk" || to.AllowedFactions.Contains(f)) return false;
+            if (m is HumanEnemy fh && EnemyAI.FriendlyToPlayer(fh)) return false;
+            var q = MacroState.Current.OfflineSquads.FirstOrDefault(s => s.Members.Contains(m));
+            return q == null || (q.QuestId == null && q.Job == null);
         }
 
         // ------------------------------------------------------------------ Batch 76: squads live where their leader belongs

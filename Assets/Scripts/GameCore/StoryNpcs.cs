@@ -74,6 +74,13 @@ namespace GameCore
             return null;
         }
 
+        /// <summary>2026-11-24 (Yan: Yefim "can only be talked to from a very specific angle"): he stands 2 tiles off his landmark, so E counted from the landmark missed his far side. True when the person placed at this landmark is within r - 1 tiles of u.</summary>
+        public static bool PersonNear(string landmark, ICombatant u, int r)
+        {
+            foreach (var kv in Live) if (kv.Key.Landmark == landmark && kv.Value.IsAlive() && System.Math.Max(System.Math.Abs(kv.Value.X - u.X), System.Math.Abs(kv.Value.Y - u.Y)) <= System.Math.Max(2, r - 1)) return true;
+            return false;
+        }
+
         /// <summary>A map loaded: the old units went with it.</summary>
         public static void OnEnterZone() { Live.Clear(); Tick(); }
 

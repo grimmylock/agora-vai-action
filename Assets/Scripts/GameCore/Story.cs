@@ -54,7 +54,8 @@ namespace GameCore
 
         /// <summary>Someone within `r` tiles of a landmark on the loaded map.</summary>
         public static bool Near(ICombatant u, string landmark, int r = 2) =>
-            u != null && landmark != null && (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).Any(l => l.Name == landmark && System.Math.Max(System.Math.Abs(l.X - u.X), System.Math.Abs(l.Y - u.Y)) <= r);
+            u != null && landmark != null && (TerrainMap.Landmarks ?? new List<LandmarkInstance>()).Any(l => l.Name == landmark && System.Math.Max(System.Math.Abs(l.X - u.X), System.Math.Abs(l.Y - u.Y)) <= r)
+            || u != null && landmark != null && StoryNpcs.PersonNear(landmark, u, r);   // 2026-11-24: a person who lives at the landmark counts from where he stands, not from the landmark's tile
 
         /// <summary>Any player within `r` tiles of a landmark (co-op: whoever gets there).</summary>
         public static bool AnyNear(string landmark, int r = 2) => Player.All.Any(p => p.IsAlive() && Near(p, landmark, r));
