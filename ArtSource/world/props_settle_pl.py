@@ -8,6 +8,10 @@ from worldlib import *
 from props_cathedral import finish2
 _HERE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settle_pl")
 ITEMS = ["cot", "barcounter", "bottleshelf", "medcabinet", "stool", "bench"]
+# 2026-11-24 (the three test buildings): look name -> the raw file's suffix (settle_pl/raw_<file>.png)
+MORE = {"bed": "bed", "wardrobe": "wardrobe", "kitchensink": "kitchen", "stove": "stove", "fridge": "fridge", "diningset": "dining", "sofa": "sofa", "toilet": "toilet", "bathtub": "bathtub",
+        "washbasin": "washbasin", "bookshelf": "bookshelf", "goodsshelf": "goodsshelf", "shopcounter": "shopcounter", "bunkbed": "bunkbed", "footlocker": "footlocker", "weaponrack": "weaponrack", "maptable": "maptable",
+        "nightstand": "nightstand", "kitchencounter": "kcounter", "plant": "plant", "floorlamp": "lamp", "noticeboard": "board", "boxstack": "boxes"}
 def _load(item):
     p = os.path.join(_HERE, f"raw_{item}.png")
     if not os.path.exists(p): return None
@@ -23,3 +27,5 @@ def _make(item):
 NEW = {}; VARIANTS = {}
 for item in ITEMS:
     if _load(item) is not None: NEW[item] = _make(item); VARIANTS[item] = 1
+for look, f in MORE.items():
+    if _load(f) is not None: NEW[look] = _make(f); VARIANTS[look] = 1

@@ -35,6 +35,7 @@ static class RenderMain {
       var lay = c.ToMapLayout(); lay.FullSize = true;
       MapLayoutDatabase.All["prop_sheet"] = lay;
     }
+    MapLayoutDatabase.All["building_lab"] = Interiors.LabMap();   // 2026-11-24: the three test buildings (Interiors.cs)
     foreach (var id in args) {
       var sw = System.Diagnostics.Stopwatch.StartNew();
       MacroState.Current.CurrentZoneId = id;

@@ -3325,6 +3325,13 @@ static class Program {
 
   // 2026-11-23: the scythe's spring
   static void DungeonSquadChecks() {
+    foreach (var (name, rows, floors, door) in new[] { ("house", Interiors.House, Interiors.HouseFloor, (17, 7)), ("shop", Interiors.Shop, Interiors.ShopFloor, (7, 12)), ("barracks", Interiors.Barracks, Interiors.BarracksFloor, (13, 14)) }) {
+      int h = rows.Length, w = rows[0].Length; bool sameDims = floors.Length == h && floors.All(r => r.Length == w) && rows.All(r => r.Length == w);
+      var seen = new HashSet<(int, int)> { door }; var q = new Queue<(int, int)>(); q.Enqueue(door);
+      while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h || seen.Contains((nx, ny)) || rows[ny][nx] != '.' && rows[ny][nx] != 'D') continue; seen.Add((nx, ny)); q.Enqueue((nx, ny)); } }
+      int lost = 0; for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) if (rows[y][x] == '.' && floors[y][x] != '.' && !seen.Contains((x, y))) lost++;
+      int hidden = 0; for (int y = 0; y < h - 1; y++) for (int x = 0; x < w; x++) if (rows[y][x] != '.' && rows[y][x] != '#' && rows[y][x] != 'n' && rows[y][x] != 'D' && (rows[y + 1][x] == '#' || rows[y + 1][x] == 'n')) hidden++;
+      Check(sameDims && lost == 0 && hidden == 0, $"interior plan {name}: floor layer matches, every floor tile reachable from the way in ({lost} cut off), nothing in the row the wall below hides ({hidden})"); }
     foreach (var (zone, lms) in new[] { ("bonfire_village", new[] { "The Smoking Barrel", "Medic's House", "Bunkhouse" }), ("scavengers_hub", new[] { "The Rusty Anchor", "Hub Clinic", "Hub Bunkhouse", "The Bazaar", "Sentinel Barracks", "Sentinel Checkpoint", "Repair Yard" }), ("vanguard_barracks", new[] { "Aid Post", "Command Post", "Barracks Row", "Parade Ground", "Motor Pool" }) }) {
       MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone);
       var miss = lms.Where(n => { var l = TerrainMap.Landmarks.FirstOrDefault(x => x.Name == n); return l == null || !TerrainMap.CanEnterTile(l.X, l.Y); }).ToList();
