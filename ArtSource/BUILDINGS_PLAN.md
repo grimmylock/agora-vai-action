@@ -16,6 +16,8 @@
 9. Loot by building type (Yan: "has to make sense"). Today stashes are fixed at about 8 per map (`Stashes.cs`, Batch 126: "ordinary loot comes from bodies and quests") and the interactive objects are only a footlocker, a PDA, a lock and a blast door. So furniture is decoration by default; some pieces per building become small searchable containers whose pool is set by archetype and furniture kind: house = food, drink, bandages, clothes, tools, small cash, notes, keys; shop = its goods; clinic = medicine; garage = tools, parts, fuel; barracks/armory = ammo, weapons, armor (the only places for them). A harness check fails any weapon/armor entry in a civilian pool.
 10. Process: a building census as the metric (this document's numbers), three test buildings (house, shop, barracks) rendered and approved by Yan before any rollout, then one map at a time so his manual map review fits, harness checks (every room reachable, doors clear, deterministic, loot pools legal), WORK_LOG per map.
 
+**Decided (Yan, 2026-11-24):** the small solid blocks (sheds and ruins, about 5x4 to 7x6) become real enterable buildings with a ruined interior; a few stay solid on purpose as ruins (chosen per map during his manual map review).
+
 **Cautions:** furniture is cover (set cover heights on purpose); more props = more sprites per frame (watch `[PERF]`); new landmark names need pt-BR lines.
 
 **References** (design, not code to copy)
