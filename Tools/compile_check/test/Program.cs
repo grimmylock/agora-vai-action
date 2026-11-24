@@ -75,6 +75,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
     if (Environment.GetEnvironmentVariable("STATICAUDIT") == "1") StaticAudit();
+    if (Environment.GetEnvironmentVariable("EMPTYAUDIT") != null) EmptyAudit(Environment.GetEnvironmentVariable("EMPTYAUDIT"));
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "9") TakenSim();
@@ -5512,6 +5513,30 @@ static class Program {
       Check(Math.Abs(light - 1f) < 0.001f && Math.Abs(heavy - 0.9f) < 0.001f, $"heavy armor ({heavyKey.def.Name}) slows the walk 10%: light {light}, heavy {heavy}"); }
   }
 
+  // EMPTYAUDIT=<out dir>: how empty is each tier map? Points of interest = named landmarks, doors (a way into a building), interactive objects (stashes, chests), exits. For every walkable tile the distance (Chebyshev, tiles) to the nearest one;
+  // prints per map the share of walkable ground more than 15 / 25 / 35 tiles from anything and the biggest empty spots, and writes <dir>/<map>.dist (w h then rows of distance, 255 = not walkable) for Tools/render/empty_heat.py.
+  static void EmptyAudit(string dir) {
+    System.IO.Directory.CreateDirectory(dir);
+    var maps = MacroMapDatabase.Zones.Where(z => !z.IsDungeon && !ZoneLayoutRecipes.IsInterior(z.Id)).Select(z => MacroMapDatabase.MapOf(z.Id)).Distinct().ToList();
+    foreach (var map in maps) {
+      MacroState.Current.CurrentZoneId = map; TerrainMap.BuildTerrainForZone(map);
+      int W = TerrainMap.Width, H = TerrainMap.Height; var dist = new int[W * H]; var q = new System.Collections.Generic.Queue<int>();
+      for (int i = 0; i < dist.Length; i++) dist[i] = int.MaxValue;
+      void Seed(int x, int y) { if (x < 0 || y < 0 || x >= W || y >= H) return; int i = y * W + x; if (dist[i] != 0) { dist[i] = 0; q.Enqueue(i); } }
+      foreach (var l in TerrainMap.Landmarks) if (!l.Name.StartsWith("arrive:") && !l.Name.StartsWith("stash:")) Seed(l.X, l.Y);
+      foreach (var o in TerrainMap.InteractiveObjects) Seed(o.X, o.Y);
+      foreach (var e in TerrainMap.Exits) Seed(e.X, e.Y);
+      for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (TerrainMap.GetTile(x, y).Type == TileType.Door) Seed(x, y);
+      while (q.Count > 0) { int c = q.Dequeue(); int cx = c % W, cy = c / W; for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) { int nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; int ni = ny * W + nx; if (dist[ni] > dist[c] + 1) { dist[ni] = dist[c] + 1; q.Enqueue(ni); } } }
+      int walk = 0, b15 = 0, b25 = 0, b35 = 0; var rows = new System.Text.StringBuilder(); rows.AppendLine(W + " " + H);
+      var cells = new System.Collections.Generic.List<(int d, int x, int y)>();
+      for (int y = 0; y < H; y++) { for (int x = 0; x < W; x++) { bool ok = TerrainMap.CanEnterTile(x, y); int d = ok ? Math.Min(dist[y * W + x], 254) : 255; rows.Append(d).Append(x == W - 1 ? "" : " "); if (!ok) continue; walk++; if (d > 15) b15++; if (d > 25) b25++; if (d > 35) b35++; cells.Add((d, x, y)); } rows.AppendLine(); }
+      System.IO.File.WriteAllText(System.IO.Path.Combine(dir, map + ".dist"), rows.ToString());
+      var spots = new System.Collections.Generic.List<(int d, int x, int y)>();
+      foreach (var c in cells.OrderByDescending(c => c.d)) { if (spots.Count >= 6 || c.d < 18) break; if (spots.All(sp => Math.Max(Math.Abs(sp.x - c.x), Math.Abs(sp.y - c.y)) > 24)) spots.Add(c); }
+      Console.WriteLine($"EMPTYAUDIT {map} {W}x{H}: walkable {walk}, >15 tiles from anything {100.0 * b15 / Math.Max(1, walk):F0}%, >25 {100.0 * b25 / Math.Max(1, walk):F0}%, >35 {100.0 * b35 / Math.Max(1, walk):F0}%; emptiest spots (distance @ x,y, region): " + string.Join("; ", spots.Select(sp => $"{sp.d} @ {sp.x},{sp.y} {TerrainMap.RegionAt(sp.x, sp.y)}")));
+    }
+  }
   // STATICAUDIT=1: what a second Play keeps (Enter Play Mode with domain reload off). Every static field of GameCore / GameData is summarised (value, or count + the first items of a collection), the game is started, played for a while
   // (world ticks, an hour of A-Life, flags, damage), started again, and the fields that differ from the first start's are listed: state that "New Game" does not put back. Time, seeds and caches that depend on play are expected noise.
   static string Sum(object v) {
