@@ -50,7 +50,7 @@ namespace GameCore
             M.Hour += minutes / 60f;
             int hours = (int)Mathf.Floor(M.Hour) - (int)Mathf.Floor(before);      // Batch 36: A-Life ticks once per game hour
             if (M.Hour >= 24f) { M.Hour -= 24f; WorldDays.NewDay(); }
-            for (int i = 0; i < hours; i++) SquadManager.TickHour();
+            for (int i = 0; i < hours; i++) using (Perf.Sec("SquadManager.TickHour")) SquadManager.TickHour();
             // weather drifts every 2 game hours
             if (Mathf.Floor(before / 2f) != Mathf.Floor(M.Hour / 2f) || M.Hour < before) Drift();
         }

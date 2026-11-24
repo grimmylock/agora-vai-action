@@ -72,7 +72,7 @@ namespace GameCore
         {
             WriteMissed();
             if (!Loc.Pt && _seen.Count == 0) return;                          // English and nothing remembered: nothing to do
-            if (Time.frameCount % 3 == 0) Scan();                              // a label made without Loc.Text shows English for at most three frames
+            if (Time.frameCount % 20 == 0) using (Perf.Sec("LocHook.Scan")) Scan();   // 2026-11-24: was every 3rd frame - FindObjectsByType over every label allocated and walked them all ~20 times a second; a label made without Loc.Text now shows English for up to 20 frames
             _dead.Clear();
             foreach (var kv in _seen)
             {

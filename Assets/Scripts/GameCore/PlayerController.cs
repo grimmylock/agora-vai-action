@@ -46,7 +46,7 @@ namespace GameCore
         private static void TickClock(Player player)
         {
             _clock += Time.deltaTime;
-            while (_clock >= SecondsPerMinute) { _clock -= SecondsPerMinute; TurnLoop.TickAwareness(); }
+            while (_clock >= SecondsPerMinute) { _clock -= SecondsPerMinute; using (Perf.Sec("TickAwareness")) TurnLoop.TickAwareness(); }
         }
 
         public static bool Exploring() =>
@@ -77,7 +77,7 @@ namespace GameCore
                 Rt.PlayerTick(j, Story.InCutscene ? default : ji);                                // and in a cutscene they stand still, like the host
             }
             TickClock(player);
-            Rt.WorldTick(player);
+            using (Perf.Sec("Rt.WorldTick")) Rt.WorldTick(player);
             if (!player.IsAlive()) { TurnLoop.CheckCombatEnd(); return; }   // dead: the world still runs above while a friend lives
             if (panel || Body.Down(player)) return;   // RT batch 2: down - crawl, or a stim from the belt (1-4)
             if (k.eKey.wasPressedThisFrame && Rt.DownedNear(player) == null)    // E next to a downed friend revives them (held, Rt.PlayerTick)

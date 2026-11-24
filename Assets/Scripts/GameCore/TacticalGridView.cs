@@ -214,11 +214,11 @@ namespace GameCore
             if (aimAt.HasValue) _aim = Mathf.Atan2(aimAt.Value.y - _playerMarker.transform.position.y, aimAt.Value.x - _playerMarker.transform.position.x);
             float lookReach = Rt.On ? look.Vision * (1f + 0.5f * (1f - Mathf.Clamp01(look.Night / 0.8f))) : 0f;
             if (Rt.On) lookReach *= Optics.LookMul(player.EquippedWeapon, Rt.Me.Aiming);   // 2026-11-16: aiming through a scope gives some of dusk/rain/fog back (Vision caps it at MaxRadius)   // real time: the look cone (Vision.LookReach)
-            Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
+            using (Perf.Sec("Vision.Update")) Vision.Update(player, _worldStamp * 131 + TerrainMap.Smoke.Count, look.Vision, player.FlashlightOn ? look.Cone : 0f, _aim, lookReach);
             Rt.Me.LookReach = Vision.LookReach;                                  // co-op: fair shots read each player's own reach
             { var vc = Camera.main; if (vc != null && _playerMarker != null) { var cp = vc.transform.position; var pm = _playerMarker.transform.position; Rt.Me.ScreenReach = vc.orthographicSize * vc.aspect + Mathf.Sqrt((cp.x - pm.x) * (cp.x - pm.x) + (cp.y - pm.y) * (cp.y - pm.y)) + 2f; } }   // what the screen shows, in tiles (zoomed out: more)
             _roofs?.Tick(player);
-            _atmo?.Tick(player, look);
+            using (Perf.Sec("Atmosphere view")) _atmo?.Tick(player, look);
             ColorGrade.Apply(look);
             if (look.Rain > 0.75f) Sfx.Ambient("amb_storm"); else if (look.Rain > 0f) Sfx.Ambient("amb_rain"); else Sfx.Ambient(Sfx.AmbientFor(MacroState.Current.CurrentZoneId));   // the map overhaul: the region you stand in
             bool downNow = Body.Down(player);   // RT batch 2: down - lying on your side, gun dropped to the ground beside you
