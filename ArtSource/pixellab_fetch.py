@@ -2,7 +2,7 @@
 import sys, os, io, json, base64, time, urllib.request
 from PIL import Image
 jid, out = sys.argv[1], sys.argv[2]; os.makedirs(out, exist_ok=True)
-def call(url): return json.load(urllib.request.urlopen(urllib.request.Request('https://api.pixellab.ai' + url, headers={'Content-Type': 'application/json'}), timeout=120))
+def call(url): return json.load(urllib.request.urlopen(urllib.request.Request('https://api.pixellab.ai' + url, headers=__import__('pixellab_auth').HEADERS), timeout=120))
 for _ in range(90):
     j = call('/v2/background-jobs/' + jid)
     if j.get('status') in ('completed', 'failed'): break

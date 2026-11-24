@@ -9,7 +9,7 @@ b = io.BytesIO(); cv.save(b, 'PNG'); img = {"type": "base64", "base64": base64.b
 body = {"first_frame": img, "description": desc, "frame_count": n, "seed": seed, "no_background": True, "enhance_prompt": True}
 if loop: body["last_frame"] = img
 def call(url, data=None):
-    req = urllib.request.Request('https://api.pixellab.ai' + url, data=json.dumps(data).encode() if data else None, headers={'Content-Type': 'application/json'})
+    req = urllib.request.Request('https://api.pixellab.ai' + url, data=json.dumps(data).encode() if data else None, headers=__import__('pixellab_auth').HEADERS)
     return json.load(urllib.request.urlopen(req, timeout=120))
 r = call('/v2/animate-pixminimax', body); jid = r['background_job_id']; print('job', jid, r.get('enhanced_prompt'))
 for _ in range(90):

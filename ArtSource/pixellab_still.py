@@ -10,7 +10,7 @@ body = {"description": desc, "image_size": {"width": w, "height": h}, "no_backgr
 if len(sys.argv) > 6: body["style_image"] = b64(sys.argv[6], (w, h)); body["style_strength"] = 60
 if len(sys.argv) > 7: body["init_image"] = b64(sys.argv[7], (w, h)); body["init_image_strength"] = int(sys.argv[8])
 def call(url, data=None):
-    req = urllib.request.Request('https://api.pixellab.ai' + url, data=json.dumps(data).encode() if data else None, headers={'Content-Type': 'application/json'})
+    req = urllib.request.Request('https://api.pixellab.ai' + url, data=json.dumps(data).encode() if data else None, headers=__import__('pixellab_auth').HEADERS)
     try: return json.load(urllib.request.urlopen(req, timeout=120))
     except urllib.error.HTTPError as e: print(e.code, e.read()[:400]); raise
 r = call('/v2/create-image-bitforge', body); print({k: v for k, v in r.items() if k != 'image'} if isinstance(r, dict) else r)
