@@ -75,6 +75,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("RTBAL") == "6") SlugReport();
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
     if (Environment.GetEnvironmentVariable("STATICAUDIT") == "1") StaticAudit();
+    if (Environment.GetEnvironmentVariable("BUILDINGCENSUS") == "1") BuildingCensus();
     if (Environment.GetEnvironmentVariable("EMPTYAUDIT") != null) EmptyAudit(Environment.GetEnvironmentVariable("EMPTYAUDIT"));
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
@@ -5536,6 +5537,28 @@ static class Program {
       foreach (var c in cells.OrderByDescending(c => c.d)) { if (spots.Count >= 6 || c.d < 18) break; if (spots.All(sp => Math.Max(Math.Abs(sp.x - c.x), Math.Abs(sp.y - c.y)) > 24)) spots.Add(c); }
       Console.WriteLine($"EMPTYAUDIT {map} {W}x{H}: walkable {walk}, >15 tiles from anything {100.0 * b15 / Math.Max(1, walk):F0}%, >25 {100.0 * b25 / Math.Max(1, walk):F0}%, >35 {100.0 * b35 / Math.Max(1, walk):F0}%; emptiest spots (distance @ x,y, region): " + string.Join("; ", spots.Select(sp => $"{sp.d} @ {sp.x},{sp.y} {TerrainMap.RegionAt(sp.x, sp.y)}")));
     }
+  }
+  // BUILDINGCENSUS=1: every building on every tier map (a connected mass of built wall, 4+ tiles each way): enterable (a door tile on it) or a solid block, its size, and what floor it has inside (Ground of the tiles inside the walls).
+  static void BuildingCensus() {
+    var built = new System.Collections.Generic.HashSet<string> { "wall", "plaster", "concrete", "hull", "metal", "plank" };
+    var maps = MacroMapDatabase.Zones.Where(z => !z.IsDungeon && !ZoneLayoutRecipes.IsInterior(z.Id)).Select(z => MacroMapDatabase.MapOf(z.Id)).Distinct().Where(m => m != "reactor_core" && m != "testing_ground").ToList();
+    int totE = 0, totS = 0; var floors = new System.Collections.Generic.Dictionary<string, int>();
+    foreach (var map in maps) {
+      MacroState.Current.CurrentZoneId = map; TerrainMap.BuildTerrainForZone(map);
+      int W = TerrainMap.Width, H = TerrainMap.Height; var seen = new bool[W * H]; int ent = 0, sol = 0; var solids = new System.Collections.Generic.List<string>();
+      for (int y0 = 0; y0 < H; y0++) for (int x0 = 0; x0 < W; x0++) {
+        var t0 = TerrainMap.GetTile(x0, y0); if (seen[y0 * W + x0] || t0.Type != TileType.Solid || !built.Contains(t0.Look ?? "")) continue;
+        var st = new System.Collections.Generic.Stack<(int, int)>(); st.Push((x0, y0)); seen[y0 * W + x0] = true; int minx = x0, maxx = x0, miny = y0, maxy = y0, n = 0; bool door = false;
+        while (st.Count > 0) { var (x, y) = st.Pop(); n++; minx = Math.Min(minx, x); maxx = Math.Max(maxx, x); miny = Math.Min(miny, y); maxy = Math.Max(maxy, y);
+          for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) { int nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; var tt = TerrainMap.GetTile(nx, ny);
+            if (tt.Type == TileType.Door) door = true;
+            if (!seen[ny * W + nx] && tt.Type == TileType.Solid && built.Contains(tt.Look ?? "")) { seen[ny * W + nx] = true; st.Push((nx, ny)); } } }
+        int w = maxx - minx + 1, h = maxy - miny + 1; if (w < 4 || h < 4) continue;
+        if (door) { ent++; var g = TerrainMap.GetTile((minx + maxx) / 2, (miny + maxy) / 2).Ground.ToString(); floors[g] = floors.TryGetValue(g, out var c) ? c + 1 : 1; } else { sol++; if (solids.Count < 6) solids.Add($"{w}x{h}@{minx},{miny}"); }
+      }
+      totE += ent; totS += sol; Console.WriteLine($"BUILDINGCENSUS {map}: {ent} enterable, {sol} solid blocks (no door){(solids.Count > 0 ? " e.g. " + string.Join(" ", solids) : "")}");
+    }
+    Console.WriteLine($"BUILDINGCENSUS total: {totE} enterable, {totS} solid. Floor under the middle of enterable buildings: " + string.Join(", ", floors.OrderByDescending(f => f.Value).Select(f => f.Key + " " + f.Value)));
   }
   // STATICAUDIT=1: what a second Play keeps (Enter Play Mode with domain reload off). Every static field of GameCore / GameData is summarised (value, or count + the first items of a collection), the game is started, played for a while
   // (world ticks, an hour of A-Life, flags, damage), started again, and the fields that differ from the first start's are listed: state that "New Game" does not put back. Time, seeds and caches that depend on play are expected noise.
