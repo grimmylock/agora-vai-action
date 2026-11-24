@@ -157,9 +157,12 @@ namespace GameCore
             catch (System.Exception e) { Debug.LogException(e); _re4Ok = false; ApplyRe4(false); GameLog.Write("[DEV] The new HUD failed (" + e.Message + "): back to the old one."); }
         }
 
+        float _reTextAt; readonly List<string> _reSt = new List<string>(), _reNeed = new List<string>();
         void TickRE4(Player p)
         {
             float dt = Time.unscaledDeltaTime; var m = MacroState.Current; bool combat = EncounterState.InCombat;
+            // 2026-11-24 (Yan: the game stutters a lot, even with nothing on screen): this tick built about twenty strings and three lists every frame (garbage -> GC pauses). The words now refresh ten times a second; the bars, fades and colours still move every frame.
+            bool textDue = Time.unscaledTime >= _reTextAt; if (textDue) _reTextAt = Time.unscaledTime + 0.1f;
             // ---- condition ----
             float hpf = Mathf.Clamp01(p.Hp / (float)Mathf.Max(1, p.MaxHp));
             bool down = Rt.On && Body.Of(p).Down;
@@ -168,43 +171,49 @@ namespace GameCore
             var col = down || hpf < 0.34f ? Danger : hpf < 0.67f ? Caution : Fine;
             float pulse = col == Danger ? 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * (down ? 7f : 4f)) : 1f;
             _rRing.fillAmount = _shown; _rRing.color = new Color(col.r, col.g, col.b, pulse); _rGhost.fillAmount = _rGhostV;
-            _rCond.text = Loc.Text(down ? "DYING" : hpf < 0.34f ? "DANGER" : hpf < 0.67f ? "CAUTION" : "FINE"); _rCond.color = col;
-            _rHp.text = p.Hp.ToString(); _rHp.color = col == Fine ? Bone : col;
+            if (textDue) { _rCond.text = Loc.Text(down ? "DYING" : hpf < 0.34f ? "DANGER" : hpf < 0.67f ? "CAUTION" : "FINE"); _rHp.text = p.Hp.ToString(); }
+            _rCond.color = col; _rHp.color = col == Fine ? Bone : col;
             _rPortrait.sprite = _portrait != null ? _portrait.sprite : null;
-            var st = new List<string>(); foreach (var c in _chips) if (c.go != null && c.go.activeSelf) st.Add(c.t.text);
-            _rStatus.text = string.Join("   ", st); _rStatus.color = down ? Danger : Yellow;
+            if (textDue) { _reSt.Clear(); foreach (var c in _chips) if (c.go != null && c.go.activeSelf) _reSt.Add(c.t.text); _rStatus.text = string.Join("   ", _reSt); }
+            var st = _reSt; _rStatus.color = down ? Danger : Yellow;
             _rStamina.rectTransform.sizeDelta = new Vector2(230f * Mathf.Clamp01(Rt.Me.Stamina / Rt.StaminaMax), 6f);
             _rFocus.rectTransform.sizeDelta = new Vector2(230f * Mathf.Clamp01(Rt.Me.Focus / Rt.FocusMax), 3f); _rFocus.color = Rt.SlowMo ? Color.white : Cyan;
-            var need = new List<string>(); if (p.Hunger / 10f < 0.3f) need.Add("HUNGRY"); if (p.Thirst / 10f < 0.3f) need.Add("THIRSTY"); if (p.Tiredness / 10f < 0.3f) need.Add("TIRED");
-            _rNeed.text = need.Count == 0 ? "" : Loc.Text(string.Join("   ", need));
+            if (textDue) { _reNeed.Clear(); if (p.Hunger / 10f < 0.3f) _reNeed.Add("HUNGRY"); if (p.Thirst / 10f < 0.3f) _reNeed.Add("THIRSTY"); if (p.Tiredness / 10f < 0.3f) _reNeed.Add("TIRED"); _rNeed.text = _reNeed.Count == 0 ? "" : Loc.Text(string.Join("   ", _reNeed)); }
+            var need = _reNeed;
 
             // ---- ammo ----
             var w = p.EquippedWeapon; bool melee = w != null && CombatRules.IsMelee(w);
             _rWName.text = Loc.Text((w?.Name ?? "UNARMED").ToUpperInvariant());
             _rWeapon.sprite = _wImage != null ? _wImage.sprite : null; _rWeapon.color = _wImage != null ? _wImage.color : Color.clear;
-            string mag = w == null || melee ? "" : w.CurrentMagazine.ToString(); string res = w == null || melee ? "" : Ammo.Get(p.Inventory, Ammo.Key(w.Db, w.CurrentAmmoType)).ToString();
             bool dry = w != null && !melee && (w.CurrentMagazine <= 0 || w.IsJammed); bool low = w != null && !melee && w.MagCapacity > 0 && w.CurrentMagazine <= Mathf.Max(1, w.MagCapacity / 4);
-            _rMag.text = mag; _rMag.color = dry ? Danger : low ? Caution : Bone; _rReserve.text = res == "" ? "" : "/ " + res;
-            string mode = w == null || melee ? "" : Rt.On ? Gunplay.ModeLabel(w, Rt.Of(p).FireMode) : "";
-            string cond = w == null ? "" : w.IsJammed ? "JAMMED" : (w.Condition ?? ItemCondition.Working).ToUpperInvariant();
-            _rLoad.text = Loc.Text(w == null || melee ? "" : (Ammo.LoadName(w).ToUpperInvariant() + (mode != "" ? "  ·  " + mode : "") + (cond != "" && cond != "WORKING" ? "  ·  " + cond : "")));
-            _rSecond.text = p.SecondaryWeapon != null ? "Y  " + p.SecondaryWeapon.Name.ToUpperInvariant() : "";
-            string stamp = mag + "|" + res + "|" + (w?.Name ?? ""); if (stamp != _ammoStamp) { _ammoStamp = stamp; _ammoStampAt = Time.unscaledTime; }
+            _rMag.color = dry ? Danger : low ? Caution : Bone;
+            if (textDue)
+            {
+                string mag = w == null || melee ? "" : w.CurrentMagazine.ToString(); string res = w == null || melee ? "" : Ammo.Get(p.Inventory, Ammo.Key(w.Db, w.CurrentAmmoType)).ToString();
+                _rMag.text = mag; _rReserve.text = res == "" ? "" : "/ " + res;
+                string mode = w == null || melee ? "" : Rt.On ? Gunplay.ModeLabel(w, Rt.Of(p).FireMode) : "";
+                string cond = w == null ? "" : w.IsJammed ? "JAMMED" : (w.Condition ?? ItemCondition.Working).ToUpperInvariant();
+                _rLoad.text = Loc.Text(w == null || melee ? "" : (Ammo.LoadName(w).ToUpperInvariant() + (mode != "" ? "  ·  " + mode : "") + (cond != "" && cond != "WORKING" ? "  ·  " + cond : "")));
+                _rSecond.text = p.SecondaryWeapon != null ? "Y  " + p.SecondaryWeapon.Name.ToUpperInvariant() : "";
+                string stamp = mag + "|" + res + "|" + (w?.Name ?? ""); if (stamp != _ammoStamp) { _ammoStamp = stamp; _ammoStampAt = Time.unscaledTime; }
+            }
 
             // ---- quick slots ----
-            for (int i = 0; i < 4; i++) { _rSlot[i].text = _belt.Count > i ? _belt[i].text : ""; _rSlotBack[i].color = Color.clear; }
-            var arts = new List<string>(); foreach (var t in _arts) if (t != null && !string.IsNullOrEmpty(t.text) && !t.text.Contains("X</color>")) arts.Add(t.text);
-            _rArts.text = string.Join(" ", arts);
+            if (textDue) for (int i = 0; i < 4; i++) { _rSlot[i].text = _belt.Count > i ? _belt[i].text : ""; _rSlotBack[i].color = Color.clear; }
+            if (textDue) { var arts = new List<string>(); foreach (var t in _arts) if (t != null && !string.IsNullOrEmpty(t.text) && !t.text.Contains("X</color>")) arts.Add(t.text); _rArts.text = string.Join(" ", arts); }
 
             // ---- place and alert ----
             var zone = GameData.MacroMapDatabase.Find(m.CurrentZoneId);
-            _rLoc.text = (zone?.Name ?? m.CurrentZoneId ?? "").ToUpperInvariant(); _rSub.text = _zoneSub != null ? _zoneSub.text : "";
-            string alert = Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : combat ? "<color=#c8443a>FIGHT</color>" : "";
-            if (Rt.SlowMo) alert += (alert != "" ? "   " : "") + "<color=#62c0e0>BULLET TIME</color>";
-            if (m.SurgeRounds > 0) alert += (alert != "" ? "   " : "") + $"<color=#c8443a>SURGE IN {m.SurgeRounds}</color>";
-            if (p.ArmedThrowable != null && GameData.ConsumableDatabase.All.TryGetValue(p.ArmedThrowable, out var armed)) alert += (alert != "" ? "   " : "") + $"<color=#e0c050>{armed.Name.ToUpperInvariant()} READY - LMB THROW, RMB CANCEL, T NEXT</color>";
-            if (Survival.On) alert = $"<color=#e0c050>{Survival.Status()}</color>   " + alert;
-            _rAlert.text = Loc.Text(alert);
+            if (textDue) { _rLoc.text = (zone?.Name ?? m.CurrentZoneId ?? "").ToUpperInvariant(); _rSub.text = _zoneSub != null ? _zoneSub.text : ""; }
+            if (textDue)
+            {
+                string alert = Rt.Paused ? "<color=#e0c050>PAUSED - ESC</color>" : combat ? "<color=#c8443a>FIGHT</color>" : "";
+                if (Rt.SlowMo) alert += (alert != "" ? "   " : "") + "<color=#62c0e0>BULLET TIME</color>";
+                if (m.SurgeRounds > 0) alert += (alert != "" ? "   " : "") + $"<color=#c8443a>SURGE IN {m.SurgeRounds}</color>";
+                if (p.ArmedThrowable != null && GameData.ConsumableDatabase.All.TryGetValue(p.ArmedThrowable, out var armed)) alert += (alert != "" ? "   " : "") + $"<color=#e0c050>{armed.Name.ToUpperInvariant()} READY - LMB THROW, RMB CANCEL, T NEXT</color>";
+                if (Survival.On) alert = $"<color=#e0c050>{Survival.Status()}</color>   " + alert;
+                _rAlert.text = Loc.Text(alert);
+            }
 
             // ---- what is worth seeing right now: the rest fades down (RE4 hides what you do not need) ----
             bool calm = !combat && hpf >= 0.995f && st.Count == 0 && need.Count == 0 && Rt.Me.Stamina >= Rt.StaminaMax - 1f && Time.unscaledTime - _hpStampAt > 3.5f && !Rt.SlowMo;

@@ -1218,6 +1218,7 @@ namespace GameCore
         // 2026-11-23 (Yan: "I'd like for the weapon to stay in the resting position unless aiming or shooting ... held naturally close to the body in front of it"): Carry (set by the view each frame): the long gun is held across
         // the front of the body, close to it, level, pointing to the side he faces (the game's own resting stance at aim 0 or 180, drawn in front of the body, shifted 3 px toward the torso) instead of following the mouse
         // round to straight up or down. Aiming (right mouse), firing, reloading and melee leave it. _restLeft = which side (from the aim's sideways part, kept when the aim is nearly vertical).
+        readonly SpriteRenderer[] _swingParts = new SpriteRenderer[11];
         public bool Carry, CarrySnap; bool _restLeft, _faceLeft; float _carryK; WeaponSpring.State _spring;
         public Vector3 LifeOff; public bool LifeOn; float _runK, _walkK, _phase2, _spdSm; Vector3? _lastPos2;
         public void Show(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
@@ -1246,7 +1247,8 @@ namespace GameCore
                 var (rx, ry, lx, ly) = HeldPoseMath.FreeHands(_phase2, _walkK, _runK); bool fl = _restLeft; float fx = fl ? rx : lx, fy = fl ? ry : ly;       // the arm on the side away from the gun
                 _support.gameObject.SetActive(true); _support.sprite = HandSprite(armor, false); _support.flipX = !fl; _support.transform.localPosition = Local(fx, fy) + new Vector3(0f, 0f, -0.015f); _support.transform.localRotation = Quaternion.Euler(0f, 0f, fl ? -90f : 90f);
             }
-            foreach (var r in new[] { _gun, _gun2, _grip, _support, _mag, _barrels, _part2, _optic, _under, _magHd, _shell }) if (r != null && r.gameObject.activeSelf && !(freeArm && r == _support)) { r.transform.localPosition = Swing(r.transform.localPosition); r.transform.localRotation = Quaternion.Euler(0f, 0f, r.transform.localEulerAngles.z + th); }
+            _swingParts[0] = _gun; _swingParts[1] = _gun2; _swingParts[2] = _grip; _swingParts[3] = _support; _swingParts[4] = _mag; _swingParts[5] = _barrels; _swingParts[6] = _part2; _swingParts[7] = _optic; _swingParts[8] = _under; _swingParts[9] = _magHd; _swingParts[10] = _shell;   // 2026-11-24 (stutter hunt): a cached array, not a new one every frame for every visible unit
+            foreach (var r in _swingParts) if (r != null && r.gameObject.activeSelf && !(freeArm && r == _support)) { r.transform.localPosition = Swing(r.transform.localPosition); r.transform.localRotation = Quaternion.Euler(0f, 0f, r.transform.localEulerAngles.z + th); }
         }
         void ShowCore(Weapon weapon, ArmorDef armor, Vector3 unitPos, Vector3? aimAt, bool visible, bool back = false, Weapon offhand = null)
         {

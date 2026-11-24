@@ -11,7 +11,7 @@ namespace GameCore
     public partial class HudView
     {
         readonly List<(RectTransform r, Image key, TextMeshProUGUI k, TextMeshProUGUI t)> _prompts = new List<(RectTransform, Image, TextMeshProUGUI, TextMeshProUGUI)>();
-        Canvas _canvasC;
+        Canvas _canvasC; List<InteractionPrompts.Prompt> _promptList; float _promptScanAt; Player _promptFor;
 
         void UpdatePrompts(Player p)
         {
@@ -22,7 +22,9 @@ namespace GameCore
                 (int, int)? hover = null;
                 var mouse = Mouse.current;
                 if (mouse != null && TacticalGridView.WorldToGrid(cam.ScreenToWorldPoint(mouse.position.ReadValue()), out int hx, out int hy)) hover = (hx, hy);
-                list = InteractionPrompts.Near(p, hover);
+                // 2026-11-24 (stutter hunt): the scan walks enemies, landmarks, exits, items and props with LINQ and builds a list; ten times a second is plenty for key chips
+                if (_promptList == null || Time.unscaledTime - _promptScanAt > 0.1f || _promptFor != p) { _promptList = InteractionPrompts.Near(p, hover); _promptScanAt = Time.unscaledTime; _promptFor = p; }
+                list = _promptList;
             }
             if (_canvasC == null && _canvas != null) _canvasC = _canvas.GetComponent<Canvas>();
             float scale = _canvasC != null && _canvasC.scaleFactor > 0f ? _canvasC.scaleFactor : 1f;
@@ -35,9 +37,9 @@ namespace GameCore
                 r.gameObject.SetActive(true);
                 bool word = q.Key.Length > 1;
                 float kw = word ? 14 + q.Key.Length * 9 : 22, w = kw + 14 + q.Label.Length * 8.5f;
-                r.sizeDelta = new Vector2(w, 26);
-                key.rectTransform.sizeDelta = new Vector2(kw, 20); k.rectTransform.sizeDelta = new Vector2(kw, 20);
-                k.text = q.Key; t.text = q.Label;
+                if (r.sizeDelta.x != w) r.sizeDelta = new Vector2(w, 26);   // 2026-11-24: only touch the UI when something changed (each write dirties its layout)
+                if (key.rectTransform.sizeDelta.x != kw) { key.rectTransform.sizeDelta = new Vector2(kw, 20); k.rectTransform.sizeDelta = new Vector2(kw, 20); }
+                if (k.text != q.Key) k.text = q.Key; if (t.text != q.Label) t.text = q.Label;
                 t.rectTransform.anchoredPosition = new Vector2(kw + 9, -5);
                 var sp = cam.WorldToScreenPoint(TacticalGridView.GridToWorld(q.X, q.Y) + new Vector3(0f, 0.95f, 0f));
                 r.anchoredPosition = new Vector2(Mathf.Round(sp.x / scale - w / 2f), Mathf.Round(sp.y / scale));

@@ -291,7 +291,8 @@ namespace GameCore
 
             // Anomalies stay invisible (per AnomalyEngine.RevealAnomaly) until something fails a
             // check stepping onto one — only draw the ones that have actually been revealed.
-            var revealedAnomalies = EncounterState.Anomalies.FindAll(a => a.Revealed);
+            _revealedBuf.Clear(); foreach (var an0 in EncounterState.Anomalies) if (an0.Revealed) _revealedBuf.Add(an0);   // 2026-11-24: reused list (was a FindAll every frame)
+            var revealedAnomalies = _revealedBuf;
             while (_anomalyMarkers.Count < revealedAnomalies.Count)
                 _anomalyMarkers.Add(CreateMarker("Anomaly", _spriteAnomaly != null ? Color.white : new Color(0.7f, 0.2f, 0.9f), TileWorldSize * 0.5f, 4, _root.transform, _spriteAnomaly));
             while (_anomalyMarkers.Count > revealedAnomalies.Count)
@@ -332,7 +333,8 @@ namespace GameCore
             // Interactive objects (loot/lore) - unlike exits, these can disappear mid-visit once
             // interacted with (InteractionEngine removes them), so sync by count every frame the
             // same way enemies/anomalies do rather than only at Rebuild().
-            var loot = TerrainMap.InteractiveObjects.FindAll(o => TerrainMap.GetTile(o.X, o.Y).Look?.StartsWith("stash_") != true);   // Batch 124: stashes are drawn as props
+            _lootBuf.Clear(); foreach (var o0 in TerrainMap.InteractiveObjects) if (TerrainMap.GetTile(o0.X, o0.Y).Look?.StartsWith("stash_") != true) _lootBuf.Add(o0);
+            var loot = _lootBuf;   // Batch 124: stashes are drawn as props
             while (_lootMarkers.Count < loot.Count)
                 _lootMarkers.Add(CreateMarker("Loot", _spriteLoot != null ? Color.white : new Color(0.9f, 0.75f, 0.2f), TileWorldSize * 0.5f, 3, _root.transform, _spriteLoot));
             while (_lootMarkers.Count > loot.Count)
@@ -743,6 +745,8 @@ namespace GameCore
                 Destroy(m.gameObject);
             }
         }
+        private readonly List<Anomaly> _revealedBuf = new List<Anomaly>();
+        private readonly List<InteractiveObjectInstance> _lootBuf = new List<InteractiveObjectInstance>();
         private readonly Dictionary<SpriteRenderer, float> _lifeTilt = new Dictionary<SpriteRenderer, float>();
         private readonly Dictionary<SpriteRenderer, float> _lifeSpd = new Dictionary<SpriteRenderer, float>();
         private readonly Dictionary<Player, SpriteRenderer> _friendMarkers = new Dictionary<Player, SpriteRenderer>();
