@@ -7296,3 +7296,9 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 - **Bonfire Village rollout** (Yan: "roll it out to the Bonfire Village"): the village's Block/Hut buildings are now `Interiors.Stamp` plans in `TierMaps.cs`: Bunkhouse (bunks, footlockers, stove), Clinic (tiled floor, medicine cabinets, cots, fridge), Repair shed (machines, lockers, boxes), Bar (bottle shelves, counter, stools, barrels), two cabins (house), two tents. New glyphs S stool, H medcabinet, P bottleshelf, V barcounter, m machine, r rustbarrel; loot archetypes bunkhouse/clinic/bar/workshop in `ContainerLoot.cs` (civilian: no weapons/armor/ammo). Landmarks kept.
 - Harness: plans reachable, stash checks now ignore furnished-building containers, the Ferryman hitbox check clears the strip south of the start (cabins stand there now). ALL CHECKS PASSED. Render: `maps/renders/buildings/village_rollout.png` (map renderer, not Unity).
 - **Not run in Unity.** Not checked: door/lane feel in play, loot balance, crews' positions inside the new rooms.
+
+## Batch 9es (2026-11-24) - Scavenger's Hub furnished
+
+- Yan: "roll it out to the scavengers hub next". `TierMaps.cs` hub: The Rusty Anchor (`Interiors.Anchor` 16x11, bar archetype: counter, bottle shelves, tables, stools, stove, sofa), Hub Bunkhouse (the village `Bunkhouse` plan), Hub Clinic (`ClinicSmall` 8x6, tiled), Sentinel Barracks (`BarracksHall` 15x10: bunks, footlockers, weapon racks, map table, lockers; military loot allowed), the two Checkpoint guard rooms (`GuardE`/`GuardW` 6x5). Landmarks, crews and the Bazaar/Repair Yard unchanged.
+- Harness: the five new plans are in the reachability check; ALL CHECKS PASSED. Render `maps/renders/buildings/hub_rollout.png` (map renderer, roofs off, not Unity).
+- **Not run in Unity.** Not checked: crews' positions inside the new rooms, doors vs. the Bazaar lane in play, loot balance.

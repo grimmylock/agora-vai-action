@@ -838,7 +838,8 @@ namespace GameCore
             }
             c.Paint(97, 143, 7, 51, Concrete);
             // Sentinel Checkpoint at the south gate
-            c.Hut(90, 186, 6, 5, "concrete", 1, false).Hut(105, 186, 6, 5, "concrete", 2, false);
+            c.Clear(89, 185, 8, 7, Concrete); Interiors.Stamp(c, 90, 186, Interiors.GuardE, Interiors.GuardEFloor, "concrete", "barracks");   // 2026-11-24: the guard rooms are furnished plans
+            c.Clear(104, 185, 8, 7, Concrete); Interiors.Stamp(c, 105, 186, Interiors.GuardW, Interiors.GuardWFloor, "concrete", "barracks");
             Sandbags(c, 94, 180, 13, 4, 0, 3);
             for (int x = 97; x <= 103; x++) c.Deco(x, 193, "barrierpole");
             c.Landmark("Sentinel Checkpoint", 100, 189);
@@ -851,16 +852,15 @@ namespace GameCore
             c.Landmark("The Bazaar", 100, 163);
             Fire(c, 100, 168); c.Put(98, 170, ScatterCover, "armchair");
             // The Rusty Anchor, the bunkhouse, the Sentinel barracks
-            c.Block(70, 146, 16, 11, "plaster", 1, Dirt);
+            c.Clear(69, 145, 18, 13, Dirt); Interiors.Stamp(c, 70, 146, Interiors.Anchor, Interiors.AnchorFloor, "plaster", "bar");   // the Anchor: bar counter, bottle shelves, tables
             c.Landmark("The Rusty Anchor", 78, 158);
-            c.Block(70, 172, 14, 10, "plank", 1, Dirt);
+            c.Clear(69, 171, 16, 11, Dirt); Interiors.Stamp(c, 70, 172, Interiors.Bunkhouse, Interiors.BunkhouseFloor, "plank", "bunkhouse");
             c.Landmark("Hub Bunkhouse", 77, 183);
             // 2026-11-24: the Anchor's terrace, the clinic (shelves, cots)
             c.Put(74, 160, ScatterCover, "desk").Put(82, 160, ScatterCover, "desk").Put(73, 160, ScatterCover, "stool").Put(75, 160, ScatterCover, "stool").Put(81, 160, ScatterCover, "stool").Put(83, 160, ScatterCover, "stool").Put(86, 158, Barrel);
-            c.Hut(93, 176, 8, 6, "plaster", 3, false);
-            c.Put(94, 177, ScatterCover, "medcabinet").Put(95, 177, ScatterCover, "medcabinet").Put(99, 177, ScatterCover, "crate").Put(97, 179, ScatterCover, "cot").Put(99, 179, ScatterCover, "cot");
+            c.Clear(92, 175, 10, 8, Concrete); Interiors.Stamp(c, 93, 176, Interiors.ClinicSmall, Interiors.ClinicSmallFloor, "plaster", "clinic");
             c.Landmark("Hub Clinic", 97, 175);
-            c.Block(116, 146, 15, 10, "concrete", 1, Dirt);
+            c.Clear(115, 145, 17, 12, Dirt); Interiors.Stamp(c, 116, 146, Interiors.BarracksHall, Interiors.BarracksHallFloor, "concrete", "barracks");
             c.Landmark("Sentinel Barracks", 123, 157);
             // the Repair Yard
             c.Clear(115, 170, 17, 21, Concrete);

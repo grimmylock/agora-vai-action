@@ -254,6 +254,101 @@ namespace GameCore
             "........",
         };
 
+        public static readonly string[] Anchor = {
+            "###n####n###n###",
+            "#.P.P.P.P..rrs.#",
+            "#..............n",
+            "#.VVVVVV.....o.#",
+            "n..S.S.S.......#",
+            "#..............D",
+            "#.STS..STS.STS.#",
+            "n..............#",
+            "#y.S....S...S..n",
+            "#..............#",
+            "#####n####n#####",
+        };
+        public static readonly string[] AnchorFloor = {
+            "................",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwww.",
+            "................",
+        };
+        public static readonly string[] ClinicSmall = {
+            "###D####",
+            "#HH...f#",
+            "#.....d#",
+            "ne.e.e.n",
+            "#......#",
+            "########",
+        };
+        public static readonly string[] ClinicSmallFloor = {
+            "........",
+            ".kkkkkk.",
+            ".kkkkkk.",
+            ".kkkkkk.",
+            ".kkkkkk.",
+            "........",
+        };
+        public static readonly string[] BarracksHall = {
+            "###n#######n###",
+            "#.KF.KF.KF..RR#",
+            "#.............#",
+            "#h...........h#",
+            "n.KF.KF.KF....n",
+            "#...........M.#",
+            "#.............#",
+            "#.N..y.....T.X#",
+            "#.............#",
+            "###n###D###n###",
+        };
+        public static readonly string[] BarracksHallFloor = {
+            "...............",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            ".wwwwwwwwwwwww.",
+            "...............",
+        };
+        public static readonly string[] GuardE = {
+            "##n###",
+            "#RR..#",
+            "#d.F.D",
+            "#....#",
+            "###n##",
+        };
+        public static readonly string[] GuardEFloor = {
+            "......",
+            ".cccc.",
+            ".cccc.",
+            ".cccc.",
+            "......",
+        };
+        public static readonly string[] GuardW = {
+            "##n###",
+            "#..RR#",
+            "D.F.d#",
+            "#....#",
+            "###n##",
+        };
+        public static readonly string[] GuardWFloor = {
+            "......",
+            ".cccc.",
+            ".cccc.",
+            ".cccc.",
+            "......",
+        };
+
         /// <summary>The dev map: the three test buildings on grass, side by side.</summary>
         public static MapLayout LabMap()
         {
