@@ -51,6 +51,7 @@ namespace GameData
                 L("Yefim's Footlocker", "A tarp-roofed lean-to around a modified shipping crate. Old Man Yefim trades out of it (B to trade)."),
                 L("Bunkhouse", "Rows of bunks for anyone who pays their way. Rest here (Z) and you wake up patched up."),
                 L("Medic's House", "The village medic works out of the old plaster house - bandages, stitches, and no questions."),
+                L("The Smoking Barrel", "The village bar: a plank counter, a few stools and a barrel the barman will not discuss. News comes in with the drinks."),
                 L("Repair Bench", "A tin shed with a vice, a grinder and a bench full of parts. Bring your gear when it's falling apart."),
                 L("Job Board", "A pole by the fire stuck full of notes: jobs, warnings, and who owes whom (J for jobs)."),
             },
@@ -128,6 +129,7 @@ namespace GameData
                 L("The Bazaar", "Rows of container-stalls selling weapons, armor, consumables, and artifacts - the primary shop location."),
                 L("Sentinel Checkpoint", "The guarded gate controlling entry; Sentinels keep the peace inside."),
                 L("The Rusty Anchor", "The Hub's bar/inn - the best place for rumor hooks, faction contacts, and job boards."),
+                L("Hub Clinic", "A plaster hut with shelves of dressings, a row of cots and a medic who has seen every kind of wound the Zone makes."),
                 L("Repair Yard", "A fenced lot where a mechanic-type NPC could be stationed for gear repair/upgrade work."),
                 L("Hub Bunkhouse", "Paid bunks behind the bazaar. Sleep here (Z) and wake up patched up."),
                 L("Sentinel Barracks", "The Sentinels' quarters by the north wall. They keep the peace in here, and they mean it."),
@@ -170,6 +172,7 @@ namespace GameData
                 L("Barracks Row", "Three long dormitory buildings, good for room-to-room fighting."),
                 L("Motor Pool", "A garage of stripped military vehicles - useful cover and a common ambush point."),
                 L("Command Post", "A sandbagged bunker at the compound's north end, usually held by whichever faction currently controls the barracks."),
+                L("Aid Post", "The barracks aid post: concrete walls, lockers of field dressings, cots for the ones who come back from the Barrier."),
                 L("The Barrier", "The Liberators' wall: a bowed arc of concrete on the compound's north side, a steel catwalk behind it and two machine-gun towers in the yard."),   // 2026-11-18: the siege's own place (Tier4Story.BarrierName). It was only an anchor in the map, so the game never spawned it and BeginSiege found nothing
             },
             ["ghost_town"] = new List<LandmarkDef>

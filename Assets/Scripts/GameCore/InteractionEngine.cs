@@ -23,6 +23,7 @@ namespace GameCore
                 return;
             }
             if (unit is Player storyPlayer && StorySystem.TryInteract(storyPlayer)) return;
+            if (unit is Player servicePlayer && Settlements.TryInteract(servicePlayer)) return;   // 2026-11-24: the medic and the bar
             if (unit is Player raider && GarrisonRaid.TryInteract(raider)) return;   // Batch 87
             if (unit is Player synth && G7Lab.TryInteract(synth)) return;            // Batch 88
 

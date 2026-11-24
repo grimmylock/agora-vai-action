@@ -82,7 +82,7 @@ namespace GameCore
         }
 
         /// <summary>A map loaded: the old units went with it.</summary>
-        public static void OnEnterZone() { Live.Clear(); Tick(); }
+        public static void OnEnterZone() { Live.Clear(); Tick(); Settlements.Populate(); }
 
         public static void Tick()
         {

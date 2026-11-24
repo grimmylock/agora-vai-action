@@ -36,6 +36,7 @@ namespace GameCore
                 if (l.Name == "Job Board") Add(l.X, l.Y, "E", "Read the job board");
                 if (l.Name == G7Lab.Machine && MacroState.Current.CurrentZoneId == G7Lab.Zone) Add(l.X, l.Y, "E", "Feed the synthesizer");
             }
+            { var sv = Settlements.PromptAt(p); if (sv != null) { var sl = TerrainMap.Landmarks.First(l => (Settlements.Medics.Contains(l.Name) || Settlements.Bars.Contains(l.Name)) && D(p, l.X, l.Y) <= 3); Add(sl.X, sl.Y, "E", sv); } }
             var talker = Radiant.NearFriend(p);
             if (talker != null && Radiant.Known(talker)) Add(talker.X, talker.Y, "E", "Talk to " + talker.Name);
             var em = Emplacement.Prompt(p); if (em.HasValue) Add(em.Value.x, em.Value.y, "E", em.Value.label);

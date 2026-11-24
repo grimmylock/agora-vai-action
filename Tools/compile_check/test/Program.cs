@@ -3321,6 +3321,10 @@ static class Program {
 
   // 2026-11-23: the scythe's spring
   static void DungeonSquadChecks() {
+    foreach (var (zone, lms) in new[] { ("bonfire_village", new[] { "The Smoking Barrel", "Medic's House", "Bunkhouse" }), ("scavengers_hub", new[] { "The Rusty Anchor", "Hub Clinic", "Hub Bunkhouse", "The Bazaar", "Sentinel Barracks", "Sentinel Checkpoint", "Repair Yard" }), ("vanguard_barracks", new[] { "Aid Post", "Command Post", "Barracks Row", "Parade Ground", "Motor Pool" }) }) {
+      MacroState.Current.CurrentZoneId = zone; TerrainMap.BuildTerrainForZone(zone);
+      var miss = lms.Where(n => { var l = TerrainMap.Landmarks.FirstOrDefault(x => x.Name == n); return l == null || !TerrainMap.CanEnterTile(l.X, l.Y); }).ToList();
+      Check(miss.Count == 0, zone + ": every settled landmark exists on a walkable tile (" + string.Join(", ", miss) + ")"); }
     { MacroState.Current.CurrentZoneId = "bonfire_village"; TerrainMap.BuildTerrainForZone("bonfire_village");
       var rw = EncounterGeneration.PickFactionLoadout("Raiders", "Rookie", 1, false); var raider = new HumanEnemy("Raider", 79, 145, "Raiders", "Rookie", rw.Item1, rw.Item2);
       var mut = EncounterGeneration.CreateMutantFromDb(MutantDatabase.Tiers["tier1"]["BlindMaw"], 79, 145);
@@ -3332,10 +3336,12 @@ static class Program {
       var sq1 = SquadManager.CreateOfflineSquad("perimeter", "Raiders", 3); foreach (var hm in sq1.Members.OfType<HumanEnemy>()) hm.Rank = "Experienced";
       Check(!SquadManager.InBand(sq, "perimeter") && SquadManager.InBand(sq1, "perimeter") && SquadManager.InBand(sq, "marshes") == false, "Tier 1 takes Tier 1 leaders only (a Veteran-led gang is out of band there)");
       MacroState.Current.OfflineSquads.Remove(sq); MacroState.Current.OfflineSquads.Remove(sq1); }
-    { Story.Reset(); var before = MacroState.Current.OfflineSquads.Count; Tier1Story.Tick();
+    { Story.Reset(); Settlements.Populate();
       var folk = MacroState.Current.OfflineSquads.Where(q => q.QuestId != null && q.QuestId.StartsWith("story:village_")).ToList();
-      Check(folk.Count == 4 && folk.Sum(q => q.Members.Count) == 9 && folk.All(q => q.Members.All(mm => TerrainMap.RegionAt(mm.X, mm.Y) == "bonfire_village")), "Bonfire Village has its people: 4 crews, 9 Wanderers, all inside the walls (" + folk.Count + " crews, " + folk.Sum(q => q.Members.Count) + " people)");
-      Tier1Story.Tick(); Check(MacroState.Current.OfflineSquads.Count(q => q.QuestId != null && q.QuestId.StartsWith("story:village_")) == 4, "...and only once");
+      Check(folk.Count == 6 && folk.Sum(q => q.Members.Count) == 13 && folk.All(q => q.Members.All(mm => TerrainMap.RegionAt(mm.X, mm.Y) == "bonfire_village")), "Bonfire Village has its people: 6 crews, 13 Wanderers, all inside the walls (" + folk.Count + " crews, " + folk.Sum(q => q.Members.Count) + " people)");
+      Check(TerrainMap.Landmarks.Any(l => l.Name == "The Smoking Barrel") && TerrainMap.Landmarks.Any(l => l.Name == "Medic's House"), "the village has a bar and a medic's house");
+      Settlements.Populate(); Check(MacroState.Current.OfflineSquads.Count(q => q.QuestId != null && q.QuestId.StartsWith("story:village_")) == 6, "...made once");
+      var hum = new HumanEnemy("T", 5, 5, "Raiders", "Rookie", null, null) { Hp = 1 }; Check(!hum.IsFleeing() && !EncounterGeneration.CreateMutantFromDb(MutantDatabase.Tiers["tier1"]["BlindMaw"], 0, 0).IsFleeing() && true, "nothing flees at a share of health");
       foreach (var q in folk) { MacroState.Current.OfflineSquads.Remove(q); EncounterState.Enemies.RemoveAll(e => q.Members.Contains(e)); } }
     var bad = new List<string>(); foreach (var z in MacroMapDatabase.Zones) if (z.IsDungeon && z.AllowedFactions.Count == 0) foreach (var f in new[] { "Garrison", "Raiders", "Mutant", "Obelisk", "Wanderers" }) if (SquadManager.CanEnter(z.Id, f)) bad.Add(z.Id + "/" + f);
     Check(bad.Count == 0, "No squad may enter a dungeon with no inhabitants of its own (the cathedral, boss arenas): " + string.Join(", ", bad));
