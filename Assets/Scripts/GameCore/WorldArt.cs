@@ -305,7 +305,7 @@ namespace GameCore
             bool Open(int i) { var ty = TerrainMap.Tiles[i / _w, i % _w]?.Type ?? TileType.Empty; return ty != TileType.Solid && ty != TileType.Door && ty != TileType.DoorOpen; }
             var q = new Queue<int>();
             for (int i = 0; i < _w * _h; i++)
-                if (Open(i) && _ground[i] != GroundType.Floor && _ground[i] != GroundType.LabTile) { _outside[i] = true; q.Enqueue(i); }
+                if (Open(i) && !GroundKinds.Indoor(_ground[i])) { _outside[i] = true; q.Enqueue(i); }
             while (q.Count > 0)
             {
                 int i = q.Dequeue(), x = i % _w, y = i / _w;
@@ -444,7 +444,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ ground layer
-        private static bool Crisp(GroundType g) => g == GroundType.Floor || g == GroundType.LabTile || g == GroundType.Grate;
+        private static bool Crisp(GroundType g) => GroundKinds.Indoor(g) || g == GroundType.Grate;
         private static bool Paved(GroundType g) => g == GroundType.Concrete || g == GroundType.Asphalt;
         private static bool Soft(GroundType g) => g == GroundType.Grass || g == GroundType.DarkGrass || g == GroundType.Dirt || g == GroundType.Mud || g == GroundType.Sand || g == GroundType.Gravel || g == GroundType.CaveFloor;   // loose ground: its borders fray into each other
         private const float Warp = 11f;
@@ -522,6 +522,7 @@ namespace GameCore
             /* Water     */ new Style { Ramp = Ramp("1d2624", "212b28", "24302c", "283430"), Cuts = Cuts3, Big = 34, Mid = 12, SpeckA = Hex("4F6458"), SpeckB = Hex("1B2422"), DensA = .004f, DensB = .01f },
             /* CaveFloor */ new Style { Ramp = Ramp("232220", "2c2a27", "322f2b", "36332f"), Cuts = Cuts3, Big = 22, Mid = 7, SpeckA = Hex("423e39"), SpeckB = Hex("1a1918"), DensA = .03f, DensB = .02f },
             /* Grate     */ null,                                   // a texture (g_grate), like Floor and LabTile
+            /* KitchenTile */ null,                                 // a texture (g_kitchentile)
         };
 
         private static void Prime(Style st, int gi)
@@ -558,7 +559,7 @@ namespace GameCore
             return c;
         }
 
-        private static readonly string[] GroundName = { "grass", "darkgrass", "dirt", "mud", "asphalt", "concrete", "floor", "labtile", "sand", "gravel", "water", "cavefloor", "grate" };
+        private static readonly string[] GroundName = { "grass", "darkgrass", "dirt", "mud", "asphalt", "concrete", "floor", "labtile", "sand", "gravel", "water", "cavefloor", "grate", "kitchentile" };
         private static readonly Color32 KerbLight = new Color32(0x8f, 0x8c, 0x83, 255), KerbDark = new Color32(0x4a, 0x48, 0x44, 255);
         private static readonly Color32 ShadowCol = new Color32(0x32, 0x21, 0x25, 255);
         private static readonly Color32 Black = new Color32(0, 0, 0, 255), White = new Color32(255, 255, 255, 255);
@@ -619,7 +620,7 @@ namespace GameCore
                     kerb = kN || kS || kW || kE;
                     float hShade = Mathf.Min(0.15f, Mathf.Abs(hgt) * 0.025f);
                     // Batch 92 (Yan: "dark, gritty, dirty"): indoor floors carry water stains and dirt banked against the walls
-                    bool indoor = !core && !buried && (own == GroundType.Floor || own == GroundType.LabTile || _interior && own == GroundType.Concrete);
+                    bool indoor = !core && !buried && (GroundKinds.Indoor(own) || _interior && own == GroundType.Concrete);
                     bool wN = indoor && Walled(cx, cy - 1), wS = indoor && Walled(cx, cy + 1), wW = indoor && Walled(cx - 1, cy), wE = indoor && Walled(cx + 1, cy);
                     var hCol = hgt > 0 ? White : Black;
                     for (int py = 0; py < Px; py++)
@@ -662,7 +663,7 @@ namespace GameCore
                                     c = py == 0 ? PlatTop : py == 5 ? PlatFoot : Lerp(PlatFace, Black, 0.04f * py);
                                 if (g == GroundType.Grate) c = DeckEdge(Rusty(c, rustLat.At(gx, gy), mossLat.At(gx, gy), H01(gx, gy, 47)), cx, cy, pxl, py);
                             }
-                            if (g != GroundType.Floor && g != GroundType.LabTile)
+                            if (!GroundKinds.Indoor(g))
                             {
                                 float macro = macroLat.At(gx, gy) - 0.5f;                     // big soft light/dark patches
                                 c = Lerp(c, macro > 0 ? White : Black, Mathf.Abs(macro) * 0.07f);
@@ -847,7 +848,7 @@ namespace GameCore
                     if (m < 0.02f) continue;
                     int gx = gx0 + i, gy = gy0 + j;
                     var fl = _ground[(gy / Px) * _w + gx / Px];
-                    if (fl == GroundType.Floor || fl == GroundType.LabTile) continue;   // indoors: under a roof, no sun
+                    if (GroundKinds.Indoor(fl)) continue;   // indoors: under a roof, no sun
                     if (m > 0.5f) _shade[gy * W + gx] = 1;
                     int k = (H - 1 - gy) * W + gx;
                     px[k] = Lerp(px[k], SunShadowCol, _sunA * m);
@@ -920,7 +921,7 @@ namespace GameCore
                 case GroundType.Dirt: return r < 0.4f ? "d_pebbles" : r < 0.65f ? "d_tallgrass_dry" : r < 0.85f ? "d_leaves" : "d_litter";
                 case GroundType.Mud: return r < 0.3f ? "d_puddle" : r < 0.65f ? "d_tallgrass_dry" : r < 0.9f ? "d_tallgrass" : "d_pebbles";   // sedge in the mud
                 case GroundType.Asphalt: case GroundType.Concrete: return r < 0.45f ? "d_crack" : r < 0.7f ? "d_oil" : "d_litter";
-                case GroundType.Floor: case GroundType.LabTile: return r < 0.6f ? "d_litter" : "d_crack";
+                case GroundType.Floor: case GroundType.LabTile: case GroundType.KitchenTile: return r < 0.6f ? "d_litter" : "d_crack";
                 case GroundType.Sand: case GroundType.Gravel: return r < 0.6f ? "d_pebbles" : "d_tallgrass_dry";
                 case GroundType.CaveFloor: return r < 0.85f ? "d_pebbles" : "d_bones";
                 case GroundType.Water: return r < 0.45f ? "d_lily" : null;          // pads on still water

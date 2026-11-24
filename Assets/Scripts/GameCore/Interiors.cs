@@ -1,7 +1,7 @@
 // 2026-11-24 (Yan: buildings should feel lived in, furnished for what they are; ArtSource/BUILDINGS_PLAN.md): interior plans that carry a FLOOR LAYER next to the structure layer, so every room has its own floor (tile in a kitchen and a bathroom, wood in
 // a bedroom, concrete in a shop and a barracks), and furniture glyphs for the new Pixel Lab props. Three TEST buildings (a house, a shop, a barracks) and a dev-only map to look at them (`BUILDING_LAB=1` in ZoneLayoutRecipes, or the render tool).
 // Structure layer: '#' wall, 'n' window, 'D' door, '.' floor; furniture: b bed, e cot, w wardrobe, k sink counter, s stove, f fridge, T dining table + chairs, o sofa, a armchair, z toilet, u bathtub, v washbasin, l bookshelf, g goods shelf,
-// C shop counter, K bunk bed, F footlocker, R weapon rack, M map table, d desk, c crate, h lockers, i nightstand, p plant, y floor lamp, q kitchen counter, N notice board, X box stack, B bench. Floor layer: 'w' wood (Floor), 't' tile (LabTile), 'c' concrete, 'd' dirt, 'g' gravel, 's' sand, '.' leave the ground as it is.
+// C shop counter, K bunk bed, F footlocker, R weapon rack, M map table, d desk, c crate, h lockers, i nightstand, p plant, y floor lamp, q kitchen counter, N notice board, X box stack, B bench. Floor layer: 'w' wood (Floor), 't' lab tile (LabTile), 'k' white kitchen / bathroom tile (KitchenTile), 'c' concrete, 'd' dirt, 'g' gravel, 's' sand, '.' leave the ground as it is.
 using System.Collections.Generic;
 using GameData;
 using static GameCore.TileType;
@@ -18,10 +18,10 @@ namespace GameCore
             ['C'] = ("shopcounter", false), ['K'] = ("bunkbed", true), ['F'] = ("footlocker", false), ['R'] = ("weaponrack", true), ['M'] = ("maptable", false), ['d'] = ("desk", false), ['c'] = ("crate", false), ['h'] = ("lockers", true),
             ['i'] = ("nightstand", false), ['p'] = ("plant", false), ['y'] = ("floorlamp", false), ['q'] = ("kitchencounter", false), ['N'] = ("noticeboard", false), ['X'] = ("boxstack", true), ['B'] = ("bench", false),
         };
-        static GroundType FloorOf(char f) => f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
+        static GroundType FloorOf(char f) => f == 'k' ? GroundType.KitchenTile : f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
 
         /// <summary>Stamps a plan with its floor layer at (x0, y0). `wallLook` is the outer wall; inner walls use it too.</summary>
-        public static void Stamp(TerrainCanvas c, int x0, int y0, string[] rows, string[] floors, string wallLook)
+        public static void Stamp(TerrainCanvas c, int x0, int y0, string[] rows, string[] floors, string wallLook, string archetype = null)
         {
             for (int py = 0; py < rows.Length; py++)
                 for (int px = 0; px < rows[py].Length; px++)
@@ -31,7 +31,7 @@ namespace GameCore
                     if (ch == 'n') { c.Put(x, y, Solid, "window"); continue; }
                     if (fl != '.') c.Paint(x, y, 1, 1, FloorOf(fl));
                     if (ch == 'D') { c.Put(x, y, Door); continue; }
-                    if (ch != '.' && Pieces.TryGetValue(ch, out var pc)) c.Put(x, y, pc.hard ? HardCover : ScatterCover, pc.look);
+                    if (ch != '.' && Pieces.TryGetValue(ch, out var pc)) { c.Put(x, y, pc.hard ? HardCover : ScatterCover, pc.look); var an = ContainerLoot.AnchorFor(archetype, pc.look, x, y); if (an != null) c.Landmark(an, x, y); }
                     else c.Put(x, y, Empty);
                 }
             c.Keep(x0 - 1, y0 - 1, rows[0].Length + 2, rows.Length + 2);
@@ -55,11 +55,11 @@ namespace GameCore
         };
         public static readonly string[] HouseFloor = {
             "...................",
-            ".tttttt.tttt.wwwww.",
-            ".tttttt.tttt.wwwww.",
-            ".tttttt.tttt.wwwww.",
-            ".tttttt.tttt.wwwww.",
-            ".tttttt.tttt.wwwww.",
+            ".kkkkkk.kkkk.wwwww.",
+            ".kkkkkk.kkkk.wwwww.",
+            ".kkkkkk.kkkk.wwwww.",
+            ".kkkkkk.kkkk.wwwww.",
+            ".kkkkkk.kkkk.wwwww.",
             "...................",
             ".wwwwwwwwwwwwwwwww.",
             "...................",
@@ -145,9 +145,9 @@ namespace GameCore
             var c = new TerrainCanvas(W, H, TerrainCanvas.Seed("building_lab"));
             c.Paint(0, 0, W, H, GroundType.Grass); c.PaintNoise(GroundType.Dirt, 6f, 0.62f, 1);
             c.Keep(0, 0, W, H);
-            Stamp(c, 3, 5, House, HouseFloor, "plank");
-            Stamp(c, 27, 5, Shop, ShopFloor, "plaster");
-            Stamp(c, 53, 4, Barracks, BarracksFloor, "concrete");
+            Stamp(c, 3, 5, House, HouseFloor, "plank", "house");
+            Stamp(c, 27, 5, Shop, ShopFloor, "plaster", "shop");
+            Stamp(c, 53, 4, Barracks, BarracksFloor, "concrete", "barracks");
             c.Landmark("arrive:building_lab", 41, 22);
             c.Border(Solid, 1, 0, "wall");
             var m = c.ToMapLayout(); m.FullSize = true; return m;

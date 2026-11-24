@@ -3325,6 +3325,18 @@ static class Program {
 
   // 2026-11-23: the scythe's spring
   static void DungeonSquadChecks() {
+    { var badc = new List<string>();
+      foreach (var arch in ContainerLoot.Rules) foreach (var piece in arch.Value) foreach (var e in piece.Value.Pool) {
+        bool civ = ContainerLoot.Civilian.Contains(arch.Key);
+        if (civ && !ContainerLoot.CivilianKinds.Contains(e.Kind)) badc.Add($"{arch.Key}/{piece.Key}: {e.Kind}");
+        if (e.Kind == "item" && (ShopDatabase.Find(e.Id) == null || civ && !ContainerLoot.CivilianItems.Contains(e.Id))) badc.Add($"{arch.Key}/{piece.Key}: item {e.Id}"); }
+      Check(badc.Count == 0, "container loot: civilian buildings hold no weapons, armor, ammo or military kit, and every item exists (" + string.Join(", ", badc) + ")");
+      MapLayoutDatabase.All["building_lab"] = Interiors.LabMap(); MacroState.Current.CurrentZoneId = "building_lab"; TerrainMap.BuildTerrainForZone("building_lab");
+      var conts = TerrainMap.InteractiveObjects.Where(ContainerLoot.Is).ToList();
+      int h = conts.Count(o => o.Reward.Loot.Id.StartsWith("cont:house:")), sh = conts.Count(o => o.Reward.Loot.Id.StartsWith("cont:shop:")), bk = conts.Count(o => o.Reward.Loot.Id.StartsWith("cont:barracks:"));
+      Check(h >= 4 && sh >= 4 && bk >= 4 && conts.All(o => TerrainMap.GetTile(o.X, o.Y).Look != null), $"the test buildings hold small containers on their furniture (house {h}, shop {sh}, barracks {bk})");
+      var pl = Player.Current ?? new Player(); int ru0 = pl.Ru; int items0 = pl.Inventory.Items.Count; for (int i = 0; i < 200; i++) foreach (var o in conts.Where(o => o.Reward.Loot.Id.StartsWith("cont:house:"))) ContainerLoot.Grant(pl, o.Reward.Loot.Id);
+      Check(!pl.Inventory.Items.Any(it => it.Type == "weapon" || it.Type == "armor"), "a house's containers, opened 200 times over, never gave a weapon or armor"); }
     foreach (var (name, rows, floors, door) in new[] { ("house", Interiors.House, Interiors.HouseFloor, (17, 7)), ("shop", Interiors.Shop, Interiors.ShopFloor, (7, 12)), ("barracks", Interiors.Barracks, Interiors.BarracksFloor, (13, 14)) }) {
       int h = rows.Length, w = rows[0].Length; bool sameDims = floors.Length == h && floors.All(r => r.Length == w) && rows.All(r => r.Length == w);
       var seen = new HashSet<(int, int)> { door }; var q = new Queue<(int, int)>(); q.Enqueue(door);

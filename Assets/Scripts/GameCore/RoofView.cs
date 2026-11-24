@@ -57,7 +57,7 @@ namespace GameCore
             return b.Alpha > 0.5f && b.Cell[(y - b.Y0) * b.W + x - b.X0] && !b.Open[(y - b.Y0) * b.W + x - b.X0];
         }
 
-        static bool Floored(int x, int y) { var g = TerrainMap.GetTile(x, y).Ground; return g == GroundType.Floor || g == GroundType.LabTile; }
+        static bool Floored(int x, int y) { var g = TerrainMap.GetTile(x, y).Ground; return GroundKinds.Indoor(g); }
 
         static bool WallAt(int x, int y)
         {

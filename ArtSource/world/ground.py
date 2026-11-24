@@ -114,6 +114,20 @@ def lab(seed):
     for _ in range(40): px(im, r.randrange(S), r.randrange(S), r.choice((pal[3], pal[1])))
     return im
 
+def kitchen(seed):
+    """2026-11-24 (Yan: white kitchen tiles): a checker of small white and pale grey-green tiles with dark grout, a few cracks and stains, for kitchens and bathrooms (GroundType.KitchenTile)."""
+    A, B, G = hx("#cfcdc3"), hx("#b9beb6"), hx("#7f847d")
+    im = Image.new("RGBA", (S, S), A); d = ImageDraw.Draw(im); r = rng(seed)
+    for ty in range(0, S, 16):
+        for tx in range(0, S, 16):
+            if ((tx // 16) + (ty // 16)) % 2: d.rectangle((tx, ty, tx + 15, ty + 15), fill=B)
+    for k in range(0, S, 16): d.line([(k, 0), (k, S - 1)], fill=G); d.line([(0, k), (S - 1, k)], fill=G)
+    for _ in range(50): px(im, r.randrange(S), r.randrange(S), r.choice((hx("#a9aaa0"), hx("#dedcd2"), hx("#9a9c93"))))
+    for _ in range(3):                                                                    # a hairline crack
+        x, y = r.randrange(S), r.randrange(S)
+        for _k in range(r.randint(6, 12)): px(im, x % S, y % S, hx("#6f736c")); x += r.choice((0, 1)); y += 1
+    return im
+
 def grate(seed):
     """A steel catwalk deck (the Depths' flooded levels, Yan 2026-11-04: "walk in platforms ... all rusted up and maybe with some moss
     from being wet all the time"; no guard rails). Bar grating: bearing bars every 3 px with the black water showing between them, a
@@ -159,7 +173,7 @@ def flagstone(seed):
 
 GROUNDS = {
     "grass": grass, "darkgrass": darkgrass, "dirt": dirt, "mud": mud, "asphalt": asphalt, "concrete": concrete,
-    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate, "flagstone": flagstone,
+    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate, "flagstone": flagstone, "kitchentile": kitchen,
 }
 try:
     import sys as _sys, os as _os; _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "tiles_pl")); import pl_ground; (None if _os.environ.get("NO_PL") else pl_ground.register(GROUNDS))   # 2026-11-21: Pixel Lab ground textures (tiles_pl), used in place of the procedural ones

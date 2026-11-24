@@ -55,7 +55,8 @@ namespace GameCore
                         // container has good loot" flavor object in the game gave nothing actually
                         // good. Roll a real weapon or armor piece instead, scaled to the current
                         // zone's tier.
-                        if (obj.Reward.Loot.Id == "richStash" || obj.Reward.Loot.Id == "containerRolls") GrantStashLoot(p2);   // 2026-11-19: random stashes: 2-4 rolls, at most one weapon, a weapon in about 15% of stashes
+                        if (obj.Reward.Loot.Id.StartsWith("cont:")) ContainerLoot.Grant(p2, obj.Reward.Loot.Id);   // 2026-11-24: a furnished building's small containers
+                        else if (obj.Reward.Loot.Id == "richStash" || obj.Reward.Loot.Id == "containerRolls") GrantStashLoot(p2);   // 2026-11-19: random stashes: 2-4 rolls, at most one weapon, a weapon in about 15% of stashes
                         else if (obj.Reward.Loot.Id == "hoardStash") { GrantHighTierLoot(p2); GrantContainerLoot(p2); }   // hand-placed story hoards keep the old, richer roll (Batch 126)
                         else if (obj.Reward.Loot.Id == "highTierLoot")
                             GrantHighTierLoot(p2);
@@ -127,7 +128,7 @@ namespace GameCore
             for (int i = 0; i < rolls; i++) GrantRoll(p, Economy.Roll(tier, trader: false));
         }
 
-        private static void GrantRoll(Player p, LootRoll r)
+        internal static void GrantRoll(Player p, LootRoll r)
         {
             if (r.Type == "cash" || r.Type == "junk")
             {

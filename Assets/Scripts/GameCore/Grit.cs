@@ -24,7 +24,7 @@ namespace GameCore
             bool Cave(int x, int y) => G(x, y) == "CaveFloor" || G(x, y) == "Mud" || G(x, y) == "Dirt";
             // indoor floor: a map underground, or a building's floor on the surface
             bool Floor(int x, int y) => x > 0 && y > 0 && x < w - 1 && y < h - 1 && m.Tiles[y][x] == "Empty" && m.Looks[y][x] == null
-                                        && G(x, y) != "Water" && (interior || G(x, y) == "Floor" || G(x, y) == "LabTile");
+                                        && G(x, y) != "Water" && (interior || G(x, y) == "Floor" || G(x, y) == "LabTile" || G(x, y) == "KitchenTile");
             bool Wall(int x, int y) => m.Tiles[y][x] == "Solid";
             var near = new HashSet<(int, int)>();
             if (m.Anchors != null) foreach (var a in m.Anchors.Values) for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) near.Add((a.x + dx, a.y + dy));

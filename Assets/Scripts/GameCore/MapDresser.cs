@@ -93,7 +93,7 @@ namespace GameCore
                 if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) return false;
                 if (m.Tiles[y][x] != "Empty" || looks[y][x] != null || keep[y, x]) return false;
                 var g = Gr(x, y);
-                return g != GroundType.Asphalt && g != GroundType.Floor && g != GroundType.LabTile && g != GroundType.Concrete && g != GroundType.Water;
+                return g != GroundType.Asphalt && g != GroundType.Floor && g != GroundType.LabTile && g != GroundType.KitchenTile && g != GroundType.Concrete && g != GroundType.Water;
             }
             bool Clear8(int x, int y, int r = 1)
             {

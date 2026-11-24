@@ -40,6 +40,13 @@ namespace GameCore
         Water,
         CaveFloor,
         Grate,      // a steel catwalk deck (the Depths' flooded levels)
+        KitchenTile, // 2026-11-24: white tiles for kitchens and bathrooms (appended, so saved maps and the arrays indexed by this enum keep their order)
+    }
+
+    public static class GroundKinds
+    {
+        /// <summary>An indoor floor (under a roof, no sun, no weather): wood, lab tile, kitchen tile.</summary>
+        public static bool Indoor(GroundType g) => g == GroundType.Floor || g == GroundType.LabTile || g == GroundType.KitchenTile;
     }
 
     public class TerrainTile

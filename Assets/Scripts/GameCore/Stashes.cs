@@ -66,7 +66,7 @@ namespace GameCore
                 {
                     if (!Bare(x, y)) continue;
                     var g = TerrainMap.Tiles[y, x].Ground;
-                    if (g != GroundType.Floor && g != GroundType.LabTile) continue;
+                    if (!GroundKinds.Indoor(g)) continue;
                     if (BuiltWall(x - 1, y) || BuiltWall(x + 1, y) || BuiltWall(x, y - 1)) list.Add((x, y));
                 }
             return list;
@@ -90,12 +90,12 @@ namespace GameCore
             var zone = MacroMapDatabase.Find(TerrainMap.ZoneId);
             int tier = zone?.Tier ?? 1;
             if (zone != null && zone.IsDungeon) { DungeonEnd(tier); return; }
-            int authored = TerrainMap.InteractiveObjects.Count(o => !o.Rolled);
+            int authored = TerrainMap.InteractiveObjects.Count(o => !o.Rolled && !ContainerLoot.Is(o));   // (a furnished building's small containers are not stashes)
             int want = System.Math.Max(MinRolled, PerMap - authored);
             var spots = WallSpots().Where(s => !Safe(s.x, s.y)).ToList();
             var posts = TerrainMap.Landmarks.Where(l => !Safe(l.X, l.Y) && !l.Name.StartsWith("stash:")).ToList();
             if (spots.Count == 0 || posts.Count == 0) return;
-            bool Free(int x, int y) => Bare(x, y) && !TerrainMap.InteractiveObjects.Any(o => D(o.X, o.Y, x, y) < 12);
+            bool Free(int x, int y) => Bare(x, y) && !TerrainMap.InteractiveObjects.Any(o => !ContainerLoot.Is(o) && D(o.X, o.Y, x, y) < 12);
             string[] kinds = { "key", "code", "post", "key", "code", "post", "key", "post" };   // mostly locked
             for (int i = 0, tries = 0; i < want && tries < want * 40; tries++)
             {

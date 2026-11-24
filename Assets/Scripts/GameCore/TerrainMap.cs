@@ -491,6 +491,7 @@ namespace GameCore
             if (ZoneId != null && MapLayoutDatabase.All.TryGetValue(ZoneId, out var authored) && authored?.Anchors != null)
                 foreach (var kv in authored.Anchors)
                 {
+                    if (kv.Key.StartsWith("cont:")) { var co = ContainerLoot.Spawn(kv.Key, kv.Value.x, kv.Value.y); if (co != null) InteractiveObjects.Add(co); continue; }   // 2026-11-24: a furnished building's container, on the furniture itself
                     if (!kv.Key.StartsWith("stash:")) continue;
                     string name = kv.Key.Substring(6);
                     var (sx0, sy0) = FindNearestEnterable(kv.Value.x, kv.Value.y);

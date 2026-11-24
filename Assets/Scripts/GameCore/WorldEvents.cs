@@ -153,7 +153,7 @@ namespace GameCore
             var zone = MacroMapDatabase.Find(MacroState.Current.CurrentZoneId);
             if (zone == null || zone.IsSafeZone || zone.AccessCondition != null || zone.IsDungeon) return true;
             var g = TerrainMap.GetTile(p.X, p.Y).Ground;
-            return g == GroundType.Floor || g == GroundType.LabTile;
+            return GroundKinds.Indoor(g);
         }
 
         /// <summary>Ticked at the end of each player turn (and on a zone crossing, which ends it).</summary>
