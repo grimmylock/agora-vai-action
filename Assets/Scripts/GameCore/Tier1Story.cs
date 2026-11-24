@@ -54,6 +54,7 @@ namespace GameCore
         /// two at the bunkhouse. They are Wanderer squads on a story post (they hold it; a hostile that gets close is fought by the normal squad skirmish, NpcFights).</summary>
         static void TickResidents()
         {
+            if (Net.Mode == Net.Role.Client) return;   // co-op: the host makes the world, a joined friend only mirrors it
             if (Story.Has("village_folk") || !TerrainMap.Landmarks.Any(l => l.Name == Yefim)) return;
             Story.Set("village_folk");
             void Crew(string tag, string at, string who, string rank, int n)
