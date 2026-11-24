@@ -267,13 +267,13 @@ namespace GameCore
             c.Landmark("Job Board", 75, 163);
             // 2026-11-24 (Yan: "add the bar ... bars, a medic with medical stuff, places to sleep"): the bar, the medic's shelves, cots in the tents
             c.Hut(90, 168, 8, 6, "plank", 2, false);                                    // the bar (the old east hut, made bigger)
-            c.Put(93, 170, ScatterCover, "desk").Put(93, 171, ScatterCover, "desk");      // the counter
-            c.Put(92, 170, ScatterCover, "armchair").Put(92, 171, ScatterCover, "armchair").Put(96, 169, Barrel).Put(96, 170, Barrel).Put(96, 172, ScatterCover, "lockers");
+            c.Put(93, 170, ScatterCover, "barcounter").Put(93, 171, ScatterCover, "barcounter");      // the counter
+            c.Put(92, 170, ScatterCover, "stool").Put(92, 171, ScatterCover, "stool").Put(96, 169, Barrel).Put(96, 170, Barrel).Put(96, 172, ScatterCover, "bottleshelf");
             c.Landmark("The Smoking Barrel", 95, 171);
-            c.Put(89, 159, ScatterCover, "lockers").Put(95, 159, ScatterCover, "lockers").Put(90, 160, ScatterCover, "crate");   // the medic's shelves and supplies at his door
+            c.Put(89, 159, ScatterCover, "medcabinet").Put(95, 159, ScatterCover, "medcabinet").Put(90, 160, ScatterCover, "crate");   // the medic's shelves and supplies at his door
             c.Hut(72, 177, 6, 5, "plank", 3).Hut(86, 177, 7, 5, "plank", 3);
             c.Hut(62, 161, 6, 4, "metal", 1, false).Hut(62, 166, 6, 4, "metal", 1, false);      // tents for the passing Wanderers
-            c.Put(63, 162, ScatterCover, "armchair").Put(63, 163, ScatterCover, "armchair").Put(63, 167, ScatterCover, "armchair").Put(63, 168, ScatterCover, "armchair");   // cots
+            c.Put(63, 162, ScatterCover, "cot").Put(63, 163, ScatterCover, "cot").Put(63, 167, ScatterCover, "cot").Put(63, 168, ScatterCover, "cot");   // cots
             for (int x = 79; x <= 85; x += 2) c.Put(x, 151, ScatterCover, x == 83 ? "desk" : "crate");   // the market stalls
             c.Put(80, 154, ScatterCover, "armchair").Put(86, 153, ScatterCover, "crate");
             Field(c, 79, 175, 6, 8);                                                       // a vegetable patch
@@ -860,9 +860,9 @@ namespace GameCore
             c.Block(70, 172, 14, 10, "plank", 1, Dirt);
             c.Landmark("Hub Bunkhouse", 77, 183);
             // 2026-11-24: the Anchor's terrace, the clinic (shelves, cots)
-            c.Put(74, 160, ScatterCover, "desk").Put(82, 160, ScatterCover, "desk").Put(73, 160, ScatterCover, "armchair").Put(75, 160, ScatterCover, "armchair").Put(81, 160, ScatterCover, "armchair").Put(83, 160, ScatterCover, "armchair").Put(86, 158, Barrel);
+            c.Put(74, 160, ScatterCover, "desk").Put(82, 160, ScatterCover, "desk").Put(73, 160, ScatterCover, "stool").Put(75, 160, ScatterCover, "stool").Put(81, 160, ScatterCover, "stool").Put(83, 160, ScatterCover, "stool").Put(86, 158, Barrel);
             c.Hut(93, 176, 8, 6, "plaster", 3, false);
-            c.Put(94, 177, ScatterCover, "lockers").Put(95, 177, ScatterCover, "lockers").Put(99, 177, ScatterCover, "crate").Put(97, 179, ScatterCover, "armchair").Put(99, 179, ScatterCover, "armchair");
+            c.Put(94, 177, ScatterCover, "medcabinet").Put(95, 177, ScatterCover, "medcabinet").Put(99, 177, ScatterCover, "crate").Put(97, 179, ScatterCover, "cot").Put(99, 179, ScatterCover, "cot");
             c.Landmark("Hub Clinic", 97, 175);
             c.Block(116, 146, 15, 10, "concrete", 1, Dirt);
             c.Landmark("Sentinel Barracks", 123, 157);
@@ -1164,7 +1164,7 @@ namespace GameCore
             c.Stamp("Barracks Row", 127, 136, 3, "wall", Floor, 0, "lockers");
             c.Landmark("Barracks Row", 155, 146);
             c.Hut(168, 149, 9, 6, "concrete", 0, false);                                // 2026-11-24: the aid post
-            c.Put(169, 150, ScatterCover, "lockers").Put(170, 150, ScatterCover, "lockers").Put(171, 150, ScatterCover, "lockers").Put(174, 152, ScatterCover, "armchair").Put(175, 152, ScatterCover, "armchair");
+            c.Put(169, 150, ScatterCover, "medcabinet").Put(170, 150, ScatterCover, "medcabinet").Put(171, 150, ScatterCover, "lockers").Put(174, 152, ScatterCover, "cot").Put(175, 152, ScatterCover, "cot");
             c.Landmark("Aid Post", 172, 156);
             // the Parade Ground and the Motor Pool
             c.Paint(130, 158, 52, 8, Concrete);

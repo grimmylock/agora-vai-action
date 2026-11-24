@@ -1212,3 +1212,9 @@ try:
     PROPS.update(_po.NEW); VARIANTS.update(_po.VARIANTS)
 except ImportError:
     pass
+# 2026-11-24: the props of the settled places (props_settle_pl.py): cot, bar counter, bottle shelf, medical cabinet, stool, bench
+try:
+    import props_settle_pl as _ps
+    PROPS.update(_ps.NEW); VARIANTS.update(_ps.VARIANTS)
+except ImportError:
+    pass

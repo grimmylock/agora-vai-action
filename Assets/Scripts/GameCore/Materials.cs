@@ -14,9 +14,9 @@ namespace GameCore
         static void Add(Material m, params string[] looks) { foreach (var l in looks) ByLook[l] = m; }
         static Materials()
         {
-            Add(Material.Wood, "crate", "desk", "desk_n", "desk_s", "desk_e", "desk_w", "logs", "logs_v", "logs_c", "fence", "fence_torn",
+            Add(Material.Wood, "crate", "barcounter", "bottleshelf", "bench", "stool", "desk", "desk_n", "desk_s", "desk_e", "desk_w", "logs", "logs_v", "logs_c", "fence", "fence_torn",
                 "fence_v", "watchtower", "pole", "tree", "pine", "deadtree", "redtree", "plank");
-            Add(Material.Tin, "lockers", "rustbarrel", "scrap", "pipes", "dumpster", "cabinet", "labtable", "labbench", "jars", "vatsmall");
+            Add(Material.Tin, "lockers", "medcabinet", "rustbarrel", "scrap", "pipes", "dumpster", "cabinet", "labtable", "labbench", "jars", "vatsmall");
             Add(Material.Steel, "machine", "engine", "wreck", "apc", "van", "silo", "sunktruck", "bus", "tank", "flatcar", "container", "pipe", "pipepost",
                 "hatch", "barrel", "metal", "hull", "console");
             Add(Material.Concrete, "block", "block_v", "block_c", "jersey", "jersey_v", "jersey_c", "debris", "pillar", "culvert",
@@ -24,7 +24,7 @@ namespace GameCore
             Add(Material.Stone, "rock", "stones", "rubble", "campfire");
             Add(Material.Earth, "sandbags", "sandbags_v", "sandbags_c", "tires");
             Add(Material.Plant, "bush", "redbush", "brush", "reeds", "roots");
-            Add(Material.Cloth, "armchair", "trash");
+            Add(Material.Cloth, "armchair", "cot", "trash");
         }
 
         public static Material Of(TerrainTile t)
