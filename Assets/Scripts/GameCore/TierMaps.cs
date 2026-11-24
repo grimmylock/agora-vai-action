@@ -255,25 +255,21 @@ namespace GameCore
             c.Rect(84, 160, 3, 2, Solid, 0, "container");
             c.Put(84, 162, ScatterCover, "crate").Put(86, 162, ScatterCover, "crate").Put(87, 160, Barrel);
             c.Landmark("Yefim's Footlocker", 85, 163);
-            // the bunkhouse (rest), the medic, the repair shed, the job board, and the villagers' huts
-            c.Block(62, 150, 14, 9, "plank", 1, Dirt);
+            // 2026-11-24 (Yan: the buildings should be furnished for what they are; ArtSource/BUILDINGS_PLAN.md): the village's buildings are furnished plans (Interiors.cs), each with its own floors, furniture and small containers
+            c.Clear(61, 149, 16, 11, Dirt); Interiors.Stamp(c, 62, 150, Interiors.Bunkhouse, Interiors.BunkhouseFloor, "plank", "bunkhouse");        // the bunkhouse: bunks, footlockers, a stove
             c.Landmark("Bunkhouse", 69, 160);
-            c.Block(88, 150, 9, 8, "plaster", 1, Dirt);
+            c.Clear(87, 149, 11, 10, Dirt); Interiors.Stamp(c, 88, 150, Interiors.Clinic, Interiors.ClinicFloor, "plaster", "clinic");               // the medic: tiled floor, medicine cabinets, cots
             c.Landmark("Medic's House", 92, 159);
-            c.Hut(62, 176, 8, 6, "metal", 3, false);
-            c.Put(63, 177, HardCover, "machine").Put(68, 177, ScatterCover, "desk").Put(63, 180, ScatterCover, "crate");
+            c.Clear(61, 175, 10, 8, Dirt); Interiors.Stamp(c, 62, 176, Interiors.Workshop, Interiors.WorkshopFloor, "metal", "workshop");           // the repair shed
             c.Landmark("Repair Bench", 66, 175);
             c.Put(75, 162, ScatterCover, "pole");
             c.Landmark("Job Board", 75, 163);
-            // 2026-11-24 (Yan: "add the bar ... bars, a medic with medical stuff, places to sleep"): the bar, the medic's shelves, cots in the tents
-            c.Hut(90, 168, 8, 6, "plank", 2, false);                                    // the bar (the old east hut, made bigger)
-            c.Put(93, 170, ScatterCover, "barcounter").Put(93, 171, ScatterCover, "barcounter");      // the counter
-            c.Put(92, 170, ScatterCover, "stool").Put(92, 171, ScatterCover, "stool").Put(96, 169, Barrel).Put(96, 170, Barrel).Put(96, 172, ScatterCover, "bottleshelf");
+            c.Clear(89, 167, 10, 8, Dirt); Interiors.Stamp(c, 90, 168, Interiors.Bar, Interiors.BarFloor, "plank", "bar");                         // the bar
             c.Landmark("The Smoking Barrel", 95, 171);
-            c.Put(89, 159, ScatterCover, "medcabinet").Put(95, 159, ScatterCover, "medcabinet").Put(90, 160, ScatterCover, "crate");   // the medic's shelves and supplies at his door
-            c.Hut(72, 177, 6, 5, "plank", 3).Hut(86, 177, 7, 5, "plank", 3);
-            c.Hut(62, 161, 6, 4, "metal", 1, false).Hut(62, 166, 6, 4, "metal", 1, false);      // tents for the passing Wanderers
-            c.Put(63, 162, ScatterCover, "cot").Put(63, 163, ScatterCover, "cot").Put(63, 167, ScatterCover, "cot").Put(63, 168, ScatterCover, "cot");   // cots
+            c.Clear(71, 176, 8, 7, Dirt); Interiors.Stamp(c, 72, 177, Interiors.Cabin1, Interiors.Cabin1Floor, "plank", "house");                  // two villagers' cabins
+            c.Clear(85, 176, 9, 7, Dirt); Interiors.Stamp(c, 86, 177, Interiors.Cabin2, Interiors.Cabin2Floor, "plank", "house");
+            c.Clear(61, 160, 8, 6, Dirt); Interiors.Stamp(c, 62, 161, Interiors.Tent, Interiors.TentFloor, "metal", "bunkhouse");                  // tents for the passing Wanderers
+            c.Clear(61, 165, 8, 6, Dirt); Interiors.Stamp(c, 62, 166, Interiors.Tent, Interiors.TentFloor, "metal", "bunkhouse");
             for (int x = 79; x <= 85; x += 2) c.Put(x, 151, ScatterCover, x == 83 ? "desk" : "crate");   // the market stalls
             c.Put(80, 154, ScatterCover, "armchair").Put(86, 153, ScatterCover, "crate");
             Field(c, 79, 175, 6, 8);                                                       // a vegetable patch

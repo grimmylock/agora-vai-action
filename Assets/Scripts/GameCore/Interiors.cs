@@ -17,6 +17,7 @@ namespace GameCore
             ['o'] = ("sofa", false), ['a'] = ("armchair", false), ['z'] = ("toilet", false), ['u'] = ("bathtub", false), ['v'] = ("washbasin", false), ['l'] = ("bookshelf", true), ['g'] = ("goodsshelf", true),
             ['C'] = ("shopcounter", false), ['K'] = ("bunkbed", true), ['F'] = ("footlocker", false), ['R'] = ("weaponrack", true), ['M'] = ("maptable", false), ['d'] = ("desk", false), ['c'] = ("crate", false), ['h'] = ("lockers", true),
             ['i'] = ("nightstand", false), ['p'] = ("plant", false), ['y'] = ("floorlamp", false), ['q'] = ("kitchencounter", false), ['N'] = ("noticeboard", false), ['X'] = ("boxstack", true), ['B'] = ("bench", false),
+            ['S'] = ("stool", false), ['H'] = ("medcabinet", true), ['P'] = ("bottleshelf", true), ['V'] = ("barcounter", false), ['m'] = ("machine", true), ['r'] = ("rustbarrel", false),
         };
         static GroundType FloorOf(char f) => f == 'k' ? GroundType.KitchenTile : f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
 
@@ -136,6 +137,121 @@ namespace GameCore
             ".cccccccccccccccccc.ccccc.",
             ".cccccccccccccccccc.ccccc.",
             "..........................",
+        };
+
+        public static readonly string[] Bunkhouse = {
+            "####n####n####",
+            "#.KF.KF.KF.KF#",
+            "#............#",
+            "#y...........#",
+            "n.KF.KF.KF.KFn",
+            "#............#",
+            "#s....B.....T#",
+            "#............#",
+            "###n###D###n##",
+        };
+        public static readonly string[] BunkhouseFloor = {
+            "..............",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            "..............",
+        };
+        public static readonly string[] Clinic = {
+            "##n###n##",
+            "#H.H.k.f#",
+            "#.......#",
+            "n.e.e.e.n",
+            "#.......#",
+            "#p.....d#",
+            "#.......#",
+            "####D####",
+        };
+        public static readonly string[] ClinicFloor = {
+            ".........",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".........",
+        };
+        public static readonly string[] Cabin1 = {
+            "###D##",
+            "#bi.s#",
+            "n...pn",
+            "#....#",
+            "######",
+        };
+        public static readonly string[] Cabin1Floor = {
+            "......",
+            ".wwww.",
+            ".wwww.",
+            ".wwww.",
+            "......",
+        };
+        public static readonly string[] Cabin2 = {
+            "###D###",
+            "#wb.is#",
+            "ny..T.n",
+            "#.....#",
+            "#######",
+        };
+        public static readonly string[] Cabin2Floor = {
+            ".......",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".......",
+        };
+        public static readonly string[] Workshop = {
+            "####D###",
+            "#m....m#",
+            "#......#",
+            "nX.d.chn",
+            "#......#",
+            "########",
+        };
+        public static readonly string[] WorkshopFloor = {
+            "........",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            "........",
+        };
+        public static readonly string[] Tent = {
+            "##n###",
+            "#e.eF#",
+            "#....D",
+            "######",
+        };
+        public static readonly string[] TentFloor = {
+            "......",
+            ".dddd.",
+            ".dddd.",
+            "......",
+        };
+        public static readonly string[] Bar = {
+            "####n###",
+            "#P.P.rr#",
+            "#..V...n",
+            "D.S.S.T#",
+            "#......#",
+            "########",
+        };
+        public static readonly string[] BarFloor = {
+            "........",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            "........",
         };
 
         /// <summary>The dev map: the three test buildings on grass, side by side.</summary>

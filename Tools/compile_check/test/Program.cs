@@ -201,11 +201,11 @@ static class Program {
       var byLook = new System.Collections.Generic.Dictionary<string, int>(); int bad = 0, close = 0; string badAt = "";
       foreach (var map in new[] { "perimeter", "scrapyard", "scavengers_hub", "vanguard_barracks", "quarry_basin", "abandoned_city" }) {
         MacroState.Current.CurrentZoneId = map; TerrainMap.BuildTerrainForZone(map);
-        foreach (var o in TerrainMap.InteractiveObjects) {
+        foreach (var o in TerrainMap.InteractiveObjects.Where(q => !ContainerLoot.Is(q))) {   // furnished-building containers are not stashes
           var l = TerrainMap.GetTile(o.X, o.Y).Look ?? "none";
           byLook[l] = (byLook.TryGetValue(l, out var n) ? n : 0) + 1;
           if (!(l.StartsWith("stash_") || l == "papers" && o.Lock == "note") || o.Name == "Rusted Blast Door") { bad++; badAt = $"{map} {o.X},{o.Y} {o.Name} {l}"; }
-          if (TerrainMap.InteractiveObjects.Any(q => q != o && Math.Max(Math.Abs(q.X - o.X), Math.Abs(q.Y - o.Y)) < 5)) close++;
+          if (TerrainMap.InteractiveObjects.Any(q => q != o && !ContainerLoot.Is(q) && Math.Max(Math.Abs(q.X - o.X), Math.Abs(q.Y - o.Y)) < 5)) close++;
         }
       }
       Console.WriteLine("  stashes: " + string.Join(", ", byLook.OrderByDescending(kv => kv.Value).Select(kv => kv.Key.Replace("stash_", "") + " " + kv.Value)));
@@ -237,7 +237,7 @@ static class Program {
       var counts = new System.Collections.Generic.List<string>(); bool kinds = true;
       foreach (var map in new[] { "perimeter", "scrapyard", "scavengers_hub", "vanguard_barracks", "quarry_basin", "abandoned_city" }) {
         MacroState.Current.CurrentZoneId = map; TerrainMap.BuildTerrainForZone(map);
-        var boxes = TerrainMap.InteractiveObjects.Where(o => o.Lock != "note").ToList();
+        var boxes = TerrainMap.InteractiveObjects.Where(o => o.Lock != "note" && !ContainerLoot.Is(o)).ToList();
         counts.Add($"{map} {boxes.Count} ({boxes.Count(o => o.Lock != null)} locked)");
         kinds &= boxes.Count <= 11 && boxes.Count(o => o.Rolled) >= Stashes.MinRolled;
       }
@@ -3337,7 +3337,7 @@ static class Program {
       Check(h >= 4 && sh >= 4 && bk >= 4 && conts.All(o => TerrainMap.GetTile(o.X, o.Y).Look != null), $"the test buildings hold small containers on their furniture (house {h}, shop {sh}, barracks {bk})");
       var pl = Player.Current ?? new Player(); int ru0 = pl.Ru; int items0 = pl.Inventory.Items.Count; for (int i = 0; i < 200; i++) foreach (var o in conts.Where(o => o.Reward.Loot.Id.StartsWith("cont:house:"))) ContainerLoot.Grant(pl, o.Reward.Loot.Id);
       Check(!pl.Inventory.Items.Any(it => it.Type == "weapon" || it.Type == "armor"), "a house's containers, opened 200 times over, never gave a weapon or armor"); }
-    foreach (var (name, rows, floors, door) in new[] { ("house", Interiors.House, Interiors.HouseFloor, (17, 7)), ("shop", Interiors.Shop, Interiors.ShopFloor, (7, 12)), ("barracks", Interiors.Barracks, Interiors.BarracksFloor, (13, 14)) }) {
+    foreach (var (name, rows, floors, door) in new[] { ("house", Interiors.House, Interiors.HouseFloor, (17, 7)), ("shop", Interiors.Shop, Interiors.ShopFloor, (7, 12)), ("barracks", Interiors.Barracks, Interiors.BarracksFloor, (13, 14)), ("bunkhouse", Interiors.Bunkhouse, Interiors.BunkhouseFloor, (7, 7)), ("clinic", Interiors.Clinic, Interiors.ClinicFloor, (4, 6)), ("cabin1", Interiors.Cabin1, Interiors.Cabin1Floor, (3, 1)), ("cabin2", Interiors.Cabin2, Interiors.Cabin2Floor, (3, 1)), ("workshop", Interiors.Workshop, Interiors.WorkshopFloor, (4, 1)), ("tent", Interiors.Tent, Interiors.TentFloor, (4, 2)), ("bar", Interiors.Bar, Interiors.BarFloor, (1, 3)) }) {
       int h = rows.Length, w = rows[0].Length; bool sameDims = floors.Length == h && floors.All(r => r.Length == w) && rows.All(r => r.Length == w);
       var seen = new HashSet<(int, int)> { door }; var q = new Queue<(int, int)>(); q.Enqueue(door);
       while (q.Count > 0) { var (x, y) = q.Dequeue(); foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h || seen.Contains((nx, ny)) || rows[ny][nx] != '.' && rows[ny][nx] != 'D') continue; seen.Add((nx, ny)); q.Enqueue((nx, ny)); } }
@@ -3586,6 +3586,7 @@ static class Program {
   }
   static void BossHitboxChecks() {   // 2026-11-21: a creature boss is hit on its drawn silhouette (HitProfiles "boss:<art>"), not on a man's one-tile column
     var p = Arena(out int px, out int py); Rt.On = true; Rt.Reset(); Boss.Reset(); EncounterState.Enemies.Clear(); UnityEngine.Time.time = 91000f;
+    for (int y = py + 8; y <= py + 20; y++) for (int x = px - 7; x <= px + 9; x++) if (x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1) TerrainMap.SetTileType(x, y, TileType.Empty);   // the village's cabins now stand south of the start
     try {
       var f = Boss.Spawn(ExcavatorBoss.Def, px + 1, py + 8); var h = f.Unit; Rt.SetOffset(h, 0f, 0f); var (hx, hy) = Ballistics.Pos(h);
       var hit = Ballistics.Trace(p, hx + OnSprite("boss:grinder", 0.3f * Ballistics.BodyTiles, Ballistics.OutlineFlipped(h)) + 0.4f, hy - 6f, 0f, 1f, 12f, 0.3f, new ICombatant[] { h });

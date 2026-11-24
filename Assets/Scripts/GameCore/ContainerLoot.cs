@@ -16,7 +16,7 @@ namespace GameCore
         public class Rule { public string Name; public float Chance; public Entry[] Pool; }
         static Rule R(string name, float chance, params Entry[] pool) => new Rule { Name = name, Chance = chance, Pool = pool };
 
-        public static readonly HashSet<string> Civilian = new HashSet<string> { "house", "shop", "office", "clinic", "school", "church", "workshop" };
+        public static readonly HashSet<string> Civilian = new HashSet<string> { "house", "shop", "office", "clinic", "school", "church", "workshop", "bunkhouse", "bar" };
         public static readonly HashSet<string> CivilianKinds = new HashSet<string> { "ru", "item" };                       // no weapon, armor or ammo
         public static readonly HashSet<string> CivilianItems = new HashSet<string> { "mre", "energyDrink", "bandage", "splint", "fieldRepairKit", "basicMedkit", "radBlockPill" };
 
@@ -41,6 +41,32 @@ namespace GameCore
                 ["fridge"] = R("Freezer", 0.7f, E(4, "item", "energyDrink"), E(3, "item", "mre")),
                 ["desk"] = R("Desk", 0.6f, E(1, "ru", null, 10, 45)),
                 ["crate"] = R("Crate", 0.4f, E(3, "item", "mre"), E(2, "item", "energyDrink"), E(2, "ru", null, 3, 15)),
+            },
+            ["bunkhouse"] = new Dictionary<string, Rule>
+            {
+                ["footlocker"] = R("Footlocker", 0.5f, E(4, "ru", null, 5, 25), E(3, "item", "bandage"), E(3, "item", "mre")),
+                ["stove"] = R("Stove", 0.25f, E(1, "item", "mre")),
+                ["bunkbed"] = R("Bunk", 0.2f, E(3, "ru", null, 3, 15), E(1, "item", "bandage")),
+            },
+            ["clinic"] = new Dictionary<string, Rule>
+            {
+                ["medcabinet"] = R("Medicine Cabinet", 0.7f, E(5, "item", "bandage"), E(3, "item", "splint"), E(2, "item", "basicMedkit"), E(1, "item", "radBlockPill")),
+                ["fridge"] = R("Medicine Fridge", 0.6f, E(3, "item", "bandage"), E(2, "item", "basicMedkit")),
+                ["desk"] = R("Desk", 0.5f, E(1, "ru", null, 5, 30)),
+                ["kitchensink"] = R("Cupboard", 0.4f, E(3, "item", "bandage"), E(1, "item", "splint")),
+            },
+            ["bar"] = new Dictionary<string, Rule>
+            {
+                ["bottleshelf"] = R("Bottle Shelf", 0.7f, E(4, "item", "energyDrink"), E(2, "ru", null, 3, 12)),
+                ["barcounter"] = R("Till", 0.8f, E(1, "ru", null, 10, 45)),
+                ["rustbarrel"] = R("Barrel", 0.3f, E(3, "item", "energyDrink"), E(1, "ru", null, 2, 8)),
+            },
+            ["workshop"] = new Dictionary<string, Rule>
+            {
+                ["lockers"] = R("Locker", 0.6f, E(4, "item", "fieldRepairKit"), E(2, "ru", null, 5, 20)),
+                ["boxstack"] = R("Boxes", 0.6f, E(3, "item", "fieldRepairKit"), E(3, "ru", null, 5, 20)),
+                ["desk"] = R("Desk", 0.5f, E(1, "ru", null, 5, 25)),
+                ["crate"] = R("Crate", 0.5f, E(2, "item", "fieldRepairKit"), E(2, "ru", null, 3, 15)),
             },
             ["barracks"] = new Dictionary<string, Rule>
             {

@@ -1219,7 +1219,7 @@ try:
 except ImportError:
     pass
 
-# 2026-11-24 (Yan: "the artstyle is not consistent on the furniture, some have hard black outlines and others don't, all of them should"): the older furniture drew a soft outline in a darkened version of its own colour; every piece of furniture now has the same hard
+# 2026-11-24 (Yan, 'yes, to keep the artstyle consistent': every prop, not only furniture) - first: (Yan: "the artstyle is not consistent on the furniture, some have hard black outlines and others don't, all of them should"): the older furniture drew a soft outline in a darkened version of its own colour; every piece of furniture now has the same hard
 # near-black outline as the settled-place props (props_settle_pl). The outline is the outermost ring of the sprite (a pixel with an empty 4-neighbour): it is recoloured, nothing is added, so sizes and pivots do not change.
 def _hard_ring(fn):
     def g(seed):
@@ -1232,8 +1232,18 @@ def _hard_ring(fn):
             if dx == 1: sh[:, 1:] = al[:, :-1]
             if dx == -1: sh[:, :-1] = al[:, 1:]
             edge |= al & ~sh
-        a[edge] = (20, 22, 23, 255); p.im = Image.fromarray(a, "RGBA"); return p
+        inner = al & ~edge; has_inner = _np.zeros_like(al)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh = _np.zeros_like(al)
+            if dy == 1: sh[1:, :] = inner[:-1, :]
+            if dy == -1: sh[:-1, :] = inner[1:, :]
+            if dx == 1: sh[:, 1:] = inner[:, :-1]
+            if dx == -1: sh[:, :-1] = inner[:, 1:]
+            has_inner |= sh
+        a[edge & has_inner] = (20, 22, 23, 255)     # a line one pixel thick (a dead branch, a reed) has no inside: left as drawn
+        p.im = Image.fromarray(a, "RGBA"); return p
     return g
-for _k in ("crate", "lockers", "desk", "armchair", "desk_n", "desk_s", "desk_e", "desk_w", "cabinet", "labtable", "labbench", "console", "terminal", "fridge_lab", "lockers_fn", "desk_fn", "cabinet_fn", "console_fn",
-           "lockers_fe", "lockers_fw", "cabinet_fe", "cabinet_fw", "desk_fe", "desk_fw", "odesk", "odesk_fn", "opc", "opc_fn", "ochair", "ochair_fn", "ofile", "ofile_fn", "oshelf", "oshelf_fn", "osofa", "osofa_fn"):
+_NO_RING = {"light", "redlight", "cables", "floorpipe", "rail_v", "puddle"}      # overhead lights and things lying flat on the floor: no outline round them
+for _k in list(PROPS):
+    if _k in _NO_RING: continue
     if _k in PROPS: PROPS[_k] = _hard_ring(PROPS[_k])
