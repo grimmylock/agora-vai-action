@@ -15,9 +15,9 @@ namespace GameCore
         public static readonly Stall[] Stalls =
         {
             new Stall { Kind = "armor",   Name = "Armour Stall",  Look = "stall_blue",  X = 71, Y = 146 },
-            new Stall { Kind = "weapons", Name = "Arms Stall",    Look = "stall_red",   X = 77, Y = 146 },
-            new Stall { Kind = "medical", Name = "Medic Stall",   Look = "stall_green", X = 82, Y = 146 },
-            new Stall { Kind = "black",   Name = "Black Market",  Look = "stall_ochre", X = 86, Y = 146 },
+            new Stall { Kind = "weapons", Name = "Arms Stall",    Look = "stall_red",   X = 75, Y = 146 },
+            new Stall { Kind = "medical", Name = "Medic Stall",   Look = "stall_green", X = 81, Y = 147 },
+            new Stall { Kind = "black",   Name = "Black Market",  Look = "stall_ochre", X = 87, Y = 147 },
         };
         static readonly HashSet<string> MedicalIds = new HashSet<string> { "basicMedkit", "basicStim", "splint", "bandage", "radBlockPill" };
 

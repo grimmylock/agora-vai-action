@@ -27,6 +27,7 @@ This file was rewritten on 2026-10-20 (after RT 7s).
 3. **Faction colours on suits must stay readable.** Lighting may tint and darken units, never recolour them.
 4. **Show real renders, not mockups.** When Yan reviews art, show actual game output: harness
    renders or Unity screenshots. Mockups that misrepresented the game have hurt before.
+4b. **Search for references before building a kind of place** (market, bar, house, barracks...), write the principles in `ArtSource/BUILDING_REFERENCES.md`, build from them (Yan, 2026-11-25: the bazaar and bar "do not look very natural").
 5. Yan wants autonomy: keep working without asking about small things. Do ask before big
    direction changes (art direction, gameplay rules). Answer concisely, in plain language.
 6. **Never nerf enemies or bosses to fix difficulty.** Give the player tools instead (Yan, 2026-10-09).
