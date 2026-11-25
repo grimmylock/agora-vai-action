@@ -7308,3 +7308,7 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 - Yan sent a drawing: a crossroads (N-S road, E-W "Bazaar" road), a big warehouse NW, a big warehouse SW with the bar in its lower-right corner, houses and a long bunkhouse NE, a truck, a campfire and a long "building" SE. `TierMaps.cs` hub rebuilt to match: E-W concrete road y165-171 with container stalls on both sides; `Interiors.WarehouseN` (22x19) and `WarehouseBar` (20x18, the Rusty Anchor as an 8x6 room inside with its own east door, landmark outside it); Hub Clinic + three cabins NE; `BunkTall` (7x18) on the east edge (Hub Bunkhouse); truck (two wrecks), campfire with seats; Repair Yard shrunk to the SE fenced corner; Sentinel Barracks = `BarracksLong` (18x8) bottom right; checkpoint guard rooms kept. Landmarks moved to the new doors. New loot archetype `warehouse` (civilian).
 - Harness: new plans in the reachability check; ALL CHECKS PASSED. Render `maps/renders/buildings/hub_crossroads.png` (map renderer, roofs off, not Unity).
 - **Not run in Unity.** Not checked: crew positions at the moved landmarks, quest/escort paths through the hub, Bazaar traders' spots, loot balance.
+
+## Batch 9eu (2026-11-25) - hub: no container stalls
+
+- Yan: the orange containers don't fit; the traders are in the warehouses. Removed all stall containers and crates from the cross road; `The Bazaar` landmark now stands inside the NW warehouse by its door, with two shop counters (`WarehouseN` row 15). Harness passes; not run in Unity.

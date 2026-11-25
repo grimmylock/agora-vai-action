@@ -846,12 +846,10 @@ namespace GameCore
             Sandbags(c, 94, 180, 13, 4, 0, 3);
             for (int x = 97; x <= 103; x++) c.Deco(x, 193, "barrierpole");
             c.Landmark("Sentinel Checkpoint", 100, 189);
-            // The Bazaar: container stalls along both sides of the cross road
-            foreach (int sx in new[] { 70, 84, 90, 105, 111, 117, 123 }) { c.Rect(sx, 163, 4, 2, Solid, 0, "container").Put(sx + 2, 165, ScatterCover, "crate"); }
-            foreach (int sx in new[] { 70, 84, 90, 105, 111 }) { c.Rect(sx, 172, 4, 2, Solid, 0, "container").Put(sx + 2, 171, ScatterCover, "crate"); }
-            c.Landmark("The Bazaar", 100, 168);
+            // The Bazaar: the traders keep their stalls inside the NW warehouse (Yan: the containers did not fit)
             // NW: the big warehouse
             c.Clear(67, 143, 24, 21, Dirt); Interiors.Stamp(c, 68, 144, Interiors.WarehouseN, Interiors.WarehouseNFloor, "concrete", "warehouse");
+            c.Landmark("The Bazaar", 79, 160);
             // SW: the big warehouse with the Rusty Anchor in its lower-right corner (the bar's own door opens east onto the road side)
             c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseBar, Interiors.WarehouseBarFloor, "concrete", "warehouse");
             c.Landmark("The Rusty Anchor", 88, 187);
