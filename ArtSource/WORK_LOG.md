@@ -7312,3 +7312,8 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 ## Batch 9eu (2026-11-25) - hub: no container stalls
 
 - Yan: the orange containers don't fit; the traders are in the warehouses. Removed all stall containers and crates from the cross road; `The Bazaar` landmark now stands inside the NW warehouse by its door, with two shop counters (`WarehouseN` row 15). Harness passes; not run in Unity.
+
+## Batch 9ev (2026-11-25) - the hub gets a real Bazaar
+
+- Yan: "doesn't feel like a bazaar, there's no rows of traders and shops". Four market stalls drawn by Pixel Lab (create_object_pro_flash, 64x64, atlas desk as style anchor, 20 generations): `stall_green/red/blue/ochre` (patched canvas awning, goods on the table), raw files `ArtSource/world/settle_pl/raw_stall_*.png`, wired in `props_settle_pl.py` MORE, atlas repacked and copied. `TierMaps.cs`: two facing rows of ~30 stalls (y165 and y170) along the E-W road with a walkway between, gaps at the warehouse door, the N-S road and every few stalls, crates and stools in the aisle. Hard cover. The Bazaar landmark (traders' crew spot) moved into the aisle at (87,168); the warehouse shop counters stay.
+- Harness passes; render `maps/renders/buildings/hub_bazaar.png` (map renderer, not Unity). **Not run in Unity.** Not checked: trader NPC placement among stalls, walking feel through the aisle, whether stalls should be lootable/sell-points.
