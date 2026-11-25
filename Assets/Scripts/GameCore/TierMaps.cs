@@ -854,9 +854,9 @@ namespace GameCore
                   foreach (int rx in new[] { 2, 4, 6, 8, 13, 15, 17, 19 })
                       c.Put(68 + rx, 144 + ry, HardCover, sk[(rx / 2 + ry + si++ / 8) % 4]); }
             c.Landmark("The Bazaar", 79, 152);
-            // SW: the big warehouse with the Rusty Anchor in its lower-right corner (the bar's own door opens east onto the road side)
-            c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseBar, Interiors.WarehouseBarFloor, "concrete", "warehouse");
-            c.Landmark("The Rusty Anchor", 88, 187);
+            c.Landmark("The Rusty Anchor", 84, 156);   // the open bar in the NW warehouse's south-east corner
+            // SW: the big storage warehouse
+            c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseS, Interiors.WarehouseSFloor, "concrete", "warehouse");
             // NE: houses and the long bunkhouse on the east edge
             c.Clear(104, 143, 24, 19, Dirt); Interiors.Stamp(c, 106, 145, Interiors.ClinicSmall, Interiors.ClinicSmallFloor, "plaster", "clinic");
             c.Landmark("Hub Clinic", 109, 144);
