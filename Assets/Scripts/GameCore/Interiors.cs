@@ -139,120 +139,6 @@ namespace GameCore
             "..........................",
         };
 
-        public static readonly string[] Bunkhouse = {
-            "####n####n####",
-            "#.KF.KF.KF.KF#",
-            "#............#",
-            "#y...........#",
-            "n.KF.KF.KF.KFn",
-            "#............#",
-            "#s....B.....T#",
-            "#............#",
-            "###n###D###n##",
-        };
-        public static readonly string[] BunkhouseFloor = {
-            "..............",
-            ".wwwwwwwwwwww.",
-            ".wwwwwwwwwwww.",
-            ".wwwwwwwwwwww.",
-            ".wwwwwwwwwwww.",
-            ".wwwwwwwwwwww.",
-            ".wwwwwwwwwwww.",
-            ".wwwwwwwwwwww.",
-            "..............",
-        };
-        public static readonly string[] Clinic = {
-            "##n###n##",
-            "#H.H.k.f#",
-            "#.......#",
-            "n.e.e.e.n",
-            "#.......#",
-            "#p.....d#",
-            "#.......#",
-            "####D####",
-        };
-        public static readonly string[] ClinicFloor = {
-            ".........",
-            ".kkkkkkk.",
-            ".kkkkkkk.",
-            ".kkkkkkk.",
-            ".kkkkkkk.",
-            ".kkkkkkk.",
-            ".kkkkkkk.",
-            ".........",
-        };
-        public static readonly string[] Cabin1 = {
-            "###D##",
-            "#bi.s#",
-            "n...pn",
-            "#....#",
-            "######",
-        };
-        public static readonly string[] Cabin1Floor = {
-            "......",
-            ".wwww.",
-            ".wwww.",
-            ".wwww.",
-            "......",
-        };
-        public static readonly string[] Cabin2 = {
-            "###D###",
-            "#wb.is#",
-            "ny..T.n",
-            "#.....#",
-            "#######",
-        };
-        public static readonly string[] Cabin2Floor = {
-            ".......",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".......",
-        };
-        public static readonly string[] Workshop = {
-            "####D###",
-            "#m....m#",
-            "#......#",
-            "nX.d.chn",
-            "#......#",
-            "########",
-        };
-        public static readonly string[] WorkshopFloor = {
-            "........",
-            ".cccccc.",
-            ".cccccc.",
-            ".cccccc.",
-            ".cccccc.",
-            "........",
-        };
-        public static readonly string[] Tent = {
-            "##n###",
-            "#e.eF#",
-            "#....D",
-            "######",
-        };
-        public static readonly string[] TentFloor = {
-            "......",
-            ".dddd.",
-            ".dddd.",
-            "......",
-        };
-        public static readonly string[] Bar = {
-            "####n###",
-            "#P.P.rr#",
-            "#..V...n",
-            "D.S.S.T#",
-            "#......#",
-            "########",
-        };
-        public static readonly string[] BarFloor = {
-            "........",
-            ".wwwwww.",
-            ".wwwwww.",
-            ".wwwwww.",
-            ".wwwwww.",
-            "........",
-        };
 
         public static readonly string[] Anchor = {
             "###n####n###n###",
@@ -280,22 +166,6 @@ namespace GameCore
             ".wwwwwwwwwwwwww.",
             "................",
         };
-        public static readonly string[] ClinicSmall = {
-            "###D####",
-            "#HH...f#",
-            "#.....d#",
-            "ne.e.e.n",
-            "#......#",
-            "########",
-        };
-        public static readonly string[] ClinicSmallFloor = {
-            "........",
-            ".kkkkkk.",
-            ".kkkkkk.",
-            ".kkkkkk.",
-            ".kkkkkk.",
-            "........",
-        };
         public static readonly string[] BarracksHall = {
             "###n#######n###",
             "#.KF.KF.KF..RR#",
@@ -320,95 +190,7 @@ namespace GameCore
             ".wwwwwwwwwwwww.",
             "...............",
         };
-        public static readonly string[] GuardE = {
-            "##n###",
-            "#RR..#",
-            "#d.F.D",
-            "#....#",
-            "###n##",
-        };
-        public static readonly string[] GuardEFloor = {
-            "......",
-            ".cccc.",
-            ".cccc.",
-            ".cccc.",
-            "......",
-        };
-        public static readonly string[] GuardW = {
-            "##n###",
-            "#..RR#",
-            "D.F.d#",
-            "#....#",
-            "###n##",
-        };
-        public static readonly string[] GuardWFloor = {
-            "......",
-            ".cccc.",
-            ".cccc.",
-            ".cccc.",
-            "......",
-        };
 
-        public static readonly string[] BunkTall = {
-            "###n###",
-            "#KF.KF#",
-            "#.....#",
-            "n.....#",
-            "#KF.KFn",
-            "#.....#",
-            "#y...T#",
-            "#.....#",
-            "D....s#",
-            "#.....#",
-            "#KF.KF#",
-            "#.....#",
-            "#.....n",
-            "nKF.KF#",
-            "#.....#",
-            "#.....#",
-            "#.....#",
-            "###n###",
-        };
-        public static readonly string[] BunkTallFloor = {
-            ".......",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".wwwww.",
-            ".......",
-        };
-        public static readonly string[] BarracksLong = {
-            "###n#####n####n###",
-            "#hKF..KF..KF..RRh#",
-            "#................#",
-            "#.....N.......M..n",
-            "D................#",
-            "#..T....T..y....X#",
-            "#................#",
-            "#####n######n#####",
-        };
-        public static readonly string[] BarracksLongFloor = {
-            "..................",
-            ".cccccccccccccccc.",
-            ".cccccccccccccccc.",
-            ".cccccccccccccccc.",
-            ".cccccccccccccccc.",
-            ".cccccccccccccccc.",
-            ".cccccccccccccccc.",
-            "..................",
-        };
 
         public static readonly string[] WarehouseN = {
             "######################",
@@ -491,6 +273,225 @@ namespace GameCore
             ".cccccccccccccccccc.",
             ".cccccccccccccccccc.",
             "....................",
+        };
+
+        public static readonly string[] Bunkhouse = {
+            "####n####n####",
+            "#.KF..K..KF.c#",
+            "#............#",
+            "#............#",
+            "nKF.....K...Fn",
+            "#.........c..#",
+            "#y...T...B..s#",
+            "#............#",
+            "###n###D###n##",
+        };
+        public static readonly string[] BunkhouseFloor = {
+            "..............",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            ".wwwwwwwwwwww.",
+            "..............",
+        };
+        public static readonly string[] Clinic = {
+            "##n###n##",
+            "#HH..k.f#",
+            "#.......#",
+            "n.e....en",
+            "#....e..#",
+            "#p.....d#",
+            "#.......#",
+            "####D####",
+        };
+        public static readonly string[] ClinicFloor = {
+            ".........",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".kkkkkkk.",
+            ".........",
+        };
+        public static readonly string[] Cabin1 = {
+            "###D##",
+            "#ib.s#",
+            "n...yn",
+            "#....#",
+            "######",
+        };
+        public static readonly string[] Cabin1Floor = {
+            "......",
+            ".wwww.",
+            ".wwww.",
+            ".wwww.",
+            "......",
+        };
+        public static readonly string[] Cabin2 = {
+            "###D###",
+            "#bi.sw#",
+            "nyT...n",
+            "#.....#",
+            "#######",
+        };
+        public static readonly string[] Cabin2Floor = {
+            ".......",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".......",
+        };
+        public static readonly string[] Workshop = {
+            "####D###",
+            "#mc...h#",
+            "#....m.#",
+            "nXd....n",
+            "#......#",
+            "########",
+        };
+        public static readonly string[] WorkshopFloor = {
+            "........",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            "........",
+        };
+        public static readonly string[] Tent = {
+            "##n###",
+            "#eF.e#",
+            "#....D",
+            "######",
+        };
+        public static readonly string[] TentFloor = {
+            "......",
+            ".dddd.",
+            ".dddd.",
+            "......",
+        };
+        public static readonly string[] Bar = {
+            "####n###",
+            "#PP...r#",
+            "#..VV.rn",
+            "D..SS..#",
+            "#......#",
+            "########",
+        };
+        public static readonly string[] BarFloor = {
+            "........",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            "........",
+        };
+        public static readonly string[] ClinicSmall = {
+            "###D####",
+            "#HH...f#",
+            "#...p..#",
+            "ne.e..dn",
+            "#......#",
+            "########",
+        };
+        public static readonly string[] ClinicSmallFloor = {
+            "........",
+            ".kkkkkk.",
+            ".kkkkkk.",
+            ".kkkkkk.",
+            ".kkkkkk.",
+            "........",
+        };
+        public static readonly string[] BunkTall = {
+            "###n###",
+            "#KF.KF#",
+            "#.....#",
+            "ny....#",
+            "#...KFn",
+            "#K....#",
+            "#.....#",
+            "#....s#",
+            "D.....#",
+            "#..T..#",
+            "#.....#",
+            "#KF...#",
+            "#....Kn",
+            "n.....#",
+            "#.c.KF#",
+            "#.....#",
+            "#.....#",
+            "###n###",
+        };
+        public static readonly string[] BunkTallFloor = {
+            ".......",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".......",
+        };
+        public static readonly string[] BarracksLong = {
+            "###n#####n####n###",
+            "#.KF..K...KF..RRh#",
+            "#................#",
+            "#.....N.......M..n",
+            "D........T.......#",
+            "#...T......y.c..X#",
+            "#................#",
+            "#####n######n#####",
+        };
+        public static readonly string[] BarracksLongFloor = {
+            "..................",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            "..................",
+        };
+        public static readonly string[] GuardE = {
+            "##n###",
+            "#RR.F#",
+            "#d...D",
+            "#....#",
+            "###n##",
+        };
+        public static readonly string[] GuardEFloor = {
+            "......",
+            ".cccc.",
+            ".cccc.",
+            ".cccc.",
+            "......",
+        };
+        public static readonly string[] GuardW = {
+            "##n###",
+            "#F.RR#",
+            "D...d#",
+            "#....#",
+            "###n##",
+        };
+        public static readonly string[] GuardWFloor = {
+            "......",
+            ".cccc.",
+            ".cccc.",
+            ".cccc.",
+            "......",
         };
 
         /// <summary>The dev map: the three test buildings on grass, side by side.</summary>

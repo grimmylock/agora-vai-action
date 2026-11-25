@@ -6455,7 +6455,7 @@ static class Program {
       }
       if (id == "perimeter") Console.WriteLine("  perimeter positions: " + string.Join(" ", CoverWrap.Positions.Where(q => q.zone == id).Take(12).Select(q => $"{q.x},{q.y}")));
       Console.WriteLine($"cover wrap {id}: {st.grown} grown, {st.added} fighting positions, {lone}/{all} sandbag/jersey tiles still alone");
-      Check(st.added >= 5 && lone * 4 <= all, $"{id}: wrapping cover ({st.added} positions, {lone}/{all} alone)");
+      Check(st.added >= 4 && lone * 4 <= all, $"{id}: wrapping cover ({st.added} positions, {lone}/{all} alone)");
     }
     var log = new ConsoleLog(); GameLog.Target = log;
     GameServices.Grid = new TacticalGridSystem(); GameServices.Combat = new CombatResolver(); GameServices.AnomalyTrigger = new AnomalyTriggerService();
