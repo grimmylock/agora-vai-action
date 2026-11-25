@@ -364,14 +364,14 @@ def build(mat, mask, variant=0, extra=None, corners=0):
             for x in range(2, 14): im[ft + k1 - 1, x] = STN[4]; im[ft + k1, x] = STN[0]               # the sill
         elif extra in ("window", "uwin"):
             for k0 in ([3] if extra == "uwin" else [3, H // 2 + 3]) if two else [2]:
-                boarded = r.random() < .5
+                boarded = False   # 2026-11-25 (Yan: the wooden windows never made sense): no boards
                 for k in range(k0, k0 + 11):
                     for x in range(3, 13):
                         edge = k in (k0, k0 + 10) or x in (3, 12)
-                        if edge: c = P["wood"][1]
+                        if edge: c = P["steel"][1]                                 # a stone/concrete frame, not wood
                         elif boarded: c = P["wood"][3] if (k - k0 - 2) % 3 else P["wood"][1]
                         else: c = hx("#1d2629") if (x - k) % 6 else hx("#4f6468")
-                        if edge and k == k0 + 10: c = P["wood"][3]           # sill
+                        if edge and k == k0 + 10: c = P["steel"][3]         # sill
                         im[ft + k, x] = c
         else:
             pal = P["wood"] if extra == "door" else P["steel"]

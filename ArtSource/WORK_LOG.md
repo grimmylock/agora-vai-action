@@ -7321,3 +7321,7 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 ## Batch 9ew (2026-11-25) - the Bazaar moves inside the NW warehouse
 
 - Yan marked the top warehouse and asked for the Bazaar inside it, as many rows as fit. Outside stalls removed; `WarehouseN` rows 5, 9, 11 emptied; `TierMaps.cs` puts 3 rows x 8 stalls (rows at plan y4/7/10, a 3-tile lane down the middle to both doors) with the Bazaar landmark at (79,153). Shelves along the north wall and the counters by the south door stay. Harness passes; not run in Unity; render `maps/renders/buildings/hub_bazaar.png`.
+
+## Batch 9ex (2026-11-25) - wooden windows gone; the Bazaar warehouse holds only stalls
+
+- Yan: "those wooden windows never made sense, remove them; remove everything else from the warehouse and leave only the bazaar stalls, closer to the top wall". `walls.py`: window faces are no longer boarded and no longer wood-framed (dark glass in a steel frame, steel sill) - game-wide, atlas repacked and copied. `Interiors.WarehouseN` is now an empty shell (no windows, shelves, counters, crates), `TierMaps.cs` stalls at plan rows 2/5/8 (3 x 8) with the Bazaar landmark at (79,152). Harness passes; not run in Unity; render `maps/renders/buildings/hub_bazaar.png`. Note: the warehouse has no windows at all now; other buildings keep theirs.

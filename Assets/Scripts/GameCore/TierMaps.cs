@@ -850,10 +850,10 @@ namespace GameCore
             c.Clear(67, 143, 24, 21, Dirt); Interiors.Stamp(c, 68, 144, Interiors.WarehouseN, Interiors.WarehouseNFloor, "concrete", "warehouse");
             // The Bazaar (Yan, 2026-11-25: inside the top warehouse, as many rows as fit): three rows of canvas stalls with two-tile aisles, a lane down the middle to the doors
             { string[] sk = { "stall_green", "stall_red", "stall_blue", "stall_ochre" }; int si = 0;
-              foreach (int ry in new[] { 4, 7, 10 })
+              foreach (int ry in new[] { 2, 5, 8 })
                   foreach (int rx in new[] { 2, 4, 6, 8, 13, 15, 17, 19 })
                       c.Put(68 + rx, 144 + ry, HardCover, sk[(rx / 2 + ry + si++ / 8) % 4]); }
-            c.Landmark("The Bazaar", 79, 153);
+            c.Landmark("The Bazaar", 79, 152);
             // SW: the big warehouse with the Rusty Anchor in its lower-right corner (the bar's own door opens east onto the road side)
             c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseBar, Interiors.WarehouseBarFloor, "concrete", "warehouse");
             c.Landmark("The Rusty Anchor", 88, 187);
