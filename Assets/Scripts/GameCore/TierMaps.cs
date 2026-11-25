@@ -846,17 +846,14 @@ namespace GameCore
             Sandbags(c, 94, 180, 13, 4, 0, 3);
             for (int x = 97; x <= 103; x++) c.Deco(x, 193, "barrierpole");
             c.Landmark("Sentinel Checkpoint", 100, 189);
-            // The Bazaar (Yan, 2026-11-25: "an actual bazaar", rows of traders and shops): canvas stalls in two rows facing the walkway of the E-W road, the road kept clear where it crosses the N-S one
-            { string[] sk = { "stall_green", "stall_red", "stall_blue", "stall_ochre" }; int si = 0;
-              for (int sx = 69; sx <= 131; sx += 2)
-              {
-                  if (sx >= 77 && sx <= 82 || sx >= 96 && sx <= 104 || (sx - 69) % 14 == 12) continue;   // the warehouse door, the N-S road and a cross-gap every few stalls
-                  c.Put(sx, 165, HardCover, sk[(sx / 2 + si++ / 5) % 4]); c.Put(sx + 1, 170, HardCover, sk[(sx / 2 + 2 + si / 4) % 4]);
-                  if (sx % 6 == 1) c.Put(sx, 167, ScatterCover, sx % 12 == 1 ? "crate" : "stool");
-              } }
-            c.Landmark("The Bazaar", 87, 168);
             // NW: the big warehouse
             c.Clear(67, 143, 24, 21, Dirt); Interiors.Stamp(c, 68, 144, Interiors.WarehouseN, Interiors.WarehouseNFloor, "concrete", "warehouse");
+            // The Bazaar (Yan, 2026-11-25: inside the top warehouse, as many rows as fit): three rows of canvas stalls with two-tile aisles, a lane down the middle to the doors
+            { string[] sk = { "stall_green", "stall_red", "stall_blue", "stall_ochre" }; int si = 0;
+              foreach (int ry in new[] { 4, 7, 10 })
+                  foreach (int rx in new[] { 2, 4, 6, 8, 13, 15, 17, 19 })
+                      c.Put(68 + rx, 144 + ry, HardCover, sk[(rx / 2 + ry + si++ / 8) % 4]); }
+            c.Landmark("The Bazaar", 79, 153);
             // SW: the big warehouse with the Rusty Anchor in its lower-right corner (the bar's own door opens east onto the road side)
             c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseBar, Interiors.WarehouseBarFloor, "concrete", "warehouse");
             c.Landmark("The Rusty Anchor", 88, 187);
