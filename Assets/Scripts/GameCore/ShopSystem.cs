@@ -62,6 +62,8 @@ namespace GameCore
         /// are); the Friendly discount only applies at a named Quartermaster (a faction with an
         /// opinion of you) - the zone-tier/Wandering Trader fallback has no faction to be Friendly
         /// with.</summary>
+        /// <summary>2026-11-25: set by ShopUI while a Bazaar vendor with its own markup (the black market, x2) is open.</summary>
+        public static float VendorMarkup = 1f;
         public static int GetBuyPrice(ShopItemDef item)
         {
             if (item == null) return 0;
@@ -73,7 +75,7 @@ namespace GameCore
             if (StorySystem.ContainPrices && Player.Current != null) repMult = ReputationPricing.FriendlyMultiplier("Friendly", isSelling: false);
             haggle *= StorySystem.PriceMultiplier;
             float basePrice = item.Type == "ammo" ? AmmoBoxPrice(item) : item.Price;
-            return (int)(basePrice * ReputationPricing.RemotenessMarkup(tier) * repMult * haggle);
+            return (int)(basePrice * ReputationPricing.RemotenessMarkup(tier) * repMult * haggle * VendorMarkup);
         }
 
         // 2026-11-17: a box costs its load's price per round times the rounds in it (AmmoDatabase), before the remoteness markup, Haggler and reputation. An old generic rolled box is priced as the load of the

@@ -52,6 +52,7 @@ namespace GameCore
                 ["bottleshelf"] = R("Bottle Shelf", 0.7f, E(4, "item", "energyDrink"), E(2, "ru", null, 3, 12)),
                 ["barcounter"] = R("Till", 0.8f, E(1, "ru", null, 10, 45)),
                 ["rustbarrel"] = R("Barrel", 0.3f, E(3, "item", "energyDrink"), E(1, "ru", null, 2, 8)),
+                ["kegs"] = R("Kegs", 0.4f, E(3, "item", "energyDrink"), E(1, "ru", null, 2, 10)),
             },
             ["bunkhouse"] = new Dictionary<string, Rule>
             {

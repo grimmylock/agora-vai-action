@@ -23,6 +23,7 @@ namespace GameCore
         private bool _open;
         private ZoneDef _currentZone;
         private QuartermasterDef _currentQuartermaster;
+        private Bazaar.Stall _vendor;                        // 2026-11-25: a Bazaar stall (its own stock and markup), null = the zone's general shop
         enum Tab { Buy, Sell, Repair, Upgrade, Hire }
         Tab _tab; int _page, _sel;
         class Row { public string Label, Price, Desc, DoLabel; public InventoryItem Preview; public System.Action Do; public bool Header, Afford = true; }
@@ -43,6 +44,8 @@ namespace GameCore
             if (_open) { Close(); return; }
             var zone = MacroMapDatabase.Find(MacroState.Current.CurrentZoneId);
             if (zone == null) { GameLog.Write("No shop here."); return; }
+            _vendor = Bazaar.Near(Player.Current);
+            if (_vendor != null) { _currentZone = zone; _currentQuartermaster = null; ShopSystem.VendorMarkup = _vendor.Kind == "black" ? Bazaar.BlackMarkup : 1f; Open(); return; }
             var qm = QuartermasterDatabase.Find(zone.Id);
             if (qm != null)
             {
@@ -73,6 +76,7 @@ namespace GameCore
         private void Close()
         {
             _open = false; GameState.Current.ModalOpen = false;
+            _vendor = null; ShopSystem.VendorMarkup = 1f;
             HudView.PackClosedFrame = Time.frameCount;                      // the Esc that closed it does not also pause
             if (_box != null) Destroy(_box); if (_dim != null) Destroy(_dim); _box = _dim = null;
         }
@@ -80,6 +84,7 @@ namespace GameCore
         // ---------------------------------------------------------------- what is on offer
         private (int tier, string name) Trader()
         {
+            if (_vendor != null) return (_vendor.Kind == "black" ? 4 : 3, _vendor.Name);
             if (_currentQuartermaster != null) return (_currentQuartermaster.MaxTier, _currentQuartermaster.Name);
             if (_currentZone != null && MacroState.Current.WanderingTraderZoneId == _currentZone.Id) return (MacroState.Current.WanderingTraderTier, "Wandering Trader");
             return (_currentZone?.Tier ?? 1, _currentZone?.Name ?? "Trader");
@@ -102,15 +107,15 @@ namespace GameCore
             var (traderTier, _) = Trader();
             if (_tab == Tab.Buy)
             {
-                var stock = ShopDatabase.Items.Where(i => i.Baseline).ToList();
-                stock.AddRange(ShopSystem.AmmoStock(player, traderTier));                      // ammo by caliber, for the guns you carry
+                var stock = _vendor != null ? Bazaar.Stock(_vendor.Kind, player) : ShopDatabase.Items.Where(i => i.Baseline).ToList();
+                if (_vendor == null) stock.AddRange(ShopSystem.AmmoStock(player, traderTier));                      // ammo by caliber, for the guns you carry
                 foreach (var item in stock)
                 {
                     var it = item; int price = ShopSystem.GetBuyPrice(it);
                     _rows.Add(new Row { Label = it.Type == "ammo" ? AmmoLabel(it, player) : it.Name, Price = price + " RU", Afford = player.Ru >= price, Preview = AsItem(it), DoLabel = "PURCHASE", Desc = Describe(AsItem(it), it), Do = () => ShopSystem.BuyItem(it.Id) });
                 }
                 // the rolled one-off stock of this trader (RolledStockSystem), gone once bought
-                var zoneId = _currentZone?.Id;
+                var zoneId = _vendor == null ? _currentZone?.Id : _vendor.Kind == "black" ? "bazaar_black" : null;   // a vendor has fixed stock; only the black market rolls a (tier 4) one-off stock
                 if (!string.IsNullOrEmpty(zoneId) && !MacroState.Current.RolledShopStock.ContainsKey(zoneId))
                 {
                     bool wandering = _currentQuartermaster == null && !_currentZone.IsSafeZone;

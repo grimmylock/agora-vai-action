@@ -12,7 +12,8 @@ ITEMS = ["cot", "barcounter", "bottleshelf", "medcabinet", "stool", "bench"]
 MORE = {"bed": "bed", "wardrobe": "wardrobe", "kitchensink": "kitchen", "stove": "stove", "fridge": "fridge", "diningset": "dining", "sofa": "sofa", "toilet": "toilet", "bathtub": "bathtub",
         "washbasin": "washbasin", "bookshelf": "bookshelf", "goodsshelf": "goodsshelf", "shopcounter": "shopcounter", "bunkbed": "bunkbed", "footlocker": "footlocker", "weaponrack": "weaponrack", "maptable": "maptable",
         "nightstand": "nightstand", "kitchencounter": "kcounter", "plant": "plant", "floorlamp": "lamp", "noticeboard": "board", "boxstack": "boxes",
-        "stall_green": "stall_green", "stall_red": "stall_red", "stall_blue": "stall_blue", "stall_ochre": "stall_ochre"}
+        "stall_green": "stall_green", "stall_red": "stall_red", "stall_blue": "stall_blue", "stall_ochre": "stall_ochre",
+        "pooltable": "pooltable", "jukebox": "jukebox", "cardtable": "cardtable", "kegs": "kegs"}
 def _load(item):
     p = os.path.join(_HERE, f"raw_{item}.png")
     if not os.path.exists(p): return None

@@ -848,13 +848,10 @@ namespace GameCore
             c.Landmark("Sentinel Checkpoint", 100, 189);
             // NW: the big warehouse
             c.Clear(67, 143, 24, 21, Dirt); Interiors.Stamp(c, 68, 144, Interiors.WarehouseN, Interiors.WarehouseNFloor, "concrete", "warehouse");
-            // The Bazaar (Yan, 2026-11-25: inside the top warehouse, as many rows as fit): three rows of canvas stalls with two-tile aisles, a lane down the middle to the doors
-            { string[] sk = { "stall_green", "stall_red", "stall_blue", "stall_ochre" }; int si = 0;
-              foreach (int ry in new[] { 2, 5, 8 })
-                  foreach (int rx in new[] { 2, 4, 6, 8, 13, 15, 17, 19 })
-                      c.Put(68 + rx, 144 + ry, HardCover, sk[(rx / 2 + ry + si++ / 8) % 4]); }
-            c.Landmark("The Bazaar", 79, 152);
-            c.Landmark("The Rusty Anchor", 84, 156);   // the open bar in the NW warehouse's south-east corner
+            // The Bazaar (Yan, 2026-11-25): four stalls against the top wall of the NW warehouse, one vendor each (Bazaar.cs: armour, arms, medical, the black market); the bar fills the warehouse's south end
+            foreach (var st in Bazaar.Stalls) c.Put(st.X, st.Y, HardCover, st.Look);
+            c.Landmark("The Bazaar", 79, 149);
+            c.Landmark("The Rusty Anchor", 72, 156);   // the bartender's side of the counter
             // SW: the big storage warehouse
             c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseS, Interiors.WarehouseSFloor, "concrete", "warehouse");
             // NE: houses and the long bunkhouse on the east edge
