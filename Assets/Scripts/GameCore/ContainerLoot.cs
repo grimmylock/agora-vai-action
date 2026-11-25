@@ -16,7 +16,7 @@ namespace GameCore
         public class Rule { public string Name; public float Chance; public Entry[] Pool; }
         static Rule R(string name, float chance, params Entry[] pool) => new Rule { Name = name, Chance = chance, Pool = pool };
 
-        public static readonly HashSet<string> Civilian = new HashSet<string> { "house", "shop", "office", "clinic", "school", "church", "workshop", "bunkhouse", "bar" };
+        public static readonly HashSet<string> Civilian = new HashSet<string> { "house", "shop", "office", "clinic", "school", "church", "workshop", "bunkhouse", "bar", "warehouse" };
         public static readonly HashSet<string> CivilianKinds = new HashSet<string> { "ru", "item" };                       // no weapon, armor or ammo
         public static readonly HashSet<string> CivilianItems = new HashSet<string> { "mre", "energyDrink", "bandage", "splint", "fieldRepairKit", "basicMedkit", "radBlockPill" };
 
@@ -41,6 +41,17 @@ namespace GameCore
                 ["fridge"] = R("Freezer", 0.7f, E(4, "item", "energyDrink"), E(3, "item", "mre")),
                 ["desk"] = R("Desk", 0.6f, E(1, "ru", null, 10, 45)),
                 ["crate"] = R("Crate", 0.4f, E(3, "item", "mre"), E(2, "item", "energyDrink"), E(2, "ru", null, 3, 15)),
+            },
+            ["warehouse"] = new Dictionary<string, Rule>
+            {
+                ["goodsshelf"] = R("Shelf", 0.4f, E(3, "item", "mre"), E(2, "item", "fieldRepairKit"), E(3, "ru", null, 5, 25)),
+                ["boxstack"] = R("Boxes", 0.5f, E(3, "item", "mre"), E(2, "item", "energyDrink"), E(3, "ru", null, 5, 25)),
+                ["crate"] = R("Crate", 0.5f, E(2, "item", "fieldRepairKit"), E(3, "ru", null, 3, 15)),
+                ["desk"] = R("Desk", 0.5f, E(1, "ru", null, 5, 30)),
+                ["lockers"] = R("Locker", 0.5f, E(3, "item", "bandage"), E(2, "ru", null, 5, 20)),
+                ["bottleshelf"] = R("Bottle Shelf", 0.7f, E(4, "item", "energyDrink"), E(2, "ru", null, 3, 12)),
+                ["barcounter"] = R("Till", 0.8f, E(1, "ru", null, 10, 45)),
+                ["rustbarrel"] = R("Barrel", 0.3f, E(3, "item", "energyDrink"), E(1, "ru", null, 2, 8)),
             },
             ["bunkhouse"] = new Dictionary<string, Rule>
             {

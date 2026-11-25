@@ -837,36 +837,41 @@ namespace GameCore
                 if (Math.Abs(y - 168) > 2) { c.Put(66, y, Solid, "concrete"); c.Put(134, y, Solid, "concrete"); }
             }
             c.Paint(97, 143, 7, 51, Concrete);
+            // 2026-11-25 (Yan's drawing): the hub is a crossroads. The N-S road (x 97-103) and the E-W Bazaar road (y 165-171) cross in the middle;
+            // NW a big warehouse, SW a big warehouse with the Anchor bar in its corner, NE houses and a long bunkhouse, SE a truck, the campfire, the repair yard and the Sentinels' long barracks.
+            c.Paint(67, 165, 67, 7, Concrete);
             // Sentinel Checkpoint at the south gate
-            c.Clear(89, 185, 8, 7, Concrete); Interiors.Stamp(c, 90, 186, Interiors.GuardE, Interiors.GuardEFloor, "concrete", "barracks");   // 2026-11-24: the guard rooms are furnished plans
+            c.Clear(89, 185, 8, 7, Concrete); Interiors.Stamp(c, 90, 186, Interiors.GuardE, Interiors.GuardEFloor, "concrete", "barracks");
             c.Clear(104, 185, 8, 7, Concrete); Interiors.Stamp(c, 105, 186, Interiors.GuardW, Interiors.GuardWFloor, "concrete", "barracks");
             Sandbags(c, 94, 180, 13, 4, 0, 3);
             for (int x = 97; x <= 103; x++) c.Deco(x, 193, "barrierpole");
             c.Landmark("Sentinel Checkpoint", 100, 189);
-            // The Bazaar: container stalls down the main lane
-            for (int y = 150; y < 178; y += 6)
-            {
-                c.Rect(88, y, 4, 2, Solid, 0, "container").Put(90, y + 2, ScatterCover, "crate");
-                c.Rect(109, y, 4, 2, Solid, 0, "container").Put(110, y + 2, ScatterCover, "crate");
-            }
-            c.Landmark("The Bazaar", 100, 163);
-            Fire(c, 100, 168); c.Put(98, 170, ScatterCover, "armchair");
-            // The Rusty Anchor, the bunkhouse, the Sentinel barracks
-            c.Clear(69, 145, 18, 13, Dirt); Interiors.Stamp(c, 70, 146, Interiors.Anchor, Interiors.AnchorFloor, "plaster", "bar");   // the Anchor: bar counter, bottle shelves, tables
-            c.Landmark("The Rusty Anchor", 78, 158);
-            c.Clear(69, 171, 16, 11, Dirt); Interiors.Stamp(c, 70, 172, Interiors.Bunkhouse, Interiors.BunkhouseFloor, "plank", "bunkhouse");
-            c.Landmark("Hub Bunkhouse", 77, 183);
-            // 2026-11-24: the Anchor's terrace, the clinic (shelves, cots)
-            c.Put(74, 160, ScatterCover, "desk").Put(82, 160, ScatterCover, "desk").Put(73, 160, ScatterCover, "stool").Put(75, 160, ScatterCover, "stool").Put(81, 160, ScatterCover, "stool").Put(83, 160, ScatterCover, "stool").Put(86, 158, Barrel);
-            c.Clear(92, 175, 10, 8, Concrete); Interiors.Stamp(c, 93, 176, Interiors.ClinicSmall, Interiors.ClinicSmallFloor, "plaster", "clinic");
-            c.Landmark("Hub Clinic", 97, 175);
-            c.Clear(115, 145, 17, 12, Dirt); Interiors.Stamp(c, 116, 146, Interiors.BarracksHall, Interiors.BarracksHallFloor, "concrete", "barracks");
-            c.Landmark("Sentinel Barracks", 123, 157);
-            // the Repair Yard
-            c.Clear(115, 170, 17, 21, Concrete);
-            c.Fence(114, 169, 132, 169, "fence", 2, 3).Fence(114, 169, 114, 191, "fence", 8, 3).Fence(114, 191, 132, 191);
-            c.Put(118, 174, Solid, "wreck").Put(124, 180, Solid, "wreck").Put(128, 174, HardCover, "machine").Put(120, 186, ScatterCover, "crate").Put(127, 186, ScatterCover, "desk");
-            c.Landmark("Repair Yard", 122, 182);
+            // The Bazaar: container stalls along both sides of the cross road
+            foreach (int sx in new[] { 70, 84, 90, 105, 111, 117, 123 }) { c.Rect(sx, 163, 4, 2, Solid, 0, "container").Put(sx + 2, 165, ScatterCover, "crate"); }
+            foreach (int sx in new[] { 70, 84, 90, 105, 111 }) { c.Rect(sx, 172, 4, 2, Solid, 0, "container").Put(sx + 2, 171, ScatterCover, "crate"); }
+            c.Landmark("The Bazaar", 100, 168);
+            // NW: the big warehouse
+            c.Clear(67, 143, 24, 21, Dirt); Interiors.Stamp(c, 68, 144, Interiors.WarehouseN, Interiors.WarehouseNFloor, "concrete", "warehouse");
+            // SW: the big warehouse with the Rusty Anchor in its lower-right corner (the bar's own door opens east onto the road side)
+            c.Clear(67, 174, 22, 19, Dirt); Interiors.Stamp(c, 68, 174, Interiors.WarehouseBar, Interiors.WarehouseBarFloor, "concrete", "warehouse");
+            c.Landmark("The Rusty Anchor", 88, 187);
+            // NE: houses and the long bunkhouse on the east edge
+            c.Clear(104, 143, 24, 19, Dirt); Interiors.Stamp(c, 106, 145, Interiors.ClinicSmall, Interiors.ClinicSmallFloor, "plaster", "clinic");
+            c.Landmark("Hub Clinic", 109, 144);
+            Interiors.Stamp(c, 117, 145, Interiors.Cabin1, Interiors.Cabin1Floor, "plank", "house");
+            Interiors.Stamp(c, 106, 155, Interiors.Cabin2, Interiors.Cabin2Floor, "plank", "house");
+            Interiors.Stamp(c, 116, 155, Interiors.Cabin1, Interiors.Cabin1Floor, "plank", "house");
+            c.Clear(124, 143, 10, 20, Dirt); Interiors.Stamp(c, 126, 144, Interiors.BunkTall, Interiors.BunkTallFloor, "plank", "bunkhouse");
+            c.Landmark("Hub Bunkhouse", 125, 152);
+            // SE: a truck on the road, the campfire, the repair yard, the Sentinels' long barracks
+            c.Put(108, 175, Solid, "wreck").Put(109, 175, Solid, "wreck");
+            Fire(c, 112, 178); c.Put(110, 178, ScatterCover, "armchair").Put(114, 178, ScatterCover, "armchair").Put(112, 180, ScatterCover, "stool");
+            c.Clear(119, 174, 14, 10, Concrete);
+            c.Fence(118, 173, 133, 173, "fence", 2, 3).Fence(118, 173, 118, 183, "fence", 5, 3).Fence(118, 183, 133, 183);
+            c.Put(121, 176, Solid, "wreck").Put(126, 179, HardCover, "machine").Put(130, 176, HardCover, "machine").Put(122, 181, ScatterCover, "crate").Put(129, 181, ScatterCover, "desk");
+            c.Landmark("Repair Yard", 124, 178);
+            c.Clear(113, 183, 20, 10, Dirt); Interiors.Stamp(c, 114, 184, Interiors.BarracksLong, Interiors.BarracksLongFloor, "concrete", "barracks");
+            c.Landmark("Sentinel Barracks", 113, 188);
             c.Keep(66, 142, 69, 53);
             c.Landmark("arrive:scavengers_hub", 100, 172);
 
