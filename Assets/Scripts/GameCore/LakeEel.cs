@@ -62,7 +62,44 @@ namespace GameCore
             _last = pos;
             if (_active || _still < WaitSeconds || now < _coolUntil || !AtEdge(p.X, p.Y)) return;
             if (!Plan(p.X, p.Y, new System.Random(p.X * 7919 + p.Y * 104729 + (int)now), out var ax, out var ay, out var bx, out var by)) { _coolUntil = now + 20f; return; }
+            Begin(ax, ay, bx, by, now);
+        }
+
+        public static void Begin(float ax, float ay, float bx, float by, float now)
+        {
             _active = true; _t0 = now; _ax = ax; _ay = ay; _len = Mathf.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)); _dx = (bx - ax) / _len; _dy = (by - ay) / _len; _coolUntil = now + Cooldown; _still = 0f;
+        }
+
+        public struct Seg { public float X, Y, Ang, Sx, Sy, A; public bool On; }
+
+        static (float x, float y) PathAt(float s, float t)
+        {
+            float w = 0.7f * Mathf.Sin(s * 0.8f - t * 2.6f);                  // a slow sideways swim along the run
+            return (_ax + _dx * s - _dy * w, _ay + _dy * s + _dx * w);
+        }
+
+        /// <summary>The shadow at `t` seconds into its run: one entry per segment (tile space, y down; Ang in degrees as drawn). Returns false once the run is over.</summary>
+        public static bool Compute(float t, Seg[] outSegs)
+        {
+            float travel = _len + Segments * Spacing, head = t * Speed;
+            if (head > travel + 1f) return false;
+            float fade = Mathf.Clamp01(Mathf.Min(t, (travel / Speed) - t) / Fade);
+            for (int i = 0; i < Segments; i++)
+            {
+                float s = head - i * Spacing; var sg = new Seg();
+                if (s >= 0f && s <= _len)
+                {
+                    var pos = PathAt(s, t); var ahead = PathAt(s + 0.2f, t); float dvx = ahead.x - pos.x, dvy = ahead.y - pos.y;
+                    if (IsWater(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y)))
+                    {
+                        float u = (float)i / (Segments - 1);
+                        float girth = u < 0.1f ? Mathf.Lerp(0.55f, 1f, u / 0.1f) : Mathf.Lerp(1f, 0.15f, (u - 0.1f) / 0.9f);   // a broad head, a long tapering body
+                        sg.On = true; sg.X = pos.x; sg.Y = pos.y; sg.Ang = Mathf.Atan2(-dvy, dvx) * Mathf.Rad2Deg; sg.Sx = 0.9f * TW; sg.Sy = 0.93f * girth * TW; sg.A = 0.5f * fade * (0.55f + 0.45f * girth);
+                    }
+                }
+                outSegs[i] = sg;
+            }
+            return true;
         }
 
         // ---------------------------------------------------------------- the view
@@ -90,17 +127,11 @@ namespace GameCore
 
         void Hide() { for (int i = 0; i < Segments; i++) if (_seg[i] != null) _seg[i].enabled = false; }
 
-        (float x, float y) PathAt(float s, float t)
-        {
-            float w = 0.7f * Mathf.Sin(s * 0.8f - t * 2.6f);                  // a slow sideways swim along the run
-            return (_ax + _dx * s - _dy * w, _ay + _dy * s + _dx * w);
-        }
+        readonly Seg[] _buf = new Seg[Segments];
 
         void Draw(float t)
         {
-            float travel = _len + Segments * Spacing, head = t * Speed;
-            if (head > travel + 1f) { _active = false; Hide(); return; }
-            float fade = Mathf.Clamp01(Mathf.Min(t, (travel / Speed) - t) / Fade);
+            if (!Compute(t, _buf)) { _active = false; Hide(); return; }
             for (int i = 0; i < Segments; i++)
             {
                 if (_seg[i] == null)
@@ -108,16 +139,11 @@ namespace GameCore
                     var go = new GameObject("LakeEelSeg"); go.transform.SetParent(transform, false);
                     _seg[i] = go.AddComponent<SpriteRenderer>(); _seg[i].sprite = Blob(); _seg[i].sortingOrder = 2;
                 }
-                float s = head - i * Spacing; var sr = _seg[i];
-                if (s < 0f || s > _len) { sr.enabled = false; continue; }
-                var pos = PathAt(s, t); var ahead = PathAt(s + 0.2f, t); float dvx = ahead.x - pos.x, dvy = ahead.y - pos.y;
-                if (!IsWater(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y))) { sr.enabled = false; continue; }
-                float u = (float)i / (Segments - 1);
-                float girth = u < 0.1f ? Mathf.Lerp(0.55f, 1f, u / 0.1f) : Mathf.Lerp(1f, 0.15f, (u - 0.1f) / 0.9f);   // a broad head, a long tapering body
-                sr.enabled = true; sr.transform.position = new Vector3(pos.x * TW, -pos.y * TW, 0f);      // tile space (y down) -> world
-                sr.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-dvy, dvx) * Mathf.Rad2Deg);
-                sr.transform.localScale = new Vector3(0.9f * TW, 0.93f * girth * TW, 1f);
-                sr.color = new Color(0.02f, 0.06f, 0.07f, 0.5f * fade * (0.55f + 0.45f * girth));
+                var sg = _buf[i]; var sr = _seg[i];
+                if (!sg.On) { sr.enabled = false; continue; }
+                sr.enabled = true; sr.transform.position = new Vector3(sg.X * TW, -sg.Y * TW, 0f);                      // tile space (y down) -> world
+                sr.transform.rotation = Quaternion.Euler(0f, 0f, sg.Ang); sr.transform.localScale = new Vector3(sg.Sx, sg.Sy, 1f);
+                sr.color = new Color(0.02f, 0.06f, 0.07f, sg.A);
             }
         }
     }

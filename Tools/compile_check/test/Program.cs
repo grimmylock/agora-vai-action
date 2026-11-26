@@ -6,6 +6,7 @@ static class Program {
     // RT 7z-d: the real JsonUtility stub (RT 7x) made SquadManager's offline_squads.json persist between runs, so every run started
     // from the last one's squads - the checks and the scene dumps drifted. Every run starts clean.
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
+    if (args.Length > 0 && args[0] == "lakeeel") { LakeEelDump(); return 0; }
     if (args.Length > 0 && args[0] == "pistolttk") { PistolTtk(); return 0; }
     if (args.Length > 0 && args[0] == "mutantmaps") { MutantMaps(); return 0; }
     if (args.Length > 0 && args[0] == "mutanthits") { MutantHits(); return 0; }
@@ -742,6 +743,12 @@ static class Program {
     public void AppendLine(string m) { Lines++; if (Clicker) Console.WriteLine("  | " + m);
       if (Counts != null) { var k = new string(m.TakeWhile(c => !char.IsDigit(c)).Take(40).ToArray()); Counts[k] = (Counts.TryGetValue(k, out var n) ? n : 0) + 1; } } }
   // Batch 72: Hunker Down, Overwatch on movement, the Raider shakedown, and the action bar's entries
+  static void LakeEelDump() {   // 2026-11-26: the eel's real geometry for Tools/render previews: lakeeel -> lines "t x y ang sx sy a" per segment
+    MacroState.Current = new MacroState(); MacroState.Current.CurrentZoneId = "marshes"; TerrainMap.BuildTerrainForZone("marshes");
+    LakeEel.Plan(161, 96, new Random(3), out var ax, out var ay, out var bx, out var by); LakeEel.Begin(ax, ay, bx, by, 0f);
+    Console.WriteLine($"PATH {ax} {ay} {bx} {by}"); var buf = new LakeEel.Seg[26];
+    foreach (float tt in new[] { 2.5f, 5f, 7.5f, 10f }) { if (!LakeEel.Compute(tt, buf)) continue; foreach (var s in buf) if (s.On) Console.WriteLine($"SEG {tt} {s.X} {s.Y} {s.Ang} {s.Sx} {s.Sy} {s.A}"); }
+  }
   static Player Arena(out int px, out int py) {
     GameBootstrap.StartNewGame();
     GameState.Current.Mode = GameMode.Tactical; GameState.Current.CurrentTurn = Turn.Player;
