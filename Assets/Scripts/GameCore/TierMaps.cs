@@ -326,6 +326,7 @@ namespace GameCore
             c.Deco(112, 133, "canopy");                                                                        // the flat canopy roof on its posts
             c.Put(104, 131, HardCover, "stationsign").Put(109, 130, ScatterCover, "icechest").Put(117, 130, ScatterCover, "tires");
             c.Put(119, 134, HardCover, "wreck").Put(120, 126, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires");
+            c.Put(107, 131, ScatterCover, "trash").Put(114, 131, ScatterCover, "debris").Put(118, 131, ScatterCover, "rubble").Put(106, 135, ScatterCover, "debris").Put(110, 135, ScatterCover, "trash");   // abandoned: litter and rubble on the forecourt
             c.Landmark("Roadside Station", 108, 130);
 
             // Army Field Camp with Watchtower 3: sandbags, tents, an abandoned carrier, the leaning tower

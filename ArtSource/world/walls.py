@@ -244,8 +244,10 @@ def stucco_face(x, k, H, r):
     if k <= 1: return hx("#b2453a") if k == 0 else hx("#9a382f")
     if k <= 4: return hx("#a63e34") if k < 4 else hx("#7d2c26")
     if k >= H - 3: return hx("#8a857a") if (x + k) % 3 else hx("#767168")
-    v = hx("#d8d0b8") if r.random() > .06 else hx("#cbc3a9")
-    if (x * 11 + 3) % 19 == 0: v = hx("#c6bea6")
+    v = hx("#d1c9b1") if r.random() > .10 else hx("#bdb59b")
+    if (x * 11 + 3) % 19 == 0: v = hx("#b4ac94")
+    if ((x // 5) * 7 + (k // 6) * 13) % 11 == 0 and r.random() < .6: v = hx("#8b6a55") if r.random() < .5 else hx("#7e7b72")   # fallen plaster: patches of brick and block showing through
+    if (x * 5 + k * 3) % 29 < 2 and k > 6: v = hx("#6f6a5e")                                                              # long damp stains
     return v
 
 STOREY = 28   # Batch 106: a built wall is one real storey (3 m; a 16 px person is 1.8 m). Was 18 (2 m). RoofView.Lift matches.
