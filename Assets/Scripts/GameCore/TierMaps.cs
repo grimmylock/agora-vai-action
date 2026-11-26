@@ -1128,10 +1128,10 @@ namespace GameCore
             c.Stamp("Row Houses", 14, 126, 3, "wall", Floor, 0, "debris");
             c.Landmark("Row Houses", 42, 136);
             // the Church on the square
-            c.Stamp("The Church", 78, 126, 4, "wall", Floor, 0, "logs");
-            c.Landmark("The Church", 88, 138);
+            c.Clear(77, 125, 24, 17, Asphalt, false); Interiors.Stamp(c, 78, 126, Interiors.Church, Interiors.ChurchFloor, "wall", "church");     // 2026-11-26 (place 5): pews, altar, candles, font, confessionals
+            c.Landmark("The Church", 88, 140);
             // the Town Hall and its basement stair (Secret Lab Beta below)
-            c.Block(12, 156, 18, 12, "plaster", 2);
+            c.Clear(10, 154, 22, 16, null); Interiors.Stamp(c, 12, 156, Interiors.CouncilHall, Interiors.CouncilHallFloor, "plaster", "office");     // the council hall: dais, benches, notice boards
             c.Hut(31, 158, 7, 6, "concrete", 1, false);
             c.Deco(34, 160, "hatch");
             c.Landmark("Town Hall Basement", 34, 162).Exit("secret_lab_beta", 34, 160);
@@ -1145,14 +1145,15 @@ namespace GameCore
             TierDungeons.StampHouse(c, 10, 178, "flats_ground", "plaster", "Stairwell", "flats_2");   // Batch 120: a T, three floors
             c.Landmark("Flats", 18, 194);
             c.Clear(62, 178, 26, 16, Asphalt, false);
-            c.Block(64, 180, 10, 8, "plaster", 1, Asphalt);
-            c.Put(78, 182, HardCover, "pillar").Put(78, 186, HardCover, "pillar").Put(83, 190, HardCover, "wreck");
+            Interiors.Stamp(c, 63, 180, Interiors.Station, Interiors.StationFloor, "stucco", "shop");        // the petrol station as at the roadside: stucco box, coolers, pumps under a canopy, the sign
+            foreach (int px in new[] { 66, 69, 72 }) c.Put(px, 190, HardCover, "fuelpump");
+            c.Deco(69, 189, "canopy"); c.Put(62, 188, HardCover, "stationsign").Put(83, 190, HardCover, "wreck").Put(80, 184, ScatterCover, "trash").Put(76, 191, ScatterCover, "tires");
             c.Landmark("Petrol Station", 76, 190);
             // town small finds
             c.Hut(86, 100, 8, 6, "plaster", 0);
             c.Stash("Laundromat", 88, 101);
             c.Landmark("Laundromat", 90, 108);
-            c.Hut(4 + 46, 180, 7, 5, "plaster", 0);
+            c.Clear(49, 179, 12, 8, null); Interiors.Stamp(c, 50, 180, Interiors.PharmacyShop, Interiors.PharmacyShopFloor, "stucco", "clinic");
             c.Landmark("Pharmacy", 53, 186);
             Tower(c, 30, 186, 4);
             c.Landmark("Balcony Perch", 30, 190);

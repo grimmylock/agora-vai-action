@@ -7437,3 +7437,7 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 
 ## Batch 9fu (2026-11-26) - torn-in-half cars and new scrap
 - Yan: "fix, then continue". `wreck` is now 24 variants: the 16 whole wrecks plus two cars torn in two (a front half and a rear half lying a car-width apart with debris between, horizontal and vertical; the generator's white background between the halves was keyed out), 8 % of wrecks. The junk heaps' `scrap` (sideways crushed bodies) is now a baled car cube, a pile of doors and hoods, and an engine with axle (5 more Pixel Lab objects, about 26 generations). The two torn wrecks are wider than one tile like the old ones; `Grit` keeps neighbours away. Harness passes; not run in Unity.
+
+## Batch 9fv (2026-11-26) - place 5 (part): Ghost Town church, town hall, petrol station, pharmacy
+- Done with existing props (no new art): the Church (22x13: three rows of pews either side of the aisle from the cathedral's pew pieces, altar, four candelabra, font, two confessionals), the Town Hall's council hall (18x12: dais with desks, map table, bookshelves, notice boards, benches in rows), the petrol station (the Station plan, pumps, canopy, sign), the Pharmacy (9x6, medicine cabinets, shelves, counter). Landmarks kept or moved just outside their doors; the hall's hatch hut and the school (authored plans) untouched.
+- Not done: Main Street and the Row Houses (procedural blocks), the Laundromat, the school's furniture, the Flats, the Playground. Harness passes (3 new plans checked); not run in Unity.

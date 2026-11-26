@@ -38,3 +38,6 @@ Sources (text, thin): wikipedia "Wrecking yard", recyclingtoday "The lay of the 
 - Yard: an office/shack by the entrance, a crusher, cars stacked in rows, scrap sorted by kind, a workshop for the yard's own equipment, a guard dog or two by the gate, a cutting/welding spot.
 - Truck stop: the diner is for solo drivers at night (a counter with stools, booths on the windows, a kitchen run behind), separate car and truck lanes, direct walk from the lot to the door, a repair garage and diesel pumps.
 - Visual identity: scrap = rust-orange and blue-grey junk, corrugated metal, tyres, oil drums, forge and anvil; the Scrap King's throne is junk (car seats, steering wheel, hubcaps); the diner reuses the stucco-and-red-band look with a lit DINER sign on a pole.
+
+## Place 5: Ghost Town (2026-11-26)
+No new search this round (the Church uses the cathedral's own props; the petrol station and pharmacy follow the "Lesson from place 1" checklist). Visual identity: a church = nave, a central aisle, rows of pews, an altar with candelabra, a font by the door, confessionals on a side wall; a council hall = a dais with desks at one end and rows of benches facing it, notice boards and bookshelves; a pharmacy = medicine cabinets and shelves behind a counter by the door; the petrol station is the roadside station again (stucco box, coolers, pumps under a canopy, price sign).
