@@ -30,6 +30,7 @@ def _weather(im, seed):
         for x in range(W):
             if a[y, x, 3] == 0: continue
             h, s, v = colorsys.rgb_to_hsv(*rgb[y, x]); s *= 0.50; v = v * 0.80 + 0.03
+            v = max(v, 0.12 + 0.35 * v)                                                              # lift the blacks: no prop keeps hard black INSIDE its shapes (some generated ones did, some did not)
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
             r, g, b = r * 0.86 + 0.40 * 0.14, g * 0.86 + 0.36 * 0.14, b * 0.86 + 0.28 * 0.14      # a warm grey-brown cast
             k = 1.0

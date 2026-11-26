@@ -41,6 +41,7 @@ namespace GameCore
         CaveFloor,
         Grate,      // a steel catwalk deck (the Depths' flooded levels)
         KitchenTile, // 2026-11-24: white tiles for kitchens and bathrooms (appended, so saved maps and the arrays indexed by this enum keep their order)
+        Boards,      // 2026-11-26: grey weathered planks for jetties and boardwalks over water (not indoor)
     }
 
     public static class GroundKinds

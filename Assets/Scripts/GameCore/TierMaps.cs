@@ -99,7 +99,7 @@ namespace GameCore
         static void Bridge(TerrainCanvas c, int x, int y, int w, int h)
         {
             for (int yy = y; yy < y + h; yy++)
-                for (int xx = x; xx < x + w; xx++) { c.Put(xx, yy, Empty, "boardwalk"); c.Paint(xx, yy, 1, 1, Floor); }
+                for (int xx = x; xx < x + w; xx++) { c.Put(xx, yy, Empty, "boardwalk"); c.Paint(xx, yy, 1, 1, Boards); }
             c.Keep(x, y, w, h);
         }
 
@@ -475,8 +475,8 @@ namespace GameCore
             c.Stash("Headman's Strongbox", 182, 80);
             c.Landmark("Headman's House", 179, 79);
             c.Clear(172, 83, 8, 7, Dirt); Interiors.Stamp(c, 173, 84, Interiors.Shack, Interiors.ShackFloor, "driftwood", "house");
-            Bridge(c, 186, 70, 8, 3); Bridge(c, 160, 90, 3, 7); Bridge(c, 150, 88, 3, 7);                                                                                // jetties
-            c.Put(192, 70, HardCover, "sunktruck");
+            Bridge(c, 160, 90, 3, 7); Bridge(c, 150, 88, 3, 7);                                                                                // jetties
+            c.Put(187, 91, HardCover, "sunktruck");                                                                                                                  // the sunk truck sits in the water off the east pier (it stood on a pier in the forest)
             for (int x = 170; x < 176; x += 2) c.Put(x, 72, ScatterCover, "logs");
             Bridge(c, 182, 88, 3, 6); Bridge(c, 143, 66, 7, 3);
             c.Put(185, 64, HardCover, "dryingrack").Put(185, 68, HardCover, "dryingrack");                                                                              // fish drying in the open, away from the smoke

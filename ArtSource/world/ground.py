@@ -128,6 +128,21 @@ def kitchen(seed):
         for _k in range(r.randint(6, 12)): px(im, x % S, y % S, hx("#6f736c")); x += r.choice((0, 1)); y += 1
     return im
 
+def boards(seed):
+    """2026-11-26 (Yan: the jetties are a different, brighter wood than the grey driftwood houses): weathered grey boards laid across the walkway, dark gaps, nail heads, damp stains and a little moss (GroundType.Boards)."""
+    pal = [hx("#4a443c"), hx("#5c5750"), hx("#6d675c"), hx("#7a756b")]
+    im = Image.new("RGBA", (S, S), pal[1]); d = ImageDraw.Draw(im); r = rng(seed)
+    for ty in range(0, S, 8):
+        tone = r.choice(pal[1:]); d.rectangle((0, ty, S - 1, ty + 6), fill=tone)
+        d.line([(0, ty + 7), (S - 1, ty + 7)], fill=hx("#1d1b18"))                                          # the gap between boards
+        cut = r.randrange(6, S - 6)                                                                         # a butt joint with two nails each side
+        d.line([(cut, ty), (cut, ty + 6)], fill=hx("#2a2723"))
+        for nx in (cut - 4, cut + 4, 3, S - 4): px(im, nx % S, ty + 2, hx("#2a2723")); px(im, nx % S, ty + 3, hx("#8a8478"))
+        for _ in range(r.randint(2, 5)): px(im, r.randrange(S), ty + r.randrange(7), r.choice((pal[0], pal[3])))   # grain
+    for _ in range(40): px(im, r.randrange(S), r.randrange(S), hx("#3a382f"))                               # damp stains
+    for _ in range(14): px(im, r.randrange(S), r.randrange(S), hx("#4b5a3c"))                               # moss
+    return im
+
 def grate(seed):
     """A steel catwalk deck (the Depths' flooded levels, Yan 2026-11-04: "walk in platforms ... all rusted up and maybe with some moss
     from being wet all the time"; no guard rails). Bar grating: bearing bars every 3 px with the black water showing between them, a
@@ -173,7 +188,7 @@ def flagstone(seed):
 
 GROUNDS = {
     "grass": grass, "darkgrass": darkgrass, "dirt": dirt, "mud": mud, "asphalt": asphalt, "concrete": concrete,
-    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate, "flagstone": flagstone, "kitchentile": kitchen,
+    "floor": floor, "labtile": lab, "sand": sand, "gravel": gravel, "water": water, "cavefloor": cave, "grate": grate, "flagstone": flagstone, "kitchentile": kitchen, "boards": boards,
 }
 try:
     import sys as _sys, os as _os; _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "tiles_pl")); import pl_ground; (None if _os.environ.get("NO_PL") else pl_ground.register(GROUNDS))   # 2026-11-21: Pixel Lab ground textures (tiles_pl), used in place of the procedural ones

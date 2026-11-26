@@ -67,7 +67,7 @@ def boardwalk(mask, seed):
     the walk with dark gaps; mask = NESW neighbours that are deck too. An open side shows the deck's
     edge, and the south side its front face and a post every other tile."""
     r = rng(seed + mask); im = blank(C, C); ew = bool(mask & 10) or not (mask & 5)
-    W = ramp("#2e2318", "#3f3122", "#54412d", "#6a533a")             # concept wood: darker, greyer than furniture
+    W = ramp("#1d1b18", "#3a3731", "#57524a", "#736e63")             # 2026-11-26: sea-bleached grey, like the driftwood houses (was brown)
     for y in range(C):
         for x in range(C):
             u, v = (x, y) if ew else (y, x)                             # u along the walk, v across

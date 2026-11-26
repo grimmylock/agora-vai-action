@@ -444,7 +444,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ ground layer
-        private static bool Crisp(GroundType g) => GroundKinds.Indoor(g) || g == GroundType.Grate;
+        private static bool Crisp(GroundType g) => GroundKinds.Indoor(g) || g == GroundType.Grate || g == GroundType.Boards;
         private static bool Paved(GroundType g) => g == GroundType.Concrete || g == GroundType.Asphalt;
         private static bool Soft(GroundType g) => g == GroundType.Grass || g == GroundType.DarkGrass || g == GroundType.Dirt || g == GroundType.Mud || g == GroundType.Sand || g == GroundType.Gravel || g == GroundType.CaveFloor;   // loose ground: its borders fray into each other
         private const float Warp = 11f;
@@ -523,6 +523,7 @@ namespace GameCore
             /* CaveFloor */ new Style { Ramp = Ramp("232220", "2c2a27", "322f2b", "36332f"), Cuts = Cuts3, Big = 22, Mid = 7, SpeckA = Hex("423e39"), SpeckB = Hex("1a1918"), DensA = .03f, DensB = .02f },
             /* Grate     */ null,                                   // a texture (g_grate), like Floor and LabTile
             /* KitchenTile */ null,                                 // a texture (g_kitchentile)
+            /* Boards    */ null,                                   // a texture (g_boards)
         };
 
         private static void Prime(Style st, int gi)
@@ -559,7 +560,7 @@ namespace GameCore
             return c;
         }
 
-        private static readonly string[] GroundName = { "grass", "darkgrass", "dirt", "mud", "asphalt", "concrete", "floor", "labtile", "sand", "gravel", "water", "cavefloor", "grate", "kitchentile" };
+        private static readonly string[] GroundName = { "grass", "darkgrass", "dirt", "mud", "asphalt", "concrete", "floor", "labtile", "sand", "gravel", "water", "cavefloor", "grate", "kitchentile", "boards" };
         private static readonly Color32 KerbLight = new Color32(0x8f, 0x8c, 0x83, 255), KerbDark = new Color32(0x4a, 0x48, 0x44, 255);
         private static readonly Color32 ShadowCol = new Color32(0x32, 0x21, 0x25, 255);
         private static readonly Color32 Black = new Color32(0, 0, 0, 255), White = new Color32(255, 255, 255, 255);
@@ -915,7 +916,7 @@ namespace GameCore
         {
             switch (g)
             {
-                case GroundType.Grate: return null;                                  // nothing lies on a grate
+                case GroundType.Grate: case GroundType.Boards: return null;                                  // nothing lies on a grate
                 case GroundType.Grass: case GroundType.DarkGrass:
                     return r < 0.45f ? "d_tallgrass" : r < 0.72f ? "d_tallgrass_dry" : r < 0.8f ? "d_tuft" : r < 0.86f ? "d_flowers" : r < 0.93f ? "d_pebbles" : "d_leaves";
                 case GroundType.Dirt: return r < 0.4f ? "d_pebbles" : r < 0.65f ? "d_tallgrass_dry" : r < 0.85f ? "d_leaves" : "d_litter";
