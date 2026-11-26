@@ -86,7 +86,13 @@ for look, f in MORE.items():
 # 2026-11-26 (Yan: "all cars are sideways and not that damaged, create a few variations of damaged, rusty, torn in half, facing different directions"):
 # the generic `wreck` is now 16 Pixel Lab variants: four bodies (rusty sedan with open doors, burnt-out, torn-up with the bonnet ripped open, crashed pickup) x east, west, north, south.
 def _wreck_variant(seed):
-    k = int(seed) % 16
-    im = _load("wreckv_%d" % k)
+    k = int(seed) % 24
+    name = "wreck_torn_h" if k == 16 else "wreck_torn_v" if k == 17 else "wreckv_%d" % (k % 16)   # 2 of 24 are cars torn in two, the rest the 16 whole wrecks
+    im = _load(name)
     return _finish_black(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1), soft=True)
-NEW["wreck"] = _wreck_variant; VARIANTS["wreck"] = 16
+NEW["wreck"] = _wreck_variant; VARIANTS["wreck"] = 24
+# junk-heap scrap: a baled car cube, a pile of doors and hoods, an engine and axle (was: sideways crushed bodies)
+def _scrap_variant(seed):
+    im = _load(["scrap_cube", "scrap_doors", "scrap_engine"][int(seed) % 3])
+    return _finish_black(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1), soft=True)
+NEW["scrap"] = _scrap_variant; VARIANTS["scrap"] = 3
