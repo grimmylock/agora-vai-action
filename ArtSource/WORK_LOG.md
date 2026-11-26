@@ -7411,3 +7411,6 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 
 ## Batch 9fn (2026-11-26) - the Causeway aged
 - Yan: "yeah" to ageing the Causeway. `TierMaps.cs` `Boardwalk()` now always planks the line itself and a 3x3 at each corner (the route north stays unbroken) but each flanking tile is planked only about two times in three (`ZoneThemes.Hash01(.,.,911)`), so the deck narrows and widens and its edge is ragged. `flats.py` `boardwalk(mask, seed, wear)` makes two worn variants per mask (rotten dark boards, moss, a missing stretch of plank showing the water); `WorldArt.cs` picks them by tile hash (30 % worn, 16 % broken). Harness passes (every map exit still walks); not run in Unity.
+
+## Batch 9fo (2026-11-26) - fishing village: the broken house, one house fewer
+- Yan: the middle house looked broken down; the two on the right were too close, keep only the big one. Cause: `Fire()` (`TierMaps.cs:51`) clears a 7x7 round the fire and ran after the house was stamped, cutting its top and east walls away; the fire now comes first. The small shack next to the headman's hall is removed.

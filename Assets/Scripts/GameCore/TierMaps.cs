@@ -477,6 +477,7 @@ namespace GameCore
             // The Fishing Village (place C): stilt huts on a dry island, jetties, the boat shed, the headman's house
             c.Clear(150, 60, 36, 30, DarkGrass);
             c.PaintNoise(Dirt, 6f, 0.55f, 51, (x, y) => x >= 150 && x < 186 && y >= 60 && y < 90);
+            Fire(c, 168, 76, false);   // first: its 7x7 clearing used to cut the corner off the house stamped after it
             // 2026-11-26 (place 2, BUILDING_REFERENCES.md): grey driftwood houses along the shore: the boat shed on the water side with the rowboat on trestles and a jetty out, a smokehouse, four fishers' homes, the headman's hall;
             // nets and fish racks drying between them, traps, fish crates and a cleaning table at the jetty root
             c.Clear(149, 79, 14, 10, Dirt); Interiors.Stamp(c, 150, 80, Interiors.BoatShed, Interiors.BoatShedFloor, "driftwood", "workshop"); c.Put(156, 83, HardCover, "rowboat");
@@ -488,7 +489,6 @@ namespace GameCore
             c.Clear(174, 74, 11, 9, Dirt); Interiors.Stamp(c, 175, 75, Interiors.Headman, Interiors.HeadmanFloor, "driftwood", "house");                       // the headman's hall
             c.Stash("Headman's Strongbox", 182, 80);
             c.Landmark("Headman's House", 179, 79);
-            c.Clear(172, 83, 8, 7, Dirt); Interiors.Stamp(c, 173, 84, Interiors.Shack, Interiors.ShackFloor, "driftwood", "house");
             Bridge(c, 160, 90, 3, 7);                                                                                // jetties
             c.Put(187, 91, HardCover, "sunktruck");                                                                                                                  // the sunk truck sits in the water off the east pier (it stood on a pier in the forest); Yan: only the one pier stays (the south jetty), the other platforms were too neat for the place
             for (int x = 170; x < 176; x += 2) c.Put(x, 72, ScatterCover, "logs");
@@ -496,7 +496,6 @@ namespace GameCore
             c.Put(164, 70, ScatterCover, "netrack").Put(174, 70, ScatterCover, "netrack").Put(163, 86, ScatterCover, "netrack");
             c.Put(158, 89, ScatterCover, "cleantable").Put(164, 89, ScatterCover, "fishcrates").Put(148, 82, ScatterCover, "crabpots").Put(165, 84, ScatterCover, "crabpots");
             c.Put(179, 86, HardCover, "rowboat").Put(169, 87, ScatterCover, "rustbarrel").Put(163, 76, ScatterCover, "lamp").Put(172, 77, ScatterCover, "lamp").Put(177, 73, ScatterCover, "rustbarrel");
-            Fire(c, 168, 76, false);
             c.Keep(150, 60, 36, 30);
             c.Landmark("Fishing Village", 168, 74);
             // the Sunken Tanker: the hull half under water, a dry deck to shoot from
