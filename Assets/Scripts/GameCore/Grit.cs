@@ -17,6 +17,17 @@ namespace GameCore
             if (m.Looks == null) { m.Looks = new string[h][]; for (int y = 0; y < h; y++) m.Looks[y] = new string[w]; }
             for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)   // Batch 108: a sunken truck a later pass left on dry land is just a wreck
                     if (m.Looks[y][x] == "sunktruck" && m.Grounds?[y]?[x] != "Water") m.Looks[y][x] = "wreck";
+            // 2026-11-26 (Yan: "cars stacked on top of each other, happens in a lot of places"): a wreck, carrier or van sprite is 2-3 tiles wide, so two of them on neighbouring tiles drew one over the other.
+            // Walking the map row by row, a wide prop with another kept one within 2 tiles across (or 1 down) becomes a small scrap part instead (same tile type, so walls and cover still block).
+            {
+                var wide = new HashSet<string> { "wreck", "apc", "van", "sunktruck", "bus" }; var kept = new List<(int x, int y)>();
+                for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+                {
+                    if (m.Looks[y][x] == null || !wide.Contains(m.Looks[y][x]) || m.Tiles[y][x] == "Empty") continue;
+                    bool clash = false; foreach (var k in kept) if (System.Math.Abs(k.x - x) <= 2 && System.Math.Abs(k.y - y) <= 1) { clash = true; break; }
+                    if (clash) m.Looks[y][x] = "part"; else kept.Add((x, y));
+                }
+            }
             for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
                     if (m.Looks[y][x] == "light" || m.Looks[y][x] == "redlight") return m;   // hand-made plan
             var r = new System.Random(TerrainCanvas.Seed(zoneId) ^ 0x6ad);
