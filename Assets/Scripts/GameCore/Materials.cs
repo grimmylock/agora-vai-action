@@ -24,7 +24,7 @@ namespace GameCore
             Add(Material.Stone, "rock", "stones", "rubble", "campfire");
             Add(Material.Earth, "sandbags", "sandbags_v", "sandbags_c", "tires");
             Add(Material.Plant, "bush", "redbush", "brush", "reeds", "roots");
-            Add(Material.Cloth, "armchair", "cot", "trash");
+            Add(Material.Cloth, "armchair", "cot", "cot_e", "cot_w", "trash");
         }
 
         public static Material Of(TerrainTile t)

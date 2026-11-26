@@ -53,6 +53,8 @@ namespace GameCore
                 ["barcounter"] = R("Till", 0.8f, E(1, "ru", null, 10, 45)),
                 ["rustbarrel"] = R("Barrel", 0.3f, E(3, "item", "energyDrink"), E(1, "ru", null, 2, 8)),
                 ["kegs"] = R("Kegs", 0.4f, E(3, "item", "energyDrink"), E(1, "ru", null, 2, 10)),
+                ["goodsshelf_e"] = R("Shelf", 0.4f, E(3, "item", "mre"), E(2, "item", "fieldRepairKit"), E(3, "ru", null, 5, 25)),
+                ["goodsshelf_w"] = R("Shelf", 0.4f, E(3, "item", "mre"), E(2, "item", "fieldRepairKit"), E(3, "ru", null, 5, 25)),
                 ["bottleshelf_e"] = R("Bottle Shelf", 0.7f, E(4, "item", "energyDrink"), E(2, "ru", null, 3, 12)),
                 ["bottleshelf_w"] = R("Bottle Shelf", 0.7f, E(4, "item", "energyDrink"), E(2, "ru", null, 3, 12)),
                 ["barcounter_e"] = R("Till", 0.8f, E(1, "ru", null, 10, 45)),
@@ -64,6 +66,8 @@ namespace GameCore
                 ["footlocker"] = R("Footlocker", 0.5f, E(4, "ru", null, 5, 25), E(3, "item", "bandage"), E(3, "item", "mre")),
                 ["stove"] = R("Stove", 0.25f, E(1, "item", "mre")),
                 ["bunkbed"] = R("Bunk", 0.2f, E(3, "ru", null, 3, 15), E(1, "item", "bandage")),
+                ["bunkbed_e"] = R("Bunk", 0.2f, E(3, "ru", null, 3, 15), E(1, "item", "bandage")),
+                ["bunkbed_w"] = R("Bunk", 0.2f, E(3, "ru", null, 3, 15), E(1, "item", "bandage")),
             },
             ["clinic"] = new Dictionary<string, Rule>
             {
