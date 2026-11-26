@@ -81,3 +81,12 @@ for item in ITEMS:
     if _load(item) is not None: NEW[item] = _make(item); VARIANTS[item] = 1
 for look, f in MORE.items():
     if _load(f) is not None: NEW[look] = _make(f); VARIANTS[look] = 1
+
+
+# 2026-11-26 (Yan: "all cars are sideways and not that damaged, create a few variations of damaged, rusty, torn in half, facing different directions"):
+# the generic `wreck` is now 16 Pixel Lab variants: four bodies (rusty sedan with open doors, burnt-out, torn-up with the bonnet ripped open, crashed pickup) x east, west, north, south.
+def _wreck_variant(seed):
+    k = int(seed) % 16
+    im = _load("wreckv_%d" % k)
+    return _finish_black(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1), soft=True)
+NEW["wreck"] = _wreck_variant; VARIANTS["wreck"] = 16
