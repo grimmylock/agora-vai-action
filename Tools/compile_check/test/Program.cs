@@ -3337,6 +3337,16 @@ static class Program {
       Check(h >= 4 && sh >= 4 && bk >= 4 && conts.All(o => TerrainMap.GetTile(o.X, o.Y).Look != null), $"the test buildings hold small containers on their furniture (house {h}, shop {sh}, barracks {bk})");
       var pl = Player.Current ?? new Player(); int ru0 = pl.Ru; int items0 = pl.Inventory.Items.Count; for (int i = 0; i < 200; i++) foreach (var o in conts.Where(o => o.Reward.Loot.Id.StartsWith("cont:house:"))) ContainerLoot.Grant(pl, o.Reward.Loot.Id);
       Check(!pl.Inventory.Items.Any(it => it.Type == "weapon" || it.Type == "armor"), "a house's containers, opened 200 times over, never gave a weapon or armor"); }
+    { // 2026-11-26: the lake easter egg: five seconds still at the water's edge and the eel's shadow starts across the lake; away from the lake nothing happens
+      MacroState.Current.CurrentZoneId = "marshes"; TerrainMap.BuildTerrainForZone("marshes");
+      Check(LakeEel.AtEdge(161, 96) && !LakeEel.AtEdge(155, 80) && !LakeEel.AtEdge(161, 99), $"lake eel: the pier's end is the water's edge, the village and open water are not");
+      bool planned = LakeEel.Plan(161, 96, new Random(3), out var eax, out var eay, out var ebx, out var eby);
+      Check(planned && Math.Sqrt((ebx - eax) * (ebx - eax) + (eby - eay) * (eby - eay)) >= 14.0 && LakeEel.IsWater((int)eax, (int)eay) && LakeEel.IsWater((int)ebx, (int)eby), "lake eel: the run starts and ends in the water and is at least 14 tiles long");
+      var lp = Player.Current; lp.X = 161; lp.Y = 96; Rt.SetOffset(lp, 0f, 0f); LakeEel.Reset(); float lnow = 1000f; bool early = false;
+      int firstOn = -1; for (int i = 0; i < 14; i++) { LakeEel.Watch(lp, 0.5f, lnow); lnow += 0.5f; if (firstOn < 0 && LakeEel.Active) firstOn = i; }
+      Check(firstOn >= 10 && LakeEel.Active, $"lake eel: nothing before 5 s, the shadow after (it started at step {firstOn}, each 0.5 s, the first only places you)");
+      LakeEel.Reset(); lp.X = 155; lp.Y = 80; for (int i = 0; i < 20; i++) { LakeEel.Watch(lp, 0.5f, lnow); lnow += 0.5f; }
+      Check(!LakeEel.Active, "lake eel: waiting in the village does nothing"); LakeEel.Reset(); }
     { // 2026-11-25: the Bazaar's four stalls: each a different colour and vendor, on hard cover against the top wall, with stock of its own kind; the black market is tier 3-4 gear at double price
       MacroState.Current.CurrentZoneId = "scavengers_hub"; TerrainMap.BuildTerrainForZone("scavengers_hub");
       Check(Bazaar.Stalls.Select(t => t.Kind).Distinct().Count() == 4 && Bazaar.Stalls.Select(t => t.Look).Distinct().Count() == 4, "Bazaar: four vendors, four colours");

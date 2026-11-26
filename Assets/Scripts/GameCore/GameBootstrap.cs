@@ -59,6 +59,7 @@ namespace GameCore
                 gameObject.AddComponent<TacticalGridView>();
             if (GetComponent<PlayerController>() == null)
                 gameObject.AddComponent<PlayerController>();
+            if (GetComponent<LakeEel>() == null) gameObject.AddComponent<LakeEel>();      // 2026-11-26: the lake easter egg (wait 5 s at the water's edge)
             // New: a "YOU DIED" overlay + restart button (TurnLoop.CheckCombatEnd's death branch
             // used to just leave input frozen forever with no feedback), and a buy/sell panel for
             // Safe Zones (ShopSystem existed but nothing ever opened it - see ShopUI).
@@ -118,7 +119,7 @@ namespace GameCore
         /// <summary>2026-11-24 (static-state audit): the statics of the running game that a New Game / Load must put back (with domain reload off they survive Play, and with it on they still survive a second New Game in one session).</summary>
         public static void ResetSession()
         {
-            Rt.ResetWorld(); MutantAttack.Reset(); StoryBarks.Reset(); Banter.Reset(); TurnLoop.ResetSession(); WorldEvents.ResetSession();
+            Rt.ResetWorld(); LakeEel.Reset(); MutantAttack.Reset(); StoryBarks.Reset(); Banter.Reset(); TurnLoop.ResetSession(); WorldEvents.ResetSession();
         }
         public static void StartNewGame(CharacterSpec spec = null, string startZone = null, bool save = true)
         {
