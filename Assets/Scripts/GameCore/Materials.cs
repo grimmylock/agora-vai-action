@@ -20,7 +20,7 @@ namespace GameCore
             Add(Material.Steel, "machine", "engine", "wreck", "apc", "van", "silo", "sunktruck", "bus", "tank", "flatcar", "container", "pipe", "pipepost",
                 "hatch", "barrel", "metal", "hull", "console");
             Add(Material.Concrete, "block", "block_v", "block_c", "jersey", "jersey_v", "jersey_c", "debris", "pillar", "culvert",
-                "fountain", "window", "concrete", "wall", "plaster");
+                "fountain", "window", "concrete", "wall", "plaster", "stucco");
             Add(Material.Stone, "rock", "stones", "rubble", "campfire");
             Add(Material.Earth, "sandbags", "sandbags_v", "sandbags_c", "tires");
             Add(Material.Plant, "bush", "redbush", "brush", "reeds", "roots");

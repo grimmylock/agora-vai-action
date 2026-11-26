@@ -239,12 +239,22 @@ def gothic_face(pal):
 
 # name: (H, T, organic, cap(x,y,r)->c, face(x,k,H,r)->c, cap_edge_light)
 STOREY2 = 40  # Batch 119 (Yan: buildings "go with the concept"): brick, plaster and concrete buildings are two storeys, 20 px a floor
+def stucco_face(x, k, H, r):
+    """2026-11-26 (place 1, gas station): painted stucco - a red fascia band under the roof line, a cream body, a grey concrete foot"""
+    if k <= 1: return hx("#b2453a") if k == 0 else hx("#9a382f")
+    if k <= 4: return hx("#a63e34") if k < 4 else hx("#7d2c26")
+    if k >= H - 3: return hx("#8a857a") if (x + k) % 3 else hx("#767168")
+    v = hx("#d8d0b8") if r.random() > .06 else hx("#cbc3a9")
+    if (x * 11 + 3) % 19 == 0: v = hx("#c6bea6")
+    return v
+
 STOREY = 28   # Batch 106: a built wall is one real storey (3 m; a 16 px person is 1.8 m). Was 18 (2 m). RoofView.Lift matches.
 MATERIALS = {
     "wall":       (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(brick_face(P["brick"])), P["concrete"][4]),
     "plaster":    (STOREY2, 10, False, plain_cap([P["plaster"][3]], P["plaster"][2]), weather(plaster_face(P["plaster"], P["brick"])), P["plaster"][4]),
     "concrete":   (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(panel_face(P["concrete"])), P["concrete"][4]),
     "gothic":     (STOREY2, 10, False, plain_cap([P["gothic"][3]], P["gothic"][2]), weather(gothic_face(P["gothic"])), P["gothic"][4]),
+    "stucco":     (STOREY, 10, False, plain_cap([hx("#d8d0b8")], hx("#c9c1a8")), weather(stucco_face), hx("#efe9d8")),
     "hull":       (STOREY, 10, False, plain_cap([P["steel"][3]], P["rust"][2]), corrugated_face(P["steel"]), P["steel"][4]),
     "metal":      (STOREY, 10, False, plain_cap([P["tin"][2]], P["rust"][2]), corrugated_face(P["tin"]), P["tin"][3]),
     "plank":      (STOREY, 10, False, plain_cap([P["wood"][3]], P["wood"][2]), weather(plank_face(P["wood"])), P["wood"][4]),
@@ -362,6 +372,13 @@ def build(mat, mask, variant=0, extra=None, corners=0):
             for dx in (-1, 0, 1):                                                                    # the rose at the head
                 for dy in range(-1, 2): im[ft + 8 + dy, 7 + dx] = hx("#d8b0a0") if (dx, dy) == (0, 0) else hx("#c8584c")
             for x in range(2, 14): im[ft + k1 - 1, x] = STN[4]; im[ft + k1, x] = STN[0]               # the sill
+        elif extra in ("window", "uwin") and mat == "stucco":                    # a shop front: one wide pane with a steel frame and a mullion, a glint
+            for k in range(6, H - 4):
+                for x in range(1, 15):
+                    edge = x in (1, 14) or k in (6, H - 5) or x in (7, 8)
+                    c = P["steel"][2] if edge else (hx("#4f7c86") if (x - k) % 7 == 0 else hx("#1d3034"))
+                    if k == H - 5: c = P["steel"][3]
+                    im[ft + k, x] = c
         elif extra in ("window", "uwin"):
             for k0 in ([3] if extra == "uwin" else [3, H // 2 + 3]) if two else [2]:
                 boarded = False   # 2026-11-25 (Yan: the wooden windows never made sense): no boards
@@ -394,6 +411,7 @@ def build(mat, mask, variant=0, extra=None, corners=0):
                       edge = x in (3, 12) or k == (H - 19 if two else 1)
                       c = pal[0] if edge else pal[2] if (x % 3) else pal[1]
                       if extra in ("metaldoor",) + LOCKS and not edge: c = pal[3] if k in (5, 12) else pal[2]
+                      if mat == "stucco" and extra == "door": c = P["steel"][1] if edge else (hx("#4f7c86") if (x + k) % 6 == 0 else hx("#1d3034"))   # a glass shop door in a steel frame
                       im[ft + k, x] = c
             if extra != "blastdoor": im[ft + (H - 9 if two else H // 2 + 1), 10] = P["steel"][4] if extra == "door" else P["rust"][3]
             if extra in LOCKS:
@@ -554,7 +572,7 @@ def all_tiles():
                 if mat in ("wall", "plaster", "plank"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
                 if mat in NEW_DOOR_MATS and (mask & 10) == 10:
                     for ex in NEW_DOORS: t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
-                if mat in ("wall", "plaster", "plank", "concrete", "gothic"):   # Batch 98: worn, for intact walls
+                if mat in ("wall", "plaster", "plank", "concrete", "gothic", "stucco"):   # Batch 98: worn, for intact walls
                     t[f"w_{mat}_{key}_worn"] = wear(build(mat, mask, 0, None, cs), __import__("zlib").crc32(f"worn{mat}{key}".encode()), mat)
     return t
 

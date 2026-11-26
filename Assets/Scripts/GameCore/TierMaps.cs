@@ -321,9 +321,11 @@ namespace GameCore
 
             // Roadside Station: pumps, a shop, wrecks, just short of the fork
             c.Clear(104, 122, 18, 14, Concrete);
-            Interiors.Stamp(c, 106, 122, Interiors.Station, Interiors.StationFloor, "plaster", "shop");      // shop and back room; the door faces the pumps
-            foreach (int px in new[] { 108, 112, 116 }) c.Put(px, 132, HardCover, "fuelpump");                // three pumps in a row, one lane in, one out
-            c.Put(118, 134, HardCover, "wreck").Put(120, 128, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires").Put(106, 134, ScatterCover, "tires");
+            Interiors.Stamp(c, 105, 122, Interiors.Station, Interiors.StationFloor, "stucco", "shop");       // 2026-11-26 (Yan: "it doesn't look like a gas station"): a stucco box with a glass shop front, the door facing the pumps
+            foreach (int px in new[] { 109, 112, 115 }) c.Put(px, 134, HardCover, "fuelpump");                 // three pumps in a row under the canopy
+            c.Deco(112, 133, "canopy");                                                                        // the flat canopy roof on its posts
+            c.Put(104, 131, HardCover, "stationsign").Put(109, 130, ScatterCover, "icechest").Put(117, 130, ScatterCover, "tires");
+            c.Put(119, 134, HardCover, "wreck").Put(120, 126, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires");
             c.Landmark("Roadside Station", 108, 130);
 
             // Army Field Camp with Watchtower 3: sandbags, tents, an abandoned carrier, the leaning tower

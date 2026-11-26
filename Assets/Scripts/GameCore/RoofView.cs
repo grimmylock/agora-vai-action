@@ -16,7 +16,7 @@ namespace GameCore
         public const int Lift = 28;                       // wall face height in px of one storey (walls.py STOREY; Batch 106, was 18)
         public const int LiftTall = 40;                   // Batch 119: brick, plaster and concrete buildings are two storeys (walls.py STOREY2)
         public static readonly System.Collections.Generic.HashSet<string> TwoStorey = new System.Collections.Generic.HashSet<string> { "wall", "plaster", "concrete", "gothic" };
-        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "concrete", "gothic", "plank", "metal", "hull", "window", "metaldoor" };
+        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "gothic", "plank", "metal", "hull", "window", "metaldoor" };
         static readonly HashSet<string> Tin = new HashSet<string> { "metal", "plank", "hull" };
 
         public enum Roof { Tar, Tin, Slab, Gable, Hip, Saw }
@@ -217,6 +217,7 @@ namespace GameCore
                     else if (span <= 16) { pitched = true; b.Mat = h < 0.4f ? Cover.Slate : h < 0.7f ? Cover.TinRed : Cover.TinBare; }
                     else b.Style = h < 0.55f ? Roof.Saw : Roof.Tar;
                     break;
+                case "stucco": b.Style = Roof.Slab; break;   // 2026-11-26: a flat roof (the gas station)
                 case "plaster":
                     if (span <= 10) { pitched = true; b.Mat = h < 0.35f ? Cover.TinGreen : h < 0.6f ? Cover.TinRed : Cover.Slate; }
                     break;
@@ -253,6 +254,7 @@ namespace GameCore
             {
                 case "plank": return wx % 4 == 0 ? C("3f3126") : Hash(wx, 0, 70) < 0.5f ? C("5f4a37") : C("6a523d");
                 case "plaster": return Hash(wx, wy, 71) < 0.15f ? C("837c6c") : C("9a9282");
+                case "stucco": return Hash(wx, wy, 71) < 0.15f ? C("b9b19a") : C("d2cab4");
                 case "gothic": return Hash(wx, wy, 72) < 0.2f ? C("3a3e46") : C("4a4f58");
                 case "concrete": case "metal": case "hull": return Hash(wx, wy, 72) < 0.2f ? C("6a6c66") : C("7d7f78");
                 default:

@@ -52,7 +52,7 @@ namespace GameCore
         {
             if (x < 0 || y < 0 || x >= TerrainMap.Width || y >= TerrainMap.Height) return false;
             var t = TerrainMap.Tiles[y, x];
-            return t.Type == TileType.Solid && (t.Look == "wall" || t.Look == "plaster" || t.Look == "concrete" || t.Look == "gothic" || t.Look == "metal" || t.Look == "plank" || t.Look == "hull");
+            return t.Type == TileType.Solid && (t.Look == "wall" || t.Look == "plaster" || t.Look == "stucco" || t.Look == "concrete" || t.Look == "gothic" || t.Look == "metal" || t.Look == "plank" || t.Look == "hull");
         }
         static bool Bare(int x, int y) => x > 0 && y > 0 && x < TerrainMap.Width - 1 && y < TerrainMap.Height - 1 && TerrainMap.Tiles[y, x].Type == TileType.Empty && TerrainMap.Tiles[y, x].Look == null;
         static bool Safe(int x, int y) => MacroMapDatabase.Find(TerrainMap.RegionAt(x, y) ?? TerrainMap.ZoneId)?.IsSafeZone == true;

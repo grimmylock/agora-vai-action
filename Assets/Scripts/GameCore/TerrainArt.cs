@@ -23,7 +23,7 @@ namespace GameCore
 
         // Looks that join up into continuous walls: edges facing anything else get an outline,
         // and the top edge gets a lighter "wall top" band.
-        private static readonly HashSet<string> Connecting = new HashSet<string> { "wall", "plaster", "concrete", "cliff", "hull", "plank", "window", "foliage", "redfoliage", "junk" };
+        private static readonly HashSet<string> Connecting = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "cliff", "hull", "plank", "window", "foliage", "redfoliage", "junk" };
         // Tall things cast a drop shadow down-right.
         private static readonly HashSet<string> NoShadow = new HashSet<string>
         {
