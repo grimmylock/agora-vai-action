@@ -781,10 +781,10 @@ namespace GameCore
             // the Scrap King's Nest: the tallest heap, a car-door shack on top - the Raiders' yard
             c.Blob(186, 108, 8, Solid, 3, 0.35f, "junk");
             c.Rect(184, 105, 5, 5, Empty, 5, "platform"); c.Ramp(186, 117, 0, -1, 8, 0, 5, 2);
-            c.Put(184, 105, ScatterCover, "crate").Put(188, 105, ScatterCover, "armchair");
-            c.Hut(190, 120, 6, 5, "metal", 2, true);
+            c.Put(186, 106, HardCover, "scrapthrone").Put(184, 105, ScatterCover, "crate").Put(188, 107, ScatterCover, "rustbarrel");   // the throne on top of the heap, in the open
+            Sandbags(c, 178, 120, 16, 5, 3);   // first: the hall is stamped over its east end
+            c.Clear(189, 119, 11, 9, Dirt); Interiors.Stamp(c, 190, 120, Interiors.KingHall, Interiors.KingHallFloor, "metal", "barracks");            // the Raiders' hall at the heap's foot
             c.Landmark("Scrap King's Nest", 186, 108);
-            Sandbags(c, 178, 120, 16, 5, 3);
             // Crusher Row: dead crushers in a line, wrecks queued between; the pit underneath is a dungeon
             c.Clear(108, 158, 86, 10, Concrete);
             for (int x = 112; x < 190; x += 8) { c.Rect(x, 160, 2, 2, Solid, 1, "machine"); c.Put(x + 3, 161, Solid, "wreck"); }
@@ -792,21 +792,23 @@ namespace GameCore
             c.Landmark("Crusher Row", 130, 163).Landmark("Crusher Pit", 150, 165).Exit("crusher_pit", 150, 166);
             // the truck stop on the old highway
             c.Clear(104, 176, 30, 20, Asphalt, false);
-            c.Block(106, 178, 22, 7, "plaster", 1, Asphalt);
-            c.Block(110, 188, 9, 7, "wall", 1, Asphalt);
-            c.Put(124, 190, HardCover, "pillar").Put(124, 193, HardCover, "pillar").Put(129, 191, HardCover, "wreck").Put(131, 186, HardCover, "wreck");
+            // 2026-11-26 (place 3): the diner (kitchen run, counter and stools, booths on the windows) and the repair garage (lift, forge, bench) as furnished plans, diesel pumps and the sign out front
+            c.Clear(105, 177, 24, 10, Asphalt); Interiors.Stamp(c, 106, 178, Interiors.Diner, Interiors.DinerFloor, "stucco", "house");
+            c.Clear(109, 187, 15, 11, Asphalt); Interiors.Stamp(c, 110, 188, Interiors.Garage, Interiors.GarageFloor, "metal", "workshop");
+            c.Put(126, 190, HardCover, "fuelpump").Put(129, 190, HardCover, "fuelpump").Put(132, 190, HardCover, "fuelpump").Put(130, 184, HardCover, "truckstopsign");
+            c.Put(129, 194, HardCover, "wreck").Put(131, 187, HardCover, "wreck").Put(126, 195, ScatterCover, "tires").Put(133, 193, ScatterCover, "rustbarrel").Put(107, 187, ScatterCover, "trash");
             c.Landmark("Truck Stop", 120, 187);
             // scrap small finds: the tire fort, the kennels, the rusted bus, the scrapper's shack
             for (int i = 0; i < 16; i++) { double a = i * 0.39; c.Put(126 + (int)(Math.Cos(a) * 5), 90 + (int)(Math.Sin(a) * 4), ScatterCover, "tires"); }
             c.Landmark("Tire Fort", 126, 92);
             c.Clear(176, 136, 14, 10, Dirt);
             c.Fence(176, 136, 189, 136).Fence(176, 145, 189, 145).Fence(176, 136, 176, 145, "fence", 4, 2).Fence(189, 136, 189, 145);
-            for (int x = 178; x < 188; x += 3) c.Put(x, 137, ScatterCover, "crate");
+            for (int x = 178; x < 189; x += 3) c.Put(x, 138, ScatterCover, "doghouse");
             c.Deco(182, 141, "bones").Deco(185, 142, "bones");
             c.Landmark("Dog Kennels", 182, 140);
             for (int i = -2; i <= 2; i++) c.Put(148 + i, 178, HardCover, i == 0 ? "bus" : "part");
             c.Landmark("Rusted Bus", 148, 180);
-            c.Hut(176, 182, 6, 5, "metal", 2);
+            c.Clear(175, 181, 11, 8, Dirt); Interiors.Stamp(c, 176, 182, Interiors.ScrapShack, Interiors.ScrapShackFloor, "metal", "workshop");
             c.Stash("Scrapper's Shack", 180, 183);
             c.Landmark("Scrapper's Shack", 175, 186);
             foreach (var (hx, hy, hr) in new[] { (108, 150, 3), (196, 96, 4), (138, 192, 3), (192, 176, 3), (106, 128, 3) })

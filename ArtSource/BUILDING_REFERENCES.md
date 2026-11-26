@@ -32,3 +32,9 @@ Sources (text): wikipedia "Fishing village" and "Stilt house/Palafito", concello
 - Houses: small, with room for gear, wood on piles at the water's edge (palafitos); the boat house keeps boats on the ground floor and nets on the loft above (funaya); net shops / net huts stand near the water.
 - Work areas: drying racks and a smokehouse near the water, a cleaning table and crates at the jetty root, traps and floats stacked by the sheds.
 - Visual identity (checklist): silhouette = low grey plank houses along a shoreline with jetties and boats; props = rowboat, fish drying rack, net on posts, crab pots, fish crates and tub, cleaning table, barrels; materials = sea-bleached grey driftwood boards with a tarred black foot, dark plank floors; the marsh keeps it damp and muted (the toxic water stays, nothing bright).
+
+## Place 3: Scrapyard (2026-11-26)
+Sources (text, thin): wikipedia "Wrecking yard", recyclingtoday "The lay of the land", ISRI scrap articles, model-railroad scrapyard threads, NATSO truck stop floor layout, toasttab diner floor plans.
+- Yard: an office/shack by the entrance, a crusher, cars stacked in rows, scrap sorted by kind, a workshop for the yard's own equipment, a guard dog or two by the gate, a cutting/welding spot.
+- Truck stop: the diner is for solo drivers at night (a counter with stools, booths on the windows, a kitchen run behind), separate car and truck lanes, direct walk from the lot to the door, a repair garage and diesel pumps.
+- Visual identity: scrap = rust-orange and blue-grey junk, corrugated metal, tyres, oil drums, forge and anvil; the Scrap King's throne is junk (car seats, steering wheel, hubcaps); the diner reuses the stucco-and-red-band look with a lit DINER sign on a pole.
