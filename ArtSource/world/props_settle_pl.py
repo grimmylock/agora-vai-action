@@ -15,7 +15,8 @@ MORE = {"bed": "bed", "wardrobe": "wardrobe", "kitchensink": "kitchen", "stove":
         "stall_green": "stall_green", "stall_red": "stall_red", "stall_blue": "stall_blue", "stall_ochre": "stall_ochre",
         "pooltable": "pooltable", "jukebox": "jukebox", "cardtable": "cardtable", "kegs": "kegs",
         "barcounter_e": "barcounter_e", "barcounter_w": "barcounter_w", "barcounter_n": "barcounter_n", "sofa_e": "sofa_e", "sofa_w": "sofa_w", "bench_e": "bench_e", "bench_w": "bench_w", "jukebox_e": "jukebox_e", "jukebox_w": "jukebox_w", "bottleshelf_e": "bottleshelf_e", "bottleshelf_w": "bottleshelf_w",
-        "bunkbed_e": "bunkbed_e", "bunkbed_w": "bunkbed_w", "cot_e": "cot_e", "cot_w": "cot_w", "goodsshelf_e": "goodsshelf_e", "goodsshelf_w": "goodsshelf_w"}
+        "bunkbed_e": "bunkbed_e", "bunkbed_w": "bunkbed_w", "cot_e": "cot_e", "cot_w": "cot_w", "goodsshelf_e": "goodsshelf_e", "goodsshelf_w": "goodsshelf_w",
+        "fuelpump": "fuelpump", "haybale": "haybale", "trough": "trough", "tractor": "tractor", "workbench": "workbench", "radiotable": "radiotable", "outhouse": "outhouse"}
 def _load(item):
     p = os.path.join(_HERE, f"raw_{item}.png")
     if not os.path.exists(p): return None

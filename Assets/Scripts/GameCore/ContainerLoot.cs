@@ -88,6 +88,7 @@ namespace GameCore
                 ["boxstack"] = R("Boxes", 0.6f, E(3, "item", "fieldRepairKit"), E(3, "ru", null, 5, 20)),
                 ["desk"] = R("Desk", 0.5f, E(1, "ru", null, 5, 25)),
                 ["crate"] = R("Crate", 0.5f, E(2, "item", "fieldRepairKit"), E(2, "ru", null, 3, 15)),
+                ["workbench"] = R("Workbench", 0.6f, E(4, "item", "fieldRepairKit"), E(2, "ru", null, 5, 20)),
             },
             ["barracks"] = new Dictionary<string, Rule>
             {

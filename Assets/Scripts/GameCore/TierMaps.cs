@@ -225,9 +225,10 @@ namespace GameCore
             c.Fence(2, 193, 197, 193, "fence", 95, 11);
             for (int x = 30; x < 34; x++) c.Deco(x, 193, "fence_torn");
             for (int x = 98; x <= 102; x++) c.Deco(x, 193, "barrierpole");
-            c.Hut(105, 185, 8, 6, "wall", 2);
-            c.Put(108, 190, Solid, "window").Put(106, 186, ScatterCover, "lockers").Deco(110, 187, "desk");
-            c.Hut(90, 186, 5, 4, "concrete", 1, false);
+            // 2026-11-26 (place 1, BUILDING_REFERENCES.md): the guard booth (desk, stove, radio, bunk) and the sentry shelter are furnished plans
+            c.Clear(104, 184, 10, 8, null); Interiors.Stamp(c, 105, 185, Interiors.Booth, Interiors.BoothFloor, "wall", "barracks");
+            c.Clear(89, 185, 8, 6, null); Interiors.Stamp(c, 90, 186, Interiors.Sentry, Interiors.SentryFloor, "concrete", "barracks");
+            c.Put(103, 187, ScatterCover, "lamp").Put(97, 187, ScatterCover, "lamp");
             c.Put(96, 191, HardCover, "jersey").Put(104, 194, HardCover, "jersey").Put(96, 195, HardCover, "jersey").Put(104, 191, HardCover, "jersey");
             Sandbags(c, 86, 194, 6, 4, 3);
             c.Put(114, 192, Barrel).Put(88, 191, ScatterCover, "rustbarrel");
@@ -300,12 +301,15 @@ namespace GameCore
             c.PaintNoise(Grass, 8f, 0.5f, 33, (x, y) => x >= 14 && x < 58 && y >= 110 && y < 150);
             c.Block(17, 113, 12, 9, "wall", 1);
             TierDungeons.StampHouse(c, 17, 113, "farmhouse_ground", "wall", "Farmhouse Stairs", "farmhouse_upper");   // Batch 120: an L, with an upstairs
-            c.Block(34, 113, 16, 10, "plank", 1);
-            c.Block(17, 138, 24, 7, "plaster", 1);
+            // the barn (stalls, a tack room, the tractor) and the cowshed (troughs along the wall) as furnished plans
+            c.Clear(33, 112, 18, 12, Dirt); Interiors.Stamp(c, 34, 113, Interiors.Barn, Interiors.BarnFloor, "plank", "workshop");
+            c.Put(38, 119, HardCover, "tractor");
+            c.Clear(16, 137, 26, 9, Dirt); Interiors.Stamp(c, 17, 138, Interiors.Cowshed, Interiors.CowshedFloor, "plaster", "house");
             c.Rect(52, 114, 2, 2, Solid, 0, "part").Put(52, 115, Solid, "tank");
             c.Rect(52, 118, 2, 2, Solid, 0, "part").Put(52, 119, Solid, "tank");
             c.Fence(14, 110, 57, 110).Fence(14, 149, 57, 149, "fence", 30, 4).Fence(57, 110, 57, 149, "fence", 18, 4).Fence(14, 110, 14, 149);
             c.Put(44, 130, HardCover, "wreck").Put(30, 128, ScatterCover, "logs").Put(31, 128, ScatterCover, "logs").Put(48, 140, ScatterCover, "brush");
+            c.Put(47, 126, ScatterCover, "haybale").Put(26, 134, ScatterCover, "trough").Put(36, 126, ScatterCover, "crate").Put(37, 126, ScatterCover, "crate").Put(33, 136, ScatterCover, "rustbarrel");   // the yard: hay by the barn, a trough, a woodpile and crates near the house, a water barrel
             c.Landmark("Old Farmstead", 36, 130);
             c.Road(3, Dirt, (78, 146), (66, 140), (57, 130));
             Bridge(c, 64, 139, 4, 5);
@@ -317,22 +321,25 @@ namespace GameCore
 
             // Roadside Station: pumps, a shop, wrecks, just short of the fork
             c.Clear(104, 122, 18, 14, Concrete);
-            c.Block(110, 124, 9, 7, "plaster", 1, Concrete);
-            c.Put(105, 128, HardCover, "pillar").Put(105, 132, HardCover, "pillar");
-            c.Put(107, 133, HardCover, "wreck").Put(119, 133, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires");
+            Interiors.Stamp(c, 106, 122, Interiors.Station, Interiors.StationFloor, "plaster", "shop");      // shop and back room; the door faces the pumps
+            foreach (int px in new[] { 108, 112, 116 }) c.Put(px, 132, HardCover, "fuelpump");                // three pumps in a row, one lane in, one out
+            c.Put(118, 134, HardCover, "wreck").Put(120, 128, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires").Put(106, 134, ScatterCover, "tires");
             c.Landmark("Roadside Station", 108, 130);
 
             // Army Field Camp with Watchtower 3: sandbags, tents, an abandoned carrier, the leaning tower
             c.Clear(150, 150, 38, 36, Dirt, false);
             Sandbags(c, 152, 152, 32, 30, 2, 3);
-            c.Hut(156, 156, 7, 5, "metal", 0).Hut(166, 156, 7, 5, "metal", 0).Hut(156, 170, 7, 5, "metal", 3);
-            c.Rect(168, 171, 4, 2, Solid, 0, "container").Rect(174, 171, 4, 2, Solid, 0, "container");
+            // 2026-11-26 (place 1): two barracks huts, the command hut by the gate, the mess apart from the beds, a supply dump, the latrines at the far corner, a motor pool, a fire pit
+            c.Clear(155, 155, 11, 8, null); Interiors.Stamp(c, 156, 156, Interiors.FieldBarracks, Interiors.FieldBarracksFloor, "metal", "barracks");
+            c.Clear(165, 155, 11, 8, null); Interiors.Stamp(c, 166, 156, Interiors.FieldBarracks, Interiors.FieldBarracksFloor, "metal", "barracks");
+            c.Clear(155, 169, 11, 8, null); Interiors.Stamp(c, 156, 170, Interiors.CommandHut, Interiors.CommandHutFloor, "metal", "barracks");
+            c.Clear(165, 169, 10, 8, null); Interiors.Stamp(c, 166, 170, Interiors.MessHut, Interiors.MessHutFloor, "metal", "barracks");
+            c.Rect(177, 171, 4, 2, Solid, 0, "container").Rect(177, 174, 4, 2, Solid, 0, "container").Put(176, 173, ScatterCover, "crate").Put(181, 173, ScatterCover, "boxstack");   // the supply dump
             Tower(c, 178, 156, 4);
             c.Landmark("Watchtower 3", 178, 156);
-            c.Put(162, 178, HardCover, "wreck").Put(176, 178, HardCover, "jersey").Put(153, 166, Barrel).Put(180, 166, ScatterCover, "crate");
-            for (int x = 154; x < 182; x++) if (x < 165 || x > 171) c.Put(x, 166, HardCover, "trench");
-            c.Put(168, 175, ScatterCover, "crate").Put(169, 175, ScatterCover, "crate").Put(176, 175, HardCover, "sandbags").Put(177, 175, HardCover, "sandbags");
-            c.Put(160, 163, Barrel).Put(174, 161, ScatterCover, "crate").Put(167, 154, ScatterCover, "pole");
+            c.Put(162, 178, HardCover, "apc").Put(176, 178, HardCover, "jersey").Put(153, 166, Barrel).Put(160, 167, HardCover, "machine").Put(161, 168, Barrel).Put(159, 168, Barrel);   // the carrier in the motor pool corner, a generator with its fuel
+            c.Put(182, 181, HardCover, "outhouse").Put(184, 181, HardCover, "outhouse");                                                                                           // latrines: far corner, downhill from the mess
+            c.Put(170, 163, ScatterCover, "campfire").Put(168, 164, ScatterCover, "logs").Put(172, 164, ScatterCover, "logs").Put(167, 154, ScatterCover, "pole");
             c.Landmark("Army Field Camp", 168, 167);
             c.Keep(152, 152, 32, 30);
             c.Road(3, Dirt, (103, 178), (130, 176), (151, 167));
