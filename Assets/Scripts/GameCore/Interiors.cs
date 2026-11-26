@@ -839,6 +839,67 @@ namespace GameCore
             ".........",
         };
 
+        public static readonly string[] CommandPost = {
+            "###n##n####n##n###",
+            "#hh.0..N..M..0.RR#",
+            "#................#",
+            "n....d...T..d....n",
+            "#.y...........S.y#",
+            "#................#",
+            "#................#",
+            "###n####DD###n####",
+        };
+        public static readonly string[] CommandPostFloor = {
+            "..................",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            "..................",
+        };
+        public static readonly string[] Armoury = {
+            "#####n######n#####",
+            "#.RRRRR..XX.hhh.F#",
+            "#................#",
+            "#...CC........XX.n",
+            "D................#",
+            "#.........F.....c#",
+            "#................#",
+            "########n#####n###",
+        };
+        public static readonly string[] ArmouryFloor = {
+            "..................",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            ".cccccccccccccccc.",
+            "..................",
+        };
+        public static readonly string[] MessHall = {
+            "#####n######n#####",
+            "#ksqqf...N......p#",
+            "#................#",
+            "#.VVVV...........n",
+            "D.........T..T..T#",
+            "#......x.........#",
+            "#................#",
+            "########n#####n###",
+        };
+        public static readonly string[] MessHallFloor = {
+            "..................",
+            ".kkkkkkkkkkkkkkkk.",
+            ".kkkkkkkkkkkkkkkk.",
+            ".kkkkkkkkkkkkkkkk.",
+            ".kkkkkkkkkkkkkkkk.",
+            ".kkkkkkkkkkkkkkkk.",
+            ".kkkkkkkkkkkkkkkk.",
+            "..................",
+        };
+
         /// <summary>The dev map: the three test buildings on grass, side by side.</summary>
         public static MapLayout LabMap()
         {

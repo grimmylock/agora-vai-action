@@ -1168,7 +1168,7 @@ namespace GameCore
             c.Clear(124, 120, 63, 61, Gravel);
             c.Fence(124, 120, 186, 120, "fence", 29, 5).Fence(124, 180, 186, 180, "fence", 34, 5).Fence(124, 120, 124, 180, "fence", 28, 5).Fence(186, 120, 186, 180);
             // the Command Post
-            c.Building(146, 123, 18, 8, "concrete", Concrete, (154, 130), (155, 130));
+            c.Clear(145, 122, 20, 10, Gravel); Interiors.Stamp(c, 146, 123, Interiors.CommandPost, Interiors.CommandPostFloor, "concrete", "barracks");   // 2026-11-26 (place 4): war table, radios, desks, lockers
             for (int x = 144; x < 166; x += 2) c.Put(x, 132, HardCover, "sandbags");
             c.Landmark("Command Post", 155, 126);
             // Story 8b: the Barrier (Barrier.cs): an arc of concrete bowing out to the north, the compound's firing step (a steel catwalk two tiles deep) just inside it
@@ -1194,17 +1194,21 @@ namespace GameCore
             c.Keep(124, 86, 66, 38);                                                    // no trees or clutter round the barrier (the dresser leaves it as authored)
             c.Landmark("The Barrier", Barrier.CX, Barrier.StepY(Barrier.CX) + 1);   // Story 8: the Liberators' line on the north side (open ground, the cover line at y 120 behind it)
             // Barracks Row
-            c.Stamp("Barracks Row", 127, 136, 3, "wall", Floor, 0, "lockers");
+            // Barracks Row: three long barracks facing each other across a lane, then the armoury, the mess hall and the aid post (furnished plans; the tents and lockers of the old block are gone)
+            c.Clear(126, 134, 60, 24, Gravel);
+            foreach (int bx in new[] { 128, 148, 168 }) Interiors.Stamp(c, bx, 136, Interiors.BarracksLong, Interiors.BarracksLongFloor, "concrete", "barracks");
+            Interiors.Stamp(c, 128, 147, Interiors.Armoury, Interiors.ArmouryFloor, "concrete", "barracks");
+            Interiors.Stamp(c, 148, 147, Interiors.MessHall, Interiors.MessHallFloor, "concrete", "barracks");
             c.Landmark("Barracks Row", 155, 146);
-            c.Hut(168, 149, 9, 6, "concrete", 0, false);                                // 2026-11-24: the aid post
-            c.Put(169, 150, ScatterCover, "medcabinet").Put(170, 150, ScatterCover, "medcabinet").Put(171, 150, ScatterCover, "lockers").Put(174, 152, ScatterCover, "cot").Put(175, 152, ScatterCover, "cot");
+            Interiors.Stamp(c, 168, 147, Interiors.Clinic, Interiors.ClinicFloor, "concrete", "clinic");            // 2026-11-24: the aid post
+            c.Put(176, 152, ScatterCover, "lamp").Put(147, 146, ScatterCover, "lamp").Put(167, 146, ScatterCover, "lamp").Put(127, 146, ScatterCover, "lamp");
             c.Landmark("Aid Post", 172, 156);
             // the Parade Ground and the Motor Pool
             c.Paint(130, 158, 52, 8, Concrete);
             c.Landmark("Parade Ground", 155, 162);
             c.Rect(130, 168, 50, 10, Solid, 0, "concrete"); c.Rect(131, 169, 48, 8, Empty); c.Paint(130, 168, 50, 10, Concrete);
             for (int x = 134; x < 178; x += 8) c.Rect(x, 168, 3, 1, Empty);
-            for (int x = 133; x < 178; x += 7) c.Put(x, 172, Solid, "wreck").Put(x + 1, 172, Solid, "wreck").Put(x + 3, 175, ScatterCover, "crate");
+            for (int x = 133; x < 178; x += 7) { c.Put(x, 172, Solid, x % 14 < 7 ? "apc" : "wreck").Put(x + 1, 172, Solid, "wreck").Put(x + 3, 175, ScatterCover, x % 14 < 7 ? "workbench" : "rustbarrel"); }   // bays: carriers and trucks, a bench or fuel barrels between
             c.Landmark("Motor Pool", 155, 174);
             Tower(c, 126, 122, 4); Tower(c, 183, 122, 4);
             c.Keep(124, 120, 63, 61);
