@@ -258,9 +258,17 @@ namespace GameCore
             {
                 int tx = Mathf.FloorToInt(x + (i % 2 == 0 ? -Radius : Radius)), ty = Mathf.FloorToInt(y + (i < 2 ? -Radius : Radius));
                 if (!TerrainMap.CanEnterTile(tx, ty)) return false;
-                if (!vaulting && Ledge(tx, ty) && (tx != p.X || ty != p.Y)) return false;
+                if (!vaulting && Ledge(tx, ty) && (tx != p.X || ty != p.Y) && !EasingOffLedge(p, x, y, tx, ty)) return false;
             }
             return true;
+        }
+
+        /// <summary>2026-11-26 (Yan: "when vaulting an obstacle the character gets stuck and can't move"): a hop can land with the body's edge still inside the cover tile's reach; then every small step, even straight away from it,
+        /// still overlapped the ledge and was refused for good. A step that does not take the body closer to that ledge tile's middle is allowed.</summary>
+        static bool EasingOffLedge(Player p, float x, float y, int tx, int ty)
+        {
+            var (ox, oy) = Offset(p); float cx = p.X + 0.5f + ox, cy = p.Y + 0.5f + oy, mx = tx + 0.5f, my = ty + 0.5f;
+            return (x - mx) * (x - mx) + (y - my) * (y - my) >= (cx - mx) * (cx - mx) + (cy - my) * (cy - my) - 1e-5f;
         }
 
         // ---- vaulting: Space at low cover hops you over it (no Focus, no landing on your face like a dive) ----
@@ -293,6 +301,7 @@ namespace GameCore
                     int fx = Mathf.FloorToInt(ex), fy = Mathf.FloorToInt(ey);
                     if (!TerrainMap.CanEnterTile(fx, fy)) return false;
                     if (Ledge(fx, fy) || TerrainMap.UnitAt(fx, fy, p) != null) continue;
+                    if (Ledge(Mathf.FloorToInt(ex - dx * Radius * 1.5f), Mathf.FloorToInt(ey - dy * Radius * 1.5f))) continue;   // land with the whole body clear of the cover
                     var s = Of(p);
                     s.VaultX = dx; s.VaultY = dy; s.VaultDist = e;
                     s.VaultLen = CombatantUtil.HasPerk(p, "Vault") ? VaultTime * 0.7f : VaultTime;

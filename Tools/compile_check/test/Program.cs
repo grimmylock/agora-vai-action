@@ -5886,6 +5886,10 @@ static class Program {
       bool hop = Rt.TryVault(p, 1f, 0f, null); float lift = 0f;
       for (int i = 0; i < 30 && Rt.Of(p).Vaulting; i++) { UnityEngine.Time.time += 0.02f; lift = Math.Max(lift, Rt.Of(p).VaultLift); Rt.TickVault(p, 0.02f); }
       Check(stopped && hop && p.X == px + 2 && !Rt.Of(p).Vaulting && lift > 0.2f, $"real time: sandbags stop you ({stopped}), Space vaults you over them (to x+{p.X - px}, up {lift:0.00})");
+      { // 2026-11-26: after the hop you can move on, in every direction, from wherever the hop put you (it used to land inside the cover's reach and refuse every step)
+        var (ax, ay) = Rt.Offset(p); float sx = p.X + 0.5f + ax, sy = p.Y + 0.5f + ay; int freeDirs = 0;
+        foreach (var (mx, my) in new[] { (0.05f, 0f), (0f, 0.05f), (0f, -0.05f) }) { Rt.SetOffset(p, ax, ay); float x0 = p.X + 0.5f + ax, y0 = p.Y + 0.5f + ay; for (int i = 0; i < 10; i++) Rt.MoveBy(p, mx, my); var (bx, by) = Rt.Offset(p); if (Math.Abs(p.X + 0.5f + bx - x0) + Math.Abs(p.Y + 0.5f + by - y0) > 0.2f) freeDirs++; p.X = px + 2; Rt.SetOffset(p, ax, ay); }
+        Check(freeDirs == 3, $"real time: after vaulting you can walk on, away and along the cover ({freeDirs}/3 directions free)"); }
       TerrainMap.SetTileType(px + 1, py, TileType.Empty); p.X = px; p.Y = py; Rt.SetOffset(p, 0f, 0f); }
     // co-op groundwork (Yan: "start steps 1-3 now"): two players in one fight - own state, own input packets, enemies pick the
     // nearest, rounds hit whoever they hit
