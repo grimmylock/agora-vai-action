@@ -17,7 +17,8 @@ MORE = {"bed": "bed", "wardrobe": "wardrobe", "kitchensink": "kitchen", "stove":
         "barcounter_e": "barcounter_e", "barcounter_w": "barcounter_w", "barcounter_n": "barcounter_n", "sofa_e": "sofa_e", "sofa_w": "sofa_w", "bench_e": "bench_e", "bench_w": "bench_w", "jukebox_e": "jukebox_e", "jukebox_w": "jukebox_w", "bottleshelf_e": "bottleshelf_e", "bottleshelf_w": "bottleshelf_w",
         "bunkbed_e": "bunkbed_e", "bunkbed_w": "bunkbed_w", "cot_e": "cot_e", "cot_w": "cot_w", "goodsshelf_e": "goodsshelf_e", "goodsshelf_w": "goodsshelf_w",
         "fuelpump": "fuelpump", "haybale": "haybale", "trough": "trough", "tractor": "tractor", "workbench": "workbench", "radiotable": "radiotable", "outhouse": "outhouse",
-        "canopy": "canopy", "cooler": "cooler", "stationsign": "stationsign", "snackrack": "snackrack", "icechest": "icechest"}
+        "canopy": "canopy", "cooler": "cooler", "stationsign": "stationsign", "snackrack": "snackrack", "icechest": "icechest",
+        "rowboat": "rowboat", "dryingrack": "dryingrack", "netrack": "netrack", "crabpots": "crabpots", "fishcrates": "fishcrates", "cleantable": "cleantable"}
 # 2026-11-26 (Yan: "the artstyle is not consistent, some have vibrant colors and hard black outlines, others are muted like the game; it looks way too clean for something abandoned"):
 # the place-1 props are muted toward the game's palette (less saturation, a warm grey-brown cast), dirtied (dust, grime at the foot, rust streaks) and outlined in a dark shade of their own colour
 WEATHERED_PLACE1 = {"fuelpump", "canopy", "cooler", "stationsign", "snackrack", "icechest", "haybale", "trough", "tractor", "workbench", "radiotable", "outhouse"}

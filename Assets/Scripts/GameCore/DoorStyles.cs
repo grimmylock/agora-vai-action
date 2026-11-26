@@ -32,7 +32,7 @@ namespace GameCore
         };
         public const int Reach = 14;
 
-        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "gothic", "hull", "metal", "plank", "window", "cathedral_mass" };
+        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "gothic", "hull", "metal", "plank", "driftwood", "window", "cathedral_mass" };
         /// <summary>A piece of a built wall: a Solid tile in a building material (not a fence or a rock) or another door.</summary>
         static bool Wall(MapLayout m, int x, int y)
         {

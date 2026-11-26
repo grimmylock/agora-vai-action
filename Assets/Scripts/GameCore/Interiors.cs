@@ -17,7 +17,7 @@ namespace GameCore
             ['o'] = ("sofa", false), ['a'] = ("armchair", false), ['z'] = ("toilet", false), ['u'] = ("bathtub", false), ['v'] = ("washbasin", false), ['l'] = ("bookshelf", true), ['g'] = ("goodsshelf", true),
             ['C'] = ("shopcounter", false), ['K'] = ("bunkbed", true), ['F'] = ("footlocker", false), ['R'] = ("weaponrack", true), ['M'] = ("maptable", false), ['d'] = ("desk", false), ['c'] = ("crate", false), ['h'] = ("lockers", true),
             ['i'] = ("nightstand", false), ['p'] = ("plant", false), ['y'] = ("floorlamp", false), ['q'] = ("kitchencounter", false), ['N'] = ("noticeboard", false), ['X'] = ("boxstack", true), ['B'] = ("bench", false),
-            ['S'] = ("stool", false), ['H'] = ("medcabinet", true), ['P'] = ("bottleshelf", true), ['V'] = ("barcounter", false), ['m'] = ("machine", true), ['r'] = ("rustbarrel", false), ['Q'] = ("pooltable", false), ['J'] = ("jukebox", true), ['U'] = ("cardtable", false), ['G'] = ("kegs", true), ['L'] = ("barcounter_e", false), ['Z'] = ("barcounter_w", false), ['Y'] = ("barcounter_n", false), ['A'] = ("sofa_e", false), ['I'] = ("sofa_w", false), ['t'] = ("bench_e", false), ['j'] = ("bench_w", false), ['O'] = ("jukebox_w", true), ['E'] = ("bottleshelf_e", true), ['W'] = ("bottleshelf_w", true), ['1'] = ("bunkbed_e", true), ['2'] = ("bunkbed_w", true), ['3'] = ("cot_e", false), ['4'] = ("cot_w", false), ['5'] = ("goodsshelf_e", true), ['6'] = ("goodsshelf_w", true), ['7'] = ("workbench", false), ['8'] = ("haybale", true), ['9'] = ("trough", false), ['0'] = ("radiotable", false), ['$'] = ("cooler", true), ['%'] = ("snackrack", false), ['x'] = ("debris", false), ['*'] = ("trash", false), ['+'] = ("rubble", false),
+            ['S'] = ("stool", false), ['H'] = ("medcabinet", true), ['P'] = ("bottleshelf", true), ['V'] = ("barcounter", false), ['m'] = ("machine", true), ['r'] = ("rustbarrel", false), ['Q'] = ("pooltable", false), ['J'] = ("jukebox", true), ['U'] = ("cardtable", false), ['G'] = ("kegs", true), ['L'] = ("barcounter_e", false), ['Z'] = ("barcounter_w", false), ['Y'] = ("barcounter_n", false), ['A'] = ("sofa_e", false), ['I'] = ("sofa_w", false), ['t'] = ("bench_e", false), ['j'] = ("bench_w", false), ['O'] = ("jukebox_w", true), ['E'] = ("bottleshelf_e", true), ['W'] = ("bottleshelf_w", true), ['1'] = ("bunkbed_e", true), ['2'] = ("bunkbed_w", true), ['3'] = ("cot_e", false), ['4'] = ("cot_w", false), ['5'] = ("goodsshelf_e", true), ['6'] = ("goodsshelf_w", true), ['7'] = ("workbench", false), ['8'] = ("haybale", true), ['9'] = ("trough", false), ['0'] = ("radiotable", false), ['$'] = ("cooler", true), ['%'] = ("snackrack", false), ['x'] = ("debris", false), ['*'] = ("trash", false), ['+'] = ("rubble", false), ['&'] = ("netrack", false), ['!'] = ("fishcrates", false), ['='] = ("dryingrack", true), ['^'] = ("crabpots", false), [';'] = ("cleantable", false),
         };
         static GroundType FloorOf(char f) => f == 'k' ? GroundType.KitchenTile : f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
 
@@ -657,6 +657,109 @@ namespace GameCore
             ".kkkkkkkkkk.ccc.",
             ".kkkkkkkkkk.ccc.",
             "................",
+        };
+
+        public static readonly string[] BoatShed = {
+            "###n####n###",
+            "#7X.......&#",
+            "#..........#",
+            "n^........!n",
+            "#..........#",
+            "#c........r#",
+            "#..........#",
+            "#####DD#####",
+        };
+        public static readonly string[] BoatShedFloor = {
+            "............",
+            ".dddddddddd.",
+            ".dddddddddd.",
+            ".dddddddddd.",
+            ".dddddddddd.",
+            ".dddddddddd.",
+            ".dddddddddd.",
+            "............",
+        };
+        public static readonly string[] FisherHomeA = {
+            "##n#n##",
+            "#bi..s#",
+            "n.....n",
+            "#..T.&#",
+            "#.....#",
+            "###D###",
+        };
+        public static readonly string[] FisherHomeAFloor = {
+            ".......",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".......",
+        };
+        public static readonly string[] FisherHomeB = {
+            "##n#n##",
+            "#s..ib#",
+            "n.....n",
+            "#^.T..#",
+            "#.....#",
+            "###D###",
+        };
+        public static readonly string[] FisherHomeBFloor = {
+            ".......",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".wwwww.",
+            ".......",
+        };
+        public static readonly string[] Smokehouse = {
+            "###n####",
+            "#s.=..r#",
+            "#......n",
+            "#!....c#",
+            "#......#",
+            "###D####",
+        };
+        public static readonly string[] SmokehouseFloor = {
+            "........",
+            ".dddddd.",
+            ".dddddd.",
+            ".dddddd.",
+            ".dddddd.",
+            "........",
+        };
+        public static readonly string[] Headman = {
+            "###n##n##",
+            "#bi.M..s#",
+            "#.......n",
+            "#w.T.T.&#",
+            "D.......#",
+            "#.......#",
+            "#.......#",
+            "###n##n##",
+        };
+        public static readonly string[] HeadmanFloor = {
+            ".........",
+            ".wwwwwww.",
+            ".wwwwwww.",
+            ".wwwwwww.",
+            ".wwwwwww.",
+            ".wwwwwww.",
+            ".wwwwwww.",
+            ".........",
+        };
+        public static readonly string[] Shack = {
+            "######",
+            "#b..s#",
+            "n...^n",
+            "#....#",
+            "###D##",
+        };
+        public static readonly string[] ShackFloor = {
+            "......",
+            ".wwww.",
+            ".wwww.",
+            ".wwww.",
+            "......",
         };
 
         /// <summary>The dev map: the three test buildings on grass, side by side.</summary>

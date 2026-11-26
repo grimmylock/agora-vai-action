@@ -463,17 +463,26 @@ namespace GameCore
             // The Fishing Village (place C): stilt huts on a dry island, jetties, the boat shed, the headman's house
             c.Clear(150, 60, 36, 30, DarkGrass);
             c.PaintNoise(Dirt, 6f, 0.55f, 51, (x, y) => x >= 150 && x < 186 && y >= 60 && y < 90);
-            c.Block(154, 63, 10, 8, "plank", 1, Dirt);                          // boat shed
-            c.Hut(167, 63, 7, 6, "plank", 0).Hut(176, 63, 7, 6, "plank", 0).Hut(154, 77, 7, 6, "plank", 3).Hut(166, 79, 6, 5, "plank", 3);
-            c.Hut(175, 75, 9, 8, "plaster", 2, true);                           // the headman's house
+            // 2026-11-26 (place 2, BUILDING_REFERENCES.md): grey driftwood houses along the shore: the boat shed on the water side with the rowboat on trestles and a jetty out, a smokehouse, four fishers' homes, the headman's hall;
+            // nets and fish racks drying between them, traps, fish crates and a cleaning table at the jetty root
+            c.Clear(149, 79, 14, 10, Dirt); Interiors.Stamp(c, 150, 80, Interiors.BoatShed, Interiors.BoatShedFloor, "driftwood", "workshop"); c.Put(156, 83, HardCover, "rowboat");
+            c.Clear(153, 62, 10, 9, Dirt); Interiors.Stamp(c, 154, 63, Interiors.Smokehouse, Interiors.SmokehouseFloor, "driftwood", "house");
+            c.Clear(166, 62, 9, 8, Dirt); Interiors.Stamp(c, 167, 63, Interiors.FisherHomeA, Interiors.FisherHomeAFloor, "driftwood", "house");
+            c.Clear(175, 62, 9, 8, Dirt); Interiors.Stamp(c, 176, 63, Interiors.FisherHomeB, Interiors.FisherHomeBFloor, "driftwood", "house");
+            c.Clear(155, 71, 9, 8, Dirt); Interiors.Stamp(c, 156, 72, Interiors.FisherHomeA, Interiors.FisherHomeAFloor, "driftwood", "house");
+            c.Clear(165, 78, 9, 8, Dirt); Interiors.Stamp(c, 166, 79, Interiors.FisherHomeB, Interiors.FisherHomeBFloor, "driftwood", "house");
+            c.Clear(174, 74, 11, 9, Dirt); Interiors.Stamp(c, 175, 75, Interiors.Headman, Interiors.HeadmanFloor, "driftwood", "house");                       // the headman's hall
             c.Stash("Headman's Strongbox", 182, 80);
             c.Landmark("Headman's House", 179, 79);
-            Bridge(c, 186, 70, 8, 3); Bridge(c, 160, 90, 3, 7);                  // jetties
+            c.Clear(172, 83, 8, 7, Dirt); Interiors.Stamp(c, 173, 84, Interiors.Shack, Interiors.ShackFloor, "driftwood", "house");
+            Bridge(c, 186, 70, 8, 3); Bridge(c, 160, 90, 3, 7); Bridge(c, 150, 88, 3, 7);                                                                                // jetties
             c.Put(192, 70, HardCover, "sunktruck");
             for (int x = 170; x < 176; x += 2) c.Put(x, 72, ScatterCover, "logs");
-            c.Hut(150, 84, 6, 5, "plank", 1).Hut(173, 84, 6, 5, "plank", 3);
-            Bridge(c, 150, 89, 3, 6); Bridge(c, 182, 88, 3, 6); Bridge(c, 143, 66, 7, 3);
-            for (int y = 64; y < 70; y += 2) c.Put(186, y, ScatterCover, "logs");             // drying racks
+            Bridge(c, 182, 88, 3, 6); Bridge(c, 143, 66, 7, 3);
+            c.Put(185, 64, HardCover, "dryingrack").Put(185, 68, HardCover, "dryingrack");                                                                              // fish drying in the open, away from the smoke
+            c.Put(164, 70, ScatterCover, "netrack").Put(174, 70, ScatterCover, "netrack").Put(163, 86, ScatterCover, "netrack");
+            c.Put(158, 89, ScatterCover, "cleantable").Put(164, 89, ScatterCover, "fishcrates").Put(148, 82, ScatterCover, "crabpots").Put(165, 84, ScatterCover, "crabpots");
+            c.Put(179, 86, HardCover, "rowboat").Put(169, 87, ScatterCover, "rustbarrel").Put(163, 76, ScatterCover, "lamp").Put(172, 77, ScatterCover, "lamp").Put(177, 73, ScatterCover, "rustbarrel");
             Fire(c, 168, 76, false);
             c.Keep(150, 60, 36, 30);
             c.Landmark("Fishing Village", 168, 74);

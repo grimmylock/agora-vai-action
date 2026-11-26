@@ -250,12 +250,22 @@ def stucco_face(x, k, H, r):
     if (x * 5 + k * 3) % 29 < 2 and k > 6: v = hx("#6f6a5e")                                                              # long damp stains
     return v
 
+def driftwood_face(pal):
+    """2026-11-26 (place 2, fishing village): grey sea-bleached boards, a tarred black foot"""
+    inner = plank_face(pal)
+    def f(x, k, H, r):
+        if k >= H - 4: return hx("#1b1917") if x % 4 != 3 else hx("#0e0d0c")
+        return inner(x, k, H, r)
+    return f
+DRIFT = ramp("#26231f", "#3d3a34", "#5c5750", "#7a756b", "#948e82")
+
 STOREY = 28   # Batch 106: a built wall is one real storey (3 m; a 16 px person is 1.8 m). Was 18 (2 m). RoofView.Lift matches.
 MATERIALS = {
     "wall":       (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(brick_face(P["brick"])), P["concrete"][4]),
     "plaster":    (STOREY2, 10, False, plain_cap([P["plaster"][3]], P["plaster"][2]), weather(plaster_face(P["plaster"], P["brick"])), P["plaster"][4]),
     "concrete":   (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(panel_face(P["concrete"])), P["concrete"][4]),
     "gothic":     (STOREY2, 10, False, plain_cap([P["gothic"][3]], P["gothic"][2]), weather(gothic_face(P["gothic"])), P["gothic"][4]),
+    "driftwood":  (STOREY, 10, False, plain_cap([DRIFT[3]], DRIFT[2]), weather(driftwood_face(DRIFT)), DRIFT[4]),
     "stucco":     (STOREY, 10, False, plain_cap([hx("#d8d0b8")], hx("#c9c1a8")), weather(stucco_face), hx("#efe9d8")),
     "hull":       (STOREY, 10, False, plain_cap([P["steel"][3]], P["rust"][2]), corrugated_face(P["steel"]), P["steel"][4]),
     "metal":      (STOREY, 10, False, plain_cap([P["tin"][2]], P["rust"][2]), corrugated_face(P["tin"]), P["tin"][3]),
@@ -540,7 +550,7 @@ def wear(im, seed, mat):
             x = max(1, min(w - 2, x + r.choice((-1, 0, 0, 1))))
     return Image.fromarray(a, "RGBA")
 
-RUBBLE_TOP = {"wall": P["brick"], "plaster": P["brick"], "plank": P["wood"]}
+RUBBLE_TOP = {"wall": P["brick"], "plaster": P["brick"], "plank": P["wood"], "driftwood": DRIFT}
 def ruin_wall(mat, mask, cs, key):
     """the cap of a broken wall is exposed core (brick under the plaster, splintered boards), not a clean concrete top"""
     import zlib
@@ -571,10 +581,10 @@ def all_tiles():
                 if mat in ("concrete", "plaster", "hull", "wall"):          # Boss 2: the lab's lock doors; 2026-11-11: every wall material a lock-and-key dungeon is built of (the ferry's hull, the morgue's and Beta's plaster, the crypts' brick fell back to a plain steel door)
                     for ex in ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on", "keypaddoor", "keypaddoor_on", "steamdoor", "steamdoor_on"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
                 if H >= 36: t[f"w_{mat}_{key}_uwin"] = build(mat, mask, 0, "uwin", cs)   # Batch 119: an upper-floor window on a plain wall
-                if mat in ("wall", "plaster", "plank"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
+                if mat in ("wall", "plaster", "plank", "driftwood"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
                 if mat in NEW_DOOR_MATS and (mask & 10) == 10:
                     for ex in NEW_DOORS: t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
-                if mat in ("wall", "plaster", "plank", "concrete", "gothic", "stucco"):   # Batch 98: worn, for intact walls
+                if mat in ("wall", "plaster", "plank", "concrete", "gothic", "stucco", "driftwood"):   # Batch 98: worn, for intact walls
                     t[f"w_{mat}_{key}_worn"] = wear(build(mat, mask, 0, None, cs), __import__("zlib").crc32(f"worn{mat}{key}".encode()), mat)
     return t
 

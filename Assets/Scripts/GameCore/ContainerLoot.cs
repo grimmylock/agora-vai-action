@@ -89,6 +89,9 @@ namespace GameCore
                 ["desk"] = R("Desk", 0.5f, E(1, "ru", null, 5, 25)),
                 ["crate"] = R("Crate", 0.5f, E(2, "item", "fieldRepairKit"), E(2, "ru", null, 3, 15)),
                 ["workbench"] = R("Workbench", 0.6f, E(4, "item", "fieldRepairKit"), E(2, "ru", null, 5, 20)),
+                ["netrack"] = R("Net Pile", 0.3f, E(3, "item", "fieldRepairKit"), E(1, "ru", null, 2, 8)),
+                ["fishcrates"] = R("Fish Crates", 0.5f, E(4, "item", "mre"), E(1, "ru", null, 2, 10)),
+                ["crabpots"] = R("Traps", 0.3f, E(2, "item", "mre"), E(2, "ru", null, 2, 8)),
             },
             ["barracks"] = new Dictionary<string, Rule>
             {

@@ -11,7 +11,7 @@ namespace GameCore
 {
     public static class BuildingCarver
     {
-        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "hull", "metal", "plank" };
+        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "hull", "metal", "plank", "driftwood" };
         const int MinSize = 7, MaxRoom = 12, MinRoom = 4;
 
         public static MapLayout Carve(MapLayout m, string zoneId)
