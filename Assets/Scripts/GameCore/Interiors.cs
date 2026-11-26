@@ -633,13 +633,17 @@ namespace GameCore
 
 
 
+
+
+
+
         public static readonly string[] Station = {
             "###n###n#####n##",
-            "#.$$$$$$.N.#cvz#",
-            "#....*.....#c..#",
-            "#.gg.g..CC.D...#",
-            "#c.+......%#.7.#",
-            "#...x..*.x.#..X#",
+            "#.$$$$$$.N.#v.z#",
+            "#..........#...#",
+            "#.gggg..CC%#D###",
+            "#c.+.......D.7X#",
+            "#...x..*.x.#.cX#",
             "#..........#...#",
             "##nn##D##nn##D##",
         };
@@ -648,7 +652,7 @@ namespace GameCore
             "................",
             ".kkkkkkkkkk.ccc.",
             ".kkkkkkkkkk.ccc.",
-            ".kkkkkkkkkk.ccc.",
+            ".kkkkkkkkkk.c...",
             ".kkkkkkkkkk.ccc.",
             ".kkkkkkkkkk.ccc.",
             ".kkkkkkkkkk.ccc.",

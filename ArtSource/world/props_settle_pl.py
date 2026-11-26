@@ -20,7 +20,7 @@ MORE = {"bed": "bed", "wardrobe": "wardrobe", "kitchensink": "kitchen", "stove":
         "canopy": "canopy", "cooler": "cooler", "stationsign": "stationsign", "snackrack": "snackrack", "icechest": "icechest"}
 # 2026-11-26 (Yan: "the artstyle is not consistent, some have vibrant colors and hard black outlines, others are muted like the game; it looks way too clean for something abandoned"):
 # the place-1 props are muted toward the game's palette (less saturation, a warm grey-brown cast), dirtied (dust, grime at the foot, rust streaks) and outlined in a dark shade of their own colour
-WEATHERED = {"fuelpump", "canopy", "cooler", "stationsign", "snackrack", "icechest", "haybale", "trough", "tractor", "workbench", "radiotable", "outhouse"}
+WEATHERED_PLACE1 = {"fuelpump", "canopy", "cooler", "stationsign", "snackrack", "icechest", "haybale", "trough", "tractor", "workbench", "radiotable", "outhouse"}
 def _weather(im, seed):
     import colorsys
     a = np.array(im).astype(np.float32); H, W = a.shape[:2]; rng = np.random.RandomState(seed)
@@ -52,7 +52,7 @@ def _load(item):
     src = src.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)); arr = np.array(src); al = arr[..., 3] >= 110
     q = Image.fromarray(arr[..., :3]).quantize(colors=28, method=Image.MEDIANCUT, dither=Image.NONE).convert("RGB"); out = np.dstack([np.array(q), np.where(al, 255, 0).astype(np.uint8)]); out[~al] = 0
     img = Image.fromarray(out.astype(np.uint8), "RGBA")
-    return _weather(img, sum(map(ord, item))) if item in WEATHERED else img
+    return _weather(img, sum(map(ord, item)))        # 2026-11-26 (Yan: "do that" for the older Pixel Lab props too): every settle_pl prop is muted and dirtied
 K = (20, 22, 23)            # the game's hard dark outline colour (worldlib.K)
 def _finish_black(im, pivot, shadow, tall=False, soft=False):
     """2026-11-24 (Yan: "some have hard black outlines and others don't, all of them should"): every settled-place prop gets a hard near-black 1 px outline all round, like the other furniture. An edge that is already dark (the Pixel Lab sprite drew its own outline there) is left alone,
@@ -71,7 +71,7 @@ def _finish_black(im, pivot, shadow, tall=False, soft=False):
     return Prop(Image.fromarray(o.astype(np.uint8), "RGBA"), (pivot[0] + 1, pivot[1] + 1), shadow, tall, scale=2)
 def _make(item):
     def f(seed):
-        im = _load(item); return _finish_black(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1), soft=item in WEATHERED)
+        im = _load(item); return _finish_black(im, (im.width // 2, int(im.height * 0.95)), (max(10, int(im.width * 0.45)), 5, 1, -1), soft=True)
     return f
 NEW = {}; VARIANTS = {}
 for item in ITEMS:
