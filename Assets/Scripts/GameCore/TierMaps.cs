@@ -475,10 +475,9 @@ namespace GameCore
             c.Stash("Headman's Strongbox", 182, 80);
             c.Landmark("Headman's House", 179, 79);
             c.Clear(172, 83, 8, 7, Dirt); Interiors.Stamp(c, 173, 84, Interiors.Shack, Interiors.ShackFloor, "driftwood", "house");
-            Bridge(c, 160, 90, 3, 7); Bridge(c, 150, 88, 3, 7);                                                                                // jetties
-            c.Put(187, 91, HardCover, "sunktruck");                                                                                                                  // the sunk truck sits in the water off the east pier (it stood on a pier in the forest)
+            Bridge(c, 160, 90, 3, 7);                                                                                // jetties
+            c.Put(187, 91, HardCover, "sunktruck");                                                                                                                  // the sunk truck sits in the water off the east pier (it stood on a pier in the forest); Yan: only the one pier stays (the south jetty), the other platforms were too neat for the place
             for (int x = 170; x < 176; x += 2) c.Put(x, 72, ScatterCover, "logs");
-            Bridge(c, 182, 88, 3, 6); Bridge(c, 143, 66, 7, 3);
             c.Put(185, 64, HardCover, "dryingrack").Put(185, 68, HardCover, "dryingrack");                                                                              // fish drying in the open, away from the smoke
             c.Put(164, 70, ScatterCover, "netrack").Put(174, 70, ScatterCover, "netrack").Put(163, 86, ScatterCover, "netrack");
             c.Put(158, 89, ScatterCover, "cleantable").Put(164, 89, ScatterCover, "fishcrates").Put(148, 82, ScatterCover, "crabpots").Put(165, 84, ScatterCover, "crabpots");
