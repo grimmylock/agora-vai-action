@@ -17,7 +17,7 @@ namespace GameCore
             ['o'] = ("sofa", false), ['a'] = ("armchair", false), ['z'] = ("toilet", false), ['u'] = ("bathtub", false), ['v'] = ("washbasin", false), ['l'] = ("bookshelf", true), ['g'] = ("goodsshelf", true),
             ['C'] = ("shopcounter", false), ['K'] = ("bunkbed", true), ['F'] = ("footlocker", false), ['R'] = ("weaponrack", true), ['M'] = ("maptable", false), ['d'] = ("desk", false), ['c'] = ("crate", false), ['h'] = ("lockers", true),
             ['i'] = ("nightstand", false), ['p'] = ("plant", false), ['y'] = ("floorlamp", false), ['q'] = ("kitchencounter", false), ['N'] = ("noticeboard", false), ['X'] = ("boxstack", true), ['B'] = ("bench", false),
-            ['S'] = ("stool", false), ['H'] = ("medcabinet", true), ['P'] = ("bottleshelf", true), ['V'] = ("barcounter", false), ['m'] = ("machine", true), ['r'] = ("rustbarrel", false), ['Q'] = ("pooltable", false), ['J'] = ("jukebox", true), ['U'] = ("cardtable", false), ['G'] = ("kegs", true),
+            ['S'] = ("stool", false), ['H'] = ("medcabinet", true), ['P'] = ("bottleshelf", true), ['V'] = ("barcounter", false), ['m'] = ("machine", true), ['r'] = ("rustbarrel", false), ['Q'] = ("pooltable", false), ['J'] = ("jukebox", true), ['U'] = ("cardtable", false), ['G'] = ("kegs", true), ['L'] = ("barcounter_e", false), ['Z'] = ("barcounter_w", false), ['Y'] = ("barcounter_n", false), ['A'] = ("sofa_e", false), ['I'] = ("sofa_w", false), ['t'] = ("bench_e", false), ['j'] = ("bench_w", false), ['O'] = ("jukebox_w", true), ['E'] = ("bottleshelf_e", true), ['W'] = ("bottleshelf_w", true),
         };
         static GroundType FloorOf(char f) => f == 'k' ? GroundType.KitchenTile : f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
 
@@ -457,6 +457,7 @@ namespace GameCore
 
 
 
+
         public static readonly string[] WarehouseN = {
             "######################",
             "#.........N..........#",
@@ -469,11 +470,11 @@ namespace GameCore
             "#............y.......#",
             "#....................D",
             "#....................#",
-            "#..GPP.Pr.........J.p#",
-            "#s.............Q.....#",
-            "#...VVVVV............#",
-            "#.S.S.S.......y...U..#",
-            "#X...........B...B...#",
+            "#G...............N..O#",
+            "#E.LS...y......Q....p#",
+            "#E.LS........y......I#",
+            "#E.L.....U........U..#",
+            "#r.LS..c............I#",
             "#....................#",
             "#....................#",
             "###########D##########",

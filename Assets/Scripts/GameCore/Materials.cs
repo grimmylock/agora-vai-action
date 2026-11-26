@@ -14,7 +14,7 @@ namespace GameCore
         static void Add(Material m, params string[] looks) { foreach (var l in looks) ByLook[l] = m; }
         static Materials()
         {
-            Add(Material.Wood, "crate", "barcounter", "bottleshelf", "bench", "stool", "desk", "desk_n", "desk_s", "desk_e", "desk_w", "logs", "logs_v", "logs_c", "fence", "fence_torn",
+            Add(Material.Wood, "crate", "barcounter", "barcounter_e", "barcounter_w", "barcounter_n", "bottleshelf", "bottleshelf_e", "bottleshelf_w", "bench", "bench_e", "bench_w", "stool", "desk", "desk_n", "desk_s", "desk_e", "desk_w", "logs", "logs_v", "logs_c", "fence", "fence_torn",
                 "fence_v", "watchtower", "pole", "tree", "pine", "deadtree", "redtree", "plank");
             Add(Material.Tin, "lockers", "medcabinet", "rustbarrel", "scrap", "pipes", "dumpster", "cabinet", "labtable", "labbench", "jars", "vatsmall");
             Add(Material.Steel, "machine", "engine", "wreck", "apc", "van", "silo", "sunktruck", "bus", "tank", "flatcar", "container", "pipe", "pipepost",
