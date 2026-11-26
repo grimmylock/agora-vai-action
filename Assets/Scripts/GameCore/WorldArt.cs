@@ -891,7 +891,9 @@ namespace GameCore
                 string L(int ax, int ay) { var k = LookAt(ax, ay); return k == "rail_v" ? "rail" : k; }
                 if (L(x, y - 1) == b) m |= 1; if (L(x + 1, y) == b) m |= 2; if (L(x, y + 1) == b) m |= 4; if (L(x - 1, y) == b) m |= 8;
                 if (m == 0 && l == "rail_v") m = 5;
-                s = Get($"f_{b}_{m}");
+                s = null;
+                if (b == "boardwalk") { float wr = H01(x, y, 31); s = Get($"f_boardwalk_{m}_w{(wr < 0.30f ? 1 : wr < 0.46f ? 2 : 0)}".Replace("_w0", "")); }   // 2026-11-26: a third of the planks are worn, some broken
+                if (s == null) s = Get($"f_{b}_{m}");
             }
             else if (l == "platform") s = Pick("f_platform", H01(x, y, 6));
             else if (t.Type == TileType.DoorOpen) s = Get(l == "door_broken" ? "f_door_broken_0" : "f_door_open_0");

@@ -62,7 +62,7 @@ def platform(seed):
             px(im, x, y, c)
     return im
 
-def boardwalk(mask, seed):
+def boardwalk(mask, seed, wear=0):
     """Batch 33: marsh causeway deck (the swamp concept's boardwalk). Weathered planks 4 px wide run across
     the walk with dark gaps; mask = NESW neighbours that are deck too. An open side shows the deck's
     edge, and the south side its front face and a post every other tile."""
@@ -84,6 +84,20 @@ def boardwalk(mask, seed):
             for i in range(C): im.putpixel((i, C - 2), W[1]); im.putpixel((i, C - 3), W[1] if i % 4 == 3 else W[2])
             if seed % 2 == 0 or True:
                 for yy in range(C - 3, C): im.putpixel((6, yy), W[0]); im.putpixel((7, yy), W[1])    # a post
+    if wear:                                                          # 2026-11-26 (Yan: the Causeway is too straight and neat): rotten boards, moss, and missing planks showing the water under the deck
+        rr = rng(seed * 31 + mask * 7 + wear)
+        WATER = (16, 26, 28, 255); ROT = (30, 26, 20, 255)
+        for y in range(C):
+            for x in range(C):
+                u, v = (x, y) if ew else (y, x)
+                if (u // 4) % 5 == (wear + seed) % 5 and rr.random() < .7: im.putpixel((x, y), ROT)             # a rotten board
+        for _ in range(26 if wear == 1 else 44): im.putpixel((rr.randrange(C), rr.randrange(C)), P["moss"][rr.randrange(2)])
+        for _ in range(1 if wear == 1 else 2):                       # a missing stretch of plank: the water shows through
+            u0 = rr.randrange(0, C - 3) // 4 * 4; v0 = rr.randrange(2, C - 8); ln = rr.randint(4, 9)
+            for uu in range(u0, min(C, u0 + 3)):
+                for vv in range(v0, min(C, v0 + ln)):
+                    x, y = (uu, vv) if ew else (vv, uu)
+                    if rr.random() < .9: im.putpixel((x, y), WATER)
     return im
 
 def tallgrass(seed, pal=None):
@@ -114,6 +128,8 @@ def all_flats():
         for m in range(16): t[f"f_{kind}_{m}"] = line_tile(kind, m)
     for v in range(2): t[f"f_platform_{v}"] = platform(v)
     for m in range(16): t[f"f_boardwalk_{m}"] = boardwalk(m, 5)
+    for m in range(16):
+        for w in (1, 2): t[f"f_boardwalk_{m}_w{w}"] = boardwalk(m, 5 + w, w)
     for v in range(3): t[f"d_lily_{v}"] = zone_style.lily(50 + v)
     import zone_style                                  # Batch 31: concept-A grass clumps
     for v in range(6): t[f"d_tallgrass_{v}"] = zone_style.grass(30 + v)

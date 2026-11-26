@@ -7408,3 +7408,6 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 
 ## Batch 9fm (2026-11-26) - fishing village: only one pier
 - Yan: the platforms look too neat and don't fit the area; remove them and leave only the pier. Removed the west stub (143,66), the second south jetty (150,88) and the east pier (182,88); the south jetty at (160,90) stays. The long vertical boardwalk is the Causeway, the only way north through the marsh to the Scrapyard (exit at (166,0)), so it stays; it could be aged (gaps, sunk and broken boards) if Yan wants. Harness passes; not run in Unity.
+
+## Batch 9fn (2026-11-26) - the Causeway aged
+- Yan: "yeah" to ageing the Causeway. `TierMaps.cs` `Boardwalk()` now always planks the line itself and a 3x3 at each corner (the route north stays unbroken) but each flanking tile is planked only about two times in three (`ZoneThemes.Hash01(.,.,911)`), so the deck narrows and widens and its edge is ragged. `flats.py` `boardwalk(mask, seed, wear)` makes two worn variants per mask (rotten dark boards, moss, a missing stretch of plank showing the water); `WorldArt.cs` picks them by tile hash (30 % worn, 16 % broken). Harness passes (every map exit still walks); not run in Unity.

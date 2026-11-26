@@ -106,12 +106,26 @@ namespace GameCore
         /// <summary>A boardwalk along an axis-aligned polyline: 3 planks wide, walkable over the marsh.</summary>
         static void Boardwalk(TerrainCanvas c, params (int x, int y)[] pts)
         {
+            // 2026-11-26 (Yan: the Causeway is too straight and neat): the line itself and a 3x3 at every corner are always planked (the way north stays unbroken),
+            // but the flanking tiles come and go, so the deck narrows to one plank here and widens to three there
+            void Plank(int x, int y) { c.Put(x, y, Empty, "boardwalk"); c.Paint(x, y, 1, 1, Boards); }
             for (int i = 0; i + 1 < pts.Length; i++)
             {
                 var (x1, y1) = pts[i]; var (x2, y2) = pts[i + 1];
-                int x0 = Math.Min(x1, x2) - 1, y0 = Math.Min(y1, y2) - 1;
-                Bridge(c, x0, y0, Math.Abs(x2 - x1) + 3, Math.Abs(y2 - y1) + 3);
+                for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
+                    for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
+                    {
+                        Plank(x, y);
+                        bool horiz = y1 == y2;
+                        foreach (int d in new[] { -1, 1 })
+                        {
+                            int fx = horiz ? x : x + d, fy = horiz ? y + d : y;
+                            if (ZoneThemes.Hash01(fx, fy, 911) < 0.66f) Plank(fx, fy);
+                        }
+                    }
+                c.Keep(Math.Min(x1, x2) - 1, Math.Min(y1, y2) - 1, Math.Abs(x2 - x1) + 3, Math.Abs(y2 - y1) + 3);
             }
+            foreach (var (px, py) in pts) for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) Plank(px + dx, py + dy);
         }
 
         static void Graves(TerrainCanvas c, int x, int y, int cols, int rows)
