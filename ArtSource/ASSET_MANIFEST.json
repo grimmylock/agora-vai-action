@@ -334,6 +334,21 @@
    "issues": []
   },
   {
+   "id": "checkout",
+   "path": "ArtSource/world/settle_pl/raw_checkout.png",
+   "size": "64x48",
+   "colours": 52,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "cleantable",
    "path": "ArtSource/world/settle_pl/raw_cleantable.png",
    "size": "80x56",
@@ -844,6 +859,21 @@
    "issues": []
   },
   {
+   "id": "mannequin",
+   "path": "ArtSource/world/settle_pl/raw_mannequin.png",
+   "size": "40x64",
+   "colours": 39,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "maptable",
    "path": "ArtSource/world/settle_pl/raw_maptable.png",
    "size": "64x48",
@@ -1225,6 +1255,21 @@
    "path": "ArtSource/world/settle_pl/raw_stool.png",
    "size": "40x44",
    "colours": 12,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "storesign",
+   "path": "ArtSource/world/settle_pl/raw_storesign.png",
+   "size": "96x48",
+   "colours": 22,
    "opaque_corner": false,
    "near_white_pixels": 0,
    "source": {

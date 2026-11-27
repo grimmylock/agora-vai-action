@@ -7,5 +7,8 @@
  "stafftable": "stafftable",
  "escalatorseg": "escalatorseg",
  "liftshaft": "liftshaft",
- "escalatorlong": "escalatorlong"
+ "escalatorlong": "escalatorlong",
+ "checkout": "checkout",
+ "mannequin": "mannequin",
+ "storesign": "storesign"
 }

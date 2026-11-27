@@ -313,7 +313,7 @@ def roof_px(mat, x, y, r):
     return TAR[3] if v < .05 else TAR[1] if v < .3 else TAR[2]
 
 NEW_DOORS = ('x_glass', 'x_barred', 'x_roller', 'x_cell', 'x_lab', 'x_arched', 'x_plank', 'x_gothic_l', 'x_gothic_r', 'x_barn_l', 'x_barn_r', 'x_steel_l', 'x_steel_r', 'x_glassd_l', 'x_glassd_r', 'x_gate_l', 'x_gate_r')   # 2026-11-20 door variety (doors_new.py)
-NEW_DOOR_MATS = ('concrete', 'plaster', 'wall', 'gothic')
+NEW_DOOR_MATS = ('concrete', 'plaster', 'wall', 'gothic', 'brick', 'stucco')   # 2026-11-27: + the one-storey brick and stucco walls
 
 def build(mat, mask, variant=0, extra=None, corners=0):
     """extra: None | 'window' | 'door' | 'metaldoor' | 'crack'"""
@@ -356,7 +356,7 @@ def build(mat, mask, variant=0, extra=None, corners=0):
     # openings on a horizontal stretch of built wall
     fx = [x for x in face_top]
     LOCKS = ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on", "keypaddoor", "keypaddoor_on", "steamdoor", "steamdoor_on")   # Boss 2: the lab's lock faces (LabLocks): one lock type, one look; 2026-11-11: + the keypad door (a code) and the steam door (a coolant valve)
-    if extra in NEW_DOORS and fx and T < C and (mask & 10) == 10 and H >= 36:                       # 2026-11-20: a door of a new kind, pasted into the lower storey of a horizontal wall
+    if extra in NEW_DOORS and fx and T < C and (mask & 10) == 10 and H >= 28:                       # 2026-11-20: a door of a new kind, pasted into the lower storey of a horizontal wall
         import doors_new
         art = doors_new.face(extra); ft = min(face_top[x] for x in fx); r0 = ft + H - 19
         for yy in range(19):

@@ -41,3 +41,6 @@ Sources (text, thin): wikipedia "Wrecking yard", recyclingtoday "The lay of the 
 
 ## Place 5: Ghost Town (2026-11-26)
 No new search this round (the Church uses the cathedral's own props; the petrol station and pharmacy follow the "Lesson from place 1" checklist). Visual identity: a church = nave, a central aisle, rows of pews, an altar with candelabra, a font by the door, confessionals on a side wall; a council hall = a dais with desks at one end and rows of benches facing it, notice boards and bookshelves; a pharmacy = medicine cabinets and shelves behind a counter by the door; the petrol station is the roadside station again (stucco box, coolers, pumps under a canopy, price sign).
+
+## Place: department store (2026-11-27)
+Search found little on floor plans (retail design history, beauty counters by the entrance on the ground floor, Retail Dive / Glossy). What we took: a storefront of big display windows with a hanging sign and glass double doors; cosmetics-style display counters in rows near the front; paying counters (checkouts) by the entrance; customer service desk; mannequins by the windows; fitting rooms; at the back, away from customers: stock room with a loading door, office, staff room and tiled restrooms. One floor only (Yan: "we'll leave it at one floor"; escalators and lift removed).

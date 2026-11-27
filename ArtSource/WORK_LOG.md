@@ -7476,3 +7476,6 @@ Two new Pixel Lab props via addprop (escalator lane segment, glyph ), steel lift
 
 ## Batch 9gg (2026-11-27) - Department store: 3/4 props, one-piece escalators, fewer doors
 New Pixel Lab props in the shelves' 3/4 view: display-case counters, office desk, staff table, one-piece 4-tile escalator (blocked with invisible 'part' tiles), lift with forced-open doors on a dark shaft. Front entrance 2 doors, loading door 1. addprop: more glyph characters (the ASCII ones ran out), part blocker glyph. Harness passed; nothing run in Unity.
+
+## Batch 9gh (2026-11-27) - Department store: storefront, glass doors, sign, checkouts, restrooms; escalators and lift removed
+One floor only. Front is a run of display windows with glass double doors and a hanging store sign; loading door gets a roller look; new Pixel Lab props: checkout counter with till, mannequin, store sign; tiled restroom with toilets and basins; stock room with crates. walls.py: new door looks now also built for the one-storey brick and stucco walls. Harness passed; nothing run in Unity.
