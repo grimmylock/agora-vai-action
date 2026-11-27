@@ -7479,3 +7479,6 @@ New Pixel Lab props in the shelves' 3/4 view: display-case counters, office desk
 
 ## Batch 9gh (2026-11-27) - Department store: storefront, glass doors, sign, checkouts, restrooms; escalators and lift removed
 One floor only. Front is a run of display windows with glass double doors and a hanging store sign; loading door gets a roller look; new Pixel Lab props: checkout counter with till, mannequin, store sign; tiled restroom with toilets and basins; stock room with crates. walls.py: new door looks now also built for the one-storey brick and stucco walls. Harness passed; nothing run in Unity.
+
+## Batch 9gi (2026-11-27) - Department store: fitting rooms moved to the east wall, stock-room overlaps fixed
+The fitting-room doors in the south block led into cubicles hidden by the wall; they are now two cubicles on the east side with doors in a side wall (which hides nothing) and a stool each. Stock room: crates no longer overlap the shelves. Harness passed; nothing run in Unity.
