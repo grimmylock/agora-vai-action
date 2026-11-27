@@ -1,0 +1,143 @@
+map	x	y	w	h	wall	innerwalls	props	landmark
+perimeter	183	20	8	6	concrete	0	1	Flooded Bunker
+perimeter	96	34	6	5	concrete	0	1	Radio Mast
+perimeter	64	58	5	5	wall	0	1	Signal Box
+perimeter	113	72	5	5	plank	0	1	Logging Camp
+perimeter	107	75	4	4	plank	0	1	Logging Camp
+perimeter	35	76	4	5	concrete	0	0	Rail Depot
+perimeter	113	81	5	5	plank	0	1	Logging Camp
+perimeter	150	84	5	4	driftwood	0	1	
+perimeter	157	84	5	4	driftwood	0	1	Fishing Village
+perimeter	58	86	7	6	concrete	0	2	Loading Office
+perimeter	122	90	5	4	plank	0	0	Hunter's Hide
+perimeter	17	113	12	6	wall	11	2	
+perimeter	43	113	4	5	plank	3	1	
+perimeter	186	113	6	5	plank	0	1	Fisherman's Shack
+perimeter	170	121	6	6	concrete	0	0	Pump Room
+perimeter	113	122	5	4	stucco	2	1	Roadside Station
+perimeter	88	154	4	4	plaster	0	1	Medic's House
+perimeter	93	154	4	4	plaster	0	0	Medic's House
+perimeter	18	161	9	12	plaster	0	1	Chapel Crypt
+perimeter	62	161	6	4	metal	0	3	Bunkhouse
+perimeter	62	166	6	4	metal	0	3	Bunkhouse
+perimeter	59	175	41	15	plank	46	35	Repair Bench
+scrapyard	178	24	6	5	plank	0	1	Hunter's Shack
+scrapyard	14	102	26	12	metal	12	42	Central Plant
+scrapyard	41	102	27	12	metal	0	40	Central Plant
+scrapyard	14	115	26	13	metal	9	44	Central Plant
+scrapyard	41	115	27	13	metal	0	51	Central Plant
+scrapyard	181	182	4	6	metal	0	2	Scrapper's Shack
+scrapyard	110	193	5	4	metal	0	1	Truck Stop
+scrapyard	118	193	5	4	metal	0	1	Truck Stop
+scavengers_hub	50	40	24	8	hull	50	0	Tower Line
+scavengers_hub	40	74	6	4	concrete	8	0	The Flats
+scavengers_hub	67	74	5	4	concrete	6	0	Breaker Room
+scavengers_hub	40	86	12	4	concrete	17	0	Sub-Station House
+scavengers_hub	60	86	8	4	concrete	9	0	Sub-Station House
+scavengers_hub	8	104	6	5	plank	0	1	Lakeside Camp
+scavengers_hub	16	104	6	5	plank	0	1	Lakeside Camp
+scavengers_hub	24	104	6	5	plank	0	1	Lakeside Camp
+scavengers_hub	32	104	6	5	plank	0	1	Lifeguard Tower
+scavengers_hub	120	114	8	4	wall	9	0	
+scavengers_hub	152	114	8	4	wall	9	0	
+scavengers_hub	8	116	6	5	plank	0	1	Lakeside Camp
+scavengers_hub	16	116	6	5	plank	0	1	Lakeside Camp
+scavengers_hub	24	116	6	5	plank	0	1	Lakeside Camp
+scavengers_hub	32	116	6	5	plank	0	1	Lifeguard Tower
+scavengers_hub	94	120	6	5	concrete	0	1	Sentinel Outpost
+scavengers_hub	120	122	12	4	wall	17	0	
+scavengers_hub	148	122	8	4	wall	9	0	Roundhouse
+scavengers_hub	68	144	22	19	concrete	0	47	The Bazaar
+scavengers_hub	80	154	10	9	concrete	0	8	The Bazaar
+scavengers_hub	186	184	6	5	wall	0	1	Track Workers' Hut
+vanguard_barracks	122	20	7	6	plank	0	1	
+vanguard_barracks	131	20	7	6	plank	0	1	
+vanguard_barracks	140	20	7	6	plank	0	1	
+vanguard_barracks	149	20	7	6	plank	0	1	
+vanguard_barracks	158	20	7	6	plank	0	1	
+vanguard_barracks	10	30	6	5	plank	0	1	Forester's Hut
+vanguard_barracks	122	30	7	6	plank	0	1	
+vanguard_barracks	131	30	7	6	plank	0	1	
+vanguard_barracks	140	30	7	6	plank	0	1	Old Summer Camp
+vanguard_barracks	149	30	7	6	plank	0	1	Old Summer Camp
+vanguard_barracks	158	30	7	6	plank	0	1	Old Summer Camp
+vanguard_barracks	173	39	5	5	wall	0	0	
+vanguard_barracks	92	54	7	5	concrete	0	1	Sentinel Firebase
+vanguard_barracks	176	56	6	5	plank	0	1	Boathouse
+vanguard_barracks	104	63	7	5	metal	0	1	Sentinel Firebase
+vanguard_barracks	126	64	6	5	concrete	0	1	Shelter Hatch
+vanguard_barracks	86	100	8	6	plaster	0	1	Laundromat
+vanguard_barracks	14	102	69	6	plaster	170	75	Main Street
+vanguard_barracks	14	111	69	6	plaster	174	68	Main Street
+vanguard_barracks	128	147	5	4	concrete	0	2	
+vanguard_barracks	148	147	5	4	concrete	0	3	Barracks Row
+vanguard_barracks	168	151	4	4	concrete	0	1	Aid Post
+vanguard_barracks	54	156	18	7	wall	24	0	Bus Stop
+vanguard_barracks	31	158	7	6	concrete	0	0	Town Hall Basement
+vanguard_barracks	48	158	5	5	wall	3	0	Bus Stop
+vanguard_barracks	73	158	5	5	wall	3	0	School
+vanguard_barracks	92	160	6	4	plaster	0	0	
+vanguard_barracks	48	164	5	4	wall	3	0	School
+vanguard_barracks	68	164	10	6	wall	4	1	School
+vanguard_barracks	84	165	4	9	plaster	2	0	
+vanguard_barracks	71	180	5	4	stucco	2	1	Petrol Station
+vanguard_barracks	10	184	6	7	plaster	6	0	Flats
+vanguard_barracks	20	184	6	7	plaster	6	0	Flats
+quarry_basin	152	0	48	200	concrete	1190	390	Dead Broadcast Van
+quarry_basin	86	6	6	5	plank	0	2	Hermit's Shack
+quarry_basin	10	10	40	34	hull	265	8	The Hulks
+quarry_basin	22	18	8	6	hull	24	0	The Hulks
+quarry_basin	36	18	9	6	hull	28	0	The Hulks
+quarry_basin	22	30	8	6	hull	24	0	The Hulks
+quarry_basin	36	30	9	6	hull	28	0	The Hulks
+quarry_basin	76	30	8	4	hull	2	2	Fish Cannery
+quarry_basin	138	53	7	5	concrete	15	0	Relay Station
+quarry_basin	156	53	7	5	concrete	15	0	Relay Station
+quarry_basin	10	56	38	38	concrete	24	16	Flooded Slipway
+quarry_basin	138	63	12	5	concrete	30	0	Relay Station
+quarry_basin	151	63	12	5	concrete	30	0	Relay Station
+quarry_basin	23	64	7	6	hull	4	0	Flooded Slipway
+quarry_basin	60	68	12	7	hull	0	3	Captain's Row
+quarry_basin	25	71	13	5	hull	13	0	
+quarry_basin	27	77	4	7	hull	0	0	Dry Dock
+quarry_basin	56	80	8	6	metal	0	1	Captain's Row
+quarry_basin	68	80	8	6	metal	0	1	Captain's Row
+quarry_basin	80	80	8	6	metal	0	1	
+quarry_basin	56	89	8	6	metal	0	1	
+quarry_basin	68	89	8	6	metal	0	1	
+quarry_basin	80	89	8	6	metal	0	2	
+quarry_basin	146	128	8	6	concrete	0	0	Blast Shack
+quarry_basin	64	186	6	5	metal	0	1	Generator Shed
+abandoned_city	68	8	23	5	plaster	27	3	Garrison Armory
+abandoned_city	100	8	14	10	plaster	30	5	
+abandoned_city	160	8	12	12	plaster	0	0	Bell Tower
+abandoned_city	118	10	7	6	concrete	0	0	Morgue Stair
+abandoned_city	79	13	6	4	plaster	4	0	Garrison Armory
+abandoned_city	94	13	10	4	plaster	5	1	Siege Ward Hospital
+abandoned_city	68	18	7	8	plaster	17	1	Garrison Armory
+abandoned_city	75	19	16	7	plaster	29	5	Garrison Armory
+abandoned_city	92	19	22	7	plaster	42	6	Siege Ward Hospital
+abandoned_city	164	34	11	8	plaster	0	1	Field Hospital Ruins
+abandoned_city	164	34	24	16	plaster	0	11	Field Hospital Ruins
+abandoned_city	32	62	5	4	metal	0	1	Lost Expedition
+abandoned_city	39	62	5	4	metal	0	0	Petrified Tree
+abandoned_city	187	88	4	6	plaster	0	1	
+abandoned_city	80	91	7	5	plaster	15	0	
+abandoned_city	88	91	7	5	plaster	15	0	
+abandoned_city	120	91	7	5	plaster	15	0	
+abandoned_city	128	91	7	5	plaster	15	0	
+abandoned_city	140	95	7	7	plaster	7	0	
+abandoned_city	180	95	10	11	plaster	18	4	
+abandoned_city	80	101	12	5	plaster	30	0	
+abandoned_city	123	101	12	5	plaster	30	0	Burned Tram
+abandoned_city	69	120	12	18	plaster	32	5	
+abandoned_city	79	120	12	15	plaster	22	5	
+abandoned_city	64	131	5	4	plaster	3	1	Department Store
+abandoned_city	82	136	8	6	plaster	4	1	Department Store
+abandoned_city	150	160	8	4	concrete	12	0	
+abandoned_city	162	160	12	4	concrete	20	0	Garrison Barricade
+abandoned_city	178	160	5	4	concrete	6	0	Evacuation Buses
+abandoned_city	110	164	4	6	concrete	2	0	Parking Garage
+abandoned_city	101	166	8	10	concrete	9	1	Parking Garage
+abandoned_city	150	175	12	5	concrete	30	0	Garrison Barricade
+abandoned_city	174	175	12	5	concrete	30	0	Garrison Barricade
