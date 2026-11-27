@@ -449,13 +449,13 @@ namespace GameCore
             // Logging Camp (central woods): log piles, a sawmill, cabins
             c.Clear(98, 70, 22, 20, Dirt, false);
             c.Block(101, 72, 10, 7, "plank", 1, Dirt);
-            c.Hut(113, 72, 5, 5, "plank", 0).Hut(113, 81, 5, 5, "plank", 2);
+            c.Clear(112, 71, 9, 9, null); Interiors.Cabin(c, 113, 71, 4); c.Clear(112, 80, 9, 9, null); Interiors.Cabin(c, 113, 80, 2);
             for (int x = 100; x < 110; x += 2) { c.Put(x, 83, ScatterCover, "logs"); c.Put(x, 86, ScatterCover, "logs"); }
             c.Put(98, 88, HardCover, "wreck");
             c.Landmark("Logging Camp", 106, 81);
             c.Road(3, Dirt, (100, 119), (104, 100), (106, 88));
             // the hunter's hide in the woods east of the camp
-            c.Hut(122, 90, 5, 4, "plank", 2, false);
+            c.Clear(121, 88, 9, 10, null); Interiors.Cabin(c, 122, 89, 2);
             c.Stash("Hunter's Hide", 124, 91);
             c.Landmark("Hunter's Hide", 121, 92);
 
@@ -941,7 +941,7 @@ namespace GameCore
             c.Landmark("Stranded Ferry", 75, 44).Exit("stranded_ferry", 73, 44);
             // the lakeside holiday camp on the old west shore (place C)
             c.Clear(6, 100, 34, 40, Grass, false);
-            for (int i = 0; i < 8; i++) c.Hut(8 + (i % 4) * 8, 104 + (i / 4) * 12, 6, 5, "plank", i < 4 ? 0 : 3);
+            for (int i = 0; i < 8; i++) { c.Clear(7 + (i % 4) * 8, 103 + (i / 4) * 12, 9, 10, null); Interiors.Cabin(c, 8 + (i % 4) * 8, 104 + (i / 4) * 12, new[] { 0, 1, 3, 0, 1, 0, 3, 1 }[i]); }   // 2026-11-27: the holiday cabins are furnished one-room cabins (Gemini plan)
             c.Block(10, 128, 18, 9, "plaster", 1, Grass);
             c.Landmark("Lakeside Camp", 22, 116);
             Tower(c, 42, 104, 4);
@@ -1084,7 +1084,7 @@ namespace GameCore
             c.Landmark("Sinkhole Grove", 14, 82).Exit("deep_caverns", 14, 80);
             // the old summer camp (place C): cabins, the mess hall, the sports field, the pond, the bomb shelter
             c.Clear(118, 16, 66, 58, Grass, false);
-            for (int i = 0; i < 10; i++) c.Hut(122 + (i % 5) * 9, 20 + (i / 5) * 10, 7, 6, "plank", i < 5 ? 0 : 3);
+            for (int i = 0; i < 10; i++) { c.Clear(121 + (i % 5) * 9, 19 + (i / 5) * 10, 9, 10, null); Interiors.Cabin(c, 122 + (i % 5) * 9, 20 + (i / 5) * 10, new[] { 0, 1, 4, 0, 1, 1, 0, 4, 1, 0 }[i]); }   // the camp's cabins (Gemini cabin plan)
             c.Block(166, 20, 14, 10, "plaster", 1, Grass);
             c.Block(166, 36, 12, 8, "wall", 1, Grass);
             c.Clear(122, 44, 30, 18, Dirt);
