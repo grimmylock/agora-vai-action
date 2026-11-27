@@ -1483,8 +1483,8 @@ namespace GameCore
             for (int x = 150; x < 186; x += 2) c.Put(x, 182, HardCover, "sandbags");
             c.Landmark("Garrison Barricade", 168, 170);
             // the big buildings round the plaza
-            c.Block(64, 120, 30, 22, "plaster", 2);
-            c.Landmark("Department Store", 79, 144);
+            c.Clear(62, 118, 34, 26, null); Interiors.Stamp(c, 66, 122, Interiors.DepartmentStore, Interiors.DepartmentStoreFloor, "brick", "shop");   // the department store ground floor (Gemini layout)
+            c.Landmark("Department Store", 79, 142);
             c.Block(64, 150, 20, 14, "wall", 2);
             c.Landmark("Police Station", 74, 166);
             c.Block(92, 160, 22, 16, "concrete", 2);

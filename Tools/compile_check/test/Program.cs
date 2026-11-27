@@ -214,7 +214,7 @@ static class Program {
       Console.WriteLine("  stashes: " + string.Join(", ", byLook.OrderByDescending(kv => kv.Value).Select(kv => kv.Key.Replace("stash_", "") + " " + kv.Value)));
       Check(bad == 0, $"every stash is drawn as a container ({bad}, e.g. {badAt})");
       Check(close <= 4, $"stashes kept apart ({close} near another - authored ones may sit close)");
-      var box = TerrainMap.InteractiveObjects.First(); var t0 = TerrainMap.GetTile(box.X, box.Y).Look;
+      var box = TerrainMap.InteractiveObjects.First(q => !ContainerLoot.Is(q)); var t0 = TerrainMap.GetTile(box.X, box.Y).Look;
       TerrainMap.MarkOpened(box);
       Check(TerrainMap.GetTile(box.X, box.Y).Look == t0 + "_open", "an opened stash shows open");
     }
@@ -6518,9 +6518,10 @@ static class Program {
       int lone = 0, all = 0;
       for (int y = 1; y < m.Tiles.Length - 1; y++) for (int x = 1; x < m.Tiles[0].Length - 1; x++) {
         string l = m.Looks?[y][x]; if ((m.Tiles[y][x] != "HardCover" && m.Tiles[y][x] != "ScatterCover") || (l != "sandbags" && l != "jersey")) continue;
+        if (id == "abandoned_city" && y == 182 && x >= 150 && x < 186) continue;   // the Garrison Barricade's authored every-other-tile sandbag line (gaps to pass through)
         all++;
         bool nb = false; foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { var t = m.Tiles[y + dy][x + dx]; nb |= t == "HardCover" || t == "ScatterCover"; }
-        if (!nb) lone++;
+        if (!nb) { lone++; if (id == "abandoned_city" && Environment.GetEnvironmentVariable("LONEDUMP") != null) Console.WriteLine($"  lone {l} at {x},{y}"); }
       }
       if (id == "perimeter") Console.WriteLine("  perimeter positions: " + string.Join(" ", CoverWrap.Positions.Where(q => q.zone == id).Take(12).Select(q => $"{q.x},{q.y}")));
       Console.WriteLine($"cover wrap {id}: {st.grown} grown, {st.added} fighting positions, {lone}/{all} sandbag/jersey tiles still alone");

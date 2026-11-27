@@ -3,6 +3,47 @@ namespace GameCore
 {
     public static partial class Interiors
     {
+        public static readonly string[] DepartmentStore = {
+            "##########DD#####nn###nn##",
+            "#5...#.gg....gg#.ddF#....#",
+            "#5...#.........#....#.TT.#",
+            "#5...#.gg...gg.#....#....#",
+            "#5...#.gg...gg.#..x.#+.hhD",
+            "#....#.........#....#....#",
+            "###D######DD#####D####D###",
+            "#.....................+..#",
+            "#5+g..................g.6#",
+            "#5.g.CCCC..CCCC.]].###g.6#",
+            "n5..............]].#.#..6n",
+            "n5.g.CCCC..CCCC.]].#D#g.6n",
+            "#..g.....x......]]....g..#",
+            "#C...CCCC..CCCC..........#",
+            "#C..+......CCC....#D##D#D#",
+            "#C...x.x........+.S.#S.#.#",
+            "#...................#..#.#",
+            "###nn##nn##DDDD#nn########",
+        };
+        public static readonly string[] DepartmentStoreFloor = {
+            "..........................",
+            ".wwww.ccccccccc.wwww.wwww.",
+            ".wwww.ccccccccc.wwww.wwww.",
+            ".wwww.ccccccccc.wwww.wwww.",
+            ".wwww.ccccccccc.wwww.wwww.",
+            ".wwww.ccccccccc.wwww.wwww.",
+            "..........................",
+            ".cccccccccccccccccccccccc.",
+            ".cccccccccccccccccccccccc.",
+            ".cccccccccccccccccc...ccc.",
+            ".cccccccccccccccccc.c.ccc.",
+            ".cccccccccccccccccc...ccc.",
+            ".cccccccccccccccccccccccc.",
+            ".cccccccccccccccccccccccc.",
+            ".ccccccccccccccccc........",
+            ".ccccccccccccccccccc.cc.c.",
+            ".ccccccccccccccccccc.cc.c.",
+            "..........................",
+        };
+
         public static readonly string[] LeanToExample = {
             "###n###",
             "#K...s#",

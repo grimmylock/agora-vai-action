@@ -1,0 +1,26 @@
+# Abandoned City department store, ground floor, 24x16 inside (Gemini layout, 2026-11-27): sales floor, escalators, lift shaft, fitting rooms, stock room, office, staff room, loading door
+plan DepartmentStore
+floor c
+region w 1 1 4 5
+region w 16 1 24 5
+region w 21 1 24 5
+rows
+##########DD#####nn###nn##
+#5...#.gg....gg#.ddF#....#
+#5...#.........#....#.TT.#
+#5...#.gg...gg.#....#....#
+#5...#.gg...gg.#..x.#+.hhD
+#....#.........#....#....#
+###D######DD#####D####D###
+#.....................+..#
+#5+g..................g.6#
+#5.g.CCCC..CCCC.]].###g.6#
+n5..............]].#.#..6n
+n5.g.CCCC..CCCC.]].#D#g.6n
+#..g.....x......]]....g..#
+#C...CCCC..CCCC..........#
+#C..+......CCC....#D##D#D#
+#C................S.#S.#.#
+#....x.x........+...#..#.#
+###nn##nn##DDDD#nn########
+end

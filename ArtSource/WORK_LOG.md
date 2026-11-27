@@ -7467,3 +7467,6 @@ Yan: "the artstyle is not consistent on the furniture, some have hard black outl
 
 ## Batch 9gd (2026-11-27) - Add-a-prop tool and image-to-grid draft tool
 Tools/props/addprop.py: one command makes a Pixel Lab prop, registers its look, glyph and manifest entry, and writes a contact sheet (test prop: jerrycan, glyph @). Tools/plans/grid_from_image.py: reads a Gemini floor-plan picture and prints a first-draft ASCII plan (walls, door/window gaps, numbered overlay); furniture is still placed by hand. Harness passed after the prop; nothing run in Unity.
+
+## Batch 9ge (2026-11-27) - Department store rebuilt from the Gemini layout
+Abandoned City department store: the solid 30x22 block is now a 24x16 ground floor (ArtSource/plans/department_store.plan): sales floor with 6 counters, shelf units and racks, escalators (car-lift sprite stand-in) beside a lift shaft, 3 fitting rooms, cash and customer-service desks, stock room with a loading door, office with safe, staff room with lockers, rubble. One-storey brick walls so rooms read. Harness: opened-stash check now skips containers; wrapping-cover check skips the Garrison's authored sandbag line. Nothing run in Unity.
