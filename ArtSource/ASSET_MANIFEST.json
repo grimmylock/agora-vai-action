@@ -469,6 +469,21 @@
    "issues": []
   },
   {
+   "id": "escalator",
+   "path": "ArtSource/world/settle_pl/raw_escalator.png",
+   "size": "48x48",
+   "colours": 34,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "fishcrates",
    "path": "ArtSource/world/settle_pl/raw_fishcrates.png",
    "size": "64x48",
@@ -745,6 +760,21 @@
    "colours": 31,
    "opaque_corner": false,
    "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "liftdoors",
+   "path": "ArtSource/world/settle_pl/raw_liftdoors.png",
+   "size": "48x48",
+   "colours": 45,
+   "opaque_corner": false,
+   "near_white_pixels": 1,
    "source": {
     "kind": "AI-generated",
     "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",

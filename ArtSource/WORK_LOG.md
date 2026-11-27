@@ -7470,3 +7470,6 @@ Tools/props/addprop.py: one command makes a Pixel Lab prop, registers its look, 
 
 ## Batch 9ge (2026-11-27) - Department store rebuilt from the Gemini layout
 Abandoned City department store: the solid 30x22 block is now a 24x16 ground floor (ArtSource/plans/department_store.plan): sales floor with 6 counters, shelf units and racks, escalators (car-lift sprite stand-in) beside a lift shaft, 3 fitting rooms, cash and customer-service desks, stock room with a loading door, office with safe, staff room with lockers, rubble. One-storey brick walls so rooms read. Harness: opened-stash check now skips containers; wrapping-cover check skips the Garrison's authored sandbag line. Nothing run in Unity.
+
+## Batch 9gf (2026-11-27) - Department store redo: real escalator and lift props
+Two new Pixel Lab props via addprop (escalator lane segment, glyph ), steel lift doors, glyph /); the walled lift room is gone, two lift doors stand against the sales-floor wall; shelves no longer stacked (tall sprites clipped), stock-room shelves moved clear of the divider wall, customer desk and cash desk moved off the clumped spots. Harness passed; nothing run in Unity.
