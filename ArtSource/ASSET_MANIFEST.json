@@ -634,6 +634,21 @@
    "issues": []
   },
   {
+   "id": "jerrycan",
+   "path": "ArtSource/world/settle_pl/raw_jerrycan.png",
+   "size": "48x48",
+   "colours": 57,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "jukebox",
    "path": "ArtSource/world/settle_pl/raw_jukebox.png",
    "size": "48x64",

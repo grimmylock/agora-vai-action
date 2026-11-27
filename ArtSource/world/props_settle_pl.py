@@ -47,6 +47,10 @@ def _weather(im, seed):
             if a[y, x, 3] > 0: out[y, x] = out[y, x] * 0.55 + np.array([0.36, 0.20, 0.12]) * 0.45
     res = np.dstack([np.clip(out, 0, 1) * 255, a[..., 3]]).astype(np.uint8)
     return Image.fromarray(res, "RGBA")
+# 2026-11-27: looks added by Tools/props/addprop.py live in settle_pl/props_registry.json ({look: raw file suffix}); no need to edit MORE by hand
+import json as _json
+_REG = os.path.join(_HERE, "props_registry.json")
+if os.path.exists(_REG): MORE.update(_json.load(open(_REG)))
 def _load(item):
     p = os.path.join(_HERE, f"raw_{item}.png")
     if not os.path.exists(p): return None
