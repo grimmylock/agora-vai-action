@@ -439,6 +439,21 @@
    "issues": []
   },
   {
+   "id": "displaycounter",
+   "path": "ArtSource/world/settle_pl/raw_displaycounter.png",
+   "size": "64x48",
+   "colours": 27,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "doghouse",
    "path": "ArtSource/world/settle_pl/raw_doghouse.png",
    "size": "64x56",
@@ -475,6 +490,36 @@
    "colours": 34,
    "opaque_corner": false,
    "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "escalatorlong",
+   "path": "ArtSource/world/settle_pl/raw_escalatorlong.png",
+   "size": "48x192",
+   "colours": 43,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "escalatorseg",
+   "path": "ArtSource/world/settle_pl/raw_escalatorseg.png",
+   "size": "48x48",
+   "colours": 29,
+   "opaque_corner": false,
+   "near_white_pixels": 5,
    "source": {
     "kind": "AI-generated",
     "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
@@ -784,6 +829,21 @@
    "issues": []
   },
   {
+   "id": "liftshaft",
+   "path": "ArtSource/world/settle_pl/raw_liftshaft.png",
+   "size": "64x56",
+   "colours": 40,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "maptable",
    "path": "ArtSource/world/settle_pl/raw_maptable.png",
    "size": "64x48",
@@ -835,6 +895,21 @@
    "path": "ArtSource/world/settle_pl/raw_nightstand.png",
    "size": "40x44",
    "colours": 42,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "officedesk",
+   "path": "ArtSource/world/settle_pl/raw_officedesk.png",
+   "size": "64x48",
+   "colours": 50,
    "opaque_corner": false,
    "near_white_pixels": 0,
    "source": {
@@ -1045,6 +1120,21 @@
    "path": "ArtSource/world/settle_pl/raw_sofa_w.png",
    "size": "56x56",
    "colours": 40,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "stafftable",
+   "path": "ArtSource/world/settle_pl/raw_stafftable.png",
+   "size": "64x56",
+   "colours": 24,
    "opaque_corner": false,
    "near_white_pixels": 0,
    "source": {

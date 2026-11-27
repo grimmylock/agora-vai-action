@@ -30,6 +30,13 @@ namespace GameCore
             ['@'] = ("jerrycan", false),
             [')'] = ("escalator", false),
             ['/'] = ("liftdoors", true),
+            ['§'] = ("displaycounter", false),
+            ['£'] = ("officedesk", true),
+            ['¥'] = ("stafftable", false),
+            ['µ'] = ("escalatorseg", false),
+            ['Æ'] = ("liftshaft", true),
+            ['Ø'] = ("escalatorlong", true),
+            ['¶'] = ("part", true),
         };
         static GroundType FloorOf(char f) => f == 'k' ? GroundType.KitchenTile : f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
 

@@ -1,5 +1,11 @@
 {
  "jerrycan": "jerrycan",
  "escalator": "escalator",
- "liftdoors": "liftdoors"
+ "liftdoors": "liftdoors",
+ "displaycounter": "displaycounter",
+ "officedesk": "officedesk",
+ "stafftable": "stafftable",
+ "escalatorseg": "escalatorseg",
+ "liftshaft": "liftshaft",
+ "escalatorlong": "escalatorlong"
 }

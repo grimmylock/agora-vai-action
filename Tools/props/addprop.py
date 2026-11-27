@@ -26,6 +26,8 @@ def free_glyph(src):
         if c not in used and c not in "'\"\\": return c
     for c in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
         if c not in used: return c
+    for c in "§£¥µÆØÞßÐÅÄÖÜÉÈÀÇÑ¤¶±×÷¿¡":
+        if c not in used: return c
     raise SystemExit("no free glyph left")
 def register(name, files, glyph, hard):
     reg_p = os.path.join(SETTLE, "props_registry.json"); reg = json.load(open(reg_p)) if os.path.exists(reg_p) else {}

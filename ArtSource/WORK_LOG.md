@@ -7473,3 +7473,6 @@ Abandoned City department store: the solid 30x22 block is now a 24x16 ground flo
 
 ## Batch 9gf (2026-11-27) - Department store redo: real escalator and lift props
 Two new Pixel Lab props via addprop (escalator lane segment, glyph ), steel lift doors, glyph /); the walled lift room is gone, two lift doors stand against the sales-floor wall; shelves no longer stacked (tall sprites clipped), stock-room shelves moved clear of the divider wall, customer desk and cash desk moved off the clumped spots. Harness passed; nothing run in Unity.
+
+## Batch 9gg (2026-11-27) - Department store: 3/4 props, one-piece escalators, fewer doors
+New Pixel Lab props in the shelves' 3/4 view: display-case counters, office desk, staff table, one-piece 4-tile escalator (blocked with invisible 'part' tiles), lift with forced-open doors on a dark shaft. Front entrance 2 doors, loading door 1. addprop: more glyph characters (the ASCII ones ran out), part blocker glyph. Harness passed; nothing run in Unity.
