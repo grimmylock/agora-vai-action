@@ -270,6 +270,7 @@ namespace GameCore
             c.Rect(84, 160, 3, 2, Solid, 0, "container");
             c.Put(84, 162, ScatterCover, "crate").Put(86, 162, ScatterCover, "crate").Put(87, 160, Barrel);
             c.Landmark("Yefim's Footlocker", 85, 163);
+            Tower(c, 95, 179, 3);                                                          // a lookout over the road (stamped before the cabin: its clearing cut the cabin's east wall)
             // 2026-11-24 (Yan: the buildings should be furnished for what they are; ArtSource/BUILDINGS_PLAN.md): the village's buildings are furnished plans (Interiors.cs), each with its own floors, furniture and small containers
             c.Clear(61, 149, 16, 11, Dirt); Interiors.Stamp(c, 62, 150, Interiors.Bunkhouse, Interiors.BunkhouseFloor, "plank", "bunkhouse");        // the bunkhouse: bunks, footlockers, a stove
             c.Landmark("Bunkhouse", 69, 160);
@@ -289,7 +290,6 @@ namespace GameCore
             c.Put(80, 154, ScatterCover, "armchair").Put(86, 153, ScatterCover, "crate");
             Field(c, 79, 175, 6, 8);                                                       // a vegetable patch
             c.Put(94, 163, Solid, "stones").Deco(94, 164, "puddle");                       // the well
-            Tower(c, 95, 179, 3);                                                          // a lookout over the road
             for (int y = 150; y < 184; y += 8) c.Deco(78, y, "lamp");
             c.Put(70, 172, ScatterCover, "logs").Put(61, 182, ScatterCover, "tires").Put(97, 150, ScatterCover, "crate");
             c.Put(101, 162, HardCover, "sandbags").Put(101, 170, HardCover, "sandbags");      // the gate post on the road
@@ -339,7 +339,7 @@ namespace GameCore
             foreach (int px in new[] { 109, 112, 115 }) c.Put(px, 134, HardCover, "fuelpump");                 // three pumps in a row under the canopy
             c.Deco(112, 133, "canopy");                                                                        // the flat canopy roof on its posts
             c.Put(104, 131, HardCover, "stationsign").Put(109, 130, ScatterCover, "icechest").Put(117, 130, ScatterCover, "tires");
-            c.Put(119, 134, HardCover, "wreck").Put(120, 126, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires");
+            c.Put(119, 134, HardCover, "wreck").Put(122, 128, HardCover, "dumpster").Put(103, 124, ScatterCover, "tires");
             c.Put(107, 131, ScatterCover, "trash").Put(114, 131, ScatterCover, "debris").Put(118, 131, ScatterCover, "rubble").Put(106, 135, ScatterCover, "debris").Put(110, 135, ScatterCover, "trash");   // abandoned: litter and rubble on the forecourt
             c.Landmark("Roadside Station", 108, 130);
 
@@ -1203,7 +1203,7 @@ namespace GameCore
             Interiors.Stamp(c, 148, 147, Interiors.MessHall, Interiors.MessHallFloor, "concrete", "barracks");
             c.Landmark("Barracks Row", 155, 146);
             Interiors.Stamp(c, 168, 147, Interiors.Clinic, Interiors.ClinicFloor, "concrete", "clinic");            // 2026-11-24: the aid post
-            c.Put(176, 152, ScatterCover, "lamp").Put(147, 146, ScatterCover, "lamp").Put(167, 146, ScatterCover, "lamp").Put(127, 146, ScatterCover, "lamp");
+            c.Put(178, 152, ScatterCover, "lamp").Put(147, 146, ScatterCover, "lamp").Put(167, 146, ScatterCover, "lamp").Put(127, 146, ScatterCover, "lamp");
             c.Landmark("Aid Post", 172, 156);
             // the Parade Ground and the Motor Pool
             c.Paint(130, 158, 52, 8, Concrete);

@@ -16,6 +16,7 @@ namespace GameCore
     public class TerrainCanvas
     {
         public readonly int W, H;
+        public int SeedValue => _seed;   // 2026-11-27: lets the harness match a canvas to its map (TerrainCanvas.Seed(zoneId))
         private readonly TileType[,] _tile;   // [y, x]
         private readonly int[,] _height;      // [y, x]
         private readonly string[,] _look;     // [y, x] art key, null = theme default

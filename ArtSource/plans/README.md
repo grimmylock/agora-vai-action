@@ -1,0 +1,1 @@
+Plans written as text and compiled by `python3 Tools/plans/plan.py` into `Assets/Scripts/GameCore/InteriorPlans.Generated.cs`. See the header of `Tools/plans/plan.py` for the format. Plans made before 2026-11-27 are still arrays in `Interiors.cs`; the harness checks both kinds (it finds them by reflection).

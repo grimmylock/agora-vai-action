@@ -8,8 +8,17 @@ using static GameCore.TileType;
 
 namespace GameCore
 {
-    public static class Interiors
+    public static partial class Interiors
     {
+        /// <summary>2026-11-27: every Stamp call (canvas seed, plan, where): the harness checks after the map is fully built that every wall, window and door of a plan is still there (a road or clear after the stamp can erase them).</summary>
+        public static readonly List<(int seed, string[] rows, int x0, int y0)> Stamped = new List<(int, string[], int, int)>();
+        /// <summary>Every public plan array X that has a floor array XFloor (generated and hand-written ones), for the harness.</summary>
+        public static IEnumerable<(string name, string[] rows, string[] floors)> AllPlans()
+        {
+            foreach (var f in typeof(Interiors).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+                if (f.FieldType == typeof(string[]) && !f.Name.EndsWith("Floor") && typeof(Interiors).GetField(f.Name + "Floor") != null)
+                    yield return (f.Name, (string[])f.GetValue(null), (string[])typeof(Interiors).GetField(f.Name + "Floor").GetValue(null));
+        }
         // glyph -> (look, tall/hard cover?)
         static readonly Dictionary<char, (string look, bool hard)> Pieces = new Dictionary<char, (string, bool)>
         {
@@ -24,6 +33,7 @@ namespace GameCore
         /// <summary>Stamps a plan with its floor layer at (x0, y0). `wallLook` is the outer wall; inner walls use it too.</summary>
         public static void Stamp(TerrainCanvas c, int x0, int y0, string[] rows, string[] floors, string wallLook, string archetype = null)
         {
+            Stamped.Add((c.SeedValue, rows, x0, y0));
             for (int py = 0; py < rows.Length; py++)
                 for (int px = 0; px < rows[py].Length; px++)
                 {

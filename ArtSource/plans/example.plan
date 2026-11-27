@@ -1,0 +1,13 @@
+# an example and a regression test for the compiler: a one-room lean-to
+plan LeanToExample
+floor w
+region d 1 3 3 3
+mirror LeanToExampleM
+rows
+###n###
+#K...s#
+#.....#
+#c...5#
+#.....#
+###D###
+end
