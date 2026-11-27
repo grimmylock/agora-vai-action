@@ -431,7 +431,7 @@ namespace GameCore
             c.Landmark("Derailed Wagon", 45, 16);
             c.Exit("industrial_basin", 46, 0);
             // the signal box at the cutting's mouth
-            c.Hut(64, 58, 5, 5, "wall", 2);
+            c.Clear(61, 54, 12, 13, null); Interiors.Stamp(c, 62, 55, Interiors.HutSignal, Interiors.HutSignalFloor, "brick", "workshop");   // 2026-11-27 (Gemini two-room hut): a switch room with panels and a radio table, a store behind
             c.Landmark("Signal Box", 63, 61);
 
             // the dead scavenger's camp in a west-forest clearing
@@ -463,7 +463,7 @@ namespace GameCore
             c.HeightBlob(102, 32, 10, 2, 0.3f);
             c.Clear(94, 24, 17, 16, Gravel, false);
             c.Put(102, 30, Solid, "antenna").Put(103, 30, Solid, "part");
-            c.Hut(96, 34, 6, 5, "concrete", 1);
+            c.Clear(94, 31, 11, 13, Gravel); Interiors.Stamp(c, 96, 31, Interiors.HutB, Interiors.HutBFloor, "metal", "workshop");   // the equipment shed: office and store (Gemini two-room hut, mirrored)
             c.Fence(94, 24, 110, 24).Fence(94, 24, 94, 39).Fence(110, 24, 110, 39, "fence", 6, 3);
             c.Landmark("Radio Mast", 102, 33);
             c.Road(3, Dirt, (106, 70), (104, 50), (103, 41));

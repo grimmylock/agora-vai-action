@@ -1107,6 +1107,103 @@ namespace GameCore
             ".......",
         };
 
+        public static readonly string[] HutA = {
+            "######D#",
+            "#gggg..#",
+            "n7.cc.r#",
+            "#......#",
+            "#####D##",
+            "#N....h#",
+            "#......#",
+            "ndS...s#",
+            "#......#",
+            "##nD#n##",
+        };
+        public static readonly string[] HutAFloor = {
+            "........",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            "........",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            "........",
+        };
+        public static readonly string[] HutB = {
+            "#D######",
+            "#..gggg#",
+            "#r.cc.7n",
+            "#......#",
+            "##D#####",
+            "#h....N#",
+            "#......#",
+            "#s...Sdn",
+            "#......#",
+            "##n#Dn##",
+        };
+        public static readonly string[] HutBFloor = {
+            "........",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            "........",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            "........",
+        };
+        public static readonly string[] HutSignal = {
+            "######D#",
+            "#hhhh..#",
+            "n7.c..r#",
+            "#......#",
+            "#####D##",
+            "#00...h#",
+            "#...N..#",
+            "ndS...s#",
+            "#......#",
+            "##nD#n##",
+        };
+        public static readonly string[] HutSignalFloor = {
+            "........",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            "........",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            "........",
+        };
+        public static readonly string[] HutLoading = {
+            "######D#",
+            "#ggXX..#",
+            "nc..X.c#",
+            "#......#",
+            "#####D##",
+            "#N....h#",
+            "#..CC..#",
+            "nd....s#",
+            "#......#",
+            "##nD#n##",
+        };
+        public static readonly string[] HutLoadingFloor = {
+            "........",
+            ".cccccc.",
+            ".cccccc.",
+            ".cccccc.",
+            "........",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            ".wwwwww.",
+            "........",
+        };
+
         /// <summary>2026-11-27 (Yan's Gemini cabin plan): the one-room cabin variants, 7x8 outer; Cabin(i) cycles them.</summary>
         public static void Cabin(TerrainCanvas c, int x, int y, int v, string[] pick = null)
         {
