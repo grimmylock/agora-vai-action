@@ -263,7 +263,7 @@ namespace GameCore
                 }
         }
 
-        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "gothic", "plank", "driftwood", "metal", "window", "metaldoor" };
+        static readonly HashSet<string> Built = new HashSet<string> { "wall", "plaster", "stucco", "brick", "concrete", "gothic", "plank", "driftwood", "metal", "window", "metaldoor" };
 
         /// <summary>Batch 33, city concept: the authored city is one asphalt sheet with blocks on it. Rebuild the
         /// streets from the blocks outward - a 2-tile pavement round every building, roadway out to 11 tiles,

@@ -101,7 +101,7 @@ namespace GameCore
         }
 
         // ------------------------------------------------------------------ classification
-        private static readonly HashSet<string> BuiltWall = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "gothic", "hull", "metal", "plank", "driftwood", "container" };   // Batch 101: containers fill their rectangle like a wall block
+        private static readonly HashSet<string> BuiltWall = new HashSet<string> { "wall", "plaster", "stucco", "brick", "concrete", "gothic", "hull", "metal", "plank", "driftwood", "container" };   // Batch 101: containers fill their rectangle like a wall block
         private static readonly HashSet<string> Mass = new HashSet<string> { "cliff", "foliage", "redfoliage", "junk" };
         private static readonly HashSet<string> Lines = new HashSet<string> { "rail", "rail_v", "roadline", "trench", "boardwalk" };
         public static bool IsDecal(string l) => l != null && Decal.Contains(l);   // Batch 103: props roll over decals

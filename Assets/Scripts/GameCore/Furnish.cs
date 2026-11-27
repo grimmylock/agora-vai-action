@@ -13,7 +13,7 @@ namespace GameCore
     {
         static readonly HashSet<string> WallBound = new HashSet<string> { "desk", "desk_n", "desk_s", "desk_e", "desk_w", "lockers", "cabinet", "armchair", "terminal", "fridge_lab", "console", "machine" };
         static readonly HashSet<string> SideViews = new HashSet<string> { "desk", "desk_n", "desk_s", "desk_e", "desk_w", "lockers", "cabinet" };   // pieces that have a side sprite (WorldArt.SideFacing): the others only stand against a NORTH wall, front to the room (2026-11-19, Yan: chairs and vending machines against the east wall facing south)
-        static readonly HashSet<string> WallLooks = new HashSet<string> { "wall", "plaster", "stucco", "concrete", "plank", "driftwood", "metal", "hull", "window", "metaldoor", "cliff", "pillar" };
+        static readonly HashSet<string> WallLooks = new HashSet<string> { "wall", "plaster", "stucco", "brick", "concrete", "plank", "driftwood", "metal", "hull", "window", "metaldoor", "cliff", "pillar" };
 
         static float H(int x, int y, int zone, int k) { unchecked { int h = x * 73856093 ^ y * 19349663 ^ zone * 83492791 ^ k * 2654435; h ^= h >> 13; h *= 1274126177; h ^= h >> 16; return (h & 0xffff) / 65536f; } }
 

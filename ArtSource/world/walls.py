@@ -265,6 +265,7 @@ MATERIALS = {
     "plaster":    (STOREY2, 10, False, plain_cap([P["plaster"][3]], P["plaster"][2]), weather(plaster_face(P["plaster"], P["brick"])), P["plaster"][4]),
     "concrete":   (STOREY2, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(panel_face(P["concrete"])), P["concrete"][4]),
     "gothic":     (STOREY2, 10, False, plain_cap([P["gothic"][3]], P["gothic"][2]), weather(gothic_face(P["gothic"])), P["gothic"][4]),
+    "brick":      (STOREY, 10, False, plain_cap([P["concrete"][3]], P["concrete"][2]), weather(brick_face(P["brick"])), P["concrete"][4]),   # 2026-11-26: the brick wall at ONE storey (the two-storey wall hid most of a house's rooms)
     "driftwood":  (STOREY, 10, False, plain_cap([DRIFT[3]], DRIFT[2]), weather(driftwood_face(DRIFT)), DRIFT[4]),
     "stucco":     (STOREY, 10, False, plain_cap([hx("#d8d0b8")], hx("#c9c1a8")), weather(stucco_face), hx("#efe9d8")),
     "hull":       (STOREY, 10, False, plain_cap([P["steel"][3]], P["rust"][2]), corrugated_face(P["steel"]), P["steel"][4]),
@@ -550,7 +551,7 @@ def wear(im, seed, mat):
             x = max(1, min(w - 2, x + r.choice((-1, 0, 0, 1))))
     return Image.fromarray(a, "RGBA")
 
-RUBBLE_TOP = {"wall": P["brick"], "plaster": P["brick"], "plank": P["wood"], "driftwood": DRIFT}
+RUBBLE_TOP = {"brick": P["brick"], "wall": P["brick"], "plaster": P["brick"], "plank": P["wood"], "driftwood": DRIFT}
 def ruin_wall(mat, mask, cs, key):
     """the cap of a broken wall is exposed core (brick under the plaster, splintered boards), not a clean concrete top"""
     import zlib
@@ -581,10 +582,10 @@ def all_tiles():
                 if mat in ("concrete", "plaster", "hull", "wall"):          # Boss 2: the lab's lock doors; 2026-11-11: every wall material a lock-and-key dungeon is built of (the ferry's hull, the morgue's and Beta's plaster, the crypts' brick fell back to a plain steel door)
                     for ex in ("badgedoor", "badgedoor_on", "powerdoor", "powerdoor_on", "keypaddoor", "keypaddoor_on", "steamdoor", "steamdoor_on"): t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
                 if H >= 36: t[f"w_{mat}_{key}_uwin"] = build(mat, mask, 0, "uwin", cs)   # Batch 119: an upper-floor window on a plain wall
-                if mat in ("wall", "plaster", "plank", "driftwood"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
+                if mat in ("wall", "plaster", "plank", "driftwood", "brick"): t[f"w_{mat}_{key}_ruin"] = ruin_wall(mat, mask, cs, key)   # Batch 97
                 if mat in NEW_DOOR_MATS and (mask & 10) == 10:
                     for ex in NEW_DOORS: t[f"w_{mat}_{key}_{ex}"] = build(mat, mask, 0, ex, cs)
-                if mat in ("wall", "plaster", "plank", "concrete", "gothic", "stucco", "driftwood"):   # Batch 98: worn, for intact walls
+                if mat in ("wall", "plaster", "plank", "concrete", "gothic", "stucco", "driftwood", "brick"):   # Batch 98: worn, for intact walls
                     t[f"w_{mat}_{key}_worn"] = wear(build(mat, mask, 0, None, cs), __import__("zlib").crc32(f"worn{mat}{key}".encode()), mat)
     return t
 

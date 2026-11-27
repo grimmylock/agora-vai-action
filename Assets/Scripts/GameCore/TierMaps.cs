@@ -1126,7 +1126,7 @@ namespace GameCore
             c.Stamp("Main Street", 14, 102, 3, "plaster", Floor, 0, "debris");
             c.Landmark("Main Street", 48, 110);
             // 2026-11-26 (Yan's Gemini plan): six narrow terrace houses sharing party walls: a kitchen with a back door to the yard, a living room, a collapsed staircase, a toilet, a front door on the street
-            c.Clear(12, 122, 41, 28, Dirt); Interiors.Stamp(c, 14, 128, Interiors.RowHouses, Interiors.RowHousesFloor, "wall", "house");
+            c.Clear(12, 122, 41, 28, Dirt); Interiors.Stamp(c, 14, 128, Interiors.RowHouses, Interiors.RowHousesFloor, "brick", "house");
             c.Landmark("Row Houses", 32, 141);
             // the Church on the square
             c.Clear(77, 125, 24, 17, Asphalt, false); Interiors.Stamp(c, 78, 126, Interiors.Church, Interiors.ChurchFloor, "wall", "church");     // 2026-11-26 (place 5): pews, altar, candles, font, confessionals
