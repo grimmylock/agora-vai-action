@@ -975,6 +975,37 @@ namespace GameCore
             ".........",
         };
 
+
+        public static readonly string[] RowHouses = {
+            "##nDn###nDn###nDn###nDn###nDn###nDn##",
+            "#ks...#...sk#ks...#...sk#ks...#...sk#",
+            "#.....#.....#.....#.....#.....#.....#",
+            "#...T.#.T...#...T.#.T...#...T.#.T...#",
+            "#.....#.....#.....#.....#.....#.....#",
+            "###D#####D#####D#####D#####D#####D###",
+            "#....+#+....#....+#+....#....+#+....#",
+            "#A.*.+#+.*.I#A.*.+#+.*.I#A.*.+#+.*.I#",
+            "#.....#.....#.....#.....#.....#.....#",
+            "#hx..z#z..xh#hx..z#z..xh#hx..z#z..xh#",
+            "#.....#.....#.....#.....#.....#.....#",
+            "##nDn###nDn###nDn###nDn###nDn###nDn##",
+        };
+
+        public static readonly string[] RowHousesFloor = {
+            ".....................................",
+            ".kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.",
+            ".kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.",
+            ".kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.",
+            ".kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.kkkkk.",
+            ".....................................",
+            ".wwwww.wwwww.wwwww.wwwww.wwwww.wwwww.",
+            ".wwwww.wwwww.wwwww.wwwww.wwwww.wwwww.",
+            ".wwwww.wwwww.wwwww.wwwww.wwwww.wwwww.",
+            ".wwwww.wwwww.wwwww.wwwww.wwwww.wwwww.",
+            ".wwwww.wwwww.wwwww.wwwww.wwwww.wwwww.",
+            ".....................................",
+        };
+
         /// <summary>The dev map: the three test buildings on grass, side by side.</summary>
         public static MapLayout LabMap()
         {
