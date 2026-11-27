@@ -466,7 +466,7 @@ namespace GameCore
             c.Clear(94, 31, 11, 13, Gravel); Interiors.Stamp(c, 96, 31, Interiors.HutB, Interiors.HutBFloor, "metal", "workshop");   // the equipment shed: office and store (Gemini two-room hut, mirrored)
             c.Fence(94, 24, 110, 24).Fence(94, 24, 94, 39).Fence(110, 24, 110, 39, "fence", 6, 3);
             c.Landmark("Radio Mast", 102, 33);
-            c.Road(3, Dirt, (106, 70), (104, 50), (103, 41));
+            c.Road(3, Dirt, (106, 70), (104, 50), (103, 43));   // ended at y41, inside the shed's new south wall
 
             // ================================================================ TOXIC MARSHES
             // The Causeway: the boardwalk north through the marsh to The Scrapyard

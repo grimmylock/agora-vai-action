@@ -7,6 +7,7 @@ static class Program {
     // from the last one's squads - the checks and the scene dumps drifted. Every run starts clean.
     try { System.IO.File.Delete(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "offline_squads.json")); } catch { }
     if (args.Length > 0 && args[0] == "lakeeel") { LakeEelDump(); return 0; }
+    if (args.Length > 5 && args[0] == "lookdump") { MacroState.Current.CurrentZoneId = args[1]; TerrainMap.BuildTerrainForZone(args[1]); int lx = int.Parse(args[2]), ly = int.Parse(args[3]), lw = int.Parse(args[4]), lh = int.Parse(args[5]); for (int yy = ly; yy < ly + lh; yy++) { var sb = new System.Text.StringBuilder(yy + ": "); for (int xx = lx; xx < lx + lw; xx++) { var t = TerrainMap.GetTile(xx, yy); sb.Append((t.Type.ToString().Substring(0, 2) + "/" + (t.Look ?? "-")).PadRight(13)); } Console.WriteLine(sb); } return 0; }
     if (args.Length > 0 && args[0] == "pistolttk") { PistolTtk(); return 0; }
     if (args.Length > 0 && args[0] == "mutantmaps") { MutantMaps(); return 0; }
     if (args.Length > 0 && args[0] == "mutanthits") { MutantHits(); return 0; }
