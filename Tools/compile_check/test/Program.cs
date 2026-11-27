@@ -77,6 +77,7 @@ static class Program {
     if (Environment.GetEnvironmentVariable("VISBENCH") == "1") VisionBench();
     if (Environment.GetEnvironmentVariable("STATICAUDIT") == "1") StaticAudit();
     if (Environment.GetEnvironmentVariable("BUILDINGCENSUS") == "1") BuildingCensus();
+    if (Environment.GetEnvironmentVariable("BUILDINGLIST") != null) BuildingList(Environment.GetEnvironmentVariable("BUILDINGLIST"));
     if (Environment.GetEnvironmentVariable("EMPTYAUDIT") != null) EmptyAudit(Environment.GetEnvironmentVariable("EMPTYAUDIT"));
     if (Environment.GetEnvironmentVariable("RTBAL") == "7") FightRangeReport();
     if (Environment.GetEnvironmentVariable("RTBAL") == "8") MutantBehaviorReport();
@@ -5585,6 +5586,29 @@ static class Program {
       foreach (var c in cells.OrderByDescending(c => c.d)) { if (spots.Count >= 6 || c.d < 18) break; if (spots.All(sp => Math.Max(Math.Abs(sp.x - c.x), Math.Abs(sp.y - c.y)) > 24)) spots.Add(c); }
       Console.WriteLine($"EMPTYAUDIT {map} {W}x{H}: walkable {walk}, >15 tiles from anything {100.0 * b15 / Math.Max(1, walk):F0}%, >25 {100.0 * b25 / Math.Max(1, walk):F0}%, >35 {100.0 * b35 / Math.Max(1, walk):F0}%; emptiest spots (distance @ x,y, region): " + string.Join("; ", spots.Select(sp => $"{sp.d} @ {sp.x},{sp.y} {TerrainMap.RegionAt(sp.x, sp.y)}")));
     }
+  }
+  // BUILDINGLIST=<file>: every enterable building on every tier map as TSV: map, x, y, w, h, wall look, inner wall tiles (rooms), props inside, nearest landmark within 14 tiles. For the layout-prompt audit (ArtSource/LAYOUT_PROMPTS.md).
+  static void BuildingList(string path) {
+    var built = new System.Collections.Generic.HashSet<string> { "wall", "plaster", "stucco", "concrete", "hull", "metal", "plank", "driftwood" };
+    var maps = MacroMapDatabase.Zones.Where(z => !z.IsDungeon && !ZoneLayoutRecipes.IsInterior(z.Id)).Select(z => MacroMapDatabase.MapOf(z.Id)).Distinct().Where(m => m != "reactor_core" && m != "testing_ground").ToList();
+    var rows = new System.Collections.Generic.List<string> { "map\tx\ty\tw\th\twall\tinnerwalls\tprops\tlandmark" };
+    foreach (var map in maps) {
+      MacroState.Current.CurrentZoneId = map; TerrainMap.BuildTerrainForZone(map); int W = TerrainMap.Width, H = TerrainMap.Height; var seen = new bool[W * H];
+      for (int y0 = 0; y0 < H; y0++) for (int x0 = 0; x0 < W; x0++) {
+        var t0 = TerrainMap.GetTile(x0, y0); if (seen[y0 * W + x0] || t0.Type != TileType.Solid || !built.Contains(t0.Look ?? "")) continue;
+        var st = new System.Collections.Generic.Stack<(int, int)>(); st.Push((x0, y0)); seen[y0 * W + x0] = true; int minx = x0, maxx = x0, miny = y0, maxy = y0; bool door = false; var cells = new System.Collections.Generic.HashSet<(int, int)>();
+        while (st.Count > 0) { var (x, y) = st.Pop(); cells.Add((x, y)); minx = Math.Min(minx, x); maxx = Math.Max(maxx, x); miny = Math.Min(miny, y); maxy = Math.Max(maxy, y);
+          for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) { int nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; var tt = TerrainMap.GetTile(nx, ny);
+            if (tt.Type == TileType.Door) door = true;
+            if (!seen[ny * W + nx] && tt.Type == TileType.Solid && built.Contains(tt.Look ?? "")) { seen[ny * W + nx] = true; st.Push((nx, ny)); } } }
+        int w = maxx - minx + 1, h = maxy - miny + 1; if (w < 4 || h < 4 || !door) continue;
+        int inner = 0, props = 0;
+        for (int y = miny + 1; y < maxy; y++) for (int x = minx + 1; x < maxx; x++) { var t = TerrainMap.GetTile(x, y); if (cells.Contains((x, y))) inner++; else if (t.Type == TileType.HardCover || t.Type == TileType.ScatterCover) props++; }
+        string lm = ""; int bd = 15; foreach (var l in TerrainMap.Landmarks) { if (l.Name.StartsWith("stash:") || l.Name.StartsWith("arrive:")) continue; int d = Math.Max(Math.Abs(l.X - (minx + maxx) / 2), Math.Abs(l.Y - (miny + maxy) / 2)); if (d < bd) { bd = d; lm = l.Name; } }
+        rows.Add($"{map}\t{minx}\t{miny}\t{w}\t{h}\t{t0.Look}\t{inner}\t{props}\t{lm}");
+      }
+    }
+    System.IO.File.WriteAllLines(path, rows); Console.WriteLine("BUILDINGLIST " + (rows.Count - 1) + " buildings -> " + path);
   }
   // BUILDINGCENSUS=1: every building on every tier map (a connected mass of built wall, 4+ tiles each way): enterable (a door tile on it) or a solid block, its size, and what floor it has inside (Ground of the tiles inside the walls).
   static void BuildingCensus() {
