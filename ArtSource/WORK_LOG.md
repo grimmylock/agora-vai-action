@@ -7497,3 +7497,6 @@ Review pass: the front wall had a dense grid of tiny windows, now windows come i
 
 ## Batch 9gn (2026-11-28) - Plan editor (browser): paint plans with the real sprites
 Tools/editor/plan_editor.html (built by build_editor.py from the atlas, Interiors glyphs and ArtSource/plans): paint walls/windows/doors/floors/props, undo, mirror, resize, rectangle fill, reachability and hidden-row checks, load/save .plan. plan.py now accepts per-tile floorrows blocks. Tested in headless Chromium (no console errors, saved plan round-trips through plan.py); not tested by hand and not run in Unity.
+
+## Batch 9go (2026-11-28) - Department store: Yan's own layout from the plan editor
+Yan edited the plan in the browser editor and saved it; compiled as is except: decor (trash, rubble, debris, crate, box) in rows the walls hide or that sealed off corners of the stock and staff rooms removed (11 tiles), and the two fitting-room curtain props in the wall row became doors (a hard prop cannot be walked through, so the cubicles were unreachable). Harness passed; nothing run in Unity.
