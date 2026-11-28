@@ -364,6 +364,21 @@
    "issues": []
   },
   {
+   "id": "clothesrack",
+   "path": "ArtSource/world/settle_pl/raw_clothesrack.png",
+   "size": "48x64",
+   "colours": 29,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "cooler",
    "path": "ArtSource/world/settle_pl/raw_cooler.png",
    "size": "64x64",
@@ -1285,6 +1300,21 @@
    "path": "ArtSource/world/settle_pl/raw_stool.png",
    "size": "40x44",
    "colours": 12,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "storepost",
+   "path": "ArtSource/world/settle_pl/raw_storepost.png",
+   "size": "96x80",
+   "colours": 25,
    "opaque_corner": false,
    "near_white_pixels": 0,
    "source": {

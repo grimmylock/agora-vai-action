@@ -7485,3 +7485,6 @@ The fitting-room doors in the south block led into cubicles hidden by the wall; 
 
 ## Batch 9gj (2026-11-28) - Department store fitting rooms from references: curtained booth row, mirror, benches
 Searched fitting-room layouts (row of curtained single cubicles, mirror outside, waiting bench). Replaced the walled block with 5 curtained booth props (Pixel Lab) along the sales floor, a standing mirror and two benches in front. Harness passed; nothing run in Unity.
+
+## Batch 9gk (2026-11-28) - Department store: full rework after review
+Door styles: Department Store landmark moved to the building's centre so inner doors are glass and only the dock door is a roller. Sales floor: parquet, display-case islands, clothes racks (new prop), checkouts and mannequins pulled off the window wall, no rubble lumps. Stray scatter (brush/bushes) no longer lands inside stamped interiors (TerrainCanvas.Scatter respects Keep, same random stream). Richer restroom, stock room, office, staff room; free-standing store sign (new prop) out front. Harness passed; nothing run in Unity.

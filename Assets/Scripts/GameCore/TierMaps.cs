@@ -1484,8 +1484,8 @@ namespace GameCore
             c.Landmark("Garrison Barricade", 168, 170);
             // the big buildings round the plaza
             c.Clear(62, 118, 34, 26, null); Interiors.Stamp(c, 66, 122, Interiors.DepartmentStore, Interiors.DepartmentStoreFloor, "brick", "shop");   // the department store ground floor (Gemini layout)
-            c.Landmark("Department Store", 79, 142);
-            c.Landmark("Loading Dock", 77, 121); c.Put(76, 140, ScatterCover, "storesign");   // the store's sign out front; the dock door gets a roller look
+            c.Landmark("Department Store", 79, 131);
+            c.Landmark("Loading Dock", 77, 119); c.Put(75, 141, HardCover, "storepost");   // the store sign out front; the dock door (nearest landmark) gets a roller look, the inner doors the store's glass
             c.Block(64, 150, 20, 14, "wall", 2);
             c.Landmark("Police Station", 74, 166);
             c.Block(92, 160, 22, 16, "concrete", 2);

@@ -183,7 +183,7 @@ namespace GameCore
         {
             for (int y = 0; y < H; y++)
                 for (int x = 0; x < W; x++)
-                    if (_tile[y, x] == onlyOnBase && _look[y, x] == null && _rng.NextDouble() < density)
+                    if (_tile[y, x] == onlyOnBase && _look[y, x] == null && _rng.NextDouble() < density && !Kept(x, y))   // (Kept last: same random stream; stamped interiors stay as authored)
                         Set(x, y, t, _height[y, x] + height, look);
             return this;
         }
