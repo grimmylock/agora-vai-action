@@ -7506,3 +7506,6 @@ New door look dx_curtain (red curtain on a rail, drawn aside; doors_new.py + wal
 
 ## Batch 9gq (2026-11-28) - Tenement block (flats) from the Gemini layout
 Abandoned City: the empty plaster block at (140,88) is now a 19x12 ground floor of flats (ArtSource/plans/tenement_block.plan): four one-room flats off a 3-row corridor, each with kitchenette, bed, wardrobe, table (north ones) and a walled bathroom; entrance hall with lockers and a stairs prop (new Pixel Lab prop, blocked with invisible tiles); plain wooden doors (landmark named so the door picker chooses plank/barn); back door at the corridor's east end. One floor only. Editor rebuilt with the new props and plan. Harness passed; nothing run in Unity.
+
+## Batch 9gr (2026-11-28) - Tenement block: kitchen no longer blocks the south flats' doors
+South flats: the sink counter stood in front of the door; fridge and stove now sit in the west corner, the sink below them, the door column and the walk to the bathroom door are clear, bed and wardrobe at the bottom. Harness passed; nothing run in Unity.
