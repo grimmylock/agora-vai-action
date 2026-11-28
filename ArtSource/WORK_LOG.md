@@ -7482,3 +7482,6 @@ One floor only. Front is a run of display windows with glass double doors and a 
 
 ## Batch 9gi (2026-11-27) - Department store: fitting rooms moved to the east wall, stock-room overlaps fixed
 The fitting-room doors in the south block led into cubicles hidden by the wall; they are now two cubicles on the east side with doors in a side wall (which hides nothing) and a stool each. Stock room: crates no longer overlap the shelves. Harness passed; nothing run in Unity.
+
+## Batch 9gj (2026-11-28) - Department store fitting rooms from references: curtained booth row, mirror, benches
+Searched fitting-room layouts (row of curtained single cubicles, mirror outside, waiting bench). Replaced the walled block with 5 curtained booth props (Pixel Lab) along the sales floor, a standing mirror and two benches in front. Harness passed; nothing run in Unity.

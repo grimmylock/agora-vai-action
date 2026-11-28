@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-11-27",
+ "generated": "2026-11-28",
  "note": "AI-generated art: keep for any store AI-content disclosure. All of these are further changed by ArtSource/world/props_settle_pl.py (muting, dirt, outline).",
  "assets": [
   {
@@ -550,6 +550,21 @@
    "colours": 48,
    "opaque_corner": false,
    "near_white_pixels": 18,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "fittingbooth",
+   "path": "ArtSource/world/settle_pl/raw_fittingbooth.png",
+   "size": "48x64",
+   "colours": 41,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
    "source": {
     "kind": "AI-generated",
     "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
@@ -1225,6 +1240,21 @@
    "path": "ArtSource/world/settle_pl/raw_stall_red.png",
    "size": "64x64",
    "colours": 41,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
+   "id": "standmirror",
+   "path": "ArtSource/world/settle_pl/raw_standmirror.png",
+   "size": "48x64",
+   "colours": 36,
    "opaque_corner": false,
    "near_white_pixels": 0,
    "source": {
