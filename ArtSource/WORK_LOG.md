@@ -7488,3 +7488,6 @@ Searched fitting-room layouts (row of curtained single cubicles, mirror outside,
 
 ## Batch 9gk (2026-11-28) - Department store: full rework after review
 Door styles: Department Store landmark moved to the building's centre so inner doors are glass and only the dock door is a roller. Sales floor: parquet, display-case islands, clothes racks (new prop), checkouts and mannequins pulled off the window wall, no rubble lumps. Stray scatter (brush/bushes) no longer lands inside stamped interiors (TerrainCanvas.Scatter respects Keep, same random stream). Richer restroom, stock room, office, staff room; free-standing store sign (new prop) out front. Harness passed; nothing run in Unity.
+
+## Batch 9gl (2026-11-28) - Department store: walk-in fitting cubicles, dock door explicit, desk and doors fixed
+Fitting rooms are now two walk-in cubicles (partition walls, a bench inside, the curtain drawn to the side of each opening) against the middle wall, so the curtains lead somewhere; office and staff doors moved so none opens into a cubicle. Loading dock: explicit roller door look and pallets outside (no landmark trick, so the restroom door is glass). Customer desk moved out of the hidden row, mannequins flank the entrance, racks moved east. Harness passed; nothing run in Unity.

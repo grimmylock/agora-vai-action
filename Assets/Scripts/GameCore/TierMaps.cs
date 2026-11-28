@@ -1485,7 +1485,7 @@ namespace GameCore
             // the big buildings round the plaza
             c.Clear(62, 118, 34, 26, null); Interiors.Stamp(c, 66, 122, Interiors.DepartmentStore, Interiors.DepartmentStoreFloor, "brick", "shop");   // the department store ground floor (Gemini layout)
             c.Landmark("Department Store", 79, 131);
-            c.Landmark("Loading Dock", 77, 119); c.Put(75, 141, HardCover, "storepost");   // the store sign out front; the dock door (nearest landmark) gets a roller look, the inner doors the store's glass
+            c.Put(76, 122, Door, "dx_roller"); c.Put(74, 120, ScatterCover, "crate").Put(75, 120, ScatterCover, "crate").Put(78, 120, ScatterCover, "tires"); c.Put(75, 141, HardCover, "storepost");   // dock door = roller (explicit look), pallets outside;
             c.Block(64, 150, 20, 14, "wall", 2);
             c.Landmark("Police Station", 74, 166);
             c.Block(92, 160, 22, 16, "concrete", 2);
