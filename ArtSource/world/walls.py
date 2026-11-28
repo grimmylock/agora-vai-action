@@ -312,7 +312,7 @@ def roof_px(mat, x, y, r):
     v = r.random()
     return TAR[3] if v < .05 else TAR[1] if v < .3 else TAR[2]
 
-NEW_DOORS = ('x_glass', 'x_barred', 'x_roller', 'x_cell', 'x_lab', 'x_arched', 'x_plank', 'x_gothic_l', 'x_gothic_r', 'x_barn_l', 'x_barn_r', 'x_steel_l', 'x_steel_r', 'x_glassd_l', 'x_glassd_r', 'x_gate_l', 'x_gate_r')   # 2026-11-20 door variety (doors_new.py)
+NEW_DOORS = ('x_curtain', 'x_glass', 'x_barred', 'x_roller', 'x_cell', 'x_lab', 'x_arched', 'x_plank', 'x_gothic_l', 'x_gothic_r', 'x_barn_l', 'x_barn_r', 'x_steel_l', 'x_steel_r', 'x_glassd_l', 'x_glassd_r', 'x_gate_l', 'x_gate_r')   # 2026-11-20 door variety (doors_new.py)
 NEW_DOOR_MATS = ('concrete', 'plaster', 'wall', 'gothic', 'brick', 'stucco')   # 2026-11-27: + the one-storey brick and stucco walls
 
 def build(mat, mask, variant=0, extra=None, corners=0):

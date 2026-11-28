@@ -7500,3 +7500,6 @@ Tools/editor/plan_editor.html (built by build_editor.py from the atlas, Interior
 
 ## Batch 9go (2026-11-28) - Department store: Yan's own layout from the plan editor
 Yan edited the plan in the browser editor and saved it; compiled as is except: decor (trash, rubble, debris, crate, box) in rows the walls hide or that sealed off corners of the stock and staff rooms removed (11 tiles), and the two fitting-room curtain props in the wall row became doors (a hard prop cannot be walked through, so the cubicles were unreachable). Harness passed; nothing run in Unity.
+
+## Batch 9gp (2026-11-28) - Department store: curtain doors for the fitting booths
+New door look dx_curtain (red curtain on a rail, drawn aside; doors_new.py + walls.py, built for brick/stucco too) used on the two fitting-room doors. Harness passed; nothing run in Unity.

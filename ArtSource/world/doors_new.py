@@ -131,7 +131,18 @@ def gate_double():
     rect(d, 3, 0, 4, 18, IRON[2]); rect(d, 27, 0, 28, 18, IRON[1]); rect(d, 3, 0, 28, 0, IRON[2])
     return im
 
-SINGLES = {"glass": glass_single, "barred": barred_single, "roller": roller_single, "cell": cell_single, "lab": lab_single, "arched": arched_single, "plank": plank_single}
+def curtain_single():
+    """a fitting-room curtain (2026-11-28, Yan: the cubicle doors are curtains): a wooden rail, a heavy faded-red curtain in folds, pulled a little aside so a dark slit shows the cubicle"""
+    im = canvas(16); d = ImageDraw.Draw(im)
+    CUR = ramp("#2a0d10", "#4a1a1e", "#6a262b", "#86363b", "#a24a4e")
+    rect(d, 3, 0, 12, 18, CUR[1]); rect(d, 3, 0, 12, 1, OAK[3]); d.line([(3, 0), (12, 0)], fill=OAK[4])             # rail
+    for x in range(4, 12):
+        c = CUR[2 + (x % 3 == 0) - (x % 3 == 2)]; rect(d, x, 2, x, 18, c)                                       # folds
+    rect(d, 7, 3, 8, 18, (12, 10, 12, 255)); d.line([(7, 3), (8, 3)], fill=CUR[0])                                # the slit onto the cubicle
+    for x in (4, 11): d.point((x, 6), fill=OAK[4]); d.point((x, 7), fill=OAK[2])                                    # rings
+    rect(d, 3, 17, 12, 18, CUR[0])                                                                               # hem in shadow
+    return im
+SINGLES = {"curtain": curtain_single, "glass": glass_single, "barred": barred_single, "roller": roller_single, "cell": cell_single, "lab": lab_single, "arched": arched_single, "plank": plank_single}
 DOUBLES = {"gothic": gothic_double, "barn": barn_double, "steel": steel_double, "glass": glass_double, "gate": gate_double}
 
 FACES = {}
