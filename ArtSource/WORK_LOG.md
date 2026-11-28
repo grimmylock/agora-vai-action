@@ -7491,3 +7491,6 @@ Door styles: Department Store landmark moved to the building's centre so inner d
 
 ## Batch 9gl (2026-11-28) - Department store: walk-in fitting cubicles, dock door explicit, desk and doors fixed
 Fitting rooms are now two walk-in cubicles (partition walls, a bench inside, the curtain drawn to the side of each opening) against the middle wall, so the curtains lead somewhere; office and staff doors moved so none opens into a cubicle. Loading dock: explicit roller door look and pallets outside (no landmark trick, so the restroom door is glass). Customer desk moved out of the hidden row, mannequins flank the entrance, racks moved east. Harness passed; nothing run in Unity.
+
+## Batch 9gm (2026-11-28) - Department store: front windows thinned, side door and bed-like debris removed
+Review pass: the front wall had a dense grid of tiny windows, now windows come in pairs with solid piers; the east side door drew as a wooden stub in the wall, removed; the white debris in the office read as a mattress, removed. Harness passed; nothing run in Unity.
