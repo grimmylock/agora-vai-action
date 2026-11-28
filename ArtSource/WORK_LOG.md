@@ -7503,3 +7503,6 @@ Yan edited the plan in the browser editor and saved it; compiled as is except: d
 
 ## Batch 9gp (2026-11-28) - Department store: curtain doors for the fitting booths
 New door look dx_curtain (red curtain on a rail, drawn aside; doors_new.py + walls.py, built for brick/stucco too) used on the two fitting-room doors. Harness passed; nothing run in Unity.
+
+## Batch 9gq (2026-11-28) - Tenement block (flats) from the Gemini layout
+Abandoned City: the empty plaster block at (140,88) is now a 19x12 ground floor of flats (ArtSource/plans/tenement_block.plan): four one-room flats off a 3-row corridor, each with kitchenette, bed, wardrobe, table (north ones) and a walled bathroom; entrance hall with lockers and a stairs prop (new Pixel Lab prop, blocked with invisible tiles); plain wooden doors (landmark named so the door picker chooses plank/barn); back door at the corridor's east end. One floor only. Editor rebuilt with the new props and plan. Harness passed; nothing run in Unity.

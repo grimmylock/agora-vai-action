@@ -77,5 +77,40 @@ namespace GameCore
             ".wwwww.",
             ".......",
         };
+
+        public static readonly string[] TenementBlock = {
+            "###nn###########nn###",
+            "#f.b.w.#zv#vz#.w.b.f#",
+            "ns.....D..#..D.....sn",
+            "nk..T..#.u#u.#..T..kn",
+            "#......#..#..#......#",
+            "####D###########D####",
+            "n.p..x............p.D",
+            "#..............x....#",
+            "#...................#",
+            "###D#####DD######D###",
+            "#fsk#zv#....¶#vz#ksf#",
+            "nw..D..#h...¶#..D..wn",
+            "nb..#.u#h...É#u.#..bn",
+            "#...#..#.....#..#...#",
+            "##nn#####DD######nn##",
+        };
+        public static readonly string[] TenementBlockFloor = {
+            ".....................",
+            ".wwwwww.kk.kk.wwwwww.",
+            ".wwwwww.kk.kk.wwwwww.",
+            ".wwwwww.kk.kk.wwwwww.",
+            ".wwwwww.kk.kk.wwwwww.",
+            ".....................",
+            ".wwwwwwwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwwwwwwww.",
+            ".wwwwwwwwwwwwwwwwwww.",
+            ".....................",
+            ".www.kk.ccccc.kk.www.",
+            ".www.kk.ccccc.kk.www.",
+            ".www.kk.ccccc.kk.www.",
+            ".www.kk.ccccc.kk.www.",
+            ".....................",
+        };
     }
 }

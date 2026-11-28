@@ -44,6 +44,7 @@ namespace GameCore
             ['Ä'] = ("standmirror", false),
             ['Ö'] = ("clothesrack", true),
             ['Ü'] = ("storepost", true),
+            ['É'] = ("stairs", true),
         };
         static GroundType FloorOf(char f) => f == 'k' ? GroundType.KitchenTile : f == 't' ? GroundType.LabTile : f == 'c' ? GroundType.Concrete : f == 'd' ? GroundType.Dirt : f == 'g' ? GroundType.Gravel : f == 's' ? GroundType.Sand : GroundType.Floor;
 

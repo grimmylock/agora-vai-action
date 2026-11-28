@@ -1206,6 +1206,21 @@
    "issues": []
   },
   {
+   "id": "stairs",
+   "path": "ArtSource/world/settle_pl/raw_stairs.png",
+   "size": "48x96",
+   "colours": 24,
+   "opaque_corner": false,
+   "near_white_pixels": 0,
+   "source": {
+    "kind": "AI-generated",
+    "tool": "Pixel Lab (create_object_pro_flash, view low top-down, style anchor: the atlas desk sprite)",
+    "licence": "Pixel Lab subscription terms (generated output usable commercially under the plan)",
+    "hand_edits": "none; the game then mutes and dirties it in props_settle_pl.py"
+   },
+   "issues": []
+  },
+  {
    "id": "stall_blue",
    "path": "ArtSource/world/settle_pl/raw_stall_blue.png",
    "size": "64x64",

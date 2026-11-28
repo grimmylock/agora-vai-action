@@ -1494,7 +1494,7 @@ namespace GameCore
             c.Block(160, 120, 20, 14, "plaster", 2);
             c.Landmark("Cinema", 170, 136);
             c.Block(180, 88, 16, 22, "plaster", 2);
-            c.Block(140, 88, 16, 20, "plaster", 2);
+            c.Clear(136, 86, 29, 21, null); Interiors.Stamp(c, 140, 90, Interiors.TenementBlock, Interiors.TenementBlockFloor, "brick", "house"); c.Landmark("Tenement House", 150, 98);   // four flats off a corridor (Gemini layout)
             c.Block(118, 182, 14, 12, "plaster", 2);
             // the tram depot
             c.Clear(62, 176, 30, 20, Asphalt, false);

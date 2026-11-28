@@ -1,0 +1,25 @@
+# Abandoned City tenement block (flats), ground floor, 19x12 inside (Gemini layout, 2026-11-28): four one-room flats off a corridor, entrance hall with mailboxes and stairs
+plan TenementBlock
+floor w
+region c 8 10 12 13
+region k 8 1 9 4
+region k 11 1 12 4
+region k 5 10 6 13
+region k 14 10 15 13
+rows
+###nn###########nn###
+#f.b.w.#zv#vz#.w.b.f#
+ns.....D..#..D.....sn
+nk..T..#.u#u.#..T..kn
+#......#..#..#......#
+####D###########D####
+n.p..x............p.D
+#...................#
+#..............x....#
+###D#####DD######D###
+#fsk#zv#....¶#vz#ksf#
+nw..D..#h...¶#..D..wn
+nb..#.u#h...É#u.#..bn
+#...#..#.....#..#...#
+##nn#####DD######nn##
+end
