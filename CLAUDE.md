@@ -117,6 +117,7 @@ targeting panel, `TurnLoop.PlayerEndTurn`. The A-Life, squads, maps and economy 
    numbers: when an unrelated change shifts one, make the check sturdier (more samples, reset state), don't loosen it blindly.
    Extra commands: `dotnet /tmp/test.dll heldframes <json>` / `meleeframes <json>` dump animation poses for
    `Tools/render/held_anim.py` / `melee_scene.py`.
+2c. **Plan editor (2026-11-28):** `Tools/editor/plan_editor.html` (open in a browser) lets Yan paint plans with the real sprites and save `.plan` files; `python3 Tools/editor/build_editor.py` rebuilds it after new props/plans. `.plan` files also accept a per-tile `floorrows ... endfloor` block (what the editor writes).
 2b. **Dev loop script (2026-11-27):** `python3 Tools/dev.py all|plans|atlas|check|render|ship` does the repeated steps in one call (see its header). Plans written as text go in `ArtSource/plans/*.plan` and compile with `Tools/plans/plan.py`; the harness checks every plan (reachability, hidden rows) and that each stamped plan keeps its walls, windows and doors on the finished map.
 3. **Renders without Unity:** `Tools/render/render.sh <maps>` (PNG + landmark labels in `Tools/render/_render/`; delete
    `_render/world_atlas.raw` to repack the atlas from `ArtSource/world`), `python3 Tools/render/overview.py` (labelled

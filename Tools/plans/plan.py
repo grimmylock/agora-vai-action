@@ -32,9 +32,13 @@ def parse(path):
         if cur is None:
             if s.startswith("plan "): cur = {"name": s.split()[1], "floor": "w", "regions": [], "mirror": None, "rows": None, "file": path, "line": ln}
             elif s and not s.startswith("#"): raise SystemExit(f"{path}:{ln}: expected 'plan <Name>'")
+        elif cur.get("_inff"):
+            if s == "endfloor": cur["_inff"] = False
+            else: cur["floorrows"].append(s)
         elif cur["rows"] is not None:
             if s == "end": plans.append(cur); cur = None
             else: cur["rows"].append(line)
+        elif s == "floorrows": cur["floorrows"] = []; cur["_inff"] = True            # the editor's per-tile floor letters (one row per plan row, '.' = the default floor), ended by 'endfloor'
         elif s.startswith("floor "): cur["floor"] = s.split()[1]
         elif s.startswith("region "): p = s.split(); cur["regions"].append((p[1], *map(int, p[2:6])))
         elif s.startswith("mirror "): cur["mirror"] = s.split()[1]
@@ -49,6 +53,8 @@ def floors(p):
             ch = rows[y][x]
             if ch in "#nD": r += "."; continue
             f = p["floor"]
+            fr = p.get("floorrows")
+            if fr and y < len(fr) and x < len(fr[y]) and fr[y][x] != ".": r += fr[y][x]; continue
             for (fl, x0, y0, x1, y1) in p["regions"]:
                 if x0 <= x <= x1 and y0 <= y <= y1: f = fl
             r += f

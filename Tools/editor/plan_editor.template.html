@@ -1,0 +1,113 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>agora vai plan editor</title>
+<style>
+:root{--bg:#1b1d21;--pn:#25282e;--ln:#3a3f47;--tx:#e6e6e6;--ac:#e0a040}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:13px system-ui,sans-serif;display:flex;height:100vh}
+#side{width:290px;background:var(--pn);border-right:1px solid var(--ln);display:flex;flex-direction:column;padding:8px;gap:6px;overflow:hidden}
+#main{flex:1;overflow:auto;padding:10px}
+button,select,input{background:#33373e;color:var(--tx);border:1px solid var(--ln);border-radius:4px;padding:4px 7px;font:inherit}button{cursor:pointer}button:hover{border-color:var(--ac)}
+.row{display:flex;gap:4px;flex-wrap:wrap;align-items:center}.tool{min-width:34px}.on{border-color:var(--ac);background:#4a3f2a}
+#pal{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;align-content:start}
+.pc{background:#1f2227;border:1px solid var(--ln);border-radius:4px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;font-size:9px;padding:2px;overflow:hidden}
+.pc canvas{max-width:100%;max-height:40px}.pc.on{border-color:var(--ac)}.pc span{opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#cv{background:#111;image-rendering:pixelated;cursor:crosshair;display:block}
+#msg{font-size:12px;line-height:1.35;max-height:130px;overflow:auto;background:#1f2227;border:1px solid var(--ln);border-radius:4px;padding:5px}.bad{color:#ff8a70}.good{color:#8ad88a}
+h4{margin:2px 0;font-size:12px;opacity:.8}
+</style></head><body>
+<div id="side">
+ <div class="row"><b>plan</b><input id="name" value="NewPlan" size="14"><button id="bNew">New</button></div>
+ <div class="row"><select id="load" style="max-width:190px"></select><button id="bLoad">Load</button><input id="file" type="file" accept=".plan,.txt" style="width:80px"></div>
+ <h4>structure</h4><div class="row" id="tools"></div>
+ <h4>floor (paints the floor layer only)</h4><div class="row" id="floors"></div>
+ <div class="row"><input id="q" placeholder="search props" style="flex:1"></div>
+ <div id="pal"></div>
+ <div class="row"><button id="uU">Undo</button><button id="uR">Redo</button><button id="mir">Mirror</button><button id="chk">Check</button></div>
+ <div class="row">size <input id="sw" type="number" min="3" max="80" value="12" style="width:52px">x<input id="sh" type="number" min="3" max="80" value="10" style="width:52px"><button id="rs">Resize (keep top-left)</button></div>
+ <div class="row">zoom <input id="zoom" type="range" min="16" max="72" value="40" style="flex:1"><label><input type="checkbox" id="gl"> glyphs</label></div>
+ <div class="row"><button id="save">Save .plan</button><button id="copy">Copy text</button></div>
+ <div id="msg">Left-drag paints, right-drag erases, hold Shift to drag a rectangle. Pick a tool or prop first.</div>
+</div>
+<div id="main"><canvas id="cv"></canvas></div>
+<script>
+const D=__DATA__;
+const FL={w:["wood","#7a5230"],t:["lab tile","#6c8a6a"],k:["kitchen tile","#cfd3cf"],c:["concrete","#7d7f84"],d:["dirt","#6b5a3e"],g:["gravel","#8a8478"],s:["sand","#c2ad7b"]};
+const SW=D.swap, P=D.pieces;
+let W=26,H=18,rows=[],fl=[],S=40,tool={k:"s",v:"#"},undo=[],redo=[],painting=false,btn=0,rectStart=null,cur=null,marks=null;
+const $=id=>document.getElementById(id),cv=$("cv"),cx=cv.getContext("2d");cx.imageSmoothingEnabled=false;
+const img={};for(const g in P){if(P[g].img){const i=new Image();i.onload=draw;i.src="data:image/png;base64,"+P[g].img;img[g]=i}}
+function blank(w,h){W=w;H=h;rows=[];fl=[];for(let y=0;y<h;y++){rows.push(Array(w).fill("."));fl.push(Array(w).fill("w"))}
+ for(let x=0;x<w;x++){rows[0][x]="#";rows[h-1][x]="#"}for(let y=0;y<h;y++){rows[y][0]="#";rows[y][w-1]="#"}}
+function snap(){return JSON.stringify([W,H,rows,fl])}function restore(s){[W,H,rows,fl]=JSON.parse(s)}
+function push(){undo.push(snap());if(undo.length>150)undo.shift();redo=[]}
+function parse(t){const L=t.split("\n"),res=[];let c=null,mode=0;
+ for(const raw of L){let s=raw.trim();
+  if(!c){if(s.startsWith("plan ")){c={name:s.split(/\s+/)[1],floor:"w",regions:[],rows:[],ff:[]};mode=0}continue}
+  if(mode==1){if(s=="end"){res.push(c);c=null}else c.rows.push(raw.replace(/\r/g,""));continue}
+  if(mode==2){if(s=="endfloor")mode=0;else c.ff.push(s);continue}
+  const q=s.split("#")[0].trim().split(/\s+/);
+  if(q[0]=="floor")c.floor=q[1];else if(q[0]=="region")c.regions.push([q[1],+q[2],+q[3],+q[4],+q[5]]);else if(q[0]=="floorrows")mode=2;else if(q[0]=="rows")mode=1}
+ return res}
+function fromPlan(p){const h=p.rows.length,w=Math.max(...p.rows.map(r=>r.length));blank(w,h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){rows[y][x]=p.rows[y][x]||".";let f=p.floor;for(const[r,x0,y0,x1,y1]of p.regions)if(x>=x0&&x<=x1&&y>=y0&&y<=y1)f=r;
+  if(p.ff.length&&p.ff[y]&&p.ff[y][x]&&p.ff[y][x]!==".")f=p.ff[y][x];fl[y][x]=f}
+ $("name").value=p.name;$("sw").value=w;$("sh").value=h;undo=[];redo=[];marks=null;size()}
+function text(){const nm=$("name").value.trim()||"NewPlan";const cnt={};for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(!"#nD".includes(rows[y][x]))cnt[fl[y][x]]=(cnt[fl[y][x]]||0)+1;
+ const df=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||"w";
+ const ff=fl.map((r,y)=>r.map((f,x)=>"#nD".includes(rows[y][x])||f===df?".":f).join(""));
+ return `plan ${nm}\nfloor ${df}\nfloorrows\n${ff.join("\n")}\nendfloor\nrows\n${rows.map(r=>r.join("")).join("\n")}\nend\n`}
+function check(){const m=[];const hard=g=>P[g]&&P[g].hard;
+ let doors=0,seen=new Set(),q=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(rows[y][x]=="D"){doors++;seen.add(y*W+x);q.push([x,y])}
+ while(q.length){const[x,y]=q.pop();for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy;if(a<0||b<0||a>=W||b>=H||seen.has(b*W+a))continue;const c=rows[b][a];if(c=="."||c=="D"){seen.add(b*W+a);q.push([a,b])}}}
+ const un=[],hid=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=rows[y][x];if(c=="."&&!seen.has(y*W+x))un.push([x,y]);
+  if(!"#nD.".includes(c)&&y+1<H&&"#n".includes(rows[y+1][x]))hid.push([x,y])}
+ marks={un,hid};if(!doors)m.push('<span class="bad">no doors: nothing can be reached</span>');
+ m.push(un.length?`<span class="bad">${un.length} floor tile(s) cannot be reached from a door (red), e.g. ${un.slice(0,4).map(p=>p.join(",")).join(" ")}</span>`:'<span class="good">every floor tile is reachable from a door</span>');
+ m.push(hid.length?`<span class="bad">${hid.length} prop(s) sit in the row the wall below hides (orange): ${hid.slice(0,4).map(p=>p.join(",")).join(" ")}. Move them up one row.</span>`:'<span class="good">nothing hidden by a wall</span>');
+ $("msg").innerHTML=m.join("<br>");draw()}
+function size(){cv.width=W*S;cv.height=H*S;cx.imageSmoothingEnabled=false;draw()}
+function draw(){cx.clearRect(0,0,cv.width,cv.height);
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=rows[y][x],px=x*S,py=y*S;
+  if(!"#n".includes(c)){cx.fillStyle=(FL[fl[y][x]]||FL.w)[1];cx.fillRect(px,py,S,S);cx.fillStyle="rgba(0,0,0,.18)";cx.fillRect(px,py,S,1);cx.fillRect(px,py,1,S)}
+  if(c=="#"){cx.fillStyle="#8a3b2e";cx.fillRect(px,py,S,S);cx.fillStyle="#6c2c22";cx.fillRect(px,py+S*.7,S,S*.3);cx.fillStyle="#b45a44";cx.fillRect(px,py,S,3)}
+  else if(c=="n"){cx.fillStyle="#8a3b2e";cx.fillRect(px,py,S,S);cx.fillStyle="#35606c";cx.fillRect(px+S*.15,py+S*.2,S*.7,S*.5);cx.strokeStyle="#9fc5cf";cx.strokeRect(px+S*.15,py+S*.2,S*.7,S*.5)}
+  else if(c=="D"){cx.fillStyle="#5a3a22";cx.fillRect(px,py,S,S);cx.fillStyle="#8a6038";cx.fillRect(px+S*.12,py+S*.1,S*.76,S*.8);cx.fillStyle="#d8c060";cx.fillRect(px+S*.7,py+S*.5,S*.08,S*.08)}}
+ const gl=$("gl").checked;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=rows[y][x];if("#nD.".includes(c))continue;const p=P[c],k=S/48;
+  if(img[c]&&!gl){const i=img[c];cx.drawImage(i,x*S+S/2-p.ox*k,y*S+S*.94-p.oy*k,p.w*k,p.h*k)}else{cx.fillStyle="#d8b040";cx.font=`bold ${S*.5}px sans-serif`;cx.textAlign="center";cx.fillText(c,x*S+S/2,y*S+S*.68)}}
+ cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.beginPath();for(let x=0;x<=W;x++){cx.moveTo(x*S+.5,0);cx.lineTo(x*S+.5,H*S)}for(let y=0;y<=H;y++){cx.moveTo(0,y*S+.5);cx.lineTo(W*S,y*S+.5)}cx.stroke();
+ if(marks){cx.fillStyle="rgba(255,40,40,.4)";for(const[x,y]of marks.un)cx.fillRect(x*S,y*S,S,S);cx.strokeStyle="#ff9a20";cx.lineWidth=3;for(const[x,y]of marks.hid)cx.strokeRect(x*S+2,y*S+2,S-4,S-4)}
+ if(rectStart&&cur){cx.strokeStyle="#fff";cx.lineWidth=2;const a=Math.min(rectStart[0],cur[0]),b=Math.min(rectStart[1],cur[1]),c2=Math.max(rectStart[0],cur[0]),d=Math.max(rectStart[1],cur[1]);cx.strokeRect(a*S,b*S,(c2-a+1)*S,(d-b+1)*S)}}
+function paint(x,y,erase){if(x<0||y<0||x>=W||y>=H)return;
+ if(tool.k=="f"&&!erase){fl[y][x]=tool.v;return}
+ if(erase){rows[y][x]=".";return}
+ rows[y][x]=tool.k=="e"?".":tool.v}
+function cell(e){const r=cv.getBoundingClientRect();return[Math.floor((e.clientX-r.left)/S),Math.floor((e.clientY-r.top)/S)]}
+cv.addEventListener("contextmenu",e=>e.preventDefault());
+cv.addEventListener("pointerdown",e=>{cv.setPointerCapture(e.pointerId);push();painting=true;btn=e.button;marks=null;const c=cell(e);cur=c;if(e.shiftKey){rectStart=c}else{paint(c[0],c[1],btn==2);draw()}});
+cv.addEventListener("pointermove",e=>{if(!painting)return;const c=cell(e);cur=c;if(!rectStart)paint(c[0],c[1],btn==2);draw()});
+cv.addEventListener("pointerup",e=>{if(!painting)return;painting=false;if(rectStart){const c=cell(e);const a=Math.min(rectStart[0],c[0]),b=Math.min(rectStart[1],c[1]),c2=Math.max(rectStart[0],c[0]),d=Math.max(rectStart[1],c[1]);for(let y=b;y<=d;y++)for(let x=a;x<=c2;x++)paint(x,y,btn==2);rectStart=null}draw()});
+function pick(k,v,el){tool={k,v};document.querySelectorAll(".tool,.pc").forEach(b=>b.classList.remove("on"));el.classList.add("on")}
+const T=[["s","#","wall"],["s","n","window"],["s","D","door"],["e",".","erase"]];
+for(const[k,v,n]of T){const b=document.createElement("button");b.className="tool";b.textContent=n;b.onclick=()=>pick(k,v,b);$("tools").appendChild(b);if(n=="wall")b.classList.add("on")}
+for(const f in FL){const b=document.createElement("button");b.className="tool";b.textContent=FL[f][0];b.style.borderLeft="8px solid "+FL[f][1];b.onclick=()=>pick("f",f,b);$("floors").appendChild(b)}
+function pal(){const q=$("q").value.toLowerCase(),el=$("pal");el.innerHTML="";
+ for(const g in P){const p=P[g];if(q&&!(p.look.includes(q)||g==q))continue;const d=document.createElement("div");d.className="pc";d.title=`${p.look}  glyph ${g}${p.hard?"  (hard cover)":""}`;
+  if(img[g]){const c=document.createElement("canvas");c.width=p.w;c.height=p.h;c.getContext("2d").drawImage(img[g],0,0);d.appendChild(c);img[g].addEventListener("load",()=>{c.getContext("2d").drawImage(img[g],0,0)})}
+  const s=document.createElement("span");s.textContent=g+" "+p.look;d.appendChild(s);d.onclick=()=>pick("s",g,d);el.appendChild(d)}}
+$("q").oninput=pal;
+$("zoom").oninput=e=>{S=+e.target.value;size()};$("gl").onchange=draw;
+$("uU").onclick=()=>{if(!undo.length)return;redo.push(snap());restore(undo.pop());marks=null;size()};
+$("uR").onclick=()=>{if(!redo.length)return;undo.push(snap());restore(redo.pop());marks=null;size()};
+$("mir").onclick=()=>{push();rows=rows.map(r=>r.slice().reverse().map(c=>SW[c]||c));fl=fl.map(r=>r.slice().reverse());marks=null;draw()};
+$("chk").onclick=check;
+$("bNew").onclick=()=>{const w=+$("sw").value,h=+$("sh").value;push();blank(w,h);marks=null;size()};
+$("rs").onclick=()=>{const w=+$("sw").value,h=+$("sh").value;push();const or=rows,of=fl,ow=W,oh=H;blank(w,h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(y<oh&&x<ow){rows[y][x]=or[y][x];fl[y][x]=of[y][x]}marks=null;size()};
+$("save").onclick=async()=>{const t=text(),nm=($("name").value.trim()||"NewPlan")+".plan";
+ if(window.showSaveFilePicker){try{const h=await window.showSaveFilePicker({suggestedName:nm,types:[{description:"plan",accept:{"text/plain":[".plan"]}}]});const w=await h.createWritable();await w.write(t);await w.close();$("msg").textContent="saved "+nm;return}catch(e){if(e.name=="AbortError")return}}
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download=nm;a.click();$("msg").textContent="downloaded "+nm+" (put it in ArtSource/plans)"};
+$("copy").onclick=()=>{navigator.clipboard.writeText(text());$("msg").textContent="plan text copied"};
+const sel=$("load");for(const f in D.plans)for(const p of parse(D.plans[f])){const o=document.createElement("option");o.value=f+"|"+p.name;o.textContent=p.name+"  ("+f+")";sel.appendChild(o)}
+$("bLoad").onclick=()=>{const[f,n]=sel.value.split("|");const p=parse(D.plans[f]).find(q=>q.name==n);if(p)fromPlan(p)};
+$("file").onchange=async e=>{const t=await e.target.files[0].text();const ps=parse(t);if(ps.length)fromPlan(ps[0]);else $("msg").textContent="no 'plan' block found"};
+blank(12,10);pal();size();
+const first=[...sel.options].find(o=>o.value.includes("department_store"));if(first){sel.value=first.value;$("bLoad").click()}
+</script></body></html>

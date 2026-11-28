@@ -7494,3 +7494,6 @@ Fitting rooms are now two walk-in cubicles (partition walls, a bench inside, the
 
 ## Batch 9gm (2026-11-28) - Department store: front windows thinned, side door and bed-like debris removed
 Review pass: the front wall had a dense grid of tiny windows, now windows come in pairs with solid piers; the east side door drew as a wooden stub in the wall, removed; the white debris in the office read as a mattress, removed. Harness passed; nothing run in Unity.
+
+## Batch 9gn (2026-11-28) - Plan editor (browser): paint plans with the real sprites
+Tools/editor/plan_editor.html (built by build_editor.py from the atlas, Interiors glyphs and ArtSource/plans): paint walls/windows/doors/floors/props, undo, mirror, resize, rectangle fill, reachability and hidden-row checks, load/save .plan. plan.py now accepts per-tile floorrows blocks. Tested in headless Chromium (no console errors, saved plan round-trips through plan.py); not tested by hand and not run in Unity.
